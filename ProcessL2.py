@@ -1,5 +1,4 @@
 
-
 import numpy as np
 
 import HDFRoot
@@ -11,8 +10,10 @@ from Utilities import Utilities
 
 class ProcessL2:
 
+    '''
     # ToDo: improve later
     # Reference: "ProSoft-7.7- Manual.pdf", Appendix D
+    '''    
     @staticmethod
     def dataDeglitching(ds):
         noiseThresh = 20        
