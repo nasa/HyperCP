@@ -1,0 +1,151 @@
+
+import collections
+import sys
+
+# For testing HDF4 support with pyhdf
+#from pyhdf.HDF import *
+#from pyhdf.V import *
+#from pyhdf.VS import *
+
+import h5py
+import numpy as np
+#import scipy as sp
+
+
+from HDFDataset import HDFDataset
+#from Utilities import Utilities
+
+
+class HDFGroup:
+    def __init__(self):
+        self.id = ""
+        self.datasets = collections.OrderedDict()
+        self.attributes = collections.OrderedDict()
+
+
+    def copy(self, gp):
+        self.copyAttributes(gp)
+        for k, ds in gp.datasets.items():
+            newDS = self.addDataset(ds.id)
+            newDS.copy(ds)
+
+    def copyAttributes(self, gp):
+        for k,v in gp.attributes.items():
+            self.attributes[k] = v
+
+    def datasetDeleteRow(self, i):
+        for k in self.datasets:
+            ds = self.datasets[k]
+            ds.data = np.delete(ds.data, (i), axis=0)
+
+    def addDataset(self, name):
+        if len(name) == 0:
+            print("Name is 0")
+            exit(1)
+        ds = None
+        if not self.getDataset(name):
+            ds = HDFDataset()
+            ds.id = name
+            self.datasets[name] = ds
+        return ds
+
+
+    def getDataset(self, name):
+        if name in self.datasets:
+            return self.datasets[name]
+        return None
+
+
+    # Generates Head attributes
+    # ToDo: This should get generated from contect file instead
+    def getTableHeader(self, name):
+        if name != "None":
+            cnt = 1
+            ds = self.getDataset(name)
+            if ds is None:
+                ds = self.addDataset(name)
+            for item in ds.columns:
+                self.attributes["Head_"+str(cnt)] = name + " 1 1 " + item
+                cnt += 1
+
+
+
+    def printd(self):
+        print("Group:", self.id)
+        #print("Sensor Type:", self.sensorType)
+
+        if "FrameType" in self.attributes:
+            print("Frame Type:", self.attributes["FrameType"])
+        else:
+            print("Frame Type not found")
+
+        for k in self.attributes:
+            print("Attribute:", k, self.attributes[k])
+        #    attr.printd()
+        #for gp in self.groups:
+        #    gp.printd()
+        for k in self.datasets:
+            ds = self.datasets[k]
+            ds.printd()
+
+
+    def read(self, f):
+        name = f.name[f.name.rfind("/")+1:]
+        #if len(name) == 0:
+        #    name = "/"
+        self.id = name
+
+        # Read attributes
+        #print("Attributes:", [k for k in f.attrs.keys()])
+        for k in f.attrs.keys():
+            if type(f.attrs[k]) == np.ndarray:
+                self.attributes[k] = f.attrs[k]
+            else: # string attribute
+                self.attributes[k] = f.attrs[k].decode("utf-8")
+        # Read datasets
+        for k in f.keys():
+            item = f.get(k)
+            if isinstance(item, h5py.Group):
+                print("HDFGroup should not contain groups")
+            elif isinstance(item, h5py.Dataset):
+                #print("Item:", k)
+                ds = HDFDataset()
+                self.datasets[k] = ds
+                ds.read(item)
+
+
+    def write(self, f):
+        #print("Group:", self.id)
+        try:
+            f = f.create_group(self.id)
+            # Write attributes
+            for k in self.attributes:
+                f.attrs[k] = np.string_(self.attributes[k])
+            # Write datasets
+            for key,ds in self.datasets.items():
+                #f.create_dataset(ds.id, data=np.asarray(ds.data))
+                ds.write(f)
+        except:
+            e = sys.exc_info()[0]
+            print(e)
+
+
+    # Writing to HDF4 file using PyHdf
+    def writeHDF4(self, v, vs):
+        print("Group:", self.id)
+        name = self.id[:self.id.find("_")]
+        if sys.version_info[0] < 3:
+            #vg = v.create(self.id.encode('utf-8'))
+            vg = v.create(name.encode('utf-8'))
+        else:
+            #vg = v.create(self.id)
+            vg = v.create(name)
+
+        for k in self.attributes:
+            attr = vg.attr(k)
+            attr.set(HC.CHAR8, self.attributes[k])
+
+        for key,ds in self.datasets.items():
+            #f.create_dataset(ds.id, data=np.asarray(ds.data))
+            ds.writeHDF4(vg, vs)
+
