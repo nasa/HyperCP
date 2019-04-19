@@ -1,8 +1,10 @@
 # HyperInSPACE 
 
-Hyperspectral In Situ Support for PACE
-Principally for processing hyperspectral, in situ, above-water radiometric measurements
-made with instruments such as the Satlantic HyperSAS SolarTracker.
+HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing
+above-water, hyperspectral radiometry collected with Satlantic HyperSAS instruments.
+
+Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center
+Acknowledgements: Nathan Vanderberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
 ## Installation
 
