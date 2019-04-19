@@ -10,8 +10,8 @@ Acknowledgements: Nathan Vanderberg (PySciDON; https://ieeexplore.ieee.org/abstr
 
 Requires the Anaconda distribution of Python 3.X
 
-Once Anaconda is installed, HyperInSPACE can be started a number of ways, such as by navigating to the program folder on the command line and using the following command:
-python Main.py
+HyperInSPACE can be started in several of ways, such as by navigating to the program folder on the command line and using the following command:
+$ python Main.py
 
 
 ## Guide
@@ -22,8 +22,7 @@ Under "Config File", click "New" to create a new HyperInSPACE config file.
 Select the new config file from the drop-down menu.
 Click "Edit" to edit the config file.
 
-In the "Edit Config" window, click "Add Calibration Files" to add the calibration files that were from the extracted .sip file.
-The currently selected calibration file can be selected using the drop-down menu.
+In the "Edit Config" window, click "Add Calibration Files" to add the calibration files that were from the extracted .sip file. The currently selected calibration file can be selected using the drop-down menu.
 
 For each calibration file:
 Click "Enable" to enable the calibration file.

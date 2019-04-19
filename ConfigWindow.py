@@ -117,14 +117,33 @@ class ConfigWindow(QtWidgets.QDialog):
         l2Label_font = l2Label.font()
         l2Label_font.setPointSize(14)
         l2Label.setFont(l2Label_font)
-        l2Sublabel = QtWidgets.QLabel(" Shutter dark correction; no parameters to set", self)  
+        l2Sublabel = QtWidgets.QLabel(" Shutter dark corrections and data deglitching", self)  
+
+        # Deglitcher
+        self.l2DeglitchLabel = QtWidgets.QLabel("     Deglitch data", self)                
+        self.l2DeglitchCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2Deglitch"]) == 1:
+            self.l2DeglitchCheckBox.setChecked(True)
+
+        self.l2Deglitch1Label = QtWidgets.QLabel("     Noise Threshold Es", self)
+        self.l2Deglitch1LineEdit = QtWidgets.QLineEdit(self)
+        self.l2Deglitch1LineEdit.setText(str(ConfigFile.settings["fL2Deglitch1"]))
+        self.l2Deglitch1LineEdit.setValidator(doubleValidator)
+
+        self.l2Deglitch2Label = QtWidgets.QLabel("     Noise Threshold Li,Lt", self)
+        self.l2Deglitch2LineEdit = QtWidgets.QLineEdit(self)
+        self.l2Deglitch2LineEdit.setText(str(ConfigFile.settings["fL2Deglitch2"]))
+        self.l2Deglitch2LineEdit.setValidator(doubleValidator)
+        
+        self.l2DeglitchCheckBoxUpdate()      
 
         l2SaveSeaBASSLabel = QtWidgets.QLabel("     Save SeaBASS text file", self)        
         self.l2SaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
             self.l2SaveSeaBASSCheckBox.setChecked(True)
 
-        # self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)       
+        # self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)    
+        self.l2DeglitchCheckBox.clicked.connect(self.l2DeglitchCheckBoxUpdate)   
 
         # L2s
         l2sLabel = QtWidgets.QLabel("Level 2s Processing", self)
@@ -364,6 +383,22 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox1.addWidget(l2Label)
         VBox1.addWidget(l2Sublabel)
         
+        # Deglitcher
+        deglitchHBox = QtWidgets.QHBoxLayout()
+        deglitchHBox.addWidget(self.l2DeglitchLabel)
+        deglitchHBox.addWidget(self.l2DeglitchCheckBox)
+        VBox1.addLayout(deglitchHBox)
+
+        deglitch1HBox = QtWidgets.QHBoxLayout()
+        deglitch1HBox.addWidget(self.l2Deglitch1Label)
+        deglitch1HBox.addWidget(self.l2Deglitch1LineEdit)
+        VBox1.addLayout(deglitch1HBox)
+        
+        deglitch2HBox = QtWidgets.QHBoxLayout()
+        deglitch2HBox.addWidget(self.l2Deglitch2Label)
+        deglitch2HBox.addWidget(self.l2Deglitch2LineEdit)
+        VBox1.addLayout(deglitch2HBox)
+
         # Horizontal Box 
         l2SeaBASSHBox = QtWidgets.QHBoxLayout()
         l2SeaBASSHBox.addWidget(l2SaveSeaBASSLabel)
@@ -612,6 +647,14 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1bSaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l1bSaveSeaBASSCheckBoxUpdate")
 
+    def l2DeglitchCheckBoxUpdate(self):
+        print("ConfigWindow - l2DeglitchCheckBoxUpdate")
+        
+        disabled = (not self.l2DeglitchCheckBox.isChecked())
+        self.l2Deglitch1Label.setDisabled(disabled)
+        self.l2Deglitch1LineEdit.setDisabled(disabled)
+        self.l2Deglitch2Label.setDisabled(disabled)
+        self.l2Deglitch2LineEdit.setDisabled(disabled)        
 
     def l2sCleanRotatorAngleCheckBoxUpdate(self):
         print("ConfigWindow - l2sCleanRotatorAngleCheckBoxUpdate")
