@@ -6,6 +6,7 @@ import HDFRoot
 #import HDFDataset
 
 from Utilities import Utilities
+# import matplotlib.pyplot as plt
 
 
 class ProcessL2:
@@ -112,9 +113,13 @@ class ProcessL2:
                 print("lightTimer does not contain strictly increasing values")
                 #return False
 
-            #print(x[0], new_x[0])
+            # print(x[0], new_x[0])
             #newDarkData[k] = Utilities.interp(x,y,new_x,'cubic')
             newDarkData[k] = Utilities.interpSpline(x,y,new_x)
+            # plt.plot(x,y,'ro')
+            # # plt.plot(new_x,newDarkData[k],'bo')
+            # plt.show()
+            # print('asdf')
 
         darkData.data = newDarkData
 
@@ -152,47 +157,47 @@ class ProcessL2:
             timerDS.data["NONE"][i] = t
         
 
-    # Finds minimum timer stamp between dark and light, and starts there
-    # Resets this time to zero, and increments dark and light by the minimum
-    # increment in the light timer. 
-    # 
-    # THIS DOESN'T MAKE SENSE. DARK TIME AND LIGHT TIME WILL BE ON DIFFERING
-    # INTERVALS THANKS TO INTEGRATION TIME, RIGHT?
-    # DARK DATA NEEDS TO BE ALIGNED SOMEHOW SO EACH LIGHT CAN HAVE THE NEAREST
-    # DARK SAMPLE SUBTRACTED.
-    @staticmethod
-    def processTimer(darkTimer, lightTimer):
+    # # Finds minimum timer stamp between dark and light, and starts there
+    # # Resets this time to zero, and increments dark and light by the minimum
+    # # increment in the light timer. 
+    # # 
+    # # THIS DOESN'T MAKE SENSE. DARK TIME AND LIGHT TIME WILL BE ON DIFFERING
+    # # INTERVALS THANKS TO INTEGRATION TIME, RIGHT?
+    # # DARK DATA NEEDS TO BE ALIGNED SOMEHOW SO EACH LIGHT CAN HAVE THE NEAREST
+    # # DARK SAMPLE SUBTRACTED.
+    # @staticmethod
+    # def processTimer(darkTimer, lightTimer):
 
-        if (darkTimer.data is None) or (lightTimer.data is None):
-            return
+    #     if (darkTimer.data is None) or (lightTimer.data is None):
+    #         return
 
-        t0 = lightTimer.data["NONE"][0]
-        t1 = lightTimer.data["NONE"][1]
-        #offset = t1 - t0
+    #     t0 = lightTimer.data["NONE"][0]
+    #     t1 = lightTimer.data["NONE"][1]
+    #     #offset = t1 - t0
 
-        # Finds the minimum cycle time of the instrument to use as offset
-        min0 = t1 - t0
-        total = len(lightTimer.data["NONE"])
-        #print("test avg")
-        for i in range(1, total):
-            num = lightTimer.data["NONE"][i] - lightTimer.data["NONE"][i-1]
-            if num < min0 and num > 0:
-                min0 = num
-        offset = min0
-        #print("min:",min0)
+    #     # Finds the minimum cycle time of the instrument to use as offset
+    #     min0 = t1 - t0
+    #     total = len(lightTimer.data["NONE"])
+    #     #print("test avg")
+    #     for i in range(1, total):
+    #         num = lightTimer.data["NONE"][i] - lightTimer.data["NONE"][i-1]
+    #         if num < min0 and num > 0:
+    #             min0 = num
+    #     offset = min0
+    #     #print("min:",min0)
 
-        # Set start time to minimum of light/dark timer values
-        if darkTimer.data["NONE"][0] < t0:
-            t0 = darkTimer.data["NONE"][0]
+    #     # Set start time to minimum of light/dark timer values
+    #     if darkTimer.data["NONE"][0] < t0:
+    #         t0 = darkTimer.data["NONE"][0]
 
-        # Recalculate timers by subtracting start time and adding offset
-        #print("Time:", time)
-        #print(darkTimer.data)
-        for i in range(0, len(darkTimer.data)):
-            darkTimer.data["NONE"][i] += -t0 + offset
-        for i in range(0, len(lightTimer.data)):
-            lightTimer.data["NONE"][i] += -t0 + offset
-        #print(darkTimer.data)
+    #     # Recalculate timers by subtracting start time and adding offset
+    #     #print("Time:", time)
+    #     #print(darkTimer.data)
+    #     for i in range(0, len(darkTimer.data)):
+    #         darkTimer.data["NONE"][i] += -t0 + offset
+    #     for i in range(0, len(lightTimer.data)):
+    #         lightTimer.data["NONE"][i] += -t0 + offset
+    #     #print(darkTimer.data)
 
 
     # Used to correct TIMETAG2 values if they are not strictly increasing
@@ -250,9 +255,12 @@ class ProcessL2:
         ProcessL2.fixTimeTag2(darkGroup)
         ProcessL2.fixTimeTag2(lightGroup)        
 
+        # Replace Timer with TT2
         ProcessL2.copyTimetag2(darkTimer, darkTT2)
         ProcessL2.copyTimetag2(lightTimer, lightTT2)
-        # ProcessL2.processTimer(darkTimer, lightTimer)
+
+        # ProcessL2.processTimer(darkTimer, lightTimer) # makes no sense
+
         if not ProcessL2.darkCorrection(darkData, darkTimer, lightData, lightTimer):
             print("ProcessL2.darkCorrection failed  for " + sensorType)
             return False
