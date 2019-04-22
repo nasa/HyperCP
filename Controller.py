@@ -388,41 +388,32 @@ class Controller:
 
             if int(ConfigFile.settings["bL4SaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
-                SeaBASSWriter.outputTXT_L4(inFilePath)                       
-        
-        # CSVWriter.outputTXT_L1b(fp)
-        # CSVWriter.outputTXT_L2(fp)
-        # CSVWriter.outputTXT_L2s(fp)
-        # CSVWriter.outputTXT_L3a(fp)
-        # CSVWriter.outputTXT_L4(fp)
+                SeaBASSWriter.outputTXT_L4(inFilePath)                               
         # print("Process Single Level: " + inFilePath + " - DONE")
 
 
     @staticmethod
-    def processMultiLevel(pathOut, fp, calibrationMap, level=4, windFile=None, skyFile=None):
+    def processMultiLevel(outFilePath, inFilePath, calibrationMap, level=4, windFile=None, skyFile=None):
         print("Process Multi Level: " + fp)
-        Controller.processL1a(pathOut, fp, calibrationMap)
-        Controller.processL1b(fp, pathOut, calibrationMap)
-        #if level >= 1:
-        
-        if level >= 2:
-            windSpeedData = Controller.processWindData(windFile)
-            """ sky file proc goes here"""
-        Controller.processL2(pathOut, fp)        
-        #     Controller.processL2s(fp)
-        # if level >= 3:
-        #     Controller.processL3a(fp)
-        # if level >= 4:
-        #     windSpeedData = Controller.processWindData(windFile)
-        #     Controller.processL4(fp, windSpeedData)
-            #Controller.outputCSV_L4(fp)
+        Controller.processL1a(inFilePath, outFilePath, calibrationMap)
+        Controller.processL1b(inFilePath, outFilePath, calibrationMap)                                
+        Controller.processL2(inFilePath, outFilePath)        
+        Controller.processL2s(inFilePath, outFilePath)
+        Controller.processL3a(inFilePath, outFilePath)
+        windSpeedData = Controller.processWindData(windFile)
+        """ sky file proc goes here"""
+        Controller.processL4(inFilePath, outFilePath, windSpeedData)
+        if int(ConfigFile.settings["bL4SaveSeaBASS"]) == 1:
+                print("Output SeaBASS: " + inFilePath)
+                SeaBASSWriter.outputTXT_L2s(inFilePath)  
+        Controller.outputCSV_L4(fp)
         print("Output CSV: " + fp)
-        CSVWriter.outputTXT_L1a(fp)
-        CSVWriter.outputTXT_L1b(fp)
-        CSVWriter.outputTXT_L2(fp)
-        # CSVWriter.outputTXT_L2s(fp)
-        # CSVWriter.outputTXT_L3a(fp)
-        # CSVWriter.outputTXT_L4(fp)
+        # SeaBASSWriter.outputTXT_L1a(fp)
+        # SeaBASSWriter.outputTXT_L1b(fp)
+        # SeaBASSWriter.outputTXT_L2(fp)
+        # SeaBASSWriter.outputTXT_L2s(fp)
+        # SeaBASSWriter.outputTXT_L3a(fp)
+        SeaBASSWriter.outputTXT_L4(fp)
         print("Process Multi Level: " + fp + " - DONE")
 
     """ This may never be called

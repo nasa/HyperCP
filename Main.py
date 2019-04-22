@@ -132,7 +132,7 @@ class Window(QtWidgets.QWidget):
         self.multiLevelLabel = QtWidgets.QLabel('Multi-Level Processing', self)
         #self.multiLevelLabel.move(30, 140)
 
-        self.multi2Button = QtWidgets.QPushButton("Level 1 --> 3a", self)
+        self.multi2Button = QtWidgets.QPushButton("Level 1 --> 4", self)
         #self.multi1Button.move(30, 170)
 
         self.multi2Button.clicked.connect(self.multi2Clicked)
