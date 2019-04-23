@@ -723,6 +723,7 @@ class ConfigWindow(QtWidgets.QDialog):
                 
         ConfigFile.settings["bL1bSaveSeaBASS"] = int(self.l1bSaveSeaBASSCheckBox.isChecked())
 
+        ConfigFile.settings["bL2Deglitch"] = int(self.l2DeglitchCheckBox.isChecked()) 
         ConfigFile.settings["bL2SaveSeaBASS"] = int(self.l2SaveSeaBASSCheckBox.isChecked())
         
         ConfigFile.settings["bl2sCleanRotatorAngle"] = int(self.l2sCleanRotatorAngleCheckBox.isChecked())        

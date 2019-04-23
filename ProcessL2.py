@@ -1,23 +1,53 @@
 
 import numpy as np
+# import matplotlib.pyplot as plt
 
 import HDFRoot
 #import HDFGroup
 #import HDFDataset
 
+from ConfigFile import ConfigFile
 from Utilities import Utilities
-# import matplotlib.pyplot as plt
+
 
 
 class ProcessL2:
 
     '''
-    # ToDo: improve later
-    # Reference: "ProSoft-7.7- Manual.pdf", Appendix D
+    # ToDo: Clarify Dark Deglitching scheme
+    # Reference: ProSoft 7.7 Rev. K May 8, 2017, SAT-DN-00228
     '''    
     @staticmethod
-    def dataDeglitching(ds):
-        noiseThresh = 20        
+    def darkDataDeglitching(ds):        
+        ''' Dark deglitching is very poorly described by SeaBird (pg 41).
+        For now, set to NaN anything outside 10 STDS from the mean of the 
+        dark dataset'''        
+        # Copy dataset to dictionary
+        ds.datasetToColumns()
+        columns = ds.columns
+
+        for k,v in columns.items(): # k is the waveband, v is the series data in the OrdDict
+            stdDark = np.std(v)
+            medDark = np.median(v)
+
+
+            print("Median = " + str(medDark) + " +/- " + str(stdDark) + " (1 STD)")
+            for i in range(len(v)):
+                if abs(v[i] - medDark) > 10*stdDark:
+                    v[i] = np.nan
+                    print("Dark data nan'ed at " + str(i))
+        ds.columnsToDataset()
+
+    @staticmethod
+    def lightDataDeglitching(ds, sensorType):        
+        ''' The code below seems to be modeled off the ProSoft manual
+        for shutter-open data (Appendix D).'''
+        # noiseThresh = 5 default for Irradiance ("reference"), fL2Deglitch1
+        # noiseThresh = 20 default for Radiance, fL2Deglitch2               
+        if sensorType=="Es":
+            noiseThresh = float(ConfigFile.settings["fL2Deglitch1"])
+        else:
+            noiseThresh = float(ConfigFile.settings["fL2Deglitch2"])        
 
         # Copy dataset to dictionary
         ds.datasetToColumns()
@@ -40,18 +70,31 @@ class ProcessL2:
             for i in range(len(v)):
                 if abs(v[i] - medN) > noiseThresh*stdS:
                     v[i] = np.nan
-
-        #ds.columns = columns
         ds.columnsToDataset()
 
     @staticmethod
-    def processDataDeglitching(node, sensorType):
+    def processDataDeglitching(node, sensorType):   
+        print("Deglitching " + sensorType)     
         darkData = None
+        lightData = None
         for gp in node.groups:
-            if gp.attributes["FrameType"] == "ShutterDark" and gp.hasDataset(sensorType):
+            if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 darkData = gp.getDataset(sensorType)
+            if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
+                lightData = gp.getDataset(sensorType)
       
-        ProcessL2.dataDeglitching(darkData)
+        # Note this is only Dark Data Deglitching here: Pg 41 ProSoft v7.7 rev k
+        if darkData is None:
+            print("Error: No dark data to deglitch")
+        else:
+            print("Deglitching dark")
+            ProcessL2.darkDataDeglitching(darkData)
+        if darkData is None:
+            print("Error: No light data to deglitch")
+        else:    
+            print("Deglitching light")
+            ProcessL2.lightDataDeglitching(lightData, sensorType)
+            
 
 
 
@@ -281,15 +324,20 @@ class ProcessL2:
         root.copy(node) #  Copy everything from the L1b file into the new HDF object
 
         root.attributes["PROCESSING_LEVEL"] = "2"
-        root.attributes["DEGLITCH_PRODAT"] = "OFF"
-        root.attributes["DEGLITCH_REFDAT"] = "OFF"
+        if int(ConfigFile.settings["bL2Deglitch"]) == 1:
+            root.attributes["DEGLITCH_PRODAT"] = "ON"
+            root.attributes["DEGLITCH_REFDAT"] = "ON"
+            ProcessL2.processDataDeglitching(root, "ES")
+            ProcessL2.processDataDeglitching(root, "LI")
+            ProcessL2.processDataDeglitching(root, "LT")
+
+        else:
+            root.attributes["DEGLITCH_PRODAT"] = "OFF"
+            root.attributes["DEGLITCH_REFDAT"] = "OFF"
         #root.attributes["STRAY_LIGHT_CORRECT"] = "OFF"
         #root.attributes["THERMAL_RESPONSIVITY_CORRECT"] = "OFF"
 
-        #ProcessL2.processDataDeglitching(root, "ES")
-        #ProcessL2.processDataDeglitching(root, "LI")
-        #ProcessL2.processDataDeglitching(root, "LT")
-
+        
         if not ProcessL2.processDarkCorrection(root, "ES"):
             print('Error dark correcting ES')
             return None
