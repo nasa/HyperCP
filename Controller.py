@@ -82,7 +82,7 @@ class Controller:
 
     @staticmethod
     def processCalibrationConfig(configName, calFiles):
-        print("processCalibrationConfig")
+        # print("processCalibrationConfig")
         calFolder = os.path.splitext(configName)[0] + "_Calibration"
         calPath = os.path.join("Config", calFolder)
         print("ReadCalibrationFile ", calPath)
@@ -93,8 +93,8 @@ class Controller:
 
         # Settings from Config file
         print("Apply ConfigFile settings")
-        print("calibrationMap keys:", calibrationMap.keys())
-        print("config keys:", calFiles.keys())
+        # print("calibrationMap keys:", calibrationMap.keys())
+        # print("config keys:", calFiles.keys())
         for key in list(calibrationMap.keys()):
             #print(key)
             if key in calFiles.keys():
@@ -104,8 +104,8 @@ class Controller:
                     del calibrationMap[key]
             else:
                 del calibrationMap[key]
-        print("calibrationMap keys 2:", calibrationMap.keys())
-        print("processCalibrationConfig - DONE")
+        # print("calibrationMap keys 2:", calibrationMap.keys())
+        # print("processCalibrationConfig - DONE")
         return calibrationMap
 
     # Read wind speed file
@@ -142,10 +142,10 @@ class Controller:
                         # It would be good to add local time as a printed output with SZA, but considering ###
                         # timezones and probable GMT input, it could be overly complex ###
                         if (90-np.nanmax(elevation)) > szaLimit:
-                            print('SZA too low. Discarding file. ' + str(90-np.nanmax(elevation)))
+                            print('SZA too low. Discarding file. ' + str(round(90-np.nanmax(elevation))))
                             return None
                         else:
-                            print('SZA passed filter: ' + str(90-np.nanmax(elevation)))
+                            print('SZA passed filter: ' + str(round(90-np.nanmax(elevation))))
                             # Write output file to HDF
                 except:
                     print('FrameTag does not exist in the group ' + gp.id + '. Aborting.')

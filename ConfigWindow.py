@@ -20,7 +20,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.initUI()
 
     def initUI(self):
-        print("ConfigWindow - initUI")
+        # print("ConfigWindow - initUI")
         #self.label = QtWidgets.QLabel("Popup", self)
 
         nameLabel = QtWidgets.QLabel("Editing: " + self.name, self)
@@ -63,17 +63,11 @@ class ConfigWindow(QtWidgets.QDialog):
         intValidator = QtGui.QIntValidator()
         doubleValidator = QtGui.QDoubleValidator()
 
-        # # L0
-        # l0Label = QtWidgets.QLabel("Level 0 Preprocessing", self)
-        # l0Label_font = l0Label.font()
-        # l0Label_font.setPointSize(13)
-        # l0Label.setFont(l0Label_font)
-        # l0Sublabel = QtWidgets.QLabel(" Raw binary to HDF; no parameters to set", self)
-
         # L1A
         l1aLabel = QtWidgets.QLabel("Level 1A Processing", self)
         l1aLabel_font = l1aLabel.font()
-        l1aLabel_font.setPointSize(13)
+        l1aLabel_font.setPointSize(14)
+        l1aLabel_font.setBold(True)
         l1aLabel.setFont(l1aLabel_font)
         l1aSublabel = QtWidgets.QLabel(" Raw binary to HDF5", self)
         # l1aSublabel = QtWidgets.QLabel(" Raw counts to dark-corrected radiometric quanitities", self)
@@ -100,6 +94,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l1bLabel = QtWidgets.QLabel("Level 1B Processing", self)
         l1bLabel_font = l1bLabel.font()
         l1bLabel_font.setPointSize(14)
+        l1bLabel_font.setBold(True)
         l1bLabel.setFont(l1bLabel_font)
         l1bSublabel = QtWidgets.QLabel(" Raw counts to calibrated radiometric quanitities", self)
         # l1bSublabel = QtWidgets.QLabel(" Interpolation of time stamps and wavebands", self)
@@ -116,6 +111,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2Label = QtWidgets.QLabel("Level 2 Processing", self)
         l2Label_font = l2Label.font()
         l2Label_font.setPointSize(14)
+        l2Label_font.setBold(True)
         l2Label.setFont(l2Label_font)
         l2Sublabel = QtWidgets.QLabel(" Shutter dark corrections and data deglitching", self)  
 
@@ -149,6 +145,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2sLabel = QtWidgets.QLabel("Level 2s Processing", self)
         l2sLabel_font = l2sLabel.font()
         l2sLabel_font.setPointSize(14)
+        l2sLabel_font.setBold(True)
         l2sLabel.setFont(l2sLabel_font)
         l2sSublabel = QtWidgets.QLabel(" Interpolate to common time coordinates. Filter", self)
         l2sSublabel2 = QtWidgets.QLabel(" for rotator and relative solar azimuth.", self)
@@ -211,6 +208,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l3aLabel = QtWidgets.QLabel("Level 3a Processing", self)
         l3aLabel_font = l3aLabel.font()
         l3aLabel_font.setPointSize(14)
+        l3aLabel_font.setBold(True)
         l3aLabel.setFont(l3aLabel_font)
         l3aSublabel = QtWidgets.QLabel(" Interpolation to common wavelengths.", self)
         l3aInterpIntervalLabel = QtWidgets.QLabel("     Interpolation Interval (nm)", self)
@@ -234,6 +232,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l4Label = QtWidgets.QLabel("Level 4 Processing", self)
         l4Label_font = l4Label.font()
         l4Label_font.setPointSize(14)
+        l4Label_font.setBold(True)
         l4Label.setFont(l4Label_font)
         l4Sublabel = QtWidgets.QLabel(" Atmos Corr, QA, Reflectances.", self)                   
         
@@ -318,12 +317,12 @@ class ConfigWindow(QtWidgets.QDialog):
         self.saveButton.clicked.connect(self.saveButtonPressed)
         self.cancelButton.clicked.connect(self.cancelButtonPressed)
 
-        print("ConfigWindow - Create Layout")
+        # print("ConfigWindow - Create Layout")
 
         # Overall box?
         VBox = QtWidgets.QVBoxLayout()
         VBox.addWidget(nameLabel)
-        VBox.addSpacing(10)
+        # VBox.addSpacing(5)
 
         # Vertical Box (left)
         VBox1 = QtWidgets.QVBoxLayout()
@@ -339,13 +338,7 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox1.addWidget(calibrationFrameTypeLabel)
         VBox1.addWidget(self.calibrationFrameTypeComboBox)
 
-        VBox1.addSpacing(25)
-
-        # # L0
-        # VBox1.addWidget(l0Label)
-        # VBox1.addWidget(l0Sublabel)
-        
-        # VBox1.addSpacing(10)
+        VBox1.addSpacing(12)
 
         # L1a
         VBox1.addWidget(l1aLabel)
@@ -365,7 +358,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l1aSeaBASSHBox.addWidget(self.l1aSaveSeaBASSCheckBox)    
         VBox1.addLayout(l1aSeaBASSHBox)        
         
-        VBox1.addSpacing(10)
+        VBox1.addSpacing(20)
 
         # L1b
         VBox1.addWidget(l1bLabel)
@@ -377,7 +370,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l1bSeaBASSHBox.addWidget(self.l1bSaveSeaBASSCheckBox)    
         VBox1.addLayout(l1bSeaBASSHBox)
 
-        VBox1.addSpacing(10)
+        VBox1.addSpacing(20)
 
         # L2
         VBox1.addWidget(l2Label)
@@ -405,58 +398,53 @@ class ConfigWindow(QtWidgets.QDialog):
         l2SeaBASSHBox.addWidget(self.l2SaveSeaBASSCheckBox)    
         VBox1.addLayout(l2SeaBASSHBox)
 
-        VBox1.addSpacing(10)
+        # Middle box
+        VBox2 = QtWidgets.QVBoxLayout()
+        VBox2.setAlignment(QtCore.Qt.AlignBottom)
 
         # L2s
-        VBox1.addWidget(l2sLabel)
-        VBox1.addWidget(l2sSublabel)
-        VBox1.addWidget(l2sSublabel2)
+        VBox2.addWidget(l2sLabel)
+        VBox2.addWidget(l2sSublabel)
+        VBox2.addWidget(l2sSublabel2)
 
         # Rotator
         rotateHBox = QtWidgets.QHBoxLayout()
         rotateHBox.addWidget(l2sCleanRotatorAngleLabel)
         rotateHBox.addWidget(self.l2sCleanRotatorAngleCheckBox)
-        VBox1.addLayout(rotateHBox)
+        VBox2.addLayout(rotateHBox)
         RotMinHBox = QtWidgets.QHBoxLayout()
         RotMinHBox.addWidget(self.l2sRotatorAngleMinLabel)
         RotMinHBox.addWidget(self.l2sRotatorAngleMinLineEdit)
-        VBox1.addLayout(RotMinHBox)
+        VBox2.addLayout(RotMinHBox)
         RotMaxHBox = QtWidgets.QHBoxLayout()
         RotMaxHBox.addWidget(self.l2sRotatorAngleMaxLabel)
         RotMaxHBox.addWidget(self.l2sRotatorAngleMaxLineEdit)
-        VBox1.addLayout(RotMaxHBox)        
+        VBox2.addLayout(RotMaxHBox)        
         RotatorDelayHBox = QtWidgets.QHBoxLayout()
         RotatorDelayHBox.addWidget(self.l2sRotatorDelayLabel)
         RotatorDelayHBox.addWidget(self.l2sRotatorDelayLineEdit)
-        VBox1.addLayout(RotatorDelayHBox)
+        VBox2.addLayout(RotatorDelayHBox)
 
         
         # Relative SZA
         CleanSunAngleHBox = QtWidgets.QHBoxLayout()
         CleanSunAngleHBox.addWidget(l2sCleanSunAngleLabel)
         CleanSunAngleHBox.addWidget(self.l2sCleanSunAngleCheckBox)
-        VBox1.addLayout(CleanSunAngleHBox)                
-        VBox1.addWidget(self.l2sRotatorHomeAngleLabel)
-        VBox1.addWidget(self.l2sRotatorHomeAngleLineEdit)        
-        VBox1.addWidget(self.l2sSunAngleMinLabel)
-        VBox1.addWidget(self.l2sSunAngleMinLineEdit)
-        VBox1.addWidget(self.l2sSunAngleMaxLabel)
-        VBox1.addWidget(self.l2sSunAngleMaxLineEdit)
+        VBox2.addLayout(CleanSunAngleHBox)                
+        VBox2.addWidget(self.l2sRotatorHomeAngleLabel)
+        VBox2.addWidget(self.l2sRotatorHomeAngleLineEdit)        
+        VBox2.addWidget(self.l2sSunAngleMinLabel)
+        VBox2.addWidget(self.l2sSunAngleMinLineEdit)
+        VBox2.addWidget(self.l2sSunAngleMaxLabel)
+        VBox2.addWidget(self.l2sSunAngleMaxLineEdit)
 
         # Horizontal Box 
         l2sSeaBASSHBox = QtWidgets.QHBoxLayout()
         l2sSeaBASSHBox.addWidget(l2sSaveSeaBASSLabel)
         l2sSeaBASSHBox.addWidget(self.l2sSaveSeaBASSCheckBox)    
-        VBox1.addLayout(l2sSeaBASSHBox)
+        VBox2.addLayout(l2sSeaBASSHBox)     
 
-        # VBox2.addSpacing(10)
-        
-        # Right box
-        VBox2 = QtWidgets.QVBoxLayout()
-        VBox2.setAlignment(QtCore.Qt.AlignBottom)
-
-        # VBox2.addSpacing(12)            
-        # VBox2.addWidget(l2sLabel2)        
+        VBox2.addSpacing(20)   
 
         #L3a        
         VBox2.addWidget(l3aLabel)
@@ -473,75 +461,81 @@ class ConfigWindow(QtWidgets.QDialog):
         l3aSeaBASSHBox.addWidget(self.l3aSaveSeaBASSCheckBox)    
         VBox2.addLayout(l3aSeaBASSHBox)
 
-        VBox2.addSpacing(10)
+        # VBox2.addSpacing(5)
+        
+        # Right box
+        VBox3 = QtWidgets.QVBoxLayout()
+        VBox3.setAlignment(QtCore.Qt.AlignBottom)
 
         # L4
-        VBox2.addWidget(l4Label)
-        VBox2.addWidget(l4Sublabel)
+        VBox3.addWidget(l4Label)
+        VBox3.addWidget(l4Sublabel)
         
         # Rho Sky & Wind
-        VBox2.addWidget(l4RhoSkyLabel)
-        VBox2.addWidget(self.l4RhoSkyLineEdit)
+        VBox3.addWidget(l4RhoSkyLabel)
+        VBox3.addWidget(self.l4RhoSkyLineEdit)
         WindSpeedHBox = QtWidgets.QHBoxLayout()
         WindSpeedHBox.addWidget(l4EnableWindSpeedCalculationLabel)
         WindSpeedHBox.addWidget(self.l4EnableWindSpeedCalculationCheckBox)
-        VBox2.addLayout(WindSpeedHBox)             
-        VBox2.addWidget(self.l4DefaultWindSpeedLabel)
-        VBox2.addWidget(self.l4DefaultWindSpeedLineEdit)
+        VBox3.addLayout(WindSpeedHBox)             
+        VBox3.addWidget(self.l4DefaultWindSpeedLabel)
+        VBox3.addWidget(self.l4DefaultWindSpeedLineEdit)
 
-        VBox2.addSpacing(10)
+        VBox3.addSpacing(5)
 
         # Meteorology Flags
         QualityFlagHBox = QtWidgets.QHBoxLayout()
         QualityFlagHBox.addWidget(l4QualityFlagLabel)
         QualityFlagHBox.addWidget(self.l4QualityFlagCheckBox)
-        VBox2.addLayout(QualityFlagHBox)         
-        VBox2.addWidget(self.l4EsFlagLabel)
-        VBox2.addWidget(self.l4EsFlagLineEdit)
-        VBox2.addWidget(self.l4DawnDuskFlagLabel)
-        VBox2.addWidget(self.l4DawnDuskFlagLineEdit)
-        VBox2.addWidget(self.l4RainfallHumidityFlagLabel)
-        VBox2.addWidget(self.l4RainfallHumidityFlagLineEdit)
+        VBox3.addLayout(QualityFlagHBox)         
+        VBox3.addWidget(self.l4EsFlagLabel)
+        VBox3.addWidget(self.l4EsFlagLineEdit)
+        VBox3.addWidget(self.l4DawnDuskFlagLabel)
+        VBox3.addWidget(self.l4DawnDuskFlagLineEdit)
+        VBox3.addWidget(self.l4RainfallHumidityFlagLabel)
+        VBox3.addWidget(self.l4RainfallHumidityFlagLineEdit)
 
-        VBox2.addSpacing(10)
+        VBox3.addSpacing(5)
 
         # Time Average Rrs
-        VBox2.addWidget(l4TimeIntervalLabel)
-        VBox2.addWidget(self.l4TimeIntervalLineEdit)
+        VBox3.addWidget(l4TimeIntervalLabel)
+        VBox3.addWidget(self.l4TimeIntervalLineEdit)
 
-        VBox2.addSpacing(10)
+        VBox3.addSpacing(5)
 
         # NIR AtmoCorr
         NIRCorrectionHBox = QtWidgets.QHBoxLayout()
         NIRCorrectionHBox.addWidget(l4NIRCorrectionLabel)
         NIRCorrectionHBox.addWidget(self.l4NIRCorrectionCheckBox)
-        VBox2.addLayout(NIRCorrectionHBox)         
+        VBox3.addLayout(NIRCorrectionHBox)         
 
-        VBox2.addSpacing(10)
+        VBox3.addSpacing(5)
         
         # Percent Light; Hooker & Morel 2003
         PercentLtHBox = QtWidgets.QHBoxLayout()
         PercentLtHBox.addWidget(self.l4EnablePercentLtLabel)
         PercentLtHBox.addWidget(self.l4EnablePercentLtCheckBox)
-        VBox2.addLayout(PercentLtHBox)  
-        VBox2.addWidget(l4PercentLtLabel)
-        VBox2.addWidget(self.l4PercentLtLineEdit)
+        VBox3.addLayout(PercentLtHBox)  
+        VBox3.addWidget(l4PercentLtLabel)
+        VBox3.addWidget(self.l4PercentLtLineEdit)
 
-        VBox2.addSpacing(10)
+        VBox3.addSpacing(5)
         
         # Horizontal Box; Save SeaBASS
         l4SeaBASSHBox = QtWidgets.QHBoxLayout()
         l4SeaBASSHBox.addWidget(l4SaveSeaBASSLabel)
         l4SeaBASSHBox.addWidget(self.l4SaveSeaBASSCheckBox)    
-        VBox2.addLayout(l4SeaBASSHBox)
+        VBox3.addLayout(l4SeaBASSHBox)
         
-        VBox2.addSpacing(20)
+        # VBox3.addSpacing(30)
 
         # ?
         hBox = QtWidgets.QHBoxLayout()
         hBox.addLayout(VBox1)
-        hBox.addSpacing(50)
+        # hBox.addSpacing(30)
         hBox.addLayout(VBox2)        
+        # hBox.addSpacing(30)
+        hBox.addLayout(VBox3)    
 
         # Save/Cancel
         saveHBox = QtWidgets.QHBoxLayout()
@@ -554,11 +548,11 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox.addLayout(saveHBox)
 
         self.setLayout(VBox)
-        self.setGeometry(300, 200, 400, 750)
-        self.setWindowTitle('Edit Config')
+        self.setGeometry(300, 100, 0, 0)
+        self.setWindowTitle('Edit Configuration')
         #self.show()
 
-        print("ConfigWindow - initUI Done")
+        # print("ConfigWindow - initUI Done")
 
 
     def addCalibrationFileButtonPressed(self):
@@ -680,7 +674,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def l4EnableWindSpeedCalculationCheckBoxUpdate(self):
         print("ConfigWindow - l4EnableWindSpeedCalculationCheckBoxUpdate")
-        print("This should do something....?")
+        # print("This should do something....?")
         
         disabled = (not self.l4EnableWindSpeedCalculationCheckBox.isChecked())
         self.l4DefaultWindSpeedLabel.setDisabled(disabled)
@@ -688,7 +682,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def l4QualityFlagCheckBoxUpdate(self):
         print("ConfigWindow - l4QualityFlagCheckBoxUpdate")
-        print("This should do something....?")
+        # print("This should do something....?")
 
         disabled = (not self.l4QualityFlagCheckBox.isChecked())
         self.l4EsFlagLabel.setDisabled(disabled)
@@ -700,11 +694,11 @@ class ConfigWindow(QtWidgets.QDialog):
     
     def l4NIRCorrectionCheckBoxUpdate(self):
         print("ConfigWindow - l4NIRCorrectionCheckBoxUpdate")
-        print("This should do something....?")
+        # print("This should do something....?")
 
     def l4EnablePercentLtCheckBoxUpdate(self):
         print("ConfigWindow - l4EnablePercentLtCheckBoxUpdate")
-        print("This should do something....?")        
+        # print("This should do something....?")        
         
         disabled = (not self.l4EnablePercentLtCheckBox.isChecked())
         self.l4PercentLtLabel.setDisabled(disabled)

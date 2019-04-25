@@ -40,7 +40,7 @@ class RawFileReader:
         posframe = 1
 
         # Note: Prosoft adds posframe=1 to the GPS for some reason
-        print(contextMap.keys())
+        # print(contextMap.keys())
         #gpsGroup = contextMap["$GPRMC"]
         #ds = gpsGroup.getDataset("POSFRAME")
         #ds.appendColumn(u"COUNT", posframe)

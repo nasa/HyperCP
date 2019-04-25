@@ -11,12 +11,9 @@ class ConfigFile:
     @staticmethod
     def printd():
         print("ConfigFile - Printd")
-
         print("bL1aCleanSZA", ConfigFile.settings["bL1aCleanSZA"])
         print("fL1aCleanSZAMax", ConfigFile.settings["fL1aCleanSZAMax"])
-
         print("fL1bInterpInterval", ConfigFile.settings["fL1bInterpInterval"])
-
         print("bL2CleanSunAngle", ConfigFile.settings["bL2CleanSunAngle"])
         print("bL2CleanRotatorAngle", ConfigFile.settings["bL2CleanRotatorAngle"])
         print("fL2SunAngleMin", ConfigFile.settings["fL2SunAngleMin"])
@@ -105,7 +102,7 @@ class ConfigFile:
     # ToDo: Apply default values to any settings that are missing (in case settings are updated)
     @staticmethod
     def loadConfig(filename):
-        print("ConfigFile - Load Config")
+        # print("ConfigFile - Load Config")
         configPath = os.path.join("Config", filename)
         if os.path.isfile(configPath):
             ConfigFile.filename = filename
@@ -130,7 +127,7 @@ class ConfigFile:
 
     @staticmethod
     def getCalibrationDirectory():
-        print("ConfigFile - getCalibrationDirectory")
+        # print("ConfigFile - getCalibrationDirectory")
         calibrationDir = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
         calibrationPath = os.path.join("Config", calibrationDir)
         return calibrationPath

@@ -5,6 +5,8 @@ above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center
 Acknowledgements: Nathan Vanderberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
+Version 1.0: Under development April 2019
+
 """
 import os
 import shutil
@@ -17,20 +19,17 @@ from Controller import Controller
 from ConfigFile import ConfigFile
 from ConfigWindow import ConfigWindow
 
-# from PreprocessRawFile import PreprocessRawFile
-
+""" Window is the main GUI container """
 class Window(QtWidgets.QWidget):
-
-    """ Window is the main GUI container """
-
+    
     def __init__(self, parent=None):
         super().__init__(parent)
         
         # Create folders if they don't exist
         # if not os.path.exists("RawData"):
         #    os.makedirs("RawData")
-        if not os.path.exists("Data"):  # These need to be placed within a designated cruise directory
-           os.makedirs("Data")
+        if not os.path.exists("Data"):  
+           os.makedirs("Data") # These should ultimately be placed within a designated cruise directory
         if not os.path.exists("Plots"):
            os.makedirs("Plots")
         if not os.path.exists("Ascii"):
@@ -74,12 +73,14 @@ class Window(QtWidgets.QWidget):
         self.inDirLabel = QtWidgets.QLabel("Input Data Directory", self)        
         # inputDirectory = "./"
         # self.inputDirectory = "../Field_Data" # for raw data on Candiru
-        self.inputDirectory = "./Data"
+        self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
+        # self.inputDirectory = "./Data"
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
 
         self.outDirLabel = QtWidgets.QLabel("Output Data Directory", self)        
-        self.outputDirectory = "./Data"
+        # self.outputDirectory = "./Data"
+        self.outputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
         
