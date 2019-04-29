@@ -121,6 +121,11 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2Deglitch"]) == 1:
             self.l2DeglitchCheckBox.setChecked(True)
 
+        self.l2Deglitch0Label = QtWidgets.QLabel("     Noise Threshold Dark", self)
+        self.l2Deglitch0LineEdit = QtWidgets.QLineEdit(self)
+        self.l2Deglitch0LineEdit.setText(str(ConfigFile.settings["fL2Deglitch0"]))
+        self.l2Deglitch0LineEdit.setValidator(doubleValidator)
+
         self.l2Deglitch1Label = QtWidgets.QLabel("     Noise Threshold Es", self)
         self.l2Deglitch1LineEdit = QtWidgets.QLineEdit(self)
         self.l2Deglitch1LineEdit.setText(str(ConfigFile.settings["fL2Deglitch1"]))
@@ -381,6 +386,11 @@ class ConfigWindow(QtWidgets.QDialog):
         deglitchHBox.addWidget(self.l2DeglitchLabel)
         deglitchHBox.addWidget(self.l2DeglitchCheckBox)
         VBox1.addLayout(deglitchHBox)
+
+        deglitch0HBox = QtWidgets.QHBoxLayout()
+        deglitch0HBox.addWidget(self.l2Deglitch0Label)
+        deglitch0HBox.addWidget(self.l2Deglitch0LineEdit)
+        VBox1.addLayout(deglitch0HBox)
 
         deglitch1HBox = QtWidgets.QHBoxLayout()
         deglitch1HBox.addWidget(self.l2Deglitch1Label)
@@ -645,6 +655,8 @@ class ConfigWindow(QtWidgets.QDialog):
         print("ConfigWindow - l2DeglitchCheckBoxUpdate")
         
         disabled = (not self.l2DeglitchCheckBox.isChecked())
+        self.l2Deglitch0Label.setDisabled(disabled)
+        self.l2Deglitch0LineEdit.setDisabled(disabled)
         self.l2Deglitch1Label.setDisabled(disabled)
         self.l2Deglitch1LineEdit.setDisabled(disabled)
         self.l2Deglitch2Label.setDisabled(disabled)

@@ -72,15 +72,16 @@ class Window(QtWidgets.QWidget):
 
         self.inDirLabel = QtWidgets.QLabel("Input Data Directory", self)        
         # inputDirectory = "./"
-        # self.inputDirectory = "../Field_Data" # for raw data on Candiru
-        self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
+        self.inputDirectory = "../Field_Data" # for raw data on Candiru, SMITHERS
+        # self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
         # self.inputDirectory = "./Data"
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
 
         self.outDirLabel = QtWidgets.QLabel("Output Data Directory", self)        
         # self.outputDirectory = "./Data"
-        self.outputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
+        self.outputDirectory = "../Field_Data" # for raw data on Candiru, SMITHERS
+        # self.outputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
         

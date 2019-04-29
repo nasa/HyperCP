@@ -18,30 +18,34 @@ class ProcessL2:
     # Reference: ProSoft 7.7 Rev. K May 8, 2017, SAT-DN-00228
     '''    
     @staticmethod
-    def darkDataDeglitching(ds):        
+    def darkDataDeglitching(darkData, sensorType):        
         ''' Dark deglitching is very poorly described by SeaBird (pg 41).
         For now, set to NaN anything outside 10 STDS from the mean of the 
         dark dataset'''        
-        # Copy dataset to dictionary
-        ds.datasetToColumns()
-        columns = ds.columns
+        # print(str(sensorType))
+        noiseThresh = float(ConfigFile.settings["fL2Deglitch0"])
 
+        # Copy dataset to dictionary
+        darkData.datasetToColumns()
+        columns = darkData.columns
+        
         for k,v in columns.items(): # k is the waveband, v is the series data in the OrdDict
             stdDark = np.std(v)
             medDark = np.median(v)
 
 
-            print("Median = " + str(medDark) + " +/- " + str(stdDark) + " (1 STD)")
+            print(str(k) + " nm Median = " + str(medDark) + " +/- " + str(stdDark) + " (1 STD)")
             for i in range(len(v)):
                 if abs(v[i] - medDark) > 10*stdDark:
                     v[i] = np.nan
                     print("Dark data nan'ed at " + str(i))
-        ds.columnsToDataset()
+        darkData.columnsToDataset()
 
     @staticmethod
-    def lightDataDeglitching(ds, sensorType):        
+    def lightDataDeglitching(lightData, sensorType):        
         ''' The code below seems to be modeled off the ProSoft manual
         for shutter-open data (Appendix D).'''
+        # print(str(sensorType))
         # noiseThresh = 5 default for Irradiance ("reference"), fL2Deglitch1
         # noiseThresh = 20 default for Radiance, fL2Deglitch2               
         if sensorType=="Es":
@@ -50,27 +54,29 @@ class ProcessL2:
             noiseThresh = float(ConfigFile.settings["fL2Deglitch2"])        
 
         # Copy dataset to dictionary
-        ds.datasetToColumns()
-        columns = ds.columns
+        lightData.datasetToColumns()
+        columns = lightData.columns
 
-        for k,v in columns.items():
+        for k,S in columns.items(): # k is the waveband, v is the series data in the OrdDict
             #print(k,v)
             dS = []
-            for i in range(len(v)-1):
-                #print(v[i])
-                if v[i] != 0:
-                    dS.append(v[i+1]/v[i])
+            for i in range(len(S)-1):
+                #print(S[i])
+                if S[i] != 0:
+                    dS.append(S[i+1]/S[i])
             dS_sorted = sorted(dS)
             n1 = 0.2 * len(dS)
             n2 = 0.75 * len(dS)
             #print(dS_sorted)
-            stdS = dS_sorted[round(n2)] - dS_sorted[round(n1)]
+            stdS = dS_sorted[round(n2)] - dS_sorted[round(n1)] # Has to be n2 - n1, or it's negative
             medN = np.median(np.array(dS))
-            print(n1,n2,stdS,medN)
-            for i in range(len(v)):
-                if abs(v[i] - medN) > noiseThresh*stdS:
-                    v[i] = np.nan
-        ds.columnsToDataset()
+            print(str(k) + " nm Median = " + str(medN) + " +/- " + str(stdS) + " (1 STD)")
+            # print(n1,n2,stdS,medN)
+            for i in range(len(S)):
+                if abs(dS[i] - medN) > noiseThresh*stdS:
+                    S[i] = np.nan
+                    print("Light data nan'ed at " + str(i))
+        lightData.columnsToDataset()
 
     @staticmethod
     def processDataDeglitching(node, sensorType):   
@@ -88,7 +94,7 @@ class ProcessL2:
             print("Error: No dark data to deglitch")
         else:
             print("Deglitching dark")
-            ProcessL2.darkDataDeglitching(darkData)
+            ProcessL2.darkDataDeglitching(darkData, sensorType)
         if darkData is None:
             print("Error: No light data to deglitch")
         else:    
