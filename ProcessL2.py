@@ -14,7 +14,7 @@ from Utilities import Utilities
 class ProcessL2:
 
     '''
-    # ToDo: Clarify Dark Deglitching scheme
+    # ToDo: Confirm that interpolation of timestamps is okay. Fix deglitching.
     # Reference: ProSoft 7.7 Rev. K May 8, 2017, SAT-DN-00228
     '''    
     @staticmethod
@@ -182,7 +182,7 @@ class ProcessL2:
         # Correct light data by subtracting interpolated dark data from light data
         for k in lightData.data.dtype.fields.keys():
             for x in range(lightData.data.shape[0]):
-                lightData.data[k][x] -= newDarkData[k][x]
+                lightData.data[k][x] -= newDarkData[k][x] # THIS CHANGES NOT ONLY lightData, BUT THE ROOT OBJECT gp FROM processDarkCorrection (near line 295)
 
         # NOW THAT THE LIGHTDATA HAS BEEN CORRECTED, WHAT HAPPENS TO IT? WHERE IS IT 
         # PLACED WITHIN THE HDF OBJECT???
@@ -292,7 +292,7 @@ class ProcessL2:
 
             if gp.attributes["FrameType"] == "ShutterLight" and gp.getDataset(sensorType):
                 lightGroup = gp
-                lightData = gp.getDataset(sensorType)
+                lightData = gp.getDataset(sensorType) # This is a two-way equivalence. Change lightData, and it changes the ShutterLight group dataset
                 lightTimer = gp.getDataset("TIMER")
                 lightTT2 = gp.getDataset("TIMETAG2")
 

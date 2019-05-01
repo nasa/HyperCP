@@ -18,7 +18,7 @@ from ProcessL0 import ProcessL0
 from ProcessL1a import ProcessL1a
 from ProcessL1b import ProcessL1b
 from ProcessL2 import ProcessL2
-# from ProcessL2s import ProcessL2s
+from ProcessL2s import ProcessL2s
 # from ProcessL3a import ProcessL3a
 # from ProcessL4 import ProcessL4
 # from ProcessL4a import ProcessL4a
@@ -177,6 +177,7 @@ class Controller:
     @staticmethod
     def processL2(inFilePath, outFilePath):
         if not os.path.isfile(inFilePath):
+            print('No such input file: ' + inFilePath)
             return None
 
         # Process the data
@@ -190,24 +191,23 @@ class Controller:
         else:
             print('L2 processing failed. Nothing to output.')
 
-    # @staticmethod
-    # def processL2s(fp):
-    #     # Get input filepath
-    #     (dirpath, filename) = os.path.split(fp)
-    #     filename = os.path.splitext(filename)[0]
-    #     filepath = os.path.join(dirpath, filename + "_L2.hdf")
-    #     if not os.path.isfile(filepath):
-    #         return None
+    @staticmethod
+    def processL2s(inFilePath, outFilePath):
+        if not os.path.isfile(inFilePath):
+            print('No such input file: ' + inFilePath)
+            return None
 
-    #     # Process the data
-    #     print("ProcessL2s")
-    #     root = HDFRoot.readHDF5(filepath)
-    #     root = ProcessL2s.processL2s(root)
-    #     #root.printd()
+        # Process the data
+        print("ProcessL2s")
+        root = HDFRoot.readHDF5(inFilepath)
+        root = ProcessL2s.processL2s(root)
+        #root.printd()
 
-    #     # Write output file
-    #     if root is not None:
-    #         root.writeHDF5(os.path.join(dirpath, filename + "_L2s.hdf"))
+        # Write output file
+        if root is not None:
+            root.writeHDF5(outFilePath)
+        else:
+            print('L2 processing failed. Nothing to output.')
 
     # @staticmethod
     # def processL3a(fp):
