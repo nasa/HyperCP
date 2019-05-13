@@ -86,9 +86,7 @@ class Controller:
         calFolder = os.path.splitext(configName)[0] + "_Calibration"
         calPath = os.path.join("Config", calFolder)
         print("ReadCalibrationFile ", calPath)
-        calibrationMap = CalibrationFileReader.read(calPath)
-        #calibrationMap = CalibrationFileReader.readSip("cal2013.sip")
-        #print("calibrationMap:", list(calibrationMap.keys()))
+        calibrationMap = CalibrationFileReader.read(calPath)       
         Controller.generateContext(calibrationMap)
 
         # Settings from Config file
@@ -199,9 +197,9 @@ class Controller:
 
         # Process the data
         print("ProcessL2s")
-        root = HDFRoot.readHDF5(inFilepath)
-        root = ProcessL2s.processL2s(root)
-        #root.printd()
+        root = HDFRoot.readHDF5(inFilePath)
+        root = ProcessL2s.processL2s(root) 
+        #root.printd()        
 
         # Write output file
         if root is not None:
@@ -368,14 +366,15 @@ class Controller:
                 print("Output SeaBASS: " + inFilePath)
                 SeaBASSWriter.outputTXT_L2(inFilePath)  
         elif level == "2s":
-            outFilePath = os.path.join(pathOut,fileName + "_L2s.hdf")
+            fileName = fileName.split('_')
+            outFilePath = os.path.join(pathOut,fileName[0] + "_L2s.hdf")
             Controller.processL2s(inFilePath, outFilePath)   
 
             if int(ConfigFile.settings["bL2sSaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
                 SeaBASSWriter.outputTXT_L2s(inFilePath)  
         elif level == "3a":
-            outFilePath = os.path.join(pathOut,fileName + "_L3a.hdf")
+            outFilePath = os.path.join(pathOut,fileName[0] + "_L3a.hdf")
             Controller.ProcessL3a(inFilePath, outFilePath)   
 
             if int(ConfigFile.settings["bL3aSaveSeaBASS"]) == 1:
@@ -383,7 +382,7 @@ class Controller:
                 SeaBASSWriter.outputTXT_L3a(inFilePath)  
         elif level == "4":            
             windSpeedData = Controller.processWindData(windFile)
-            outFilePath = os.path.join(pathOut,fileName + "_L4.hdf")
+            outFilePath = os.path.join(pathOut,fileName[0] + "_L4.hdf")
             Controller.processL1b(inFilePath, outFilePath)   
 
             if int(ConfigFile.settings["bL4SaveSeaBASS"]) == 1:

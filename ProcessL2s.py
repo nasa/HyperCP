@@ -1,11 +1,13 @@
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 import HDFRoot
 #import HDFGroup
 #import HDFDataset
-
 from Utilities import Utilities
+from ConfigFile import ConfigFile
+
 
 
 class ProcessL2s:
@@ -33,20 +35,75 @@ class ProcessL2s:
                         v = dsTimer.data["NONE"][x] + sec
                         dsTimeTag2.data["NONE"][x] = Utilities.secToTimeTag2(v)
 
+        
+    # Delete GPS records within the out-of-bounds times found by filtering on relative solar angle
+    @staticmethod
+    def filterData(group, badTimes):
+        
+        if group.id.startswith("GPR"):
+            # This is handled seperately in order to deal with the UTC fields in GPS
+            print("Filter GPS Data")
+
+            gpsTimeData = group.getDataset("UTCPOS")        
+            dataSec = []
+            for i in range(gpsTimeData.data.shape[0]):
+                # UTC is the same format as TT2 with the miliseconds truncated.     
+                dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))
+            lenDataSec = len(dataSec)
+            print('Data start ' + str(lenDataSec) + ' long')
+        else:
+            print("Filter " + group.id + " Data")
+            # try:
+            timeData = group.getDataset("TIMETAG2")        
+            dataSec = []
+            for i in range(timeData.data.shape[0]):
+                dataSec.append(Utilities.timeTag2ToSec(timeData.data["NONE"][i]))
+            lenDataSec = len(dataSec)
+            print('Data start ' + str(lenDataSec) + ' long')
+            # except:
+            #     print("Unable to find time field")
+
+        if dataSec:        
+            badIndex = []
+            for timeTag in badTimes:            
+                start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
+                stop = Utilities.timeTag2ToSec(list(timeTag[1])[0])
+                # startStopSec = [start), Utilities.timeTag2ToSec(stop)]
+                badIndex.append([i for i in range(lenDataSec) if start <= dataSec[i] and stop >= dataSec[i]])
+                # print(start)
+                # print(stop)
+                # print(badIndex)
+
+            badIndex = np.concatenate(np.array(badIndex), axis=None)            
+            # print(len(badIndex))
+
+            for i in range(len(badIndex)):
+                group.datasetDeleteRow(badIndex[i])    
+            
+            
+            return len(badIndex)/lenDataSec
+        else:
+            return None   
 
     @staticmethod
-    def interpolateL2s(xData, xTimer, yTimer, newXData, kind='linear'):
+    def interpolateL2s(xData, xTimer, yTimer, newXData, instr, kind='linear'):        
         for k in xData.data.dtype.names:
             if k == "Datetag" or k == "Timetag2":
                 continue
-            #print(k)
+            # print(k)
             x = list(xTimer)
             new_x = list(yTimer)
             y = np.copy(xData.data[k]).tolist()
-            if kind == 'cubic':
-                newXData.columns[k] = Utilities.interpSpline(x, y, new_x)
+            if kind == 'cubic':  
+                # test = Utilities.interpSpline(x, y, new_x)   
+                # print('len(test) = ' + str(len(test)))           
+                newXData.columns[k] = Utilities.interpSpline(x, y, new_x)       
+                # print('len(newXData.columns[k]) = ' + str(len(newXData.columns[k])))  
+                # print('')      
             else:
                 newXData.columns[k] = Utilities.interp(x, y, new_x, kind)
+
+        Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, instr)
 
 
     # Converts a sensor group into the format used by Level 2s
@@ -73,8 +130,8 @@ class ProcessL2s:
 
     # Preforms time interpolation to match xData to yData
     @staticmethod
-    def interpolateData(xData, yData):
-        print("Interpolate Data")
+    def interpolateData(xData, yData, instr):
+        print("Interpolate Data " + instr)
 
         # Interpolating to itself
         if xData is yData:
@@ -110,7 +167,7 @@ class ProcessL2s:
         #    print("Found NAN 1")
 
         # Perform interpolation
-        ProcessL2s.interpolateL2s(xData, xTimer, yTimer, xData, 'cubic')
+        ProcessL2s.interpolateL2s(xData, xTimer, yTimer, xData, instr, 'cubic')
         xData.columnsToDataset()
         
 
@@ -124,6 +181,7 @@ class ProcessL2s:
     # interpolate GPS to match ES using linear interpolation
     @staticmethod
     def interpolateGPSData(node, gpsGroup):
+        # This is handled seperately in order to correct the Lat Long and UTC fields
         print("Interpolate GPS Data")
 
         if gpsGroup is None:
@@ -265,11 +323,11 @@ class ProcessL2s:
 
 
         # Interpolate by time values
-        ProcessL2s.interpolateL2s(satnavAzimuthData, xTimer, yTimer, newSATNAVAzimuthData, 'linear')
-        ProcessL2s.interpolateL2s(satnavHeadingData, xTimer, yTimer, newSATNAVHeadingData, 'linear')
-        ProcessL2s.interpolateL2s(satnavPitchData, xTimer, yTimer, newSATNAVPitchData, 'linear')
-        ProcessL2s.interpolateL2s(satnavPointingData, xTimer, yTimer, newSATNAVPointingData, 'linear')
-        ProcessL2s.interpolateL2s(satnavRollData, xTimer, yTimer, newSATNAVRollData, 'linear')
+        ProcessL2s.interpolateL2s(satnavAzimuthData, xTimer, yTimer, newSATNAVAzimuthData, 'SunAz', 'linear')
+        ProcessL2s.interpolateL2s(satnavHeadingData, xTimer, yTimer, newSATNAVHeadingData, 'Heading', 'linear')
+        ProcessL2s.interpolateL2s(satnavPitchData, xTimer, yTimer, newSATNAVPitchData, 'Pitch', 'linear')
+        ProcessL2s.interpolateL2s(satnavPointingData, xTimer, yTimer, newSATNAVPointingData, 'Pointing', 'linear')
+        ProcessL2s.interpolateL2s(satnavRollData, xTimer, yTimer, newSATNAVRollData, 'Roll', 'linear')
 
 
         newSATNAVAzimuthData.columnsToDataset()
@@ -279,18 +337,124 @@ class ProcessL2s:
         newSATNAVRollData.columnsToDataset()
 
 
-    # Interpolates datasets so they have common time coordinates
+    # Interpolates datasets so they have common time coordinates.
+    # According to ProSoft Manual rev. K 2017, "Almost all reference instruments have an Es sensor which ProSoft 
+    # uses to calculate the time co-ordinate system. In the case of SAS instruments, an Lt sensor is always 
+    # present which is used to calculate the time co-ordinate system...If Timetag2 values were appended to the 
+    # logged data then those values are used as the absolute time for each frame....For SAS data the time interval 
+    # is determined from the optical sensor operating at the fastest rate."
+    # PysciDON used the sensor with the slowest rate.
+
     @staticmethod
     def processL2s(node):
 
+        # Apply Relative Azimuth filter 
+        # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
+        # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
+        # Interpolating them first would introduce error.
+        if node is not None and int(ConfigFile.settings["bL2sCleanSunAngle"]) == 1:
+            print("Filtering file for bad relative solar angle")
+            
+            i = 0
+            # try:
+            for group in node.groups:
+                if group.id.startswith("SATNAV"):
+                    gp = group
+
+            if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):   
+                timeStamp = gp.getDataset("TIMETAG2").data
+                # rotator = gp.getDataset("POINTING").data["ROTATOR"]                        
+                # home = float(ConfigFile.settings["fL2sRotatorHomeAngle"])
+                sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]
+                sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
+                # shipAzimuth = gp.getDataset("HEADING").data["SHIP_TRUE"]
+                relAzimuthMin = float(ConfigFile.settings["fL2sSunAngleMin"])
+                relAzimuthMax = float(ConfigFile.settings["fL2sSunAngleMax"])
+
+                badTimes = []
+                start = -1
+                for index in range(len(sunAzimuth)):
+                    # Check for angles spanning north
+                    if sunAzimuth[index] > sasAzimuth[index]:
+                        hiAng = sunAzimuth[index]
+                        loAng = sasAzimuth[index]
+                    else:
+                        hiAng = sasAzimuth[index]
+                        loAng = sunAzimuth[index]
+                    # Choose the smallest angle between them
+                    if hiAng-loAng > 180:
+                        relAzimuthAngle = 360 - (hiAng-loAng)
+                    else:
+                        relAzimuthAngle = hiAng-loAng
+
+                    if relAzimuthAngle > relAzimuthMax or relAzimuthAngle < relAzimuthMin:   
+                        i += 1                              
+                        if start == -1:
+                            print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle)))
+                            start = index
+                        stop = index                                
+                    else:                                
+                        if start != -1:
+                            print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle)))
+                            startstop = [timeStamp[start],timeStamp[stop]]
+                            startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
+                            stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])
+                            print('From ' + str(startSec) + ' to ' + str(stopSec))
+                            badTimes.append(startstop)
+                            start = -1
+                print("Percentage of SATNAV data out of bounds: " + str(round(100*i/len(timeStamp))) + "%")
+                # print(badTimes)
+                        # Write output file to HDF
+
+                #Now what the hell do I do with badTimes to knock out all the associated records in the HDF?
+                # For each dataset in each group, find the TIMETAG2s to remove and delete those rows
+                # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
+                for gp in node.groups:                                        
+                    
+                    if gp.id.startswith("GPR"):
+                        #  pass
+                        fractionRemoved = ProcessL2s.filterData(gp, badTimes)
+                        # Confirm that data were removed from group
+                        # gpTimeset  = gp.getDataset("UTCPOS") 
+                        # gpTime = gpTimeset.data["NONE"]
+                        # print('Group data end up ' + str(len(gpTime)) + ' long')                    
+                        # Confirm that data were removed from Root    
+                        group = node.getGroup("GPR")
+                        gpTimeset  = group.getDataset("UTCPOS") 
+                        gpTime = gpTimeset.data["NONE"]
+                        lenGpTime = len(gpTime)
+                        print('Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%')
+                    
+                    # SATMSG has an ambiguous timer POSFRAME.COUNT
+                    elif gp.id.startswith("SATMSG") is False:
+                        fractionRemoved = ProcessL2s.filterData(gp, badTimes)
+                        # Confirm that data were removed from group                 
+                        # gpTimeset  = gp.getDataset("TIMETAG2") 
+                        # gpTime = gpTimeset.data["NONE"]
+                        # print('Group data end up ' + str(len(gpTime)) + ' long')                    
+                        # Confirm that data were removed from Root    
+                        group = node.getGroup(gp.id)
+                        gpTimeset  = group.getDataset("TIMETAG2") 
+                        gpTime = gpTimeset.data["NONE"]
+                        lenGpTime = len(gpTime)
+                        print('Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%')
+
+
+                        
+                    
+
+
+            # except KeyError:
+            #     print('SATNAV not fournd, or fields not found in ' + gp.id)
+            #     return None
+
         #ProcessL2s.processGPSTime(node)
-
-        root = HDFRoot.HDFRoot()
-        root.copyAttributes(node)
+        root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class  (not sure about the .HDFRoot...its not a module in HDFRoot.py)
+        root.copyAttributes(node) # Now copy the attributes in from the L2 object
         root.attributes["PROCESSING_LEVEL"] = "2s"
-        root.attributes["DEPTH_RESOLUTION"] = "0.1 m"
+        root.attributes["DEPTH_RESOLUTION"] = "N/A"
 
-        esGroup = None
+        esGroup = None # Why are these initialized like this?
         gpsGroup = None
         liGroup = None
         ltGroup = None
@@ -298,19 +462,19 @@ class ProcessL2s:
         for gp in node.groups:
             #if gp.id.startswith("GPS"):
             if gp.getDataset("UTCPOS"):
-                print("GPS")
+                # print("GPS")
                 gpsGroup = gp
             elif gp.getDataset("ES") and gp.attributes["FrameType"] == "ShutterLight":
-                print("ES")
+                # print("ES")
                 esGroup = gp
             elif gp.getDataset("LI") and gp.attributes["FrameType"] == "ShutterLight":
-                print("LI")
+                # print("LI")
                 liGroup = gp
             elif gp.getDataset("LT") and gp.attributes["FrameType"] == "ShutterLight":
-                print("LT")
+                # print("LT")
                 ltGroup = gp
             elif gp.getDataset("AZIMUTH"):
-                print("SATNAV")
+                # print("SATNAV")
                 satnavGroup = gp
 
         refGroup = root.addGroup("Reference")
@@ -320,45 +484,39 @@ class ProcessL2s:
         if satnavGroup is not None:
             satnavGroup2 = root.addGroup("SATNAV")
 
-
-        #ProcessL2s.interpolateGPSData(root, esGroup, gpsGroup)
-        #ProcessL2s.interpolateSASData(root, liGroup, ltGroup)
-
-        #ProcessL2s.interpolateData(root, liGroup, ltGroup, esGroup)
-        #ProcessL2s.interpolateGPSData2(root, esGroup, gpsGroup)
-
         ProcessL2s.convertGroup(esGroup, "ES", refGroup, "ES_hyperspectral")        
         ProcessL2s.convertGroup(liGroup, "LI", sasGroup, "LI_hyperspectral")
         ProcessL2s.convertGroup(ltGroup, "LT", sasGroup, "LT_hyperspectral")
 
-        esData = refGroup.getDataset("ES_hyperspectral")
+        esData = refGroup.getDataset("ES_hyperspectral") # array with columns date, time, esdata*wavebands...
         liData = sasGroup.getDataset("LI_hyperspectral")
         ltData = sasGroup.getDataset("LT_hyperspectral")
 
-        # Find dataset with lowest amount of data
+        # Find dataset with fewest data records, although this would represent the SLOWEST sampling rate,
+        # in contradiction to the approach used in ProSoft
         esLength = len(esData.data["Timetag2"].tolist())
         liLength = len(liData.data["Timetag2"].tolist())
         ltLength = len(ltData.data["Timetag2"].tolist())
-
+        
         interpData = None
         if esLength < liLength and esLength < ltLength:
-            print("Interpolating to ES")
+            print("ES has fewest records - interpolating to ES")
             interpData = esData
         elif liLength < ltLength:
-            print("Interpolating to LI")
+            print("LI has fewest records - interpolating to LI")
             interpData = liData
         else:
-            print("Interpolating to LT")
+            print("LT has fewest records - interpolating to LT")
             interpData = ltData
 
-        #interpData = liData # Testing against Prosoft
+        #interpData = liData # Testing against Prosoft ##??
 
         # Perform time interpolation
-        if not ProcessL2s.interpolateData(esData, interpData):
+        if not ProcessL2s.interpolateData(esData, interpData, "ES"):
             return None
-        if not ProcessL2s.interpolateData(liData, interpData):
+        if not ProcessL2s.interpolateData(liData, interpData, "LI"):
             return None
-        if not ProcessL2s.interpolateData(ltData, interpData):
+        if not ProcessL2s.interpolateData(ltData, interpData, "LT"):
             return None
 
         ProcessL2s.interpolateGPSData(root, gpsGroup)

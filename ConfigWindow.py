@@ -156,48 +156,43 @@ class ConfigWindow(QtWidgets.QDialog):
         l2sSublabel2 = QtWidgets.QLabel(" for rotator and relative solar azimuth.", self)
 
         # Rotator
-        l2sCleanRotatorAngleLabel = QtWidgets.QLabel("     Absolute Rotator Angle Filter", self)        
+        self.l2sRotatorHomeAngleLabel = QtWidgets.QLabel("       Rotator Home Angle", self)
         self.l2sRotatorHomeAngleLineEdit = QtWidgets.QLineEdit(self)
         self.l2sRotatorHomeAngleLineEdit.setText(str(ConfigFile.settings["fL2sRotatorHomeAngle"]))
-        self.l2sRotatorHomeAngleLineEdit.setValidator(doubleValidator)
-        
+        self.l2sRotatorHomeAngleLineEdit.setValidator(doubleValidator)   
+
+        self.l2sRotatorDelayLabel = QtWidgets.QLabel("       Rotator Delay (Seconds)", self)
+        self.l2sRotatorDelayLineEdit = QtWidgets.QLineEdit(self)
+        self.l2sRotatorDelayLineEdit.setText(str(ConfigFile.settings["fL2sRotatorDelay"]))
+        self.l2sRotatorDelayLineEdit.setValidator(doubleValidator)             
+
+        l2sCleanRotatorAngleLabel = QtWidgets.QLabel("     Absolute Rotator Angle Filter", self)                        
         self.l2sCleanRotatorAngleCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2sCleanRotatorAngle"]) == 1:
             self.l2sCleanRotatorAngleCheckBox.setChecked(True)
-
-        self.l2sRotatorAngleMinLabel = QtWidgets.QLabel("     Rotator Angle Min", self)
+        self.l2sRotatorAngleMinLabel = QtWidgets.QLabel("       Rotator Angle Min", self)
         self.l2sRotatorAngleMinLineEdit = QtWidgets.QLineEdit(self)
         self.l2sRotatorAngleMinLineEdit.setText(str(ConfigFile.settings["fL2sRotatorAngleMin"]))
         self.l2sRotatorAngleMinLineEdit.setValidator(doubleValidator)
-
-        self.l2sRotatorAngleMaxLabel = QtWidgets.QLabel("     Rotator Angle Max", self)
+        self.l2sRotatorAngleMaxLabel = QtWidgets.QLabel("       Rotator Angle Max", self)
         self.l2sRotatorAngleMaxLineEdit = QtWidgets.QLineEdit(self)
         self.l2sRotatorAngleMaxLineEdit.setText(str(ConfigFile.settings["fL2sRotatorAngleMax"]))
-        self.l2sRotatorAngleMaxLineEdit.setValidator(doubleValidator)
-
-        self.l2sRotatorDelayLabel = QtWidgets.QLabel("     Rotator Delay (Seconds)", self)
-        self.l2sRotatorDelayLineEdit = QtWidgets.QLineEdit(self)
-        self.l2sRotatorDelayLineEdit.setText(str(ConfigFile.settings["fL2sRotatorDelay"]))
-        self.l2sRotatorDelayLineEdit.setValidator(doubleValidator)        
+        self.l2sRotatorAngleMaxLineEdit.setValidator(doubleValidator)        
         self.l2sCleanRotatorAngleCheckBoxUpdate()        
 
         # Relative SZA
-        l2sCleanSunAngleLabel = QtWidgets.QLabel("Relative Solar Azimuth Filter", self)
+        l2sCleanSunAngleLabel = QtWidgets.QLabel("     Relative Solar Azimuth Filter", self)
         self.l2sCleanSunAngleCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2sCleanSunAngle"]) == 1:
-            self.l2sCleanSunAngleCheckBox.setChecked(True)
-        self.l2sRotatorHomeAngleLabel = QtWidgets.QLabel("Rotator Home Angle (already set underway?)", self)                
-
-        self.l2sSunAngleMinLabel = QtWidgets.QLabel("Sun Angle Min", self)
+            self.l2sCleanSunAngleCheckBox.setChecked(True)        
+        self.l2sSunAngleMinLabel = QtWidgets.QLabel("       Sun Angle Min", self)
         self.l2sSunAngleMinLineEdit = QtWidgets.QLineEdit(self)
         self.l2sSunAngleMinLineEdit.setText(str(ConfigFile.settings["fL2sSunAngleMin"]))
         self.l2sSunAngleMinLineEdit.setValidator(doubleValidator)
-
-        self.l2sSunAngleMaxLabel = QtWidgets.QLabel("Sun Angle Max", self)
+        self.l2sSunAngleMaxLabel = QtWidgets.QLabel("       Sun Angle Max", self)
         self.l2sSunAngleMaxLineEdit = QtWidgets.QLineEdit(self)
         self.l2sSunAngleMaxLineEdit.setText(str(ConfigFile.settings["fL2sSunAngleMax"]))
         self.l2sSunAngleMaxLineEdit.setValidator(doubleValidator)
-
         self.l2sCleanSunAngleCheckBoxUpdate()  
 
         l2sSaveSeaBASSLabel = QtWidgets.QLabel("     Save SeaBASS text file", self)        
@@ -327,7 +322,6 @@ class ConfigWindow(QtWidgets.QDialog):
         # Overall box?
         VBox = QtWidgets.QVBoxLayout()
         VBox.addWidget(nameLabel)
-        # VBox.addSpacing(5)
 
         # Vertical Box (left)
         VBox1 = QtWidgets.QVBoxLayout()
@@ -402,13 +396,13 @@ class ConfigWindow(QtWidgets.QDialog):
         deglitch2HBox.addWidget(self.l2Deglitch2LineEdit)
         VBox1.addLayout(deglitch2HBox)
 
-        # Horizontal Box 
+        # SeaBASS Output 
         l2SeaBASSHBox = QtWidgets.QHBoxLayout()
         l2SeaBASSHBox.addWidget(l2SaveSeaBASSLabel)
         l2SeaBASSHBox.addWidget(self.l2SaveSeaBASSCheckBox)    
         VBox1.addLayout(l2SeaBASSHBox)
 
-        # Middle box
+        # Middle Vertical Box
         VBox2 = QtWidgets.QVBoxLayout()
         VBox2.setAlignment(QtCore.Qt.AlignBottom)
 
@@ -418,6 +412,15 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addWidget(l2sSublabel2)
 
         # Rotator
+        RotHomeAngleHBox = QtWidgets.QHBoxLayout()       
+        RotHomeAngleHBox.addWidget(self.l2sRotatorHomeAngleLabel)
+        RotHomeAngleHBox.addWidget(self.l2sRotatorHomeAngleLineEdit)        
+        VBox2.addLayout(RotHomeAngleHBox)    
+        RotatorDelayHBox = QtWidgets.QHBoxLayout()
+        RotatorDelayHBox.addWidget(self.l2sRotatorDelayLabel)
+        RotatorDelayHBox.addWidget(self.l2sRotatorDelayLineEdit)
+        VBox2.addLayout(RotatorDelayHBox)
+
         rotateHBox = QtWidgets.QHBoxLayout()
         rotateHBox.addWidget(l2sCleanRotatorAngleLabel)
         rotateHBox.addWidget(self.l2sCleanRotatorAngleCheckBox)
@@ -430,23 +433,21 @@ class ConfigWindow(QtWidgets.QDialog):
         RotMaxHBox.addWidget(self.l2sRotatorAngleMaxLabel)
         RotMaxHBox.addWidget(self.l2sRotatorAngleMaxLineEdit)
         VBox2.addLayout(RotMaxHBox)        
-        RotatorDelayHBox = QtWidgets.QHBoxLayout()
-        RotatorDelayHBox.addWidget(self.l2sRotatorDelayLabel)
-        RotatorDelayHBox.addWidget(self.l2sRotatorDelayLineEdit)
-        VBox2.addLayout(RotatorDelayHBox)
-
+        
         
         # Relative SZA
         CleanSunAngleHBox = QtWidgets.QHBoxLayout()
         CleanSunAngleHBox.addWidget(l2sCleanSunAngleLabel)
         CleanSunAngleHBox.addWidget(self.l2sCleanSunAngleCheckBox)
-        VBox2.addLayout(CleanSunAngleHBox)                
-        VBox2.addWidget(self.l2sRotatorHomeAngleLabel)
-        VBox2.addWidget(self.l2sRotatorHomeAngleLineEdit)        
-        VBox2.addWidget(self.l2sSunAngleMinLabel)
-        VBox2.addWidget(self.l2sSunAngleMinLineEdit)
-        VBox2.addWidget(self.l2sSunAngleMaxLabel)
-        VBox2.addWidget(self.l2sSunAngleMaxLineEdit)
+        VBox2.addLayout(CleanSunAngleHBox)                      
+        SunAngleMinHBox = QtWidgets.QHBoxLayout()       
+        SunAngleMinHBox.addWidget(self.l2sSunAngleMinLabel)
+        SunAngleMinHBox.addWidget(self.l2sSunAngleMinLineEdit)
+        VBox2.addLayout(SunAngleMinHBox)         
+        SunAngleMaxHBox = QtWidgets.QHBoxLayout()       
+        SunAngleMaxHBox.addWidget(self.l2sSunAngleMaxLabel)
+        SunAngleMaxHBox.addWidget(self.l2sSunAngleMaxLineEdit)
+        VBox2.addLayout(SunAngleMaxHBox)         
 
         # Horizontal Box 
         l2sSeaBASSHBox = QtWidgets.QHBoxLayout()
@@ -535,16 +536,12 @@ class ConfigWindow(QtWidgets.QDialog):
         l4SeaBASSHBox = QtWidgets.QHBoxLayout()
         l4SeaBASSHBox.addWidget(l4SaveSeaBASSLabel)
         l4SeaBASSHBox.addWidget(self.l4SaveSeaBASSCheckBox)    
-        VBox3.addLayout(l4SeaBASSHBox)
-        
-        # VBox3.addSpacing(30)
+        VBox3.addLayout(l4SeaBASSHBox)    
 
-        # ?
+        # Add 3 Vertical Boxes to Horizontal Box hBox
         hBox = QtWidgets.QHBoxLayout()
         hBox.addLayout(VBox1)
-        # hBox.addSpacing(30)
         hBox.addLayout(VBox2)        
-        # hBox.addSpacing(30)
         hBox.addLayout(VBox3)    
 
         # Save/Cancel
@@ -553,7 +550,7 @@ class ConfigWindow(QtWidgets.QDialog):
         saveHBox.addWidget(self.saveButton)
         saveHBox.addWidget(self.cancelButton)
 
-        # Adds hBox and saveHBox, but what about VBox1 and VBox2?
+        # Adds hBox and saveHBox to primary VBox 
         VBox.addLayout(hBox)
         VBox.addLayout(saveHBox)
 
@@ -670,8 +667,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2sRotatorAngleMinLineEdit.setDisabled(disabled)
         self.l2sRotatorAngleMaxLabel.setDisabled(disabled)
         self.l2sRotatorAngleMaxLineEdit.setDisabled(disabled)
-        self.l2sRotatorDelayLabel.setDisabled(disabled)
-        self.l2sRotatorDelayLineEdit.setDisabled(disabled)
 
     def l2sCleanSunAngleCheckBoxUpdate(self):
         print("ConfigWindow - l2sCleanSunAngleCheckBoxUpdate")
@@ -681,8 +676,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2sSunAngleMinLineEdit.setDisabled(disabled)
         self.l2sSunAngleMaxLabel.setDisabled(disabled)
         self.l2sSunAngleMaxLineEdit.setDisabled(disabled)
-        self.l2sRotatorHomeAngleLabel.setDisabled(disabled)
-        self.l2sRotatorHomeAngleLineEdit.setDisabled(disabled)
 
     def l4EnableWindSpeedCalculationCheckBoxUpdate(self):
         print("ConfigWindow - l4EnableWindSpeedCalculationCheckBoxUpdate")
@@ -732,15 +725,15 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2Deglitch"] = int(self.l2DeglitchCheckBox.isChecked()) 
         ConfigFile.settings["bL2SaveSeaBASS"] = int(self.l2SaveSeaBASSCheckBox.isChecked())
         
-        ConfigFile.settings["bl2sCleanRotatorAngle"] = int(self.l2sCleanRotatorAngleCheckBox.isChecked())        
-        ConfigFile.settings["fl2sRotatorAngleMin"] = float(self.l2sRotatorAngleMinLineEdit.text())
-        ConfigFile.settings["fl2sRotatorAngleMax"] = float(self.l2sRotatorAngleMaxLineEdit.text())        
-        ConfigFile.settings["fl2sRotatorDelay"] = float(self.l2sRotatorDelayLineEdit.text())     
-        ConfigFile.settings["bl2sCleanSunAngle"] = int(self.l2sCleanSunAngleCheckBox.isChecked())
-        ConfigFile.settings["fl2sRotatorHomeAngle"] = float(self.l2sRotatorHomeAngleLineEdit.text())
-        ConfigFile.settings["fl2sSunAngleMin"] = float(self.l2sSunAngleMinLineEdit.text())
-        ConfigFile.settings["fl2sSunAngleMax"] = float(self.l2sSunAngleMaxLineEdit.text())
-        ConfigFile.settings["b2sSaveSeaBASS"] = int(self.l2sSaveSeaBASSCheckBox.isChecked())
+        ConfigFile.settings["bL2sCleanRotatorAngle"] = int(self.l2sCleanRotatorAngleCheckBox.isChecked())        
+        ConfigFile.settings["fL2sRotatorAngleMin"] = float(self.l2sRotatorAngleMinLineEdit.text())
+        ConfigFile.settings["fL2sRotatorAngleMax"] = float(self.l2sRotatorAngleMaxLineEdit.text())        
+        ConfigFile.settings["fL2sRotatorDelay"] = float(self.l2sRotatorDelayLineEdit.text())     
+        ConfigFile.settings["bL2sCleanSunAngle"] = int(self.l2sCleanSunAngleCheckBox.isChecked())
+        ConfigFile.settings["fL2sRotatorHomeAngle"] = float(self.l2sRotatorHomeAngleLineEdit.text())
+        ConfigFile.settings["fL2sSunAngleMin"] = float(self.l2sSunAngleMinLineEdit.text())
+        ConfigFile.settings["fL2sSunAngleMax"] = float(self.l2sSunAngleMaxLineEdit.text())
+        ConfigFile.settings["bL2sSaveSeaBASS"] = int(self.l2sSaveSeaBASSCheckBox.isChecked())
 
         ConfigFile.settings["fL3aInterpInterval"] = float(self.l3aInterpIntervalLineEdit.text())
         ConfigFile.settings["fL3aInterpInterval"] = float(self.l3aInterpIntervalLineEdit.text())

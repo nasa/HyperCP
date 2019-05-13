@@ -46,7 +46,8 @@ class HDFRoot:
 
     def getGroup(self, name):
         for gp in self.groups:
-            if gp.id == name:
+            # if gp.id == name:
+            if gp.id.startswith(name):
                 return gp
         return None
 

@@ -20,7 +20,7 @@ class ProcessL2:
     @staticmethod
     def darkDataDeglitching(darkData, sensorType):        
         ''' Dark deglitching is very poorly described by SeaBird (pg 41).
-        For now, set to NaN anything outside 10 STDS from the mean of the 
+        For now, set to NaN anything outside X STDS from the mean of the 
         dark dataset'''        
         # print(str(sensorType))
         noiseThresh = float(ConfigFile.settings["fL2Deglitch0"])
@@ -34,9 +34,9 @@ class ProcessL2:
             medDark = np.median(v)
 
 
-            print(str(k) + " nm Median = " + str(medDark) + " +/- " + str(stdDark) + " (1 STD)")
+            # print(str(k) + " nm Median = " + str(medDark) + " +/- " + str(stdDark) + " (1 STD)")
             for i in range(len(v)):
-                if abs(v[i] - medDark) > 10*stdDark:
+                if abs(v[i] - medDark) > noiseThresh*stdDark:
                     v[i] = np.nan
                     print("Dark data nan'ed at " + str(i))
         darkData.columnsToDataset()
@@ -44,7 +44,9 @@ class ProcessL2:
     @staticmethod
     def lightDataDeglitching(lightData, sensorType):        
         ''' The code below seems to be modeled off the ProSoft manual
-        for shutter-open data (Appendix D).'''
+        for shutter-open data (Appendix D).
+        Still problems with the format and the length of dS below
+        '''
         # print(str(sensorType))
         # noiseThresh = 5 default for Irradiance ("reference"), fL2Deglitch1
         # noiseThresh = 20 default for Radiance, fL2Deglitch2               
@@ -57,7 +59,7 @@ class ProcessL2:
         lightData.datasetToColumns()
         columns = lightData.columns
 
-        for k,S in columns.items(): # k is the waveband, v is the series data in the OrdDict
+        for k,S in columns.items(): # k is the waveband, S is the series data in the OrdDict
             #print(k,v)
             dS = []
             for i in range(len(S)-1):
@@ -70,12 +72,16 @@ class ProcessL2:
             #print(dS_sorted)
             stdS = dS_sorted[round(n2)] - dS_sorted[round(n1)] # Has to be n2 - n1, or it's negative
             medN = np.median(np.array(dS))
-            print(str(k) + " nm Median = " + str(medN) + " +/- " + str(stdS) + " (1 STD)")
+            # print(str(k) + " nm Median = " + str(medN) + " +/- " + str(stdS) + " (1 STD)")
+            
             # print(n1,n2,stdS,medN)
-            for i in range(len(S)):
+            # print(len(S))
+            # print(len(dS))
+            for i in range(len(dS)): # Had to stop at len(dS instead of len(S), or it bombs)
                 if abs(dS[i] - medN) > noiseThresh*stdS:
                     S[i] = np.nan
                     print("Light data nan'ed at " + str(i))
+
         lightData.columnsToDataset()
 
     @staticmethod

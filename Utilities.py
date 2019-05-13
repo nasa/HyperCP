@@ -12,6 +12,7 @@ import scipy.interpolate
 class Utilities:
     
     # Converts degrees minutes to decimal degrees format
+    @staticmethod # for some reason, these were not set to static method, but didn't refer to self
     def dmToDd(dm, direction):
         d = int(dm/100)
         m = dm-d*100
@@ -21,6 +22,7 @@ class Utilities:
         return dd
 
     # Converts decimal degrees to degrees minutes format
+    @staticmethod
     def ddToDm(dd):
         d = int(dd)
         m = abs(dd - d)*60
@@ -72,7 +74,7 @@ class Utilities:
         m = int(t[2:4])
         s = int(t[4:6])
         ms = int(t[6:])
-        #print(h, m, s, ms)
+        # print(h, m, s, ms)
         return ((h*60)+m)*60+s+(float(ms)/1000.0)
 
     # Converts HDFRoot timestamp attribute to seconds
@@ -162,6 +164,7 @@ class Utilities:
             y.insert(0, y[0])
 
         new_y = scipy.interpolate.InterpolatedUnivariateSpline(x, y, k=3)(new_x)
+        # print('len(new_y) = ' + str(len(new_y)))
 
         return new_y
 
@@ -214,7 +217,7 @@ class Utilities:
             plt.close() # This prevents displaying the polt on screen with certain IDEs
         except:
             e = sys.exc_info()[0]
-            print("Error: %s" % e)
+            print("Error: %s" % e)        
 
 
     @staticmethod
@@ -258,3 +261,40 @@ class Utilities:
         except:
             e = sys.exc_info()[0]
             print("Error: %s" % e)
+
+    @staticmethod
+    def plotTimeInterp(xData, xTimer, newXData, yTimer, instr):        
+        try:           
+            font = {'family': 'serif',
+                'color':  'darkred',
+                'weight': 'normal',
+                'size': 16,
+                }
+
+            for k in xData.data.dtype.names:
+                if k == "Datetag" or k == "Timetag2":
+                    continue
+            
+                x = np.copy(xData.data[k]).tolist()
+                new_x = np.copy(newXData.columns[k]).tolist()
+
+                fig = plt.figure()
+                ax = fig.add_subplot(1, 1, 1)
+                ax.plot(xTimer, x, 'bo', yTimer, new_x, 'k--')
+                # print(len(x))
+
+                plt.xlabel('Timetag2', fontdict=font)
+                plt.ylabel('Data', fontdict=font)
+                
+                plt.savefig('Plots/' + instr + '_' + k + '.png')
+                plt.close()
+                # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)                
+                # # Tweak spacing to prevent clipping of ylabel
+                # plt.subplots_adjust(left=0.15)
+        except:
+            e = sys.exc_info()[0]
+            print("Error: %s" % e)
+
+        
+
+        

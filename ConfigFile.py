@@ -13,15 +13,28 @@ class ConfigFile:
         print("ConfigFile - Printd")
         print("bL1aCleanSZA", ConfigFile.settings["bL1aCleanSZA"])
         print("fL1aCleanSZAMax", ConfigFile.settings["fL1aCleanSZAMax"])
-        print("fL1bInterpInterval", ConfigFile.settings["fL1bInterpInterval"])
-        print("bL2CleanSunAngle", ConfigFile.settings["bL2CleanSunAngle"])
-        print("bL2CleanRotatorAngle", ConfigFile.settings["bL2CleanRotatorAngle"])
-        print("fL2SunAngleMin", ConfigFile.settings["fL2SunAngleMin"])
-        print("fL2SunAngleMax", ConfigFile.settings["fL2SunAngleMax"])
-        print("fL2RotatorAngleMin", ConfigFile.settings["fL2RotatorAngleMin"])
-        print("fL2RotatorAngleMax", ConfigFile.settings["fL2RotatorAngleMax"])
-        print("fL2RotatorHomeAngle", ConfigFile.settings["fL2RotatorHomeAngle"])
-        print("fL2RotatorDelay", ConfigFile.settings["fL2RotatorDelay"])    
+        print("bL1aSaveSeaBASS", ConfigFile.settings["bL1aSaveSeaBASS"])
+
+        print("bL1aSaveSeaBASS", ConfigFile.settings["bL1aSaveSeaBASS"])
+
+        print("bL2Deglitch", ConfigFile.settings["bL2Deglitch"])
+        print("fL2Deglitch0", ConfigFile.settings["fL2Deglitch0"])
+        print("fL2Deglitch1", ConfigFile.settings["fL2Deglitch1"])
+        print("fL2Deglitch2", ConfigFile.settings["fL2Deglitch2"])
+        print("bL2SaveSeaBASS", ConfigFile.settings["bL2SaveSeaBASS"])
+        
+        print("fL2sRotatorHomeAngle", ConfigFile.settings["fL2sRotatorHomeAngle"])
+        print("fL2RotatorDelay", ConfigFile.settings["fL2RotatorDelay"]) 
+        print("bL2sCleanRotatorAngle", ConfigFile.settings["bL2sCleanRotatorAngle"])
+        print("fL2sRotatorAngleMin", ConfigFile.settings["fL2sRotatorAngleMin"])
+        print("fL2sRotatorAngleMax", ConfigFile.settings["fL2sRotatorAngleMax"])
+        print("fL2sRotatorDelay", ConfigFile.settings["fL2sRotatorDelay"])
+        print("bL2sCleanSunAngle", ConfigFile.settings["bL2sCleanSunAngle"])
+        print("fL2sSunAngleMin", ConfigFile.settings["fL2sSunAngleMin"])
+        print("fL2sSunAngleMax", ConfigFile.settings["fL2sSunAngleMax"])
+        print("bL2sSaveSeaBASS", ConfigFile.settings["bL2sSaveSeaBASS"])
+   
+
         print("fL2TimeInterval", ConfigFile.settings["fL2TimeInterval"])
         print("bL2EnableQualityFlags", ConfigFile.settings["bL2EnableQualityFlags"])
         print("fL2SignificantEsFlag", ConfigFile.settings["fL2SignificantEsFlag"])
@@ -48,36 +61,41 @@ class ConfigFile:
     def createDefaultConfig(name):
         print("ConfigFile - Create Default Config")
 
-        #ConfigFile.settings["CalibrationFiles"] = {'GPRMC_WithMode.tdf': 1, \
-        #        'HED527A.cal': 1, 'HLD419A.cal': 1, 'HLD420A.cal': 1, 'HSE527A.cal': 1, \
-        #        'HSL419A.cal': 1, 'HSL420A.cal': 1, 'SATMSG.tdf': 1, 'SATNAV0004A.tdf': 1}
         ConfigFile.settings["CalibrationFiles"] = {}
 
         ConfigFile.settings["bL1aCleanSZA"] = 0
         ConfigFile.settings["fL1aCleanSZAMax"] = 60.0 # e.g. Brewin 2016
         ConfigFile.settings["bL1aSaveSeaBASS"] = 0
 
-        ConfigFile.settings["fL1bInterpInterval"] = 1.0
+        ConfigFile.settings["bL1bSaveSeaBASS"] = 0
 
-        ConfigFile.settings["bL2CleanSunAngle"] = 0
-        ConfigFile.settings["bL2CleanRotatorAngle"] = 0
-        ConfigFile.settings["fL2SunAngleMin"] = 90.0
-        ConfigFile.settings["fL2SunAngleMax"] = 135.0
-        ConfigFile.settings["fL2RotatorAngleMin"] = -40.0
-        ConfigFile.settings["fL2RotatorAngleMax"] = 40.0
-        ConfigFile.settings["fL2RotatorHomeAngle"] = 0.0
-        ConfigFile.settings["fL2RotatorDelay"] = 60.0
-        ConfigFile.settings["fL2TimeInterval"] = 60
-        ConfigFile.settings["bL2EnableQualityFlags"] = 1
-        ConfigFile.settings["fL2SignificantEsFlag"] = 2.0
-        ConfigFile.settings["fL2DawnDuskFlag"] = 1.0
-        ConfigFile.settings["fL2RainfallHumidityFlag"] = 1.095
-        ConfigFile.settings["fL2RhoSky"] = 0.0256
-        ConfigFile.settings["bL2EnableWindSpeedCalculation"] = 1
-        ConfigFile.settings["fL2DefaultWindSpeed"] = 0.0
-        ConfigFile.settings["bL2PerformNIRCorrection"] = 0
-        ConfigFile.settings["bL2EnablePercentLt"] = 0
-        ConfigFile.settings["fL2PercentLt"] = 5
+        ConfigFile.settings["bL2Deglitch"] = 0
+        ConfigFile.settings["fL2Deglitch0"] = 10    # These should all have citable defaults
+        ConfigFile.settings["fL2Deglitch1"] = 5     # An "info" button would be nice for the citation
+        ConfigFile.settings["fL2Deglitch2"] = 20
+        ConfigFile.settings["bL2SaveSeaBASS"] = 0
+        
+        ConfigFile.settings["fL2sRotatorHomeAngle"] = 0.0
+        ConfigFile.settings["fL2sRotatorDelay"] = 60.0
+        ConfigFile.settings["bL2sCleanRotatorAngle"] = 0
+        ConfigFile.settings["fL2sRotatorAngleMin"] = -40.0
+        ConfigFile.settings["fL2sRotatorAngleMax"] = 40.0
+        ConfigFile.settings["bL2sCleanSunAngle"] = 0
+        ConfigFile.settings["fL2sSunAngleMin"] = 90.0
+        ConfigFile.settings["fL2sSunAngleMax"] = 135.0                
+        ConfigFile.settings["bL2sSaveSeaBASS"] = 0
+        
+        ConfigFile.settings["fL4TimeInterval"] = 60
+        ConfigFile.settings["bL4EnableQualityFlags"] = 1
+        ConfigFile.settings["fL4SignificantEsFlag"] = 2.0
+        ConfigFile.settings["fL4DawnDuskFlag"] = 1.0
+        ConfigFile.settings["fL4RainfallHumidityFlag"] = 1.095
+        ConfigFile.settings["fL4RhoSky"] = 0.0256
+        ConfigFile.settings["bL4EnableWindSpeedCalculation"] = 1
+        ConfigFile.settings["fL4DefaultWindSpeed"] = 0.0
+        ConfigFile.settings["bL4PerformNIRCorrection"] = 0
+        ConfigFile.settings["bL4EnablePercentLt"] = 0
+        ConfigFile.settings["fL4PercentLt"] = 5
 
         if not name.endswith(".cfg"):
             name = name + ".cfg"
