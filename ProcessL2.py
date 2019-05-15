@@ -60,7 +60,7 @@ class ProcessL2:
         else:
             noiseThresh = float(ConfigFile.settings["fL2Deglitch2"])        
 
-        # Copy dataset to dictionary
+        # Copy dataset array to dictionary
         lightData.datasetToColumns()
         columns = lightData.columns
 
@@ -125,7 +125,7 @@ class ProcessL2:
         for gp in node.groups:
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 darkData = gp.getDataset(sensorType)
-                
+
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
             
