@@ -329,13 +329,20 @@ class Controller:
     @staticmethod
     def processSingleLevel(pathOut, inFilePath, calibrationMap, level, windFile=None, skyFile=None):
         pathOut = os.path.abspath(pathOut)
-        inFilePath = os.path.abspath(inFilePath)
-        # fp is now singleton files
-        (dirpath, inFileName) = os.path.split(inFilePath)
+        # inFilePath is a singleton file complete with path
+        inFilePath = os.path.abspath(inFilePath)        
+        (inpath, inFileName) = os.path.split(inFilePath)        
         # Split off the .RAW suffix
-        fileName = os.path.splitext(inFileName)[0]        
+        fileName = os.path.splitext(inFileName)[0]   
 
-        if level == "1a":
+        if level == "1a":            
+            if os.path.isdir(pathOut):
+                pathOut = pathOut + "/L1A"
+                if os.path.isdir(pathOut) is False:
+                    os.mkdir(pathOut)
+            else:
+                print("Bad output destination. Select new Output Data Directory.")
+
             outFilePath = os.path.join(pathOut,fileName + "_L1a.hdf")
             Controller.processL1a(inFilePath, outFilePath, calibrationMap) 
             
@@ -346,6 +353,13 @@ class Controller:
                     print("Output SeaBASS: " + inFilePath)
                     SeaBASSWriter.outputTXT_L1a(inFilePath)
         elif level == "1b":
+            if os.path.isdir(pathOut):
+                pathOut = pathOut + "/L1B"
+                if os.path.isdir(pathOut) is False:
+                    os.mkdir(pathOut)
+            else:
+                print("Bad output destination. Select new Output Data Directory.")
+
             fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_L1b.hdf")
             Controller.processL1b(inFilePath, outFilePath, calibrationMap)   
@@ -357,6 +371,13 @@ class Controller:
                     print("Output SeaBASS: " + inFilePath)
                     SeaBASSWriter.outputTXT_L1b(inFilePath)  
         elif level == "2":
+            if os.path.isdir(pathOut):
+                pathOut = pathOut + "/L2"
+                if os.path.isdir(pathOut) is False:
+                    os.mkdir(pathOut)
+            else:
+                print("Bad output destination. Select new Output Data Directory.")
+
             fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_L2.hdf")
             Controller.processL2(inFilePath, outFilePath) 
@@ -366,6 +387,13 @@ class Controller:
                 print("Output SeaBASS: " + inFilePath)
                 SeaBASSWriter.outputTXT_L2(inFilePath)  
         elif level == "2s":
+            if os.path.isdir(pathOut):
+                pathOut = pathOut + "/L2s"
+                if os.path.isdir(pathOut) is False:
+                    os.mkdir(pathOut)
+            else:
+                print("Bad output destination. Select new Output Data Directory.")
+
             fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_L2s.hdf")
             Controller.processL2s(inFilePath, outFilePath)   
@@ -456,6 +484,9 @@ class Controller:
         for fp in inFiles:
             # fp is now singleton files; run this once per file
             print("Processing: " + fp)
-            Controller.processSingleLevel(pathOut, fp, calibrationMap, level, windFile, skyFile)
+            try:
+                Controller.processSingleLevel(pathOut, fp, calibrationMap, level, windFile, skyFile)
+            except OSError:
+                print("Unable to process that file due to an operating system error. Try again.")
         print("processFilesSingleLevel - DONE")
 

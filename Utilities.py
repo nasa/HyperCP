@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 import numpy as np
 import scipy.interpolate
+from scipy.interpolate import splev, splrep
 
 
 class Utilities:
@@ -145,28 +146,41 @@ class Utilities:
 
         return new_y
 
-
-    # Wrapper for scipy UnivariateSpline interpolation
-    # This method does not seem stable unless points are uniform distance apart - results in all Nan output
+    # Cubic spline interpolation intended to get around the all NaN output from InterpolateUnivariateSpline
+    # x is original time to be splined, y is the data to be interpolated, new_x is the time to interpolate/spline to
     @staticmethod
     def interpSpline(x, y, new_x):
+        spl = splrep(x, y)        
+        new_y = splev(new_x, spl)
 
-        #print("t0", len(x), len(y))
-        n0 = len(x)-1
-        n1 = len(new_x)-1
-        if new_x[n1] > x[n0]:
-            #print(new_x[n], x[n])
-            x.append(new_x[n1])
-            y.append(y[n0])
-        if new_x[0] < x[0]:
-            #print(new_x[0], x[0])
-            x.insert(0, new_x[0])
-            y.insert(0, y[0])
-
-        new_y = scipy.interpolate.InterpolatedUnivariateSpline(x, y, k=3)(new_x)
-        # print('len(new_y) = ' + str(len(new_y)))
+        for i in range(len(new_y)):
+            if np.isnan(new_y[i]):
+                print("NaN")                
 
         return new_y
+
+    '''Below is the problematic interpolation scheme in PySciDON
+    # # Wrapper for scipy UnivariateSpline interpolation
+    # # This method does not seem stable unless points are uniform distance apart - results in all Nan output
+    # @staticmethod
+    # def interpSpline(x, y, new_x):
+
+    #     #print("t0", len(x), len(y))
+    #     n0 = len(x)-1
+    #     n1 = len(new_x)-1
+    #     if new_x[n1] > x[n0]:
+    #         #print(new_x[n], x[n])
+    #         x.append(new_x[n1])
+    #         y.append(y[n0])
+    #     if new_x[0] < x[0]:
+    #         #print(new_x[0], x[0])
+    #         x.insert(0, new_x[0])
+    #         y.insert(0, y[0])
+
+    #     new_y = scipy.interpolate.InterpolatedUnivariateSpline(x, y, k=3)(new_x)
+    #     # print('len(new_y) = ' + str(len(new_y)))
+
+    #     return new_y'''
 
 
     @staticmethod
@@ -278,9 +292,9 @@ class Utilities:
                 x = np.copy(xData.data[k]).tolist()
                 new_x = np.copy(newXData.columns[k]).tolist()
 
-                fig = plt.figure()
+                fig = plt.figure(figsize=(12, 4))
                 ax = fig.add_subplot(1, 1, 1)
-                ax.plot(xTimer, x, 'bo', yTimer, new_x, 'k--')
+                ax.plot(xTimer, x, 'bo', yTimer, new_x, 'k.')
                 # print(len(x))
 
                 plt.xlabel('Timetag2', fontdict=font)

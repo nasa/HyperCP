@@ -40,50 +40,68 @@ class ProcessL2s:
     @staticmethod
     def filterData(group, badTimes):
         
+        # Convert all time stamps to milliseconds UTC
         if group.id.startswith("GPR"):
             # This is handled seperately in order to deal with the UTC fields in GPS
             print("Filter GPS Data")
-
             gpsTimeData = group.getDataset("UTCPOS")        
             dataSec = []
             for i in range(gpsTimeData.data.shape[0]):
-                # UTC is the same format as TT2 with the miliseconds truncated.     
-                dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))
-            lenDataSec = len(dataSec)
-            print('Data start ' + str(lenDataSec) + ' long')
+                # UTC format (hhmmss.) similar to TT2 (hhmmssmss.) with the miliseconds truncated
+                dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))            
         else:
             print("Filter " + group.id + " Data")
-            # try:
             timeData = group.getDataset("TIMETAG2")        
             dataSec = []
             for i in range(timeData.data.shape[0]):
+                # Converts from TT2 (hhmmssmss. UTC) to milliseconds UTC
                 dataSec.append(Utilities.timeTag2ToSec(timeData.data["NONE"][i]))
-            lenDataSec = len(dataSec)
-            print('Data start ' + str(lenDataSec) + ' long')
-            # except:
-            #     print("Unable to find time field")
 
-        if dataSec:        
-            badIndex = []
-            for timeTag in badTimes:            
-                start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
-                stop = Utilities.timeTag2ToSec(list(timeTag[1])[0])
-                # startStopSec = [start), Utilities.timeTag2ToSec(stop)]
-                badIndex.append([i for i in range(lenDataSec) if start <= dataSec[i] and stop >= dataSec[i]])
-                # print(start)
-                # print(stop)
-                # print(badIndex)
+        lenDataSec = len(dataSec)
+        print('Data start ' + str(lenDataSec) + ' long')
 
-            badIndex = np.concatenate(np.array(badIndex), axis=None)            
-            # print(len(badIndex))
+        # Now delete the record from each dataset in the group
+        counter = 0
+        for timeTag in badTimes:   
+            # print("timeTag")
+            # print(timeTag)
+            # print(" ")         
+            start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
+            stop = Utilities.timeTag2ToSec(list(timeTag[1])[0])                
+            # badIndex = ([i for i in range(lenDataSec) if start <= dataSec[i] and stop >= dataSec[i]])       
+            for i in range(lenDataSec):
+                if start <= dataSec[i] and stop >= dataSec[i]:
+                    # if group.id.startswith("GPR"):
+                    #     test = group.getDataset("UTCPOS").data["NONE"][i - counter]
+                    # else:
+                    #     test = group.getDataset("TIMETAG2").data["NONE"][i - counter]                    
+                    # print("Removing " + str(test) + " " + str(Utilities.secToTimeTag2(dataSec[i])) + " index: " + str(i))                                        
+                    
+                    group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
+                    counter += 1
 
-            for i in range(len(badIndex)):
-                group.datasetDeleteRow(badIndex[i])    
-            
-            
-            return len(badIndex)/lenDataSec
-        else:
-            return None   
+        return counter/lenDataSec
+
+        # if dataSec:        
+        #     badIndex = []
+        #     for timeTag in badTimes:            
+        #         start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
+        #         stop = Utilities.timeTag2ToSec(list(timeTag[1])[0])
+        #         # startStopSec = [start), Utilities.timeTag2ToSec(stop)]
+        #         badIndex.append([i for i in range(lenDataSec) if start <= dataSec[i] and stop >= dataSec[i]])
+        #         # print(start)
+        #         # print(stop)
+        #         # print(badIndex)
+
+        #     badIndex = np.concatenate(np.array(badIndex), axis=None)            
+        #     # print(len(badIndex))
+
+        #     for i in range(len(badIndex)):
+        #         group.datasetDeleteRow(badIndex[i])    
+
+        #     return len(badIndex)/lenDataSec
+        # else:
+        #     return None   
 
     @staticmethod
     def interpolateL2s(xData, xTimer, yTimer, newXData, instr, kind='linear'):        
@@ -166,7 +184,7 @@ class ProcessL2s:
         #if Utilities.hasNan(xData):
         #    print("Found NAN 1")
 
-        # Perform interpolation
+        # Perform interpolation on full hyperspectral time series
         ProcessL2s.interpolateL2s(xData, xTimer, yTimer, xData, instr, 'cubic')
         xData.columnsToDataset()
         
@@ -362,6 +380,7 @@ class ProcessL2s:
                     gp = group
 
             if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):   
+                # TIMETAG2 format: hhmmssmss.0
                 timeStamp = gp.getDataset("TIMETAG2").data
                 # rotator = gp.getDataset("POINTING").data["ROTATOR"]                        
                 # home = float(ConfigFile.settings["fL2sRotatorHomeAngle"])
@@ -397,56 +416,45 @@ class ProcessL2s:
                         if start != -1:
                             print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle)))
                             startstop = [timeStamp[start],timeStamp[stop]]
+                            # print('   Remove data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
                             startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
-                            stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])
-                            print('From ' + str(startSec) + ' to ' + str(stopSec))
+                            stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
                             badTimes.append(startstop)
                             start = -1
                 print("Percentage of SATNAV data out of bounds: " + str(round(100*i/len(timeStamp))) + "%")
-                # print(badTimes)
-                        # Write output file to HDF
-
-                #Now what the hell do I do with badTimes to knock out all the associated records in the HDF?
-                # For each dataset in each group, find the TIMETAG2s to remove and delete those rows
-                # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
+                
+                # For each dataset in each group, find the badTimes to remove and delete those rows                
                 for gp in node.groups:                                        
                     
-                    if gp.id.startswith("GPR"):
-                        #  pass
-                        fractionRemoved = ProcessL2s.filterData(gp, badTimes)
-                        # Confirm that data were removed from group
-                        # gpTimeset  = gp.getDataset("UTCPOS") 
-                        # gpTime = gpTimeset.data["NONE"]
-                        # print('Group data end up ' + str(len(gpTime)) + ' long')                    
-                        # Confirm that data were removed from Root    
-                        group = node.getGroup("GPR")
-                        gpTimeset  = group.getDataset("UTCPOS") 
-                        gpTime = gpTimeset.data["NONE"]
-                        lenGpTime = len(gpTime)
-                        print('Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%')
+                    # if gp.id.startswith("GPR"):
+                    #     #  pass
+                    #     fractionRemoved = ProcessL2s.filterData(gp, badTimes)
+                    #     # Confirm that data were removed from group
+                    #     # gpTimeset  = gp.getDataset("UTCPOS") 
+                    #     # gpTime = gpTimeset.data["NONE"]
+                    #     # print('Group data end up ' + str(len(gpTime)) + ' long')                    
+                    #     # Confirm that data were removed from Root    
+                    #     group = node.getGroup("GPR")
+                    #     gpTimeset  = group.getDataset("UTCPOS") 
+                    #     gpTime = gpTimeset.data["NONE"]
+                    #     lenGpTime = len(gpTime)
+                    #     print('Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%')
                     
-                    # SATMSG has an ambiguous timer POSFRAME.COUNT
-                    elif gp.id.startswith("SATMSG") is False:
+                    # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
+                    if gp.id.startswith("SATMSG") is False:
                         fractionRemoved = ProcessL2s.filterData(gp, badTimes)
-                        # Confirm that data were removed from group                 
-                        # gpTimeset  = gp.getDataset("TIMETAG2") 
-                        # gpTime = gpTimeset.data["NONE"]
-                        # print('Group data end up ' + str(len(gpTime)) + ' long')                    
+                        
                         # Confirm that data were removed from Root    
                         group = node.getGroup(gp.id)
-                        gpTimeset  = group.getDataset("TIMETAG2") 
+                        if gp.id.startswith("GPRMC"):
+                            gpTimeset  = group.getDataset("UTCPOS") 
+                        else:
+                            gpTimeset  = group.getDataset("TIMETAG2") 
+
                         gpTime = gpTimeset.data["NONE"]
                         lenGpTime = len(gpTime)
-                        print('Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%')
+                        print('Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%')                                        
 
-
-                        
-                    
-
-
-            # except KeyError:
-            #     print('SATNAV not fournd, or fields not found in ' + gp.id)
-            #     return None
 
         #ProcessL2s.processGPSTime(node)
         root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class  (not sure about the .HDFRoot...its not a module in HDFRoot.py)
@@ -492,18 +500,20 @@ class ProcessL2s:
         liData = sasGroup.getDataset("LI_hyperspectral")
         ltData = sasGroup.getDataset("LT_hyperspectral")
 
-        # Find dataset with fewest data records, although this would represent the SLOWEST sampling rate,
-        # in contradiction to the approach used in ProSoft
+        ''' PysciDON interpolates to the SLOWEST sampling rate, but ProSoft
+        interpolates to the FASTEST. Not much in the literature on this, although
+        Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises.'''
+        # Interpolate all datasets to the fastest radiometric sampling rate
         esLength = len(esData.data["Timetag2"].tolist())
         liLength = len(liData.data["Timetag2"].tolist())
         ltLength = len(ltData.data["Timetag2"].tolist())
         
         interpData = None
         if esLength < liLength and esLength < ltLength:
-            print("ES has fewest records - interpolating to ES")
+            print("ES has fewest records - interpolating to ES; This should raise a red flag.")
             interpData = esData
         elif liLength < ltLength:
-            print("LI has fewest records - interpolating to LI")
+            print("LI has fewest records - interpolating to LI; This should raise a red flag.")
             interpData = liData
         else:
             print("LT has fewest records - interpolating to LT")

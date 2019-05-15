@@ -33,12 +33,17 @@ class ProcessL2:
             stdDark = np.std(v)
             medDark = np.median(v)
 
-
             # print(str(k) + " nm Median = " + str(medDark) + " +/- " + str(stdDark) + " (1 STD)")
+
+            counter = 0
             for i in range(len(v)):
                 if abs(v[i] - medDark) > noiseThresh*stdDark:
                     v[i] = np.nan
-                    print("Dark data nan'ed at " + str(i))
+                    # print("Dark data nan'ed at " + str(i))
+                    darkData.datasetDeleteRow(i-counter)
+                    print("Dark data deleted at " + str(i) + " , new index " + str(i-counter))
+                    counter += 1
+                                        
         darkData.columnsToDataset()
 
     @staticmethod
@@ -62,6 +67,7 @@ class ProcessL2:
         for k,S in columns.items(): # k is the waveband, S is the series data in the OrdDict
             #print(k,v)
             dS = []
+
             for i in range(len(S)-1):
                 #print(S[i])
                 if S[i] != 0:
@@ -77,12 +83,21 @@ class ProcessL2:
             # print(n1,n2,stdS,medN)
             # print(len(S))
             # print(len(dS))
+            counter = 0
+            # badIndex = []
             for i in range(len(dS)): # Had to stop at len(dS instead of len(S), or it bombs)
                 if abs(dS[i] - medN) > noiseThresh*stdS:
                     S[i] = np.nan
-                    print("Light data nan'ed at " + str(i))
+                    # print("Light data nan'ed at " + str(i))
+                    # lightData.datasetDeleteRow(i - counter)
+                    # badIndex.append(i - counter)
+                    print("Light data " + str(i) + " , new index " + str(i-counter) + " marked for deletion")
+                    counter += 1
 
         lightData.columnsToDataset()
+        # return badIndex # To be used for deleting the NaN'ed row of the dataset later
+        # for i in range(len(badIndex)):
+        #     lightData.datasetDeleteRow(badIndex[i])            
 
     @staticmethod
     def processDataDeglitching(node, sensorType):   
@@ -94,21 +109,26 @@ class ProcessL2:
                 darkData = gp.getDataset(sensorType)
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
-      
-        # Note this is only Dark Data Deglitching here: Pg 41 ProSoft v7.7 rev k
+
         if darkData is None:
             print("Error: No dark data to deglitch")
         else:
             print("Deglitching dark")
             ProcessL2.darkDataDeglitching(darkData, sensorType)
-        if darkData is None:
+        if lightData is None:
             print("Error: No light data to deglitch")
         else:    
             print("Deglitching light")
             ProcessL2.lightDataDeglitching(lightData, sensorType)
+
+        # Now we need to delete the rows of the datasets that have any NaNs in them
+        for gp in node.groups:
+            if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
+                darkData = gp.getDataset(sensorType)
+                
+            if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
+                lightData = gp.getDataset(sensorType)
             
-
-
 
     @staticmethod
     # This does not change the HDF object
@@ -145,13 +165,15 @@ class ProcessL2:
         lightData.data = newLightData
         '''
 
+        if Utilities.hasNan(lightData):
+            print("Found NAN 0")
+            exit
         if Utilities.hasNan(darkData):
            print("Found NAN 1")
            exit
 
         # Interpolate Dark Dataset to match number of elements as Light Dataset
-        newDarkData = np.copy(lightData.data)
-        # print(darkTimer.data["NONE"])
+        newDarkData = np.copy(lightData.data)        
         for k in darkData.data.dtype.fields.keys(): # For each wavelength
             x = np.copy(darkTimer.data["NONE"]).tolist() # darktimer
             y = np.copy(darkData.data[k]).tolist()  # data at that band over time
@@ -178,9 +200,9 @@ class ProcessL2:
 
         darkData.data = newDarkData
 
-        #if Utilities.hasNan(darkData):
-        #    print("Found NAN 2")
-        #    exit
+        if Utilities.hasNan(darkData):
+            print("Found NAN 2")
+            exit
 
         #print(lightData.data.shape)
         #print(newDarkData.shape)
@@ -188,12 +210,13 @@ class ProcessL2:
         # Correct light data by subtracting interpolated dark data from light data
         for k in lightData.data.dtype.fields.keys():
             for x in range(lightData.data.shape[0]):
-                lightData.data[k][x] -= newDarkData[k][x] # THIS CHANGES NOT ONLY lightData, BUT THE ROOT OBJECT gp FROM processDarkCorrection (near line 295)
+                # THIS CHANGES NOT ONLY lightData, BUT THE ROOT OBJECT gp FROM processDarkCorrection
+                lightData.data[k][x] -= newDarkData[k][x]
 
-        # NOW THAT THE LIGHTDATA HAS BEEN CORRECTED, WHAT HAPPENS TO IT? WHERE IS IT 
-        # PLACED WITHIN THE HDF OBJECT???
+        if Utilities.hasNan(lightData):
+            print("Found NAN 3")
+            exit
 
-        #print(lightData.data)
         return True
 
 

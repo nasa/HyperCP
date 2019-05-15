@@ -255,7 +255,7 @@ class Window(QtWidgets.QWidget):
 
     def inDirButtonPressed(self):        
         self.inputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Choose Directory", 
+            self, "Choose Directory.", 
             self.inputDirectory)
         print('Data input directory changed: ', self.inputDirectory)
         (inDirPath, inDirName) = os.path.split(self.inputDirectory)        
@@ -265,9 +265,11 @@ class Window(QtWidgets.QWidget):
 
     def outDirButtonPressed(self):        
         self.outputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Choose Directory",
+            self, "SUBDIRECTORIES FOR DATA LEVELS WILL BE CREATED HERE AUTOMATICALLY.",
             self.outputDirectory)
         print('Data output directory changed: ', self.outputDirectory)
+        print("NOTE: SUBDIRECTORIES FOR DATA LEVELS WILL BE CREATED HERE")
+        print("      AUTOMATICALLY, UNLESS THEY ALREADY EXIST.")
         (dirPath, dirName) = os.path.split(self.outputDirectory)        
         self.outDirButton.setText(dirName)
         return self.outputDirectory
