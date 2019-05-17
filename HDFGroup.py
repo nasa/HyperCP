@@ -36,7 +36,7 @@ class HDFGroup:
     def datasetDeleteRow(self, i):
         for k in self.datasets:
             ds = self.datasets[k]
-            ds.data = np.delete(ds.data, (i), axis=0)
+            ds.data = np.delete(ds.data, (i), axis=0)            
 
     def addDataset(self, name):
         if len(name) == 0:

@@ -367,9 +367,9 @@ class Controller:
             if os.path.isfile(outFilePath):
                 print("L1b file produced: " + outFilePath) 
 
-                if int(ConfigFile.settings["bL1bSaveSeaBASS"]) == 1:
-                    print("Output SeaBASS: " + inFilePath)
-                    SeaBASSWriter.outputTXT_L1b(inFilePath)  
+                # if int(ConfigFile.settings["bL1bSaveSeaBASS"]) == 1:
+                #     print("Output SeaBASS: " + inFilePath)
+                #     SeaBASSWriter.outputTXT_L1b(inFilePath)  
         elif level == "2":
             if os.path.isdir(pathOut):
                 pathOut = pathOut + "/L2"
@@ -381,7 +381,8 @@ class Controller:
             fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_L2.hdf")
             Controller.processL2(inFilePath, outFilePath) 
-            print("L2 file produced: " + outFilePath)   
+            if os.path.isfile(outFilePath):
+                print("L2 file produced: " + outFilePath)   
 
             if int(ConfigFile.settings["bL1bSaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)

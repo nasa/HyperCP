@@ -21,6 +21,7 @@ class ConfigFile:
         print("fL2Deglitch0", ConfigFile.settings["fL2Deglitch0"])
         print("fL2Deglitch1", ConfigFile.settings["fL2Deglitch1"])
         print("fL2Deglitch2", ConfigFile.settings["fL2Deglitch2"])
+        print("fL2Deglitch3", ConfigFile.settings["fL2Deglitch3"])
         print("bL2SaveSeaBASS", ConfigFile.settings["bL2SaveSeaBASS"])
         
         print("fL2sRotatorHomeAngle", ConfigFile.settings["fL2sRotatorHomeAngle"])

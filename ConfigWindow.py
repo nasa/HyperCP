@@ -5,6 +5,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 from ConfigFile import ConfigFile
+import AnomalyDetection
 
 
 #class myListWidget(QtWidgets.QListWidget):
@@ -81,10 +82,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aCleanSZAMaxLineEdit.setText(str(ConfigFile.settings["fL1aCleanSZAMax"]))
         self.l1aCleanSZAMaxLineEdit.setValidator(doubleValidator)
 
-        l1aSaveSeaBASSLabel = QtWidgets.QLabel("     Save SeaBASS text file", self)        
-        self.l1aSaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)            
-        if int(ConfigFile.settings["bL1aSaveSeaBASS"]) == 1:
-            self.l1aSaveSeaBASSCheckBox.setChecked(True)     
+        # l1aSaveSeaBASSLabel = QtWidgets.QLabel("     Save SeaBASS text file", self)        
+        # self.l1aSaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)            
+        # if int(ConfigFile.settings["bL1aSaveSeaBASS"]) == 1:
+        #     self.l1aSaveSeaBASSCheckBox.setChecked(True)     
 
         self.l1aCleanSZACheckBoxUpdate()   
         self.l1aCleanSZACheckBox.clicked.connect(self.l1aCleanSZACheckBoxUpdate) 
@@ -100,10 +101,10 @@ class ConfigWindow(QtWidgets.QDialog):
         # l1bSublabel = QtWidgets.QLabel(" Interpolation of time stamps and wavebands", self)
         
         
-        l1bSaveSeaBASSLabel = QtWidgets.QLabel("     Save SeaBASS text file", self)        
-        self.l1bSaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)                    
-        if int(ConfigFile.settings["bL1bSaveSeaBASS"]) == 1:
-            self.l1bSaveSeaBASSCheckBox.setChecked(True)
+        # l1bSaveSeaBASSLabel = QtWidgets.QLabel("     Save SeaBASS text file", self)        
+        # self.l1bSaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)                    
+        # if int(ConfigFile.settings["bL1bSaveSeaBASS"]) == 1:
+        #     self.l1bSaveSeaBASSCheckBox.setChecked(True)
 
         # self.l1bSaveSeaBASSCheckBox.clicked.connect(self.l1bSaveSeaBASSCheckBoxUpdate)        
 
@@ -121,21 +122,26 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2Deglitch"]) == 1:
             self.l2DeglitchCheckBox.setChecked(True)
 
-        self.l2Deglitch0Label = QtWidgets.QLabel("     Noise Threshold Dark", self)
+        self.l2Deglitch0Label = QtWidgets.QLabel("     Rolling Window for Darks", self)
         self.l2Deglitch0LineEdit = QtWidgets.QLineEdit(self)
         self.l2Deglitch0LineEdit.setText(str(ConfigFile.settings["fL2Deglitch0"]))
         self.l2Deglitch0LineEdit.setValidator(doubleValidator)
 
-        self.l2Deglitch1Label = QtWidgets.QLabel("     Noise Threshold Es", self)
+        self.l2Deglitch1Label = QtWidgets.QLabel("     Rolling Window for Lights", self)
         self.l2Deglitch1LineEdit = QtWidgets.QLineEdit(self)
         self.l2Deglitch1LineEdit.setText(str(ConfigFile.settings["fL2Deglitch1"]))
         self.l2Deglitch1LineEdit.setValidator(doubleValidator)
 
-        self.l2Deglitch2Label = QtWidgets.QLabel("     Noise Threshold Li,Lt", self)
+        self.l2Deglitch2Label = QtWidgets.QLabel("     Sigma Factor Darks", self)
         self.l2Deglitch2LineEdit = QtWidgets.QLineEdit(self)
         self.l2Deglitch2LineEdit.setText(str(ConfigFile.settings["fL2Deglitch2"]))
         self.l2Deglitch2LineEdit.setValidator(doubleValidator)
         
+        self.l2Deglitch3Label = QtWidgets.QLabel("     Sigma Factor Lights", self)
+        self.l2Deglitch3LineEdit = QtWidgets.QLineEdit(self)
+        self.l2Deglitch3LineEdit.setText(str(ConfigFile.settings["fL2Deglitch3"]))
+        self.l2Deglitch3LineEdit.setValidator(doubleValidator)
+
         self.l2DeglitchCheckBoxUpdate()      
 
         l2SaveSeaBASSLabel = QtWidgets.QLabel("     Save SeaBASS text file", self)        
@@ -145,6 +151,16 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)    
         self.l2DeglitchCheckBox.clicked.connect(self.l2DeglitchCheckBoxUpdate)   
+
+        # Launch Deglitcher Analysis 
+        l2AnomalyLabel = QtWidgets.QLabel("Level 2 Anomaly Detection", self)
+        l2AnomalyLabel_font = l2AnomalyLabel.font()
+        l2AnomalyLabel_font.setPointSize(14)
+        l2AnomalyLabel_font.setBold(True)
+        l2AnomalyLabel.setFont(l2AnomalyLabel_font)
+        l2AnomalySublabel = QtWidgets.QLabel(" Launch to establish Deglitching params", self)  
+        self.anomalyButton = QtWidgets.QPushButton("Launch Anomaly Analysis")
+        self.anomalyButton.clicked.connect(self.anomalyButtonPressed)
 
         # L2s
         l2sLabel = QtWidgets.QLabel("Level 2s Processing", self)
@@ -351,11 +367,11 @@ class ConfigWindow(QtWidgets.QDialog):
         szaHBox.addWidget(self.l1aCleanSZAMaxLineEdit)        
         VBox1.addLayout(szaHBox)
 
-        # Horizontal Box; Save SeaBASS
-        l1aSeaBASSHBox = QtWidgets.QHBoxLayout()
-        l1aSeaBASSHBox.addWidget(l1aSaveSeaBASSLabel)
-        l1aSeaBASSHBox.addWidget(self.l1aSaveSeaBASSCheckBox)    
-        VBox1.addLayout(l1aSeaBASSHBox)        
+        # # Horizontal Box; Save SeaBASS
+        # l1aSeaBASSHBox = QtWidgets.QHBoxLayout()
+        # l1aSeaBASSHBox.addWidget(l1aSaveSeaBASSLabel)
+        # l1aSeaBASSHBox.addWidget(self.l1aSaveSeaBASSCheckBox)    
+        # VBox1.addLayout(l1aSeaBASSHBox)        
         
         VBox1.addSpacing(20)
 
@@ -363,11 +379,11 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox1.addWidget(l1bLabel)
         VBox1.addWidget(l1bSublabel)
         
-        # Horizontal Box 
-        l1bSeaBASSHBox = QtWidgets.QHBoxLayout()
-        l1bSeaBASSHBox.addWidget(l1bSaveSeaBASSLabel)
-        l1bSeaBASSHBox.addWidget(self.l1bSaveSeaBASSCheckBox)    
-        VBox1.addLayout(l1bSeaBASSHBox)
+        # # Horizontal Box 
+        # l1bSeaBASSHBox = QtWidgets.QHBoxLayout()
+        # l1bSeaBASSHBox.addWidget(l1bSaveSeaBASSLabel)
+        # l1bSeaBASSHBox.addWidget(self.l1bSaveSeaBASSCheckBox)    
+        # VBox1.addLayout(l1bSeaBASSHBox)
 
         VBox1.addSpacing(20)
 
@@ -396,6 +412,11 @@ class ConfigWindow(QtWidgets.QDialog):
         deglitch2HBox.addWidget(self.l2Deglitch2LineEdit)
         VBox1.addLayout(deglitch2HBox)
 
+        deglitch3HBox = QtWidgets.QHBoxLayout()
+        deglitch3HBox.addWidget(self.l2Deglitch3Label)
+        deglitch3HBox.addWidget(self.l2Deglitch3LineEdit)
+        VBox1.addLayout(deglitch3HBox)
+
         # SeaBASS Output 
         l2SeaBASSHBox = QtWidgets.QHBoxLayout()
         l2SeaBASSHBox.addWidget(l2SaveSeaBASSLabel)
@@ -405,6 +426,13 @@ class ConfigWindow(QtWidgets.QDialog):
         # Middle Vertical Box
         VBox2 = QtWidgets.QVBoxLayout()
         VBox2.setAlignment(QtCore.Qt.AlignBottom)
+
+        # L2 Anomaly Launcher
+        VBox2.addWidget(l2AnomalyLabel)
+        VBox2.addWidget(l2AnomalySublabel)
+        VBox2.addWidget(self.anomalyButton)
+        
+        VBox2.addSpacing(20)   
 
         # L2s
         VBox2.addWidget(l2sLabel)
@@ -639,14 +667,14 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aCleanSZAMaxLineEdit.setDisabled(disabled)
 
     
-    def l1aSaveSeaBASSCheckBoxUpdate(self):
-        print("ConfigWindow - l1aSaveSeaBASSCheckBoxUpdate")
+    # def l1aSaveSeaBASSCheckBoxUpdate(self):
+    #     print("ConfigWindow - l1aSaveSeaBASSCheckBoxUpdate")
 
         # disabled = (not self.l1aSaveSeaBASSCheckBox.isChecked())
         # self.l1aSaveSeaBASSLabel.setDisabled(disabled)
 
-    def l1bSaveSeaBASSCheckBoxUpdate(self):
-        print("ConfigWindow - l1bSaveSeaBASSCheckBoxUpdate")
+    # def l1bSaveSeaBASSCheckBoxUpdate(self):
+    #     print("ConfigWindow - l1bSaveSeaBASSCheckBoxUpdate")
 
     def l2DeglitchCheckBoxUpdate(self):
         print("ConfigWindow - l2DeglitchCheckBoxUpdate")
@@ -657,7 +685,16 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2Deglitch1Label.setDisabled(disabled)
         self.l2Deglitch1LineEdit.setDisabled(disabled)
         self.l2Deglitch2Label.setDisabled(disabled)
-        self.l2Deglitch2LineEdit.setDisabled(disabled)        
+        self.l2Deglitch2LineEdit.setDisabled(disabled)   
+        self.l2Deglitch3Label.setDisabled(disabled)
+        self.l2Deglitch3LineEdit.setDisabled(disabled)     
+
+    def anomalyButtonPressed(self):
+        print("CalibrationEditWindow - Launching anomaly analysis module")
+        # fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files")
+        # print(fnames)
+
+        AnomalyDetection.launchAnomalyDetection(self)
 
     def l2sCleanRotatorAngleCheckBoxUpdate(self):
         print("ConfigWindow - l2sCleanRotatorAngleCheckBoxUpdate")
@@ -718,9 +755,9 @@ class ConfigWindow(QtWidgets.QDialog):
 
         ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
         ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())
-        ConfigFile.settings["bL1aSaveSeaBASS"] = int(self.l1aSaveSeaBASSCheckBox.isChecked())
+        # ConfigFile.settings["bL1aSaveSeaBASS"] = int(self.l1aSaveSeaBASSCheckBox.isChecked())
                 
-        ConfigFile.settings["bL1bSaveSeaBASS"] = int(self.l1bSaveSeaBASSCheckBox.isChecked())
+        # ConfigFile.settings["bL1bSaveSeaBASS"] = int(self.l1bSaveSeaBASSCheckBox.isChecked())
 
         ConfigFile.settings["bL2Deglitch"] = int(self.l2DeglitchCheckBox.isChecked()) 
         ConfigFile.settings["bL2SaveSeaBASS"] = int(self.l2SaveSeaBASSCheckBox.isChecked())

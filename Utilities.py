@@ -111,6 +111,26 @@ class Utilities:
     def isIncreasing(l):
         return all(x<y for x, y in zip(l, l[1:]))
 
+    @staticmethod
+    def movingAverage(data, window_size):
+        # Window size will be determined experimentally by examining the dark and light data from each instrument.
+        """ Noise detection using a low-pass filter. 
+        Computes moving average using discrete linear convolution of two one dimensional sequences.
+        Args:
+        -----
+                data (pandas.Series): independent variable
+                window_size (int): rolling window size
+        Returns:
+        --------
+                ndarray of linear convolution
+        References:
+        ------------
+        [1] Wikipedia, "Convolution", http://en.wikipedia.org/wiki/Convolution.
+        [2] API Reference: https://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html"""
+        
+        window = np.ones(int(window_size))/float(window_size)
+        return np.convolve(data, window, 'same')
+
 
     # Wrapper for scipy interp1d that works even if
     # values in new_x are outside the range of values in x
@@ -148,6 +168,7 @@ class Utilities:
 
     # Cubic spline interpolation intended to get around the all NaN output from InterpolateUnivariateSpline
     # x is original time to be splined, y is the data to be interpolated, new_x is the time to interpolate/spline to
+    # interpolate.splrep is intolerant of duplicate or non-ascending inputs, and inputs with fewer than 3 points
     @staticmethod
     def interpSpline(x, y, new_x):
         spl = splrep(x, y)        

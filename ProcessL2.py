@@ -1,5 +1,6 @@
 
 import numpy as np
+import pandas as pd
 # import matplotlib.pyplot as plt
 
 import HDFRoot
@@ -14,94 +15,82 @@ from Utilities import Utilities
 class ProcessL2:
 
     '''
-    # ToDo: Confirm that interpolation of timestamps is okay. Fix deglitching.
+    # The Deglitching process departs signicantly from ProSoft and PySciDON
     # Reference: ProSoft 7.7 Rev. K May 8, 2017, SAT-DN-00228
+    # More information can be found in AnomalyDetection.py
     '''    
     @staticmethod
     def darkDataDeglitching(darkData, sensorType):        
-        ''' Dark deglitching is very poorly described by SeaBird (pg 41).
-        For now, set to NaN anything outside X STDS from the mean of the 
-        dark dataset'''        
+        ''' Dark deglitching is now based on discrete linear convolution with a stationary std over a 
+        rolling average'''        
         # print(str(sensorType))
-        noiseThresh = float(ConfigFile.settings["fL2Deglitch0"])
+        windowSize = int(ConfigFile.settings["fL2Deglitch0"])
+        sigma = float(ConfigFile.settings["fL2Deglitch2"])
 
-        # Copy dataset to dictionary
         darkData.datasetToColumns()
         columns = darkData.columns
+
+        for k in columns.items():        
+            timeSeries = k[1]            
+            # Note: the moving average is not tolerant to 2 or fewer records
+            avg = Utilities.movingAverage(timeSeries, windowSize).tolist()               
+            residual = np.array(timeSeries) - np.array(avg)            
+            std = np.std(residual)                                   
+
+            badIndex = []            
+            for i in range(len(timeSeries)):
+                if i < 2 or i > len(timeSeries)-2:
+                    # First and last avg values from convolution are not to be trusted
+                    badIndex.append(True)
+                else:
+                    # Use stationary standard deviation anomaly (from rolling average) detection for dark timeSeries
+                    if (timeSeries[i] > avg[i] + (sigma*std)) or (timeSeries[i] < avg[i] - (sigma*std)):
+                        badIndex.append(True)
+                    else:
+                        badIndex.append(False)
         
-        for k,v in columns.items(): # k is the waveband, v is the series data in the OrdDict
-            stdDark = np.std(v)
-            medDark = np.median(v)
-
-            # print(str(k) + " nm Median = " + str(medDark) + " +/- " + str(stdDark) + " (1 STD)")
-
-            counter = 0
-            for i in range(len(v)):
-                if abs(v[i] - medDark) > noiseThresh*stdDark:
-                    v[i] = np.nan
-                    # print("Dark data nan'ed at " + str(i))
-                    darkData.datasetDeleteRow(i-counter)
-                    print("Dark data deleted at " + str(i) + " , new index " + str(i-counter))
-                    counter += 1
-                                        
-        darkData.columnsToDataset()
-
+        return badIndex
+           
     @staticmethod
     def lightDataDeglitching(lightData, sensorType):        
-        ''' The code below seems to be modeled off the ProSoft manual
-        for shutter-open data (Appendix D).
-        Still problems with the format and the length of dS below
-        '''
+        ''' Dight deglitching is now based on discrete linear convolution with a rolling std over a 
+        rolling average'''        
         # print(str(sensorType))
-        # noiseThresh = 5 default for Irradiance ("reference"), fL2Deglitch1
-        # noiseThresh = 20 default for Radiance, fL2Deglitch2               
-        if sensorType=="Es":
-            noiseThresh = float(ConfigFile.settings["fL2Deglitch1"])
-        else:
-            noiseThresh = float(ConfigFile.settings["fL2Deglitch2"])        
+        windowSize = int(ConfigFile.settings["fL2Deglitch1"])
+        sigma = float(ConfigFile.settings["fL2Deglitch3"])
 
-        # Copy dataset array to dictionary
         lightData.datasetToColumns()
         columns = lightData.columns
 
-        for k,S in columns.items(): # k is the waveband, S is the series data in the OrdDict
-            #print(k,v)
-            dS = []
+        for k in columns.items():        
+            timeSeries = k[1]       
+            # Note: the moving average is not tolerant to 2 or fewer records     
+            avg = Utilities.movingAverage(timeSeries, windowSize).tolist()        
+            residual = np.array(timeSeries) - np.array(avg)
+                           
+            # Calculate the variation in the distribution of the residual
+            residualDf = pd.DataFrame(residual)
+            testing_std_as_df = residualDf.rolling(windowSize).std()
+            rolling_std = testing_std_as_df.replace(np.nan,
+                                testing_std_as_df.iloc[windowSize - 1]).round(3).iloc[:,0].tolist()
 
-            for i in range(len(S)-1):
-                #print(S[i])
-                if S[i] != 0:
-                    dS.append(S[i+1]/S[i])
-            dS_sorted = sorted(dS)
-            n1 = 0.2 * len(dS)
-            n2 = 0.75 * len(dS)
-            #print(dS_sorted)
-            stdS = dS_sorted[round(n2)] - dS_sorted[round(n1)] # Has to be n2 - n1, or it's negative
-            medN = np.median(np.array(dS))
-            # print(str(k) + " nm Median = " + str(medN) + " +/- " + str(stdS) + " (1 STD)")
-            
-            # print(n1,n2,stdS,medN)
-            # print(len(S))
-            # print(len(dS))
-            counter = 0
-            # badIndex = []
-            for i in range(len(dS)): # Had to stop at len(dS instead of len(S), or it bombs)
-                if abs(dS[i] - medN) > noiseThresh*stdS:
-                    S[i] = np.nan
-                    # print("Light data nan'ed at " + str(i))
-                    # lightData.datasetDeleteRow(i - counter)
-                    # badIndex.append(i - counter)
-                    print("Light data " + str(i) + " , new index " + str(i-counter) + " marked for deletion")
-                    counter += 1
-
-        lightData.columnsToDataset()
-        # return badIndex # To be used for deleting the NaN'ed row of the dataset later
-        # for i in range(len(badIndex)):
-        #     lightData.datasetDeleteRow(badIndex[i])            
+            badIndex = []            
+            for i in range(len(timeSeries)):
+                if i < 2 or i > len(timeSeries)-2:
+                    # First and last avg values from convolution are not to be trusted
+                    badIndex.append(True)
+                else:
+                    # Use rolling standard deviation anomaly (from rolling average) detection for dark data
+                    if (timeSeries[i] > avg[i] + (sigma*rolling_std[i])) or (timeSeries[i] < avg[i] - (sigma*rolling_std[i])):
+                        badIndex.append(True)
+                    else:
+                        badIndex.append(False)
+        
+        return badIndex
 
     @staticmethod
     def processDataDeglitching(node, sensorType):   
-        print("Deglitching " + sensorType)     
+        print(sensorType)     
         darkData = None
         lightData = None
         for gp in node.groups:
@@ -109,25 +98,48 @@ class ProcessL2:
                 darkData = gp.getDataset(sensorType)
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
+            
+            # Rolling averages required for deglitching of data are intolerant to 2 or fewer data points
+            # Furthermore, 5 or fewer datapoints is a suspiciously short sampling time. Finally,
+            # Having fewer data points than the size of the rolling window won't work. Exit processing if 
+            # these conditions are met.
+            windowSizeDark = int(ConfigFile.settings["fL2Deglitch0"])
+            windowSizeLight = int(ConfigFile.settings["fL2Deglitch1"])
+            if darkData is not None and lightData is not None:
+                if len(darkData.data) <= 2 or \
+                    len(lightData.data) <= 5 or \
+                    len(darkData.data) < windowSizeDark or \
+                    len(lightData.data) < windowSizeLight:
+                        return True
 
         if darkData is None:
             print("Error: No dark data to deglitch")
         else:
             print("Deglitching dark")
-            ProcessL2.darkDataDeglitching(darkData, sensorType)
+            badIndexDark = ProcessL2.darkDataDeglitching(darkData, sensorType)
+            print('Data reduced by ' + str(sum(badIndexDark)) + ' (' + \
+                str(round(100*sum(badIndexDark)/len(darkData.data))) + '%)')
+            
+
         if lightData is None:
             print("Error: No light data to deglitch")
         else:    
             print("Deglitching light")
-            ProcessL2.lightDataDeglitching(lightData, sensorType)
+            badIndexLight = ProcessL2.lightDataDeglitching(lightData, sensorType)      
+            print('Data reduced by ' + str(sum(badIndexLight)) + ' (' + \
+                str(round(100*sum(badIndexLight)/len(darkData.data))) + '%)')      
 
         # Now we need to delete the rows of the datasets that have any NaNs in them
         for gp in node.groups:
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
-                darkData = gp.getDataset(sensorType)
+               gp.datasetDeleteRow(np.where(badIndexDark))
 
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
+                gp.datasetDeleteRow(np.where(badIndexLight))
+        
+        tooShort = False
+        return tooShort
             
 
     @staticmethod
@@ -166,10 +178,10 @@ class ProcessL2:
         '''
 
         if Utilities.hasNan(lightData):
-            print("Found NAN 0")
+            print("**************Found NAN 0")
             exit
         if Utilities.hasNan(darkData):
-           print("Found NAN 1")
+           print("**************Found NAN 1")
            exit
 
         # Interpolate Dark Dataset to match number of elements as Light Dataset
@@ -177,22 +189,26 @@ class ProcessL2:
         for k in darkData.data.dtype.fields.keys(): # For each wavelength
             x = np.copy(darkTimer.data["NONE"]).tolist() # darktimer
             y = np.copy(darkData.data[k]).tolist()  # data at that band over time
-            new_x = lightTimer.data["NONE"]         # lighttimer
+            new_x = lightTimer.data["NONE"].tolist()  # lighttimer
 
             if len(x) < 3 or len(y) < 3 or len(new_x) < 3:
-                print("Cannot do cubic spline interpolation, length of datasets < 3")
+                print("**************Cannot do cubic spline interpolation, length of datasets < 3")
                 return False
 
             if not Utilities.isIncreasing(x):
-                print("darkTimer does not contain strictly increasing values")
-                #return False
+                print("**************darkTimer does not contain strictly increasing values")
+                return False
             if not Utilities.isIncreasing(new_x):
-                print("lightTimer does not contain strictly increasing values")
-                #return False
+                print("**************lightTimer does not contain strictly increasing values")
+                return False
 
             # print(x[0], new_x[0])
             #newDarkData[k] = Utilities.interp(x,y,new_x,'cubic')
-            newDarkData[k] = Utilities.interpSpline(x,y,new_x)
+            if len(x) > 3:
+                newDarkData[k] = Utilities.interpSpline(x,y,new_x)
+            else:
+                print('**************Record too small for splining. Exiting.')
+                return False
             # plt.plot(x,y,'ro')
             # # plt.plot(new_x,newDarkData[k],'bo')
             # plt.show()
@@ -201,7 +217,7 @@ class ProcessL2:
         darkData.data = newDarkData
 
         if Utilities.hasNan(darkData):
-            print("Found NAN 2")
+            print("**************Found NAN 2")
             exit
 
         #print(lightData.data.shape)
@@ -214,7 +230,7 @@ class ProcessL2:
                 lightData.data[k][x] -= newDarkData[k][x]
 
         if Utilities.hasNan(lightData):
-            print("Found NAN 3")
+            print("**************Found NAN 3")
             exit
 
         return True
@@ -362,9 +378,13 @@ class ProcessL2:
         if int(ConfigFile.settings["bL2Deglitch"]) == 1:
             root.attributes["DEGLITCH_PRODAT"] = "ON"
             root.attributes["DEGLITCH_REFDAT"] = "ON"
-            ProcessL2.processDataDeglitching(root, "ES")
-            ProcessL2.processDataDeglitching(root, "LI")
-            ProcessL2.processDataDeglitching(root, "LT")
+            flagES = ProcessL2.processDataDeglitching(root, "ES")
+            flagLI = ProcessL2.processDataDeglitching(root, "LI")
+            flagLT = ProcessL2.processDataDeglitching(root, "LT")
+
+            if flagES or flagLI or flagLT:
+                print('***********Too few records in the file to continue. Exiting.')
+                return None
 
         else:
             root.attributes["DEGLITCH_PRODAT"] = "OFF"
