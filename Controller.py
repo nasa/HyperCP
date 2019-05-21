@@ -398,6 +398,8 @@ class Controller:
             fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_L2s.hdf")
             Controller.processL2s(inFilePath, outFilePath)   
+            if os.path.isfile(outFilePath):
+                print("L2s file produced: " + outFilePath)   
 
             if int(ConfigFile.settings["bL2sSaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)

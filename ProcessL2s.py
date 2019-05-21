@@ -36,7 +36,8 @@ class ProcessL2s:
                         dsTimeTag2.data["NONE"][x] = Utilities.secToTimeTag2(v)
 
         
-    # Delete GPS records within the out-of-bounds times found by filtering on relative solar angle
+    # Delete records within the out-of-bounds times found by filtering on relative solar angle
+    # Or records within the out-of-bounds for absolute rotator angle.
     @staticmethod
     def filterData(group, badTimes):
         
@@ -63,7 +64,7 @@ class ProcessL2s:
         # Now delete the record from each dataset in the group
         counter = 0
         for timeTag in badTimes:   
-            # print("timeTag")
+            print("     Eliminate data between: " + str(timeTag) + " (HHMMSSMSS)")
             # print(timeTag)
             # print(" ")         
             start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
@@ -79,29 +80,10 @@ class ProcessL2s:
                     
                     group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
                     counter += 1
+            # print(str(counter) + " records eliminated.")
 
         return counter/lenDataSec
-
-        # if dataSec:        
-        #     badIndex = []
-        #     for timeTag in badTimes:            
-        #         start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
-        #         stop = Utilities.timeTag2ToSec(list(timeTag[1])[0])
-        #         # startStopSec = [start), Utilities.timeTag2ToSec(stop)]
-        #         badIndex.append([i for i in range(lenDataSec) if start <= dataSec[i] and stop >= dataSec[i]])
-        #         # print(start)
-        #         # print(stop)
-        #         # print(badIndex)
-
-        #     badIndex = np.concatenate(np.array(badIndex), axis=None)            
-        #     # print(len(badIndex))
-
-        #     for i in range(len(badIndex)):
-        #         group.datasetDeleteRow(badIndex[i])    
-
-        #     return len(badIndex)/lenDataSec
-        # else:
-        #     return None   
+       
 
     @staticmethod
     def interpolateL2s(xData, xTimer, yTimer, newXData, instr, kind='linear'):        
@@ -257,6 +239,7 @@ class ProcessL2s:
             x.append(lonDD)
             y.append(latDD)
 
+        ''' This is a good idea to persue. No implementation yet.'''
         #print("PlotGPS")
         #Utilities.plotGPS(x, y, 'test1')
         #print("PlotGPS - DONE")
@@ -366,6 +349,8 @@ class ProcessL2s:
     @staticmethod
     def processL2s(node):
 
+        badTimes = None
+
         # Apply Relative Azimuth filter 
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
@@ -383,23 +368,25 @@ class ProcessL2s:
                 # TIMETAG2 format: hhmmssmss.0
                 timeStamp = gp.getDataset("TIMETAG2").data
                 # rotator = gp.getDataset("POINTING").data["ROTATOR"]                        
-                # home = float(ConfigFile.settings["fL2sRotatorHomeAngle"])
+                home = float(ConfigFile.settings["fL2sRotatorHomeAngle"])
                 sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]
                 sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
                 # shipAzimuth = gp.getDataset("HEADING").data["SHIP_TRUE"]
                 relAzimuthMin = float(ConfigFile.settings["fL2sSunAngleMin"])
                 relAzimuthMax = float(ConfigFile.settings["fL2sSunAngleMax"])
 
-                badTimes = []
+                if badTimes is None:
+                    badTimes = []
+
                 start = -1
                 for index in range(len(sunAzimuth)):
                     # Check for angles spanning north
                     if sunAzimuth[index] > sasAzimuth[index]:
-                        hiAng = sunAzimuth[index]
-                        loAng = sasAzimuth[index]
+                        hiAng = sunAzimuth[index] + home
+                        loAng = sasAzimuth[index] + home
                     else:
-                        hiAng = sasAzimuth[index]
-                        loAng = sunAzimuth[index]
+                        hiAng = sasAzimuth[index] + home
+                        loAng = sunAzimuth[index] + home
                     # Choose the smallest angle between them
                     if hiAng-loAng > 180:
                         relAzimuthAngle = 360 - (hiAng-loAng)
@@ -416,44 +403,142 @@ class ProcessL2s:
                         if start != -1:
                             print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle)))
                             startstop = [timeStamp[start],timeStamp[stop]]
-                            # print('   Remove data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
-                            startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
-                            stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
+                            print('   Remove data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
+                            # startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
+                            # stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
                             badTimes.append(startstop)
                             start = -1
-                print("Percentage of SATNAV data out of bounds: " + str(round(100*i/len(timeStamp))) + "%")
-                
-                # For each dataset in each group, find the badTimes to remove and delete those rows                
-                for gp in node.groups:                                        
-                    
-                    # if gp.id.startswith("GPR"):
-                    #     #  pass
-                    #     fractionRemoved = ProcessL2s.filterData(gp, badTimes)
-                    #     # Confirm that data were removed from group
-                    #     # gpTimeset  = gp.getDataset("UTCPOS") 
-                    #     # gpTime = gpTimeset.data["NONE"]
-                    #     # print('Group data end up ' + str(len(gpTime)) + ' long')                    
-                    #     # Confirm that data were removed from Root    
-                    #     group = node.getGroup("GPR")
-                    #     gpTimeset  = group.getDataset("UTCPOS") 
-                    #     gpTime = gpTimeset.data["NONE"]
-                    #     lenGpTime = len(gpTime)
-                    #     print('Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%')
-                    
-                    # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
-                    if gp.id.startswith("SATMSG") is False:
-                        fractionRemoved = ProcessL2s.filterData(gp, badTimes)
-                        
-                        # Confirm that data were removed from Root    
-                        group = node.getGroup(gp.id)
-                        if gp.id.startswith("GPRMC"):
-                            gpTimeset  = group.getDataset("UTCPOS") 
-                        else:
-                            gpTimeset  = group.getDataset("TIMETAG2") 
+                print("Percentage of SATNAV data out of Solar Azimuth bounds: " + str(round(100*i/len(timeStamp))) + "%")
 
-                        gpTime = gpTimeset.data["NONE"]
-                        lenGpTime = len(gpTime)
-                        print('Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%')                                        
+        # Apply Absolute Rotator Angle Filter
+        # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
+        # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
+        # Interpolating them first would introduce error.
+        if node is not None and int(ConfigFile.settings["bL2sCleanRotatorAngle"]) == 1:
+            print("Filtering file for bad rotator angle")
+            
+            i = 0
+            # try:
+            for group in node.groups:
+                if group.id.startswith("SATNAV"):
+                    gp = group
+
+            if gp.getDataset("POINTING"):   
+                # TIMETAG2 format: hhmmssmss.0
+                timeStamp = gp.getDataset("TIMETAG2").data
+                rotator = gp.getDataset("POINTING").data["ROTATOR"]                        
+                home = float(ConfigFile.settings["fL2sRotatorHomeAngle"])
+               
+                absRotatorMin = float(ConfigFile.settings["fL2sRotatorAngleMin"])
+                absRotatorMax = float(ConfigFile.settings["fL2sRotatorAngleMax"])
+
+                if badTimes is None:
+                    badTimes = []
+
+                start = -1
+                for index in range(len(rotator)):
+                    # Check for angles spanning north
+                    if rotator[index] + home > absRotatorMax or rotator[index] + home < absRotatorMin:
+                        i += 1                              
+                        if start == -1:
+                            print('Absolute rotator angle outside bounds. ' + str(round(rotator[index] + home)))
+                            start = index
+                        stop = index                                
+                    else:                                
+                        if start != -1:
+                            print('Absolute rotator angle passed: ' + str(round(rotator[index] + home)))
+                            startstop = [timeStamp[start],timeStamp[stop]]
+                            print('   Remove data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
+                            # startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
+                            # stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
+                            badTimes.append(startstop)
+                            start = -1
+                print("Percentage of SATNAV data out of Absolute Rotator bounds: " + str(round(100*i/len(timeStamp))) + "%")
+
+        # Apply Rotator Delay Filter (delete records within so many seconds of a rotation)
+        # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
+        # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
+        # Interpolating them first would introduce error.
+
+        print("Filtering file for rotator delay")
+            
+        for group in node.groups:
+            if group.id.startswith("SATNAV"):
+                gp = group
+
+        if gp.getDataset("POINTING"):   
+            # TIMETAG2 format: hhmmssmss.0 is unbuffered (i.e. 1234.0 is 1.234 minutes after midnight)
+            timeStamp = gp.getDataset('TIMETAG2').data['NONE']
+            timeStampTuple = gp.getDataset("TIMETAG2").data
+            rotator = gp.getDataset("POINTING").data["ROTATOR"]                        
+            home = float(ConfigFile.settings["fL2sRotatorHomeAngle"])     
+            delay = float(ConfigFile.settings["fL2sRotatorDelay"])
+
+            if badTimes is None:
+                badTimes = []
+
+            kickout = 0
+            i = 0
+            for index in range(len(rotator)):  
+                if index == 0:
+                    lastAngle = rotator[index]
+                else:
+                    if rotator[index] > (lastAngle + 0.05) or rotator[index] < (lastAngle - 0.05):
+                        i += 1
+                        # Detect angle changed   
+                        timeInt = int(timeStamp[index])                    
+                        print('Rotator delay kick-out. ' + str(timeInt) )
+                        startIndex = index
+                        start = Utilities.timeTag2ToSec(timeInt)
+                        lastAngle = rotator[index]
+                        kickout = 1
+
+                    else:                        
+                        # Is this X seconds past a kick-out start?
+                        timeInt = int(timeStamp[index])
+                        time = Utilities.timeTag2ToSec(timeInt)
+                        if kickout==1 and time > (start+delay):
+                            startstop = [timeStampTuple[startIndex],timeStampTuple[index-1]]
+                            print('   Remove data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
+                            badTimes.append(startstop)
+                            kickout = 0
+                        elif kickout ==1:
+                            i += 1
+
+
+            print("Percentage of SATNAV data out of Rotator Delay bounds: " + str(round(100*i/len(timeStamp))) + "%")
+                
+        # For each dataset in each group, find the badTimes to remove and delete those rows                
+        for gp in node.groups:                                        
+            
+            # if gp.id.startswith("GPR"):
+            #     #  pass
+            #     fractionRemoved = ProcessL2s.filterTimeData(gp, badTimes)
+            #     # Confirm that data were removed from group
+            #     # gpTimeset  = gp.getDataset("UTCPOS") 
+            #     # gpTime = gpTimeset.data["NONE"]
+            #     # print('Group data end up ' + str(len(gpTime)) + ' long')                    
+            #     # Confirm that data were removed from Root    
+            #     group = node.getGroup("GPR")
+            #     gpTimeset  = group.getDataset("UTCPOS") 
+            #     gpTime = gpTimeset.data["NONE"]
+            #     lenGpTime = len(gpTime)
+            #     print('Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%')
+            
+            # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
+            if gp.id.startswith("SATMSG") is False:
+                fractionRemoved = ProcessL2s.filterData(gp, badTimes)
+                
+                # Confirm that data were removed from Root    
+                group = node.getGroup(gp.id)
+                if gp.id.startswith("GPRMC"):
+                    gpTimeset  = group.getDataset("UTCPOS") 
+                else:
+                    gpTimeset  = group.getDataset("TIMETAG2") 
+
+                gpTime = gpTimeset.data["NONE"]
+                lenGpTime = len(gpTime)
+                print('Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%')                                        
 
 
         #ProcessL2s.processGPSTime(node)
@@ -503,7 +588,7 @@ class ProcessL2s:
         ''' PysciDON interpolates to the SLOWEST sampling rate, but ProSoft
         interpolates to the FASTEST. Not much in the literature on this, although
         Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises.'''
-        # Interpolate all datasets to the fastest radiometric sampling rate
+        # Interpolate all datasets to the slowest radiometric sampling rate
         esLength = len(esData.data["Timetag2"].tolist())
         liLength = len(liData.data["Timetag2"].tolist())
         ltLength = len(ltData.data["Timetag2"].tolist())

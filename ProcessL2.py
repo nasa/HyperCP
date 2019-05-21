@@ -300,22 +300,26 @@ class ProcessL2:
     def fixTimeTag2(gp):
         tt2 = gp.getDataset("TIMETAG2")
         total = len(tt2.data["NONE"])
-        # Check the first element prior to looping over rest
-        i = 0
-        num = tt2.data["NONE"][i+1] - tt2.data["NONE"][i]
-        if num <= 0:
-                gp.datasetDeleteRow(i)
-                total = total - 1
-                print('Out of order TIMETAG2 row deleted at ' + str(i))
-        i = 1
-        while i < total:
-            num = tt2.data["NONE"][i] - tt2.data["NONE"][i-1]
+        if total >= 2:
+            # Check the first element prior to looping over rest
+            i = 0
+            num = tt2.data["NONE"][i+1] - tt2.data["NONE"][i]
             if num <= 0:
-                gp.datasetDeleteRow(i)
-                total = total - 1
-                print('Out of order TIMETAG2 row deleted at ' + str(i))
-                continue
-            i = i + 1
+                    gp.datasetDeleteRow(i)
+                    total = total - 1
+                    print('Out of order TIMETAG2 row deleted at ' + str(i))
+            i = 1
+            while i < total:
+                num = tt2.data["NONE"][i] - tt2.data["NONE"][i-1]
+                if num <= 0:
+                    gp.datasetDeleteRow(i)
+                    total = total - 1
+                    print('Out of order TIMETAG2 row deleted at ' + str(i))
+                    continue
+                i = i + 1
+        else:
+            print('************Too few records to test for ascending timestamps. Exiting.')
+            return False
 
 
     @staticmethod
@@ -346,8 +350,12 @@ class ProcessL2:
             return False
 
         # Fix in case time doesn't increase from one sample to the next
-        ProcessL2.fixTimeTag2(darkGroup)
-        ProcessL2.fixTimeTag2(lightGroup)        
+        # or there are fewer than 2 two stamps remaining.
+        fixTimeFlagDark = ProcessL2.fixTimeTag2(darkGroup)
+        fixTimeFlagLight = ProcessL2.fixTimeTag2(lightGroup)        
+
+        if fixTimeFlagLight is False or fixTimeFlagDark is False:
+            return False
 
         # Replace Timer with TT2
         ProcessL2.copyTimetag2(darkTimer, darkTT2)
