@@ -36,6 +36,8 @@ class Window(QtWidgets.QWidget):
            os.makedirs("Ascii")
         if not os.path.exists("Config"):
             os.makedirs("Config")
+        if not os.path.exists("Logs"):
+            os.makedirs("Logs")
 
         self.initUI()
 

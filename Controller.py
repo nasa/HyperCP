@@ -196,7 +196,9 @@ class Controller:
             return None
 
         # Process the data
-        print("ProcessL2s")
+        msg = ("ProcessL2s: " + inFilePath)
+        print(msg)
+        ProcessL2s.writeLogFile(msg,'w')
         root = HDFRoot.readHDF5(inFilePath)
         root = ProcessL2s.processL2s(root) 
         #root.printd()        
@@ -205,7 +207,9 @@ class Controller:
         if root is not None:
             root.writeHDF5(outFilePath)
         else:
-            print('L2 processing failed. Nothing to output.')
+            msg = "L2 processing failed. Nothing to output."
+            print(msg)
+            ProcessL2s.writeLogFile(msg)
 
     # @staticmethod
     # def processL3a(fp):
@@ -399,7 +403,10 @@ class Controller:
             outFilePath = os.path.join(pathOut,fileName[0] + "_L2s.hdf")
             Controller.processL2s(inFilePath, outFilePath)   
             if os.path.isfile(outFilePath):
-                print("L2s file produced: " + outFilePath)   
+                msg = ("L2s file produced: " + outFilePath)  
+                print(msg)
+                ProcessL2s.writeLogFile(msg)
+                 
 
             if int(ConfigFile.settings["bL2sSaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
