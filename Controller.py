@@ -19,7 +19,7 @@ from ProcessL1a import ProcessL1a
 from ProcessL1b import ProcessL1b
 from ProcessL2 import ProcessL2
 from ProcessL2s import ProcessL2s
-# from ProcessL3a import ProcessL3a
+from ProcessL3a import ProcessL3a
 # from ProcessL4 import ProcessL4
 # from ProcessL4a import ProcessL4a
 
@@ -211,23 +211,27 @@ class Controller:
             print(msg)
             ProcessL2s.writeLogFile(msg)
 
-    # @staticmethod
-    # def processL3a(fp):
-    #     # Get input filepath
-    #     (dirpath, filename) = os.path.split(fp)
-    #     filename = os.path.splitext(filename)[0]
-    #     filepath = os.path.join(dirpath, filename + "_L2s.hdf")
-    #     if not os.path.isfile(filepath):
-    #         return None
+    @staticmethod
+    def processL3a(inFilePath, outFilePath):
+        if not os.path.isfile(inFilePath):
+            print('No such input file: ' + inFilePath)
+            return None
 
-    #     # Process the data
-    #     print("ProcessL3a")
-    #     root = HDFRoot.readHDF5(filepath)
-    #     root = ProcessL3a.processL3a(root)
+        # Process the data
+        msg = ("ProcessL3a: " + inFilePath)
+        print(msg)
+        ProcessL2s.writeLogFile(msg,'w')
+        root = HDFRoot.readHDF5(inFilePath)
+        root = ProcessL3a.processL3a(root) 
+        #root.printd()        
 
-    #     # Write output file
-    #     if root is not None:
-    #         root.writeHDF5(os.path.join(dirpath, filename + "_L3a.hdf"))
+        # Write output file
+        if root is not None:
+            root.writeHDF5(outFilePath)
+        else:
+            msg = "L3 processing failed. Nothing to output."
+            print(msg)
+            ProcessL3a.writeLogFile(msg)
 
     # @staticmethod
     # def processL4(fp, windSpeedData):
@@ -356,6 +360,7 @@ class Controller:
                 if int(ConfigFile.settings["bL1aSaveSeaBASS"]) == 1:
                     print("Output SeaBASS: " + inFilePath)
                     SeaBASSWriter.outputTXT_L1a(inFilePath)
+
         elif level == "1b":
             if os.path.isdir(pathOut):
                 pathOut = pathOut + "/L1B"
@@ -371,9 +376,6 @@ class Controller:
             if os.path.isfile(outFilePath):
                 print("L1b file produced: " + outFilePath) 
 
-                # if int(ConfigFile.settings["bL1bSaveSeaBASS"]) == 1:
-                #     print("Output SeaBASS: " + inFilePath)
-                #     SeaBASSWriter.outputTXT_L1b(inFilePath)  
         elif level == "2":
             if os.path.isdir(pathOut):
                 pathOut = pathOut + "/L2"
@@ -391,6 +393,7 @@ class Controller:
             if int(ConfigFile.settings["bL1bSaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
                 SeaBASSWriter.outputTXT_L2(inFilePath)  
+
         elif level == "2s":
             if os.path.isdir(pathOut):
                 pathOut = pathOut + "/L2s"
@@ -407,17 +410,32 @@ class Controller:
                 print(msg)
                 ProcessL2s.writeLogFile(msg)
                  
-
             if int(ConfigFile.settings["bL2sSaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
-                SeaBASSWriter.outputTXT_L2s(inFilePath)  
-        elif level == "3a":
-            outFilePath = os.path.join(pathOut,fileName[0] + "_L3a.hdf")
-            Controller.ProcessL3a(inFilePath, outFilePath)   
 
+                SeaBASSWriter.outputTXT_L2s(inFilePath)  
+
+        elif level == "3a":
+            if os.path.isdir(pathOut):
+                pathOut = pathOut + "/L3"
+                if os.path.isdir(pathOut) is False:
+                    os.mkdir(pathOut)
+            else:
+                print("Bad output destination. Select new Output Data Directory.")
+
+            fileName = fileName.split('_')
+            outFilePath = os.path.join(pathOut,fileName[0] + "_L3.hdf")
+            Controller.processL3a(inFilePath, outFilePath)   
+            if os.path.isfile(outFilePath):
+                msg = ("L3 file produced: " + outFilePath)  
+                print(msg)
+                ProcessL3a.writeLogFile(msg)
+                 
             if int(ConfigFile.settings["bL3aSaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
+
                 SeaBASSWriter.outputTXT_L3a(inFilePath)  
+
         elif level == "4":            
             windSpeedData = Controller.processWindData(windFile)
             outFilePath = os.path.join(pathOut,fileName[0] + "_L4.hdf")

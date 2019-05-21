@@ -15,6 +15,11 @@ from ConfigFile import ConfigFile
 
 class ProcessL3a:
 
+    @staticmethod
+    def writeLogFile(logText, mode='a'):
+        with open('Logs/L2S_Processing_log.txt', mode) as logFile:
+            logFile.write(logText + "\n")
+
     # Interpolates by wavelength
     @staticmethod
     def interpolateWavelength(ds, newDS, interval=1):
@@ -230,14 +235,16 @@ class ProcessL3a:
     @staticmethod
     def processL3a(node):
 
+        interval = float(ConfigFile.settings["fL3aInterpInterval"])
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
         root.attributes["PROCESSING_LEVEL"] = "3a"
-        root.attributes["BIN_INTERVAL"] = "1 m"
-        root.attributes["BIN_WIDTH"] = "0.5 m"
-        root.attributes["TIME_INTERVAL"] = "2 sec"
-        root.attributes["TIME_WIDTH"] = "1 sec"
-        root.attributes["WAVEL_INTERP"] = "1 nm"
+        ''' This was all very odd in PySciDon'''
+        # root.attributes["BIN_INTERVAL"] = "1 m"
+        # root.attributes["BIN_WIDTH"] = "0.5 m"
+        # root.attributes["TIME_INTERVAL"] = "2 sec"
+        # root.attributes["TIME_WIDTH"] = "1 sec"
+        root.attributes["WAVEL_INTERP"] = (str(interval) + " nm") 
 
         newReferenceGroup = root.addGroup("Reference")
         newSASGroup = root.addGroup("SAS")
@@ -256,9 +263,6 @@ class ProcessL3a:
         newESData = newReferenceGroup.addDataset("ES_hyperspectral")
         newLIData = newSASGroup.addDataset("LI_hyperspectral")
         newLTData = newSASGroup.addDataset("LT_hyperspectral")
-
-        #interval = float(settings["fL3aInterpInterval"])
-        interval = float(ConfigFile.settings["fL3aInterpInterval"])
 
         ProcessL3a.interpolateWavelength(esData, newESData, interval)
         ProcessL3a.interpolateWavelength(liData, newLIData, interval)

@@ -120,10 +120,10 @@ class Window(QtWidgets.QWidget):
         self.singleL2sButton = QtWidgets.QPushButton("L2 --> L2s", self)
         #self.singleL1bButton.move(30, 400)
 
-        self.singleL3aButton = QtWidgets.QPushButton("L2s --> L3a", self)
+        self.singleL3aButton = QtWidgets.QPushButton("L2s --> L3", self)
         #self.singleL1bButton.move(30, 400)
 
-        self.singleL4Button = QtWidgets.QPushButton("L2s --> L4", self)
+        self.singleL4Button = QtWidgets.QPushButton("L3 --> L4", self)
         #self.singleL1bButton.move(30, 400)
         
         self.singleL1aButton.clicked.connect(self.singleL1aClicked)
@@ -271,7 +271,7 @@ class Window(QtWidgets.QWidget):
             self.outputDirectory)
         print('Data output directory changed: ', self.outputDirectory)
         print("NOTE: SUBDIRECTORIES FOR DATA LEVELS WILL BE CREATED HERE")
-        print("      AUTOMATICALLY, UNLESS THEY ALREADY EXIST.")
+        print("      AUTOMATICALLY, UNLESS THEY ALREADY EXIST.")        
         (dirPath, dirName) = os.path.split(self.outputDirectory)        
         self.outDirButton.setText(dirName)
         return self.outputDirectory
