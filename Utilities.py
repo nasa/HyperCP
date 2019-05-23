@@ -2,6 +2,7 @@
 import datetime
 import os
 import sys
+# import logging
 
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
@@ -9,8 +10,33 @@ import numpy as np
 import scipy.interpolate
 from scipy.interpolate import splev, splrep
 
+if "LOGFILE" not in os.environ:
+    os.environ["LOGFILE"] = "temp.log"
+
+
 
 class Utilities:
+
+    # @staticmethod
+    # # inFilePath needs to be an attribute that can be set remotely the first time this is called.
+    # def hyperLogger(inFilePath, mode):
+    #     fileBaseExt = os.path.split(inFilePath)[0]
+    #     logFileName = os.path.splitext(fileBaseExt)[0]
+    #     # Create and configure logger
+    #     # DEBUG insures that return values below the default threshold 30 (warning) such as info (20) still get logged
+    #     LOG_FORMAT = "%(levelname)s %(asctime)s - %(message)s"
+    #     logging.basicConfig(filename=logFileName,
+    #                 level=logging.DEBUG,
+    #                 format=LOG_FORMAT,
+    #                 filemode=mode)
+        
+    #     logger = logging.getLogger()
+    #     return logger
+
+    @staticmethod
+    def writeLogFile(logText, mode='a'):
+        with open('Logs/' + os.environ["LOGFILE"], mode) as logFile:
+            logFile.write(logText + "\n")
     
     # Converts degrees minutes to decimal degrees format
     @staticmethod # for some reason, these were not set to static method, but didn't refer to self

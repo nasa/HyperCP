@@ -1,22 +1,14 @@
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
 import HDFRoot
-#import HDFGroup
-#import HDFDataset
 from Utilities import Utilities
 from ConfigFile import ConfigFile
 
 
-
 class ProcessL2s:
-
-    @staticmethod
-    def writeLogFile(logText, mode='a'):
-        with open('Logs/L2S_Processing_log.txt', mode) as logFile:
-            logFile.write(logText + "\n")
-
 
     # recalculate TimeTag2 to follow GPS UTC time
     @staticmethod
@@ -52,7 +44,7 @@ class ProcessL2s:
             # This is handled seperately in order to deal with the UTC fields in GPS            
             msg = "Remove GPS Data"
             print(msg)
-            ProcessL2s.writeLogFile(msg)
+            Utilities.writeLogFile(msg)
             gpsTimeData = group.getDataset("UTCPOS")        
             dataSec = []
             for i in range(gpsTimeData.data.shape[0]):
@@ -61,7 +53,7 @@ class ProcessL2s:
         else:
             msg = ("Remove " + group.id + " Data")
             print(msg)
-            ProcessL2s.writeLogFile(msg)
+            Utilities.writeLogFile(msg)
             timeData = group.getDataset("TIMETAG2")        
             dataSec = []
             for i in range(timeData.data.shape[0]):
@@ -71,7 +63,7 @@ class ProcessL2s:
         lenDataSec = len(dataSec)
         msg = ('Data start ' + str(lenDataSec) + ' long')
         print(msg)
-        ProcessL2s.writeLogFile(msg)
+        Utilities.writeLogFile(msg)
         
 
         # Now delete the record from each dataset in the group
@@ -79,7 +71,7 @@ class ProcessL2s:
         for timeTag in badTimes:               
             msg = ("     Eliminate data between: " + str(timeTag) + " (HHMMSSMSS)")
             print(msg)
-            ProcessL2s.writeLogFile(msg)
+            Utilities.writeLogFile(msg)
             # print(timeTag)
             # print(" ")         
             start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
@@ -148,7 +140,7 @@ class ProcessL2s:
     def interpolateData(xData, yData, instr):
         msg = ("Interpolate Data " + instr)
         print(msg)
-        ProcessL2s.writeLogFile(msg)
+        Utilities.writeLogFile(msg)
 
         # Interpolating to itself
         if xData is yData:
@@ -172,12 +164,12 @@ class ProcessL2s:
         if not Utilities.isIncreasing(xTimer):
             msg = ("xTimer does not contain strictly increasing values")
             print(msg)
-            ProcessL2s.writeLogFile(msg)
+            Utilities.writeLogFile(msg)
             return False
         if not Utilities.isIncreasing(yTimer):
             msg = ("yTimer does not contain strictly increasing values")
             print(msg)
-            ProcessL2s.writeLogFile(msg)
+            Utilities.writeLogFile(msg)
             return False
 
         xData.columns["Datetag"] = yData.data["Datetag"].tolist()
@@ -205,12 +197,12 @@ class ProcessL2s:
         # This is handled seperately in order to correct the Lat Long and UTC fields
         msg = "Interpolate GPS Data"
         print(msg)
-        ProcessL2s.writeLogFile(msg)
+        Utilities.writeLogFile(msg)
 
         if gpsGroup is None:            
             msg = "WARNING, gpsGroup is None"
             print(msg)
-            ProcessL2s.writeLogFile(msg)
+            Utilities.writeLogFile(msg)
             return
 
         refGroup = node.getGroup("Reference")
@@ -301,12 +293,12 @@ class ProcessL2s:
     def interpolateSATNAVData(node, satnavGroup):
         msg = "Interpolate SATNAV Data"
         print(msg)
-        ProcessL2s.writeLogFile(msg)
+        Utilities.writeLogFile(msg)
 
         if satnavGroup is None:
             msg = "WARNING, satnavGroup is None"
             print(msg)
-            ProcessL2s.writeLogFile(msg)
+            Utilities.writeLogFile(msg)
             return
 
         refGroup = node.getGroup("Reference")
@@ -387,7 +379,8 @@ class ProcessL2s:
         if node is not None and int(ConfigFile.settings["bL2sCleanSunAngle"]) == 1:
             msg = "Filtering file for bad Relative Solar Azimuth"
             print(msg)
-            ProcessL2s.writeLogFile(msg)
+            # Utilities.writeLogFile(msg)
+            # Utilities.hyperLogger(inFilePath,'a')
             
             i = 0
             # try:
@@ -436,14 +429,14 @@ class ProcessL2s:
                             startstop = [timeStamp[start],timeStamp[stop]]
                             msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
                             print(msg)
-                            ProcessL2s.writeLogFile(msg)
+                            Utilities.writeLogFile(msg)
                             # startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
                             # stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
                             badTimes.append(startstop)
                             start = -1
                 msg = ("Percentage of SATNAV data out of Solar Azimuth bounds: " + str(round(100*i/len(timeStamp))) + "%")
                 print(msg)
-                ProcessL2s.writeLogFile(msg)
+                Utilities.writeLogFile(msg)
 
         # Apply Absolute Rotator Angle Filter
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
@@ -452,7 +445,7 @@ class ProcessL2s:
         if node is not None and int(ConfigFile.settings["bL2sCleanRotatorAngle"]) == 1:
             msg = "Filtering file for bad Absolute Rotator Angle"
             print(msg)
-            ProcessL2s.writeLogFile(msg)
+            Utilities.writeLogFile(msg)
             
             i = 0
             # try:
@@ -487,14 +480,14 @@ class ProcessL2s:
                             startstop = [timeStamp[start],timeStamp[stop]]
                             msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
                             print(msg)
-                            ProcessL2s.writeLogFile(msg)
+                            Utilities.writeLogFile(msg)
                             # startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
                             # stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
                             badTimes.append(startstop)
                             start = -1
                 msg = ("Percentage of SATNAV data out of Absolute Rotator bounds: " + str(round(100*i/len(timeStamp))) + "%")
                 print(msg)
-                ProcessL2s.writeLogFile(msg)
+                Utilities.writeLogFile(msg)
 
         # Apply Rotator Delay Filter (delete records within so many seconds of a rotation)
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
@@ -503,7 +496,7 @@ class ProcessL2s:
 
         msg = "Filtering file for Rotator Delay"
         print(msg)
-        ProcessL2s.writeLogFile(msg)
+        Utilities.writeLogFile(msg)
             
         for group in node.groups:
             if group.id.startswith("SATNAV"):
@@ -544,7 +537,7 @@ class ProcessL2s:
                             startstop = [timeStampTuple[startIndex],timeStampTuple[index-1]]
                             msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
                             print(msg)
-                            ProcessL2s.writeLogFile(msg)
+                            Utilities.writeLogFile(msg)
                             badTimes.append(startstop)
                             kickout = 0
                         elif kickout ==1:
@@ -552,11 +545,11 @@ class ProcessL2s:
 
             msg = ("Percentage of SATNAV data out of Rotator Delay bounds: " + str(round(100*i/len(timeStamp))) + "%")
             print(msg)
-            ProcessL2s.writeLogFile(msg)
+            Utilities.writeLogFile(msg)
                 
         msg = "Eliminate combined filtered data from datasets.__________________________________"
         print(msg)
-        ProcessL2s.writeLogFile(msg)
+        Utilities.writeLogFile(msg)
         # For each dataset in each group, find the badTimes to remove and delete those rows                
         for gp in node.groups:                                        
             
@@ -589,7 +582,7 @@ class ProcessL2s:
                 lenGpTime = len(gpTime)
                 msg = ('Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%') 
                 print(msg)
-                ProcessL2s.writeLogFile(msg)                                       
+                Utilities.writeLogFile(msg)                                       
 
 
         #ProcessL2s.processGPSTime(node)
@@ -648,17 +641,17 @@ class ProcessL2s:
         if esLength < liLength and esLength < ltLength:
             msg = "ES has fewest records - interpolating to ES; This should raise a red flag."
             print(msg)
-            ProcessL2s.writeLogFile(msg)                                       
+            Utilities.writeLogFile(msg)                                       
             interpData = esData
         elif liLength < ltLength:
             msg = "LI has fewest records - interpolating to LI; This should raise a red flag."
             print(msg)
-            ProcessL2s.writeLogFile(msg)                                       
+            Utilities.writeLogFile(msg)                                       
             interpData = liData
         else:
             msg = "LT has fewest records - interpolating to LT"
             print(msg)
-            ProcessL2s.writeLogFile(msg)                                       
+            Utilities.writeLogFile(msg)                                       
             interpData = ltData
 
         #interpData = liData # Testing against Prosoft ##??

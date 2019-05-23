@@ -1,36 +1,26 @@
 
 import collections
-
 import numpy as np
 import scipy as sp
 
 import HDFRoot
-#import HDFGroup
-#import HDFDataset
-
 from Utilities import Utilities
-
 from ConfigFile import ConfigFile
 
 
 class ProcessL3a:
 
-    @staticmethod
-    def writeLogFile(logText, mode='a'):
-        with open('Logs/L2S_Processing_log.txt', mode) as logFile:
-            logFile.write(logText + "\n")
 
     # Interpolates by wavelength
     @staticmethod
-    def interpolateWavelength(ds, newDS, interval=1):
+    def interpolateWavelength(ds, newDS, new_x):
 
         # Copy dataset to dictionary
         ds.datasetToColumns()
         columns = ds.columns
         saveDatetag = columns.pop("Datetag")
         saveTimetag2 = columns.pop("Timetag2")
-
-
+        
         # Get wavelength values
         wavelength = []
         for k in columns:
@@ -38,12 +28,13 @@ class ProcessL3a:
             wavelength.append(float(k))
         x = np.asarray(wavelength)
 
-
-        # Determine interpolated wavelength values
-        start = np.ceil(wavelength[0])
-        end = np.floor(wavelength[len(wavelength)-1])
-        new_x = np.arange(start, end, interval)
-        #print(new_x)
+        ''' PySciDON interpolated each instrument to a different set of bands.
+            Here we use a common set.'''
+        # # Determine interpolated wavelength values
+        # start = np.ceil(wavelength[0])
+        # end = np.floor(wavelength[len(wavelength)-1])
+        # new_x = np.arange(start, end, interval)
+        # #print(new_x)
 
         newColumns = collections.OrderedDict()
         newColumns["Datetag"] = saveDatetag
@@ -110,66 +101,68 @@ class ProcessL3a:
         avg /= len(lst)
         return avg
 
-    # Performs averaging on the data
-    @staticmethod
-    def dataAveraging(ds):
+    # # Performs averaging on the data
+    # @staticmethod
+    # def dataAveraging(ds):
         
-        print("Process Data Average")
+    #     msg = "Process Data Average"
+    #     print(msg)
+    #     Utilities.writeLogFile(msg)
         
-        interval = 2
-        width = 1
+    #     interval = 2
+    #     width = 1
 
-        # Copy dataset to dictionary
-        ds.datasetToColumns()
-        columns = ds.columns
-        saveDatetag = columns.pop("Datetag")
-        saveTimetag2 = columns.pop("Timetag2")
+    #     # Copy dataset to dictionary
+    #     ds.datasetToColumns()
+    #     columns = ds.columns
+    #     saveDatetag = columns.pop("Datetag")
+    #     saveTimetag2 = columns.pop("Timetag2")
 
-        # convert timetag2 to seconds
-        timer = []
-        for i in range(len(saveTimetag2)):
-            timer.append(Utilities.timeTag2ToSec(saveTimetag2[i]))
+    #     # convert timetag2 to seconds
+    #     timer = []
+    #     for i in range(len(saveTimetag2)):
+    #         timer.append(Utilities.timeTag2ToSec(saveTimetag2[i]))
 
-        # new data to return
-        newColumns = collections.OrderedDict()
-        newColumns["Datetag"] = []
-        newColumns["Timetag2"] = []
+    #     # new data to return
+    #     newColumns = collections.OrderedDict()
+    #     newColumns["Datetag"] = []
+    #     newColumns["Timetag2"] = []
 
-        i = 0
-        v = timer[0]
-        while i < len(timer)-1:
-            if (timer[i] - v) > interval:
-                #print(saveTimetag2[i], timer[i])
-                newColumns["Datetag"].append(saveDatetag[i])
-                newColumns["Timetag2"].append(saveTimetag2[i])
-                v = timer[i]
-                i += 2
-            else:
-                i += 1
+    #     i = 0
+    #     v = timer[0]
+    #     while i < len(timer)-1:
+    #         if (timer[i] - v) > interval:
+    #             #print(saveTimetag2[i], timer[i])
+    #             newColumns["Datetag"].append(saveDatetag[i])
+    #             newColumns["Timetag2"].append(saveTimetag2[i])
+    #             v = timer[i]
+    #             i += 2
+    #         else:
+    #             i += 1
 
-        for k in columns:
-            data = columns[k]
-            newColumns[k] = []
+    #     for k in columns:
+    #         data = columns[k]
+    #         newColumns[k] = []
 
-            # Do a natural log transform
-            data = np.log(data)
+    #         # Do a natural log transform
+    #         data = np.log(data)
 
-            # generate points to average based on interval
-            i = 0            
-            v = timer[0]
-            while i < len(timer)-1:
-                if (timer[i] - v) > interval:
-                    avg = ProcessL3a.getDataAverage(i, data, timer, width)
-                    newColumns[k].append(avg)
-                    v = timer[i]
-                    i += 2
-                else:
-                    i += 1
+    #         # generate points to average based on interval
+    #         i = 0            
+    #         v = timer[0]
+    #         while i < len(timer)-1:
+    #             if (timer[i] - v) > interval:
+    #                 avg = ProcessL3a.getDataAverage(i, data, timer, width)
+    #                 newColumns[k].append(avg)
+    #                 v = timer[i]
+    #                 i += 2
+    #             else:
+    #                 i += 1
 
-            newColumns = np.exp(newColumns)
+    #         newColumns = np.exp(newColumns)
 
-        ds.columns = newColumns
-        ds.columnsToDataset()
+    #     ds.columns = newColumns
+    #     ds.columnsToDataset()
 
 
     # Makes each dataset have matching wavelength values
@@ -177,7 +170,9 @@ class ProcessL3a:
     @staticmethod
     def matchColumns(esData, liData, ltData):
 
-        print("Match Columns")
+        msg = "Match Columns"
+        print(msg)
+        Utilities.writeLogFile(msg)
 
         esData.datasetToColumns()
         liData.datasetToColumns()
@@ -264,9 +259,57 @@ class ProcessL3a:
         newLIData = newSASGroup.addDataset("LI_hyperspectral")
         newLTData = newSASGroup.addDataset("LT_hyperspectral")
 
-        ProcessL3a.interpolateWavelength(esData, newESData, interval)
-        ProcessL3a.interpolateWavelength(liData, newLIData, interval)
-        ProcessL3a.interpolateWavelength(ltData, newLTData, interval)
+        ''' PySciDON interpolated each instrument to a different set of bands.
+        Here we use a common set.'''
+        # Es dataset to dictionary
+        esData.datasetToColumns()
+        columns = esData.columns
+        saveDatetag = columns.pop("Datetag")
+        saveTimetag2 = columns.pop("Timetag2")
+        # Get wavelength values
+        esWavelength = []
+        for k in columns:
+            esWavelength.append(float(k))
+        # Determine interpolated wavelength values
+        esStart = np.ceil(esWavelength[0])
+        esEnd = np.floor(esWavelength[len(esWavelength)-1])
+        
+        # Li dataset to dictionary
+        liData.datasetToColumns()
+        columns = liData.columns
+        saveDatetag = columns.pop("Datetag")
+        saveTimetag2 = columns.pop("Timetag2")
+        # Get wavelength values
+        liWavelength = []
+        for k in columns:
+            liWavelength.append(float(k))
+        # Determine interpolated wavelength values
+        liStart = np.ceil(liWavelength[0])
+        liEnd = np.floor(liWavelength[len(liWavelength)-1])
+        
+        # Lt dataset to dictionary
+        ltData.datasetToColumns()
+        columns = ltData.columns
+        saveDatetag = columns.pop("Datetag")
+        saveTimetag2 = columns.pop("Timetag2")
+        # Get wavelength values
+        ltWavelength = []
+        for k in columns:
+            ltWavelength.append(float(k))
+        # esWave = np.asarray(wavelength)
+        # Determine interpolated wavelength values
+        ltStart = np.ceil(ltWavelength[0])
+        ltEnd = np.floor(ltWavelength[len(liWavelength)-1])
+
+        # No extrapolation
+        start = max(esStart,liStart,ltStart)
+        end = min(esEnd,liEnd,ltEnd)
+        new_x = np.arange(start, end, interval)
+        # print(new_x)
+
+        ProcessL3a.interpolateWavelength(esData, newESData, new_x)
+        ProcessL3a.interpolateWavelength(liData, newLIData, new_x)
+        ProcessL3a.interpolateWavelength(ltData, newLTData, new_x)
 
 
         # Append latpos/lonpos to datasets

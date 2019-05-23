@@ -2,18 +2,14 @@
 import csv
 import os
 import numpy as np
+# import logging
 
 from SeaBASSWriter import SeaBASSWriter
 from CalibrationFileReader import CalibrationFileReader
-#from RawFileReader import RawFileReader
 from HDFRoot import HDFRoot
-#from HDFGroup import HDFGroup
-#from HDFDataset import HDFDataset
-
 from ConfigFile import ConfigFile
 from Utilities import Utilities
 from WindSpeedReader import WindSpeedReader
-
 from ProcessL0 import ProcessL0
 from ProcessL1a import ProcessL1a
 from ProcessL1b import ProcessL1b
@@ -22,6 +18,7 @@ from ProcessL2s import ProcessL2s
 from ProcessL3a import ProcessL3a
 # from ProcessL4 import ProcessL4
 # from ProcessL4a import ProcessL4a
+
 
 
 class Controller:
@@ -190,18 +187,19 @@ class Controller:
             print('L2 processing failed. Nothing to output.')
 
     @staticmethod
-    def processL2s(inFilePath, outFilePath):
+    def processL2s(inFilePath, outFilePath):        
+
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
             return None
-
+        
         # Process the data
         msg = ("ProcessL2s: " + inFilePath)
-        print(msg)
-        ProcessL2s.writeLogFile(msg,'w')
+        print(msg)    
+        Utilities.writeLogFile(msg,'w')
+        
         root = HDFRoot.readHDF5(inFilePath)
         root = ProcessL2s.processL2s(root) 
-        #root.printd()        
 
         # Write output file
         if root is not None:
@@ -209,10 +207,11 @@ class Controller:
         else:
             msg = "L2 processing failed. Nothing to output."
             print(msg)
-            ProcessL2s.writeLogFile(msg)
+            Utilities.writeLogFile(msg)
 
     @staticmethod
     def processL3a(inFilePath, outFilePath):
+        
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
             return None
@@ -220,10 +219,9 @@ class Controller:
         # Process the data
         msg = ("ProcessL3a: " + inFilePath)
         print(msg)
-        ProcessL2s.writeLogFile(msg,'w')
+        Utilities.writeLogFile(msg,'w')
         root = HDFRoot.readHDF5(inFilePath)
-        root = ProcessL3a.processL3a(root) 
-        #root.printd()        
+        root = ProcessL3a.processL3a(root)     
 
         # Write output file
         if root is not None:
@@ -231,7 +229,7 @@ class Controller:
         else:
             msg = "L3 processing failed. Nothing to output."
             print(msg)
-            ProcessL3a.writeLogFile(msg)
+            Utilities.writeLogFile(msg)
 
     # @staticmethod
     # def processL4(fp, windSpeedData):
@@ -339,9 +337,13 @@ class Controller:
         pathOut = os.path.abspath(pathOut)
         # inFilePath is a singleton file complete with path
         inFilePath = os.path.abspath(inFilePath)        
-        (inpath, inFileName) = os.path.split(inFilePath)        
+        # (inpath, inFileName) = os.path.split(inFilePath)        
+        inFileName = os.path.split(inFilePath)[1]        
         # Split off the .RAW suffix
         fileName = os.path.splitext(inFileName)[0]   
+
+        # Initialize the Utility logger
+        os.environ["LOGFILE"] = (fileName + '_L' + level + '.log')
 
         if level == "1a":            
             if os.path.isdir(pathOut):
@@ -408,7 +410,7 @@ class Controller:
             if os.path.isfile(outFilePath):
                 msg = ("L2s file produced: " + outFilePath)  
                 print(msg)
-                ProcessL2s.writeLogFile(msg)
+                Utilities.writeLogFile(msg)
                  
             if int(ConfigFile.settings["bL2sSaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
@@ -429,47 +431,55 @@ class Controller:
             if os.path.isfile(outFilePath):
                 msg = ("L3 file produced: " + outFilePath)  
                 print(msg)
-                ProcessL3a.writeLogFile(msg)
+                Utilities.writeLogFile(msg)
                  
             if int(ConfigFile.settings["bL3aSaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
 
                 SeaBASSWriter.outputTXT_L3a(inFilePath)  
 
-        elif level == "4":            
+        elif level == "4":          
+            if os.path.isdir(pathOut):
+                pathOut = pathOut + "/L4"
+                if os.path.isdir(pathOut) is False:
+                    os.mkdir(pathOut)
+            else:
+                print("Bad output destination. Select new Output Data Directory.")  
+
             windSpeedData = Controller.processWindData(windFile)
+            fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_L4.hdf")
-            Controller.processL1b(inFilePath, outFilePath)   
+            Controller.processL3a(inFilePath, outFilePath)  
 
             if int(ConfigFile.settings["bL4SaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
                 SeaBASSWriter.outputTXT_L4(inFilePath)                               
-        # print("Process Single Level: " + inFilePath + " - DONE")
+        print("Process Single Level: " + inFilePath + " - DONE")
 
 
-    @staticmethod
-    def processMultiLevel(outFilePath, inFilePath, calibrationMap, level=4, windFile=None, skyFile=None):
-        print("Process Multi Level: " + fp)
-        Controller.processL1a(inFilePath, outFilePath, calibrationMap)
-        Controller.processL1b(inFilePath, outFilePath, calibrationMap)                                
-        Controller.processL2(inFilePath, outFilePath)        
-        Controller.processL2s(inFilePath, outFilePath)
-        Controller.processL3a(inFilePath, outFilePath)
-        windSpeedData = Controller.processWindData(windFile)
-        """ sky file proc goes here"""
-        Controller.processL4(inFilePath, outFilePath, windSpeedData)
-        if int(ConfigFile.settings["bL4SaveSeaBASS"]) == 1:
-                print("Output SeaBASS: " + inFilePath)
-                SeaBASSWriter.outputTXT_L2s(inFilePath)  
-        Controller.outputCSV_L4(fp)
-        print("Output CSV: " + fp)
-        # SeaBASSWriter.outputTXT_L1a(fp)
-        # SeaBASSWriter.outputTXT_L1b(fp)
-        # SeaBASSWriter.outputTXT_L2(fp)
-        # SeaBASSWriter.outputTXT_L2s(fp)
-        # SeaBASSWriter.outputTXT_L3a(fp)
-        SeaBASSWriter.outputTXT_L4(fp)
-        print("Process Multi Level: " + fp + " - DONE")
+    # @staticmethod
+    # def processMultiLevel(outFilePath, inFilePath, calibrationMap, level=4, windFile=None, skyFile=None):
+    #     print("Process Multi Level: " + fp)
+    #     Controller.processL1a(inFilePath, outFilePath, calibrationMap)
+    #     Controller.processL1b(inFilePath, outFilePath, calibrationMap)                                
+    #     Controller.processL2(inFilePath, outFilePath)        
+    #     Controller.processL2s(inFilePath, outFilePath)
+    #     Controller.processL3a(inFilePath, outFilePath)
+    #     windSpeedData = Controller.processWindData(windFile)
+    #     """ sky file proc goes here"""
+    #     Controller.processL4(inFilePath, outFilePath, windSpeedData)
+    #     if int(ConfigFile.settings["bL4SaveSeaBASS"]) == 1:
+    #             print("Output SeaBASS: " + inFilePath)
+    #             SeaBASSWriter.outputTXT_L2s(inFilePath)  
+    #     Controller.outputCSV_L4(fp)
+    #     print("Output CSV: " + fp)
+    #     # SeaBASSWriter.outputTXT_L1a(fp)
+    #     # SeaBASSWriter.outputTXT_L1b(fp)
+    #     # SeaBASSWriter.outputTXT_L2(fp)
+    #     # SeaBASSWriter.outputTXT_L2s(fp)
+    #     # SeaBASSWriter.outputTXT_L3a(fp)
+    #     SeaBASSWriter.outputTXT_L4(fp)
+    #     print("Process Multi Level: " + fp + " - DONE")
 
     """ This may never be called
     @staticmethod
@@ -495,14 +505,14 @@ class Controller:
     #                 Controller.processMultiLevel(os.path.join(dirpath, name), calibrationMap, level, windFile)
     #         break
 
-    # Used to process every file in a list of files
-    @staticmethod
-    def processFilesMultiLevel(pathout,files, calibrationMap, level=4, windFile=None, skyFile=None):
-        print("processFilesMultiLevel")
-        for fp in files:
-            print("Processing: " + fp)
-            Controller.processMultiLevel(pathout, fp, calibrationMap, level, windFile, skyFile)
-        print("processFilesMultiLevel - DONE")
+    # # Used to process every file in a list of files
+    # @staticmethod
+    # def processFilesMultiLevel(pathout,files, calibrationMap, level=4, windFile=None, skyFile=None):
+    #     print("processFilesMultiLevel")
+    #     for fp in files:
+    #         print("Processing: " + fp)
+    #         Controller.processMultiLevel(pathout, fp, calibrationMap, level, windFile, skyFile)
+    #     print("processFilesMultiLevel - DONE")
 
 
     # Used to process every file in a list of files
@@ -512,9 +522,9 @@ class Controller:
         for fp in inFiles:
             # fp is now singleton files; run this once per file
             print("Processing: " + fp)
-            try:
-                Controller.processSingleLevel(pathOut, fp, calibrationMap, level, windFile, skyFile)
-            except OSError:
-                print("Unable to process that file due to an operating system error. Try again.")
+            # try:
+            Controller.processSingleLevel(pathOut, fp, calibrationMap, level, windFile, skyFile)
+            # except OSError:
+            #     print("Unable to process that file due to an operating system error. Try again.")
         print("processFilesSingleLevel - DONE")
 
