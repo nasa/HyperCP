@@ -414,7 +414,6 @@ class Controller:
                  
             if int(ConfigFile.settings["bL2sSaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
-
                 SeaBASSWriter.outputTXT_L2s(inFilePath)  
 
         elif level == "3a":
@@ -435,7 +434,6 @@ class Controller:
                  
             if int(ConfigFile.settings["bL3aSaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
-
                 SeaBASSWriter.outputTXT_L3a(inFilePath)  
 
         elif level == "4":          
@@ -450,6 +448,10 @@ class Controller:
             fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_L4.hdf")
             Controller.processL3a(inFilePath, outFilePath)  
+            if os.path.isfile(outFilePath):
+                msg = ("L4 file produced: " + outFilePath)  
+                print(msg)
+                Utilities.writeLogFile(msg)
 
             if int(ConfigFile.settings["bL4SaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
