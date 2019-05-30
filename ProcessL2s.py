@@ -37,59 +37,77 @@ class ProcessL2s:
     # Delete records within the out-of-bounds times found by filtering on relative solar angle
     # Or records within the out-of-bounds for absolute rotator angle.
     @staticmethod
-    def filterData(group, badTimes):
+    def filterData(group, badTimes):                    
         
-        # Convert all time stamps to milliseconds UTC
-        if group.id.startswith("GPR"):
-            # This is handled seperately in order to deal with the UTC fields in GPS            
-            msg = "Remove GPS Data"
-            print(msg)
-            Utilities.writeLogFile(msg)
-            gpsTimeData = group.getDataset("UTCPOS")        
-            dataSec = []
-            for i in range(gpsTimeData.data.shape[0]):
-                # UTC format (hhmmss.) similar to TT2 (hhmmssmss.) with the miliseconds truncated
-                dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))            
-        else:
-            msg = ("Remove " + group.id + " Data")
-            print(msg)
-            Utilities.writeLogFile(msg)
-            timeData = group.getDataset("TIMETAG2")        
-            dataSec = []
-            for i in range(timeData.data.shape[0]):
-                # Converts from TT2 (hhmmssmss. UTC) to milliseconds UTC
-                dataSec.append(Utilities.timeTag2ToSec(timeData.data["NONE"][i]))
-
-        lenDataSec = len(dataSec)
-        msg = ('Data start ' + str(lenDataSec) + ' long')
-        print(msg)
-        Utilities.writeLogFile(msg)
-        
-
         # Now delete the record from each dataset in the group
-        counter = 0
+        ticker = 0
+        finalCount = 0
         for timeTag in badTimes:               
-            msg = ("     Eliminate data between: " + str(timeTag) + " (HHMMSSMSS)")
+            msg = ("Eliminate data between: " + str(timeTag) + " (HHMMSSMSS)")
             print(msg)
             Utilities.writeLogFile(msg)
             # print(timeTag)
             # print(" ")         
             start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
             stop = Utilities.timeTag2ToSec(list(timeTag[1])[0])                
-            # badIndex = ([i for i in range(lenDataSec) if start <= dataSec[i] and stop >= dataSec[i]])       
-            for i in range(lenDataSec):
-                if start <= dataSec[i] and stop >= dataSec[i]:
-                    # if group.id.startswith("GPR"):
-                    #     test = group.getDataset("UTCPOS").data["NONE"][i - counter]
-                    # else:
-                    #     test = group.getDataset("TIMETAG2").data["NONE"][i - counter]                    
-                    # print("Removing " + str(test) + " " + str(Utilities.secToTimeTag2(dataSec[i])) + " index: " + str(i))                                        
-                    
-                    group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
-                    counter += 1
-            # print(str(counter) + " records eliminated.")
+            # badIndex = ([i for i in range(lenDataSec) if start <= dataSec[i] and stop >= dataSec[i]])      
+            
+            # Convert all time stamps to milliseconds UTC
+            if group.id.startswith("GPR"):
+                # This is handled seperately in order to deal with the UTC fields in GPS            
+                if ticker ==0:
+                    msg = "   Remove GPS Data"
+                    print(msg)
+                    Utilities.writeLogFile(msg)
 
-        return counter/lenDataSec
+                gpsTimeData = group.getDataset("UTCPOS")        
+                dataSec = []
+                for i in range(gpsTimeData.data.shape[0]):
+                    # UTC format (hhmmss.) similar to TT2 (hhmmssmss.) with the miliseconds truncated
+                    dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))    
+                    # print(dataSec[i])        
+            else:
+                msg = ("   Remove " + group.id + " Data")
+                print(msg)
+                Utilities.writeLogFile(msg)
+                timeData = group.getDataset("TIMETAG2")        
+                dataSec = []
+                for i in range(timeData.data.shape[0]):
+                    # Converts from TT2 (hhmmssmss. UTC) to milliseconds UTC
+                    dataSec.append(Utilities.timeTag2ToSec(timeData.data["NONE"][i])) 
+
+            lenDataSec = len(dataSec)
+            if ticker == 0:
+                startLength = lenDataSec
+                ticker +=1
+
+            msg = ('   Length of dataset prior to removal ' + str(lenDataSec) + ' long')
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+            if lenDataSec > 0:
+                counter = 0
+                for i in range(lenDataSec):
+                    if start <= dataSec[i] and stop >= dataSec[i]:
+                        if group.id.startswith("GPR"):
+                            test = group.getDataset("UTCPOS").data["NONE"][i - counter]
+                        else:
+                            test = group.getDataset("TIMETAG2").data["NONE"][i - counter]                    
+                        print("     Removing " + str(test) + " " + str(Utilities.secToTimeTag2(dataSec[i])) + " index: " + str(i))                                        
+                        # print(i-counter)
+                        group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
+                        counter += 1
+                # print(str(counter) + " records eliminated.")
+                if group.id.startswith("GPR"):
+                    test = len(group.getDataset("UTCPOS").data["NONE"])
+                else:
+                    test = len(group.getDataset("TIMETAG2").data["NONE"])
+                print("     Length of dataset after removal " + str(test))
+                finalCount += counter
+            else:
+                print('Data group is empty')
+
+        return finalCount/startLength
        
 
     @staticmethod

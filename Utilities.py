@@ -70,7 +70,7 @@ class Utilities:
     def utcToSec(utc):
         # Use zfill to ensure correct width, fixes bug when hour is 0 (12 am)
         t = str(int(utc)).zfill(6)
-        #print(t)
+        # print(t)
         #print(t[:2], t[2:4], t[4:])
         h = int(t[:2])
         m = int(t[2:4])
