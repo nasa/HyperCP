@@ -1,0 +1,111 @@
+ProcessL2s: /Users/daurin/Projects_Supplemental/HyperPACE/Field_Data/Processed/KORUS/L2/1614105_L2.hdf
+   Flag data from TT2: (50413390.,) to (50413390.,)(HHMMSSMSS)
+   Flag data from TT2: (50423424.,) to (50509908.,)(HHMMSSMSS)
+Percentage of SATNAV data out of Solar Azimuth bounds: 92%
+Filtering file for bad Absolute Rotator Angle
+Percentage of SATNAV data out of Absolute Rotator bounds: 0%
+Filtering file for Rotator Delay
+   Flag data from TT2: (50403236.,) to (50501865.,)(HHMMSSMSS)
+   Flag data from TT2: (50519988.,) to (50618651.,)(HHMMSSMSS)
+   Flag data from TT2: (50705108.,) to (50803548.,)(HHMMSSMSS)
+Percentage of SATNAV data out of Rotator Delay bounds: 5%
+Eliminate combined filtered data from datasets.__________________________________
+Eliminate data between: [(50413390.,), (50413390.,)] (HHMMSSMSS)
+   Remove GPS Data
+   Length of dataset prior to removal 1786 long
+Eliminate data between: [(50423424.,), (50509908.,)] (HHMMSSMSS)
+   Length of dataset prior to removal 1786 long
+Eliminate data between: [(50403236.,), (50501865.,)] (HHMMSSMSS)
+   Length of dataset prior to removal 1764 long
+Eliminate data between: [(50519988.,), (50618651.,)] (HHMMSSMSS)
+   Length of dataset prior to removal 1754 long
+Eliminate data between: [(50705108.,), (50803548.,)] (HHMMSSMSS)
+   Length of dataset prior to removal 1724 long
+Data end   1696 long, a loss of 5%
+Eliminate data between: [(50413390.,), (50413390.,)] (HHMMSSMSS)
+   Remove HSE488B.cal Data
+   Length of dataset prior to removal 397 long
+Eliminate data between: [(50423424.,), (50509908.,)] (HHMMSSMSS)
+   Remove HSE488B.cal Data
+   Length of dataset prior to removal 396 long
+Eliminate data between: [(50403236.,), (50501865.,)] (HHMMSSMSS)
+   Remove HSE488B.cal Data
+   Length of dataset prior to removal 355 long
+Eliminate data between: [(50519988.,), (50618651.,)] (HHMMSSMSS)
+   Remove HSE488B.cal Data
+   Length of dataset prior to removal 333 long
+Eliminate data between: [(50705108.,), (50803548.,)] (HHMMSSMSS)
+   Remove HSE488B.cal Data
+   Length of dataset prior to removal 272 long
+Data end   272 long, a loss of 31%
+Eliminate data between: [(50413390.,), (50413390.,)] (HHMMSSMSS)
+   Remove HSL385B.cal Data
+   Length of dataset prior to removal 442 long
+Eliminate data between: [(50423424.,), (50509908.,)] (HHMMSSMSS)
+   Remove HSL385B.cal Data
+   Length of dataset prior to removal 442 long
+Eliminate data between: [(50403236.,), (50501865.,)] (HHMMSSMSS)
+   Remove HSL385B.cal Data
+   Length of dataset prior to removal 394 long
+Eliminate data between: [(50519988.,), (50618651.,)] (HHMMSSMSS)
+   Remove HSL385B.cal Data
+   Length of dataset prior to removal 370 long
+Eliminate data between: [(50705108.,), (50803548.,)] (HHMMSSMSS)
+   Remove HSL385B.cal Data
+   Length of dataset prior to removal 293 long
+Data end   293 long, a loss of 34%
+Eliminate data between: [(50413390.,), (50413390.,)] (HHMMSSMSS)
+   Remove HSL386B.cal Data
+   Length of dataset prior to removal 204 long
+Eliminate data between: [(50423424.,), (50509908.,)] (HHMMSSMSS)
+   Remove HSL386B.cal Data
+   Length of dataset prior to removal 204 long
+Eliminate data between: [(50403236.,), (50501865.,)] (HHMMSSMSS)
+   Remove HSL386B.cal Data
+   Length of dataset prior to removal 189 long
+Eliminate data between: [(50519988.,), (50618651.,)] (HHMMSSMSS)
+   Remove HSL386B.cal Data
+   Length of dataset prior to removal 177 long
+Eliminate data between: [(50705108.,), (50803548.,)] (HHMMSSMSS)
+   Remove HSL386B.cal Data
+   Length of dataset prior to removal 143 long
+Data end   143 long, a loss of 30%
+Eliminate data between: [(50413390.,), (50413390.,)] (HHMMSSMSS)
+   Remove SATNAV0001A.tdf Data
+   Length of dataset prior to removal 1784 long
+Eliminate data between: [(50423424.,), (50509908.,)] (HHMMSSMSS)
+   Remove SATNAV0001A.tdf Data
+   Length of dataset prior to removal 1783 long
+Eliminate data between: [(50403236.,), (50501865.,)] (HHMMSSMSS)
+   Remove SATNAV0001A.tdf Data
+   Length of dataset prior to removal 1759 long
+Eliminate data between: [(50519988.,), (50618651.,)] (HHMMSSMSS)
+   Remove SATNAV0001A.tdf Data
+   Length of dataset prior to removal 1750 long
+Eliminate data between: [(50705108.,), (50803548.,)] (HHMMSSMSS)
+   Remove SATNAV0001A.tdf Data
+   Length of dataset prior to removal 1720 long
+Data end   1690 long, a loss of 5%
+Eliminate data between: [(50413390.,), (50413390.,)] (HHMMSSMSS)
+   Remove SATPYR.tdf Data
+   Length of dataset prior to removal 31 long
+Eliminate data between: [(50423424.,), (50509908.,)] (HHMMSSMSS)
+   Remove SATPYR.tdf Data
+   Length of dataset prior to removal 31 long
+Eliminate data between: [(50403236.,), (50501865.,)] (HHMMSSMSS)
+   Remove SATPYR.tdf Data
+   Length of dataset prior to removal 28 long
+Eliminate data between: [(50519988.,), (50618651.,)] (HHMMSSMSS)
+   Remove SATPYR.tdf Data
+   Length of dataset prior to removal 26 long
+Eliminate data between: [(50705108.,), (50803548.,)] (HHMMSSMSS)
+   Remove SATPYR.tdf Data
+   Length of dataset prior to removal 21 long
+Data end   21 long, a loss of 32%
+LT has fewest records - interpolating to LT
+Interpolate Data ES
+Interpolate Data LI
+Interpolate Data LT
+Interpolate GPS Data
+Interpolate SATNAV Data
+L2s file produced: /Users/daurin/Projects_Supplemental/HyperPACE/Field_Data/Processed/KORUS/L2s/1614105_L2s.hdf

@@ -1,4 +1,4 @@
-ProcessL2s: C:\Users\dirka\OneDrive\HyperSAS\Field_Data\Processed\KORUS\L2\1614100_L2.hdf
+ProcessL2s: /Users/daurin/Projects_Supplemental/HyperPACE/Field_Data/Processed/KORUS/L2/1614100_L2.hdf
    Flag data from TT2: (2739459.,) to (2741379.,)(HHMMSSMSS)
    Flag data from TT2: (2751491.,) to (2751491.,)(HHMMSSMSS)
    Flag data from TT2: (2757529.,) to (2757529.,)(HHMMSSMSS)
@@ -504,4 +504,4 @@ Interpolate Data LI
 Interpolate Data LT
 Interpolate GPS Data
 Interpolate SATNAV Data
-L2s file produced: C:\Users\dirka\OneDrive\HyperSAS\Field_Data\Processed\KORUS/L2s\1614100_L2s.hdf
+L2s file produced: /Users/daurin/Projects_Supplemental/HyperPACE/Field_Data/Processed/KORUS/L2s/1614100_L2s.hdf

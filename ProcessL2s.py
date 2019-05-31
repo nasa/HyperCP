@@ -93,7 +93,7 @@ class ProcessL2s:
                             test = group.getDataset("UTCPOS").data["NONE"][i - counter]
                         else:
                             test = group.getDataset("TIMETAG2").data["NONE"][i - counter]                    
-                        print("     Removing " + str(test) + " " + str(Utilities.secToTimeTag2(dataSec[i])) + " index: " + str(i))                                        
+                        # print("     Removing " + str(test) + " " + str(Utilities.secToTimeTag2(dataSec[i])) + " index: " + str(i))                                        
                         # print(i-counter)
                         group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
                         counter += 1
@@ -601,88 +601,91 @@ class ProcessL2s:
                 msg = ('Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%') 
                 print(msg)
                 Utilities.writeLogFile(msg)                                       
+        print(fractionRemoved)
+        if fractionRemoved < 0.95: # Abort if 95% or more of data was culled
 
+            #ProcessL2s.processGPSTime(node)
+            root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class  (not sure about the .HDFRoot...its not a module in HDFRoot.py)
+            root.copyAttributes(node) # Now copy the attributes in from the L2 object
+            root.attributes["PROCESSING_LEVEL"] = "2s"
+            root.attributes["DEPTH_RESOLUTION"] = "N/A"
 
-        #ProcessL2s.processGPSTime(node)
-        root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class  (not sure about the .HDFRoot...its not a module in HDFRoot.py)
-        root.copyAttributes(node) # Now copy the attributes in from the L2 object
-        root.attributes["PROCESSING_LEVEL"] = "2s"
-        root.attributes["DEPTH_RESOLUTION"] = "N/A"
+            esGroup = None # Why are these initialized like this?
+            gpsGroup = None
+            liGroup = None
+            ltGroup = None
+            satnavGroup = None
+            for gp in node.groups:
+                #if gp.id.startswith("GPS"):
+                if gp.getDataset("UTCPOS"):
+                    # print("GPS")
+                    gpsGroup = gp
+                elif gp.getDataset("ES") and gp.attributes["FrameType"] == "ShutterLight":
+                    # print("ES")
+                    esGroup = gp
+                elif gp.getDataset("LI") and gp.attributes["FrameType"] == "ShutterLight":
+                    # print("LI")
+                    liGroup = gp
+                elif gp.getDataset("LT") and gp.attributes["FrameType"] == "ShutterLight":
+                    # print("LT")
+                    ltGroup = gp
+                elif gp.getDataset("AZIMUTH"):
+                    # print("SATNAV")
+                    satnavGroup = gp
 
-        esGroup = None # Why are these initialized like this?
-        gpsGroup = None
-        liGroup = None
-        ltGroup = None
-        satnavGroup = None
-        for gp in node.groups:
-            #if gp.id.startswith("GPS"):
-            if gp.getDataset("UTCPOS"):
-                # print("GPS")
-                gpsGroup = gp
-            elif gp.getDataset("ES") and gp.attributes["FrameType"] == "ShutterLight":
-                # print("ES")
-                esGroup = gp
-            elif gp.getDataset("LI") and gp.attributes["FrameType"] == "ShutterLight":
-                # print("LI")
-                liGroup = gp
-            elif gp.getDataset("LT") and gp.attributes["FrameType"] == "ShutterLight":
-                # print("LT")
-                ltGroup = gp
-            elif gp.getDataset("AZIMUTH"):
-                # print("SATNAV")
-                satnavGroup = gp
+            refGroup = root.addGroup("Reference")
+            sasGroup = root.addGroup("SAS")
+            if gpsGroup is not None:
+                gpsGroup2 = root.addGroup("GPS")
+            if satnavGroup is not None:
+                satnavGroup2 = root.addGroup("SATNAV")
 
-        refGroup = root.addGroup("Reference")
-        sasGroup = root.addGroup("SAS")
-        if gpsGroup is not None:
-            gpsGroup2 = root.addGroup("GPS")
-        if satnavGroup is not None:
-            satnavGroup2 = root.addGroup("SATNAV")
+            ProcessL2s.convertGroup(esGroup, "ES", refGroup, "ES_hyperspectral")        
+            ProcessL2s.convertGroup(liGroup, "LI", sasGroup, "LI_hyperspectral")
+            ProcessL2s.convertGroup(ltGroup, "LT", sasGroup, "LT_hyperspectral")
 
-        ProcessL2s.convertGroup(esGroup, "ES", refGroup, "ES_hyperspectral")        
-        ProcessL2s.convertGroup(liGroup, "LI", sasGroup, "LI_hyperspectral")
-        ProcessL2s.convertGroup(ltGroup, "LT", sasGroup, "LT_hyperspectral")
+            esData = refGroup.getDataset("ES_hyperspectral") # array with columns date, time, esdata*wavebands...
+            liData = sasGroup.getDataset("LI_hyperspectral")
+            ltData = sasGroup.getDataset("LT_hyperspectral")
 
-        esData = refGroup.getDataset("ES_hyperspectral") # array with columns date, time, esdata*wavebands...
-        liData = sasGroup.getDataset("LI_hyperspectral")
-        ltData = sasGroup.getDataset("LT_hyperspectral")
+            ''' PysciDON interpolates to the SLOWEST sampling rate, but ProSoft
+            interpolates to the FASTEST. Not much in the literature on this, although
+            Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises.'''
+            # Interpolate all datasets to the slowest radiometric sampling rate
+            esLength = len(esData.data["Timetag2"].tolist())
+            liLength = len(liData.data["Timetag2"].tolist())
+            ltLength = len(ltData.data["Timetag2"].tolist())
+            
+            interpData = None
+            if esLength < liLength and esLength < ltLength:
+                msg = "ES has fewest records - interpolating to ES; This should raise a red flag."
+                print(msg)
+                Utilities.writeLogFile(msg)                                       
+                interpData = esData
+            elif liLength < ltLength:
+                msg = "LI has fewest records - interpolating to LI; This should raise a red flag."
+                print(msg)
+                Utilities.writeLogFile(msg)                                       
+                interpData = liData
+            else:
+                msg = "LT has fewest records - interpolating to LT"
+                print(msg)
+                Utilities.writeLogFile(msg)                                       
+                interpData = ltData
 
-        ''' PysciDON interpolates to the SLOWEST sampling rate, but ProSoft
-        interpolates to the FASTEST. Not much in the literature on this, although
-        Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises.'''
-        # Interpolate all datasets to the slowest radiometric sampling rate
-        esLength = len(esData.data["Timetag2"].tolist())
-        liLength = len(liData.data["Timetag2"].tolist())
-        ltLength = len(ltData.data["Timetag2"].tolist())
-        
-        interpData = None
-        if esLength < liLength and esLength < ltLength:
-            msg = "ES has fewest records - interpolating to ES; This should raise a red flag."
-            print(msg)
-            Utilities.writeLogFile(msg)                                       
-            interpData = esData
-        elif liLength < ltLength:
-            msg = "LI has fewest records - interpolating to LI; This should raise a red flag."
-            print(msg)
-            Utilities.writeLogFile(msg)                                       
-            interpData = liData
+            #interpData = liData # Testing against Prosoft ##??
+
+            # Perform time interpolation
+            if not ProcessL2s.interpolateData(esData, interpData, "ES"):
+                return None
+            if not ProcessL2s.interpolateData(liData, interpData, "LI"):
+                return None
+            if not ProcessL2s.interpolateData(ltData, interpData, "LT"):
+                return None
+
+            ProcessL2s.interpolateGPSData(root, gpsGroup)
+            ProcessL2s.interpolateSATNAVData(root, satnavGroup)
+
+            return root
         else:
-            msg = "LT has fewest records - interpolating to LT"
-            print(msg)
-            Utilities.writeLogFile(msg)                                       
-            interpData = ltData
-
-        #interpData = liData # Testing against Prosoft ##??
-
-        # Perform time interpolation
-        if not ProcessL2s.interpolateData(esData, interpData, "ES"):
-            return None
-        if not ProcessL2s.interpolateData(liData, interpData, "LI"):
-            return None
-        if not ProcessL2s.interpolateData(ltData, interpData, "LT"):
-            return None
-
-        ProcessL2s.interpolateGPSData(root, gpsGroup)
-        ProcessL2s.interpolateSATNAVData(root, satnavGroup)
-
-        return root
+            print('Nothing left to process. Quit.')
