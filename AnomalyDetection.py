@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
-# matplotlib.use('TkAgg')
+# matplotlib.use('Qt4Agg')
+# matplotlib.use("TkAgg")
 import sys
 
 import easygui
@@ -79,14 +80,20 @@ def plotDeglitch(k,avg,residual,std,sensorType,lightDark,windowSize,sigma,\
     #     e = sys.exc_info()[0]
     #     print("Error: %s" % e)
 
-def launchAnomalyDetection(self):
+def launchAnomalyDetection(selfy):
     if not os.path.exists("Plots/Anomalies"):
             os.makedirs("Plots/Anomalies")
 
+    # print(outputDirectory)
+    # default_L1B_dir = outputDirectory
+
+
     # Open L1B HDF5 file for Deglitching
+    # inFilePath = easygui.fileopenbox(msg=None, title=None, default='*', filetypes=None)
+    # , multiple=False)
     inFilePath = easygui.fileopenbox(msg="Open L1B HDF5 file for Deglitching", \
-        title="Open HDF5 L1B", default='/accounts/daurin/SSDWORK/Projects/HyperPACE/Field_Data/Processed/KORUS/L1B/*hdf',\
-            filetypes=None, multiple=False)
+        title="Open HDF5 L1B", filetypes=None, multiple=False)
+
     print(inFilePath)
     windowSizeDark = int(input("Enter window size for Darks: "))
     sigmaDark = int(input("Enter sigma multiplier for Darks: "))

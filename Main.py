@@ -6,7 +6,6 @@ Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center
 Acknowledgements: Nathan Vanderberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
 Version 1.0: Under development April 2019
-
 """
 import os
 import shutil

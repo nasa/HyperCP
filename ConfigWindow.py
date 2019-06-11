@@ -19,6 +19,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.setModal(True)
         self.name = name
         self.initUI()
+        # self.outputDirectory = outputDirectory
 
     def initUI(self):
         # print("ConfigWindow - initUI")
@@ -311,12 +312,12 @@ class ConfigWindow(QtWidgets.QDialog):
            self.l4EnablePercentLtCheckBox.setChecked(True)
 
         # Set percentage for Rrs calculation
-        l4PercentLtLabel = QtWidgets.QLabel("Percent Lt", self)
+        self.l4PercentLtLabel = QtWidgets.QLabel("Percent Lt", self)
         self.l4PercentLtLineEdit = QtWidgets.QLineEdit(self)
         self.l4PercentLtLineEdit.setText(str(ConfigFile.settings["fL4PercentLt"]))
         self.l4PercentLtLineEdit.setValidator(doubleValidator)
+        
         l4SaveSeaBASSLabel = QtWidgets.QLabel("Save SeaBASS text file", self)     
-
         self.l4SaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)    
         self.l4SaveSeaBASSCheckBox.clicked.connect(self.l4SaveSeaBASSCheckBoxUpdate)        
         if int(ConfigFile.settings["bL4SaveSeaBASS"]) == 1:
@@ -555,7 +556,7 @@ class ConfigWindow(QtWidgets.QDialog):
         PercentLtHBox.addWidget(self.l4EnablePercentLtLabel)
         PercentLtHBox.addWidget(self.l4EnablePercentLtCheckBox)
         VBox3.addLayout(PercentLtHBox)  
-        VBox3.addWidget(l4PercentLtLabel)
+        VBox3.addWidget(self.l4PercentLtLabel)
         VBox3.addWidget(self.l4PercentLtLineEdit)
 
         VBox3.addSpacing(5)
