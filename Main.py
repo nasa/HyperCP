@@ -107,7 +107,7 @@ class Window(QtWidgets.QWidget):
         self.singleLevelLabel = QtWidgets.QLabel('Single-Level Processing', self)
         #self.singleLevelLabel.move(30, 270)
 
-        self.singleL1aButton = QtWidgets.QPushButton("Raw (BIN) --> Level 1a (HDF)", self)
+        self.singleL1aButton = QtWidgets.QPushButton("Raw (BIN) --> Level 1a (HDF5)", self)
         #self.singleL0Button.move(30, 300)
 
         self.singleL1bButton = QtWidgets.QPushButton("L1A --> L1B", self)
@@ -116,10 +116,7 @@ class Window(QtWidgets.QWidget):
         self.singleL2Button = QtWidgets.QPushButton("L1B --> L2", self)
         #self.singleL2Button.move(30, 450)
 
-        self.singleL2sButton = QtWidgets.QPushButton("L2 --> L2s", self)
-        #self.singleL1bButton.move(30, 400)
-
-        self.singleL3aButton = QtWidgets.QPushButton("L2s --> L3", self)
+        self.singleL3Button = QtWidgets.QPushButton("L2 --> L3", self)
         #self.singleL1bButton.move(30, 400)
 
         self.singleL4Button = QtWidgets.QPushButton("L3 --> L4", self)
@@ -128,14 +125,13 @@ class Window(QtWidgets.QWidget):
         self.singleL1aButton.clicked.connect(self.singleL1aClicked)
         self.singleL1bButton.clicked.connect(self.singleL1bClicked)            
         self.singleL2Button.clicked.connect(self.singleL2Clicked)
-        self.singleL2sButton.clicked.connect(self.singleL2sClicked)
-        self.singleL3aButton.clicked.connect(self.singleL3aClicked)
+        self.singleL3Button.clicked.connect(self.singleL3aClicked)
         self.singleL4Button.clicked.connect(self.singleL4Clicked)
 
         self.multiLevelLabel = QtWidgets.QLabel('Multi-Level Processing', self)
         #self.multiLevelLabel.move(30, 140)
 
-        self.multi2Button = QtWidgets.QPushButton("Level 1 --> 4", self)
+        self.multi2Button = QtWidgets.QPushButton("Level Raw (BIN) --> 4 (HDF5)", self)
         #self.multi1Button.move(30, 170)
 
         self.multi2Button.clicked.connect(self.multi2Clicked)
@@ -191,8 +187,7 @@ class Window(QtWidgets.QWidget):
         vBox.addWidget(self.singleL1aButton)
         vBox.addWidget(self.singleL1bButton)
         vBox.addWidget(self.singleL2Button)
-        vBox.addWidget(self.singleL2sButton)
-        vBox.addWidget(self.singleL3aButton)
+        vBox.addWidget(self.singleL3Button)
         vBox.addWidget(self.singleL4Button)
 
         vBox.addStretch(1)

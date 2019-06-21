@@ -13,40 +13,36 @@ class ConfigFile:
         print("ConfigFile - Printd")
         print("bL1aCleanSZA", ConfigFile.settings["bL1aCleanSZA"])
         print("fL1aCleanSZAMax", ConfigFile.settings["fL1aCleanSZAMax"])
-        print("bL1aSaveSeaBASS", ConfigFile.settings["bL1aSaveSeaBASS"])
 
-        print("bL1aSaveSeaBASS", ConfigFile.settings["bL1aSaveSeaBASS"])
+        print("fL1bRotatorHomeAngle", ConfigFile.settings["fL1bRotatorHomeAngle"])
+        print("fL1bRotatorDelay", ConfigFile.settings["fL1bRotatorDelay"]) 
+        print("bL1bCleanRotatorAngle", ConfigFile.settings["bL1bCleanRotatorAngle"])
+        print("fL1bRotatorAngleMin", ConfigFile.settings["fL1bRotatorAngleMin"])
+        print("fL1bRotatorAngleMax", ConfigFile.settings["fL1bRotatorAngleMax"])
+        print("fL1bRotatorDelay", ConfigFile.settings["fL1bRotatorDelay"])
+        print("bL1bCleanSunAngle", ConfigFile.settings["bL1bCleanSunAngle"])
+        print("fL1bSunAngleMin", ConfigFile.settings["fL1bSunAngleMin"])
+        print("fL1bSunAngleMax", ConfigFile.settings["fL1bSunAngleMax"])
 
         print("bL2Deglitch", ConfigFile.settings["bL2Deglitch"])
         print("fL2Deglitch0", ConfigFile.settings["fL2Deglitch0"])
         print("fL2Deglitch1", ConfigFile.settings["fL2Deglitch1"])
         print("fL2Deglitch2", ConfigFile.settings["fL2Deglitch2"])
-        print("fL2Deglitch3", ConfigFile.settings["fL2Deglitch3"])
-        print("bL2SaveSeaBASS", ConfigFile.settings["bL2SaveSeaBASS"])
-        
-        print("fL2sRotatorHomeAngle", ConfigFile.settings["fL2sRotatorHomeAngle"])
-        print("fL2RotatorDelay", ConfigFile.settings["fL2RotatorDelay"]) 
-        print("bL2sCleanRotatorAngle", ConfigFile.settings["bL2sCleanRotatorAngle"])
-        print("fL2sRotatorAngleMin", ConfigFile.settings["fL2sRotatorAngleMin"])
-        print("fL2sRotatorAngleMax", ConfigFile.settings["fL2sRotatorAngleMax"])
-        print("fL2sRotatorDelay", ConfigFile.settings["fL2sRotatorDelay"])
-        print("bL2sCleanSunAngle", ConfigFile.settings["bL2sCleanSunAngle"])
-        print("fL2sSunAngleMin", ConfigFile.settings["fL2sSunAngleMin"])
-        print("fL2sSunAngleMax", ConfigFile.settings["fL2sSunAngleMax"])
-        print("bL2sSaveSeaBASS", ConfigFile.settings["bL2sSaveSeaBASS"])
-   
+        print("fL2Deglitch3", ConfigFile.settings["fL2Deglitch3"])   
 
-        print("fL2TimeInterval", ConfigFile.settings["fL2TimeInterval"])
-        print("bL2EnableQualityFlags", ConfigFile.settings["bL2EnableQualityFlags"])
-        print("fL2SignificantEsFlag", ConfigFile.settings["fL2SignificantEsFlag"])
-        print("fL2DawnDuskFlag", ConfigFile.settings["fL2DawnDuskFlag"])
-        print("fL2RainfallHumidityFlag", ConfigFile.settings["fL2RainfallHumidityFlag"])
-        print("fL2RhoSky", ConfigFile.settings["fL2RhoSky"])
-        print("bL2EnableWindSpeedCalculation", ConfigFile.settings["bL2EnableWindSpeedCalculation"])
-        print("fL2DefaultWindSpeed", ConfigFile.settings["fL2DefaultWindSpeed"])
-        print("bL2PerformNIRCorrection", ConfigFile.settings["bL2PerformNIRCorrection"])        
-        print("bL2EnablePercentLt", ConfigFile.settings["bL2EnablePercentLt"])
-        print("fL2PercentLt", ConfigFile.settings["fL2PercentLt"])
+        print("fL3InterpInterval", ConfigFile.settings["fL3InterpInterval"])
+
+        print("fL4RhoSky", ConfigFile.settings["fL4RhoSky"])
+        print("bL4EnableWindSpeedCalculation", ConfigFile.settings["bL4EnableWindSpeedCalculation"])
+        print("fL4DefaultWindSpeed", ConfigFile.settings["fL4DefaultWindSpeed"])        
+        print("bL4EnableQualityFlags", ConfigFile.settings["bL4EnableQualityFlags"])
+        print("fL4SignificantEsFlag", ConfigFile.settings["fL4SignificantEsFlag"])
+        print("fL4DawnDuskFlag", ConfigFile.settings["fL4DawnDuskFlag"])
+        print("fL4RainfallHumidityFlag", ConfigFile.settings["fL4RainfallHumidityFlag"])                        
+        print("fL4TimeInterval", ConfigFile.settings["fL4TimeInterval"])
+        print("bL4PerformNIRCorrection", ConfigFile.settings["bL4PerformNIRCorrection"])        
+        print("bL4EnablePercentLt", ConfigFile.settings["bL4EnablePercentLt"])
+        print("fL4PercentLt", ConfigFile.settings["fL4PercentLt"])
 
 
     # Creates the calibration file folder if not exist
@@ -66,26 +62,24 @@ class ConfigFile:
 
         ConfigFile.settings["bL1aCleanSZA"] = 0
         ConfigFile.settings["fL1aCleanSZAMax"] = 60.0 # e.g. Brewin 2016
-        ConfigFile.settings["bL1aSaveSeaBASS"] = 0
 
+        ConfigFile.settings["fL1bRotatorHomeAngle"] = 0.0
+        ConfigFile.settings["fL1bRotatorDelay"] = 60.0
+        ConfigFile.settings["bL1bCleanRotatorAngle"] = 0
+        ConfigFile.settings["fL1bRotatorAngleMin"] = -40.0
+        ConfigFile.settings["fL1bRotatorAngleMax"] = 40.0
+        ConfigFile.settings["bL1bCleanSunAngle"] = 0
+        ConfigFile.settings["fL1bSunAngleMin"] = 90.0
+        ConfigFile.settings["fL1bSunAngleMax"] = 135.0                
         ConfigFile.settings["bL1bSaveSeaBASS"] = 0
+
 
         ConfigFile.settings["bL2Deglitch"] = 0
         ConfigFile.settings["fL2Deglitch0"] = 10    # These should all have citable defaults
         ConfigFile.settings["fL2Deglitch1"] = 5     # An "info" button would be nice for the citation
         ConfigFile.settings["fL2Deglitch2"] = 20
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
-        
-        ConfigFile.settings["fL2sRotatorHomeAngle"] = 0.0
-        ConfigFile.settings["fL2sRotatorDelay"] = 60.0
-        ConfigFile.settings["bL2sCleanRotatorAngle"] = 0
-        ConfigFile.settings["fL2sRotatorAngleMin"] = -40.0
-        ConfigFile.settings["fL2sRotatorAngleMax"] = 40.0
-        ConfigFile.settings["bL2sCleanSunAngle"] = 0
-        ConfigFile.settings["fL2sSunAngleMin"] = 90.0
-        ConfigFile.settings["fL2sSunAngleMax"] = 135.0                
-        ConfigFile.settings["bL2sSaveSeaBASS"] = 0
-        
+                
         ConfigFile.settings["fL4TimeInterval"] = 60
         ConfigFile.settings["bL4EnableQualityFlags"] = 1
         ConfigFile.settings["fL4SignificantEsFlag"] = 2.0
