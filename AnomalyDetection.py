@@ -96,9 +96,9 @@ def launchAnomalyDetection(selfy):
 
     print(inFilePath)
     windowSizeDark = int(input("Enter window size for Darks: "))
-    sigmaDark = int(input("Enter sigma multiplier for Darks: "))
+    sigmaDark = float(input("Enter sigma multiplier for Darks: "))
     windowSizeLight = int(input("Enter window size for Lights: "))
-    sigmaLight = int(input("Enter sigma multiplier for Lights: "))
+    sigmaLight = float(input("Enter sigma multiplier for Lights: "))
     sensorTypes = ["ES","LT","LI"]
 
     root = HDFRoot.readHDF5(inFilePath)
