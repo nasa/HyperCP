@@ -66,32 +66,33 @@ class Controller:
                 cf.sensorType = cf.getSensorType()
 
 
-    @staticmethod
-    def processCalibration(calPath):
-        print("processCalibration")
-        print("ReadCalibrationFile ", calPath)
-        calibrationMap = CalibrationFileReader.read(calPath)
-        #calibrationMap = CalibrationFileReader.readSip("cal2013.sip")
-        print("calibrationMap:", list(calibrationMap.keys()))
-        Controller.generateContext(calibrationMap)
-        print("processCalibration - DONE")
-        return calibrationMap
+    # @staticmethod
+    # def processCalibration(calPath):
+    #     print("processCalibration")
+    #     print("ReadCalibrationFile ", calPath)
+    #     calibrationMap = CalibrationFileReader.read(calPath)
+    #     #calibrationMap = CalibrationFileReader.readSip("cal2013.sip")
+    #     print("calibrationMap:", list(calibrationMap.keys()))
+    #     Controller.generateContext(calibrationMap)
+    #     print("processCalibration - DONE")
+    #     return calibrationMap
 
     @staticmethod
     def processCalibrationConfig(configName, calFiles):
         # print("processCalibrationConfig")
         calFolder = os.path.splitext(configName)[0] + "_Calibration"
         calPath = os.path.join("Config", calFolder)
-        print("ReadCalibrationFile ", calPath)
+        print("Read CalibrationFile ", calPath)
         calibrationMap = CalibrationFileReader.read(calPath)       
         Controller.generateContext(calibrationMap)
 
         # Settings from Config file
         print("Apply ConfigFile settings")
-        # print("calibrationMap keys:", calibrationMap.keys())
+        print("calibrationMap keys:", calibrationMap.keys())
         # print("config keys:", calFiles.keys())
+        
         for key in list(calibrationMap.keys()):
-            #print(key)
+            # print(key)
             if key in calFiles.keys():
                 if calFiles[key]["enabled"]:
                     calibrationMap[key].frameType = calFiles[key]["frameType"]
@@ -357,11 +358,7 @@ class Controller:
             Controller.processL1a(inFilePath, outFilePath, calibrationMap) 
             
             if os.path.isfile(outFilePath):
-                print("L1a file produced: " + outFilePath)           
-                        
-                if int(ConfigFile.settings["bL1aSaveSeaBASS"]) == 1:
-                    print("Output SeaBASS: " + inFilePath)
-                    SeaBASSWriter.outputTXT_L1a(inFilePath)
+                print("L1a file produced: " + outFilePath)                                   
 
         elif level == "1b":
             if os.path.isdir(pathOut):
@@ -411,12 +408,8 @@ class Controller:
                 msg = ("L2s file produced: " + outFilePath)  
                 print(msg)
                 Utilities.writeLogFile(msg)
-                 
-            if int(ConfigFile.settings["bL2sSaveSeaBASS"]) == 1:
-                print("Output SeaBASS: " + inFilePath)
-                SeaBASSWriter.outputTXT_L2s(inFilePath)  
 
-        elif level == "3a":
+        elif level == "3":
             if os.path.isdir(pathOut):
                 pathOut = pathOut + "/L3"
                 if os.path.isdir(pathOut) is False:

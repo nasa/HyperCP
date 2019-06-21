@@ -73,16 +73,16 @@ class Window(QtWidgets.QWidget):
 
         self.inDirLabel = QtWidgets.QLabel("Input Data Directory", self)        
         # inputDirectory = "./"
-        # self.inputDirectory = "../Field_Data/Processed/KORUS" # for raw data on Candiru, SMITHERS
-        self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
+        self.inputDirectory = "../Field_Data/Processed/KORUS" # for raw data on Candiru, SMITHERS
+        # self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
         # self.inputDirectory = "./Data"
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
 
         self.outDirLabel = QtWidgets.QLabel("Output Data Directory", self)        
         # self.outputDirectory = "./Data"
-        # self.outputDirectory = "../Field_Data/Processed/KORUS" # for raw data on Candiru, SMITHERS
-        self.outputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
+        self.outputDirectory = "../Field_Data/Processed/KORUS" # for raw data on Candiru, SMITHERS
+        # self.outputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
         
@@ -292,25 +292,25 @@ class Window(QtWidgets.QWidget):
         print("Sky File Remove Dialogue")
         self.skyFileLineEdit.setText("")
 
-
-    # Backup files before preprocessing if source files same as output directory
-    def createBackupFiles(self, fileNames):
-        if len(fileNames) > 0:
-            path = fileNames[0]
-            (dirPath, fileName) = os.path.split(path)
-            if dirPath == self.outputDirectory:
-                newFileNames = []
-                backupDir = os.path.join(self.outputDirectory, "Backup")
-                if not os.path.exists(backupDir):
-                    os.makedirs(backupDir)
-                for path in fileNames:
-                    (dirPath, fileName) = os.path.split(path)
-                    backupPath = os.path.join(backupDir, fileName)
-                    if not os.path.exists(backupPath):
-                        shutil.move(path, backupPath)
-                    newFileNames.append(backupPath)
-                fileNames = newFileNames
-        return fileNames
+    # # Not implemented
+    # # Backup files before preprocessing if source files same as output directory
+    # def createBackupFiles(self, fileNames):
+    #     if len(fileNames) > 0:
+    #         path = fileNames[0]
+    #         (dirPath, fileName) = os.path.split(path)
+    #         if dirPath == self.outputDirectory:
+    #             newFileNames = []
+    #             # backupDir = os.path.join(self.outputDirectory, "Backup")
+    #             if not os.path.exists(backupDir):
+    #                 os.makedirs(backupDir)
+    #             for path in fileNames:
+    #                 (dirPath, fileName) = os.path.split(path)
+    #                 backupPath = os.path.join(backupDir, fileName)
+    #                 if not os.path.exists(backupPath):
+    #                     shutil.move(path, backupPath)
+    #                 newFileNames.append(backupPath)
+    #             fileNames = newFileNames
+    #     return fileNames
 
     def processSingle(self, level):
         print("Process Single-Level")
@@ -324,7 +324,10 @@ class Window(QtWidgets.QWidget):
             return
         ConfigFile.loadConfig(configFileName)
 
-        # Select data files        
+        # Select data files    
+        if not self.inputDirectory[0]:
+            print("Bad input directory.")
+            return                
         openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",self.inputDirectory)
         
         print("Files:", openFileNames)
@@ -340,20 +343,18 @@ class Window(QtWidgets.QWidget):
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings["CalibrationFiles"]
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        if not calibrationMap.keys():
+            print("No calibration files found. "
+            "Check Config directory for your instrument files.")
+            return            
             
         # outputDirectory = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Output Directory")
         print("Output Directory:", os.path.abspath(self.outputDirectory))
-
         if not self.outputDirectory[0]:
             print("Bad output directory.")
-            return
+            return            
 
-        # Copy to backup folder if same directory
-        # fileNames = self.createBackupFiles(fileNames)    
-                
-        # print("Process Raw Files")
-        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile, skyFile) # add sky file...........
-        # Controller.processFilesSingleLevel(fileNames, calibrationMap, level, skyFile)
+        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile, skyFile) 
 
     # def singleL0Clicked(self):
     #     self.processSingle("0")
@@ -403,11 +404,6 @@ class Window(QtWidgets.QWidget):
         print("Output Directory:", self.outputDirectory)
         if not self.outputDirectory:
             return
-
-
-        # Copy to backup folder if same directory
-        fileNames = self.createBackupFiles(fileNames)
-
 
         windFile = self.windFileLineEdit.text()
         skyFile = self.skyFileLineEdit.text()

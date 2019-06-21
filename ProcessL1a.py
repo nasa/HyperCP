@@ -39,7 +39,8 @@ class ProcessL1a:
             gp.id = cf.instrumentType
             contextMap[cf.id] = gp
 
-        #print("contextMap:", list(contextMap.keys()))
+        # print("contextMap:", list(contextMap.keys()))
+        # print("calibrationMap:", list(calibrationMap.keys()))
 
         RawFileReader.readRawFile(fp, calibrationMap, contextMap, root)
 
