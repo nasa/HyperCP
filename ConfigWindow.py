@@ -94,10 +94,15 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # L1b
         l1bLabel = QtWidgets.QLabel("Level 1B Processing", self)
+        l1bLabel2 = QtWidgets.QLabel("Level 1B Processing (cntd)", self)
         l1bLabel_font = l1bLabel.font()
         l1bLabel_font.setPointSize(14)
         l1bLabel_font.setBold(True)
+        l1bLabel2_font = l1bLabel2.font()
+        l1bLabel2_font.setPointSize(14)
+        l1bLabel2_font.setBold(True)
         l1bLabel.setFont(l1bLabel_font)
+        l1bLabel2.setFont(l1bLabel_font)
         l1bSublabel = QtWidgets.QLabel(" Filter on pitch, roll, rotator, yaw,", self)        
         l1bSublabel2 = QtWidgets.QLabel("   and relative solar azimuth. Apply", self)
         l1bSublabel3 = QtWidgets.QLabel("   factory calibrations.", self)        
@@ -211,7 +216,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2DeglitchCheckBox.clicked.connect(self.l2DeglitchCheckBoxUpdate)   
                         
         # l3
-        l3Label = QtWidgets.QLabel("Level 3a Processing", self)
+        l3Label = QtWidgets.QLabel("Level 3 Processing", self)
         l3Label_font = l3Label.font()
         l3Label_font.setPointSize(14)
         l3Label_font.setBold(True)
@@ -381,8 +386,8 @@ class ConfigWindow(QtWidgets.QDialog):
         RotMaxHBox = QtWidgets.QHBoxLayout()
         RotMaxHBox.addWidget(self.l1bPitchRollRollLabel)
         RotMaxHBox.addWidget(self.l1bPitchRollRollLineEdit)
-        VBox1.addLayout(RotMaxHBox)                
-
+        VBox1.addLayout(RotMaxHBox)                        
+        
         # Rotator
         rotateHBox = QtWidgets.QHBoxLayout()
         rotateHBox.addWidget(l1bCleanRotatorAngleLabel)
@@ -395,25 +400,28 @@ class ConfigWindow(QtWidgets.QDialog):
         RotMaxHBox = QtWidgets.QHBoxLayout()
         RotMaxHBox.addWidget(self.l1bRotatorAngleMaxLabel)
         RotMaxHBox.addWidget(self.l1bRotatorAngleMaxLineEdit)
-        VBox1.addLayout(RotMaxHBox)                
+        VBox1.addLayout(RotMaxHBox) 
+
+        # Middle Vertical Box
+        VBox2 = QtWidgets.QVBoxLayout()
+        VBox2.setAlignment(QtCore.Qt.AlignBottom)               
         
+        VBox2.addWidget(l1bLabel2)
         # Relative SZA
         CleanSunAngleHBox = QtWidgets.QHBoxLayout()
         CleanSunAngleHBox.addWidget(l1bCleanSunAngleLabel)
         CleanSunAngleHBox.addWidget(self.l1bCleanSunAngleCheckBox)
-        VBox1.addLayout(CleanSunAngleHBox)                      
+        VBox2.addLayout(CleanSunAngleHBox)                      
         SunAngleMinHBox = QtWidgets.QHBoxLayout()       
         SunAngleMinHBox.addWidget(self.l1bSunAngleMinLabel)
         SunAngleMinHBox.addWidget(self.l1bSunAngleMinLineEdit)
-        VBox1.addLayout(SunAngleMinHBox)         
+        VBox2.addLayout(SunAngleMinHBox)         
         SunAngleMaxHBox = QtWidgets.QHBoxLayout()       
         SunAngleMaxHBox.addWidget(self.l1bSunAngleMaxLabel)
         SunAngleMaxHBox.addWidget(self.l1bSunAngleMaxLineEdit)
-        VBox1.addLayout(SunAngleMaxHBox)         
+        VBox2.addLayout(SunAngleMaxHBox)         
         
-        # Middle Vertical Box
-        VBox2 = QtWidgets.QVBoxLayout()
-        VBox2.setAlignment(QtCore.Qt.AlignBottom)
+        VBox2.addSpacing(20) 
 
         # L2 Anomaly Launcher
         VBox2.addWidget(l2AnomalyLabel)
