@@ -13,7 +13,6 @@ from Utilities import Utilities
 
 
 class ProcessL2:
-
     '''
     # The Deglitching process departs signicantly from ProSoft and PySciDON
     # Reference: ProSoft 7.7 Rev. K May 8, 2017, SAT-DN-00228
@@ -21,8 +20,8 @@ class ProcessL2:
     '''    
     @staticmethod
     def darkDataDeglitching(darkData, sensorType):        
-        ''' Dark deglitching is now based on discrete linear convolution with a stationary std over a 
-        rolling average'''        
+        ''' Dark deglitching is now based on double-pass discrete linear convolution of the residual 
+        with a stationary std over a rolling average'''        
         # print(str(sensorType))
         windowSize = int(ConfigFile.settings["fL2Deglitch0"])
         sigma = float(ConfigFile.settings["fL2Deglitch2"])
@@ -30,31 +29,44 @@ class ProcessL2:
         darkData.datasetToColumns()
         columns = darkData.columns
 
-        for k in columns.items():        
+        waveindex = 0
+        for k in columns.items():   # Loop over all wavebands     
             timeSeries = k[1]            
             # Note: the moving average is not tolerant to 2 or fewer records
-            avg = Utilities.movingAverage(timeSeries, windowSize).tolist()               
-            residual = np.array(timeSeries) - np.array(avg)            
-            std = np.std(residual)                                   
+            avg = Utilities.movingAverage(timeSeries, windowSize).tolist()        
+            # avg = Utilities.windowAverage(timeSeries, windowSize).mean().values.tolist()  
+            residual = np.array(timeSeries) - np.array(avg)
+            stdData = np.std(residual)                                  
 
-            badIndex = []            
-            for i in range(len(timeSeries)):
-                if i < 2 or i > len(timeSeries)-2:
-                    # First and last avg values from convolution are not to be trusted
-                    badIndex.append(True)
-                else:
-                    # Use stationary standard deviation anomaly (from rolling average) detection for dark timeSeries
-                    if (timeSeries[i] > avg[i] + (sigma*std)) or (timeSeries[i] < avg[i] - (sigma*std)):
-                        badIndex.append(True)
-                    else:
-                        badIndex.append(False)
-        
+            # First pass
+            badIndex1 = Utilities.darkConvolution(timeSeries,avg,stdData,sigma)  
+
+            # Second pass
+            timeSeries2 = np.array(timeSeries[:])
+            timeSeries2[badIndex1] = np.nan
+            timeSeries2 = timeSeries2.tolist()
+            avg2 = Utilities.movingAverage(timeSeries2, windowSize).tolist()        
+            # avg2 = Utilities.windowAverage(timeSeries2, windowSize).mean().values.tolist()        
+            residual = np.array(timeSeries2) - np.array(avg2)
+            stdData = np.nanstd(residual)        
+
+            badIndex2 = Utilities.darkConvolution(timeSeries2,avg2,stdData,sigma)  
+            
+            # This will eliminate data from all wavebands for glitches found in any one waveband        
+            if waveindex==0:
+                badIndex = badIndex1[:]
+                
+            for i in range(len(badIndex)):
+                if badIndex1[i] is True or badIndex2[i] is True:
+                    badIndex[i] = True
+            # print(badIndex[i])                
+            waveindex += 1
         return badIndex
            
     @staticmethod
     def lightDataDeglitching(lightData, sensorType):        
-        ''' Light deglitching is now based on discrete linear convolution with a rolling std over a 
-        rolling average'''        
+        ''' Light deglitching is now based on double-pass discrete linear convolution of the residual
+        with a ROLLING std over a rolling average'''        
         # print(str(sensorType))
         windowSize = int(ConfigFile.settings["fL2Deglitch1"])
         sigma = float(ConfigFile.settings["fL2Deglitch3"])
@@ -62,30 +74,58 @@ class ProcessL2:
         lightData.datasetToColumns()
         columns = lightData.columns
 
+        waveindex = 0
         for k in columns.items():        
             timeSeries = k[1]       
             # Note: the moving average is not tolerant to 2 or fewer records     
             avg = Utilities.movingAverage(timeSeries, windowSize).tolist()        
             residual = np.array(timeSeries) - np.array(avg)
                            
-            # Calculate the variation in the distribution of the residual
+             # Calculate the variation in the distribution of the residual
             residualDf = pd.DataFrame(residual)
             testing_std_as_df = residualDf.rolling(windowSize).std()
             rolling_std = testing_std_as_df.replace(np.nan,
-                                testing_std_as_df.iloc[windowSize - 1]).round(3).iloc[:,0].tolist()
+                testing_std_as_df.iloc[windowSize - 1]).round(3).iloc[:,0].tolist() 
+            # This rolling std on the residual has a tendancy to blow up for extreme outliers,
+            # replace it with the median residual std when that happens
+            y = np.array(rolling_std)
+            y[y > np.median(y)+3*np.std(y)] = np.median(y)
+            rolling_std = y.tolist()
 
-            badIndex = []            
-            for i in range(len(timeSeries)):
-                if i < 2 or i > len(timeSeries)-2:
-                    # First and last avg values from convolution are not to be trusted
-                    badIndex.append(True)
-                else:
-                    # Use rolling standard deviation anomaly (from rolling average) detection for dark data
-                    if (timeSeries[i] > avg[i] + (sigma*rolling_std[i])) or (timeSeries[i] < avg[i] - (sigma*rolling_std[i])):
-                        badIndex.append(True)
-                    else:
-                        badIndex.append(False)
-        
+            
+            # First pass
+            badIndex1 = Utilities.lightConvolution(timeSeries,avg,rolling_std,sigma)
+
+            # Second pass
+            timeSeries2 = np.array(timeSeries[:])
+            timeSeries2[badIndex1] = np.nan
+            timeSeries2 = timeSeries2.tolist()
+            avg2 = Utilities.movingAverage(timeSeries2, windowSize).tolist()        
+            # avg2 = Utilities.windowAverage(timeSeries2, windowSize).mean.values.tolist()        
+            residual2 = np.array(timeSeries2) - np.array(avg2)        
+            # Calculate the variation in the distribution of the residual
+            residualDf2 = pd.DataFrame(residual2)
+            testing_std_as_df2 = residualDf2.rolling(windowSize).std()
+            rolling_std2 = testing_std_as_df2.replace(np.nan,
+                testing_std_as_df2.iloc[windowSize - 1]).round(3).iloc[:,0].tolist()
+            # This rolling std on the residual has a tendancy to blow up for extreme outliers,
+            # replace it with the median residual std when that happens
+            y = np.array(rolling_std2)
+            y[np.isnan(y)] = np.nanmedian(y)
+            y[y > np.nanmedian(y)+3*np.nanstd(y)] = np.nanmedian(y)
+            rolling_std2 = y.tolist()
+
+            badIndex2 = Utilities.lightConvolution(timeSeries2,avg2,rolling_std2,sigma)
+            
+            # This will eliminate data from all wavebands for glitches found in any one waveband        
+            if waveindex==0:
+                badIndex = badIndex1[:]
+                
+            for i in range(len(badIndex)):
+                if badIndex1[i] is True or badIndex2[i] is True:
+                    badIndex[i] = True
+            # print(badIndex[i])                
+            waveindex += 1
         return badIndex
 
     @staticmethod
@@ -127,9 +167,9 @@ class ProcessL2:
             print("Deglitching light")
             badIndexLight = ProcessL2.lightDataDeglitching(lightData, sensorType)      
             print('Data reduced by ' + str(sum(badIndexLight)) + ' (' + \
-                str(round(100*sum(badIndexLight)/len(darkData.data))) + '%)')      
+                str(round(100*sum(badIndexLight)/len(lightData.data))) + '%)')      
 
-        # Now we need to delete the rows of the datasets that have any NaNs in them
+        # Delete the glitchy rows of the datasets
         for gp in node.groups:
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                gp.datasetDeleteRow(np.where(badIndexDark))
@@ -137,9 +177,8 @@ class ProcessL2:
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
                 gp.datasetDeleteRow(np.where(badIndexLight))
-        
-        tooShort = False
-        return tooShort
+                
+        return False
             
 
     @staticmethod
