@@ -61,6 +61,8 @@ class ConfigWindow(QtWidgets.QDialog):
         # Config File Settings
         intValidator = QtGui.QIntValidator()
         doubleValidator = QtGui.QDoubleValidator()
+        # rx = QtCore.QRegExp.isValid("")
+        # oddValidator = QtGui.QRegExpValidator(rx,self)
 
         # L1A
         l1aLabel = QtWidgets.QLabel("Level 1A Processing", self)
@@ -179,15 +181,17 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2Deglitch"]) == 1:
             self.l2DeglitchCheckBox.setChecked(True)
 
-        self.l2Deglitch0Label = QtWidgets.QLabel("     Rolling Window for Darks", self)
+        self.l2Deglitch0Label = QtWidgets.QLabel("     Window for Darks (odd)", self)
         self.l2Deglitch0LineEdit = QtWidgets.QLineEdit(self)
         self.l2Deglitch0LineEdit.setText(str(ConfigFile.settings["fL2Deglitch0"]))
         self.l2Deglitch0LineEdit.setValidator(intValidator)
+        # self.l2Deglitch0LineEdit.setValidator(oddValidator)
 
-        self.l2Deglitch1Label = QtWidgets.QLabel("     Rolling Window for Lights", self)
+        self.l2Deglitch1Label = QtWidgets.QLabel("     Window for Lights (odd)", self)
         self.l2Deglitch1LineEdit = QtWidgets.QLineEdit(self)
         self.l2Deglitch1LineEdit.setText(str(ConfigFile.settings["fL2Deglitch1"]))
         self.l2Deglitch1LineEdit.setValidator(intValidator)
+        # self.l2Deglitch1LineEdit.setValidator(oddValidator)
 
         self.l2Deglitch2Label = QtWidgets.QLabel("     Sigma Factor Darks", self)
         self.l2Deglitch2LineEdit = QtWidgets.QLineEdit(self)
@@ -733,6 +737,14 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def saveButtonPressed(self):
         print("ConfigWindow - Save Pressed")
+        # print(self.l2Deglitch0LineEdit.text())
+        # print(int(self.l2Deglitch0LineEdit.text())%2)
+        if int(self.l2Deglitch0LineEdit.text())%2 == 0 or int(self.l2Deglitch1LineEdit.text())%2 ==0:
+            alert = QtWidgets.QMessageBox()
+            alert.setText('Deglitching windows must be odd integers.')
+            alert.exec_()
+            return
+
 
         ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
         ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())
