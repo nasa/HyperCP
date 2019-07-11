@@ -9,6 +9,7 @@ from matplotlib.pyplot import cm
 import numpy as np
 import scipy.interpolate
 from scipy.interpolate import splev, splrep
+import pandas as pd
 
 if "LOGFILE" not in os.environ:
     os.environ["LOGFILE"] = "temp.log"
@@ -152,10 +153,73 @@ class Utilities:
         References:
         ------------
         [1] Wikipedia, "Convolution", http://en.wikipedia.org/wiki/Convolution.
-        [2] API Reference: https://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html"""
+        [2] API Reference: https://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html
+        [3] ABE, N., Zadrozny, B., and Langford, J. 2006. Outlier detection by active learning. 
+            In Proceedings of the 12th ACM SIGKDD International Conference on Knowledge Discovery and 
+            Data Mining. ACM Press, New York, 504–509
+        [4] V Chandola, A Banerjee and V Kumar 2009. Anomaly Detection: A Survey Article No. 15 in ACM 
+            Computing Surveys"""
         
-        window = np.ones(int(window_size))/float(window_size)
-        return np.convolve(data, window, 'same')
+        # window = np.ones(int(window_size))/float(window_size)
+        # Convolve is not nan-tolerant, so use a mask
+        mask = np.isnan(data)
+        K = np.ones(window_size, dtype=int)
+        out = np.convolve(np.where(mask,0,data), K)/np.convolve(~mask,K)
+        # return np.convolve(data, window, 'same')
+
+        # Slice out one half window on either side; this requires an odd-sized window
+        return out[round(window_size/2)-1:-round(window_size/2)+1]  
+
+    @staticmethod
+    def windowAverage(data,window_size):
+        min_periods = round(window_size/2)
+        df=pd.DataFrame(data)    
+        out=df.rolling(window_size,min_periods,center=True,win_type='boxcar')
+        # out = [item for items in out for item in items] #flattening doesn't work
+        return out
+
+    @staticmethod
+    def darkConvolution(data,avg,std,sigma):
+        badIndex = []
+        for i in range(len(data)):
+            if i < 1 or i > len(data)-2:
+                # First and last avg values from convolution are not to be trusted
+                badIndex.append(True)
+            elif np.isnan(data[i]):
+                badIndex.append(False)
+            else:
+                # Use stationary standard deviation anomaly (from rolling average) detection for dark data
+                if (data[i] > avg[i] + (sigma*std)) or (data[i] < avg[i] - (sigma*std)):
+                    badIndex.append(True)
+                else:
+                    badIndex.append(False)
+        return badIndex
+
+    @staticmethod
+    def lightConvolution(data,avg,rolling_std,sigma):
+        badIndex = []
+        for i in range(len(data)):
+            if i < 1 or i > len(data)-2:
+                # First and last avg values from convolution are not to be trusted
+                badIndex.append(True)
+            elif np.isnan(data[i]):
+                badIndex.append(False)
+            else:
+                # Use rolling standard deviation anomaly (from rolling average) detection for dark data
+                if (data[i] > avg[i] + (sigma*rolling_std[i])) or (data[i] < avg[i] - (sigma*rolling_std[i])):
+                    badIndex.append(True)
+                else:
+                    badIndex.append(False)
+        return badIndex
+
+    # @staticmethod
+    # def rejectOutliers(data, m):
+    #     d = np.abs(data - np.nanmedian(data))
+    #     mdev = np.nanmedian(d)
+    #     s = d/mdev if mdev else 0.
+    #     badIndex = np.zeros((len(s),1),dtype=bool)
+    #     badIndex = [s>=m]
+    #     return badIndex
 
 
     # Wrapper for scipy interp1d that works even if

@@ -5,19 +5,16 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 from ConfigFile import ConfigFile
-import AnomalyDetection
-
-
-#class myListWidget(QtWidgets.QListWidget):
-#   def Clicked(self,item):
-#      QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
+from AnomalyDetection import AnomalyDetection
 
 
 class ConfigWindow(QtWidgets.QDialog):
-    def __init__(self, name, parent=None):
+    def __init__(self, name, inputDir, parent=None):
         super().__init__(parent)
         self.setModal(True)
         self.name = name
+        self.inputDirectory = inputDir
+        # print(self.inputDirectory)
         self.initUI()
         # self.outputDirectory = outputDirectory
 
@@ -167,24 +164,15 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bCleanRotatorAngleCheckBox.clicked.connect(self.l1bCleanRotatorAngleCheckBoxUpdate)
         self.l1bCleanSunAngleCheckBox.clicked.connect(self.l1bCleanSunAngleCheckBoxUpdate)
 
-        # L2
+
+        # L2 (Main)
         l2Label = QtWidgets.QLabel("Level 2 Processing", self)
         l2Label_font = l2Label.font()
         l2Label_font.setPointSize(14)
         l2Label_font.setBold(True)
         l2Label.setFont(l2Label_font)
         l2Sublabel = QtWidgets.QLabel(" Shutter dark corrections and data deglitching", self)  
-
-        # Launch Deglitcher Analysis 
-        l2AnomalyLabel = QtWidgets.QLabel("Level 2 Anomaly Detection", self)
-        l2AnomalyLabel_font = l2AnomalyLabel.font()
-        l2AnomalyLabel_font.setPointSize(14)
-        l2AnomalyLabel_font.setBold(True)
-        l2AnomalyLabel.setFont(l2AnomalyLabel_font)
-        l2AnomalySublabel = QtWidgets.QLabel(" Launch to establish Deglitching params", self)  
-        self.anomalyButton = QtWidgets.QPushButton("Launch Anomaly Analysis")
-        self.anomalyButton.clicked.connect(self.anomalyButtonPressed)
-
+        
         # Deglitcher
         self.l2DeglitchLabel = QtWidgets.QLabel("     Deglitch data", self)                
         self.l2DeglitchCheckBox = QtWidgets.QCheckBox("", self)
@@ -194,12 +182,12 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2Deglitch0Label = QtWidgets.QLabel("     Rolling Window for Darks", self)
         self.l2Deglitch0LineEdit = QtWidgets.QLineEdit(self)
         self.l2Deglitch0LineEdit.setText(str(ConfigFile.settings["fL2Deglitch0"]))
-        self.l2Deglitch0LineEdit.setValidator(doubleValidator)
+        self.l2Deglitch0LineEdit.setValidator(intValidator)
 
         self.l2Deglitch1Label = QtWidgets.QLabel("     Rolling Window for Lights", self)
         self.l2Deglitch1LineEdit = QtWidgets.QLineEdit(self)
         self.l2Deglitch1LineEdit.setText(str(ConfigFile.settings["fL2Deglitch1"]))
-        self.l2Deglitch1LineEdit.setValidator(doubleValidator)
+        self.l2Deglitch1LineEdit.setValidator(intValidator)
 
         self.l2Deglitch2Label = QtWidgets.QLabel("     Sigma Factor Darks", self)
         self.l2Deglitch2LineEdit = QtWidgets.QLineEdit(self)
@@ -214,6 +202,18 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2DeglitchCheckBoxUpdate()      
 
         self.l2DeglitchCheckBox.clicked.connect(self.l2DeglitchCheckBoxUpdate)   
+
+        # Launch Deglitcher Analysis 
+        # l2AnomalyLabel = QtWidgets.QLabel("Level 2 Anomaly Detection", self)
+        # l2AnomalyLabel_font = l2AnomalyLabel.font()
+        # l2AnomalyLabel_font.setPointSize(14)
+        # l2AnomalyLabel_font.setBold(True)
+        # l2AnomalyLabel.setFont(l2AnomalyLabel_font)
+        l2AnomalySublabel1 = QtWidgets.QLabel("Launch Anomaly Analysis below to load L1B",self)
+        l2AnomalySublabel2 = QtWidgets.QLabel("  file for testing the above parameters.",self)
+        l2AnomalySublabel3 = QtWidgets.QLabel("  Results will be saved to ./Plot/Anomalies.", self)  
+        self.anomalyButton = QtWidgets.QPushButton("Anomaly Analysis")
+        self.anomalyButton.clicked.connect(self.anomalyButtonPressed)
                         
         # l3
         l3Label = QtWidgets.QLabel("Level 3 Processing", self)
@@ -324,7 +324,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.saveButton.clicked.connect(self.saveButtonPressed)
         self.cancelButton.clicked.connect(self.cancelButtonPressed)
 
-        # Overall box?
+        # Whole Window Box
         VBox = QtWidgets.QVBoxLayout()
         VBox.addWidget(nameLabel)
 
@@ -422,13 +422,8 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addLayout(SunAngleMaxHBox)         
         
         VBox2.addSpacing(20) 
-
-        # L2 Anomaly Launcher
-        VBox2.addWidget(l2AnomalyLabel)
-        VBox2.addWidget(l2AnomalySublabel)
-        VBox2.addWidget(self.anomalyButton)
         
-        VBox2.addSpacing(20)           
+        # VBox2.addSpacing(20)           
 
         # L2
         VBox2.addWidget(l2Label)
@@ -459,6 +454,14 @@ class ConfigWindow(QtWidgets.QDialog):
         deglitch3HBox.addWidget(self.l2Deglitch3Label)
         deglitch3HBox.addWidget(self.l2Deglitch3LineEdit)
         VBox2.addLayout(deglitch3HBox)
+
+        # L2 Anomaly Launcher
+        # VBox2.addWidget(l2AnomalyLabel)
+        VBox2.addWidget(l2AnomalySublabel1)
+        VBox2.addWidget(l2AnomalySublabel2)
+        VBox2.addWidget(l2AnomalySublabel3)
+        VBox2.addWidget(self.anomalyButton)
+
 
         VBox2.addSpacing(20)   
 
@@ -673,10 +676,8 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def anomalyButtonPressed(self):
         print("CalibrationEditWindow - Launching anomaly analysis module")
-        # fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files")
-        # print(fnames)
 
-        AnomalyDetection.launchAnomalyDetection(self)
+        AnomalyDetection(self,self.inputDirectory)
 
     def l2DeglitchCheckBoxUpdate(self):
         print("ConfigWindow - l2DeglitchCheckBoxUpdate")
@@ -749,8 +750,8 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL1bSunAngleMax"] = float(self.l1bSunAngleMaxLineEdit.text())
 
         ConfigFile.settings["bL2Deglitch"] = int(self.l2DeglitchCheckBox.isChecked()) 
-        ConfigFile.settings["fL2Deglitch0"] = float(self.l2Deglitch0LineEdit.text())
-        ConfigFile.settings["fL2Deglitch1"] = float(self.l2Deglitch1LineEdit.text())
+        ConfigFile.settings["fL2Deglitch0"] = int(self.l2Deglitch0LineEdit.text())
+        ConfigFile.settings["fL2Deglitch1"] = int(self.l2Deglitch1LineEdit.text())
         ConfigFile.settings["fL2Deglitch2"] = float(self.l2Deglitch2LineEdit.text())
         ConfigFile.settings["fL2Deglitch3"] = float(self.l2Deglitch3LineEdit.text())
 

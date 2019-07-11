@@ -53,7 +53,7 @@ class ProcessL2:
            
     @staticmethod
     def lightDataDeglitching(lightData, sensorType):        
-        ''' Dight deglitching is now based on discrete linear convolution with a rolling std over a 
+        ''' Light deglitching is now based on discrete linear convolution with a rolling std over a 
         rolling average'''        
         # print(str(sensorType))
         windowSize = int(ConfigFile.settings["fL2Deglitch1"])

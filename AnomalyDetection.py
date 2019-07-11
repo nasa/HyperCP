@@ -1,107 +1,37 @@
 
 import os
+import shutil
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
-# matplotlib.use('Qt4Agg')
-# matplotlib.use("TkAgg")
-import sys
+from PyQt5 import QtCore, QtGui, QtWidgets
 
-import easygui
-from itertools import count
 
+from ConfigFile import ConfigFile
 from HDFRoot import HDFRoot
-from Utilities import Utilities
+from Utilities import Utilities        
 
-def plotDeglitch(k,avg,residual,std,sensorType,lightDark,windowSize,sigma,\
-    text_xlabel="Series",\
-    text_ylabel="Radiometry"):      
 
-    data = k[1]
-    x = np.arange(0,len(data),1) 
-    # Calculate the variation in the distribution of the residual
-    residualDf = pd.DataFrame(residual)
-    testing_std_as_df = residualDf.rolling(windowSize).std()
-    rolling_std = testing_std_as_df.replace(np.nan,
-                        testing_std_as_df.iloc[windowSize - 1]).round(3).iloc[:,0].tolist()
+def AnomalyDetection(self,inputDirectory):
+    print("AnomalyDetection - Launching anomaly analysis")
 
-    badIndex = []
-
-    if lightDark=='Dark':
-        for i in range(len(data)):
-            if i < 2 or i > len(data)-2:
-                # First and last avg values from convolution are not to be trusted
-                badIndex.append(True)
-            else:
-                # Use stationary standard deviation anomaly (from rolling average) detection for dark data
-                if (data[i] > avg[i] + (sigma*std)) or (data[i] < avg[i] - (sigma*std)):
-                    badIndex.append(True)
-                else:
-                    badIndex.append(False)
-    else:
-        for i in range(len(data)):
-            if i < 2 or i > len(data)-2:
-                # First and last avg values from convolution are not to be trusted
-                badIndex.append(True)
-            else:
-
-                # Use rolling standard deviation anomaly (from rolling average) detection for dark data
-                if (data[i] > avg[i] + (sigma*rolling_std[i])) or (data[i] < avg[i] - (sigma*rolling_std[i])):
-                    badIndex.append(True)
-                else:
-                    badIndex.append(False)
-
-    #Plot results  
-    font = {'family': 'serif',
-        'color':  'darkred',
-        'weight': 'normal',
-        'size': 16}   
-    # try:     
-    plt.figure(figsize=(15, 8))
-    
-    # y_av = moving_average(data, window_size)
-    plt.plot(x[3:-3], avg[3:-3], color='green')
-    y_anomaly = np.array(data)[badIndex]
-    x_anomaly = x[badIndex]
-    plt.plot(x_anomaly, y_anomaly, "r*", markersize=12)
-    plt.plot(x, data, "k.")
-
-    plt.xlabel(text_xlabel, fontdict=font)
-    plt.ylabel(text_ylabel, fontdict=font)   
-    plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
-
-    plotName = ('Plots/Anomalies/W' + str(windowSize) + 'S' + str(sigma) + '_' \
-        + sensorType + lightDark + '_' + k[0] + '.png')
-    print(plotName)
-    plt.savefig(plotName)
-    plt.close()    
-    # except:
-    #     e = sys.exc_info()[0]
-    #     print("Error: %s" % e)
-
-def launchAnomalyDetection(selfy):
     if not os.path.exists("Plots/Anomalies"):
             os.makedirs("Plots/Anomalies")
 
-    # print(outputDirectory)
-    # default_L1B_dir = outputDirectory
+    # Open L1B HDF5 file for Deglitching        
+    inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1B HDF5 file for Deglitching", \
+        inputDirectory)
+    print(inFilePath[0])
 
-
-    # Open L1B HDF5 file for Deglitching
-    # inFilePath = easygui.fileopenbox(msg=None, title=None, default='*', filetypes=None)
-    # , multiple=False)
-    inFilePath = easygui.fileopenbox(msg="Open L1B HDF5 file for Deglitching", \
-        title="Open HDF5 L1B", filetypes=None, multiple=False)
-
-    print(inFilePath)
-    windowSizeDark = int(input("Enter window size for Darks: "))
-    sigmaDark = float(input("Enter sigma multiplier for Darks: "))
-    windowSizeLight = int(input("Enter window size for Lights: "))
-    sigmaLight = float(input("Enter sigma multiplier for Lights: "))
+    windowSizeDark = int(self.l2Deglitch0LineEdit.text())
+    windowSizeLight= int(self.l2Deglitch1LineEdit.text())
+    sigmaDark = float(self.l2Deglitch2LineEdit.text())
+    sigmaLight = float(self.l2Deglitch3LineEdit.text())
     sensorTypes = ["ES","LT","LI"]
 
-    root = HDFRoot.readHDF5(inFilePath)
+    root = HDFRoot.readHDF5(inFilePath[0])
+    fileName = os.path.basename(os.path.splitext(inFilePath[0])[0])
 
 
     for sensorType in sensorTypes:
@@ -125,16 +55,11 @@ def launchAnomalyDetection(selfy):
             darkData.datasetToColumns()
             columns = darkData.columns
 
-            step = 20
+            step = 20 # Steps in wavebands used for plots
             index = 0
             for k in columns.items():
-                if index % step == 0:
-                    timeSeries = k[1]            
-                    avg = Utilities.movingAverage(timeSeries, windowSizeDark).tolist()        
-                    residual = np.array(timeSeries) - np.array(avg)
-                    std = np.std(residual)
-
-                    plotDeglitch(k,avg,residual,std,sensorType,lightDark,windowSizeDark,sigmaDark,\
+                if index % step == 0:                    
+                    deglitchAndPlot(fileName,k,sensorType,lightDark,windowSizeDark,sigmaDark,\
                         text_ylabel=sensorType + " Darks " + k[0])
                 index +=1
 
@@ -149,17 +74,102 @@ def launchAnomalyDetection(selfy):
             step = 20
             index = 0        
             for k in columns.items():
-                if index % step == 0:
-                    timeSeries = k[1]            
-                    avg = Utilities.movingAverage(timeSeries, windowSizeLight).tolist()        
-                    residual = np.array(timeSeries) - np.array(avg)
-                    std = np.std(residual)
-
+                if index % step == 0:                    
                     # print('Window: ' + str(windowSizeLight) + ' Sigma: ' + str(sigmaLight))
-                    plotDeglitch(k,avg,residual,std,sensorType,lightDark,windowSizeLight,sigmaLight,\
+                    deglitchAndPlot(fileName,k,sensorType,lightDark,windowSizeLight,sigmaLight,\
                         text_ylabel=sensorType + " Lights " + k[0])
                 index += 1
 
-# # Uncomment to run as an independant function
-# x=2
-# launchAnomalyDetection(x)
+def deglitchAndPlot(fileName,k,sensorType,lightDark,windowSize,sigma,\
+    text_xlabel="Series",\
+    text_ylabel="Radiometry"):      
+
+    timeSeries = k[1]     
+    avg = Utilities.movingAverage(timeSeries, windowSize).tolist()        
+    # avg = Utilities.windowAverage(timeSeries, windowSize).mean().values.tolist()  
+    residual = np.array(timeSeries) - np.array(avg)
+    stdData = np.std(residual)
+    x = np.arange(0,len(timeSeries),1)     
+
+    if lightDark=='Dark':        
+        # First pass
+        badIndex = Utilities.darkConvolution(timeSeries,avg,stdData,sigma)  
+
+        # Second pass
+        timeSeries2 = np.array(timeSeries[:])
+        timeSeries2[badIndex] = np.nan
+        timeSeries2 = timeSeries2.tolist()
+        avg2 = Utilities.movingAverage(timeSeries2, windowSize).tolist()        
+        # avg2 = Utilities.windowAverage(timeSeries2, windowSize).mean().values.tolist()        
+        residual = np.array(timeSeries2) - np.array(avg2)
+        stdData = np.nanstd(residual)        
+
+        badIndex2 = Utilities.darkConvolution(timeSeries2,avg2,stdData,sigma)        
+    else:   
+        # Calculate the variation in the distribution of the residual
+        residualDf = pd.DataFrame(residual)
+        testing_std_as_df = residualDf.rolling(windowSize).std()
+        rolling_std = testing_std_as_df.replace(np.nan,
+            testing_std_as_df.iloc[windowSize - 1]).round(3).iloc[:,0].tolist() 
+        # This rolling std on the residual has a tendancy to blow up for extreme outliers,
+        # replace it with the median residual std when that happens
+        y = np.array(rolling_std)
+        y[y > np.median(y)+3*np.std(y)] = np.median(y)
+        rolling_std = y.tolist()
+
+        
+        # First pass
+        badIndex = Utilities.lightConvolution(timeSeries,avg,rolling_std,sigma)
+
+        # Second pass
+        timeSeries2 = np.array(timeSeries[:])
+        timeSeries2[badIndex] = np.nan
+        timeSeries2 = timeSeries2.tolist()
+        avg2 = Utilities.movingAverage(timeSeries2, windowSize).tolist()        
+        # avg2 = Utilities.windowAverage(timeSeries2, windowSize).mean.values.tolist()        
+        residual2 = np.array(timeSeries2) - np.array(avg2)        
+        # Calculate the variation in the distribution of the residual
+        residualDf2 = pd.DataFrame(residual2)
+        testing_std_as_df2 = residualDf2.rolling(windowSize).std()
+        rolling_std2 = testing_std_as_df2.replace(np.nan,
+            testing_std_as_df2.iloc[windowSize - 1]).round(3).iloc[:,0].tolist()
+        # This rolling std on the residual has a tendancy to blow up for extreme outliers,
+        # replace it with the median residual std when that happens
+        y = np.array(rolling_std2)
+        y[np.isnan(y)] = np.nanmedian(y)
+        y[y > np.nanmedian(y)+3*np.nanstd(y)] = np.nanmedian(y)
+        rolling_std2 = y.tolist()
+
+        badIndex2 = Utilities.lightConvolution(timeSeries2,avg2,rolling_std2,sigma)
+        # print(badIndex2)       
+    #Plot results  
+    font = {'family': 'serif',
+        'color':  'darkred',
+        'weight': 'normal',
+        'size': 16}   
+    # try:     
+    plt.figure(figsize=(15, 8))
+    
+    # y_av = moving_average(timeSeries, window_size)
+    plt.plot(x[3:-3], avg[3:-3], color='green')
+    y_anomaly = np.array(timeSeries)[badIndex]
+    x_anomaly = x[badIndex]
+    y_anomaly2 = np.array(timeSeries)[badIndex2]
+    x_anomaly2 = x[badIndex2]
+    plt.plot(x_anomaly, y_anomaly, "rs", markersize=12)
+    plt.plot(x_anomaly2, y_anomaly2, "b*", markersize=12)
+    plt.plot(x, timeSeries, "k.")
+
+    plt.xlabel(text_xlabel, fontdict=font)
+    plt.ylabel(text_ylabel, fontdict=font)   
+    plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
+
+    plotName = ('Plots/Anomalies/' + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
+        + sensorType + lightDark + '_' + k[0] + '.png')
+    print(plotName)
+    plt.savefig(plotName)
+    plt.close()    
+    # except:
+    #     e = sys.exc_info()[0]
+    #     print("Error: %s" % e)
+

@@ -136,7 +136,7 @@ class Window(QtWidgets.QWidget):
 
         self.multi2Button.clicked.connect(self.multi2Clicked)
 
-        # Add QtWodgets to the Window
+        # Add QtWidgets to the Window
         vBox = QtWidgets.QVBoxLayout()
         vBox.addStretch(1)
 
@@ -218,10 +218,11 @@ class Window(QtWidgets.QWidget):
         # print("index: ", self.configComboBox.currentIndex())
         # print("text: ", self.configComboBox.currentText())
         configFileName = self.configComboBox.currentText()
+        inputDir = self.inputDirectory
         configPath = os.path.join("Config", configFileName)
         if os.path.isfile(configPath):
             ConfigFile.loadConfig(configFileName)
-            configDialog = ConfigWindow(configFileName, self)
+            configDialog = ConfigWindow(configFileName, inputDir, self)
             #configDialog = CalibrationEditWindow(configFileName, self)
             configDialog.show()
         else:
