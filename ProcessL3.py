@@ -494,94 +494,12 @@ class ProcessL3:
         liData.columnsToDataset()
         ltData.columnsToDataset()
 
-
-    # Does time and wavelength interpolation and data averaging (not implemented here)
     @staticmethod
-    def processL3(node):
-        
-        root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class  (not sure about the .HDFRoot...its not a module in HDFRoot.py)
-        root.copyAttributes(node) # Now copy the attributes in from the L2 object
-        root.attributes["PROCESSING_LEVEL"] = "3"
-        root.attributes["DEPTH_RESOLUTION"] = "N/A"
-
-        # Time Interpolation        
-        esGroup = None 
-        gpsGroup = None
-        liGroup = None
-        ltGroup = None
-        satnavGroup = None
-        for gp in node.groups:
-            #if gp.id.startswith("GPS"):
-            if gp.getDataset("UTCPOS"):
-                # print("GPS")
-                gpsGroup = gp
-            elif gp.getDataset("ES") and gp.attributes["FrameType"] == "ShutterLight":
-                # print("ES")
-                esGroup = gp
-            elif gp.getDataset("LI") and gp.attributes["FrameType"] == "ShutterLight":
-                # print("LI")
-                liGroup = gp
-            elif gp.getDataset("LT") and gp.attributes["FrameType"] == "ShutterLight":
-                # print("LT")
-                ltGroup = gp
-            elif gp.getDataset("AZIMUTH"):
-                # print("SATNAV")
-                satnavGroup = gp
-
-        refGroup = root.addGroup("Reference")
-        sasGroup = root.addGroup("SAS")
-        if gpsGroup is not None:
-            gpsGroup2 = root.addGroup("GPS")
-        if satnavGroup is not None:
-            satnavGroup2 = root.addGroup("SATNAV")
-
-        ProcessL3.convertGroup(esGroup, "ES", refGroup, "ES_hyperspectral")        
-        ProcessL3.convertGroup(liGroup, "LI", sasGroup, "LI_hyperspectral")
-        ProcessL3.convertGroup(ltGroup, "LT", sasGroup, "LT_hyperspectral")
-
-        esData = refGroup.getDataset("ES_hyperspectral") # array with columns date, time, esdata*wavebands...
-        liData = sasGroup.getDataset("LI_hyperspectral")
-        ltData = sasGroup.getDataset("LT_hyperspectral")
-
-        ''' PysciDON interpolates to the SLOWEST sampling rate, but ProSoft
-        interpolates to the FASTEST. Not much in the literature on this, although
-        Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises.'''
-        # Interpolate all datasets to the SLOWEST radiometric sampling rate
-        esLength = len(esData.data["Timetag2"].tolist())
-        liLength = len(liData.data["Timetag2"].tolist())
-        ltLength = len(ltData.data["Timetag2"].tolist())
-        
-        interpData = None
-        if esLength < liLength and esLength < ltLength:
-            msg = "ES has fewest records - interpolating to ES; This should raise a red flag."
-            print(msg)
-            Utilities.writeLogFile(msg)                                       
-            interpData = esData
-        elif liLength < ltLength:
-            msg = "LI has fewest records - interpolating to LI; This should raise a red flag."
-            print(msg)
-            Utilities.writeLogFile(msg)                                       
-            interpData = liData
-        else:
-            msg = "LT has fewest records - interpolating to LT"
-            print(msg)
-            Utilities.writeLogFile(msg)                                       
-            interpData = ltData
-        #interpData = liData # Testing against Prosoft ##??
-
-        # Perform time interpolation
-        if not ProcessL3.interpolateData(esData, interpData, "ES"):
-            return None
-        if not ProcessL3.interpolateData(liData, interpData, "LI"):
-            return None
-        if not ProcessL3.interpolateData(ltData, interpData, "LT"):
-            return None
-
-        ProcessL3.interpolateGPSData(root, gpsGroup)
-        ProcessL3.interpolateSATNAVData(root, satnavGroup)
-
+    def matchWavelengths(node):
 
         # Wavelength Interpolation
+        root = HDFRoot.HDFRoot()
+        root.copyAttributes(node)
         interval = float(ConfigFile.settings["fL3InterpInterval"])
         ''' This was all very odd in PySciDon'''
         # root.attributes["BIN_INTERVAL"] = "1 m"
@@ -741,6 +659,95 @@ class ProcessL3:
 
         # Make each dataset have matching wavelength values (for testing)
         ProcessL3.matchColumns(newESData, newLIData, newLTData)
+
+
+    # Does time and wavelength interpolation and data averaging (not implemented here)
+    @staticmethod
+    def processL3(node):
+        
+        root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class  (not sure about the .HDFRoot...its not a module in HDFRoot.py)
+        root.copyAttributes(node) # Now copy the attributes in from the L2 object
+        root.attributes["PROCESSING_LEVEL"] = "3"
+        root.attributes["DEPTH_RESOLUTION"] = "N/A"
+
+        # Time Interpolation        
+        esGroup = None 
+        gpsGroup = None
+        liGroup = None
+        ltGroup = None
+        satnavGroup = None
+        for gp in node.groups:
+            #if gp.id.startswith("GPS"):
+            if gp.getDataset("UTCPOS"):
+                # print("GPS")
+                gpsGroup = gp
+            elif gp.getDataset("ES") and gp.attributes["FrameType"] == "ShutterLight":
+                # print("ES")
+                esGroup = gp
+            elif gp.getDataset("LI") and gp.attributes["FrameType"] == "ShutterLight":
+                # print("LI")
+                liGroup = gp
+            elif gp.getDataset("LT") and gp.attributes["FrameType"] == "ShutterLight":
+                # print("LT")
+                ltGroup = gp
+            elif gp.getDataset("AZIMUTH"):
+                # print("SATNAV")
+                satnavGroup = gp
+
+        refGroup = root.addGroup("Reference")
+        sasGroup = root.addGroup("SAS")
+        if gpsGroup is not None:
+            gpsGroup2 = root.addGroup("GPS")
+        if satnavGroup is not None:
+            satnavGroup2 = root.addGroup("SATNAV")
+
+        ProcessL3.convertGroup(esGroup, "ES", refGroup, "ES_hyperspectral")        
+        ProcessL3.convertGroup(liGroup, "LI", sasGroup, "LI_hyperspectral")
+        ProcessL3.convertGroup(ltGroup, "LT", sasGroup, "LT_hyperspectral")
+
+        esData = refGroup.getDataset("ES_hyperspectral") # array with columns date, time, esdata*wavebands...
+        liData = sasGroup.getDataset("LI_hyperspectral")
+        ltData = sasGroup.getDataset("LT_hyperspectral")
+
+        ''' PysciDON interpolates to the SLOWEST sampling rate, but ProSoft
+        interpolates to the FASTEST. Not much in the literature on this, although
+        Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises.'''
+        # Interpolate all datasets to the SLOWEST radiometric sampling rate
+        esLength = len(esData.data["Timetag2"].tolist())
+        liLength = len(liData.data["Timetag2"].tolist())
+        ltLength = len(ltData.data["Timetag2"].tolist())
+        
+        interpData = None
+        if esLength < liLength and esLength < ltLength:
+            msg = "ES has fewest records - interpolating to ES; This should raise a red flag."
+            print(msg)
+            Utilities.writeLogFile(msg)                                       
+            interpData = esData
+        elif liLength < ltLength:
+            msg = "LI has fewest records - interpolating to LI; This should raise a red flag."
+            print(msg)
+            Utilities.writeLogFile(msg)                                       
+            interpData = liData
+        else:
+            msg = "LT has fewest records - interpolating to LT"
+            print(msg)
+            Utilities.writeLogFile(msg)                                       
+            interpData = ltData
+        #interpData = liData # Testing against Prosoft ##??
+
+        # Perform time interpolation
+        if not ProcessL3.interpolateData(esData, interpData, "ES"):
+            return None
+        if not ProcessL3.interpolateData(liData, interpData, "LI"):
+            return None
+        if not ProcessL3.interpolateData(ltData, interpData, "LT"):
+            return None
+
+        ProcessL3.interpolateGPSData(root, gpsGroup)
+        ProcessL3.interpolateSATNAVData(root, satnavGroup)
+
+        ProcessL3.matchWavelengths(root)
+       
 
         #ProcessL3.dataAveraging(newESData)
         #ProcessL3.dataAveraging(newLIData)

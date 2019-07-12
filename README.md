@@ -10,6 +10,8 @@ Acknowledgements: Nathan Vanderberg (PySciDON; https://ieeexplore.ieee.org/abstr
 
 Requires the Anaconda distribution of Python 3.X
 
+Download the entire HyperInSPACE repository, and save it anywhere on your machine.
+
 HyperInSPACE can be started in several of ways, such as by navigating to the program folder on the command line and using the following command:
 $ python Main.py
 
@@ -18,30 +20,31 @@ $ python Main.py
 
 ### Config
 
-Under "Config File", click "New" to create a new HyperInSPACE config file.
-Select the new config file from the drop-down menu.
-Click "Edit" to edit the config file.
+Under "Config File", click "New" to create a new HyperInSPACE config file. This file will be instrument-specific, and is usually
+also deployment-specific. Select the new config file from the drop-down menu. Click "Edit" to edit the config file.
 
-In the "Edit Config" window, click "Add Calibration Files" to add the calibration files that were from the extracted .sip file. The currently selected calibration file can be selected using the drop-down menu.
+In the "Edit Config" window, click "Add Calibration Files" to add the calibration files that were from the extracted Satlantic .sip file. The currently selected calibration file can be selected using the drop-down menu.
 
 For each calibration file:
 Click "Enable" to enable the calibration file.
-Select the frame type used for dark data correction.
+Select the frame type used for dark data correction, light data, or "Not Required" for navigational and ancillary data.
 
-Other config file settings can be changed if required.
+Level 1A through Level 4 processing configurations can be set here. These values will depend on your viewing geometry, and quality control thresholds. Level 2 includes a tool to assist with data deglitching parameters ("Anomaly Analysis").
 
-Click "Save" to save the settings.
+Click "Save" to save the settings. A file will be created in the Config subdirectory, together with copies of the instrument files for later use.
 
 ### Processing
 
 Process the data by clicking on one of the buttons for single-level or multi-level processing.
 
-During preprocessing stage, raw files are first copied to the "RawData" folder.
-The program sends the output from preprocessing to the "Data" folder.
-These folders are created in the HyperInSPACE directory when the program starts up.
+You will need to set up your data input and output directories from the Main window. Note that output subdirectories for particular processing levels (i.e. "L1a", "L3") will be created automatically within your output directory.
+The following folders will be created automatically when you first run the program:
+    Ascii - Data from L3 and L4 can optionally be output to text files here
+    Config - Configuration and instrument files
+    Data - Optional location for input and/or output data
+    Logs - Most command line output messages are captured for later reference in .log text files here
+    Plots - and Plots/Anomalies for optional plotted output (e.g. from Anomaly Analysis)
 
-If performing multi-level processing, generated HDF files are created in the same folder as the input files.
-Plots of the level 4 output are generated in the "Plots" folder. CSV files are created in the "csv" folder.
 
 
 ## Overview

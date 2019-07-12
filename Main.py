@@ -5,7 +5,7 @@ above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center
 Acknowledgements: Nathan Vanderberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
-Version 1.0: Under development April 2019
+Version 2.0: Under development July 2019
 """
 import os
 import shutil
@@ -369,11 +369,11 @@ class Window(QtWidgets.QWidget):
     def singleL2Clicked(self):
         self.processSingle("2")
 
-    def singleL2sClicked(self):
-        self.processSingle("2s")        
+    # def singleL2sClicked(self):
+    #     self.processSingle("2s")        
 
     def singleL3aClicked(self):
-        self.processSingle("3a")   
+        self.processSingle("3")   
 
     def singleL4Clicked(self):
         self.processSingle("4")   
