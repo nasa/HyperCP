@@ -745,5 +745,4 @@ class ProcessL3:
         #ProcessL3.dataAveraging(newESData)
         #ProcessL3.dataAveraging(newLIData)
         #ProcessL3.dataAveraging(newLTData)
-
         return root
