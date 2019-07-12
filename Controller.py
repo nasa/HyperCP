@@ -389,25 +389,25 @@ class Controller:
             if os.path.isfile(outFilePath):
                 print("L2 file produced: " + outFilePath)   
 
-            if int(ConfigFile.settings["bL1bSaveSeaBASS"]) == 1:
-                print("Output SeaBASS: " + inFilePath)
-                SeaBASSWriter.outputTXT_L2(inFilePath)  
+            # if int(ConfigFile.settings["bL1bSaveSeaBASS"]) == 1:
+            #     print("Output SeaBASS: " + inFilePath)
+            #     SeaBASSWriter.outputTXT_L2(inFilePath)  
 
-        elif level == "2s":
-            if os.path.isdir(pathOut):
-                pathOut = pathOut + "/L2s"
-                if os.path.isdir(pathOut) is False:
-                    os.mkdir(pathOut)
-            else:
-                print("Bad output destination. Select new Output Data Directory.")
+        # elif level == "2s":
+        #     if os.path.isdir(pathOut):
+        #         pathOut = pathOut + "/L2s"
+        #         if os.path.isdir(pathOut) is False:
+        #             os.mkdir(pathOut)
+        #     else:
+        #         print("Bad output destination. Select new Output Data Directory.")
 
-            fileName = fileName.split('_')
-            outFilePath = os.path.join(pathOut,fileName[0] + "_L2s.hdf")
-            Controller.processL2s(inFilePath, outFilePath)   
-            if os.path.isfile(outFilePath):
-                msg = ("L2s file produced: " + outFilePath)  
-                print(msg)
-                Utilities.writeLogFile(msg)
+        #     fileName = fileName.split('_')
+        #     outFilePath = os.path.join(pathOut,fileName[0] + "_L2s.hdf")
+        #     Controller.processL2s(inFilePath, outFilePath)   
+        #     if os.path.isfile(outFilePath):
+        #         msg = ("L2s file produced: " + outFilePath)  
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
 
         elif level == "3":
             if os.path.isdir(pathOut):

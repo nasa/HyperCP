@@ -182,7 +182,6 @@ class ProcessL2:
             
 
     @staticmethod
-    # This does not change the HDF object
     def darkCorrection(darkData, darkTimer, lightData, lightTimer):
         if (darkData == None) or (lightData == None):
             print("Dark Correction, dataset not found:", darkData, lightData)
