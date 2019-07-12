@@ -82,6 +82,9 @@ class ConfigFile:
         ConfigFile.settings["fL2Deglitch1"] = 5     # An "info" button would be nice for the citation
         ConfigFile.settings["fL2Deglitch2"] = 20
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
+
+        ConfigFile.settings["fL3InterpInterval"] = 3
+        ConfigFile.settings["bL3SaveSeaBASS"] = 0
                 
         ConfigFile.settings["fL4TimeInterval"] = 60
         ConfigFile.settings["bL4EnableQualityFlags"] = 1

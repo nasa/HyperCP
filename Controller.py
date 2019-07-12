@@ -15,7 +15,7 @@ from ProcessL1a import ProcessL1a
 from ProcessL1b import ProcessL1b
 from ProcessL2 import ProcessL2
 from ProcessL2s import ProcessL2s
-from ProcessL3a import ProcessL3a
+from ProcessL3 import ProcessL3
 # from ProcessL4 import ProcessL4
 # from ProcessL4a import ProcessL4a
 
@@ -187,42 +187,42 @@ class Controller:
         else:
             print('L2 processing failed. Nothing to output.')
 
-    @staticmethod
-    def processL2s(inFilePath, outFilePath):        
+    # @staticmethod
+    # def processL2s(inFilePath, outFilePath):        
 
+    #     if not os.path.isfile(inFilePath):
+    #         print('No such input file: ' + inFilePath)
+    #         return None
+        
+    #     # Process the data
+    #     msg = ("ProcessL2s: " + inFilePath)
+    #     print(msg)    
+    #     Utilities.writeLogFile(msg,'w')
+        
+    #     root = HDFRoot.readHDF5(inFilePath)
+    #     root = ProcessL2s.processL2s(root) 
+
+    #     # Write output file
+    #     if root is not None:
+    #         root.writeHDF5(outFilePath)
+    #     else:
+    #         msg = "L2 processing failed. Nothing to output."
+    #         print(msg)
+    #         Utilities.writeLogFile(msg)
+
+    @staticmethod
+    def processL3(inFilePath, outFilePath):
+        
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
             return None
-        
-        # Process the data
-        msg = ("ProcessL2s: " + inFilePath)
-        print(msg)    
-        Utilities.writeLogFile(msg,'w')
-        
-        root = HDFRoot.readHDF5(inFilePath)
-        root = ProcessL2s.processL2s(root) 
-
-        # Write output file
-        if root is not None:
-            root.writeHDF5(outFilePath)
-        else:
-            msg = "L2 processing failed. Nothing to output."
-            print(msg)
-            Utilities.writeLogFile(msg)
-
-    @staticmethod
-    def processL3a(inFilePath, outFilePath):
-        
-        if not os.path.isfile(inFilePath):
-            print('No such input file: ' + inFilePath)
-            return None
 
         # Process the data
-        msg = ("ProcessL3a: " + inFilePath)
+        msg = ("ProcessL3: " + inFilePath)
         print(msg)
         Utilities.writeLogFile(msg,'w')
         root = HDFRoot.readHDF5(inFilePath)
-        root = ProcessL3a.processL3a(root)     
+        root = ProcessL3.processL3(root)     
 
         # Write output file
         if root is not None:
@@ -237,7 +237,7 @@ class Controller:
     #     # Get input filepath
     #     (dirpath, filename) = os.path.split(fp)
     #     filename = os.path.splitext(filename)[0]
-    #     filepath = os.path.join(dirpath, filename + "_L3a.hdf")
+    #     filepath = os.path.join(dirpath, filename + "_L3.hdf")
     #     if not os.path.isfile(filepath):
     #         return None
 
@@ -419,15 +419,15 @@ class Controller:
 
             fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_L3.hdf")
-            Controller.processL3a(inFilePath, outFilePath)   
+            Controller.processL3(inFilePath, outFilePath)   
             if os.path.isfile(outFilePath):
                 msg = ("L3 file produced: " + outFilePath)  
                 print(msg)
                 Utilities.writeLogFile(msg)
                  
-            if int(ConfigFile.settings["bL3aSaveSeaBASS"]) == 1:
+            if int(ConfigFile.settings["bL3SaveSeaBASS"]) == 1:
                 print("Output SeaBASS: " + inFilePath)
-                SeaBASSWriter.outputTXT_L3a(inFilePath)  
+                SeaBASSWriter.outputTXT_L3(inFilePath)  
 
         elif level == "4":          
             if os.path.isdir(pathOut):
@@ -440,7 +440,7 @@ class Controller:
             windSpeedData = Controller.processWindData(windFile)
             fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_L4.hdf")
-            Controller.processL3a(inFilePath, outFilePath)  
+            Controller.processL3(inFilePath, outFilePath)  
             if os.path.isfile(outFilePath):
                 msg = ("L4 file produced: " + outFilePath)  
                 print(msg)
@@ -459,7 +459,7 @@ class Controller:
     #     Controller.processL1b(inFilePath, outFilePath, calibrationMap)                                
     #     Controller.processL2(inFilePath, outFilePath)        
     #     Controller.processL2s(inFilePath, outFilePath)
-    #     Controller.processL3a(inFilePath, outFilePath)
+    #     Controller.processL3(inFilePath, outFilePath)
     #     windSpeedData = Controller.processWindData(windFile)
     #     """ sky file proc goes here"""
     #     Controller.processL4(inFilePath, outFilePath, windSpeedData)
@@ -472,7 +472,7 @@ class Controller:
     #     # SeaBASSWriter.outputTXT_L1b(fp)
     #     # SeaBASSWriter.outputTXT_L2(fp)
     #     # SeaBASSWriter.outputTXT_L2s(fp)
-    #     # SeaBASSWriter.outputTXT_L3a(fp)
+    #     # SeaBASSWriter.outputTXT_L3(fp)
     #     SeaBASSWriter.outputTXT_L4(fp)
     #     print("Process Multi Level: " + fp + " - DONE")
 
