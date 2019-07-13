@@ -91,7 +91,7 @@ class SeaBASSWriter:
     # def outputTXT_L2(fp):
     #     SeaBASSWriter.outputTXT_Type1(fp, "L2")
 
-     @staticmethod
+    @staticmethod
     def outputTXT_L3(fp):
         SeaBASSWriter.outputTXT_Type3(fp, "L3")
 
@@ -196,9 +196,10 @@ class SeaBASSWriter:
         ltData = SeaBASSWriter.removeColumns(ltData.data, ["Datetag", "Timetag2"])
 
         # Format for output
-        es = SeaBASSWriter.formatData3(esData, esTT2)
-        li = SeaBASSWriter.formatData3(liData, liTT2)
-        lt = SeaBASSWriter.formatData3(ltData, ltTT2)
+        # es = SeaBASSWriter.formatData3(esData, esTT2)
+        # li = SeaBASSWriter.formatData3(liData, liTT2)
+        # lt = SeaBASSWriter.formatData3(ltData, ltTT2)
+        formattedDatablock = SeaBASSWriter.formatData3(esData, esTT2,liData, liTT2,ltData, ltTT2)
 
         # Write SeaBASS files
         SeaBASSWriter.writeSeaBASS(name, dirpath, es, "ES", level)
@@ -207,7 +208,7 @@ class SeaBASSWriter:
 
     # Convert Level 4 data to SeaBASS file
     @staticmethod
-    def outputTXT_Type3(fp, level):
+    def outputTXT_Type4(fp, level):
 
         # Get filepath of input hdf
         (dirpath, filename) = os.path.split(fp)

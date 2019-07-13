@@ -34,6 +34,28 @@ class Utilities:
     #     logger = logging.getLogger()
     #     return logger
 
+    # Print iterations progress
+    @staticmethod
+    def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+        """
+        Call in a loop to create terminal progress bar
+        @params:
+            iteration   - Required  : current iteration (Int)
+            total       - Required  : total iterations (Int)
+            prefix      - Optional  : prefix string (Str)
+            suffix      - Optional  : suffix string (Str)
+            decimals    - Optional  : positive number of decimals in percent complete (Int)
+            length      - Optional  : character length of bar (Int)
+            fill        - Optional  : bar fill character (Str)
+        """
+        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+        filledLength = int(length * iteration // total)
+        bar = fill * filledLength + '-' * (length - filledLength)
+        print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
+        # Print New Line on Complete
+        if iteration == total: 
+            print()
+
     @staticmethod
     def writeLogFile(logText, mode='a'):
         with open('Logs/' + os.environ["LOGFILE"], mode) as logFile:
@@ -396,10 +418,19 @@ class Utilities:
                 'size': 16,
                 }
 
-            for k in xData.data.dtype.names:
+            if instr == 'ES' or instr == 'LI' or instr == 'LT':
+                l = len(xData.columns)
+            elif instr == 'Heading':
+                l = 2
+            else:
+                l = 1
+
+            Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+            # Should break out every 10-20 bands here, as in Anom Detect
+            for i, k in enumerate(xData.data.dtype.names):
+                Utilities.printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
                 if k == "Datetag" or k == "Timetag2":
-                    continue
-            
+                    continue                            
                 x = np.copy(xData.data[k]).tolist()
                 new_x = np.copy(newXData.columns[k]).tolist()
 
@@ -415,7 +446,8 @@ class Utilities:
                 plt.close()
                 # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)                
                 # # Tweak spacing to prevent clipping of ylabel
-                # plt.subplots_adjust(left=0.15)
+                # plt.subplots_adjust(left=0.15)                
+                
         except:
             e = sys.exc_info()[0]
             print("Error: %s" % e)

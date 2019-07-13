@@ -33,6 +33,7 @@ class ProcessL3:
                         v = dsTimer.data["NONE"][x] + sec
                         dsTimeTag2.data["NONE"][x] = Utilities.secToTimeTag2(v)       
 
+    # Time interpolation
     @staticmethod
     def interpolateL3(xData, xTimer, yTimer, newXData, instr, kind='linear'):        
         for k in xData.data.dtype.names:
@@ -51,7 +52,11 @@ class ProcessL3:
             else:
                 newXData.columns[k] = Utilities.interp(x, y, new_x, kind)
 
-        Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, instr)
+        if ConfigFile.settings["bL3PlotTimeInterp"] == 1:
+            print('Plotting time interpolations ' +instr)
+            # This plots the interpolated data in Plots
+            Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, instr)
+
 
     # Converts a sensor group into the format used by Level 2s
     # The sensor dataset is renamed (e.g. ES -> ES_hyperspectral)
@@ -206,11 +211,11 @@ class ProcessL3:
             yTimer.append(Utilities.timeTag2ToSec(esData.data["Timetag2"][i]))
 
         # Interpolate by time values
-        ProcessL3.interpolateL3(gpsCourseData, xTimer, yTimer, newGPSCourseData, 'linear')
-        ProcessL3.interpolateL3(gpsLatPosData, xTimer, yTimer, newGPSLatPosData, 'linear')
-        ProcessL3.interpolateL3(gpsLonPosData, xTimer, yTimer, newGPSLonPosData, 'linear')
-        ProcessL3.interpolateL3(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, 'linear')
-        ProcessL3.interpolateL3(gpsSpeedData, xTimer, yTimer, newGPSSpeedData, 'linear')
+        ProcessL3.interpolateL3(gpsCourseData, xTimer, yTimer, newGPSCourseData, gpsCourseData.id, 'linear')
+        ProcessL3.interpolateL3(gpsLatPosData, xTimer, yTimer, newGPSLatPosData, gpsLatPosData.id, 'linear')
+        ProcessL3.interpolateL3(gpsLonPosData, xTimer, yTimer, newGPSLonPosData, gpsLonPosData.id, 'linear')
+        ProcessL3.interpolateL3(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, gpsMagVarData.id, 'linear')
+        ProcessL3.interpolateL3(gpsSpeedData, xTimer, yTimer, newGPSSpeedData, gpsSpeedData.id, 'linear')
 
         newGPSCourseData.columnsToDataset()
         newGPSLatPosData.columnsToDataset()
@@ -300,6 +305,12 @@ class ProcessL3:
             #print(k)
             wavelength.append(float(k))
         x = np.asarray(wavelength)
+
+
+
+        # Not happening
+        print('chugga')
+
 
         ''' PySciDON interpolated each instrument to a different set of bands.
             Here we use a common set.'''
@@ -496,7 +507,7 @@ class ProcessL3:
 
     @staticmethod
     def matchWavelengths(node):
-
+        print('Interpolating to common wavelengths')
         # Wavelength Interpolation
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
@@ -742,13 +753,12 @@ class ProcessL3:
             return None
         if not ProcessL3.interpolateData(ltData, interpData, "LT"):
             return None
-
         ProcessL3.interpolateGPSData(root, gpsGroup)
         ProcessL3.interpolateSATNAVData(root, satnavGroup)
 
+        # Match wavelengths across instruments
         ProcessL3.matchWavelengths(root)
        
-
         #ProcessL3.dataAveraging(newESData)
         #ProcessL3.dataAveraging(newLIData)
         #ProcessL3.dataAveraging(newLTData)

@@ -31,6 +31,8 @@ class ConfigFile:
         print("fL2Deglitch3", ConfigFile.settings["fL2Deglitch3"])   
 
         print("fL3InterpInterval", ConfigFile.settings["fL3InterpInterval"])
+        print("bL3PlotTimeInterp", ConfigFile.settings["bL3PlotTimeInterp"])
+        print("bL3SaveSeaBASS", ConfigFile.settings["bL3SaveSeaBASS"])
 
         print("fL4RhoSky", ConfigFile.settings["fL4RhoSky"])
         print("bL4EnableWindSpeedCalculation", ConfigFile.settings["bL4EnableWindSpeedCalculation"])
@@ -84,6 +86,7 @@ class ConfigFile:
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
 
         ConfigFile.settings["fL3InterpInterval"] = 3
+        ConfigFile.settings["bL3PlotTimeInterp"] = 0
         ConfigFile.settings["bL3SaveSeaBASS"] = 0
                 
         ConfigFile.settings["fL4TimeInterval"] = 60

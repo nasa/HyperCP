@@ -231,13 +231,18 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l3InterpIntervalLineEdit = QtWidgets.QLineEdit(self)
         self.l3InterpIntervalLineEdit.setText(str(ConfigFile.settings["fL3InterpInterval"]))
         self.l3InterpIntervalLineEdit.setValidator(doubleValidator)
-        
+
+        l3PlotTimeInterpLabel = QtWidgets.QLabel("     Generate Plots", self)        
+        self.l3PlotTimeInterpCheckBox = QtWidgets.QCheckBox("", self)                    
+        if int(ConfigFile.settings["bL3PlotTimeInterp"]) == 1:
+            self.l3PlotTimeInterpCheckBox.setChecked(True)   
+        self.l3PlotTimeInterpCheckBox.clicked.connect(self.l3PlotTimeInterpCheckBoxUpdate)   
+
         l3SaveSeaBASSLabel = QtWidgets.QLabel("     Save SeaBASS text file", self)        
         self.l3SaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL3SaveSeaBASS"]) == 1:
             self.l3SaveSeaBASSCheckBox.setChecked(True)   
-
-        # self.l3SaveSeaBASSCheckBox.clicked.connect(self.l3SaveSeaBASSCheckBoxUpdate)   
+        self.l3SaveSeaBASSCheckBox.clicked.connect(self.l3SaveSeaBASSCheckBoxUpdate)   
 
         # L4     
         l4Label = QtWidgets.QLabel("Level 4 Processing", self)
@@ -479,7 +484,11 @@ class ConfigWindow(QtWidgets.QDialog):
         interpHBox.addWidget(self.l3InterpIntervalLineEdit)
         VBox2.addLayout(interpHBox)
 
-        # Horizontal Box 
+        l3PlotTimeInterpHBox = QtWidgets.QHBoxLayout()
+        l3PlotTimeInterpHBox.addWidget(l3PlotTimeInterpLabel)
+        l3PlotTimeInterpHBox.addWidget(self.l3PlotTimeInterpCheckBox)    
+        VBox2.addLayout(l3PlotTimeInterpHBox)
+        
         l3SeaBASSHBox = QtWidgets.QHBoxLayout()
         l3SeaBASSHBox.addWidget(l3SaveSeaBASSLabel)
         l3SeaBASSHBox.addWidget(self.l3SaveSeaBASSCheckBox)    
@@ -696,6 +705,9 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2Deglitch3Label.setDisabled(disabled)
         self.l2Deglitch3LineEdit.setDisabled(disabled)     
 
+    def l3PlotTimeInterpCheckBoxUpdate(self):
+        print("ConfigWindow - l3PlotTimeInterpCheckBoxUpdate")
+
     def l3SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l3SaveSeaBASSCheckBoxUpdate")
 
@@ -768,7 +780,8 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL2Deglitch3"] = float(self.l2Deglitch3LineEdit.text())
 
         ConfigFile.settings["fL3InterpInterval"] = float(self.l3InterpIntervalLineEdit.text())
-        ConfigFile.settings["fL3InterpInterval"] = float(self.l3InterpIntervalLineEdit.text())
+        ConfigFile.settings["bL3PlotTimeInterp"] = int(self.l3PlotTimeInterpCheckBox.isChecked())
+        ConfigFile.settings["bL3SaveSeaBASS"] = int(self.l3SaveSeaBASSCheckBox.isChecked())
 
         ConfigFile.settings["fL4RhoSky"] = float(self.l4RhoSkyLineEdit.text())
         ConfigFile.settings["bL4EnableWindSpeedCalculation"] = int(self.l4EnableWindSpeedCalculationCheckBox.isChecked())

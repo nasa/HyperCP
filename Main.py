@@ -2,8 +2,8 @@
 HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing
 above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 
-Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center
-Acknowledgements: Nathan Vanderberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
+Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center (https://oceancolor.gsfc.nasa.gov/)
+Acknowledgements: Nathan Vanderberg (PySciDON Repo; https://ieeexplore.ieee.org/abstract/document/8121926)
 
 Version 2.0: Under development July 2019
 """
