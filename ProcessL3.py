@@ -34,6 +34,7 @@ class ProcessL3:
                         dsTimeTag2.data["NONE"][x] = Utilities.secToTimeTag2(v)       
 
     # Time interpolation
+    # xTimer, yTimer are already converted from TimeTag2 to seconds
     @staticmethod
     def interpolateL3(xData, xTimer, yTimer, newXData, instr, kind='linear'):        
         for k in xData.data.dtype.names:
@@ -81,6 +82,7 @@ class ProcessL3:
 
 
     # Preforms time interpolation to match xData to yData
+    # xData is the dataset to be interpolate, yData is the reference dataset with the times to be interpolated to.
     @staticmethod
     def interpolateData(xData, yData, instr):
         msg = ("Interpolate Data " + instr)
@@ -89,6 +91,7 @@ class ProcessL3:
 
         # Interpolating to itself
         if xData is yData:
+            print('Skip.')
             return True
 
         #xDatetag= xData.data["Datetag"].tolist()
@@ -115,6 +118,10 @@ class ProcessL3:
             print(msg)
             Utilities.writeLogFile(msg)
             return False
+        print('Intperpolating '+str(len(xTimer))+' timestamps from '+\
+            str(min(xTimer))+'s to '+str(max(xTimer)))
+        print(' To '+str(len(yTimer))+' timestamps from '+str(min(yTimer))+\
+            's to '+str(max(yTimer)))
 
         xData.columns["Datetag"] = yData.data["Datetag"].tolist()
         xData.columns["Timetag2"] = yData.data["Timetag2"].tolist()
@@ -209,6 +216,10 @@ class ProcessL3:
         yTimer = []
         for i in range(esData.data.shape[0]):
             yTimer.append(Utilities.timeTag2ToSec(esData.data["Timetag2"][i]))
+        print('Intperpolating '+str(len(xTimer))+' timestamps from '+\
+            str(min(xTimer))+'s to '+str(max(xTimer)))
+        print(' To '+str(len(yTimer))+' timestamps from '+str(min(yTimer))+\
+            's to '+str(max(yTimer)))
 
         # Interpolate by time values
         ProcessL3.interpolateL3(gpsCourseData, xTimer, yTimer, newGPSCourseData, gpsCourseData.id, 'linear')
@@ -275,6 +286,10 @@ class ProcessL3:
         yTimer = []
         for i in range(esData.data.shape[0]):
             yTimer.append(Utilities.timeTag2ToSec(esData.data["Timetag2"][i]))
+        print('Intperpolating '+str(len(xTimer))+' timestamps from '+\
+            str(min(xTimer))+'s to '+str(max(xTimer)))
+        print(' To '+str(len(yTimer))+' timestamps from '+str(min(yTimer))+\
+            's to '+str(max(yTimer)))
 
         # Interpolate by time values
         ProcessL3.interpolateL3(satnavAzimuthData, xTimer, yTimer, newSATNAVAzimuthData, 'SunAz', 'linear')
@@ -291,7 +306,7 @@ class ProcessL3:
 
     # Interpolates by wavelength
     @staticmethod
-    def interpolateWavelength(ds, newDS, new_x):
+    def interpolateWavelength(ds, newDS, newWavebands):
 
         # Copy dataset to dictionary
         ds.datasetToColumns()
@@ -306,19 +321,13 @@ class ProcessL3:
             wavelength.append(float(k))
         x = np.asarray(wavelength)
 
-
-
-        # Not happening
-        print('chugga')
-
-
         ''' PySciDON interpolated each instrument to a different set of bands.
             Here we use a common set.'''
         # # Determine interpolated wavelength values
         # start = np.ceil(wavelength[0])
         # end = np.floor(wavelength[len(wavelength)-1])
-        # new_x = np.arange(start, end, interval)
-        # #print(new_x)
+        # newWavebands = np.arange(start, end, interval)
+        # #print(newWavebands)
 
         newColumns = collections.OrderedDict()
         newColumns["Datetag"] = saveDatetag
@@ -335,29 +344,29 @@ class ProcessL3:
         newColumns["ROLL"] = saveDatetag
 
 
-        for i in range(new_x.shape[0]):
-            #print(i, new_x[i])
-            newColumns[str(new_x[i])] = []
+        for i in range(newWavebands.shape[0]):
+            #print(i, newWavebands[i])
+            newColumns[str(newWavebands[i])] = []
 
         # Perform interpolation for each row
-        for i in range(len(saveDatetag)):
+        for timeIndex in range(len(saveDatetag)):
             #print(i)
 
             values = []
             for k in columns:
-                values.append(columns[k][i])
+                values.append(columns[k][timeIndex])
             y = np.asarray(values)
-            #new_y = sp.interpolate.interp1d(x, y)(new_x)
-            new_y = sp.interpolate.InterpolatedUnivariateSpline(x, y, k=3)(new_x)
+            #new_y = sp.interpolate.interp1d(x, y)(newWavebands)
+            new_y = sp.interpolate.InterpolatedUnivariateSpline(x, y, k=3)(newWavebands)
 
-            for i in range(new_x.shape[0]):
-                newColumns[str(new_x[i])].append(new_y[i])
+            for waveIndex in range(newWavebands.shape[0]):
+                newColumns[str(newWavebands[waveIndex])].append(new_y[waveIndex])
 
 
         #newDS = HDFDataset()
         newDS.columns = newColumns
         newDS.columnsToDataset()
-        #print(ds.columns)
+        # print(ds.columns)
         #return newDS
 
     # Determines points to average data
@@ -582,12 +591,15 @@ class ProcessL3:
         # No extrapolation
         start = max(esStart,liStart,ltStart)
         end = min(esEnd,liEnd,ltEnd)
-        new_x = np.arange(start, end, interval)
-        # print(new_x)
+        newWavebands = np.arange(start, end, interval)
+        # print(newWavebands)
 
-        ProcessL3.interpolateWavelength(esData, newESData, new_x)
-        ProcessL3.interpolateWavelength(liData, newLIData, new_x)
-        ProcessL3.interpolateWavelength(ltData, newLTData, new_x)
+        print('Interpolating Es')
+        ProcessL3.interpolateWavelength(esData, newESData, newWavebands)
+        print('Interpolating Li')
+        ProcessL3.interpolateWavelength(liData, newLIData, newWavebands)
+        print('Interpolating Lt')
+        ProcessL3.interpolateWavelength(ltData, newLTData, newWavebands)
 
         # Append latpos/lonpos to datasets
         if root.getGroup("GPS"):
@@ -670,9 +682,10 @@ class ProcessL3:
 
         # Make each dataset have matching wavelength values (for testing)
         ProcessL3.matchColumns(newESData, newLIData, newLTData)
+        return root
 
 
-    # Does time and wavelength interpolation and data averaging (not implemented here)
+    # Does time and wavelength interpolation and data averaging (latter not implemented here)
     @staticmethod
     def processL3(node):
         
@@ -757,8 +770,8 @@ class ProcessL3:
         ProcessL3.interpolateSATNAVData(root, satnavGroup)
 
         # Match wavelengths across instruments
-        ProcessL3.matchWavelengths(root)
-       
+        # Calls interpolateWavelengths and matchColumns
+        root = ProcessL3.matchWavelengths(root)
         #ProcessL3.dataAveraging(newESData)
         #ProcessL3.dataAveraging(newLIData)
         #ProcessL3.dataAveraging(newLTData)

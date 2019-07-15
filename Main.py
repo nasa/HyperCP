@@ -125,7 +125,7 @@ class Window(QtWidgets.QWidget):
         self.singleL1aButton.clicked.connect(self.singleL1aClicked)
         self.singleL1bButton.clicked.connect(self.singleL1bClicked)            
         self.singleL2Button.clicked.connect(self.singleL2Clicked)
-        self.singleL3Button.clicked.connect(self.singleL3aClicked)
+        self.singleL3Button.clicked.connect(self.singleL3Clicked)
         self.singleL4Button.clicked.connect(self.singleL4Clicked)
 
         self.multiLevelLabel = QtWidgets.QLabel('Multi-Level Processing', self)
@@ -372,7 +372,7 @@ class Window(QtWidgets.QWidget):
     # def singleL2sClicked(self):
     #     self.processSingle("2s")        
 
-    def singleL3aClicked(self):
+    def singleL3Clicked(self):
         self.processSingle("3")   
 
     def singleL4Clicked(self):

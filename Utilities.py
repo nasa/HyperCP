@@ -14,8 +14,6 @@ import pandas as pd
 if "LOGFILE" not in os.environ:
     os.environ["LOGFILE"] = "temp.log"
 
-
-
 class Utilities:
 
     # @staticmethod
@@ -190,7 +188,7 @@ class Utilities:
         # return np.convolve(data, window, 'same')
 
         # Slice out one half window on either side; this requires an odd-sized window
-        return out[round(window_size/2)-1:-round(window_size/2)+1]  
+        return out[int(np.floor(window_size/2)):-int(np.floor(window_size/2))]  
 
     @staticmethod
     def windowAverage(data,window_size):
@@ -429,6 +427,7 @@ class Utilities:
             # Should break out every 10-20 bands here, as in Anom Detect
             for i, k in enumerate(xData.data.dtype.names):
                 Utilities.printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+                
                 if k == "Datetag" or k == "Timetag2":
                     continue                            
                 x = np.copy(xData.data[k]).tolist()

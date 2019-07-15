@@ -593,7 +593,7 @@ class ConfigWindow(QtWidgets.QDialog):
         calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
         configPath = os.path.join("Config", calibrationDir)
         for src in fnames[0]:
-            (dirpath, filename) = os.path.split(src)
+            (_, filename) = os.path.split(src)
             dest = os.path.join(configPath, filename)
             print(src)
             print(dest)
@@ -737,7 +737,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def l4EnablePercentLtCheckBoxUpdate(self):
         print("ConfigWindow - l4EnablePercentLtCheckBoxUpdate")
-        # print("This should do something....?")        
         
         disabled = (not self.l4EnablePercentLtCheckBox.isChecked())
         self.l4PercentLtLabel.setDisabled(disabled)
@@ -767,7 +766,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL1bPitchRollPitch"] = float(self.l1bPitchRollPitchLineEdit.text())
         ConfigFile.settings["fL1bPitchRollRoll"] = float(self.l1bPitchRollRollLineEdit.text())         
         ConfigFile.settings["bL1bCleanRotatorAngle"] = int(self.l1bCleanRotatorAngleCheckBox.isChecked())        
-        ConfigFile.settings["fLbRotatorAngleMin"] = float(self.l1bRotatorAngleMinLineEdit.text())
+        ConfigFile.settings["fL1bRotatorAngleMin"] = float(self.l1bRotatorAngleMinLineEdit.text())
         ConfigFile.settings["fL1bRotatorAngleMax"] = float(self.l1bRotatorAngleMaxLineEdit.text())                
         ConfigFile.settings["bL1bCleanSunAngle"] = int(self.l1bCleanSunAngleCheckBox.isChecked())        
         ConfigFile.settings["fL1bSunAngleMin"] = float(self.l1bSunAngleMinLineEdit.text())
