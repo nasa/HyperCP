@@ -54,8 +54,8 @@ class Window(QtWidgets.QWidget):
 
         self.configComboBox = QtWidgets.QComboBox(self)
         self.configComboBox.setModel(fsm)
-        fsm.setNameFilters(["*.cfg"]) # How to default to last used, or first on the list?
-        # fsm.setNameFilterDisables(False) #??
+        fsm.setNameFilters(["*.cfg"]) 
+        fsm.setNameFilterDisables(False) # This activates the Filter (on Win10)
         fsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
         self.configComboBox.setRootModelIndex(index)
         self.configComboBox.setCurrentIndex(0) # How to default to last used, or first on the list?

@@ -17,7 +17,7 @@ class SeaBASSWriter:
         # seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
         headerBlock = SeaBASSHeader.settings        
 
-        # Leading columns can be taken from any sensor 
+        # Dataset leading columns can be taken from any sensor 
         referenceGroup = node.getGroup("Reference")
         esData = referenceGroup.getDataset("ES_hyperspectral")
 
@@ -33,18 +33,20 @@ class SeaBASSWriter:
             timeDT.append(Utilities.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
         # time = [Utilities.timeTagToDateTime(y,x) for x,y in date,timeTag]  
         # Python 2 format operator       
-        startTime = "%02d:%02d:%02d [UTC]" % (min(timeDT).hour, min(timeDT).minute, min(timeDT).second)
-        endTime = "%02d:%02d:%02d [UTC]" % (max(timeDT).hour, max(timeDT).minute, max(timeDT).second)
+        startTime = "%02d:%02d:%02d[GMT]" % (min(timeDT).hour, min(timeDT).minute, min(timeDT).second)
+        endTime = "%02d:%02d:%02d[GMT]" % (max(timeDT).hour, max(timeDT).minute, max(timeDT).second)
         startDate = "%04d%02d%02d" % (min(timeDT).year, min(timeDT).month, min(timeDT).day)      
         endDate = "%04d%02d%02d" % (max(timeDT).year, max(timeDT).month, max(timeDT).day)
 
         # Convert Position
         # Python 3 format syntax
-        southLat = "{:.4f}".format(min(esData.data['LATPOS'].tolist()))
-        northLat = "{:.4f}".format(max(esData.data['LATPOS'].tolist()))
-        eastLon = "{:.4f}".format(max(esData.data['LONPOS'].tolist()))
-        westLon = "{:.4f}".format(min(esData.data['LONPOS'].tolist()))
+        southLat = "{:.4f}[DEG]".format(min(esData.data['LATPOS'].tolist()))
+        northLat = "{:.4f}[DEG]".format(max(esData.data['LATPOS'].tolist()))
+        eastLon = "{:.4f}[DEG]".format(max(esData.data['LONPOS'].tolist()))
+        westLon = "{:.4f}[DEG]".format(min(esData.data['LONPOS'].tolist()))
 
+        if headerBlock['station'] is '':
+            headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
         if headerBlock['start_time'] is '':
             headerBlock['start_time'] = startTime
         if headerBlock['end_time'] is '':
@@ -68,8 +70,14 @@ class SeaBASSWriter:
     
    
     @staticmethod
-    def formatData3(dataset,dtype, units):        
+    def formatData3(dataset,dtype, units):    
+        # Change field names for SeaBASS compliance
         ls = list(dataset.data.dtype.names)
+        ls[0]='date'
+        ls[1]='time'
+        ls[2]='lat'
+        ls[3]='lon'
+        ls[3]='relaz'        
         fieldsLineStr = ','.join(list(dataset.data.dtype.names)[:5] + [f'{dtype}{band}' for band in ls[5:]])
         
         lenRad = (len(dataset.data.dtype.names)-5)
@@ -117,9 +125,7 @@ class SeaBASSWriter:
                 # Python 3 f-string
                 line = f'/{key}={value}\n'
                 outFile.write(line)
-        outFile.write(headerBlock['comments']+'\n')
-        outFile.write('/missing_data=-999\n')
-        outFile.write('/delimiter=comma\n')
+        outFile.write(headerBlock['comments']+'\n')        
         outFile.write('/fields='+fields+'\n')
         outFile.write('/units='+units+'\n')
         outFile.write('/end_header\n')

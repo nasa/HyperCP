@@ -256,8 +256,8 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l3SeaBASSHeaderComboBox = QtWidgets.QComboBox(self)
         self.l3SeaBASSHeaderComboBox.setModel(l3SeaBASSfsm)
-        l3SeaBASSfsm.setNameFilters(["*.hdr"]) # How to default to last used, or first on the list?
-        l3SeaBASSfsm.setNameFilterDisables(False) #??
+        l3SeaBASSfsm.setNameFilters(["*.hdr"]) 
+        l3SeaBASSfsm.setNameFilterDisables(False) 
         l3SeaBASSfsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
         self.l3SeaBASSHeaderComboBox.setRootModelIndex(index)
         self.l3SeaBASSHeaderComboBox.setCurrentIndex(0) # How to default to last used, or first on the list?  
@@ -748,8 +748,6 @@ class ConfigWindow(QtWidgets.QDialog):
     def l3PlotTimeInterpCheckBoxUpdate(self):
         print("ConfigWindow - l3PlotTimeInterpCheckBoxUpdate")
 
-
-
     def l3SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l3SaveSeaBASSCheckBoxUpdate")
         disabled = (not self.l3SaveSeaBASSCheckBox.isChecked())
@@ -760,10 +758,31 @@ class ConfigWindow(QtWidgets.QDialog):
     def l3seaBASSHeaderNewButtonPressed(self):
         print("New SeaBASSHeader Dialogue")
         text, ok = QtWidgets.QInputDialog.getText(self, 'New SeaBASSHeader File', 'Enter File Name')
+        seaBASSHeaderFileName = f'{text}.hdr'
         if ok:
-            print("Create SeaBASSHeader File: ", text)
-            SeaBASSHeader.createDefaultSeaBASSHeader(text)
-            # ToDo: Add code to change text for the combobox once file is created      
+            print("Create SeaBASSHeader File: ", seaBASSHeaderFileName)
+            
+            inputDir = self.inputDirectory
+            seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
+            # Now open the new file
+            
+            if os.path.isfile(seaBASSHeaderPath):
+                seaBASSHeaderDeleteMessage = "Overwrite " + seaBASSHeaderFileName + "?"
+
+                reply = QtWidgets.QMessageBox.question(self, 'Message', seaBASSHeaderDeleteMessage, \
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+
+                if reply == QtWidgets.QMessageBox.Yes:
+                    SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
+                    SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+                    seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
+                    #seaBASSHeaderDialog = CalibrationEditWindow(seaBASSHeaderFileName, self)
+                    seaBASSHeaderDialog.show()                
+            else:
+                SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
+                SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+                seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
+                seaBASSHeaderDialog.show()                
 
     def l3seaBASSHeaderEditButtonPressed(self):
         print("Edit seaBASSHeader Dialogue")
@@ -799,9 +818,6 @@ class ConfigWindow(QtWidgets.QDialog):
             #print("Not a seaBASSHeader File: " + seaBASSHeaderFileName)
             message = "Not a seaBASSHeader File: " + seaBASSHeaderFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
-
-
-
 
     def l4EnableWindSpeedCalculationCheckBoxUpdate(self):
         print("ConfigWindow - l4EnableWindSpeedCalculationCheckBoxUpdate")

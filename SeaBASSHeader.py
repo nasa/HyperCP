@@ -23,6 +23,11 @@ class SeaBASSHeader:
         print("original_file_name", SeaBASSHeader.settings["original_file_name"])
         print("documents", SeaBASSHeader.settings["documents"])
         print("calibration_files", SeaBASSHeader.settings["calibration_files"])
+
+        print("instrument_manufacturer", SeaBASSHeader.settings["instrument_manufacturer"])
+        print("instrument_model", SeaBASSHeader.settings["instrument_model"])
+        print("calibration_date", SeaBASSHeader.settings["calibration_date"])
+
         print("data_type", SeaBASSHeader.settings["data_type"])
         print("data_status", SeaBASSHeader.settings["data_status"])
 
@@ -42,6 +47,9 @@ class SeaBASSHeader:
         print("wave_height", SeaBASSHeader.settings["wave_height"])
 
         print("comments", SeaBASSHeader.settings["comments"])
+        print("other_comments", SeaBASSHeader.settings["other_comments"])
+        print("missing", SeaBASSHeader.settings["missing"])
+        print("delimiter", SeaBASSHeader.settings["delimiter"])
 
     # Generates the default configuration
     @staticmethod
@@ -52,19 +60,24 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["affiliations"] = ''
         SeaBASSHeader.settings["contact"] = ''
         SeaBASSHeader.settings["experiment"] = name
-        SeaBASSHeader.settings["cruise"] = name
-        SeaBASSHeader.settings["station"] = 'N/A'
+        SeaBASSHeader.settings["cruise"] = ''        
         
         SeaBASSHeader.settings["documents"] = ''
-        SeaBASSHeader.refreshCalibrationFiles()        
+        SeaBASSHeader.refreshCalibrationFiles()    
+        
+        SeaBASSHeader.settings["instrument_manufacturer"] = 'Satlantic'
+        SeaBASSHeader.settings["instrument_model"] = 'HyperSAS'
+        SeaBASSHeader.settings["calibration_date"] = ''
+        
         SeaBASSHeader.settings["data_type"] = 'above_water'            
         SeaBASSHeader.settings["data_status"] = ''
 
-        SeaBASSHeader.settings["water_depth"] = ''
-        SeaBASSHeader.settings["measurement_depth"] = ''
-        SeaBASSHeader.settings["cloud_percent"] = ''        
-        SeaBASSHeader.settings["wave_height"] = ''
+        SeaBASSHeader.settings["water_depth"] = 'NA'
+        SeaBASSHeader.settings["measurement_depth"] = '0'
+        SeaBASSHeader.settings["cloud_percent"] = 'NA'        
+        SeaBASSHeader.settings["wave_height"] = 'NA'
 
+        SeaBASSHeader.settings["station"] = 'NA'
         SeaBASSHeader.settings["data_file_name"] = ''
         SeaBASSHeader.settings["original_file_name"] = ''
         SeaBASSHeader.settings["start_date"] = ''    
@@ -75,9 +88,21 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["south_latitude"] = ''
         SeaBASSHeader.settings["east_longitude"] = ''                        
         SeaBASSHeader.settings["west_longitude"] = ''
-        SeaBASSHeader.settings["wind_speed"] = ''
+        SeaBASSHeader.settings["wind_speed"] = 'NA'
 
-        SeaBASSHeader.settings["comments"] = '!\n! Enter Comments with leading exclamation points\n!'
+        # This should update from the ConfigFile on demand
+        SeaBASSHeader.settings["comments"] =\
+            f'! SZA Filter = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
+            f'! Rotator Home Angle = {ConfigFile.settings["fL1bRotatorHomeAngle"]}\n'+\
+            f'! Rotator Delay = {ConfigFile.settings["fL1bRotatorDelay"]}\n'
+
+
+        SeaBASSHeader.settings["other_comments"] = f'!\n'\
+            '! Other comments...\n'\
+            '!'
+
+        SeaBASSHeader.settings["missing"] = -999
+        SeaBASSHeader.settings["delimiter"] = 'comma'
 
         if not name.endswith(".hdr"):
             name = name + ".hdr"
@@ -139,6 +164,6 @@ class SeaBASSHeader:
         #     else:
         #         newCalibrationFiles[file] = {"enabled": 0, "frameType": "Not Required"}
 
-        SeaBASSHeader.settings["calibration_files"] = (', '.join(files))
+        SeaBASSHeader.settings["calibration_files"] = (','.join(files))
     
 
