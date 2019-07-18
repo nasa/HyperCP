@@ -17,6 +17,7 @@ from Controller import Controller
 
 from ConfigFile import ConfigFile
 from ConfigWindow import ConfigWindow
+from SeaBASSHeader import SeaBASSHeader
 
 """ Window is the main GUI container """
 class Window(QtWidgets.QWidget):
@@ -28,7 +29,7 @@ class Window(QtWidgets.QWidget):
         # if not os.path.exists("RawData"):
         #    os.makedirs("RawData")
         if not os.path.exists("Data"):  
-           os.makedirs("Data") # These should ultimately be placed within a designated cruise directory
+           os.makedirs("Data") 
         if not os.path.exists("Plots"):
            os.makedirs("Plots")
         if not os.path.exists("Ascii"):
@@ -324,6 +325,8 @@ class Window(QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(self, "Error", message)
             return
         ConfigFile.loadConfig(configFileName)
+        seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
+        SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 
         # Select data files    
         if not self.inputDirectory[0]:

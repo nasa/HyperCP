@@ -104,6 +104,12 @@ class Utilities:
         dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
         return dt.strftime('%Y%m%d')
 
+    # Converts datetag to datetime
+    @staticmethod
+    def dateTagToDateTime(dateTag):
+        dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
+        return dt
+
     # Converts seconds to TimeTag2
     @staticmethod
     def secToTimeTag2(sec):
@@ -124,6 +130,18 @@ class Utilities:
         ms = int(t[6:])
         # print(h, m, s, ms)
         return ((h*60)+m)*60+s+(float(ms)/1000.0)
+
+    # Converts datetime.date and TimeTag2 to datetime
+    @staticmethod
+    def timeTag2ToDateTime(dt,tt2):
+        t = str(int(tt2)).zfill(9)
+        h = int(t[:2])
+        m = int(t[2:4])
+        s = int(t[4:6])
+        us = 1000*int(t[6:])
+        # print(h, m, s, us)
+        
+        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us)
 
     # Converts HDFRoot timestamp attribute to seconds
     @staticmethod

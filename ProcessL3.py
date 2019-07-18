@@ -256,6 +256,7 @@ class ProcessL3:
         satnavPitchData = satnavGroup.getDataset("PITCH")
         satnavPointingData = satnavGroup.getDataset("POINTING")
         satnavRollData = satnavGroup.getDataset("ROLL")
+        satnavRelAzData = satnavGroup.getDataset("REL_AZ")
 
         newSATNAVGroup = node.getGroup("SATNAV")
         newSATNAVAzimuthData = newSATNAVGroup.addDataset("AZIMUTH")
@@ -263,6 +264,7 @@ class ProcessL3:
         newSATNAVPitchData = newSATNAVGroup.addDataset("PITCH")
         newSATNAVPointingData = newSATNAVGroup.addDataset("POINTING")
         newSATNAVRollData = newSATNAVGroup.addDataset("ROLL")
+        newSATNAVRelAzData = newSATNAVGroup.addDataset("REL_AZ")
 
         # Add Datetag, Timetag2 data to satnav groups
         # This matches ES data after interpolation
@@ -276,6 +278,8 @@ class ProcessL3:
         newSATNAVPointingData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
         newSATNAVRollData.columns["Datetag"] = esData.data["Datetag"].tolist()
         newSATNAVRollData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
+        newSATNAVRelAzData.columns["Datetag"] = esData.data["Datetag"].tolist()
+        newSATNAVRelAzData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
 
         # Convert GPS UTC time values to seconds to be used for interpolation
         xTimer = []
@@ -297,12 +301,14 @@ class ProcessL3:
         ProcessL3.interpolateL3(satnavPitchData, xTimer, yTimer, newSATNAVPitchData, 'Pitch', 'linear')
         ProcessL3.interpolateL3(satnavPointingData, xTimer, yTimer, newSATNAVPointingData, 'Pointing', 'linear')
         ProcessL3.interpolateL3(satnavRollData, xTimer, yTimer, newSATNAVRollData, 'Roll', 'linear')
+        ProcessL3.interpolateL3(satnavRelAzData, xTimer, yTimer, newSATNAVRelAzData, 'RelAz', 'linear')
 
         newSATNAVAzimuthData.columnsToDataset()
         newSATNAVHeadingData.columnsToDataset()
         newSATNAVPitchData.columnsToDataset()
         newSATNAVPointingData.columnsToDataset()
         newSATNAVRollData.columnsToDataset()
+        newSATNAVRelAzData.columnsToDataset()
 
     # Interpolates by wavelength
     @staticmethod
@@ -337,11 +343,12 @@ class ProcessL3:
         # ToDo: Do this better
         newColumns["LATPOS"] = saveDatetag
         newColumns["LONPOS"] = saveDatetag
-        newColumns["AZIMUTH"] = saveDatetag
-        newColumns["SHIP_TRUE"] = saveDatetag
-        newColumns["PITCH"] = saveDatetag
-        newColumns["ROTATOR"] = saveDatetag
-        newColumns["ROLL"] = saveDatetag
+        # newColumns["AZIMUTH"] = saveDatetag
+        # newColumns["SHIP_TRUE"] = saveDatetag
+        # newColumns["PITCH"] = saveDatetag
+        # newColumns["ROTATOR"] = saveDatetag
+        # newColumns["ROLL"] = saveDatetag
+        newColumns["REL_AZ"] = saveDatetag
 
 
         for i in range(newWavebands.shape[0]):
@@ -634,47 +641,54 @@ class ProcessL3:
         if root.getGroup("SATNAV"):
             satnavGroup = node.getGroup("SATNAV")
 
-            azimuthData = satnavGroup.getDataset("AZIMUTH")
-            headingData = satnavGroup.getDataset("HEADING")
-            pitchData = satnavGroup.getDataset("PITCH")
-            pointingData = satnavGroup.getDataset("POINTING")
-            rollData = satnavGroup.getDataset("ROLL")
+            # azimuthData = satnavGroup.getDataset("AZIMUTH")
+            # headingData = satnavGroup.getDataset("HEADING")
+            # pitchData = satnavGroup.getDataset("PITCH")
+            # pointingData = satnavGroup.getDataset("POINTING")
+            # rollData = satnavGroup.getDataset("ROLL")
+            relAzData = satnavGroup.getDataset("REL_AZ")
 
-            azimuthData.datasetToColumns()
-            headingData.datasetToColumns()
-            pitchData.datasetToColumns()
-            pointingData.datasetToColumns()
-            rollData.datasetToColumns()            
+            # azimuthData.datasetToColumns()
+            # headingData.datasetToColumns()
+            # pitchData.datasetToColumns()
+            # pointingData.datasetToColumns()
+            # rollData.datasetToColumns()            
+            relAzData.datasetToColumns() 
 
-            azimuth = azimuthData.columns["SUN"]
-            shipTrue = headingData.columns["SHIP_TRUE"]
-            pitch = pitchData.columns["SAS"]
-            rotator = pointingData.columns["ROTATOR"]
-            roll = rollData.columns["SAS"]
+            # azimuth = azimuthData.columns["SUN"]
+            # shipTrue = headingData.columns["SHIP_TRUE"]
+            # pitch = pitchData.columns["SAS"]
+            # rotator = pointingData.columns["ROTATOR"]
+            # roll = rollData.columns["SAS"]
+            relAz = relAzData.columns["REL_AZ"]
 
             newESData.datasetToColumns()
             newLIData.datasetToColumns()
             newLTData.datasetToColumns()
             
-            newESData.columns["AZIMUTH"] = azimuth
-            newLIData.columns["AZIMUTH"] = azimuth
-            newLTData.columns["AZIMUTH"] = azimuth
+            # newESData.columns["AZIMUTH"] = azimuth
+            # newLIData.columns["AZIMUTH"] = azimuth
+            # newLTData.columns["AZIMUTH"] = azimuth
 
-            newESData.columns["SHIP_TRUE"] = shipTrue
-            newLIData.columns["SHIP_TRUE"] = shipTrue
-            newLTData.columns["SHIP_TRUE"] = shipTrue
+            # newESData.columns["SHIP_TRUE"] = shipTrue
+            # newLIData.columns["SHIP_TRUE"] = shipTrue
+            # newLTData.columns["SHIP_TRUE"] = shipTrue
 
-            newESData.columns["PITCH"] = pitch
-            newLIData.columns["PITCH"] = pitch
-            newLTData.columns["PITCH"] = pitch
+            # newESData.columns["PITCH"] = pitch
+            # newLIData.columns["PITCH"] = pitch
+            # newLTData.columns["PITCH"] = pitch
             
-            newESData.columns["ROTATOR"] = rotator
-            newLIData.columns["ROTATOR"] = rotator
-            newLTData.columns["ROTATOR"] = rotator
+            # newESData.columns["ROTATOR"] = rotator
+            # newLIData.columns["ROTATOR"] = rotator
+            # newLTData.columns["ROTATOR"] = rotator
             
-            newESData.columns["ROLL"] = roll
-            newLIData.columns["ROLL"] = roll
-            newLTData.columns["ROLL"] = roll
+            # newESData.columns["ROLL"] = roll
+            # newLIData.columns["ROLL"] = roll
+            # newLTData.columns["ROLL"] = roll
+
+            newESData.columns["REL_AZ"] = relAz
+            newLIData.columns["REL_AZ"] = relAz
+            newLTData.columns["REL_AZ"] = relAz
 
             newESData.columnsToDataset()
             newLIData.columnsToDataset()

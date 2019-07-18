@@ -1,0 +1,144 @@
+
+import collections
+import json
+import os
+import shutil
+
+from ConfigFile import ConfigFile
+
+class SeaBASSHeader:
+    filename = ""
+    settings = collections.OrderedDict()
+
+    @staticmethod
+    def printd():
+        print("SeaBASSHeader - Printd")
+        print("investigators", SeaBASSHeader.settings["investigators"])
+        print("affiliations", SeaBASSHeader.settings["affiliations"])
+        print("contact", SeaBASSHeader.settings["contact"])
+        print("experiment", SeaBASSHeader.settings["experiment"]) 
+        print("cruise", SeaBASSHeader.settings["cruise"])
+        print("station", SeaBASSHeader.settings["station"])
+        print("data_file_name", SeaBASSHeader.settings["data_file_name"])
+        print("original_file_name", SeaBASSHeader.settings["original_file_name"])
+        print("documents", SeaBASSHeader.settings["documents"])
+        print("calibration_files", SeaBASSHeader.settings["calibration_files"])
+        print("data_type", SeaBASSHeader.settings["data_type"])
+        print("data_status", SeaBASSHeader.settings["data_status"])
+
+        print("start_date", SeaBASSHeader.settings["start_date"])
+        print("end_date", SeaBASSHeader.settings["end_date"])
+        print("start_time", SeaBASSHeader.settings["start_time"])
+        print("end_time", SeaBASSHeader.settings["end_time"])   
+        print("north_latitude", SeaBASSHeader.settings["north_latitude"])
+        print("south_latitude", SeaBASSHeader.settings["south_latitude"])
+        print("east_longitude", SeaBASSHeader.settings["east_longitude"])
+        print("west_longitude", SeaBASSHeader.settings["west_longitude"])
+
+        print("water_depth", SeaBASSHeader.settings["water_depth"])
+        print("measurement_depth", SeaBASSHeader.settings["measurement_depth"])                
+        print("cloud_percent", SeaBASSHeader.settings["cloud_percent"])        
+        print("wind_speed", SeaBASSHeader.settings["wind_speed"])
+        print("wave_height", SeaBASSHeader.settings["wave_height"])
+
+        print("comments", SeaBASSHeader.settings["comments"])
+
+    # Generates the default configuration
+    @staticmethod
+    def createDefaultSeaBASSHeader(name):
+        print("SeaBASSHeader - Create Default SeaBASSHeader")
+
+        SeaBASSHeader.settings["investigators"] = ''
+        SeaBASSHeader.settings["affiliations"] = ''
+        SeaBASSHeader.settings["contact"] = ''
+        SeaBASSHeader.settings["experiment"] = name
+        SeaBASSHeader.settings["cruise"] = name
+        SeaBASSHeader.settings["station"] = 'N/A'
+        
+        SeaBASSHeader.settings["documents"] = ''
+        SeaBASSHeader.refreshCalibrationFiles()        
+        SeaBASSHeader.settings["data_type"] = 'above_water'            
+        SeaBASSHeader.settings["data_status"] = ''
+
+        SeaBASSHeader.settings["water_depth"] = ''
+        SeaBASSHeader.settings["measurement_depth"] = ''
+        SeaBASSHeader.settings["cloud_percent"] = ''        
+        SeaBASSHeader.settings["wave_height"] = ''
+
+        SeaBASSHeader.settings["data_file_name"] = ''
+        SeaBASSHeader.settings["original_file_name"] = ''
+        SeaBASSHeader.settings["start_date"] = ''    
+        SeaBASSHeader.settings["end_date"] = ''     
+        SeaBASSHeader.settings["start_time"] = ''
+        SeaBASSHeader.settings["end_time"] = ''
+        SeaBASSHeader.settings["north_latitude"] = ''
+        SeaBASSHeader.settings["south_latitude"] = ''
+        SeaBASSHeader.settings["east_longitude"] = ''                        
+        SeaBASSHeader.settings["west_longitude"] = ''
+        SeaBASSHeader.settings["wind_speed"] = ''
+
+        SeaBASSHeader.settings["comments"] = '!\n! Enter Comments with leading exclamation points\n!'
+
+        if not name.endswith(".hdr"):
+            name = name + ".hdr"
+        SeaBASSHeader.filename = name
+        SeaBASSHeader.saveSeaBASSHeader(name)
+
+
+    # Saves the hdr file
+    @staticmethod
+    def saveSeaBASSHeader(filename):
+        print("SeaBASSHeader - Save SeaBASSHeader")
+
+        jsn = json.dumps(SeaBASSHeader.settings)
+        fp = os.path.join("Config", filename)
+
+        #print(os.path.abspath(os.curdir))
+        with open(fp, 'w') as f:
+            f.write(jsn)
+        # SeaBASSHeader.createCalibrationFolder()
+
+    # Loads the hdr file
+    # ToDo: Apply default values to any settings that are missing (in case settings are updated)
+    @staticmethod
+    def loadSeaBASSHeader(filename):
+        # print("SeaBASSHeader - Load seaBASSHeader")
+        seaBASSHeaderPath = os.path.join("Config", filename)
+        if os.path.isfile(seaBASSHeaderPath):
+            SeaBASSHeader.filename = filename
+            text = ""
+            with open(seaBASSHeaderPath, 'r') as f:
+                text = f.read()
+                SeaBASSHeader.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
+                # SeaBASSHeader.createCalibrationFolder()
+
+    # Deletes a seaBASSHeader
+    @staticmethod
+    def deleteSeaBASSHeader(filename):
+        print("SeaBASSHeader - Delete SeaBASSHeader")
+        seaBASSHeaderPath = os.path.join("Config", filename)
+        if os.path.isfile(seaBASSHeaderPath):
+            SeaBASSHeader.filename = filename
+            calibrationPath = ConfigFile.getCalibrationDirectory()
+            os.remove(seaBASSHeaderPath)
+            # shutil.rmtree(calibrationPath)
+        
+
+    @staticmethod
+    def refreshCalibrationFiles():
+        print("SeaBASSHeader - refreshCalibrationFiles")
+        calibrationPath = ConfigFile.getCalibrationDirectory()
+        files = os.listdir(calibrationPath)
+
+        # newCalibrationFiles = {}
+        # calibrationFiles = ConfigFile.settings["CalibrationFiles"]
+        
+        # for file in files:
+        #     if file in calibrationFiles:
+        #         newCalibrationFiles[file] = calibrationFiles[file]
+        #     else:
+        #         newCalibrationFiles[file] = {"enabled": 0, "frameType": "Not Required"}
+
+        SeaBASSHeader.settings["calibration_files"] = (', '.join(files))
+    
+

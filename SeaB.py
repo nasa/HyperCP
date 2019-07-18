@@ -33,7 +33,6 @@ class ConfigFile:
         print("fL3InterpInterval", ConfigFile.settings["fL3InterpInterval"])
         print("bL3PlotTimeInterp", ConfigFile.settings["bL3PlotTimeInterp"])
         print("bL3SaveSeaBASS", ConfigFile.settings["bL3SaveSeaBASS"])
-        print("seaBASSHeaderFileName", ConfigFile.settings["seaBASSHeaderFileName"])
 
         print("fL4RhoSky", ConfigFile.settings["fL4RhoSky"])
         print("bL4EnableWindSpeedCalculation", ConfigFile.settings["bL4EnableWindSpeedCalculation"])
@@ -81,15 +80,14 @@ class ConfigFile:
 
 
         ConfigFile.settings["bL2Deglitch"] = 0
-        ConfigFile.settings["fL2Deglitch0"] = 15    # These should all have citable defaults
-        ConfigFile.settings["fL2Deglitch1"] = 15     # An "info" button would be nice for the citation
-        ConfigFile.settings["fL2Deglitch2"] = 3
-        ConfigFile.settings["fL2Deglitch3"] = 3
+        ConfigFile.settings["fL2Deglitch0"] = 10    # These should all have citable defaults
+        ConfigFile.settings["fL2Deglitch1"] = 5     # An "info" button would be nice for the citation
+        ConfigFile.settings["fL2Deglitch2"] = 20
+        ConfigFile.settings["bL2SaveSeaBASS"] = 0
 
         ConfigFile.settings["fL3InterpInterval"] = 3
         ConfigFile.settings["bL3PlotTimeInterp"] = 0
         ConfigFile.settings["bL3SaveSeaBASS"] = 0
-        ConfigFile.settings["seaBASSHeaderFileName"] = None
                 
         ConfigFile.settings["fL4TimeInterval"] = 60
         ConfigFile.settings["bL4EnableQualityFlags"] = 1

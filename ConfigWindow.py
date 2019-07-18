@@ -6,6 +6,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 from ConfigFile import ConfigFile
 from AnomalyDetection import AnomalyDetection
+from SeaBASSHeader import SeaBASSHeader
+from SeaBASSHeaderWindow import SeaBASSHeaderWindow
+
 
 
 class ConfigWindow(QtWidgets.QDialog):
@@ -152,11 +155,11 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bCleanSunAngleCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bCleanSunAngle"]) == 1:
             self.l1bCleanSunAngleCheckBox.setChecked(True)        
-        self.l1bSunAngleMinLabel = QtWidgets.QLabel("       Sun Angle Min", self)
+        self.l1bSunAngleMinLabel = QtWidgets.QLabel("       Rel Angle Min", self)
         self.l1bSunAngleMinLineEdit = QtWidgets.QLineEdit(self)
         self.l1bSunAngleMinLineEdit.setText(str(ConfigFile.settings["fL1bSunAngleMin"]))
         self.l1bSunAngleMinLineEdit.setValidator(doubleValidator)
-        self.l1bSunAngleMaxLabel = QtWidgets.QLabel("       Sun Angle Max", self)
+        self.l1bSunAngleMaxLabel = QtWidgets.QLabel("       Rel Angle Max", self)
         self.l1bSunAngleMaxLineEdit = QtWidgets.QLineEdit(self)
         self.l1bSunAngleMaxLineEdit.setText(str(ConfigFile.settings["fL1bSunAngleMax"]))
         self.l1bSunAngleMaxLineEdit.setValidator(doubleValidator)
@@ -232,7 +235,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l3InterpIntervalLineEdit.setText(str(ConfigFile.settings["fL3InterpInterval"]))
         self.l3InterpIntervalLineEdit.setValidator(doubleValidator)
 
-        l3PlotTimeInterpLabel = QtWidgets.QLabel("     Generate Plots", self)        
+        l3PlotTimeInterpLabel = QtWidgets.QLabel("     Generate Plots (slow)", self)        
         self.l3PlotTimeInterpCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL3PlotTimeInterp"]) == 1:
             self.l3PlotTimeInterpCheckBox.setChecked(True)   
@@ -242,7 +245,33 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l3SaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL3SaveSeaBASS"]) == 1:
             self.l3SaveSeaBASSCheckBox.setChecked(True)   
-        self.l3SaveSeaBASSCheckBox.clicked.connect(self.l3SaveSeaBASSCheckBoxUpdate)   
+        self.l3SaveSeaBASSCheckBox.clicked.connect(self.l3SaveSeaBASSCheckBoxUpdate) 
+
+        # SeaBASSHeader File
+        l3SeaBASSfsm = QtWidgets.QFileSystemModel()
+        index = l3SeaBASSfsm.setRootPath("Config")
+        
+        self.l3SeaBASSHeaderLabel = QtWidgets.QLabel('       SeaBASS Header File', self)
+        #self.l3SeaBASSHeaderLabel.move(30, 20)
+
+        self.l3SeaBASSHeaderComboBox = QtWidgets.QComboBox(self)
+        self.l3SeaBASSHeaderComboBox.setModel(l3SeaBASSfsm)
+        l3SeaBASSfsm.setNameFilters(["*.hdr"]) # How to default to last used, or first on the list?
+        l3SeaBASSfsm.setNameFilterDisables(False) #??
+        l3SeaBASSfsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
+        self.l3SeaBASSHeaderComboBox.setRootModelIndex(index)
+        self.l3SeaBASSHeaderComboBox.setCurrentIndex(0) # How to default to last used, or first on the list?  
+        #self.l3SeaBASSHeaderComboBox.move(30, 50)                
+
+        self.l3SeaBASSHeaderNewButton = QtWidgets.QPushButton("New", self)
+        #self.l3SeaBASSHeaderNewButton.move(30, 80)
+        self.l3SeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit", self)
+        #self.l3SeaBASSHeaderEditButton.move(130, 80)
+        self.l3SeaBASSHeaderDeleteButton = QtWidgets.QPushButton("Delete", self)
+
+        self.l3SeaBASSHeaderNewButton.clicked.connect(self.l3seaBASSHeaderNewButtonPressed)
+        self.l3SeaBASSHeaderEditButton.clicked.connect(self.l3seaBASSHeaderEditButtonPressed)
+        self.l3SeaBASSHeaderDeleteButton.clicked.connect(self.l3seaBASSHeaderDeleteButtonPressed)  
 
         # L4     
         l4Label = QtWidgets.QLabel("Level 4 Processing", self)
@@ -494,6 +523,17 @@ class ConfigWindow(QtWidgets.QDialog):
         l3SeaBASSHBox.addWidget(self.l3SaveSeaBASSCheckBox)    
         VBox2.addLayout(l3SeaBASSHBox)
 
+        l3SeaBASSHeaderHBox = QtWidgets.QHBoxLayout()
+        l3SeaBASSHeaderHBox.addWidget(self.l3SeaBASSHeaderLabel)
+        l3SeaBASSHeaderHBox.addWidget(self.l3SeaBASSHeaderComboBox)
+        VBox2.addLayout(l3SeaBASSHeaderHBox)
+
+        l3SeaBASSHeaderHBox2 = QtWidgets.QHBoxLayout()
+        l3SeaBASSHeaderHBox2.addWidget(self.l3SeaBASSHeaderNewButton)
+        l3SeaBASSHeaderHBox2.addWidget(self.l3SeaBASSHeaderEditButton)
+        l3SeaBASSHeaderHBox2.addWidget(self.l3SeaBASSHeaderDeleteButton)
+        VBox2.addLayout(l3SeaBASSHeaderHBox2)
+
         VBox2.addSpacing(3)
         
         # Right box
@@ -708,8 +748,60 @@ class ConfigWindow(QtWidgets.QDialog):
     def l3PlotTimeInterpCheckBoxUpdate(self):
         print("ConfigWindow - l3PlotTimeInterpCheckBoxUpdate")
 
+
+
     def l3SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l3SaveSeaBASSCheckBoxUpdate")
+        disabled = (not self.l3SaveSeaBASSCheckBox.isChecked())
+        self.l3SeaBASSHeaderNewButton.setDisabled(disabled)
+        self.l3SeaBASSHeaderEditButton.setDisabled(disabled)
+        self.l3SeaBASSHeaderDeleteButton.setDisabled(disabled)
+
+    def l3seaBASSHeaderNewButtonPressed(self):
+        print("New SeaBASSHeader Dialogue")
+        text, ok = QtWidgets.QInputDialog.getText(self, 'New SeaBASSHeader File', 'Enter File Name')
+        if ok:
+            print("Create SeaBASSHeader File: ", text)
+            SeaBASSHeader.createDefaultSeaBASSHeader(text)
+            # ToDo: Add code to change text for the combobox once file is created      
+
+    def l3seaBASSHeaderEditButtonPressed(self):
+        print("Edit seaBASSHeader Dialogue")
+        
+        seaBASSHeaderFileName = self.l3SeaBASSHeaderComboBox.currentText()
+        inputDir = self.inputDirectory
+        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
+        if os.path.isfile(seaBASSHeaderPath):
+            SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+            seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
+            #seaBASSHeaderDialog = CalibrationEditWindow(seaBASSHeaderFileName, self)
+            seaBASSHeaderDialog.show()
+        else:
+            #print("Not a SeaBASSHeader File: " + seaBASSHeaderFileName)
+            message = "Not a seaBASSHeader File: " + seaBASSHeaderFileName
+            QtWidgets.QMessageBox.critical(self, "Error", message)
+
+    def l3seaBASSHeaderDeleteButtonPressed(self):
+        print("Delete seaBASSHeader Dialogue")
+        # print("index: ", self.seaBASSHeaderComboBox.currentIndex())
+        # print("text: ", self.seaBASSHeaderComboBox.currentText())
+        seaBASSHeaderFileName = self.l3SeaBASSHeaderComboBox.currentText()
+        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
+        if os.path.isfile(seaBASSHeaderPath):
+            seaBASSHeaderDeleteMessage = "Delete " + seaBASSHeaderFileName + "?"
+
+            reply = QtWidgets.QMessageBox.question(self, 'Message', seaBASSHeaderDeleteMessage, \
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+
+            if reply == QtWidgets.QMessageBox.Yes:
+                SeaBASSHeader.deleteSeaBASSHeader(seaBASSHeaderFileName)
+        else:
+            #print("Not a seaBASSHeader File: " + seaBASSHeaderFileName)
+            message = "Not a seaBASSHeader File: " + seaBASSHeaderFileName
+            QtWidgets.QMessageBox.critical(self, "Error", message)
+
+
+
 
     def l4EnableWindSpeedCalculationCheckBoxUpdate(self):
         print("ConfigWindow - l4EnableWindSpeedCalculationCheckBoxUpdate")
@@ -781,6 +873,8 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL3InterpInterval"] = float(self.l3InterpIntervalLineEdit.text())
         ConfigFile.settings["bL3PlotTimeInterp"] = int(self.l3PlotTimeInterpCheckBox.isChecked())
         ConfigFile.settings["bL3SaveSeaBASS"] = int(self.l3SaveSeaBASSCheckBox.isChecked())
+        ConfigFile.settings["seaBASSHeaderFileName"] = self.l3SeaBASSHeaderComboBox.currentText()
+        
 
         ConfigFile.settings["fL4RhoSky"] = float(self.l4RhoSkyLineEdit.text())
         ConfigFile.settings["bL4EnableWindSpeedCalculation"] = int(self.l4EnableWindSpeedCalculationCheckBox.isChecked())

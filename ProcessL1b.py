@@ -1,4 +1,5 @@
 
+import math
 import HDFRoot
 #import HDFGroup
 #import HDFDataset
@@ -30,7 +31,7 @@ class ProcessL1b:
                 # This is handled seperately in order to deal with the UTC fields in GPS            
                 if ticker ==0:
                     msg = "   Remove GPS Data"
-                    print(msg)
+                    # print(msg)
                     Utilities.writeLogFile(msg)
 
                 gpsTimeData = group.getDataset("UTCPOS")        
@@ -41,7 +42,7 @@ class ProcessL1b:
                     # print(dataSec[i])        
             else:
                 msg = ("   Remove " + group.id + " Data")
-                print(msg)
+                # print(msg)
                 Utilities.writeLogFile(msg)
                 timeData = group.getDataset("TIMETAG2")        
                 dataSec = []
@@ -54,9 +55,9 @@ class ProcessL1b:
                 startLength = lenDataSec
                 ticker +=1
 
-            msg = ('   Length of dataset prior to removal ' + str(lenDataSec) + ' long')
-            print(msg)
-            Utilities.writeLogFile(msg)
+            # msg = ('   Length of dataset prior to removal ' + str(lenDataSec) + ' long')
+            # print(msg)
+            # Utilities.writeLogFile(msg)
 
             if lenDataSec > 0:
                 counter = 0
@@ -75,9 +76,9 @@ class ProcessL1b:
                     test = len(group.getDataset("UTCPOS").data["NONE"])
                 else:
                     test = len(group.getDataset("TIMETAG2").data["NONE"])
-                msg = ("     Length of dataset after removal " + str(test))
-                print(msg)
-                Utilities.writeLogFile(msg)
+                # msg = ("     Length of dataset after removal " + str(test))
+                # print(msg)
+                # Utilities.writeLogFile(msg)
                 finalCount += counter
             else:
                 msg = ('Data group is empty')
@@ -248,10 +249,7 @@ class ProcessL1b:
     # Calibrates raw data from L1a using information from calibration file
     @staticmethod
     def processL1b(node, calibrationMap): 
-        root = HDFRoot.HDFRoot()
-        root.copy(node)
-
-        root.attributes["PROCESSING_LEVEL"] = "1b"
+        
 
         badTimes = None   
         # Apply Pitch & Roll Filter
@@ -393,7 +391,7 @@ class ProcessL1b:
                 start = -1
                 for index in range(len(rotator)):
                     # Check for angles spanning north
-                    if rotator[index] + home > absRotatorMax or rotator[index] + home < absRotatorMin:
+                    if rotator[index] + home > absRotatorMax or rotator[index] + home < absRotatorMin or math.isnan(rotator[index]):
                         i += 1                              
                         if start == -1:
                             # print('Absolute rotator angle outside bounds. ' + str(round(rotator[index] + home)))
@@ -444,6 +442,9 @@ class ProcessL1b:
                 if badTimes is None:
                     badTimes = []
 
+                # Need to add relAzimuthAngle to a dataset in node
+                newRelAzData = gp.addDataset("REL_AZ")
+                relAz=[]
                 start = -1
                 for index in range(len(sunAzimuth)):
                     # Check for angles spanning north
@@ -459,7 +460,9 @@ class ProcessL1b:
                     else:
                         relAzimuthAngle = hiAng-loAng
 
-                    if relAzimuthAngle > relAzimuthMax or relAzimuthAngle < relAzimuthMin:   
+                    relAz.append(relAzimuthAngle)
+
+                    if relAzimuthAngle > relAzimuthMax or relAzimuthAngle < relAzimuthMin or math.isnan(relAzimuthAngle):   
                         i += 1                              
                         if start == -1:
                             # print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle)))
@@ -476,12 +479,12 @@ class ProcessL1b:
                             # stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
                             badTimes.append(startstop)
                             start = -1
+                newRelAzData.columns["REL_AZ"] = relAz
+                newRelAzData.columnsToDataset()
                 msg = ("Percentage of SATNAV data out of Solar Azimuth bounds: " + str(round(100*i/len(timeStamp))) + "%")
                 print(msg)
                 Utilities.writeLogFile(msg)
-
-        
-                
+                        
         msg = "Eliminate combined filtered data from datasets.__________________________________"
         print(msg)
         Utilities.writeLogFile(msg)
@@ -523,7 +526,7 @@ class ProcessL1b:
         liUnits = None
         ltUnits = None
 
-        for gp in root.groups:
+        for gp in node.groups:
             # Apply calibration factors to each dataset in HDF 
             print("Group: ", gp.id)
             if "CalFileName" in gp.attributes:
@@ -541,8 +544,8 @@ class ProcessL1b:
                     ltUnits = cf.getUnits("LT")
 
         #print(esUnits, luUnits)
-        root.attributes["LI_UNITS"] = liUnits
-        root.attributes["LT_UNITS"] = ltUnits
-        root.attributes["ES_UNITS"] = esUnits
+        node.attributes["LI_UNITS"] = liUnits
+        node.attributes["LT_UNITS"] = ltUnits
+        node.attributes["ES_UNITS"] = esUnits
 
-        return root
+        return node

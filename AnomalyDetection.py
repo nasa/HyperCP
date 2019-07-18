@@ -55,6 +55,9 @@ def AnomalyDetection(self,inputDirectory):
             darkData.datasetToColumns()
             columns = darkData.columns
 
+            ''' This should include the time stamp instead of just an index to
+            plot against below.'''
+
             step = 20 # Steps in wavebands used for plots
             index = 0
             for k in columns.items():
