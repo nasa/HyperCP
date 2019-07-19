@@ -357,9 +357,11 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l4EnablePercentLtCheckBox.clicked.connect(self.l4EnablePercentLtCheckBoxUpdate)
 
         self.saveButton = QtWidgets.QPushButton("Save")
+        self.saveAsButton = QtWidgets.QPushButton("Save As")
         self.cancelButton = QtWidgets.QPushButton("Cancel")                      
             
         self.saveButton.clicked.connect(self.saveButtonPressed)
+        self.saveAsButton.clicked.connect(self.saveAsButtonPressed)
         self.cancelButton.clicked.connect(self.cancelButtonPressed)
 
         # Whole Window Box
@@ -610,6 +612,7 @@ class ConfigWindow(QtWidgets.QDialog):
         saveHBox = QtWidgets.QHBoxLayout()
         saveHBox.addStretch(1)
         saveHBox.addWidget(self.saveButton)
+        saveHBox.addWidget(self.saveAsButton)
         saveHBox.addWidget(self.cancelButton)
 
         # Adds hBox and saveHBox to primary VBox 
@@ -692,7 +695,6 @@ class ConfigWindow(QtWidgets.QDialog):
         print("CalibrationEditWindow - Calibration Frame Type Changed")
         print("Current index",i,"selection changed ", self.calibrationFrameTypeComboBox.currentText())
         self.setCalibrationSettings()
-
 
     def l1aCleanSZACheckBoxUpdate(self):
         print("ConfigWindow - l1aCleanSZAAngleCheckBoxUpdate")
@@ -853,7 +855,6 @@ class ConfigWindow(QtWidgets.QDialog):
     def l4SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l4SaveSeaBASSCheckBoxUpdate")
 
-
     def saveButtonPressed(self):
         print("ConfigWindow - Save Pressed")
         # print(self.l2Deglitch0LineEdit.text())
@@ -863,7 +864,6 @@ class ConfigWindow(QtWidgets.QDialog):
             alert.setText('Deglitching windows must be odd integers.')
             alert.exec_()
             return
-
 
         ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
         ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())
@@ -910,6 +910,69 @@ class ConfigWindow(QtWidgets.QDialog):
         QtWidgets.QMessageBox.about(self, "Edit Config File", "Config File Saved")
         self.close()
 
+    def saveAsButtonPressed(self):
+        print("ConfigWindow - Save As Pressed")
+        self.newName, ok = QtWidgets.QInputDialog.getText(self, 'Save As Config File', 'Enter File Name')
+        if ok:
+            print("Create Config File: ", self.newName)
+
+            if not self.newName.endswith(".cfg"):
+                self.newName = self.newName + ".cfg"
+                ConfigFile.filename = self.newName                
+
+            self.calibrationFileComboBox.currentIndexChanged.connect(self.calibrationFileChanged)
+            
+            if int(self.l2Deglitch0LineEdit.text())%2 == 0 or int(self.l2Deglitch1LineEdit.text())%2 ==0:
+                alert = QtWidgets.QMessageBox()
+                alert.setText('Deglitching windows must be odd integers.')
+                alert.exec_()
+                return
+
+            ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
+            ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())
+            
+            ConfigFile.settings["fL1bRotatorHomeAngle"] = float(self.l1bRotatorHomeAngleLineEdit.text())
+            ConfigFile.settings["fL1bRotatorDelay"] = float(self.l1bRotatorDelayLineEdit.text())     
+            ConfigFile.settings["bL1bCleanPitchRoll"] = int(self.l1bCleanPitchRollCheckBox.isChecked())        
+            ConfigFile.settings["fL1bPitchRollPitch"] = float(self.l1bPitchRollPitchLineEdit.text())
+            ConfigFile.settings["fL1bPitchRollRoll"] = float(self.l1bPitchRollRollLineEdit.text())         
+            ConfigFile.settings["bL1bCleanRotatorAngle"] = int(self.l1bCleanRotatorAngleCheckBox.isChecked())        
+            ConfigFile.settings["fL1bRotatorAngleMin"] = float(self.l1bRotatorAngleMinLineEdit.text())
+            ConfigFile.settings["fL1bRotatorAngleMax"] = float(self.l1bRotatorAngleMaxLineEdit.text())                
+            ConfigFile.settings["bL1bCleanSunAngle"] = int(self.l1bCleanSunAngleCheckBox.isChecked())        
+            ConfigFile.settings["fL1bSunAngleMin"] = float(self.l1bSunAngleMinLineEdit.text())
+            ConfigFile.settings["fL1bSunAngleMax"] = float(self.l1bSunAngleMaxLineEdit.text())
+
+            ConfigFile.settings["bL2Deglitch"] = int(self.l2DeglitchCheckBox.isChecked()) 
+            ConfigFile.settings["fL2Deglitch0"] = int(self.l2Deglitch0LineEdit.text())
+            ConfigFile.settings["fL2Deglitch1"] = int(self.l2Deglitch1LineEdit.text())
+            ConfigFile.settings["fL2Deglitch2"] = float(self.l2Deglitch2LineEdit.text())
+            ConfigFile.settings["fL2Deglitch3"] = float(self.l2Deglitch3LineEdit.text())
+
+            ConfigFile.settings["fL3InterpInterval"] = float(self.l3InterpIntervalLineEdit.text())
+            ConfigFile.settings["bL3PlotTimeInterp"] = int(self.l3PlotTimeInterpCheckBox.isChecked())
+            ConfigFile.settings["bL3SaveSeaBASS"] = int(self.l3SaveSeaBASSCheckBox.isChecked())
+            ConfigFile.settings["seaBASSHeaderFileName"] = self.l3SeaBASSHeaderComboBox.currentText()
+            
+
+            ConfigFile.settings["fL4RhoSky"] = float(self.l4RhoSkyLineEdit.text())
+            ConfigFile.settings["bL4EnableWindSpeedCalculation"] = int(self.l4EnableWindSpeedCalculationCheckBox.isChecked())
+            ConfigFile.settings["fL4DefaultWindSpeed"] = float(self.l4DefaultWindSpeedLineEdit.text())
+            ConfigFile.settings["bL4EnableQualityFlags"] = int(self.l4QualityFlagCheckBox.isChecked())
+            ConfigFile.settings["fL4SignificantEsFlag"] = float(self.l4EsFlagLineEdit.text())
+            ConfigFile.settings["fL4DawnDuskFlag"] = float(self.l4DawnDuskFlagLineEdit.text())
+            ConfigFile.settings["fL4RainfallHumidityFlag"] = float(self.l4RainfallHumidityFlagLineEdit.text())
+            ConfigFile.settings["fL4TimeInterval"] = int(self.l4TimeIntervalLineEdit.text())                
+            ConfigFile.settings["bL4PerformNIRCorrection"] = int(self.l4NIRCorrectionCheckBox.isChecked())
+            ConfigFile.settings["bL4EnablePercentLtCorrection"] = int(self.l4EnablePercentLtCheckBox.isChecked())
+            ConfigFile.settings["fL4PercentLt"] = float(self.l4PercentLtLineEdit.text())
+            ConfigFile.settings["bL4SaveSeaBASS"] = int(self.l4SaveSeaBASSCheckBox.isChecked())            
+
+            QtWidgets.QMessageBox.about(self, "Save As Config File", "Config File Saved")
+            ConfigFile.saveConfig(ConfigFile.filename)
+            # self.configComboBox.update()
+            self.close()
+        
 
     def cancelButtonPressed(self):
         print("ConfigWindow - Cancel Pressed")

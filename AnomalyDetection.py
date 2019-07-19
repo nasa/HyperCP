@@ -22,7 +22,12 @@ def AnomalyDetection(self,inputDirectory):
     # Open L1B HDF5 file for Deglitching        
     inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1B HDF5 file for Deglitching", \
         inputDirectory)
-    print(inFilePath[0])
+    try:
+        print(inFilePath[0])
+    except:
+        print('No file returned')
+        return
+
 
     windowSizeDark = int(self.l2Deglitch0LineEdit.text())
     windowSizeLight= int(self.l2Deglitch1LineEdit.text())

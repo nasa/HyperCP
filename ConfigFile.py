@@ -114,7 +114,7 @@ class ConfigFile:
     @staticmethod
     def saveConfig(filename):
         print("ConfigFile - Save Config")
-
+        ConfigFile.filename = filename
         jsn = json.dumps(ConfigFile.settings)
         fp = os.path.join("Config", filename)
 
