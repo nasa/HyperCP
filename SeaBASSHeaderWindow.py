@@ -24,7 +24,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         intValidator = QtGui.QIntValidator()
         doubleValidator = QtGui.QDoubleValidator()
 
-        nameLabel = QtWidgets.QLabel("Editing: " + self.name, self)
+        nameLabel = QtWidgets.QLabel(f'Editing: {self.name}', self)
         linkSeaBASSLabel = QtWidgets.QLabel("For input assistance, go to \
             <a href=\"https://seabass.gsfc.nasa.gov/wiki/metadataheaders\"> SeaBASS Metadata Headers</a>")
         linkSeaBASSLabel.setOpenExternalLinks(True)                
@@ -110,6 +110,11 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.wave_heightLineEdit = QtWidgets.QLineEdit(self)
         self.wave_heightLineEdit.setText(str(SeaBASSHeader.settings["wave_height"]))
         self.wave_heightLineEdit.setValidator(doubleValidator)
+
+        secchi_depthLabel = QtWidgets.QLabel("secchi_depth", self)
+        self.secchi_depthLineEdit = QtWidgets.QLineEdit(self)
+        self.secchi_depthLineEdit.setText(str(SeaBASSHeader.settings["secchi_depth"]))
+        self.secchi_depthLineEdit.setValidator(doubleValidator)
 
         #############################
         commentsLabel = QtWidgets.QLabel("Config Comments (lead line with !)", self)
@@ -275,6 +280,10 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         HBox25.addWidget(self.wave_heightLineEdit)
         VBox1.addLayout(HBox25)
 
+        HBox31 = QtWidgets.QHBoxLayout()
+        HBox31.addWidget(secchi_depthLabel)
+        HBox31.addWidget(self.secchi_depthLineEdit)
+        VBox1.addLayout(HBox31)
         ##############
         VBox2 = QtWidgets.QVBoxLayout()
         #############
@@ -399,6 +408,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.settings["measurement_depth"] = self.measurement_depthLineEdit.text()      
         SeaBASSHeader.settings["cloud_percent"] = self.cloud_percentLineEdit.text()     
         SeaBASSHeader.settings["wave_height"] = self.wave_heightLineEdit.text()
+        SeaBASSHeader.settings["secchi_depth"] = self.secchi_depthLineEdit.text()
 
         SeaBASSHeader.settings["instrument_manufacturer"] = self.instrument_manufacturerLineEdit.text()
         SeaBASSHeader.settings["instrument_model"] = self.instrument_modelLineEdit.text()
@@ -430,7 +440,30 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.settings["comments"] =\
             f'! SZA Filter = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
             f'! Rotator Home Angle = {ConfigFile.settings["fL1bRotatorHomeAngle"]}\n'+\
-            f'! Rotator Delay = {ConfigFile.settings["fL1bRotatorDelay"]}\n+'
+            f'! Rotator Delay = {ConfigFile.settings["fL1bRotatorDelay"]}\n'+\
+            f'! Max Pitch = {ConfigFile.settings["fL1bPitchRollPitch"]}\n'+\
+            f'! Max Roll = {ConfigFile.settings["fL1bPitchRollRoll"]}\n'+\
+            f'! Rotator Min = {ConfigFile.settings["fL1bRotatorAngleMin"]}\n'+\
+            f'! Rotator Max = {ConfigFile.settings["fL1bRotatorAngleMax"]}\n'+\
+            f'! Rel Azimuth Min = {ConfigFile.settings["fL1bSunAngleMin"]}\n'+\
+            f'! Rel Azimuth Max = {ConfigFile.settings["fL1bSunAngleMax"]}\n'+\
+            f'! Dark Window = {ConfigFile.settings["fL2Deglitch0"]}\n'+\
+            f'! Light Window = {ConfigFile.settings["fL2Deglitch1"]}\n'+\
+            f'! Dark Sigma = {ConfigFile.settings["fL2Deglitch2"]}\n'+\
+            f'! Light Sigma = {ConfigFile.settings["fL2Deglitch3"]}\n'+\
+            f'! Wavelength Interp Int = {ConfigFile.settings["fL3InterpInterval"]}\n'+\
+            f'! Rho Sky = {ConfigFile.settings["fL4RhoSky"]}\n'+\
+            f'! Default Wind = {ConfigFile.settings["fL4DefaultWindSpeed"]}\n'+\
+            f'! Es Flag = {ConfigFile.settings["fL4SignificantEsFlag"]}\n'+\
+            f'! Dawn/Dusk Flag = {ConfigFile.settings["fL4DawnDuskFlag"]}\n'+\
+            f'! Rain/Humidity Flag = {ConfigFile.settings["fL4RainfallHumidityFlag"]}\n'+\
+            f'! Rrs Time Interval = {ConfigFile.settings["fL4TimeInterval"]}\n'+\
+            f'! Percent Light = {ConfigFile.settings["fL4PercentLt"]}'
+
+        self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
+        self.commentsLineEdit.update()
+
+        # print(SeaBASSHeader.settings["comments"])
 
 
 

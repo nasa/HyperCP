@@ -77,11 +77,17 @@ class SeaBASSWriter:
         ls[1]='time'
         ls[2]='lat'
         ls[3]='lon'
-        ls[3]='relaz'        
-        fieldsLineStr = ','.join(list(dataset.data.dtype.names)[:5] + [f'{dtype}{band}' for band in ls[5:]])
+        ls[4]='relaz'   
+        if dtype == 'es':
+            fieldName = 'Es'
+        elif dtype == 'li':
+            fieldName = 'Lsky'
+        elif dtype == 'lt':
+            fieldName = 'Lt'
+        fieldsLineStr = ','.join(ls[:5] + [f'{fieldName}{band}' for band in ls[5:]])
         
         lenRad = (len(dataset.data.dtype.names)-5)
-        unitsLine = ['yymmdd']
+        unitsLine = ['yyyymmdd']
         unitsLine.append('hh:mm:ss')
         unitsLine.extend(['degrees']*3)
         unitsLine.extend([units]*lenRad)
@@ -118,14 +124,15 @@ class SeaBASSWriter:
         
         outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{dtype}{os.path.split(fp)[1].replace(".hdf",".out")}'
 
-        outFile = open(outFileName,'w')
+        outFile = open(outFileName,'w',newline='\n')
         outFile.write('/begin_header\n')
         for key,value in headerBlock.items():
-            if key != 'comments':
+            if key != 'comments' and key != 'other_comments':
                 # Python 3 f-string
                 line = f'/{key}={value}\n'
                 outFile.write(line)
         outFile.write(headerBlock['comments']+'\n')        
+        outFile.write(headerBlock['other_comments']+'\n')
         outFile.write('/fields='+fields+'\n')
         outFile.write('/units='+units+'\n')
         outFile.write('/end_header\n')

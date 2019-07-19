@@ -16,10 +16,11 @@ class ConfigFile:
 
         print("fL1bRotatorHomeAngle", ConfigFile.settings["fL1bRotatorHomeAngle"])
         print("fL1bRotatorDelay", ConfigFile.settings["fL1bRotatorDelay"]) 
+        print("fL1bPitchRollPitch", ConfigFile.settings["fL1bPitchRollPitch"]) 
+        print("fL1bPitchRollRoll", ConfigFile.settings["fL1bPitchRollRoll"]) 
         print("bL1bCleanRotatorAngle", ConfigFile.settings["bL1bCleanRotatorAngle"])
         print("fL1bRotatorAngleMin", ConfigFile.settings["fL1bRotatorAngleMin"])
         print("fL1bRotatorAngleMax", ConfigFile.settings["fL1bRotatorAngleMax"])
-        print("fL1bRotatorDelay", ConfigFile.settings["fL1bRotatorDelay"])
         print("bL1bCleanSunAngle", ConfigFile.settings["bL1bCleanSunAngle"])
         print("fL1bSunAngleMin", ConfigFile.settings["fL1bSunAngleMin"])
         print("fL1bSunAngleMax", ConfigFile.settings["fL1bSunAngleMax"])
@@ -67,7 +68,7 @@ class ConfigFile:
         ConfigFile.settings["fL1aCleanSZAMax"] = 60.0 # e.g. Brewin 2016
 
         ConfigFile.settings["bL1bCleanPitchRoll"] = 0
-        ConfigFile.settings["fL1bPitchRollPitc"] = 5
+        ConfigFile.settings["fL1bPitchRollPitch"] = 5
         ConfigFile.settings["fL1bPitchRollRoll"] = 5
         ConfigFile.settings["fL1bRotatorHomeAngle"] = 0.0
         ConfigFile.settings["fL1bRotatorDelay"] = 60.0

@@ -43,14 +43,24 @@ class Window(QtWidgets.QWidget):
 
     def initUI(self):
 
+        banner = QtWidgets.QLabel(self)
+        pixmap = QtGui.QPixmap('ConFig/img/hyperspace2.jpg')
+        # banner.setPixmap(pixmap.scaled(banner.size(),QtCore.Qt.IgnoreAspectRatio))
+        banner.setPixmap(pixmap)
+        # banner.resize(self.width(),100)        
+
         """Initialize the user interface"""        
 
         # Configuration File
         fsm = QtWidgets.QFileSystemModel()
         index = fsm.setRootPath("Config")
         
-        self.configLabel = QtWidgets.QLabel('Configuration File', self)
-        #self.configLabel.move(30, 20)
+        configLabel = QtWidgets.QLabel('Select/Create Configuration File', self)
+        configLabel_font = configLabel.font()
+        configLabel_font.setPointSize(10)
+        configLabel_font.setBold(True)
+        configLabel.setFont(configLabel_font)
+        #configLabel.move(30, 20)
 
         self.configComboBox = QtWidgets.QComboBox(self)
         self.configComboBox.setModel(fsm)
@@ -105,7 +115,11 @@ class Window(QtWidgets.QWidget):
         self.skyRemoveButton.clicked.connect(self.skyRemoveButtonPressed)
 
 
-        self.singleLevelLabel = QtWidgets.QLabel('Single-Level Processing', self)
+        singleLevelLabel = QtWidgets.QLabel('Single-Level Processing', self)
+        singleLevelLabel_font = singleLevelLabel.font()
+        singleLevelLabel_font.setPointSize(10)
+        singleLevelLabel_font.setBold(True)
+        singleLevelLabel.setFont(singleLevelLabel_font)
         #self.singleLevelLabel.move(30, 270)
 
         self.singleL1aButton = QtWidgets.QPushButton("Raw (BIN) --> Level 1a (HDF5)", self)
@@ -129,7 +143,11 @@ class Window(QtWidgets.QWidget):
         self.singleL3Button.clicked.connect(self.singleL3Clicked)
         self.singleL4Button.clicked.connect(self.singleL4Clicked)
 
-        self.multiLevelLabel = QtWidgets.QLabel('Multi-Level Processing', self)
+        multiLevelLabel = QtWidgets.QLabel('Multi-Level Processing', self)
+        multiLevelLabel_font = multiLevelLabel.font()
+        multiLevelLabel_font.setPointSize(10)
+        multiLevelLabel_font.setBold(True)
+        multiLevelLabel.setFont(multiLevelLabel_font)
         #self.multiLevelLabel.move(30, 140)
 
         self.multi2Button = QtWidgets.QPushButton("Level Raw (BIN) --> 4 (HDF5)", self)
@@ -139,9 +157,12 @@ class Window(QtWidgets.QWidget):
 
         # Add QtWidgets to the Window
         vBox = QtWidgets.QVBoxLayout()
-        vBox.addStretch(1)
+        # vBox.addStretch(1)
 
-        vBox.addWidget(self.configLabel)
+        vBox.addWidget(banner)
+
+        # vBox1 = QtWidgets.QVBoxLayout()
+        vBox.addWidget(configLabel)
         vBox.addWidget(self.configComboBox)
         # print("index: ", self.configComboBox.currentIndex())
         # print("text: ", self.configComboBox.currentText())        
@@ -153,7 +174,7 @@ class Window(QtWidgets.QWidget):
         configHBox.addWidget(self.configEditButton)
         configHBox.addWidget(self.configDeleteButton)
         vBox.addLayout(configHBox) 
-        vBox.addStretch(1) # allows vbox to stretch open here when resized
+        vBox.addStretch(1) # allows vBox to stretch open here when resized
 
         vBox.addWidget(self.inDirLabel)
         vBox.addWidget(self.inDirButton)
@@ -183,7 +204,7 @@ class Window(QtWidgets.QWidget):
         vBox.addLayout(skyHBox)
         vBox.addStretch(1)
 
-        vBox.addWidget(self.singleLevelLabel)
+        vBox.addWidget(singleLevelLabel)
         # vBox.addWidget(self.singleL0Button)
         vBox.addWidget(self.singleL1aButton)
         vBox.addWidget(self.singleL1bButton)
@@ -193,11 +214,12 @@ class Window(QtWidgets.QWidget):
 
         vBox.addStretch(1)
 
-        vBox.addWidget(self.multiLevelLabel)
+        vBox.addWidget(multiLevelLabel)
         vBox.addWidget(self.multi2Button)
 
         vBox.addStretch(1)
 
+        # vBox.addLayout(vBox1)
         self.setLayout(vBox)
 
         self.setGeometry(300, 300, 290, 600)
