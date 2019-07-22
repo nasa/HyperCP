@@ -32,8 +32,8 @@ class Window(QtWidgets.QWidget):
            os.makedirs("Data") 
         if not os.path.exists("Plots"):
            os.makedirs("Plots")
-        if not os.path.exists("Ascii"):
-           os.makedirs("Ascii")
+        # if not os.path.exists("Ascii"):
+        #    os.makedirs("Ascii")
         if not os.path.exists("Config"):
             os.makedirs("Config")
         if not os.path.exists("Logs"):
@@ -44,7 +44,7 @@ class Window(QtWidgets.QWidget):
     def initUI(self):
 
         banner = QtWidgets.QLabel(self)
-        pixmap = QtGui.QPixmap('ConFig/img/hyperspace2.jpg')
+        pixmap = QtGui.QPixmap('Config/img/hyperspace2.jpg')
         # banner.setPixmap(pixmap.scaled(banner.size(),QtCore.Qt.IgnoreAspectRatio))
         banner.setPixmap(pixmap)
         # banner.resize(self.width(),100)        
@@ -155,6 +155,7 @@ class Window(QtWidgets.QWidget):
 
         self.multi2Button.clicked.connect(self.multi2Clicked)
 
+        ########################################################################################
         # Add QtWidgets to the Window
         vBox = QtWidgets.QVBoxLayout()
         # vBox.addStretch(1)

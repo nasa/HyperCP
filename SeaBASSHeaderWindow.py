@@ -24,17 +24,18 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         intValidator = QtGui.QIntValidator()
         doubleValidator = QtGui.QDoubleValidator()
 
-        nameLabel = QtWidgets.QLabel(f'Editing: {self.name}', self)
+        self.nameLabel = QtWidgets.QLabel(f'Editing: {self.name}', self)
         linkSeaBASSLabel = QtWidgets.QLabel("For input assistance, go to \
             <a href=\"https://seabass.gsfc.nasa.gov/wiki/metadataheaders\"> SeaBASS Metadata Headers</a>")
         linkSeaBASSLabel.setOpenExternalLinks(True)                
 
-        instructionLabel = QtWidgets.QLabel("  Separate multiple entries with commas, and replace spaces with underscores.\
-            ")
+        instructionLabel = QtWidgets.QLabel("Separate multiple entries with commas, and replace spaces with underscores.")        
         instructionLabel_font = instructionLabel.font()
         instructionLabel_font.setPointSize(10)
         instructionLabel_font.setBold(True)
         instructionLabel.setFont(instructionLabel_font)
+        instructionLabelSub = QtWidgets.QLabel("To match fields to existing SeaBASS entries, \
+            check the 'Lists' pull-down menu  <a href=\"https://seabass.gsfc.nasa.gov\"> here</a>.")
 
        
         investigatorsLabel = QtWidgets.QLabel("Investigators", self)
@@ -186,19 +187,22 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         ##
 
         self.saveButton = QtWidgets.QPushButton("Save")
+        self.saveAsButton = QtWidgets.QPushButton("Save As")
         self.cancelButton = QtWidgets.QPushButton("Cancel")                      
             
         self.saveButton.clicked.connect(self.saveButtonPressed)
+        self.saveAsButton.clicked.connect(self.saveAsButtonPressed)
         self.cancelButton.clicked.connect(self.cancelButtonPressed)
 
         # ####################################################################################
         # Whole Window Box
         VBox = QtWidgets.QVBoxLayout()
-        VBox.addWidget(nameLabel)
+        VBox.addWidget(self.nameLabel)
         VBox.addWidget(linkSeaBASSLabel)
 
         VBox1 = QtWidgets.QVBoxLayout()
         VBox1.addWidget(instructionLabel)
+        VBox1.addWidget(instructionLabelSub)
         # Horizontal Box 
         HBox1 = QtWidgets.QHBoxLayout()
         HBox1.addWidget(investigatorsLabel)
@@ -380,6 +384,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         saveHBox = QtWidgets.QHBoxLayout()
         saveHBox.addStretch(1)
         saveHBox.addWidget(self.saveButton)
+        saveHBox.addWidget(self.saveAsButton)
         saveHBox.addWidget(self.cancelButton)
 
         # Adds hBox and saveHBox to primary VBox 
@@ -390,6 +395,37 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.setGeometry(300, 100, 0, 0)
         self.setWindowTitle('Edit SeaBASS Header')
 
+
+    def configUpdateButtonPressed(self):
+        print("Updating comments from values in ConFigWindow")
+
+        SeaBASSHeader.settings["comments"] =\
+            f'! SZA Filter = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
+            f'! Rotator Home Angle = {ConfigFile.settings["fL1bRotatorHomeAngle"]}\n'+\
+            f'! Rotator Delay = {ConfigFile.settings["fL1bRotatorDelay"]}\n'+\
+            f'! Max Pitch = {ConfigFile.settings["fL1bPitchRollPitch"]}\n'+\
+            f'! Max Roll = {ConfigFile.settings["fL1bPitchRollRoll"]}\n'+\
+            f'! Rotator Min = {ConfigFile.settings["fL1bRotatorAngleMin"]}\n'+\
+            f'! Rotator Max = {ConfigFile.settings["fL1bRotatorAngleMax"]}\n'+\
+            f'! Rel Azimuth Min = {ConfigFile.settings["fL1bSunAngleMin"]}\n'+\
+            f'! Rel Azimuth Max = {ConfigFile.settings["fL1bSunAngleMax"]}\n'+\
+            f'! Dark Window = {ConfigFile.settings["fL2Deglitch0"]}\n'+\
+            f'! Light Window = {ConfigFile.settings["fL2Deglitch1"]}\n'+\
+            f'! Dark Sigma = {ConfigFile.settings["fL2Deglitch2"]}\n'+\
+            f'! Light Sigma = {ConfigFile.settings["fL2Deglitch3"]}\n'+\
+            f'! Wavelength Interp Int = {ConfigFile.settings["fL3InterpInterval"]}\n'+\
+            f'! Rho Sky = {ConfigFile.settings["fL4RhoSky"]}\n'+\
+            f'! Default Wind = {ConfigFile.settings["fL4DefaultWindSpeed"]}\n'+\
+            f'! Es Flag = {ConfigFile.settings["fL4SignificantEsFlag"]}\n'+\
+            f'! Dawn/Dusk Flag = {ConfigFile.settings["fL4DawnDuskFlag"]}\n'+\
+            f'! Rain/Humidity Flag = {ConfigFile.settings["fL4RainfallHumidityFlag"]}\n'+\
+            f'! Rrs Time Interval = {ConfigFile.settings["fL4TimeInterval"]}\n'+\
+            f'! Percent Light = {ConfigFile.settings["fL4PercentLt"]}'
+
+        self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
+        self.commentsLineEdit.update()
+
+        # print(SeaBASSHeader.settings["comments"])
        
     def saveButtonPressed(self):
         print("SeaBASSHeaderWindow - Save Pressed")        
@@ -434,36 +470,19 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         QtWidgets.QMessageBox.about(self, "Edit SeaBASSHeader File", "SeaBASSHeader File Saved")
         self.close()
 
-    def configUpdateButtonPressed(self):
-        print("Updating comments from values in ConFigWindow")
+    def saveAsButtonPressed(self):
+        print("ConfigWindow - Save As Pressed")
+        self.name, ok = QtWidgets.QInputDialog.getText(self, 'Save As SeaBASS Header File', 'Enter File Name')
+        if ok:
+            print("Create SeaBASS Header: ", self.name)
 
-        SeaBASSHeader.settings["comments"] =\
-            f'! SZA Filter = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
-            f'! Rotator Home Angle = {ConfigFile.settings["fL1bRotatorHomeAngle"]}\n'+\
-            f'! Rotator Delay = {ConfigFile.settings["fL1bRotatorDelay"]}\n'+\
-            f'! Max Pitch = {ConfigFile.settings["fL1bPitchRollPitch"]}\n'+\
-            f'! Max Roll = {ConfigFile.settings["fL1bPitchRollRoll"]}\n'+\
-            f'! Rotator Min = {ConfigFile.settings["fL1bRotatorAngleMin"]}\n'+\
-            f'! Rotator Max = {ConfigFile.settings["fL1bRotatorAngleMax"]}\n'+\
-            f'! Rel Azimuth Min = {ConfigFile.settings["fL1bSunAngleMin"]}\n'+\
-            f'! Rel Azimuth Max = {ConfigFile.settings["fL1bSunAngleMax"]}\n'+\
-            f'! Dark Window = {ConfigFile.settings["fL2Deglitch0"]}\n'+\
-            f'! Light Window = {ConfigFile.settings["fL2Deglitch1"]}\n'+\
-            f'! Dark Sigma = {ConfigFile.settings["fL2Deglitch2"]}\n'+\
-            f'! Light Sigma = {ConfigFile.settings["fL2Deglitch3"]}\n'+\
-            f'! Wavelength Interp Int = {ConfigFile.settings["fL3InterpInterval"]}\n'+\
-            f'! Rho Sky = {ConfigFile.settings["fL4RhoSky"]}\n'+\
-            f'! Default Wind = {ConfigFile.settings["fL4DefaultWindSpeed"]}\n'+\
-            f'! Es Flag = {ConfigFile.settings["fL4SignificantEsFlag"]}\n'+\
-            f'! Dawn/Dusk Flag = {ConfigFile.settings["fL4DawnDuskFlag"]}\n'+\
-            f'! Rain/Humidity Flag = {ConfigFile.settings["fL4RainfallHumidityFlag"]}\n'+\
-            f'! Rrs Time Interval = {ConfigFile.settings["fL4TimeInterval"]}\n'+\
-            f'! Percent Light = {ConfigFile.settings["fL4PercentLt"]}'
+            if not self.name.endswith(".hdr"):
+                self.name = self.name + ".hdr"            
 
-        self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
-        self.commentsLineEdit.update()
+            self.nameLabel.update()
+            SeaBASSHeaderWindow.saveButtonPressed(self) 
+                      
 
-        # print(SeaBASSHeader.settings["comments"])
 
 
 

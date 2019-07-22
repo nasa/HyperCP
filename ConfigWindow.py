@@ -918,9 +918,10 @@ class ConfigWindow(QtWidgets.QDialog):
 
             if not self.newName.endswith(".cfg"):
                 self.newName = self.newName + ".cfg"
+                # oldConfigName = ConfigFile.filename
                 ConfigFile.filename = self.newName                
 
-            self.calibrationFileComboBox.currentIndexChanged.connect(self.calibrationFileChanged)
+            # self.calibrationFileComboBox.currentIndexChanged.connect(self.calibrationFileChanged)
             
             if int(self.l2Deglitch0LineEdit.text())%2 == 0 or int(self.l2Deglitch1LineEdit.text())%2 ==0:
                 alert = QtWidgets.QMessageBox()
@@ -970,6 +971,25 @@ class ConfigWindow(QtWidgets.QDialog):
 
             QtWidgets.QMessageBox.about(self, "Save As Config File", "Config File Saved")
             ConfigFile.saveConfig(ConfigFile.filename)
+
+            # Copy Calibration files into new Config folder
+            # fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files")
+            fnames = ConfigFile.settings['CalibrationFiles']
+            # print(fnames)
+
+            # oldCalibrationDir = os.path.splitext(oldConfigName)[0] + "_Calibration"
+            oldConfigName = self.name
+            newConfigName = ConfigFile.filename
+            oldCalibrationDir = os.path.splitext(oldConfigName)[0] + "_Calibration"
+            newCalibrationDir = os.path.splitext(newConfigName)[0] + "_Calibration"
+            oldConfigPath = os.path.join("Config", oldCalibrationDir)
+            newConfigPath = os.path.join("Config", newCalibrationDir)
+            for src in fnames:
+                srcPath = os.path.join(oldConfigPath, src)
+                destPath = os.path.join(newConfigPath, src)
+                print(srcPath)
+                print(destPath)
+                shutil.copy(srcPath, destPath)
             # self.configComboBox.update()
             self.close()
         

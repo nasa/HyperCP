@@ -12,7 +12,8 @@ Requires the Anaconda distribution of Python 3.X
 
 Download the entire HyperInSPACE repository, and save it anywhere on your machine.
 
-HyperInSPACE can be started in several of ways, such as by navigating to the program folder on the command line and using the following command:
+HyperInSPACE can be started in several of ways, such as by navigating to the program folder on the command line 
+and using the following command:
 $ python Main.py
 
 
@@ -20,31 +21,37 @@ $ python Main.py
 
 ### Config
 
-Under "Config File", click "New" to create a new HyperInSPACE config file. This file will be instrument-specific, and is usually
-also deployment-specific. Select the new config file from the drop-down menu. Click "Edit" to edit the config file.
+Under "Config File", click "New" to create a new HyperInSPACE config file. This file will be instrument-specific, 
+and is usually also deployment-specific. Select the new config file from the drop-down menu. Click "Edit" to edit 
+the config file.
 
-In the "Edit Config" window, click "Add Calibration Files" to add the calibration files that were from the extracted Satlantic .sip file. The currently selected calibration file can be selected using the drop-down menu.
+In the "Edit Config" window, click "Add Calibration Files" to add the calibration files that were from the extracted 
+Satlantic .sip file. The currently selected calibration file can be selected using the drop-down menu.
 
 For each calibration file:
 Click "Enable" to enable the calibration file.
-Select the frame type used for dark data correction, light data, or "Not Required" for navigational and ancillary data.
+Select the frame type used for dark data correction, light data, or "Not Required" for navigational and ancillary 
+data.
 
-Level 1A through Level 4 processing configurations can be set here. These values will depend on your viewing geometry, and quality control thresholds. Level 2 includes a tool to assist with data deglitching parameters ("Anomaly Analysis").
+Level 1A through Level 4 processing configurations can be set here. These values will depend on your viewing 
+geometry, and quality control thresholds. Level 2 includes a tool to assist with data deglitching parameters ("Anomaly 
+Analysis").
 
-Click "Save" to save the settings. A file will be created in the Config subdirectory, together with copies of the instrument files for later use.
+Click "Save" to save the settings. A file will be created in the Config subdirectory, together with copies of the 
+instrument files for later use.
 
 ### Processing
 
 Process the data by clicking on one of the buttons for single-level or multi-level processing.
 
-You will need to set up your data input and output directories from the Main window. Note that output subdirectories for particular processing levels (i.e. "L1a", "L3") will be created automatically within your output directory.
-The following folders will be created automatically when you first run the program:
-    Ascii - Data from L3 and L4 can optionally be output to text files here
-    Config - Configuration and instrument files
+You will need input your data input and output directories from the Main window. Note that output subdirectories 
+for particular processing levels (i.e. "L1a", ... "L4") will be created automatically within your output directory.
+
+The following folders will be created automatically when you first run the program:    
+    Config - Configuration and instrument files (by subdirectory - auto-created), SeaBASS configuration files
     Data - Optional location for input and/or output data
     Logs - Most command line output messages are captured for later reference in .log text files here
-    Plots - and Plots/Anomalies for optional plotted output (e.g. from Anomaly Analysis)
-
+    Plots - and Plots/Anomalies for optional plotted output (i.e. from Anomaly Analysis, L3, L4)
 
 
 ## Overview
@@ -52,16 +59,27 @@ The following folders will be created automatically when you first run the progr
 ### Main Window
 
 The Main window is the window that appears once HyperInSPACE is started.
-It has options to specify a config file, single-level processing, and multi-level processing.
+It has options to specify a configuration file, input/output directories, ancillary input files (wind and sky), 
+single-level processing, and multi-level processing.
 
-#### Config File
-
-Before doing any processing, a config file needs to be selected to specify the configuration 
-HyperInSPACE should use when processing the data.
-Available config files can be chosen using the drop-down box.
 The New button allows creation of a new config file.
 Edit allows editing the currently selected config file.
 Delete can be used to delete the currently selected config file.
+
+The Input/Output Data Directory buttons allow selection of data directories. Note that output data sub-
+directories are also auto-created as per below.
+
+Ancillary files for wind and sky should be text files SeaBASS format with columns for date, time, lat, and lon.
+See https://seabass.gsfc.nasa.gov/
+
+Processing levels are described below.
+
+#### Config File
+
+Before doing any processing, a configuration file needs to be created or selected to specify the configuration
+HyperInSPACE should use when processing the data.
+Available calibration files can be chosen/added using the drop-down box.
+
 
 Single-level processing - Performs one level of processing.
 Multi-level processing - Performs multiple levels of processing from the raw file up to the specified level.

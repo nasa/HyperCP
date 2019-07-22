@@ -189,30 +189,10 @@ class ProcessL2:
 
         '''        
         # Prosoft - Replace Light Timer with closest value in Dark Timer, interpolate Light Data
-        print("Test interpolate light data", lightData.id)
-        oldLightTimer = np.copy(lightTimer.data["NONE"]).tolist()
-        j = 0
-        for i in range(len(darkTimer.data["NONE"])):
-            v = darkTimer.data["NONE"][i]
-            closest = [0, abs(lightTimer.data["NONE"][0] - v)]
-            for j in range(1, len(lightTimer.data["NONE"])):
-                if abs(lightTimer.data["NONE"][j] - v) < closest[1]:
-                    closest[0] = j
-                    closest[1] = abs(lightTimer.data["NONE"][j] - v)
-            if closest[0] != len(lightTimer.data["NONE"])-1:
-                #print(closest)
-                lightTimer.data["NONE"][closest[0]] = v
 
-        newLightData = np.copy(lightData.data)
-        for k in darkData.data.dtype.fields.keys():
-            x = np.copy(oldLightTimer).tolist()
-            y = np.copy(lightData.data[k]).tolist()
-            #print("t1", len(x), len(y))
-            #print(len(x),len(y))
-            new_x = lightTimer.data["NONE"]
-            #newLightData[k] = Utilities.interp(x,y,new_x,'linear')
-            newLightData[k] = Utilities.interp(x,y,new_x,'cubic')
-        lightData.data = newLightData
+        ... has been changed to ...
+
+        # HyperInSPACE - Interpolate Dark values to match light measurements (e.g. Brewin 2016)
         '''
 
         if Utilities.hasNan(lightData):

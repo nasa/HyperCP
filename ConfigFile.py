@@ -68,26 +68,26 @@ class ConfigFile:
         ConfigFile.settings["fL1aCleanSZAMax"] = 60.0 # e.g. Brewin 2016
 
         ConfigFile.settings["bL1bCleanPitchRoll"] = 0
-        ConfigFile.settings["fL1bPitchRollPitch"] = 5
-        ConfigFile.settings["fL1bPitchRollRoll"] = 5
-        ConfigFile.settings["fL1bRotatorHomeAngle"] = 0.0
+        ConfigFile.settings["fL1bPitchRollPitch"] = 5 # These should all have citable defaults
+        ConfigFile.settings["fL1bPitchRollRoll"] = 5 # An "info" button would be nice for the citation
+        ConfigFile.settings["fL1bRotatorHomeAngle"] = 0.0 # Require knowledge of deployment set-up
         ConfigFile.settings["fL1bRotatorDelay"] = 60.0
         ConfigFile.settings["bL1bCleanRotatorAngle"] = 0
-        ConfigFile.settings["fL1bRotatorAngleMin"] = -40.0
-        ConfigFile.settings["fL1bRotatorAngleMax"] = 40.0
+        ConfigFile.settings["fL1bRotatorAngleMin"] = -40.0 # Require knowledge of deployment set-up
+        ConfigFile.settings["fL1bRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
         ConfigFile.settings["bL1bCleanSunAngle"] = 0
-        ConfigFile.settings["fL1bSunAngleMin"] = 90.0
+        ConfigFile.settings["fL1bSunAngleMin"] = 90.0 
         ConfigFile.settings["fL1bSunAngleMax"] = 135.0                
         ConfigFile.settings["bL1bSaveSeaBASS"] = 0
 
 
         ConfigFile.settings["bL2Deglitch"] = 0
-        ConfigFile.settings["fL2Deglitch0"] = 15    # These should all have citable defaults
-        ConfigFile.settings["fL2Deglitch1"] = 15     # An "info" button would be nice for the citation
+        ConfigFile.settings["fL2Deglitch0"] = 15    # These can be experimentally derived with the AnomalyDetection tool
+        ConfigFile.settings["fL2Deglitch1"] = 15     
         ConfigFile.settings["fL2Deglitch2"] = 3
         ConfigFile.settings["fL2Deglitch3"] = 3
 
-        ConfigFile.settings["fL3InterpInterval"] = 3
+        ConfigFile.settings["fL3InterpInterval"] = 3 # Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL3PlotTimeInterp"] = 0
         ConfigFile.settings["bL3SaveSeaBASS"] = 0
         ConfigFile.settings["seaBASSHeaderFileName"] = None

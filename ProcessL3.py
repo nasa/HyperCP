@@ -59,7 +59,7 @@ class ProcessL3:
             Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, instr)
 
 
-    # Converts a sensor group into the format used by Level 2s
+    # Converts a sensor group into the format used by Level 3
     # The sensor dataset is renamed (e.g. ES -> ES_hyperspectral)
     # The separate DATETAG, TIMETAG2 datasets are combined into the sensor dataset
     @staticmethod
@@ -703,7 +703,7 @@ class ProcessL3:
     @staticmethod
     def processL3(node):
         
-        root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class  (not sure about the .HDFRoot...its not a module in HDFRoot.py)
+        root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class 
         root.copyAttributes(node) # Now copy the attributes in from the L2 object
         root.attributes["PROCESSING_LEVEL"] = "3"
         root.attributes["DEPTH_RESOLUTION"] = "N/A"
