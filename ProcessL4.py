@@ -105,6 +105,8 @@ class ProcessL4:
     # Take a slice of a dataset stored in columns
     @staticmethod
     def columnToSlice(columns, start, end):
+        # Each column is a time series at a waveband
+        # Start and end are defined by the interval established in the Config
         newSlice = collections.OrderedDict()
         for k in columns:
             newSlice[k] = columns[k][start:end]
@@ -122,11 +124,14 @@ class ProcessL4:
         timetag = esColumns["Timetag2"]
         latpos = None
         lonpos = None
-        azimuth = None
-        shipTrue = None
-        pitch = None
-        rotator = None
-        roll = None
+
+        relAzimuth = None
+
+        # azimuth = None
+        # shipTrue = None
+        # pitch = None
+        # rotator = None
+        # roll = None
 
 
         esColumns.pop("Datetag")
@@ -151,31 +156,36 @@ class ProcessL4:
             ltColumns.pop("LONPOS")
 
 
-        if "AZIMUTH" in esColumns:
-            azimuth = esColumns["AZIMUTH"]
-            esColumns.pop("AZIMUTH")
-            liColumns.pop("AZIMUTH")
-            ltColumns.pop("AZIMUTH")
-        if "SHIP_TRUE" in esColumns:
-            shipTrue = esColumns["SHIP_TRUE"]
-            esColumns.pop("SHIP_TRUE")
-            liColumns.pop("SHIP_TRUE")
-            ltColumns.pop("SHIP_TRUE")
-        if "PITCH" in esColumns:
-            pitch = esColumns["PITCH"]
-            esColumns.pop("PITCH")
-            liColumns.pop("PITCH")
-            ltColumns.pop("PITCH")
-        if "ROTATOR" in esColumns:
-            rotator = esColumns["ROTATOR"]
-            esColumns.pop("ROTATOR")
-            liColumns.pop("ROTATOR")
-            ltColumns.pop("ROTATOR")
-        if "ROLL" in esColumns:
-            roll = esColumns["ROLL"]
-            esColumns.pop("ROLL")
-            liColumns.pop("ROLL")
-            ltColumns.pop("ROLL")
+        if "REL_AZ" in esColumns:
+            relAzimuth = esColumns["REL_AZ"]
+            esColumns.pop("REL_AZ")
+            liColumns.pop("REL_AZ")
+            ltColumns.pop("REL_AZ")
+        # if "AZIMUTH" in esColumns:
+        #     azimuth = esColumns["AZIMUTH"]
+        #     esColumns.pop("AZIMUTH")
+        #     liColumns.pop("AZIMUTH")
+        #     ltColumns.pop("AZIMUTH")
+        # if "SHIP_TRUE" in esColumns:
+        #     shipTrue = esColumns["SHIP_TRUE"]
+        #     esColumns.pop("SHIP_TRUE")
+        #     liColumns.pop("SHIP_TRUE")
+        #     ltColumns.pop("SHIP_TRUE")
+        # if "PITCH" in esColumns:
+        #     pitch = esColumns["PITCH"]
+        #     esColumns.pop("PITCH")
+        #     liColumns.pop("PITCH")
+        #     ltColumns.pop("PITCH")
+        # if "ROTATOR" in esColumns:
+        #     rotator = esColumns["ROTATOR"]
+        #     esColumns.pop("ROTATOR")
+        #     liColumns.pop("ROTATOR")
+        #     ltColumns.pop("ROTATOR")
+        # if "ROLL" in esColumns:
+        #     roll = esColumns["ROLL"]
+        #     esColumns.pop("ROLL")
+        #     liColumns.pop("ROLL")
+        #     ltColumns.pop("ROLL")
 
 
         # Stores the middle element
@@ -187,16 +197,18 @@ class ProcessL4:
         if lonpos:
             lon = lonpos[int(len(lonpos)/2)]
 
-        if azimuth:
-            azi = azimuth[int(len(azimuth)/2)]
-        if shipTrue:
-            ship = shipTrue[int(len(shipTrue)/2)]
-        if pitch:
-            pit = pitch[int(len(pitch)/2)]
-        if rotator:
-            rot = rotator[int(len(rotator)/2)]
-        if roll:
-            rol = roll[int(len(roll)/2)]
+        if relAzimuth:
+            relAzi = relAzimuth[int(len(relAzimuth)/2)]
+        # if azimuth:
+            # azi = azimuth[int(len(azimuth)/2)]
+        # if shipTrue:
+        #     ship = shipTrue[int(len(shipTrue)/2)]
+        # if pitch:
+        #     pit = pitch[int(len(pitch)/2)]
+        # if rotator:
+        #     rot = rotator[int(len(rotator)/2)]
+        # if roll:
+        #     rol = roll[int(len(roll)/2)]
 
 
         #print("Test:")
@@ -205,25 +217,24 @@ class ProcessL4:
 
         # Calculates the lowest 5% (based on Hooker & Morel 2003)
         n = len(list(ltColumns.values())[0])
-        x = round(n*percentLt/100)
+        x = round(n*percentLt/100) # number of retained values
         if n <= 5 or x == 0:
-            x = n
-
+            x = n # if only 5 or fewer records retained, use them all...
 
         #print(ltColumns["780.0"])
 
         # Find the indexes for the lowest 5%
         #lt780 = ltColumns["780.0"]
         lt780 = ProcessL4.interpolateColumn(ltColumns, 780.0)
-        index = np.argsort(lt780)
-        y = index[0:x]
+        index = np.argsort(lt780) # gives indexes if values were to be sorted
+        y = index[0:x] # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest 5% of lt780
 
 
         # Takes the mean of the lowest 5%
         es5Columns = collections.OrderedDict()
         li5Columns = collections.OrderedDict()
         lt5Columns = collections.OrderedDict()
-        windSpeedMean = defaultWindSpeed
+        windSpeedMean = defaultWindSpeed # replaced later with met file, if present
 
 
         # Checks if the data has NaNs
@@ -231,9 +242,9 @@ class ProcessL4:
         # Ignore runtime warnings when array is all NaNs
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            for k in esColumns:
-                v = [esColumns[k][i] for i in y]
-                mean = np.nanmean(v)
+            for k in esColumns: # each k is a time series at a waveband.
+                v = [esColumns[k][i] for i in y] # selects the lowest 5% within the interval window...
+                mean = np.nanmean(v) # ... and averages them
                 es5Columns[k] = [mean]
                 if np.isnan(mean):
                     hasNan = True
@@ -251,6 +262,7 @@ class ProcessL4:
                     hasNan = True
 
         # Mean of wind speed for data
+        # If present, use this instead of the default value
         if windSpeedColumns is not None:
             v = [windSpeedColumns[i] for i in y]
             mean = np.nanmean(v)
@@ -270,6 +282,9 @@ class ProcessL4:
                 return False
 
 
+        '''# This is the Ruddick, et al. 2006 approach, which has one method for 
+        # clear sky, and another for cloudy.'''
+
         # Calculate Rho_sky
         li750 = ProcessL4.interpolateColumn(li5Columns, 750.0)
         es750 = ProcessL4.interpolateColumn(es5Columns, 750.0)
@@ -279,8 +294,10 @@ class ProcessL4:
 
         # ToDo: sunny/wind calculations
         if not enableWindSpeedCalculation or sky750 > 0.05:
+            # Cloudy conditions: no further correction
             p_sky = rhoSky
         else:
+            # Clear sky conditions: correct for wind
             # Set wind speed here
             w = windSpeedMean
             p_sky = rhoSky + 0.00039 * w + 0.000034 * w * w
@@ -307,31 +324,37 @@ class ProcessL4:
                 newLIData.columns["Lonpos"] = [lon]
                 newLTData.columns["Lonpos"] = [lon]
                 newRrsData.columns["Lonpos"] = [lon]
-            if azimuth:
-                newESData.columns["Azimuth"] = [azi]
-                newLIData.columns["Azimuth"] = [azi]
-                newLTData.columns["Azimuth"] = [azi]
-                newRrsData.columns["Azimuth"] = [azi]
-            if shipTrue:
-                newESData.columns["ShipTrue"] = [ship]
-                newLIData.columns["ShipTrue"] = [ship]
-                newLTData.columns["ShipTrue"] = [ship]
-                newRrsData.columns["ShipTrue"] = [ship]
-            if pitch:
-                newESData.columns["Pitch"] = [pit]
-                newLIData.columns["Pitch"] = [pit]
-                newLTData.columns["Pitch"] = [pit]
-                newRrsData.columns["Pitch"] = [pit]
-            if rotator:
-                newESData.columns["Rotator"] = [rot]
-                newLIData.columns["Rotator"] = [rot]
-                newLTData.columns["Rotator"] = [rot]
-                newRrsData.columns["Rotator"] = [rot]
-            if roll:
-                newESData.columns["Roll"] = [rol]
-                newLIData.columns["Roll"] = [rol]
-                newLTData.columns["Roll"] = [rol]
-                newRrsData.columns["Roll"] = [rol]
+
+            if relAzimuth:
+                newESData.columns["RelativeAzimuth"] = [relAzi]
+                newLIData.columns["RelativeAzimuth"] = [relAzi]
+                newLTData.columns["RelativeAzimuth"] = [relAzi]
+                newRrsData.columns["RelativeAzimuth"] = [relAzi]
+            # if azimuth:
+            #     newESData.columns["Azimuth"] = [azi]
+            #     newLIData.columns["Azimuth"] = [azi]
+            #     newLTData.columns["Azimuth"] = [azi]
+            #     newRrsData.columns["Azimuth"] = [azi]
+            # if shipTrue:
+            #     newESData.columns["ShipTrue"] = [ship]
+            #     newLIData.columns["ShipTrue"] = [ship]
+            #     newLTData.columns["ShipTrue"] = [ship]
+            #     newRrsData.columns["ShipTrue"] = [ship]
+            # if pitch:
+            #     newESData.columns["Pitch"] = [pit]
+            #     newLIData.columns["Pitch"] = [pit]
+            #     newLTData.columns["Pitch"] = [pit]
+            #     newRrsData.columns["Pitch"] = [pit]
+            # if rotator:
+            #     newESData.columns["Rotator"] = [rot]
+            #     newLIData.columns["Rotator"] = [rot]
+            #     newLTData.columns["Rotator"] = [rot]
+            #     newRrsData.columns["Rotator"] = [rot]
+            # if roll:
+            #     newESData.columns["Roll"] = [rol]
+            #     newLIData.columns["Roll"] = [rol]
+            #     newLTData.columns["Roll"] = [rol]
+            #     newRrsData.columns["Roll"] = [rol]
         else:
             newESData.columns["Datetag"].append(date)
             newLIData.columns["Datetag"].append(date)
@@ -351,35 +374,41 @@ class ProcessL4:
                 newLIData.columns["Lonpos"].append(lon)
                 newLTData.columns["Lonpos"].append(lon)
                 newRrsData.columns["Lonpos"].append(lon)
-            if azimuth:
-                newESData.columns["Azimuth"].append(azi)
-                newLIData.columns["Azimuth"].append(azi)
-                newLTData.columns["Azimuth"].append(azi)
-                newRrsData.columns["Azimuth"].append(azi)
-            if shipTrue:
-                newESData.columns["ShipTrue"].append(ship)
-                newLIData.columns["ShipTrue"].append(ship)
-                newLTData.columns["ShipTrue"].append(ship)
-                newRrsData.columns["ShipTrue"].append(ship)
-            if pitch:
-                newESData.columns["Pitch"].append(pit)
-                newLIData.columns["Pitch"].append(pit)
-                newLTData.columns["Pitch"].append(pit)
-                newRrsData.columns["Pitch"].append(pit)
-            if rotator:
-                newESData.columns["Rotator"].append(rot)
-                newLIData.columns["Rotator"].append(rot)
-                newLTData.columns["Rotator"].append(rot)
-                newRrsData.columns["Rotator"].append(rot)
-            if roll:
-                newESData.columns["Roll"].append(rol)
-                newLIData.columns["Roll"].append(rol)
-                newLTData.columns["Roll"].append(rol)
-                newRrsData.columns["Roll"].append(rol)
+            if relAzimuth:
+                newESData.columns["RelativeAzimuth"].append(relAzi)
+                newLIData.columns["RelativeAzimuth"].append(relAzi)
+                newLTData.columns["RelativeAzimuth"].append(relAzi)
+                newRrsData.columns["RelativeAzimuth"].append(relAzi)
+            # if azimuth:
+            #     newESData.columns["Azimuth"].append(azi)
+            #     newLIData.columns["Azimuth"].append(azi)
+            #     newLTData.columns["Azimuth"].append(azi)
+            #     newRrsData.columns["Azimuth"].append(azi)
+            # if shipTrue:
+            #     newESData.columns["ShipTrue"].append(ship)
+            #     newLIData.columns["ShipTrue"].append(ship)
+            #     newLTData.columns["ShipTrue"].append(ship)
+            #     newRrsData.columns["ShipTrue"].append(ship)
+            # if pitch:
+            #     newESData.columns["Pitch"].append(pit)
+            #     newLIData.columns["Pitch"].append(pit)
+            #     newLTData.columns["Pitch"].append(pit)
+            #     newRrsData.columns["Pitch"].append(pit)
+            # if rotator:
+            #     newESData.columns["Rotator"].append(rot)
+            #     newLIData.columns["Rotator"].append(rot)
+            #     newLTData.columns["Rotator"].append(rot)
+            #     newRrsData.columns["Rotator"].append(rot)
+            # if roll:
+            #     newESData.columns["Roll"].append(rol)
+            #     newLIData.columns["Roll"].append(rol)
+            #     newLTData.columns["Roll"].append(rol)
+            #     newRrsData.columns["Roll"].append(rol)
 
         rrsColumns = {}
                 
         # Calculate Rrs
+        '''# No bidirectional correction is made here.....'''
         for k in es5Columns:
             if (k in li5Columns) and (k in lt5Columns):
                 if k not in newESData.columns:
@@ -391,7 +420,11 @@ class ProcessL4:
                 es = es5Columns[k][0]
                 li = li5Columns[k][0]
                 lt = lt5Columns[k][0]
+
+                # Calculate the Rrs
                 rrs = (lt - (p_sky * li)) / es
+
+
                 #esColumns[k] = [es]
                 #liColumns[k] = [li]
                 #ltColumns[k] = [lt]
@@ -503,6 +536,16 @@ class ProcessL4:
         if windSpeedData is not None:
             x = windSpeedData.getColumn("TIMETAG2")[0]
             y = windSpeedData.getColumn("WINDSPEED")[0]
+            
+            nanIndex = []
+            for i,value in enumerate(y):
+                if np.isnan(value):                    
+                    nanIndex.append(i)
+                    
+            for index in sorted(nanIndex, reverse=True):
+                del x[index]
+                del y[index]
+
             new_x = esData.data["Timetag2"].tolist()
             new_y = Utilities.interp(x, y, new_x)
             windSpeedData.columns["WINDSPEED"] = new_y
@@ -514,6 +557,7 @@ class ProcessL4:
         #print("items:", esColumns.values())
         #print(ltLength,resolution)
         if interval == 0:
+            # Here, take the complete time series
             for i in range(0, len(tt2)-1):
                 esSlice = ProcessL4.columnToSlice(esColumns, i, i+1)
                 liSlice = ProcessL4.columnToSlice(liColumns, i, i+1)
@@ -530,6 +574,7 @@ class ProcessL4:
                 time = Utilities.timeTag2ToSec(tt2[i])
                 if time > endTime:
                     end = i-1
+                    # Here take one interval as defined in Config
                     esSlice = ProcessL4.columnToSlice(esColumns, start, end)
                     liSlice = ProcessL4.columnToSlice(liColumns, start, end)
                     ltSlice = ProcessL4.columnToSlice(ltColumns, start, end)

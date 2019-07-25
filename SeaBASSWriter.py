@@ -77,19 +77,25 @@ class SeaBASSWriter:
         ls[1]='time'
         ls[2]='lat'
         ls[3]='lon'
-        ls[4]='relaz'   
+        ls[4]='SAZ'
+        ls[5]='heading'    # This is SAS -> SHIP_TRUE, not GPS    
+        # pointing         # no SeaBASS field for sensor azimuth
+        ls[6]='RelAz'   
+        ls[7]='SZA'
+        lenNonRad = 8
+
         if dtype == 'es':
             fieldName = 'Es'
         elif dtype == 'li':
             fieldName = 'Lsky'
         elif dtype == 'lt':
             fieldName = 'Lt'
-        fieldsLineStr = ','.join(ls[:5] + [f'{fieldName}{band}' for band in ls[5:]])
+        fieldsLineStr = ','.join(ls[:lenNonRad] + [f'{fieldName}{band}' for band in ls[lenNonRad:]])
         
-        lenRad = (len(dataset.data.dtype.names)-5)
+        lenRad = (len(dataset.data.dtype.names)-lenNonRad)
         unitsLine = ['yyyymmdd']
         unitsLine.append('hh:mm:ss')
-        unitsLine.extend(['degrees']*3)
+        unitsLine.extend(['degrees']*6)
         unitsLine.extend([units]*lenRad)
         unitsLineStr = ','.join(unitsLine)
         
@@ -103,7 +109,7 @@ class SeaBASSWriter:
                      
         # Add data for each row
         dataOut = []
-        formatStr = str('{:04d}{:02d}{:02d},{:02d}:{:02d}:{:02d},{:.4f},{:.4f},{:.1f}' + ',{:.6f}'*lenRad)
+        formatStr = str('{:04d}{:02d}{:02d},{:02d}:{:02d}:{:02d},{:.4f},{:.4f},{:.1f},{:.1f},{:.1f},{:.1f}' + ',{:.6f}'*lenRad)
         for i in range(dataset.data.shape[0]):                        
             lineList = [timeDT[i].year,timeDT[i].month,timeDT[i].day,timeDT[i].hour,timeDT[i].minute,timeDT[i].second]+list(dataset.data[i].tolist()[2:])
             lineStr = formatStr.format(*lineList)

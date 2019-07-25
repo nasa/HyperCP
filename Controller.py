@@ -16,7 +16,7 @@ from ProcessL1b import ProcessL1b
 from ProcessL2 import ProcessL2
 # from ProcessL2s import ProcessL2s
 from ProcessL3 import ProcessL3
-# from ProcessL4 import ProcessL4
+from ProcessL4 import ProcessL4
 # from ProcessL4a import ProcessL4a
 
 
@@ -147,10 +147,16 @@ class Controller:
                     print('FrameTag does not exist in the group ' + gp.id + '. Aborting.')
                     return None
         
+        # Write output file
         if root is not None:
-            root.writeHDF5(os.path.join(outFilePath))   
+            try:
+                root.writeHDF5(outFilePath)
+            except:
+                print('Unable to write L1A file. It may be open in another program.')
         else:
-            print('L1a processing failed. Nothing to output.')
+            msg = "L1a processing failed. Nothing to output."
+            print(msg)
+            Utilities.writeLogFile(msg)
 
     @staticmethod
     def processL1b(inFilePath, outFilePath, calibrationMap):      
@@ -164,10 +170,15 @@ class Controller:
         root = ProcessL1b.processL1b(root, calibrationMap)
 
         # Write output file
-        if root is not None:            
-            root.writeHDF5(outFilePath)
+        if root is not None:
+            try:
+                root.writeHDF5(outFilePath)
+            except:
+                print('Unable to write L1b file. It may be open in another program.')
         else:
-            print('L1b processing failed. Nothing to output.')
+            msg = "L1b processing failed. Nothing to output."
+            print(msg)
+            Utilities.writeLogFile(msg)
 
 
     @staticmethod
@@ -182,10 +193,15 @@ class Controller:
         root = ProcessL2.processL2(root)
 
         # Write output file
-        if root is not None:            
-            root.writeHDF5(outFilePath)
+        if root is not None:
+            try:
+                root.writeHDF5(outFilePath)
+            except:
+                print('Unable to write L2 file. It may be open in another program.')
         else:
-            print('L2 processing failed. Nothing to output.')
+            msg = "L2 processing failed. Nothing to output."
+            print(msg)
+            Utilities.writeLogFile(msg)
 
     # @staticmethod
     # def processL2s(inFilePath, outFilePath):        
@@ -229,31 +245,27 @@ class Controller:
             try:
                 root.writeHDF5(outFilePath)
             except:
-                print('Unable to write L3 file. It may be open with another program.')
+                print('Unable to write L3 file. It may be open in another program.')
         else:
             msg = "L3 processing failed. Nothing to output."
             print(msg)
             Utilities.writeLogFile(msg)
 
-    # @staticmethod
-    # def processL4(fp, windSpeedData):
-    #     # Get input filepath
-    #     (dirpath, filename) = os.path.split(fp)
-    #     filename = os.path.splitext(filename)[0]
-    #     filepath = os.path.join(dirpath, filename + "_L3.hdf")
-    #     if not os.path.isfile(filepath):
-    #         return None
+    @staticmethod
+    def processL4(inFilePath, outFilePath, windSpeedData):
+        
+        if not os.path.isfile(inFilePath):
+            print('No such input file: ' + inFilePath)
+            return None
 
-    #     # Process the data
-    #     print("ProcessL4")
-    #     root = HDFRoot.readHDF5(filepath)
-    #     root = ProcessL4.processL4(root, False, windSpeedData)
-    #     root = ProcessL4a.processL4a(root)
+        # Process the data
+        msg = ("ProcessL4: " + inFilePath)
+        print(msg)
+        Utilities.writeLogFile(msg,'w')
+        root = HDFRoot.readHDF5(inFilePath)
+        enableQualityFlags = int(ConfigFile.settings["bL4EnableQualityFlags"])
+        root = ProcessL4.processL4(root, enableQualityFlags, windSpeedData)
 
-    #     # Write output file
-    #     if root is not None:
-    #         Utilities.plotReflectance(root, dirpath, filename)
-    #         root.writeHDF5(os.path.join(dirpath, filename + "_L4.hdf"))
 
     #     # Write to separate file if quality flags are enabled
     #     enableQualityFlags = int(ConfigFile.settings["bL4EnableQualityFlags"])
@@ -264,6 +276,17 @@ class Controller:
     #         if root is not None:
     #             Utilities.plotReflectance(root, dirpath, filename + "-flags")
     #             root.writeHDF5(os.path.join(dirpath, filename + "_L4-flags.hdf"))
+
+    # Write output file
+        if root is not None:
+            try:
+                root.writeHDF5(outFilePath)
+            except:
+                print('Unable to write L4 file. It may be open in another program.')
+        else:
+            msg = "L4 processing failed. Nothing to output."
+            print(msg)
+            Utilities.writeLogFile(msg)
 
 
 
@@ -337,7 +360,7 @@ class Controller:
 
 
     @staticmethod
-    def processSingleLevel(pathOut, inFilePath, calibrationMap, level, windFile=None, skyFile=None):
+    def processSingleLevel(pathOut, inFilePath, calibrationMap, level, windFile=None):
         pathOut = os.path.abspath(pathOut)
         # inFilePath is a singleton file complete with path
         inFilePath = os.path.abspath(inFilePath)        
@@ -423,7 +446,7 @@ class Controller:
             windSpeedData = Controller.processWindData(windFile)
             fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_L4.hdf")
-            Controller.processL3(inFilePath, outFilePath)  
+            Controller.processL4(inFilePath, outFilePath, windSpeedData)  
             if os.path.isfile(outFilePath):
                 msg = ("L4 file produced: " + outFilePath)  
                 print(msg)
@@ -495,13 +518,13 @@ class Controller:
 
     # Used to process every file in a list of files
     @staticmethod
-    def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level, windFile=None, skyFile=None):
+    def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level, windFile=None):
         # print("processFilesSingleLevel")
         for fp in inFiles:
             # fp is now singleton files; run this once per file
             print("Processing: " + fp)
             # try:
-            Controller.processSingleLevel(pathOut, fp, calibrationMap, level, windFile, skyFile)
+            Controller.processSingleLevel(pathOut, fp, calibrationMap, level, windFile)
             # except OSError:
             #     print("Unable to process that file due to an operating system error. Try again.")
         print("processFilesSingleLevel - DONE")

@@ -65,7 +65,8 @@ class ConfigFile:
         ConfigFile.settings["CalibrationFiles"] = {}
 
         ConfigFile.settings["bL1aCleanSZA"] = 0
-        ConfigFile.settings["fL1aCleanSZAMax"] = 60.0 # e.g. Brewin 2016
+        # Need to add a SZAMin (@ L4??) # e.g. 20: Zhang 2017
+        ConfigFile.settings["fL1aCleanSZAMax"] = 60.0 # e.g. 60:Brewin 2016, 
 
         ConfigFile.settings["bL1bCleanPitchRoll"] = 0
         ConfigFile.settings["fL1bPitchRollPitch"] = 5 # These should all have citable defaults
@@ -76,8 +77,8 @@ class ConfigFile:
         ConfigFile.settings["fL1bRotatorAngleMin"] = -40.0 # Require knowledge of deployment set-up
         ConfigFile.settings["fL1bRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
         ConfigFile.settings["bL1bCleanSunAngle"] = 0
-        ConfigFile.settings["fL1bSunAngleMin"] = 90.0 
-        ConfigFile.settings["fL1bSunAngleMax"] = 135.0                
+        ConfigFile.settings["fL1bSunAngleMin"] = 90.0 # Zhang 2017: 45, Mobley 1999: 90, Zibordi 2009 (and IOCCG Protocols): 90
+        ConfigFile.settings["fL1bSunAngleMax"] = 135.0 #Zhang 2017: 90, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90
         ConfigFile.settings["bL1bSaveSeaBASS"] = 0
 
 
@@ -92,6 +93,7 @@ class ConfigFile:
         ConfigFile.settings["bL3SaveSeaBASS"] = 0
         ConfigFile.settings["seaBASSHeaderFileName"] = None
                 
+        # Need to add a SZAMin (@ L4??) # e.g. 20: Zhang 2017, depends on wind
         ConfigFile.settings["fL4TimeInterval"] = 60
         ConfigFile.settings["bL4EnableQualityFlags"] = 1
         ConfigFile.settings["fL4SignificantEsFlag"] = 2.0

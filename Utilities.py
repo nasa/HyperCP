@@ -265,13 +265,16 @@ class Utilities:
     @staticmethod
     def interp(x, y, new_x, kind='linear'):
 
-        #print("t0", len(x), len(y))
+        # If the last value to interp to is larger than the last value interp'ed from,
+        # then append that higher value onto the values to interp from
         n0 = len(x)-1
         n1 = len(new_x)-1
         if new_x[n1] > x[n0]:
             #print(new_x[n], x[n])
             x.append(new_x[n1])
             y.append(y[n0])
+        # If the first value to interp to is less than the first value interp'd from,
+        # then add that lesser value to the beginning of values to interp from
         if new_x[0] < x[0]:
             #print(new_x[0], x[0])
             x.insert(0, new_x[0])

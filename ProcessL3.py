@@ -253,18 +253,20 @@ class ProcessL3:
         satnavTimeData = satnavGroup.getDataset("TIMETAG2")
         satnavAzimuthData = satnavGroup.getDataset("AZIMUTH")
         satnavHeadingData = satnavGroup.getDataset("HEADING")
-        satnavPitchData = satnavGroup.getDataset("PITCH")
+        # satnavPitchData = satnavGroup.getDataset("PITCH")
         satnavPointingData = satnavGroup.getDataset("POINTING")
-        satnavRollData = satnavGroup.getDataset("ROLL")
+        # satnavRollData = satnavGroup.getDataset("ROLL")
         satnavRelAzData = satnavGroup.getDataset("REL_AZ")
+        satnavElevationData = satnavGroup.getDataset("ELEVATION")
 
         newSATNAVGroup = node.getGroup("SATNAV")
         newSATNAVAzimuthData = newSATNAVGroup.addDataset("AZIMUTH")
         newSATNAVHeadingData = newSATNAVGroup.addDataset("HEADING")
-        newSATNAVPitchData = newSATNAVGroup.addDataset("PITCH")
+        # newSATNAVPitchData = newSATNAVGroup.addDataset("PITCH")
         newSATNAVPointingData = newSATNAVGroup.addDataset("POINTING")
-        newSATNAVRollData = newSATNAVGroup.addDataset("ROLL")
+        # newSATNAVRollData = newSATNAVGroup.addDataset("ROLL")
         newSATNAVRelAzData = newSATNAVGroup.addDataset("REL_AZ")
+        newSATNAVElevationData = newSATNAVGroup.addDataset("ELEVATION")
 
         # Add Datetag, Timetag2 data to satnav groups
         # This matches ES data after interpolation
@@ -272,14 +274,16 @@ class ProcessL3:
         newSATNAVAzimuthData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
         newSATNAVHeadingData.columns["Datetag"] = esData.data["Datetag"].tolist()
         newSATNAVHeadingData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-        newSATNAVPitchData.columns["Datetag"] = esData.data["Datetag"].tolist()
-        newSATNAVPitchData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
+        # newSATNAVPitchData.columns["Datetag"] = esData.data["Datetag"].tolist()
+        # newSATNAVPitchData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
         newSATNAVPointingData.columns["Datetag"] = esData.data["Datetag"].tolist()
         newSATNAVPointingData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-        newSATNAVRollData.columns["Datetag"] = esData.data["Datetag"].tolist()
-        newSATNAVRollData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
+        # newSATNAVRollData.columns["Datetag"] = esData.data["Datetag"].tolist()
+        # newSATNAVRollData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
         newSATNAVRelAzData.columns["Datetag"] = esData.data["Datetag"].tolist()
         newSATNAVRelAzData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
+        newSATNAVElevationData.columns["Datetag"] = esData.data["Datetag"].tolist()
+        newSATNAVElevationData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
 
         # Convert GPS UTC time values to seconds to be used for interpolation
         xTimer = []
@@ -298,17 +302,19 @@ class ProcessL3:
         # Interpolate by time values
         ProcessL3.interpolateL3(satnavAzimuthData, xTimer, yTimer, newSATNAVAzimuthData, 'SunAz', 'linear')
         ProcessL3.interpolateL3(satnavHeadingData, xTimer, yTimer, newSATNAVHeadingData, 'Heading', 'linear')
-        ProcessL3.interpolateL3(satnavPitchData, xTimer, yTimer, newSATNAVPitchData, 'Pitch', 'linear')
+        # ProcessL3.interpolateL3(satnavPitchData, xTimer, yTimer, newSATNAVPitchData, 'Pitch', 'linear')
         ProcessL3.interpolateL3(satnavPointingData, xTimer, yTimer, newSATNAVPointingData, 'Pointing', 'linear')
-        ProcessL3.interpolateL3(satnavRollData, xTimer, yTimer, newSATNAVRollData, 'Roll', 'linear')
+        # ProcessL3.interpolateL3(satnavRollData, xTimer, yTimer, newSATNAVRollData, 'Roll', 'linear')
         ProcessL3.interpolateL3(satnavRelAzData, xTimer, yTimer, newSATNAVRelAzData, 'RelAz', 'linear')
+        ProcessL3.interpolateL3(satnavElevationData, xTimer, yTimer, newSATNAVElevationData, 'Elevation', 'linear')
 
         newSATNAVAzimuthData.columnsToDataset()
         newSATNAVHeadingData.columnsToDataset()
-        newSATNAVPitchData.columnsToDataset()
+        # newSATNAVPitchData.columnsToDataset()
         newSATNAVPointingData.columnsToDataset()
-        newSATNAVRollData.columnsToDataset()
+        # newSATNAVRollData.columnsToDataset()
         newSATNAVRelAzData.columnsToDataset()
+        newSATNAVElevationData.columnsToDataset()
 
     # Interpolates by wavelength
     @staticmethod
@@ -641,46 +647,50 @@ class ProcessL3:
         if root.getGroup("SATNAV"):
             satnavGroup = node.getGroup("SATNAV")
 
-            # azimuthData = satnavGroup.getDataset("AZIMUTH")
-            # headingData = satnavGroup.getDataset("HEADING")
+            azimuthData = satnavGroup.getDataset("AZIMUTH")
+            headingData = satnavGroup.getDataset("HEADING") # SAS_TRUE & SHIP_TRUE
             # pitchData = satnavGroup.getDataset("PITCH")
-            # pointingData = satnavGroup.getDataset("POINTING")
+            pointingData = satnavGroup.getDataset("POINTING")
             # rollData = satnavGroup.getDataset("ROLL")
             relAzData = satnavGroup.getDataset("REL_AZ")
+            elevationData = satnavGroup.getDataset("ELEVATION")
 
-            # azimuthData.datasetToColumns()
-            # headingData.datasetToColumns()
+            azimuthData.datasetToColumns()
+            headingData.datasetToColumns()
             # pitchData.datasetToColumns()
-            # pointingData.datasetToColumns()
+            pointingData.datasetToColumns()
             # rollData.datasetToColumns()            
             relAzData.datasetToColumns() 
+            elevationData.datasetToColumns() 
 
-            # azimuth = azimuthData.columns["SUN"]
-            # shipTrue = headingData.columns["SHIP_TRUE"]
+            azimuth = azimuthData.columns["SUN"]
+            shipTrue = headingData.columns["SHIP_TRUE"]
+            sasTrue = headingData.columns["SAS_TRUE"]
             # pitch = pitchData.columns["SAS"]
-            # rotator = pointingData.columns["ROTATOR"]
+            rotator = pointingData.columns["ROTATOR"]
             # roll = rollData.columns["SAS"]
             relAz = relAzData.columns["REL_AZ"]
+            elevation = elevationData.columns["SUN"]
 
             newESData.datasetToColumns()
             newLIData.datasetToColumns()
             newLTData.datasetToColumns()
             
-            # newESData.columns["AZIMUTH"] = azimuth
-            # newLIData.columns["AZIMUTH"] = azimuth
-            # newLTData.columns["AZIMUTH"] = azimuth
+            newESData.columns["AZIMUTH"] = azimuth
+            newLIData.columns["AZIMUTH"] = azimuth
+            newLTData.columns["AZIMUTH"] = azimuth
 
-            # newESData.columns["SHIP_TRUE"] = shipTrue
-            # newLIData.columns["SHIP_TRUE"] = shipTrue
-            # newLTData.columns["SHIP_TRUE"] = shipTrue
+            newESData.columns["SHIP_TRUE"] = shipTrue # From SAS, not GPS...
+            newLIData.columns["SHIP_TRUE"] = shipTrue
+            newLTData.columns["SHIP_TRUE"] = shipTrue
 
             # newESData.columns["PITCH"] = pitch
             # newLIData.columns["PITCH"] = pitch
             # newLTData.columns["PITCH"] = pitch
             
-            # newESData.columns["ROTATOR"] = rotator
-            # newLIData.columns["ROTATOR"] = rotator
-            # newLTData.columns["ROTATOR"] = rotator
+            newESData.columns["ROTATOR"] = rotator
+            newLIData.columns["ROTATOR"] = rotator
+            newLTData.columns["ROTATOR"] = rotator
             
             # newESData.columns["ROLL"] = roll
             # newLIData.columns["ROLL"] = roll
@@ -689,6 +699,10 @@ class ProcessL3:
             newESData.columns["REL_AZ"] = relAz
             newLIData.columns["REL_AZ"] = relAz
             newLTData.columns["REL_AZ"] = relAz
+
+            newESData.columns["SZA"] = elevation
+            newLIData.columns["SZA"] = elevation
+            newLTData.columns["SZA"] = elevation
 
             newESData.columnsToDataset()
             newLIData.columnsToDataset()

@@ -98,7 +98,7 @@ class Window(QtWidgets.QWidget):
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
         
 
-        self.windFileLabel = QtWidgets.QLabel("Wind Speed File (SeaBASS format)")
+        self.windFileLabel = QtWidgets.QLabel("Meteorologic File (SeaBASS format)")
         self.windFileLineEdit = QtWidgets.QLineEdit()
         self.windAddButton = QtWidgets.QPushButton("Add", self)
         self.windRemoveButton = QtWidgets.QPushButton("Remove", self)                
@@ -106,13 +106,13 @@ class Window(QtWidgets.QWidget):
         self.windAddButton.clicked.connect(self.windAddButtonPressed)
         self.windRemoveButton.clicked.connect(self.windRemoveButtonPressed)
 
-        self.skyFileLabel = QtWidgets.QLabel("Sky File (SeaBASS format)")
-        self.skyFileLineEdit = QtWidgets.QLineEdit()
-        self.skyAddButton = QtWidgets.QPushButton("Add", self)
-        self.skyRemoveButton = QtWidgets.QPushButton("Remove", self)                
+        # self.skyFileLabel = QtWidgets.QLabel("Sky File (SeaBASS format)")
+        # self.skyFileLineEdit = QtWidgets.QLineEdit()
+        # self.skyAddButton = QtWidgets.QPushButton("Add", self)
+        # self.skyRemoveButton = QtWidgets.QPushButton("Remove", self)                
 
-        self.skyAddButton.clicked.connect(self.skyAddButtonPressed)
-        self.skyRemoveButton.clicked.connect(self.skyRemoveButtonPressed)
+        # self.skyAddButton.clicked.connect(self.skyAddButtonPressed)
+        # self.skyRemoveButton.clicked.connect(self.skyRemoveButtonPressed)
 
 
         singleLevelLabel = QtWidgets.QLabel('Single-Level Processing', self)
@@ -195,14 +195,14 @@ class Window(QtWidgets.QWidget):
         vBox.addLayout(windHBox)
         vBox.addStretch(1)
 
-        vBox.addWidget(self.skyFileLabel)        
-        vBox.addWidget(self.skyFileLineEdit)
+        # vBox.addWidget(self.skyFileLabel)        
+        # vBox.addWidget(self.skyFileLineEdit)
 
-        skyHBox = QtWidgets.QHBoxLayout()        
-        skyHBox.addWidget(self.skyAddButton)
-        skyHBox.addWidget(self.skyRemoveButton)
+        # skyHBox = QtWidgets.QHBoxLayout()        
+        # skyHBox.addWidget(self.skyAddButton)
+        # skyHBox.addWidget(self.skyRemoveButton)
 
-        vBox.addLayout(skyHBox)
+        # vBox.addLayout(skyHBox)
         vBox.addStretch(1)
 
         vBox.addWidget(singleLevelLabel)
@@ -297,7 +297,7 @@ class Window(QtWidgets.QWidget):
 
     def windAddButtonPressed(self):
         print("Wind File Add Dialogue")
-        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Select Wind File")
+        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Select Wind File",self.inputDirectory)
         print(fnames)
         if len(fnames[0]) == 1:
             self.windFileLineEdit.setText(fnames[0][0])
@@ -306,16 +306,16 @@ class Window(QtWidgets.QWidget):
         print("Wind File Remove Dialogue")
         self.windFileLineEdit.setText("")
 
-    def skyAddButtonPressed(self):
-        print("Sky File Add Dialogue")
-        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Select Sky File")
-        print(fnames)
-        if len(fnames[0]) == 1:
-            self.skyFileLineEdit.setText(fnames[0][0])
+    # def skyAddButtonPressed(self):
+    #     print("Sky File Add Dialogue")
+    #     fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Select Sky File")
+    #     print(fnames)
+    #     if len(fnames[0]) == 1:
+    #         self.skyFileLineEdit.setText(fnames[0][0])
 
-    def skyRemoveButtonPressed(self):
-        print("Sky File Remove Dialogue")
-        self.skyFileLineEdit.setText("")
+    # def skyRemoveButtonPressed(self):
+    #     print("Sky File Remove Dialogue")
+    #     self.skyFileLineEdit.setText("")
 
     # # Not implemented
     # # Backup files before preprocessing if source files same as output directory
@@ -363,7 +363,7 @@ class Window(QtWidgets.QWidget):
         fileNames = openFileNames[0] # The first element is the whole list
 
         windFile = self.windFileLineEdit.text()
-        skyFile = self.skyFileLineEdit.text()
+        # skyFile = self.skyFileLineEdit.text()
 
         print("Process Calibration Files")
         #calibrationMap = Controller.processCalibration(calibrationDirectory)
@@ -381,7 +381,7 @@ class Window(QtWidgets.QWidget):
             print("Bad output directory.")
             return            
 
-        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile, skyFile) 
+        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile) 
 
     # def singleL0Clicked(self):
     #     self.processSingle("0")
@@ -433,14 +433,14 @@ class Window(QtWidgets.QWidget):
             return
 
         windFile = self.windFileLineEdit.text()
-        skyFile = self.skyFileLineEdit.text()
+        # skyFile = self.skyFileLineEdit.text()
 
         print("Process Calibration Files")
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings["CalibrationFiles"]
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
     
-        Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile, skyFile)
+        Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile)
 
     # def multi1Clicked(self):
     #     self.processMulti(1)
