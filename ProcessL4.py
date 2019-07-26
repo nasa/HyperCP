@@ -161,31 +161,31 @@ class ProcessL4:
             esColumns.pop("REL_AZ")
             liColumns.pop("REL_AZ")
             ltColumns.pop("REL_AZ")
-        # if "AZIMUTH" in esColumns:
-        #     azimuth = esColumns["AZIMUTH"]
-        #     esColumns.pop("AZIMUTH")
-        #     liColumns.pop("AZIMUTH")
-        #     ltColumns.pop("AZIMUTH")
-        # if "SHIP_TRUE" in esColumns:
-        #     shipTrue = esColumns["SHIP_TRUE"]
-        #     esColumns.pop("SHIP_TRUE")
-        #     liColumns.pop("SHIP_TRUE")
-        #     ltColumns.pop("SHIP_TRUE")
-        # if "PITCH" in esColumns:
-        #     pitch = esColumns["PITCH"]
-        #     esColumns.pop("PITCH")
-        #     liColumns.pop("PITCH")
-        #     ltColumns.pop("PITCH")
-        # if "ROTATOR" in esColumns:
-        #     rotator = esColumns["ROTATOR"]
-        #     esColumns.pop("ROTATOR")
-        #     liColumns.pop("ROTATOR")
-        #     ltColumns.pop("ROTATOR")
-        # if "ROLL" in esColumns:
-        #     roll = esColumns["ROLL"]
-        #     esColumns.pop("ROLL")
-        #     liColumns.pop("ROLL")
-        #     ltColumns.pop("ROLL")
+        if "AZIMUTH" in esColumns:
+            azimuth = esColumns["AZIMUTH"]
+            esColumns.pop("AZIMUTH")
+            liColumns.pop("AZIMUTH")
+            ltColumns.pop("AZIMUTH")
+        if "SHIP_TRUE" in esColumns:
+            shipTrue = esColumns["SHIP_TRUE"]
+            esColumns.pop("SHIP_TRUE")
+            liColumns.pop("SHIP_TRUE")
+            ltColumns.pop("SHIP_TRUE")
+        if "PITCH" in esColumns:
+            pitch = esColumns["PITCH"]
+            esColumns.pop("PITCH")
+            liColumns.pop("PITCH")
+            ltColumns.pop("PITCH")
+        if "ROTATOR" in esColumns:
+            rotator = esColumns["ROTATOR"]
+            esColumns.pop("ROTATOR")
+            liColumns.pop("ROTATOR")
+            ltColumns.pop("ROTATOR")
+        if "ROLL" in esColumns:
+            roll = esColumns["ROLL"]
+            esColumns.pop("ROLL")
+            liColumns.pop("ROLL")
+            ltColumns.pop("ROLL")
 
 
         # Stores the middle element
@@ -199,16 +199,16 @@ class ProcessL4:
 
         if relAzimuth:
             relAzi = relAzimuth[int(len(relAzimuth)/2)]
-        # if azimuth:
-            # azi = azimuth[int(len(azimuth)/2)]
-        # if shipTrue:
-        #     ship = shipTrue[int(len(shipTrue)/2)]
-        # if pitch:
-        #     pit = pitch[int(len(pitch)/2)]
-        # if rotator:
-        #     rot = rotator[int(len(rotator)/2)]
-        # if roll:
-        #     rol = roll[int(len(roll)/2)]
+        if azimuth:
+            azi = azimuth[int(len(azimuth)/2)]
+        if shipTrue:
+            ship = shipTrue[int(len(shipTrue)/2)]
+        if pitch:
+            pit = pitch[int(len(pitch)/2)]
+        if rotator:
+            rot = rotator[int(len(rotator)/2)]
+        if roll:
+            rol = roll[int(len(roll)/2)]
 
 
         #print("Test:")

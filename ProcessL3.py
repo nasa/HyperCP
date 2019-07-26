@@ -347,14 +347,14 @@ class ProcessL3:
 
         # Append latpos/lonpos
         # ToDo: Do this better
-        newColumns["LATPOS"] = saveDatetag
-        newColumns["LONPOS"] = saveDatetag
+        # newColumns["LATPOS"] = saveDatetag
+        # newColumns["LONPOS"] = saveDatetag
         # newColumns["AZIMUTH"] = saveDatetag
         # newColumns["SHIP_TRUE"] = saveDatetag
         # newColumns["PITCH"] = saveDatetag
         # newColumns["ROTATOR"] = saveDatetag
         # newColumns["ROLL"] = saveDatetag
-        newColumns["REL_AZ"] = saveDatetag
+        # newColumns["REL_AZ"] = saveDatetag
 
 
         for i in range(newWavebands.shape[0]):
@@ -614,102 +614,102 @@ class ProcessL3:
         print('Interpolating Lt')
         ProcessL3.interpolateWavelength(ltData, newLTData, newWavebands)
 
-        # Append latpos/lonpos to datasets
-        if root.getGroup("GPS"):
-            gpsGroup = node.getGroup("GPS")
-            latposData = gpsGroup.getDataset("LATPOS")
-            lonposData = gpsGroup.getDataset("LONPOS")
+        # # Append latpos/lonpos to datasets
+        # if root.getGroup("GPS"):
+        #     gpsGroup = node.getGroup("GPS")
+        #     latposData = gpsGroup.getDataset("LATPOS")
+        #     lonposData = gpsGroup.getDataset("LONPOS")
 
-            latposData.datasetToColumns()
-            lonposData.datasetToColumns()
+        #     latposData.datasetToColumns()
+        #     lonposData.datasetToColumns()
 
-            latpos = latposData.columns["NONE"]
-            lonpos = lonposData.columns["NONE"]
+        #     latpos = latposData.columns["NONE"]
+        #     lonpos = lonposData.columns["NONE"]
 
-            newESData.datasetToColumns()
-            newLIData.datasetToColumns()
-            newLTData.datasetToColumns()
+        #     newESData.datasetToColumns()
+        #     newLIData.datasetToColumns()
+        #     newLTData.datasetToColumns()
 
-            #print(newESData.columns)
+        #     #print(newESData.columns)
 
-            newESData.columns["LATPOS"] = latpos
-            newLIData.columns["LATPOS"] = latpos
-            newLTData.columns["LATPOS"] = latpos
+        #     newESData.columns["LATPOS"] = latpos
+        #     newLIData.columns["LATPOS"] = latpos
+        #     newLTData.columns["LATPOS"] = latpos
 
-            newESData.columns["LONPOS"] = lonpos
-            newLIData.columns["LONPOS"] = lonpos
-            newLTData.columns["LONPOS"] = lonpos
+        #     newESData.columns["LONPOS"] = lonpos
+        #     newLIData.columns["LONPOS"] = lonpos
+        #     newLTData.columns["LONPOS"] = lonpos
 
-            newESData.columnsToDataset()
-            newLIData.columnsToDataset()
-            newLTData.columnsToDataset()
+        #     newESData.columnsToDataset()
+        #     newLIData.columnsToDataset()
+        #     newLTData.columnsToDataset()
         
-        if root.getGroup("SATNAV"):
-            satnavGroup = node.getGroup("SATNAV")
+        # if root.getGroup("SATNAV"):
+        #     satnavGroup = node.getGroup("SATNAV")
 
-            azimuthData = satnavGroup.getDataset("AZIMUTH")
-            headingData = satnavGroup.getDataset("HEADING") # SAS_TRUE & SHIP_TRUE
-            # pitchData = satnavGroup.getDataset("PITCH")
-            pointingData = satnavGroup.getDataset("POINTING")
-            # rollData = satnavGroup.getDataset("ROLL")
-            relAzData = satnavGroup.getDataset("REL_AZ")
-            elevationData = satnavGroup.getDataset("ELEVATION")
+        #     azimuthData = satnavGroup.getDataset("AZIMUTH")
+        #     headingData = satnavGroup.getDataset("HEADING") # SAS_TRUE & SHIP_TRUE
+        #     # pitchData = satnavGroup.getDataset("PITCH")
+        #     pointingData = satnavGroup.getDataset("POINTING")
+        #     # rollData = satnavGroup.getDataset("ROLL")
+        #     relAzData = satnavGroup.getDataset("REL_AZ")
+        #     elevationData = satnavGroup.getDataset("ELEVATION")
 
-            azimuthData.datasetToColumns()
-            headingData.datasetToColumns()
-            # pitchData.datasetToColumns()
-            pointingData.datasetToColumns()
-            # rollData.datasetToColumns()            
-            relAzData.datasetToColumns() 
-            elevationData.datasetToColumns() 
+        #     azimuthData.datasetToColumns()
+        #     headingData.datasetToColumns()
+        #     # pitchData.datasetToColumns()
+        #     pointingData.datasetToColumns()
+        #     # rollData.datasetToColumns()            
+        #     relAzData.datasetToColumns() 
+        #     elevationData.datasetToColumns() 
 
-            azimuth = azimuthData.columns["SUN"]
-            shipTrue = headingData.columns["SHIP_TRUE"]
-            sasTrue = headingData.columns["SAS_TRUE"]
-            # pitch = pitchData.columns["SAS"]
-            rotator = pointingData.columns["ROTATOR"]
-            # roll = rollData.columns["SAS"]
-            relAz = relAzData.columns["REL_AZ"]
-            elevation = elevationData.columns["SUN"]
+        #     azimuth = azimuthData.columns["SUN"]
+        #     shipTrue = headingData.columns["SHIP_TRUE"]
+        #     sasTrue = headingData.columns["SAS_TRUE"]
+        #     # pitch = pitchData.columns["SAS"]
+        #     rotator = pointingData.columns["ROTATOR"]
+        #     # roll = rollData.columns["SAS"]
+        #     relAz = relAzData.columns["REL_AZ"]
+        #     elevation = elevationData.columns["SUN"]
 
-            newESData.datasetToColumns()
-            newLIData.datasetToColumns()
-            newLTData.datasetToColumns()
+        #     newESData.datasetToColumns()
+        #     newLIData.datasetToColumns()
+        #     newLTData.datasetToColumns()
             
-            newESData.columns["AZIMUTH"] = azimuth
-            newLIData.columns["AZIMUTH"] = azimuth
-            newLTData.columns["AZIMUTH"] = azimuth
+        #     newESData.columns["AZIMUTH"] = azimuth
+        #     newLIData.columns["AZIMUTH"] = azimuth
+        #     newLTData.columns["AZIMUTH"] = azimuth
 
-            newESData.columns["SHIP_TRUE"] = shipTrue # From SAS, not GPS...
-            newLIData.columns["SHIP_TRUE"] = shipTrue
-            newLTData.columns["SHIP_TRUE"] = shipTrue
+        #     newESData.columns["SHIP_TRUE"] = shipTrue # From SAS, not GPS...
+        #     newLIData.columns["SHIP_TRUE"] = shipTrue
+        #     newLTData.columns["SHIP_TRUE"] = shipTrue
 
-            # newESData.columns["PITCH"] = pitch
-            # newLIData.columns["PITCH"] = pitch
-            # newLTData.columns["PITCH"] = pitch
+        #     # newESData.columns["PITCH"] = pitch
+        #     # newLIData.columns["PITCH"] = pitch
+        #     # newLTData.columns["PITCH"] = pitch
             
-            newESData.columns["ROTATOR"] = rotator
-            newLIData.columns["ROTATOR"] = rotator
-            newLTData.columns["ROTATOR"] = rotator
+        #     newESData.columns["ROTATOR"] = rotator
+        #     newLIData.columns["ROTATOR"] = rotator
+        #     newLTData.columns["ROTATOR"] = rotator
             
-            # newESData.columns["ROLL"] = roll
-            # newLIData.columns["ROLL"] = roll
-            # newLTData.columns["ROLL"] = roll
+        #     # newESData.columns["ROLL"] = roll
+        #     # newLIData.columns["ROLL"] = roll
+        #     # newLTData.columns["ROLL"] = roll
 
-            newESData.columns["REL_AZ"] = relAz
-            newLIData.columns["REL_AZ"] = relAz
-            newLTData.columns["REL_AZ"] = relAz
+        #     newESData.columns["REL_AZ"] = relAz
+        #     newLIData.columns["REL_AZ"] = relAz
+        #     newLTData.columns["REL_AZ"] = relAz
 
-            newESData.columns["SZA"] = elevation
-            newLIData.columns["SZA"] = elevation
-            newLTData.columns["SZA"] = elevation
+        #     newESData.columns["SZA"] = elevation
+        #     newLIData.columns["SZA"] = elevation
+        #     newLTData.columns["SZA"] = elevation
 
-            newESData.columnsToDataset()
-            newLIData.columnsToDataset()
-            newLTData.columnsToDataset()
+        #     newESData.columnsToDataset()
+        #     newLIData.columnsToDataset()
+        #     newLTData.columnsToDataset()
 
         # Make each dataset have matching wavelength values (for testing)
-        ProcessL3.matchColumns(newESData, newLIData, newLTData)
+        # ProcessL3.matchColumns(newESData, newLIData, newLTData)
         return root
 
 
