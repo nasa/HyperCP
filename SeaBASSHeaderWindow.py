@@ -25,7 +25,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         doubleValidator = QtGui.QDoubleValidator()
 
         self.nameLabel = QtWidgets.QLabel(f'Editing: {self.name}', self)
-        linkSeaBASSLabel = QtWidgets.QLabel("For input assistance, go to \
+        linkSeaBASSLabel = QtWidgets.QLabel("Separate multiple entries with commas, and replace spaces with underscores. For input assistance, go to \
             <a href=\"https://seabass.gsfc.nasa.gov/wiki/metadataheaders\"> SeaBASS Metadata Headers</a>")
         linkSeaBASSLabel.setOpenExternalLinks(True)                
 
@@ -34,8 +34,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         instructionLabel_font.setPointSize(10)
         instructionLabel_font.setBold(True)
         instructionLabel.setFont(instructionLabel_font)
-        instructionLabelSub = QtWidgets.QLabel("To match fields to existing SeaBASS entries, \
-            check the 'Lists' pull-down menu  <a href=\"https://seabass.gsfc.nasa.gov\"> here</a>.")
+        instructionLabelSub = QtWidgets.QLabel("To match fields to existing SeaBASS entries,")
+        instructionLabelSub1 = QtWidgets.QLabel("check the 'Lists' pull-down menu  <a href=\"https://seabass.gsfc.nasa.gov\"> here</a>.")
 
        
         investigatorsLabel = QtWidgets.QLabel("Investigators", self)
@@ -122,7 +122,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.commentsLineEdit = QtWidgets.QTextEdit(self)
         self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
 
-        self.configUpdateButton = QtWidgets.QPushButton("Update from Configuration Settings")
+        self.configUpdateButton = QtWidgets.QPushButton("Update from Config Window")
         self.configUpdateButton.clicked.connect(self.configUpdateButtonPressed)
 
         other_commentsLabel = QtWidgets.QLabel("Other Comments", self)
@@ -201,8 +201,9 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         VBox.addWidget(linkSeaBASSLabel)
 
         VBox1 = QtWidgets.QVBoxLayout()
-        VBox1.addWidget(instructionLabel)
+        #VBox1.addWidget(instructionLabel)
         VBox1.addWidget(instructionLabelSub)
+        VBox1.addWidget(instructionLabelSub1)
         # Horizontal Box 
         HBox1 = QtWidgets.QHBoxLayout()
         HBox1.addWidget(investigatorsLabel)

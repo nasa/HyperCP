@@ -806,11 +806,12 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def l3seaBASSHeaderOpenButtonPressed(self):
         print("SeaBASSHeader Open Dialogue")
-        text = QtWidgets.QFileDialog.getOpenFileNames(self, "Select SeaBASS Header File","Config","hdr(*.hdr)")
-        (_, fname) = os.path.split(text[0][0])
-        print(fname)
-        if len(fname[0]) == 1:
-            self.l3SeaBASSHeaderLineEdit.setText(fname)            
+        text, ok = QtWidgets.QFileDialog.getOpenFileNames(self, "Select SeaBASS Header File","Config","hdr(*.hdr)")
+        if ok:
+            (_, fname) = os.path.split(text[0][0])
+            print(fname)
+            if len(fname[0]) == 1:
+                self.l3SeaBASSHeaderLineEdit.setText(fname)            
 
     def l3seaBASSHeaderEditButtonPressed(self):
         print("Edit seaBASSHeader Dialogue")
