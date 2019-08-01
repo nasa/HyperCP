@@ -932,7 +932,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL4RainfallHumidityFlag"] = float(self.l4RainfallHumidityFlagLineEdit.text())
         ConfigFile.settings["fL4TimeInterval"] = int(self.l4TimeIntervalLineEdit.text())                
         ConfigFile.settings["bL4PerformNIRCorrection"] = int(self.l4NIRCorrectionCheckBox.isChecked())
-        ConfigFile.settings["bL4EnablePercentLtCorrection"] = int(self.l4EnablePercentLtCheckBox.isChecked())
+        ConfigFile.settings["bL4EnablePercentLt"] = int(self.l4EnablePercentLtCheckBox.isChecked())
         ConfigFile.settings["fL4PercentLt"] = float(self.l4PercentLtLineEdit.text())
         ConfigFile.settings["bL4SaveSeaBASS"] = int(self.l4SaveSeaBASSCheckBox.isChecked())
 
@@ -997,7 +997,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["fL4RainfallHumidityFlag"] = float(self.l4RainfallHumidityFlagLineEdit.text())
             ConfigFile.settings["fL4TimeInterval"] = int(self.l4TimeIntervalLineEdit.text())                
             ConfigFile.settings["bL4PerformNIRCorrection"] = int(self.l4NIRCorrectionCheckBox.isChecked())
-            ConfigFile.settings["bL4EnablePercentLtCorrection"] = int(self.l4EnablePercentLtCheckBox.isChecked())
+            ConfigFile.settings["bL4EnablePercentLt"] = int(self.l4EnablePercentLtCheckBox.isChecked())
             ConfigFile.settings["fL4PercentLt"] = float(self.l4PercentLtLineEdit.text())
             ConfigFile.settings["bL4SaveSeaBASS"] = int(self.l4SaveSeaBASSCheckBox.isChecked())            
 

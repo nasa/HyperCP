@@ -5,6 +5,7 @@ import warnings
 
 import numpy as np
 import scipy as sp
+import datetime as dt
 
 import HDFRoot
 #import HDFGroup
@@ -161,31 +162,31 @@ class ProcessL4:
             esColumns.pop("REL_AZ")
             liColumns.pop("REL_AZ")
             ltColumns.pop("REL_AZ")
-        if "AZIMUTH" in esColumns:
-            azimuth = esColumns["AZIMUTH"]
-            esColumns.pop("AZIMUTH")
-            liColumns.pop("AZIMUTH")
-            ltColumns.pop("AZIMUTH")
-        if "SHIP_TRUE" in esColumns:
-            shipTrue = esColumns["SHIP_TRUE"]
-            esColumns.pop("SHIP_TRUE")
-            liColumns.pop("SHIP_TRUE")
-            ltColumns.pop("SHIP_TRUE")
-        if "PITCH" in esColumns:
-            pitch = esColumns["PITCH"]
-            esColumns.pop("PITCH")
-            liColumns.pop("PITCH")
-            ltColumns.pop("PITCH")
-        if "ROTATOR" in esColumns:
-            rotator = esColumns["ROTATOR"]
-            esColumns.pop("ROTATOR")
-            liColumns.pop("ROTATOR")
-            ltColumns.pop("ROTATOR")
-        if "ROLL" in esColumns:
-            roll = esColumns["ROLL"]
-            esColumns.pop("ROLL")
-            liColumns.pop("ROLL")
-            ltColumns.pop("ROLL")
+        # if "AZIMUTH" in esColumns:
+        #     azimuth = esColumns["AZIMUTH"]
+        #     esColumns.pop("AZIMUTH")
+        #     liColumns.pop("AZIMUTH")
+        #     ltColumns.pop("AZIMUTH")
+        # if "SHIP_TRUE" in esColumns:
+        #     shipTrue = esColumns["SHIP_TRUE"]
+        #     esColumns.pop("SHIP_TRUE")
+        #     liColumns.pop("SHIP_TRUE")
+        #     ltColumns.pop("SHIP_TRUE")
+        # if "PITCH" in esColumns:
+        #     pitch = esColumns["PITCH"]
+        #     esColumns.pop("PITCH")
+        #     liColumns.pop("PITCH")
+        #     ltColumns.pop("PITCH")
+        # if "ROTATOR" in esColumns:
+        #     rotator = esColumns["ROTATOR"]
+        #     esColumns.pop("ROTATOR")
+        #     liColumns.pop("ROTATOR")
+        #     ltColumns.pop("ROTATOR")
+        # if "ROLL" in esColumns:
+        #     roll = esColumns["ROLL"]
+        #     esColumns.pop("ROLL")
+        #     liColumns.pop("ROLL")
+        #     ltColumns.pop("ROLL")
 
 
         # Stores the middle element
@@ -199,16 +200,16 @@ class ProcessL4:
 
         if relAzimuth:
             relAzi = relAzimuth[int(len(relAzimuth)/2)]
-        if azimuth:
-            azi = azimuth[int(len(azimuth)/2)]
-        if shipTrue:
-            ship = shipTrue[int(len(shipTrue)/2)]
-        if pitch:
-            pit = pitch[int(len(pitch)/2)]
-        if rotator:
-            rot = rotator[int(len(rotator)/2)]
-        if roll:
-            rol = roll[int(len(roll)/2)]
+        # if azimuth:
+        #     azi = azimuth[int(len(azimuth)/2)]
+        # if shipTrue:
+        #     ship = shipTrue[int(len(shipTrue)/2)]
+        # if pitch:
+        #     pit = pitch[int(len(pitch)/2)]
+        # if rotator:
+        #     rot = rotator[int(len(rotator)/2)]
+        # if roll:
+        #     rol = roll[int(len(roll)/2)]
 
 
         #print("Test:")
@@ -473,30 +474,28 @@ class ProcessL4:
         liData = sasGroup.getDataset("LI_hyperspectral")
         ltData = sasGroup.getDataset("LT_hyperspectral")
 
-
         newReflectanceGroup = root.getGroup("Reflectance")
         newRrsData = newReflectanceGroup.addDataset("Rrs")
         newESData = newReflectanceGroup.addDataset("ES")
         newLIData = newReflectanceGroup.addDataset("LI")
-        newLTData = newReflectanceGroup.addDataset("LT")
-        
+        newLTData = newReflectanceGroup.addDataset("LT")        
 
         # Copy datasets to dictionary
         esData.datasetToColumns()
         esColumns = esData.columns
         tt2 = esColumns["Timetag2"]
-        #esColumns.pop("Datetag")
-        #tt2 = esColumns.pop("Timetag2")
+        # esColumns.pop("Datetag")
+        # tt2 = esColumns.pop("Timetag2")
 
         liData.datasetToColumns()
         liColumns = liData.columns
-        #liColumns.pop("Datetag")
-        #liColumns.pop("Timetag2")
+        # liColumns.pop("Datetag")
+        # liColumns.pop("Timetag2")
 
         ltData.datasetToColumns()
         ltColumns = ltData.columns
-        #ltColumns.pop("Datetag")
-        #ltColumns.pop("Timetag2")
+        # ltColumns.pop("Datetag")
+        # ltColumns.pop("Timetag2")
 
         # remove added LATPOS/LONPOS if added
         #if "LATPOS" in esColumns:
@@ -507,7 +506,6 @@ class ProcessL4:
         #    esColumns.pop("LONPOS")
         #    liColumns.pop("LONPOS")
         #    ltColumns.pop("LONPOS")
-
 
         #if Utilities.hasNan(esData):
         #    print("Found NAN 1") 
@@ -525,8 +523,9 @@ class ProcessL4:
         ltLength = len(list(ltColumns.values())[0])
 
         if ltLength > esLength:
+            print('Warning. Why would ltLength be > esLength??')
             for col in ltColumns:
-                col = col[0:esLength]
+                col = col[0:esLength] # strips off final columns
             for col in liColumns:
                 col = col[0:esLength]
 
@@ -534,7 +533,8 @@ class ProcessL4:
 
         # interpolate wind speed to match sensor time values
         if windSpeedData is not None:
-            x = windSpeedData.getColumn("TIMETAG2")[0]
+            # x = windSpeedData.getColumn("TIMETAG2")[0]
+            x = windSpeedData.getColumn("DATETIME")[0]
             y = windSpeedData.getColumn("WINDSPEED")[0]
             
             nanIndex = []
@@ -546,10 +546,24 @@ class ProcessL4:
                 del x[index]
                 del y[index]
 
-            new_x = esData.data["Timetag2"].tolist()
-            new_y = Utilities.interp(x, y, new_x)
+            # Convert windSpeed datetime to seconds for interpolation
+            epoch = dt.datetime(1970, 1, 1)
+            windSeconds = [(i-epoch).total_seconds() for i in x]
+
+            # Convert esData date and time to datetime and then to seconds for interpolation
+            esTime = esData.data["Timetag2"].tolist()
+            esSeconds = []
+            for i, esDate in enumerate(esData.data["Datetag"].tolist()):                
+                esDatetime = Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(esDate),esTime[i])
+                esSeconds.append((esDatetime-epoch).total_seconds())
+                
+            '''set up conditional for wind time being within es time, else take default wind'''
+            
+            new_y = Utilities.interp(windSeconds, y, esSeconds)
+            
             windSpeedData.columns["WINDSPEED"] = new_y
-            windSpeedData.columns["TIMETAG2"] = new_x
+            windSpeedData.columns["DATETAG"] = esData.data["Datetag"]
+            windSpeedData.columns["TIMETAG2"] = esData.data["Timetag2"]
             windSpeedData.columnsToDataset()
             windSpeedColumns = new_y
 
@@ -558,7 +572,7 @@ class ProcessL4:
         #print(ltLength,resolution)
         if interval == 0:
             # Here, take the complete time series
-            for i in range(0, len(tt2)-1):
+            for i in range(0, esLength-1):
                 esSlice = ProcessL4.columnToSlice(esColumns, i, i+1)
                 liSlice = ProcessL4.columnToSlice(liColumns, i, i+1)
                 ltSlice = ProcessL4.columnToSlice(ltColumns, i, i+1)
@@ -570,7 +584,7 @@ class ProcessL4:
             start = 0
             #end = 0
             endTime = Utilities.timeTag2ToSec(tt2[0]) + interval
-            for i in range(0, len(tt2)):
+            for i in range(0, esLength):
                 time = Utilities.timeTag2ToSec(tt2[i])
                 if time > endTime:
                     end = i-1
@@ -586,7 +600,7 @@ class ProcessL4:
                     endTime = time + interval
 
             # Try converting any remaining
-            end = len(tt2)-1
+            end = esLength-1
             time = Utilities.timeTag2ToSec(tt2[end])
             if time < endTime:
                 esSlice = ProcessL4.columnToSlice(esColumns, start, end)
