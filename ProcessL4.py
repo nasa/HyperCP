@@ -6,6 +6,7 @@ import warnings
 import numpy as np
 import scipy as sp
 import datetime as dt
+import matplotlib.pyplot as plt
 
 import HDFRoot
 #import HDFGroup
@@ -62,7 +63,7 @@ class ProcessL4:
     # Perform meteorological flag checking
     @staticmethod
     def qualityCheckVar(es5Columns, esFlag, dawnDuskFlag, humidityFlag):
-        print("qualtiy check")
+        # print("qualtiy check")
 
         # Threshold for significant es
         #v = es5Columns["480.0"][0]
@@ -535,16 +536,10 @@ class ProcessL4:
         if windSpeedData is not None:
             # x = windSpeedData.getColumn("TIMETAG2")[0]
             x = windSpeedData.getColumn("DATETIME")[0]
+            # ''' Need a way to remove this column - it cannot be converted to dataset below '''
+            # windSpeedData.getColumn("DATETIME")[0] = []
             y = windSpeedData.getColumn("WINDSPEED")[0]
-            
-            nanIndex = []
-            for i,value in enumerate(y):
-                if np.isnan(value):                    
-                    nanIndex.append(i)
-                    
-            for index in sorted(nanIndex, reverse=True):
-                del x[index]
-                del y[index]
+                       
 
             # Convert windSpeed datetime to seconds for interpolation
             epoch = dt.datetime(1970, 1, 1)
@@ -553,19 +548,59 @@ class ProcessL4:
             # Convert esData date and time to datetime and then to seconds for interpolation
             esTime = esData.data["Timetag2"].tolist()
             esSeconds = []
+            esDatetime = []
             for i, esDate in enumerate(esData.data["Datetag"].tolist()):                
-                esDatetime = Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(esDate),esTime[i])
-                esSeconds.append((esDatetime-epoch).total_seconds())
-                
-            '''set up conditional for wind time being within es time, else take default wind'''
+                esDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(esDate),esTime[i]))
+                esSeconds.append((esDatetime[i]-epoch).total_seconds())
+                            
+            # windInEsSeconds = [i for i in windSeconds if i>=min(esSeconds) and i<=max(esSeconds)]
+            windInEsSeconds = []
+            windDateTimeInEs = []
+            windInEs = []
+            for i, value in enumerate(windSeconds):
+                if value>=min(esSeconds) and value <=max(esSeconds):
+                    windInEsSeconds.append(value)
+                    windInEs.append(y[i])        
+                    windDateTimeInEs.append(x[i])    
+            # Eliminate Nans
+            nanIndex = []
+            for i,value in enumerate(windInEs):
+                if np.isnan(value):                    
+                    nanIndex.append(i)
+            if len(nanIndex)>0:
+                msg = ("Wind records deleted as Nans: " + str(len(nanIndex)))
+                print(msg)
+                Utilities.writeLogFile(msg)                    
+            for index in sorted(nanIndex, reverse=True):
+                del windInEsSeconds[index]
+                del windInEs[index]    
             
-            new_y = Utilities.interp(windSeconds, y, esSeconds)
-            
-            windSpeedData.columns["WINDSPEED"] = new_y
-            windSpeedData.columns["DATETAG"] = esData.data["Datetag"]
-            windSpeedData.columns["TIMETAG2"] = esData.data["Timetag2"]
-            windSpeedData.columnsToDataset()
-            windSpeedColumns = new_y
+            # Interpolate winds
+            if windInEsSeconds:
+                durationEs = max(esSeconds)-min(esSeconds)
+                durationWind = max(windInEsSeconds)-min(windInEsSeconds)
+
+                # If at least half of the period has wind data
+                if durationWind/durationEs > 0.5:
+                    print("Warning: ProcessL4 Wind values may be extrapolated to match radiometric data.")
+                    new_y = Utilities.interp(windInEsSeconds, windInEs, esSeconds,fill_value="extrapolate")
+                    
+                    
+                    # windSpeedData.columns["WINDSPEED"] = new_y.tolist()
+                    # windSpeedData.columns["DATETAG"] = esData.data["Datetag"].tolist()
+                    # windSpeedData.columns["TIMETAG2"] = esData.data["Timetag2"].tolist()
+                    # windSpeedData.columnsToDataset()
+                    windSpeedColumns = new_y.tolist()
+                else:
+                    msg = "Insufficient intersection of wind and radiometric data; reverting to default wind speed."
+                    print(msg)
+                    Utilities.writeLogFile(msg)  
+                    windSpeedColumns=None
+            else:
+                msg = "Wind data do not intersect radiometric data; reverting to default wind speed."
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                windSpeedColumns=None
 
 
         #print("items:", esColumns.values())
@@ -576,9 +611,13 @@ class ProcessL4:
                 esSlice = ProcessL4.columnToSlice(esColumns, i, i+1)
                 liSlice = ProcessL4.columnToSlice(liColumns, i, i+1)
                 ltSlice = ProcessL4.columnToSlice(ltColumns, i, i+1)
+                if windSpeedColumns is not None:
+                    windSlice = windSpeedColumns[i: i+1]
+                else:
+                    windSlice = None
                 ProcessL4.calculateReflectance2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
                                                 percentLt, enableQualityCheck, performNIRCorrection, \
-                                                rhoSky, enableWindSpeedCalculation, defaultWindSpeed, windSpeedColumns)
+                                                rhoSky, enableWindSpeedCalculation, defaultWindSpeed, windSlice)
 
         else:
             start = 0
@@ -586,15 +625,20 @@ class ProcessL4:
             endTime = Utilities.timeTag2ToSec(tt2[0]) + interval
             for i in range(0, esLength):
                 time = Utilities.timeTag2ToSec(tt2[i])
-                if time > endTime:
-                    end = i-1
+                if time > endTime: # end of increment reached
+                    # end = i-1
+                    end = i # end of the slice is up to and not including...so -1 is not needed
                     # Here take one interval as defined in Config
                     esSlice = ProcessL4.columnToSlice(esColumns, start, end)
                     liSlice = ProcessL4.columnToSlice(liColumns, start, end)
                     ltSlice = ProcessL4.columnToSlice(ltColumns, start, end)
+                    if windSpeedColumns is not None:
+                        windSlice = windSpeedColumns[start: end]
+                    else:
+                        windSlice = None
                     ProcessL4.calculateReflectance2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
                                                     percentLt, enableQualityCheck, performNIRCorrection, \
-                                                    rhoSky, enableWindSpeedCalculation, defaultWindSpeed, windSpeedColumns)
+                                                    rhoSky, enableWindSpeedCalculation, defaultWindSpeed, windSlice)
     
                     start = i
                     endTime = time + interval
@@ -606,9 +650,13 @@ class ProcessL4:
                 esSlice = ProcessL4.columnToSlice(esColumns, start, end)
                 liSlice = ProcessL4.columnToSlice(liColumns, start, end)
                 ltSlice = ProcessL4.columnToSlice(ltColumns, start, end)
+                if windSpeedColumns is not None:
+                    windSlice = windSpeedColumns[start: end]
+                else:
+                    windSlice = None
                 ProcessL4.calculateReflectance2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
                                                 percentLt, enableQualityCheck, performNIRCorrection, \
-                                                rhoSky, enableWindSpeedCalculation, defaultWindSpeed, windSpeedColumns)
+                                                rhoSky, enableWindSpeedCalculation, defaultWindSpeed, windSlice)
 
 
 

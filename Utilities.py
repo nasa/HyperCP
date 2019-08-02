@@ -263,7 +263,7 @@ class Utilities:
     # Wrapper for scipy interp1d that works even if
     # values in new_x are outside the range of values in x
     @staticmethod
-    def interp(x, y, new_x, kind='linear'):
+    def interp(x, y, new_x, kind='linear', fill_value=0.0):
 
         # If the last value to interp to is larger than the last value interp'ed from,
         # then append that higher value onto the values to interp from
@@ -280,7 +280,7 @@ class Utilities:
             x.insert(0, new_x[0])
             y.insert(0, y[0])
 
-        new_y = scipy.interpolate.interp1d(x, y, kind=kind, bounds_error=False, fill_value=0.0)(new_x)
+        new_y = scipy.interpolate.interp1d(x, y, kind=kind, bounds_error=False, fill_value=fill_value)(new_x)
 
         '''
         test = False
@@ -337,53 +337,55 @@ class Utilities:
 
     @staticmethod
     def plotReflectance(root, dirpath, filename):
-        try:
-            referenceGroup = root.getGroup("Reflectance")
-            rrsData = referenceGroup.getDataset("Rrs")
+        # try:
+        print('Plotting Rrs')
+        referenceGroup = root.getGroup("Reflectance")
+        rrsData = referenceGroup.getDataset("Rrs")
 
-            font = {'family': 'serif',
-                'color':  'darkred',
-                'weight': 'normal',
-                'size': 16,
-                }
+        font = {'family': 'serif',
+            'color':  'darkred',
+            'weight': 'normal',
+            'size': 16,
+            }
 
-            x = []
-            for k in rrsData.data.dtype.names:
-                if Utilities.isFloat(k):
-                    x.append(k)
+        x = []
+        for k in rrsData.data.dtype.names:
+            if Utilities.isFloat(k):
+                x.append(k)
 
-            total = rrsData.data.shape[0]
-            color=iter(cm.jet(np.linspace(0,1,total)))
-            for i in range(total):
-                y = []
-                for k in x:
-                    y.append(rrsData.data[k][i])
+        total = rrsData.data.shape[0]
+        cmap = cm.get_cmap("jet")
+        color=iter(cmap(np.linspace(0,1,total)))
+        for i in range(total):
+            y = []
+            for k in x:
+                y.append(rrsData.data[k][i])
 
-                c=next(color)
-                plt.plot(x, y, 'k', c=c)
-                #if (i % 25) == 0:
-                #    plt.plot(x, y, 'k', color=(i/total, 0, 1-i/total, 1))
+            c=next(color)
+            plt.plot(x, y, 'k', c=c)
+            #if (i % 25) == 0:
+            #    plt.plot(x, y, 'k', color=(i/total, 0, 1-i/total, 1))
 
-            #plt.title('Remote sensing reflectance', fontdict=font)
-            #plt.text(2, 0.65, r'$\cos(2 \pi t) \exp(-t)$', fontdict=font)
-            plt.xlabel('wavelength (nm)', fontdict=font)
-            plt.ylabel('Rrs ($sr^{-1}$)', fontdict=font)
+        #plt.title('Remote sensing reflectance', fontdict=font)
+        #plt.text(2, 0.65, r'$\cos(2 \pi t) \exp(-t)$', fontdict=font)
+        plt.xlabel('wavelength (nm)', fontdict=font)
+        plt.ylabel('Rrs ($sr^{-1}$)', fontdict=font)
 
-            # Tweak spacing to prevent clipping of ylabel
-            plt.subplots_adjust(left=0.15)
-            #plt.show()
+        # Tweak spacing to prevent clipping of ylabel
+        plt.subplots_adjust(left=0.15)
+        #plt.show()
 
-            # Create output directory
-            plotdir = os.path.join(dirpath, 'Plots')
-            os.makedirs(plotdir, exist_ok=True)
+        # Create output directory
+        plotdir = os.path.join(dirpath, 'Plots')
+        os.makedirs(plotdir, exist_ok=True)
 
-            # Save the plot
-            fp = os.path.join(plotdir, filename + '.png')
-            plt.savefig(fp)
-            plt.close() # This prevents displaying the polt on screen with certain IDEs
-        except:
-            e = sys.exc_info()[0]
-            print("Error: %s" % e)        
+        # Save the plot
+        fp = os.path.join(plotdir, filename + '.png')
+        plt.savefig(fp)
+        plt.close() # This prevents displaying the polt on screen with certain IDEs
+        # except:
+        #     e = sys.exc_info()[0]
+        #     print("Error: %s" % e)        
 
 
     @staticmethod

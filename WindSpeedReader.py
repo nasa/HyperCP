@@ -26,6 +26,7 @@ class WindSpeedReader:
     def readWindSpeed(fp):
         print("WindSpeedReader.readWindSpeed: " + fp)
 
+        # metData = readSB(fp,mask_missing=False, no_warn=True)
         metData = readSB(fp, no_warn=True)
         wspd = metData.data['wind']
         windDatetime = metData.fd_datetime()

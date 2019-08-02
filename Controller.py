@@ -2,7 +2,6 @@
 import csv
 import os
 import numpy as np
-# import logging
 
 from SeaBASSWriter import SeaBASSWriter
 from CalibrationFileReader import CalibrationFileReader
@@ -14,7 +13,6 @@ from ProcessL0 import ProcessL0
 from ProcessL1a import ProcessL1a
 from ProcessL1b import ProcessL1b
 from ProcessL2 import ProcessL2
-# from ProcessL2s import ProcessL2s
 from ProcessL3 import ProcessL3
 from ProcessL4 import ProcessL4
 # from ProcessL4a import ProcessL4a
@@ -63,19 +61,7 @@ class Controller:
                 cf.media = "Air"
                 cf.measMode = "VesselBorne"
                 cf.frameType = "LightAncCombined"
-                cf.sensorType = cf.getSensorType()
-
-
-    # @staticmethod
-    # def processCalibration(calPath):
-    #     print("processCalibration")
-    #     print("ReadCalibrationFile ", calPath)
-    #     calibrationMap = CalibrationFileReader.read(calPath)
-    #     #calibrationMap = CalibrationFileReader.readSip("cal2013.sip")
-    #     print("calibrationMap:", list(calibrationMap.keys()))
-    #     Controller.generateContext(calibrationMap)
-    #     print("processCalibration - DONE")
-    #     return calibrationMap
+                cf.sensorType = cf.getSensorType()    
 
     @staticmethod
     def processCalibrationConfig(configName, calFiles):
@@ -201,30 +187,7 @@ class Controller:
         else:
             msg = "L2 processing failed. Nothing to output."
             print(msg)
-            Utilities.writeLogFile(msg)
-
-    # @staticmethod
-    # def processL2s(inFilePath, outFilePath):        
-
-    #     if not os.path.isfile(inFilePath):
-    #         print('No such input file: ' + inFilePath)
-    #         return None
-        
-    #     # Process the data
-    #     msg = ("ProcessL2s: " + inFilePath)
-    #     print(msg)    
-    #     Utilities.writeLogFile(msg,'w')
-        
-    #     root = HDFRoot.readHDF5(inFilePath)
-    #     root = ProcessL2s.processL2s(root) 
-
-    #     # Write output file
-    #     if root is not None:
-    #         root.writeHDF5(outFilePath)
-    #     else:
-    #         msg = "L2 processing failed. Nothing to output."
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
+            Utilities.writeLogFile(msg)    
 
     @staticmethod
     def processL3(inFilePath, outFilePath):
@@ -266,6 +229,9 @@ class Controller:
         enableQualityFlags = int(ConfigFile.settings["bL4EnableQualityFlags"])
         root = ProcessL4.processL4(root, enableQualityFlags, windSpeedData)
 
+        dirpath = './'
+        _, filename = os.path.split(outFilePath)
+        Utilities.plotReflectance(root, dirpath, filename)
 
     #     # Write to separate file if quality flags are enabled
     #     enableQualityFlags = int(ConfigFile.settings["bL4EnableQualityFlags"])
@@ -287,28 +253,6 @@ class Controller:
             msg = "L4 processing failed. Nothing to output."
             print(msg)
             Utilities.writeLogFile(msg)
-
-
-
-    # # Saving data to a formatted csv file for testing
-    # @staticmethod
-    # def outputCSV_L4(fp):
-    #     (dirpath, filename) = os.path.split(fp)
-    #     filename = os.path.splitext(filename)[0]
-
-    #     filepath = os.path.join(dirpath, filename + "_L4.hdf")
-    #     if not os.path.isfile(filepath):
-    #         return
-
-    #     root = HDFRoot.readHDF5(filepath)
-    #     if root is None:
-    #         print("outputCSV: root is None")
-    #         return
-
-    #     Controller.outputCSV(fp, root, "Reflectance", "ES")
-    #     Controller.outputCSV(fp, root, "Reflectance", "LI")
-    #     Controller.outputCSV(fp, root, "Reflectance", "LT")
-    #     Controller.outputCSV(fp, root, "Reflectance", "Rrs")
 
 
     @staticmethod

@@ -83,16 +83,17 @@ class Window(QtWidgets.QWidget):
         self.configDeleteButton.clicked.connect(self.configDeleteButtonPressed)
 
         self.inDirLabel = QtWidgets.QLabel("Input Data Directory", self)        
-        # inputDirectory = "./"
-        self.inputDirectory = "../Field_Data/Processed/KORUS" # for raw data on Candiru, SMITHERS
-        # self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
         # self.inputDirectory = "./Data"
+        # self.inputDirectory = "../Field_Data/Processed/KORUS" # for processed data on Candiru
+        self.inputDirectory = "D:/Dirk/NASA/HyperInSPACE_Processed/KORUS" # for processed data on SMITHERS
+        # self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac        
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
 
         self.outDirLabel = QtWidgets.QLabel("Output Data Directory", self)        
         # self.outputDirectory = "./Data"
-        self.outputDirectory = "../Field_Data/Processed/KORUS" # for raw data on Candiru, SMITHERS
+        # self.outputDirectory = "../Field_Data/Processed/KORUS" # for processed data on Candiru
+        self.outputDirectory = "D:/Dirk/NASA/HyperInSPACE_Processed/KORUS" # for processed data on SMITHERS
         # self.outputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
@@ -383,9 +384,6 @@ class Window(QtWidgets.QWidget):
 
         Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile) 
 
-    # def singleL0Clicked(self):
-    #     self.processSingle("0")
-
     def singleL1aClicked(self):
         self.processSingle("1a")
 
@@ -394,9 +392,6 @@ class Window(QtWidgets.QWidget):
 
     def singleL2Clicked(self):
         self.processSingle("2")
-
-    # def singleL2sClicked(self):
-    #     self.processSingle("2s")        
 
     def singleL3Clicked(self):
         self.processSingle("3")   

@@ -142,7 +142,6 @@ class HDFDataset:
         else:
             self.columns[name].append(val)
 
-    '''         Why would you do this??              '''
     # Converts numpy array into columns (stored as a dictionary)
     def datasetToColumns(self):
         if self.data is None:
