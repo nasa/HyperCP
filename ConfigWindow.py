@@ -290,7 +290,13 @@ class ConfigWindow(QtWidgets.QDialog):
         l4Label_font.setPointSize(12)
         l4Label_font.setBold(True)
         l4Label.setFont(l4Label_font)
-        l4Sublabel = QtWidgets.QLabel(" Atmos Corr, QA, Reflectances.", self)                   
+        l4Sublabel = QtWidgets.QLabel(" Atmos Corr, QA, Reflectances.", self)   
+
+        # Min SZA
+        l4SZAMinLabel = QtWidgets.QLabel("SZA Minimum", self)
+        self.l4SZAMinLineEdit = QtWidgets.QLineEdit(self)
+        self.l4SZAMinLineEdit.setText(str(ConfigFile.settings["fL4SZAMin"]))
+        self.l4SZAMinLineEdit.setValidator(doubleValidator)                
         
         # Rho Sky & Wind
         l4RhoSkyLabel = QtWidgets.QLabel("Default Rho Sky", self)
@@ -303,7 +309,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL4EnableWindSpeedCalculation"]) == 1:
             self.l4EnableWindSpeedCalculationCheckBox.setChecked(True)
 
-        self.l4DefaultWindSpeedLabel = QtWidgets.QLabel("Default Wind Speed (m/s)", self)
+        self.l4DefaultWindSpeedLabel = QtWidgets.QLabel("    Default Wind Speed (m/s)", self)
         self.l4DefaultWindSpeedLineEdit = QtWidgets.QLineEdit(self)
         self.l4DefaultWindSpeedLineEdit.setText(str(ConfigFile.settings["fL4DefaultWindSpeed"]))
         self.l4DefaultWindSpeedLineEdit.setValidator(doubleValidator)
@@ -312,21 +318,22 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # Meteorology Flags
         l4QualityFlagLabel = QtWidgets.QLabel("Enable Meteorological Flags", self)
+        l4QualityFlagLabel2 = QtWidgets.QLabel("(See Wernand 2012, OO XVI)", self)
         self.l4QualityFlagCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4EnableQualityFlags"]) == 1:
             self.l4QualityFlagCheckBox.setChecked(True)
 
-        self.l4EsFlagLabel = QtWidgets.QLabel("Es Flag", self)
+        self.l4EsFlagLabel = QtWidgets.QLabel("    Significant Es(480) (uW cm^-2 nm^-1)", self)
         self.l4EsFlagLineEdit = QtWidgets.QLineEdit("", self)
         self.l4EsFlagLineEdit.setText(str(ConfigFile.settings["fL4SignificantEsFlag"]))
         self.l4EsFlagLineEdit.setValidator(doubleValidator)
 
-        self.l4DawnDuskFlagLabel = QtWidgets.QLabel("Dawn/Dusk Flag", self)
+        self.l4DawnDuskFlagLabel = QtWidgets.QLabel("    Dawn/Dusk Es(470/680)<", self)
         self.l4DawnDuskFlagLineEdit = QtWidgets.QLineEdit("", self)
         self.l4DawnDuskFlagLineEdit.setText(str(ConfigFile.settings["fL4DawnDuskFlag"]))
         self.l4DawnDuskFlagLineEdit.setValidator(doubleValidator)
 
-        self.l4RainfallHumidityFlagLabel = QtWidgets.QLabel("Rainfall/Humidity Flag", self)
+        self.l4RainfallHumidityFlagLabel = QtWidgets.QLabel("    Rain/Humid. Es(720/370)<", self)
         self.l4RainfallHumidityFlagLineEdit = QtWidgets.QLineEdit("", self)
         self.l4RainfallHumidityFlagLineEdit.setText(str(ConfigFile.settings["fL4RainfallHumidityFlag"]))
         self.l4RainfallHumidityFlagLineEdit.setValidator(doubleValidator)
@@ -334,7 +341,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l4QualityFlagCheckBoxUpdate()
 
         # Time Average Rrs
-        l4TimeIntervalLabel = QtWidgets.QLabel("Time Averaging Interval (seconds)", self)
+        l4TimeIntervalLabel = QtWidgets.QLabel("Time Averaging Interval (seconds; 0 for entire file)", self)
         self.l4TimeIntervalLineEdit = QtWidgets.QLineEdit(self)
         self.l4TimeIntervalLineEdit.setText(str(ConfigFile.settings["fL4TimeInterval"]))
         self.l4TimeIntervalLineEdit.setValidator(intValidator)        
@@ -351,7 +358,7 @@ class ConfigWindow(QtWidgets.QDialog):
            self.l4EnablePercentLtCheckBox.setChecked(True)
 
         # Set percentage for Rrs calculation
-        self.l4PercentLtLabel = QtWidgets.QLabel("Percent Lt", self)
+        self.l4PercentLtLabel = QtWidgets.QLabel("    Percent Lt", self)
         self.l4PercentLtLineEdit = QtWidgets.QLineEdit(self)
         self.l4PercentLtLineEdit.setText(str(ConfigFile.settings["fL4PercentLt"]))
         self.l4PercentLtLineEdit.setValidator(doubleValidator)
@@ -561,6 +568,11 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addWidget(l4Label)
         VBox3.addWidget(l4Sublabel)
         
+        # SZA Min
+        VBox3.addWidget(l4SZAMinLabel)
+        VBox3.addWidget(self.l4SZAMinLineEdit)
+
+
         # Rho Sky & Wind
         VBox3.addWidget(l4RhoSkyLabel)
         VBox3.addWidget(self.l4RhoSkyLineEdit)
@@ -576,6 +588,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # Meteorology Flags
         QualityFlagHBox = QtWidgets.QHBoxLayout()
         QualityFlagHBox.addWidget(l4QualityFlagLabel)
+        QualityFlagHBox.addWidget(l4QualityFlagLabel2)
         QualityFlagHBox.addWidget(self.l4QualityFlagCheckBox)
         VBox3.addLayout(QualityFlagHBox)         
         VBox3.addWidget(self.l4EsFlagLabel)
@@ -922,7 +935,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # ConfigFile.settings["seaBASSHeaderFileName"] = self.l3SeaBASSHeaderComboBox.currentText()
         ConfigFile.settings["seaBASSHeaderFileName"] = self.l3SeaBASSHeaderLineEdit.text()
         
-
+        ConfigFile.settings["fL4SZAMin"] = float(self.l4SZAMinLineEdit.text())
         ConfigFile.settings["fL4RhoSky"] = float(self.l4RhoSkyLineEdit.text())
         ConfigFile.settings["bL4EnableWindSpeedCalculation"] = int(self.l4EnableWindSpeedCalculationCheckBox.isChecked())
         ConfigFile.settings["fL4DefaultWindSpeed"] = float(self.l4DefaultWindSpeedLineEdit.text())
@@ -987,7 +1000,7 @@ class ConfigWindow(QtWidgets.QDialog):
             # ConfigFile.settings["seaBASSHeaderFileName"] = self.l3SeaBASSHeaderComboBox.currentText()
             ConfigFile.settings["seaBASSHeaderFileName"] = self.l3SeaBASSHeaderLineEdit.text()
             
-
+            ConfigFile.settings["fL4SZAMin"] = float(self.l4SZAMinLineEdit.text())
             ConfigFile.settings["fL4RhoSky"] = float(self.l4RhoSkyLineEdit.text())
             ConfigFile.settings["bL4EnableWindSpeedCalculation"] = int(self.l4EnableWindSpeedCalculationCheckBox.isChecked())
             ConfigFile.settings["fL4DefaultWindSpeed"] = float(self.l4DefaultWindSpeedLineEdit.text())

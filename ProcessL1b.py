@@ -281,7 +281,6 @@ class ProcessL1b:
 
                 start = -1
                 for index in range(len(pitch)):
-                    # Check for angles spanning north
                     if abs(pitch[index]) > pitchMax or abs(roll[index]) > rollMax:
                         i += 1                              
                         if start == -1:
@@ -390,7 +389,6 @@ class ProcessL1b:
 
                 start = -1
                 for index in range(len(rotator)):
-                    # Check for angles spanning north
                     if rotator[index] + home > absRotatorMax or rotator[index] + home < absRotatorMin or math.isnan(rotator[index]):
                         i += 1                              
                         if start == -1:

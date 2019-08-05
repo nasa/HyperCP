@@ -337,6 +337,10 @@ class Utilities:
 
     @staticmethod
     def plotReflectance(root, dirpath, filename):
+
+        if not os.path.exists("Plots/Rrs"):
+            os.makedirs("Plots/Rrs")
+
         # try:
         print('Plotting Rrs')
         referenceGroup = root.getGroup("Reflectance")
@@ -349,38 +353,55 @@ class Utilities:
             }
 
         x = []
+        wave = []
+        plotRange = [390, 800]
         for k in rrsData.data.dtype.names:
             if Utilities.isFloat(k):
-                x.append(k)
+                if float(k)>=plotRange[0] and float(k)<=plotRange[1]:
+                    x.append(k)
+                    wave.append(float(k))
 
         total = rrsData.data.shape[0]
+        maxRrs = 0
         cmap = cm.get_cmap("jet")
         color=iter(cmap(np.linspace(0,1,total)))
+
+        plt.figure(1, figsize=(6,4))
         for i in range(total):
             y = []
             for k in x:
                 y.append(rrsData.data[k][i])
 
             c=next(color)
-            plt.plot(x, y, 'k', c=c)
+            if max(y) > maxRrs:
+                maxRrs = max(y)
+
+            plt.plot(wave, y, 'k', c=c)
             #if (i % 25) == 0:
             #    plt.plot(x, y, 'k', color=(i/total, 0, 1-i/total, 1))
-
-        #plt.title('Remote sensing reflectance', fontdict=font)
-        #plt.text(2, 0.65, r'$\cos(2 \pi t) \exp(-t)$', fontdict=font)
+        # x1,x2,y1,y2 = plt.axis()
+        # print(f'{x1} {x2} {y1} {y2}')        
+        axes = plt.gca()
+        axes.set_title(filename, fontdict=font)
+        # axes.set_xlim([390, 800])
+        axes.set_ylim([0, maxRrs])
+        
         plt.xlabel('wavelength (nm)', fontdict=font)
-        plt.ylabel('Rrs ($sr^{-1}$)', fontdict=font)
+        plt.ylabel('$R_{rs}$ ($sr^{-1}$)', fontdict=font)
 
-        # Tweak spacing to prevent clipping of ylabel
+        # Tweak spacing to prevent clipping of labels
         plt.subplots_adjust(left=0.15)
-        #plt.show()
+        plt.subplots_adjust(bottom=0.15)
+        #plt.show()        
+
 
         # Create output directory
-        plotdir = os.path.join(dirpath, 'Plots')
+        plotdir = os.path.join(dirpath, 'Plots/Rrs/')
         os.makedirs(plotdir, exist_ok=True)
 
         # Save the plot
-        fp = os.path.join(plotdir, filename + '.png')
+        filebasename,_ = filename.split('_')
+        fp = os.path.join(plotdir, filebasename + '_Rrs.png')
         plt.savefig(fp)
         plt.close() # This prevents displaying the polt on screen with certain IDEs
         # except:

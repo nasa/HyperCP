@@ -36,6 +36,7 @@ class ConfigFile:
         print("bL3SaveSeaBASS", ConfigFile.settings["bL3SaveSeaBASS"])
         print("seaBASSHeaderFileName", ConfigFile.settings["seaBASSHeaderFileName"])
 
+        print("fL4SZAMin", ConfigFile.settings["fL4SZAMin"])
         print("fL4RhoSky", ConfigFile.settings["fL4RhoSky"])
         print("bL4EnableWindSpeedCalculation", ConfigFile.settings["bL4EnableWindSpeedCalculation"])
         print("fL4DefaultWindSpeed", ConfigFile.settings["fL4DefaultWindSpeed"])        
@@ -94,14 +95,15 @@ class ConfigFile:
         ConfigFile.settings["seaBASSHeaderFileName"] = None
                 
         # Need to add a SZAMin (@ L4??) # e.g. 20: Zhang 2017, depends on wind
-        ConfigFile.settings["fL4TimeInterval"] = 60
+        ConfigFile.settings["fL4SZAMin"] = 30
+        ConfigFile.settings["fL4RhoSky"] = 0.0256
+        ConfigFile.settings["bL4EnableWindSpeedCalculation"] = 1
+        ConfigFile.settings["fL4DefaultWindSpeed"] = 0.0        
         ConfigFile.settings["bL4EnableQualityFlags"] = 1
         ConfigFile.settings["fL4SignificantEsFlag"] = 2.0
         ConfigFile.settings["fL4DawnDuskFlag"] = 1.0
-        ConfigFile.settings["fL4RainfallHumidityFlag"] = 1.095
-        ConfigFile.settings["fL4RhoSky"] = 0.0256
-        ConfigFile.settings["bL4EnableWindSpeedCalculation"] = 1
-        ConfigFile.settings["fL4DefaultWindSpeed"] = 0.0
+        ConfigFile.settings["fL4RainfallHumidityFlag"] = 1.095        
+        ConfigFile.settings["fL4TimeInterval"] = 60
         ConfigFile.settings["bL4PerformNIRCorrection"] = 0
         ConfigFile.settings["bL4EnablePercentLt"] = 0
         ConfigFile.settings["fL4PercentLt"] = 5

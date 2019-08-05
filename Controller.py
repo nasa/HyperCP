@@ -225,25 +225,31 @@ class Controller:
         msg = ("ProcessL4: " + inFilePath)
         print(msg)
         Utilities.writeLogFile(msg,'w')
-        root = HDFRoot.readHDF5(inFilePath)
+        try:
+            root = HDFRoot.readHDF5(inFilePath)
+        except:
+            print('Unable to read L3 file. It may be open in another program.')
+            return None
         enableQualityFlags = int(ConfigFile.settings["bL4EnableQualityFlags"])
         root = ProcessL4.processL4(root, enableQualityFlags, windSpeedData)
 
-        dirpath = './'
-        _, filename = os.path.split(outFilePath)
-        Utilities.plotReflectance(root, dirpath, filename)
+        # Create Plots
+        if root is not None:
+            dirpath = './'
+            _, filename = os.path.split(outFilePath)
+            Utilities.plotReflectance(root, dirpath, filename)
 
-    #     # Write to separate file if quality flags are enabled
-    #     enableQualityFlags = int(ConfigFile.settings["bL4EnableQualityFlags"])
-    #     if enableQualityFlags:
-    #         root = HDFRoot.readHDF5(filepath)
-    #         root = ProcessL4.processL4(root, True, windSpeedData)
-    #         root = ProcessL4a.processL4a(root)
-    #         if root is not None:
-    #             Utilities.plotReflectance(root, dirpath, filename + "-flags")
-    #             root.writeHDF5(os.path.join(dirpath, filename + "_L4-flags.hdf"))
+        #     # Write to separate file if quality flags are enabled
+        #     enableQualityFlags = int(ConfigFile.settings["bL4EnableQualityFlags"])
+        #     if enableQualityFlags:
+        #         root = HDFRoot.readHDF5(filepath)
+        #         root = ProcessL4.processL4(root, True, windSpeedData)
+        #         root = ProcessL4a.processL4a(root)
+        #         if root is not None:
+        #             Utilities.plotReflectance(root, dirpath, filename + "-flags")
+        #             root.writeHDF5(os.path.join(dirpath, filename + "_L4-flags.hdf"))
 
-    # Write output file
+        # Write output file
         if root is not None:
             try:
                 root.writeHDF5(outFilePath)
