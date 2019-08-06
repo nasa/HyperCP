@@ -26,24 +26,34 @@ class ProcessL4:
         # Now delete the record from each dataset in the group
         ticker = 0
         finalCount = 0
-        for timeTag in badTimes:               
+        for timeTag in badTimes:
+
             msg = ("Eliminate data between: " + str(timeTag) + " (HHMMSSMSS)")
-            # print(msg)
+            print(msg)
             Utilities.writeLogFile(msg)
             # print(timeTag)
             # print(" ")         
-            start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
-            stop = Utilities.timeTag2ToSec(list(timeTag[1])[0])                
+            start = Utilities.timeTag2ToSec(timeTag[0])
+            stop = Utilities.timeTag2ToSec(timeTag[1])                
             # badIndex = ([i for i in range(lenDataSec) if start <= dataSec[i] and stop >= dataSec[i]])      
                     
             msg = ("   Remove " + group.id + " Data")
-            # print(msg)
+            print(msg)
             Utilities.writeLogFile(msg)
-            timeData = group.getDataset("Timtag2")        
+            #  timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
+            if group.id == "Reference":
+                timeData = group.getDataset("ES_hyperspectral").data["Timetag2"]
+            if group.id == "SAS":
+                timeData = group.getDataset("LI_hyperspectral").data["Timetag2"]
+            if group.id == "SATNAV":
+                timeData = group.getDataset("AZIMUTH").data["Timetag2"]
+            if group.id == "GPS":
+                timeData = group.getDataset("COURSE").data["Timetag2"]
+
             dataSec = []
-            for i in range(timeData.data.shape[0]):
+            for i in range(timeData.shape[0]):
                 # Converts from TT2 (hhmmssmss. UTC) to milliseconds UTC
-                dataSec.append(Utilities.timeTag2ToSec(timeData.data["NONE"][i])) 
+                dataSec.append(Utilities.timeTag2ToSec(timeData[i])) 
 
             lenDataSec = len(dataSec)
             if ticker == 0:
@@ -54,11 +64,11 @@ class ProcessL4:
                 counter = 0
                 for i in range(lenDataSec):
                     if start <= dataSec[i] and stop >= dataSec[i]:                        
-                        test = group.getDataset("Timetag2").data["NONE"][i - counter]                                            
+                        # test = group.getDataset("Timetag2").data["NONE"][i - counter]                                            
                         group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
                         counter += 1
 
-                test = len(group.getDataset("Timetag2").data["NONE"])
+                # test = len(group.getDataset("Timetag2").data["NONE"])
                 finalCount += counter
             else:
                 msg = ('Data group is empty')
@@ -483,14 +493,16 @@ class ProcessL4:
         referenceGroup = node.getGroup("Reference")
         sasGroup = node.getGroup("SAS")
         satnavGroup = node.getGroup("SATNAV")
+        gpsGroup = node.getGroup("GPS")
 
         # Filter low SZAs
         SZAMin = float(ConfigFile.settings["fL4SZAMin"])
         SZA = 90 -satnavGroup.getDataset("ELEVATION").data["SUN"]
         timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
-        badTimes = []
+        badTimes = None
         i=0
         start = -1
+        stop = []
         for index in range(len(SZA)):
             # Check for angles spanning north
             if SZA[index] < SZAMin:
@@ -512,9 +524,18 @@ class ProcessL4:
         print(msg)
         Utilities.writeLogFile(msg)
 
-        ProcessL4.filterData(referenceGroup, badTimes)
-        ProcessL4.filterData(sasGroup, badTimes)
-        ProcessL4.filterData(satnavGroup, badTimes)                        
+        if start != -1 and badTimes is None: # Records from a mid-point to the end are bad
+            startstop = [timeStamp[start],timeStamp[stop]]
+            badTimes = [startstop]
+
+        if start==0 and stop==index: # All records are bad                           
+            return False
+        
+        if badTimes is not None:
+            ProcessL4.filterData(referenceGroup, badTimes)
+            ProcessL4.filterData(gpsGroup, badTimes)
+            ProcessL4.filterData(sasGroup, badTimes)
+            ProcessL4.filterData(satnavGroup, badTimes)                        
 
 
         esData = referenceGroup.getDataset("ES_hyperspectral")

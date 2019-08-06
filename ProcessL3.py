@@ -36,7 +36,7 @@ class ProcessL3:
     # Time interpolation
     # xTimer, yTimer are already converted from TimeTag2 to seconds
     @staticmethod
-    def interpolateL3(xData, xTimer, yTimer, newXData, instr, kind='linear'):        
+    def interpolateL3(xData, xTimer, yTimer, newXData, instr, kind='linear', fileName='default'):        
         for k in xData.data.dtype.names:
             if k == "Datetag" or k == "Timetag2":
                 continue
@@ -56,7 +56,7 @@ class ProcessL3:
         if ConfigFile.settings["bL3PlotTimeInterp"] == 1:
             print('Plotting time interpolations ' +instr)
             # This plots the interpolated data in Plots
-            Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, instr)
+            Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName)
 
 
     # Converts a sensor group into the format used by Level 3
@@ -84,7 +84,7 @@ class ProcessL3:
     # Preforms time interpolation to match xData to yData
     # xData is the dataset to be interpolate, yData is the reference dataset with the times to be interpolated to.
     @staticmethod
-    def interpolateData(xData, yData, instr):
+    def interpolateData(xData, yData, instr, fileName):
         msg = ("Interpolate Data " + instr)
         print(msg)
         Utilities.writeLogFile(msg)
@@ -130,7 +130,7 @@ class ProcessL3:
         #    print("Found NAN 1")
 
         # Perform interpolation on full hyperspectral time series
-        ProcessL3.interpolateL3(xData, xTimer, yTimer, xData, instr, 'cubic')
+        ProcessL3.interpolateL3(xData, xTimer, yTimer, xData, instr, 'cubic', fileName)
         xData.columnsToDataset()
         
         #if Utilities.hasNan(xData):
@@ -140,7 +140,7 @@ class ProcessL3:
 
     # interpolate GPS to match ES using linear interpolation
     @staticmethod
-    def interpolateGPSData(node, gpsGroup):
+    def interpolateGPSData(node, gpsGroup, fileName):
         # This is handled seperately in order to correct the Lat Long and UTC fields
         msg = "Interpolate GPS Data"
         print(msg)
@@ -222,11 +222,11 @@ class ProcessL3:
             's to '+str(max(yTimer)))
 
         # Interpolate by time values
-        ProcessL3.interpolateL3(gpsCourseData, xTimer, yTimer, newGPSCourseData, gpsCourseData.id, 'linear')
-        ProcessL3.interpolateL3(gpsLatPosData, xTimer, yTimer, newGPSLatPosData, gpsLatPosData.id, 'linear')
-        ProcessL3.interpolateL3(gpsLonPosData, xTimer, yTimer, newGPSLonPosData, gpsLonPosData.id, 'linear')
-        ProcessL3.interpolateL3(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, gpsMagVarData.id, 'linear')
-        ProcessL3.interpolateL3(gpsSpeedData, xTimer, yTimer, newGPSSpeedData, gpsSpeedData.id, 'linear')
+        ProcessL3.interpolateL3(gpsCourseData, xTimer, yTimer, newGPSCourseData, gpsCourseData.id, 'linear', fileName)
+        ProcessL3.interpolateL3(gpsLatPosData, xTimer, yTimer, newGPSLatPosData, gpsLatPosData.id, 'linear', fileName)
+        ProcessL3.interpolateL3(gpsLonPosData, xTimer, yTimer, newGPSLonPosData, gpsLonPosData.id, 'linear', fileName)
+        ProcessL3.interpolateL3(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, gpsMagVarData.id, 'linear', fileName)
+        ProcessL3.interpolateL3(gpsSpeedData, xTimer, yTimer, newGPSSpeedData, gpsSpeedData.id, 'linear', fileName)
 
         newGPSCourseData.columnsToDataset()
         newGPSLatPosData.columnsToDataset()
@@ -236,7 +236,7 @@ class ProcessL3:
 
     # interpolate SATNAV to match ES
     @staticmethod
-    def interpolateSATNAVData(node, satnavGroup):
+    def interpolateSATNAVData(node, satnavGroup, fileName):
         msg = "Interpolate SATNAV Data"
         print(msg)
         Utilities.writeLogFile(msg)
@@ -300,13 +300,13 @@ class ProcessL3:
             's to '+str(max(yTimer)))
 
         # Interpolate by time values
-        ProcessL3.interpolateL3(satnavAzimuthData, xTimer, yTimer, newSATNAVAzimuthData, 'SunAz', 'linear')
-        ProcessL3.interpolateL3(satnavHeadingData, xTimer, yTimer, newSATNAVHeadingData, 'Heading', 'linear')
+        ProcessL3.interpolateL3(satnavAzimuthData, xTimer, yTimer, newSATNAVAzimuthData, 'SunAz', 'linear', fileName)
+        ProcessL3.interpolateL3(satnavHeadingData, xTimer, yTimer, newSATNAVHeadingData, 'Heading', 'linear', fileName)
         # ProcessL3.interpolateL3(satnavPitchData, xTimer, yTimer, newSATNAVPitchData, 'Pitch', 'linear')
-        ProcessL3.interpolateL3(satnavPointingData, xTimer, yTimer, newSATNAVPointingData, 'Pointing', 'linear')
+        ProcessL3.interpolateL3(satnavPointingData, xTimer, yTimer, newSATNAVPointingData, 'Pointing', 'linear', fileName)
         # ProcessL3.interpolateL3(satnavRollData, xTimer, yTimer, newSATNAVRollData, 'Roll', 'linear')
-        ProcessL3.interpolateL3(satnavRelAzData, xTimer, yTimer, newSATNAVRelAzData, 'RelAz', 'linear')
-        ProcessL3.interpolateL3(satnavElevationData, xTimer, yTimer, newSATNAVElevationData, 'Elevation', 'linear')
+        ProcessL3.interpolateL3(satnavRelAzData, xTimer, yTimer, newSATNAVRelAzData, 'RelAz', 'linear', fileName)
+        ProcessL3.interpolateL3(satnavElevationData, xTimer, yTimer, newSATNAVElevationData, 'Elevation', 'linear', fileName)
 
         newSATNAVAzimuthData.columnsToDataset()
         newSATNAVHeadingData.columnsToDataset()
@@ -715,7 +715,7 @@ class ProcessL3:
 
     # Does time and wavelength interpolation and data averaging (latter not implemented here)
     @staticmethod
-    def processL3(node):
+    def processL3(node, fileName):
         
         root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class 
         root.copyAttributes(node) # Now copy the attributes in from the L2 object
@@ -788,14 +788,14 @@ class ProcessL3:
         #interpData = liData # Testing against Prosoft ##??
 
         # Perform time interpolation
-        if not ProcessL3.interpolateData(esData, interpData, "ES"):
+        if not ProcessL3.interpolateData(esData, interpData, "ES", fileName):
             return None
-        if not ProcessL3.interpolateData(liData, interpData, "LI"):
+        if not ProcessL3.interpolateData(liData, interpData, "LI", fileName):
             return None
-        if not ProcessL3.interpolateData(ltData, interpData, "LT"):
+        if not ProcessL3.interpolateData(ltData, interpData, "LT", fileName):
             return None
-        ProcessL3.interpolateGPSData(root, gpsGroup)
-        ProcessL3.interpolateSATNAVData(root, satnavGroup)
+        ProcessL3.interpolateGPSData(root, gpsGroup, fileName)
+        ProcessL3.interpolateSATNAVData(root, satnavGroup, fileName)
 
         # Match wavelengths across instruments
         # Calls interpolateWavelengths and matchColumns

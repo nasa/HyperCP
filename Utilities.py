@@ -11,6 +11,8 @@ import scipy.interpolate
 from scipy.interpolate import splev, splrep
 import pandas as pd
 
+from ConfigFile import ConfigFile
+
 if "LOGFILE" not in os.environ:
     os.environ["LOGFILE"] = "temp.log"
 
@@ -392,6 +394,12 @@ class Utilities:
         # Tweak spacing to prevent clipping of labels
         plt.subplots_adjust(left=0.15)
         plt.subplots_adjust(bottom=0.15)
+
+        note = f'Interval: {ConfigFile.settings["fL4TimeInterval"]}'
+        axes.text(0.95, 0.01, note,
+        verticalalignment='top', horizontalalignment='right',
+        transform=ax.transAxes,
+        color='green', fontdict=font)
         #plt.show()        
 
 
@@ -410,49 +418,89 @@ class Utilities:
 
 
     @staticmethod
-    def plotDataset(root, filename, name, label):
-        try:
-            referenceGroup = root.getGroup("Reflectance")
-            rrsData = referenceGroup.getDataset(name)
+    def plotRadiance(root, dirpath, filename):
 
-            font = {'family': 'serif',
-                'color':  'darkred',
-                'weight': 'normal',
-                'size': 16,
-                }
+        if not os.path.exists("Plots/EsLiLt"):
+            os.makedirs("Plots/EsLiLt")
 
-            x = []
-            for k in rrsData.data.dtype.names:
-                x.append(k)
+        # try:
+        print('Plotting Es')
+        referenceGroup = root.getGroup("Irradiance")
+        esData = referenceGroup.getDataset("Es")
 
-            total = rrsData.data.shape[0]
-            color=iter(cm.jet(np.linspace(0,1,total)))
-            for i in range(total):
-                y = []
-                for k in x:
-                    y.append(rrsData.data[k][i])
+        font = {'family': 'serif',
+            'color':  'darkred',
+            'weight': 'normal',
+            'size': 16,
+            }
 
-                c=next(color)
-                plt.plot(x, y, 'k', c=c)
-                #if (i % 25) == 0:
-                #    plt.plot(x, y, 'k', color=(i/total, 0, 1-i/total, 1))
+        x = []
+        wave = []
+        plotRange = [300, 1200]
+        for k in esData.data.dtype.names:
+            if Utilities.isFloat(k):
+                if float(k)>=plotRange[0] and float(k)<=plotRange[1]:
+                    x.append(k)
+                    wave.append(float(k))
 
-            #plt.title('Remote sensing reflectance', fontdict=font)
-            #plt.text(2, 0.65, r'$\cos(2 \pi t) \exp(-t)$', fontdict=font)
-            plt.xlabel('wavelength (nm)', fontdict=font)
-            plt.ylabel(label, fontdict=font)
+        total = esData.data.shape[0]
+        maxEs = 0
+        cmap = cm.get_cmap("jet")
+        color=iter(cmap(np.linspace(0,1,total)))
 
-            # Tweak spacing to prevent clipping of ylabel
-            plt.subplots_adjust(left=0.15)
-            #plt.show()
-            plt.savefig('Plots/' + filename + '.png')
-            plt.close() # This prevents displaying the polt on screen with certain IDEs
-        except:
-            e = sys.exc_info()[0]
-            print("Error: %s" % e)
+        plt.figure(1, figsize=(6,4))
+        for i in range(total):
+            y = []
+            for k in x:
+                y.append(esData.data[k][i])
+
+            c=next(color)
+            if max(y) > maxEs:
+                maxEs = max(y)
+
+            plt.plot(wave, y, 'k', c=c)
+            #if (i % 25) == 0:
+            #    plt.plot(x, y, 'k', color=(i/total, 0, 1-i/total, 1))
+        # x1,x2,y1,y2 = plt.axis()
+        # print(f'{x1} {x2} {y1} {y2}')        
+        axes = plt.gca()
+        axes.set_title(filename, fontdict=font)
+        # axes.set_xlim([390, 800])
+        axes.set_ylim([0, maxEs])
+        
+        plt.xlabel('wavelength (nm)', fontdict=font)
+        plt.ylabel('$R_{rs}$ ($sr^{-1}$)', fontdict=font)
+
+        # Tweak spacing to prevent clipping of labels
+        plt.subplots_adjust(left=0.15)
+        plt.subplots_adjust(bottom=0.15)
+
+        note = f'Interval: {ConfigFile.settings["fL4TimeInterval"]}'
+        axes.text(0.95, 0.01, note,
+        verticalalignment='top', horizontalalignment='right',
+        transform=ax.transAxes,
+        color='green', fontdict=font)
+        #plt.show()        
+
+
+        # Create output directory
+        plotdir = os.path.join(dirpath, 'Plots/EsLiLt/')
+        os.makedirs(plotdir, exist_ok=True)
+
+        # Save the plot
+        filebasename,_ = filename.split('_')
+        fp = os.path.join(plotdir, filebasename + '_Es.png')
+        plt.savefig(fp)
+        plt.close() # This prevents displaying the polt on screen with certain IDEs
+        # except:
+        #     e = sys.exc_info()[0]
+        #     print("Error: %s" % e)     
 
     @staticmethod
-    def plotTimeInterp(xData, xTimer, newXData, yTimer, instr):        
+    def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):     
+        fileBaseName,_ = fileName.split('.')
+        if not os.path.exists("Plots/L3"):
+            os.makedirs("Plots/L3")   
         try:           
             font = {'family': 'serif',
                 'color':  'darkred',
@@ -468,28 +516,36 @@ class Utilities:
                 l = 1
 
             Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-            # Should break out every 10-20 bands here, as in Anom Detect
+            
+            step = 10 # Steps in wavebands used for plots
+            index = 0
             for i, k in enumerate(xData.data.dtype.names):
-                Utilities.printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-                
-                if k == "Datetag" or k == "Timetag2":
-                    continue                            
-                x = np.copy(xData.data[k]).tolist()
-                new_x = np.copy(newXData.columns[k]).tolist()
+                if index % step == 0: 
+                    Utilities.printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+                    
+                    if k == "Datetag" or k == "Timetag2":
+                        continue                            
+                    x = np.copy(xData.data[k]).tolist()
+                    new_x = np.copy(newXData.columns[k]).tolist()
 
-                fig = plt.figure(figsize=(12, 4))
-                ax = fig.add_subplot(1, 1, 1)
-                ax.plot(xTimer, x, 'bo', yTimer, new_x, 'k.')
-                # print(len(x))
+                    fig = plt.figure(figsize=(12, 4))
+                    ax = fig.add_subplot(1, 1, 1)
+                    ax.plot(xTimer, x, 'bo', label='Raw')
+                    ax.plot(yTimer, new_x, 'k.', label='Interpolated')
+                    ax.legend()
 
-                plt.xlabel('Timetag2', fontdict=font)
-                plt.ylabel('Data', fontdict=font)
-                
-                plt.savefig('Plots/' + instr + '_' + k + '.png')
-                plt.close()
-                # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)                
-                # # Tweak spacing to prevent clipping of ylabel
-                # plt.subplots_adjust(left=0.15)                
+                    plt.xlabel('Seconds', fontdict=font)
+                    plt.ylabel('Data', fontdict=font)
+                    plt.subplots_adjust(left=0.15)
+                    plt.subplots_adjust(bottom=0.15)
+                    
+                    plt.savefig('Plots/L3/' + fileBaseName + '_' + instr + '_' + k + '.png')
+                    plt.close()
+                    # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)                
+                    # # Tweak spacing to prevent clipping of ylabel
+                    # plt.subplots_adjust(left=0.15)     
+
+                index +=1           
                 
         except:
             e = sys.exc_info()[0]

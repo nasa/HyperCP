@@ -217,8 +217,8 @@ class ConfigWindow(QtWidgets.QDialog):
         # l2AnomalyLabel_font.setBold(True)
         # l2AnomalyLabel.setFont(l2AnomalyLabel_font)
         l2AnomalySublabel1 = QtWidgets.QLabel("Launch Anomaly Analysis below to load L1B",self)
-        l2AnomalySublabel2 = QtWidgets.QLabel("  file for testing the above parameters.",self)
-        l2AnomalySublabel3 = QtWidgets.QLabel("  Results will be saved to ./Plot/Anomalies.", self)  
+        l2AnomalySublabel2 = QtWidgets.QLabel("  file for testing the above parameters. Save config if test-",self)
+        l2AnomalySublabel3 = QtWidgets.QLabel("  ing updated values. Results will be saved to ./Plot/Anomalies.", self)  
         self.anomalyButton = QtWidgets.QPushButton("Anomaly Analysis")
         self.anomalyButton.clicked.connect(self.anomalyButtonPressed)
                         

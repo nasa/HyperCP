@@ -191,6 +191,8 @@ class Controller:
 
     @staticmethod
     def processL3(inFilePath, outFilePath):
+
+        _,fileName = os.path.split(outFilePath)
         
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
@@ -201,7 +203,7 @@ class Controller:
         print(msg)
         Utilities.writeLogFile(msg,'w')
         root = HDFRoot.readHDF5(inFilePath)
-        root = ProcessL3.processL3(root)     
+        root = ProcessL3.processL3(root, fileName)     
 
         # Write output file
         if root is not None:
