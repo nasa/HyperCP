@@ -16,8 +16,8 @@ from Utilities import Utilities
 def AnomalyDetection(self,inputDirectory):
     print("AnomalyDetection - Launching anomaly analysis")
 
-    if not os.path.exists("Plots/Anomalies"):
-            os.makedirs("Plots/Anomalies")
+    if not os.path.exists("Plots/Anoms"):
+            os.makedirs("Plots/Anomss")
 
     # Open L1B HDF5 file for Deglitching        
     inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1B HDF5 file for Deglitching", \
@@ -172,7 +172,7 @@ def deglitchAndPlot(fileName,k,sensorType,lightDark,windowSize,sigma,\
     plt.ylabel(text_ylabel, fontdict=font)   
     plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
 
-    plotName = ('Plots/Anomalies/' + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
+    plotName = ('Plots/Anoms/' + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
         + sensorType + lightDark + '_' + k[0] + '.png')
     print(plotName)
     plt.savefig(plotName)

@@ -338,15 +338,33 @@ class Utilities:
 
 
     @staticmethod
-    def plotReflectance(root, dirpath, filename):
+    def plotRadiometry(root, dirpath, filename, rType):
 
-        if not os.path.exists("Plots/Rrs"):
-            os.makedirs("Plots/Rrs")
-
-        # try:
-        print('Plotting Rrs')
-        referenceGroup = root.getGroup("Reflectance")
-        rrsData = referenceGroup.getDataset("Rrs")
+        if rType=='Rrs':
+            print('Plotting Rrs')
+            referenceGroup = root.getGroup("Reflectance")
+            Data = referenceGroup.getDataset(rType)
+            if not os.path.exists("Plots/L4_Rrs/"):
+                os.makedirs("Plots/L4_Rrs/")
+            plotdir = os.path.join(dirpath, 'Plots/L4_Rrs/')
+        else:
+            if not os.path.exists("Plots/L4_EsLiLt"):
+                os.makedirs("Plots/L4_EsLiLt")
+            plotdir = os.path.join(dirpath, 'Plots/L4_EsLiLt/')
+        if rType=='ES':
+            print('Plotting Es')
+            referenceGroup = root.getGroup("Irradiance")
+            Data = referenceGroup.getDataset(rType)
+            
+        if rType=='LI':
+            print('Plotting Li')
+            referenceGroup = root.getGroup("Radiance")
+            Data = referenceGroup.getDataset(rType)
+            
+        if rType=='LT':
+            print('Plotting Lt')
+            referenceGroup = root.getGroup("Radiance")
+            Data = referenceGroup.getDataset(rType)            
 
         font = {'family': 'serif',
             'color':  'darkred',
@@ -357,13 +375,13 @@ class Utilities:
         x = []
         wave = []
         plotRange = [390, 800]
-        for k in rrsData.data.dtype.names:
+        for k in Data.data.dtype.names:
             if Utilities.isFloat(k):
                 if float(k)>=plotRange[0] and float(k)<=plotRange[1]:
                     x.append(k)
                     wave.append(float(k))
 
-        total = rrsData.data.shape[0]
+        total = Data.data.shape[0]
         maxRrs = 0
         cmap = cm.get_cmap("jet")
         color=iter(cmap(np.linspace(0,1,total)))
@@ -372,7 +390,7 @@ class Utilities:
         for i in range(total):
             y = []
             for k in x:
-                y.append(rrsData.data[k][i])
+                y.append(Data.data[k][i])
 
             c=next(color)
             if max(y) > maxRrs:
@@ -389,112 +407,32 @@ class Utilities:
         axes.set_ylim([0, maxRrs])
         
         plt.xlabel('wavelength (nm)', fontdict=font)
-        plt.ylabel('$R_{rs}$ ($sr^{-1}$)', fontdict=font)
+        plt.ylabel(rType, fontdict=font)
 
         # Tweak spacing to prevent clipping of labels
         plt.subplots_adjust(left=0.15)
         plt.subplots_adjust(bottom=0.15)
 
-        note = f'Interval: {ConfigFile.settings["fL4TimeInterval"]}'
-        axes.text(0.95, 0.01, note,
+        note = f'Interval: {ConfigFile.settings["fL4TimeInterval"]} s'
+        axes.text(0.95, 0.95, note,
         verticalalignment='top', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='green', fontdict=font)
+        transform=axes.transAxes,
+        color='black', fontdict=font)
         #plt.show()        
 
 
-        # Create output directory
-        plotdir = os.path.join(dirpath, 'Plots/Rrs/')
+        # Create output directory        
         os.makedirs(plotdir, exist_ok=True)
 
         # Save the plot
         filebasename,_ = filename.split('_')
-        fp = os.path.join(plotdir, filebasename + '_Rrs.png')
+        fp = os.path.join(plotdir, filebasename + '_' + rType + '.png')
         plt.savefig(fp)
         plt.close() # This prevents displaying the polt on screen with certain IDEs
         # except:
         #     e = sys.exc_info()[0]
         #     print("Error: %s" % e)        
-
-
-    @staticmethod
-    def plotRadiance(root, dirpath, filename):
-
-        if not os.path.exists("Plots/EsLiLt"):
-            os.makedirs("Plots/EsLiLt")
-
-        # try:
-        print('Plotting Es')
-        referenceGroup = root.getGroup("Irradiance")
-        esData = referenceGroup.getDataset("Es")
-
-        font = {'family': 'serif',
-            'color':  'darkred',
-            'weight': 'normal',
-            'size': 16,
-            }
-
-        x = []
-        wave = []
-        plotRange = [300, 1200]
-        for k in esData.data.dtype.names:
-            if Utilities.isFloat(k):
-                if float(k)>=plotRange[0] and float(k)<=plotRange[1]:
-                    x.append(k)
-                    wave.append(float(k))
-
-        total = esData.data.shape[0]
-        maxEs = 0
-        cmap = cm.get_cmap("jet")
-        color=iter(cmap(np.linspace(0,1,total)))
-
-        plt.figure(1, figsize=(6,4))
-        for i in range(total):
-            y = []
-            for k in x:
-                y.append(esData.data[k][i])
-
-            c=next(color)
-            if max(y) > maxEs:
-                maxEs = max(y)
-
-            plt.plot(wave, y, 'k', c=c)
-            #if (i % 25) == 0:
-            #    plt.plot(x, y, 'k', color=(i/total, 0, 1-i/total, 1))
-        # x1,x2,y1,y2 = plt.axis()
-        # print(f'{x1} {x2} {y1} {y2}')        
-        axes = plt.gca()
-        axes.set_title(filename, fontdict=font)
-        # axes.set_xlim([390, 800])
-        axes.set_ylim([0, maxEs])
-        
-        plt.xlabel('wavelength (nm)', fontdict=font)
-        plt.ylabel('$R_{rs}$ ($sr^{-1}$)', fontdict=font)
-
-        # Tweak spacing to prevent clipping of labels
-        plt.subplots_adjust(left=0.15)
-        plt.subplots_adjust(bottom=0.15)
-
-        note = f'Interval: {ConfigFile.settings["fL4TimeInterval"]}'
-        axes.text(0.95, 0.01, note,
-        verticalalignment='top', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='green', fontdict=font)
-        #plt.show()        
-
-
-        # Create output directory
-        plotdir = os.path.join(dirpath, 'Plots/EsLiLt/')
-        os.makedirs(plotdir, exist_ok=True)
-
-        # Save the plot
-        filebasename,_ = filename.split('_')
-        fp = os.path.join(plotdir, filebasename + '_Es.png')
-        plt.savefig(fp)
-        plt.close() # This prevents displaying the polt on screen with certain IDEs
-        # except:
-        #     e = sys.exc_info()[0]
-        #     print("Error: %s" % e)     
+   
 
     @staticmethod
     def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):     

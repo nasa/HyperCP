@@ -510,7 +510,9 @@ class ProcessL4:
                 if start == -1:
                     print('Low SZA. SZA: ' + str(round(SZA[index])))
                     start = index
-                stop = index                                
+                stop = index 
+                if badTimes is None:
+                    badTimes = []                               
             else:                                
                 if start != -1:
                     print('SZA passed. SZA: ' + str(round(SZA[index])))

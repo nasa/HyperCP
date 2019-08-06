@@ -9,7 +9,7 @@ from HDFRoot import HDFRoot
 from ConfigFile import ConfigFile
 from Utilities import Utilities
 from WindSpeedReader import WindSpeedReader
-from ProcessL0 import ProcessL0
+# from ProcessL0 import ProcessL0
 from ProcessL1a import ProcessL1a
 from ProcessL1b import ProcessL1b
 from ProcessL2 import ProcessL2
@@ -236,10 +236,22 @@ class Controller:
         root = ProcessL4.processL4(root, enableQualityFlags, windSpeedData)
 
         # Create Plots
-        if root is not None:
+        if root is not None and ConfigFile.settings['bL4PlotRrs']==1:
             dirpath = './'
             _, filename = os.path.split(outFilePath)
-            Utilities.plotReflectance(root, dirpath, filename)
+            Utilities.plotRadiometry(root, dirpath, filename, rType='Rrs')
+        if root is not None and ConfigFile.settings['bL4PlotEs']==1:
+            dirpath = './'
+            _, filename = os.path.split(outFilePath)
+            Utilities.plotRadiometry(root, dirpath, filename, rType='ES')
+        if root is not None and ConfigFile.settings['bL4PlotLi']==1:
+            dirpath = './'
+            _, filename = os.path.split(outFilePath)
+            Utilities.plotRadiometry(root, dirpath, filename, rType='LI')
+        if root is not None and ConfigFile.settings['bL4PlotLt']==1:
+            dirpath = './'
+            _, filename = os.path.split(outFilePath)
+            Utilities.plotRadiometry(root, dirpath, filename, rType='LT')
 
         #     # Write to separate file if quality flags are enabled
         #     enableQualityFlags = int(ConfigFile.settings["bL4EnableQualityFlags"])

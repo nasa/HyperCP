@@ -280,7 +280,7 @@ class Window(QtWidgets.QWidget):
             self, "Choose Directory.", 
             self.inputDirectory)
         print('Data input directory changed: ', self.inputDirectory)
-        (inDirPath, inDirName) = os.path.split(self.inputDirectory)        
+        (_, inDirName) = os.path.split(self.inputDirectory)        
         self.inDirButton.setText(inDirName)
         # self.inputDirectory = inDir
         return self.inputDirectory
@@ -292,7 +292,7 @@ class Window(QtWidgets.QWidget):
         print('Data output directory changed: ', self.outputDirectory)
         print("NOTE: SUBDIRECTORIES FOR DATA LEVELS WILL BE CREATED HERE")
         print("      AUTOMATICALLY, UNLESS THEY ALREADY EXIST.")        
-        (dirPath, dirName) = os.path.split(self.outputDirectory)        
+        (_, dirName) = os.path.split(self.outputDirectory)        
         self.outDirButton.setText(dirName)
         return self.outputDirectory
 

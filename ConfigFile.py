@@ -48,6 +48,11 @@ class ConfigFile:
         print("bL4PerformNIRCorrection", ConfigFile.settings["bL4PerformNIRCorrection"])        
         print("bL4EnablePercentLt", ConfigFile.settings["bL4EnablePercentLt"])
         print("fL4PercentLt", ConfigFile.settings["fL4PercentLt"])
+        print("bL4PlotRrs", ConfigFile.settings["bL4PlotRrs"])
+        print("bL4PlotEs", ConfigFile.settings["bL4PlotEs"])
+        print("bL4PlotLi", ConfigFile.settings["bL4PlotLi"])
+        print("bL4PlotLt", ConfigFile.settings["bL4PlotLt"])
+        print("bL4SaveSeaBASS", ConfigFile.settings["bL4SaveSeaBASS"])
 
 
     # Creates the calibration file folder if not exist
@@ -79,9 +84,7 @@ class ConfigFile:
         ConfigFile.settings["fL1bRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
         ConfigFile.settings["bL1bCleanSunAngle"] = 0
         ConfigFile.settings["fL1bSunAngleMin"] = 90.0 # Zhang 2017: 45, Mobley 1999: 90, Zibordi 2009 (and IOCCG Protocols): 90
-        ConfigFile.settings["fL1bSunAngleMax"] = 135.0 #Zhang 2017: 90, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90
-        ConfigFile.settings["bL1bSaveSeaBASS"] = 0
-
+        ConfigFile.settings["fL1bSunAngleMax"] = 135.0 #Zhang 2017: 90, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90        
 
         ConfigFile.settings["bL2Deglitch"] = 0
         ConfigFile.settings["fL2Deglitch0"] = 15    # These can be experimentally derived with the AnomalyDetection tool
@@ -107,6 +110,11 @@ class ConfigFile:
         ConfigFile.settings["bL4PerformNIRCorrection"] = 0
         ConfigFile.settings["bL4EnablePercentLt"] = 0
         ConfigFile.settings["fL4PercentLt"] = 5
+        ConfigFile.settings["bL4PlotRrs"] = 0
+        ConfigFile.settings["bL4PlotEs"] = 0
+        ConfigFile.settings["bL4PlotLi"] = 0
+        ConfigFile.settings["bL4PlotLt"] = 0
+        ConfigFile.settings["bL4SaveSeaBASS"] = 0
 
         if not name.endswith(".cfg"):
             name = name + ".cfg"

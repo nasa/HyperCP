@@ -95,16 +95,17 @@ class ConfigWindow(QtWidgets.QDialog):
         # self.l1aSaveSeaBASSCheckBox.clicked.connect(self.l1aSaveSeaBASSCheckBoxUpdate)
 
         # L1b
-        l1bLabel = QtWidgets.QLabel("Level 1B Processing", self)
-        l1bLabel2 = QtWidgets.QLabel("Level 1B Processing (cntd)", self)
+        l1bLabel = QtWidgets.QLabel("Level 1B Processing", self)        
         l1bLabel_font = l1bLabel.font()
         l1bLabel_font.setPointSize(12)
         l1bLabel_font.setBold(True)
-        l1bLabel2_font = l1bLabel2.font()
-        l1bLabel2_font.setPointSize(12)
-        l1bLabel2_font.setBold(True)
         l1bLabel.setFont(l1bLabel_font)
-        l1bLabel2.setFont(l1bLabel_font)
+        # l1bLabel2 = QtWidgets.QLabel("Level 1B Processing (cntd)", self)
+        # l1bLabel2_font = l1bLabel2.font()
+        # l1bLabel2_font.setPointSize(12)
+        # l1bLabel2_font.setBold(True)
+        
+        # l1bLabel2.setFont(l1bLabel_font)
         l1bSublabel = QtWidgets.QLabel(" Filter on pitch, roll, rotator, yaw,", self)        
         l1bSublabel2 = QtWidgets.QLabel("   and relative solar azimuth. Apply", self)
         l1bSublabel3 = QtWidgets.QLabel("   factory calibrations.", self)        
@@ -216,9 +217,9 @@ class ConfigWindow(QtWidgets.QDialog):
         # l2AnomalyLabel_font.setPointSize(12)
         # l2AnomalyLabel_font.setBold(True)
         # l2AnomalyLabel.setFont(l2AnomalyLabel_font)
-        l2AnomalySublabel1 = QtWidgets.QLabel("Launch Anomaly Analysis below to load L1B",self)
-        l2AnomalySublabel2 = QtWidgets.QLabel("  file for testing the above parameters. Save config if test-",self)
-        l2AnomalySublabel3 = QtWidgets.QLabel("  ing updated values. Results will be saved to ./Plot/Anomalies.", self)  
+        l2AnomalySublabel1 = QtWidgets.QLabel("Launch Anom. Anal. below to test above",self)
+        l2AnomalySublabel2 = QtWidgets.QLabel("  params on L1B. Save config when updating",self)
+        l2AnomalySublabel3 = QtWidgets.QLabel("  params. Results will be saved to Plot/Anoms.", self)  
         self.anomalyButton = QtWidgets.QPushButton("Anomaly Analysis")
         self.anomalyButton.clicked.connect(self.anomalyButtonPressed)
                         
@@ -235,13 +236,13 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l3InterpIntervalLineEdit.setText(str(ConfigFile.settings["fL3InterpInterval"]))
         self.l3InterpIntervalLineEdit.setValidator(doubleValidator)
 
-        l3PlotTimeInterpLabel = QtWidgets.QLabel("     Generate Plots (slow; saved in ./Plots)", self)        
+        l3PlotTimeInterpLabel = QtWidgets.QLabel("Generate Plots (slow; saved in ./Plots/L3/)", self)        
         self.l3PlotTimeInterpCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL3PlotTimeInterp"]) == 1:
             self.l3PlotTimeInterpCheckBox.setChecked(True)   
         self.l3PlotTimeInterpCheckBox.clicked.connect(self.l3PlotTimeInterpCheckBoxUpdate)   
 
-        l3SaveSeaBASSLabel = QtWidgets.QLabel("     Save SeaBASS text file", self)        
+        l3SaveSeaBASSLabel = QtWidgets.QLabel("Save SeaBASS text file", self)        
         self.l3SaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL3SaveSeaBASS"]) == 1:
             self.l3SaveSeaBASSCheckBox.setChecked(True)   
@@ -251,11 +252,9 @@ class ConfigWindow(QtWidgets.QDialog):
         '''# Can't figure out how to change the index when the window is drawn, so creating
         # a lineedit insteada'''
         # l3SeaBASSfsm = QtWidgets.QFileSystemModel()
-        # index = l3SeaBASSfsm.setRootPath("Config")
-        
+        # index = l3SeaBASSfsm.setRootPath("Config")        
         self.l3SeaBASSHeaderLabel = QtWidgets.QLabel('       SeaBASS Header File', self)
         # #self.l3SeaBASSHeaderLabel.move(30, 20)
-
         # self.l3SeaBASSHeaderComboBox = QtWidgets.QComboBox(self)
         # self.l3SeaBASSHeaderComboBox.setModel(l3SeaBASSfsm)
         # l3SeaBASSfsm.setNameFilters(["*.hdr"]) 
@@ -267,16 +266,13 @@ class ConfigWindow(QtWidgets.QDialog):
         # print(headFileIndex)
         # self.l3SeaBASSHeaderComboBox.setCurrentIndex(headFileIndex)
         #self.l3SeaBASSHeaderComboBox.move(30, 50)        
-        # 
         self.l3SeaBASSHeaderLineEdit = QtWidgets.QLineEdit(ConfigFile.settings["seaBASSHeaderFileName"])        
-
         self.l3SeaBASSHeaderNewButton = QtWidgets.QPushButton("New", self)
         #self.l3SeaBASSHeaderNewButton.move(30, 80)
         self.l3SeaBASSHeaderOpenButton = QtWidgets.QPushButton("Open", self)
         self.l3SeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit", self)
         #self.l3SeaBASSHeaderEditButton.move(130, 80)
         self.l3SeaBASSHeaderDeleteButton = QtWidgets.QPushButton("Delete", self)
-
         self.l3SeaBASSHeaderNewButton.clicked.connect(self.l3seaBASSHeaderNewButtonPressed)
         self.l3SeaBASSHeaderOpenButton.clicked.connect(self.l3seaBASSHeaderOpenButtonPressed)
         self.l3SeaBASSHeaderEditButton.clicked.connect(self.l3seaBASSHeaderEditButtonPressed)
@@ -293,7 +289,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l4Sublabel = QtWidgets.QLabel(" Atmos Corr, QA, Reflectances.", self)   
 
         # Min SZA
-        l4SZAMinLabel = QtWidgets.QLabel("SZA Minimum", self)
+        l4SZAMinLabel = QtWidgets.QLabel("SZA Minimum (deg)", self)
         self.l4SZAMinLineEdit = QtWidgets.QLineEdit(self)
         self.l4SZAMinLineEdit.setText(str(ConfigFile.settings["fL4SZAMin"]))
         self.l4SZAMinLineEdit.setValidator(doubleValidator)                
@@ -318,7 +314,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # Meteorology Flags
         l4QualityFlagLabel = QtWidgets.QLabel("Enable Meteorological Flags", self)
-        l4QualityFlagLabel2 = QtWidgets.QLabel("(See Wernand 2012, OO XVI)", self)
+        l4QualityFlagLabel2 = QtWidgets.QLabel("(Wernand 2012, OO XVI)", self)
         self.l4QualityFlagCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4EnableQualityFlags"]) == 1:
             self.l4QualityFlagCheckBox.setChecked(True)
@@ -341,7 +337,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l4QualityFlagCheckBoxUpdate()
 
         # Time Average Rrs
-        l4TimeIntervalLabel = QtWidgets.QLabel("Time Averaging Interval (seconds; 0 for entire file)", self)
+        l4TimeIntervalLabel = QtWidgets.QLabel("Time Ave. Interval (seconds; 0=None)", self)
         self.l4TimeIntervalLineEdit = QtWidgets.QLineEdit(self)
         self.l4TimeIntervalLineEdit.setText(str(ConfigFile.settings["fL4TimeInterval"]))
         self.l4TimeIntervalLineEdit.setValidator(intValidator)        
@@ -358,7 +354,7 @@ class ConfigWindow(QtWidgets.QDialog):
            self.l4EnablePercentLtCheckBox.setChecked(True)
 
         # Set percentage for Rrs calculation
-        self.l4PercentLtLabel = QtWidgets.QLabel("    Percent Lt", self)
+        self.l4PercentLtLabel = QtWidgets.QLabel("    Percent Lt (%)", self)
         self.l4PercentLtLineEdit = QtWidgets.QLineEdit(self)
         self.l4PercentLtLineEdit.setText(str(ConfigFile.settings["fL4PercentLt"]))
         self.l4PercentLtLineEdit.setValidator(doubleValidator)
@@ -370,6 +366,27 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l4SaveSeaBASSCheckBox.clicked.connect(self.l4SaveSeaBASSCheckBoxUpdate)        
         if int(ConfigFile.settings["bL4SaveSeaBASS"]) == 1:
             self.l4SaveSeaBASSCheckBox.setChecked(True)
+
+        l4PlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
+        l4PlotRrsLabel = QtWidgets.QLabel("Rrs", self)     
+        self.l4PlotRrsCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL4PlotRrs"]) == 1:
+            self.l4PlotRrsCheckBox.setChecked(True)
+
+        l4PlotEsLabel = QtWidgets.QLabel("Es", self)     
+        self.l4PlotEsCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL4PlotEs"]) == 1:
+            self.l4PlotEsCheckBox.setChecked(True)
+
+        l4PlotLiLabel = QtWidgets.QLabel("Li", self)     
+        self.l4PlotLiCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL4PlotLi"]) == 1:
+            self.l4PlotLiCheckBox.setChecked(True)
+
+        l4PlotLtLabel = QtWidgets.QLabel("Lt", self)     
+        self.l4PlotLtCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL4PlotLt"]) == 1:
+            self.l4PlotLtCheckBox.setChecked(True)
 
         self.l4QualityFlagCheckBox.clicked.connect(self.l4QualityFlagCheckBoxUpdate)
         self.l4EnableWindSpeedCalculationCheckBox.clicked.connect(self.l4EnableWindSpeedCalculationCheckBoxUpdate)
@@ -461,27 +478,48 @@ class ConfigWindow(QtWidgets.QDialog):
         RotMaxHBox.addWidget(self.l1bRotatorAngleMaxLabel)
         RotMaxHBox.addWidget(self.l1bRotatorAngleMaxLineEdit)
         VBox1.addLayout(RotMaxHBox) 
+                
+        
+        # Relative SZA
+        CleanSunAngleHBox = QtWidgets.QHBoxLayout()
+        CleanSunAngleHBox.addWidget(l1bCleanSunAngleLabel)
+        CleanSunAngleHBox.addWidget(self.l1bCleanSunAngleCheckBox)
+        VBox1.addLayout(CleanSunAngleHBox)                      
+        SunAngleMinHBox = QtWidgets.QHBoxLayout()       
+        SunAngleMinHBox.addWidget(self.l1bSunAngleMinLabel)
+        SunAngleMinHBox.addWidget(self.l1bSunAngleMinLineEdit)
+        VBox1.addLayout(SunAngleMinHBox)         
+        SunAngleMaxHBox = QtWidgets.QHBoxLayout()       
+        SunAngleMaxHBox.addWidget(self.l1bSunAngleMaxLabel)
+        SunAngleMaxHBox.addWidget(self.l1bSunAngleMaxLineEdit)
+        VBox1.addLayout(SunAngleMaxHBox)         
 
         # Middle Vertical Box
         VBox2 = QtWidgets.QVBoxLayout()
         VBox2.setAlignment(QtCore.Qt.AlignBottom)               
         
-        VBox2.addWidget(l1bLabel2)
-        # Relative SZA
-        CleanSunAngleHBox = QtWidgets.QHBoxLayout()
-        CleanSunAngleHBox.addWidget(l1bCleanSunAngleLabel)
-        CleanSunAngleHBox.addWidget(self.l1bCleanSunAngleCheckBox)
-        VBox2.addLayout(CleanSunAngleHBox)                      
-        SunAngleMinHBox = QtWidgets.QHBoxLayout()       
-        SunAngleMinHBox.addWidget(self.l1bSunAngleMinLabel)
-        SunAngleMinHBox.addWidget(self.l1bSunAngleMinLineEdit)
-        VBox2.addLayout(SunAngleMinHBox)         
-        SunAngleMaxHBox = QtWidgets.QHBoxLayout()       
-        SunAngleMaxHBox.addWidget(self.l1bSunAngleMaxLabel)
-        SunAngleMaxHBox.addWidget(self.l1bSunAngleMaxLineEdit)
-        VBox2.addLayout(SunAngleMaxHBox)         
+        # VBox2.addSpacing(20) 
+        # # Middle Vertical Box
+        # VBox2 = QtWidgets.QVBoxLayout()
+        # VBox2.setAlignment(QtCore.Qt.AlignBottom)               
         
-        VBox2.addSpacing(20) 
+        # VBox2.addWidget(l1bLabel2)
+        # # Relative SZA
+        # CleanSunAngleHBox = QtWidgets.QHBoxLayout()
+        # CleanSunAngleHBox.addWidget(l1bCleanSunAngleLabel)
+        # CleanSunAngleHBox.addWidget(self.l1bCleanSunAngleCheckBox)
+        # VBox2.addLayout(CleanSunAngleHBox)                      
+        # SunAngleMinHBox = QtWidgets.QHBoxLayout()       
+        # SunAngleMinHBox.addWidget(self.l1bSunAngleMinLabel)
+        # SunAngleMinHBox.addWidget(self.l1bSunAngleMinLineEdit)
+        # VBox2.addLayout(SunAngleMinHBox)         
+        # SunAngleMaxHBox = QtWidgets.QHBoxLayout()       
+        # SunAngleMaxHBox.addWidget(self.l1bSunAngleMaxLabel)
+        # SunAngleMaxHBox.addWidget(self.l1bSunAngleMaxLineEdit)
+        # VBox2.addLayout(SunAngleMaxHBox)         
+        
+        # VBox2.addSpacing(20) 
+
         
         # VBox2.addSpacing(20)           
 
@@ -515,6 +553,8 @@ class ConfigWindow(QtWidgets.QDialog):
         deglitch3HBox.addWidget(self.l2Deglitch3LineEdit)
         VBox2.addLayout(deglitch3HBox)
 
+        VBox2.addSpacing(10)
+
         # L2 Anomaly Launcher
         # VBox2.addWidget(l2AnomalyLabel)
         VBox2.addWidget(l2AnomalySublabel1)
@@ -535,10 +575,14 @@ class ConfigWindow(QtWidgets.QDialog):
         interpHBox.addWidget(self.l3InterpIntervalLineEdit)
         VBox2.addLayout(interpHBox)
 
+        VBox2.addSpacing(10)
+
         l3PlotTimeInterpHBox = QtWidgets.QHBoxLayout()
         l3PlotTimeInterpHBox.addWidget(l3PlotTimeInterpLabel)
         l3PlotTimeInterpHBox.addWidget(self.l3PlotTimeInterpCheckBox)    
         VBox2.addLayout(l3PlotTimeInterpHBox)
+
+        VBox2.addSpacing(10)
         
         l3SeaBASSHBox = QtWidgets.QHBoxLayout()
         l3SeaBASSHBox.addWidget(l3SaveSeaBASSLabel)
@@ -557,8 +601,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l3SeaBASSHeaderHBox2.addWidget(self.l3SeaBASSHeaderEditButton)
         l3SeaBASSHeaderHBox2.addWidget(self.l3SeaBASSHeaderDeleteButton)
         VBox2.addLayout(l3SeaBASSHeaderHBox2)
-
-        VBox2.addSpacing(3)
+        
         
         # Right box
         VBox3 = QtWidgets.QVBoxLayout()
@@ -569,19 +612,25 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addWidget(l4Sublabel)
         
         # SZA Min
-        VBox3.addWidget(l4SZAMinLabel)
-        VBox3.addWidget(self.l4SZAMinLineEdit)
+        SZAHBox = QtWidgets.QHBoxLayout()
+        SZAHBox.addWidget(l4SZAMinLabel)
+        SZAHBox.addWidget(self.l4SZAMinLineEdit)
+        VBox3.addLayout(SZAHBox)
 
 
         # Rho Sky & Wind
-        VBox3.addWidget(l4RhoSkyLabel)
-        VBox3.addWidget(self.l4RhoSkyLineEdit)
+        RhoHBox = QtWidgets.QHBoxLayout()
+        RhoHBox.addWidget(l4RhoSkyLabel)
+        RhoHBox.addWidget(self.l4RhoSkyLineEdit)
+        VBox3.addLayout(RhoHBox)
         WindSpeedHBox = QtWidgets.QHBoxLayout()
         WindSpeedHBox.addWidget(l4EnableWindSpeedCalculationLabel)
         WindSpeedHBox.addWidget(self.l4EnableWindSpeedCalculationCheckBox)
-        VBox3.addLayout(WindSpeedHBox)             
-        VBox3.addWidget(self.l4DefaultWindSpeedLabel)
-        VBox3.addWidget(self.l4DefaultWindSpeedLineEdit)
+        VBox3.addLayout(WindSpeedHBox)         
+        WindSpeedHBox2 = QtWidgets.QHBoxLayout()    
+        WindSpeedHBox2.addWidget(self.l4DefaultWindSpeedLabel)
+        WindSpeedHBox2.addWidget(self.l4DefaultWindSpeedLineEdit)
+        VBox3.addLayout(WindSpeedHBox2)         
 
         VBox3.addSpacing(5)
 
@@ -590,19 +639,27 @@ class ConfigWindow(QtWidgets.QDialog):
         QualityFlagHBox.addWidget(l4QualityFlagLabel)
         QualityFlagHBox.addWidget(l4QualityFlagLabel2)
         QualityFlagHBox.addWidget(self.l4QualityFlagCheckBox)
-        VBox3.addLayout(QualityFlagHBox)         
-        VBox3.addWidget(self.l4EsFlagLabel)
-        VBox3.addWidget(self.l4EsFlagLineEdit)
-        VBox3.addWidget(self.l4DawnDuskFlagLabel)
-        VBox3.addWidget(self.l4DawnDuskFlagLineEdit)
-        VBox3.addWidget(self.l4RainfallHumidityFlagLabel)
-        VBox3.addWidget(self.l4RainfallHumidityFlagLineEdit)
+        VBox3.addLayout(QualityFlagHBox) 
+        EsFlagHBox = QtWidgets.QHBoxLayout()        
+        EsFlagHBox.addWidget(self.l4EsFlagLabel)
+        EsFlagHBox.addWidget(self.l4EsFlagLineEdit)
+        VBox3.addLayout(EsFlagHBox) 
+        DawnFlagHBox =QtWidgets.QHBoxLayout()
+        DawnFlagHBox.addWidget(self.l4DawnDuskFlagLabel)
+        DawnFlagHBox.addWidget(self.l4DawnDuskFlagLineEdit)
+        VBox3.addLayout(DawnFlagHBox) 
+        RainFlagHBox = QtWidgets.QHBoxLayout()
+        RainFlagHBox.addWidget(self.l4RainfallHumidityFlagLabel)
+        RainFlagHBox.addWidget(self.l4RainfallHumidityFlagLineEdit)
+        VBox3.addLayout(RainFlagHBox) 
 
         VBox3.addSpacing(5)
 
         # Time Average Rrs
-        VBox3.addWidget(l4TimeIntervalLabel)
-        VBox3.addWidget(self.l4TimeIntervalLineEdit)
+        TimeAveHBox = QtWidgets.QHBoxLayout()
+        TimeAveHBox.addWidget(l4TimeIntervalLabel)
+        TimeAveHBox.addWidget(self.l4TimeIntervalLineEdit)
+        VBox3.addLayout(TimeAveHBox)         
 
         VBox3.addSpacing(5)
 
@@ -619,11 +676,28 @@ class ConfigWindow(QtWidgets.QDialog):
         PercentLtHBox.addWidget(self.l4EnablePercentLtLabel)
         PercentLtHBox.addWidget(self.l4EnablePercentLtCheckBox)
         VBox3.addLayout(PercentLtHBox)  
-        VBox3.addWidget(self.l4PercentLtLabel)
-        VBox3.addWidget(self.l4PercentLtLineEdit)
+        PercentLtHBox2 = QtWidgets.QHBoxLayout()
+        PercentLtHBox2.addWidget(self.l4PercentLtLabel)
+        PercentLtHBox2.addWidget(self.l4PercentLtLineEdit)
+        VBox3.addLayout(PercentLtHBox2)  
 
         VBox3.addSpacing(5)
-        
+
+        # Plotting
+        VBox3.addWidget(l4PlotsLabel)
+        l4PlotHBox = QtWidgets.QHBoxLayout()
+        l4PlotHBox.addWidget(l4PlotRrsLabel)
+        l4PlotHBox.addWidget(self.l4PlotRrsCheckBox)    
+        l4PlotHBox.addWidget(l4PlotEsLabel)
+        l4PlotHBox.addWidget(self.l4PlotEsCheckBox)
+        l4PlotHBox.addWidget(l4PlotLiLabel)
+        l4PlotHBox.addWidget(self.l4PlotLiCheckBox)
+        l4PlotHBox.addWidget(l4PlotLtLabel)
+        l4PlotHBox.addWidget(self.l4PlotLtCheckBox)
+        VBox3.addLayout(l4PlotHBox)    
+
+        VBox3.addSpacing(5)
+
         # Horizontal Box; Save SeaBASS
         l4SeaBASSHBox = QtWidgets.QHBoxLayout()
         l4SeaBASSHBox.addWidget(l4SaveSeaBASSLabel)
@@ -947,6 +1021,10 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL4PerformNIRCorrection"] = int(self.l4NIRCorrectionCheckBox.isChecked())
         ConfigFile.settings["bL4EnablePercentLt"] = int(self.l4EnablePercentLtCheckBox.isChecked())
         ConfigFile.settings["fL4PercentLt"] = float(self.l4PercentLtLineEdit.text())
+        ConfigFile.settings["bL4PlotRrs"] = int(self.l4PlotRrsCheckBox.isChecked())
+        ConfigFile.settings["bL4PlotEs"] = int(self.l4PlotEsCheckBox.isChecked())
+        ConfigFile.settings["bL4PlotLi"] = int(self.l4PlotLiCheckBox.isChecked())
+        ConfigFile.settings["bL4PlotLt"] = int(self.l4PlotLtCheckBox.isChecked())
         ConfigFile.settings["bL4SaveSeaBASS"] = int(self.l4SaveSeaBASSCheckBox.isChecked())
 
         ConfigFile.saveConfig(self.name)
@@ -1012,6 +1090,10 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL4PerformNIRCorrection"] = int(self.l4NIRCorrectionCheckBox.isChecked())
             ConfigFile.settings["bL4EnablePercentLt"] = int(self.l4EnablePercentLtCheckBox.isChecked())
             ConfigFile.settings["fL4PercentLt"] = float(self.l4PercentLtLineEdit.text())
+            ConfigFile.settings["bL4PlotRrs"] = int(self.l4PlotRrsCheckBox.isChecked())  
+            ConfigFile.settings["bL4PlotEs"] = int(self.l4PlotEsCheckBox.isChecked())  
+            ConfigFile.settings["bL4PlotLi"] = int(self.l4PlotLiCheckBox.isChecked())  
+            ConfigFile.settings["bL4PlotLt"] = int(self.l4PlotLtCheckBox.isChecked())  
             ConfigFile.settings["bL4SaveSeaBASS"] = int(self.l4SaveSeaBASSCheckBox.isChecked())            
 
             QtWidgets.QMessageBox.about(self, "Save As Config File", "Config File Saved")
