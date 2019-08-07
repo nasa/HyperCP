@@ -343,14 +343,16 @@ class Utilities:
         if rType=='Rrs':
             print('Plotting Rrs')
             referenceGroup = root.getGroup("Reflectance")
-            Data = referenceGroup.getDataset(rType)
+            Data = referenceGroup.getDataset(rType)            
             if not os.path.exists("Plots/L4_Rrs/"):
                 os.makedirs("Plots/L4_Rrs/")
             plotdir = os.path.join(dirpath, 'Plots/L4_Rrs/')
+            plotRange = [390, 800]
         else:
             if not os.path.exists("Plots/L4_EsLiLt"):
                 os.makedirs("Plots/L4_EsLiLt")
             plotdir = os.path.join(dirpath, 'Plots/L4_EsLiLt/')
+            plotRange = [305, 1140]
         if rType=='ES':
             print('Plotting Es')
             referenceGroup = root.getGroup("Irradiance")
@@ -374,7 +376,7 @@ class Utilities:
 
         x = []
         wave = []
-        plotRange = [390, 800]
+        
         for k in Data.data.dtype.names:
             if Utilities.isFloat(k):
                 if float(k)>=plotRange[0] and float(k)<=plotRange[1]:

@@ -141,6 +141,76 @@ class SeaBASSWriter:
         return dataOut, fieldsLineStr, unitsLineStr
 
     @staticmethod
+    def formatData4(dataset,dtype, units):            
+                
+        # Convert Dates and Times and remove from dataset
+        newData = dataset.data
+        dateDay = dataset.data['Datetag'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'Datetag')
+        dateDT = [Utilities.dateTagToDateTime(x) for x in dateDay]
+        timeTag2 = dataset.data['Timetag2'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'Timetag2')
+        timeDT = []
+        for i in range(len(dateDT)):
+            timeDT.append(Utilities.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
+
+        # Retrieve ancillaries and remove from dataset        
+        lat = dataset.data['LATPOS'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'LATPOS')
+        lon = dataset.data['LONPOS'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'LONPOS')
+        sza = dataset.data['SZA'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'SZA')
+        relAz = dataset.data['REL_AZ'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'REL_AZ')
+        # rotator = dataset.data['ROTATOR'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'ROTATOR')
+        # heading = dataset.data['SHIP_TRUE'].tolist() # from SAS
+        newData = SeaBASSWriter.removeColumns(newData,'SHIP_TRUE')
+        # azimuth = dataset.data['AZIMUTH'].tolist()        
+        newData = SeaBASSWriter.removeColumns(newData,'AZIMUTH')
+
+        dataset.data = newData
+
+        # Change field names for SeaBASS compliance
+        bands = list(dataset.data.dtype.names)    
+        ls = ['date','time','lat','lon','RelAz','SZA']
+        # ls[4]='SAZ'
+        # ls[5]='heading'    # This is SAS -> SHIP_TRUE, not GPS    
+        # pointing         # no SeaBASS field for sensor azimuth
+
+        if dtype == 'es':
+            fieldName = 'Es'
+        elif dtype == 'li':
+            fieldName = 'Lsky'
+        elif dtype == 'lt':
+            fieldName = 'Lt'
+        # fieldsLineStr = ','.join(ls[:lenNonRad] + [f'{fieldName}{band}' for band in ls[lenNonRad:]])
+        fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands])
+
+        lenRad = (len(dataset.data.dtype.names))
+        unitsLine = ['yyyymmdd']
+        unitsLine.append('hh:mm:ss')
+        unitsLine.extend(['degrees']*6)
+        unitsLine.extend([units]*lenRad)
+        unitsLineStr = ','.join(unitsLine)
+
+        # Add data for each row
+        dataOut = []
+        formatStr = str('{:04d}{:02d}{:02d},{:02d}:{:02d}:{:02d},{:.4f},{:.4f},{:.1f},{:.1f}' + ',{:.6f}'*lenRad)
+        for i in range(dataset.data.shape[0]):                        
+            subList = [lat[i],lon[i],relAz[i],sza[i]]
+            lineList = [timeDT[i].year,timeDT[i].month,timeDT[i].day,timeDT[i].hour,timeDT[i].minute,timeDT[i].second] +\
+                subList + list(dataset.data[i].tolist())
+
+            # Replace NaNs with -9999.0
+            lineList = [-9999.0 if np.isnan(element) else element for element in lineList]
+
+            lineStr = formatStr.format(*lineList)
+            dataOut.append(lineStr)
+        return dataOut, fieldsLineStr, unitsLineStr
+
+    @staticmethod
     def removeColumns(a, removeNameList):
         return a[[name for name in a.dtype.names if name not in removeNameList]]
 
@@ -152,7 +222,7 @@ class SeaBASSWriter:
             print('Creating a SeaBASS directory')
             os.makedirs(os.path.split(fp)[0] + '/SeaBASS')
         
-        outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{dtype}{os.path.split(fp)[1].replace(".hdf",".out")}'
+        outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{dtype}{os.path.split(fp)[1].replace(".hdf",".sb")}'
 
         outFile = open(outFileName,'w',newline='\n')
         outFile.write('/begin_header\n')
@@ -189,9 +259,10 @@ class SeaBASSWriter:
         print('Writing type 3 SeaBASS file')
         SeaBASSWriter.outputTXT_Type3(fp, "L3")
 
-    # @staticmethod
-    # def outputTXT_L4(fp):
-    #     SeaBASSWriter.outputTXT_Type4(fp, "L4")
+    @staticmethod
+    def outputTXT_L4(fp):
+        print('Writing type 4 SeaBASS file')
+        SeaBASSWriter.outputTXT_Type4(fp, "L4")
     #     SeaBASSWriter.outputTXT_Type4(fp, "L4-flags")
 
 
@@ -256,6 +327,148 @@ class SeaBASSWriter:
             liData.columnsToDataset()
             ltData.columnsToDataset()
         
+        # Append azimuth, heading, rotator, relAz, and solar elevation
+        if root.getGroup("SATNAV"):
+            satnavGroup = root.getGroup("SATNAV")
+
+            azimuthData = satnavGroup.getDataset("AZIMUTH")
+            headingData = satnavGroup.getDataset("HEADING") # SAS_TRUE & SHIP_TRUE
+            # pitchData = satnavGroup.getDataset("PITCH")
+            pointingData = satnavGroup.getDataset("POINTING")
+            # rollData = satnavGroup.getDataset("ROLL")
+            relAzData = satnavGroup.getDataset("REL_AZ")
+            elevationData = satnavGroup.getDataset("ELEVATION")
+
+            azimuthData.datasetToColumns()
+            headingData.datasetToColumns()
+            # pitchData.datasetToColumns()
+            pointingData.datasetToColumns()
+            # rollData.datasetToColumns()            
+            relAzData.datasetToColumns() 
+            elevationData.datasetToColumns() 
+
+            azimuth = azimuthData.columns["SUN"]
+            shipTrue = headingData.columns["SHIP_TRUE"]
+            sasTrue = headingData.columns["SAS_TRUE"]
+            # pitch = pitchData.columns["SAS"]
+            rotator = pointingData.columns["ROTATOR"]
+            # roll = rollData.columns["SAS"]
+            relAz = relAzData.columns["REL_AZ"]
+            elevation = elevationData.columns["SUN"]
+
+            esData.datasetToColumns()
+            liData.datasetToColumns()
+            ltData.datasetToColumns()
+            
+            esData.columns["AZIMUTH"] = azimuth
+            liData.columns["AZIMUTH"] = azimuth
+            ltData.columns["AZIMUTH"] = azimuth
+
+            esData.columns["SHIP_TRUE"] = shipTrue # From SAS, not GPS...
+            liData.columns["SHIP_TRUE"] = shipTrue
+            ltData.columns["SHIP_TRUE"] = shipTrue
+
+            # esData.columns["PITCH"] = pitch
+            # liData.columns["PITCH"] = pitch
+            # ltData.columns["PITCH"] = pitch
+            
+            esData.columns["ROTATOR"] = rotator
+            liData.columns["ROTATOR"] = rotator
+            ltData.columns["ROTATOR"] = rotator
+            
+            # esData.columns["ROLL"] = roll
+            # liData.columns["ROLL"] = roll
+            # ltData.columns["ROLL"] = roll
+
+            esData.columns["REL_AZ"] = relAz
+            liData.columns["REL_AZ"] = relAz
+            ltData.columns["REL_AZ"] = relAz
+
+            esData.columns["SZA"] = elevation
+            liData.columns["SZA"] = elevation
+            ltData.columns["SZA"] = elevation
+
+            esData.columnsToDataset()
+            liData.columnsToDataset()
+            ltData.columnsToDataset()
+
+        # Format the non-specific header block
+        headerBlock = SeaBASSWriter.formatHeader(fp,root)
+
+        # Format each data block for individual output
+        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData3(esData,'es',root.attributes["ES_UNITS"])        
+        formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData3(liData,'li',root.attributes["LI_UNITS"])
+        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData3(ltData,'lt',root.attributes["LT_UNITS"])                        
+
+        # # Write SeaBASS files
+        SeaBASSWriter.writeSeaBASS('ES',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
+        SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
+        SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)
+
+    # Convert Level 4 data to SeaBASS file
+    @staticmethod
+    def outputTXT_Type4(fp, level):
+
+        if not os.path.isfile(fp):
+            print("SeaBASSWriter: no file to convert")
+            return
+
+        # Make sure hdf can be read
+        try:
+            root = HDFRoot.readHDF5(fp)
+        except:
+            print('SeaBassWriter: cannot open HDF. May be open in another app.')
+            return
+
+        if root is None:
+            print("SeaBASSWriter: root is None")
+            return
+
+        # Get datasets to output
+        irradianceGroup = root.getGroup("Irradiance")
+        radianceGroup = root.getGroup("Radiance")
+        reflectanceGroup = root.getGroup("Reflectance")
+
+        esData = irradianceGroup.getDataset("ES")
+        liData = radianceGroup.getDataset("LI")
+        ltData = radianceGroup.getDataset("LT")
+        rrsData = reflectanceGroup("Rrs")
+
+        if esData is None or liData is None or ltData is None or rrsData is None:
+            print("SeaBASSWriter: Radiometric data is missing")
+            return
+
+        # Append latpos/lonpos to datasets
+        if root.getGroup("GPS"):
+            gpsGroup = root.getGroup("GPS")
+            latposData = gpsGroup.getDataset("LATPOS")
+            lonposData = gpsGroup.getDataset("LONPOS")
+
+            latposData.datasetToColumns()
+            lonposData.datasetToColumns()
+
+            latpos = latposData.columns["NONE"]
+            lonpos = lonposData.columns["NONE"]
+
+            esData.datasetToColumns()
+            liData.datasetToColumns()
+            ltData.datasetToColumns()
+
+            #print(esData.columns)
+
+            esData.columns["LATPOS"] = latpos
+            liData.columns["LATPOS"] = latpos
+            ltData.columns["LATPOS"] = latpos
+
+            esData.columns["LONPOS"] = lonpos
+            liData.columns["LONPOS"] = lonpos
+            ltData.columns["LONPOS"] = lonpos
+
+            esData.columnsToDataset()
+            liData.columnsToDataset()
+            ltData.columnsToDataset()
+        
+        # Append azimuth, heading, rotator, relAz, and solar elevation
         if root.getGroup("SATNAV"):
             satnavGroup = root.getGroup("SATNAV")
 

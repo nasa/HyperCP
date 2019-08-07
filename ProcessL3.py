@@ -564,8 +564,8 @@ class ProcessL3:
         # Es dataset to dictionary
         esData.datasetToColumns()
         columns = esData.columns
-        saveDatetag = columns.pop("Datetag")
-        saveTimetag2 = columns.pop("Timetag2")
+        columns.pop("Datetag")
+        columns.pop("Timetag2")
         # Get wavelength values
         esWavelength = []
         for k in columns:
@@ -722,7 +722,6 @@ class ProcessL3:
         root.attributes["PROCESSING_LEVEL"] = "3"
         root.attributes["DEPTH_RESOLUTION"] = "N/A"
 
-        # Time Interpolation        
         esGroup = None 
         gpsGroup = None
         liGroup = None
@@ -749,9 +748,9 @@ class ProcessL3:
         refGroup = root.addGroup("Reference")
         sasGroup = root.addGroup("SAS")
         if gpsGroup is not None:
-            gpsGroup2 = root.addGroup("GPS")
+            root.addGroup("GPS")
         if satnavGroup is not None:
-            satnavGroup2 = root.addGroup("SATNAV")
+            root.addGroup("SATNAV")
 
         ProcessL3.convertGroup(esGroup, "ES", refGroup, "ES_hyperspectral")        
         ProcessL3.convertGroup(liGroup, "LI", sasGroup, "LI_hyperspectral")
@@ -785,7 +784,6 @@ class ProcessL3:
             print(msg)
             Utilities.writeLogFile(msg)                                       
             interpData = ltData
-        #interpData = liData # Testing against Prosoft ##??
 
         # Perform time interpolation
         if not ProcessL3.interpolateData(esData, interpData, "ES", fileName):
@@ -800,6 +798,7 @@ class ProcessL3:
         # Match wavelengths across instruments
         # Calls interpolateWavelengths and matchColumns
         root = ProcessL3.matchWavelengths(root)
+
         #ProcessL3.dataAveraging(newESData)
         #ProcessL3.dataAveraging(newLIData)
         #ProcessL3.dataAveraging(newLTData)
