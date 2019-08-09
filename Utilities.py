@@ -347,7 +347,7 @@ class Utilities:
             if not os.path.exists("Plots/L4_Rrs/"):
                 os.makedirs("Plots/L4_Rrs/")
             plotdir = os.path.join(dirpath, 'Plots/L4_Rrs/')
-            plotRange = [390, 800]
+            plotRange = [380, 800]
         else:
             if not os.path.exists("Plots/L4_EsLiLt"):
                 os.makedirs("Plots/L4_EsLiLt")
@@ -384,7 +384,7 @@ class Utilities:
                     wave.append(float(k))
 
         total = Data.data.shape[0]
-        maxRrs = 0
+        maxRad = 0
         cmap = cm.get_cmap("jet")
         color=iter(cmap(np.linspace(0,1,total)))
 
@@ -395,8 +395,12 @@ class Utilities:
                 y.append(Data.data[k][i])
 
             c=next(color)
-            if max(y) > maxRrs:
-                maxRrs = max(y)
+            if max(y) > maxRad:
+                maxRad = max(y)
+            if rType == 'LI' and maxRad > 20:
+                maxRad = 20
+            if rType == 'LT' and maxRad > 2:
+                maxRad = 2
 
             plt.plot(wave, y, 'k', c=c)
             #if (i % 25) == 0:
@@ -406,7 +410,7 @@ class Utilities:
         axes = plt.gca()
         axes.set_title(filename, fontdict=font)
         # axes.set_xlim([390, 800])
-        axes.set_ylim([0, maxRrs])
+        axes.set_ylim([0, maxRad])
         
         plt.xlabel('wavelength (nm)', fontdict=font)
         plt.ylabel(rType, fontdict=font)

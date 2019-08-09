@@ -130,7 +130,8 @@ class ProcessL3:
         #    print("Found NAN 1")
 
         # Perform interpolation on full hyperspectral time series
-        ProcessL3.interpolateL3(xData, xTimer, yTimer, xData, instr, 'cubic', fileName)
+        # ProcessL3.interpolateL3(xData, xTimer, yTimer, xData, instr, 'cubic', fileName)
+        ProcessL3.interpolateL3(xData, xTimer, yTimer, xData, instr, 'linear', fileName)
         xData.columnsToDataset()
         
         #if Utilities.hasNan(xData):

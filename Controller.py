@@ -9,7 +9,7 @@ from HDFRoot import HDFRoot
 from ConfigFile import ConfigFile
 from Utilities import Utilities
 from WindSpeedReader import WindSpeedReader
-# from ProcessL0 import ProcessL0
+
 from ProcessL1a import ProcessL1a
 from ProcessL1b import ProcessL1b
 from ProcessL2 import ProcessL2
@@ -96,7 +96,7 @@ class Controller:
         if fp is None:
             return None
         elif not os.path.isfile(fp):
-            print("Specified wind file not found.")
+            print("Specified wind file not found: " + fp)
             return None
         windSpeedData = WindSpeedReader.readWindSpeed(fp)
         return windSpeedData

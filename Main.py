@@ -364,6 +364,8 @@ class Window(QtWidgets.QWidget):
         fileNames = openFileNames[0] # The first element is the whole list
 
         windFile = self.windFileLineEdit.text()
+        if windFile == '':
+            windFile = None
         # skyFile = self.skyFileLineEdit.text()
 
         print("Process Calibration Files")

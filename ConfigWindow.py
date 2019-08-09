@@ -180,7 +180,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2Sublabel = QtWidgets.QLabel(" Shutter dark corrections and data deglitching", self)  
         
         # Deglitcher
-        self.l2DeglitchLabel = QtWidgets.QLabel("     Deglitch data", self)                
+        self.l2DeglitchLabel = QtWidgets.QLabel("  Deglitch data", self)                
         self.l2DeglitchCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2Deglitch"]) == 1:
             self.l2DeglitchCheckBox.setChecked(True)
@@ -217,9 +217,9 @@ class ConfigWindow(QtWidgets.QDialog):
         # l2AnomalyLabel_font.setPointSize(12)
         # l2AnomalyLabel_font.setBold(True)
         # l2AnomalyLabel.setFont(l2AnomalyLabel_font)
-        l2AnomalySublabel1 = QtWidgets.QLabel("Launch Anom. Anal. below to test above",self)
-        l2AnomalySublabel2 = QtWidgets.QLabel("  params on L1B. Save config when updating",self)
-        l2AnomalySublabel3 = QtWidgets.QLabel("  params. Results will be saved to Plot/Anoms.", self)  
+        l2AnomalySublabel1 = QtWidgets.QLabel("  Launch Anom. Anal. below to test above",self)
+        l2AnomalySublabel2 = QtWidgets.QLabel("   params on L1B. Save config when updating",self)
+        l2AnomalySublabel3 = QtWidgets.QLabel("   params. Results will be saved to Plot/Anoms.", self)  
         self.anomalyButton = QtWidgets.QPushButton("Anomaly Analysis")
         self.anomalyButton.clicked.connect(self.anomalyButtonPressed)
                         
@@ -250,7 +250,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # # SeaBASSHeader File
         '''# Can't figure out how to change the index when the window is drawn, so creating
-        # a lineedit insteada'''
+         a lineedit instead. It should be a pull-down, then drop the "Open" box.'''
         # l3SeaBASSfsm = QtWidgets.QFileSystemModel()
         # index = l3SeaBASSfsm.setRootPath("Config")        
         self.l3SeaBASSHeaderLabel = QtWidgets.QLabel('       SeaBASS Header File', self)
@@ -268,7 +268,6 @@ class ConfigWindow(QtWidgets.QDialog):
         #self.l3SeaBASSHeaderComboBox.move(30, 50)        
         self.l3SeaBASSHeaderLineEdit = QtWidgets.QLineEdit(ConfigFile.settings["seaBASSHeaderFileName"])        
         self.l3SeaBASSHeaderNewButton = QtWidgets.QPushButton("New", self)
-        #self.l3SeaBASSHeaderNewButton.move(30, 80)
         self.l3SeaBASSHeaderOpenButton = QtWidgets.QPushButton("Open", self)
         self.l3SeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit", self)
         #self.l3SeaBASSHeaderEditButton.move(130, 80)
@@ -288,24 +287,34 @@ class ConfigWindow(QtWidgets.QDialog):
         l4Label.setFont(l4Label_font)
         l4Sublabel = QtWidgets.QLabel(" Atmos Corr, QA, Reflectances.", self)   
 
-        # Min SZA
-        l4SZAMinLabel = QtWidgets.QLabel("SZA Minimum (deg)", self)
+        # Min/Max SZA
+        l4MaxWindLabel = QtWidgets.QLabel("     Max. Wind Speed (m/s)", self)
+        self.l4MaxWindLineEdit = QtWidgets.QLineEdit(self)
+        self.l4MaxWindLineEdit.setText(str(ConfigFile.settings["fL4MaxWind"]))
+        self.l4MaxWindLineEdit.setValidator(doubleValidator)        
+
+        # Min/Max SZA
+        l4SZAMinLabel = QtWidgets.QLabel("     SZA Minimum (deg)", self)
         self.l4SZAMinLineEdit = QtWidgets.QLineEdit(self)
         self.l4SZAMinLineEdit.setText(str(ConfigFile.settings["fL4SZAMin"]))
-        self.l4SZAMinLineEdit.setValidator(doubleValidator)                
+        self.l4SZAMinLineEdit.setValidator(doubleValidator)        
+        l4SZAMaxLabel = QtWidgets.QLabel("     SZA Maximum (deg)", self)
+        self.l4SZAMaxLineEdit = QtWidgets.QLineEdit(self)
+        self.l4SZAMaxLineEdit.setText(str(ConfigFile.settings["fL4SZAMax"]))
+        self.l4SZAMaxLineEdit.setValidator(doubleValidator)                
         
         # Rho Sky & Wind
-        l4RhoSkyLabel = QtWidgets.QLabel("Default Rho Sky", self)
+        l4RhoSkyLabel = QtWidgets.QLabel("     Default Rho Sky", self)
         self.l4RhoSkyLineEdit = QtWidgets.QLineEdit(self)
         self.l4RhoSkyLineEdit.setText(str(ConfigFile.settings["fL4RhoSky"]))
         self.l4RhoSkyLineEdit.setValidator(doubleValidator)
 
-        l4EnableWindSpeedCalculationLabel = QtWidgets.QLabel("Enable Wind Speed Calculation", self)
+        l4EnableWindSpeedCalculationLabel = QtWidgets.QLabel("  Enable Wind Speed Calculation", self)
         self.l4EnableWindSpeedCalculationCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4EnableWindSpeedCalculation"]) == 1:
             self.l4EnableWindSpeedCalculationCheckBox.setChecked(True)
 
-        self.l4DefaultWindSpeedLabel = QtWidgets.QLabel("    Default Wind Speed (m/s)", self)
+        self.l4DefaultWindSpeedLabel = QtWidgets.QLabel("     Default Wind Speed (m/s)", self)
         self.l4DefaultWindSpeedLineEdit = QtWidgets.QLineEdit(self)
         self.l4DefaultWindSpeedLineEdit.setText(str(ConfigFile.settings["fL4DefaultWindSpeed"]))
         self.l4DefaultWindSpeedLineEdit.setValidator(doubleValidator)
@@ -313,23 +322,23 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l4EnableWindSpeedCalculationCheckBoxUpdate()
 
         # Meteorology Flags
-        l4QualityFlagLabel = QtWidgets.QLabel("Enable Meteorological Flags", self)
+        l4QualityFlagLabel = QtWidgets.QLabel("  Enable Meteorological Flags", self)
         l4QualityFlagLabel2 = QtWidgets.QLabel("(Wernand 2012, OO XVI)", self)
         self.l4QualityFlagCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4EnableQualityFlags"]) == 1:
             self.l4QualityFlagCheckBox.setChecked(True)
 
-        self.l4EsFlagLabel = QtWidgets.QLabel("    Significant Es(480) (uW cm^-2 nm^-1)", self)
-        self.l4EsFlagLineEdit = QtWidgets.QLineEdit("", self)
+        self.l4EsFlagLabel = QtWidgets.QLabel("     Significant Es(480) (uW cm^-2 nm^-1)", self)
+        self.l4EsFlagLineEdit = QtWidgets.QLineEdit(self)
         self.l4EsFlagLineEdit.setText(str(ConfigFile.settings["fL4SignificantEsFlag"]))
         self.l4EsFlagLineEdit.setValidator(doubleValidator)
 
-        self.l4DawnDuskFlagLabel = QtWidgets.QLabel("    Dawn/Dusk Es(470/680)<", self)
+        self.l4DawnDuskFlagLabel = QtWidgets.QLabel("     Dawn/Dusk Es(470/680)<", self)
         self.l4DawnDuskFlagLineEdit = QtWidgets.QLineEdit("", self)
         self.l4DawnDuskFlagLineEdit.setText(str(ConfigFile.settings["fL4DawnDuskFlag"]))
         self.l4DawnDuskFlagLineEdit.setValidator(doubleValidator)
 
-        self.l4RainfallHumidityFlagLabel = QtWidgets.QLabel("    Rain/Humid. Es(720/370)<", self)
+        self.l4RainfallHumidityFlagLabel = QtWidgets.QLabel("     Rain/Humid. Es(720/370)<", self)
         self.l4RainfallHumidityFlagLineEdit = QtWidgets.QLineEdit("", self)
         self.l4RainfallHumidityFlagLineEdit.setText(str(ConfigFile.settings["fL4RainfallHumidityFlag"]))
         self.l4RainfallHumidityFlagLineEdit.setValidator(doubleValidator)
@@ -337,24 +346,24 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l4QualityFlagCheckBoxUpdate()
 
         # Time Average Rrs
-        l4TimeIntervalLabel = QtWidgets.QLabel("Time Ave. Interval (seconds; 0=None)", self)
+        l4TimeIntervalLabel = QtWidgets.QLabel("  Time Ave. Interval (seconds; 0=None)", self)
         self.l4TimeIntervalLineEdit = QtWidgets.QLineEdit(self)
         self.l4TimeIntervalLineEdit.setText(str(ConfigFile.settings["fL4TimeInterval"]))
         self.l4TimeIntervalLineEdit.setValidator(intValidator)        
 
         # NIR AtmoCorr
-        l4NIRCorrectionLabel = QtWidgets.QLabel("Enable Near-infrared Correction", self)
+        l4NIRCorrectionLabel = QtWidgets.QLabel("  Enable Near-infrared Correction", self)
         self.l4NIRCorrectionCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4PerformNIRCorrection"]) == 1:
             self.l4NIRCorrectionCheckBox.setChecked(True)
 
-        self.l4EnablePercentLtLabel = QtWidgets.QLabel("Enable Percent Lt Calculation", self)
+        self.l4EnablePercentLtLabel = QtWidgets.QLabel("  Enable Percent Lt Calculation", self)
         self.l4EnablePercentLtCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4EnablePercentLt"]) == 1:
            self.l4EnablePercentLtCheckBox.setChecked(True)
 
         # Set percentage for Rrs calculation
-        self.l4PercentLtLabel = QtWidgets.QLabel("    Percent Lt (%)", self)
+        self.l4PercentLtLabel = QtWidgets.QLabel("     Percent Lt (%)", self)
         self.l4PercentLtLineEdit = QtWidgets.QLineEdit(self)
         self.l4PercentLtLineEdit.setText(str(ConfigFile.settings["fL4PercentLt"]))
         self.l4PercentLtLineEdit.setValidator(doubleValidator)
@@ -612,10 +621,22 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addWidget(l4Sublabel)
         
         # SZA Min
-        SZAHBox = QtWidgets.QHBoxLayout()
-        SZAHBox.addWidget(l4SZAMinLabel)
-        SZAHBox.addWidget(self.l4SZAMinLineEdit)
-        VBox3.addLayout(SZAHBox)
+        maxWindBox = QtWidgets.QHBoxLayout()
+        maxWindBox.addWidget(l4MaxWindLabel)
+        maxWindBox.addWidget(self.l4MaxWindLineEdit)
+        VBox3.addLayout(maxWindBox)
+
+        # SZA Min
+        SZAHBox1 = QtWidgets.QHBoxLayout()
+        SZAHBox1.addWidget(l4SZAMinLabel)
+        SZAHBox1.addWidget(self.l4SZAMinLineEdit)
+        VBox3.addLayout(SZAHBox1)
+
+        # SZA Max
+        SZAHBox2 = QtWidgets.QHBoxLayout()
+        SZAHBox2.addWidget(l4SZAMaxLabel)
+        SZAHBox2.addWidget(self.l4SZAMaxLineEdit)
+        VBox3.addLayout(SZAHBox2)
 
 
         # Rho Sky & Wind
@@ -1009,7 +1030,9 @@ class ConfigWindow(QtWidgets.QDialog):
         # ConfigFile.settings["seaBASSHeaderFileName"] = self.l3SeaBASSHeaderComboBox.currentText()
         ConfigFile.settings["seaBASSHeaderFileName"] = self.l3SeaBASSHeaderLineEdit.text()
         
+        ConfigFile.settings["fL4MaxWind"] = float(self.l4MaxWindLineEdit.text())
         ConfigFile.settings["fL4SZAMin"] = float(self.l4SZAMinLineEdit.text())
+        ConfigFile.settings["fL4SZAMax"] = float(self.l4SZAMaxLineEdit.text())
         ConfigFile.settings["fL4RhoSky"] = float(self.l4RhoSkyLineEdit.text())
         ConfigFile.settings["bL4EnableWindSpeedCalculation"] = int(self.l4EnableWindSpeedCalculationCheckBox.isChecked())
         ConfigFile.settings["fL4DefaultWindSpeed"] = float(self.l4DefaultWindSpeedLineEdit.text())
@@ -1078,7 +1101,9 @@ class ConfigWindow(QtWidgets.QDialog):
             # ConfigFile.settings["seaBASSHeaderFileName"] = self.l3SeaBASSHeaderComboBox.currentText()
             ConfigFile.settings["seaBASSHeaderFileName"] = self.l3SeaBASSHeaderLineEdit.text()
             
+            ConfigFile.settings["fL4MaxWind"] = float(self.l4MaxWindLineEdit.text())
             ConfigFile.settings["fL4SZAMin"] = float(self.l4SZAMinLineEdit.text())
+            ConfigFile.settings["fL4SZAMax"] = float(self.l4SZAMaxLineEdit.text())
             ConfigFile.settings["fL4RhoSky"] = float(self.l4RhoSkyLineEdit.text())
             ConfigFile.settings["bL4EnableWindSpeedCalculation"] = int(self.l4EnableWindSpeedCalculationCheckBox.isChecked())
             ConfigFile.settings["fL4DefaultWindSpeed"] = float(self.l4DefaultWindSpeedLineEdit.text())

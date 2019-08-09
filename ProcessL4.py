@@ -96,7 +96,6 @@ class ProcessL4:
 
         # Perform interpolation for each row
         for i in range(num):
-
             values = []
             for k in columns:
                 #print("b")
@@ -108,13 +107,42 @@ class ProcessL4:
 
         return return_y
 
+    # Perform spectral filtering
+    @staticmethod
+    def specQualityCheck(group):
+        if group.id == 'Reference':
+            Data = group.getDataset("ES_hyperspectral") 
+            Data.datasetToColumns()            
+        else:
+            liData = group.getDataset("LI_hyperspectral")
+            ltData = group.getDataset("LT_hyperspectral")
+
+        Columns = Data.columns
+        aveSpec = []
+        stdSpec = []
+        for k in Columns:
+            aveSpec.append(np.median(k))
+            stdSpec.append(np.std(k))
+
+    # Now plot the median spec, +/- the std, test each spectrum against it, and identify outliers, and plot these
+        print() 
+        
+
+
+            
+
+
+
     # Perform meteorological flag checking
     @staticmethod
-    def qualityCheckVar(es5Columns, esFlag, dawnDuskFlag, humidityFlag):
-        # print("qualtiy check")
+    def metQualityCheck(es5Columns):   
+        esFlag = float(ConfigFile.settings["fL4SignificantEsFlag"])
+        dawnDuskFlag = float(ConfigFile.settings["fL4DawnDuskFlag"])
+        humidityFlag = float(ConfigFile.settings["fL4RainfallHumidityFlag"])     
+        # print("quality check")     
 
         # Threshold for significant es
-        # Garaba et al. 2012
+        # Wernand 2002
         #v = es5Columns["480.0"][0]
         v = ProcessL4.interpolateColumn(es5Columns, 480.0)[0]
         if v < esFlag:
@@ -122,7 +150,7 @@ class ProcessL4:
             return False
 
         # Masking spectra affected by dawn/dusk radiation
-        # Garaba et al. 2012
+        # Wernand 2002
         #v = es5Columns["470.0"][0] / es5Columns["610.0"][0] # Fix 610 -> 680
         v1 = ProcessL4.interpolateColumn(es5Columns, 470.0)[0]
         v2 = ProcessL4.interpolateColumn(es5Columns, 680.0)[0]
@@ -132,7 +160,7 @@ class ProcessL4:
             return False
 
         # Masking spectra affected by rainfall and high humidity
-        # Garaba et al. 2012 uses Es(940/370), presumably 720 was developed by Wang...???
+        # Wernand 2002 (940/370), Garaba et al. 2012 also uses Es(940/370), presumably 720 was developed by Wang...???
         ''' Follow up on the source of this flag'''
         #v = es5Columns["720.0"][0] / es5Columns["370.0"][0]    
         v1 = ProcessL4.interpolateColumn(es5Columns, 720.0)[0]
@@ -144,16 +172,6 @@ class ProcessL4:
 
         return True
 
-    # Perform meteorological flag checking with settings from config
-    @staticmethod
-    def qualityCheck(es5Columns):
-        esFlag = float(ConfigFile.settings["fL4SignificantEsFlag"])
-        dawnDuskFlag = float(ConfigFile.settings["fL4DawnDuskFlag"])
-        humidityFlag = float(ConfigFile.settings["fL4RainfallHumidityFlag"])
-
-        result = ProcessL4.qualityCheckVar(es5Columns, esFlag, dawnDuskFlag, humidityFlag)
-
-        return result
 
     # Take a slice of a dataset stored in columns
     @staticmethod
@@ -164,6 +182,74 @@ class ProcessL4:
         for k in columns:
             newSlice[k] = columns[k][start:end]
         return newSlice
+
+    # Interpolate wind to radiometry
+    @staticmethod
+    def interpWind(windSpeedData, radData):
+        
+        windSpeedColumns=None
+
+        # interpolate wind speed to match sensor time values
+        if windSpeedData is not None:
+            x = windSpeedData.getColumn("DATETIME")[0]
+            y = windSpeedData.getColumn("WINDSPEED")[0]
+
+            # Convert windSpeed datetime to seconds for interpolation
+            epoch = dt.datetime(1970, 1, 1)
+            windSeconds = [(i-epoch).total_seconds() for i in x]
+
+            # Convert radData date and time to datetime and then to seconds for interpolation
+            radTime = radData.data["Timetag2"].tolist()
+            radSeconds = []
+            radDatetime = []
+            for i, radDate in enumerate(radData.data["Datetag"].tolist()):                
+                radDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(radDate),radTime[i]))
+                radSeconds.append((radDatetime[i]-epoch).total_seconds())
+                            
+            # windInradSeconds = [i for i in windSeconds if i>=min(radSeconds) and i<=max(radSeconds)]
+            windInRadSeconds = []
+            windDateTimeInRad = []
+            windInRad = []
+            for i, value in enumerate(windSeconds):
+                if value>=min(radSeconds) and value <=max(radSeconds):
+                    windInRadSeconds.append(value)
+                    windInRad.append(y[i])        
+                    windDateTimeInRad.append(x[i])    
+            # Eliminate Nans
+            nanIndex = []
+            for i,value in enumerate(windInRad):
+                if np.isnan(value):                    
+                    nanIndex.append(i)
+            if len(nanIndex)>0:
+                msg = ("Wind records deleted as Nans: " + str(len(nanIndex)))
+                print(msg)
+                Utilities.writeLogFile(msg)                    
+            for index in sorted(nanIndex, reverse=True):
+                del windInRadSeconds[index]
+                del windInRad[index]    
+            
+            # Interpolate winds
+            if windInRadSeconds:
+                durationRad = max(radSeconds)-min(radSeconds)
+                durationWind = max(windInRadSeconds)-min(windInRadSeconds)
+
+                # If at least half of the period has wind data
+                if durationWind/durationRad > 0.5:
+                    print("Warning: ProcessL4 Wind values may be extrapolated to match radiometric data.")
+                    new_y = Utilities.interp(windInRadSeconds, windInRad, radSeconds,fill_value="extrapolate")                    
+                    windSpeedColumns = new_y.tolist()
+                else:
+                    msg = "Insufficient intersection of wind and radiometric data; reverting to default wind speed."
+                    print(msg)
+                    Utilities.writeLogFile(msg)  
+                    windSpeedColumns=None
+            else:
+                msg = "Wind data do not intersect radiometric data; reverting to default wind speed."
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                windSpeedColumns=None
+
+        return windSpeedColumns
 
     # Take the slice median averages of ancillary data
     @staticmethod
@@ -278,15 +364,16 @@ class ProcessL4:
         rhoSky = float(ConfigFile.settings["fL4RhoSky"])
         enableWindSpeedCalculation = int(ConfigFile.settings["bL4EnableWindSpeedCalculation"])
         defaultWindSpeed = float(ConfigFile.settings["fL4DefaultWindSpeed"])
-        enableQualityCheck = int(ConfigFile.settings["bL4EnableQualityFlags"])                        
+        enableMetQualityCheck = int(ConfigFile.settings["bL4EnableQualityFlags"])                        
         performNIRCorrection = int(ConfigFile.settings["bL4PerformNIRCorrection"])                        
+        enablePercentLt = float(ConfigFile.settings["bL4EnablePercentLt"])
         percentLt = float(ConfigFile.settings["fL4PercentLt"])
         
         datetag = esColumns["Datetag"]
         timetag = esColumns["Timetag2"]
-        latpos = None
-        lonpos = None
-        relAzimuth = None
+        # latpos = None
+        # lonpos = None
+        # relAzimuth = None
 
         # azimuth = None
         # shipTrue = None
@@ -303,35 +390,35 @@ class ProcessL4:
         ltColumns.pop("Datetag")
         ltColumns.pop("Timetag2")
 
-        # remove added LATPOS/LONPOS if added
-        if "LATPOS" in esColumns:
-            latpos = esColumns["LATPOS"]
-            esColumns.pop("LATPOS")
-            liColumns.pop("LATPOS")
-            ltColumns.pop("LATPOS")
-        if "LONPOS" in esColumns:
-            lonpos = esColumns["LONPOS"]
-            esColumns.pop("LONPOS")
-            liColumns.pop("LONPOS")
-            ltColumns.pop("LONPOS")
-        if "REL_AZ" in esColumns:
-            relAzimuth = esColumns["REL_AZ"]
-            esColumns.pop("REL_AZ")
-            liColumns.pop("REL_AZ")
-            ltColumns.pop("REL_AZ")
+        # # remove added LATPOS/LONPOS if added
+        # if "LATPOS" in esColumns:
+        #     latpos = esColumns["LATPOS"]
+        #     esColumns.pop("LATPOS")
+        #     liColumns.pop("LATPOS")
+        #     ltColumns.pop("LATPOS")
+        # if "LONPOS" in esColumns:
+        #     lonpos = esColumns["LONPOS"]
+        #     esColumns.pop("LONPOS")
+        #     liColumns.pop("LONPOS")
+        #     ltColumns.pop("LONPOS")
+        # if "REL_AZ" in esColumns:
+        #     relAzimuth = esColumns["REL_AZ"]
+        #     esColumns.pop("REL_AZ")
+        #     liColumns.pop("REL_AZ")
+        #     ltColumns.pop("REL_AZ")
 
         # Stores the middle element
         if len(datetag) > 0:
             date = datetag[int(len(datetag)/2)]
             time = timetag[int(len(timetag)/2)]
-        if latpos:
-            lat = latpos[int(len(latpos)/2)]
-        if lonpos:
-            lon = lonpos[int(len(lonpos)/2)]
-        if relAzimuth:
-            relAzi = relAzimuth[int(len(relAzimuth)/2)]
+        # if latpos:
+        #     lat = latpos[int(len(latpos)/2)]
+        # if lonpos:
+        #     lon = lonpos[int(len(lonpos)/2)]
+        # if relAzimuth:
+        #     relAzi = relAzimuth[int(len(relAzimuth)/2)]
 
-        # Calculates the lowest 5% (based on Hooker & Morel 2003)
+        '''# Calculates the lowest 5% (based on Hooker & Morel 2003; Hooker et al. 2002)'''
         n = len(list(ltColumns.values())[0])
         x = round(n*percentLt/100) # number of retained values
         if n <= 5 or x == 0:
@@ -339,13 +426,18 @@ class ProcessL4:
         # Find the indexes for the lowest 5%
         lt780 = ProcessL4.interpolateColumn(ltColumns, 780.0)
         index = np.argsort(lt780) # gives indexes if values were to be sorted
-        y = index[0:x] # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest 5% of lt780
+                
+        if enablePercentLt:
+            y = index[0:x] # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest 5% of lt780
+        else:
+            y = index # If Percent Lt is turned off, this will average the whole slice
 
         # Takes the mean of the lowest 5%
         es5Columns = collections.OrderedDict()
         li5Columns = collections.OrderedDict()
         lt5Columns = collections.OrderedDict()
-        windSpeedMean = defaultWindSpeed # replaced later with met file, if present
+        windSpeedMean = defaultWindSpeed # replaced later with met file, if present        
+
 
         hasNan = False
         # Ignore runtime warnings when array is all NaNs
@@ -383,28 +475,37 @@ class ProcessL4:
             print("Error NaN Found")
             return False
 
-        # Test meteorological flags
-        if enableQualityCheck:
-            if not ProcessL4.qualityCheck(es5Columns):
+        '''# Filter on meteorological flags'''
+        if enableMetQualityCheck:
+            if not ProcessL4.metQualityCheck(es5Columns):
+                msg = 'Slice failed quality check.'
+                print(msg)
+                Utilities.writeLogFile(msg) 
                 return False
 
 
-        '''# This is the Ruddick, et al. 2006 approach, which has one method for 
-        # clear sky, and another for cloudy.'''
+        '''This is the Ruddick, et al. 2006 approach, which has one method for 
+        clear sky, and another for cloudy. Methods of this type (i.e. not accounting
+        for spectral dependence (Lee et al. 2010, Gilerson et al. 2018) or polarization
+        effects (Harmel et al. 2012, Mobley 2015, Hieronumi 2016, D'Alimonte and Kajiyama 2016, 
+        Foster and Gilerson 2016, Gilerson et al. 2018)) are explicitly recommended in the 
+        IOCCG Protocols for Above Water Radiometry Measurements and Data Analysis (Chapter 5, Draft 2019).'''
         # Calculate Rho_sky
         li750 = ProcessL4.interpolateColumn(li5Columns, 750.0)
         es750 = ProcessL4.interpolateColumn(es5Columns, 750.0)
         sky750 = li750[0]/es750[0]
 
-        if not enableWindSpeedCalculation or sky750 > 0.05:
+        if not enableWindSpeedCalculation or sky750 >= 0.05:
             # Cloudy conditions: no further correction
+            if sky750 >= 0.05:
+                msg = "Sky 750 threshold triggered for cloudy sky. Rho set to default value."
             p_sky = rhoSky
         else:
             # Clear sky conditions: correct for wind
             # Set wind speed here
             w = windSpeedMean
             p_sky = rhoSky + 0.00039 * w + 0.000034 * w * w
-            #p_sky = 0.0256
+            print(f'Rho_sky: {p_sky:.4f} Wind: {w:.1f} m/s')
 
         # Add ancillary data to Rrs dataset
         if not ("Datetag" in newRrsData.columns):
@@ -416,22 +517,22 @@ class ProcessL4:
             newLIData.columns["Timetag2"] = [time]
             newLTData.columns["Timetag2"] = [time]
             newRrsData.columns["Timetag2"] = [time]
-            if latpos:
-                newESData.columns["Latpos"] = [lat]
-                newLIData.columns["Latpos"] = [lat]
-                newLTData.columns["Latpos"] = [lat]
-                newRrsData.columns["Latpos"] = [lat]
-            if lonpos:
-                newESData.columns["Lonpos"] = [lon]
-                newLIData.columns["Lonpos"] = [lon]
-                newLTData.columns["Lonpos"] = [lon]
-                newRrsData.columns["Lonpos"] = [lon]
+            # if latpos:
+            #     newESData.columns["Latpos"] = [lat]
+            #     newLIData.columns["Latpos"] = [lat]
+            #     newLTData.columns["Latpos"] = [lat]
+            #     newRrsData.columns["Latpos"] = [lat]
+            # if lonpos:
+            #     newESData.columns["Lonpos"] = [lon]
+            #     newLIData.columns["Lonpos"] = [lon]
+            #     newLTData.columns["Lonpos"] = [lon]
+            #     newRrsData.columns["Lonpos"] = [lon]
 
-            if relAzimuth:
-                newESData.columns["RelativeAzimuth"] = [relAzi]
-                newLIData.columns["RelativeAzimuth"] = [relAzi]
-                newLTData.columns["RelativeAzimuth"] = [relAzi]
-                newRrsData.columns["RelativeAzimuth"] = [relAzi]
+            # if relAzimuth:
+            #     newESData.columns["RelativeAzimuth"] = [relAzi]
+            #     newLIData.columns["RelativeAzimuth"] = [relAzi]
+            #     newLTData.columns["RelativeAzimuth"] = [relAzi]
+            #     newRrsData.columns["RelativeAzimuth"] = [relAzi]
             # if azimuth:
             #     newESData.columns["Azimuth"] = [azi]
             #     newLIData.columns["Azimuth"] = [azi]
@@ -466,21 +567,21 @@ class ProcessL4:
             newLIData.columns["Timetag2"].append(time)
             newLTData.columns["Timetag2"].append(time)
             newRrsData.columns["Timetag2"].append(time)
-            if latpos:
-                newESData.columns["Latpos"].append(lat)
-                newLIData.columns["Latpos"].append(lat)
-                newLTData.columns["Latpos"].append(lat)
-                newRrsData.columns["Latpos"].append(lat)
-            if lonpos:
-                newESData.columns["Lonpos"].append(lon)
-                newLIData.columns["Lonpos"].append(lon)
-                newLTData.columns["Lonpos"].append(lon)
-                newRrsData.columns["Lonpos"].append(lon)
-            if relAzimuth:
-                newESData.columns["RelativeAzimuth"].append(relAzi)
-                newLIData.columns["RelativeAzimuth"].append(relAzi)
-                newLTData.columns["RelativeAzimuth"].append(relAzi)
-                newRrsData.columns["RelativeAzimuth"].append(relAzi)
+            # if latpos:
+            #     newESData.columns["Latpos"].append(lat)
+            #     newLIData.columns["Latpos"].append(lat)
+            #     newLTData.columns["Latpos"].append(lat)
+            #     newRrsData.columns["Latpos"].append(lat)
+            # if lonpos:
+            #     newESData.columns["Lonpos"].append(lon)
+            #     newLIData.columns["Lonpos"].append(lon)
+            #     newLTData.columns["Lonpos"].append(lon)
+            #     newRrsData.columns["Lonpos"].append(lon)
+            # if relAzimuth:
+            #     newESData.columns["RelativeAzimuth"].append(relAzi)
+            #     newLIData.columns["RelativeAzimuth"].append(relAzi)
+            #     newLTData.columns["RelativeAzimuth"].append(relAzi)
+            #     newRrsData.columns["RelativeAzimuth"].append(relAzi)
             # if azimuth:
             #     newESData.columns["Azimuth"].append(azi)
             #     newLIData.columns["Azimuth"].append(azi)
@@ -525,26 +626,39 @@ class ProcessL4:
 
                 # Calculate the Rrs
                 rrs = (lt - (p_sky * li)) / es
+
+
                 newESData.columns[k].append(es)
                 newLIData.columns[k].append(li)
                 newLTData.columns[k].append(lt)
                 #newRrsData.columns[k].append(rrs)
                 rrsColumns[k] = rrs
 
-        # Perfrom near-infrared correction of remove additional contamination from sky/sun glint
+        # Perfrom near-infrared correction to remove additional atmospheric and glint contamination
         if performNIRCorrection:
-            # Get average of Rrs values between 750-800nm
-            avg = 0
-            num = 0
+
+            # Change this to take a median value, not the mean...
+
+            # # Get average of Rrs values between 750-800nm
+            # avg = 0
+            # num = 0
+
+            # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
+            NIRRRs = []
             for k in rrsColumns:
-                if float(k) >= 750 and float(k) <= 800:
-                    avg += rrsColumns[k]
-                    num += 1
-            avg /= num
+                # if float(k) >= 750 and float(k) <= 800:
+                if float(k) >= 700 and float(k) <= 800:
+                    # avg += rrsColumns[k]
+                    # num += 1
+                    NIRRRs.append(rrsColumns[k])
+            # avg /= num
+            # avg = np.median(NIRRRs)
+            minNIR = min(NIRRRs)
     
-            # Subtract average from each spectra
+            # Subtract average from each waveband
             for k in rrsColumns:
-                rrsColumns[k] -= avg
+                # rrsColumns[k] -= avg
+                rrsColumns[k] -= minNIR
 
         for k in rrsColumns:
             newRrsData.columns[k].append(rrsColumns[k])
@@ -554,7 +668,10 @@ class ProcessL4:
 
     @staticmethod
     def calculateReflectance(root, node, windSpeedData):
-        '''Interpolate windspeeds, average intervals, and pass to calculateReflectance2'''
+        '''Filter out high wind and high/low SZA.
+        Interpolate windspeeds, average intervals.
+        Run meteorology quality checks.
+        Pass to calculateReflectance2 for rho calcs, Rrs, NIR correction.'''
 
         print("calculateReflectance")
         
@@ -565,17 +682,29 @@ class ProcessL4:
         satnavGroup = node.getGroup("SATNAV")
         gpsGroup = node.getGroup("GPS")
 
-        # Filter low SZAs
+        ''' # Filter low SZAs and high winds '''
+        defaultWindSpeed = float(ConfigFile.settings["fL4DefaultWindSpeed"])
+        maxWind = float(ConfigFile.settings["fL4MaxWind"]) 
         SZAMin = float(ConfigFile.settings["fL4SZAMin"])
+        SZAMax = float(ConfigFile.settings["fL4SZAMax"])
         SZA = 90 -satnavGroup.getDataset("ELEVATION").data["SUN"]
         timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
+        
+        esData = referenceGroup.getDataset("ES_hyperspectral")
+        windSpeedColumns = ProcessL4.interpWind(windSpeedData, esData)
+        
         badTimes = None
         i=0
         start = -1
         stop = []
+        if windSpeedColumns is not None:
+            wind = windSpeedColumns
+        else:
+            wind = np.matlib.repmat(defaultWindSpeed, len(SZA), 1)
+
         for index in range(len(SZA)):
             # Check for angles spanning north
-            if SZA[index] < SZAMin:
+            if SZA[index] < SZAMin or SZA[index] > SZAMax or wind[index] > maxWind:
                 i += 1                              
                 if start == -1:
                     print('Low SZA. SZA: ' + str(round(SZA[index])))
@@ -592,7 +721,7 @@ class ProcessL4:
                     Utilities.writeLogFile(msg)                                               
                     badTimes.append(startstop)
                     start = -1
-        msg = ("Percentage of SATNAV data out of SZA bounds: " + str(round(100*i/len(timeStamp))) + "%")
+        msg = ("Percentage of data out of SZA and Wind limits: " + str(round(100*i/len(timeStamp))) + "%")
         print(msg)
         Utilities.writeLogFile(msg)
 
@@ -607,7 +736,26 @@ class ProcessL4:
             ProcessL4.filterData(referenceGroup, badTimes)            
             ProcessL4.filterData(sasGroup, badTimes)
             ProcessL4.filterData(gpsGroup, badTimes)
-            ProcessL4.filterData(satnavGroup, badTimes)                        
+            ProcessL4.filterData(satnavGroup, badTimes)   
+
+
+        ''' # Now filter the spectra from the entire ensemble before slicing the intervals
+        # First try: calculate the STD of the normalized (at some max value) average ensemble.
+        # Then test each normalized spectrum against the ensemble average and STD.
+        # Plot results to see what to do next.... '''
+        '''# Filter on meteorological flags'''
+        enableSpecQualityCheck = 1
+        if enableSpecQualityCheck:
+            badTimes1 = ProcessL4.specQualityCheck(referenceGroup)
+            badTimes2 = ProcessL4.specQualityCheck(sasGroup)
+            badTimes = badTimes1.append(badTimes2)
+
+            if badTimes is not None:
+                ProcessL4.filterData(referenceGroup, badTimes)            
+                ProcessL4.filterData(sasGroup, badTimes)
+                ProcessL4.filterData(gpsGroup, badTimes)
+                ProcessL4.filterData(satnavGroup, badTimes)   
+
 
 
         esData = referenceGroup.getDataset("ES_hyperspectral")
@@ -703,91 +851,40 @@ class ProcessL4:
         ltLength = len(list(ltColumns.values())[0])
 
         if ltLength > esLength:
-            print('Warning. Why would ltLength be > esLength??')
+            print('Warning. Why would ltLength be > esLength??************************************')
             for col in ltColumns:
                 col = col[0:esLength] # strips off final columns
             for col in liColumns:
                 col = col[0:esLength]
 
-        windSpeedColumns=None
-
-        # interpolate wind speed to match sensor time values
-        if windSpeedData is not None:
-            x = windSpeedData.getColumn("DATETIME")[0]
-            y = windSpeedData.getColumn("WINDSPEED")[0]
-
-            # Convert windSpeed datetime to seconds for interpolation
-            epoch = dt.datetime(1970, 1, 1)
-            windSeconds = [(i-epoch).total_seconds() for i in x]
-
-            # Convert esData date and time to datetime and then to seconds for interpolation
-            esTime = esData.data["Timetag2"].tolist()
-            esSeconds = []
-            esDatetime = []
-            for i, esDate in enumerate(esData.data["Datetag"].tolist()):                
-                esDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(esDate),esTime[i]))
-                esSeconds.append((esDatetime[i]-epoch).total_seconds())
-                            
-            # windInEsSeconds = [i for i in windSeconds if i>=min(esSeconds) and i<=max(esSeconds)]
-            windInEsSeconds = []
-            windDateTimeInEs = []
-            windInEs = []
-            for i, value in enumerate(windSeconds):
-                if value>=min(esSeconds) and value <=max(esSeconds):
-                    windInEsSeconds.append(value)
-                    windInEs.append(y[i])        
-                    windDateTimeInEs.append(x[i])    
-            # Eliminate Nans
-            nanIndex = []
-            for i,value in enumerate(windInEs):
-                if np.isnan(value):                    
-                    nanIndex.append(i)
-            if len(nanIndex)>0:
-                msg = ("Wind records deleted as Nans: " + str(len(nanIndex)))
-                print(msg)
-                Utilities.writeLogFile(msg)                    
-            for index in sorted(nanIndex, reverse=True):
-                del windInEsSeconds[index]
-                del windInEs[index]    
-            
-            # Interpolate winds
-            if windInEsSeconds:
-                durationEs = max(esSeconds)-min(esSeconds)
-                durationWind = max(windInEsSeconds)-min(windInEsSeconds)
-
-                # If at least half of the period has wind data
-                if durationWind/durationEs > 0.5:
-                    print("Warning: ProcessL4 Wind values may be extrapolated to match radiometric data.")
-                    new_y = Utilities.interp(windInEsSeconds, windInEs, esSeconds,fill_value="extrapolate")                    
-                    windSpeedColumns = new_y.tolist()
-                else:
-                    msg = "Insufficient intersection of wind and radiometric data; reverting to default wind speed."
-                    print(msg)
-                    Utilities.writeLogFile(msg)  
-                    windSpeedColumns=None
-            else:
-                msg = "Wind data do not intersect radiometric data; reverting to default wind speed."
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                windSpeedColumns=None
+        
+        windSpeedColumns = ProcessL4.interpWind(windSpeedData, esData)
 
 
         # Break up data into time intervals, and calculate reflectance
         if interval == 0:
             # Here, take the complete time series
             print("No time binning. This can take a moment.")
+            Utilities.printProgressBar(0, esLength-1, prefix = 'Progress:', suffix = 'Complete', length = 50)
             for i in range(0, esLength-1):
-                esSlice = ProcessL4.columnToSlice(esColumns, i, i+1)
-                liSlice = ProcessL4.columnToSlice(liColumns, i, i+1)
-                ltSlice = ProcessL4.columnToSlice(ltColumns, i, i+1)
+                Utilities.printProgressBar(i+1, esLength-1, prefix = 'Progress:', suffix = 'Complete', length = 50)
+                start = i
+                end = i+1
+
+                esSlice = ProcessL4.columnToSlice(esColumns,start, end)
+                liSlice = ProcessL4.columnToSlice(liColumns,start, end)
+                ltSlice = ProcessL4.columnToSlice(ltColumns,start, end)
                 if windSpeedColumns is not None:
                     windSlice = windSpeedColumns[i: i+1]
                 else:
                     windSlice = None
-                ProcessL4.calculateReflectance2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
-                                                windSlice)
-                start = i
-                end = i+1
+                if not ProcessL4.calculateReflectance2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
+                                                windSlice):
+                    # msg = 'Slice failed. Skipping.'
+                    # print(msg)
+                    # Utilities.writeLogFile(msg)                      
+                    continue
+                
                 # Take the slice median of ancillary data and add it to appropriate groups
                 with warnings.catch_warnings():
                     warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
@@ -795,17 +892,16 @@ class ProcessL4:
                     ProcessL4.sliceAverageAncillary(start, end, newESData, gpsCourseColumns, newGPSCourseData, gpsLatPosColumns, newGPSLatPosData, \
                         gpsLonPosColumns, newGPSLonPosData, gpsMagVarColumns, newGPSMagVarData, gpsSpeedColumns, newGPSSpeedData, \
                         satnavAzimuthColumns, newSATNAVAzimuthData, satnavElevationColumns, newSATNAVElevationData, satnavHeadingColumns, \
-                        newSATNAVHeadingData, satnavPointingColumns, newSATNAVPointingData, satnavRelAzColumns, newSATNAVRelAzData)
-
+                        newSATNAVHeadingData, satnavPointingColumns, newSATNAVPointingData, satnavRelAzColumns, newSATNAVRelAzData)                
                             
 
         else:
             start = 0
-            #end = 0
             endTime = Utilities.timeTag2ToSec(tt2[0]) + interval
             for i in range(0, esLength):
                 time = Utilities.timeTag2ToSec(tt2[i])
                 if time > endTime: # end of increment reached
+                    endTime = time + interval # increment for the next bin loop
                     # end = i-1
                     end = i # end of the slice is up to and not including...so -1 is not needed
                     # Here take one interval as defined in Config
@@ -816,8 +912,13 @@ class ProcessL4:
                         windSlice = windSpeedColumns[start: end]
                     else:
                         windSlice = None
-                    ProcessL4.calculateReflectance2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
-                                                    windSlice)
+                    if not ProcessL4.calculateReflectance2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
+                                                    windSlice):
+                        # msg = 'Slice failed. Skipping.'
+                        # print(msg)
+                        # Utilities.writeLogFile(msg)  
+                        start = i                        
+                        continue
 
                     # Take the slice median of ancillary data and add it to appropriate groups
                     with warnings.catch_warnings():
@@ -827,9 +928,7 @@ class ProcessL4:
                             gpsLonPosColumns, newGPSLonPosData, gpsMagVarColumns, newGPSMagVarData, gpsSpeedColumns, newGPSSpeedData, \
                             satnavAzimuthColumns, newSATNAVAzimuthData, satnavElevationColumns, newSATNAVElevationData, satnavHeadingColumns, \
                             newSATNAVHeadingData, satnavPointingColumns, newSATNAVPointingData, satnavRelAzColumns, newSATNAVRelAzData)
-
                     start = i
-                    endTime = time + interval
 
             # Try converting any remaining
             end = esLength-1
@@ -838,21 +937,21 @@ class ProcessL4:
                 esSlice = ProcessL4.columnToSlice(esColumns, start, end)
                 liSlice = ProcessL4.columnToSlice(liColumns, start, end)
                 ltSlice = ProcessL4.columnToSlice(ltColumns, start, end)
+
                 if windSpeedColumns is not None:
                     windSlice = windSpeedColumns[start: end]
                 else:
                     windSlice = None
-                ProcessL4.calculateReflectance2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
-                                                windSlice)
-                
-                # Take the slice median of ancillary data and add it to appropriate groups
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 
-                    ProcessL4.sliceAverageAncillary(start, end, newESData, gpsCourseColumns, newGPSCourseData, gpsLatPosColumns, newGPSLatPosData, \
-                        gpsLonPosColumns, newGPSLonPosData, gpsMagVarColumns, newGPSMagVarData, gpsSpeedColumns, newGPSSpeedData, \
-                        satnavAzimuthColumns, newSATNAVAzimuthData, satnavElevationColumns, newSATNAVElevationData, satnavHeadingColumns, \
-                        newSATNAVHeadingData, satnavPointingColumns, newSATNAVPointingData, satnavRelAzColumns, newSATNAVRelAzData)
+                if ProcessL4.calculateReflectance2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, windSlice):
+                    # Take the slice median of ancillary data and add it to appropriate groups
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
+
+                        ProcessL4.sliceAverageAncillary(start, end, newESData, gpsCourseColumns, newGPSCourseData, gpsLatPosColumns, newGPSLatPosData, \
+                            gpsLonPosColumns, newGPSLonPosData, gpsMagVarColumns, newGPSMagVarData, gpsSpeedColumns, newGPSSpeedData, \
+                            satnavAzimuthColumns, newSATNAVAzimuthData, satnavElevationColumns, newSATNAVElevationData, satnavHeadingColumns, \
+                            newSATNAVHeadingData, satnavPointingColumns, newSATNAVPointingData, satnavRelAzColumns, newSATNAVRelAzData)
 
 
         newESData.columnsToDataset()
@@ -875,7 +974,7 @@ class ProcessL4:
 
     # Calculates Rrs
     @staticmethod
-    def processL4(node, enableQualityCheck, windSpeedData=None):
+    def processL4(node, enableMetQualityCheck, windSpeedData=None):
 
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
@@ -885,38 +984,20 @@ class ProcessL4:
         root.addGroup("Irradiance")
         root.addGroup("Radiance")    
 
-        # esGroup = None         
-        # liGroup = None
-        # ltGroup = None
         gpsGroup = None
         satnavGroup = None
         for gp in node.groups:
             if gp.id.startswith("GPS"):
-            # if gp.getDataset("UTCPOS"):
-                # print("GPS")
                 gpsGroup = gp
-            # elif gp.getDataset("ES") and gp.attributes["FrameType"] == "ShutterLight":
-            #     # print("ES")
-            #     esGroup = gp
-            # elif gp.getDataset("LI") and gp.attributes["FrameType"] == "ShutterLight":
-            #     # print("LI")
-            #     liGroup = gp
-            # elif gp.getDataset("LT") and gp.attributes["FrameType"] == "ShutterLight":
-            #     # print("LT")
-            #     ltGroup = gp
             elif gp.id.startswith("SATNAV"):
-            # elif gp.getDataset("AZIMUTH"):
-                # print("SATNAV")
                 satnavGroup = gp
 
-        # refGroup = root.addGroup("Reference")
-        # sasGroup = root.addGroup("SAS")
         if gpsGroup is not None:
             root.addGroup("GPS")
         if satnavGroup is not None:
             root.addGroup("SATNAV")    
 
-        if not ProcessL4.calculateReflectance(root, node, windSpeedData=None):
+        if not ProcessL4.calculateReflectance(root, node, windSpeedData):
             return None
         
         # Check to insure at least some data survived quality checks

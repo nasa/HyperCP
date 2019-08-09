@@ -36,7 +36,9 @@ class ConfigFile:
         print("bL3SaveSeaBASS", ConfigFile.settings["bL3SaveSeaBASS"])
         print("seaBASSHeaderFileName", ConfigFile.settings["seaBASSHeaderFileName"])
 
+        print("fL4MaxWind", ConfigFile.settings["fL4MaxWind"])
         print("fL4SZAMin", ConfigFile.settings["fL4SZAMin"])
+        print("fL4SZAMax", ConfigFile.settings["fL4SZAMax"])
         print("fL4RhoSky", ConfigFile.settings["fL4RhoSky"])
         print("bL4EnableWindSpeedCalculation", ConfigFile.settings["bL4EnableWindSpeedCalculation"])
         print("fL4DefaultWindSpeed", ConfigFile.settings["fL4DefaultWindSpeed"])        
@@ -71,20 +73,19 @@ class ConfigFile:
         ConfigFile.settings["CalibrationFiles"] = {}
 
         ConfigFile.settings["bL1aCleanSZA"] = 0
-        # Need to add a SZAMin (@ L4??) # e.g. 20: Zhang 2017
         ConfigFile.settings["fL1aCleanSZAMax"] = 60.0 # e.g. 60:Brewin 2016, 
 
         ConfigFile.settings["bL1bCleanPitchRoll"] = 0
         ConfigFile.settings["fL1bPitchRollPitch"] = 5 # These should all have citable defaults
         ConfigFile.settings["fL1bPitchRollRoll"] = 5 # An "info" button would be nice for the citation
         ConfigFile.settings["fL1bRotatorHomeAngle"] = 0.0 # Require knowledge of deployment set-up
-        ConfigFile.settings["fL1bRotatorDelay"] = 60.0
+        ConfigFile.settings["fL1bRotatorDelay"] = 60.0 # Vandenberg 2016
         ConfigFile.settings["bL1bCleanRotatorAngle"] = 0
         ConfigFile.settings["fL1bRotatorAngleMin"] = -40.0 # Require knowledge of deployment set-up
         ConfigFile.settings["fL1bRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
         ConfigFile.settings["bL1bCleanSunAngle"] = 0
-        ConfigFile.settings["fL1bSunAngleMin"] = 90.0 # Zhang 2017: 45, Mobley 1999: 90, Zibordi 2009 (and IOCCG Protocols): 90
-        ConfigFile.settings["fL1bSunAngleMax"] = 135.0 #Zhang 2017: 90, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90        
+        ConfigFile.settings["fL1bSunAngleMin"] = 90.0 # Zhang 2017: 45*, Mobley 1999: 90, Zibordi 2009 (and IOCCG Protocols): 90
+        ConfigFile.settings["fL1bSunAngleMax"] = 135.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90        
 
         ConfigFile.settings["bL2Deglitch"] = 0
         ConfigFile.settings["fL2Deglitch0"] = 15    # These can be experimentally derived with the AnomalyDetection tool
@@ -97,17 +98,18 @@ class ConfigFile:
         ConfigFile.settings["bL3SaveSeaBASS"] = 0
         ConfigFile.settings["seaBASSHeaderFileName"] = None
                 
-        # Need to add a SZAMin (@ L4??) # e.g. 20: Zhang 2017, depends on wind
-        ConfigFile.settings["fL4SZAMin"] = 30
-        ConfigFile.settings["fL4RhoSky"] = 0.0256
+        ConfigFile.settings["fL4MaxWind"] = 15.0 # 
+        ConfigFile.settings["fL4SZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
+        ConfigFile.settings["fL4SZAMax"] = 60 # e.g. 60:Brewin 2016,
+        ConfigFile.settings["fL4RhoSky"] = 0.0256 # Mobley 1999
         ConfigFile.settings["bL4EnableWindSpeedCalculation"] = 1
         ConfigFile.settings["fL4DefaultWindSpeed"] = 0.0        
         ConfigFile.settings["bL4EnableQualityFlags"] = 1
-        ConfigFile.settings["fL4SignificantEsFlag"] = 2.0
-        ConfigFile.settings["fL4DawnDuskFlag"] = 1.0
-        ConfigFile.settings["fL4RainfallHumidityFlag"] = 1.095        
+        ConfigFile.settings["fL4SignificantEsFlag"] = 2.0 # Wernand 2002
+        ConfigFile.settings["fL4DawnDuskFlag"] = 1.0 # Wernand 2002
+        ConfigFile.settings["fL4RainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain      
         ConfigFile.settings["fL4TimeInterval"] = 60
-        ConfigFile.settings["bL4PerformNIRCorrection"] = 0
+        ConfigFile.settings["bL4PerformNIRCorrection"] = 0 # Needs work
         ConfigFile.settings["bL4EnablePercentLt"] = 0
         ConfigFile.settings["fL4PercentLt"] = 5
         ConfigFile.settings["bL4PlotRrs"] = 0

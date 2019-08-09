@@ -118,7 +118,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.secchi_depthLineEdit.setValidator(doubleValidator)
 
         #############################
-        commentsLabel = QtWidgets.QLabel("Config Comments (lead line with !)", self)
+        commentsLabel = QtWidgets.QLabel("Config Comments (lead with !)", self)
         self.commentsLineEdit = QtWidgets.QTextEdit(self)
         self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
 
@@ -126,6 +126,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.configUpdateButton.clicked.connect(self.configUpdateButtonPressed)
 
         other_commentsLabel = QtWidgets.QLabel("Other Comments", self)
+        other_commentsLabel2 = QtWidgets.QLabel("(lead with !)", self)
         self.other_commentsLineEdit = QtWidgets.QTextEdit(self)
         self.other_commentsLineEdit.setPlainText(SeaBASSHeader.settings["other_comments"])
 
@@ -309,6 +310,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         ############
         HBox30 = QtWidgets.QHBoxLayout()
         HBox30.addWidget(other_commentsLabel)
+        HBox30.addWidget(other_commentsLabel2)
         HBox30.addWidget(self.other_commentsLineEdit)
         VBox2.addLayout(HBox30) 
 

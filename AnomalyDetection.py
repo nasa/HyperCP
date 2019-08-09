@@ -1,5 +1,6 @@
 
 import os
+import sys
 import shutil
 import numpy as np
 import pandas as pd
@@ -16,8 +17,8 @@ from Utilities import Utilities
 def AnomalyDetection(self,inputDirectory):
     print("AnomalyDetection - Launching anomaly analysis")
 
-    if not os.path.exists("Plots/Anoms"):
-            os.makedirs("Plots/Anomss")
+    if not os.path.exists("Plots/L1B_Anoms"):
+            os.makedirs("Plots/L1B_Anoms")
 
     # Open L1B HDF5 file for Deglitching        
     inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1B HDF5 file for Deglitching", \
@@ -155,29 +156,29 @@ def deglitchAndPlot(fileName,k,sensorType,lightDark,windowSize,sigma,\
         'color':  'darkred',
         'weight': 'normal',
         'size': 16}   
-    # try:     
-    plt.figure(figsize=(15, 8))
-    
-    # y_av = moving_average(timeSeries, window_size)
-    plt.plot(x[3:-3], avg[3:-3], color='green')
-    y_anomaly = np.array(timeSeries)[badIndex]
-    x_anomaly = x[badIndex]
-    y_anomaly2 = np.array(timeSeries)[badIndex2]
-    x_anomaly2 = x[badIndex2]
-    plt.plot(x_anomaly, y_anomaly, "rs", markersize=12)
-    plt.plot(x_anomaly2, y_anomaly2, "b*", markersize=12)
-    plt.plot(x, timeSeries, "k.")
+    try:     
+        plt.figure(figsize=(15, 8))
+        
+        # y_av = moving_average(timeSeries, window_size)
+        plt.plot(x[3:-3], avg[3:-3], color='green')
+        y_anomaly = np.array(timeSeries)[badIndex]
+        x_anomaly = x[badIndex]
+        y_anomaly2 = np.array(timeSeries)[badIndex2]
+        x_anomaly2 = x[badIndex2]
+        plt.plot(x_anomaly, y_anomaly, "rs", markersize=12)
+        plt.plot(x_anomaly2, y_anomaly2, "b*", markersize=12)
+        plt.plot(x, timeSeries, "k.")
 
-    plt.xlabel(text_xlabel, fontdict=font)
-    plt.ylabel(text_ylabel, fontdict=font)   
-    plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
+        plt.xlabel(text_xlabel, fontdict=font)
+        plt.ylabel(text_ylabel, fontdict=font)   
+        plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
 
-    plotName = ('Plots/Anoms/' + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
-        + sensorType + lightDark + '_' + k[0] + '.png')
-    print(plotName)
-    plt.savefig(plotName)
-    plt.close()    
-    # except:
-    #     e = sys.exc_info()[0]
-    #     print("Error: %s" % e)
+        plotName = ('Plots/L1B_Anoms/' + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
+            + sensorType + lightDark + '_' + k[0] + '.png')
+        print(plotName)
+        plt.savefig(plotName)
+        plt.close()    
+    except:
+        e = sys.exc_info()[0]
+        print("Error: %s" % e)
 

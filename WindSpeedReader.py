@@ -9,25 +9,14 @@ from SB_support import readSB
 
 class WindSpeedReader:
 
-    # @staticmethod
-    # def readCSV(fp):
-    #     lst = []
-    #     with open(fp, 'r') as f:
-    #         reader = csv.reader(f)
-    #         #for row in reader:
-    #         #    print(row)
-    #         lst = list(reader)
-    #     return lst
-
-
-
-    # Reads a wind speed SeaBASS file and returns a HDFDataset
+    # Reads a wind speed SeaBASS file and returns an HDFDataset
     @staticmethod
     def readWindSpeed(fp):
         print("WindSpeedReader.readWindSpeed: " + fp)
 
         # metData = readSB(fp,mask_missing=False, no_warn=True)
         metData = readSB(fp, no_warn=True)
+        # metData = readSB(fp, no_warn=False)
         wspd = metData.data['wind']
         windDatetime = metData.fd_datetime()
 
