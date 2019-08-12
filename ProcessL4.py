@@ -24,7 +24,7 @@ class ProcessL4:
         for timeTag in badTimes:
 
             msg = ("Eliminate data between: " + str(timeTag) + " (HHMMSSMSS)")
-            print(msg)
+            # print(msg)
             Utilities.writeLogFile(msg)
             # print(timeTag)
             # print(" ")         
@@ -33,7 +33,7 @@ class ProcessL4:
             # badIndex = ([i for i in range(lenDataSec) if start <= dataSec[i] and stop >= dataSec[i]])      
                     
             msg = ("   Remove " + group.id + " Data")
-            print(msg)
+            # print(msg)
             Utilities.writeLogFile(msg)
             #  timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
             if group.id == "Reference":
@@ -107,31 +107,43 @@ class ProcessL4:
 
         return return_y
 
-    # Perform spectral filtering
+    '''# Perform spectral filtering
+     # First try: calculate the STD of the normalized (at some max value) average ensemble.
+        # Then test each normalized spectrum against the ensemble average and STD.
+        # Plot results to see what to do next.... '''
     @staticmethod
-    def specQualityCheck(group):
+    def specQualityCheck(group, inFilePath):
+        
         if group.id == 'Reference':
             Data = group.getDataset("ES_hyperspectral") 
-            Data.datasetToColumns()            
-        else:
-            liData = group.getDataset("LI_hyperspectral")
-            ltData = group.getDataset("LT_hyperspectral")
+            timeStamp = group.getDataset("ES_hyperspectral").data["Timetag2"]
+            badTimes = Utilities.specFilter(inFilePath, Data, timeStamp, filterRange=[400, 700],\
+                filterFactor=5, rType='Es')
+            msg = f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of Es data flagged'
+            print(msg)
+            Utilities.writeLogFile(msg)  
+        else:            
+            Data = group.getDataset("LI_hyperspectral")
+            timeStamp = group.getDataset("LI_hyperspectral").data["Timetag2"]
+            badTimes1 = Utilities.specFilter(inFilePath, Data, timeStamp, filterRange=[400, 700],\
+                filterFactor=8, rType='Li')
+            msg = f'{len(np.unique(badTimes1))/len(timeStamp)*100:.1f}% of Li data flagged'
+            print(msg)
+            Utilities.writeLogFile(msg)  
 
-        Columns = Data.columns
-        aveSpec = []
-        stdSpec = []
-        for k in Columns:
-            aveSpec.append(np.median(k))
-            stdSpec.append(np.std(k))
+            Data = group.getDataset("LT_hyperspectral")
+            timeStamp = group.getDataset("LT_hyperspectral").data["Timetag2"]
+            badTimes2 = Utilities.specFilter(inFilePath, Data, timeStamp, filterRange=[400, 700],\
+                filterFactor=3, rType='Lt')
+            msg = f'{len(np.unique(badTimes2))/len(timeStamp)*100:.1f}% of Lt data flagged'
+            print(msg)
+            Utilities.writeLogFile(msg)  
 
-    # Now plot the median spec, +/- the std, test each spectrum against it, and identify outliers, and plot these
-        print() 
+            badTimes = np.append(badTimes1,badTimes2, axis=0)
         
 
-
-            
-
-
+        return badTimes
+        
 
     # Perform meteorological flag checking
     @staticmethod
@@ -739,24 +751,23 @@ class ProcessL4:
             ProcessL4.filterData(satnavGroup, badTimes)   
 
 
-        ''' # Now filter the spectra from the entire ensemble before slicing the intervals
-        # First try: calculate the STD of the normalized (at some max value) average ensemble.
-        # Then test each normalized spectrum against the ensemble average and STD.
-        # Plot results to see what to do next.... '''
-        '''# Filter on meteorological flags'''
-        enableSpecQualityCheck = 1
+        ''' # Now filter the spectra from the entire ensemble before slicing the intervals'''
+       
+        enableSpecQualityCheck = ConfigFile.settings['bL4EnableSpecQualityCheck']
         if enableSpecQualityCheck:
-            badTimes1 = ProcessL4.specQualityCheck(referenceGroup)
-            badTimes2 = ProcessL4.specQualityCheck(sasGroup)
-            badTimes = badTimes1.append(badTimes2)
+            msg = ("Applying spectral filtering to eliminate noisy spectra. This takes a moment for hi-res data.")
+            print(msg)
+            Utilities.writeLogFile(msg)
+            inFilePath = root.attributes['In_Filepath']
+            badTimes1 = ProcessL4.specQualityCheck(referenceGroup, inFilePath)
+            badTimes2 = ProcessL4.specQualityCheck(sasGroup, inFilePath)
+            badTimes = np.append(badTimes1,badTimes2, axis=0)
 
             if badTimes is not None:
                 ProcessL4.filterData(referenceGroup, badTimes)            
                 ProcessL4.filterData(sasGroup, badTimes)
                 ProcessL4.filterData(gpsGroup, badTimes)
-                ProcessL4.filterData(satnavGroup, badTimes)   
-
-
+                ProcessL4.filterData(satnavGroup, badTimes)  
 
         esData = referenceGroup.getDataset("ES_hyperspectral")
         liData = sasGroup.getDataset("LI_hyperspectral")
@@ -974,7 +985,7 @@ class ProcessL4:
 
     # Calculates Rrs
     @staticmethod
-    def processL4(node, enableMetQualityCheck, windSpeedData=None):
+    def processL4(node, windSpeedData=None):
 
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
@@ -999,6 +1010,8 @@ class ProcessL4:
 
         if not ProcessL4.calculateReflectance(root, node, windSpeedData):
             return None
+
+        root.attributes["Rrs_UNITS"] = "sr^-1"
         
         # Check to insure at least some data survived quality checks
         if root.getGroup("Reflectance").getDataset("Rrs").data is None:

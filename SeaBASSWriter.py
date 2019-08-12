@@ -13,14 +13,18 @@ from Utilities import Utilities
 class SeaBASSWriter:
 
     @staticmethod
-    def formatHeader(fp,node):
+    def formatHeader(fp,node, level):
         
         # seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
         headerBlock = SeaBASSHeader.settings        
 
         # Dataset leading columns can be taken from any sensor 
-        referenceGroup = node.getGroup("Reference")
-        esData = referenceGroup.getDataset("ES_hyperspectral")
+        if level == 3:
+            referenceGroup = node.getGroup("Reference")
+            esData = referenceGroup.getDataset("ES_hyperspectral")
+        if level == 4:
+            referenceGroup = node.getGroup("Irradiance")
+            esData = referenceGroup.getDataset("ES")
 
         headerBlock['original_file_name'] = node.attributes['RAW_FILE_NAME']
         headerBlock['data_file_name'] = os.path.split(fp)[1]
@@ -115,6 +119,8 @@ class SeaBASSWriter:
             fieldName = 'Lsky'
         elif dtype == 'lt':
             fieldName = 'Lt'
+        elif dtype == 'rrs':
+            fieldName = 'Rrs'
         # fieldsLineStr = ','.join(ls[:lenNonRad] + [f'{fieldName}{band}' for band in ls[lenNonRad:]])
         fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands])
 
@@ -393,7 +399,7 @@ class SeaBASSWriter:
             ltData.columnsToDataset()
 
         # Format the non-specific header block
-        headerBlock = SeaBASSWriter.formatHeader(fp,root)
+        headerBlock = SeaBASSWriter.formatHeader(fp,root, level=3)
 
         # Format each data block for individual output
         formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData3(esData,'es',root.attributes["ES_UNITS"])        
@@ -432,7 +438,7 @@ class SeaBASSWriter:
         esData = irradianceGroup.getDataset("ES")
         liData = radianceGroup.getDataset("LI")
         ltData = radianceGroup.getDataset("LT")
-        rrsData = reflectanceGroup("Rrs")
+        rrsData = reflectanceGroup.getDataset("Rrs")
 
         if esData is None or liData is None or ltData is None or rrsData is None:
             print("SeaBASSWriter: Radiometric data is missing")
@@ -453,20 +459,24 @@ class SeaBASSWriter:
             esData.datasetToColumns()
             liData.datasetToColumns()
             ltData.datasetToColumns()
+            rrsData.datasetToColumns()
 
             #print(esData.columns)
 
             esData.columns["LATPOS"] = latpos
             liData.columns["LATPOS"] = latpos
             ltData.columns["LATPOS"] = latpos
+            rrsData.columns["LATPOS"] = latpos
 
             esData.columns["LONPOS"] = lonpos
             liData.columns["LONPOS"] = lonpos
             ltData.columns["LONPOS"] = lonpos
+            rrsData.columns["LONPOS"] = lonpos
 
             esData.columnsToDataset()
             liData.columnsToDataset()
             ltData.columnsToDataset()
+            rrsData.columnsToDataset()
         
         # Append azimuth, heading, rotator, relAz, and solar elevation
         if root.getGroup("SATNAV"):
@@ -489,8 +499,8 @@ class SeaBASSWriter:
             elevationData.datasetToColumns() 
 
             azimuth = azimuthData.columns["SUN"]
-            shipTrue = headingData.columns["SHIP_TRUE"]
-            sasTrue = headingData.columns["SAS_TRUE"]
+            shipTrue = headingData.columns["SHIP_True"]
+            sasTrue = headingData.columns["SAS_True"]
             # pitch = pitchData.columns["SAS"]
             rotator = pointingData.columns["ROTATOR"]
             # roll = rollData.columns["SAS"]
@@ -500,14 +510,17 @@ class SeaBASSWriter:
             esData.datasetToColumns()
             liData.datasetToColumns()
             ltData.datasetToColumns()
+            rrsData.datasetToColumns()
             
             esData.columns["AZIMUTH"] = azimuth
             liData.columns["AZIMUTH"] = azimuth
             ltData.columns["AZIMUTH"] = azimuth
+            rrsData.columns["AZIMUTH"] = azimuth
 
             esData.columns["SHIP_TRUE"] = shipTrue # From SAS, not GPS...
             liData.columns["SHIP_TRUE"] = shipTrue
             ltData.columns["SHIP_TRUE"] = shipTrue
+            rrsData.columns["SHIP_TRUE"] = shipTrue
 
             # esData.columns["PITCH"] = pitch
             # liData.columns["PITCH"] = pitch
@@ -516,6 +529,7 @@ class SeaBASSWriter:
             esData.columns["ROTATOR"] = rotator
             liData.columns["ROTATOR"] = rotator
             ltData.columns["ROTATOR"] = rotator
+            rrsData.columns["ROTATOR"] = rotator
             
             # esData.columns["ROLL"] = roll
             # liData.columns["ROLL"] = roll
@@ -524,64 +538,29 @@ class SeaBASSWriter:
             esData.columns["REL_AZ"] = relAz
             liData.columns["REL_AZ"] = relAz
             ltData.columns["REL_AZ"] = relAz
+            rrsData.columns["REL_AZ"] = relAz
 
             esData.columns["SZA"] = elevation
             liData.columns["SZA"] = elevation
             ltData.columns["SZA"] = elevation
+            rrsData.columns["SZA"] = elevation
 
             esData.columnsToDataset()
             liData.columnsToDataset()
             ltData.columnsToDataset()
+            rrsData.columnsToDataset()
 
         # Format the non-specific header block
-        headerBlock = SeaBASSWriter.formatHeader(fp,root)
+        headerBlock = SeaBASSWriter.formatHeader(fp,root, level=4)
 
         # Format each data block for individual output
         formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData3(esData,'es',root.attributes["ES_UNITS"])        
         formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData3(liData,'li',root.attributes["LI_UNITS"])
-        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData3(ltData,'lt',root.attributes["LT_UNITS"])                        
+        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData3(ltData,'lt',root.attributes["LT_UNITS"])
+        formattedRrs, fieldsRrs, unitsRrs  = SeaBASSWriter.formatData3(rrsData,'rrs',root.attributes["Rrs_UNITS"])
 
         # # Write SeaBASS files
         SeaBASSWriter.writeSeaBASS('ES',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
         SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
         SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)
-
-    # # Convert Level 4 data to SeaBASS file
-    # @staticmethod
-    # def outputTXT_Type4(fp, level):
-    
-    #     if not os.path.isfile(fp):
-    #         return
-
-    #     # Make sure hdf can be read
-    #     root = HDFRoot.readHDF5(fp)
-    #     if root is None:
-    #         print("outputSeaBASS: root is None")
-    #         return
-
-    #     #name = filename[28:43]
-    #     name = filename[0:15]
-
-    #     # Get datasets to output
-    #     gp = root.getGroup("Reflectance")
-
-    #     esData = gp.getDataset("ES")
-    #     liData = gp.getDataset("LI")
-    #     ltData = gp.getDataset("LT")
-    #     rrsData = gp.getDataset("Rrs")
-
-    #     if esData is None or liData is None or ltData is None or rrsData is None:
-    #         return
-
-    #     # Format for output
-    #     es = SeaBASSWriter.formatData3(esData)
-    #     li = SeaBASSWriter.formatData3(liData)
-    #     lt = SeaBASSWriter.formatData3(ltData)
-    #     rrs = SeaBASSWriter.formatData3(rrsData)
-
-    #     # Write SeaBASS files
-    #     SeaBASSWriter.writeSeaBASS(name, dirpath, es, "ES", level)
-    #     SeaBASSWriter.writeSeaBASS(name, dirpath, li, "LI", level)
-    #     SeaBASSWriter.writeSeaBASS(name, dirpath, lt, "LT", level)
-    #     SeaBASSWriter.writeSeaBASS(name, dirpath, rrs, "RRS", level)
-
+        SeaBASSWriter.writeSeaBASS('Rrs',fp,headerBlock,formattedRrs,fieldsRrs,unitsRrs)

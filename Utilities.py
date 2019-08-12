@@ -342,8 +342,8 @@ class Utilities:
 
         if rType=='Rrs':
             print('Plotting Rrs')
-            referenceGroup = root.getGroup("Reflectance")
-            Data = referenceGroup.getDataset(rType)            
+            group = root.getGroup("Reflectance")
+            Data = group.getDataset(rType)            
             if not os.path.exists("Plots/L4_Rrs/"):
                 os.makedirs("Plots/L4_Rrs/")
             plotdir = os.path.join(dirpath, 'Plots/L4_Rrs/')
@@ -353,20 +353,21 @@ class Utilities:
                 os.makedirs("Plots/L4_EsLiLt")
             plotdir = os.path.join(dirpath, 'Plots/L4_EsLiLt/')
             plotRange = [305, 1140]
+
         if rType=='ES':
             print('Plotting Es')
-            referenceGroup = root.getGroup("Irradiance")
-            Data = referenceGroup.getDataset(rType)
+            group = root.getGroup("Irradiance")
+            Data = group.getDataset(rType)
             
         if rType=='LI':
             print('Plotting Li')
-            referenceGroup = root.getGroup("Radiance")
-            Data = referenceGroup.getDataset(rType)
+            group = root.getGroup("Radiance")
+            Data = group.getDataset(rType)
             
         if rType=='LT':
             print('Plotting Lt')
-            referenceGroup = root.getGroup("Radiance")
-            Data = referenceGroup.getDataset(rType)            
+            group = root.getGroup("Radiance")
+            Data = group.getDataset(rType)            
 
         font = {'family': 'serif',
             'color':  'darkred',
@@ -495,6 +496,88 @@ class Utilities:
             e = sys.exc_info()[0]
             print("Error: %s" % e)
 
-        
+    @staticmethod
+    def specFilter(inFilePath, Dataset, timeStamp, filterRange, filterFactor, rType):
+        dirpath = './'
+        if not os.path.exists("Plots/L4_Spectral_Filter/"):
+            os.makedirs("Plots/L4_Spectral_Filter/")
+        plotdir = os.path.join(dirpath, 'Plots/L4_Spectral_Filter/')
 
+        font = {'family': 'serif',
+                'color':  'darkred',
+                'weight': 'normal',
+                'size': 16,
+                }
+
+        # Collect each column name ignoring Datetag and Timetag2 (i.e. each wavelength) in the desired range
+        x = []
+        wave = []        
+        for k in Dataset.data.dtype.names:
+            if Utilities.isFloat(k):
+                if float(k)>=filterRange[0] and float(k)<=filterRange[1]:
+                    x.append(k)
+                    wave.append(float(k))
         
+        # Read in each spectrum
+        total = Dataset.data.shape[0]
+        specArray = []
+        normSpec = []
+        # cmap = cm.get_cmap("jet")
+        # color=iter(cmap(np.linspace(0,1,total)))
+        plt.figure(1, figsize=(10,8))
+        for time in range(total):
+            y = []
+            for waveband in x:
+                y.append(Dataset.data[waveband][time])
+            
+            specArray.append(y)
+            peakIndx = y.index(max(y))
+            normSpec.append(y / y[peakIndx])
+            # c=next(color)
+            # plt.plot(wave, y / y[peakIndx], 'k', c=c)
+            plt.plot(wave, y / y[peakIndx], color='grey')
+
+        normSpec = np.array(normSpec)
+        
+        aveSpec = np.median(normSpec, axis = 0)
+        stdSpec = np.std(normSpec, axis = 0)
+
+        plt.plot(wave, aveSpec, color='black', linewidth=0.5)
+        plt.plot(wave, aveSpec + filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
+        plt.plot(wave, aveSpec - filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
+
+        badTimes  = []
+        badIndx = []
+        for i in range(0, len(normSpec[0])-1):
+            for j, rad in enumerate(normSpec[:,i]):
+                if rad > (aveSpec[i] + filterFactor*stdSpec[i]) or \
+                    rad < (aveSpec[i] - filterFactor*stdSpec[i]):
+                    badIndx.append(j)
+                    badTimes.append(timeStamp[j])
+
+        badTimes = np.unique(badTimes)
+        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
+        
+        for i in badIndx:
+            plt.plot(wave, normSpec[i,:], color='red', linewidth=0.5, linestyle='dashed')
+
+        plt.xlabel('Seconds', fontdict=font)
+        plt.ylabel('Data', fontdict=font)
+        plt.subplots_adjust(left=0.15)
+        plt.subplots_adjust(bottom=0.15)
+            
+        # Create output directory        
+        os.makedirs(plotdir, exist_ok=True)
+
+        # Save the plot
+        _,filename = os.path.split(inFilePath)
+        filebasename,_ = filename.split('_')
+        fp = os.path.join(plotdir, filebasename + '_' + rType + '.png')
+        plt.savefig(fp)
+        plt.close()
+
+        return badTimes
+
+    
+
+    

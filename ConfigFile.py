@@ -39,6 +39,7 @@ class ConfigFile:
         print("fL4MaxWind", ConfigFile.settings["fL4MaxWind"])
         print("fL4SZAMin", ConfigFile.settings["fL4SZAMin"])
         print("fL4SZAMax", ConfigFile.settings["fL4SZAMax"])
+        print("bL4EnableSpecQualityCheck", ConfigFile.settings["bL4EnableSpecQualityCheck"])
         print("fL4RhoSky", ConfigFile.settings["fL4RhoSky"])
         print("bL4EnableWindSpeedCalculation", ConfigFile.settings["bL4EnableWindSpeedCalculation"])
         print("fL4DefaultWindSpeed", ConfigFile.settings["fL4DefaultWindSpeed"])        
@@ -101,6 +102,7 @@ class ConfigFile:
         ConfigFile.settings["fL4MaxWind"] = 15.0 # 
         ConfigFile.settings["fL4SZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
         ConfigFile.settings["fL4SZAMax"] = 60 # e.g. 60:Brewin 2016,
+        ConfigFile.settings["bL4EnableSpecQualityCheck"] = 1
         ConfigFile.settings["fL4RhoSky"] = 0.0256 # Mobley 1999
         ConfigFile.settings["bL4EnableWindSpeedCalculation"] = 1
         ConfigFile.settings["fL4DefaultWindSpeed"] = 0.0        

@@ -232,24 +232,22 @@ class Controller:
         except:
             print('Unable to read L3 file. It may be open in another program.')
             return None
-        enableQualityFlags = int(ConfigFile.settings["bL4EnableQualityFlags"])
-        root = ProcessL4.processL4(root, enableQualityFlags, windSpeedData)
+        
+        root.attributes['In_Filepath'] = inFilePath
+        root = ProcessL4.processL4(root, windSpeedData)
 
         # Create Plots
-        if root is not None and ConfigFile.settings['bL4PlotRrs']==1:
-            dirpath = './'
+        dirpath = './'
+        if root is not None and ConfigFile.settings['bL4PlotRrs']==1:            
             _, filename = os.path.split(outFilePath)
             Utilities.plotRadiometry(root, dirpath, filename, rType='Rrs')
         if root is not None and ConfigFile.settings['bL4PlotEs']==1:
-            dirpath = './'
             _, filename = os.path.split(outFilePath)
             Utilities.plotRadiometry(root, dirpath, filename, rType='ES')
         if root is not None and ConfigFile.settings['bL4PlotLi']==1:
-            dirpath = './'
             _, filename = os.path.split(outFilePath)
             Utilities.plotRadiometry(root, dirpath, filename, rType='LI')
         if root is not None and ConfigFile.settings['bL4PlotLt']==1:
-            dirpath = './'
             _, filename = os.path.split(outFilePath)
             Utilities.plotRadiometry(root, dirpath, filename, rType='LT')
 
@@ -417,9 +415,10 @@ class Controller:
                 Utilities.writeLogFile(msg)
 
             if int(ConfigFile.settings["bL4SaveSeaBASS"]) == 1:
-                print("Output SeaBASS: " + inFilePath)
-                SeaBASSWriter.outputTXT_L4(inFilePath)                               
-        print("Process Single Level: " + inFilePath + " - DONE")
+                print("Output SeaBASS for HDF: " + outFilePath)
+                SeaBASSWriter.outputTXT_L4(outFilePath)
+
+        print("Process Single Level: " + outFilePath + " - DONE")
 
 
     # @staticmethod
