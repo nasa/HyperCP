@@ -85,7 +85,7 @@ class ProcessL3:
     # xData is the dataset to be interpolate, yData is the reference dataset with the times to be interpolated to.
     @staticmethod
     def interpolateData(xData, yData, instr, fileName):
-        msg = ("Interpolate Data " + instr)
+        msg = f'Interpolate Data {instr}'
         print(msg)
         Utilities.writeLogFile(msg)
 
@@ -109,12 +109,12 @@ class ProcessL3:
             yTimer.append(Utilities.timeTag2ToSec(yTimetag2[i]))
 
         if not Utilities.isIncreasing(xTimer):
-            msg = ("xTimer does not contain strictly increasing values")
+            msg = "xTimer does not contain strictly increasing values"
             print(msg)
             Utilities.writeLogFile(msg)
             return False
         if not Utilities.isIncreasing(yTimer):
-            msg = ("yTimer does not contain strictly increasing values")
+            msg = "yTimer does not contain strictly increasing values"
             print(msg)
             Utilities.writeLogFile(msg)
             return False
@@ -534,12 +534,9 @@ class ProcessL3:
         # Wavelength Interpolation
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
+        
         interval = float(ConfigFile.settings["fL3InterpInterval"])
-        ''' This was all very odd in PySciDon'''
-        # root.attributes["BIN_INTERVAL"] = "1 m"
-        # root.attributes["BIN_WIDTH"] = "0.5 m"
-        # root.attributes["TIME_INTERVAL"] = "2 sec"
-        # root.attributes["TIME_WIDTH"] = "1 sec"
+        
         root.attributes["WAVEL_INTERP"] = (str(interval) + " nm") 
 
         newReferenceGroup = root.addGroup("Reference")

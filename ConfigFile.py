@@ -77,8 +77,8 @@ class ConfigFile:
         ConfigFile.settings["fL1aCleanSZAMax"] = 60.0 # e.g. 60:Brewin 2016, 
 
         ConfigFile.settings["bL1bCleanPitchRoll"] = 0
-        ConfigFile.settings["fL1bPitchRollPitch"] = 5 # These should all have citable defaults
-        ConfigFile.settings["fL1bPitchRollRoll"] = 5 # An "info" button would be nice for the citation
+        ConfigFile.settings["fL1bPitchRollPitch"] = 5 # 2-5 deg. IOCCG Draft Protocols
+        ConfigFile.settings["fL1bPitchRollRoll"] = 5 # 2-5 deg. IOCCG Draft Protocols
         ConfigFile.settings["fL1bRotatorHomeAngle"] = 0.0 # Require knowledge of deployment set-up
         ConfigFile.settings["fL1bRotatorDelay"] = 60.0 # Vandenberg 2016
         ConfigFile.settings["bL1bCleanRotatorAngle"] = 0

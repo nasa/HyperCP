@@ -4,6 +4,7 @@ import os
 import sys
 
 from CalibrationData import CalibrationData
+from Utilities import Utilities
 
 
 # CalibrationFile class stores information about an instrument
@@ -23,14 +24,16 @@ class CalibrationFile:
 
     def printd(self):
         if len(self.id) != 0:
-            print("id:", self.id)
+            msg = f'id: {self.id}'
+            print(msg)
+            Utilities.writeLogFile(msg)
 #        for cd in self.data:
 #            cd.printd()
 
     # Reads a calibration file and generates calibration data
     def read(self, f):
         #print("CalibrationFile.read()")
-        (dirpath, filename) = os.path.split(f.name)
+        (_, filename) = os.path.split(f.name)
         self.name = filename
         while 1:
             line = f.readline()
@@ -120,8 +123,10 @@ class CalibrationFile:
             return True
 
         except:
-            pass
-            #print("Failed to read message successfully")
+            # pass
+            msg = "Failed to read message successfully"
+            print(msg)
+            Utilities.writeLogFile(msg)
 
         return False
 

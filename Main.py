@@ -2,19 +2,16 @@
 HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing
 above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 
-Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center (https://oceancolor.gsfc.nasa.gov/)
-Acknowledgements: Nathan Vanderberg (PySciDON Repo; https://ieeexplore.ieee.org/abstract/document/8121926)
+See README.md
 
-Version 2.0: Under development July 2019
+Version 1.0.a: Under development August 2019
 """
 import os
 import shutil
 import sys
-#from PyQt4 import QtCore, QtGui
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from Controller import Controller
-
 from ConfigFile import ConfigFile
 from ConfigWindow import ConfigWindow
 from SeaBASSHeader import SeaBASSHeader
@@ -82,24 +79,25 @@ class Window(QtWidgets.QWidget):
         self.configEditButton.clicked.connect(self.configEditButtonPressed)
         self.configDeleteButton.clicked.connect(self.configDeleteButtonPressed)
 
+        ''' Should create a .config file to store defaults for the Main window'''
         self.inDirLabel = QtWidgets.QLabel("Input Data Directory", self)        
         # self.inputDirectory = "./Data"
-        # self.inputDirectory = "../Field_Data/Processed/KORUS" # for processed data on Candiru
-        self.inputDirectory = "D:/Dirk/NASA/HyperInSPACE_Processed/KORUS" # for processed data on SMITHERS
+        self.inputDirectory = "../Field_Data/Processed/KORUS" # for processed data on Candiru
+        # self.inputDirectory = "D:/Dirk/NASA/HyperInSPACE_Processed/KORUS" # for processed data on SMITHERS
         # self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac        
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
 
         self.outDirLabel = QtWidgets.QLabel("Output Data Directory", self)        
         # self.outputDirectory = "./Data"
-        # self.outputDirectory = "../Field_Data/Processed/KORUS" # for processed data on Candiru
-        self.outputDirectory = "D:/Dirk/NASA/HyperInSPACE_Processed/KORUS" # for processed data on SMITHERS
+        self.outputDirectory = "../Field_Data/Processed/KORUS" # for processed data on Candiru
+        # self.outputDirectory = "D:/Dirk/NASA/HyperInSPACE_Processed/KORUS" # for processed data on SMITHERS
         # self.outputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
         
 
-        self.windFileLabel = QtWidgets.QLabel("Meteorologic File (SeaBASS format)")
+        self.windFileLabel = QtWidgets.QLabel("Meteorologic File for L4 (SeaBASS format)")
         self.windFileLineEdit = QtWidgets.QLineEdit()
         self.windAddButton = QtWidgets.QPushButton("Add", self)
         self.windRemoveButton = QtWidgets.QPushButton("Remove", self)                
@@ -123,7 +121,7 @@ class Window(QtWidgets.QWidget):
         singleLevelLabel.setFont(singleLevelLabel_font)
         #self.singleLevelLabel.move(30, 270)
 
-        self.singleL1aButton = QtWidgets.QPushButton("Raw (BIN) --> Level 1a (HDF5)", self)
+        self.singleL1aButton = QtWidgets.QPushButton("Raw (BIN) --> Level 1A (HDF5)", self)
         #self.singleL0Button.move(30, 300)
 
         self.singleL1bButton = QtWidgets.QPushButton("L1A --> L1B", self)
@@ -151,10 +149,10 @@ class Window(QtWidgets.QWidget):
         multiLevelLabel.setFont(multiLevelLabel_font)
         #self.multiLevelLabel.move(30, 140)
 
-        self.multi2Button = QtWidgets.QPushButton("Level Raw (BIN) --> 4 (HDF5)", self)
+        self.multi4Button = QtWidgets.QPushButton("Raw (BIN) ----->> L4 (HDF5)", self)
         #self.multi1Button.move(30, 170)
 
-        self.multi2Button.clicked.connect(self.multi2Clicked)
+        self.multi4Button.clicked.connect(self.multi4Clicked)
 
         ########################################################################################
         # Add QtWidgets to the Window
@@ -217,7 +215,7 @@ class Window(QtWidgets.QWidget):
         vBox.addStretch(1)
 
         vBox.addWidget(multiLevelLabel)
-        vBox.addWidget(self.multi2Button)
+        vBox.addWidget(self.multi4Button)
 
         vBox.addStretch(1)
 
@@ -413,14 +411,17 @@ class Window(QtWidgets.QWidget):
             return
         ConfigFile.loadConfig(configFileName)
 
-        # Select data files
-        openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File")
+        # Select data files    
+        if not self.inputDirectory[0]:
+            print("Bad input directory.")
+            return                
+        openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",self.inputDirectory)
+
         print("Files:", openFileNames)
+        
         if not openFileNames[0]:
             return
         fileNames = openFileNames[0]
-        #calibrationDirectory = settings["sCalibrationFolder"].strip('"')
-        #preprocessDirectory = settings["sPreprocessFolder"].strip('"')
 
 
         ## Select Output Directory
@@ -437,19 +438,11 @@ class Window(QtWidgets.QWidget):
         calFiles = ConfigFile.settings["CalibrationFiles"]
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
     
-        Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile)
+        Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, windFile)
 
-    # def multi1Clicked(self):
-    #     self.processMulti(1)
 
-    def multi2Clicked(self):
-        self.processMulti(2)
-
-    # def multi3Clicked(self):
-    #     self.processMulti(3)
-
-    # def multi4Clicked(self):
-    #     self.processMulti(4)
+    def multi4Clicked(self):
+        self.processMulti(4)
 
 
 if __name__ == '__main__':

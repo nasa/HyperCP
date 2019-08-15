@@ -2,7 +2,6 @@
 import datetime
 import os
 import sys
-# import logging
 
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
@@ -13,26 +12,11 @@ import pandas as pd
 
 from ConfigFile import ConfigFile
 
+# This gets reset later in Controller.processSingleLevel to reflect the file being processed.
 if "LOGFILE" not in os.environ:
     os.environ["LOGFILE"] = "temp.log"
 
 class Utilities:
-
-    # @staticmethod
-    # # inFilePath needs to be an attribute that can be set remotely the first time this is called.
-    # def hyperLogger(inFilePath, mode):
-    #     fileBaseExt = os.path.split(inFilePath)[0]
-    #     logFileName = os.path.splitext(fileBaseExt)[0]
-    #     # Create and configure logger
-    #     # DEBUG insures that return values below the default threshold 30 (warning) such as info (20) still get logged
-    #     LOG_FORMAT = "%(levelname)s %(asctime)s - %(message)s"
-    #     logging.basicConfig(filename=logFileName,
-    #                 level=logging.DEBUG,
-    #                 format=LOG_FORMAT,
-    #                 filemode=mode)
-        
-    #     logger = logging.getLogger()
-    #     return logger
 
     # Print iterations progress
     @staticmethod
@@ -179,9 +163,18 @@ class Utilities:
         return all(x<y for x, y in zip(l, l[1:]))
 
     @staticmethod
+    def windowAverage(data,window_size):
+        min_periods = round(window_size/2)
+        df=pd.DataFrame(data)    
+        out=df.rolling(window_size,min_periods,center=True,win_type='boxcar')
+        # out = [item for items in out for item in items] #flattening doesn't work
+        return out
+
+    @staticmethod
     def movingAverage(data, window_size):
         # Window size will be determined experimentally by examining the dark and light data from each instrument.
         """ Noise detection using a low-pass filter. 
+        https://www.datascience.com/blog/python-anomaly-detection
         Computes moving average using discrete linear convolution of two one dimensional sequences.
         Args:
         -----
@@ -202,21 +195,18 @@ class Utilities:
         
         # window = np.ones(int(window_size))/float(window_size)
         # Convolve is not nan-tolerant, so use a mask
+        data = np.array(data)
         mask = np.isnan(data)
         K = np.ones(window_size, dtype=int)
-        out = np.convolve(np.where(mask,0,data), K)/np.convolve(~mask,K)
+        denom = np.convolve(~mask,K)
+        denom = np.where(denom != 0, denom, 1) # replace the 0s with 1s to block div0 error; the numerator will be zero anyway
+        
+        out = np.convolve(np.where(mask,0,data), K)/denom
         # return np.convolve(data, window, 'same')
 
         # Slice out one half window on either side; this requires an odd-sized window
         return out[int(np.floor(window_size/2)):-int(np.floor(window_size/2))]  
 
-    @staticmethod
-    def windowAverage(data,window_size):
-        min_periods = round(window_size/2)
-        df=pd.DataFrame(data)    
-        out=df.rolling(window_size,min_periods,center=True,win_type='boxcar')
-        # out = [item for items in out for item in items] #flattening doesn't work
-        return out
 
     @staticmethod
     def darkConvolution(data,avg,std,sigma):
@@ -548,10 +538,14 @@ class Utilities:
 
         badTimes  = []
         badIndx = []
+        # For each spectral band...
         for i in range(0, len(normSpec[0])-1):
+            # For each timeserioes radiometric measurement...
             for j, rad in enumerate(normSpec[:,i]):
+                # Identify outliers and negative values for elimination
                 if rad > (aveSpec[i] + filterFactor*stdSpec[i]) or \
-                    rad < (aveSpec[i] - filterFactor*stdSpec[i]):
+                    rad < (aveSpec[i] - filterFactor*stdSpec[i]) or \
+                    rad < 0:
                     badIndx.append(j)
                     badTimes.append(timeStamp[j])
 

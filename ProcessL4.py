@@ -23,7 +23,7 @@ class ProcessL4:
         finalCount = 0
         for timeTag in badTimes:
 
-            msg = ("Eliminate data between: " + str(timeTag) + " (HHMMSSMSS)")
+            msg = f'Eliminate data between: {timeTag} (HHMMSSMSS)'
             # print(msg)
             Utilities.writeLogFile(msg)
             # print(timeTag)
@@ -32,7 +32,7 @@ class ProcessL4:
             stop = Utilities.timeTag2ToSec(timeTag[1])                
             # badIndex = ([i for i in range(lenDataSec) if start <= dataSec[i] and stop >= dataSec[i]])      
                     
-            msg = ("   Remove " + group.id + " Data")
+            msg = f'   Remove {group.id}  Data'
             # print(msg)
             Utilities.writeLogFile(msg)
             #  timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
@@ -66,7 +66,7 @@ class ProcessL4:
                 # test = len(group.getDataset("Timetag2").data["NONE"])
                 finalCount += counter
             else:
-                msg = ('Data group is empty')
+                msg = 'Data group is empty'
                 print(msg)
                 Utilities.writeLogFile(msg)
 
@@ -233,7 +233,7 @@ class ProcessL4:
                 if np.isnan(value):                    
                     nanIndex.append(i)
             if len(nanIndex)>0:
-                msg = ("Wind records deleted as Nans: " + str(len(nanIndex)))
+                msg = f'Wind records deleted as Nans: {len(nanIndex)}'
                 print(msg)
                 Utilities.writeLogFile(msg)                    
             for index in sorted(nanIndex, reverse=True):
@@ -256,7 +256,7 @@ class ProcessL4:
                     Utilities.writeLogFile(msg)  
                     windSpeedColumns=None
             else:
-                msg = "Wind data do not intersect radiometric data; reverting to default wind speed."
+                msg = "Wind data do not intersect radiometric data; reverting to default wind speed************************"
                 print(msg)
                 Utilities.writeLogFile(msg)  
                 windSpeedColumns=None
@@ -728,12 +728,12 @@ class ProcessL4:
                 if start != -1:
                     print('SZA passed. SZA: ' + str(round(SZA[index])))
                     startstop = [timeStamp[start],timeStamp[stop]]
-                    msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
+                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
                     print(msg)
                     Utilities.writeLogFile(msg)                                               
                     badTimes.append(startstop)
                     start = -1
-        msg = ("Percentage of data out of SZA and Wind limits: " + str(round(100*i/len(timeStamp))) + "%")
+        msg = f'Percentage of data out of SZA and Wind limits: {round(100*i/len(timeStamp))} %'
         print(msg)
         Utilities.writeLogFile(msg)
 
@@ -752,10 +752,10 @@ class ProcessL4:
 
 
         ''' # Now filter the spectra from the entire ensemble before slicing the intervals'''
-       
+       # Spectral Outlier Filter
         enableSpecQualityCheck = ConfigFile.settings['bL4EnableSpecQualityCheck']
         if enableSpecQualityCheck:
-            msg = ("Applying spectral filtering to eliminate noisy spectra. This takes a moment for hi-res data.")
+            msg = "Applying spectral filtering to eliminate noisy spectra. This takes a moment for hi-res data."
             print(msg)
             Utilities.writeLogFile(msg)
             inFilePath = root.attributes['In_Filepath']

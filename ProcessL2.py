@@ -30,8 +30,9 @@ class ProcessL2:
         columns = darkData.columns
 
         waveindex = 0
+        badIndex = []
         for k in columns.items():   # Loop over all wavebands     
-            timeSeries = k[1]            
+            timeSeries = k[1]   # Ignores waveband label (e.g. '1142.754')
             # Note: the moving average is not tolerant to 2 or fewer records
             avg = Utilities.movingAverage(timeSeries, windowSize).tolist()        
             # avg = Utilities.windowAverage(timeSeries, windowSize).mean().values.tolist()  
@@ -43,7 +44,7 @@ class ProcessL2:
 
             # Second pass
             timeSeries2 = np.array(timeSeries[:])
-            timeSeries2[badIndex1] = np.nan
+            timeSeries2[badIndex1] = np.nan # BEWARE: NaNs introduced
             timeSeries2 = timeSeries2.tolist()
             avg2 = Utilities.movingAverage(timeSeries2, windowSize).tolist()        
             # avg2 = Utilities.windowAverage(timeSeries2, windowSize).mean().values.tolist()        
@@ -54,11 +55,18 @@ class ProcessL2:
             
             # This will eliminate data from all wavebands for glitches found in any one waveband        
             if waveindex==0:
-                badIndex = badIndex1[:]
-                
-            for i in range(len(badIndex)):
-                if badIndex1[i] is True or badIndex2[i] is True:
-                    badIndex[i] = True
+                # badIndex = badIndex1[:]
+                for i in range(len(badIndex1)):
+                    if badIndex1[i] is True or badIndex2[i] is True:
+                        badIndex.append(True)
+                    else:
+                        badIndex.append(False)
+            else:
+                for i in range(len(badIndex)):
+                    if badIndex1[i] is True or badIndex2[i] is True or badIndex[i] is True:
+                        badIndex[i] = True
+                    else:
+                        badIndex[i] = False # this is redundant
             # print(badIndex[i])                
             waveindex += 1
         return badIndex
@@ -75,6 +83,7 @@ class ProcessL2:
         columns = lightData.columns
 
         waveindex = 0
+        badIndex = []
         for k in columns.items():        
             timeSeries = k[1]       
             # Note: the moving average is not tolerant to 2 or fewer records     
@@ -119,18 +128,28 @@ class ProcessL2:
             
             # This will eliminate data from all wavebands for glitches found in any one waveband        
             if waveindex==0:
-                badIndex = badIndex1[:]
-                
-            for i in range(len(badIndex)):
-                if badIndex1[i] is True or badIndex2[i] is True:
-                    badIndex[i] = True
+                # badIndex = badIndex1[:]
+                for i in range(len(badIndex1)):
+                    if badIndex1[i] is True or badIndex2[i] is True:
+                        badIndex.append(True)
+                    else:
+                        badIndex.append(False)
+            else:
+                for i in range(len(badIndex)):
+                    if badIndex1[i] is True or badIndex2[i] is True or badIndex[i] is True:
+                        badIndex[i] = True
+                    else:
+                        badIndex[i] = False # this is redundant
             # print(badIndex[i])                
             waveindex += 1
         return badIndex
 
     @staticmethod
     def processDataDeglitching(node, sensorType):   
-        print(sensorType)     
+        msg = sensorType
+        print(msg)    
+        Utilities.writeLogFile(msg)
+
         darkData = None
         lightData = None
         for gp in node.groups:
@@ -150,24 +169,38 @@ class ProcessL2:
                     len(lightData.data) <= 5 or \
                     len(darkData.data) < windowSizeDark or \
                     len(lightData.data) < windowSizeLight:
-                        return True
+
+                        return True # Sets the flag to true
+
 
         if darkData is None:
-            print("Error: No dark data to deglitch")
+            msg = "Error: No dark data to deglitch"
+            print(msg)
+            Utilities.writeLogFile(msg)
         else:
-            print("Deglitching dark")
+            msg = "Deglitching dark"
+            print(msg)
+            Utilities.writeLogFile(msg)
+
             badIndexDark = ProcessL2.darkDataDeglitching(darkData, sensorType)
-            print('Data reduced by ' + str(sum(badIndexDark)) + ' (' + \
-                str(round(100*sum(badIndexDark)/len(darkData.data))) + '%)')
+            msg = f'Data reduced by {sum(badIndexDark)} ({round(100*sum(badIndexDark)/len(darkData.data))}%)'
+            print(msg)
+            Utilities.writeLogFile(msg)
             
 
         if lightData is None:
-            print("Error: No light data to deglitch")
-        else:    
-            print("Deglitching light")
+            msg = "Error: No light data to deglitch"
+            print(msg)
+            Utilities.writeLogFile(msg)
+        else:                
+            msg = "Deglitching light"
+            print(msg)
+            Utilities.writeLogFile(msg)
+
             badIndexLight = ProcessL2.lightDataDeglitching(lightData, sensorType)      
-            print('Data reduced by ' + str(sum(badIndexLight)) + ' (' + \
-                str(round(100*sum(badIndexLight)/len(lightData.data))) + '%)')      
+            msg = f'Data reduced by {sum(badIndexLight)} ({round(100*sum(badIndexLight)/len(lightData.data))}%)'
+            print(msg)
+            Utilities.writeLogFile(msg)
 
         # Delete the glitchy rows of the datasets
         for gp in node.groups:
@@ -183,24 +216,28 @@ class ProcessL2:
 
     @staticmethod
     def darkCorrection(darkData, darkTimer, lightData, lightTimer):
-        if (darkData == None) or (lightData == None):
-            print("Dark Correction, dataset not found:", darkData, lightData)
+        if (darkData == None) or (lightData == None):            
+            msg  = f'Dark Correction, dataset not found: {darkData} , {lightData}'
+            print(msg)
+            Utilities.writeLogFile(msg)
             return False
 
-        '''        
-        # Prosoft - Replace Light Timer with closest value in Dark Timer, interpolate Light Data
-
-        ... has been changed to ...
-
-        # HyperInSPACE - Interpolate Dark values to match light measurements (e.g. Brewin 2016)
+        '''                
+        # HyperInSPACE - Interpolate Dark values to match light measurements (e.g. Brewin 2016, Prosoft
+        # 7.7 User Manual SAT-DN-00228-K)
         '''
 
         if Utilities.hasNan(lightData):
-            print("**************Found NAN 0")
+            msg = "**************Found NAN 0"
+            print(msg)
+            Utilities.writeLogFile(msg)
             exit
+
         if Utilities.hasNan(darkData):
-           print("**************Found NAN 1")
-           exit
+            msg = "**************Found NAN 1"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            exit
 
         # Interpolate Dark Dataset to match number of elements as Light Dataset
         newDarkData = np.copy(lightData.data)        
@@ -210,14 +247,20 @@ class ProcessL2:
             new_x = lightTimer.data["NONE"].tolist()  # lighttimer
 
             if len(x) < 3 or len(y) < 3 or len(new_x) < 3:
-                print("**************Cannot do cubic spline interpolation, length of datasets < 3")
+                msg = "**************Cannot do cubic spline interpolation, length of datasets < 3"
+                print(msg)
+                Utilities.writeLogFile(msg)
                 return False
 
             if not Utilities.isIncreasing(x):
-                print("**************darkTimer does not contain strictly increasing values")
+                msg = "**************darkTimer does not contain strictly increasing values"
+                print(msg)
+                Utilities.writeLogFile(msg)
                 return False
             if not Utilities.isIncreasing(new_x):
-                print("**************lightTimer does not contain strictly increasing values")
+                msg = "**************lightTimer does not contain strictly increasing values"
+                print(msg)
+                Utilities.writeLogFile(msg)
                 return False
 
             # print(x[0], new_x[0])
@@ -225,17 +268,17 @@ class ProcessL2:
             if len(x) > 3:
                 newDarkData[k] = Utilities.interpSpline(x,y,new_x)
             else:
-                print('**************Record too small for splining. Exiting.')
-                return False
-            # plt.plot(x,y,'ro')
-            # # plt.plot(new_x,newDarkData[k],'bo')
-            # plt.show()
-            # print('asdf')
+                msg = '**************Record too small for splining. Exiting.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False            
 
         darkData.data = newDarkData
 
         if Utilities.hasNan(darkData):
-            print("**************Found NAN 2")
+            msg = "**************Found NAN 2"
+            print(msg)
+            Utilities.writeLogFile(msg)
             exit
 
         #print(lightData.data.shape)
@@ -248,7 +291,9 @@ class ProcessL2:
                 lightData.data[k][x] -= newDarkData[k][x]
 
         if Utilities.hasNan(lightData):
-            print("**************Found NAN 3")
+            msg = "**************Found NAN 3"
+            print(msg)
+            Utilities.writeLogFile(msg)
             exit
 
         return True
@@ -258,7 +303,9 @@ class ProcessL2:
     @staticmethod
     def copyTimetag2(timerDS, tt2DS):
         if (timerDS.data is None) or (tt2DS.data is None):
-            print("copyTimetag2: Timer/TT2 is None")
+            msg = "copyTimetag2: Timer/TT2 is None"
+            print(msg)
+            Utilities.writeLogFile(msg)
             return
 
         #print("Time:", time)
@@ -266,50 +313,7 @@ class ProcessL2:
         for i in range(0, len(timerDS.data)):
             tt2 = float(tt2DS.data["NONE"][i])
             t = Utilities.timeTag2ToSec(tt2)
-            timerDS.data["NONE"][i] = t
-        
-
-    # # Finds minimum timer stamp between dark and light, and starts there
-    # # Resets this time to zero, and increments dark and light by the minimum
-    # # increment in the light timer. 
-    # # 
-    # # THIS DOESN'T MAKE SENSE. DARK TIME AND LIGHT TIME WILL BE ON DIFFERING
-    # # INTERVALS THANKS TO INTEGRATION TIME, RIGHT?
-    # # DARK DATA NEEDS TO BE ALIGNED SOMEHOW SO EACH LIGHT CAN HAVE THE NEAREST
-    # # DARK SAMPLE SUBTRACTED.
-    # @staticmethod
-    # def processTimer(darkTimer, lightTimer):
-
-    #     if (darkTimer.data is None) or (lightTimer.data is None):
-    #         return
-
-    #     t0 = lightTimer.data["NONE"][0]
-    #     t1 = lightTimer.data["NONE"][1]
-    #     #offset = t1 - t0
-
-    #     # Finds the minimum cycle time of the instrument to use as offset
-    #     min0 = t1 - t0
-    #     total = len(lightTimer.data["NONE"])
-    #     #print("test avg")
-    #     for i in range(1, total):
-    #         num = lightTimer.data["NONE"][i] - lightTimer.data["NONE"][i-1]
-    #         if num < min0 and num > 0:
-    #             min0 = num
-    #     offset = min0
-    #     #print("min:",min0)
-
-    #     # Set start time to minimum of light/dark timer values
-    #     if darkTimer.data["NONE"][0] < t0:
-    #         t0 = darkTimer.data["NONE"][0]
-
-    #     # Recalculate timers by subtracting start time and adding offset
-    #     #print("Time:", time)
-    #     #print(darkTimer.data)
-    #     for i in range(0, len(darkTimer.data)):
-    #         darkTimer.data["NONE"][i] += -t0 + offset
-    #     for i in range(0, len(lightTimer.data)):
-    #         lightTimer.data["NONE"][i] += -t0 + offset
-    #     #print(darkTimer.data)
+            timerDS.data["NONE"][i] = t        
 
 
     # Used to correct TIMETAG2 values if they are not strictly increasing
@@ -325,24 +329,32 @@ class ProcessL2:
             if num <= 0:
                     gp.datasetDeleteRow(i)
                     total = total - 1
-                    print('Out of order TIMETAG2 row deleted at ' + str(i))
+                    msg = f'Out of order TIMETAG2 row deleted at {i}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
             i = 1
             while i < total:
                 num = tt2.data["NONE"][i] - tt2.data["NONE"][i-1]
                 if num <= 0:
                     gp.datasetDeleteRow(i)
                     total = total - 1
-                    print('Out of order TIMETAG2 row deleted at ' + str(i))
+                    msg = f'Out of order TIMETAG2 row deleted at {i}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
                     continue
                 i = i + 1
         else:
-            print('************Too few records to test for ascending timestamps. Exiting.')
+            msg = '************Too few records to test for ascending timestamps. Exiting.'
+            print(msg)
+            Utilities.writeLogFile(msg)
             return False
 
 
     @staticmethod
     def processDarkCorrection(node, sensorType):
-        print("Dark Correction:", sensorType)
+        msg = f'Dark Correction: {sensorType}'
+        print(msg)
+        Utilities.writeLogFile(msg)
         darkGroup = None
         darkData = None
         darkTimer = None
@@ -364,7 +376,9 @@ class ProcessL2:
                 lightTT2 = gp.getDataset("TIMETAG2")
 
         if darkGroup is None or lightGroup is None:
-            print("No radiometry found for " + sensorType)
+            msg = f'No radiometry found for {sensorType}'
+            print(msg)
+            Utilities.writeLogFile(msg)
             return False
 
         # Fix in case time doesn't increase from one sample to the next
@@ -382,7 +396,9 @@ class ProcessL2:
         # ProcessL2.processTimer(darkTimer, lightTimer) # makes no sense
 
         if not ProcessL2.darkCorrection(darkData, darkTimer, lightData, lightTimer):
-            print("ProcessL2.darkCorrection failed  for " + sensorType)
+            msg = f'ProcessL2.darkCorrection failed  for {sensorType}'
+            print(msg)
+            Utilities.writeLogFile(msg)
             return False
             
         # Now that the dark correction is done, we can strip the dark shutter data from the        
@@ -398,7 +414,7 @@ class ProcessL2:
     @staticmethod
     def processL2(node):
         root = HDFRoot.HDFRoot()
-        root.copy(node) #  Copy everything from the L1b file into the new HDF object
+        root.copy(node) 
 
         root.attributes["PROCESSING_LEVEL"] = "2"
         if int(ConfigFile.settings["bL2Deglitch"]) == 1:
@@ -409,24 +425,32 @@ class ProcessL2:
             flagLT = ProcessL2.processDataDeglitching(root, "LT")
 
             if flagES or flagLI or flagLT:
-                print('***********Too few records in the file to continue. Exiting.')
+                msg = '***********Too few records in the file to continue. Exiting.'
+                print(msg)
+                Utilities.writeLogFile(msg)
                 return None
 
         else:
             root.attributes["DEGLITCH_PRODAT"] = "OFF"
             root.attributes["DEGLITCH_REFDAT"] = "OFF"
-        #root.attributes["STRAY_LIGHT_CORRECT"] = "OFF"
-        #root.attributes["THERMAL_RESPONSIVITY_CORRECT"] = "OFF"
+            #root.attributes["STRAY_LIGHT_CORRECT"] = "OFF"
+            #root.attributes["THERMAL_RESPONSIVITY_CORRECT"] = "OFF"
 
         
         if not ProcessL2.processDarkCorrection(root, "ES"):
-            print('Error dark correcting ES')
+            msg = 'Error dark correcting ES'
+            print(msg)
+            Utilities.writeLogFile(msg)
             return None
         if not ProcessL2.processDarkCorrection(root, "LI"):
-            print('Error dark correcting LI')
+            msg = 'Error dark correcting LI'
+            print(msg)
+            Utilities.writeLogFile(msg)
             return None
         if not ProcessL2.processDarkCorrection(root, "LT"):
-            print('Error dark correcting LT')
+            msg = 'Error dark correcting LT'
+            print(msg)
+            Utilities.writeLogFile(msg)
             return None
 
         return root

@@ -1,8 +1,8 @@
 
 import math
+
 import HDFRoot
-#import HDFGroup
-#import HDFDataset
+
 from Utilities import Utilities
 from ConfigFile import ConfigFile
 
@@ -17,7 +17,7 @@ class ProcessL1b:
         ticker = 0
         finalCount = 0
         for timeTag in badTimes:               
-            msg = ("Eliminate data between: " + str(timeTag) + " (HHMMSSMSS)")
+            msg = f'Eliminate data between: {timeTag}  (HHMMSSMSS)'
             print(msg)
             Utilities.writeLogFile(msg)
                  
@@ -39,7 +39,7 @@ class ProcessL1b:
                     dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))    
                     # print(dataSec[i])        
             else:
-                msg = ("   Remove " + group.id + " Data")
+                msg = f'   Remove {group.id} Data'
                 # print(msg)
                 Utilities.writeLogFile(msg)
                 timeData = group.getDataset("TIMETAG2")        
@@ -79,7 +79,7 @@ class ProcessL1b:
                 # Utilities.writeLogFile(msg)
                 finalCount += counter
             else:
-                msg = ('Data group is empty')
+                msg = 'Data group is empty'
                 print(msg)
                 Utilities.writeLogFile(msg)
 
@@ -119,7 +119,7 @@ class ProcessL1b:
         elif cd.fitType == "NONE":
             pass
         else:
-            msg = ("Unknown Fit Type:", cd.fitType)
+            msg = f'Unknown Fit Type: {cd.fitType}'
             print(msg)
             Utilities.writeLogFile(msg)
 
@@ -290,20 +290,20 @@ class ProcessL1b:
                         if start != -1:
                             # print('Pitch or roll angle passed. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
                             startstop = [timeStamp[start],timeStamp[stop]]
-                            msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
+                            msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
                             print(msg)
                             Utilities.writeLogFile(msg)
                             # startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
                             # stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
                             badTimes.append(startstop)
                             start = -1
-                msg = ("Percentage of SATNAV data out of Pitch/Roll bounds: " + str(round(100*i/len(timeStamp))) + "%")
+                msg = f'Percentage of SATNAV data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %'
                 print(msg)
                 Utilities.writeLogFile(msg)
 
                 if start != -1 and stop == index: # Records from a mid-point to the end are bad
                     startstop = [timeStamp[start],timeStamp[stop]]
-                    msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
+                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     if badTimes is None: # only one set of records
@@ -318,7 +318,6 @@ class ProcessL1b:
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
-
         msg = "Filtering file for Rotator Delay"
         print(msg)
         Utilities.writeLogFile(msg)
@@ -360,7 +359,7 @@ class ProcessL1b:
                         time = Utilities.timeTag2ToSec(timeInt)
                         if kickout==1 and time > (start+delay):
                             startstop = [timeStampTuple[startIndex],timeStampTuple[index-1]]
-                            msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
+                            msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
                             print(msg)
                             Utilities.writeLogFile(msg)
                             badTimes.append(startstop)
@@ -368,7 +367,7 @@ class ProcessL1b:
                         elif kickout ==1:
                             i += 1
 
-            msg = ("Percentage of SATNAV data out of Rotator Delay bounds: " + str(round(100*i/len(timeStamp))) + "%")
+            msg = f'Percentage of SATNAV data out of Rotator Delay bounds: {round(100*i/len(timeStamp))} %'
             print(msg)
             Utilities.writeLogFile(msg)
 
@@ -415,17 +414,16 @@ class ProcessL1b:
                             msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
                             print(msg)
                             Utilities.writeLogFile(msg)
-                            # startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
-                            # stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
+                           
                             badTimes.append(startstop)
                             start = -1
-                msg = ("Percentage of SATNAV data out of Absolute Rotator bounds: " + str(round(100*i/len(timeStamp))) + "%")
+                msg = f'Percentage of SATNAV data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %'
                 print(msg)
                 Utilities.writeLogFile(msg)
 
                 if start != -1 and stop == index: # Records from a mid-point to the end are bad
                     startstop = [timeStamp[start],timeStamp[stop]]
-                    msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
+                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     if badTimes is None: # only one set of records
@@ -466,7 +464,7 @@ class ProcessL1b:
                 if badTimes is None:
                     badTimes = []
 
-                # Need to add relAzimuthAngle to a dataset in node
+                # Add relAzimuthAngle to a dataset in node
                 newRelAzData = gp.addDataset("REL_AZ")
                 relAz=[]
                 start = -1
@@ -497,22 +495,21 @@ class ProcessL1b:
                         if start != -1:
                             # print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle)))
                             startstop = [timeStamp[start],timeStamp[stop]]
-                            msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
+                            msg = f'   Flag data from TT2: {startstop[0]}  to {startstop[1]} (HHMMSSMSS)'
                             print(msg)
                             Utilities.writeLogFile(msg)
-                            # startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
-                            # stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
+                      
                             badTimes.append(startstop)
                             start = -1
                 newRelAzData.columns["REL_AZ"] = relAz
                 newRelAzData.columnsToDataset()
-                msg = ("Percentage of SATNAV data out of Solar Azimuth bounds: " + str(round(100*i/len(timeStamp))) + "%")
+                msg = f'Percentage of SATNAV data out of Solar Azimuth bounds: {round(100*i/len(timeStamp))} %'
                 print(msg)
                 Utilities.writeLogFile(msg)
 
                 if start != -1 and stop == index: # Records from a mid-point to the end are bad
                     startstop = [timeStamp[start],timeStamp[stop]]
-                    msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
+                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     if badTimes is None: # only one set of records
@@ -529,6 +526,7 @@ class ProcessL1b:
         msg = "Eliminate combined filtered data from datasets.*****************************"
         print(msg)
         Utilities.writeLogFile(msg)
+
         # For each dataset in each group, find the badTimes to remove and delete those rows                
         for gp in node.groups:                                                    
             
@@ -538,11 +536,10 @@ class ProcessL1b:
 
                 # Now test whether the overlap has eliminated all radiometric data
                 if fractionRemoved > 0.98 and gp.id.startswith("H"):
-                    msg = ("Radiometric data eliminated. Aborting.") 
+                    msg = "Radiometric data eliminated. Aborting."
                     print(msg)
                     Utilities.writeLogFile(msg)                   
                     return None                            
-
                 
                 # Confirm that data were removed from Root    
                 group = node.getGroup(gp.id)
@@ -553,7 +550,7 @@ class ProcessL1b:
 
                 gpTime = gpTimeset.data["NONE"]
                 lenGpTime = len(gpTime)
-                msg = (gp.id + ' Data end   ' + str(lenGpTime) + ' long, a loss of ' + str(round(100*(fractionRemoved))) + '%') 
+                msg = f'{gp.id}  Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
                 print(msg)
                 Utilities.writeLogFile(msg)                                               
 
@@ -561,19 +558,20 @@ class ProcessL1b:
         liUnits = None
         ltUnits = None
 
-        msg = ("Applying factory calibrations.")
+        msg = "Applying factory calibrations."
         print(msg)
         Utilities.writeLogFile(msg)
+
         for gp in node.groups:
             # Apply calibration factors to each dataset in HDF 
-            msg = ("  Group: " + gp.id)
+            msg = f'  Group: {gp.id}'
             print(msg)
             Utilities.writeLogFile(msg)
             if "CalFileName" in gp.attributes:
                 #cf = calibrationMap[gp.attributes["FrameTag"]]
                 cf = calibrationMap[gp.attributes["CalFileName"]]
                 #print(gp.id, gp.attributes)
-                msg = ("    File: " + cf.id)
+                msg = f'    File: {cf.id}'
                 print(msg)
                 Utilities.writeLogFile(msg)
 

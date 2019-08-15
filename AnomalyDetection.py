@@ -17,6 +17,8 @@ from Utilities import Utilities
 def AnomalyDetection(self,inputDirectory):
     print("AnomalyDetection - Launching anomaly analysis")
 
+    step = 1 # Steps in wavebands used for plots
+
     if not os.path.exists("Plots/L1B_Anoms"):
             os.makedirs("Plots/L1B_Anoms")
 
@@ -64,7 +66,7 @@ def AnomalyDetection(self,inputDirectory):
             ''' This should include the time stamp instead of just an index to
             plot against below.'''
 
-            step = 20 # Steps in wavebands used for plots
+            
             index = 0
             for k in columns.items():
                 if index % step == 0:                    
@@ -80,7 +82,7 @@ def AnomalyDetection(self,inputDirectory):
             lightData.datasetToColumns()
             columns = lightData.columns
 
-            step = 20
+            # step = 20
             index = 0        
             for k in columns.items():
                 if index % step == 0:                    

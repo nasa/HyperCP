@@ -177,7 +177,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2Label_font.setPointSize(12)
         l2Label_font.setBold(True)
         l2Label.setFont(l2Label_font)
-        l2Sublabel = QtWidgets.QLabel(" Shutter dark corrections and data deglitching", self)  
+        l2Sublabel = QtWidgets.QLabel("Data deglitching and shutter dark corrections", self)  
         
         # Deglitcher
         self.l2DeglitchLabel = QtWidgets.QLabel("  Deglitch data", self)                

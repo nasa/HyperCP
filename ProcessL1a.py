@@ -3,11 +3,10 @@ import collections
 import datetime as dt
 import os
 
-
 import HDFRoot
 import HDFGroup
-#import HDFDataset
 
+from Utilities import Utilities
 from RawFileReader import RawFileReader
 
 
@@ -21,7 +20,7 @@ class ProcessL1a:
         # Generate root header attributes
         root = HDFRoot.HDFRoot()
         root.id = "/"
-        #root.attributes["PROSOFT"] = "Prosoft 9.0.4"
+        root.attributes["HYPERINSPACE"] = "HyperInSPACE 1.0.a"
         #root.attributes["PROSOFT_INSTRUMENT_CONFIG"] = "testcfg"
         #root.attributes["PROSOFT_PARAMETERS_FILE_NAME"] = "test.mat"
         root.attributes["CAL_FILE_NAMES"] = ','.join(calibrationMap.keys())
@@ -52,7 +51,7 @@ class ProcessL1a:
             gp.attributes["Media"] = cf.media
             gp.attributes["MeasMode"] = cf.measMode
             gp.attributes["FrameType"] = cf.frameType
-            gp.attributes["INSTRUMENT_NO"] = "1" #?? THIS SHOULD BE RETRIEVED, NOT ASSUMED
+            gp.attributes["INSTRUMENT_NO"] = "1" #For individual OCR; TO DO: should be retrieved
             gp.getTableHeader(cf.sensorType)
             gp.attributes["DISTANCE_1"] = "Pressure " + cf.sensorType + " 1 1 0"
             gp.attributes["DISTANCE_2"] = "Surface " + cf.sensorType + " 1 1 0"
@@ -65,7 +64,9 @@ class ProcessL1a:
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         root.attributes["FILE_CREATION_TIME"] = timestr
-        print(timestr)
+        msg = timestr
+        print(msg)
+        Utilities.writeLogFile(msg)
 
         # Converts gp.columns to numpy array
         for gp in root.groups:
