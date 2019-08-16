@@ -756,7 +756,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.setLayout(VBox)
         self.setGeometry(300, 100, 0, 0)
-        self.setWindowTitle('Edit Configuration')
+        self.setWindowTitle('Configuration')
         #self.show()        
 
         # print("ConfigWindow - initUI Done")

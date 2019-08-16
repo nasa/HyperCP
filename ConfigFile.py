@@ -89,10 +89,10 @@ class ConfigFile:
         ConfigFile.settings["fL1bSunAngleMax"] = 135.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90        
 
         ConfigFile.settings["bL2Deglitch"] = 0
-        ConfigFile.settings["fL2Deglitch0"] = 15    # These can be experimentally derived with the AnomalyDetection tool
-        ConfigFile.settings["fL2Deglitch1"] = 15     
-        ConfigFile.settings["fL2Deglitch2"] = 3
-        ConfigFile.settings["fL2Deglitch3"] = 3
+        ConfigFile.settings["fL2Deglitch0"] = 9   # These can be experimentally derived with the AnomalyDetection tool
+        ConfigFile.settings["fL2Deglitch1"] = 11     
+        ConfigFile.settings["fL2Deglitch2"] = 2.7
+        ConfigFile.settings["fL2Deglitch3"] = 3.7
 
         ConfigFile.settings["fL3InterpInterval"] = 3 # Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL3PlotTimeInterp"] = 0
