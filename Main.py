@@ -82,16 +82,16 @@ class Window(QtWidgets.QWidget):
         ''' Should create a .config file to store defaults for the Main window'''
         self.inDirLabel = QtWidgets.QLabel("Input Data Directory", self)        
         # self.inputDirectory = "./Data"
-        self.inputDirectory = "../Field_Data/Processed/KORUS" # for processed data on Candiru
-        # self.inputDirectory = "D:/Dirk/NASA/HyperInSPACE_Processed/KORUS" # for processed data on SMITHERS
+        # self.inputDirectory = "../Field_Data/Processed/KORUS" # for processed data on Candiru
+        self.inputDirectory = "D:/Dirk/NASA/HyperInSPACE_Processed/KORUS" # for processed data on SMITHERS
         # self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac        
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
 
         self.outDirLabel = QtWidgets.QLabel("Output Data Directory", self)        
         # self.outputDirectory = "./Data"
-        self.outputDirectory = "../Field_Data/Processed/KORUS" # for processed data on Candiru
-        # self.outputDirectory = "D:/Dirk/NASA/HyperInSPACE_Processed/KORUS" # for processed data on SMITHERS
+        # self.outputDirectory = "../Field_Data/Processed/KORUS" # for processed data on Candiru
+        self.outputDirectory = "D:/Dirk/NASA/HyperInSPACE_Processed/KORUS" # for processed data on SMITHERS
         # self.outputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                

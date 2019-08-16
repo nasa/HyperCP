@@ -99,13 +99,13 @@ class ConfigFile:
         ConfigFile.settings["bL3SaveSeaBASS"] = 0
         ConfigFile.settings["seaBASSHeaderFileName"] = None
                 
-        ConfigFile.settings["fL4MaxWind"] = 15.0 # 
+        ConfigFile.settings["fL4MaxWind"] = 15.0 # 15 m/s: Zibordi 2009, 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019
         ConfigFile.settings["fL4SZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
         ConfigFile.settings["fL4SZAMax"] = 60 # e.g. 60:Brewin 2016,
         ConfigFile.settings["bL4EnableSpecQualityCheck"] = 1
         ConfigFile.settings["fL4RhoSky"] = 0.0256 # Mobley 1999
         ConfigFile.settings["bL4EnableWindSpeedCalculation"] = 1
-        ConfigFile.settings["fL4DefaultWindSpeed"] = 0.0        
+        ConfigFile.settings["fL4DefaultWindSpeed"] = 5.0        
         ConfigFile.settings["bL4EnableQualityFlags"] = 1
         ConfigFile.settings["fL4SignificantEsFlag"] = 2.0 # Wernand 2002
         ConfigFile.settings["fL4DawnDuskFlag"] = 1.0 # Wernand 2002
@@ -113,7 +113,7 @@ class ConfigFile:
         ConfigFile.settings["fL4TimeInterval"] = 60
         ConfigFile.settings["bL4PerformNIRCorrection"] = 0 # Needs work
         ConfigFile.settings["bL4EnablePercentLt"] = 0
-        ConfigFile.settings["fL4PercentLt"] = 5
+        ConfigFile.settings["fL4PercentLt"] = 5 # Hooker et al 2002, Hooker and Morel 2003
         ConfigFile.settings["bL4PlotRrs"] = 0
         ConfigFile.settings["bL4PlotEs"] = 0
         ConfigFile.settings["bL4PlotLi"] = 0

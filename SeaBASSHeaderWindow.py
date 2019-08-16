@@ -202,6 +202,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         VBox.addWidget(linkSeaBASSLabel)
 
         VBox1 = QtWidgets.QVBoxLayout()
+        VBox1.addSpacing(10)
         #VBox1.addWidget(instructionLabel)
         VBox1.addWidget(instructionLabelSub)
         VBox1.addWidget(instructionLabelSub1)

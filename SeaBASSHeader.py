@@ -60,15 +60,15 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["investigators"] = ''
         SeaBASSHeader.settings["affiliations"] = ''
         SeaBASSHeader.settings["contact"] = ''
-        SeaBASSHeader.settings["experiment"] = name.split('.')[0].copy()
+        SeaBASSHeader.settings["experiment"] = name.split('.')[0]
         SeaBASSHeader.settings["cruise"] = ''        
         
-        SeaBASSHeader.settings["documents"] = ''
-        SeaBASSHeader.refreshCalibrationFiles()    
+        SeaBASSHeader.settings["documents"] = ''        
         
         SeaBASSHeader.settings["instrument_manufacturer"] = 'Satlantic'
         SeaBASSHeader.settings["instrument_model"] = 'HyperSAS'
         SeaBASSHeader.settings["calibration_date"] = ''
+        SeaBASSHeader.refreshCalibrationFiles()    
         
         SeaBASSHeader.settings["data_type"] = 'above_water'            
         SeaBASSHeader.settings["data_status"] = ''

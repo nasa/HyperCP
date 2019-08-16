@@ -583,8 +583,8 @@ class ConfigWindow(QtWidgets.QDialog):
 
         #L3        
         VBox2.addWidget(l3Label)
-        VBox2.addWidget(l3Sublabel)
         VBox2.addWidget(l3Sublabel2)
+        VBox2.addWidget(l3Sublabel)
 
         interpHBox = QtWidgets.QHBoxLayout()
         interpHBox.addWidget(l3InterpIntervalLabel)
