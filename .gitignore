@@ -1,6 +1,8 @@
 Data
 Plots
 Ascii
+old_py_files
+Logs
 .vscode
 *.json
 *.pyc

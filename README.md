@@ -140,6 +140,8 @@ Process data from L1B to L2. Light and dark data are screened for electronic noi
 Analysis), which are then removed from the data (optional). Shutter dark samples are then subtracted from shutter lights after dark data have been interpolated in time to match light data.  
 **(e.g. Brewin et al. 2016, Sea-Bird/Satlantic 2017)**
 
+*{To Do: discard dark data outside thresholds as hinted at in Zibordi 2009 (no actual threshold or methods given)}*
+
 ##### Anomaly Analysis (optional)
 
 Deglitching the data is highly sensitive to the deglitching parameters described below, as well as environmental 
@@ -158,6 +160,8 @@ and are discarded.
 **(Abe et al. 2006, Chandola et al. 2009)**  
 **(API Reference: https://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html)**
 
+Time-series plots of Es, Li, and Lt showing the results of the anomaly detection are saved to ./Plots/L3_Anoms. Data flagged for removal given the parameterizations chosen in the Configuration window are shown for the filter first pass (red box) and second pass (blue star). Review of these plots and adjustment of the parameters allow the user to optimize the low-pass filter for a given instrument and collection environment. 
+
 #### Level 3
 
 Process data from L2 to L3. Interpolates radiometric data to common timestamps and wavebands, optionally generates spectral
@@ -167,9 +171,16 @@ to the SeaWiFS Bio-optical Archive and Storage System (SeaBASS; https://seabass.
 Each HyperOCR collects data at unique time intervals and requires interpolation for inter-instrument comparison. Satlantic ProSoft 7.7 software interpolates radiometric data between radiometers using the OCR with the fastest sampling rate (Sea-Bird 2017), but here we use the timestamp of the slowest-sampling radiometer (typically Lt) to minimize perterbations in interpolated data (i.e. interpolated data in HyperInSPACE are always closer in time to actual sampled data) **(Brewin et al. 2016, Vandenberg 2017)**. Each HyperOCR radiometer collects data in a unique set of wavebands nominally at 3.3 nm resolution. For merging, they must be interpolated to common wavebands. Interpolating to a different (i.e. lower) spectral resolution is also an option. No extrapolation is calculated (i.e. interpolation is between the global minimum and maximum spectral range for all HyperOCRs). Spectral interpolation is by univariate spline with a smoothing factor of 3.
 **(API: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.UnivariateSpline.html)**
 
+Optional spectral plots of Es, Li, and Lt of L3 data can be generated. They are saved in ./Plots/L3.
+
 *{TO DO: Include selections for various ocean color sensor bands, and use spectral response functions from those instruments to weight HyperSAS data spectrally to those wavebands.}*
 
-A linked module allows the user to collect all of the information from the data being processed and from the processing configuration (as defined in the Configuration window) for use in automatically creating SeaBASS headers and data files. The module is launched by selecting the New, Open, or Edit buttons to create, select, or edit a SeaBASS header configuration file, which is automatically stored in the ./Config directory with a .hdr extension. Instructions are given at the top of the new SeaBASS Header window that launches when the Edit button is pressed. Within the SeaBASS Header window, the left column allows the user to input the fields required by SeaBASS. Calibration files (if they have been added at the time of creation) are auto-populated. In the right hand column, additional header fields can be auto-populated or updated from the Configuration window additional comments can be added, and the lower fields are autopopulated from each data file as it is processed. To override auto-population of fields, enter the desired value here in the SeaBASS Header window, and save it.
+##### SeaBASS File and Header
+
+To output SeaBASS formatted text files, check the box. A subfolder within the L3 directory will be created, and seperated files made for Li, Lt, and Es hyperspectral data.
+
+A linked module allows the user to collect all of the information from the data being processed and from the processing configuration (as defined in the Configuration window) for use in automatically creating SeaBASS headers and data files. The module is launched by selecting the New, Open, or Edit buttons in the Configuration window to create, select, or edit a SeaBASS header configuration file, which is automatically stored in the ./Config directory with a .hdr extension. Instructions are given at the top of the new SeaBASS Header window that launches when the Edit button is pressed. Within the SeaBASS Header window, the left column allows the user to input the fields required by SeaBASS. Calibration files (if they have been added at the time of creation) are auto-populated. In the right hand column, additional header fields can be auto-populated or updated from the Configuration window additional comments can be added, and the lower fields are autopopulated from each data file as it is processed. To override auto-population of fields, enter the desired value here in the SeaBASS Header window, and save it.
+
 
 **When updating values in the Configuration window, be sure to apply those updates in the SeaBASS Header by editing the header through the module, selecting the 'Update from Config Window' button, and saving the header file.**
 
@@ -183,6 +194,10 @@ Prior to binning, data may be filtered for **Maximum Wind Speed**.
 **Solar Zenith Angle** may be filtered for minimum and maximum values.  
 **Default Min: 20 deg (Zhang et al 2017); Default Max: 60 deg (Brewin et al. 2016)**
 
+**Spectral Outlier Filter** may be applied to remove noisy data prior to binning. This simple filter examines only the spectrum of Es, Li, and Lt from 400 - 700 nm, above which the data are extremely noisy. Using the standard deviation of the normalized spectra for the entire sample ensemble, together with a multiplier to establish an envelope, spectra with data outside the envelop in any band are rejected. Currently, the arbitrary filter factors are 5.0 for Es, 8.0 for Li, and 3.0 for Lt. Results of spectral filtering are saved as spectral plots in ./Plots/L4_Spectral_Filter.
+
+*{To Do: Improve this filter and/or include the sigmas as adjustables in the GUI as per Anom. Anal.}*
+
 **Time Average Interval** can be set to the user's requirements. Setting this to avoids temporal binning, using the common timestamps established in L3.
 
 Data are optionally limited to the lowest (e.g. 5% default) of Lt data at 780 nm within the sampling interval (if binning is performed) to minimize the effects of glint reflection from surface waves **(Hooker et al. 2002, Hooker and Morel 2003)**.
@@ -193,13 +208,17 @@ The default value for sea-surface reflectance (**Rho_sky**) is set to 0.0256 bas
 
 **Meteorological flags** based on **(Wernand et al. 2002, Garaba et al. 2012, Vandenberg 2017)** can be optionally applied to screen for undesirable data. Specifically, data are filtered for unusually low downwelling irradiance at 480 nm (default 2.0 uW cm^-2 nm^-1, for data likely to have been collected near dawn or dusk (Es(470)/Es(680) < 1.0), and for data likely to have high relative humidity or rain (Es(720)/Es(370) < 1.095).
 
-*{TO DO: Include a bidirectional correction to Lw based on, e.g. }*
+*{TO DO: Include a bidirectional correction to Lw based on, e.g. Lee 2011, Zibordi 2009}*
 
 Remote sensing reflectance is calculated as Rrs = (Lt - rho_sky* Li) / Es (e.g. **(Mobley 1999, Mueller et al. 2003, Ruddick et al. 2006)**). 
 
 Additional sun glint can be optionally removed from the Rrs by subtracting the value in the NIR from the entire spectrum **(Mueller et al. 2003)**. This approach, however, assumes neglible water-leaving radiance in the 750-800 nm range (not true of turbid waters), and ignores the spectral dependence in sky glint, and should therefore only be used in the clearest waters with caution. Here, a minimum in Rrs(750-800) is found and subtracted from the entire spectrum.
 
 *{TO Do: The NIR dark-pixel subtraction is bogus, and should be eliminated in favor of a more robust glint correction above (e.g. Zhang et al 2017)}*
+
+To output SeaBASS formatted text files, check the box. A subfolder within the L4 directory will be created, and seperated files made for Li, Lt, Es, and Rrs hyperspectral data.
+
+Optional 
 
 
 ## References
