@@ -15,7 +15,9 @@ class SeaBASSWriter:
     @staticmethod
     def formatHeader(fp,node, level):
         
-        # seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
+        seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
+        seaBASSFP = os.path.join(os.path.dirname(os.path.realpath(__file__)),'Config',seaBASSHeaderFileName)
+        SeaBASSHeader.loadSeaBASSHeader(seaBASSFP)
         headerBlock = SeaBASSHeader.settings        
 
         # Dataset leading columns can be taken from any sensor 

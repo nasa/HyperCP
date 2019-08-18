@@ -300,7 +300,7 @@ class Controller:
 
         if level == "1a":            
             if os.path.isdir(pathOut):
-                pathOut = pathOut + "/L1A"
+                pathOut = os.path.join(pathOut,'L1A')
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:
@@ -323,7 +323,7 @@ class Controller:
 
         elif level == "1b":
             if os.path.isdir(pathOut):
-                pathOut = pathOut + "/L1B"
+                pathOut = os.path.join(pathOut,'L1B')
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:
@@ -347,7 +347,7 @@ class Controller:
 
         elif level == "2":
             if os.path.isdir(pathOut):
-                pathOut = pathOut + "/L2"
+                pathOut = os.path.join(pathOut,'L2')
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:
@@ -371,7 +371,7 @@ class Controller:
 
         elif level == "3":
             if os.path.isdir(pathOut):
-                pathOut = pathOut + "/L3"
+                pathOut = os.path.join(pathOut,'L3')
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:
@@ -403,7 +403,7 @@ class Controller:
 
         elif level == "4":          
             if os.path.isdir(pathOut):
-                pathOut = pathOut + "/L4"
+                pathOut = os.path.join(pathOut,'L4')
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:

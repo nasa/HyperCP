@@ -79,7 +79,7 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["wave_height"] = 'NA'
         SeaBASSHeader.settings["secchi_depth"] = 'NA'
 
-        SeaBASSHeader.settings["station"] = 'NA'
+        SeaBASSHeader.settings["station"] = ''
         SeaBASSHeader.settings["data_file_name"] = ''
         SeaBASSHeader.settings["original_file_name"] = ''
         SeaBASSHeader.settings["start_date"] = ''    

@@ -35,7 +35,7 @@ Save this entire HyperInSPACE file repository to a convenient directory on your 
 HyperInSPACE is a Main-View-Controller package that can be launched in several ways to compile the Main.py module,
 such as by navigating to the program folder on the command line and typing the following command:
 ```
-**prompt$** python Main.py
+prompt$ python Main.py
 ```
 
 The following folders will be created automatically when you first run the program:    
@@ -44,6 +44,8 @@ The following folders will be created automatically when you first run the progr
 - Logs - Most command line output messages are captured for later reference in .log text files here
 - Plots - A variety of optional plotting routines are included, some of which create name-appropriate sub-
 directories (e.g. 'L1B_Anoms', 'L3', 'L4_Rrs', etc.)
+
+Note: Data, Plots, and Logs are not tracked on git.
 
 ## Guide
 

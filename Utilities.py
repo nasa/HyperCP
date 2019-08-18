@@ -444,19 +444,49 @@ class Utilities:
                 }
 
             if instr == 'ES' or instr == 'LI' or instr == 'LT':
-                l = len(xData.columns)
-            elif instr == 'Heading':
-                l = 2
+                l = len(xData.data.dtype.names)-2 # skip date and time
+                index = 0
+            # elif instr == 'Heading':
+            #     l = 2
             else:
-                l = 1
+                l = len(xData.data.dtype.names)
+                index = None
 
             Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
             
             step = 10 # Steps in wavebands used for plots
-            index = 0
-            for i, k in enumerate(xData.data.dtype.names):
-                if index % step == 0: 
-                    Utilities.printProgressBar(i + 1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+            
+            if index == 0:
+                for i, k in enumerate(xData.data.dtype.names):
+                    if index % step == 0: 
+                        Utilities.printProgressBar(i+1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+                        
+                        if k == "Datetag" or k == "Timetag2":
+                            continue                            
+                        x = np.copy(xData.data[k]).tolist()
+                        new_x = np.copy(newXData.columns[k]).tolist()
+
+                        fig = plt.figure(figsize=(12, 4))
+                        ax = fig.add_subplot(1, 1, 1)
+                        ax.plot(xTimer, x, 'bo', label='Raw')
+                        ax.plot(yTimer, new_x, 'k.', label='Interpolated')
+                        ax.legend()
+
+                        plt.xlabel('Seconds', fontdict=font)
+                        plt.ylabel('Data', fontdict=font)
+                        plt.subplots_adjust(left=0.15)
+                        plt.subplots_adjust(bottom=0.15)
+                        
+                        plt.savefig(os.path.join('Plots','L3',f'{fileBaseName}_{k}.png'))
+                        plt.close()
+                        # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)                
+                        # # Tweak spacing to prevent clipping of ylabel
+                        # plt.subplots_adjust(left=0.15)     
+
+                    index +=1     
+            else:
+                for i, k in enumerate(xData.data.dtype.names):
+                    Utilities.printProgressBar(i+1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
                     
                     if k == "Datetag" or k == "Timetag2":
                         continue                            
@@ -474,13 +504,10 @@ class Utilities:
                     plt.subplots_adjust(left=0.15)
                     plt.subplots_adjust(bottom=0.15)
                     
-                    plt.savefig('Plots/L3/' + fileBaseName + '_' + instr + '_' + k + '.png')
+                    plt.savefig(os.path.join('Plots','L3',f'{fileBaseName}_{k}.png'))
                     plt.close()
-                    # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)                
-                    # # Tweak spacing to prevent clipping of ylabel
-                    # plt.subplots_adjust(left=0.15)     
-
-                index +=1           
+                    
+            print('\n')      
                 
         except:
             e = sys.exc_info()[0]
