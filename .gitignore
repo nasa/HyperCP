@@ -1,8 +1,7 @@
 Data
 Plots
-Ascii
-old_py_files
 Logs
+.DS_Store
 .vscode
 *.json
 *.pyc
