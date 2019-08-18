@@ -91,7 +91,9 @@ class ProcessL3:
 
         # Interpolating to itself
         if xData is yData:
-            print('Skip.')
+            msg = 'Skip.'
+            print(msg)
+            Utilities.writeLogFile(msg)
             return True
 
         #xDatetag= xData.data["Datetag"].tolist()
