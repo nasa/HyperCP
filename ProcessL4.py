@@ -4,6 +4,7 @@ import sys
 import warnings
 
 import numpy as np
+from numpy import matlib as mb
 import scipy as sp
 import datetime as dt
 
@@ -712,7 +713,7 @@ class ProcessL4:
         if windSpeedColumns is not None:
             wind = windSpeedColumns
         else:
-            wind = np.matlib.repmat(defaultWindSpeed, len(SZA), 1)
+            wind = mb.repmat(defaultWindSpeed, len(SZA), 1)
 
         for index in range(len(SZA)):
             # Check for angles spanning north
