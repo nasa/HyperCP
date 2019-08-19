@@ -28,8 +28,10 @@ class ConfigWindow(QtWidgets.QDialog):
         nameLabel = QtWidgets.QLabel("Editing: " + self.name, self)
 
         # Calibration Config Settings
-        self.addCalibrationFileButton = QtWidgets.QPushButton("Add Calibration Files")
+        self.addCalibrationFileButton = QtWidgets.QPushButton("Add Cals")
         self.addCalibrationFileButton.clicked.connect(self.addCalibrationFileButtonPressed)
+        self.deleteCalibrationFileButton = QtWidgets.QPushButton("Remove Cals")
+        self.deleteCalibrationFileButton.clicked.connect(self.deleteCalibrationFileButtonPressed)
 
         calFiles = ConfigFile.settings["CalibrationFiles"]
         print("Calibration Files:")
@@ -51,6 +53,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationEnabledCheckBox = QtWidgets.QCheckBox("Enabled", self)
         self.calibrationEnabledCheckBox.stateChanged.connect(self.calibrationEnabledStateChanged)
         self.calibrationEnabledCheckBox.setEnabled(False)
+
+        
 
         calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
         self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
@@ -303,10 +307,23 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l4SZAMaxLineEdit.setText(str(ConfigFile.settings["fL4SZAMax"]))
         self.l4SZAMaxLineEdit.setValidator(doubleValidator)         
 
+        # Spectral Outlier Filter
         l4EnableSpecQualityCheckLabel = QtWidgets.QLabel("    Enable Spectral Outlier Filter", self)
         self.l4EnableSpecQualityCheckCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4EnableSpecQualityCheck"]) == 1:
-            self.l4EnableSpecQualityCheckCheckBox.setChecked(True)       
+            self.l4EnableSpecQualityCheckCheckBox.setChecked(True)   
+        l4SpecFilterEsLabel = QtWidgets.QLabel("     Filter Sigma Es", self)
+        self.l4SpecFilterEsLineEdit = QtWidgets.QLineEdit(self)
+        self.l4SpecFilterEsLineEdit.setText(str(ConfigFile.settings["fL4SpecFilterEs"]))
+        self.l4SpecFilterEsLineEdit.setValidator(doubleValidator)
+        l4SpecFilterLiLabel = QtWidgets.QLabel("     Filter Sigma Li", self)
+        self.l4SpecFilterLiLineEdit = QtWidgets.QLineEdit(self)
+        self.l4SpecFilterLiLineEdit.setText(str(ConfigFile.settings["fL4SpecFilterLi"]))
+        self.l4SpecFilterLiLineEdit.setValidator(doubleValidator)
+        l4SpecFilterLtLabel = QtWidgets.QLabel("     Filter Sigma Lt", self)
+        self.l4SpecFilterLtLineEdit = QtWidgets.QLineEdit(self)
+        self.l4SpecFilterLtLineEdit.setText(str(ConfigFile.settings["fL4SpecFilterLt"]))
+        self.l4SpecFilterLtLineEdit.setValidator(doubleValidator)
         
 
         # Time Average Rrs
@@ -425,7 +442,11 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox1 = QtWidgets.QVBoxLayout()
 
         # Calibration Setup
-        VBox1.addWidget(self.addCalibrationFileButton)
+        # Horizontal Box 
+        calHBox1 = QtWidgets.QHBoxLayout()
+        calHBox1.addWidget(self.addCalibrationFileButton)
+        calHBox1.addWidget(self.deleteCalibrationFileButton)
+        VBox1.addLayout(calHBox1)   
         # Horizontal Box 
         calHBox = QtWidgets.QHBoxLayout()
         calHBox.addWidget(self.calibrationFileComboBox)
@@ -651,6 +672,18 @@ class ConfigWindow(QtWidgets.QDialog):
         SpecFilterHBox.addWidget(l4EnableSpecQualityCheckLabel)
         SpecFilterHBox.addWidget(self.l4EnableSpecQualityCheckCheckBox)
         VBox3.addLayout(SpecFilterHBox)
+        SpecFilterEsHBox = QtWidgets.QHBoxLayout()
+        SpecFilterEsHBox.addWidget(l4SpecFilterEsLabel)
+        SpecFilterEsHBox.addWidget(self.l4SpecFilterEsLineEdit)
+        VBox3.addLayout(SpecFilterEsHBox)
+        SpecFilterLiHBox = QtWidgets.QHBoxLayout()
+        SpecFilterLiHBox.addWidget(l4SpecFilterLiLabel)
+        SpecFilterLiHBox.addWidget(self.l4SpecFilterLiLineEdit)
+        VBox3.addLayout(SpecFilterLiHBox)
+        SpecFilterLtHBox = QtWidgets.QHBoxLayout()
+        SpecFilterLtHBox.addWidget(l4SpecFilterLtLabel)
+        SpecFilterLtHBox.addWidget(self.l4SpecFilterLtLineEdit)
+        VBox3.addLayout(SpecFilterLtHBox)
 
         VBox3.addSpacing(5)
 
@@ -776,7 +809,22 @@ class ConfigWindow(QtWidgets.QDialog):
             print(src)
             print(dest)
             shutil.copy(src, dest)
-        #print(fp)
+        
+    def deleteCalibrationFileButtonPressed(self):
+        print("CalibrationEditWindow - Remove Calibration File Pressed")
+        # fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files")
+        # print(fnames)
+
+        configName = self.name
+        calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
+        configPath = os.path.join("Config", calibrationDir)
+        # for src in fnames[0]:
+        #     (_, filename) = os.path.split(src)
+        #     dest = os.path.join(configPath, filename)
+        #     print(src)
+        #     print(dest)
+        #     shutil.copy(src, dest)
+        os.remove(os.path.join(configPath,self.calibrationFileComboBox.currentText()))
 
 
     def getCalibrationSettings(self):
@@ -1046,6 +1094,10 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL4SZAMin"] = float(self.l4SZAMinLineEdit.text())
         ConfigFile.settings["fL4SZAMax"] = float(self.l4SZAMaxLineEdit.text())
         ConfigFile.settings["bL4EnableSpecQualityCheck"] = int(self.l4EnableSpecQualityCheckCheckBox.isChecked())
+        ConfigFile.settings["fL4SpecFilterEs"] = float(self.l4SpecFilterEsLineEdit.text())
+        ConfigFile.settings["fL4SpecFilterLi"] = float(self.l4SpecFilterLiLineEdit.text())
+        ConfigFile.settings["fL4SpecFilterLt"] = float(self.l4SpecFilterLtLineEdit.text())
+
         ConfigFile.settings["fL4RhoSky"] = float(self.l4RhoSkyLineEdit.text())
         ConfigFile.settings["bL4EnableWindSpeedCalculation"] = int(self.l4EnableWindSpeedCalculationCheckBox.isChecked())
         ConfigFile.settings["fL4DefaultWindSpeed"] = float(self.l4DefaultWindSpeedLineEdit.text())
@@ -1118,6 +1170,9 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["fL4SZAMin"] = float(self.l4SZAMinLineEdit.text())
             ConfigFile.settings["fL4SZAMax"] = float(self.l4SZAMaxLineEdit.text())
             ConfigFile.settings["bL4EnableSpecQualityCheck"] = int(self.l4EnableSpecQualityCheckCheckBox.isChecked())
+            ConfigFile.settings["fL4SpecFilterEs"] = float(self.l4SpecFilterEsLineEdit.text())
+            ConfigFile.settings["fL4SpecFilterLi"] = float(self.l4SpecFilterLiLineEdit.text())
+            ConfigFile.settings["fL4SpecFilterLt"] = float(self.l4SpecFilterLtLineEdit.text())
             ConfigFile.settings["fL4RhoSky"] = float(self.l4RhoSkyLineEdit.text())
             ConfigFile.settings["bL4EnableWindSpeedCalculation"] = int(self.l4EnableWindSpeedCalculationCheckBox.isChecked())
             ConfigFile.settings["fL4DefaultWindSpeed"] = float(self.l4DefaultWindSpeedLineEdit.text())

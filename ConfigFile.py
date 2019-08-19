@@ -103,6 +103,10 @@ class ConfigFile:
         ConfigFile.settings["fL4SZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
         ConfigFile.settings["fL4SZAMax"] = 60 # e.g. 60:Brewin 2016,
         ConfigFile.settings["bL4EnableSpecQualityCheck"] = 1
+        ConfigFile.settings["fL4SpecFilterEs"] = 5
+        ConfigFile.settings["fL4SpecFilterLi"] = 8
+        ConfigFile.settings["fL4SpecFilterLt"] = 3
+
         ConfigFile.settings["fL4RhoSky"] = 0.0256 # Mobley 1999
         ConfigFile.settings["bL4EnableWindSpeedCalculation"] = 1
         ConfigFile.settings["fL4DefaultWindSpeed"] = 5.0        
@@ -113,7 +117,7 @@ class ConfigFile:
         ConfigFile.settings["fL4TimeInterval"] = 60
         ConfigFile.settings["bL4PerformNIRCorrection"] = 0 # Needs work
         ConfigFile.settings["bL4EnablePercentLt"] = 0
-        ConfigFile.settings["fL4PercentLt"] = 5 # Hooker et al 2002, Hooker and Morel 2003
+        ConfigFile.settings["fL4PercentLt"] = 5
         ConfigFile.settings["bL4PlotRrs"] = 0
         ConfigFile.settings["bL4PlotEs"] = 0
         ConfigFile.settings["bL4PlotLi"] = 0

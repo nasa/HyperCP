@@ -135,7 +135,7 @@ class Controller:
                             Utilities.writeLogFile(msg)
                             
                 except:
-                    msg = f'FrameTag does not exist in the group {gp.id}. Aborting.'
+                    msg = f'FrameTag SATNAV does not exist in the group {gp.id}. Possibly collected overnight. Aborting. *********'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return None

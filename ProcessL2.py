@@ -152,6 +152,8 @@ class ProcessL2:
 
         darkData = None
         lightData = None
+        windowSizeDark = int(ConfigFile.settings["fL2Deglitch0"])
+        windowSizeLight = int(ConfigFile.settings["fL2Deglitch1"])
         for gp in node.groups:
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 darkData = gp.getDataset(sensorType)
@@ -162,8 +164,8 @@ class ProcessL2:
             # Furthermore, 5 or fewer datapoints is a suspiciously short sampling time. Finally,
             # Having fewer data points than the size of the rolling window won't work. Exit processing if 
             # these conditions are met.
-            windowSizeDark = int(ConfigFile.settings["fL2Deglitch0"])
-            windowSizeLight = int(ConfigFile.settings["fL2Deglitch1"])
+            
+            # Problems with the sizes of the datasets:
             if darkData is not None and lightData is not None:
                 if len(darkData.data) <= 2 or \
                     len(lightData.data) <= 5 or \

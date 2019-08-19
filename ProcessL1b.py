@@ -82,7 +82,10 @@ class ProcessL1b:
                 msg = 'Data group is empty'
                 print(msg)
                 Utilities.writeLogFile(msg)
-
+        
+        if badTimes == []:
+            startLength = 1 # avoids div by zero below when finalCount is 0
+        
         return finalCount/startLength
 
     # Used to calibrate raw data (convert from L1a to L1b)
