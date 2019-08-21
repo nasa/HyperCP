@@ -6,7 +6,7 @@ Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.g
 Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
 ## Version
-1.0.a 
+1.0.&alpha;
 ---
 ```
                  NASA Goddard Space Flight Center (GSFC) 
@@ -28,7 +28,7 @@ Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstr
 
 Requires that the Anaconda distribution of Python 3.X is installed on a Linux, MacOS, or Windows computer.
 
-*{If upgraded to include model retrievals of ancillary data (i.e. getanc.py), the OCCSW package will become an additional requirement}*
+*{Note: If upgraded to include model retrievals of ancillary data (i.e. getanc.py), the OCCSW package will become an additional requirement}*
 
 Save this entire HyperInSPACE file repository to a convenient directory on your computer.
 
@@ -77,12 +77,13 @@ Launch the configuration module and GUI (ConfigWindow.py) from the Main window b
 ##### Calibration Files:
 In the 'Configuration' window, click 'Add Calibration Files' to add the calibration files that were from the relevant extracted 
 Satlantic '.sip' file (i.e. '.cal' and '.tdf' files). The calibration file can be selected using the drop-down menu. Select the calibration files that correspond to the data you want to process with this configuration. You will need to know which .cal files correspond to each sensor, and which represent light and dark shutter measurements. For example,
-- HEDXXXX.cal > Es Dark
-- HSEXXXX.cal > Es Light
-- HLDYYYY.cal > Li Dark
-- HSLYYYY.cal > Li Light
-- HLDZZZZ.cal > Lt Dark
-- HSLZZZZ.cal > Lt Light
+- HEDX.cal > Es Dark
+- HSEX.cal > Es Light
+- HLDY.cal > Li Dark
+- HSLY.cal > Li Light
+- HLDZ.cal > Lt Dark
+- HSLZ.cal > Lt Light
+where X, Y, and Z are the numbers of the individual HyperOCRs.
 
 Selections:  
 -Add Calibration Files - Allows loading calibration files (.cal/.tdf) into HyperInSPACE. Once loaded the drop-down 
@@ -175,7 +176,7 @@ Each HyperOCR collects data at unique time intervals and requires interpolation 
 
 Optional spectral plots of Es, Li, and Lt of L3 data can be generated. They are saved in ./Plots/L3.
 
-*{TO DO: Include selections for various ocean color sensor bands, and use spectral response functions from those instruments to weight HyperSAS data spectrally to those wavebands.}*
+*{To Do: Include selections for various ocean color sensor bands, and use spectral response functions from those instruments to weight HyperSAS data spectrally to those wavebands.}*
 
 ##### SeaBASS File and Header
 
@@ -206,21 +207,20 @@ Data are optionally limited to the lowest (e.g. 5% default) of Lt data at 780 nm
 
 The default value for sea-surface reflectance (**Rho_sky**) is set to 0.0256 based on **(Morel 1999, Mueller et al. 2003)**, which can be optionally adjusted for wind speed and cloud cover using the relationship found in **(Ruddick et al. 2006)**. The default wind speed should be set by the user depending on in situ conditions for instances when the ancillary data and models are not available. This correction does not account for the spectral dependence or polarization sensitivity in Rho_sky.
 
-*{TO DO: encode the Zhang et al. 2017 approach in Python to calculate a spectrally dependent, polarization-sensitive rho_sky. Matlab code was provided by Zhang, along with permission to distribute. This will also require an estimate of aerosol optical thickness, so adding getanc.py with AOD would be required.}*
+*{To Do: encode the Zhang et al. 2017 approach in Python to calculate a spectrally dependent, polarization-sensitive rho_sky. Matlab code was provided by Zhang, along with permission to distribute. This will also require an estimate of aerosol optical thickness, so adding getanc.py with AOD would be required.}*
 
 **Meteorological flags** based on **(Wernand et al. 2002, Garaba et al. 2012, Vandenberg 2017)** can be optionally applied to screen for undesirable data. Specifically, data are filtered for unusually low downwelling irradiance at 480 nm (default 2.0 uW cm^-2 nm^-1, for data likely to have been collected near dawn or dusk (Es(470)/Es(680) < 1.0), and for data likely to have high relative humidity or rain (Es(720)/Es(370) < 1.095).
 
-*{TO DO: Include a bidirectional correction to Lw based on, e.g. Lee 2011, Zibordi 2009}*
+*{To Do: Include a bidirectional correction to Lw based on, e.g. Lee 2011, Zibordi 2009}*
 
 Remote sensing reflectance is calculated as Rrs = (Lt - rho_sky* Li) / Es (e.g. **(Mobley 1999, Mueller et al. 2003, Ruddick et al. 2006)**). 
 
 Additional sun glint can be optionally removed from the Rrs by subtracting the value in the NIR from the entire spectrum **(Mueller et al. 2003)**. This approach, however, assumes neglible water-leaving radiance in the 750-800 nm range (not true of turbid waters), and ignores the spectral dependence in sky glint, and should therefore only be used in the clearest waters with caution. Here, a minimum in Rrs(750-800) is found and subtracted from the entire spectrum.
 
-*{TO Do: The NIR dark-pixel subtraction is bogus, and should be eliminated in favor of a more robust glint correction above (e.g. Zhang et al 2017)}*
+*{To Do: The NIR dark-pixel subtraction is bogus, and should be eliminated in favor of a more robust glint correction above (e.g. Zhang et al 2017)}*
 
 To output SeaBASS formatted text files, check the box. A subfolder within the L4 directory will be created, and seperated files made for Li, Lt, Es, and Rrs hyperspectral data.
 
-Optional 
 
 
 ## References
