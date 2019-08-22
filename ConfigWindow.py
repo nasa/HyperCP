@@ -224,8 +224,12 @@ class ConfigWindow(QtWidgets.QDialog):
         l2AnomalySublabel1 = QtWidgets.QLabel("  Launch Anom. Anal. below to test above",self)
         l2AnomalySublabel2 = QtWidgets.QLabel("   params on L1B. Save config when updating",self)
         l2AnomalySublabel3 = QtWidgets.QLabel("   params. Results will be saved to Plot/Anoms.", self)  
-        self.anomalyButton = QtWidgets.QPushButton("Anomaly Analysis")
-        self.anomalyButton.clicked.connect(self.anomalyButtonPressed)
+        l2AnomalyStepLabel = QtWidgets.QLabel("   Waveband interval to plot (integer): ", self)  
+        self.l2AnomalyStepLineEdit = QtWidgets.QLineEdit(self)
+        self.l2AnomalyStepLineEdit.setText(str(ConfigFile.settings["bL2AnomalyStep"]))
+        self.l2AnomalyStepLineEdit.setValidator(intValidator)
+        self.l2AnomalyButton = QtWidgets.QPushButton("Anomaly Analysis")
+        self.l2AnomalyButton.clicked.connect(self.l2AnomalyButtonPressed)
                         
         # l3
         l3Label = QtWidgets.QLabel("Level 3 Processing", self)
@@ -597,7 +601,11 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addWidget(l2AnomalySublabel1)
         VBox2.addWidget(l2AnomalySublabel2)
         VBox2.addWidget(l2AnomalySublabel3)
-        VBox2.addWidget(self.anomalyButton)
+        stepHBox = QtWidgets.QHBoxLayout()
+        stepHBox.addWidget(l2AnomalyStepLabel)
+        stepHBox.addWidget(self.l2AnomalyStepLineEdit)
+        VBox2.addLayout(stepHBox)
+        VBox2.addWidget(self.l2AnomalyButton)
 
 
         VBox2.addSpacing(20)   
@@ -912,7 +920,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bSunAngleMaxLabel.setDisabled(disabled)
         self.l1bSunAngleMaxLineEdit.setDisabled(disabled)
 
-    def anomalyButtonPressed(self):
+    def l2AnomalyButtonPressed(self):
         print("CalibrationEditWindow - Launching anomaly analysis module")
 
         AnomalyDetection(self,self.inputDirectory)
@@ -1083,6 +1091,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL2Deglitch1"] = int(self.l2Deglitch1LineEdit.text())
         ConfigFile.settings["fL2Deglitch2"] = float(self.l2Deglitch2LineEdit.text())
         ConfigFile.settings["fL2Deglitch3"] = float(self.l2Deglitch3LineEdit.text())
+        ConfigFile.settings["bL2AnomalyStep"] = int(self.l2AnomalyStepLineEdit.text())
 
         ConfigFile.settings["fL3InterpInterval"] = float(self.l3InterpIntervalLineEdit.text())
         ConfigFile.settings["bL3PlotTimeInterp"] = int(self.l3PlotTimeInterpCheckBox.isChecked())

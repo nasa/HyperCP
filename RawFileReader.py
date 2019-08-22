@@ -1,6 +1,8 @@
 
 import sys
 
+from Utilities import Utilities
+
 class RawFileReader:
     MAX_TAG_READ = 32
     MAX_BLOCK_READ = 1024
@@ -17,8 +19,10 @@ class RawFileReader:
         else:
             end = hdr.find(bytes(b"\x0D\x0A".decode("unicode_escape"), "utf-8"))
 
-        sp1 = hdr.find(b" ")
-        sp2 = hdr.rfind(b" ")
+        # TO DO: This is still screwing up the SAS SERIAL NUMBER hdr
+        sp1 = hdr.find(b" ") # returns the first occurence where substring is found
+        # sp2 = hdr.rfind(b" ") # returns the highest index where substring is found
+        sp2 = hdr.find(b"(") - 1
 
         if sys.version_info[0] < 3:
             str1 = hdr[sp1+1:sp2]
@@ -89,13 +93,20 @@ class RawFileReader:
                                 f.seek(pos)
 
                                 gp = contextMap[cf.id]
+                                # Only the first time through
                                 if len(gp.attributes) == 0:
                                     #gp.id += "_" + cf.id
                                     gp.id = key                                    
                                     gp.attributes["CalFileName"] = key
                                     gp.attributes["FrameTag"] = cf.id
 
-                                num = cf.convertRaw(msg, gp)
+                                try:
+                                    num = cf.convertRaw(msg, gp)
+                                except:
+                                    msg = f'Unable to convert the following raw message: {msg}'
+                                    print(msg)
+                                    Utilities.writeLogFile(msg)
+
 
 
                                 if num >= 0:

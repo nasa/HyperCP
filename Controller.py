@@ -116,7 +116,8 @@ class Controller:
         # Apply SZA filter 
         if root is not None:
             for gp in root.groups:                              
-                try:
+                # try:
+                if 'FrameTag' in gp.attributes:
                     if gp.attributes["FrameTag"].startswith("SATNAV"):
                         elevData = gp.getDataset("ELEVATION")
                         elevation = elevData.data.tolist()
@@ -133,12 +134,13 @@ class Controller:
                             msg = f'SZA passed filter: {round(90-np.nanmax(elevation))}'
                             print(msg)
                             Utilities.writeLogFile(msg)
-                            
-                except:
-                    msg = f'FrameTag SATNAV does not exist in the group {gp.id}. Possibly collected overnight. Aborting. *********'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return None
+                else:
+                    print(f'No FrameTag in {gp.id} group')
+                # except:
+                #     msg = f'FrameTag does not exist in the group {gp.id}.'
+                #     print(msg)
+                #     Utilities.writeLogFile(msg)
+                #     return None
         
         # Write output file
         if root is not None:

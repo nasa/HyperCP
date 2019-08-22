@@ -51,12 +51,13 @@ class ProcessL1a:
             gp.attributes["Media"] = cf.media
             gp.attributes["MeasMode"] = cf.measMode
             gp.attributes["FrameType"] = cf.frameType
-            gp.attributes["INSTRUMENT_NO"] = "1" #For individual OCR; TO DO: should be retrieved
+            # gp.attributes["INSTRUMENT_NO"] = "1" #For individual OCR; TO DO: should be retrieved
             gp.getTableHeader(cf.sensorType)
             gp.attributes["DISTANCE_1"] = "Pressure " + cf.sensorType + " 1 1 0"
             gp.attributes["DISTANCE_2"] = "Surface " + cf.sensorType + " 1 1 0"
             gp.attributes["SensorDataList"] = ", ".join([x for x in gp.datasets.keys()])
-            root.groups.append(gp)
+            if gp.id != 'SAS' and gp.id != 'Reference':
+                root.groups.append(gp)
 
 
         # Generates root footer attributes

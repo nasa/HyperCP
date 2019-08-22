@@ -1,5 +1,6 @@
 
 import math
+import numpy as np
 
 import HDFRoot
 
@@ -35,8 +36,10 @@ class ProcessL1b:
                 gpsTimeData = group.getDataset("UTCPOS")        
                 dataSec = []
                 for i in range(gpsTimeData.data.shape[0]):
-                    # UTC format (hhmmss.) similar to TT2 (hhmmssmss.) with the miliseconds truncated
-                    dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))    
+                    # Screen raw GPS UTCPOS data for NaN (ECOA-1)
+                    if not np.isnan(gpsTimeData.data["NONE"][i]):
+                        # UTC format (hhmmss.) similar to TT2 (hhmmssmss.) with the miliseconds truncated
+                        dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))    
                     # print(dataSec[i])        
             else:
                 msg = f'   Remove {group.id} Data'

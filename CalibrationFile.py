@@ -120,7 +120,7 @@ class CalibrationFile:
                 #if nRead > len(msg):
                 #    return False
 
-            return True
+                return True
 
         except:
             # pass
@@ -142,7 +142,7 @@ class CalibrationFile:
         #print("file:", msg)
 
         if self.verifyRaw(msg) == False:
-            #print("Message not read successfully:\n" + str(msg))
+            print("Message not read successfully:\n" + str(msg))
             return -1
 
         for i in range(0, len(self.data)):

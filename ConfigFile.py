@@ -29,7 +29,8 @@ class ConfigFile:
         print("fL2Deglitch0", ConfigFile.settings["fL2Deglitch0"])
         print("fL2Deglitch1", ConfigFile.settings["fL2Deglitch1"])
         print("fL2Deglitch2", ConfigFile.settings["fL2Deglitch2"])
-        print("fL2Deglitch3", ConfigFile.settings["fL2Deglitch3"])   
+        print("fL2Deglitch3", ConfigFile.settings["fL2Deglitch3"])
+        print("bL2AnomalyStep", ConfigFile.settings["bL2AnomalyStep"])   
 
         print("fL3InterpInterval", ConfigFile.settings["fL3InterpInterval"])
         print("bL3PlotTimeInterp", ConfigFile.settings["bL3PlotTimeInterp"])
@@ -93,6 +94,7 @@ class ConfigFile:
         ConfigFile.settings["fL2Deglitch1"] = 11     
         ConfigFile.settings["fL2Deglitch2"] = 2.7
         ConfigFile.settings["fL2Deglitch3"] = 3.7
+        ConfigFile.settings["bL2AnomalyStep"] = 10
 
         ConfigFile.settings["fL3InterpInterval"] = 3 # Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL3PlotTimeInterp"] = 0
@@ -115,7 +117,7 @@ class ConfigFile:
         ConfigFile.settings["fL4DawnDuskFlag"] = 1.0 # Wernand 2002
         ConfigFile.settings["fL4RainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain      
         ConfigFile.settings["fL4TimeInterval"] = 60
-        ConfigFile.settings["bL4PerformNIRCorrection"] = 0 # Needs work
+        ConfigFile.settings["bL4PerformNIRCorrection"] = 0 # Recommended in Mobley 1999 to correct after rho-correction (Rrs = Rrs-Rrs(750))
         ConfigFile.settings["bL4EnablePercentLt"] = 0
         ConfigFile.settings["fL4PercentLt"] = 5
         ConfigFile.settings["bL4PlotRrs"] = 0
