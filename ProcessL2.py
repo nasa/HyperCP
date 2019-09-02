@@ -4,13 +4,8 @@ import pandas as pd
 # import matplotlib.pyplot as plt
 
 import HDFRoot
-#import HDFGroup
-#import HDFDataset
-
 from ConfigFile import ConfigFile
 from Utilities import Utilities
-
-
 
 class ProcessL2:
     '''
@@ -268,7 +263,8 @@ class ProcessL2:
             # print(x[0], new_x[0])
             #newDarkData[k] = Utilities.interp(x,y,new_x,'cubic')
             if len(x) > 3:
-                newDarkData[k] = Utilities.interpSpline(x,y,new_x)
+                # newDarkData[k] = Utilities.interpSpline(x,y,new_x)
+                newDarkData[k] = Utilities.interp(x,y,new_x)
             else:
                 msg = '**************Record too small for splining. Exiting.'
                 print(msg)

@@ -58,6 +58,25 @@ class ProcessL3:
             # This plots the interpolated data in Plots
             Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName)
 
+    # Time interpolation
+    # xTimer, yTimer are already converted from TimeTag2 to seconds
+    @staticmethod
+    def interpolateL3Angular(xData, xTimer, yTimer, newXData, instr, fileName='default'):        
+        for k in xData.data.dtype.names:
+            if k == "Datetag" or k == "Timetag2":
+                continue
+            # print(k)
+            x = list(xTimer)
+            new_x = list(yTimer)
+            y = np.copy(xData.data[k]).tolist()
+            
+            newXData.columns[k] = Utilities.interpAngular(x, y, new_x)
+
+        if ConfigFile.settings["bL3PlotTimeInterp"] == 1:
+            print('Plotting time interpolations ' +instr)
+            # This plots the interpolated data in Plots
+            Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName)
+
 
     # Converts a sensor group into the format used by Level 3
     # The sensor dataset is renamed (e.g. ES -> ES_hyperspectral)
@@ -231,7 +250,8 @@ class ProcessL3:
 
         # Interpolate by time values
         # Convert GPS UTC time values to seconds to be used for interpolation        
-        ProcessL3.interpolateL3(gpsCourseData, xTimer, yTimer, newGPSCourseData, gpsCourseData.id, 'linear', fileName)        
+        # ProcessL3.interpolateL3(gpsCourseData, xTimer, yTimer, newGPSCourseData, gpsCourseData.id, 'linear', fileName)        
+        ProcessL3.interpolateL3Angular(gpsCourseData, xTimer, yTimer, newGPSCourseData, gpsCourseData.id, fileName)        
         ProcessL3.interpolateL3(gpsLatPosData, xTimer, yTimer, newGPSLatPosData, gpsLatPosData.id, 'linear', fileName)
         ProcessL3.interpolateL3(gpsLonPosData, xTimer, yTimer, newGPSLonPosData, gpsLonPosData.id, 'linear', fileName)
         ProcessL3.interpolateL3(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, gpsMagVarData.id, 'linear', fileName)
@@ -309,10 +329,13 @@ class ProcessL3:
             's to '+str(max(yTimer)))
 
         # Interpolate by time values
-        ProcessL3.interpolateL3(satnavAzimuthData, xTimer, yTimer, newSATNAVAzimuthData, 'SunAz', 'linear', fileName)
-        ProcessL3.interpolateL3(satnavHeadingData, xTimer, yTimer, newSATNAVHeadingData, 'Heading', 'linear', fileName)
+        # ProcessL3.interpolateL3(satnavAzimuthData, xTimer, yTimer, newSATNAVAzimuthData, 'SunAz', 'linear', fileName)
+        ProcessL3.interpolateL3Angular(satnavAzimuthData, xTimer, yTimer, newSATNAVAzimuthData, 'SunAz', fileName)
+        # ProcessL3.interpolateL3(satnavHeadingData, xTimer, yTimer, newSATNAVHeadingData, 'Heading', 'linear', fileName)
+        ProcessL3.interpolateL3Angular(satnavHeadingData, xTimer, yTimer, newSATNAVHeadingData, 'Heading', fileName)
         # ProcessL3.interpolateL3(satnavPitchData, xTimer, yTimer, newSATNAVPitchData, 'Pitch', 'linear')
-        ProcessL3.interpolateL3(satnavPointingData, xTimer, yTimer, newSATNAVPointingData, 'Pointing', 'linear', fileName)
+        # ProcessL3.interpolateL3(satnavPointingData, xTimer, yTimer, newSATNAVPointingData, 'Pointing', 'linear', fileName)
+        ProcessL3.interpolateL3Angular(satnavPointingData, xTimer, yTimer, newSATNAVPointingData, 'Pointing', fileName)
         # ProcessL3.interpolateL3(satnavRollData, xTimer, yTimer, newSATNAVRollData, 'Roll', 'linear')
         ProcessL3.interpolateL3(satnavRelAzData, xTimer, yTimer, newSATNAVRelAzData, 'RelAz', 'linear', fileName)
         ProcessL3.interpolateL3(satnavElevationData, xTimer, yTimer, newSATNAVElevationData, 'Elevation', 'linear', fileName)

@@ -289,6 +289,15 @@ class Utilities:
 
         return new_y
 
+    # Wrapper for scipy interp1d that works even if
+    # values in new_x are outside the range of values in x
+    @staticmethod
+    def interpAngular(x, y, new_x):
+        complement360 = np.rad2deg(np.unwrap(np.deg2rad(y)))
+        f = scipy.interpolate.interp1d(x,complement360,kind='linear', bounds_error=False, fill_value=None)
+        new_y = f(new_x)%360
+        return new_y
+
     # Cubic spline interpolation intended to get around the all NaN output from InterpolateUnivariateSpline
     # x is original time to be splined, y is the data to be interpolated, new_x is the time to interpolate/spline to
     # interpolate.splrep is intolerant of duplicate or non-ascending inputs, and inputs with fewer than 3 points
@@ -455,7 +464,9 @@ class Utilities:
             Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
             
             # Steps in wavebands used for plots
-            step = float(ConfigFile.settings["bL2AnomalyStep"])
+            # step = float(ConfigFile.settings["fL3InterpInterval"]) # this is in nm
+            # This happens prior to waveband interpolation, so each interval is ~3.5 nm
+            step = 2 # this is in band intervals
             
             if index == 0:
                 for i, k in enumerate(xData.data.dtype.names):
@@ -474,7 +485,7 @@ class Utilities:
                         ax.legend()
 
                         plt.xlabel('Seconds', fontdict=font)
-                        plt.ylabel('Data', fontdict=font)
+                        plt.ylabel(f'{instr}_{k}', fontdict=font)
                         plt.subplots_adjust(left=0.15)
                         plt.subplots_adjust(bottom=0.15)
                         

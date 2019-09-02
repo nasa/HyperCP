@@ -83,7 +83,7 @@ class Window(QtWidgets.QWidget):
         self.inDirLabel = QtWidgets.QLabel("Input Data Directory", self)        
         # self.inputDirectory = "./Data"
         # self.inputDirectory = "../Field_Data/NOAA-ECOA_2015/hyperSAS" # for processed data on Candiru
-        self.inputDirectory = "D:/Dirk/NASA/HyperInSPACE_Processed" # for processed data on SMITHERS
+        self.inputDirectory = "D:/Dirk/NASA/HyperSAS/HyperInSPACE_Processed" # for processed data on SMITHERS
         # self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac        
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
@@ -91,7 +91,7 @@ class Window(QtWidgets.QWidget):
         self.outDirLabel = QtWidgets.QLabel("Output Data Directory", self)        
         # self.outputDirectory = "./Data"
         # self.outputDirectory = "../Field_Data/Processed/NOAA-ECOA_2015" # for processed data on Candiru
-        self.outputDirectory = "D:/Dirk/NASA/HyperInSPACE_Processed" # for processed data on SMITHERS
+        self.outputDirectory = "D:/Dirk/NASA/HyperSAS/HyperInSPACE_Processed" # for processed data on SMITHERS
         # self.outputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
