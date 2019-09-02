@@ -17,7 +17,8 @@ from Utilities import Utilities
 def AnomalyDetection(self,inputDirectory):
     print("AnomalyDetection - Launching anomaly analysis")
 
-    step = 1 # Steps in wavebands used for plots
+    # Steps in wavebands used for plots
+    step = float(ConfigFile.settings["bL2AnomalyStep"])
 
     if not os.path.exists("Plots/L1B_Anoms"):
             os.makedirs("Plots/L1B_Anoms")

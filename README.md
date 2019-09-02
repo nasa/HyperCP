@@ -99,7 +99,7 @@ Data from the GPS and SATNAV instruments is interpreted using the corresponding,
 
 Calibration files are copied from their selected locations into the ./Config directory within an automatically created sub-directory named after the configuration (i.e. KORUS.cfg results in ./Config/KORUS_Calibration/calfiles... once calibration files have been added).
 
-Level 1A through Level 4 processing configurations are adjusted in the Configuration window, and it is a good reference to accompany the discussion below regarding processing levels. *The values set in the configuration file should be considered carefully, as they will depend on your viewing geometry and desired quality control thresholds.* Level 2 includes a module which can be launched from the Configuration window to assist with data deglitching parameter selection ('Anomaly Analysis'). More details with citations and default setting descriptions are given below. A seperate module to assist in the creation of SeaBASS output files is launched in Level 3 processing, and applied to L3 and L4 SeaBASS output as described below.
+Level 1A through Level 4 processing configurations are adjusted in the Configuration window, and it is a good reference to accompany the discussion below regarding processing levels. *The values set in the configuration file should be considered carefully, as they will depend on your viewing geometry and desired quality control thresholds.* Level 2 includes a module which can be launched from the Configuration window to assist with data deglitching parameter selection ('Anomaly Analysis'). More details with citations and default setting descriptions are given below. A separate module to assist in the creation of SeaBASS output files is launched in Level 3 processing, and applied to L3 and L4 SeaBASS output as described below.
 
 Click 'Save' or 'Save As' to save the configuration file. The configuration files are saved to the ./Config directory under the HyperInSPACE main directory with a .cfg extension. 
 
@@ -148,15 +148,15 @@ Analysis), which are then removed from the data (optional). Shutter dark samples
 ##### Anomaly Analysis (optional)
 
 Deglitching the data is highly sensitive to the deglitching parameters described below, as well as environmental 
-conditions and the variability of the radiometric data itself. Therefore, a seperate module was developed to 
+conditions and the variability of the radiometric data itself. Therefore, a separate module was developed to 
 tune these parameters for individual files, instruments, and/or field campaigns. The tool is launched by setting 
 the parameters (windows and sigma factors described below) in the Configuration window, *SAVING THE CHANGES*, and then running the tool on an example of L1B data using the Anomaly Analysis button and file dialog. Plots produced automatically in the ./Plots/L1B_Anoms directory can be used to evaluate the choice of parameters.
 
 For each waveband of each sensor, and for both light and dark shutter measurements, the time series of radiometric
 data are low-pass filtered with a moving average using discrete linear convolution of two one dimensional 
 sequences with adjustable window sizes. For darks, a stationary standard deviation anomaly (from 
-the moving average) is used to assess whether data are within an adjustable "sigma factor" multiplier within the window. For lights, a MOVING standard deviation anomaly (from the moving average of seperately adjustable window size) is used 
-to assess whether data are within a seperately adjustable sigma. The low-band filter is passed over the
+the moving average) is used to assess whether data are within an adjustable "sigma factor" multiplier within the window. For lights, a MOVING standard deviation anomaly (from the moving average of separately adjustable window size) is used 
+to assess whether data are within a separately adjustable sigma. The low-band filter is passed over the
 data twice. First and last data points for light and dark data cannot be accurately filtered with this method, 
 and are discarded.  
 **Defaults: Dark Window 11, Light Window 9, Dark Sigma 2.7, Light Sigma 3.7 determined empirically from KORUS cruise**
@@ -180,7 +180,7 @@ Optional spectral plots of Es, Li, and Lt of L3 data can be generated. They are 
 
 ##### SeaBASS File and Header
 
-To output SeaBASS formatted text files, check the box. A subfolder within the L3 directory will be created, and seperated files made for Li, Lt, and Es hyperspectral data.
+To output SeaBASS formatted text files, check the box. A subfolder within the L3 directory will be created, and separated files made for Li, Lt, and Es hyperspectral data.
 
 A linked module allows the user to collect all of the information from the data being processed and from the processing configuration (as defined in the Configuration window) for use in automatically creating SeaBASS headers and data files. The module is launched by selecting the New, Open, or Edit buttons in the Configuration window to create, select, or edit a SeaBASS header configuration file, which is automatically stored in the ./Config directory with a .hdr extension. Instructions are given at the top of the new SeaBASS Header window that launches when the Edit button is pressed. Within the SeaBASS Header window, the left column allows the user to input the fields required by SeaBASS. Calibration files (if they have been added at the time of creation) are auto-populated. In the right hand column, additional header fields can be auto-populated or updated from the Configuration window additional comments can be added, and the lower fields are autopopulated from each data file as it is processed. To override auto-population of fields, enter the desired value here in the SeaBASS Header window, and save it.
 
@@ -219,7 +219,7 @@ Additional sun glint can be optionally removed from the Rrs by subtracting the v
 
 *{To Do: The NIR dark-pixel subtraction is bogus, and should be eliminated in favor of a more robust glint correction above (e.g. Zhang et al 2017)}*
 
-To output SeaBASS formatted text files, check the box. A subfolder within the L4 directory will be created, and seperated files made for Li, Lt, Es, and Rrs hyperspectral data.
+To output SeaBASS formatted text files, check the box. A subfolder within the L4 directory will be created, and separated files made for Li, Lt, Es, and Rrs hyperspectral data.
 
 
 
