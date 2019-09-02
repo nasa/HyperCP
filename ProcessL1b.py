@@ -17,10 +17,7 @@ class ProcessL1b:
         # Now delete the record from each dataset in the group
         ticker = 0
         finalCount = 0
-        for timeTag in badTimes:               
-            msg = f'Eliminate data between: {timeTag}  (HHMMSSMSS)'
-            print(msg)
-            Utilities.writeLogFile(msg)
+        for timeTag in badTimes:                           
                              
             start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
             stop = Utilities.timeTag2ToSec(list(timeTag[1])[0])                
@@ -30,7 +27,7 @@ class ProcessL1b:
                 # This is handled seperately in order to deal with the UTC fields in GPS            
                 if ticker ==0:
                     msg = "   Remove GPS Data"
-                    # print(msg)
+                    print(msg)
                     Utilities.writeLogFile(msg)
 
                 gpsTimeData = group.getDataset("UTCPOS")        
@@ -43,15 +40,20 @@ class ProcessL1b:
                         dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))    
                     # print(dataSec[i])        
             else:
-                msg = f'   Remove {group.id} Data'
-                # print(msg)
-                Utilities.writeLogFile(msg)
+                if ticker ==0:
+                    msg = f'   Remove {group.id} Data'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
                 timeData = group.getDataset("TIMETAG2")        
                 dataSec = []
                 for i in range(timeData.data.shape[0]):
                     # Converts from TT2 (hhmmssmss. UTC) to milliseconds UTC
                     dataSec.append(Utilities.timeTag2ToSec(timeData.data["NONE"][i])) 
 
+            msg = f'Eliminate data between: {timeTag}  (HHMMSSMSS)'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            
             lenDataSec = len(dataSec)
             if ticker == 0:
                 startLength = lenDataSec
