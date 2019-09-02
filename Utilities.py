@@ -454,7 +454,8 @@ class Utilities:
 
             Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
             
-            step = 10 # Steps in wavebands used for plots
+            # Steps in wavebands used for plots
+            step = float(ConfigFile.settings["bL2AnomalyStep"])
             
             if index == 0:
                 for i, k in enumerate(xData.data.dtype.names):
@@ -477,7 +478,7 @@ class Utilities:
                         plt.subplots_adjust(left=0.15)
                         plt.subplots_adjust(bottom=0.15)
                         
-                        plt.savefig(os.path.join('Plots','L3',f'{fileBaseName}_{k}.png'))
+                        plt.savefig(os.path.join('Plots','L3',f'{fileBaseName}_{instr}_{k}.png'))
                         plt.close()
                         # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)                
                         # # Tweak spacing to prevent clipping of ylabel
@@ -504,7 +505,7 @@ class Utilities:
                     plt.subplots_adjust(left=0.15)
                     plt.subplots_adjust(bottom=0.15)
                     
-                    plt.savefig(os.path.join('Plots','L3',f'{fileBaseName}_{k}.png'))
+                    plt.savefig(os.path.join('Plots','L3',f'{fileBaseName}_{instr}_{k}.png'))
                     plt.close()
                     
             print('\n')      

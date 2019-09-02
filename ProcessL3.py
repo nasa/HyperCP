@@ -230,36 +230,11 @@ class ProcessL3:
             's to '+str(max(yTimer)))
 
         # Interpolate by time values
-        # Convert GPS UTC time values to seconds to be used for interpolation
-        ''' Only work up to the point where there is GPS data to go along with the timestamp. 
-        Bad KORUS data has partial records at the end of the binary file ... which should ultimately be
-        dealt with at the ReadRawFile level.'''
-        # xTimer = []
-        # for i in range(gpsTimeData.data.shape[0]):
-        #     if len(xTimer) <= len(gpsCourseData.data):
-        #         xTimer.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))
-        ProcessL3.interpolateL3(gpsCourseData, xTimer, yTimer, newGPSCourseData, gpsCourseData.id, 'linear', fileName)
-        # xTimer = []
-        # for i in range(gpsTimeData.data.shape[0]):
-        #     if len(xTimer) <= len(gpsLatPosData.data):
-        #         xTimer.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))
+        # Convert GPS UTC time values to seconds to be used for interpolation        
+        ProcessL3.interpolateL3(gpsCourseData, xTimer, yTimer, newGPSCourseData, gpsCourseData.id, 'linear', fileName)        
         ProcessL3.interpolateL3(gpsLatPosData, xTimer, yTimer, newGPSLatPosData, gpsLatPosData.id, 'linear', fileName)
-        # xTimer = []
-        # for i in range(gpsTimeData.data.shape[0]):
-        #     if len(xTimer) <= len(gpsLonPosData.data):
-        #         xTimer.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))        
         ProcessL3.interpolateL3(gpsLonPosData, xTimer, yTimer, newGPSLonPosData, gpsLonPosData.id, 'linear', fileName)
-        # xTimer = []
-        # for i in range(gpsTimeData.data.shape[0]):
-        #     if len(xTimer) < len(gpsMagVarData.data):
-        #         xTimer.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))  
-        #     else:
-        #         print('go f')      
         ProcessL3.interpolateL3(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, gpsMagVarData.id, 'linear', fileName)
-        # xTimer = []
-        # for i in range(gpsTimeData.data.shape[0]):
-        #     if len(xTimer) <= len(gpsSpeedData.data):
-        #         xTimer.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))        
         ProcessL3.interpolateL3(gpsSpeedData, xTimer, yTimer, newGPSSpeedData, gpsSpeedData.id, 'linear', fileName)
 
         newGPSCourseData.columnsToDataset()
