@@ -24,9 +24,9 @@ class CalibrationFile:
 
     def printd(self):
         if len(self.id) != 0:
-            msg = f'id: {self.id}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            pmsg = f'id: {self.id}'
+            print(pmsg)
+            Utilities.writeLogFile(pmsg)
 #        for cd in self.data:
 #            cd.printd()
 
@@ -98,7 +98,7 @@ class CalibrationFile:
                     #print("delimiter:", delimiter)
 
                     end = msg[nRead:].find(delimiter)
-                    #print("read:", nRead, end)
+                    # print("read:", nRead, end)
                     if end == 0:
                         v = 0.0
                     else:
@@ -112,7 +112,7 @@ class CalibrationFile:
                     if cd.fitType.upper() != "DELIMITER":
                         if cd.fieldLength != 0:
                             b = msg[nRead:nRead+cd.fieldLength]
-                            #print(nRead, cd.fieldLength, b)
+                            # print(nRead, cd.fieldLength, b)
                             v = cd.convertRaw(b)
                     nRead  += cd.fieldLength
                 
@@ -120,13 +120,13 @@ class CalibrationFile:
                 #if nRead > len(msg):
                 #    return False
 
-                return True
+            return True
 
         except:
             # pass
-            msg = "Failed to read message successfully"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            pmsg = "Failed to read message successfully"
+            print(pmsg)
+            Utilities.writeLogFile(pmsg)
 
         return False
 
@@ -169,7 +169,7 @@ class CalibrationFile:
                 if cd.fitType.upper() != "DELIMITER":
                     if cd.fieldLength != 0:
                         b = msg[nRead:nRead+cd.fieldLength]
-                        #print(nRead, cd.fieldLength, b)
+                        # print(nRead, cd.fieldLength, b)
                         v = cd.convertRaw(b)
                 nRead  += cd.fieldLength
 

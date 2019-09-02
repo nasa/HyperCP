@@ -21,7 +21,7 @@ class ProcessL1b:
             msg = f'Eliminate data between: {timeTag}  (HHMMSSMSS)'
             print(msg)
             Utilities.writeLogFile(msg)
-                 
+                             
             start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
             stop = Utilities.timeTag2ToSec(list(timeTag[1])[0])                
             
@@ -34,6 +34,7 @@ class ProcessL1b:
                     Utilities.writeLogFile(msg)
 
                 gpsTimeData = group.getDataset("UTCPOS")        
+                # gpsLonData = group.getDataset("LONPOS")
                 dataSec = []
                 for i in range(gpsTimeData.data.shape[0]):
                     # Screen raw GPS UTCPOS data for NaN (ECOA-1)
@@ -64,19 +65,19 @@ class ProcessL1b:
                 counter = 0
                 for i in range(lenDataSec):
                     if start <= dataSec[i] and stop >= dataSec[i]:
-                        if group.id.startswith("GPR"):
-                            test = group.getDataset("UTCPOS").data["NONE"][i - counter]
-                        else:
-                            test = group.getDataset("TIMETAG2").data["NONE"][i - counter]                    
+                        # if group.id.startswith("GPR"):
+                        #     test = group.getDataset("UTCPOS").data["NONE"][i - counter]
+                        # else:
+                        #     test = group.getDataset("TIMETAG2").data["NONE"][i - counter]                    
                         # print("     Removing " + str(test) + " " + str(Utilities.secToTimeTag2(dataSec[i])) + " index: " + str(i))                                        
                         # print(i-counter)
                         group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
                         counter += 1
                 # print(str(counter) + " records eliminated.")
-                if group.id.startswith("GPR"):
-                    test = len(group.getDataset("UTCPOS").data["NONE"])
-                else:
-                    test = len(group.getDataset("TIMETAG2").data["NONE"])
+                # if group.id.startswith("GPR"):
+                #     test = len(group.getDataset("UTCPOS").data["NONE"])
+                # else:
+                    # test = len(group.getDataset("TIMETAG2").data["NONE"])
                 # msg = ("     Length of dataset after removal " + str(test))
                 # print(msg)
                 # Utilities.writeLogFile(msg)
@@ -252,14 +253,13 @@ class ProcessL1b:
     # Filters data for pitch, roll, yaw, and rotator.
     # Calibrates raw data from L1a using information from calibration file
     @staticmethod
-    def processL1b(node, calibrationMap): 
-        
+    def processL1b(node, calibrationMap):         
 
         badTimes = None   
-        # Apply Pitch & Roll Filter
+        # Apply Pitch & Roll Filter   
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
-        # Interpolating them first would introduce error.
+        # Interpolating them first would introduce error.     
         if node is not None and int(ConfigFile.settings["bL1bCleanPitchRoll"]) == 1:
             msg = "Filtering file for high pitch and roll"
             print(msg)

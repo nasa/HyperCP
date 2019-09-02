@@ -103,9 +103,9 @@ class RawFileReader:
                                 try:
                                     num = cf.convertRaw(msg, gp)
                                 except:
-                                    msg = f'Unable to convert the following raw message: {msg}'
-                                    print(msg)
-                                    Utilities.writeLogFile(msg)
+                                    pmsg = f'Unable to convert the following raw message: {msg}'
+                                    print(pmsg)
+                                    Utilities.writeLogFile(pmsg)
 
 
 
