@@ -205,7 +205,7 @@ Prior to binning, data may be filtered for **Maximum Wind Speed**.
 
 Data are optionally limited to the lowest (e.g. 5% default) of Lt data at 780 nm within the sampling interval (if binning is performed) to minimize the effects of glint reflection from surface waves **(Hooker et al. 2002, Hooker and Morel 2003)**.
 
-The default value for sea-surface reflectance (**Rho_sky**) is set to 0.0256 based on **(Morel 1999, Mueller et al. 2003)**, which can be optionally adjusted for wind speed and cloud cover using the relationship found in **(Ruddick et al. 2006)**. The default wind speed should be set by the user depending on in situ conditions for instances when the ancillary data and models are not available. This correction does not account for the spectral dependence or polarization sensitivity in Rho_sky.
+The default value for sea-surface reflectance (**Rho_sky**) is set to 0.0256 based on **(Mobley 1999, Mueller et al. 2003)**, which can be optionally adjusted for wind speed and cloud cover using the relationship found in **(Ruddick et al. 2006)**. The default wind speed should be set by the user depending on in situ conditions for instances when the ancillary data and models are not available. This correction does not account for the spectral dependence or polarization sensitivity in Rho_sky.
 
 *{To Do: encode the Zhang et al. 2017 approach in Python to calculate a spectrally dependent, polarization-sensitive rho_sky. Matlab code was provided by Zhang, along with permission to distribute. This will also require an estimate of aerosol optical thickness, so adding getanc.py with AOD would be required.}*
 
