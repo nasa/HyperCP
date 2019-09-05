@@ -94,14 +94,14 @@ class ConfigFile:
         ConfigFile.settings["fL2Deglitch1"] = 11     
         ConfigFile.settings["fL2Deglitch2"] = 2.7
         ConfigFile.settings["fL2Deglitch3"] = 3.7
-        ConfigFile.settings["bL2AnomalyStep"] = 10
+        ConfigFile.settings["bL2AnomalyStep"] = 3
 
         ConfigFile.settings["fL3InterpInterval"] = 3 # Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL3PlotTimeInterp"] = 0
         ConfigFile.settings["bL3SaveSeaBASS"] = 0
         ConfigFile.settings["seaBASSHeaderFileName"] = None
                 
-        ConfigFile.settings["fL4MaxWind"] = 15.0 # 15 m/s: Zibordi 2009, 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019
+        ConfigFile.settings["fL4MaxWind"] = 7.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009, 
         ConfigFile.settings["fL4SZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
         ConfigFile.settings["fL4SZAMax"] = 60 # e.g. 60:Brewin 2016,
         ConfigFile.settings["bL4EnableSpecQualityCheck"] = 1

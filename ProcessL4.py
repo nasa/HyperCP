@@ -511,14 +511,18 @@ class ProcessL4:
         if not enableWindSpeedCalculation or sky750 >= 0.05:
             # Cloudy conditions: no further correction
             if sky750 >= 0.05:
-                msg = "Sky 750 threshold triggered for cloudy sky. Rho set to default value."
+                msg = f'Sky 750 threshold triggered for cloudy sky. Rho set to {rhoSky}.'
+                print(msg)
+                Utilities.writeLogFile(msg)
             p_sky = rhoSky
         else:
             # Clear sky conditions: correct for wind
             # Set wind speed here
             w = windSpeedMean
             p_sky = rhoSky + 0.00039 * w + 0.000034 * w * w
-            print(f'Rho_sky: {p_sky:.4f} Wind: {w:.1f} m/s')
+            msg = f'Rho_sky: {p_sky:.4f} Wind: {w:.1f} m/s'
+            print(msg)
+            Utilities.writeLogFile(msg)
 
         # Add ancillary data to Rrs dataset
         if not ("Datetag" in newRrsData.columns):
@@ -752,11 +756,11 @@ class ProcessL4:
             ProcessL4.filterData(satnavGroup, badTimes)   
 
 
-        ''' # Now filter the spectra from the entire ensemble before slicing the intervals'''
+        ''' # Now filter the spectra from the entire collection before slicing the intervals'''
        # Spectral Outlier Filter
         enableSpecQualityCheck = ConfigFile.settings['bL4EnableSpecQualityCheck']
         if enableSpecQualityCheck:
-            msg = "Applying spectral filtering to eliminate noisy spectra. This takes a moment for hi-res data."
+            msg = "Applying spectral filtering to eliminate noisy spectra."
             print(msg)
             Utilities.writeLogFile(msg)
             inFilePath = root.attributes['In_Filepath']
@@ -877,7 +881,7 @@ class ProcessL4:
         if interval == 0:
             # Here, take the complete time series
             print("No time binning. This can take a moment.")
-            Utilities.printProgressBar(0, esLength-1, prefix = 'Progress:', suffix = 'Complete', length = 50)
+            # Utilities.printProgressBar(0, esLength-1, prefix = 'Progress:', suffix = 'Complete', length = 50)
             for i in range(0, esLength-1):
                 Utilities.printProgressBar(i+1, esLength-1, prefix = 'Progress:', suffix = 'Complete', length = 50)
                 start = i

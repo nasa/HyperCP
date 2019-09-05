@@ -2,9 +2,10 @@
 HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing
 above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 
-See README.md
+See README.md or README.pdf for installation instructions and guide.
 
-Version 1.0.a: Under development August 2019
+Version 1.0.a: Under development September 2019
+Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 """
 import os
 import shutil
@@ -29,8 +30,6 @@ class Window(QtWidgets.QWidget):
            os.makedirs("Data") 
         if not os.path.exists("Plots"):
            os.makedirs("Plots")
-        # if not os.path.exists("Ascii"):
-        #    os.makedirs("Ascii")
         if not os.path.exists("Config"):
             os.makedirs("Config")
         if not os.path.exists("Logs"):
@@ -41,7 +40,7 @@ class Window(QtWidgets.QWidget):
     def initUI(self):
 
         banner = QtWidgets.QLabel(self)
-        pixmap = QtGui.QPixmap('Config/img/hyperspace2.jpg')
+        pixmap = QtGui.QPixmap('banner.jpg')
         # banner.setPixmap(pixmap.scaled(banner.size(),QtCore.Qt.IgnoreAspectRatio))
         banner.setPixmap(pixmap)
         # banner.resize(self.width(),100)        
@@ -81,17 +80,17 @@ class Window(QtWidgets.QWidget):
 
         ''' Should create a .config file to store defaults for the Main window'''
         self.inDirLabel = QtWidgets.QLabel("Input Data Directory", self)        
-        # self.inputDirectory = "./Data"
+        self.inputDirectory = "./Data"
         # self.inputDirectory = "../Field_Data/NOAA-ECOA_2015/hyperSAS" # for processed data on Candiru
-        self.inputDirectory = "D:/Dirk/NASA/HyperSAS/Field_Data" # for processed data on SMITHERS
+        # self.inputDirectory = "D:/Dirk/NASA/HyperSAS/Field_Data" # for processed data on SMITHERS
         # self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac        
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
 
         self.outDirLabel = QtWidgets.QLabel("Output Data Directory", self)        
-        # self.outputDirectory = "./Data"
+        self.outputDirectory = "./Data"
         # self.outputDirectory = "../Field_Data/Processed/NOAA-ECOA_2015" # for processed data on Candiru
-        self.outputDirectory = "D:/Dirk/NASA/HyperSAS/Field_Data/Processed" # for processed data on SMITHERS
+        # self.outputDirectory = "D:/Dirk/NASA/HyperSAS/Field_Data/Processed" # for processed data on SMITHERS
         # self.outputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
@@ -104,14 +103,6 @@ class Window(QtWidgets.QWidget):
 
         self.windAddButton.clicked.connect(self.windAddButtonPressed)
         self.windRemoveButton.clicked.connect(self.windRemoveButtonPressed)
-
-        # self.skyFileLabel = QtWidgets.QLabel("Sky File (SeaBASS format)")
-        # self.skyFileLineEdit = QtWidgets.QLineEdit()
-        # self.skyAddButton = QtWidgets.QPushButton("Add", self)
-        # self.skyRemoveButton = QtWidgets.QPushButton("Remove", self)                
-
-        # self.skyAddButton.clicked.connect(self.skyAddButtonPressed)
-        # self.skyRemoveButton.clicked.connect(self.skyRemoveButtonPressed)
 
 
         singleLevelLabel = QtWidgets.QLabel('Single-Level Processing', self)
@@ -194,14 +185,6 @@ class Window(QtWidgets.QWidget):
         vBox.addLayout(windHBox)
         vBox.addStretch(1)
 
-        # vBox.addWidget(self.skyFileLabel)        
-        # vBox.addWidget(self.skyFileLineEdit)
-
-        # skyHBox = QtWidgets.QHBoxLayout()        
-        # skyHBox.addWidget(self.skyAddButton)
-        # skyHBox.addWidget(self.skyRemoveButton)
-
-        # vBox.addLayout(skyHBox)
         vBox.addStretch(1)
 
         vBox.addWidget(singleLevelLabel)
@@ -288,8 +271,8 @@ class Window(QtWidgets.QWidget):
             self, "SUBDIRECTORIES FOR DATA LEVELS WILL BE CREATED HERE AUTOMATICALLY.",
             self.outputDirectory)
         print('Data output directory changed: ', self.outputDirectory)
-        print("NOTE: SUBDIRECTORIES FOR DATA LEVELS WILL BE CREATED HERE")
-        print("      AUTOMATICALLY, UNLESS THEY ALREADY EXIST.")        
+        print("NOTE: Subdirectories for data levels will be created here")
+        print("      automatically, unless they already exist.")        
         (_, dirName) = os.path.split(self.outputDirectory)        
         self.outDirButton.setText(dirName)
         return self.outputDirectory
@@ -304,37 +287,6 @@ class Window(QtWidgets.QWidget):
     def windRemoveButtonPressed(self):
         print("Wind File Remove Dialogue")
         self.windFileLineEdit.setText("")
-
-    # def skyAddButtonPressed(self):
-    #     print("Sky File Add Dialogue")
-    #     fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Select Sky File")
-    #     print(fnames)
-    #     if len(fnames[0]) == 1:
-    #         self.skyFileLineEdit.setText(fnames[0][0])
-
-    # def skyRemoveButtonPressed(self):
-    #     print("Sky File Remove Dialogue")
-    #     self.skyFileLineEdit.setText("")
-
-    # # Not implemented
-    # # Backup files before preprocessing if source files same as output directory
-    # def createBackupFiles(self, fileNames):
-    #     if len(fileNames) > 0:
-    #         path = fileNames[0]
-    #         (dirPath, fileName) = os.path.split(path)
-    #         if dirPath == self.outputDirectory:
-    #             newFileNames = []
-    #             # backupDir = os.path.join(self.outputDirectory, "Backup")
-    #             if not os.path.exists(backupDir):
-    #                 os.makedirs(backupDir)
-    #             for path in fileNames:
-    #                 (dirPath, fileName) = os.path.split(path)
-    #                 backupPath = os.path.join(backupDir, fileName)
-    #                 if not os.path.exists(backupPath):
-    #                     shutil.move(path, backupPath)
-    #                 newFileNames.append(backupPath)
-    #             fileNames = newFileNames
-    #     return fileNames
 
     def processSingle(self, level):
         print("Process Single-Level")
@@ -364,10 +316,8 @@ class Window(QtWidgets.QWidget):
         windFile = self.windFileLineEdit.text()
         if windFile == '':
             windFile = None
-        # skyFile = self.skyFileLineEdit.text()
 
         print("Process Calibration Files")
-        #calibrationMap = Controller.processCalibration(calibrationDirectory)
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings["CalibrationFiles"]
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
@@ -423,7 +373,6 @@ class Window(QtWidgets.QWidget):
             return
         fileNames = openFileNames[0]
 
-
         ## Select Output Directory
         # outputDirectory = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Output Directory")
         print("Output Directory:", self.outputDirectory)
@@ -431,7 +380,6 @@ class Window(QtWidgets.QWidget):
             return
 
         windFile = self.windFileLineEdit.text()
-        # skyFile = self.skyFileLineEdit.text()
 
         print("Process Calibration Files")
         filename = ConfigFile.filename
@@ -446,7 +394,6 @@ class Window(QtWidgets.QWidget):
 
 
 if __name__ == '__main__':
-    #app = QtGui.QApplication(sys.argv)
     app = QtWidgets.QApplication(sys.argv)
     win = Window()
     sys.exit(app.exec_())

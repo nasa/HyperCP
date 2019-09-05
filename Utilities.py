@@ -594,8 +594,8 @@ class Utilities:
         for i in badIndx:
             plt.plot(wave, normSpec[i,:], color='red', linewidth=0.5, linestyle='dashed')
 
-        plt.xlabel('Seconds', fontdict=font)
-        plt.ylabel('Data', fontdict=font)
+        plt.xlabel('Wavelength [nm]', fontdict=font)
+        plt.ylabel(f'{rType}', fontdict=font)
         plt.subplots_adjust(left=0.15)
         plt.subplots_adjust(bottom=0.15)
             

@@ -16,7 +16,6 @@ from ProcessL1b import ProcessL1b
 from ProcessL2 import ProcessL2
 from ProcessL3 import ProcessL3
 from ProcessL4 import ProcessL4
-# from ProcessL4a import ProcessL4a
 
 
 class Controller:
@@ -123,8 +122,7 @@ class Controller:
                         elevation = elevData.data.tolist()
                         szaLimit = float(ConfigFile.settings["fL1aCleanSZAMax"])
 
-                        # It would be good to add local time as a printed output with SZA, but considering ###
-                        # timezones and probable GMT input, it could be overly complex ###
+                        ''' It would be good to add local time as a printed output with SZA'''
                         if (90-np.nanmax(elevation)) > szaLimit:
                             msg = f'SZA too low. Discarding file. {round(90-np.nanmax(elevation))}'
                             print(msg)
@@ -262,16 +260,6 @@ class Controller:
             _, filename = os.path.split(outFilePath)
             Utilities.plotRadiometry(root, dirpath, filename, rType='LT')
 
-        #     # Write to separate file if quality flags are enabled
-        #     enableQualityFlags = int(ConfigFile.settings["bL4EnableQualityFlags"])
-        #     if enableQualityFlags:
-        #         root = HDFRoot.readHDF5(filepath)
-        #         root = ProcessL4.processL4(root, True, windSpeedData)
-        #         root = ProcessL4a.processL4a(root)
-        #         if root is not None:
-        #             Utilities.plotReflectance(root, dirpath, filename + "-flags")
-        #             root.writeHDF5(os.path.join(dirpath, filename + "_L4-flags.hdf"))
-
         # Write output file
         if root is not None:
             try:
@@ -283,7 +271,7 @@ class Controller:
             print(msg)
             Utilities.writeLogFile(msg)
 
-
+    # Process every file in a list of files 1 level
     @staticmethod
     def processSingleLevel(pathOut, inFilePath, calibrationMap, level, windFile=None):
         # Find the absolute path to the output directory
@@ -441,13 +429,7 @@ class Controller:
         Utilities.writeLogFile(msg)
 
 
-    # @staticmethod
-    # def processMultiLevel(outFilePath, inFilePath, calibrationMap, windFile=None):
-    #     print("Process Multi Level: ")
-               
-    #     print("Process Multi Level: " + outFilePath + " - DONE")
-
-    # Used to process every file in a list of files
+    # Process every file in a list of files from L1 to L4
     @staticmethod
     def processFilesMultiLevel(pathOut,inFiles, calibrationMap, windFile=None):
         print("processFilesMultiLevel")
@@ -475,7 +457,7 @@ class Controller:
         print("processFilesMultiLevel - DONE")
 
 
-    # Used to process every file in a list of files
+    # Process every file in a list of files 1 level
     @staticmethod
     def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level, windFile=None):
         # print("processFilesSingleLevel")
@@ -508,51 +490,5 @@ class Controller:
     #                 #Controller.processAll(os.path.join(dirpath, name), calibrationMap)
     #                 Controller.processMultiLevel(os.path.join(dirpath, name), calibrationMap, level, windFile)
     #         break
-    # @staticmethod
-    # def outputSeaBASS(fp, root, gpName, dsName):
-    #     (dirpath, filename) = os.path.split(fp)
-    #     filename = os.path.splitext(filename)[0]
-
-    #     gp = root.getGroup(gpName)
-    #     ds = gp.getDataset(dsName)
-    #     #np.savetxt('Data/test.out', ds.data)
-
-    #     if not ds:
-    #         print("Warning - outputSeaBASS: missing dataset")
-    #         return
-
-    #     #dirpath = "csv"
-    #     #name = filename[28:43]
-    #     dirpath = os.path.join(dirpath, 'csv')
-    #     name = filename[0:15]
-
-    #     outList = []
-    #     columnName = dsName.lower()
-        
-    #     names = list(ds.data.dtype.names)
-    #     names.remove("Datetag")
-    #     names.remove("Timetag2")
-    #     names.remove("Latpos")
-    #     names.remove("Lonpos")
-    #     data = ds.data[names]
-
-    #     total = ds.data.shape[0]
-    #     #ls = ["wl"] + [k for k,v in sorted(ds.data.dtype.fields.items(), key=lambda k: k[1])]
-    #     ls = ["wl"] + list(data.dtype.names)
-    #     outList.append(ls)
-    #     for i in range(total):
-    #         n = str(i+1)
-    #         ls = [columnName + "_" + name + '_' + n] + ['%f' % num for num in data[i]]
-    #         outList.append(ls)
-
-    #     outList = zip(*outList)
-
-    #     filename = dsName.upper() + "_" + name
-    #     #filename = name + "_" + dsName.upper()
-    #     csvPath = os.path.join(dirpath, filename + ".csv")
-
-    #     with open(csvPath, 'w') as f:
-    #         writer = csv.writer(f)
-    #         writer.writerows(outList)
-    """
+   """
     
