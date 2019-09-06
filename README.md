@@ -72,21 +72,22 @@ Launch the configuration module and GUI (ConfigWindow.py) from the Main window b
 *{Possible To Do: Interpolate values between cals?}*
 
 ##### Calibration & Instrument Files:
-In the 'Configuration' window, click 'Add Calibration Files' to add the calibration files from the relevant extracted Satlantic '.sip' file (i.e. '.cal' and '.tdf' files). The calibration file can be selected using the drop-down menu. Select the calibration files that correspond to the data you want to process with this configuration. You will need to know which .cal files correspond to each sensor, and which represent light and dark shutter measurements. For example,
-- SATNAVVVV.tdf > Solar Tracker (Frame Type Not Required)
+In the 'Configuration' window, click 'Add Calibration Files' to add the calibration and instrument files (telemetry definition files) from the relevant extracted Satlantic '.sip' file (i.e. '.cal' and '.tdf' files). The calibration or instrument file can be selected using the drop-down menu. Select (or enable) only the files that correspond to the data you want to process with this configuration. You will need to know which .cal/.tdf files correspond to each sensor/instrument, and which represent light and dark shutter measurements. For example,
+- SATTHSUUUUA.tdf > Tilt-heading sensor (Frame Type Not Required)
+- SATNAVVVVA.tdf > Solar Tracker (Frame Type Not Required)
 - GPRMC_NMEAWWW.tdf > GPS (Frame Type Not Required)
 - SATPYR.tdf > Pyrometer (Frame Type Not Required)
-- HEDXXX.cal > Es Frame Type: Dark
-- HSEXXX.cal > Es Light
-- HLDYYY.cal > Li Dark
-- HSLYYY.cal > Li Light
-- HLDZZZ.cal > Lt Dark
-- HSLZZZ.cal > Lt Light
-where VVV, WWW, XXX, YYY, and ZZZ are the serial numbers of the individual instruments.
+- HEDXXXAcal > Es Frame Type: Dark
+- HSEXXXA.cal > Es Light
+- HLDYYYA.cal > Li Dark
+- HSLYYYA.cal > Li Light
+- HLDZZZA.cal > Lt Dark
+- HSLZZZA.cal > Lt Light
+where UUUU, VVV, WWW, XXX, YYY, and ZZZ are the serial numbers of the individual instruments, which are followed where appropriate by factory calibration code (A, B, C, D, E, ...).
 
 Selections:  
 -Add Calibration Files - Allows loading calibration/instrument files (.cal/.tdf) into HyperInSPACE. Once loaded the drop-down box can be used to select the file to enable the instrument and set the frame type.
--Enabled checkbox - Used to enable/disable loading the calibration file in HyperInSPACE.
+-Enabled checkbox - Used to enable/disable loading the file in HyperInSPACE.
 -Frame Type - ShutterLight/ShutterDark/Not Required/LightAncCombined can be selected. This is used to specify frame type (ShutterLight/ShutterDark) for dark correction; the other options are ignored.
 
 For each calibration file:  
@@ -194,12 +195,14 @@ The default value for sea-surface reflectance (**Rho_sky**, sometimes called the
 **Meteorological flags** based on **(Wernand et al. 2002, Garaba et al. 2012, Vandenberg 2017)** can be optionally applied to screen for undesirable data. Specifically, data are filtered for unusually low downwelling irradiance at 480 nm (default 2.0 uW cm^-2 nm^-1, for data likely to have been collected near dawn or dusk (Es(470)/Es(680) < 1.0), and for data likely to have high relative humidity or rain (Es(720)/Es(370) < 1.095).
 
 *{To Do: Include a bidirectional correction to Lw based on, e.g. Lee 2011, Zibordi 2009}*
+*{To Do: Uncertainty estimates (e.g. Zibordi et al. 2009)}*
 
 Remote sensing reflectance is calculated as Rrs = (Lt - rho_sky* Li) / Es (e.g. **(Mobley 1999, Mueller et al. 2003, Ruddick et al. 2006)**). 
 
 Additional sun glint can be optionally removed from the Rrs by subtracting the value in the NIR from the entire spectrum **(Mueller et al. 2003 (NASA Protocols))**. This approach, however, assumes neglible water-leaving radiance in the 750-800 nm range (not true of turbid waters), and ignores the spectral dependence in sky glint, and **should therefore only be used in the clearest waters with caution**. Here, a minimum in Rrs(750-800) is found and subtracted from the entire spectrum.
 
 *{To Do: The NIR dark-pixel subtraction is bogus, and should be eliminated in favor of a more robust glint correction above (e.g. Zhang et al 2017)}*
+
 
 To output SeaBASS formatted text files, check the box. A subfolder within the L4 directory will be created, and separated files made for Li, Lt, Es, and Rrs hyperspectral data.
 
