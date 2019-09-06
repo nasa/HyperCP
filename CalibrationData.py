@@ -35,6 +35,11 @@ class CalibrationData:
         self.calLines = int(parts[5])
         self.fitType = parts[6]
 
+        if self.type == 'POSITION':
+            self.type = 'POINTING'
+            self.id = 'ROTATOR'            
+
+
     # Reads a coefficients line in the cal file
     # Notes: Does not support for OPTIC1, which uses 1-4 calibration lines
     def readCoefficients(self, line):
