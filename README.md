@@ -73,16 +73,27 @@ Launch the configuration module and GUI (ConfigWindow.py) from the Main window b
 
 ##### Calibration & Instrument Files:
 In the 'Configuration' window, click 'Add Calibration Files' to add the calibration and instrument files (telemetry definition files) from the relevant extracted Satlantic '.sip' file (i.e. '.cal' and '.tdf' files). The calibration or instrument file can be selected using the drop-down menu. Select (or enable) only the files that correspond to the data you want to process with this configuration. You will need to know which .cal/.tdf files correspond to each sensor/instrument, and which represent light and dark shutter measurements. For example,
+
 - SATTHSUUUUA.tdf > Tilt-heading sensor (Frame Type Not Required)
+
 - SATNAVVVVA.tdf > Solar Tracker (Frame Type Not Required)
+
 - GPRMC_NMEAWWW.tdf > GPS (Frame Type Not Required)
+
 - SATPYR.tdf > Pyrometer (Frame Type Not Required)
+
 - HEDXXXAcal > Es Frame Type: Dark
+
 - HSEXXXA.cal > Es Light
+
 - HLDYYYA.cal > Li Dark
+
 - HSLYYYA.cal > Li Light
+
 - HLDZZZA.cal > Lt Dark
+
 - HSLZZZA.cal > Lt Light
+
 where UUUU, VVV, WWW, XXX, YYY, and ZZZ are the serial numbers of the individual instruments, which are followed where appropriate by factory revision code (A, B, C, D, E, ...).
 
 Selections:  
