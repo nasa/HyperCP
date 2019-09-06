@@ -96,7 +96,7 @@ class ConfigFile:
         ConfigFile.settings["fL2Deglitch3"] = 3.7
         ConfigFile.settings["bL2AnomalyStep"] = 3
 
-        ConfigFile.settings["fL3InterpInterval"] = 3 # Brewin 2016 uses 3.5 nm
+        ConfigFile.settings["fL3InterpInterval"] = 3.5 # Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL3PlotTimeInterp"] = 0
         ConfigFile.settings["bL3SaveSeaBASS"] = 0
         ConfigFile.settings["seaBASSHeaderFileName"] = None

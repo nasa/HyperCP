@@ -392,7 +392,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l4QualityFlagCheckBoxUpdate()
 
         # NIR AtmoCorr
-        l4NIRCorrectionLabel = QtWidgets.QLabel("  Enable Near-infrared Correction", self)
+        l4NIRCorrectionLabel = QtWidgets.QLabel("  Enable NIR Correction (blue water only)", self)
         self.l4NIRCorrectionCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4PerformNIRCorrection"]) == 1:
             self.l4NIRCorrectionCheckBox.setChecked(True)
