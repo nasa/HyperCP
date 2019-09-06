@@ -83,7 +83,7 @@ In the 'Configuration' window, click 'Add Calibration Files' to add the calibrat
 - HSLYYYA.cal > Li Light
 - HLDZZZA.cal > Lt Dark
 - HSLZZZA.cal > Lt Light
-where UUUU, VVV, WWW, XXX, YYY, and ZZZ are the serial numbers of the individual instruments, which are followed where appropriate by factory calibration code (A, B, C, D, E, ...).
+where UUUU, VVV, WWW, XXX, YYY, and ZZZ are the serial numbers of the individual instruments, which are followed where appropriate by factory revision code (A, B, C, D, E, ...).
 
 Selections:  
 -Add Calibration Files - Allows loading calibration/instrument files (.cal/.tdf) into HyperInSPACE. Once loaded the drop-down box can be used to select the file to enable the instrument and set the frame type.

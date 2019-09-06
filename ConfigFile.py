@@ -119,7 +119,7 @@ class ConfigFile:
         ConfigFile.settings["fL4TimeInterval"] = 60
         ConfigFile.settings["bL4PerformNIRCorrection"] = 0 # Recommended in Mobley 1999 to correct after rho-correction (Rrs = Rrs-Rrs(750))
         ConfigFile.settings["bL4EnablePercentLt"] = 0
-        ConfigFile.settings["fL4PercentLt"] = 5
+        ConfigFile.settings["fL4PercentLt"] = 5 # 5% Hooker et al. 2002, Hooker and Morel 2003; <10% IOCCG Protocols
         ConfigFile.settings["bL4PlotRrs"] = 0
         ConfigFile.settings["bL4PlotEs"] = 0
         ConfigFile.settings["bL4PlotLi"] = 0

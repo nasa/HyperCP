@@ -371,7 +371,7 @@ class ProcessL4:
     @staticmethod
     def calculateReflectance2(root, esColumns, liColumns, ltColumns, newRrsData, newESData, newLIData, newLTData, \
                             windSpeedColumns=None):
-        '''Calculate the lowest 5% Lt. Check for Nans in Li, Lt, Es, or wind. Send out for meteorological quality flags, 
+        '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for meteorological quality flags, 
         Perform rho correction with wind. Calculate the Rrs. Correct for NIR.'''
     
         rhoSky = float(ConfigFile.settings["fL4RhoSky"])
@@ -441,7 +441,8 @@ class ProcessL4:
         index = np.argsort(lt780) # gives indexes if values were to be sorted
                 
         if enablePercentLt:
-            y = index[0:x] # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest 5% of lt780
+            # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest 5% of lt780
+            y = index[0:x] 
         else:
             y = index # If Percent Lt is turned off, this will average the whole slice
 
