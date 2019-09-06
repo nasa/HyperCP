@@ -161,7 +161,13 @@ class Controller:
 
         # Process the data
         print("ProcessL1b")
-        root = HDFRoot.readHDF5(inFilePath)
+        try:
+            root = HDFRoot.readHDF5(inFilePath)
+        except:
+            msg = "Unable to open file. May be open in another application."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
         root = ProcessL1b.processL1b(root, calibrationMap)
 
         # Write output file
@@ -184,7 +190,13 @@ class Controller:
 
         # Process the data
         print("ProcessL2")
-        root = HDFRoot.readHDF5(inFilePath)
+        try:
+            root = HDFRoot.readHDF5(inFilePath)
+        except:
+            msg = "Unable to open file. May be open in another application."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
         root = ProcessL2.processL2(root)
 
         # Write output file
@@ -211,7 +223,13 @@ class Controller:
         msg = ("ProcessL3: " + inFilePath)
         print(msg)
         Utilities.writeLogFile(msg,'w')
-        root = HDFRoot.readHDF5(inFilePath)
+        try:
+            root = HDFRoot.readHDF5(inFilePath)
+        except:
+            msg = "Unable to open file. May be open in another application."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
         root = ProcessL3.processL3(root, fileName)     
 
         # Write output file
@@ -239,7 +257,9 @@ class Controller:
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
-            print('Unable to read L3 file. It may be open in another program.')
+            msg = "Unable to open file. May be open in another application."
+            print(msg)
+            Utilities.writeLogFile(msg)
             return None
         
         root.attributes['In_Filepath'] = inFilePath
