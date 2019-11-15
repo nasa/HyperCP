@@ -1,9 +1,7 @@
-Config
-Data
-Plots
-Logs
-.DS_Store
-.vscode
-*.json
+Data/
+Plots/
+Logs/
+.vscode/
+settings.json
 *.pyc
 *.log
