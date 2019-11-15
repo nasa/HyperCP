@@ -11,6 +11,7 @@ import datetime as dt
 import HDFRoot
 from Utilities import Utilities
 from ConfigFile import ConfigFile
+from RhoCorrections import RhoCorrections
 
 
 class ProcessL4:
@@ -375,13 +376,30 @@ class ProcessL4:
         Perform rho correction with wind. Calculate the Rrs. Correct for NIR.'''
     
         rhoSky = float(ConfigFile.settings["fL4RhoSky"])
-        enableWindSpeedCalculation = int(ConfigFile.settings["bL4EnableWindSpeedCalculation"])
+        RuddickRho = int(ConfigFile.settings["bL4RuddickRho"])
+        ZhangRho = int(ConfigFile.settings["bL4ZhangRho"])
         defaultWindSpeed = float(ConfigFile.settings["fL4DefaultWindSpeed"])
+        windSpeedMean = defaultWindSpeed # replaced later with met file, if present   
         enableMetQualityCheck = int(ConfigFile.settings["bL4EnableQualityFlags"])                        
         performNIRCorrection = int(ConfigFile.settings["bL4PerformNIRCorrection"])                        
         enablePercentLt = float(ConfigFile.settings["bL4EnablePercentLt"])
         percentLt = float(ConfigFile.settings["fL4PercentLt"])
+
+        ''' Going to need output from getanc.py for Zhang Rho corrections '''
+        # I think getanc produces a file I can read in here to get the values I need
+        # Then need to replace default wind with model wind - this will be replaced with field
+        # data if it's available
+
+        AOD = 0 # from getanc
+        Cloud = 0 # from getanc
+        solZen = 0 # Need to grad this from the HDF
+        wTemp = 0 # Need to pull this off the pyrometer, if available. Need an input value otherwise
+        Sal = 0 # This is going to have to be input
+
         
+
+
+
         datetag = esColumns["Datetag"]
         timetag = esColumns["Timetag2"]
         # latpos = None
@@ -450,7 +468,7 @@ class ProcessL4:
         es5Columns = collections.OrderedDict()
         li5Columns = collections.OrderedDict()
         lt5Columns = collections.OrderedDict()
-        windSpeedMean = defaultWindSpeed # replaced later with met file, if present        
+             
 
 
         hasNan = False
@@ -489,7 +507,7 @@ class ProcessL4:
             print("Error NaN Found")
             return False
 
-        '''# Filter on meteorological flags'''
+        # Filter on meteorological flags
         if enableMetQualityCheck:
             if not ProcessL4.metQualityCheck(es5Columns):
                 msg = 'Slice failed quality check.'
@@ -498,32 +516,26 @@ class ProcessL4:
                 return False
 
 
-        '''This is the Ruddick, et al. 2006 approach, which has one method for 
-        clear sky, and another for cloudy. Methods of this type (i.e. not accounting
-        for spectral dependence (Lee et al. 2010, Gilerson et al. 2018) or polarization
-        effects (Harmel et al. 2012, Mobley 2015, Hieronumi 2016, D'Alimonte and Kajiyama 2016, 
-        Foster and Gilerson 2016, Gilerson et al. 2018)) are explicitly recommended in the 
-        IOCCG Protocols for Above Water Radiometry Measurements and Data Analysis (Chapter 5, Draft 2019).'''
         # Calculate Rho_sky
-        li750 = ProcessL4.interpolateColumn(li5Columns, 750.0)
-        es750 = ProcessL4.interpolateColumn(es5Columns, 750.0)
-        sky750 = li750[0]/es750[0]
 
-        if not enableWindSpeedCalculation or sky750 >= 0.05:
-            # Cloudy conditions: no further correction
-            if sky750 >= 0.05:
-                msg = f'Sky 750 threshold triggered for cloudy sky. Rho set to {rhoSky}.'
-                print(msg)
-                Utilities.writeLogFile(msg)
-            p_sky = rhoSky
-        else:
-            # Clear sky conditions: correct for wind
-            # Set wind speed here
-            w = windSpeedMean
-            p_sky = rhoSky + 0.00039 * w + 0.000034 * w * w
-            msg = f'Rho_sky: {p_sky:.4f} Wind: {w:.1f} m/s'
-            print(msg)
-            Utilities.writeLogFile(msg)
+        if RuddickRho:
+
+            '''This is the Ruddick, et al. 2006 approach, which has one method for 
+            clear sky, and another for cloudy. Methods of this type (i.e. not accounting
+            for spectral dependence (Lee et al. 2010, Gilerson et al. 2018) or polarization
+            effects (Harmel et al. 2012, Mobley 2015, Hieronumi 2016, D'Alimonte and Kajiyama 2016, 
+            Foster and Gilerson 2016, Gilerson et al. 2018)) are explicitly recommended in the 
+            IOCCG Protocols for Above Water Radiometry Measurements and Data Analysis (Chapter 5, Draft 2019).'''
+            
+            li750 = ProcessL4.interpolateColumn(li5Columns, 750.0)
+            es750 = ProcessL4.interpolateColumn(es5Columns, 750.0)
+            sky750 = li750[0]/es750[0]
+
+            p_sky = RhoCorrections.RuddickCorr(sky750, rhoSky, windSpeedMean)
+
+        elif ZhangRho:
+            p_sky = RhoCorrections.ZhangCorr(windSpeedMean,AOD,Cloud,solZen,wTemp,Sal)
+
 
         # Add ancillary data to Rrs dataset
         if not ("Datetag" in newRrsData.columns):
