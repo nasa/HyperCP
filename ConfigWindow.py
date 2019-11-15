@@ -309,8 +309,14 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l4SZAMaxLineEdit.setText(str(ConfigFile.settings["fL4SZAMax"]))
         self.l4SZAMaxLineEdit.setValidator(doubleValidator)         
 
+        # Time Average Rrs
+        l4TimeIntervalLabel = QtWidgets.QLabel("  Ensemble Interval (secs; 0=None)", self)
+        self.l4TimeIntervalLineEdit = QtWidgets.QLineEdit(self)
+        self.l4TimeIntervalLineEdit.setText(str(ConfigFile.settings["fL4TimeInterval"]))
+        self.l4TimeIntervalLineEdit.setValidator(intValidator)      
+
         # Spectral Outlier Filter
-        l4EnableSpecQualityCheckLabel = QtWidgets.QLabel("  Enable Spectral Outlier Filter", self)
+        l4EnableSpecQualityCheckLabel = QtWidgets.QLabel("    Enable Spectral Outlier Filter", self)
         self.l4EnableSpecQualityCheckCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4EnableSpecQualityCheck"]) == 1:
             self.l4EnableSpecQualityCheckCheckBox.setChecked(True)   
@@ -325,17 +331,10 @@ class ConfigWindow(QtWidgets.QDialog):
         l4SpecFilterLtLabel = QtWidgets.QLabel("     Filter Sigma Lt", self)
         self.l4SpecFilterLtLineEdit = QtWidgets.QLineEdit(self)
         self.l4SpecFilterLtLineEdit.setText(str(ConfigFile.settings["fL4SpecFilterLt"]))
-        self.l4SpecFilterLtLineEdit.setValidator(doubleValidator)
-        
-
-        # Time Average Rrs
-        l4TimeIntervalLabel = QtWidgets.QLabel("  Time Ave. Interval (seconds; 0=None)", self)
-        self.l4TimeIntervalLineEdit = QtWidgets.QLineEdit(self)
-        self.l4TimeIntervalLineEdit.setText(str(ConfigFile.settings["fL4TimeInterval"]))
-        self.l4TimeIntervalLineEdit.setValidator(intValidator)        
+        self.l4SpecFilterLtLineEdit.setValidator(doubleValidator)        
 
         # Set percentage Lt filter
-        self.l4EnablePercentLtLabel = QtWidgets.QLabel("  Enable Percent Lt Calculation", self)
+        self.l4EnablePercentLtLabel = QtWidgets.QLabel("    Enable Percent Lt Calculation", self)
         self.l4EnablePercentLtCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4EnablePercentLt"]) == 1:
            self.l4EnablePercentLtCheckBox.setChecked(True)        
@@ -347,21 +346,16 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l4EnablePercentLtCheckBoxUpdate()
 
         # Rho Sky Correction
-        l4RhoSkyLabel = QtWidgets.QLabel("    Default Rho Sky", self)
+        l4RhoSkyLabel = QtWidgets.QLabel("  Skyglint/Sunglint Correction (Rho)", self)
+        l4DefaultRhoSkyLabel = QtWidgets.QLabel("     Default Rho", self)
         self.l4RhoSkyLineEdit = QtWidgets.QLineEdit(self)
         self.l4RhoSkyLineEdit.setText(str(ConfigFile.settings["fL4RhoSky"]))
         self.l4RhoSkyLineEdit.setValidator(doubleValidator)
-        self.l4DefaultWindSpeedLabel = QtWidgets.QLabel("      Default Wind Speed (m/s)", self)
+        self.l4DefaultWindSpeedLabel = QtWidgets.QLabel("     Default Wind Speed (m/s)", self)
         self.l4DefaultWindSpeedLineEdit = QtWidgets.QLineEdit(self)
         self.l4DefaultWindSpeedLineEdit.setText(str(ConfigFile.settings["fL4DefaultWindSpeed"]))
         self.l4DefaultWindSpeedLineEdit.setValidator(doubleValidator)
 
-        # l4RuddickRhoLabel = QtWidgets.QLabel("  Ruddick et al 2006 Rho", self)
-        # self.l4RuddickRhoCheckBox = QtWidgets.QCheckBox("", self)
-        # if int(ConfigFile.settings["bL4RuddickRho"]) == 1:
-        #     self.l4RuddickRhoCheckBox.setChecked(True)        
-        
-        # self.l4RuddickRhoCheckBoxUpdate()
         self.RhoRadioButtonRuddick = QtWidgets.QRadioButton("Ruddick et al 2006 Rho")
         if ConfigFile.settings["bL4RuddickRho"]==1:
             self.RhoRadioButtonRuddick.setChecked(True)
@@ -372,7 +366,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.RhoRadioButtonZhang.clicked.connect(self.l4RhoCorrectionRadioButtonClicked)        
 
         # Meteorology Flags
-        l4QualityFlagLabel = QtWidgets.QLabel("    Enable Meteorological Flags", self)
+        l4QualityFlagLabel = QtWidgets.QLabel("  Enable Meteorological Flags", self)
         # l4QualityFlagLabel2 = QtWidgets.QLabel("    (Wernand 2012, OO XVI)", self)
         self.l4QualityFlagCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4EnableQualityFlags"]) == 1:
@@ -541,32 +535,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # Middle Vertical Box
         VBox2 = QtWidgets.QVBoxLayout()
-        VBox2.setAlignment(QtCore.Qt.AlignBottom)               
-        
-        # VBox2.addSpacing(20) 
-        # # Middle Vertical Box
-        # VBox2 = QtWidgets.QVBoxLayout()
-        # VBox2.setAlignment(QtCore.Qt.AlignBottom)               
-        
-        # VBox2.addWidget(l1bLabel2)
-        # # Relative SZA
-        # CleanSunAngleHBox = QtWidgets.QHBoxLayout()
-        # CleanSunAngleHBox.addWidget(l1bCleanSunAngleLabel)
-        # CleanSunAngleHBox.addWidget(self.l1bCleanSunAngleCheckBox)
-        # VBox2.addLayout(CleanSunAngleHBox)                      
-        # SunAngleMinHBox = QtWidgets.QHBoxLayout()       
-        # SunAngleMinHBox.addWidget(self.l1bSunAngleMinLabel)
-        # SunAngleMinHBox.addWidget(self.l1bSunAngleMinLineEdit)
-        # VBox2.addLayout(SunAngleMinHBox)         
-        # SunAngleMaxHBox = QtWidgets.QHBoxLayout()       
-        # SunAngleMaxHBox.addWidget(self.l1bSunAngleMaxLabel)
-        # SunAngleMaxHBox.addWidget(self.l1bSunAngleMaxLineEdit)
-        # VBox2.addLayout(SunAngleMaxHBox)         
-        
-        # VBox2.addSpacing(20) 
-
-        
-        # VBox2.addSpacing(20)           
+        VBox2.setAlignment(QtCore.Qt.AlignBottom)                            
 
         # L2
         VBox2.addWidget(l2Label)
@@ -611,7 +580,6 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addLayout(stepHBox)
         VBox2.addWidget(self.l2AnomalyButton)
 
-
         VBox2.addSpacing(20)   
 
         #L3        
@@ -649,8 +617,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l3SeaBASSHeaderHBox2.addWidget(self.l3SeaBASSHeaderOpenButton)
         l3SeaBASSHeaderHBox2.addWidget(self.l3SeaBASSHeaderEditButton)
         l3SeaBASSHeaderHBox2.addWidget(self.l3SeaBASSHeaderDeleteButton)
-        VBox2.addLayout(l3SeaBASSHeaderHBox2)
-        
+        VBox2.addLayout(l3SeaBASSHeaderHBox2)        
         
         # Right box
         VBox3 = QtWidgets.QVBoxLayout()
@@ -679,6 +646,12 @@ class ConfigWindow(QtWidgets.QDialog):
         SZAHBox2.addWidget(self.l4SZAMaxLineEdit)
         VBox3.addLayout(SZAHBox2)
 
+        # Time Average Rrs
+        TimeAveHBox = QtWidgets.QHBoxLayout()
+        TimeAveHBox.addWidget(l4TimeIntervalLabel)
+        TimeAveHBox.addWidget(self.l4TimeIntervalLineEdit)
+        VBox3.addLayout(TimeAveHBox)     
+
         # Spectral Outlier Filter
         SpecFilterHBox = QtWidgets.QHBoxLayout()
         SpecFilterHBox.addWidget(l4EnableSpecQualityCheckLabel)
@@ -699,12 +672,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
         VBox3.addSpacing(5)
 
-        # Time Average Rrs
-        TimeAveHBox = QtWidgets.QHBoxLayout()
-        TimeAveHBox.addWidget(l4TimeIntervalLabel)
-        TimeAveHBox.addWidget(self.l4TimeIntervalLineEdit)
-        VBox3.addLayout(TimeAveHBox)     
-
         # Percent Light; Hooker & Morel 2003
         PercentLtHBox = QtWidgets.QHBoxLayout()
         PercentLtHBox.addWidget(self.l4EnablePercentLtLabel)
@@ -716,9 +683,10 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addLayout(PercentLtHBox2)              
 
         # Rho Skyglint/Sunglint Correction
+        VBox3.addWidget(l4RhoSkyLabel)
         # Default Rho
         RhoHBox = QtWidgets.QHBoxLayout()
-        RhoHBox.addWidget(l4RhoSkyLabel)
+        RhoHBox.addWidget(l4DefaultRhoSkyLabel)
         RhoHBox.addWidget(self.l4RhoSkyLineEdit)
         VBox3.addLayout(RhoHBox)
         # Default Wind
