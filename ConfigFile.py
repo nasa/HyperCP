@@ -42,8 +42,9 @@ class ConfigFile:
         print("fL4SZAMax", ConfigFile.settings["fL4SZAMax"])
         print("bL4EnableSpecQualityCheck", ConfigFile.settings["bL4EnableSpecQualityCheck"])
         print("fL4RhoSky", ConfigFile.settings["fL4RhoSky"])
-        print("bL4EnableWindSpeedCalculation", ConfigFile.settings["bL4EnableWindSpeedCalculation"])
-        print("fL4DefaultWindSpeed", ConfigFile.settings["fL4DefaultWindSpeed"])        
+        print("fL4DefaultWindSpeed", ConfigFile.settings["fL4DefaultWindSpeed"])   
+        print("bL4RuddickRho", ConfigFile.settings["bL4RuddickRho"])
+        print("bL4ZhangRho", ConfigFile.settings["bL4ZhangRho"])             
         print("bL4EnableQualityFlags", ConfigFile.settings["bL4EnableQualityFlags"])
         print("fL4SignificantEsFlag", ConfigFile.settings["fL4SignificantEsFlag"])
         print("fL4DawnDuskFlag", ConfigFile.settings["fL4DawnDuskFlag"])
@@ -110,7 +111,8 @@ class ConfigFile:
         ConfigFile.settings["fL4SpecFilterLt"] = 3
 
         ConfigFile.settings["fL4RhoSky"] = 0.0256 # Mobley 1999
-        ConfigFile.settings["bL4EnableWindSpeedCalculation"] = 1
+        ConfigFile.settings["bL4RuddickRho"] = 1
+        ConfigFile.settings["bL4ZhangRho"] = 0
         ConfigFile.settings["fL4DefaultWindSpeed"] = 5.0        
         ConfigFile.settings["bL4EnableQualityFlags"] = 1
         ConfigFile.settings["fL4SignificantEsFlag"] = 2.0 # Wernand 2002

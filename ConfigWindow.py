@@ -54,8 +54,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationEnabledCheckBox.stateChanged.connect(self.calibrationEnabledStateChanged)
         self.calibrationEnabledCheckBox.setEnabled(False)
 
-        
-
         calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
         self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
         self.calibrationFrameTypeComboBox.addItem("ShutterLight")
@@ -312,7 +310,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l4SZAMaxLineEdit.setValidator(doubleValidator)         
 
         # Spectral Outlier Filter
-        l4EnableSpecQualityCheckLabel = QtWidgets.QLabel("    Enable Spectral Outlier Filter", self)
+        l4EnableSpecQualityCheckLabel = QtWidgets.QLabel("  Enable Spectral Outlier Filter", self)
         self.l4EnableSpecQualityCheckCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4EnableSpecQualityCheck"]) == 1:
             self.l4EnableSpecQualityCheckCheckBox.setChecked(True)   
@@ -336,36 +334,42 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l4TimeIntervalLineEdit.setText(str(ConfigFile.settings["fL4TimeInterval"]))
         self.l4TimeIntervalLineEdit.setValidator(intValidator)        
 
-        self.l4EnablePercentLtLabel = QtWidgets.QLabel("    Enable Percent Lt Calculation", self)
+        # Set percentage Lt filter
+        self.l4EnablePercentLtLabel = QtWidgets.QLabel("  Enable Percent Lt Calculation", self)
         self.l4EnablePercentLtCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL4EnablePercentLt"]) == 1:
-           self.l4EnablePercentLtCheckBox.setChecked(True)
-
-        # Set percentage Lt filter
-        self.l4PercentLtLabel = QtWidgets.QLabel("      Percent Lt (%)", self)
+           self.l4EnablePercentLtCheckBox.setChecked(True)        
+        self.l4PercentLtLabel = QtWidgets.QLabel("     Percent Lt (%)", self)
         self.l4PercentLtLineEdit = QtWidgets.QLineEdit(self)
         self.l4PercentLtLineEdit.setText(str(ConfigFile.settings["fL4PercentLt"]))
         self.l4PercentLtLineEdit.setValidator(doubleValidator)
 
         self.l4EnablePercentLtCheckBoxUpdate()
 
-        # Rho Sky & Wind
+        # Rho Sky Correction
         l4RhoSkyLabel = QtWidgets.QLabel("    Default Rho Sky", self)
         self.l4RhoSkyLineEdit = QtWidgets.QLineEdit(self)
         self.l4RhoSkyLineEdit.setText(str(ConfigFile.settings["fL4RhoSky"]))
         self.l4RhoSkyLineEdit.setValidator(doubleValidator)
-
-        l4EnableWindSpeedCalculationLabel = QtWidgets.QLabel("    Enable Wind Speed Rho Calculation", self)
-        self.l4EnableWindSpeedCalculationCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL4EnableWindSpeedCalculation"]) == 1:
-            self.l4EnableWindSpeedCalculationCheckBox.setChecked(True)
-
         self.l4DefaultWindSpeedLabel = QtWidgets.QLabel("      Default Wind Speed (m/s)", self)
         self.l4DefaultWindSpeedLineEdit = QtWidgets.QLineEdit(self)
         self.l4DefaultWindSpeedLineEdit.setText(str(ConfigFile.settings["fL4DefaultWindSpeed"]))
         self.l4DefaultWindSpeedLineEdit.setValidator(doubleValidator)
+
+        # l4RuddickRhoLabel = QtWidgets.QLabel("  Ruddick et al 2006 Rho", self)
+        # self.l4RuddickRhoCheckBox = QtWidgets.QCheckBox("", self)
+        # if int(ConfigFile.settings["bL4RuddickRho"]) == 1:
+        #     self.l4RuddickRhoCheckBox.setChecked(True)        
         
-        self.l4EnableWindSpeedCalculationCheckBoxUpdate()
+        # self.l4RuddickRhoCheckBoxUpdate()
+        self.RhoRadioButtonRuddick = QtWidgets.QRadioButton("Ruddick et al 2006 Rho")
+        if ConfigFile.settings["bL4RuddickRho"]==1:
+            self.RhoRadioButtonRuddick.setChecked(True)
+        self.RhoRadioButtonRuddick.clicked.connect(self.l4RhoCorrectionRadioButtonClicked)        
+        self.RhoRadioButtonZhang = QtWidgets.QRadioButton("Zhang et al 2017 Rho")
+        if ConfigFile.settings["bL4ZhangRho"]==1:
+            self.RhoRadioButtonZhang.setChecked(True)
+        self.RhoRadioButtonZhang.clicked.connect(self.l4RhoCorrectionRadioButtonClicked)        
 
         # Meteorology Flags
         l4QualityFlagLabel = QtWidgets.QLabel("    Enable Meteorological Flags", self)
@@ -419,7 +423,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l4PlotLtCheckBox.setChecked(True)
 
         self.l4QualityFlagCheckBox.clicked.connect(self.l4QualityFlagCheckBoxUpdate)
-        self.l4EnableWindSpeedCalculationCheckBox.clicked.connect(self.l4EnableWindSpeedCalculationCheckBoxUpdate)
+        # self.l4RuddickRhoCheckBox.clicked.connect(self.l4RuddickRhoCheckBoxUpdate)
         self.l4NIRCorrectionCheckBox.clicked.connect(self.l4NIRCorrectionCheckBoxUpdate)
         self.l4EnablePercentLtCheckBox.clicked.connect(self.l4EnablePercentLtCheckBoxUpdate)
 
@@ -711,19 +715,27 @@ class ConfigWindow(QtWidgets.QDialog):
         PercentLtHBox2.addWidget(self.l4PercentLtLineEdit)
         VBox3.addLayout(PercentLtHBox2)              
 
-        # Rho Sky & Wind
+        # Rho Skyglint/Sunglint Correction
+        # Default Rho
         RhoHBox = QtWidgets.QHBoxLayout()
         RhoHBox.addWidget(l4RhoSkyLabel)
         RhoHBox.addWidget(self.l4RhoSkyLineEdit)
         VBox3.addLayout(RhoHBox)
-        WindSpeedHBox = QtWidgets.QHBoxLayout()
-        WindSpeedHBox.addWidget(l4EnableWindSpeedCalculationLabel)
-        WindSpeedHBox.addWidget(self.l4EnableWindSpeedCalculationCheckBox)
-        VBox3.addLayout(WindSpeedHBox)         
+        # Default Wind
         WindSpeedHBox2 = QtWidgets.QHBoxLayout()    
         WindSpeedHBox2.addWidget(self.l4DefaultWindSpeedLabel)
         WindSpeedHBox2.addWidget(self.l4DefaultWindSpeedLineEdit)
         VBox3.addLayout(WindSpeedHBox2)         
+        # Rho model
+        RhoHBox2 = QtWidgets.QHBoxLayout()
+        # WindSpeedHBox = QtWidgets.QHBoxLayout()
+        RhoHBox2.addWidget(self.RhoRadioButtonRuddick)
+        RhoHBox2.addWidget(self.RhoRadioButtonZhang)
+        VBox3.addLayout(RhoHBox2)         
+        # WindSpeedHBox.addWidget(l4RuddickRhoLabel)
+        # WindSpeedHBox.addWidget(self.l4RuddickRhoCheckBox)
+        # VBox3.addLayout(WindSpeedHBox)         
+        
 
         VBox3.addSpacing(5)
 
@@ -1027,13 +1039,24 @@ class ConfigWindow(QtWidgets.QDialog):
             message = "Not a seaBASSHeader File: " + seaBASSHeaderFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
 
-    def l4EnableWindSpeedCalculationCheckBoxUpdate(self):
-        print("ConfigWindow - l4EnableWindSpeedCalculationCheckBoxUpdate")
-        # print("This should do something....?")
+    # def l4RuddickRhoCheckBoxUpdate(self):
+    #     print("ConfigWindow - l4RuddickRhoCheckBoxUpdate")
+    #     # print("This should do something....?")
         
-        disabled = (not self.l4EnableWindSpeedCalculationCheckBox.isChecked())
-        self.l4DefaultWindSpeedLabel.setDisabled(disabled)
-        self.l4DefaultWindSpeedLineEdit.setDisabled(disabled)
+    #     disabled = (not self.l4RuddickRhoCheckBox.isChecked())
+    #     self.l4DefaultWindSpeedLabel.setDisabled(disabled)
+    #     self.l4DefaultWindSpeedLineEdit.setDisabled(disabled)
+
+    def l4RhoCorrectionRadioButtonClicked(self):
+        # radioButton = self.sender()
+        if self.RhoRadioButtonRuddick.isChecked():
+            print("ConfigWindow - l4RhoCorrection set to Ruddick")
+            ConfigFile.settings["bL4RuddickRho"] = 1
+            ConfigFile.settings["bL4ZhangRho"] = 0
+        else:
+            print("ConfigWindow - l4RhoCorrection set to Zhang")
+            ConfigFile.settings["bL4RuddickRho"] = 0
+            ConfigFile.settings["bL4ZhangRho"] = 1
 
     def l4QualityFlagCheckBoxUpdate(self):
         print("ConfigWindow - l4QualityFlagCheckBoxUpdate")
@@ -1108,7 +1131,8 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL4SpecFilterLt"] = float(self.l4SpecFilterLtLineEdit.text())
 
         ConfigFile.settings["fL4RhoSky"] = float(self.l4RhoSkyLineEdit.text())
-        ConfigFile.settings["bL4EnableWindSpeedCalculation"] = int(self.l4EnableWindSpeedCalculationCheckBox.isChecked())
+        ConfigFile.settings["bL4RuddickRho"] = int(self.RhoRadioButtonRuddick.isChecked())
+        ConfigFile.settings["bL4ZhangRho"] = int(self.RhoRadioButtonZhang.isChecked())
         ConfigFile.settings["fL4DefaultWindSpeed"] = float(self.l4DefaultWindSpeedLineEdit.text())
         ConfigFile.settings["bL4EnableQualityFlags"] = int(self.l4QualityFlagCheckBox.isChecked())
         ConfigFile.settings["fL4SignificantEsFlag"] = float(self.l4EsFlagLineEdit.text())
@@ -1183,7 +1207,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["fL4SpecFilterLi"] = float(self.l4SpecFilterLiLineEdit.text())
             ConfigFile.settings["fL4SpecFilterLt"] = float(self.l4SpecFilterLtLineEdit.text())
             ConfigFile.settings["fL4RhoSky"] = float(self.l4RhoSkyLineEdit.text())
-            ConfigFile.settings["bL4EnableWindSpeedCalculation"] = int(self.l4EnableWindSpeedCalculationCheckBox.isChecked())
+            ConfigFile.settings["bL4RuddickRho"] = int(self.l4RuddickRhoCheckBox.isChecked())
             ConfigFile.settings["fL4DefaultWindSpeed"] = float(self.l4DefaultWindSpeedLineEdit.text())
             ConfigFile.settings["bL4EnableQualityFlags"] = int(self.l4QualityFlagCheckBox.isChecked())
             ConfigFile.settings["fL4SignificantEsFlag"] = float(self.l4EsFlagLineEdit.text())

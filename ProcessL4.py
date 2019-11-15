@@ -375,7 +375,7 @@ class ProcessL4:
         Perform rho correction with wind. Calculate the Rrs. Correct for NIR.'''
     
         rhoSky = float(ConfigFile.settings["fL4RhoSky"])
-        enableWindSpeedCalculation = int(ConfigFile.settings["bL4EnableWindSpeedCalculation"])
+        RuddickRho = int(ConfigFile.settings["bL4RuddickRho"])
         defaultWindSpeed = float(ConfigFile.settings["fL4DefaultWindSpeed"])
         enableMetQualityCheck = int(ConfigFile.settings["bL4EnableQualityFlags"])                        
         performNIRCorrection = int(ConfigFile.settings["bL4PerformNIRCorrection"])                        
@@ -509,7 +509,7 @@ class ProcessL4:
         es750 = ProcessL4.interpolateColumn(es5Columns, 750.0)
         sky750 = li750[0]/es750[0]
 
-        if not enableWindSpeedCalculation or sky750 >= 0.05:
+        if not RuddickRho or sky750 >= 0.05:
             # Cloudy conditions: no further correction
             if sky750 >= 0.05:
                 msg = f'Sky 750 threshold triggered for cloudy sky. Rho set to {rhoSky}.'
