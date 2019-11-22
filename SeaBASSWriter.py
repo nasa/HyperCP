@@ -21,10 +21,10 @@ class SeaBASSWriter:
         headerBlock = SeaBASSHeader.settings        
 
         # Dataset leading columns can be taken from any sensor 
-        if level == 3:
+        if level == '1e':
             referenceGroup = node.getGroup("Reference")
             esData = referenceGroup.getDataset("ES_hyperspectral")
-        if level == 4:
+        if level == '2':
             referenceGroup = node.getGroup("Irradiance")
             esData = referenceGroup.getDataset("ES")
 
@@ -77,7 +77,7 @@ class SeaBASSWriter:
     
    
     @staticmethod
-    def formatData3(dataset,dtype, units):            
+    def formatData1e(dataset,dtype, units):            
                 
         # Convert Dates and Times and remove from dataset
         newData = dataset.data
@@ -149,7 +149,7 @@ class SeaBASSWriter:
         return dataOut, fieldsLineStr, unitsLineStr
 
     @staticmethod
-    def formatData4(dataset,dtype, units):            
+    def formatData2(dataset,dtype, units):            
                 
         # Convert Dates and Times and remove from dataset
         newData = dataset.data
@@ -265,18 +265,18 @@ class SeaBASSWriter:
     @staticmethod
     def outputTXT_L3(fp):
         print('Writing type 3 SeaBASS file')
-        SeaBASSWriter.outputTXT_Type3(fp, "L3")
+        SeaBASSWriter.outputTXT_Type1e(fp, "L3")
 
     @staticmethod
     def outputTXT_L4(fp):
         print('Writing type 4 SeaBASS file')
-        SeaBASSWriter.outputTXT_Type4(fp, "L4")
-    #     SeaBASSWriter.outputTXT_Type4(fp, "L4-flags")
+        SeaBASSWriter.outputTXT_Type2(fp, "L4")
+    #     SeaBASSWriter.outputTXT_Type2(fp, "L4-flags")
 
 
     # Convert Level 3 data to SeaBASS file
     @staticmethod
-    def outputTXT_Type3(fp, level):
+    def outputTXT_Type1e(fp):
 
         if not os.path.isfile(fp):
             print("SeaBASSWriter: no file to convert")
@@ -401,21 +401,21 @@ class SeaBASSWriter:
             ltData.columnsToDataset()
 
         # Format the non-specific header block
-        headerBlock = SeaBASSWriter.formatHeader(fp,root, level=3)
+        headerBlock = SeaBASSWriter.formatHeader(fp,root, level='1e')
 
         # Format each data block for individual output
-        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData3(esData,'es',root.attributes["ES_UNITS"])        
-        formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData3(liData,'li',root.attributes["LI_UNITS"])
-        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData3(ltData,'lt',root.attributes["LT_UNITS"])                        
+        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData1e(esData,'es',root.attributes["ES_UNITS"])        
+        formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData1e(liData,'li',root.attributes["LI_UNITS"])
+        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData1e(ltData,'lt',root.attributes["LT_UNITS"])                        
 
         # # Write SeaBASS files
         SeaBASSWriter.writeSeaBASS('ES',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
         SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
         SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)
 
-    # Convert Level 4 data to SeaBASS file
+    # Convert Level 2 data to SeaBASS file
     @staticmethod
-    def outputTXT_Type4(fp, level):
+    def outputTXT_Type2(fp):
 
         if not os.path.isfile(fp):
             print("SeaBASSWriter: no file to convert")
@@ -553,13 +553,13 @@ class SeaBASSWriter:
             rrsData.columnsToDataset()
 
         # Format the non-specific header block
-        headerBlock = SeaBASSWriter.formatHeader(fp,root, level=4)
+        headerBlock = SeaBASSWriter.formatHeader(fp,root, level='2')
 
         # Format each data block for individual output
-        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData3(esData,'es',root.attributes["ES_UNITS"])        
-        formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData3(liData,'li',root.attributes["LI_UNITS"])
-        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData3(ltData,'lt',root.attributes["LT_UNITS"])
-        formattedRrs, fieldsRrs, unitsRrs  = SeaBASSWriter.formatData3(rrsData,'rrs',root.attributes["Rrs_UNITS"])
+        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData1e(esData,'es',root.attributes["ES_UNITS"])        
+        formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData1e(liData,'li',root.attributes["LI_UNITS"])
+        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData1e(ltData,'lt',root.attributes["LT_UNITS"])
+        formattedRrs, fieldsRrs, unitsRrs  = SeaBASSWriter.formatData1e(rrsData,'rrs',root.attributes["Rrs_UNITS"])
 
         # # Write SeaBASS files
         SeaBASSWriter.writeSeaBASS('ES',fp,headerBlock,formattedEs,fieldsEs,unitsEs)

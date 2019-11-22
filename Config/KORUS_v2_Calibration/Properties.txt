@@ -1,2 +1,0 @@
-NAME = SolarTracker
-BAUDRATE = 115200

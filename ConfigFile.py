@@ -14,50 +14,50 @@ class ConfigFile:
         print("bL1aCleanSZA", ConfigFile.settings["bL1aCleanSZA"])
         print("fL1aCleanSZAMax", ConfigFile.settings["fL1aCleanSZAMax"])
 
-        print("fL1bRotatorHomeAngle", ConfigFile.settings["fL1bRotatorHomeAngle"])
-        print("fL1bRotatorDelay", ConfigFile.settings["fL1bRotatorDelay"]) 
-        print("fL1bPitchRollPitch", ConfigFile.settings["fL1bPitchRollPitch"]) 
-        print("fL1bPitchRollRoll", ConfigFile.settings["fL1bPitchRollRoll"]) 
-        print("bL1bCleanRotatorAngle", ConfigFile.settings["bL1bCleanRotatorAngle"])
-        print("fL1bRotatorAngleMin", ConfigFile.settings["fL1bRotatorAngleMin"])
-        print("fL1bRotatorAngleMax", ConfigFile.settings["fL1bRotatorAngleMax"])
-        print("bL1bCleanSunAngle", ConfigFile.settings["bL1bCleanSunAngle"])
-        print("fL1bSunAngleMin", ConfigFile.settings["fL1bSunAngleMin"])
-        print("fL1bSunAngleMax", ConfigFile.settings["fL1bSunAngleMax"])
+        print("fL1cRotatorHomeAngle", ConfigFile.settings["fL1cRotatorHomeAngle"])
+        print("fL1cRotatorDelay", ConfigFile.settings["fL1cRotatorDelay"]) 
+        print("fL1cPitchRollPitch", ConfigFile.settings["fL1cPitchRollPitch"]) 
+        print("fL1cPitchRollRoll", ConfigFile.settings["fL1cPitchRollRoll"]) 
+        print("bL1cCleanRotatorAngle", ConfigFile.settings["bL1cCleanRotatorAngle"])
+        print("fL1cRotatorAngleMin", ConfigFile.settings["fL1cRotatorAngleMin"])
+        print("fL1cRotatorAngleMax", ConfigFile.settings["fL1cRotatorAngleMax"])
+        print("bL1cCleanSunAngle", ConfigFile.settings["bL1cCleanSunAngle"])
+        print("fL1cSunAngleMin", ConfigFile.settings["fL1cSunAngleMin"])
+        print("fL1cSunAngleMax", ConfigFile.settings["fL1cSunAngleMax"])
 
-        print("bL2Deglitch", ConfigFile.settings["bL2Deglitch"])
-        print("fL2Deglitch0", ConfigFile.settings["fL2Deglitch0"])
-        print("fL2Deglitch1", ConfigFile.settings["fL2Deglitch1"])
-        print("fL2Deglitch2", ConfigFile.settings["fL2Deglitch2"])
-        print("fL2Deglitch3", ConfigFile.settings["fL2Deglitch3"])
-        print("bL2AnomalyStep", ConfigFile.settings["bL2AnomalyStep"])   
+        print("bL1dDeglitch", ConfigFile.settings["bL1dDeglitch"])
+        print("fL1dDeglitch0", ConfigFile.settings["fL1dDeglitch0"])
+        print("fL1dDeglitch1", ConfigFile.settings["fL1dDeglitch1"])
+        print("fL1dDeglitch2", ConfigFile.settings["fL1dDeglitch2"])
+        print("fL1dDeglitch3", ConfigFile.settings["fL1dDeglitch3"])
+        print("bL1dAnomalyStep", ConfigFile.settings["bL1dAnomalyStep"])   
 
-        print("fL3InterpInterval", ConfigFile.settings["fL3InterpInterval"])
-        print("bL3PlotTimeInterp", ConfigFile.settings["bL3PlotTimeInterp"])
-        print("bL3SaveSeaBASS", ConfigFile.settings["bL3SaveSeaBASS"])
+        print("fL1eInterpInterval", ConfigFile.settings["fL1eInterpInterval"])
+        print("bL1ePlotTimeInterp", ConfigFile.settings["bL1ePlotTimeInterp"])
+        print("bL1eSaveSeaBASS", ConfigFile.settings["bL1eSaveSeaBASS"])
         print("seaBASSHeaderFileName", ConfigFile.settings["seaBASSHeaderFileName"])
 
-        print("fL4MaxWind", ConfigFile.settings["fL4MaxWind"])
-        print("fL4SZAMin", ConfigFile.settings["fL4SZAMin"])
-        print("fL4SZAMax", ConfigFile.settings["fL4SZAMax"])
-        print("bL4EnableSpecQualityCheck", ConfigFile.settings["bL4EnableSpecQualityCheck"])
-        print("fL4RhoSky", ConfigFile.settings["fL4RhoSky"])
-        print("fL4DefaultWindSpeed", ConfigFile.settings["fL4DefaultWindSpeed"])   
-        print("bL4RuddickRho", ConfigFile.settings["bL4RuddickRho"])
-        print("bL4ZhangRho", ConfigFile.settings["bL4ZhangRho"])             
-        print("bL4EnableQualityFlags", ConfigFile.settings["bL4EnableQualityFlags"])
-        print("fL4SignificantEsFlag", ConfigFile.settings["fL4SignificantEsFlag"])
-        print("fL4DawnDuskFlag", ConfigFile.settings["fL4DawnDuskFlag"])
-        print("fL4RainfallHumidityFlag", ConfigFile.settings["fL4RainfallHumidityFlag"])                        
-        print("fL4TimeInterval", ConfigFile.settings["fL4TimeInterval"])
-        print("bL4PerformNIRCorrection", ConfigFile.settings["bL4PerformNIRCorrection"])        
-        print("bL4EnablePercentLt", ConfigFile.settings["bL4EnablePercentLt"])
-        print("fL4PercentLt", ConfigFile.settings["fL4PercentLt"])
-        print("bL4PlotRrs", ConfigFile.settings["bL4PlotRrs"])
-        print("bL4PlotEs", ConfigFile.settings["bL4PlotEs"])
-        print("bL4PlotLi", ConfigFile.settings["bL4PlotLi"])
-        print("bL4PlotLt", ConfigFile.settings["bL4PlotLt"])
-        print("bL4SaveSeaBASS", ConfigFile.settings["bL4SaveSeaBASS"])
+        print("fL2MaxWind", ConfigFile.settings["fL2MaxWind"])
+        print("fL2SZAMin", ConfigFile.settings["fL2SZAMin"])
+        print("fL2SZAMax", ConfigFile.settings["fL2SZAMax"])
+        print("bL2EnableSpecQualityCheck", ConfigFile.settings["bL2EnableSpecQualityCheck"])
+        print("fL2RhoSky", ConfigFile.settings["fL2RhoSky"])
+        print("fL2DefaultWindSpeed", ConfigFile.settings["fL2DefaultWindSpeed"])   
+        print("bL2RuddickRho", ConfigFile.settings["bL2RuddickRho"])
+        print("bL2ZhangRho", ConfigFile.settings["bL2ZhangRho"])             
+        print("bL2EnableQualityFlags", ConfigFile.settings["bL2EnableQualityFlags"])
+        print("fL2SignificantEsFlag", ConfigFile.settings["fL2SignificantEsFlag"])
+        print("fL2DawnDuskFlag", ConfigFile.settings["fL2DawnDuskFlag"])
+        print("fL2RainfallHumidityFlag", ConfigFile.settings["fL2RainfallHumidityFlag"])                        
+        print("fL2TimeInterval", ConfigFile.settings["fL2TimeInterval"])
+        print("bL2PerformNIRCorrection", ConfigFile.settings["bL2PerformNIRCorrection"])        
+        print("bL2EnablePercentLt", ConfigFile.settings["bL2EnablePercentLt"])
+        print("fL2PercentLt", ConfigFile.settings["fL2PercentLt"])
+        print("bL2PlotRrs", ConfigFile.settings["bL2PlotRrs"])
+        print("bL2PlotEs", ConfigFile.settings["bL2PlotEs"])
+        print("bL2PlotLi", ConfigFile.settings["bL2PlotLi"])
+        print("bL2PlotLt", ConfigFile.settings["bL2PlotLt"])
+        print("bL2SaveSeaBASS", ConfigFile.settings["bL2SaveSeaBASS"])
 
 
     # Creates the calibration file folder if not exist
@@ -78,55 +78,55 @@ class ConfigFile:
         ConfigFile.settings["bL1aCleanSZA"] = 0
         ConfigFile.settings["fL1aCleanSZAMax"] = 60.0 # e.g. 60:Brewin 2016, 
 
-        ConfigFile.settings["bL1bCleanPitchRoll"] = 0
-        ConfigFile.settings["fL1bPitchRollPitch"] = 5 # 2-5 deg. IOCCG Draft Protocols
-        ConfigFile.settings["fL1bPitchRollRoll"] = 5 # 2-5 deg. IOCCG Draft Protocols
-        ConfigFile.settings["fL1bRotatorHomeAngle"] = 0.0 # Require knowledge of deployment set-up
-        ConfigFile.settings["fL1bRotatorDelay"] = 60.0 # Vandenberg 2016
-        ConfigFile.settings["bL1bCleanRotatorAngle"] = 0
-        ConfigFile.settings["fL1bRotatorAngleMin"] = -40.0 # Require knowledge of deployment set-up
-        ConfigFile.settings["fL1bRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
-        ConfigFile.settings["bL1bCleanSunAngle"] = 0
-        ConfigFile.settings["fL1bSunAngleMin"] = 90.0 # Zhang 2017: 45*, Mobley 1999: 90, Zibordi 2009 (and IOCCG Protocols): 90
-        ConfigFile.settings["fL1bSunAngleMax"] = 135.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90        
+        ConfigFile.settings["bL1cCleanPitchRoll"] = 0
+        ConfigFile.settings["fL1cPitchRollPitch"] = 5 # 2-5 deg. IOCCG Draft Protocols
+        ConfigFile.settings["fL1cPitchRollRoll"] = 5 # 2-5 deg. IOCCG Draft Protocols
+        ConfigFile.settings["fL1cRotatorHomeAngle"] = 0.0 # Require knowledge of deployment set-up
+        ConfigFile.settings["fL1cRotatorDelay"] = 60.0 # Vandenberg 2016
+        ConfigFile.settings["bL1cCleanRotatorAngle"] = 0
+        ConfigFile.settings["fL1cRotatorAngleMin"] = -40.0 # Require knowledge of deployment set-up
+        ConfigFile.settings["fL1cRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
+        ConfigFile.settings["bL1cCleanSunAngle"] = 0
+        ConfigFile.settings["fL1cSunAngleMin"] = 90.0 # Zhang 2017: 45*, Mobley 1999: 90, Zibordi 2009 (and IOCCG Protocols): 90
+        ConfigFile.settings["fL1cSunAngleMax"] = 135.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90        
 
-        ConfigFile.settings["bL2Deglitch"] = 0
-        ConfigFile.settings["fL2Deglitch0"] = 9   # These can be experimentally derived with the AnomalyDetection tool
-        ConfigFile.settings["fL2Deglitch1"] = 11     
-        ConfigFile.settings["fL2Deglitch2"] = 2.7
-        ConfigFile.settings["fL2Deglitch3"] = 3.7
-        ConfigFile.settings["bL2AnomalyStep"] = 3
+        ConfigFile.settings["bL1dDeglitch"] = 0
+        ConfigFile.settings["fL1dDeglitch0"] = 9   # These can be experimentally derived with the AnomalyDetection tool
+        ConfigFile.settings["fL1dDeglitch1"] = 11     
+        ConfigFile.settings["fL1dDeglitch2"] = 2.7
+        ConfigFile.settings["fL1dDeglitch3"] = 3.7
+        ConfigFile.settings["bL1dAnomalyStep"] = 3
 
-        ConfigFile.settings["fL3InterpInterval"] = 3.5 # Brewin 2016 uses 3.5 nm
-        ConfigFile.settings["bL3PlotTimeInterp"] = 0
-        ConfigFile.settings["bL3SaveSeaBASS"] = 0
+        ConfigFile.settings["fL1eInterpInterval"] = 3.5 # Brewin 2016 uses 3.5 nm
+        ConfigFile.settings["bL1ePlotTimeInterp"] = 0
+        ConfigFile.settings["bL1eSaveSeaBASS"] = 0
         ConfigFile.settings["seaBASSHeaderFileName"] = None
                 
-        ConfigFile.settings["fL4MaxWind"] = 7.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009, 
-        ConfigFile.settings["fL4SZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
-        ConfigFile.settings["fL4SZAMax"] = 60 # e.g. 60:Brewin 2016,
-        ConfigFile.settings["bL4EnableSpecQualityCheck"] = 1
-        ConfigFile.settings["fL4SpecFilterEs"] = 5
-        ConfigFile.settings["fL4SpecFilterLi"] = 8
-        ConfigFile.settings["fL4SpecFilterLt"] = 3
+        ConfigFile.settings["fL2MaxWind"] = 7.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009, 
+        ConfigFile.settings["fL2SZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
+        ConfigFile.settings["fL2SZAMax"] = 60 # e.g. 60:Brewin 2016,
+        ConfigFile.settings["bL2EnableSpecQualityCheck"] = 1
+        ConfigFile.settings["fL2SpecFilterEs"] = 5
+        ConfigFile.settings["fL2SpecFilterLi"] = 8
+        ConfigFile.settings["fL2SpecFilterLt"] = 3
 
-        ConfigFile.settings["fL4RhoSky"] = 0.0256 # Mobley 1999
-        ConfigFile.settings["bL4RuddickRho"] = 1
-        ConfigFile.settings["bL4ZhangRho"] = 0
-        ConfigFile.settings["fL4DefaultWindSpeed"] = 5.0        
-        ConfigFile.settings["bL4EnableQualityFlags"] = 1
-        ConfigFile.settings["fL4SignificantEsFlag"] = 2.0 # Wernand 2002
-        ConfigFile.settings["fL4DawnDuskFlag"] = 1.0 # Wernand 2002
-        ConfigFile.settings["fL4RainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain      
-        ConfigFile.settings["fL4TimeInterval"] = 60
-        ConfigFile.settings["bL4PerformNIRCorrection"] = 0 # Recommended in Mobley 1999 to correct after rho-correction (Rrs = Rrs-Rrs(750))
-        ConfigFile.settings["bL4EnablePercentLt"] = 0
-        ConfigFile.settings["fL4PercentLt"] = 5 # 5% Hooker et al. 2002, Hooker and Morel 2003; <10% IOCCG Protocols
-        ConfigFile.settings["bL4PlotRrs"] = 0
-        ConfigFile.settings["bL4PlotEs"] = 0
-        ConfigFile.settings["bL4PlotLi"] = 0
-        ConfigFile.settings["bL4PlotLt"] = 0
-        ConfigFile.settings["bL4SaveSeaBASS"] = 0
+        ConfigFile.settings["fL2RhoSky"] = 0.0256 # Mobley 1999
+        ConfigFile.settings["bL2RuddickRho"] = 1
+        ConfigFile.settings["bL2ZhangRho"] = 0
+        ConfigFile.settings["fL2DefaultWindSpeed"] = 5.0        
+        ConfigFile.settings["bL2EnableQualityFlags"] = 1
+        ConfigFile.settings["fL2SignificantEsFlag"] = 2.0 # Wernand 2002
+        ConfigFile.settings["fL2DawnDuskFlag"] = 1.0 # Wernand 2002
+        ConfigFile.settings["fL2RainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain      
+        ConfigFile.settings["fL2TimeInterval"] = 60
+        ConfigFile.settings["bL2PerformNIRCorrection"] = 0 # Recommended in Mobley 1999 to correct after rho-correction (Rrs = Rrs-Rrs(750))
+        ConfigFile.settings["bL2EnablePercentLt"] = 0
+        ConfigFile.settings["fL2PercentLt"] = 5 # 5% Hooker et al. 2002, Hooker and Morel 2003; <10% IOCCG Protocols
+        ConfigFile.settings["bL2PlotRrs"] = 0
+        ConfigFile.settings["bL2PlotEs"] = 0
+        ConfigFile.settings["bL2PlotLi"] = 0
+        ConfigFile.settings["bL2PlotLt"] = 0
+        ConfigFile.settings["bL2SaveSeaBASS"] = 0
 
         if not name.endswith(".cfg"):
             name = name + ".cfg"

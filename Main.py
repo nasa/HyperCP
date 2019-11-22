@@ -4,7 +4,7 @@ above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 
 See README.md or README.pdf for installation instructions and guide.
 
-Version 1.0.a: Under development September 2019
+Version 1.0.b: Under development November 2019
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 """
 import os
@@ -96,7 +96,7 @@ class Window(QtWidgets.QWidget):
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
         
 
-        self.windFileLabel = QtWidgets.QLabel("Meteorologic File for L4 (SeaBASS format)")
+        self.windFileLabel = QtWidgets.QLabel("Meteorologic File for L2 (SeaBASS format)")
         self.windFileLineEdit = QtWidgets.QLineEdit()
         self.windAddButton = QtWidgets.QPushButton("Add", self)
         self.windRemoveButton = QtWidgets.QPushButton("Remove", self)                
@@ -118,20 +118,24 @@ class Window(QtWidgets.QWidget):
         self.singleL1bButton = QtWidgets.QPushButton("L1A --> L1B", self)
         #self.singleL1aButton.move(30, 350)
 
-        self.singleL2Button = QtWidgets.QPushButton("L1B --> L2", self)
-        #self.singleL2Button.move(30, 450)
+        self.singleL1cButton = QtWidgets.QPushButton("L1B --> L1C", self)
+        #self.singleL1cButton.move(30, 450)
 
-        self.singleL3Button = QtWidgets.QPushButton("L2 --> L3", self)
+        self.singleL1dButton = QtWidgets.QPushButton("L1C --> L1D", self)
         #self.singleL1bButton.move(30, 400)
 
-        self.singleL4Button = QtWidgets.QPushButton("L3 --> L4", self)
+        self.singleL1eButton = QtWidgets.QPushButton("L1D --> L1E", self)
+        #self.singleL1bButton.move(30, 400)
+
+        self.singleL2Button = QtWidgets.QPushButton("L1E --> L2", self)
         #self.singleL1bButton.move(30, 400)
         
         self.singleL1aButton.clicked.connect(self.singleL1aClicked)
         self.singleL1bButton.clicked.connect(self.singleL1bClicked)            
+        self.singleL1cButton.clicked.connect(self.singleL1cClicked)
+        self.singleL1dButton.clicked.connect(self.singleL1dClicked)
+        self.singleL1eButton.clicked.connect(self.singleL1eClicked)
         self.singleL2Button.clicked.connect(self.singleL2Clicked)
-        self.singleL3Button.clicked.connect(self.singleL3Clicked)
-        self.singleL4Button.clicked.connect(self.singleL4Clicked)
 
         multiLevelLabel = QtWidgets.QLabel('Multi-Level Processing', self)
         multiLevelLabel_font = multiLevelLabel.font()
@@ -140,7 +144,7 @@ class Window(QtWidgets.QWidget):
         multiLevelLabel.setFont(multiLevelLabel_font)
         #self.multiLevelLabel.move(30, 140)
 
-        self.multi4Button = QtWidgets.QPushButton("Raw (BIN) ----->> L4 (HDF5)", self)
+        self.multi4Button = QtWidgets.QPushButton("Raw (BIN) ----->> L2 (HDF5)", self)
         #self.multi1Button.move(30, 170)
 
         self.multi4Button.clicked.connect(self.multi4Clicked)
@@ -191,9 +195,10 @@ class Window(QtWidgets.QWidget):
         # vBox.addWidget(self.singleL0Button)
         vBox.addWidget(self.singleL1aButton)
         vBox.addWidget(self.singleL1bButton)
+        vBox.addWidget(self.singleL1cButton)
+        vBox.addWidget(self.singleL1dButton)
+        vBox.addWidget(self.singleL1eButton)
         vBox.addWidget(self.singleL2Button)
-        vBox.addWidget(self.singleL3Button)
-        vBox.addWidget(self.singleL4Button)
 
         vBox.addStretch(1)
 
@@ -340,13 +345,16 @@ class Window(QtWidgets.QWidget):
     def singleL1bClicked(self):
         self.processSingle("1b")
 
+    def singleL1cClicked(self):
+        self.processSingle("1c")
+
+    def singleL1dClicked(self):
+        self.processSingle("1d")
+
+    def singleL1eClicked(self):
+        self.processSingle("1e")      
+
     def singleL2Clicked(self):
-        self.processSingle("2")
-
-    def singleL3Clicked(self):
-        self.processSingle("3")   
-
-    def singleL4Clicked(self):
         self.processSingle("4")   
 
     def processMulti(self, level):
