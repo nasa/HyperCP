@@ -26,7 +26,7 @@ Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstr
 
 ## Requirements and Installation
 
-Requires that the Anaconda distribution of Python 3.X is installed on a Linux, MacOS, or Windows computer.
+Requires that the Anaconda distribution of Python 3.X is installed on a Linux, MacOS, or Windows computer. A nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk
 
 *{Note: If upgraded to include model retrievals of ancillary data (i.e. getanc.py), the OCCSW package will become an additional requirement}*
 
