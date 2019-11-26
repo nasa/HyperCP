@@ -10,6 +10,8 @@ Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 import os
 import shutil
 import sys
+import collections
+import json
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from Controller import Controller
@@ -45,27 +47,27 @@ class Window(QtWidgets.QWidget):
         banner.setPixmap(pixmap)
         # banner.resize(self.width(),100)        
 
-        """Initialize the user interface"""        
+        """Initialize the user interface"""   
 
-        # Configuration File
-        fsm = QtWidgets.QFileSystemModel()
-        index = fsm.setRootPath("Config")
-        
+        # Main window configuration restore
+        MainConfig.loadConfig(MainConfig.fileName)  
+        print(MainConfig.settings)   
+
+        # Configuration File        
         configLabel = QtWidgets.QLabel('Select/Create Configuration File', self)
         configLabel_font = configLabel.font()
         configLabel_font.setPointSize(10)
         configLabel_font.setBold(True)
         configLabel.setFont(configLabel_font)
-        #configLabel.move(30, 20)
-
+        self.fsm = QtWidgets.QFileSystemModel()        
+        self.fsm.setNameFilters(["*.cfg"]) 
+        self.fsm.setNameFilterDisables(False) # This activates the Filter (on Win10)
+        self.fsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
         self.configComboBox = QtWidgets.QComboBox(self)
-        self.configComboBox.setModel(fsm)
-        fsm.setNameFilters(["*.cfg"]) 
-        fsm.setNameFilterDisables(False) # This activates the Filter (on Win10)
-        fsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
-        self.configComboBox.setRootModelIndex(index)
-        self.configComboBox.setCurrentIndex(0) # How to default to last used, or first on the list?
-        # self.configComboBox.addItem("1")        
+        self.configComboBox.setModel(self.fsm)
+        self.configComboBox.setRootModelIndex(self.fsm.setRootPath("Config"))
+        self.fsm.directoryLoaded.connect(self.on_directoryLoaded)         
+        self.configComboBox.currentTextChanged.connect(self.comboBox1Changed)             
         #self.configComboBox.move(30, 50)                
 
         self.configNewButton = QtWidgets.QPushButton("New", self)
@@ -80,7 +82,7 @@ class Window(QtWidgets.QWidget):
 
         ''' Should create a .config file to store defaults for the Main window'''
         self.inDirLabel = QtWidgets.QLabel("Input Data Directory", self)        
-        self.inputDirectory = "./Data"
+        self.inputDirectory = MainConfig.settings["inDir"]
         # self.inputDirectory = "../Field_Data/NOAA-ECOA_2015/hyperSAS" # for processed data on Candiru
         # self.inputDirectory = "D:/Dirk/NASA/HyperSAS/Field_Data" # for processed data on SMITHERS
         # self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac        
@@ -88,7 +90,7 @@ class Window(QtWidgets.QWidget):
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
 
         self.outDirLabel = QtWidgets.QLabel("Output Data Directory", self)        
-        self.outputDirectory = "./Data"
+        self.outputDirectory = MainConfig.settings["outDir"]
         # self.outputDirectory = "../Field_Data/Processed/NOAA-ECOA_2015" # for processed data on Candiru
         # self.outputDirectory = "D:/Dirk/NASA/HyperSAS/Field_Data/Processed" # for processed data on SMITHERS
         # self.outputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
@@ -214,6 +216,14 @@ class Window(QtWidgets.QWidget):
         self.setWindowTitle('HyperInSPACE')
         self.show()
 
+    def on_directoryLoaded(self, path):
+        # print(MainConfig.settings["cfgFile"])
+        index = self.configComboBox.findText(MainConfig.settings["cfgFile"])
+        self.configComboBox.setCurrentIndex(index)
+
+    def comboBox1Changed(self,value):
+        MainConfig.settings["cfgFile"] = value
+        print("MainConfig: Configuration file changed to: ", value)    
 
     def configNewButtonPressed(self):
         print("New Config Dialogue")
@@ -222,7 +232,6 @@ class Window(QtWidgets.QWidget):
             print("Create Config File: ", text)
             ConfigFile.createDefaultConfig(text)
             # ToDo: Add code to change text for the combobox once file is created            
-
 
     def configEditButtonPressed(self):
         print("Edit Config Dialogue")
@@ -240,7 +249,6 @@ class Window(QtWidgets.QWidget):
             #print("Not a Config File: " + configFileName)
             message = "Not a Config File: " + configFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
-
 
     def configDeleteButtonPressed(self):
         print("Delete Config Dialogue")
@@ -268,7 +276,7 @@ class Window(QtWidgets.QWidget):
         print('Data input directory changed: ', self.inputDirectory)
         (_, inDirName) = os.path.split(self.inputDirectory)        
         self.inDirButton.setText(inDirName)
-        # self.inputDirectory = inDir
+        MainConfig.settings["inDir"] = inDirName
         return self.inputDirectory
 
     def outDirButtonPressed(self):        
@@ -278,8 +286,9 @@ class Window(QtWidgets.QWidget):
         print('Data output directory changed: ', self.outputDirectory)
         print("NOTE: Subdirectories for data levels will be created here")
         print("      automatically, unless they already exist.")        
-        (_, dirName) = os.path.split(self.outputDirectory)        
-        self.outDirButton.setText(dirName)
+        (_, outDirName) = os.path.split(self.outputDirectory)        
+        self.outDirButton.setText(outDirName)
+        MainConfig.settings["outDir"] = outDirName
         return self.outputDirectory
 
     def windAddButtonPressed(self):
@@ -338,6 +347,16 @@ class Window(QtWidgets.QWidget):
             return            
 
         Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile) 
+
+    def closeEvent(self, event):
+        reply = QtWidgets.QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            event.accept()
+            MainConfig.saveConfig(MainConfig.fileName)
+        else:
+            event.ignore()
 
     def singleL1aClicked(self):
         self.processSingle("1a")
@@ -399,6 +418,44 @@ class Window(QtWidgets.QWidget):
 
     def multi4Clicked(self):
         self.processMulti(4)
+
+class MainConfig:   
+    fileName = "main.config"
+    settings = collections.OrderedDict()
+
+    # Saves the cfg file
+    @staticmethod
+    def saveConfig(fileName):
+        print("ConfigFile - Save Config")        
+        jsn = json.dumps(MainConfig.settings)
+        fp = os.path.join("Config", fileName)
+
+        with open(fp, 'w') as f:
+            f.write(jsn)
+
+    # Loads the cfg file
+    @staticmethod
+    def loadConfig(fileName):
+        print("MainConfig - Load Config")
+        configPath = os.path.join("Config", fileName)
+        if os.path.isfile(configPath):
+            text = ""
+            with open(configPath, 'r') as f:
+                text = f.read()
+                MainConfig.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
+        else:
+            MainConfig.createDefaultConfig(fileName)
+
+    # Generates the default configuration
+    @staticmethod
+    def createDefaultConfig(fileName):
+        print("MainConfig - File not found..")
+        print("MainConfig - Create Default Config")
+
+        MainConfig.settings["cfgFile"] = ""
+        MainConfig.settings["inDir"] = './Data'
+        MainConfig.settings["outDir"] = './Data'
+        
 
 
 if __name__ == '__main__':
