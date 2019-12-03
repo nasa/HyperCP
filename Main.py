@@ -80,20 +80,13 @@ class Window(QtWidgets.QWidget):
         self.configEditButton.clicked.connect(self.configEditButtonPressed)
         self.configDeleteButton.clicked.connect(self.configDeleteButtonPressed)
 
-        ''' Should create a .config file to store defaults for the Main window'''
         self.inDirLabel = QtWidgets.QLabel("Input Data Directory", self)        
         self.inputDirectory = MainConfig.settings["inDir"]
-        # self.inputDirectory = "../Field_Data/NOAA-ECOA_2015/hyperSAS" # for processed data on Candiru
-        # self.inputDirectory = "D:/Dirk/NASA/HyperSAS/Field_Data" # for processed data on SMITHERS
-        # self.inputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac        
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
 
-        self.outDirLabel = QtWidgets.QLabel("Output Data Directory", self)        
+        self.outDirLabel = QtWidgets.QLabel("Output Data Directory (not level specific)", self)        
         self.outputDirectory = MainConfig.settings["outDir"]
-        # self.outputDirectory = "../Field_Data/Processed/NOAA-ECOA_2015" # for processed data on Candiru
-        # self.outputDirectory = "D:/Dirk/NASA/HyperSAS/Field_Data/Processed" # for processed data on SMITHERS
-        # self.outputDirectory = "../../Projects_Supplemental/HyperPACE/Field_Data" # for raw data on Mac
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
         
@@ -157,12 +150,9 @@ class Window(QtWidgets.QWidget):
         # vBox.addStretch(1)
 
         vBox.addWidget(banner)
-
-        # vBox1 = QtWidgets.QVBoxLayout()
+        
         vBox.addWidget(configLabel)
         vBox.addWidget(self.configComboBox)
-        # print("index: ", self.configComboBox.currentIndex())
-        # print("text: ", self.configComboBox.currentText())        
         # index = self.configComboBox.findText("*.cfg",QtCore.Qt.MatchFixedString)
 
         # Horizontal Box; New Edit Delete Buttons
@@ -194,7 +184,6 @@ class Window(QtWidgets.QWidget):
         vBox.addStretch(1)
 
         vBox.addWidget(singleLevelLabel)
-        # vBox.addWidget(self.singleL0Button)
         vBox.addWidget(self.singleL1aButton)
         vBox.addWidget(self.singleL1bButton)
         vBox.addWidget(self.singleL1cButton)
@@ -209,7 +198,6 @@ class Window(QtWidgets.QWidget):
 
         vBox.addStretch(1)
 
-        # vBox.addLayout(vBox1)
         self.setLayout(vBox)
 
         self.setGeometry(300, 300, 290, 600)
@@ -274,9 +262,9 @@ class Window(QtWidgets.QWidget):
             self, "Choose Directory.", 
             self.inputDirectory)
         print('Data input directory changed: ', self.inputDirectory)
-        (_, inDirName) = os.path.split(self.inputDirectory)        
-        self.inDirButton.setText(inDirName)
-        MainConfig.settings["inDir"] = inDirName
+        # (_, inDirName) = os.path.split(self.inputDirectory)        
+        self.inDirButton.setText(self.inputDirectory)
+        MainConfig.settings["inDir"] = self.inputDirectory
         return self.inputDirectory
 
     def outDirButtonPressed(self):        
@@ -286,9 +274,9 @@ class Window(QtWidgets.QWidget):
         print('Data output directory changed: ', self.outputDirectory)
         print("NOTE: Subdirectories for data levels will be created here")
         print("      automatically, unless they already exist.")        
-        (_, outDirName) = os.path.split(self.outputDirectory)        
-        self.outDirButton.setText(outDirName)
-        MainConfig.settings["outDir"] = outDirName
+        # (_, outDirName) = os.path.split(self.outputDirectory)        
+        self.outDirButton.setText(self.outputDirectory)
+        MainConfig.settings["outDir"] = self.outputDirectory
         return self.outputDirectory
 
     def windAddButtonPressed(self):

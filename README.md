@@ -6,7 +6,7 @@ Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.g
 Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
 ## Version
-1.0.&alpha;
+1.0.&beta;
 ---
 ```
                  NASA Goddard Space Flight Center (GSFC) 
@@ -72,27 +72,29 @@ Launch the configuration module and GUI (ConfigWindow.py) from the Main window b
 *{Possible To Do: Interpolate values between cals?}*
 
 ##### Calibration & Instrument Files:
-In the 'Configuration' window, click 'Add Calibration Files' to add the calibration and instrument files (telemetry definition files) from the relevant extracted Satlantic '.sip' file (i.e. '.cal' and '.tdf' files). The calibration or instrument file can be selected using the drop-down menu. Select (or enable) only the files that correspond to the data you want to process with this configuration. You will need to know which .cal/.tdf files correspond to each sensor/instrument, and which represent light and dark shutter measurements. For example,
+In the 'Configuration' window, click 'Add Calibration Files' to add the calibration and instrument files (telemetry definition files) from the relevant extracted Satlantic '.sip' file (i.e. '.cal' and '.tdf' files). The calibration or instrument file can be selected using the drop-down menu. Enable (in the neighboring checkbox) only the files that correspond to the data you want to process with this configuration. You will need to know which .cal/.tdf files correspond to each sensor/instrument, and which represent light and dark shutter measurements. For example:
 
-- SATTHSUUUUA.tdf > Tilt-heading sensor (Frame Type Not Required)
+- SATMSG.tdf > SAS Solar Tracker status message string (Frame Type: Not Required)
 
-- SATNAVVVVA.tdf > Solar Tracker (Frame Type Not Required)
+- SATTHSUUUUA.tdf > Tilt-heading sensor (Frame Type: Not Required)
 
-- GPRMC_NMEAWWW.tdf > GPS (Frame Type Not Required)
+- SATNAVVVVA.tdf > Solar Tracker (Frame Type: Not Required)
 
-- SATPYR.tdf > Pyrometer (Frame Type Not Required)
+- GPRMC_NMEAWWW.tdf > GPS (Frame Type: Not Required)
 
-- HEDXXXAcal > Es Frame Type: Dark
+- SATPYR.tdf > Pyrometer (Frame Type: Not Required)
 
-- HSEXXXA.cal > Es Light
+- HEDXXXAcal > Es (Frame Type: Dark)
 
-- HLDYYYA.cal > Li Dark
+- HSEXXXA.cal > Es (Frame Type: Light)
 
-- HSLYYYA.cal > Li Light
+- HLDYYYA.cal > Li (Frame Type: Dark)
 
-- HLDZZZA.cal > Lt Dark
+- HSLYYYA.cal > Li (Frame Type: Light)
 
-- HSLZZZA.cal > Lt Light
+- HLDZZZA.cal > Lt (Frame Type: Dark)
+
+- HSLZZZA.cal > Lt (Frame Type: Light)
 
 where UUUU, VVV, WWW, XXX, YYY, and ZZZ are the serial numbers of the individual instruments, which are followed where appropriate by factory revision code (A, B, C, D, E, ...).
 

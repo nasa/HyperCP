@@ -79,7 +79,8 @@ class CalibrationFile:
         for cd in self.data:
             if cd.type == "ES" or \
                cd.type == "LI" or \
-               cd.type == "LT":
+               cd.type == "LT" or \
+               cd.type == "T":
                 return cd.type
         return "None"
 

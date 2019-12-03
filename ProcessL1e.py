@@ -38,6 +38,7 @@ class ProcessL1e:
     @staticmethod
     def interpolateL1e(xData, xTimer, yTimer, newXData, instr, kind='linear', fileName='default'):        
         for k in xData.data.dtype.names:
+            print(k)
             if k == "Datetag" or k == "Timetag2":
                 continue
             # print(k)

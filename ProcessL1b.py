@@ -43,7 +43,7 @@ class ProcessL1b:
         elif cd.fitType == "NONE":
             pass
         else:
-            msg = f'Unknown Fit Type: {cd.fitType}'
+            msg = f'ProcessL1b.processDataset: Unknown Fit Type: {cd.fitType}'
             print(msg)
             Utilities.writeLogFile(msg)
 
@@ -148,9 +148,34 @@ class ProcessL1b:
         return
         #x = datetime.fromtimestamp(x).strftime("%y-%m-%d %H:%M:%S")
 
-    # Used to calibrate raw data (from L0 to L1b)
+    # Used to calibrate raw data (from L1a to L1b)
     @staticmethod
     def processGroup(gp, cf): # group, calibration file
+
+        # Rename the groups to more generic ids rather than the names of the cal files
+        if gp.id.startswith("GPRMC"):
+            gp.id = "GPS"
+        if gp.id.startswith("SATNAV"):
+            gp.id = "SOLARTRACKER"
+        if gp.id.startswith("SATPYR"):
+            gp.id = "PYROMETER"
+        if gp.id.startswith("SATMSG"):
+            gp.id = "SOLARTRACKER_MESSAGE"
+        if gp.id.startswith("HED"):
+            gp.id = "ES_DARK"
+        if gp.id.startswith("HSE"):
+            gp.id = "ES_LIGHT"
+        if gp.id.startswith("HLD"):
+            if cf.sensorType == "LI":
+                gp.id = "LI_DARK"
+            if cf.sensorType == "LT":
+                gp.id = "LT_DARK"
+        if gp.id.startswith("HSL"):
+            if cf.sensorType == "LI":
+                gp.id = "LI_LIGHT"
+            if cf.sensorType == "LT":
+                gp.id = "LT_LIGHT"
+
         inttime = None
         for cd in cf.data: # cd is the name of the cal file data
             # Process slightly differently for INTTIME
@@ -171,6 +196,11 @@ class ProcessL1b:
     # Calibrates raw data from L1a using information from calibration file
     @staticmethod
     def processL1b(node, calibrationMap):                 
+
+        esUnits = None
+        liUnits = None
+        ltUnits = None
+        pyrUnits = None
 
         msg = "Applying factory calibrations."
         print(msg)
@@ -197,10 +227,13 @@ class ProcessL1b:
                     liUnits = cf.getUnits("LI")
                 if ltUnits == None:
                     ltUnits = cf.getUnits("LT")
+                if pyrUnits == None:
+                    pyrUnits == cf.getUnits("T") #Pyrometer
 
         #print(esUnits, luUnits)
         node.attributes["LI_UNITS"] = liUnits
         node.attributes["LT_UNITS"] = ltUnits
         node.attributes["ES_UNITS"] = esUnits
+        node.attributes["SATPYR_UNITS"] = pyrUnits
 
         return node

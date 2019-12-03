@@ -20,7 +20,7 @@ class ProcessL1a:
         # Generate root header attributes
         root = HDFRoot.HDFRoot()
         root.id = "/"
-        root.attributes["HYPERINSPACE"] = "HyperInSPACE 1.0.a"
+        root.attributes["HYPERINSPACE"] = "HyperInSPACE 1.0.b"
         #root.attributes["PROSOFT_INSTRUMENT_CONFIG"] = "testcfg"
         #root.attributes["PROSOFT_PARAMETERS_FILE_NAME"] = "test.mat"
         root.attributes["CAL_FILE_NAMES"] = ','.join(calibrationMap.keys())
@@ -28,6 +28,7 @@ class ProcessL1a:
         root.attributes["LU_UNITS"] = "count"
         root.attributes["ED_UNITS"] = "count"
         root.attributes["ES_UNITS"] = "count"
+        root.attributes["SATPYR_UNITS"] = "count"
         root.attributes["RAW_FILE_NAME"] = fileName
 
         contextMap = collections.OrderedDict()
@@ -40,7 +41,7 @@ class ProcessL1a:
 
         # print("contextMap:", list(contextMap.keys()))
         # print("calibrationMap:", list(calibrationMap.keys()))
-
+        print('Reading in raw binary data may take a moment.')
         RawFileReader.readRawFile(fp, calibrationMap, contextMap, root)
 
         # Populate HDF group attributes
@@ -71,8 +72,13 @@ class ProcessL1a:
 
         # Converts gp.columns to numpy array
         for gp in root.groups:
-            for ds in gp.datasets.values():
-                ds.columnsToDataset()
+            if gp.id.startswith("SATMSG"): # Don't convert these strings to datasets.
+                for ds in gp.datasets.values():
+                    ds.columnsToDataset()
+                # break
+            else:
+                for ds in gp.datasets.values():
+                    ds.columnsToDataset()
         #RawFileReader.generateContext(root)
 
         return root

@@ -57,6 +57,12 @@ class Controller:
                 cf.measMode = "Not Required"
                 cf.frameType = "Not Required"
                 cf.sensorType = cf.getSensorType()
+            elif cf.id.startswith("SATPYR"):
+                cf.instrumentType = "SATPYR"
+                cf.media = "Not Required"
+                cf.measMode = "Not Required"
+                cf.frameType = "Not Required"
+                cf.sensorType = cf.getSensorType()
             else:
                 cf.instrumentType = "SAS"
                 cf.media = "Air"
@@ -217,9 +223,7 @@ class Controller:
             Utilities.writeLogFile(msg)
 
     @staticmethod
-    def processL1d(inFilePath, outFilePath):
-
-        _,fileName = os.path.split(outFilePath)
+    def processL1d(inFilePath, outFilePath):        
         
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
@@ -236,7 +240,7 @@ class Controller:
             print(msg)
             Utilities.writeLogFile(msg)
             return None
-        root = ProcessL1c.processL1c(root, fileName)     
+        root = ProcessL1d.processL1d(root)     
 
         # Write output file
         if root is not None:
@@ -251,6 +255,8 @@ class Controller:
 
     @staticmethod
     def processL1e(inFilePath, outFilePath):
+        _,fileName = os.path.split(outFilePath)
+
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
             return None
@@ -264,7 +270,7 @@ class Controller:
             print(msg)
             Utilities.writeLogFile(msg)
             return None
-        root = ProcessL1e.processL1e(root)
+        root = ProcessL1e.processL1e(root, fileName)
 
         # Write output file
         if root is not None:
@@ -392,7 +398,7 @@ class Controller:
 
         elif level == "1c":
             if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L1c')
+                pathOut = os.path.join(pathOut,'L1C')
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:
@@ -416,7 +422,7 @@ class Controller:
 
         elif level == "1d":
             if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L1d')
+                pathOut = os.path.join(pathOut,'L1D')
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:
@@ -440,7 +446,7 @@ class Controller:
 
         elif level == "1e":
             if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L1e')
+                pathOut = os.path.join(pathOut,'L1E')
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:

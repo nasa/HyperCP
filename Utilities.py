@@ -343,14 +343,14 @@ class Utilities:
             print('Plotting Rrs')
             group = root.getGroup("Reflectance")
             Data = group.getDataset(rType)            
-            if not os.path.exists("Plots/L4_Rrs/"):
-                os.makedirs("Plots/L4_Rrs/")
-            plotdir = os.path.join(dirpath, 'Plots/L4_Rrs/')
+            if not os.path.exists("Plots/L2_Rrs/"):
+                os.makedirs("Plots/L2_Rrs/")
+            plotdir = os.path.join(dirpath, 'Plots/L2_Rrs/')
             plotRange = [380, 800]
         else:
-            if not os.path.exists("Plots/L4_EsLiLt"):
-                os.makedirs("Plots/L4_EsLiLt")
-            plotdir = os.path.join(dirpath, 'Plots/L4_EsLiLt/')
+            if not os.path.exists("Plots/L2_EsLiLt"):
+                os.makedirs("Plots/L2_EsLiLt")
+            plotdir = os.path.join(dirpath, 'Plots/L2_EsLiLt/')
             plotRange = [305, 1140]
 
         if rType=='ES':
@@ -419,7 +419,7 @@ class Utilities:
         plt.subplots_adjust(left=0.15)
         plt.subplots_adjust(bottom=0.15)
 
-        note = f'Interval: {ConfigFile.settings["fL4TimeInterval"]} s'
+        note = f'Interval: {ConfigFile.settings["fL2TimeInterval"]} s'
         axes.text(0.95, 0.95, note,
         verticalalignment='top', horizontalalignment='right',
         transform=axes.transAxes,
@@ -528,9 +528,9 @@ class Utilities:
     @staticmethod
     def specFilter(inFilePath, Dataset, timeStamp, filterRange, filterFactor, rType):
         dirpath = './'
-        if not os.path.exists("Plots/L4_Spectral_Filter/"):
-            os.makedirs("Plots/L4_Spectral_Filter/")
-        plotdir = os.path.join(dirpath, 'Plots/L4_Spectral_Filter/')
+        if not os.path.exists("Plots/L2_Spectral_Filter/"):
+            os.makedirs("Plots/L2_Spectral_Filter/")
+        plotdir = os.path.join(dirpath, 'Plots/L2_Spectral_Filter/')
 
         font = {'family': 'serif',
                 'color':  'darkred',

@@ -233,24 +233,24 @@ class ProcessL1c:
         return
         #x = datetime.fromtimestamp(x).strftime("%y-%m-%d %H:%M:%S")
 
-    # Used to calibrate raw data (from L0 to L1c)
-    @staticmethod
-    def processGroup(gp, cf): # group, calibration file
-        inttime = None
-        for cd in cf.data: # cd is the name of the cal file data
-            # Process slightly differently for INTTIME
-            if cd.type == "INTTIME":
-                #print("Process INTTIME")
-                ds = gp.getDataset("INTTIME")
-                ProcessL1c.processDataset(ds, cd)
-                inttime = ds
+    # # Used to calibrate raw data (from L0 to L1c)
+    # @staticmethod
+    # def processGroup(gp, cf): # group, calibration file
+    #     inttime = None
+    #     for cd in cf.data: # cd is the name of the cal file data
+    #         # Process slightly differently for INTTIME
+    #         if cd.type == "INTTIME":
+    #             #print("Process INTTIME")
+    #             ds = gp.getDataset("INTTIME")
+    #             ProcessL1c.processDataset(ds, cd)
+    #             inttime = ds
 
-        for cd in cf.data:
-            # process each dataset in the cal file list of data, except INTTIME
-            if gp.getDataset(cd.type) and cd.type != "INTTIME":
-                #print("Dataset:", cd.type)
-                ds = gp.getDataset(cd.type)
-                ProcessL1c.processDataset(ds, cd, inttime)
+    #     for cd in cf.data:
+    #         # process each dataset in the cal file list of data, except INTTIME
+    #         if gp.getDataset(cd.type) and cd.type != "INTTIME":
+    #             #print("Dataset:", cd.type)
+    #             ds = gp.getDataset(cd.type)
+    #             ProcessL1c.processDataset(ds, cd, inttime)
 
     # Filters data for pitch, roll, yaw, and rotator.
     # Calibrates raw data from L1a using information from calibration file
@@ -270,57 +270,57 @@ class ProcessL1c:
             i = 0
             # try:
             for group in node.groups:
-                if group.id.startswith("SATNAV"):
+                if group.id.startswith("SOLARTRACKER"):
                     gp = group
 
-            if gp.getDataset("POINTING"):   
-                # TIMETAG2 format: hhmmssmss.0
-                timeStamp = gp.getDataset("TIMETAG2").data
-                pitch = gp.getDataset("PITCH").data["SAS"]
-                roll = gp.getDataset("ROLL").data["SAS"]
-                               
-                pitchMax = float(ConfigFile.settings["fL1cPitchRollPitch"])
-                rollMax = float(ConfigFile.settings["fL1cPitchRollRoll"])
+            # if gp.getDataset("POINTING"):   
+            # TIMETAG2 format: hhmmssmss.0
+            timeStamp = gp.getDataset("TIMETAG2").data
+            pitch = gp.getDataset("PITCH").data["SAS"]
+            roll = gp.getDataset("ROLL").data["SAS"]
+                            
+            pitchMax = float(ConfigFile.settings["fL1cPitchRollPitch"])
+            rollMax = float(ConfigFile.settings["fL1cPitchRollRoll"])
 
-                if badTimes is None:
-                    badTimes = []
+            if badTimes is None:
+                badTimes = []
 
-                start = -1
-                stop =[]
-                for index in range(len(pitch)):
-                    if abs(pitch[index]) > pitchMax or abs(roll[index]) > rollMax:
-                        i += 1                              
-                        if start == -1:
-                            # print('Pitch or roll angle outside bounds. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
-                            start = index
-                        stop = index                                
-                    else:                                
-                        if start != -1:
-                            # print('Pitch or roll angle passed. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
-                            startstop = [timeStamp[start],timeStamp[stop]]
-                            msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
-                            print(msg)
-                            Utilities.writeLogFile(msg)
-                            # startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
-                            # stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
-                            badTimes.append(startstop)
-                            start = -1
-                msg = f'Percentage of SATNAV data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %'
+            start = -1
+            stop =[]
+            for index in range(len(pitch)):
+                if abs(pitch[index]) > pitchMax or abs(roll[index]) > rollMax:
+                    i += 1                              
+                    if start == -1:
+                        # print('Pitch or roll angle outside bounds. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
+                        start = index
+                    stop = index                                
+                else:                                
+                    if start != -1:
+                        # print('Pitch or roll angle passed. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
+                        startstop = [timeStamp[start],timeStamp[stop]]
+                        msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        # startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
+                        # stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
+                        badTimes.append(startstop)
+                        start = -1
+            msg = f'Percentage of SATNAV data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %'
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+            if start != -1 and stop == index: # Records from a mid-point to the end are bad
+                startstop = [timeStamp[start],timeStamp[stop]]
+                msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
                 print(msg)
                 Utilities.writeLogFile(msg)
+                if badTimes is None: # only one set of records
+                    badTimes = [startstop]
+                else:
+                    badTimes.append(startstop)
 
-                if start != -1 and stop == index: # Records from a mid-point to the end are bad
-                    startstop = [timeStamp[start],timeStamp[stop]]
-                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    if badTimes is None: # only one set of records
-                        badTimes = [startstop]
-                    else:
-                        badTimes.append(startstop)
-
-                if start==0 and stop==index: # All records are bad                           
-                    return False
+            if start==0 and stop==index: # All records are bad                           
+                return False
 
         # Apply Rotator Delay Filter (delete records within so many seconds of a rotation)
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
@@ -331,7 +331,7 @@ class ProcessL1c:
         Utilities.writeLogFile(msg)
             
         for group in node.groups:
-            if group.id.startswith("SATNAV"):
+            if group.id.startswith("SOLARTRACKER"):
                 gp = group
 
         if gp.getDataset("POINTING"):   
@@ -377,7 +377,11 @@ class ProcessL1c:
 
             msg = f'Percentage of SATNAV data out of Rotator Delay bounds: {round(100*i/len(timeStamp))} %'
             print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFile(msg)    
+        else:
+            msg = f'No rotator data found. Filtering on rotator delay failed.'
+            print(msg)
+            Utilities.writeLogFile(msg)    
 
         # Apply Absolute Rotator Angle Filter
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
@@ -391,7 +395,7 @@ class ProcessL1c:
             i = 0
             # try:
             for group in node.groups:
-                if group.id.startswith("SATNAV"):
+                if group.id.startswith("SOLARTRACKER"):
                     gp = group
 
             if gp.getDataset("POINTING"):   
@@ -441,6 +445,46 @@ class ProcessL1c:
 
                 if start==0 and stop==index: # All records are bad                           
                     return False
+            else:
+                msg = f'No rotator data found. Filtering on absolute rotator angle failed.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+
+        # Add Relative Azimuth (REL_AZ) Dataset       
+        for group in node.groups:
+                if group.id.startswith("SOLARTRACKER"):
+                    gp = group
+
+        if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):   
+            # TIMETAG2 format: hhmmssmss.0
+            timeStamp = gp.getDataset("TIMETAG2").data
+            # rotator = gp.getDataset("POINTING").data["ROTATOR"]                        
+            home = float(ConfigFile.settings["fL1cRotatorHomeAngle"])
+            sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]
+            sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
+            
+            newRelAzData = gp.addDataset("REL_AZ")
+            relAz=[]
+
+            for index in range(len(sunAzimuth)):
+                # Check for angles spanning north
+                if sunAzimuth[index] > sasAzimuth[index]:
+                    hiAng = sunAzimuth[index] + home
+                    loAng = sasAzimuth[index] + home
+                else:
+                    hiAng = sasAzimuth[index] + home
+                    loAng = sunAzimuth[index] + home
+                # Choose the smallest angle between them
+                if hiAng-loAng > 180:
+                    relAzimuthAngle = 360 - (hiAng-loAng)
+                else:
+                    relAzimuthAngle = hiAng-loAng
+
+                relAz.append(relAzimuthAngle)
+        else:
+                msg = f"No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
+                print(msg)
+                Utilities.writeLogFile(msg)
 
         # Apply Relative Azimuth filter 
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
@@ -450,21 +494,20 @@ class ProcessL1c:
             msg = "Filtering file for bad Relative Solar Azimuth"
             print(msg)
             Utilities.writeLogFile(msg)
-            # Utilities.hyperLogger(inFilePath,'a')
             
             i = 0
             # try:
             for group in node.groups:
-                if group.id.startswith("SATNAV"):
+                if group.id.startswith("SOLARTRACKER"):
                     gp = group
 
             if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):   
                 # TIMETAG2 format: hhmmssmss.0
                 timeStamp = gp.getDataset("TIMETAG2").data
                 # rotator = gp.getDataset("POINTING").data["ROTATOR"]                        
-                home = float(ConfigFile.settings["fL1cRotatorHomeAngle"])
-                sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]
-                sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
+                # home = float(ConfigFile.settings["fL1cRotatorHomeAngle"])
+                # sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]
+                # sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
                 # shipAzimuth = gp.getDataset("HEADING").data["SHIP_TRUE"]
                 relAzimuthMin = float(ConfigFile.settings["fL1cSunAngleMin"])
                 relAzimuthMax = float(ConfigFile.settings["fL1cSunAngleMax"])
@@ -472,26 +515,10 @@ class ProcessL1c:
                 if badTimes is None:
                     badTimes = []
 
-                # Add relAzimuthAngle to a dataset in node
-                newRelAzData = gp.addDataset("REL_AZ")
-                relAz=[]
                 start = -1
                 stop = []
-                for index in range(len(sunAzimuth)):
-                    # Check for angles spanning north
-                    if sunAzimuth[index] > sasAzimuth[index]:
-                        hiAng = sunAzimuth[index] + home
-                        loAng = sasAzimuth[index] + home
-                    else:
-                        hiAng = sasAzimuth[index] + home
-                        loAng = sunAzimuth[index] + home
-                    # Choose the smallest angle between them
-                    if hiAng-loAng > 180:
-                        relAzimuthAngle = 360 - (hiAng-loAng)
-                    else:
-                        relAzimuthAngle = hiAng-loAng
-
-                    relAz.append(relAzimuthAngle)
+                for index in range(len(relAz)):
+                    relAzimuthAngle = relAz[index]
 
                     if relAzimuthAngle > relAzimuthMax or relAzimuthAngle < relAzimuthMin or math.isnan(relAzimuthAngle):   
                         i += 1                              
@@ -509,8 +536,7 @@ class ProcessL1c:
                       
                             badTimes.append(startstop)
                             start = -1
-                newRelAzData.columns["REL_AZ"] = relAz
-                newRelAzData.columnsToDataset()
+                
                 msg = f'Percentage of SATNAV data out of Solar Azimuth bounds: {round(100*i/len(timeStamp))} %'
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -530,6 +556,13 @@ class ProcessL1c:
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return None
+            else:
+                msg = f'No rotator, solar azimuth, and/or relative azimuth data found. Filtering on relative azimuth failed.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+
+        newRelAzData.columns["REL_AZ"] = relAz
+        newRelAzData.columnsToDataset()
                         
         msg = "Eliminate combined filtered data from datasets.*****************************"
         print(msg)
@@ -544,7 +577,7 @@ class ProcessL1c:
 
                 # Now test whether the overlap has eliminated all radiometric data
                 if fractionRemoved > 0.98 and gp.id.startswith("H"):
-                    msg = "Radiometric data eliminated. Aborting."
+                    msg = "Radiometric data >98'%' eliminated. Aborting."
                     print(msg)
                     Utilities.writeLogFile(msg)                   
                     return None                            
@@ -561,40 +594,5 @@ class ProcessL1c:
                 msg = f'{gp.id}  Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
                 print(msg)
                 Utilities.writeLogFile(msg)                                               
-
-        esUnits = None
-        liUnits = None
-        ltUnits = None
-
-        msg = "Applying factory calibrations."
-        print(msg)
-        Utilities.writeLogFile(msg)
-
-        for gp in node.groups:
-            # Apply calibration factors to each dataset in HDF 
-            msg = f'  Group: {gp.id}'
-            print(msg)
-            Utilities.writeLogFile(msg)
-            if "CalFileName" in gp.attributes:
-                #cf = calibrationMap[gp.attributes["FrameTag"]]
-                cf = calibrationMap[gp.attributes["CalFileName"]]
-                #print(gp.id, gp.attributes)
-                msg = f'    File: {cf.id}'
-                print(msg)
-                Utilities.writeLogFile(msg)
-
-                ProcessL1c.processGroup(gp, cf)
-    
-                if esUnits == None:
-                    esUnits = cf.getUnits("ES")
-                if liUnits == None:
-                    liUnits = cf.getUnits("LI")
-                if ltUnits == None:
-                    ltUnits = cf.getUnits("LT")
-
-        #print(esUnits, luUnits)
-        node.attributes["LI_UNITS"] = liUnits
-        node.attributes["LT_UNITS"] = ltUnits
-        node.attributes["ES_UNITS"] = esUnits
 
         return node
