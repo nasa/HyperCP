@@ -23,7 +23,7 @@ class ProcessL1c:
             stop = Utilities.timeTag2ToSec(list(timeTag[1])[0])                
             
             # Convert all time stamps to milliseconds UTC
-            if group.id.startswith("GPR"):
+            if group.id.startswith("GPS"):
                 # This is handled seperately in order to deal with the UTC fields in GPS            
                 if ticker ==0:
                     msg = "   Remove GPS Data"
@@ -38,7 +38,12 @@ class ProcessL1c:
                     if not np.isnan(gpsTimeData.data["NONE"][i]):
                         # UTC format (hhmmss.) similar to TT2 (hhmmssmss.) with the miliseconds truncated
                         dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))    
-                    # print(dataSec[i])        
+                    # print(dataSec[i])   
+            # elif group.id == "SOLARTRACKER_MESSAGE":                
+            #     msg = "   Ignore SOLARTRACKER_MESSAGEs"
+            #     print(msg)
+            #     Utilities.writeLogFile(msg)
+            #     return 1
             else:
                 if ticker ==0:
                     msg = f'   Remove {group.id} Data'
@@ -51,7 +56,7 @@ class ProcessL1c:
                     dataSec.append(Utilities.timeTag2ToSec(timeData.data["NONE"][i])) 
 
             msg = f'Eliminate data between: {timeTag}  (HHMMSSMSS)'
-            print(msg)
+            # print(msg)
             Utilities.writeLogFile(msg)
             
             lenDataSec = len(dataSec)
@@ -232,25 +237,7 @@ class ProcessL1c:
     def processTIME2(ds, cd):
         return
         #x = datetime.fromtimestamp(x).strftime("%y-%m-%d %H:%M:%S")
-
-    # # Used to calibrate raw data (from L0 to L1c)
-    # @staticmethod
-    # def processGroup(gp, cf): # group, calibration file
-    #     inttime = None
-    #     for cd in cf.data: # cd is the name of the cal file data
-    #         # Process slightly differently for INTTIME
-    #         if cd.type == "INTTIME":
-    #             #print("Process INTTIME")
-    #             ds = gp.getDataset("INTTIME")
-    #             ProcessL1c.processDataset(ds, cd)
-    #             inttime = ds
-
-    #     for cd in cf.data:
-    #         # process each dataset in the cal file list of data, except INTTIME
-    #         if gp.getDataset(cd.type) and cd.type != "INTTIME":
-    #             #print("Dataset:", cd.type)
-    #             ds = gp.getDataset(cd.type)
-    #             ProcessL1c.processDataset(ds, cd, inttime)
+    
 
     # Filters data for pitch, roll, yaw, and rotator.
     # Calibrates raw data from L1a using information from calibration file
@@ -270,7 +257,7 @@ class ProcessL1c:
             i = 0
             # try:
             for group in node.groups:
-                if group.id.startswith("SOLARTRACKER"):
+                if group.id == "SOLARTRACKER":
                     gp = group
 
             # if gp.getDataset("POINTING"):   
@@ -299,7 +286,7 @@ class ProcessL1c:
                         # print('Pitch or roll angle passed. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
                         startstop = [timeStamp[start],timeStamp[stop]]
                         msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
-                        print(msg)
+                        # print(msg)
                         Utilities.writeLogFile(msg)
                         # startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
                         # stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
@@ -312,7 +299,7 @@ class ProcessL1c:
             if start != -1 and stop == index: # Records from a mid-point to the end are bad
                 startstop = [timeStamp[start],timeStamp[stop]]
                 msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
-                print(msg)
+                # print(msg)
                 Utilities.writeLogFile(msg)
                 if badTimes is None: # only one set of records
                     badTimes = [startstop]
@@ -331,7 +318,7 @@ class ProcessL1c:
         Utilities.writeLogFile(msg)
             
         for group in node.groups:
-            if group.id.startswith("SOLARTRACKER"):
+            if group.id == "SOLARTRACKER":
                 gp = group
 
         if gp.getDataset("POINTING"):   
@@ -368,7 +355,7 @@ class ProcessL1c:
                         if kickout==1 and time > (start+delay):
                             startstop = [timeStampTuple[startIndex],timeStampTuple[index-1]]
                             msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
-                            print(msg)
+                            # print(msg)
                             Utilities.writeLogFile(msg)
                             badTimes.append(startstop)
                             kickout = 0
@@ -395,7 +382,7 @@ class ProcessL1c:
             i = 0
             # try:
             for group in node.groups:
-                if group.id.startswith("SOLARTRACKER"):
+                if group.id == "SOLARTRACKER":
                     gp = group
 
             if gp.getDataset("POINTING"):   
@@ -424,7 +411,7 @@ class ProcessL1c:
                             # print('Absolute rotator angle passed: ' + str(round(rotator[index] + home)))
                             startstop = [timeStamp[start],timeStamp[stop]]
                             msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
-                            print(msg)
+                            # print(msg)
                             Utilities.writeLogFile(msg)
                            
                             badTimes.append(startstop)
@@ -436,7 +423,7 @@ class ProcessL1c:
                 if start != -1 and stop == index: # Records from a mid-point to the end are bad
                     startstop = [timeStamp[start],timeStamp[stop]]
                     msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
-                    print(msg)
+                    # print(msg)
                     Utilities.writeLogFile(msg)
                     if badTimes is None: # only one set of records
                         badTimes = [startstop]
@@ -452,7 +439,7 @@ class ProcessL1c:
 
         # Add Relative Azimuth (REL_AZ) Dataset       
         for group in node.groups:
-                if group.id.startswith("SOLARTRACKER"):
+                if group.id == "SOLARTRACKER":
                     gp = group
 
         if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):   
@@ -498,7 +485,7 @@ class ProcessL1c:
             i = 0
             # try:
             for group in node.groups:
-                if group.id.startswith("SOLARTRACKER"):
+                if group.id == "SOLARTRACKER":
                     gp = group
 
             if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):   
@@ -531,7 +518,7 @@ class ProcessL1c:
                             # print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle)))
                             startstop = [timeStamp[start],timeStamp[stop]]
                             msg = f'   Flag data from TT2: {startstop[0]}  to {startstop[1]} (HHMMSSMSS)'
-                            print(msg)
+                            # print(msg)
                             Utilities.writeLogFile(msg)
                       
                             badTimes.append(startstop)
@@ -544,7 +531,7 @@ class ProcessL1c:
                 if start != -1 and stop == index: # Records from a mid-point to the end are bad
                     startstop = [timeStamp[start],timeStamp[stop]]
                     msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
-                    print(msg)
+                    # print(msg)
                     Utilities.writeLogFile(msg)
                     if badTimes is None: # only one set of records
                         badTimes = [startstop]
@@ -572,7 +559,7 @@ class ProcessL1c:
         for gp in node.groups:                                                    
             
             # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
-            if gp.id.startswith("SATMSG") is False:                
+            if (gp.id == "SOLARTRACKER_MESSAGE") is False:                
                 fractionRemoved = ProcessL1c.filterData(gp, badTimes)
 
                 # Now test whether the overlap has eliminated all radiometric data
@@ -584,7 +571,7 @@ class ProcessL1c:
                 
                 # Confirm that data were removed from Root    
                 group = node.getGroup(gp.id)
-                if gp.id.startswith("GPRMC"):
+                if gp.id.startswith("GPS"):
                     gpTimeset  = group.getDataset("UTCPOS") 
                 else:
                     gpTimeset  = group.getDataset("TIMETAG2") 

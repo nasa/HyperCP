@@ -228,7 +228,7 @@ class ProcessL1b:
                 if ltUnits == None:
                     ltUnits = cf.getUnits("LT")
                 if pyrUnits == None:
-                    pyrUnits == cf.getUnits("T") #Pyrometer
+                    pyrUnits = cf.getUnits("T") #Pyrometer
 
         #print(esUnits, luUnits)
         node.attributes["LI_UNITS"] = liUnits

@@ -414,7 +414,7 @@ class ProcessL1d:
         root = HDFRoot.HDFRoot()
         root.copy(node) 
 
-        root.attributes["PROCESSING_LEVEL"] = "2"
+        root.attributes["PROCESSING_LEVEL"] = "1d"
         if int(ConfigFile.settings["bL1dDeglitch"]) == 1:
             root.attributes["DEGLITCH_PRODAT"] = "ON"
             root.attributes["DEGLITCH_REFDAT"] = "ON"

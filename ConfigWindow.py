@@ -893,7 +893,8 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def l1dAnomalyButtonPressed(self):
         print("CalibrationEditWindow - Launching anomaly analysis module")
-
+        srchStr = 'L1C'
+        
         AnomalyDetection(self,self.inputDirectory)
 
     def l1dDeglitchCheckBoxUpdate(self):

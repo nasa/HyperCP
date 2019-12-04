@@ -345,13 +345,17 @@ class Controller:
         fileName = os.path.splitext(inFileName)[0]   
 
         # Initialize the Utility logger, overwriting it if necessary
-        os.environ["LOGFILE"] = (fileName + '_L' + level + '.log')
+        os.environ["LOGFILE"] = (fileName + '_' + level + '.log')
         msg = "Process Single Level"
         Utilities.writeLogFile(msg,mode='w')
 
-        if level == "1a":            
+        if level == "L1A" or \
+            level == "L1B" or \
+            level == "L1C" or \
+            level == "L1D":       
+
             if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L1A')
+                pathOut = os.path.join(pathOut,level)
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:
@@ -359,46 +363,107 @@ class Controller:
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
-
-            outFilePath = os.path.join(pathOut,fileName + "_L1a.hdf")
-            Controller.processL1a(inFilePath, outFilePath, calibrationMap) 
             
+            if level == "L1A":               
+                outFilePath = os.path.join(pathOut,fileName + "_" + level + ".hdf")
+            else:
+                # split the level suffix off the infile to make the outfilename
+                fileName = fileName.split('_')
+                outFilePath = os.path.join(pathOut,fileName[0] + "_" + level + ".hdf")                
+            
+            if level == "L1A":
+                Controller.processL1a(inFilePath, outFilePath, calibrationMap) 
+            elif level == "L1B":
+                Controller.processL1b(inFilePath, outFilePath, calibrationMap) 
+            elif level == "L1C":
+                Controller.processL1c(inFilePath, outFilePath)
+            elif level == "L1D":
+                Controller.processL1d(inFilePath, outFilePath) 
+
             if os.path.isfile(outFilePath):
                 modTime = os.path.getmtime(outFilePath)
                 nowTime = datetime.datetime.now()
                 if nowTime.timestamp() - modTime < 60: # If the file exists and was created in the last minute...
-                    msg = f'L1a file produced: {outFilePath}'
+                    msg = f'{level} file produced: {outFilePath}'
                     print(msg)
                     Utilities.writeLogFile(msg)  
                     return True                                 
 
-        elif level == "1b":
-            if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L1B')
-                if os.path.isdir(pathOut) is False:
-                    os.mkdir(pathOut)
-            else:
-                msg = "Bad output destination. Select new Output Data Directory."
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return False
+        # elif level == "1b":
+        #     if os.path.isdir(pathOut):
+        #         pathOut = os.path.join(pathOut,'L1B')
+        #         if os.path.isdir(pathOut) is False:
+        #             os.mkdir(pathOut)
+        #     else:
+        #         msg = "Bad output destination. Select new Output Data Directory."
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #         return False
 
-            fileName = fileName.split('_')
-            outFilePath = os.path.join(pathOut,fileName[0] + "_L1b.hdf")
-            Controller.processL1b(inFilePath, outFilePath, calibrationMap)   
+        #     fileName = fileName.split('_')
+        #     outFilePath = os.path.join(pathOut,fileName[0] + "_L1b.hdf")
+        #     Controller.processL1b(inFilePath, outFilePath, calibrationMap)   
             
-            if os.path.isfile(outFilePath):
-                modTime = os.path.getmtime(outFilePath)
-                nowTime = datetime.datetime.now()
-                if nowTime.timestamp() - modTime < 60:
-                    msg = f'L1b file produced: {outFilePath}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return True
+        #     if os.path.isfile(outFilePath):
+        #         modTime = os.path.getmtime(outFilePath)
+        #         nowTime = datetime.datetime.now()
+        #         if nowTime.timestamp() - modTime < 60:
+        #             msg = f'L1b file produced: {outFilePath}'
+        #             print(msg)
+        #             Utilities.writeLogFile(msg)
+        #             return True
 
-        elif level == "1c":
+        # elif level == "1c":
+        #     if os.path.isdir(pathOut):
+        #         pathOut = os.path.join(pathOut,'L1C')
+        #         if os.path.isdir(pathOut) is False:
+        #             os.mkdir(pathOut)
+        #     else:
+        #         msg = "Bad output destination. Select new Output Data Directory."
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #         return False
+
+        #     fileName = fileName.split('_')
+        #     outFilePath = os.path.join(pathOut,fileName[0] + "_L1c.hdf")
+        #     Controller.processL1c(inFilePath, outFilePath) 
+
+        #     if os.path.isfile(outFilePath):
+        #         modTime = os.path.getmtime(outFilePath)
+        #         nowTime = datetime.datetime.now()
+        #         if nowTime.timestamp() - modTime < 60:
+        #             msg = f'L1c file produced: {outFilePath}'
+        #             print(msg)
+        #             Utilities.writeLogFile(msg)
+        #             return True
+
+        # elif level == "1d":
+        #     if os.path.isdir(pathOut):
+        #         pathOut = os.path.join(pathOut,'L1D')
+        #         if os.path.isdir(pathOut) is False:
+        #             os.mkdir(pathOut)
+        #     else:
+        #         msg = "Bad output destination. Select new Output Data Directory."
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #         return False
+
+        #     fileName = fileName.split('_')
+        #     outFilePath = os.path.join(pathOut,fileName[0] + "_L1d.hdf")
+        #     Controller.processL1d(inFilePath, outFilePath) 
+
+        #     if os.path.isfile(outFilePath):
+        #         modTime = os.path.getmtime(outFilePath)
+        #         nowTime = datetime.datetime.now()
+        #         if nowTime.timestamp() - modTime < 60:
+        #             msg = f'L1d file produced: {outFilePath}'
+        #             print(msg)
+        #             Utilities.writeLogFile(msg)
+        #             return True
+
+        elif level == "L1E":
             if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L1C')
+                pathOut = os.path.join(pathOut,level)
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:
@@ -408,62 +473,14 @@ class Controller:
                 return False
 
             fileName = fileName.split('_')
-            outFilePath = os.path.join(pathOut,fileName[0] + "_L1c.hdf")
-            Controller.processL1c(inFilePath, outFilePath) 
-
-            if os.path.isfile(outFilePath):
-                modTime = os.path.getmtime(outFilePath)
-                nowTime = datetime.datetime.now()
-                if nowTime.timestamp() - modTime < 60:
-                    msg = f'L1c file produced: {outFilePath}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return True
-
-        elif level == "1d":
-            if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L1D')
-                if os.path.isdir(pathOut) is False:
-                    os.mkdir(pathOut)
-            else:
-                msg = "Bad output destination. Select new Output Data Directory."
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return False
-
-            fileName = fileName.split('_')
-            outFilePath = os.path.join(pathOut,fileName[0] + "_L1d.hdf")
-            Controller.processL1d(inFilePath, outFilePath) 
-
-            if os.path.isfile(outFilePath):
-                modTime = os.path.getmtime(outFilePath)
-                nowTime = datetime.datetime.now()
-                if nowTime.timestamp() - modTime < 60:
-                    msg = f'L1d file produced: {outFilePath}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return True
-
-        elif level == "1e":
-            if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L1E')
-                if os.path.isdir(pathOut) is False:
-                    os.mkdir(pathOut)
-            else:
-                msg = "Bad output destination. Select new Output Data Directory."
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return False
-
-            fileName = fileName.split('_')
-            outFilePath = os.path.join(pathOut,fileName[0] + "_L1e.hdf")
+            outFilePath = os.path.join(pathOut,fileName[0] + "_" + level + ".hdf")
             Controller.processL1e(inFilePath, outFilePath)   
             
             if os.path.isfile(outFilePath):
                 modTime = os.path.getmtime(outFilePath)
                 nowTime = datetime.datetime.now()
                 if nowTime.timestamp() - modTime < 60:
-                    msg = f'L1e file produced: {outFilePath}'
+                    msg = f'{level} file produced: {outFilePath}'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     
@@ -471,14 +488,12 @@ class Controller:
                         msg = f'Output SeaBASS for HDF: {outFilePath}'
                         print(msg)
                         Utilities.writeLogFile(msg)
-
-                        SeaBASSWriter.outputTXT_Type1e(outFilePath)  
-                    
+                        SeaBASSWriter.outputTXT_Type1e(outFilePath)                      
                     return True
 
-        elif level == "2":          
+        elif level == "L2":          
             if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L2')
+                pathOut = os.path.join(pathOut,level)
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:
@@ -489,14 +504,14 @@ class Controller:
 
             windSpeedData = Controller.processWindData(windFile)
             fileName = fileName.split('_')
-            outFilePath = os.path.join(pathOut,fileName[0] + "_L2.hdf")
+            outFilePath = os.path.join(pathOut,fileName[0] + "_" + level + ".hdf")
             Controller.processL2(inFilePath, outFilePath, windSpeedData)  
             
             if os.path.isfile(outFilePath):
                 modTime = os.path.getmtime(outFilePath)
                 nowTime = datetime.datetime.now()
                 if nowTime.timestamp() - modTime < 60: 
-                    msg = f'L2 file produced: {outFilePath}'
+                    msg = f'{level} file produced: {outFilePath}'
                     print(msg)
                     Utilities.writeLogFile(msg)
 
@@ -504,9 +519,7 @@ class Controller:
                         msg = f'Output SeaBASS for HDF: {outFilePath}'
                         print(msg)
                         Utilities.writeLogFile(msg)
-
                         SeaBASSWriter.outputTXT_Type2(outFilePath)
-
                     return True
 
         msg = f'Process Single Level: {outFilePath} - DONE'
@@ -547,6 +560,26 @@ class Controller:
     def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level, windFile=None):
         # print("processFilesSingleLevel")
         for fp in inFiles:            
+            # Check that the input file matches what is expected for this processing level
+            fileName = os.path.split(fp)[1]
+            if level == "L1A":
+                srchStr = 'RAW'
+            elif level == 'L1B':
+                srchStr = 'L1A'
+            elif level == 'L1C':
+                srchStr = 'L1B'
+            elif level == 'L1D':
+                srchStr = 'L1C'
+            elif level == 'L1E':
+                srchStr = 'L1D'
+            elif level == 'L2':
+                srchStr = 'L1E'
+            if fileName.find(srchStr) == -1:
+                msg = f'{fileName} does not match expected input level for outputing {level}'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return -1
+
             print("Processing: " + fp)
             # try:
             Controller.processSingleLevel(pathOut, fp, calibrationMap, level, windFile)

@@ -80,12 +80,12 @@ class Window(QtWidgets.QWidget):
         self.configEditButton.clicked.connect(self.configEditButtonPressed)
         self.configDeleteButton.clicked.connect(self.configDeleteButtonPressed)
 
-        self.inDirLabel = QtWidgets.QLabel("Input Data Directory", self)        
+        self.inDirLabel = QtWidgets.QLabel("Input Data Parent Directory", self)        
         self.inputDirectory = MainConfig.settings["inDir"]
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
 
-        self.outDirLabel = QtWidgets.QLabel("Output Data Directory (not level specific)", self)        
+        self.outDirLabel = QtWidgets.QLabel("Output Data Parent Directory", self)        
         self.outputDirectory = MainConfig.settings["outDir"]
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
@@ -306,14 +306,34 @@ class Window(QtWidgets.QWidget):
 
         # Select data files    
         if not self.inputDirectory[0]:
-            print("Bad input directory.")
-            return                
-        openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",self.inputDirectory)
+            print("Bad input parent directory.")
+            return       
+        
+        if level == "L1A":
+            inLevel = "unknown"
+        if level == "L1B":
+            inLevel = "L1A"
+        if level == "L1C":
+            inLevel = "L1B"
+        if level == "L1D":
+            inLevel = "L1C"
+        if level == "L1E":
+            inLevel = "L1D"
+        if level == "L2":
+            inLevel = "L1E"
+        # Check for subdirectory associated with level chosen
+        subInputDir = os.path.join(self.inputDirectory + '/' + inLevel + '/')
+        if os.path.exists(subInputDir):
+            openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",subInputDir)
+            fileNames = openFileNames[0] # The first element is the whole list
+        else:    
+            openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",self.inputDirectory)
+            fileNames = openFileNames[0] # The first element is the whole list
         
         print("Files:", openFileNames)
-        if not openFileNames[0]:
+        if not fileNames:
             return
-        fileNames = openFileNames[0] # The first element is the whole list
+        
 
         windFile = self.windFileLineEdit.text()
         if windFile == '':
@@ -347,22 +367,22 @@ class Window(QtWidgets.QWidget):
             event.ignore()
 
     def singleL1aClicked(self):
-        self.processSingle("1a")
+        self.processSingle("L1A")
 
     def singleL1bClicked(self):
-        self.processSingle("1b")
+        self.processSingle("L1B")
 
     def singleL1cClicked(self):
-        self.processSingle("1c")
+        self.processSingle("L1C")
 
     def singleL1dClicked(self):
-        self.processSingle("1d")
+        self.processSingle("L1D")
 
     def singleL1eClicked(self):
-        self.processSingle("1e")      
+        self.processSingle("L1E")      
 
     def singleL2Clicked(self):
-        self.processSingle("4")   
+        self.processSingle("L2")   
 
     def processMulti(self, level):
         print("Process Multi-Level")
