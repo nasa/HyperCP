@@ -273,10 +273,10 @@ class Controller:
                 root.writeHDF5(outFilePath)
             except:
                 msg = "Unable to write file. May be open in another application."
-            Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return None
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
         else:
             msg = "L1d processing failed. Nothing to output."
             Utilities.errorWindow("File Error", msg)
@@ -302,7 +302,7 @@ class Controller:
             print(msg)
             Utilities.writeLogFile(msg)
             return None
-            
+
         root = ProcessL1e.processL1e(root, fileName)
 
         # Write output file

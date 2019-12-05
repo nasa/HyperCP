@@ -456,8 +456,8 @@ class Utilities:
     @staticmethod
     def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):     
         fileBaseName,_ = fileName.split('.')
-        if not os.path.exists("Plots/L3"):
-            os.makedirs("Plots/L3")   
+        if not os.path.exists("Plots/L1D"):
+            os.makedirs("Plots/L1D")   
         try:           
             font = {'family': 'serif',
                 'color':  'darkred',
@@ -502,7 +502,7 @@ class Utilities:
                         plt.subplots_adjust(left=0.15)
                         plt.subplots_adjust(bottom=0.15)
                         
-                        plt.savefig(os.path.join('Plots','L3',f'{fileBaseName}_{instr}_{k}.png'))
+                        plt.savefig(os.path.join('Plots','L1D',f'{fileBaseName}_{instr}_{k}.png'))
                         plt.close()
                         # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)                
                         # # Tweak spacing to prevent clipping of ylabel

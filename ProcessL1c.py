@@ -39,8 +39,8 @@ class ProcessL1c:
                         # UTC format (hhmmss.) similar to TT2 (hhmmssmss.) with the miliseconds truncated
                         dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))    
                     # print(dataSec[i])   
-            # elif group.id == "SOLARTRACKER_MESSAGE":                
-            #     msg = "   Ignore SOLARTRACKER_MESSAGEs"
+            # elif group.id == "SOLARTRACKER_STATUS":                
+            #     msg = "   Ignore SOLARTRACKER_STATUSs"
             #     print(msg)
             #     Utilities.writeLogFile(msg)
             #     return 1
@@ -559,7 +559,7 @@ class ProcessL1c:
         for gp in node.groups:                                                    
             
             # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
-            if (gp.id == "SOLARTRACKER_MESSAGE") is False:                
+            if (gp.id == "SOLARTRACKER_STATUS") is False:                
                 fractionRemoved = ProcessL1c.filterData(gp, badTimes)
 
                 # Now test whether the overlap has eliminated all radiometric data

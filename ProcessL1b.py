@@ -157,10 +157,10 @@ class ProcessL1b:
             gp.id = "GPS"
         if gp.id.startswith("SATNAV"):
             gp.id = "SOLARTRACKER"
+        if gp.id.startswith("SATMSG"):
+            gp.id = "SOLARTRACKER_STATUS"
         if gp.id.startswith("SATPYR"):
             gp.id = "PYROMETER"
-        if gp.id.startswith("SATMSG"):
-            gp.id = "SOLARTRACKER_MESSAGE"
         if gp.id.startswith("HED"):
             gp.id = "ES_DARK"
         if gp.id.startswith("HSE"):

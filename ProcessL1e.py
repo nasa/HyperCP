@@ -334,9 +334,9 @@ class ProcessL1e:
         # Angular interpolation is for compass angles 0-360 degrees (i.e. crossing 0, North)
         ProcessL1e.interpolateL1eAngular(satnavAzimuthData, xTimer, yTimer, newSATNAVAzimuthData, 'SunAz', fileName)
         ProcessL1e.interpolateL1eAngular(satnavHeadingData, xTimer, yTimer, newSATNAVHeadingData, 'Heading', fileName)
-        ProcessL1e.interpolateL1e(satnavPitchData, xTimer, yTimer, newSATNAVPitchData, 'Pitch', 'linear')
+        ProcessL1e.interpolateL1e(satnavPitchData, xTimer, yTimer, newSATNAVPitchData, 'Pitch', 'linear', fileName)
         ProcessL1e.interpolateL1eAngular(satnavPointingData, xTimer, yTimer, newSATNAVPointingData, 'Pointing', fileName)
-        ProcessL1e.interpolateL1e(satnavRollData, xTimer, yTimer, newSATNAVRollData, 'Roll', 'linear')
+        ProcessL1e.interpolateL1e(satnavRollData, xTimer, yTimer, newSATNAVRollData, 'Roll', 'linear', fileName)
         ProcessL1e.interpolateL1e(satnavRelAzData, xTimer, yTimer, newSATNAVRelAzData, 'RelAz', 'linear', fileName)
         ProcessL1e.interpolateL1e(satnavElevationData, xTimer, yTimer, newSATNAVElevationData, 'Elevation', 'linear', fileName)
 
@@ -485,10 +485,12 @@ class ProcessL1e:
 
         newReferenceGroup = root.addGroup("Irradiance")
         newSASGroup = root.addGroup("Radiance")
-        # if node.getGroup("GPS"):
-        #     root.groups.append(node.getGroup("GPS"))
-        if node.getGroup("Ancillary"):
-            root.groups.append(node.getGroup("Ancillary"))
+        if node.getGroup("GPS"):
+            root.groups.append(node.getGroup("GPS"))
+        if node.getGroup("SOLARTRACKER"):
+            root.groups.append(node.getGroup("SOLARTRACKER"))
+        if node.getGroup("SOLARTRACKER_STATUS"):
+            root.groups.append(node.getGroup("SOLARTRACKER_STATUS"))
 
         referenceGroup = node.getGroup("Irradiance")
         sasGroup = node.getGroup("Radiance")
@@ -564,7 +566,7 @@ class ProcessL1e:
     def processL1e(node, fileName):
         
         root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class 
-        root.copyAttributes(node) # Now copy the attributes in from the L2 object
+        root.copyAttributes(node) # Now copy the attributes in from the L1d object
         root.attributes["PROCESSING_LEVEL"] = "1e"
         root.attributes["DEPTH_RESOLUTION"] = "N/A"
 
@@ -590,6 +592,9 @@ class ProcessL1e:
             elif gp.getDataset("AZIMUTH"):
                 # print("SATNAV")
                 satnavGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
+            elif gp.getDataset("MESSAGE"):
+                # print("SATNAV")
+                satmsgGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
 
         refGroup = root.addGroup("Irradiance")
         sasGroup = root.addGroup("Radiance")
@@ -597,6 +602,8 @@ class ProcessL1e:
             root.addGroup("GPS")
         if satnavGroup is not None:
             root.addGroup("SOLARTRACKER")
+        if satmsgGroup is not None:
+            root.addGroup("SOLARTRACKER_STATUS")
 
         ProcessL1e.convertGroup(esGroup, "ES", refGroup, "ES")        
         ProcessL1e.convertGroup(liGroup, "LI", sasGroup, "LI")
