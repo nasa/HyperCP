@@ -111,7 +111,10 @@ class Controller:
     @staticmethod
     def processL1a(inFilePath, outFilePath, calibrationMap):      
         if not os.path.isfile(inFilePath):
-            print("No such file...")
+            msg = 'No such file...'
+            Utilities.errorWindow("File Error", msg)
+            print(msg)
+            Utilities.writeLogFile(msg)
             return None
 
         # Process the data
@@ -152,14 +155,18 @@ class Controller:
         if root is not None:
             try:
                 root.writeHDF5(outFilePath)
-            except:
+            except:                
                 msg = 'Unable to write L1A file. It may be open in another program.'
+                Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
+                return None
         else:
             msg = "L1a processing failed. Nothing to output."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
+            return None
 
     @staticmethod
     def processL1b(inFilePath, outFilePath, calibrationMap):      
@@ -173,9 +180,11 @@ class Controller:
             root = HDFRoot.readHDF5(inFilePath)
         except:
             msg = "Unable to open file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
+
         root = ProcessL1b.processL1b(root, calibrationMap)
 
         # Write output file
@@ -183,11 +192,17 @@ class Controller:
             try:
                 root.writeHDF5(outFilePath)
             except:
-                print('Unable to write L1b file. It may be open in another program.')
+                msg = "Unable to write the file. May be open in another application."
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
         else:
             msg = "L1b processing failed. Nothing to output."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
+            return None
 
     @staticmethod
     def processL1c(inFilePath, outFilePath):
@@ -206,9 +221,11 @@ class Controller:
             root = HDFRoot.readHDF5(inFilePath)
         except:
             msg = "Unable to open file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
+
         root = ProcessL1c.processL1c(root, fileName)     
 
         # Write output file
@@ -216,11 +233,17 @@ class Controller:
             try:
                 root.writeHDF5(outFilePath)
             except:
-                print('Unable to write L1c file. It may be open in another program.')
+                msg = "Unable to write file. May be open in another application."
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
         else:
             msg = "L1c processing failed. Nothing to output."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
+            return None
 
     @staticmethod
     def processL1d(inFilePath, outFilePath):        
@@ -237,9 +260,11 @@ class Controller:
             root = HDFRoot.readHDF5(inFilePath)
         except:
             msg = "Unable to open file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
+
         root = ProcessL1d.processL1d(root)     
 
         # Write output file
@@ -247,11 +272,17 @@ class Controller:
             try:
                 root.writeHDF5(outFilePath)
             except:
-                print('Unable to write L1d file. It may be open in another program.')
-        else:
-            msg = "L1c processing failed. Nothing to output."
+                msg = "Unable to write file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
-            Utilities.writeLogFile(msg)            
+            Utilities.writeLogFile(msg)
+            return None
+        else:
+            msg = "L1d processing failed. Nothing to output."
+            Utilities.errorWindow("File Error", msg)
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None            
 
     @staticmethod
     def processL1e(inFilePath, outFilePath):
@@ -267,9 +298,11 @@ class Controller:
             root = HDFRoot.readHDF5(inFilePath)
         except:
             msg = "Unable to open file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
+            
         root = ProcessL1e.processL1e(root, fileName)
 
         # Write output file
@@ -277,11 +310,17 @@ class Controller:
             try:
                 root.writeHDF5(outFilePath)
             except:
-                print('Unable to write L1e file. It may be open in another program.')
+                msg = "Unable to write file. May be open in another application."
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
         else:
             msg = "L1e processing failed. Nothing to output."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
-            Utilities.writeLogFile(msg)    
+            Utilities.writeLogFile(msg)
+            return None  
 
 
     @staticmethod
@@ -299,6 +338,7 @@ class Controller:
             root = HDFRoot.readHDF5(inFilePath)
         except:
             msg = "Unable to open file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
@@ -326,11 +366,17 @@ class Controller:
             try:
                 root.writeHDF5(outFilePath)
             except:
-                print('Unable to write L2 file. It may be open in another program.')
+                msg = "Unable to write file. May be open in another application."
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
         else:
             msg = "L2 processing failed. Nothing to output."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
+            return None
 
     # Process every file in a list of files 1 level
     @staticmethod

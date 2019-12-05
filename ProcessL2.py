@@ -1007,24 +1007,28 @@ class ProcessL2:
 
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
-        root.attributes["PROCESSING_LEVEL"] = "4"
+        root.attributes["PROCESSING_LEVEL"] = "2"
 
         root.addGroup("Reflectance")
         root.addGroup("Irradiance")
         root.addGroup("Radiance")    
 
-        gpsGroup = None
-        satnavGroup = None
+        ancGroup = None
+        # gpsGroup = None
+        # satnavGroup = None
+        # for gp in node.groups:
+        #     if gp.id.startswith("GPS"):
+        #         gpsGroup = gp
+        #     elif gp.id.startswith("SATNAV"):
+        #         satnavGroup = gp
         for gp in node.groups:
-            if gp.id.startswith("GPS"):
-                gpsGroup = gp
-            elif gp.id.startswith("SATNAV"):
-                satnavGroup = gp
+            if gp.id.startswith("ANCILLARY"):
+                ancGroup = gp
 
-        if gpsGroup is not None:
-            root.addGroup("GPS")
-        if satnavGroup is not None:
-            root.addGroup("SATNAV")    
+        if ancGroup is not None:
+            root.addGroup("ANCILLARY")
+        # if satnavGroup is not None:
+        #     root.addGroup("SATNAV")    
 
         if not ProcessL2.calculateReflectance(root, node, windSpeedData):
             return None

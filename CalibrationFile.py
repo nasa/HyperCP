@@ -219,6 +219,7 @@ class CalibrationFile:
                 instrumentId.startswith("SATHSE") or \
                 instrumentId.startswith("SATHSL") or \
                 instrumentId.startswith("SATPYR") or \
+                instrumentId.startswith("SATMSG") or \
                 instrumentId.startswith("SATNAV"):
             #print("not gps")
             # Read DATETAG

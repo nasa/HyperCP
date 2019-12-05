@@ -2,6 +2,9 @@
 import datetime
 import os
 import sys
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QMessageBox
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import pyqtSlot
 
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
@@ -17,6 +20,16 @@ if "LOGFILE" not in os.environ:
     os.environ["LOGFILE"] = "temp.log"
 
 class Utilities:
+
+    @staticmethod
+    def errorWindow(winText,errorText):
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Information)
+        msgBox.setText(errorText)
+        msgBox.setWindowTitle(winText)
+        msgBox.setStandardButtons(QMessageBox.Ok)
+        # msgBox.buttonClicked.connect(msgButtonClick)
+        msgBox.exec_()
 
     # Print iterations progress
     @staticmethod

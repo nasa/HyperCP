@@ -188,8 +188,8 @@ class ProcessL1e:
         gpsLatHemiData = gpsGroup.getDataset("LATHEMI")
         gpsLonHemiData = gpsGroup.getDataset("LONHEMI")
 
-        # newGPSGroup = node.getGroup("GPS")
-        newGPSGroup = node.getGroup("Ancillary")
+        newGPSGroup = node.getGroup("GPS")
+        # newGPSGroup = node.getGroup("Ancillary")
         newGPSCourseData = newGPSGroup.addDataset("COURSE")
         newGPSLatPosData = newGPSGroup.addDataset("LATPOS")
         newGPSLonPosData = newGPSGroup.addDataset("LONPOS")
@@ -289,7 +289,8 @@ class ProcessL1e:
         satnavRelAzData = satnavGroup.getDataset("REL_AZ")
         satnavElevationData = satnavGroup.getDataset("ELEVATION")
 
-        newSATNAVGroup = node.getGroup("Ancillary")
+        # newSATNAVGroup = node.getGroup("Ancillary")
+        newSATNAVGroup = node.getGroup("SOLARTRACKER")
         newSATNAVAzimuthData = newSATNAVGroup.addDataset("AZIMUTH")
         newSATNAVHeadingData = newSATNAVGroup.addDataset("HEADING")
         newSATNAVPitchData = newSATNAVGroup.addDataset("PITCH")
@@ -588,14 +589,14 @@ class ProcessL1e:
                 ltGroup = gp
             elif gp.getDataset("AZIMUTH"):
                 # print("SATNAV")
-                satnavGroup = gp
+                satnavGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
 
         refGroup = root.addGroup("Irradiance")
         sasGroup = root.addGroup("Radiance")
-        # if gpsGroup is not None:
-        #     root.addGroup("GPS")
+        if gpsGroup is not None:
+            root.addGroup("GPS")
         if satnavGroup is not None:
-            root.addGroup("Ancillary")
+            root.addGroup("SOLARTRACKER")
 
         ProcessL1e.convertGroup(esGroup, "ES", refGroup, "ES")        
         ProcessL1e.convertGroup(liGroup, "LI", sasGroup, "LI")
