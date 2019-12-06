@@ -317,7 +317,6 @@ class Utilities:
         new_y_rad = f(new_x)%(2*np.pi)
         new_y = np.rad2deg(new_y_rad)
 
-
         return new_y
 
     # Cubic spline interpolation intended to get around the all NaN output from InterpolateUnivariateSpline

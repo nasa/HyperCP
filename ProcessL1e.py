@@ -78,7 +78,7 @@ class ProcessL1e:
             Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName)
 
 
-    # Converts a sensor group into the format used by Level 1E
+    # Converts a sensor group into the L1E format
     # The sensor dataset is renamed (e.g. ES -> ES)
     # The separate DATETAG, TIMETAG2 datasets are combined into the sensor dataset
     @staticmethod
@@ -174,7 +174,7 @@ class ProcessL1e:
             Utilities.writeLogFile(msg)
             return
 
-        refGroup = node.getGroup("Irradiance")
+        refGroup = node.getGroup("IRRADIANCE")
         esData = refGroup.getDataset("ES")
 
         # GPS
@@ -183,7 +183,7 @@ class ProcessL1e:
         gpsCourseData = gpsGroup.getDataset("COURSE")
         gpsLatPosData = gpsGroup.getDataset("LATPOS")
         gpsLonPosData = gpsGroup.getDataset("LONPOS")
-        gpsMagVarData = gpsGroup.getDataset("MAGVAR")
+        # gpsMagVarData = gpsGroup.getDataset("MAGVAR")
         gpsSpeedData = gpsGroup.getDataset("SPEED")
         gpsLatHemiData = gpsGroup.getDataset("LATHEMI")
         gpsLonHemiData = gpsGroup.getDataset("LONHEMI")
@@ -191,9 +191,9 @@ class ProcessL1e:
         newGPSGroup = node.getGroup("GPS")
         # newGPSGroup = node.getGroup("Ancillary")
         newGPSCourseData = newGPSGroup.addDataset("COURSE")
-        newGPSLatPosData = newGPSGroup.addDataset("LATPOS")
-        newGPSLonPosData = newGPSGroup.addDataset("LONPOS")
-        newGPSMagVarData = newGPSGroup.addDataset("MAGVAR")
+        newGPSLatPosData = newGPSGroup.addDataset("LATITUDE")
+        newGPSLonPosData = newGPSGroup.addDataset("LONGITUDE")
+        # newGPSMagVarData = newGPSGroup.addDataset("MAGVAR")
         newGPSSpeedData = newGPSGroup.addDataset("SPEED")
 
         # Add Datetag, Timetag2 data to gps groups
@@ -204,8 +204,8 @@ class ProcessL1e:
         newGPSLatPosData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
         newGPSLonPosData.columns["Datetag"] = esData.data["Datetag"].tolist()
         newGPSLonPosData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-        newGPSMagVarData.columns["Datetag"] = esData.data["Datetag"].tolist()
-        newGPSMagVarData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
+        # newGPSMagVarData.columns["Datetag"] = esData.data["Datetag"].tolist()
+        # newGPSMagVarData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
         newGPSSpeedData.columns["Datetag"] = esData.data["Datetag"].tolist()
         newGPSSpeedData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
 
@@ -255,13 +255,13 @@ class ProcessL1e:
         ProcessL1e.interpolateL1eAngular(gpsCourseData, xTimer, yTimer, newGPSCourseData, gpsCourseData.id, fileName)        
         ProcessL1e.interpolateL1e(gpsLatPosData, xTimer, yTimer, newGPSLatPosData, gpsLatPosData.id, 'linear', fileName)
         ProcessL1e.interpolateL1e(gpsLonPosData, xTimer, yTimer, newGPSLonPosData, gpsLonPosData.id, 'linear', fileName)
-        ProcessL1e.interpolateL1e(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, gpsMagVarData.id, 'linear', fileName)
+        # ProcessL1e.interpolateL1e(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, gpsMagVarData.id, 'linear', fileName)
         ProcessL1e.interpolateL1e(gpsSpeedData, xTimer, yTimer, newGPSSpeedData, gpsSpeedData.id, 'linear', fileName)
 
         newGPSCourseData.columnsToDataset()
         newGPSLatPosData.columnsToDataset()
         newGPSLonPosData.columnsToDataset()
-        newGPSMagVarData.columnsToDataset()
+        # newGPSMagVarData.columnsToDataset()
         newGPSSpeedData.columnsToDataset()
 
     # interpolate SATNAV to match ES
@@ -277,7 +277,7 @@ class ProcessL1e:
             Utilities.writeLogFile(msg)
             return
 
-        refGroup = node.getGroup("Irradiance")
+        refGroup = node.getGroup("IRRADIANCE")
         esData = refGroup.getDataset("ES")
 
         satnavTimeData = satnavGroup.getDataset("TIMETAG2")
@@ -483,17 +483,19 @@ class ProcessL1e:
         
         root.attributes["WAVEL_INTERP"] = (str(interval) + " nm") 
 
-        newReferenceGroup = root.addGroup("Irradiance")
-        newSASGroup = root.addGroup("Radiance")
+        newReferenceGroup = root.addGroup("IRRADIANCE")
+        newSASGroup = root.addGroup("RADIANCE")
         if node.getGroup("GPS"):
             root.groups.append(node.getGroup("GPS"))
+        if node.getGroup("PYROMETER"):
+            root.groups.append(node.getGroup("PYROMETER"))
         if node.getGroup("SOLARTRACKER"):
             root.groups.append(node.getGroup("SOLARTRACKER"))
         if node.getGroup("SOLARTRACKER_STATUS"):
             root.groups.append(node.getGroup("SOLARTRACKER_STATUS"))
 
-        referenceGroup = node.getGroup("Irradiance")
-        sasGroup = node.getGroup("Radiance")
+        referenceGroup = node.getGroup("IRRADIANCE")
+        sasGroup = node.getGroup("RADIANCE")
 
         esData = referenceGroup.getDataset("ES")
         liData = sasGroup.getDataset("LI")
@@ -580,6 +582,9 @@ class ProcessL1e:
             if gp.getDataset("UTCPOS"):
                 # print("GPS")
                 gpsGroup = gp
+            if gp.getDataset("T"):
+                # print("PYROMETER")
+                pyrGroup = gp
             elif gp.getDataset("ES") and gp.attributes["FrameType"] == "ShutterLight":
                 # print("ES")
                 esGroup = gp
@@ -596,15 +601,9 @@ class ProcessL1e:
                 # print("SATNAV")
                 satmsgGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
 
-        refGroup = root.addGroup("Irradiance")
-        sasGroup = root.addGroup("Radiance")
-        if gpsGroup is not None:
-            root.addGroup("GPS")
-        if satnavGroup is not None:
-            root.addGroup("SOLARTRACKER")
-        if satmsgGroup is not None:
-            root.addGroup("SOLARTRACKER_STATUS")
-
+        refGroup = root.addGroup("IRRADIANCE")
+        sasGroup = root.addGroup("RADIANCE")
+        
         ProcessL1e.convertGroup(esGroup, "ES", refGroup, "ES")        
         ProcessL1e.convertGroup(liGroup, "LI", sasGroup, "LI")
         ProcessL1e.convertGroup(ltGroup, "LT", sasGroup, "LT")
@@ -613,6 +612,27 @@ class ProcessL1e:
         liData = sasGroup.getDataset("LI")
         ltData = sasGroup.getDataset("LT")
 
+        if gpsGroup is not None:
+            root.addGroup("GPS")
+        if pyrGroup is not None:
+            newPyrGroup = root.addGroup("PYROMETER")
+            ProcessL1e.convertGroup(pyrGroup, "T", newPyrGroup, "T")
+            pyrData = newPyrGroup.getDataset("T")
+        if satnavGroup is not None:
+            root.addGroup("SOLARTRACKER")
+        if satmsgGroup is not None:
+            newSatMSGGroup = root.addGroup("SOLARTRACKER_STATUS")
+            # SATMSG (SOLARTRACKER_STATUS) has no date or time, just propogate it as is
+            satMSG = satmsgGroup.getDataset("MESSAGE")
+            newSatMSG = newSatMSGGroup.addDataset("MESSAGE")
+            # newSatMSGGroup["MESSAGE"] = satMSG
+            # Copies over the dataset
+            for k in satMSG.data.dtype.names:
+                #print("type",type(esData.data[k]))
+                newSatMSG.columns[k] = satMSG.data[k].tolist()
+            newSatMSG.columnsToDataset()
+
+        
         ''' PysciDON interpolates to the SLOWEST sampling rate, but ProSoft
         interpolates to the FASTEST. Not much in the literature on this, although
         Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises.'''
@@ -639,11 +659,16 @@ class ProcessL1e:
             interpData = ltData
 
         # Perform time interpolation
+        ''' Note that only the specified datasets in each group will be interpolated and 
+        carried forward. For radiometers, this means that ancillary metadata such as 
+        SPECC_TEMP and THERMAL_RESP will be dropped at L1E and beyond.'''
         if not ProcessL1e.interpolateData(esData, interpData, "ES", fileName):
             return None
         if not ProcessL1e.interpolateData(liData, interpData, "LI", fileName):
             return None
         if not ProcessL1e.interpolateData(ltData, interpData, "LT", fileName):
+            return None
+        if not ProcessL1e.interpolateData(pyrData, interpData, "T", fileName):
             return None
         ProcessL1e.interpolateGPSData(root, gpsGroup, fileName)
         ProcessL1e.interpolateSATNAVData(root, satnavGroup, fileName)
