@@ -305,10 +305,19 @@ class Utilities:
     # Wrapper for scipy interp1d that works even if
     # values in new_x are outside the range of values in x
     @staticmethod
-    def interpAngular(x, y, new_x):
-        complement360 = np.rad2deg(np.unwrap(np.deg2rad(y)))
-        f = scipy.interpolate.interp1d(x,complement360,kind='linear', bounds_error=False, fill_value=None)
-        new_y = f(new_x)%360
+    def interpAngular(x, y, new_x):        
+        # eliminate NaNs
+        for i, value in enumerate(y):
+            if np.isnan(value):
+                x.pop(i)
+                y.pop(i)
+
+        y_rad = np.deg2rad(y)
+        f = scipy.interpolate.interp1d(x,y_rad,kind='linear', bounds_error=False, fill_value=None)
+        new_y_rad = f(new_x)%(2*np.pi)
+        new_y = np.rad2deg(new_y_rad)
+
+
         return new_y
 
     # Cubic spline interpolation intended to get around the all NaN output from InterpolateUnivariateSpline
@@ -437,8 +446,6 @@ class Utilities:
         verticalalignment='top', horizontalalignment='right',
         transform=axes.transAxes,
         color='black', fontdict=font)
-        #plt.show()        
-
 
         # Create output directory        
         os.makedirs(plotdir, exist_ok=True)
@@ -447,7 +454,7 @@ class Utilities:
         filebasename,_ = filename.split('_')
         fp = os.path.join(plotdir, filebasename + '_' + rType + '.png')
         plt.savefig(fp)
-        plt.close() # This prevents displaying the polt on screen with certain IDEs
+        plt.close() # This prevents displaying the plot on screen with certain IDEs
         # except:
         #     e = sys.exc_info()[0]
         #     print("Error: %s" % e)        
@@ -456,8 +463,9 @@ class Utilities:
     @staticmethod
     def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):     
         fileBaseName,_ = fileName.split('.')
-        if not os.path.exists("Plots/L1D"):
-            os.makedirs("Plots/L1D")   
+        # if not os.path.exists("Plots/L1D"):os.path.join('Plots','L1D'
+        if not os.path.exists(os.path.join('Plots','L1E')):
+            os.makedirs(os.path.join('Plots','L1E'))
         try:           
             font = {'family': 'serif',
                 'color':  'darkred',
@@ -502,9 +510,9 @@ class Utilities:
                         plt.subplots_adjust(left=0.15)
                         plt.subplots_adjust(bottom=0.15)
                         
-                        plt.savefig(os.path.join('Plots','L1D',f'{fileBaseName}_{instr}_{k}.png'))
-                        plt.close()
-                        # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)                
+                        plt.savefig(os.path.join('Plots','L1E',f'{fileBaseName}_{instr}_{k}.png'))
+                        # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)  
+                        plt.close()                                      
                         # # Tweak spacing to prevent clipping of ylabel
                         # plt.subplots_adjust(left=0.15)     
 
@@ -529,7 +537,7 @@ class Utilities:
                     plt.subplots_adjust(left=0.15)
                     plt.subplots_adjust(bottom=0.15)
                     
-                    plt.savefig(os.path.join('Plots','L3',f'{fileBaseName}_{instr}_{k}.png'))
+                    plt.savefig(os.path.join('Plots','L1E',f'{fileBaseName}_{instr}_{k}.png'))
                     plt.close()
                     
             print('\n')      
