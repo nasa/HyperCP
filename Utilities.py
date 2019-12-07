@@ -362,7 +362,7 @@ class Utilities:
 
         if rType=='Rrs':
             print('Plotting Rrs')
-            group = root.getGroup("Reflectance")
+            group = root.getGroup("REFLECTANCE")
             Data = group.getDataset(rType)            
             if not os.path.exists("Plots/L2_Rrs/"):
                 os.makedirs("Plots/L2_Rrs/")
@@ -376,17 +376,17 @@ class Utilities:
 
         if rType=='ES':
             print('Plotting Es')
-            group = root.getGroup("Irradiance")
+            group = root.getGroup("IRRADIANCE")
             Data = group.getDataset(rType)
             
         if rType=='LI':
             print('Plotting Li')
-            group = root.getGroup("Radiance")
+            group = root.getGroup("RADIANCE")
             Data = group.getDataset(rType)
             
         if rType=='LT':
             print('Plotting Lt')
-            group = root.getGroup("Radiance")
+            group = root.getGroup("RADIANCE")
             Data = group.getDataset(rType)            
 
         font = {'family': 'serif',

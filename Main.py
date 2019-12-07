@@ -93,6 +93,7 @@ class Window(QtWidgets.QWidget):
 
         self.windFileLabel = QtWidgets.QLabel("Meteorologic File for L2 (SeaBASS format)")
         self.windFileLineEdit = QtWidgets.QLineEdit()
+        self.windFileLineEdit.setText(str(MainConfig.settings["metFile"]))
         self.windAddButton = QtWidgets.QPushButton("Add", self)
         self.windRemoveButton = QtWidgets.QPushButton("Remove", self)                
 
@@ -280,11 +281,12 @@ class Window(QtWidgets.QWidget):
         return self.outputDirectory
 
     def windAddButtonPressed(self):
-        print("Wind File Add Dialogue")
-        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Select Wind File",self.inputDirectory)
+        print("Met File Add Dialogue")
+        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Select Meteorologic Data File",self.inputDirectory)
         print(fnames)
         if len(fnames[0]) == 1:
             self.windFileLineEdit.setText(fnames[0][0])
+        MainConfig.settings["metFile"] = fnames[0][0]
 
     def windRemoveButtonPressed(self):
         print("Wind File Remove Dialogue")
@@ -463,6 +465,7 @@ class MainConfig:
         MainConfig.settings["cfgFile"] = ""
         MainConfig.settings["inDir"] = './Data'
         MainConfig.settings["outDir"] = './Data'
+        MainConfig.settings["metFile"] = ""
         
 
 

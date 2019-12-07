@@ -38,10 +38,10 @@ class ProcessL2:
             # print(msg)
             Utilities.writeLogFile(msg)
             #  timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
-            if group.id == "Reference":
-                timeData = group.getDataset("ES_hyperspectral").data["Timetag2"]
-            if group.id == "SAS":
-                timeData = group.getDataset("LI_hyperspectral").data["Timetag2"]
+            if group.id == "IRRADIANCE":
+                timeData = group.getDataset("ES").data["Timetag2"]
+            if group.id == "RADIANCE":
+                timeData = group.getDataset("LI").data["Timetag2"]
             if group.id == "SATNAV":
                 timeData = group.getDataset("AZIMUTH").data["Timetag2"]
             if group.id == "GPS":
@@ -116,25 +116,25 @@ class ProcessL2:
     @staticmethod
     def specQualityCheck(group, inFilePath):
         
-        if group.id == 'Reference':
-            Data = group.getDataset("ES_hyperspectral") 
-            timeStamp = group.getDataset("ES_hyperspectral").data["Timetag2"]
+        if group.id == 'IRRADIANCE':
+            Data = group.getDataset("ES") 
+            timeStamp = group.getDataset("ES").data["Timetag2"]
             badTimes = Utilities.specFilter(inFilePath, Data, timeStamp, filterRange=[400, 700],\
                 filterFactor=5, rType='Es')
             msg = f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of Es data flagged'
             print(msg)
             Utilities.writeLogFile(msg)  
         else:            
-            Data = group.getDataset("LI_hyperspectral")
-            timeStamp = group.getDataset("LI_hyperspectral").data["Timetag2"]
+            Data = group.getDataset("LI")
+            timeStamp = group.getDataset("LI").data["Timetag2"]
             badTimes1 = Utilities.specFilter(inFilePath, Data, timeStamp, filterRange=[400, 700],\
                 filterFactor=8, rType='Li')
             msg = f'{len(np.unique(badTimes1))/len(timeStamp)*100:.1f}% of Li data flagged'
             print(msg)
             Utilities.writeLogFile(msg)  
 
-            Data = group.getDataset("LT_hyperspectral")
-            timeStamp = group.getDataset("LT_hyperspectral").data["Timetag2"]
+            Data = group.getDataset("LT")
+            timeStamp = group.getDataset("LT").data["Timetag2"]
             badTimes2 = Utilities.specFilter(inFilePath, Data, timeStamp, filterRange=[400, 700],\
                 filterFactor=3, rType='Lt')
             msg = f'{len(np.unique(badTimes2))/len(timeStamp)*100:.1f}% of Lt data flagged'
@@ -267,110 +267,122 @@ class ProcessL2:
 
     # Take the slice median averages of ancillary data
     @staticmethod
-    def sliceAverageAncillary(start, end, newESData, gpsCourseColumns, newGPSCourseData, gpsLatPosColumns, newGPSLatPosData, \
-            gpsLonPosColumns, newGPSLonPosData, gpsMagVarColumns, newGPSMagVarData, gpsSpeedColumns, newGPSSpeedData, \
-            satnavAzimuthColumns, newSATNAVAzimuthData, satnavElevationColumns, newSATNAVElevationData, satnavHeadingColumns, \
-            newSATNAVHeadingData, satnavPointingColumns, newSATNAVPointingData, satnavRelAzColumns, newSATNAVRelAzData):
+    def sliceAverageAncillary(start, end, newESData, gpsCourseColumns=None, newGPSCourseData=None, gpsLatPosColumns=None, newGPSLatPosData=None, \
+            gpsLonPosColumns=None, newGPSLonPosData=None, gpsMagVarColumns=None, newGPSMagVarData=None, gpsSpeedColumns=None, newGPSSpeedData=None, \
+            satnavAzimuthColumns=None, newSATNAVAzimuthData=None, satnavElevationColumns=None, newSATNAVElevationData=None, satnavHeadingColumns=None, \
+            newSATNAVHeadingData=None, satnavPointingColumns=None, newSATNAVPointingData=None, satnavRelAzColumns=None, newSATNAVRelAzData=None, \
+            pyrColumns=None, newPyrData=None):
 
         # Take the slice median of ancillary data and add it to appropriate groups 
         # You can't take medians of Datetag and Timetag2, so use those from es
         sliceDate = newESData.columns["Datetag"][-1]
         sliceTime = newESData.columns["Timetag2"][-1]
 
-        gpsCourseSlice = ProcessL2.columnToSlice(gpsCourseColumns, start, end)
-        sliceCourse = np.nanmedian(gpsCourseSlice["TRUE"])
-        gpsLatSlice = ProcessL2.columnToSlice(gpsLatPosColumns, start, end)
-        sliceLat = np.nanmedian(gpsLatSlice["NONE"])
-        gpsLonSlice = ProcessL2.columnToSlice(gpsLonPosColumns, start, end)
-        sliceLon = np.nanmedian(gpsLonSlice["NONE"])
-        gpsMagVarSlice = ProcessL2.columnToSlice(gpsMagVarColumns, start, end)
-        sliceMagVar = np.nanmedian(gpsMagVarSlice["NONE"])
-        gpsSpeedSlice = ProcessL2.columnToSlice(gpsSpeedColumns, start, end)
-        sliceSpeed = np.nanmedian(gpsSpeedSlice["NONE"])
+        if gpsLatPosColumns is not None:
+            gpsCourseSlice = ProcessL2.columnToSlice(gpsCourseColumns, start, end)
+            sliceCourse = np.nanmedian(gpsCourseSlice["TRUE"])
+            gpsLatSlice = ProcessL2.columnToSlice(gpsLatPosColumns, start, end)
+            sliceLat = np.nanmedian(gpsLatSlice["NONE"])
+            gpsLonSlice = ProcessL2.columnToSlice(gpsLonPosColumns, start, end)
+            sliceLon = np.nanmedian(gpsLonSlice["NONE"])
+            # gpsMagVarSlice = ProcessL2.columnToSlice(gpsMagVarColumns, start, end)
+            # sliceMagVar = np.nanmedian(gpsMagVarSlice["NONE"])
+            gpsSpeedSlice = ProcessL2.columnToSlice(gpsSpeedColumns, start, end)
+            sliceSpeed = np.nanmedian(gpsSpeedSlice["NONE"])
+            if not ("Datetag" in newGPSCourseData.columns):
+                newGPSCourseData.columns["Datetag"] = [sliceDate]
+                newGPSCourseData.columns["Timetag2"] = [sliceTime]
+                newGPSCourseData.columns["TRUE"] = [sliceCourse]                        
+                newGPSLatPosData.columns["Datetag"] = [sliceDate]
+                newGPSLatPosData.columns["Timetag2"] = [sliceTime]
+                newGPSLatPosData.columns["NONE"] = [sliceLat]
+                newGPSLonPosData.columns["Datetag"] = [sliceDate]
+                newGPSLonPosData.columns["Timetag2"] = [sliceTime]
+                newGPSLonPosData.columns["NONE"] = [sliceLon]
+                # newGPSMagVarData.columns["Datetag"] = [sliceDate]
+                # newGPSMagVarData.columns["Timetag2"] = [sliceTime]
+                # newGPSMagVarData.columns["NONE"] = [sliceMagVar]
+                newGPSSpeedData.columns["Datetag"] = [sliceDate]
+                newGPSSpeedData.columns["Timetag2"] = [sliceTime]
+                newGPSSpeedData.columns["NONE"] = [sliceSpeed]
+            else:
+                newGPSCourseData.columns["Datetag"].append(sliceDate)
+                newGPSCourseData.columns["Timetag2"].append(sliceTime)
+                newGPSCourseData.columns["TRUE"].append(sliceCourse)
+                newGPSLatPosData.columns["Datetag"].append(sliceDate)
+                newGPSLatPosData.columns["Timetag2"].append(sliceTime)
+                newGPSLatPosData.columns["NONE"].append(sliceLat)
+                newGPSLonPosData.columns["Datetag"].append(sliceDate)
+                newGPSLonPosData.columns["Timetag2"].append(sliceTime)
+                newGPSLonPosData.columns["NONE"].append(sliceLon)
+                # newGPSMagVarData.columns["Datetag"].append(sliceDate)
+                # newGPSMagVarData.columns["Timetag2"].append(sliceTime)
+                # newGPSMagVarData.columns["NONE"].append(sliceMagVar)
+                newGPSSpeedData.columns["Datetag"].append(sliceDate)
+                newGPSSpeedData.columns["Timetag2"].append(sliceTime)
+                newGPSSpeedData.columns["NONE"].append(sliceSpeed)
 
-        satnavAzimuthSlice = ProcessL2.columnToSlice(satnavAzimuthColumns, start, end)
-        sliceAzimuth = np.nanmedian(satnavAzimuthSlice["SUN"])
-        satnavElevationSlice = ProcessL2.columnToSlice(satnavElevationColumns, start, end)
-        sliceElevation = np.nanmedian(satnavElevationSlice["SUN"])
-        satnavHeadingSlice = ProcessL2.columnToSlice(satnavHeadingColumns, start, end)
-        sliceHeadingSAS = np.nanmedian(satnavHeadingSlice["SAS_TRUE"])
-        sliceHeadingShip = np.nanmedian(satnavHeadingSlice["SHIP_TRUE"])
-        satnavPointingSlice = ProcessL2.columnToSlice(satnavPointingColumns, start, end)
-        slicePointing = np.nanmedian(satnavPointingSlice["ROTATOR"])
-        satnavRelAzSlice = ProcessL2.columnToSlice(satnavRelAzColumns, start, end)
-        sliceRelAz = np.nanmedian(satnavRelAzSlice["REL_AZ"])
+        if satnavRelAzColumns is not None:
+            satnavAzimuthSlice = ProcessL2.columnToSlice(satnavAzimuthColumns, start, end)
+            sliceAzimuth = np.nanmedian(satnavAzimuthSlice["SUN"])
+            satnavElevationSlice = ProcessL2.columnToSlice(satnavElevationColumns, start, end)
+            sliceElevation = np.nanmedian(satnavElevationSlice["SUN"])
+            satnavHeadingSlice = ProcessL2.columnToSlice(satnavHeadingColumns, start, end)
+            sliceHeadingSAS = np.nanmedian(satnavHeadingSlice["SAS_TRUE"])
+            sliceHeadingShip = np.nanmedian(satnavHeadingSlice["SHIP_TRUE"])
+            satnavPointingSlice = ProcessL2.columnToSlice(satnavPointingColumns, start, end)
+            slicePointing = np.nanmedian(satnavPointingSlice["ROTATOR"])
+            satnavRelAzSlice = ProcessL2.columnToSlice(satnavRelAzColumns, start, end)
+            sliceRelAz = np.nanmedian(satnavRelAzSlice["REL_AZ"])
+            if not ("Datetag" in newSATNAVAzimuthData.columns):
+                newSATNAVAzimuthData.columns["Datetag"] = [sliceDate]
+                newSATNAVAzimuthData.columns["Timetag2"] = [sliceTime]
+                newSATNAVAzimuthData.columns["SUN"] = [sliceAzimuth]
+                newSATNAVElevationData.columns["Datetag"] = [sliceDate]
+                newSATNAVElevationData.columns["Timetag2"] = [sliceTime]
+                newSATNAVElevationData.columns["SUN"] = [sliceElevation]
+                newSATNAVHeadingData.columns["Datetag"] = [sliceDate]
+                newSATNAVHeadingData.columns["Timetag2"] = [sliceTime]
+                newSATNAVHeadingData.columns["SAS_True"] = [sliceHeadingSAS]
+                newSATNAVHeadingData.columns["SHIP_True"] = [sliceHeadingShip]
+                newSATNAVPointingData.columns["Datetag"] = [sliceDate]
+                newSATNAVPointingData.columns["Timetag2"] = [sliceTime]
+                newSATNAVPointingData.columns["ROTATOR"] = [slicePointing]
+                newSATNAVRelAzData.columns["Datetag"] = [sliceDate]
+                newSATNAVRelAzData.columns["Timetag2"] = [sliceTime]
+                newSATNAVRelAzData.columns["REL_AZ"] = [sliceRelAz]    
+            else:
+                newSATNAVAzimuthData.columns["Datetag"].append(sliceDate)
+                newSATNAVAzimuthData.columns["Timetag2"].append(sliceTime)
+                newSATNAVAzimuthData.columns["SUN"].append(sliceAzimuth)
+                newSATNAVElevationData.columns["Datetag"].append(sliceDate)
+                newSATNAVElevationData.columns["Timetag2"].append(sliceTime)
+                newSATNAVElevationData.columns["SUN"].append(sliceElevation)
+                newSATNAVHeadingData.columns["Datetag"].append(sliceDate)
+                newSATNAVHeadingData.columns["Timetag2"].append(sliceTime)
+                newSATNAVHeadingData.columns["SAS_True"].append(sliceHeadingSAS)
+                newSATNAVHeadingData.columns["SHIP_True"].append(sliceHeadingShip)
+                newSATNAVPointingData.columns["Datetag"].append(sliceDate)
+                newSATNAVPointingData.columns["Timetag2"].append(sliceTime)
+                newSATNAVPointingData.columns["ROTATOR"].append(slicePointing)
+                newSATNAVRelAzData.columns["Datetag"].append(sliceDate)
+                newSATNAVRelAzData.columns["Timetag2"].append(sliceTime)
+                newSATNAVRelAzData.columns["REL_AZ"].append(sliceRelAz)
 
-
-        if not ("Datetag" in newGPSCourseData.columns):
-            newGPSCourseData.columns["Datetag"] = [sliceDate]
-            newGPSCourseData.columns["Timetag2"] = [sliceTime]
-            newGPSCourseData.columns["TRUE"] = [sliceCourse]                        
-            newGPSLatPosData.columns["Datetag"] = [sliceDate]
-            newGPSLatPosData.columns["Timetag2"] = [sliceTime]
-            newGPSLatPosData.columns["NONE"] = [sliceLat]
-            newGPSLonPosData.columns["Datetag"] = [sliceDate]
-            newGPSLonPosData.columns["Timetag2"] = [sliceTime]
-            newGPSLonPosData.columns["NONE"] = [sliceLon]
-            newGPSMagVarData.columns["Datetag"] = [sliceDate]
-            newGPSMagVarData.columns["Timetag2"] = [sliceTime]
-            newGPSMagVarData.columns["NONE"] = [sliceMagVar]
-            newGPSSpeedData.columns["Datetag"] = [sliceDate]
-            newGPSSpeedData.columns["Timetag2"] = [sliceTime]
-            newGPSSpeedData.columns["NONE"] = [sliceSpeed]
-            newSATNAVAzimuthData.columns["Datetag"] = [sliceDate]
-            newSATNAVAzimuthData.columns["Timetag2"] = [sliceTime]
-            newSATNAVAzimuthData.columns["SUN"] = [sliceAzimuth]
-            newSATNAVElevationData.columns["Datetag"] = [sliceDate]
-            newSATNAVElevationData.columns["Timetag2"] = [sliceTime]
-            newSATNAVElevationData.columns["SUN"] = [sliceElevation]
-            newSATNAVHeadingData.columns["Datetag"] = [sliceDate]
-            newSATNAVHeadingData.columns["Timetag2"] = [sliceTime]
-            newSATNAVHeadingData.columns["SAS_True"] = [sliceHeadingSAS]
-            newSATNAVHeadingData.columns["SHIP_True"] = [sliceHeadingShip]
-            newSATNAVPointingData.columns["Datetag"] = [sliceDate]
-            newSATNAVPointingData.columns["Timetag2"] = [sliceTime]
-            newSATNAVPointingData.columns["ROTATOR"] = [slicePointing]
-            newSATNAVRelAzData.columns["Datetag"] = [sliceDate]
-            newSATNAVRelAzData.columns["Timetag2"] = [sliceTime]
-            newSATNAVRelAzData.columns["REL_AZ"] = [sliceRelAz]                    
-
-            
-        else:
-            newGPSCourseData.columns["Datetag"].append(sliceDate)
-            newGPSCourseData.columns["Timetag2"].append(sliceTime)
-            newGPSCourseData.columns["TRUE"].append(sliceCourse)
-            newGPSLatPosData.columns["Datetag"].append(sliceDate)
-            newGPSLatPosData.columns["Timetag2"].append(sliceTime)
-            newGPSLatPosData.columns["NONE"].append(sliceLat)
-            newGPSLonPosData.columns["Datetag"].append(sliceDate)
-            newGPSLonPosData.columns["Timetag2"].append(sliceTime)
-            newGPSLonPosData.columns["NONE"].append(sliceLon)
-            newGPSMagVarData.columns["Datetag"].append(sliceDate)
-            newGPSMagVarData.columns["Timetag2"].append(sliceTime)
-            newGPSMagVarData.columns["NONE"].append(sliceMagVar)
-            newGPSSpeedData.columns["Datetag"].append(sliceDate)
-            newGPSSpeedData.columns["Timetag2"].append(sliceTime)
-            newGPSSpeedData.columns["NONE"].append(sliceSpeed)
-            newSATNAVAzimuthData.columns["Datetag"].append(sliceDate)
-            newSATNAVAzimuthData.columns["Timetag2"].append(sliceTime)
-            newSATNAVAzimuthData.columns["SUN"].append(sliceAzimuth)
-            newSATNAVElevationData.columns["Datetag"].append(sliceDate)
-            newSATNAVElevationData.columns["Timetag2"].append(sliceTime)
-            newSATNAVElevationData.columns["SUN"].append(sliceElevation)
-            newSATNAVHeadingData.columns["Datetag"].append(sliceDate)
-            newSATNAVHeadingData.columns["Timetag2"].append(sliceTime)
-            newSATNAVHeadingData.columns["SAS_True"].append(sliceHeadingSAS)
-            newSATNAVHeadingData.columns["SHIP_True"].append(sliceHeadingShip)
-            newSATNAVPointingData.columns["Datetag"].append(sliceDate)
-            newSATNAVPointingData.columns["Timetag2"].append(sliceTime)
-            newSATNAVPointingData.columns["ROTATOR"].append(slicePointing)
-            newSATNAVRelAzData.columns["Datetag"].append(sliceDate)
-            newSATNAVRelAzData.columns["Timetag2"].append(sliceTime)
-            newSATNAVRelAzData.columns["REL_AZ"].append(sliceRelAz)
-
-
+        if pyrColumns is not None:
+            pyrSlice = ProcessL2.columnToSlice(pyrColumns, start, end)
+            slicePyr = np.nanmedian(pyrSlice["IR"])
+            if not ("Datetag" in newPyrData.columns):
+                newPyrData.columns["Datetag"] = [sliceDate]  
+                newPyrData.columns["Timetag2"] = [sliceTime]
+                newPyrData.columns["WATER_TEMP"] = [slicePyr]              
+            else:
+                newPyrData.columns["Datetag"].append(sliceDate)
+                newPyrData.columns["Timetag2"].append(sliceTime)
+                newPyrData.columns["WATER_TEMP"].append(slicePyr)
+       
     @staticmethod
-    def calculateReflectance2(root, esColumns, liColumns, ltColumns, newRrsData, newESData, newLIData, newLTData, \
+    def calculateREFLECTANCE2(root, esColumns, liColumns, ltColumns, newRrsData, newESData, newLIData, newLTData, \
                             windSpeedColumns=None):
         '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for meteorological quality flags, 
         Perform rho correction with wind. Calculate the Rrs. Correct for NIR.'''
@@ -402,15 +414,6 @@ class ProcessL2:
 
         datetag = esColumns["Datetag"]
         timetag = esColumns["Timetag2"]
-        # latpos = None
-        # lonpos = None
-        # relAzimuth = None
-
-        # azimuth = None
-        # shipTrue = None
-        # pitch = None
-        # rotator = None
-        # roll = None
 
         esColumns.pop("Datetag")
         esColumns.pop("Timetag2")
@@ -420,23 +423,6 @@ class ProcessL2:
 
         ltColumns.pop("Datetag")
         ltColumns.pop("Timetag2")
-
-        # # remove added LATPOS/LONPOS if added
-        # if "LATPOS" in esColumns:
-        #     latpos = esColumns["LATPOS"]
-        #     esColumns.pop("LATPOS")
-        #     liColumns.pop("LATPOS")
-        #     ltColumns.pop("LATPOS")
-        # if "LONPOS" in esColumns:
-        #     lonpos = esColumns["LONPOS"]
-        #     esColumns.pop("LONPOS")
-        #     liColumns.pop("LONPOS")
-        #     ltColumns.pop("LONPOS")
-        # if "REL_AZ" in esColumns:
-        #     relAzimuth = esColumns["REL_AZ"]
-        #     esColumns.pop("REL_AZ")
-        #     liColumns.pop("REL_AZ")
-        #     ltColumns.pop("REL_AZ")
 
         # Stores the middle element
         if len(datetag) > 0:
@@ -469,8 +455,6 @@ class ProcessL2:
         li5Columns = collections.OrderedDict()
         lt5Columns = collections.OrderedDict()
              
-
-
         hasNan = False
         # Ignore runtime warnings when array is all NaNs
         with warnings.catch_warnings():
@@ -517,9 +501,7 @@ class ProcessL2:
 
 
         # Calculate Rho_sky
-
         if RuddickRho:
-
             '''This is the Ruddick, et al. 2006 approach, which has one method for 
             clear sky, and another for cloudy. Methods of this type (i.e. not accounting
             for spectral dependence (Lee et al. 2010, Gilerson et al. 2018) or polarization
@@ -536,8 +518,7 @@ class ProcessL2:
         elif ZhangRho:
             p_sky = RhoCorrections.ZhangCorr(windSpeedMean,AOD,Cloud,solZen,wTemp,Sal)
 
-
-        # Add ancillary data to Rrs dataset
+        # Add date/time data to Rrs dataset
         if not ("Datetag" in newRrsData.columns):
             newESData.columns["Datetag"] = [date]
             newLIData.columns["Datetag"] = [date]
@@ -546,48 +527,7 @@ class ProcessL2:
             newESData.columns["Timetag2"] = [time]
             newLIData.columns["Timetag2"] = [time]
             newLTData.columns["Timetag2"] = [time]
-            newRrsData.columns["Timetag2"] = [time]
-            # if latpos:
-            #     newESData.columns["Latpos"] = [lat]
-            #     newLIData.columns["Latpos"] = [lat]
-            #     newLTData.columns["Latpos"] = [lat]
-            #     newRrsData.columns["Latpos"] = [lat]
-            # if lonpos:
-            #     newESData.columns["Lonpos"] = [lon]
-            #     newLIData.columns["Lonpos"] = [lon]
-            #     newLTData.columns["Lonpos"] = [lon]
-            #     newRrsData.columns["Lonpos"] = [lon]
-
-            # if relAzimuth:
-            #     newESData.columns["RelativeAzimuth"] = [relAzi]
-            #     newLIData.columns["RelativeAzimuth"] = [relAzi]
-            #     newLTData.columns["RelativeAzimuth"] = [relAzi]
-            #     newRrsData.columns["RelativeAzimuth"] = [relAzi]
-            # if azimuth:
-            #     newESData.columns["Azimuth"] = [azi]
-            #     newLIData.columns["Azimuth"] = [azi]
-            #     newLTData.columns["Azimuth"] = [azi]
-            #     newRrsData.columns["Azimuth"] = [azi]
-            # if shipTrue:
-            #     newESData.columns["ShipTrue"] = [ship]
-            #     newLIData.columns["ShipTrue"] = [ship]
-            #     newLTData.columns["ShipTrue"] = [ship]
-            #     newRrsData.columns["ShipTrue"] = [ship]
-            # if pitch:
-            #     newESData.columns["Pitch"] = [pit]
-            #     newLIData.columns["Pitch"] = [pit]
-            #     newLTData.columns["Pitch"] = [pit]
-            #     newRrsData.columns["Pitch"] = [pit]
-            # if rotator:
-            #     newESData.columns["Rotator"] = [rot]
-            #     newLIData.columns["Rotator"] = [rot]
-            #     newLTData.columns["Rotator"] = [rot]
-            #     newRrsData.columns["Rotator"] = [rot]
-            # if roll:
-            #     newESData.columns["Roll"] = [rol]
-            #     newLIData.columns["Roll"] = [rol]
-            #     newLTData.columns["Roll"] = [rol]
-            #     newRrsData.columns["Roll"] = [rol]
+            newRrsData.columns["Timetag2"] = [time]            
         else:
             newESData.columns["Datetag"].append(date)
             newLIData.columns["Datetag"].append(date)
@@ -596,47 +536,7 @@ class ProcessL2:
             newESData.columns["Timetag2"].append(time)
             newLIData.columns["Timetag2"].append(time)
             newLTData.columns["Timetag2"].append(time)
-            newRrsData.columns["Timetag2"].append(time)
-            # if latpos:
-            #     newESData.columns["Latpos"].append(lat)
-            #     newLIData.columns["Latpos"].append(lat)
-            #     newLTData.columns["Latpos"].append(lat)
-            #     newRrsData.columns["Latpos"].append(lat)
-            # if lonpos:
-            #     newESData.columns["Lonpos"].append(lon)
-            #     newLIData.columns["Lonpos"].append(lon)
-            #     newLTData.columns["Lonpos"].append(lon)
-            #     newRrsData.columns["Lonpos"].append(lon)
-            # if relAzimuth:
-            #     newESData.columns["RelativeAzimuth"].append(relAzi)
-            #     newLIData.columns["RelativeAzimuth"].append(relAzi)
-            #     newLTData.columns["RelativeAzimuth"].append(relAzi)
-            #     newRrsData.columns["RelativeAzimuth"].append(relAzi)
-            # if azimuth:
-            #     newESData.columns["Azimuth"].append(azi)
-            #     newLIData.columns["Azimuth"].append(azi)
-            #     newLTData.columns["Azimuth"].append(azi)
-            #     newRrsData.columns["Azimuth"].append(azi)
-            # if shipTrue:
-            #     newESData.columns["ShipTrue"].append(ship)
-            #     newLIData.columns["ShipTrue"].append(ship)
-            #     newLTData.columns["ShipTrue"].append(ship)
-            #     newRrsData.columns["ShipTrue"].append(ship)
-            # if pitch:
-            #     newESData.columns["Pitch"].append(pit)
-            #     newLIData.columns["Pitch"].append(pit)
-            #     newLTData.columns["Pitch"].append(pit)
-            #     newRrsData.columns["Pitch"].append(pit)
-            # if rotator:
-            #     newESData.columns["Rotator"].append(rot)
-            #     newLIData.columns["Rotator"].append(rot)
-            #     newLTData.columns["Rotator"].append(rot)
-            #     newRrsData.columns["Rotator"].append(rot)
-            # if roll:
-            #     newESData.columns["Roll"].append(rol)
-            #     newLIData.columns["Roll"].append(rol)
-            #     newLTData.columns["Roll"].append(rol)
-            #     newRrsData.columns["Roll"].append(rol)
+            newRrsData.columns["Timetag2"].append(time)           
 
         rrsColumns = {}
                 
@@ -657,7 +557,6 @@ class ProcessL2:
                 # Calculate the Rrs
                 rrs = (lt - (p_sky * li)) / es
 
-
                 newESData.columns[k].append(es)
                 newLIData.columns[k].append(li)
                 newLTData.columns[k].append(lt)
@@ -666,12 +565,6 @@ class ProcessL2:
 
         # Perfrom near-infrared correction to remove additional atmospheric and glint contamination
         if performNIRCorrection:
-
-            # Change this to take a median value, not the mean...
-
-            # # Get average of Rrs values between 750-800nm
-            # avg = 0
-            # num = 0
 
             # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
             NIRRRs = []
@@ -697,20 +590,28 @@ class ProcessL2:
 
 
     @staticmethod
-    def calculateReflectance(root, node, windSpeedData):
+    def calculateREFLECTANCE(root, node, windSpeedData):
         '''Filter out high wind and high/low SZA.
         Interpolate windspeeds, average intervals.
         Run meteorology quality checks.
-        Pass to calculateReflectance2 for rho calcs, Rrs, NIR correction.'''
+        Pass to calculateREFLECTANCE2 for rho calcs, Rrs, NIR correction.'''
 
-        print("calculateReflectance")
+        print("calculateREFLECTANCE")
         
         interval = float(ConfigFile.settings["fL2TimeInterval"])       
 
-        referenceGroup = node.getGroup("Reference")
-        sasGroup = node.getGroup("SAS")
-        satnavGroup = node.getGroup("SATNAV")
-        gpsGroup = node.getGroup("GPS")
+        # Node (input) groups:
+        gpsGroup = None
+        satnavGroup = None
+        pyrGroup = None
+        referenceGroup = node.getGroup("IRRADIANCE")
+        sasGroup = node.getGroup("RADIANCE")
+        if  node.getGroup("GPS"):
+            gpsGroup = node.getGroup("GPS")
+        if node.getGroup("SOLARTRACKER")        :
+            satnavGroup = node.getGroup("SOLARTRACKER")        
+        if node.getGroup("PYROMETER"):
+            pyrGroup = node.getGroup("PYROMETER")
 
         ''' # Filter low SZAs and high winds '''
         defaultWindSpeed = float(ConfigFile.settings["fL2DefaultWindSpeed"])
@@ -720,7 +621,7 @@ class ProcessL2:
         SZA = 90 -satnavGroup.getDataset("ELEVATION").data["SUN"]
         timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
         
-        esData = referenceGroup.getDataset("ES_hyperspectral")
+        esData = referenceGroup.getDataset("ES")
         windSpeedColumns = ProcessL2.interpWind(windSpeedData, esData)
         
         badTimes = None
@@ -765,8 +666,12 @@ class ProcessL2:
         if badTimes is not None:
             ProcessL2.filterData(referenceGroup, badTimes)            
             ProcessL2.filterData(sasGroup, badTimes)
-            ProcessL2.filterData(gpsGroup, badTimes)
-            ProcessL2.filterData(satnavGroup, badTimes)   
+            if gpsGroup is not None:
+                ProcessL2.filterData(gpsGroup, badTimes)
+            if satnavGroup is not None:
+                ProcessL2.filterData(satnavGroup, badTimes)   
+            if pyrGroup is not None:
+                ProcessL2.filterData(pyrGroup, badTimes)   
 
 
         ''' # Now filter the spectra from the entire collection before slicing the intervals'''
@@ -784,52 +689,75 @@ class ProcessL2:
             if badTimes is not None:
                 ProcessL2.filterData(referenceGroup, badTimes)            
                 ProcessL2.filterData(sasGroup, badTimes)
-                ProcessL2.filterData(gpsGroup, badTimes)
-                ProcessL2.filterData(satnavGroup, badTimes)  
+                if gpsGroup is not None:
+                    ProcessL2.filterData(gpsGroup, badTimes)
+                if satnavGroup is not None:
+                    ProcessL2.filterData(satnavGroup, badTimes)   
+                if pyrGroup is not None:
+                    ProcessL2.filterData(pyrGroup, badTimes)   
+        esData = referenceGroup.getDataset("ES")
+        liData = sasGroup.getDataset("LI")
+        ltData = sasGroup.getDataset("LT")
 
-        esData = referenceGroup.getDataset("ES_hyperspectral")
-        liData = sasGroup.getDataset("LI_hyperspectral")
-        ltData = sasGroup.getDataset("LT_hyperspectral")
-
-        newReflectanceGroup = root.getGroup("Reflectance")
-        newRadianceGroup = root.getGroup("Radiance")
-        newIrradianceGroup = root.getGroup("Irradiance")
-        newGPSGroup = root.getGroup("GPS")
-        newSATNAVGroup = root.getGroup("SATNAV")
+        # Root (new/output) groups:
+        newReflectanceGroup = root.getGroup("REFLECTANCE")
+        newRadianceGroup = root.getGroup("RADIANCE")
+        newIrradianceGroup = root.getGroup("IRRADIANCE")
+        if gpsGroup is not None:
+            # newGPSGroup = root.getGroup("GPS")
+            newGPSGroup = root.getGroup("ANCILLARY")
+        if satnavGroup is not None:
+            # newSATNAVGroup = root.getGroup("SOLARTRACKER")
+            newSATNAVGroup = root.getGroup("ANCILLARY")
+        if pyrGroup is not None:
+            # newPyrGroup = root.getGroup("PYROMETER")
+            newPyrGroup = root.getGroup("ANCILLARY")
 
         newRrsData = newReflectanceGroup.addDataset("Rrs")
         newESData = newIrradianceGroup.addDataset("ES")
         newLIData = newRadianceGroup.addDataset("LI")
         newLTData = newRadianceGroup.addDataset("LT") 
 
-        # GPS
-        # Creates new gps group with Datetag/Timetag2 columns appended to all datasets
-        gpsCourseData = gpsGroup.getDataset("COURSE")
-        gpsLatPosData = gpsGroup.getDataset("LATPOS")
-        gpsLonPosData = gpsGroup.getDataset("LONPOS")
-        gpsMagVarData = gpsGroup.getDataset("MAGVAR")
-        gpsSpeedData = gpsGroup.getDataset("SPEED")        
+        if gpsGroup is not None:
+            # GPS
+            # Creates new gps group with Datetag/Timetag2 columns appended to all datasets
+            gpsCourseData = gpsGroup.getDataset("COURSE")
+            gpsLatPosData = gpsGroup.getDataset("LATITUDE")
+            gpsLonPosData = gpsGroup.getDataset("LONGITUDE")
+            # gpsMagVarData = gpsGroup.getDataset("MAGVAR")
+            gpsSpeedData = gpsGroup.getDataset("SPEED")        
 
-        newGPSGroup = root.getGroup("GPS")
-        newGPSCourseData = newGPSGroup.addDataset("COURSE")
-        newGPSLatPosData = newGPSGroup.addDataset("LATPOS")
-        newGPSLonPosData = newGPSGroup.addDataset("LONPOS")
-        newGPSMagVarData = newGPSGroup.addDataset("MAGVAR")
-        newGPSSpeedData = newGPSGroup.addDataset("SPEED")    
+            # newGPSGroup = root.getGroup("GPS")
+            newGPSGroup = root.getGroup("ANCILLARY")
+            newGPSCourseData = newGPSGroup.addDataset("COURSE")
+            newGPSLatPosData = newGPSGroup.addDataset("LATITUDE")
+            newGPSLonPosData = newGPSGroup.addDataset("LONGITUDE")
+            # newGPSMagVarData = newGPSGroup.addDataset("MAGVAR")
+            newGPSSpeedData = newGPSGroup.addDataset("SPEED")    
 
-        #SATNAV
-        satnavAzimuthData = satnavGroup.getDataset("AZIMUTH")
-        satnavHeadingData = satnavGroup.getDataset("HEADING")
-        satnavPointingData = satnavGroup.getDataset("POINTING")
-        satnavRelAzData = satnavGroup.getDataset("REL_AZ")
-        satnavElevationData = satnavGroup.getDataset("ELEVATION")
+        if satnavGroup is not None:
+            #SATNAV
+            satnavAzimuthData = satnavGroup.getDataset("AZIMUTH")
+            satnavHeadingData = satnavGroup.getDataset("HEADING")
+            satnavPointingData = satnavGroup.getDataset("POINTING")
+            satnavRelAzData = satnavGroup.getDataset("REL_AZ")
+            satnavElevationData = satnavGroup.getDataset("ELEVATION")
 
-        newSATNAVGroup = root.getGroup("SATNAV")
-        newSATNAVAzimuthData = newSATNAVGroup.addDataset("AZIMUTH")
-        newSATNAVHeadingData = newSATNAVGroup.addDataset("HEADING")
-        newSATNAVPointingData = newSATNAVGroup.addDataset("POINTING")
-        newSATNAVRelAzData = newSATNAVGroup.addDataset("REL_AZ")
-        newSATNAVElevationData = newSATNAVGroup.addDataset("ELEVATION")   
+            # newSATNAVGroup = root.getGroup("SATNAV")
+            newSATNAVGroup = root.getGroup("ANCILLARY")
+            newSATNAVAzimuthData = newSATNAVGroup.addDataset("SOLAR_AZIMUTH")
+            newSATNAVHeadingData = newSATNAVGroup.addDataset("HEADING")
+            newSATNAVPointingData = newSATNAVGroup.addDataset("POINTING")
+            newSATNAVRelAzData = newSATNAVGroup.addDataset("REL_AZ")
+            newSATNAVElevationData = newSATNAVGroup.addDataset("SOLAR_ELEVATION")   
+        
+        if pyrGroup is not None:
+            #PYROMETER
+            pyrData = pyrGroup.getDataset("T")            
+
+            # newPyrGroup = root.getGroup("PYROMETER")
+            newPyrGroup = root.getGroup("ANCILLARY")
+            newPyrData = newPyrGroup.addDataset("WATER_TEMP")            
 
         # Copy datasets to dictionary
         esData.datasetToColumns()
@@ -842,27 +770,33 @@ class ProcessL2:
         ltData.datasetToColumns()
         ltColumns = ltData.columns
 
-        gpsCourseData.datasetToColumns()
-        gpsCourseColumns = gpsCourseData.columns
-        gpsLatPosData.datasetToColumns()
-        gpsLatPosColumns = gpsLatPosData.columns
-        gpsLonPosData.datasetToColumns()
-        gpsLonPosColumns = gpsLonPosData.columns
-        gpsMagVarData.datasetToColumns()
-        gpsMagVarColumns = gpsMagVarData.columns
-        gpsSpeedData.datasetToColumns()
-        gpsSpeedColumns = gpsSpeedData.columns
+        if gpsGroup is not None:
+            gpsCourseData.datasetToColumns()
+            gpsCourseColumns = gpsCourseData.columns
+            gpsLatPosData.datasetToColumns()
+            gpsLatPosColumns = gpsLatPosData.columns
+            gpsLonPosData.datasetToColumns()
+            gpsLonPosColumns = gpsLonPosData.columns
+            # gpsMagVarData.datasetToColumns()
+            # gpsMagVarColumns = gpsMagVarData.columns
+            gpsSpeedData.datasetToColumns()
+            gpsSpeedColumns = gpsSpeedData.columns
 
-        satnavAzimuthData.datasetToColumns()
-        satnavAzimuthColumns = satnavAzimuthData.columns
-        satnavHeadingData.datasetToColumns()
-        satnavHeadingColumns = satnavHeadingData.columns
-        satnavPointingData.datasetToColumns()
-        satnavPointingColumns = satnavPointingData.columns
-        satnavRelAzData.datasetToColumns()
-        satnavRelAzColumns = satnavRelAzData.columns
-        satnavElevationData.datasetToColumns()
-        satnavElevationColumns =satnavElevationData.columns
+        if satnavGroup is not None:
+            satnavAzimuthData.datasetToColumns()
+            satnavAzimuthColumns = satnavAzimuthData.columns
+            satnavHeadingData.datasetToColumns()
+            satnavHeadingColumns = satnavHeadingData.columns
+            satnavPointingData.datasetToColumns()
+            satnavPointingColumns = satnavPointingData.columns
+            satnavRelAzData.datasetToColumns()
+            satnavRelAzColumns = satnavRelAzData.columns
+            satnavElevationData.datasetToColumns()
+            satnavElevationColumns =satnavElevationData.columns
+
+        if pyrGroup is not None:
+            pyrData.datasetToColumns()
+            pyrColumns = pyrData.columns
 
         #if Utilities.hasNan(esData):
         #    print("Found NAN 1") 
@@ -907,7 +841,7 @@ class ProcessL2:
                     windSlice = windSpeedColumns[i: i+1]
                 else:
                     windSlice = None
-                if not ProcessL2.calculateReflectance2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
+                if not ProcessL2.calculateREFLECTANCE2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
                                                 windSlice):
                     # msg = 'Slice failed. Skipping.'
                     # print(msg)
@@ -919,9 +853,10 @@ class ProcessL2:
                     warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 
                     ProcessL2.sliceAverageAncillary(start, end, newESData, gpsCourseColumns, newGPSCourseData, gpsLatPosColumns, newGPSLatPosData, \
-                        gpsLonPosColumns, newGPSLonPosData, gpsMagVarColumns, newGPSMagVarData, gpsSpeedColumns, newGPSSpeedData, \
+                        gpsLonPosColumns, newGPSLonPosData, None, None, gpsSpeedColumns, newGPSSpeedData, \
                         satnavAzimuthColumns, newSATNAVAzimuthData, satnavElevationColumns, newSATNAVElevationData, satnavHeadingColumns, \
-                        newSATNAVHeadingData, satnavPointingColumns, newSATNAVPointingData, satnavRelAzColumns, newSATNAVRelAzData)                
+                        newSATNAVHeadingData, satnavPointingColumns, newSATNAVPointingData, satnavRelAzColumns, newSATNAVRelAzData, \
+                        pyrColumns, newPyrData)                
                             
 
         else:
@@ -941,7 +876,7 @@ class ProcessL2:
                         windSlice = windSpeedColumns[start: end]
                     else:
                         windSlice = None
-                    if not ProcessL2.calculateReflectance2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
+                    if not ProcessL2.calculateREFLECTANCE2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
                                                     windSlice):
                         # msg = 'Slice failed. Skipping.'
                         # print(msg)
@@ -954,9 +889,10 @@ class ProcessL2:
                         warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 
                         ProcessL2.sliceAverageAncillary(start, end, newESData, gpsCourseColumns, newGPSCourseData, gpsLatPosColumns, newGPSLatPosData, \
-                            gpsLonPosColumns, newGPSLonPosData, gpsMagVarColumns, newGPSMagVarData, gpsSpeedColumns, newGPSSpeedData, \
+                            gpsLonPosColumns, newGPSLonPosData, None, None, gpsSpeedColumns, newGPSSpeedData, \
                             satnavAzimuthColumns, newSATNAVAzimuthData, satnavElevationColumns, newSATNAVElevationData, satnavHeadingColumns, \
-                            newSATNAVHeadingData, satnavPointingColumns, newSATNAVPointingData, satnavRelAzColumns, newSATNAVRelAzData)
+                            newSATNAVHeadingData, satnavPointingColumns, newSATNAVPointingData, satnavRelAzColumns, newSATNAVRelAzData, \
+                            pyrColumns, newPyrData)           
                     start = i
 
             # Try converting any remaining
@@ -972,31 +908,36 @@ class ProcessL2:
                 else:
                     windSlice = None
 
-                if ProcessL2.calculateReflectance2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, windSlice):
+                if ProcessL2.calculateREFLECTANCE2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, windSlice):
                     # Take the slice median of ancillary data and add it to appropriate groups
                     with warnings.catch_warnings():
                         warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
 
                         ProcessL2.sliceAverageAncillary(start, end, newESData, gpsCourseColumns, newGPSCourseData, gpsLatPosColumns, newGPSLatPosData, \
-                            gpsLonPosColumns, newGPSLonPosData, gpsMagVarColumns, newGPSMagVarData, gpsSpeedColumns, newGPSSpeedData, \
+                            gpsLonPosColumns, newGPSLonPosData, None, None, gpsSpeedColumns, newGPSSpeedData, \
                             satnavAzimuthColumns, newSATNAVAzimuthData, satnavElevationColumns, newSATNAVElevationData, satnavHeadingColumns, \
-                            newSATNAVHeadingData, satnavPointingColumns, newSATNAVPointingData, satnavRelAzColumns, newSATNAVRelAzData)
+                            newSATNAVHeadingData, satnavPointingColumns, newSATNAVPointingData, satnavRelAzColumns, newSATNAVRelAzData, \
+                            pyrColumns, newPyrData)           
 
 
         newESData.columnsToDataset()
         newLIData.columnsToDataset()
         newLTData.columnsToDataset()
         newRrsData.columnsToDataset()
-        newGPSCourseData.columnsToDataset()
-        newGPSLatPosData.columnsToDataset()
-        newGPSLonPosData.columnsToDataset()
-        newGPSMagVarData.columnsToDataset()
-        newGPSSpeedData.columnsToDataset()
-        newSATNAVAzimuthData.columnsToDataset()
-        newSATNAVElevationData.columnsToDataset()
-        newSATNAVHeadingData.columnsToDataset()
-        newSATNAVPointingData.columnsToDataset()
-        newSATNAVRelAzData.columnsToDataset()
+        if gpsGroup is not None:
+            newGPSCourseData.columnsToDataset()
+            newGPSLatPosData.columnsToDataset()
+            newGPSLonPosData.columnsToDataset()
+            # newGPSMagVarData.columnsToDataset()
+            newGPSSpeedData.columnsToDataset()
+        if satnavGroup is not None:
+            newSATNAVAzimuthData.columnsToDataset()
+            newSATNAVElevationData.columnsToDataset()
+            newSATNAVHeadingData.columnsToDataset()
+            newSATNAVPointingData.columnsToDataset()
+            newSATNAVRelAzData.columnsToDataset()
+        if pyrGroup is not None:
+            newPyrData.columnsToDataset()
 
         return True
 
@@ -1009,34 +950,35 @@ class ProcessL2:
         root.copyAttributes(node)
         root.attributes["PROCESSING_LEVEL"] = "2"
 
-        root.addGroup("Reflectance")
-        root.addGroup("Irradiance")
-        root.addGroup("Radiance")    
+        root.addGroup("REFLECTANCE")
+        root.addGroup("IRRADIANCE")
+        root.addGroup("RADIANCE")    
 
-        ancGroup = None
-        # gpsGroup = None
-        # satnavGroup = None
-        # for gp in node.groups:
-        #     if gp.id.startswith("GPS"):
-        #         gpsGroup = gp
-        #     elif gp.id.startswith("SATNAV"):
-        #         satnavGroup = gp
+        pyrGroup = None
+        gpsGroup = None
+        satnavGroup = None
         for gp in node.groups:
-            if gp.id.startswith("ANCILLARY"):
-                ancGroup = gp
+            if gp.id.startswith("GPS"):
+                gpsGroup = gp
+            if gp.id == ("SOLARTRACKER"):
+                satnavGroup = gp
+            # if gp.id == ("SOLARTRACKER_STATUS"):
+            #     satnavGroup = gp            
+            if gp.id.startswith("PYROMETER"):
+                pyrGroup = gp
 
-        if ancGroup is not None:
+        if satnavGroup is not None or gpsGroup is not None or pyrGroup is not None:
             root.addGroup("ANCILLARY")
-        # if satnavGroup is not None:
-        #     root.addGroup("SATNAV")    
+        # if pyrGroup is not None:
+        #     root.addGroup("PYROMETER")    
 
-        if not ProcessL2.calculateReflectance(root, node, windSpeedData):
+        if not ProcessL2.calculateREFLECTANCE(root, node, windSpeedData):
             return None
 
         root.attributes["Rrs_UNITS"] = "sr^-1"
         
         # Check to insure at least some data survived quality checks
-        if root.getGroup("Reflectance").getDataset("Rrs").data is None:
+        if root.getGroup("REFLECTANCE").getDataset("Rrs").data is None:
             msg = "All data appear to have been eliminated from the file. Aborting."
             print(msg)
             Utilities.writeLogFile(msg)  
