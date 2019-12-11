@@ -892,9 +892,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cSunAngleMaxLineEdit.setDisabled(disabled)
 
     def l1dAnomalyButtonPressed(self):
-        print("CalibrationEditWindow - Launching anomaly analysis module")
-        srchStr = 'L1C'
-        
+        print("CalibrationEditWindow - Launching anomaly analysis module")        
         AnomalyDetection(self,self.inputDirectory)
 
     def l1dDeglitchCheckBoxUpdate(self):
