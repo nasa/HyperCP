@@ -66,7 +66,7 @@ class ProcessL1a:
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         root.attributes["FILE_CREATION_TIME"] = timestr
-        msg = timestr
+        msg = "ProcessL1a.processL1a: " + timestr
         print(msg)
         Utilities.writeLogFile(msg)
 
@@ -78,7 +78,13 @@ class ProcessL1a:
                 # break
             else:
                 for ds in gp.datasets.values():
-                    ds.columnsToDataset()
+                    if not ds.columnsToDataset():
+                        # In case there are no data or they fail to convert to datasets, 
+                        # do we trash the whole file, or just the group, or...?
+                        msg = "ProcessL1a.processL1a: Column cannot be converted to Dataset. Aborting"
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        return None
         #RawFileReader.generateContext(root)
 
         return root

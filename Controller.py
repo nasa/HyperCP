@@ -7,6 +7,7 @@ import datetime
 from SeaBASSWriter import SeaBASSWriter
 from CalibrationFileReader import CalibrationFileReader
 from HDFRoot import HDFRoot
+from MainConfig import MainConfig
 from ConfigFile import ConfigFile
 from Utilities import Utilities
 from WindSpeedReader import WindSpeedReader
@@ -163,7 +164,8 @@ class Controller:
                 return None
         else:
             msg = "L1a processing failed. Nothing to output."
-            Utilities.errorWindow("File Error", msg)
+            if MainConfig.settings["popQuery"] == 0:
+                Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
@@ -433,79 +435,7 @@ class Controller:
                     msg = f'{level} file produced: {outFilePath}'
                     print(msg)
                     Utilities.writeLogFile(msg)  
-                    return True                                 
-
-        # elif level == "1b":
-        #     if os.path.isdir(pathOut):
-        #         pathOut = os.path.join(pathOut,'L1B')
-        #         if os.path.isdir(pathOut) is False:
-        #             os.mkdir(pathOut)
-        #     else:
-        #         msg = "Bad output destination. Select new Output Data Directory."
-        #         print(msg)
-        #         Utilities.writeLogFile(msg)
-        #         return False
-
-        #     fileName = fileName.split('_')
-        #     outFilePath = os.path.join(pathOut,fileName[0] + "_L1b.hdf")
-        #     Controller.processL1b(inFilePath, outFilePath, calibrationMap)   
-            
-        #     if os.path.isfile(outFilePath):
-        #         modTime = os.path.getmtime(outFilePath)
-        #         nowTime = datetime.datetime.now()
-        #         if nowTime.timestamp() - modTime < 60:
-        #             msg = f'L1b file produced: {outFilePath}'
-        #             print(msg)
-        #             Utilities.writeLogFile(msg)
-        #             return True
-
-        # elif level == "1c":
-        #     if os.path.isdir(pathOut):
-        #         pathOut = os.path.join(pathOut,'L1C')
-        #         if os.path.isdir(pathOut) is False:
-        #             os.mkdir(pathOut)
-        #     else:
-        #         msg = "Bad output destination. Select new Output Data Directory."
-        #         print(msg)
-        #         Utilities.writeLogFile(msg)
-        #         return False
-
-        #     fileName = fileName.split('_')
-        #     outFilePath = os.path.join(pathOut,fileName[0] + "_L1c.hdf")
-        #     Controller.processL1c(inFilePath, outFilePath) 
-
-        #     if os.path.isfile(outFilePath):
-        #         modTime = os.path.getmtime(outFilePath)
-        #         nowTime = datetime.datetime.now()
-        #         if nowTime.timestamp() - modTime < 60:
-        #             msg = f'L1c file produced: {outFilePath}'
-        #             print(msg)
-        #             Utilities.writeLogFile(msg)
-        #             return True
-
-        # elif level == "1d":
-        #     if os.path.isdir(pathOut):
-        #         pathOut = os.path.join(pathOut,'L1D')
-        #         if os.path.isdir(pathOut) is False:
-        #             os.mkdir(pathOut)
-        #     else:
-        #         msg = "Bad output destination. Select new Output Data Directory."
-        #         print(msg)
-        #         Utilities.writeLogFile(msg)
-        #         return False
-
-        #     fileName = fileName.split('_')
-        #     outFilePath = os.path.join(pathOut,fileName[0] + "_L1d.hdf")
-        #     Controller.processL1d(inFilePath, outFilePath) 
-
-        #     if os.path.isfile(outFilePath):
-        #         modTime = os.path.getmtime(outFilePath)
-        #         nowTime = datetime.datetime.now()
-        #         if nowTime.timestamp() - modTime < 60:
-        #             msg = f'L1d file produced: {outFilePath}'
-        #             print(msg)
-        #             Utilities.writeLogFile(msg)
-        #             return True
+                    return True                                        
 
         elif level == "L1E":
             if os.path.isdir(pathOut):
@@ -580,24 +510,28 @@ class Controller:
         for fp in inFiles:
             print("Processing: " + fp)
             # Controller.processMultiLevel(pathout, fp, calibrationMap, windFile)
-            if Controller.processSingleLevel(pathOut, fp, calibrationMap, '1a', windFile):
+            if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A', windFile):
                 # Going from L0 to L1A, need to account for the underscore
                 inFileName = os.path.split(fp)[1]
-                fileName = f'L1A/{os.path.splitext(inFileName)[0]}_L1a.hdf'
+                fileName = f'L1A/{os.path.splitext(inFileName)[0]}_L1A.hdf'
                 fp = os.path.join(os.path.abspath(pathOut),fileName)
-                if Controller.processSingleLevel(pathOut, fp, calibrationMap, '1b', windFile):
+                if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1B', windFile):
                     inFileName = os.path.split(fp)[1]
-                    fileName = f'L1B/{os.path.splitext(inFileName)[0].split("_")[0]}_L1b.hdf'
+                    fileName = f'L1B/{os.path.splitext(inFileName)[0].split("_")[0]}_L1B.hdf'
                     fp = os.path.join(os.path.abspath(pathOut),fileName)
-                    if Controller.processSingleLevel(pathOut, fp, calibrationMap, '2', windFile):
+                    if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1C', windFile):
                         inFileName = os.path.split(fp)[1]
-                        fileName = f'L2/{os.path.splitext(inFileName)[0].split("_")[0]}_L2.hdf'
+                        fileName = f'L1C/{os.path.splitext(inFileName)[0].split("_")[0]}_L1C.hdf'
                         fp = os.path.join(os.path.abspath(pathOut),fileName)
-                        if Controller.processSingleLevel(pathOut, fp, calibrationMap, '3', windFile):
+                        if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1D', windFile):
                             inFileName = os.path.split(fp)[1]
-                            fileName = f'L3/{os.path.splitext(inFileName)[0].split("_")[0]}_L3.hdf'
+                            fileName = f'L1D/{os.path.splitext(inFileName)[0].split("_")[0]}_L1D.hdf'
                             fp = os.path.join(os.path.abspath(pathOut),fileName)
-                            Controller.processSingleLevel(pathOut, fp, calibrationMap, '4', windFile) 
+                            if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1E', windFile):
+                                inFileName = os.path.split(fp)[1]
+                                fileName = f'L1E/{os.path.splitext(inFileName)[0].split("_")[0]}_L1E.hdf'
+                                fp = os.path.join(os.path.abspath(pathOut),fileName)
+                                Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2', windFile) 
         print("processFilesMultiLevel - DONE")
 
 
