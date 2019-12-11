@@ -14,6 +14,7 @@ import collections
 import json
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from MainConfig import MainConfig
 from Controller import Controller
 from ConfigFile import ConfigFile
 from ConfigWindow import ConfigWindow
@@ -140,10 +141,19 @@ class Window(QtWidgets.QWidget):
         multiLevelLabel.setFont(multiLevelLabel_font)
         #self.multiLevelLabel.move(30, 140)
 
-        self.multi4Button = QtWidgets.QPushButton("Raw (BIN) ----->> L2 (HDF5)", self)
+        self.multi2Button = QtWidgets.QPushButton("Raw (BIN) ----->> L2 (HDF5)", self)
         #self.multi1Button.move(30, 170)
 
-        self.multi4Button.clicked.connect(self.multi4Clicked)
+        self.multi2Button.clicked.connect(self.multi2Clicked)
+
+        popQueryLabel = QtWidgets.QLabel('Suppress pop-up window on processing fail?', self)
+        self.popQueryCheckBox = QtWidgets.QCheckBox("", self)
+        if int(MainConfig.settings["popQuery"]) == 1:
+            self.popQueryCheckBox.setChecked(True)
+
+        self.popQueryCheckBoxUpdate()      
+
+        self.popQueryCheckBox.clicked.connect(self.popQueryCheckBoxUpdate)  
 
         ########################################################################################
         # Add QtWidgets to the Window
@@ -195,7 +205,12 @@ class Window(QtWidgets.QWidget):
         vBox.addStretch(1)
 
         vBox.addWidget(multiLevelLabel)
-        vBox.addWidget(self.multi4Button)
+        vBox.addWidget(self.multi2Button)
+
+        popQueryBox = QtWidgets.QHBoxLayout()  
+        popQueryBox.addWidget(popQueryLabel)
+        popQueryBox.addWidget(self.popQueryCheckBox)
+        vBox.addLayout(popQueryBox)
 
         vBox.addStretch(1)
 
@@ -426,46 +441,52 @@ class Window(QtWidgets.QWidget):
         Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, windFile)
 
 
-    def multi4Clicked(self):
-        self.processMulti(4)
+    def multi2Clicked(self):
+        self.processMulti(2)
 
-class MainConfig:   
-    fileName = "main.config"
-    settings = collections.OrderedDict()
+    def popQueryCheckBoxUpdate(self):
+        print("Main - popQueryCheckBoxUpdate")
+        MainConfig.settings["popQuery"] = int(self.popQueryCheckBox.isChecked())
+        pass
 
-    # Saves the cfg file
-    @staticmethod
-    def saveConfig(fileName):
-        print("ConfigFile - Save Config")        
-        jsn = json.dumps(MainConfig.settings)
-        fp = os.path.join("Config", fileName)
+# class MainConfig:   
+#     fileName = "main.config"
+#     settings = collections.OrderedDict()
 
-        with open(fp, 'w') as f:
-            f.write(jsn)
+#     # Saves the cfg file
+#     @staticmethod
+#     def saveConfig(fileName):
+#         print("ConfigFile - Save Config")        
+#         jsn = json.dumps(MainConfig.settings)
+#         fp = os.path.join("Config", fileName)
 
-    # Loads the cfg file
-    @staticmethod
-    def loadConfig(fileName):
-        print("MainConfig - Load Config")
-        configPath = os.path.join("Config", fileName)
-        if os.path.isfile(configPath):
-            text = ""
-            with open(configPath, 'r') as f:
-                text = f.read()
-                MainConfig.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
-        else:
-            MainConfig.createDefaultConfig(fileName)
+#         with open(fp, 'w') as f:
+#             f.write(jsn)
 
-    # Generates the default configuration
-    @staticmethod
-    def createDefaultConfig(fileName):
-        print("MainConfig - File not found..")
-        print("MainConfig - Create Default Config")
+#     # Loads the cfg file
+#     @staticmethod
+#     def loadConfig(fileName):
+#         print("MainConfig - Load Config")
+#         configPath = os.path.join("Config", fileName)
+#         if os.path.isfile(configPath):
+#             text = ""
+#             with open(configPath, 'r') as f:
+#                 text = f.read()
+#                 MainConfig.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
+#         else:
+#             MainConfig.createDefaultConfig(fileName)
 
-        MainConfig.settings["cfgFile"] = ""
-        MainConfig.settings["inDir"] = './Data'
-        MainConfig.settings["outDir"] = './Data'
-        MainConfig.settings["metFile"] = ""
+#     # Generates the default configuration
+#     @staticmethod
+#     def createDefaultConfig(fileName):
+#         print("MainConfig - File not found..")
+#         print("MainConfig - Create Default Config")
+
+#         MainConfig.settings["cfgFile"] = ""
+#         MainConfig.settings["inDir"] = './Data'
+#         MainConfig.settings["outDir"] = './Data'
+#         MainConfig.settings["metFile"] = ""
+#         MainConfig.settings["popQuery"] = 0
         
 
 

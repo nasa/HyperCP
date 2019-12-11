@@ -42,10 +42,14 @@ class ProcessL2:
                 timeData = group.getDataset("ES").data["Timetag2"]
             if group.id == "RADIANCE":
                 timeData = group.getDataset("LI").data["Timetag2"]
-            if group.id == "SATNAV":
+            if group.id == "SOLARTRACKER":
                 timeData = group.getDataset("AZIMUTH").data["Timetag2"]
+            if group.id == "SOLARTRACKER_STATUS":
+                return # Nothing we can do without a timetag
             if group.id == "GPS":
                 timeData = group.getDataset("COURSE").data["Timetag2"]
+            if group.id == "PYROMETER":
+                timeData = group.getDataset("T").data["Timetag2"]
 
             dataSec = []
             for i in range(timeData.shape[0]):

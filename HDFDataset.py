@@ -171,9 +171,9 @@ class HDFDataset:
         #dtype0 = np.dtype([(name, type(ds.columns[name][0])) for name in ds.columns.keys()])
 
         if not self.columns:
-            # print("Warning - columnsToDataset: raw data column is empty")
-            # print("Id:", self.id) #, ", Columns:", self.columns)
-            return
+            print("Warning - columnsToDataset: raw data column is empty")
+            print("Id:", self.id) #, ", Columns:", self.columns)
+            return False
 
         dtype = []
         for name in self.columns.keys():
@@ -211,4 +211,6 @@ class HDFDataset:
         self.data = np.empty(shape, dtype=dtype)
         for k,v in self.columns.items():
             self.data[k] = v
+
+        return True
 
