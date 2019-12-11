@@ -6,7 +6,7 @@ Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.g
 Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
 ## Version
-1.0.&alpha;
+1.0.&beta;
 ---
 ```
                  NASA Goddard Space Flight Center (GSFC) 
@@ -55,9 +55,7 @@ The Main window appears once HyperInSPACE Main.py is launched. It has options to
 
 The 'New' button allows creation of a new configuration file. 'Edit' allows editing the currently selected configuration file. 'Delete' is used to delete the currently selected configuration file and corresponding auto-created calibration directories (see Configuration). After creating a new configuration file, select it from the drop-down menu, and select 'Edit' to launch the Configuration module and GUI. Configuration files are saved in the './Config' subdirectory of HyperInSPACE.
 
-The 'Input...' and 'Output Data Directory' buttons allow optional selection of data directories from any mounted/mapped drive. Note that output data sub-directories are also auto-created as described below. If no input or output data directories are selected, './Data' under the HyperInSPACE directory will be used by default.
-
-*{To Do: Save last-used values for Config File, Input, Output, and Met file from the Main window in a .config for convenience when re-launching on the same machine.}*
+The 'Input...' and 'Output Data Parent Directory' buttons allow optional selection of data directories from any mounted/mapped drive. Note that output data sub-directories (e.g. for processing levels) are also auto-created as described below. The parent directory is the directory containing the sub-directories for processing levels (e.g. "/L1A/", "/L1B/", etc.) If no input or output data directories are selected, './Data' under the HyperInSPACE directory will be used by default as the parent data directory.
 
 Ancillary files for meteorologic conditions should be text files in SeaBASS format with columns for date, time, lat, and lon. See https://seabass.gsfc.nasa.gov/ for a description of SeaBASS format. It is recommended that ancillary files are checked with the 'FCHECK' utility as described on the SeaBASS website. They will be interpreted using the included SB_support.py module from OBPG.
 
@@ -72,27 +70,29 @@ Launch the configuration module and GUI (ConfigWindow.py) from the Main window b
 *{Possible To Do: Interpolate values between cals?}*
 
 ##### Calibration & Instrument Files:
-In the 'Configuration' window, click 'Add Calibration Files' to add the calibration and instrument files (telemetry definition files) from the relevant extracted Satlantic '.sip' file (i.e. '.cal' and '.tdf' files). The calibration or instrument file can be selected using the drop-down menu. Select (or enable) only the files that correspond to the data you want to process with this configuration. You will need to know which .cal/.tdf files correspond to each sensor/instrument, and which represent light and dark shutter measurements. For example,
+In the 'Configuration' window, click 'Add Calibration Files' to add the calibration and instrument files (telemetry definition files) from the relevant extracted Satlantic '.sip' file (i.e. '.cal' and '.tdf' files). The calibration or instrument file can be selected using the drop-down menu. Enable (in the neighboring checkbox) only the files that correspond to the data you want to process with this configuration. You will need to know which .cal/.tdf files correspond to each sensor/instrument, and which represent light and dark shutter measurements. For example:
 
-- SATTHSUUUUA.tdf > Tilt-heading sensor (Frame Type Not Required)
+- SATMSG.tdf > SAS Solar Tracker status message string (Frame Type: Not Required)
 
-- SATNAVVVVA.tdf > Solar Tracker (Frame Type Not Required)
+- SATTHSUUUUA.tdf > Tilt-heading sensor (Frame Type: Not Required)
 
-- GPRMC_NMEAWWW.tdf > GPS (Frame Type Not Required)
+- SATNAVVVVA.tdf > Solar Tracker (Frame Type: Not Required)
 
-- SATPYR.tdf > Pyrometer (Frame Type Not Required)
+- GPRMC_NMEAWWW.tdf > GPS (Frame Type: Not Required)
 
-- HEDXXXAcal > Es Frame Type: Dark
+- SATPYR.tdf > Pyrometer (Frame Type: Not Required)
 
-- HSEXXXA.cal > Es Light
+- HEDXXXAcal > Es (Frame Type: Dark)
 
-- HLDYYYA.cal > Li Dark
+- HSEXXXA.cal > Es (Frame Type: Light)
 
-- HSLYYYA.cal > Li Light
+- HLDYYYA.cal > Li (Frame Type: Dark)
 
-- HLDZZZA.cal > Lt Dark
+- HSLYYYA.cal > Li (Frame Type: Light)
 
-- HSLZZZA.cal > Lt Light
+- HLDZZZA.cal > Lt (Frame Type: Dark)
+
+- HSLZZZA.cal > Lt (Frame Type: Light)
 
 where UUUU, VVV, WWW, XXX, YYY, and ZZZ are the serial numbers of the individual instruments, which are followed where appropriate by factory revision code (A, B, C, D, E, ...).
 
@@ -106,26 +106,30 @@ Click 'Enable' to enable the calibration file. Select the frame type used for da
 
 Calibration files are copied from their selected locations into the ./Config directory within an automatically created sub-directory named after the configuration is saved (i.e. KORUS.cfg results in ./Config/KORUS_Calibration/[calibration/instrument files]).
 
-Level 1A through Level 4 processing configurations are adjusted in the Configuration window. If you are reading this README for the first time, the Configuration Window is a good reference to accompany the discussion below regarding processing levels. *The values set in the configuration file should be considered carefully, as they will depend on your viewing geometry and desired quality control thresholds. Do not use default values without consideration.* Level 2 includes a module that can be launched from the Configuration window to assist with data deglitching parameter selection ('Anomaly Analysis'). More details with citations and default setting descriptions are given below. A separate module to assist in the creation of SeaBASS output files is launched in Level 3 processing, and applied to L3 and L4 SeaBASS output as described below.
+Level 1A through Level 2 processing configurations are adjusted in the Configuration window. If you are reading this for the first time, the Configuration Window is a good reference to accompany the discussion below regarding processing levels. *The values set in the configuration file should be considered carefully, as they will depend on your viewing geometry and desired quality control thresholds. Do not use default values without consideration.* Level 1d includes a module that can be launched from the Configuration window to assist with data deglitching parameter selection ('Anomaly Analysis'). More details with citations and default setting descriptions are given below. A separate module to assist in the creation of SeaBASS output files is launched in Level 3 processing, and applied to L3 and L4 SeaBASS output as described below.
 
 Click 'Save' or 'Save As' to save the configuration file. The configuration files are saved to the ./Config directory under the HyperInSPACE main directory with a .cfg extension. 
 
 ### Processing Overview
 
-It may be helpful (though not required) to set your 'Input Data' and 'Output Data' directories from the Main window. If not selected, these will default to the ./Data directory within HyperInSPACE. Note that output subdirectories for particular processing levels (i.e. 'L1A', ... 'L4') will be created automatically within your output directory as appropriate. 
+It may be helpful to set your 'Input Data' and 'Output Data' directories from the Main window. If not selected, these will default to the ./Data directory within HyperInSPACE. Note that output subdirectories for particular processing levels (i.e. '/L1A/', ... '/L2/') will be created automatically within your output directory as appropriate, and the Input and Output directories you choose will be the parent directories containing those sub-directories for individual levels (e.g. /FieldData/CruiseName/, and subdirectories for processing levels will be automatically recognized and chosen as appropriate). Your setup in the Main window (including configuration file, input/output directories, and Met File) will be saved in Config/main.config and reopened the next time you launch Main.py.
 
-Process the data by clicking on one of the buttons for single-level or multi-level processing. A file selection dialogue will appear. Multiple data files can be processed at once (in succession) by selecting them together in the GUI. Multi-level processing works the same as single-level, processing each input raw file through all levels before moving on to the next file. However, it will only continue with a file if the preceding level was created immediately (within 1 minute) prior. In other words, if -- due to changes in QA/QC parameterization -- a file is entirely discarded at a given level, but an old file of the same name still exists in that directory, it will be ignored, and processing for that file will be terminated for higher levels. 
+Process the data by clicking on one of the buttons for single-level or multi-level processing. A file selection dialogue will appear. Multiple data files can be processed at once (in succession) by selecting them together in the GUI. Input files will be checked for match to expected input level (e.g. L1A file input for for L1B processing). Multi-level processing works the same as single-level, processing each input raw file through all levels before moving on to the next file. However, it will only continue with a file if the preceding level was created immediately (within 1 minute) prior. In other words, if -- due to changes in QA/QC parameterization -- a file is entirely discarded at a given level, but an old file of the same name still exists in that directory, it will be ignored, and processing for that file will be terminated for higher levels. 
 
 #### Level 1A - Preprocessing
 
 Process data from raw binary ('.RAW' collections) to L1A (Hierarchical Data Format 5 '.hdf'). Calibration files and the RawFileReader.py script allow for interpretation of raw data fields, which are read into HDF objects.
 
-**Solar Zenith Angle Filter**: prescreens data for high SZA (low solar elevation) to exclude files which may have been collected post-dusk or pre-dawn from further processing. Triggering the SZA threshold will skip the entire file.  
+**Solar Zenith Angle Filter**: prescreens data for high SZA (low solar elevation) to exclude files which may have been collected post-dusk or pre-dawn from further processing. *Triggering the SZA threshold will skip the entire file, so don't be overly conservative with this selection.* Further screening for SZA will be available on a sample basis in L2 processing.  
 **Default: 60 degrees (e.g. Brewin et al., 2016)**
 
 #### Level 1B
 
-Process data from L1A to L1B. Data are filtered for vessel attitude (pitch and roll), viewing and solar geometry, and then processed from raw counts to calibrated radiances/irradiances using the factory calibration files. *It should be noted that viewing geometry should conform to total radiance (Lt) measured at about 40 degrees from nadir, and sky radiance (Li) at about 40 degrees from zenith* **(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**.
+Process data from L1A to L1B. Factory calibrations are applied, and data arranged in a standard, platform independent HDF5 format. *Data being processed from non-HyperSAS SOLARTRACKER systems should be formatted to match L1B in order to be successfully processed to L2 in HyperInSPACE.
+
+#### Level 1C
+
+Process data from L1B to L1C. Data are filtered for vessel attitude (pitch and roll), viewing and solar geometry, and then processed from raw counts to calibrated radiances/irradiances using the factory calibration files. *It should be noted that viewing geometry should conform to total radiance (Lt) measured at about 40 degrees from nadir, and sky radiance (Li) at about 40 degrees from zenith* **(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**.
 
 **Rotator Home Angle**: The offset between the neutral position of the SolarTracker unit and the bow of the ship. This /should/ be zero if the SAS Home Direction was set at the time of data collection as per Satlantic SAT-DN-635.** 
 
@@ -140,9 +144,11 @@ Process data from L1A to L1B. Data are filtered for vessel attitude (pitch and r
 **Relative Solar Azimuth Filter** (optional): Relative angle in degrees between the viewing Li/Lt and the sun.  
 **Default: 90-135 deg (Mobley 1999, Zhang et al. 2017); 135 deg (Mueller 2003 (NASA Protocols)); 90 deg unless certain of platform shadow (Zibordi et al. 2009, IOCCG Draft Protocols)**
 
-#### Level 2
+*{\*\*To Do: include options for systems which do not have a solar tracker}*
 
-Process data from L1B to L2. Light and dark data are screened for electronic noise ("deglitched" - see Anomaly 
+#### Level 1D
+
+Process data from L1C to L1D. Light and dark data are screened for electronic noise ("deglitched" - see Anomaly 
 Analysis), which are then removed from the data (optional). Shutter dark samples are then subtracted from shutter lights after dark data have been interpolated in time to match light data.  
 **(e.g. Brewin et al. 2016, Sea-Bird/Satlantic 2017)**
 
@@ -160,12 +166,14 @@ the moving average) is used to assess whether data are within an adjustable "sig
 
 Waveband interval to plot selects which waveband time-series plots will be generated (e.g. a value of 2 results in plots every ~7 nm). Time-series plots of Es, Li, and Lt showing the results of the anomaly detection are saved to ./Plots/L3_Anoms. Data flagged for removal given the parameterizations chosen in the Configuration window are shown for the filter first pass (red box) and second pass (blue star). Review of these plots and adjustment of the parameters allow the user to optimize the low-pass filter for a given instrument and collection environment prior to L2 processing.
 
-#### Level 3
+#### Level 1E
 
-Process data from L2 to L3. Interpolates radiometric data to common timestamps and wavebands, optionally generates spectral plots of Li, Lt, and Es, and optionally outputs text files containing the data and metadata for submission to the SeaWiFS Bio-optical Archive and Storage System (SeaBASS; https://seabass.gsfc.nasa.gov/)
+Process data from L1D to L1E. Interpolates radiometric data to common timestamps and wavebands, optionally generates spectral plots of Li, Lt, and Es, and optionally outputs text files containing the data and metadata for submission to the SeaWiFS Bio-optical Archive and Storage System (SeaBASS; https://seabass.gsfc.nasa.gov/)
 
 Each HyperOCR collects data at unique time intervals and requires interpolation for inter-instrument comparison. Satlantic ProSoft 7.7 software interpolates radiometric data between radiometers using the OCR with the fastest sampling rate (Sea-Bird 2017), but here we use the timestamp of the slowest-sampling radiometer (typically Lt) to minimize perterbations in interpolated data (i.e. interpolated data in HyperInSPACE are always closer in time to actual sampled data) **(Brewin et al. 2016, Vandenberg 2017)**. Each HyperOCR radiometer collects data in a unique set of wavebands nominally at 3.3 nm resolution. For merging, they must be interpolated to common wavebands. Interpolating to a different (i.e. lower) spectral resolution is also an option. No extrapolation is calculated (i.e. interpolation is between the global minimum and maximum spectral range for all HyperOCRs). Spectral interpolation is linear by default, but has an option for univariate spline with a smoothing factor of 3.
 **(API: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.UnivariateSpline.html)**
+
+*Note that only the specified datasets in each group will be interpolated and carried forward. For radiometers, this means that ancillary metadata such as SPEC_TEMP and THERMAL_RESP will be dropped at L1E and beyond. See ProcessL1e.py at Perform Time Intepolation comment.*
 
 Optional plots of Es, Li, and Lt of L3 data can be generated which show the temporal interpolation for each parameter and waveband to the slowest sampling radiometer timestamp. They are saved in ./Plots/L3.
 
@@ -180,9 +188,9 @@ An eponymous, linked module allows the user to collect information from the data
 
 **When updating values in the Configuration window, be sure to apply those updates in the SeaBASS Header by editing the header, selecting the 'Update from Config Window' button, and saving the header file.**
 
-#### Level 4 - Rrs Calculation
+#### Level 2 - Rrs Calculation
 
-Process L3 to L4. Further quality control filters are applied to data, and data are average into optional time interval ensembles prior to calculating the remote sensing reflectance within each ensemble. While the use of ensembles is optional (set to 0 to avoid averaging), it is highly recommended, as it allows for the statistical analysis required for Percent Lt calculation (see below) within each ensemble, rather than across an entire collection.
+Process L1E to L2. Further quality control filters are applied to data, and data are average into optional time interval ensembles prior to calculating the remote sensing reflectance within each ensemble. While the use of ensembles is optional (set to 0 to avoid averaging), it is highly recommended, as it allows for the statistical analysis required for Percent Lt calculation (see below) within each ensemble, rather than across an entire collection.
 
 Prior to ensemble binning, data may be filtered for **Maximum Wind Speed**.  
 **Default 7 m/s (IOCCG Draft Protocols 2019; D'Alimonte pers.comm 2019); 10 m/s Mueller et al. 2003 (NASA Protocols); 15 m/s (Zibordi et al. 2009);**
@@ -190,9 +198,7 @@ Prior to ensemble binning, data may be filtered for **Maximum Wind Speed**.
 **Solar Zenith Angle** may be filtered for minimum and maximum values.  
 **Default Min: 20 deg (Zhang et al 2017); Default Max: 60 deg (Brewin et al. 2016)**
 
-**Spectral Outlier Filter** may be applied to remove noisy data prior to binning. This simple filter examines only the spectrum of Es, Li, and Lt from 400 - 700 nm, above which the data are extremely noisy. Using the standard deviation of the normalized spectra for the entire sample ensemble, together with a multiplier to establish an envelope, spectra with data outside the envelop in any band are rejected. Currently, the arbitrary filter factors are 5.0 for Es, 8.0 for Li, and 3.0 for Lt. Results of spectral filtering are saved as spectral plots in ./Plots/L4_Spectral_Filter.
-
-*{To Do: Improve this filter and/or include the sigmas as adjustables in the GUI as per Anom. Anal.}*
+**Spectral Outlier Filter** may be applied to remove noisy data prior to binning. This simple filter examines only the spectrum of Es, Li, and Lt from 400 - 700 nm, above which the data are extremely noisy. Using the standard deviation of the normalized spectra for the entire sample ensemble, together with a multiplier to establish an envelope, spectra with data outside the envelop in any band are rejected. Currently, the arbitrary filter factors are 5.0 for Es, 8.0 for Li, and 3.0 for Lt. Results of spectral filtering are saved as spectral plots in ./Plots/L2_Spectral_Filter.
 
 **Time Average Interval** can be set to the user's requirements. Setting this to avoids temporal binning, using the common timestamps established in L3.
 

@@ -79,7 +79,8 @@ class CalibrationFile:
         for cd in self.data:
             if cd.type == "ES" or \
                cd.type == "LI" or \
-               cd.type == "LT":
+               cd.type == "LT" or \
+               cd.type == "T":
                 return cd.type
         return "None"
 
@@ -212,13 +213,15 @@ class CalibrationFile:
 
 
         # Some instruments produce additional bytes for
-        # DATETAG (3 bytes), and TIMETAG2 (4 bytes)
+        # DATETAG (3 bytes), and TIMETAG2 (4 bytes)        
+        #        apparently SATMSG does not .... comes out jibberish
         if instrumentId.startswith("SATHED") or \
-                instrumentId.startswith("SATHLD") or \
-                instrumentId.startswith("SATHSE") or \
-                instrumentId.startswith("SATHSL") or \
-                instrumentId.startswith("SATPYR") or \
-                instrumentId.startswith("SATNAV"):
+            instrumentId.startswith("SATHLD") or \
+            instrumentId.startswith("SATHSE") or \
+            instrumentId.startswith("SATHSL") or \
+            instrumentId.startswith("SATPYR") or \
+            instrumentId.startswith("SATNAV"):
+            #    instrumentId.startswith("SATMSG") or \
             #print("not gps")
             # Read DATETAG
             b = msg[nRead:nRead+3]

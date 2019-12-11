@@ -2,6 +2,9 @@
 import datetime
 import os
 import sys
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QMessageBox
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import pyqtSlot
 
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
@@ -17,6 +20,16 @@ if "LOGFILE" not in os.environ:
     os.environ["LOGFILE"] = "temp.log"
 
 class Utilities:
+
+    @staticmethod
+    def errorWindow(winText,errorText):
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Information)
+        msgBox.setText(errorText)
+        msgBox.setWindowTitle(winText)
+        msgBox.setStandardButtons(QMessageBox.Ok)
+        # msgBox.buttonClicked.connect(msgButtonClick)
+        msgBox.exec_()
 
     # Print iterations progress
     @staticmethod
@@ -292,10 +305,18 @@ class Utilities:
     # Wrapper for scipy interp1d that works even if
     # values in new_x are outside the range of values in x
     @staticmethod
-    def interpAngular(x, y, new_x):
-        complement360 = np.rad2deg(np.unwrap(np.deg2rad(y)))
-        f = scipy.interpolate.interp1d(x,complement360,kind='linear', bounds_error=False, fill_value=None)
-        new_y = f(new_x)%360
+    def interpAngular(x, y, new_x):        
+        # eliminate NaNs
+        for i, value in enumerate(y):
+            if np.isnan(value):
+                x.pop(i)
+                y.pop(i)
+
+        y_rad = np.deg2rad(y)
+        f = scipy.interpolate.interp1d(x,y_rad,kind='linear', bounds_error=False, fill_value=None)
+        new_y_rad = f(new_x)%(2*np.pi)
+        new_y = np.rad2deg(new_y_rad)
+
         return new_y
 
     # Cubic spline interpolation intended to get around the all NaN output from InterpolateUnivariateSpline
@@ -341,31 +362,31 @@ class Utilities:
 
         if rType=='Rrs':
             print('Plotting Rrs')
-            group = root.getGroup("Reflectance")
+            group = root.getGroup("REFLECTANCE")
             Data = group.getDataset(rType)            
-            if not os.path.exists("Plots/L4_Rrs/"):
-                os.makedirs("Plots/L4_Rrs/")
-            plotdir = os.path.join(dirpath, 'Plots/L4_Rrs/')
+            if not os.path.exists("Plots/L2_Rrs/"):
+                os.makedirs("Plots/L2_Rrs/")
+            plotdir = os.path.join(dirpath, 'Plots/L2_Rrs/')
             plotRange = [380, 800]
         else:
-            if not os.path.exists("Plots/L4_EsLiLt"):
-                os.makedirs("Plots/L4_EsLiLt")
-            plotdir = os.path.join(dirpath, 'Plots/L4_EsLiLt/')
+            if not os.path.exists("Plots/L2_EsLiLt"):
+                os.makedirs("Plots/L2_EsLiLt")
+            plotdir = os.path.join(dirpath, 'Plots/L2_EsLiLt/')
             plotRange = [305, 1140]
 
         if rType=='ES':
             print('Plotting Es')
-            group = root.getGroup("Irradiance")
+            group = root.getGroup("IRRADIANCE")
             Data = group.getDataset(rType)
             
         if rType=='LI':
             print('Plotting Li')
-            group = root.getGroup("Radiance")
+            group = root.getGroup("RADIANCE")
             Data = group.getDataset(rType)
             
         if rType=='LT':
             print('Plotting Lt')
-            group = root.getGroup("Radiance")
+            group = root.getGroup("RADIANCE")
             Data = group.getDataset(rType)            
 
         font = {'family': 'serif',
@@ -419,13 +440,11 @@ class Utilities:
         plt.subplots_adjust(left=0.15)
         plt.subplots_adjust(bottom=0.15)
 
-        note = f'Interval: {ConfigFile.settings["fL4TimeInterval"]} s'
+        note = f'Interval: {ConfigFile.settings["fL2TimeInterval"]} s'
         axes.text(0.95, 0.95, note,
         verticalalignment='top', horizontalalignment='right',
         transform=axes.transAxes,
         color='black', fontdict=font)
-        #plt.show()        
-
 
         # Create output directory        
         os.makedirs(plotdir, exist_ok=True)
@@ -434,7 +453,7 @@ class Utilities:
         filebasename,_ = filename.split('_')
         fp = os.path.join(plotdir, filebasename + '_' + rType + '.png')
         plt.savefig(fp)
-        plt.close() # This prevents displaying the polt on screen with certain IDEs
+        plt.close() # This prevents displaying the plot on screen with certain IDEs
         # except:
         #     e = sys.exc_info()[0]
         #     print("Error: %s" % e)        
@@ -443,8 +462,9 @@ class Utilities:
     @staticmethod
     def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):     
         fileBaseName,_ = fileName.split('.')
-        if not os.path.exists("Plots/L3"):
-            os.makedirs("Plots/L3")   
+        # if not os.path.exists("Plots/L1D"):os.path.join('Plots','L1D'
+        if not os.path.exists(os.path.join('Plots','L1E')):
+            os.makedirs(os.path.join('Plots','L1E'))
         try:           
             font = {'family': 'serif',
                 'color':  'darkred',
@@ -489,9 +509,9 @@ class Utilities:
                         plt.subplots_adjust(left=0.15)
                         plt.subplots_adjust(bottom=0.15)
                         
-                        plt.savefig(os.path.join('Plots','L3',f'{fileBaseName}_{instr}_{k}.png'))
-                        plt.close()
-                        # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)                
+                        plt.savefig(os.path.join('Plots','L1E',f'{fileBaseName}_{instr}_{k}.png'))
+                        # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)  
+                        plt.close()                                      
                         # # Tweak spacing to prevent clipping of ylabel
                         # plt.subplots_adjust(left=0.15)     
 
@@ -516,7 +536,7 @@ class Utilities:
                     plt.subplots_adjust(left=0.15)
                     plt.subplots_adjust(bottom=0.15)
                     
-                    plt.savefig(os.path.join('Plots','L3',f'{fileBaseName}_{instr}_{k}.png'))
+                    plt.savefig(os.path.join('Plots','L1E',f'{fileBaseName}_{instr}_{k}.png'))
                     plt.close()
                     
             print('\n')      
@@ -528,9 +548,9 @@ class Utilities:
     @staticmethod
     def specFilter(inFilePath, Dataset, timeStamp, filterRange, filterFactor, rType):
         dirpath = './'
-        if not os.path.exists("Plots/L4_Spectral_Filter/"):
-            os.makedirs("Plots/L4_Spectral_Filter/")
-        plotdir = os.path.join(dirpath, 'Plots/L4_Spectral_Filter/')
+        if not os.path.exists("Plots/L2_Spectral_Filter/"):
+            os.makedirs("Plots/L2_Spectral_Filter/")
+        plotdir = os.path.join(dirpath, 'Plots/L2_Spectral_Filter/')
 
         font = {'family': 'serif',
                 'color':  'darkred',

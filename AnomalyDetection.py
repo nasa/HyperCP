@@ -18,14 +18,20 @@ def AnomalyDetection(self,inputDirectory):
     print("AnomalyDetection - Launching anomaly analysis")
 
     # Steps in wavebands used for plots
-    step = float(ConfigFile.settings["bL2AnomalyStep"])
+    step = float(ConfigFile.settings["bL1dAnomalyStep"])
 
-    if not os.path.exists("Plots/L1B_Anoms"):
-            os.makedirs("Plots/L1B_Anoms")
+    if not os.path.exists("Plots/L1C_Anoms"):
+            os.makedirs("Plots/L1C_Anoms")
 
-    # Open L1B HDF5 file for Deglitching        
-    inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1B HDF5 file for Deglitching", \
-        inputDirectory)
+    # Open L1C HDF5 file for Deglitching   
+    inLevel = "L1C"   
+    subInputDir = os.path.join(inputDirectory + '/' + inLevel + '/')
+    if os.path.exists(subInputDir):
+        inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1C HDF5 file for Deglitching", \
+            subInputDir)
+    else:
+        inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1C HDF5 file for Deglitching", \
+            inputDirectory)
     try:
         print(inFilePath[0])
     except:
@@ -33,10 +39,10 @@ def AnomalyDetection(self,inputDirectory):
         return
 
 
-    windowSizeDark = int(self.l2Deglitch0LineEdit.text())
-    windowSizeLight= int(self.l2Deglitch1LineEdit.text())
-    sigmaDark = float(self.l2Deglitch2LineEdit.text())
-    sigmaLight = float(self.l2Deglitch3LineEdit.text())
+    windowSizeDark = int(self.l1dDeglitch0LineEdit.text())
+    windowSizeLight= int(self.l1dDeglitch1LineEdit.text())
+    sigmaDark = float(self.l1dDeglitch2LineEdit.text())
+    sigmaLight = float(self.l1dDeglitch3LineEdit.text())
     sensorTypes = ["ES","LT","LI"]
 
     root = HDFRoot.readHDF5(inFilePath[0])
@@ -91,6 +97,8 @@ def AnomalyDetection(self,inputDirectory):
                     deglitchAndPlot(fileName,k,sensorType,lightDark,windowSizeLight,sigmaLight,\
                         text_ylabel=sensorType + " Lights " + k[0])
                 index += 1
+            print('Complete')
+            
 
 def deglitchAndPlot(fileName,k,sensorType,lightDark,windowSize,sigma,\
     text_xlabel="Series",\
@@ -176,7 +184,7 @@ def deglitchAndPlot(fileName,k,sensorType,lightDark,windowSize,sigma,\
         plt.ylabel(text_ylabel, fontdict=font)   
         plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
 
-        plotName = ('Plots/L1B_Anoms/' + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
+        plotName = ('Plots/L1C_Anoms/' + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
             + sensorType + lightDark + '_' + k[0] + '.png')
         print(plotName)
         plt.savefig(plotName)

@@ -13,9 +13,11 @@ from WindSpeedReader import WindSpeedReader
 
 from ProcessL1a import ProcessL1a
 from ProcessL1b import ProcessL1b
+from ProcessL1c import ProcessL1c
+from ProcessL1d import ProcessL1d
+from ProcessL1e import ProcessL1e
 from ProcessL2 import ProcessL2
-from ProcessL3 import ProcessL3
-from ProcessL4 import ProcessL4
+
 
 
 class Controller:
@@ -51,6 +53,12 @@ class Controller:
                 cf.sensorType = cf.getSensorType()
             elif cf.id.startswith("$GPRMC"):
                 cf.instrumentType = "GPS"
+                cf.media = "Not Required"
+                cf.measMode = "Not Required"
+                cf.frameType = "Not Required"
+                cf.sensorType = cf.getSensorType()
+            elif cf.id.startswith("SATPYR"):
+                cf.instrumentType = "SATPYR"
                 cf.media = "Not Required"
                 cf.measMode = "Not Required"
                 cf.frameType = "Not Required"
@@ -103,7 +111,10 @@ class Controller:
     @staticmethod
     def processL1a(inFilePath, outFilePath, calibrationMap):      
         if not os.path.isfile(inFilePath):
-            print("No such file...")
+            msg = 'No such file...'
+            Utilities.errorWindow("File Error", msg)
+            print(msg)
+            Utilities.writeLogFile(msg)
             return None
 
         # Process the data
@@ -144,14 +155,18 @@ class Controller:
         if root is not None:
             try:
                 root.writeHDF5(outFilePath)
-            except:
+            except:                
                 msg = 'Unable to write L1A file. It may be open in another program.'
+                Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
+                return None
         else:
             msg = "L1a processing failed. Nothing to output."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
+            return None
 
     @staticmethod
     def processL1b(inFilePath, outFilePath, calibrationMap):      
@@ -165,9 +180,11 @@ class Controller:
             root = HDFRoot.readHDF5(inFilePath)
         except:
             msg = "Unable to open file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
+
         root = ProcessL1b.processL1b(root, calibrationMap)
 
         # Write output file
@@ -175,43 +192,20 @@ class Controller:
             try:
                 root.writeHDF5(outFilePath)
             except:
-                print('Unable to write L1b file. It may be open in another program.')
+                msg = "Unable to write the file. May be open in another application."
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
         else:
             msg = "L1b processing failed. Nothing to output."
-            print(msg)
-            Utilities.writeLogFile(msg)
-
-
-    @staticmethod
-    def processL2(inFilePath, outFilePath):
-        if not os.path.isfile(inFilePath):
-            print('No such input file: ' + inFilePath)
-            return None
-
-        # Process the data
-        print("ProcessL2")
-        try:
-            root = HDFRoot.readHDF5(inFilePath)
-        except:
-            msg = "Unable to open file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
-        root = ProcessL2.processL2(root)
-
-        # Write output file
-        if root is not None:
-            try:
-                root.writeHDF5(outFilePath)
-            except:
-                print('Unable to write L2 file. It may be open in another program.')
-        else:
-            msg = "L2 processing failed. Nothing to output."
-            print(msg)
-            Utilities.writeLogFile(msg)    
 
     @staticmethod
-    def processL3(inFilePath, outFilePath):
+    def processL1c(inFilePath, outFilePath):
 
         _,fileName = os.path.split(outFilePath)
         
@@ -220,63 +214,150 @@ class Controller:
             return None
 
         # Process the data
-        msg = ("ProcessL3: " + inFilePath)
+        msg = ("ProcessL1c: " + inFilePath)
         print(msg)
         Utilities.writeLogFile(msg,'w')
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
             msg = "Unable to open file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
-        root = ProcessL3.processL3(root, fileName)     
+
+        root = ProcessL1c.processL1c(root, fileName)     
 
         # Write output file
         if root is not None:
             try:
                 root.writeHDF5(outFilePath)
             except:
-                print('Unable to write L3 file. It may be open in another program.')
+                msg = "Unable to write file. May be open in another application."
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
         else:
-            msg = "L3 processing failed. Nothing to output."
+            msg = "L1c processing failed. Nothing to output."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
+            return None
 
     @staticmethod
-    def processL4(inFilePath, outFilePath, windSpeedData):
+    def processL1d(inFilePath, outFilePath):        
         
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
             return None
 
         # Process the data
-        msg = ("ProcessL4: " + inFilePath)
+        msg = ("ProcessL1d: " + inFilePath)
         print(msg)
         Utilities.writeLogFile(msg,'w')
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
             msg = "Unable to open file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+
+        root = ProcessL1d.processL1d(root)     
+
+        # Write output file
+        if root is not None:
+            try:
+                root.writeHDF5(outFilePath)
+            except:
+                msg = "Unable to write file. May be open in another application."
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
+        else:
+            msg = "L1d processing failed. Nothing to output."
+            Utilities.errorWindow("File Error", msg)
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None            
+
+    @staticmethod
+    def processL1e(inFilePath, outFilePath):
+        _,fileName = os.path.split(outFilePath)
+
+        if not os.path.isfile(inFilePath):
+            print('No such input file: ' + inFilePath)
+            return None
+
+        # Process the data
+        print("ProcessL1e")
+        try:
+            root = HDFRoot.readHDF5(inFilePath)
+        except:
+            msg = "Unable to open file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+
+        root = ProcessL1e.processL1e(root, fileName)
+
+        # Write output file
+        if root is not None:
+            try:
+                root.writeHDF5(outFilePath)
+            except:
+                msg = "Unable to write file. May be open in another application."
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
+        else:
+            msg = "L1e processing failed. Nothing to output."
+            Utilities.errorWindow("File Error", msg)
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None  
+
+
+    @staticmethod
+    def processL2(inFilePath, outFilePath, windSpeedData):
+        
+        if not os.path.isfile(inFilePath):
+            print('No such input file: ' + inFilePath)
+            return None
+
+        # Process the data
+        msg = ("ProcessL2: " + inFilePath)
+        print(msg)
+        Utilities.writeLogFile(msg,'w')
+        try:
+            root = HDFRoot.readHDF5(inFilePath)
+        except:
+            msg = "Unable to open file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
         
         root.attributes['In_Filepath'] = inFilePath
-        root = ProcessL4.processL4(root, windSpeedData)
+        root = ProcessL2.processL2(root, windSpeedData)
 
         # Create Plots
         dirpath = './'
-        if root is not None and ConfigFile.settings['bL4PlotRrs']==1:            
+        if root is not None and ConfigFile.settings['bL2PlotRrs']==1:            
             _, filename = os.path.split(outFilePath)
             Utilities.plotRadiometry(root, dirpath, filename, rType='Rrs')
-        if root is not None and ConfigFile.settings['bL4PlotEs']==1:
+        if root is not None and ConfigFile.settings['bL2PlotEs']==1:
             _, filename = os.path.split(outFilePath)
             Utilities.plotRadiometry(root, dirpath, filename, rType='ES')
-        if root is not None and ConfigFile.settings['bL4PlotLi']==1:
+        if root is not None and ConfigFile.settings['bL2PlotLi']==1:
             _, filename = os.path.split(outFilePath)
             Utilities.plotRadiometry(root, dirpath, filename, rType='LI')
-        if root is not None and ConfigFile.settings['bL4PlotLt']==1:
+        if root is not None and ConfigFile.settings['bL2PlotLt']==1:
             _, filename = os.path.split(outFilePath)
             Utilities.plotRadiometry(root, dirpath, filename, rType='LT')
 
@@ -285,11 +366,17 @@ class Controller:
             try:
                 root.writeHDF5(outFilePath)
             except:
-                print('Unable to write L4 file. It may be open in another program.')
+                msg = "Unable to write file. May be open in another application."
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
         else:
-            msg = "L4 processing failed. Nothing to output."
+            msg = "L2 processing failed. Nothing to output."
+            Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
+            return None
 
     # Process every file in a list of files 1 level
     @staticmethod
@@ -304,13 +391,17 @@ class Controller:
         fileName = os.path.splitext(inFileName)[0]   
 
         # Initialize the Utility logger, overwriting it if necessary
-        os.environ["LOGFILE"] = (fileName + '_L' + level + '.log')
+        os.environ["LOGFILE"] = (fileName + '_' + level + '.log')
         msg = "Process Single Level"
         Utilities.writeLogFile(msg,mode='w')
 
-        if level == "1a":            
+        if level == "L1A" or \
+            level == "L1B" or \
+            level == "L1C" or \
+            level == "L1D":       
+
             if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L1A')
+                pathOut = os.path.join(pathOut,level)
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:
@@ -318,22 +409,107 @@ class Controller:
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
-
-            outFilePath = os.path.join(pathOut,fileName + "_L1a.hdf")
-            Controller.processL1a(inFilePath, outFilePath, calibrationMap) 
             
+            if level == "L1A":               
+                outFilePath = os.path.join(pathOut,fileName + "_" + level + ".hdf")
+            else:
+                # split the level suffix off the infile to make the outfilename
+                fileName = fileName.split('_')
+                outFilePath = os.path.join(pathOut,fileName[0] + "_" + level + ".hdf")                
+            
+            if level == "L1A":
+                Controller.processL1a(inFilePath, outFilePath, calibrationMap) 
+            elif level == "L1B":
+                Controller.processL1b(inFilePath, outFilePath, calibrationMap) 
+            elif level == "L1C":
+                Controller.processL1c(inFilePath, outFilePath)
+            elif level == "L1D":
+                Controller.processL1d(inFilePath, outFilePath) 
+
             if os.path.isfile(outFilePath):
                 modTime = os.path.getmtime(outFilePath)
                 nowTime = datetime.datetime.now()
                 if nowTime.timestamp() - modTime < 60: # If the file exists and was created in the last minute...
-                    msg = f'L1a file produced: {outFilePath}'
+                    msg = f'{level} file produced: {outFilePath}'
                     print(msg)
                     Utilities.writeLogFile(msg)  
                     return True                                 
 
-        elif level == "1b":
+        # elif level == "1b":
+        #     if os.path.isdir(pathOut):
+        #         pathOut = os.path.join(pathOut,'L1B')
+        #         if os.path.isdir(pathOut) is False:
+        #             os.mkdir(pathOut)
+        #     else:
+        #         msg = "Bad output destination. Select new Output Data Directory."
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #         return False
+
+        #     fileName = fileName.split('_')
+        #     outFilePath = os.path.join(pathOut,fileName[0] + "_L1b.hdf")
+        #     Controller.processL1b(inFilePath, outFilePath, calibrationMap)   
+            
+        #     if os.path.isfile(outFilePath):
+        #         modTime = os.path.getmtime(outFilePath)
+        #         nowTime = datetime.datetime.now()
+        #         if nowTime.timestamp() - modTime < 60:
+        #             msg = f'L1b file produced: {outFilePath}'
+        #             print(msg)
+        #             Utilities.writeLogFile(msg)
+        #             return True
+
+        # elif level == "1c":
+        #     if os.path.isdir(pathOut):
+        #         pathOut = os.path.join(pathOut,'L1C')
+        #         if os.path.isdir(pathOut) is False:
+        #             os.mkdir(pathOut)
+        #     else:
+        #         msg = "Bad output destination. Select new Output Data Directory."
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #         return False
+
+        #     fileName = fileName.split('_')
+        #     outFilePath = os.path.join(pathOut,fileName[0] + "_L1c.hdf")
+        #     Controller.processL1c(inFilePath, outFilePath) 
+
+        #     if os.path.isfile(outFilePath):
+        #         modTime = os.path.getmtime(outFilePath)
+        #         nowTime = datetime.datetime.now()
+        #         if nowTime.timestamp() - modTime < 60:
+        #             msg = f'L1c file produced: {outFilePath}'
+        #             print(msg)
+        #             Utilities.writeLogFile(msg)
+        #             return True
+
+        # elif level == "1d":
+        #     if os.path.isdir(pathOut):
+        #         pathOut = os.path.join(pathOut,'L1D')
+        #         if os.path.isdir(pathOut) is False:
+        #             os.mkdir(pathOut)
+        #     else:
+        #         msg = "Bad output destination. Select new Output Data Directory."
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #         return False
+
+        #     fileName = fileName.split('_')
+        #     outFilePath = os.path.join(pathOut,fileName[0] + "_L1d.hdf")
+        #     Controller.processL1d(inFilePath, outFilePath) 
+
+        #     if os.path.isfile(outFilePath):
+        #         modTime = os.path.getmtime(outFilePath)
+        #         nowTime = datetime.datetime.now()
+        #         if nowTime.timestamp() - modTime < 60:
+        #             msg = f'L1d file produced: {outFilePath}'
+        #             print(msg)
+        #             Utilities.writeLogFile(msg)
+        #             return True
+
+        elif level == "L1E":
             if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L1B')
+                pathOut = os.path.join(pathOut,level)
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:
@@ -343,77 +519,27 @@ class Controller:
                 return False
 
             fileName = fileName.split('_')
-            outFilePath = os.path.join(pathOut,fileName[0] + "_L1b.hdf")
-            Controller.processL1b(inFilePath, outFilePath, calibrationMap)   
+            outFilePath = os.path.join(pathOut,fileName[0] + "_" + level + ".hdf")
+            Controller.processL1e(inFilePath, outFilePath)   
             
             if os.path.isfile(outFilePath):
                 modTime = os.path.getmtime(outFilePath)
                 nowTime = datetime.datetime.now()
                 if nowTime.timestamp() - modTime < 60:
-                    msg = f'L1b file produced: {outFilePath}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return True
-
-        elif level == "2":
-            if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L2')
-                if os.path.isdir(pathOut) is False:
-                    os.mkdir(pathOut)
-            else:
-                msg = "Bad output destination. Select new Output Data Directory."
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return False
-
-            fileName = fileName.split('_')
-            outFilePath = os.path.join(pathOut,fileName[0] + "_L2.hdf")
-            Controller.processL2(inFilePath, outFilePath) 
-
-            if os.path.isfile(outFilePath):
-                modTime = os.path.getmtime(outFilePath)
-                nowTime = datetime.datetime.now()
-                if nowTime.timestamp() - modTime < 60:
-                    msg = f'L2 file produced: {outFilePath}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return True
-
-        elif level == "3":
-            if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L3')
-                if os.path.isdir(pathOut) is False:
-                    os.mkdir(pathOut)
-            else:
-                msg = "Bad output destination. Select new Output Data Directory."
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return False
-
-            fileName = fileName.split('_')
-            outFilePath = os.path.join(pathOut,fileName[0] + "_L3.hdf")
-            Controller.processL3(inFilePath, outFilePath)   
-            
-            if os.path.isfile(outFilePath):
-                modTime = os.path.getmtime(outFilePath)
-                nowTime = datetime.datetime.now()
-                if nowTime.timestamp() - modTime < 60:
-                    msg = f'L3 file produced: {outFilePath}'
+                    msg = f'{level} file produced: {outFilePath}'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     
-                    if int(ConfigFile.settings["bL3SaveSeaBASS"]) == 1:
+                    if int(ConfigFile.settings["bL1eSaveSeaBASS"]) == 1:
                         msg = f'Output SeaBASS for HDF: {outFilePath}'
                         print(msg)
                         Utilities.writeLogFile(msg)
-
-                        SeaBASSWriter.outputTXT_L3(outFilePath)  
-                    
+                        SeaBASSWriter.outputTXT_Type1e(outFilePath)                      
                     return True
 
-        elif level == "4":          
+        elif level == "L2":          
             if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,'L4')
+                pathOut = os.path.join(pathOut,level)
                 if os.path.isdir(pathOut) is False:
                     os.mkdir(pathOut)
             else:
@@ -424,24 +550,22 @@ class Controller:
 
             windSpeedData = Controller.processWindData(windFile)
             fileName = fileName.split('_')
-            outFilePath = os.path.join(pathOut,fileName[0] + "_L4.hdf")
-            Controller.processL4(inFilePath, outFilePath, windSpeedData)  
+            outFilePath = os.path.join(pathOut,fileName[0] + "_" + level + ".hdf")
+            Controller.processL2(inFilePath, outFilePath, windSpeedData)  
             
             if os.path.isfile(outFilePath):
                 modTime = os.path.getmtime(outFilePath)
                 nowTime = datetime.datetime.now()
                 if nowTime.timestamp() - modTime < 60: 
-                    msg = f'L4 file produced: {outFilePath}'
+                    msg = f'{level} file produced: {outFilePath}'
                     print(msg)
                     Utilities.writeLogFile(msg)
 
-                    if int(ConfigFile.settings["bL4SaveSeaBASS"]) == 1:
+                    if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
                         msg = f'Output SeaBASS for HDF: {outFilePath}'
                         print(msg)
                         Utilities.writeLogFile(msg)
-
-                        SeaBASSWriter.outputTXT_L4(outFilePath)
-
+                        SeaBASSWriter.outputTXT_Type2(outFilePath)
                     return True
 
         msg = f'Process Single Level: {outFilePath} - DONE'
@@ -449,7 +573,7 @@ class Controller:
         Utilities.writeLogFile(msg)
 
 
-    # Process every file in a list of files from L1 to L4
+    # Process every file in a list of files from L0 to L2
     @staticmethod
     def processFilesMultiLevel(pathOut,inFiles, calibrationMap, windFile=None):
         print("processFilesMultiLevel")
@@ -482,6 +606,26 @@ class Controller:
     def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level, windFile=None):
         # print("processFilesSingleLevel")
         for fp in inFiles:            
+            # Check that the input file matches what is expected for this processing level
+            fileName = os.path.split(fp)[1]
+            if level == "L1A":
+                srchStr = 'RAW'
+            elif level == 'L1B':
+                srchStr = 'L1A'
+            elif level == 'L1C':
+                srchStr = 'L1B'
+            elif level == 'L1D':
+                srchStr = 'L1C'
+            elif level == 'L1E':
+                srchStr = 'L1D'
+            elif level == 'L2':
+                srchStr = 'L1E'
+            if fileName.find(srchStr) == -1:
+                msg = f'{fileName} does not match expected input level for outputing {level}'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return -1
+
             print("Processing: " + fp)
             # try:
             Controller.processSingleLevel(pathOut, fp, calibrationMap, level, windFile)

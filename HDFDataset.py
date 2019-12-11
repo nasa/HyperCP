@@ -181,17 +181,27 @@ class HDFDataset:
             # Numpy dtype column name cannot be unicode in Python 2
             if sys.version_info[0] < 3:
                 name = name.encode('utf-8')
-        
-            item = self.columns[name][0]
-            if isinstance(item, bytes):
-                #dtype.append((name, h5py.special_dtype(vlen=str)))
-                dtype.append((name, "|S" + str(len(item))))
-                #dtype.append((name, np.dtype(str)))
-            # Note: hdf4 only supports 32 bit int, convert to float64
-            elif isinstance(item, int):
-                dtype.append((name, np.float64))
+
+            if self.id == "MESSAGE": # For SATMSG strings, buffer the data type for stings longer than the first one
+                maxlength = 0
+                for item in self.columns[name]:
+                    length = len(item)
+                    if length > maxlength:
+                        maxlength = length
+
+                dtype.append((name, "|S" + str(maxlength)))
             else:
-                dtype.append((name, type(item)))
+
+                item = self.columns[name][0]
+                if isinstance(item, bytes):
+                    #dtype.append((name, h5py.special_dtype(vlen=str)))
+                    dtype.append((name, "|S" + str(len(item))))
+                    #dtype.append((name, np.dtype(str)))
+                # Note: hdf4 only supports 32 bit int, convert to float64
+                elif isinstance(item, int):
+                    dtype.append((name, np.float64))
+                else:
+                    dtype.append((name, type(item)))
 
         #shape = (len(list(ds.columns.values())[0]), len(ds.columns))
         shape = (len(list(self.columns.values())[0]), )

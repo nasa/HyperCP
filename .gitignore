@@ -1,6 +1,7 @@
 Data/
 Plots/
 Logs/
+Config/main.config
 .vscode/settings.json
 *.pyc
 *.log
