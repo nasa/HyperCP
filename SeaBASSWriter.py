@@ -22,10 +22,10 @@ class SeaBASSWriter:
 
         # Dataset leading columns can be taken from any sensor 
         if level == '1e':
-            referenceGroup = node.getGroup("Reference")
-            esData = referenceGroup.getDataset("ES_hyperspectral")
+            referenceGroup = node.getGroup("IRRADIANCE")
+            esData = referenceGroup.getDataset("ES")
         if level == '2':
-            referenceGroup = node.getGroup("Irradiance")
+            referenceGroup = node.getGroup("IRRADIANCE")
             esData = referenceGroup.getDataset("ES")
 
         headerBlock['original_file_name'] = node.attributes['RAW_FILE_NAME']
@@ -47,10 +47,10 @@ class SeaBASSWriter:
 
         # Convert Position
         # Python 3 format syntax
-        southLat = "{:.4f}[DEG]".format(min(esData.data['LATPOS'].tolist()))
-        northLat = "{:.4f}[DEG]".format(max(esData.data['LATPOS'].tolist()))
-        eastLon = "{:.4f}[DEG]".format(max(esData.data['LONPOS'].tolist()))
-        westLon = "{:.4f}[DEG]".format(min(esData.data['LONPOS'].tolist()))
+        southLat = "{:.4f}[DEG]".format(min(esData.data['LATITUDE'].tolist()))
+        northLat = "{:.4f}[DEG]".format(max(esData.data['LATITUDE'].tolist()))
+        eastLon = "{:.4f}[DEG]".format(max(esData.data['LONGITUDE'].tolist()))
+        westLon = "{:.4f}[DEG]".format(min(esData.data['LONGITUDE'].tolist()))
 
         if headerBlock['station'] is '':
             headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
@@ -91,10 +91,10 @@ class SeaBASSWriter:
             timeDT.append(Utilities.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
 
         # Retrieve ancillaries and remove from dataset        
-        lat = dataset.data['LATPOS'].tolist()
-        newData = SeaBASSWriter.removeColumns(newData,'LATPOS')
-        lon = dataset.data['LONPOS'].tolist()
-        newData = SeaBASSWriter.removeColumns(newData,'LONPOS')
+        lat = dataset.data['LATITUDE'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'LATITUDE')
+        lon = dataset.data['LONGITUDE'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'LONGITUDE')
         sza = dataset.data['SZA'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'SZA')
         relAz = dataset.data['REL_AZ'].tolist()
@@ -121,8 +121,8 @@ class SeaBASSWriter:
             fieldName = 'Lsky'
         elif dtype == 'lt':
             fieldName = 'Lt'
-        elif dtype == 'rrs':
-            fieldName = 'Rrs'
+        # elif dtype == 'rrs':
+        #     fieldName = 'Rrs'
         # fieldsLineStr = ','.join(ls[:lenNonRad] + [f'{fieldName}{band}' for band in ls[lenNonRad:]])
         fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands])
 
@@ -163,10 +163,10 @@ class SeaBASSWriter:
             timeDT.append(Utilities.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
 
         # Retrieve ancillaries and remove from dataset        
-        lat = dataset.data['LATPOS'].tolist()
-        newData = SeaBASSWriter.removeColumns(newData,'LATPOS')
-        lon = dataset.data['LONPOS'].tolist()
-        newData = SeaBASSWriter.removeColumns(newData,'LONPOS')
+        lat = dataset.data['LATITUDE'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'LATITUDE')
+        lon = dataset.data['LONGITUDE'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'LONGITUDE')
         sza = dataset.data['SZA'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'SZA')
         relAz = dataset.data['REL_AZ'].tolist()
@@ -193,6 +193,8 @@ class SeaBASSWriter:
             fieldName = 'Lsky'
         elif dtype == 'lt':
             fieldName = 'Lt'
+        elif dtype == 'rrs':
+            fieldName = 'Rrs'
         # fieldsLineStr = ','.join(ls[:lenNonRad] + [f'{fieldName}{band}' for band in ls[lenNonRad:]])
         fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands])
 
@@ -262,16 +264,16 @@ class SeaBASSWriter:
         #     writer = csv.writer(f)
         #     writer.writerows(data)
 
-    @staticmethod
-    def outputTXT_L3(fp):
-        print('Writing type 3 SeaBASS file')
-        SeaBASSWriter.outputTXT_Type1e(fp, "L3")
+    # @staticmethod
+    # def outputTXT_L3(fp):
+    #     print('Writing type 3 SeaBASS file')
+    #     SeaBASSWriter.outputTXT_Type1e(fp, "L3")
 
-    @staticmethod
-    def outputTXT_L4(fp):
-        print('Writing type 4 SeaBASS file')
-        SeaBASSWriter.outputTXT_Type2(fp, "L4")
-    #     SeaBASSWriter.outputTXT_Type2(fp, "L4-flags")
+    # @staticmethod
+    # def outputTXT_L4(fp):
+    #     print('Writing type 4 SeaBASS file')
+    #     SeaBASSWriter.outputTXT_Type2(fp, "L4")
+    # #     SeaBASSWriter.outputTXT_Type2(fp, "L4-flags")
 
 
     # Convert Level 3 data to SeaBASS file
@@ -294,12 +296,12 @@ class SeaBASSWriter:
             return
 
         # Get datasets to output
-        referenceGroup = root.getGroup("Reference")
-        sasGroup = root.getGroup("SAS")
+        referenceGroup = root.getGroup("IRRADIANCE")
+        sasGroup = root.getGroup("RADIANCE")
 
-        esData = referenceGroup.getDataset("ES_hyperspectral")
-        liData = sasGroup.getDataset("LI_hyperspectral")
-        ltData = sasGroup.getDataset("LT_hyperspectral")
+        esData = referenceGroup.getDataset("ES")
+        liData = sasGroup.getDataset("LI")
+        ltData = sasGroup.getDataset("LT")
 
         if esData is None or liData is None or ltData is None:
             print("SeaBASSWriter: Radiometric data is missing")
@@ -308,8 +310,8 @@ class SeaBASSWriter:
         # Append latpos/lonpos to datasets
         if root.getGroup("GPS"):
             gpsGroup = root.getGroup("GPS")
-            latposData = gpsGroup.getDataset("LATPOS")
-            lonposData = gpsGroup.getDataset("LONPOS")
+            latposData = gpsGroup.getDataset("LATITUDE")
+            lonposData = gpsGroup.getDataset("LONGITUDE")
 
             latposData.datasetToColumns()
             lonposData.datasetToColumns()
@@ -323,21 +325,21 @@ class SeaBASSWriter:
 
             #print(esData.columns)
 
-            esData.columns["LATPOS"] = latpos
-            liData.columns["LATPOS"] = latpos
-            ltData.columns["LATPOS"] = latpos
+            esData.columns["LATITUDE"] = latpos
+            liData.columns["LATITUDE"] = latpos
+            ltData.columns["LATITUDE"] = latpos
 
-            esData.columns["LONPOS"] = lonpos
-            liData.columns["LONPOS"] = lonpos
-            ltData.columns["LONPOS"] = lonpos
+            esData.columns["LONGITUDE"] = lonpos
+            liData.columns["LONGITUDE"] = lonpos
+            ltData.columns["LONGITUDE"] = lonpos
 
             esData.columnsToDataset()
             liData.columnsToDataset()
             ltData.columnsToDataset()
         
         # Append azimuth, heading, rotator, relAz, and solar elevation
-        if root.getGroup("SATNAV"):
-            satnavGroup = root.getGroup("SATNAV")
+        if root.getGroup("SOLARTRACKER"):
+            satnavGroup = root.getGroup("SOLARTRACKER")
 
             azimuthData = satnavGroup.getDataset("AZIMUTH")
             headingData = satnavGroup.getDataset("HEADING") # SAS_TRUE & SHIP_TRUE
@@ -357,7 +359,7 @@ class SeaBASSWriter:
 
             azimuth = azimuthData.columns["SUN"]
             shipTrue = headingData.columns["SHIP_TRUE"]
-            sasTrue = headingData.columns["SAS_TRUE"]
+            # sasTrue = headingData.columns["SAS_TRUE"]
             # pitch = pitchData.columns["SAS"]
             rotator = pointingData.columns["ROTATOR"]
             # roll = rollData.columns["SAS"]
@@ -433,9 +435,9 @@ class SeaBASSWriter:
             return
 
         # Get datasets to output
-        irradianceGroup = root.getGroup("Irradiance")
-        radianceGroup = root.getGroup("Radiance")
-        reflectanceGroup = root.getGroup("Reflectance")
+        irradianceGroup = root.getGroup("IRRADIANCE")
+        radianceGroup = root.getGroup("RADIANCE")
+        reflectanceGroup = root.getGroup("REFLECTANCE")
 
         esData = irradianceGroup.getDataset("ES")
         liData = radianceGroup.getDataset("LI")
@@ -447,10 +449,10 @@ class SeaBASSWriter:
             return
 
         # Append latpos/lonpos to datasets
-        if root.getGroup("GPS"):
-            gpsGroup = root.getGroup("GPS")
-            latposData = gpsGroup.getDataset("LATPOS")
-            lonposData = gpsGroup.getDataset("LONPOS")
+        if root.getGroup("ANCILLARY"):
+            ancGroup = root.getGroup("ANCILLARY")
+            latposData = ancGroup.getDataset("LATITUDE")
+            lonposData = ancGroup.getDataset("LONGITUDE")
 
             latposData.datasetToColumns()
             lonposData.datasetToColumns()
@@ -465,32 +467,32 @@ class SeaBASSWriter:
 
             #print(esData.columns)
 
-            esData.columns["LATPOS"] = latpos
-            liData.columns["LATPOS"] = latpos
-            ltData.columns["LATPOS"] = latpos
-            rrsData.columns["LATPOS"] = latpos
+            esData.columns["LATITUDE"] = latpos
+            liData.columns["LATITUDE"] = latpos
+            ltData.columns["LATITUDE"] = latpos
+            rrsData.columns["LATITUDE"] = latpos
 
-            esData.columns["LONPOS"] = lonpos
-            liData.columns["LONPOS"] = lonpos
-            ltData.columns["LONPOS"] = lonpos
-            rrsData.columns["LONPOS"] = lonpos
+            esData.columns["LONGITUDE"] = lonpos
+            liData.columns["LONGITUDE"] = lonpos
+            ltData.columns["LONGITUDE"] = lonpos
+            rrsData.columns["LONGITUDE"] = lonpos
 
             esData.columnsToDataset()
             liData.columnsToDataset()
             ltData.columnsToDataset()
             rrsData.columnsToDataset()
         
-        # Append azimuth, heading, rotator, relAz, and solar elevation
-        if root.getGroup("SATNAV"):
-            satnavGroup = root.getGroup("SATNAV")
+        # # Append azimuth, heading, rotator, relAz, and solar elevation
+        # if root.getGroup("SOLARTRACKER"):
+        #     satnavGroup = root.getGroup("SOLARTRACKER")
 
-            azimuthData = satnavGroup.getDataset("AZIMUTH")
-            headingData = satnavGroup.getDataset("HEADING") # SAS_TRUE & SHIP_TRUE
-            # pitchData = satnavGroup.getDataset("PITCH")
-            pointingData = satnavGroup.getDataset("POINTING")
-            # rollData = satnavGroup.getDataset("ROLL")
-            relAzData = satnavGroup.getDataset("REL_AZ")
-            elevationData = satnavGroup.getDataset("ELEVATION")
+            azimuthData = ancGroup.getDataset("SOLAR_AZIMUTH")
+            headingData = ancGroup.getDataset("HEADING") # SAS_TRUE & SHIP_TRUE
+            # pitchData = ancGroup.getDataset("PITCH")
+            pointingData = ancGroup.getDataset("POINTING")
+            # rollData = ancGroup.getDataset("ROLL")
+            relAzData = ancGroup.getDataset("REL_AZ")
+            elevationData = ancGroup.getDataset("SOLAR_ELEVATION")
 
             azimuthData.datasetToColumns()
             headingData.datasetToColumns()
@@ -502,7 +504,7 @@ class SeaBASSWriter:
 
             azimuth = azimuthData.columns["SUN"]
             shipTrue = headingData.columns["SHIP_True"]
-            sasTrue = headingData.columns["SAS_True"]
+            # sasTrue = headingData.columns["SAS_True"]
             # pitch = pitchData.columns["SAS"]
             rotator = pointingData.columns["ROTATOR"]
             # roll = rollData.columns["SAS"]
@@ -514,10 +516,10 @@ class SeaBASSWriter:
             ltData.datasetToColumns()
             rrsData.datasetToColumns()
             
-            esData.columns["AZIMUTH"] = azimuth
-            liData.columns["AZIMUTH"] = azimuth
-            ltData.columns["AZIMUTH"] = azimuth
-            rrsData.columns["AZIMUTH"] = azimuth
+            esData.columns["SOL_AZIMUTH"] = azimuth
+            liData.columns["SOL_AZIMUTH"] = azimuth
+            ltData.columns["SOL_AZIMUTH"] = azimuth
+            rrsData.columns["SOL_AZIMUTH"] = azimuth
 
             esData.columns["SHIP_TRUE"] = shipTrue # From SAS, not GPS...
             liData.columns["SHIP_TRUE"] = shipTrue
@@ -556,10 +558,10 @@ class SeaBASSWriter:
         headerBlock = SeaBASSWriter.formatHeader(fp,root, level='2')
 
         # Format each data block for individual output
-        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData1e(esData,'es',root.attributes["ES_UNITS"])        
-        formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData1e(liData,'li',root.attributes["LI_UNITS"])
-        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData1e(ltData,'lt',root.attributes["LT_UNITS"])
-        formattedRrs, fieldsRrs, unitsRrs  = SeaBASSWriter.formatData1e(rrsData,'rrs',root.attributes["Rrs_UNITS"])
+        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData2(esData,'es',root.attributes["ES_UNITS"])        
+        formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData2(liData,'li',root.attributes["LI_UNITS"])
+        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData2(ltData,'lt',root.attributes["LT_UNITS"])
+        formattedRrs, fieldsRrs, unitsRrs  = SeaBASSWriter.formatData2(rrsData,'rrs',root.attributes["Rrs_UNITS"])
 
         # # Write SeaBASS files
         SeaBASSWriter.writeSeaBASS('ES',fp,headerBlock,formattedEs,fieldsEs,unitsEs)

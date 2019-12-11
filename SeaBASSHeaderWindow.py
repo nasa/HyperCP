@@ -405,26 +405,26 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
         SeaBASSHeader.settings["comments"] =\
             f'! SZA Filter = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
-            f'! Rotator Home Angle = {ConfigFile.settings["fL1bRotatorHomeAngle"]}\n'+\
-            f'! Rotator Delay = {ConfigFile.settings["fL1bRotatorDelay"]}\n'+\
-            f'! Max Pitch = {ConfigFile.settings["fL1bPitchRollPitch"]}\n'+\
-            f'! Max Roll = {ConfigFile.settings["fL1bPitchRollRoll"]}\n'+\
-            f'! Rotator Min = {ConfigFile.settings["fL1bRotatorAngleMin"]}\n'+\
-            f'! Rotator Max = {ConfigFile.settings["fL1bRotatorAngleMax"]}\n'+\
-            f'! Rel Azimuth Min = {ConfigFile.settings["fL1bSunAngleMin"]}\n'+\
-            f'! Rel Azimuth Max = {ConfigFile.settings["fL1bSunAngleMax"]}\n'+\
-            f'! Dark Window = {ConfigFile.settings["fL2Deglitch0"]}\n'+\
-            f'! Light Window = {ConfigFile.settings["fL2Deglitch1"]}\n'+\
-            f'! Dark Sigma = {ConfigFile.settings["fL2Deglitch2"]}\n'+\
-            f'! Light Sigma = {ConfigFile.settings["fL2Deglitch3"]}\n'+\
-            f'! Wavelength Interp Int = {ConfigFile.settings["fL3InterpInterval"]}\n'+\
-            f'! Rho Sky = {ConfigFile.settings["fL4RhoSky"]}\n'+\
-            f'! Default Wind = {ConfigFile.settings["fL4DefaultWindSpeed"]}\n'+\
-            f'! Es Flag = {ConfigFile.settings["fL4SignificantEsFlag"]}\n'+\
-            f'! Dawn/Dusk Flag = {ConfigFile.settings["fL4DawnDuskFlag"]}\n'+\
-            f'! Rain/Humidity Flag = {ConfigFile.settings["fL4RainfallHumidityFlag"]}\n'+\
-            f'! Rrs Time Interval = {ConfigFile.settings["fL4TimeInterval"]}\n'+\
-            f'! Percent Light = {ConfigFile.settings["fL4PercentLt"]}'
+            f'! Rotator Home Angle = {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'+\
+            f'! Rotator Delay = {ConfigFile.settings["fL1cRotatorDelay"]}\n'+\
+            f'! Max Pitch = {ConfigFile.settings["fL1cPitchRollPitch"]}\n'+\
+            f'! Max Roll = {ConfigFile.settings["fL1cPitchRollRoll"]}\n'+\
+            f'! Rotator Min = {ConfigFile.settings["fL1cRotatorAngleMin"]}\n'+\
+            f'! Rotator Max = {ConfigFile.settings["fL1cRotatorAngleMax"]}\n'+\
+            f'! Rel Azimuth Min = {ConfigFile.settings["fL1cSunAngleMin"]}\n'+\
+            f'! Rel Azimuth Max = {ConfigFile.settings["fL1cSunAngleMax"]}\n'+\
+            f'! Dark Window = {ConfigFile.settings["fL1dDeglitch0"]}\n'+\
+            f'! Light Window = {ConfigFile.settings["fL1dDeglitch1"]}\n'+\
+            f'! Dark Sigma = {ConfigFile.settings["fL1dDeglitch2"]}\n'+\
+            f'! Light Sigma = {ConfigFile.settings["fL1dDeglitch3"]}\n'+\
+            f'! Wavelength Interp Int = {ConfigFile.settings["fL1eInterpInterval"]}\n'+\
+            f'! Rho Sky = {ConfigFile.settings["fL2RhoSky"]}\n'+\
+            f'! Default Wind = {ConfigFile.settings["fL2DefaultWindSpeed"]}\n'+\
+            f'! Es Flag = {ConfigFile.settings["fL2SignificantEsFlag"]}\n'+\
+            f'! Dawn/Dusk Flag = {ConfigFile.settings["fL2DawnDuskFlag"]}\n'+\
+            f'! Rain/Humidity Flag = {ConfigFile.settings["fL2RainfallHumidityFlag"]}\n'+\
+            f'! Rrs Time Interval = {ConfigFile.settings["fL2TimeInterval"]}\n'+\
+            f'! Percent Light = {ConfigFile.settings["fL2PercentLt"]}'
 
         self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
         self.commentsLineEdit.update()

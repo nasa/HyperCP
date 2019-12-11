@@ -201,7 +201,8 @@ class Controller:
                 return None
         else:
             msg = "L1b processing failed. Nothing to output."
-            Utilities.errorWindow("File Error", msg)
+            if MainConfig.settings["popQuery"] == 0:
+                Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
@@ -242,7 +243,8 @@ class Controller:
                 return None
         else:
             msg = "L1c processing failed. Nothing to output."
-            Utilities.errorWindow("File Error", msg)
+            if MainConfig.settings["popQuery"] == 0:
+                Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
@@ -281,7 +283,8 @@ class Controller:
                 return None
         else:
             msg = "L1d processing failed. Nothing to output."
-            Utilities.errorWindow("File Error", msg)
+            if MainConfig.settings["popQuery"] == 0:
+                Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None            
@@ -319,7 +322,8 @@ class Controller:
                 return None
         else:
             msg = "L1e processing failed. Nothing to output."
-            Utilities.errorWindow("File Error", msg)
+            if MainConfig.settings["popQuery"] == 0:
+                Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None  
@@ -375,7 +379,8 @@ class Controller:
                 return None
         else:
             msg = "L2 processing failed. Nothing to output."
-            Utilities.errorWindow("File Error", msg)
+            if MainConfig.settings["popQuery"] == 0:
+                Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
