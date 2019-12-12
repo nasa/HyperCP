@@ -976,6 +976,9 @@ class ProcessL2:
         # if pyrGroup is not None:
         #     root.addGroup("PYROMETER")    
 
+        if ConfigFile.settings["l2pGetAnc"] ==1:
+            AOD, modWind = getAnc() # lat, long, YYYYDDDHH
+
         if not ProcessL2.calculateREFLECTANCE(root, node, windSpeedData):
             return None
 

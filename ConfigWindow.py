@@ -273,6 +273,23 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l1eSaveSeaBASSCheckBoxUpdate()
 
+        # L2 (Preliminary)
+        l2pLabel = QtWidgets.QLabel("Level 2 Preliminary", self)
+        l2pLabel_font = l1eLabel.font()
+        l2pLabel_font.setPointSize(12)
+        l2pLabel_font.setBold(True)
+        l2pLabel.setFont(l1eLabel_font)
+        l2pSublabel = QtWidgets.QLabel(" Select here to download GMAO MERRA2 ancillary met data", self)
+        l2pSublabel2 = QtWidgets.QLabel(" Required for Zhang correction & fills in gaps in wind data.", self)
+
+        l2pGetAncLabel = QtWidgets.QLabel("       Download ancillary models", self)        
+        self.l2pGetAncCheckBox = QtWidgets.QCheckBox("", self)                    
+        if int(ConfigFile.settings["bL2pGetAnc"]) == 1:
+            self.l2pGetAncCheckBox.setChecked(True)   
+        self.l2pGetAncCheckBox.clicked.connect(self.l2pGetAncCheckBoxUpdate)
+
+        
+
 
         # L2     
         l2Label = QtWidgets.QLabel("Level 2 Processing", self)
@@ -354,6 +371,8 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL2ZhangRho"]==1:
             self.RhoRadioButtonZhang.setChecked(True)
         self.RhoRadioButtonZhang.clicked.connect(self.l2RhoCorrectionRadioButtonClicked)        
+
+        self.l2pGetAncCheckBoxUpdate()
 
         # L2 Meteorology Flags
         l2QualityFlagLabel = QtWidgets.QLabel("  Enable Meteorological Flags", self)
@@ -610,7 +629,20 @@ class ConfigWindow(QtWidgets.QDialog):
         l1eSeaBASSHeaderHBox2.addWidget(self.l1eSeaBASSHeaderOpenButton)
         l1eSeaBASSHeaderHBox2.addWidget(self.l1eSeaBASSHeaderEditButton)
         l1eSeaBASSHeaderHBox2.addWidget(self.l1eSeaBASSHeaderDeleteButton)
-        VBox2.addLayout(l1eSeaBASSHeaderHBox2)        
+        VBox2.addLayout(l1eSeaBASSHeaderHBox2)    
+
+        VBox2.addSpacing(20)       
+
+        # L2 (Preliminary)
+        VBox2.addWidget(l2pLabel)
+        VBox2.addWidget(l2pSublabel)
+        VBox2.addWidget(l2pSublabel2)
+
+        l2pGetAncHBox = QtWidgets.QHBoxLayout()
+        l2pGetAncHBox.addWidget(l2pGetAncLabel)
+        l2pGetAncHBox.addWidget(self.l2pGetAncCheckBox)    
+        VBox2.addLayout(l2pGetAncHBox)
+        
         
         # Right box
         VBox3 = QtWidgets.QVBoxLayout()
@@ -997,6 +1029,23 @@ class ConfigWindow(QtWidgets.QDialog):
             message = "Not a seaBASSHeader File: " + seaBASSHeaderFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
 
+    def l2pGetAncCheckBoxUpdate(self):
+        print("ConfigWindow - l2pGetAncCheckBoxUpdate")
+        if self.l2pGetAncCheckBox.isChecked():
+            ConfigFile.settings["bL2pGetAnc"] = 1
+            self.RhoRadioButtonRuddick.setDisabled(0)
+            self.RhoRadioButtonZhang.setDisabled(0)
+        else:            
+            ConfigFile.settings["bL2pGetAnc"] = 0
+            self.RhoRadioButtonZhang.setChecked(0)
+            self.RhoRadioButtonZhang.setDisabled(1)
+            self.RhoRadioButtonRuddick.setChecked(1)
+            self.RhoRadioButtonRuddick.setDisabled(1)
+            
+            print("ConfigWindow - l2RhoCorrection set to Ruddick")
+            ConfigFile.settings["bL2RuddickRho"] = 1
+            ConfigFile.settings["bL2ZhangRho"] = 0
+
     def l2RhoCorrectionRadioButtonClicked(self):
         # radioButton = self.sender()
         if self.RhoRadioButtonRuddick.isChecked():
@@ -1071,6 +1120,8 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL1eSaveSeaBASS"] = int(self.l1eSaveSeaBASSCheckBox.isChecked())
         # ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderComboBox.currentText()
         ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderLineEdit.text()
+
+        ConfigFile.settings["bL2pGetAnc"] = int(self.l2pGetAncCheckBox.isChecked())
         
         ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
         ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
@@ -1137,17 +1188,19 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["fL1cSunAngleMin"] = float(self.l1cSunAngleMinLineEdit.text())
             ConfigFile.settings["fL1cSunAngleMax"] = float(self.l1cSunAngleMaxLineEdit.text())
 
-            ConfigFile.settings["bL2Deglitch"] = int(self.l1dDeglitchCheckBox.isChecked()) 
-            ConfigFile.settings["fL2Deglitch0"] = int(self.l1dDeglitch0LineEdit.text())
-            ConfigFile.settings["fL2Deglitch1"] = int(self.l1dDeglitch1LineEdit.text())
-            ConfigFile.settings["fL2Deglitch2"] = float(self.l1dDeglitch2LineEdit.text())
-            ConfigFile.settings["fL2Deglitch3"] = float(self.l1dDeglitch3LineEdit.text())
+            ConfigFile.settings["bL1dDeglitch"] = int(self.l1dDeglitchCheckBox.isChecked()) 
+            ConfigFile.settings["fL1dDeglitch0"] = int(self.l1dDeglitch0LineEdit.text())
+            ConfigFile.settings["fL1dDeglitch1"] = int(self.l1dDeglitch1LineEdit.text())
+            ConfigFile.settings["fL1dDeglitch2"] = float(self.l1dDeglitch2LineEdit.text())
+            ConfigFile.settings["fL1dDeglitch3"] = float(self.l1dDeglitch3LineEdit.text())
 
             ConfigFile.settings["fL1eInterpInterval"] = float(self.l1eInterpIntervalLineEdit.text())
             ConfigFile.settings["bL1ePlotTimeInterp"] = int(self.l1ePlotTimeInterpCheckBox.isChecked())
             ConfigFile.settings["bL1eSaveSeaBASS"] = int(self.l1eSaveSeaBASSCheckBox.isChecked())
             # ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderComboBox.currentText()
             ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderLineEdit.text()
+
+            ConfigFile.settings["bL2pGetAnc"] = int(self.l2pGetAncCheckBox.isChecked())
             
             ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
             ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
