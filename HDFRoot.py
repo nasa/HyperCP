@@ -20,6 +20,7 @@ class HDFRoot:
     def __init__(self):
         self.id = ""
         self.groups = []
+        self.datasets = []
         self.attributes = collections.OrderedDict()
 
 
@@ -56,6 +57,11 @@ class HDFRoot:
         if gp:
             self.groups.remove(gp)
         # return 
+    
+    def getDataset(self, name):
+        if name in self.datasets:
+            return self.datasets[name]
+        return None
 
 
     def printd(self):
@@ -81,7 +87,12 @@ class HDFRoot:
             # Read attributes
             #print("Attributes:", [k for k in f.attrs.keys()])
             for k in f.attrs.keys():
-                root.attributes[k] = f.attrs[k].decode("utf-8")
+                # Need to check values for non-character encoding
+                value = f.attrs[k]
+                if value.__class__ is np.ndarray:
+                    root.attributes[k] = value
+                else:
+                    root.attributes[k] = f.attrs[k].decode("utf-8")                    
                 # Use the following when using h5toh4 converter:
                 #root.attributes[k.replace("__GLOSDS", "")] = f.attrs[k].decode("utf-8")
             # Read groups
@@ -94,6 +105,9 @@ class HDFRoot:
                     gp.read(item)
                 elif isinstance(item, h5py.Dataset):
                     print("HDFRoot should not contain datasets")
+                    ds = HDFDataset()                    
+                    root.datasets.append(ds)
+                    ds.read(item)
 
         return root
 

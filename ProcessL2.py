@@ -12,6 +12,7 @@ import HDFRoot
 from Utilities import Utilities
 from ConfigFile import ConfigFile
 from RhoCorrections import RhoCorrections
+from GetAnc import GetAnc
 
 
 class ProcessL2:
@@ -976,8 +977,14 @@ class ProcessL2:
         # if pyrGroup is not None:
         #     root.addGroup("PYROMETER")    
 
-        if ConfigFile.settings["l2pGetAnc"] ==1:
-            AOD, modWind = getAnc() # lat, long, YYYYDDDHH
+        if ConfigFile.settings["bL2pGetAnc"] ==1:
+            lat = 20
+            lon = -90
+            year = 2019
+            doy = 1
+            hr = 0
+            AOD, modWind = GetAnc.getAnc(lat, lon, year, doy, hr)
+
 
         if not ProcessL2.calculateREFLECTANCE(root, node, windSpeedData):
             return None
