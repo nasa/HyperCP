@@ -10,7 +10,7 @@ from HDFRoot import HDFRoot
 from MainConfig import MainConfig
 from ConfigFile import ConfigFile
 from Utilities import Utilities
-from WindSpeedReader import WindSpeedReader
+from AncillaryReader import AncillaryReader
 
 from ProcessL1a import ProcessL1a
 from ProcessL1b import ProcessL1b
@@ -106,8 +106,8 @@ class Controller:
         elif not os.path.isfile(fp):
             print("Specified wind file not found: " + fp)
             return None
-        windSpeedData = WindSpeedReader.readWindSpeed(fp)
-        return windSpeedData
+        ancillaryData = AncillaryReader.readAncillary(fp)
+        return ancillaryData
 
     @staticmethod
     def processL1a(inFilePath, outFilePath, calibrationMap):      
@@ -330,7 +330,7 @@ class Controller:
 
 
     @staticmethod
-    def processL2(inFilePath, outFilePath, windSpeedData):
+    def processL2(inFilePath, outFilePath, ancillaryData):
         
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
@@ -350,7 +350,7 @@ class Controller:
             return None
         
         root.attributes['In_Filepath'] = inFilePath
-        root = ProcessL2.processL2(root, windSpeedData)
+        root = ProcessL2.processL2(root, ancillaryData)
 
         # Create Plots
         dirpath = './'
@@ -483,10 +483,10 @@ class Controller:
                 Utilities.writeLogFile(msg)
                 return False
 
-            windSpeedData = Controller.processWindData(windFile)
+            ancillaryData = Controller.processWindData(windFile)
             fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_" + level + ".hdf")
-            Controller.processL2(inFilePath, outFilePath, windSpeedData)  
+            Controller.processL2(inFilePath, outFilePath, ancillaryData)  
             
             if os.path.isfile(outFilePath):
                 modTime = os.path.getmtime(outFilePath)

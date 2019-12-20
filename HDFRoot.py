@@ -104,7 +104,7 @@ class HDFRoot:
                     root.groups.append(gp)
                     gp.read(item)
                 elif isinstance(item, h5py.Dataset):
-                    print("HDFRoot should not contain datasets")
+                    # print("HDFRoot should not contain datasets")
                     ds = HDFDataset()                    
                     root.datasets.append(ds)
                     ds.read(item)

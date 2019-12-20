@@ -626,6 +626,11 @@ class ProcessL2:
         SZA = 90 -satnavGroup.getDataset("ELEVATION").data["SUN"]
         timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
         
+        # If ancillary modeled data is selected, and an ancillary file exists for wind, 
+        # Use the model data to fill in gaps in the field record prior to interpolating to 
+        # L2 timestamps
+        # Otherwise, just intepolate the field ancillary data if it exists, else just use the
+        # selected default values        
         esData = referenceGroup.getDataset("ES")
         windSpeedColumns = ProcessL2.interpWind(windSpeedData, esData)
         
@@ -986,6 +991,7 @@ class ProcessL2:
             AOD, modWind = GetAnc.getAnc(lat, lon, year, doy, hr)
 
 
+        # Need to either create a new windSpeedData object, or populate the nans in the current one with the model data
         if not ProcessL2.calculateREFLECTANCE(root, node, windSpeedData):
             return None
 

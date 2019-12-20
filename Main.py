@@ -92,7 +92,7 @@ class Window(QtWidgets.QWidget):
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
         
 
-        self.windFileLabel = QtWidgets.QLabel("Meteorologic File for L2 (SeaBASS format)")
+        self.windFileLabel = QtWidgets.QLabel("Ancillary Data File for L2 (SeaBASS format)")
         self.windFileLineEdit = QtWidgets.QLineEdit()
         self.windFileLineEdit.setText(str(MainConfig.settings["metFile"]))
         self.windAddButton = QtWidgets.QPushButton("Add", self)
