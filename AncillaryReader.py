@@ -34,7 +34,7 @@ class AncillaryReader:
             ancDatetime = metData.fd_datetime()
 
         for ds in metData.data:
-            if ds == ("wind"):
+            if ds == "wind":
                 wind = True
                 print(ds)
                 wspd = metData.data['wind']
@@ -56,7 +56,7 @@ class AncillaryReader:
             else:
                 aot = False   
 
-            if ds == ("Wt"):
+            if ds == "Wt":
                 wt = True
                 print(ds)
                 wT = metData.data['Wt']
@@ -64,7 +64,7 @@ class AncillaryReader:
             else:
                 wt = False
 
-            if ds == ("sal"):
+            if ds == "sal":
                 sal = True
                 print(ds)
                 S = metData.data['sal']
