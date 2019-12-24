@@ -16,6 +16,8 @@ class AncillaryReader:
         print("AncillaryReader.readAncillary: " + fp)
 
         # metData = readSB(fp,mask_missing=False, no_warn=True)
+        ''' Note: All field names apparently converted to lower case in readSB.
+        Field names in SeaBASS are case insensitive'''
         if not readSB(fp, no_warn=True):
             msg = "Unable to read ancillary data file. Make sure it is in SeaBASS format."
             print(msg)
@@ -33,44 +35,46 @@ class AncillaryReader:
         else:
             ancDatetime = metData.fd_datetime()
 
+        wind = False
+        aot = False   
+        wt = False
+        sal = False
         for ds in metData.data:
+            # Remember, all lower case...
             if ds == "wind":
                 wind = True
-                print(ds)
-                wspd = metData.data['wind']
-                windUnits = metData.variables['wind'][1]
-            else:
-                wind = False
-
-            if ds.startswith("AOT"):
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                wspd = metData.data[ds]
+                windUnits = metData.variables[ds][1]
+            if ds.startswith("aot"):
                 aot = True
                 # Same as AOD or Tot. Aerosol Extinction
-                print(ds)
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
                 aot = metData.data[ds]
-                windUnits = metData.variables[ds][1] 
+                aotUnits = metData.variables[ds][1] 
                 if len(ds) == 3:
                     # with no waveband present, assume 550 nm
                     wv = '550'
                 else:
                     wv = ds[3:]   
-            else:
-                aot = False   
-
-            if ds == "Wt":
+            if ds == "wt":
                 wt = True
-                print(ds)
-                wT = metData.data['Wt']
-                wTUnits = metData.variables['Wt'][1] 
-            else:
-                wt = False
-
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                wT = metData.data[ds]
+                wTUnits = metData.variables[ds][1] 
             if ds == "sal":
                 sal = True
-                print(ds)
-                S = metData.data['sal']
-                SUnits = metData.variables['sal'][1] 
-            else:
-                sal = False
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                S = metData.data[ds]
+                SUnits = metData.variables[ds][1] 
 
 
         # Generate HDFDataset
@@ -82,7 +86,7 @@ class AncillaryReader:
             ancillaryData.attributes["Wind_Units"]=windUnits
         if aot:
             ancillaryData.appendColumn("AOD", aot)
-            ancillaryData.attributes["AOD_Units"]=windUnits
+            ancillaryData.attributes["AOD_Units"]=aotUnits
             ancillaryData.attributes["AOD_wavelength"] = wv
         if wt:
             ancillaryData.appendColumn("SST", wT)

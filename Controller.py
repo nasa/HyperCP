@@ -100,11 +100,11 @@ class Controller:
 
     # Read wind speed file
     @staticmethod
-    def processWindData(fp):
+    def processAncData(fp):
         if fp is None:
             return None
         elif not os.path.isfile(fp):
-            print("Specified wind file not found: " + fp)
+            print("Specified ancillary file not found: " + fp)
             return None
         ancillaryData = AncillaryReader.readAncillary(fp)
         return ancillaryData
@@ -387,7 +387,7 @@ class Controller:
 
     # Process every file in a list of files 1 level
     @staticmethod
-    def processSingleLevel(pathOut, inFilePath, calibrationMap, level, windFile=None):
+    def processSingleLevel(pathOut, inFilePath, calibrationMap, level, ancFile=None):
         # Find the absolute path to the output directory
         pathOut = os.path.abspath(pathOut)
         # inFilePath is a singleton file complete with path
@@ -483,7 +483,7 @@ class Controller:
                 Utilities.writeLogFile(msg)
                 return False
 
-            ancillaryData = Controller.processWindData(windFile)
+            ancillaryData = Controller.processAncData(ancFile)
             fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_" + level + ".hdf")
             Controller.processL2(inFilePath, outFilePath, ancillaryData)  
@@ -510,39 +510,39 @@ class Controller:
 
     # Process every file in a list of files from L0 to L2
     @staticmethod
-    def processFilesMultiLevel(pathOut,inFiles, calibrationMap, windFile=None):
+    def processFilesMultiLevel(pathOut,inFiles, calibrationMap, ancFile=None):
         print("processFilesMultiLevel")
         for fp in inFiles:
             print("Processing: " + fp)
-            # Controller.processMultiLevel(pathout, fp, calibrationMap, windFile)
-            if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A', windFile):
+            # Controller.processMultiLevel(pathout, fp, calibrationMap, ancFile)
+            if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A', ancFile):
                 # Going from L0 to L1A, need to account for the underscore
                 inFileName = os.path.split(fp)[1]
                 fileName = f'L1A/{os.path.splitext(inFileName)[0]}_L1A.hdf'
                 fp = os.path.join(os.path.abspath(pathOut),fileName)
-                if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1B', windFile):
+                if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1B', ancFile):
                     inFileName = os.path.split(fp)[1]
                     fileName = f'L1B/{os.path.splitext(inFileName)[0].split("_")[0]}_L1B.hdf'
                     fp = os.path.join(os.path.abspath(pathOut),fileName)
-                    if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1C', windFile):
+                    if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1C', ancFile):
                         inFileName = os.path.split(fp)[1]
                         fileName = f'L1C/{os.path.splitext(inFileName)[0].split("_")[0]}_L1C.hdf'
                         fp = os.path.join(os.path.abspath(pathOut),fileName)
-                        if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1D', windFile):
+                        if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1D', ancFile):
                             inFileName = os.path.split(fp)[1]
                             fileName = f'L1D/{os.path.splitext(inFileName)[0].split("_")[0]}_L1D.hdf'
                             fp = os.path.join(os.path.abspath(pathOut),fileName)
-                            if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1E', windFile):
+                            if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1E', ancFile):
                                 inFileName = os.path.split(fp)[1]
                                 fileName = f'L1E/{os.path.splitext(inFileName)[0].split("_")[0]}_L1E.hdf'
                                 fp = os.path.join(os.path.abspath(pathOut),fileName)
-                                Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2', windFile) 
+                                Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2', ancFile) 
         print("processFilesMultiLevel - DONE")
 
 
     # Process every file in a list of files 1 level
     @staticmethod
-    def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level, windFile=None):
+    def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level, ancFile=None):
         # print("processFilesSingleLevel")
         for fp in inFiles:            
             # Check that the input file matches what is expected for this processing level
@@ -567,7 +567,7 @@ class Controller:
 
             print("Processing: " + fp)
             # try:
-            Controller.processSingleLevel(pathOut, fp, calibrationMap, level, windFile)
+            Controller.processSingleLevel(pathOut, fp, calibrationMap, level, ancFile)
             # except OSError:
             #     print("Unable to process that file due to an operating system error. Try again.")
         print("processFilesSingleLevel - DONE")
@@ -585,13 +585,13 @@ class Controller:
         
     # # Used to process every file in the specified directory
     # @staticmethod
-    # def processDirectory(path, calibrationMap, level=4, windFile=None):
+    # def processDirectory(path, calibrationMap, level=4, ancFile=None):
     #     for (dirpath, dirnames, filenames) in os.walk(path):
     #         for name in sorted(filenames):
     #             #print("infile:", name)
     #             if os.path.splitext(name)[1].lower() == ".raw":
     #                 #Controller.processAll(os.path.join(dirpath, name), calibrationMap)
-    #                 Controller.processMultiLevel(os.path.join(dirpath, name), calibrationMap, level, windFile)
+    #                 Controller.processMultiLevel(os.path.join(dirpath, name), calibrationMap, level, ancFile)
     #         break
    """
     
