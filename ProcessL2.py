@@ -27,7 +27,7 @@ class ProcessL2:
         for timeTag in badTimes:
 
             msg = f'Eliminate data between: {timeTag} (HHMMSSMSS)'
-            # print(msg)
+            print(msg)
             Utilities.writeLogFile(msg)
             # print(timeTag)
             # print(" ")         
@@ -39,6 +39,10 @@ class ProcessL2:
             # print(msg)
             Utilities.writeLogFile(msg)
             #  timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
+            # Ancillary still has datetag and tt2 broken out...
+            if group.id == "ANCILLARY":
+                timeData = group.getDataset("Timetag2").data["Timetag2"]
+                '''For some fucking reason one of the timetags in the ancillary is screwed up, but not the others'''
             if group.id == "IRRADIANCE":
                 timeData = group.getDataset("ES").data["Timetag2"]
             if group.id == "RADIANCE":
@@ -204,16 +208,28 @@ class ProcessL2:
 
     # Interpolate wind to radiometry
     @staticmethod
-    def interpAncillary(ancData, modData, radData):
-        
+    def interpAncillary(root, ancData, modData, radData):
+        print('Interpolating ancillary data...')
         windSpeedColumns = None
-        SSTColumns = None
-        salColumns = None
-        AODColumns = None
+        sstColumns = None
+        saltColumns = None
+        aodColumns = None
+
+        ancGroup = root.getGroup("ANCILLARY")
+        dateTagDataset = ancGroup.addDataset("Datetag")
+        timeTag2Dataset = ancGroup.addDataset("Timetag2")
+        windDataset = ancGroup.addDataset("WINDSPEED")
+        aodDataset = ancGroup.addDataset("AOD")
+        saltDataset = ancGroup.addDataset("SAL")
+        sstDataset = ancGroup.addDataset("SST")
+        # windDataset = windSpeedColumns.columnsToDataset()
+        ancGroup.copyAttributes(ancData)
+        # ancGroup.attributes["WIND_UNITS"] = "m/s"
 
 
         # interpolate wind speed to match sensor time values
         if ancData is not None:
+            # These are the entire ancillary record for the cruise
             dateTime = ancData.getColumn("DATETIME")[0]
             wind = ancData.getColumn("WINDSPEED")[0]
             salt = ancData.getColumn("SALINITY")[0]
@@ -230,6 +246,7 @@ class ProcessL2:
             for i, radDate in enumerate(radData.data["Datetag"].tolist()):                
                 radDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(radDate),radTime[i]))
                 radSeconds.append((radDatetime[i]-epoch).total_seconds())
+                
 
             if modData is not None:
                 # Convert radData date and time to datetime and then to seconds for interpolation
@@ -251,56 +268,105 @@ class ProcessL2:
             for i, value in enumerate(ancSeconds):
                 # Eliminate all the data outside the timeframe of the Rad file
                 if value>=min(radSeconds) and value <=max(radSeconds):
-                    ancInRadSeconds.append(value)
-                    # ancDateTimeInRad.append(dateTime[i])    
+                    ancInRadSeconds.append(value)                     
                     windInRad.append(wind[i])
                     saltInRad.append(salt[i])
                     sstInRad.append(sst[i])
-                    aodInRad.append(np.nan)                    
-                    
+                    aodInRad.append(np.nan)                     
 
-            # Replace Nans with modeled data where possible, otherwise eliminate them
-            nanIndex = []
-            for i,value in enumerate(windInRad):
-                if np.isnan(value):                    
-                    if modData is not None:
+            # Tallies
+            msg = f'Ancillary wind data has {np.isnan(windInRad).sum()} NaNs out of {len(windInRad)}'                
+            print(msg)
+            Utilities.writeLogFile(msg)
+            msg = f'Ancillary salt data has {np.isnan(saltInRad).sum()} NaNs out of {len(saltInRad)}'                
+            print(msg)
+            Utilities.writeLogFile(msg)
+            msg = f'Ancillary sst data has {np.isnan(sstInRad).sum()} NaNs out of {len(sstInRad)}'                
+            print(msg)
+            Utilities.writeLogFile(msg)
+            msg = f'Ancillary aod data has {np.isnan(aodInRad).sum()} NaNs out of {len(aodInRad)}'                
+            print(msg)
+            Utilities.writeLogFile(msg)
+            # Replace Wind, AOD Nans with modeled data where possible
+            if modData is not None:
+                for i,value in enumerate(windInRad):
+                    if np.isnan(value):   
+                        # print('Replacing wind with model data')                                         
                         idx = Utilities.find_nearest(modSeconds,ancInRadSeconds[i])
-                        windInRad[i] = modData.datasets['Wind'][idx]
-                    
-                    nanIndex.append(i)
+                        windInRad[i] = modData.groups[0].datasets['Wind'][idx]                        
+                for i, value in enumerate(aodInRad):
+                    if np.isnan(value):
+                        # print('Replacing aod with model data')                                         
+                        idx = Utilities.find_nearest(modSeconds,ancInRadSeconds[i])
+                        aodInRad[i] = modData.groups[0].datasets['AOD'][idx]
 
-
-
-            if len(nanIndex)>0:
-                msg = f'Wind records deleted as Nans: {len(nanIndex)}'
-                print(msg)
-                Utilities.writeLogFile(msg)                    
-            for index in sorted(nanIndex, reverse=True):
-                del ancInRadSeconds[index]
-                del ancInRad[index]    
+            # Replace Wind, AOD, SST, and Sal with defaults where still nan
+            for i, value in enumerate(windInRad):
+                if np.isnan(value):
+                    windInRad[i] = ConfigFile.settings["fL2DefaultWindSpeed"]
+            for i, value in enumerate(aodInRad):
+                if np.isnan(value):
+                    aodInRad[i] = ConfigFile.settings["fL2DefaultAOD"]
+            for i, value in enumerate(saltInRad):
+                if np.isnan(value):
+                    saltInRad[i] = ConfigFile.settings["fL2DefaultSalt"]
+            for i, value in enumerate(sstInRad):
+                if np.isnan(value):
+                    sstInRad[i] = ConfigFile.settings["fL2DefaultSST"]
             
             # Interpolate ancs
             if ancInRadSeconds:
-                durationRad = max(radSeconds)-min(radSeconds)
-                durationWind = max(ancInRadSeconds)-min(ancInRadSeconds)
+                # durationRad = max(radSeconds)-min(radSeconds)
+                # durationWind = max(ancInRadSeconds)-min(ancInRadSeconds)
 
-                # If at least half of the period has anc data
-                if durationWind/durationRad > 0.5:
-                    print("Warning: ProcessL2 Wind values may be extrapolated to match radiometric data.")
-                    new_y = Utilities.interp(ancInRadSeconds, ancInRad, radSeconds,fill_value="extrapolate")                    
-                    ancSpeedColumns = new_y.tolist()
-                else:
-                    msg = "Insufficient intersection of anc and radiometric data; reverting to default wind speed."
-                    print(msg)
-                    Utilities.writeLogFile(msg)  
-                    windSpeedColumns=None
+                # # If at least half of the period has anc data
+                # if durationWind/durationRad > 0.5:
+
+                print("Warning: ProcessL2 Ancillary values may be extrapolated to match radiometric data.")
+                fromSeconds = ancInRadSeconds.copy() # input variables can be changed in size in interp
+                new_y = Utilities.interp(fromSeconds, windInRad, radSeconds,fill_value="extrapolate")                                    
+                windDataset.columns["WINDSPEED"] = new_y
+                fromSeconds = ancInRadSeconds.copy()
+                new_y = Utilities.interp(fromSeconds, aodInRad, radSeconds,fill_value="extrapolate")                    
+                aodDataset.columns["AOD"] = new_y
+                fromSeconds = ancInRadSeconds.copy()
+                new_y = Utilities.interp(fromSeconds, saltInRad, radSeconds,fill_value="extrapolate")                    
+                saltDataset.columns["SALT"] = new_y
+                fromSeconds = ancInRadSeconds.copy()
+                new_y = Utilities.interp(fromSeconds, sstInRad, radSeconds,fill_value="extrapolate")                    
+                sstDataset.columns["SST"] = new_y
+                # else:
+                #     msg = "Insufficient intersection of anc and radiometric data; reverting to default wind speed."
+                #     print(msg)
+                #     Utilities.writeLogFile(msg)  
+                #     windSpeedColumns=None
             else:
                 msg = "Wind data do not intersect radiometric data; reverting to default wind speed************************"
                 print(msg)
                 Utilities.writeLogFile(msg)  
                 windSpeedColumns=None
 
-        return windSpeedColumns
+            ancDateTag = []
+            ancTimeTag2 = []            
+            for sec in radSeconds:
+                radDT = dt.datetime.utcfromtimestamp(sec)
+                ancDateTag.append(float(f'{radDT.timetuple()[0]}{radDT.timetuple()[7]}'))
+                ancTimeTag2.append(float( \
+                    f'{radDT.timetuple()[3]}{radDT.timetuple()[4]}{radDT.timetuple()[5]}{float(radDT.microsecond/1000)}'))
+                # ancTimeTag2.append(Utilities.epochSecToDateTagTimeTag2(sec))
+            
+            dateTagDataset.columns["Datetag"] = ancDateTag
+            timeTag2Dataset.columns["Timetag2"] = ancTimeTag2
+            
+            windDataset.columnsToDataset()
+            aodDataset.columnsToDataset()
+            saltDataset.columnsToDataset()
+            sstDataset.columnsToDataset()
+            dateTagDataset.columnsToDataset()
+            timeTag2Dataset.columnsToDataset()
+            
+
+        return
 
     # Take the slice median averages of ancillary data
     @staticmethod
@@ -643,15 +709,15 @@ class ProcessL2:
         pyrGroup = None
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
-        if  node.getGroup("GPS"):
+        if node.getGroup("GPS"):
             gpsGroup = node.getGroup("GPS")
-        if node.getGroup("SOLARTRACKER")        :
+        if node.getGroup("SOLARTRACKER"):
             satnavGroup = node.getGroup("SOLARTRACKER")        
         if node.getGroup("PYROMETER"):
             pyrGroup = node.getGroup("PYROMETER")
 
         ''' # Filter low SZAs and high winds '''
-        defaultWindSpeed = float(ConfigFile.settings["fL2DefaultWindSpeed"])
+        # defaultWindSpeed = float(ConfigFile.settings["fL2DefaultWindSpeed"])
         maxWind = float(ConfigFile.settings["fL2MaxWind"]) 
         SZAMin = float(ConfigFile.settings["fL2SZAMin"])
         SZAMax = float(ConfigFile.settings["fL2SZAMax"])
@@ -664,17 +730,23 @@ class ProcessL2:
         # Otherwise, just intepolate the field ancillary data if it exists, else just use the
         # selected default values        
         esData = referenceGroup.getDataset("ES")
-        windSpeedColumns = ProcessL2.interpAncillary(ancData, modData, esData)
+        # This will populate the root group ANCILLARY with ancillary and modelled dataset and dates/times
+        # all interpolated to the radiometric data
+        ProcessL2.interpAncillary(root, ancData, modData, esData)
+        
+        ancGroup = root.getGroup("ANCILLARY")
+        wind = ancGroup.getDataset("WINDSPEED").data["WINDSPEED"]
         
         badTimes = None
         i=0
         start = -1
         stop = []
-        if windSpeedColumns is not None:
-            wind = windSpeedColumns
-        else:
-            wind = mb.repmat(defaultWindSpeed, len(SZA), 1)
+        # if windSpeedColumns is not None:
+        #     wind = windSpeedColumns
+        # else:
+        #     wind = mb.repmat(defaultWindSpeed, len(SZA), 1)
 
+        # Filter on SZA and Wind limit
         for index in range(len(SZA)):
             # Check for angles spanning north
             if SZA[index] < SZAMin or SZA[index] > SZAMax or wind[index] > maxWind:
@@ -706,20 +778,25 @@ class ProcessL2:
             return False
         
         if badTimes is not None:
+            print('Removing records...')
             ProcessL2.filterData(referenceGroup, badTimes)            
             ProcessL2.filterData(sasGroup, badTimes)
+            ProcessL2.filterData(ancGroup, badTimes)
+
             if gpsGroup is not None:
                 ProcessL2.filterData(gpsGroup, badTimes)
             if satnavGroup is not None:
                 ProcessL2.filterData(satnavGroup, badTimes)   
             if pyrGroup is not None:
                 ProcessL2.filterData(pyrGroup, badTimes)   
+            
 
 
         ''' # Now filter the spectra from the entire collection before slicing the intervals'''
        # Spectral Outlier Filter
         enableSpecQualityCheck = ConfigFile.settings['bL2EnableSpecQualityCheck']
         if enableSpecQualityCheck:
+            badTimes = None
             msg = "Applying spectral filtering to eliminate noisy spectra."
             print(msg)
             Utilities.writeLogFile(msg)
@@ -729,15 +806,18 @@ class ProcessL2:
             badTimes = np.append(badTimes1,badTimes2, axis=0)
 
             if badTimes is not None:
+                print('Removing records...')
                 ProcessL2.filterData(referenceGroup, badTimes)            
                 ProcessL2.filterData(sasGroup, badTimes)
+                ProcessL2.filterData(ancGroup, badTimes)
                 if gpsGroup is not None:
                     ProcessL2.filterData(gpsGroup, badTimes)
                 if satnavGroup is not None:
                     ProcessL2.filterData(satnavGroup, badTimes)   
                 if pyrGroup is not None:
                     ProcessL2.filterData(pyrGroup, badTimes)   
-        esData = referenceGroup.getDataset("ES")
+                
+        # esData = referenceGroup.getDataset("ES")
         liData = sasGroup.getDataset("LI")
         ltData = sasGroup.getDataset("LT")
 
@@ -745,15 +825,15 @@ class ProcessL2:
         newReflectanceGroup = root.getGroup("REFLECTANCE")
         newRadianceGroup = root.getGroup("RADIANCE")
         newIrradianceGroup = root.getGroup("IRRADIANCE")
-        if gpsGroup is not None:
-            # newGPSGroup = root.getGroup("GPS")
-            newGPSGroup = root.getGroup("ANCILLARY")
-        if satnavGroup is not None:
-            # newSATNAVGroup = root.getGroup("SOLARTRACKER")
-            newSATNAVGroup = root.getGroup("ANCILLARY")
-        if pyrGroup is not None:
-            # newPyrGroup = root.getGroup("PYROMETER")
-            newPyrGroup = root.getGroup("ANCILLARY")
+        # if gpsGroup is not None:
+        #     # newGPSGroup = root.getGroup("GPS")
+        #     newGPSGroup = root.getGroup("ANCILLARY")
+        # if satnavGroup is not None:
+        #     # newSATNAVGroup = root.getGroup("SOLARTRACKER")
+        #     newSATNAVGroup = root.getGroup("ANCILLARY")
+        # if pyrGroup is not None:
+        #     # newPyrGroup = root.getGroup("PYROMETER")
+        #     newPyrGroup = root.getGroup("ANCILLARY")
 
         newRrsData = newReflectanceGroup.addDataset("Rrs")
         newESData = newIrradianceGroup.addDataset("ES")
@@ -862,8 +942,8 @@ class ProcessL2:
             for col in liColumns:
                 col = col[0:esLength]
 
-        
-        windSpeedColumns = ProcessL2.interpAncillary(ancData, modData, esData)
+        print('Reinterpolating ancillary data to reduced dataset')
+        ProcessL2.interpAncillary(root, ancData, modData, esData)
 
 
         # Break up data into time intervals, and calculate reflectance
@@ -986,7 +1066,7 @@ class ProcessL2:
 
     # Calculates Rrs
     @staticmethod
-    def processL2(node, ancData=None):
+    def processL2(node, ancillaryData=None):
 
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
@@ -1014,15 +1094,18 @@ class ProcessL2:
         # if pyrGroup is not None:
         #     root.addGroup("PYROMETER")    
 
-        # Retrieve MERRA2 model ancillary data
+        # Retrieve MERRA2 model ancillary data        
         if ConfigFile.settings["bL2pGetAnc"] ==1:            
+            msg = 'Model data for Wind and AOD may be used to replace blank values. Reading in model data...'
+            print(msg)
+            Utilities.writeLogFile(msg)  
             modData = GetAnc.getAnc(gpsGroup)
         else:
             modData = None
 
 
         # Need to either create a new ancData object, or populate the nans in the current one with the model data
-        if not ProcessL2.calculateREFLECTANCE(root, node, ancData, modData):
+        if not ProcessL2.calculateREFLECTANCE(root, node, ancillaryData, modData):
             return None
 
         root.attributes["Rrs_UNITS"] = "sr^-1"

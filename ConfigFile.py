@@ -45,6 +45,9 @@ class ConfigFile:
         print("bL2EnableSpecQualityCheck", ConfigFile.settings["bL2EnableSpecQualityCheck"])
         print("fL2RhoSky", ConfigFile.settings["fL2RhoSky"])
         print("fL2DefaultWindSpeed", ConfigFile.settings["fL2DefaultWindSpeed"])   
+        print("fL2DefaultAOD", ConfigFile.settings["fL2DefaultAOD"])
+        print("fL2DefaultSalt", ConfigFile.settings["fL2DefaultSalt"])
+        print("fL2DefaultSST", ConfigFile.settings["fL2DefaultSST"])
         print("bL2RuddickRho", ConfigFile.settings["bL2RuddickRho"])
         print("bL2ZhangRho", ConfigFile.settings["bL2ZhangRho"])             
         print("bL2EnableQualityFlags", ConfigFile.settings["bL2EnableQualityFlags"])
@@ -118,6 +121,9 @@ class ConfigFile:
         ConfigFile.settings["bL2RuddickRho"] = 1
         ConfigFile.settings["bL2ZhangRho"] = 0
         ConfigFile.settings["fL2DefaultWindSpeed"] = 5.0        
+        ConfigFile.settings["fL2DefaultAOD"] = 0.5
+        ConfigFile.settings["fL2DefaultSalt"] = 35.0
+        ConfigFile.settings["fL2DefaultSST"] = 26.0
         ConfigFile.settings["bL2EnableQualityFlags"] = 1
         ConfigFile.settings["fL2SignificantEsFlag"] = 2.0 # Wernand 2002
         ConfigFile.settings["fL2DawnDuskFlag"] = 1.0 # Wernand 2002

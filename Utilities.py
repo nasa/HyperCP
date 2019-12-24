@@ -123,7 +123,7 @@ class Utilities:
         dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
         return dt
 
-    # Converts seconds to TimeTag2
+    # Converts seconds of the day to TimeTag2
     @staticmethod
     def secToTimeTag2(sec):
         #return float(time.strftime("%H%M%S", time.gmtime(sec)))
@@ -155,6 +155,14 @@ class Utilities:
         # print(h, m, s, us)
         
         return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us)
+
+    # @staticmethod
+    # def epochSecToDateTagTimeTag2(eSec):
+    #     dateTime = datetime.datetime.utcfromtimestamp(eSec)
+    #     year = dateTime.timetuple()[0]
+        
+
+    #     return
 
     # Converts HDFRoot timestamp attribute to seconds
     @staticmethod
