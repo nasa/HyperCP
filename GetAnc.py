@@ -48,7 +48,7 @@ class GetAnc:
                     print(msg)
                     Utilities.writeLogFile(msg) 
                 else:
-                    msg = f'Anchillary file found locally: {file1}'
+                    msg = f'Ancillary file found locally: {file1}'
                     print(msg)
                     Utilities.writeLogFile(msg) 
 
@@ -64,7 +64,7 @@ class GetAnc:
                     print(msg)
                     Utilities.writeLogFile(msg) 
                 else:
-                    msg = f'Anchillary file found locally: {file2}'
+                    msg = f'Ancillary file found locally: {file2}'
                     print(msg)
                     Utilities.writeLogFile(msg) 
 
