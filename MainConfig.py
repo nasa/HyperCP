@@ -37,6 +37,7 @@ class MainConfig:
         print("MainConfig - Create Default Config")
 
         MainConfig.settings["cfgFile"] = ""
+        MainConfig.settings["version"] = "1.0.b"
         MainConfig.settings["inDir"] = './Data'
         MainConfig.settings["outDir"] = './Data'
         MainConfig.settings["metFile"] = ""

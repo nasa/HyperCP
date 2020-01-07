@@ -41,6 +41,12 @@ class Window(QtWidgets.QWidget):
         self.initUI()
 
     def initUI(self):
+        """Initialize the user interface"""   
+
+        # Main window configuration restore
+        MainConfig.loadConfig(MainConfig.fileName)  
+        MainConfig.settings["version"] = "1.0.b"
+        print(MainConfig.settings)   
 
         banner = QtWidgets.QLabel(self)
         pixmap = QtGui.QPixmap('banner.jpg')
@@ -48,11 +54,6 @@ class Window(QtWidgets.QWidget):
         banner.setPixmap(pixmap)
         # banner.resize(self.width(),100)        
 
-        """Initialize the user interface"""   
-
-        # Main window configuration restore
-        MainConfig.loadConfig(MainConfig.fileName)  
-        print(MainConfig.settings)   
 
         # Configuration File        
         configLabel = QtWidgets.QLabel('Select/Create Configuration File', self)
@@ -164,7 +165,6 @@ class Window(QtWidgets.QWidget):
         
         vBox.addWidget(configLabel)
         vBox.addWidget(self.configComboBox)
-        # index = self.configComboBox.findText("*.cfg",QtCore.Qt.MatchFixedString)
 
         # Horizontal Box; New Edit Delete Buttons
         configHBox = QtWidgets.QHBoxLayout()
@@ -221,7 +221,6 @@ class Window(QtWidgets.QWidget):
         self.show()
 
     def on_directoryLoaded(self, path):
-        # print(MainConfig.settings["cfgFile"])
         index = self.configComboBox.findText(MainConfig.settings["cfgFile"])
         self.configComboBox.setCurrentIndex(index)
 
@@ -448,47 +447,7 @@ class Window(QtWidgets.QWidget):
         print("Main - popQueryCheckBoxUpdate")
         MainConfig.settings["popQuery"] = int(self.popQueryCheckBox.isChecked())
         pass
-
-# class MainConfig:   
-#     fileName = "main.config"
-#     settings = collections.OrderedDict()
-
-#     # Saves the cfg file
-#     @staticmethod
-#     def saveConfig(fileName):
-#         print("ConfigFile - Save Config")        
-#         jsn = json.dumps(MainConfig.settings)
-#         fp = os.path.join("Config", fileName)
-
-#         with open(fp, 'w') as f:
-#             f.write(jsn)
-
-#     # Loads the cfg file
-#     @staticmethod
-#     def loadConfig(fileName):
-#         print("MainConfig - Load Config")
-#         configPath = os.path.join("Config", fileName)
-#         if os.path.isfile(configPath):
-#             text = ""
-#             with open(configPath, 'r') as f:
-#                 text = f.read()
-#                 MainConfig.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
-#         else:
-#             MainConfig.createDefaultConfig(fileName)
-
-#     # Generates the default configuration
-#     @staticmethod
-#     def createDefaultConfig(fileName):
-#         print("MainConfig - File not found..")
-#         print("MainConfig - Create Default Config")
-
-#         MainConfig.settings["cfgFile"] = ""
-#         MainConfig.settings["inDir"] = './Data'
-#         MainConfig.settings["outDir"] = './Data'
-#         MainConfig.settings["metFile"] = ""
-#         MainConfig.settings["popQuery"] = 0
         
-
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

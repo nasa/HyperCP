@@ -5,7 +5,7 @@ import os
 
 import HDFRoot
 import HDFGroup
-
+from MainConfig import MainConfig
 from Utilities import Utilities
 from RawFileReader import RawFileReader
 
@@ -20,9 +20,7 @@ class ProcessL1a:
         # Generate root header attributes
         root = HDFRoot.HDFRoot()
         root.id = "/"
-        root.attributes["HYPERINSPACE"] = "HyperInSPACE 1.0.b"
-        #root.attributes["PROSOFT_INSTRUMENT_CONFIG"] = "testcfg"
-        #root.attributes["PROSOFT_PARAMETERS_FILE_NAME"] = "test.mat"
+        root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
         root.attributes["CAL_FILE_NAMES"] = ','.join(calibrationMap.keys())
         root.attributes["WAVELENGTH_UNITS"] = "nm"
         root.attributes["LU_UNITS"] = "count"
@@ -51,8 +49,7 @@ class ProcessL1a:
             gp.attributes["InstrumentType"] = cf.instrumentType
             gp.attributes["Media"] = cf.media
             gp.attributes["MeasMode"] = cf.measMode
-            gp.attributes["FrameType"] = cf.frameType
-            # gp.attributes["INSTRUMENT_NO"] = "1" #For individual OCR; TO DO: should be retrieved
+            gp.attributes["FrameType"] = cf.frameType            
             gp.getTableHeader(cf.sensorType)
             gp.attributes["DISTANCE_1"] = "Pressure " + cf.sensorType + " 1 1 0"
             gp.attributes["DISTANCE_2"] = "Surface " + cf.sensorType + " 1 1 0"
@@ -60,7 +57,30 @@ class ProcessL1a:
             if gp.id != 'SAS' and gp.id != 'Reference':
                 root.groups.append(gp)
 
-
+        # Insure essential data groups are present before proceeding
+        hld = 0
+        hsl = 0
+        hse = 0
+        hed = 0
+        gps = 0
+        for gp in root.groups:
+            if gp.id.startswith("HLD"):
+                hld += 1
+            if gp.id.startswith("HSL"):
+                hsl += 1
+            if gp.id.startswith("HSE"):
+                hse += 1
+            if gp.id.startswith("HED"):
+                hed += 1
+            if gp.id.startswith("GPRMC"):
+                gps += 1
+        if hld != 2 or hsl != 2 or hse != 1 or hed != 1 or gps != 1:
+            msg = "ProcessL1a.processL1a: Essential dataset missing. Aborting."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+                
+                                
         # Generates root footer attributes
         root.attributes["PROCESSING_LEVEL"] = "1a"
         now = dt.datetime.now()
@@ -78,13 +98,10 @@ class ProcessL1a:
                 # break
             else:
                 for ds in gp.datasets.values():
-                    if not ds.columnsToDataset():
-                        # In case there are no data or they fail to convert to datasets, 
-                        # do we trash the whole file, or just the group, or...?
-                        msg = "ProcessL1a.processL1a: Column cannot be converted to Dataset. Aborting"
+                    if not ds.columnsToDataset():                                                
+                        msg = "ProcessL1a.processL1a: Essential column cannot be converted to Dataset. Aborting."
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
-        #RawFileReader.generateContext(root)
 
         return root
