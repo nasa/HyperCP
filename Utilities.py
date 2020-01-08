@@ -3,6 +3,7 @@ import datetime
 import os
 import sys
 import math
+from collections import Counter
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QMessageBox
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot
@@ -21,6 +22,11 @@ if "LOGFILE" not in os.environ:
     os.environ["LOGFILE"] = "temp.log"
 
 class Utilities:
+
+    @staticmethod
+    def mostFrequent(List): 
+        occurence_count = Counter(List) 
+        return occurence_count.most_common(1)[0][0] 
 
     @staticmethod
     def find_nearest(array,value):

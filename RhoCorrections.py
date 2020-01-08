@@ -16,7 +16,7 @@ class RhoCorrections:
         else:
             # Clear sky conditions: correct for wind
             # Set wind speed here
-            w = windSpeedMean
+            w = windSpeedMean[0]
             p_sky = 0.0256 + 0.00039 * w + 0.000034 * w * w
             msg = f'Rho_sky: {p_sky:.4f} Wind: {w:.1f} m/s'
             print(msg)

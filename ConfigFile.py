@@ -51,6 +51,7 @@ class ConfigFile:
         print("bL2RuddickRho", ConfigFile.settings["bL2RuddickRho"])
         print("bL2ZhangRho", ConfigFile.settings["bL2ZhangRho"])             
         print("bL2EnableQualityFlags", ConfigFile.settings["bL2EnableQualityFlags"])
+        print("fL2CloudFlag", ConfigFile.settings["fL2CloudFlag"])
         print("fL2SignificantEsFlag", ConfigFile.settings["fL2SignificantEsFlag"])
         print("fL2DawnDuskFlag", ConfigFile.settings["fL2DawnDuskFlag"])
         print("fL2RainfallHumidityFlag", ConfigFile.settings["fL2RainfallHumidityFlag"])                        
@@ -125,6 +126,7 @@ class ConfigFile:
         ConfigFile.settings["fL2DefaultSalt"] = 35.0
         ConfigFile.settings["fL2DefaultSST"] = 26.0
         ConfigFile.settings["bL2EnableQualityFlags"] = 1
+        ConfigFile.settings["fL2CloudFlag"] = 5.0 # Ruddick 2006, IOCCG Protocols
         ConfigFile.settings["fL2SignificantEsFlag"] = 2.0 # Wernand 2002
         ConfigFile.settings["fL2DawnDuskFlag"] = 1.0 # Wernand 2002
         ConfigFile.settings["fL2RainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain      

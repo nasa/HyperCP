@@ -289,8 +289,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2pGetAncCheckBox.clicked.connect(self.l2pGetAncCheckBoxUpdate)
 
         
-
-
         # L2     
         l2Label = QtWidgets.QLabel("Level 2 Processing", self)
         l2Label_font = l2Label.font()
@@ -314,31 +312,60 @@ class ConfigWindow(QtWidgets.QDialog):
         l2SZAMaxLabel = QtWidgets.QLabel("     SZA Maximum (deg)", self)
         self.l2SZAMaxLineEdit = QtWidgets.QLineEdit(self)
         self.l2SZAMaxLineEdit.setText(str(ConfigFile.settings["fL2SZAMax"]))
-        self.l2SZAMaxLineEdit.setValidator(doubleValidator)         
+        self.l2SZAMaxLineEdit.setValidator(doubleValidator)                 
+
+        # L2 Spectral Outlier Filter
+        l2SpecQualityCheckLabel = QtWidgets.QLabel("     Enable Spectral Outlier Filter", self)
+        self.l2SpecQualityCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2EnableSpecQualityCheck"]) == 1:
+            self.l2SpecQualityCheckBox.setChecked(True)   
+        self.l2SpecFilterEsLabel = QtWidgets.QLabel("      Filter Sigma Es", self)
+        self.l2SpecFilterEsLineEdit = QtWidgets.QLineEdit(self)
+        self.l2SpecFilterEsLineEdit.setText(str(ConfigFile.settings["fL2SpecFilterEs"]))
+        self.l2SpecFilterEsLineEdit.setValidator(doubleValidator)
+        self.l2SpecFilterLiLabel = QtWidgets.QLabel("      Filter Sigma Li", self)
+        self.l2SpecFilterLiLineEdit = QtWidgets.QLineEdit(self)
+        self.l2SpecFilterLiLineEdit.setText(str(ConfigFile.settings["fL2SpecFilterLi"]))
+        self.l2SpecFilterLiLineEdit.setValidator(doubleValidator)
+        self.l2SpecFilterLtLabel = QtWidgets.QLabel("      Filter Sigma Lt", self)
+        self.l2SpecFilterLtLineEdit = QtWidgets.QLineEdit(self)
+        self.l2SpecFilterLtLineEdit.setText(str(ConfigFile.settings["fL2SpecFilterLt"]))
+        self.l2SpecFilterLtLineEdit.setValidator(doubleValidator)     
+
+        # L2 Meteorology Flags
+        l2QualityFlagLabel = QtWidgets.QLabel("     Enable Meteorological Filters", self)
+        # l2QualityFlagLabel2 = QtWidgets.QLabel("    (Wernand 2012, OO XVI)", self)
+        self.l2QualityFlagCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2EnableQualityFlags"]) == 1:
+            self.l2QualityFlagCheckBox.setChecked(True)
+
+        self.l2CloudFlagLabel = QtWidgets.QLabel("      Cloud Li(750)Es(750)>", self)
+        self.l2CloudFlagLineEdit = QtWidgets.QLineEdit("", self)
+        self.l2CloudFlagLineEdit.setText(str(ConfigFile.settings["fL2CloudFlag"]))
+        self.l2CloudFlagLineEdit.setValidator(doubleValidator)
+
+        self.l2EsFlagLabel = QtWidgets.QLabel("      Significant Es(480) (uW cm^-2 nm^-1)", self)
+        self.l2EsFlagLineEdit = QtWidgets.QLineEdit(self)
+        self.l2EsFlagLineEdit.setText(str(ConfigFile.settings["fL2SignificantEsFlag"]))
+        self.l2EsFlagLineEdit.setValidator(doubleValidator)
+
+        self.l2DawnDuskFlagLabel = QtWidgets.QLabel("      Dawn/Dusk Es(470/680)<", self)
+        self.l2DawnDuskFlagLineEdit = QtWidgets.QLineEdit("", self)
+        self.l2DawnDuskFlagLineEdit.setText(str(ConfigFile.settings["fL2DawnDuskFlag"]))
+        self.l2DawnDuskFlagLineEdit.setValidator(doubleValidator)
+
+        self.l2RainfallHumidityFlagLabel = QtWidgets.QLabel("      Rain/Humid. Es(720/370)<", self)
+        self.l2RainfallHumidityFlagLineEdit = QtWidgets.QLineEdit("", self)
+        self.l2RainfallHumidityFlagLineEdit.setText(str(ConfigFile.settings["fL2RainfallHumidityFlag"]))
+        self.l2RainfallHumidityFlagLineEdit.setValidator(doubleValidator)
+
+        self.l2QualityFlagCheckBoxUpdate()     
 
         # L2 Time Average Rrs
         l2TimeIntervalLabel = QtWidgets.QLabel("  Ensemble Interval (secs; 0=None)", self)
         self.l2TimeIntervalLineEdit = QtWidgets.QLineEdit(self)
         self.l2TimeIntervalLineEdit.setText(str(ConfigFile.settings["fL2TimeInterval"]))
-        self.l2TimeIntervalLineEdit.setValidator(intValidator)      
-
-        # L2 Spectral Outlier Filter
-        l2EnableSpecQualityCheckLabel = QtWidgets.QLabel("    Enable Spectral Outlier Filter", self)
-        self.l2EnableSpecQualityCheckCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL2EnableSpecQualityCheck"]) == 1:
-            self.l2EnableSpecQualityCheckCheckBox.setChecked(True)   
-        l2SpecFilterEsLabel = QtWidgets.QLabel("     Filter Sigma Es", self)
-        self.l2SpecFilterEsLineEdit = QtWidgets.QLineEdit(self)
-        self.l2SpecFilterEsLineEdit.setText(str(ConfigFile.settings["fL2SpecFilterEs"]))
-        self.l2SpecFilterEsLineEdit.setValidator(doubleValidator)
-        l2SpecFilterLiLabel = QtWidgets.QLabel("     Filter Sigma Li", self)
-        self.l2SpecFilterLiLineEdit = QtWidgets.QLineEdit(self)
-        self.l2SpecFilterLiLineEdit.setText(str(ConfigFile.settings["fL2SpecFilterLi"]))
-        self.l2SpecFilterLiLineEdit.setValidator(doubleValidator)
-        l2SpecFilterLtLabel = QtWidgets.QLabel("     Filter Sigma Lt", self)
-        self.l2SpecFilterLtLineEdit = QtWidgets.QLineEdit(self)
-        self.l2SpecFilterLtLineEdit.setText(str(ConfigFile.settings["fL2SpecFilterLt"]))
-        self.l2SpecFilterLtLineEdit.setValidator(doubleValidator)        
+        self.l2TimeIntervalLineEdit.setValidator(intValidator)            
 
         # L2 Set percentage Lt filter
         self.l2EnablePercentLtLabel = QtWidgets.QLabel("    Enable Percent Lt Calculation", self)
@@ -384,31 +411,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.RhoRadioButtonZhang.setChecked(True)
         self.RhoRadioButtonZhang.clicked.connect(self.l2RhoCorrectionRadioButtonClicked)        
 
-        self.l2pGetAncCheckBoxUpdate()
-
-        # L2 Meteorology Flags
-        l2QualityFlagLabel = QtWidgets.QLabel("  Enable Meteorological Flags", self)
-        # l2QualityFlagLabel2 = QtWidgets.QLabel("    (Wernand 2012, OO XVI)", self)
-        self.l2QualityFlagCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL2EnableQualityFlags"]) == 1:
-            self.l2QualityFlagCheckBox.setChecked(True)
-
-        self.l2EsFlagLabel = QtWidgets.QLabel("      Significant Es(480) (uW cm^-2 nm^-1)", self)
-        self.l2EsFlagLineEdit = QtWidgets.QLineEdit(self)
-        self.l2EsFlagLineEdit.setText(str(ConfigFile.settings["fL2SignificantEsFlag"]))
-        self.l2EsFlagLineEdit.setValidator(doubleValidator)
-
-        self.l2DawnDuskFlagLabel = QtWidgets.QLabel("      Dawn/Dusk Es(470/680)<", self)
-        self.l2DawnDuskFlagLineEdit = QtWidgets.QLineEdit("", self)
-        self.l2DawnDuskFlagLineEdit.setText(str(ConfigFile.settings["fL2DawnDuskFlag"]))
-        self.l2DawnDuskFlagLineEdit.setValidator(doubleValidator)
-
-        self.l2RainfallHumidityFlagLabel = QtWidgets.QLabel("      Rain/Humid. Es(720/370)<", self)
-        self.l2RainfallHumidityFlagLineEdit = QtWidgets.QLineEdit("", self)
-        self.l2RainfallHumidityFlagLineEdit.setText(str(ConfigFile.settings["fL2RainfallHumidityFlag"]))
-        self.l2RainfallHumidityFlagLineEdit.setValidator(doubleValidator)
-
-        self.l2QualityFlagCheckBoxUpdate()
+        self.l2pGetAncCheckBoxUpdate()        
 
         # L2 NIR AtmoCorr
         l2NIRCorrectionLabel = QtWidgets.QLabel("  Enable NIR Correction (blue water only)", self)
@@ -438,6 +441,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2PlotLtCheckBox.setChecked(True)
 
         self.l2QualityFlagCheckBox.clicked.connect(self.l2QualityFlagCheckBoxUpdate)
+        self.l2SpecQualityCheckBox.clicked.connect(self.l2SpecQualityCheckBoxUpdate)
         # self.l2RuddickRhoCheckBox.clicked.connect(self.l2RuddickRhoCheckBoxUpdate)
         self.l2NIRCorrectionCheckBox.clicked.connect(self.l2NIRCorrectionCheckBoxUpdate)
         self.l2EnablePercentLtCheckBox.clicked.connect(self.l2EnablePercentLtCheckBoxUpdate)
@@ -679,33 +683,58 @@ class ConfigWindow(QtWidgets.QDialog):
         SZAHBox2 = QtWidgets.QHBoxLayout()
         SZAHBox2.addWidget(l2SZAMaxLabel)
         SZAHBox2.addWidget(self.l2SZAMaxLineEdit)
-        VBox3.addLayout(SZAHBox2)
+        VBox3.addLayout(SZAHBox2)       
+
+        # L2 Spectral Outlier Filter
+        SpecFilterHBox = QtWidgets.QHBoxLayout()
+        SpecFilterHBox.addWidget(l2SpecQualityCheckLabel)
+        SpecFilterHBox.addWidget(self.l2SpecQualityCheckBox)
+        VBox3.addLayout(SpecFilterHBox)
+        SpecFilterEsHBox = QtWidgets.QHBoxLayout()
+        SpecFilterEsHBox.addWidget(self.l2SpecFilterEsLabel)
+        SpecFilterEsHBox.addWidget(self.l2SpecFilterEsLineEdit)
+        VBox3.addLayout(SpecFilterEsHBox)
+        SpecFilterLiHBox = QtWidgets.QHBoxLayout()
+        SpecFilterLiHBox.addWidget(self.l2SpecFilterLiLabel)
+        SpecFilterLiHBox.addWidget(self.l2SpecFilterLiLineEdit)
+        VBox3.addLayout(SpecFilterLiHBox)
+        SpecFilterLtHBox = QtWidgets.QHBoxLayout()
+        SpecFilterLtHBox.addWidget(self.l2SpecFilterLtLabel)
+        SpecFilterLtHBox.addWidget(self.l2SpecFilterLtLineEdit)
+        VBox3.addLayout(SpecFilterLtHBox)
+
+        # VBox3.addSpacing(5)
+
+        # L2 Meteorology Flags
+        QualityFlagHBox = QtWidgets.QHBoxLayout()
+        QualityFlagHBox.addWidget(l2QualityFlagLabel)
+        # QualityFlagHBox.addWidget(l2QualityFlagLabel2)
+        QualityFlagHBox.addWidget(self.l2QualityFlagCheckBox)
+        VBox3.addLayout(QualityFlagHBox) 
+        CloudFlagHBox = QtWidgets.QHBoxLayout()        
+        CloudFlagHBox.addWidget(self.l2CloudFlagLabel)
+        CloudFlagHBox.addWidget(self.l2CloudFlagLineEdit)
+        VBox3.addLayout(CloudFlagHBox) 
+        EsFlagHBox = QtWidgets.QHBoxLayout()        
+        EsFlagHBox.addWidget(self.l2EsFlagLabel)
+        EsFlagHBox.addWidget(self.l2EsFlagLineEdit)
+        VBox3.addLayout(EsFlagHBox) 
+        DawnFlagHBox =QtWidgets.QHBoxLayout()
+        DawnFlagHBox.addWidget(self.l2DawnDuskFlagLabel)
+        DawnFlagHBox.addWidget(self.l2DawnDuskFlagLineEdit)
+        VBox3.addLayout(DawnFlagHBox) 
+        RainFlagHBox = QtWidgets.QHBoxLayout()
+        RainFlagHBox.addWidget(self.l2RainfallHumidityFlagLabel)
+        RainFlagHBox.addWidget(self.l2RainfallHumidityFlagLineEdit)
+        VBox3.addLayout(RainFlagHBox) 
+
+        VBox3.addSpacing(5)
 
         # L2 Time Average Rrs
         TimeAveHBox = QtWidgets.QHBoxLayout()
         TimeAveHBox.addWidget(l2TimeIntervalLabel)
         TimeAveHBox.addWidget(self.l2TimeIntervalLineEdit)
-        VBox3.addLayout(TimeAveHBox)     
-
-        # L2 Spectral Outlier Filter
-        SpecFilterHBox = QtWidgets.QHBoxLayout()
-        SpecFilterHBox.addWidget(l2EnableSpecQualityCheckLabel)
-        SpecFilterHBox.addWidget(self.l2EnableSpecQualityCheckCheckBox)
-        VBox3.addLayout(SpecFilterHBox)
-        SpecFilterEsHBox = QtWidgets.QHBoxLayout()
-        SpecFilterEsHBox.addWidget(l2SpecFilterEsLabel)
-        SpecFilterEsHBox.addWidget(self.l2SpecFilterEsLineEdit)
-        VBox3.addLayout(SpecFilterEsHBox)
-        SpecFilterLiHBox = QtWidgets.QHBoxLayout()
-        SpecFilterLiHBox.addWidget(l2SpecFilterLiLabel)
-        SpecFilterLiHBox.addWidget(self.l2SpecFilterLiLineEdit)
-        VBox3.addLayout(SpecFilterLiHBox)
-        SpecFilterLtHBox = QtWidgets.QHBoxLayout()
-        SpecFilterLtHBox.addWidget(l2SpecFilterLtLabel)
-        SpecFilterLtHBox.addWidget(self.l2SpecFilterLtLineEdit)
-        VBox3.addLayout(SpecFilterLtHBox)
-
-        VBox3.addSpacing(5)
+        VBox3.addLayout(TimeAveHBox)  
 
         # L2 Percent Light; Hooker & Morel 2003
         PercentLtHBox = QtWidgets.QHBoxLayout()
@@ -751,31 +780,6 @@ class ConfigWindow(QtWidgets.QDialog):
         RhoHBox2.addWidget(self.RhoRadioButtonRuddick)
         RhoHBox2.addWidget(self.RhoRadioButtonZhang)
         VBox3.addLayout(RhoHBox2)         
-        # WindSpeedHBox.addWidget(l2RuddickRhoLabel)
-        # WindSpeedHBox.addWidget(self.l2RuddickRhoCheckBox)
-        # VBox3.addLayout(WindSpeedHBox)         
-        
-
-        VBox3.addSpacing(5)
-
-        # L2 Meteorology Flags
-        QualityFlagHBox = QtWidgets.QHBoxLayout()
-        QualityFlagHBox.addWidget(l2QualityFlagLabel)
-        # QualityFlagHBox.addWidget(l2QualityFlagLabel2)
-        QualityFlagHBox.addWidget(self.l2QualityFlagCheckBox)
-        VBox3.addLayout(QualityFlagHBox) 
-        EsFlagHBox = QtWidgets.QHBoxLayout()        
-        EsFlagHBox.addWidget(self.l2EsFlagLabel)
-        EsFlagHBox.addWidget(self.l2EsFlagLineEdit)
-        VBox3.addLayout(EsFlagHBox) 
-        DawnFlagHBox =QtWidgets.QHBoxLayout()
-        DawnFlagHBox.addWidget(self.l2DawnDuskFlagLabel)
-        DawnFlagHBox.addWidget(self.l2DawnDuskFlagLineEdit)
-        VBox3.addLayout(DawnFlagHBox) 
-        RainFlagHBox = QtWidgets.QHBoxLayout()
-        RainFlagHBox.addWidget(self.l2RainfallHumidityFlagLabel)
-        RainFlagHBox.addWidget(self.l2RainfallHumidityFlagLineEdit)
-        VBox3.addLayout(RainFlagHBox) 
 
         VBox3.addSpacing(5)
 
@@ -1085,11 +1089,23 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2RuddickRho"] = 0
             ConfigFile.settings["bL2ZhangRho"] = 1
 
+    def l2SpecQualityCheckBoxUpdate(self):
+        print("ConfigWindow - l2SpecQualityCheckBoxUpdate")
+
+        disabled = (not self.l2SpecQualityCheckBox.isChecked())
+        self.l2SpecFilterLiLabel.setDisabled(disabled)
+        self.l2SpecFilterLiLineEdit.setDisabled(disabled)
+        self.l2SpecFilterLtLabel.setDisabled(disabled)
+        self.l2SpecFilterLtLineEdit.setDisabled(disabled)
+        self.l2SpecFilterEsLabel.setDisabled(disabled)
+        self.l2SpecFilterEsLineEdit.setDisabled(disabled)
+    
     def l2QualityFlagCheckBoxUpdate(self):
         print("ConfigWindow - l2QualityFlagCheckBoxUpdate")
-        # print("This should do something....?")
 
         disabled = (not self.l2QualityFlagCheckBox.isChecked())
+        self.l2CloudFlagLabel.setDisabled(disabled)
+        self.l2CloudFlagLineEdit.setDisabled(disabled)
         self.l2EsFlagLabel.setDisabled(disabled)
         self.l2EsFlagLineEdit.setDisabled(disabled)
         self.l2DawnDuskFlagLabel.setDisabled(disabled)
@@ -1154,7 +1170,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
         ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
         ConfigFile.settings["fL2SZAMax"] = float(self.l2SZAMaxLineEdit.text())
-        ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2EnableSpecQualityCheckCheckBox.isChecked())
+        ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2EnableSpecQualityCheckBox.isChecked())
         ConfigFile.settings["fL2SpecFilterEs"] = float(self.l2SpecFilterEsLineEdit.text())
         ConfigFile.settings["fL2SpecFilterLi"] = float(self.l2SpecFilterLiLineEdit.text())
         ConfigFile.settings["fL2SpecFilterLt"] = float(self.l2SpecFilterLtLineEdit.text())
@@ -1167,6 +1183,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL2DefaultSalt"] = float(self.l2DefaultSaltLineEdit.text())
         ConfigFile.settings["fL2DefaultSST"] = float(self.l2DefaultSSTLineEdit.text())
         ConfigFile.settings["bL2EnableQualityFlags"] = int(self.l2QualityFlagCheckBox.isChecked())
+        ConfigFile.settings["fL2SignificantEsFlag"] = float(self.l2CloudFlagLineEdit.text())
         ConfigFile.settings["fL2SignificantEsFlag"] = float(self.l2EsFlagLineEdit.text())
         ConfigFile.settings["fL2DawnDuskFlag"] = float(self.l2DawnDuskFlagLineEdit.text())
         ConfigFile.settings["fL2RainfallHumidityFlag"] = float(self.l2RainfallHumidityFlagLineEdit.text())
@@ -1236,7 +1253,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
             ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
             ConfigFile.settings["fL2SZAMax"] = float(self.l2SZAMaxLineEdit.text())
-            ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2EnableSpecQualityCheckCheckBox.isChecked())
+            ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2EnableSpecQualityCheckBox.isChecked())
             ConfigFile.settings["fL2SpecFilterEs"] = float(self.l2SpecFilterEsLineEdit.text())
             ConfigFile.settings["fL2SpecFilterLi"] = float(self.l2SpecFilterLiLineEdit.text())
             ConfigFile.settings["fL2SpecFilterLt"] = float(self.l2SpecFilterLtLineEdit.text())
@@ -1247,6 +1264,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["fL2DefaultSalt"] = float(self.l2DefaultSaltLineEdit.text())
             ConfigFile.settings["fL2DefaultSST"] = float(self.l2DefaultSSTLineEdit.text())
             ConfigFile.settings["bL2EnableQualityFlags"] = int(self.l2QualityFlagCheckBox.isChecked())
+            ConfigFile.settings["fL2SignificantEsFlag"] = float(self.l2CloudFlagLineEdit.text())
             ConfigFile.settings["fL2SignificantEsFlag"] = float(self.l2EsFlagLineEdit.text())
             ConfigFile.settings["fL2DawnDuskFlag"] = float(self.l2DawnDuskFlagLineEdit.text())
             ConfigFile.settings["fL2RainfallHumidityFlag"] = float(self.l2RainfallHumidityFlagLineEdit.text())

@@ -157,49 +157,86 @@ class ProcessL2:
 
     # Perform meteorological flag checking
     @staticmethod
-    def metQualityCheck(es5Columns):   
+    def metQualityCheck(refGroup, sasGroup):   
         esFlag = float(ConfigFile.settings["fL2SignificantEsFlag"])
         dawnDuskFlag = float(ConfigFile.settings["fL2DawnDuskFlag"])
         humidityFlag = float(ConfigFile.settings["fL2RainfallHumidityFlag"])     
-        # print("quality check")     
+        cloudFlag = float(ConfigFile.settings["fL2CloudFlag"])
 
-        # Threshold for significant es
-        # Wernand 2002
-        #v = es5Columns["480.0"][0]
-        v = ProcessL2.interpolateColumn(es5Columns, 480.0)[0]
-        if v < esFlag:
-            print("Quality Check: Sign. ES(480.0) =", v)
-            return False
 
-        # Masking spectra affected by dawn/dusk radiation
-        # Wernand 2002
-        #v = es5Columns["470.0"][0] / es5Columns["610.0"][0] # Fix 610 -> 680
-        v1 = ProcessL2.interpolateColumn(es5Columns, 470.0)[0]
-        v2 = ProcessL2.interpolateColumn(es5Columns, 680.0)[0]
-        v = v1/v2
-        if v < dawnDuskFlag:
-            print("Quality Check: ES(470.0)/ES(680.0) =", v)
-            return False
+        esData = refGroup.getDataset("ES")
+        esData.datasetToColumns()
+        esColumns = esData.columns
+        esColumns.pop('Datetag')
+        esTime =esColumns.pop('Timetag2')
+        #  refGroup.getDataset("ES").data["Timetag2"]
 
-        # Masking spectra affected by rainfall and high humidity
-        # Wernand 2002 (940/370), Garaba et al. 2012 also uses Es(940/370), presumably 720 was developed by Wang...???
-        ''' Follow up on the source of this flag'''
-        #v = es5Columns["720.0"][0] / es5Columns["370.0"][0]    
-        v1 = ProcessL2.interpolateColumn(es5Columns, 720.0)[0]
-        v2 = ProcessL2.interpolateColumn(es5Columns, 370.0)[0]
-        v = v1/v2
-        if v < humidityFlag:
-            print("Quality Check: ES(720.0)/ES(370.0) =", v)
-            return False
+        liData = sasGroup.getDataset("LI")
+        liData.datasetToColumns()
+        liColumns = liData.columns
+        liColumns.pop('Datetag')
+        liColumns.pop('Timetag2')
+        ltData = sasGroup.getDataset("LT")
+        ltData.datasetToColumns()
+        ltColumns = ltData.columns
+        ltColumns.pop('Datetag')
+        ltColumns.pop('Timetag2')
+        
+        
+        li750 = ProcessL2.interpolateColumn(liColumns, 750.0)
+        es370 = ProcessL2.interpolateColumn(esColumns, 370.0)
+        es470 = ProcessL2.interpolateColumn(esColumns, 470.0)
+        es480 = ProcessL2.interpolateColumn(esColumns, 480.0)
+        es680 = ProcessL2.interpolateColumn(esColumns, 680.0)
+        es720 = ProcessL2.interpolateColumn(esColumns, 720.0)
+        es750 = ProcessL2.interpolateColumn(esColumns, 750.0)
+        badTimes = []
+        for indx, timeTag in enumerate(esTime):                
+            # Masking spectra affected by clouds (Ruddick 2006, IOCCG Protocols). 
+            # The alternative to masking is to process them differently (e.g. See Ruddick_Rho)
+            
+            if li750[indx]/es750[indx] >= cloudFlag:
+                # msg = f"Quality Check: Li(750)/Es(750) >= cloudFlag:{cloudFlag}"
+                # print(msg)
+                # Utilities.writeLogFile(msg)  
+                badTimes.append(timeTag)
 
-        return True
+
+            # Threshold for significant es
+            # Wernand 2002
+            if es480[indx] < esFlag:
+                # msg = f"Quality Check: es(480) < esFlag:{esFlag}"
+                # print(msg)
+                # Utilities.writeLogFile(msg)  
+                badTimes.append(timeTag)
+
+            # Masking spectra affected by dawn/dusk radiation
+            # Wernand 2002
+            #v = esXSlice["470.0"][0] / esXSlice["610.0"][0] # Fix 610 -> 680
+            if es470[indx]/es680[indx] < dawnDuskFlag:
+                # msg = f'Quality Check: ES(470.0)/ES(680.0) < dawnDuskFlag:{dawnDuskFlag}'
+                # print(msg)
+                # Utilities.writeLogFile(msg)  
+                badTimes.append(timeTag)
+
+            # Masking spectra affected by rainfall and high humidity
+            # Wernand 2002 (940/370), Garaba et al. 2012 also uses Es(940/370), presumably 720 was developed by Wang...???
+            ''' Follow up on the source of this flag'''            
+            if es720[indx]/es370[indx] < humidityFlag:
+                # msg = f'Quality Check: ES(720.0)/ES(370.0) < humidityFlag:{humidityFlag}'
+                # print(msg)
+                # Utilities.writeLogFile(msg)  
+                badTimes.append(timeTag)
+        
+        badTimes = np.unique(badTimes)
+        return badTimes
 
 
     # Take a slice of a dataset stored in columns
     @staticmethod
     def columnToSlice(columns, start, end):
-        # Each column is a time series at a waveband
-        # Start and end are defined by the interval established in the Config
+        # Each column is a time series either at a waveband for radiometer columns, or various grouped datasets for ancillary
+        # Start and end are defined by the interval established in the Config (they are indexes)
         newSlice = collections.OrderedDict()
         for k in columns:
             newSlice[k] = columns[k][start:end]
@@ -207,11 +244,11 @@ class ProcessL2:
 
     # Interpolate wind to radiometry
     @staticmethod
-    def interpAncillary(root, ancData, modData, radData):
+    def interpAncillary(node, ancData, modData, radData):
         print('Interpolating field ancillary and/or modeled ancillary data to radiometry times...')
         epoch = dt.datetime(1970, 1, 1)
 
-        ancGroup = root.getGroup("ANCILLARY")
+        ancGroup = node.getGroup("ANCILLARY")
         dateTagDataset = ancGroup.addDataset("Datetag")
         timeTag2Dataset = ancGroup.addDataset("Timetag2")
         windDataset = ancGroup.addDataset("WINDSPEED")
@@ -305,9 +342,11 @@ class ProcessL2:
             for i, modDate in enumerate(modData.groups[0].datasets["Datetag"].tolist()):                
                 modDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(modDate),modTime[i]))
                 modSeconds.append((modDatetime[i]-epoch).total_seconds())  
-        
         # Replace Wind, AOD Nans with modeled data where possible. These will be within one hour of the field data
         if modData is not None:
+            msg = 'Filling in field data with model data where needed.'
+            print(msg)
+            Utilities.writeLogFile(msg)
             for i,value in enumerate(windInRad):
                 if np.isnan(value):   
                     msg = 'Replacing wind with model data'
@@ -326,6 +365,9 @@ class ProcessL2:
                     aodFlag[i] = 'model'
 
         # Replace Wind, AOD, SST, and Sal with defaults where still nan
+        msg = 'Filling in ancillary data with default values where still needed.'
+        print(msg)
+        Utilities.writeLogFile(msg)
         for i, value in enumerate(windInRad):
             if np.isnan(value):
                 windInRad[i] = ConfigFile.settings["fL2DefaultWindSpeed"]
@@ -347,7 +389,7 @@ class ProcessL2:
         windDataset.columns["WINDFLAG"] = windFlag
         aodDataset.columns["AOD"] = aodInRad
         aodDataset.columns["AODFLAG"] = aodFlag
-        saltDataset.columns["SALT"] = saltInRad
+        saltDataset.columns["SAL"] = saltInRad
         saltDataset.columns["SALTFLAG"] = saltFlag
         sstDataset.columns["SST"] = sstInRad
         sstDataset.columns["SSTFLAG"] = sstFlag
@@ -374,164 +416,301 @@ class ProcessL2:
                                             
         return
 
-    # Take the slice median averages of ancillary data
+    # Take the slice median of the lowest X% of hyperspectral slices
     @staticmethod
-    def sliceAverageAncillary(start, end, newESData, gpsCourseColumns=None, newGPSCourseData=None, gpsLatPosColumns=None, newGPSLatPosData=None, \
-            gpsLonPosColumns=None, newGPSLonPosData=None, gpsMagVarColumns=None, newGPSMagVarData=None, gpsSpeedColumns=None, newGPSSpeedData=None, \
-            satnavAzimuthColumns=None, newSATNAVAzimuthData=None, satnavElevationColumns=None, newSATNAVElevationData=None, satnavHeadingColumns=None, \
-            newSATNAVHeadingData=None, satnavPointingColumns=None, newSATNAVPointingData=None, satnavRelAzColumns=None, newSATNAVRelAzData=None, \
-            pyrColumns=None, newPyrData=None):
+    def sliceAveHyper(y, hyperSlice, xSlice):
+        hasNan = False
+        # Ignore runtime warnings when array is all NaNs
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            for k in hyperSlice: # each k is a time series at a waveband.
+                v = [hyperSlice[k][i] for i in y] # selects the lowest 5% within the interval window...
+                mean = np.nanmean(v) # ... and averages them
+                xSlice[k] = [mean]
+                if np.isnan(mean):
+                    hasNan = True
+        return hasNan
 
-        # Take the slice median of ancillary data and add it to appropriate groups 
-        # You can't take medians of Datetag and Timetag2, so use those from es
-        sliceDate = newESData.columns["Datetag"][-1]
-        sliceTime = newESData.columns["Timetag2"][-1]
+    # Take the slice AND the median averages of ancillary data with X%
+    @staticmethod
+    def sliceAveAnc(root, start, end, y, ancGroup):
+        newAncGroup = root.getGroup("ANCILLARY")
 
-        if gpsLatPosColumns is not None:
-            gpsCourseSlice = ProcessL2.columnToSlice(gpsCourseColumns, start, end)
-            sliceCourse = np.nanmedian(gpsCourseSlice["TRUE"])
-            gpsLatSlice = ProcessL2.columnToSlice(gpsLatPosColumns, start, end)
-            sliceLat = np.nanmedian(gpsLatSlice["NONE"])
-            gpsLonSlice = ProcessL2.columnToSlice(gpsLonPosColumns, start, end)
-            sliceLon = np.nanmedian(gpsLonSlice["NONE"])
-            # gpsMagVarSlice = ProcessL2.columnToSlice(gpsMagVarColumns, start, end)
-            # sliceMagVar = np.nanmedian(gpsMagVarSlice["NONE"])
-            gpsSpeedSlice = ProcessL2.columnToSlice(gpsSpeedColumns, start, end)
-            sliceSpeed = np.nanmedian(gpsSpeedSlice["NONE"])
-            if not ("Datetag" in newGPSCourseData.columns):
-                newGPSCourseData.columns["Datetag"] = [sliceDate]
-                newGPSCourseData.columns["Timetag2"] = [sliceTime]
-                newGPSCourseData.columns["TRUE"] = [sliceCourse]                        
-                newGPSLatPosData.columns["Datetag"] = [sliceDate]
-                newGPSLatPosData.columns["Timetag2"] = [sliceTime]
-                newGPSLatPosData.columns["NONE"] = [sliceLat]
-                newGPSLonPosData.columns["Datetag"] = [sliceDate]
-                newGPSLonPosData.columns["Timetag2"] = [sliceTime]
-                newGPSLonPosData.columns["NONE"] = [sliceLon]
-                # newGPSMagVarData.columns["Datetag"] = [sliceDate]
-                # newGPSMagVarData.columns["Timetag2"] = [sliceTime]
-                # newGPSMagVarData.columns["NONE"] = [sliceMagVar]
-                newGPSSpeedData.columns["Datetag"] = [sliceDate]
-                newGPSSpeedData.columns["Timetag2"] = [sliceTime]
-                newGPSSpeedData.columns["NONE"] = [sliceSpeed]
-            else:
-                newGPSCourseData.columns["Datetag"].append(sliceDate)
-                newGPSCourseData.columns["Timetag2"].append(sliceTime)
-                newGPSCourseData.columns["TRUE"].append(sliceCourse)
-                newGPSLatPosData.columns["Datetag"].append(sliceDate)
-                newGPSLatPosData.columns["Timetag2"].append(sliceTime)
-                newGPSLatPosData.columns["NONE"].append(sliceLat)
-                newGPSLonPosData.columns["Datetag"].append(sliceDate)
-                newGPSLonPosData.columns["Timetag2"].append(sliceTime)
-                newGPSLonPosData.columns["NONE"].append(sliceLon)
-                # newGPSMagVarData.columns["Datetag"].append(sliceDate)
-                # newGPSMagVarData.columns["Timetag2"].append(sliceTime)
-                # newGPSMagVarData.columns["NONE"].append(sliceMagVar)
-                newGPSSpeedData.columns["Datetag"].append(sliceDate)
-                newGPSSpeedData.columns["Timetag2"].append(sliceTime)
-                newGPSSpeedData.columns["NONE"].append(sliceSpeed)
+        # Combine these steps in a loop for ancillary date
+        ancDict = collections.OrderedDict()
+        for ds in ancGroup.datasets:
+            key = ds            
+            value = ancGroup.datasets[ds]            
+            ancDict[key] = value
 
-        if satnavRelAzColumns is not None:
-            satnavAzimuthSlice = ProcessL2.columnToSlice(satnavAzimuthColumns, start, end)
-            sliceAzimuth = np.nanmedian(satnavAzimuthSlice["SUN"])
-            satnavElevationSlice = ProcessL2.columnToSlice(satnavElevationColumns, start, end)
-            sliceElevation = np.nanmedian(satnavElevationSlice["SUN"])
-            satnavHeadingSlice = ProcessL2.columnToSlice(satnavHeadingColumns, start, end)
-            sliceHeadingSAS = np.nanmedian(satnavHeadingSlice["SAS_TRUE"])
-            sliceHeadingShip = np.nanmedian(satnavHeadingSlice["SHIP_TRUE"])
-            satnavPointingSlice = ProcessL2.columnToSlice(satnavPointingColumns, start, end)
-            slicePointing = np.nanmedian(satnavPointingSlice["ROTATOR"])
-            satnavRelAzSlice = ProcessL2.columnToSlice(satnavRelAzColumns, start, end)
-            sliceRelAz = np.nanmedian(satnavRelAzSlice["REL_AZ"])
-            if not ("Datetag" in newSATNAVAzimuthData.columns):
-                newSATNAVAzimuthData.columns["Datetag"] = [sliceDate]
-                newSATNAVAzimuthData.columns["Timetag2"] = [sliceTime]
-                newSATNAVAzimuthData.columns["SUN"] = [sliceAzimuth]
-                newSATNAVElevationData.columns["Datetag"] = [sliceDate]
-                newSATNAVElevationData.columns["Timetag2"] = [sliceTime]
-                newSATNAVElevationData.columns["SUN"] = [sliceElevation]
-                newSATNAVHeadingData.columns["Datetag"] = [sliceDate]
-                newSATNAVHeadingData.columns["Timetag2"] = [sliceTime]
-                newSATNAVHeadingData.columns["SAS_True"] = [sliceHeadingSAS]
-                newSATNAVHeadingData.columns["SHIP_True"] = [sliceHeadingShip]
-                newSATNAVPointingData.columns["Datetag"] = [sliceDate]
-                newSATNAVPointingData.columns["Timetag2"] = [sliceTime]
-                newSATNAVPointingData.columns["ROTATOR"] = [slicePointing]
-                newSATNAVRelAzData.columns["Datetag"] = [sliceDate]
-                newSATNAVRelAzData.columns["Timetag2"] = [sliceTime]
-                newSATNAVRelAzData.columns["REL_AZ"] = [sliceRelAz]    
-            else:
-                newSATNAVAzimuthData.columns["Datetag"].append(sliceDate)
-                newSATNAVAzimuthData.columns["Timetag2"].append(sliceTime)
-                newSATNAVAzimuthData.columns["SUN"].append(sliceAzimuth)
-                newSATNAVElevationData.columns["Datetag"].append(sliceDate)
-                newSATNAVElevationData.columns["Timetag2"].append(sliceTime)
-                newSATNAVElevationData.columns["SUN"].append(sliceElevation)
-                newSATNAVHeadingData.columns["Datetag"].append(sliceDate)
-                newSATNAVHeadingData.columns["Timetag2"].append(sliceTime)
-                newSATNAVHeadingData.columns["SAS_True"].append(sliceHeadingSAS)
-                newSATNAVHeadingData.columns["SHIP_True"].append(sliceHeadingShip)
-                newSATNAVPointingData.columns["Datetag"].append(sliceDate)
-                newSATNAVPointingData.columns["Timetag2"].append(sliceTime)
-                newSATNAVPointingData.columns["ROTATOR"].append(slicePointing)
-                newSATNAVRelAzData.columns["Datetag"].append(sliceDate)
-                newSATNAVRelAzData.columns["Timetag2"].append(sliceTime)
-                newSATNAVRelAzData.columns["REL_AZ"].append(sliceRelAz)
+        datetag = ancDict['Datetag'].data
+        timetag = ancDict['Timetag2'].data
+        # Stores the middle element
+        if len(datetag) > 0:
+            date = datetag[int(len(datetag)/2)]
+            time = timetag[int(len(timetag)/2)]
 
-        if pyrColumns is not None:
-            pyrSlice = ProcessL2.columnToSlice(pyrColumns, start, end)
-            slicePyr = np.nanmedian(pyrSlice["IR"])
-            if not ("Datetag" in newPyrData.columns):
-                newPyrData.columns["Datetag"] = [sliceDate]  
-                newPyrData.columns["Timetag2"] = [sliceTime]
-                newPyrData.columns["WATER_TEMP"] = [slicePyr]              
-            else:
-                newPyrData.columns["Datetag"].append(sliceDate)
-                newPyrData.columns["Timetag2"].append(sliceTime)
-                newPyrData.columns["WATER_TEMP"].append(slicePyr)
+        for ds in ancDict: 
+            if ds != 'Datetag' and ds != 'Timetag2':
+                dsSlice = ProcessL2.columnToSlice(ancDict[ds].columns,start, end)
+
+                dsXSlice = collections.OrderedDict
+
+                for subset in dsSlice: # several ancillary datasets are groups
+                    if subset != 'Datetag' and subset != 'Timetag2':
+                        v = [dsSlice[subset][i] for i in y]
+                        dsXSlice = collections.OrderedDict()                    
+                        dsXSlice['Datetag'] = date
+                        dsXSlice['Timetag2'] = time
+                        if subset.endswith('FLAG'):
+                            # Find the most frequest element
+                            dsXSlice[subset] = Utilities.mostFrequent(v)
+                        else:
+                            dsXSlice[subset] = [np.mean(v)]
+                    
+                        # Check if the dataset is already there, and if so add to it, 
+                        # otherwise build it
+                        if not newAncGroup.getDataset(ds):
+                            newDS = newAncGroup.addDataset(ds)                            
+                            newDS.columns[subset] = dsXSlice
+                        else:
+                            newDS = newAncGroup.getDataset(ds)
+                            newDS.columns[subset].append(dsXSlice)
+
+                        newDS.columns[subset].columnsToDataset()
+
+            
+
+
+
+
+
+
+
+        # AODSlice = ProcessL2.columnToSlice(ancDict["AOD"].columns,start, end)
+        # AZIMUTHSlice = ProcessL2.columnToSlice(ancDict["AZIMUTH"].columns,start, end)
+        # COURSESlice = ProcessL2.columnToSlice(ancDict["COURSE"].columns,start, end)
+        # ELEVATIONSlice = ProcessL2.columnToSlice(ancDict["ELEVATION"].columns,start, end)
+        # HEADINGSlice = ProcessL2.columnToSlice(ancDict["HEADING"].columns,start, end)
+        # LATITUDESlice = ProcessL2.columnToSlice(ancDict["LATITUDE"].columns,start, end)
+        # LONGITUDESlice = ProcessL2.columnToSlice(ancDict["LONGITUDE"].columns,start, end)
+        # PITCHSlice = ProcessL2.columnToSlice(ancDict["PITCH"].columns,start, end)
+        # POINTINGSlice = ProcessL2.columnToSlice(ancDict["POINTING"].columns,start, end)
+        # REL_AZSlice = ProcessL2.columnToSlice(ancDict["REL_AZ"].columns,start, end)
+        # ROLLSlice = ProcessL2.columnToSlice(ancDict["ROLL"].columns,start, end)
+        # SPEEDSlice = ProcessL2.columnToSlice(ancDict["SPEED"].columns,start, end)
+        # SSTSlice = ProcessL2.columnToSlice(ancDict["SST"].columns,start, end)
+        # SST_IRSlice = ProcessL2.columnToSlice(ancDict["SST_IR"].columns,start, end)
+        # SALSlice = ProcessL2.columnToSlice(ancDict["SAL"].columns,start, end)
+        # WINDSPEEDSlice = ProcessL2.columnToSlice(ancDict["WINDSPEED"].columns,start, end)
+
+        # WINDSPEEDXSlice = collections.OrderedDict()
+        # AODXSlice = collections.OrderedDict()
+        # SalXSlice = collections.OrderedDict()
+        # SSTXSlice = collections.OrderedDict()
+        # SOL_ELXSlice = collections.OrderedDict()
+
+        # with warnings.catch_warnings():
+        #     warnings.simplefilter("ignore", category=RuntimeWarning)
+        #     v = [WINDSPEEDSlice['WINDSPEED'][i] for i in y]
+        #     mean = np.nanmean(v)
+        #     WINDSPEEDXSlice = [mean]
+        #     if np.isnan(mean):
+        #         hasNan = True   
+        #     # for k in AODSlice:
+        #     v = [AODSlice['AOD'][i] for i in y]
+        #     mean = np.nanmean(v)
+        #     AODXSlice = [mean]
+        #     if np.isnan(mean):
+        #         hasNan = True  
+        #     # for k in SalSlice:
+        #     v = [SALSlice['SALT'][i] for i in y]
+        #     mean = np.nanmean(v)
+        #     SalXSlice = [mean]
+        #     if np.isnan(mean):
+        #         hasNan = True   
+        #     # for k in SSTSlice:
+        #     v = [SSTSlice['SST'][i] for i in y]
+        #     mean = np.nanmean(v)
+        #     SSTXSlice = [mean]
+        #     if np.isnan(mean):
+        #         hasNan = True   
+        #     # for k in SOLAR_ELEVATIONSlice:
+        #     v = [ELEVATIONSlice['SUN'][i] for i in y]
+        #     mean = np.nanmean(v)
+        #     SOL_ELXSlice = [mean]
+        #     if np.isnan(mean):
+        #         hasNan = True
+
+    # # Take the slice median averages of ancillary data
+    # @staticmethod
+    # def sliceAverageAncillary(start, end, newESData, gpsCourseColumns=None, newGPSCourseData=None, gpsLatPosColumns=None, newGPSLatPosData=None, \
+    #         gpsLonPosColumns=None, newGPSLonPosData=None, gpsMagVarColumns=None, newGPSMagVarData=None, gpsSpeedColumns=None, newGPSSpeedData=None, \
+    #         satnavAzimuthColumns=None, newSATNAVAzimuthData=None, satnavElevationColumns=None, newSATNAVElevationData=None, satnavHeadingColumns=None, \
+    #         newSATNAVHeadingData=None, satnavPointingColumns=None, newSATNAVPointingData=None, satnavRelAzColumns=None, newSATNAVRelAzData=None, \
+    #         pyrColumns=None, newPyrData=None):
+
+    #     # Take the slice median of ancillary data and add it to appropriate groups 
+    #     # You can't take medians of Datetag and Timetag2, so use those from es
+    #     sliceDate = newESData.columns["Datetag"][-1]
+    #     sliceTime = newESData.columns["Timetag2"][-1]
+
+    #     if gpsLatPosColumns is not None:
+    #         gpsCourseSlice = ProcessL2.columnToSlice(gpsCourseColumns, start, end)
+    #         sliceCourse = np.nanmedian(gpsCourseSlice["TRUE"])
+    #         gpsLatSlice = ProcessL2.columnToSlice(gpsLatPosColumns, start, end)
+    #         sliceLat = np.nanmedian(gpsLatSlice["NONE"])
+    #         gpsLonSlice = ProcessL2.columnToSlice(gpsLonPosColumns, start, end)
+    #         sliceLon = np.nanmedian(gpsLonSlice["NONE"])
+    #         # gpsMagVarSlice = ProcessL2.columnToSlice(gpsMagVarColumns, start, end)
+    #         # sliceMagVar = np.nanmedian(gpsMagVarSlice["NONE"])
+    #         gpsSpeedSlice = ProcessL2.columnToSlice(gpsSpeedColumns, start, end)
+    #         sliceSpeed = np.nanmedian(gpsSpeedSlice["NONE"])
+    #         if not ("Datetag" in newGPSCourseData.columns):
+    #             newGPSCourseData.columns["Datetag"] = [sliceDate]
+    #             newGPSCourseData.columns["Timetag2"] = [sliceTime]
+    #             newGPSCourseData.columns["TRUE"] = [sliceCourse]                        
+    #             newGPSLatPosData.columns["Datetag"] = [sliceDate]
+    #             newGPSLatPosData.columns["Timetag2"] = [sliceTime]
+    #             newGPSLatPosData.columns["NONE"] = [sliceLat]
+    #             newGPSLonPosData.columns["Datetag"] = [sliceDate]
+    #             newGPSLonPosData.columns["Timetag2"] = [sliceTime]
+    #             newGPSLonPosData.columns["NONE"] = [sliceLon]
+    #             # newGPSMagVarData.columns["Datetag"] = [sliceDate]
+    #             # newGPSMagVarData.columns["Timetag2"] = [sliceTime]
+    #             # newGPSMagVarData.columns["NONE"] = [sliceMagVar]
+    #             newGPSSpeedData.columns["Datetag"] = [sliceDate]
+    #             newGPSSpeedData.columns["Timetag2"] = [sliceTime]
+    #             newGPSSpeedData.columns["NONE"] = [sliceSpeed]
+    #         else:
+    #             newGPSCourseData.columns["Datetag"].append(sliceDate)
+    #             newGPSCourseData.columns["Timetag2"].append(sliceTime)
+    #             newGPSCourseData.columns["TRUE"].append(sliceCourse)
+    #             newGPSLatPosData.columns["Datetag"].append(sliceDate)
+    #             newGPSLatPosData.columns["Timetag2"].append(sliceTime)
+    #             newGPSLatPosData.columns["NONE"].append(sliceLat)
+    #             newGPSLonPosData.columns["Datetag"].append(sliceDate)
+    #             newGPSLonPosData.columns["Timetag2"].append(sliceTime)
+    #             newGPSLonPosData.columns["NONE"].append(sliceLon)
+    #             # newGPSMagVarData.columns["Datetag"].append(sliceDate)
+    #             # newGPSMagVarData.columns["Timetag2"].append(sliceTime)
+    #             # newGPSMagVarData.columns["NONE"].append(sliceMagVar)
+    #             newGPSSpeedData.columns["Datetag"].append(sliceDate)
+    #             newGPSSpeedData.columns["Timetag2"].append(sliceTime)
+    #             newGPSSpeedData.columns["NONE"].append(sliceSpeed)
+
+    #     if satnavRelAzColumns is not None:
+    #         satnavAzimuthSlice = ProcessL2.columnToSlice(satnavAzimuthColumns, start, end)
+    #         sliceAzimuth = np.nanmedian(satnavAzimuthSlice["SUN"])
+    #         satnavElevationSlice = ProcessL2.columnToSlice(satnavElevationColumns, start, end)
+    #         sliceElevation = np.nanmedian(satnavElevationSlice["SUN"])
+    #         satnavHeadingSlice = ProcessL2.columnToSlice(satnavHeadingColumns, start, end)
+    #         sliceHeadingSAS = np.nanmedian(satnavHeadingSlice["SAS_TRUE"])
+    #         sliceHeadingShip = np.nanmedian(satnavHeadingSlice["SHIP_TRUE"])
+    #         satnavPointingSlice = ProcessL2.columnToSlice(satnavPointingColumns, start, end)
+    #         slicePointing = np.nanmedian(satnavPointingSlice["ROTATOR"])
+    #         satnavRelAzSlice = ProcessL2.columnToSlice(satnavRelAzColumns, start, end)
+    #         sliceRelAz = np.nanmedian(satnavRelAzSlice["REL_AZ"])
+    #         if not ("Datetag" in newSATNAVAzimuthData.columns):
+    #             newSATNAVAzimuthData.columns["Datetag"] = [sliceDate]
+    #             newSATNAVAzimuthData.columns["Timetag2"] = [sliceTime]
+    #             newSATNAVAzimuthData.columns["SUN"] = [sliceAzimuth]
+    #             newSATNAVElevationData.columns["Datetag"] = [sliceDate]
+    #             newSATNAVElevationData.columns["Timetag2"] = [sliceTime]
+    #             newSATNAVElevationData.columns["SUN"] = [sliceElevation]
+    #             newSATNAVHeadingData.columns["Datetag"] = [sliceDate]
+    #             newSATNAVHeadingData.columns["Timetag2"] = [sliceTime]
+    #             newSATNAVHeadingData.columns["SAS_True"] = [sliceHeadingSAS]
+    #             newSATNAVHeadingData.columns["SHIP_True"] = [sliceHeadingShip]
+    #             newSATNAVPointingData.columns["Datetag"] = [sliceDate]
+    #             newSATNAVPointingData.columns["Timetag2"] = [sliceTime]
+    #             newSATNAVPointingData.columns["ROTATOR"] = [slicePointing]
+    #             newSATNAVRelAzData.columns["Datetag"] = [sliceDate]
+    #             newSATNAVRelAzData.columns["Timetag2"] = [sliceTime]
+    #             newSATNAVRelAzData.columns["REL_AZ"] = [sliceRelAz]    
+    #         else:
+    #             newSATNAVAzimuthData.columns["Datetag"].append(sliceDate)
+    #             newSATNAVAzimuthData.columns["Timetag2"].append(sliceTime)
+    #             newSATNAVAzimuthData.columns["SUN"].append(sliceAzimuth)
+    #             newSATNAVElevationData.columns["Datetag"].append(sliceDate)
+    #             newSATNAVElevationData.columns["Timetag2"].append(sliceTime)
+    #             newSATNAVElevationData.columns["SUN"].append(sliceElevation)
+    #             newSATNAVHeadingData.columns["Datetag"].append(sliceDate)
+    #             newSATNAVHeadingData.columns["Timetag2"].append(sliceTime)
+    #             newSATNAVHeadingData.columns["SAS_True"].append(sliceHeadingSAS)
+    #             newSATNAVHeadingData.columns["SHIP_True"].append(sliceHeadingShip)
+    #             newSATNAVPointingData.columns["Datetag"].append(sliceDate)
+    #             newSATNAVPointingData.columns["Timetag2"].append(sliceTime)
+    #             newSATNAVPointingData.columns["ROTATOR"].append(slicePointing)
+    #             newSATNAVRelAzData.columns["Datetag"].append(sliceDate)
+    #             newSATNAVRelAzData.columns["Timetag2"].append(sliceTime)
+    #             newSATNAVRelAzData.columns["REL_AZ"].append(sliceRelAz)
+
+    #     if pyrColumns is not None:
+    #         pyrSlice = ProcessL2.columnToSlice(pyrColumns, start, end)
+    #         slicePyr = np.nanmedian(pyrSlice["IR"])
+    #         if not ("Datetag" in newPyrData.columns):
+    #             newPyrData.columns["Datetag"] = [sliceDate]  
+    #             newPyrData.columns["Timetag2"] = [sliceTime]
+    #             newPyrData.columns["WATER_TEMP"] = [slicePyr]              
+    #         else:
+    #             newPyrData.columns["Datetag"].append(sliceDate)
+    #             newPyrData.columns["Timetag2"].append(sliceTime)
+    #             newPyrData.columns["WATER_TEMP"].append(slicePyr)
        
     @staticmethod
-    def calculateREFLECTANCE2(root, esColumns, liColumns, ltColumns, newRrsData, newESData, newLIData, newLTData, \
-                            WINDSPEEDSlice, AODSlice, SalSlice, SSTSlice, SOLAR_ELEVATIONSlice):
+    def calculateREFLECTANCE2(root, sasGroup, refGroup, ancGroup, start, end):
         '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for meteorological quality flags, 
         Perform rho correction with wind. Calculate the Rrs. Correct for NIR.'''
+
+        esData = refGroup.getDataset("ES")
+        liData = sasGroup.getDataset("LI")
+        ltData = sasGroup.getDataset("LT") 
+        
+        # Copy datasets to dictionary
+        esData.datasetToColumns()
+        esColumns = esData.columns
+        # tt2 = esColumns["Timetag2"]
+        liData.datasetToColumns()
+        liColumns = liData.columns        
+        ltData.datasetToColumns()
+        ltColumns = ltData.columns   
+
+        # Root (new/output) groups:
+        newReflectanceGroup = root.getGroup("REFLECTANCE")
+        newRadianceGroup = root.getGroup("RADIANCE")
+        newIrradianceGroup = root.getGroup("IRRADIANCE")
+
+        newRrsData = newReflectanceGroup.addDataset("Rrs")
+        newESData = newIrradianceGroup.addDataset("ES")        
+        newLIData = newRadianceGroup.addDataset("LI")
+        newLTData = newRadianceGroup.addDataset("LT") 
+
+        esSlice = ProcessL2.columnToSlice(esColumns,start, end)
+        liSlice = ProcessL2.columnToSlice(liColumns,start, end)
+        ltSlice = ProcessL2.columnToSlice(ltColumns,start, end)
+
     
-        rhoSky = float(ConfigFile.settings["fL2RhoSky"])
+        rhoSkyDefault = float(ConfigFile.settings["fL2RhoSky"])
         RuddickRho = int(ConfigFile.settings["bL2RuddickRho"])
         ZhangRho = int(ConfigFile.settings["bL2ZhangRho"])
         # defaultWindSpeed = float(ConfigFile.settings["fL2DefaultWindSpeed"])
-        # windSpeedMean = defaultWindSpeed # replaced later with met file, if present   
-        enableMetQualityCheck = int(ConfigFile.settings["bL2EnableQualityFlags"])                        
+        # windSpeedMean = defaultWindSpeed # replaced later with met file, if present                         
         performNIRCorrection = int(ConfigFile.settings["bL2PerformNIRCorrection"])                        
         enablePercentLt = float(ConfigFile.settings["bL2EnablePercentLt"])
         percentLt = float(ConfigFile.settings["fL2PercentLt"])
 
-        ''' Going to need output from getanc.py for Zhang Rho corrections '''
-        # I think getanc produces a file I can read in here to get the values I need
-        # Then need to replace default wind with model wind - this will be replaced with field
-        # data if it's available
+        datetag = esSlice["Datetag"]
+        timetag = esSlice["Timetag2"]
 
-        AOD = 0 # from getanc
-        Cloud = 0 # from getanc
-        solZen = 0 # Need to grad this from the HDF
-        wTemp = 0 # Need to pull this off the pyrometer, if available. Need an input value otherwise
-        Sal = 0 # This is going to have to be input
+        esSlice.pop("Datetag")
+        esSlice.pop("Timetag2")
 
-        
+        liSlice.pop("Datetag")
+        liSlice.pop("Timetag2")
 
-
-
-        datetag = esColumns["Datetag"]
-        timetag = esColumns["Timetag2"]
-
-        esColumns.pop("Datetag")
-        esColumns.pop("Timetag2")
-
-        liColumns.pop("Datetag")
-        liColumns.pop("Timetag2")
-
-        ltColumns.pop("Datetag")
-        ltColumns.pop("Timetag2")
+        ltSlice.pop("Datetag")
+        ltSlice.pop("Timetag2")
 
         # Stores the middle element
         if len(datetag) > 0:
@@ -544,62 +723,111 @@ class ProcessL2:
         # if relAzimuth:
         #     relAzi = relAzimuth[int(len(relAzimuth)/2)]
 
-        '''# Calculates the lowest 5% (based on Hooker & Morel 2003; Hooker et al. 2002)'''
-        n = len(list(ltColumns.values())[0])
+        '''# Calculates the lowest X% (based on Hooker & Morel 2003; Hooker et al. 2002; Zibordi et al. 2002, IOCCG Protocols)
+        X will depend on FOV and integration time of instrument. Hooker cites a rate of 2 Hz.
+        It remains unclear to me from Hooker 2002 whether the recommendation is to take the average of the ir/radiances
+        within the threshold and calculate Rrs, or to calculate the Rrs within the threshold, and then average, however IOCCG
+        Protocols pretty clearly state to average the ir/radiances first, then calculate the Rrs...as done here.'''
+        n = len(list(ltSlice.values())[0])
         x = round(n*percentLt/100) # number of retained values
+        msg = f'{n} data points in slice (ensemble).'
+        print(msg)
+        Utilities.writeLogFile(msg)
+        
+        # IS THIS NECESSARY?...There are often few data points, and given 10% of 10 points is just one data point...(?)
         if n <= 5 or x == 0:
             x = n # if only 5 or fewer records retained, use them all...
-        # Find the indexes for the lowest 5%
-        lt780 = ProcessL2.interpolateColumn(ltColumns, 780.0)
+        
+        # Find the indexes for the lowest X%
+        lt780 = ProcessL2.interpolateColumn(ltSlice, 780.0)
         index = np.argsort(lt780) # gives indexes if values were to be sorted
                 
         if enablePercentLt:
-            # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest 5% of lt780
+            # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest X% of lt780
             y = index[0:x] 
         else:
             y = index # If Percent Lt is turned off, this will average the whole slice
+        msg = f'{len(y)} data points remaining in slice to average after low light filter.'
+        print(msg)
+        Utilities.writeLogFile(msg)
 
-        # Takes the mean of the lowest 5%
-        es5Columns = collections.OrderedDict()
-        li5Columns = collections.OrderedDict()
-        lt5Columns = collections.OrderedDict()
-             
-        hasNan = False
-        # Ignore runtime warnings when array is all NaNs
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-            for k in esColumns: # each k is a time series at a waveband.
-                v = [esColumns[k][i] for i in y] # selects the lowest 5% within the interval window...
-                mean = np.nanmean(v) # ... and averages them
-                es5Columns[k] = [mean]
-                if np.isnan(mean):
-                    hasNan = True
-            for k in liColumns:
-                v = [liColumns[k][i] for i in y]
-                mean = np.nanmean(v)
-                li5Columns[k] = [mean]
-                if np.isnan(mean):
-                    hasNan = True
-            for k in ltColumns:
-                v = [ltColumns[k][i] for i in y]
-                mean = np.nanmean(v)
-                lt5Columns[k] = [mean]
-                if np.isnan(mean):
-                    hasNan = True   
+        # Take the mean of the lowest X%
+        esXSlice = collections.OrderedDict()
+        liXSlice = collections.OrderedDict()
+        ltXSlice = collections.OrderedDict()        
+
+        hasNan = ProcessL2.sliceAveHyper(y, esSlice, esXSlice)
+        hasNan = ProcessL2.sliceAveHyper(y, liSlice, liXSlice)
+        hasNan = ProcessL2.sliceAveHyper(y, ltSlice, ltXSlice)
+
+        ProcessL2.sliceAveAnc(root, start, end, y, ancGroup)
+        newAncGroup = root.getGroup("ANCILLARY") # Just populated above
+
+        WINDSPEEDXSlice = newAncGroup
+        AODXSlice = newAncGroup
+        CloudXSlice = newAncGroup
+        SOL_ELXSlice = newAncGroup
+        SSTXSlice = newAncGroup
+        SalXSlice = newAncGroup
+
+        # # Combine these steps in a loop for ancillary date
+        # ancDict = {}
+        # for ds in ancGroup.datasets:
+        #     key = ds            
+        #     value = ancGroup.datasets[ds]            
+        #     ancDict[key] = value
+
+        # WINDSPEEDSlice = ProcessL2.columnToSlice(ancDict["WINDSPEED"].columns,start, end)
+        # AODSlice = ProcessL2.columnToSlice(ancDict["AOD"].columns,start, end)
+        # SALSlice = ProcessL2.columnToSlice(ancDict["SAL"].columns,start, end)
+        # SSTSlice = ProcessL2.columnToSlice(ancDict["SST"].columns,start, end)
+        # ELEVATIONSlice = ProcessL2.columnToSlice(ancDict["ELEVATION"].columns,start, end)
+
+
+        # WINDSPEEDXSlice = collections.OrderedDict()
+        # AODXSlice = collections.OrderedDict()
+        # SalXSlice = collections.OrderedDict()
+        # SSTXSlice = collections.OrderedDict()
+        # SOL_ELXSlice = collections.OrderedDict()
+
+        # with warnings.catch_warnings():
+        #     warnings.simplefilter("ignore", category=RuntimeWarning)
+        #     v = [WINDSPEEDSlice['WINDSPEED'][i] for i in y]
+        #     mean = np.nanmean(v)
+        #     WINDSPEEDXSlice = [mean]
+        #     if np.isnan(mean):
+        #         hasNan = True   
+        #     # for k in AODSlice:
+        #     v = [AODSlice['AOD'][i] for i in y]
+        #     mean = np.nanmean(v)
+        #     AODXSlice = [mean]
+        #     if np.isnan(mean):
+        #         hasNan = True  
+        #     # for k in SalSlice:
+        #     v = [SALSlice['SALT'][i] for i in y]
+        #     mean = np.nanmean(v)
+        #     SalXSlice = [mean]
+        #     if np.isnan(mean):
+        #         hasNan = True   
+        #     # for k in SSTSlice:
+        #     v = [SSTSlice['SST'][i] for i in y]
+        #     mean = np.nanmean(v)
+        #     SSTXSlice = [mean]
+        #     if np.isnan(mean):
+        #         hasNan = True   
+        #     # for k in SOLAR_ELEVATIONSlice:
+        #     v = [ELEVATIONSlice['SUN'][i] for i in y]
+        #     mean = np.nanmean(v)
+        #     SOL_ELXSlice = [mean]
+        #     if np.isnan(mean):
+        #         hasNan = True   
 
         # Exit if detect NaN
-        if hasNan:
-            print("Error NaN Found")
+        if hasNan:            
+            msg = 'ProcessL2.calculateREFLECTANCE2: Slice X"%" average error: Dataset all NaNs.'
+            print(msg)
+            Utilities.writeLogFile(msg)
             return False
-
-        # Filter on meteorological flags
-        if enableMetQualityCheck:
-            if not ProcessL2.metQualityCheck(es5Columns):
-                msg = 'Slice failed quality check.'
-                print(msg)
-                Utilities.writeLogFile(msg) 
-                return False
-
 
         # Calculate Rho_sky
         if RuddickRho:
@@ -610,14 +838,18 @@ class ProcessL2:
             Foster and Gilerson 2016, Gilerson et al. 2018)) are explicitly recommended in the 
             IOCCG Protocols for Above Water Radiometry Measurements and Data Analysis (Chapter 5, Draft 2019).'''
             
-            li750 = ProcessL2.interpolateColumn(li5Columns, 750.0)
-            es750 = ProcessL2.interpolateColumn(es5Columns, 750.0)
+            li750 = ProcessL2.interpolateColumn(liXSlice, 750.0)
+            es750 = ProcessL2.interpolateColumn(esXSlice, 750.0)
             sky750 = li750[0]/es750[0]
 
-            p_sky = RhoCorrections.RuddickCorr(sky750, rhoSky, windSpeedMean)
+            p_sky = RhoCorrections.RuddickCorr(sky750, rhoSkyDefault, WINDSPEEDXSlice)
 
         elif ZhangRho:
-            p_sky = RhoCorrections.ZhangCorr(windSpeedMean,AOD,Cloud,solZen,wTemp,Sal)
+
+            ''' Fix '''
+            CloudXSlice = 50 # %
+
+            p_sky = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice,CloudXSlice,SOL_ELXSlice,SSTXSlice,SalXSlice)
 
         # Add date/time data to Rrs dataset
         if not ("Datetag" in newRrsData.columns):
@@ -639,21 +871,21 @@ class ProcessL2:
             newLTData.columns["Timetag2"].append(time)
             newRrsData.columns["Timetag2"].append(time)           
 
-        rrsColumns = {}
+        rrsSlice = {}
                 
         # Calculate Rrs
         '''# No bidirectional correction is made here.....'''
-        for k in es5Columns:
-            if (k in li5Columns) and (k in lt5Columns):
+        for k in esXSlice:
+            if (k in liXSlice) and (k in ltXSlice):
                 if k not in newESData.columns:
                     newESData.columns[k] = []
                     newLIData.columns[k] = []
                     newLTData.columns[k] = []
                     newRrsData.columns[k] = []
 
-                es = es5Columns[k][0]
-                li = li5Columns[k][0]
-                lt = lt5Columns[k][0]
+                es = esXSlice[k][0]
+                li = liXSlice[k][0]
+                lt = ltXSlice[k][0]
 
                 # Calculate the Rrs
                 rrs = (lt - (p_sky * li)) / es
@@ -662,31 +894,35 @@ class ProcessL2:
                 newLIData.columns[k].append(li)
                 newLTData.columns[k].append(lt)
                 #newRrsData.columns[k].append(rrs)
-                rrsColumns[k] = rrs
+                rrsSlice[k] = rrs
 
         # Perfrom near-infrared correction to remove additional atmospheric and glint contamination
         if performNIRCorrection:
 
             # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
             NIRRRs = []
-            for k in rrsColumns:
+            for k in rrsSlice:
                 # if float(k) >= 750 and float(k) <= 800:
                 if float(k) >= 700 and float(k) <= 800:
-                    # avg += rrsColumns[k]
+                    # avg += rrsSlice[k]
                     # num += 1
-                    NIRRRs.append(rrsColumns[k])
+                    NIRRRs.append(rrsSlice[k])
             # avg /= num
             # avg = np.median(NIRRRs)
             minNIR = min(NIRRRs)
     
             # Subtract average from each waveband
-            for k in rrsColumns:
-                # rrsColumns[k] -= avg
-                rrsColumns[k] -= minNIR
+            for k in rrsSlice:
+                # rrsSlice[k] -= avg
+                rrsSlice[k] -= minNIR
 
-        for k in rrsColumns:
-            newRrsData.columns[k].append(rrsColumns[k])
+        for k in rrsSlice:
+            newRrsData.columns[k].append(rrsSlice[k])
 
+        newESData.columnsToDataset()   
+        newLIData.columnsToDataset()
+        newLTData.columnsToDataset()
+        newRrsData.columnsToDataset()
         return True
 
 
@@ -719,11 +955,11 @@ class ProcessL2:
 
         # This will populate the root group ANCILLARY with ancillary and/or modelled datasets
         # and/or default values, all interpolated to the radiometric data timestamps
-        ProcessL2.interpAncillary(root, ancData, modData, esData)
+        ProcessL2.interpAncillary(node, ancData, modData, esData)
         
-        # Now that ancillary data has been interpolated, it should match additional 
-        # ancillary (gps, solartracker, etc.) 1:1
-        ancGroup = root.getGroup("ANCILLARY")
+        # Now that ancillary data has been interpolated, it is matched up with
+        #  additional ancillary data (gps, solartracker, etc.) 1:1
+        ancGroup = node.getGroup("ANCILLARY")
         ancGroup.addDataset('COURSE')
         ancGroup.addDataset('LATITUDE')
         ancGroup.addDataset('LONGITUDE')
@@ -829,58 +1065,64 @@ class ProcessL2:
                 print('Removing records...')
                 ProcessL2.filterData(referenceGroup, badTimes)            
                 ProcessL2.filterData(sasGroup, badTimes)
-                ProcessL2.filterData(ancGroup, badTimes)
-                # if gpsGroup is not None:
-                #     ProcessL2.filterData(gpsGroup, badTimes)
-                # if satnavGroup is not None:
-                #     ProcessL2.filterData(satnavGroup, badTimes)   
-                # if pyrGroup is not None:
-                #     ProcessL2.filterData(pyrGroup, badTimes)   
+                ProcessL2.filterData(ancGroup, badTimes)                
+
+        ''' Next apply the meteorological filter prior to slicing'''     
+        # Meteorological Filtering   
+        enableMetQualityCheck = int(ConfigFile.settings["bL2EnableQualityFlags"])          
+        if enableMetQualityCheck:
+            badTimes = ProcessL2.metQualityCheck(referenceGroup, sasGroup)
                 
-        # esData = referenceGroup.getDataset("ES")
-        liData = sasGroup.getDataset("LI")
-        ltData = sasGroup.getDataset("LT")        
+            if badTimes is not None:
+                print('Removing records...')
+                ProcessL2.filterData(referenceGroup, badTimes)            
+                ProcessL2.filterData(sasGroup, badTimes)
+                ProcessL2.filterData(ancGroup, badTimes)
 
 
-        # Root (new/output) groups:
-        newReflectanceGroup = root.getGroup("REFLECTANCE")
-        newRadianceGroup = root.getGroup("RADIANCE")
-        newIrradianceGroup = root.getGroup("IRRADIANCE")
-        # newAncillaryGroup = root.getGroup("ANCILLARY")
+        # # esData = referenceGroup.getDataset("ES")
+        # liData = sasGroup.getDataset("LI")
+        # ltData = sasGroup.getDataset("LT")        
 
-        newRrsData = newReflectanceGroup.addDataset("Rrs")
-        newESData = newIrradianceGroup.addDataset("ES")        
-        newLIData = newRadianceGroup.addDataset("LI")
-        newLTData = newRadianceGroup.addDataset("LT") 
+        # # Root (new/output) groups:
+        # newReflectanceGroup = root.getGroup("REFLECTANCE")
+        # newRadianceGroup = root.getGroup("RADIANCE")
+        # newIrradianceGroup = root.getGroup("IRRADIANCE")
+        # # newAncillaryGroup = root.getGroup("ANCILLARY")
 
-        # Copy datasets to dictionary
+        # newRrsData = newReflectanceGroup.addDataset("Rrs")
+        # newESData = newIrradianceGroup.addDataset("ES")        
+        # newLIData = newRadianceGroup.addDataset("LI")
+        # newLTData = newRadianceGroup.addDataset("LT") 
+
+        # # Copy datasets to dictionary
         esData.datasetToColumns()
         esColumns = esData.columns
         tt2 = esColumns["Timetag2"]
 
-        liData.datasetToColumns()
-        liColumns = liData.columns        
+        # liData.datasetToColumns()
+        # liColumns = liData.columns        
 
-        ltData.datasetToColumns()
-        ltColumns = ltData.columns                    
+        # ltData.datasetToColumns()
+        # ltColumns = ltData.columns                    
 
-        # Combine these steps in a loop for ancillary date
-        ancDict = {}
-        for ds in ancGroup.datasets:
-            key = ds            
-            value = ancGroup.datasets[ds]            
-            ancDict[key] = value
+        # # Combine these steps in a loop for ancillary date
+        # ancDict = {}
+        # for ds in ancGroup.datasets:
+        #     key = ds            
+        #     value = ancGroup.datasets[ds]            
+        #     ancDict[key] = value
 
-        # Test
+        # # Test
         esLength = len(list(esColumns.values())[0])
-        ltLength = len(list(ltColumns.values())[0])
+        # ltLength = len(list(ltColumns.values())[0])
 
-        if ltLength > esLength:
-            print('Warning. Why would ltLength be > esLength??************************************')
-            for col in ltColumns:
-                col = col[0:esLength] # strips off final columns
-            for col in liColumns:
-                col = col[0:esLength]
+        # if ltLength > esLength:
+        #     print('Warning. Why would ltLength be > esLength??************************************')
+        #     for col in ltColumns:
+        #         col = col[0:esLength] # strips off final columns
+        #     for col in liColumns:
+        #         col = col[0:esLength]
 
 
         interval = float(ConfigFile.settings["fL2TimeInterval"])    
@@ -894,21 +1136,20 @@ class ProcessL2:
                 start = i
                 end = i+1
 
-                esSlice = ProcessL2.columnToSlice(esColumns,start, end)
-                liSlice = ProcessL2.columnToSlice(liColumns,start, end)
-                ltSlice = ProcessL2.columnToSlice(ltColumns,start, end)
+                # esSlice = ProcessL2.columnToSlice(esColumns,start, end)
+                # liSlice = ProcessL2.columnToSlice(liColumns,start, end)
+                # ltSlice = ProcessL2.columnToSlice(ltColumns,start, end)
 
-                WINDSPEEDSlice = ProcessL2.columnToSlice(ancDict["WINDSPEED"].columns,start, end)
-                AODSlice = ProcessL2.columnToSlice(ancDict["AOD"].columns,start, end)
-                SALSlice = ProcessL2.columnToSlice(ancDict["SAL"].columns,start, end)
-                SSTSlice = ProcessL2.columnToSlice(ancDict["SST"].columns,start, end)
-                ELEVATIONSlice = ProcessL2.columnToSlice(ancDict["ELEVATION"].columns,start, end)
+                # WINDSPEEDSlice = ProcessL2.columnToSlice(ancDict["WINDSPEED"].columns,start, end)
+                # AODSlice = ProcessL2.columnToSlice(ancDict["AOD"].columns,start, end)
+                # SALSlice = ProcessL2.columnToSlice(ancDict["SAL"].columns,start, end)
+                # SSTSlice = ProcessL2.columnToSlice(ancDict["SST"].columns,start, end)
+                # ELEVATIONSlice = ProcessL2.columnToSlice(ancDict["ELEVATION"].columns,start, end)
 
 
                 # The reflectance needs to be calculated with the individual unaveraged radiometric and ancillary data
                 # Use model (SST) over Pyrometer (WATER_TEMP) until I can figure out the pyrometer issue
-                if not ProcessL2.calculateREFLECTANCE2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
-                                                WINDSPEEDSlice, AODSlice, SALSlice, SSTSlice, ELEVATIONSlice):
+                if not ProcessL2.calculateREFLECTANCE2(root, sasGroup, referenceGroup, ancGroup, start, end):
                     # msg = 'Slice failed. Skipping.'
                     # print(msg)
                     # Utilities.writeLogFile(msg)                      
@@ -934,21 +1175,20 @@ class ProcessL2:
                     endTime = time + interval # increment for the next bin loop
                     # end = i-1
                     end = i # end of the slice is up to and not including...so -1 is not needed
-                    # Here take one interval as defined in Config
-                    esSlice = ProcessL2.columnToSlice(esColumns, start, end)
-                    liSlice = ProcessL2.columnToSlice(liColumns, start, end)
-                    ltSlice = ProcessL2.columnToSlice(ltColumns, start, end)
+                    # # Here take one interval as defined in Config
+                    # esSlice = ProcessL2.columnToSlice(esColumns, start, end)
+                    # liSlice = ProcessL2.columnToSlice(liColumns, start, end)
+                    # ltSlice = ProcessL2.columnToSlice(ltColumns, start, end)
 
-                    WINDSPEEDSlice = ProcessL2.columnToSlice(ancDict["WINDSPEED"].columns,start, end)
-                    AODSlice = ProcessL2.columnToSlice(ancDict["AOD"].columns,start, end)
-                    SALSlice = ProcessL2.columnToSlice(ancDict["SAL"].columns,start, end)
-                    SSTSlice = ProcessL2.columnToSlice(ancDict["SST"].columns,start, end)
-                    ELEVATIONSlice = ProcessL2.columnToSlice(ancDict["ELEVATION"].columns,start, end)
+                    # WINDSPEEDSlice = ProcessL2.columnToSlice(ancDict["WINDSPEED"].columns,start, end)
+                    # AODSlice = ProcessL2.columnToSlice(ancDict["AOD"].columns,start, end)
+                    # SALSlice = ProcessL2.columnToSlice(ancDict["SAL"].columns,start, end)
+                    # SSTSlice = ProcessL2.columnToSlice(ancDict["SST"].columns,start, end)
+                    # ELEVATIONSlice = ProcessL2.columnToSlice(ancDict["ELEVATION"].columns,start, end)
 
                     # The reflectance needs to be calculated with the individual unaveraged radiometric and ancillary data
                     # Use model (SST) over Pyrometer (WATER_TEMP) until I can figure out the pyrometer issue
-                    if not ProcessL2.calculateREFLECTANCE2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
-                                                    WINDSPEEDSlice, AODSlice, SALSlice, SSTSlice, ELEVATIONSlice):
+                    if not ProcessL2.calculateREFLECTANCE2(root, sasGroup, referenceGroup, ancGroup, start, end):
                         # msg = 'Slice failed. Skipping.'
                         # print(msg)
                         # Utilities.writeLogFile(msg)  
@@ -970,20 +1210,19 @@ class ProcessL2:
             end = esLength-1
             time = Utilities.timeTag2ToSec(tt2[end])
             if time < endTime:
-                esSlice = ProcessL2.columnToSlice(esColumns, start, end)
-                liSlice = ProcessL2.columnToSlice(liColumns, start, end)
-                ltSlice = ProcessL2.columnToSlice(ltColumns, start, end)
+                # esSlice = ProcessL2.columnToSlice(esColumns, start, end)
+                # liSlice = ProcessL2.columnToSlice(liColumns, start, end)
+                # ltSlice = ProcessL2.columnToSlice(ltColumns, start, end)
 
-                WINDSPEEDSlice = ProcessL2.columnToSlice(ancDict["WINDSPEED"].columns,start, end)
-                AODSlice = ProcessL2.columnToSlice(ancDict["AOD"].columns,start, end)
-                SALSlice = ProcessL2.columnToSlice(ancDict["SAL"].columns,start, end)
-                SSTSlice = ProcessL2.columnToSlice(ancDict["SST"].columns,start, end)
-                ELEVATIONSlice = ProcessL2.columnToSlice(ancDict["ELEVATION"].columns,start, end)
+                # WINDSPEEDSlice = ProcessL2.columnToSlice(ancDict["WINDSPEED"].columns,start, end)
+                # AODSlice = ProcessL2.columnToSlice(ancDict["AOD"].columns,start, end)
+                # SALSlice = ProcessL2.columnToSlice(ancDict["SAL"].columns,start, end)
+                # SSTSlice = ProcessL2.columnToSlice(ancDict["SST"].columns,start, end)
+                # ELEVATIONSlice = ProcessL2.columnToSlice(ancDict["ELEVATION"].columns,start, end)
 
                 # The reflectance needs to be calculated with the individual unaveraged radiometric and ancillary data
                 # Use model (SST) over Pyrometer (WATER_TEMP) until I can figure out the pyrometer issue
-                if not ProcessL2.calculateREFLECTANCE2(root, esSlice, liSlice, ltSlice, newRrsData, newESData, newLIData, newLTData, \
-                                                WINDSPEEDSlice, AODSlice, SALSlice, SSTSlice, ELEVATIONSlice):
+                if not ProcessL2.calculateREFLECTANCE2(root,sasGroup, referenceGroup, ancGroup, start, end):
                     # Take the slice median of ancillary data and add it to appropriate groups
                     with warnings.catch_warnings():
                         warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
@@ -995,25 +1234,8 @@ class ProcessL2:
                         #     pyrColumns, newPyrData)           
 
 
-        newESData.columnsToDataset()
-        newLIData.columnsToDataset()
-        newLTData.columnsToDataset()
-        newRrsData.columnsToDataset()
-        # if gpsGroup is not None:
-        #     newGPSCourseData.columnsToDataset()
-        #     newGPSLatPosData.columnsToDataset()
-        #     newGPSLonPosData.columnsToDataset()
-        #     # newGPSMagVarData.columnsToDataset()
-        #     newGPSSpeedData.columnsToDataset()
-        # if satnavGroup is not None:
-        #     newSATNAVAzimuthData.columnsToDataset()
-        #     newSATNAVElevationData.columnsToDataset()
-        #     newSATNAVHeadingData.columnsToDataset()
-        #     newSATNAVPointingData.columnsToDataset()
-        #     newSATNAVRelAzData.columnsToDataset()
-        # if pyrGroup is not None:
-        #     newPyrData.columnsToDataset()
-
+        
+ 
         return True
 
 
@@ -1043,6 +1265,7 @@ class ProcessL2:
                 pyrGroup = gp
 
         if satnavGroup is not None or gpsGroup is not None or pyrGroup is not None:
+            node.addGroup("ANCILLARY")
             root.addGroup("ANCILLARY")
         # if pyrGroup is not None:
         #     root.addGroup("PYROMETER")    
