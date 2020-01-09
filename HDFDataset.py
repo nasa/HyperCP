@@ -199,7 +199,9 @@ class HDFDataset:
                     #dtype.append((name, np.dtype(str)))
                 # Note: hdf4 only supports 32 bit int, convert to float64
                 elif isinstance(item, int):
-                    dtype.append((name, np.float64))
+                    dtype.append((name, np.float64))  
+                elif name.endswith('FLAG'):
+                    dtype.append((name, np.int))  
                 else:
                     dtype.append((name, type(item)))
 
@@ -209,8 +211,19 @@ class HDFDataset:
         #print("Dtype:", dtype)
         #print("Shape:", shape)
         self.data = np.empty(shape, dtype=dtype)
-        for k,v in self.columns.items():
-            self.data[k] = v
+        for k,v in self.columns.items():            
+            if k.endswith('FLAG'):
+                    # Interpret as undeclared, field, model, or default: 0, 1, 2, 3
+                    if v[0] == 'undetermined':
+                        v = 0
+                    elif v[0] == 'field':
+                        v = 1
+                    elif v[0] == 'model':
+                        v = 2
+                    elif v[0] == 'default':
+                        v = 3
+            
+            self.data[k] = v ''' NOW THIS WONT POPULATE THE DATE AND TIME DATA AFTER REGENERATING IT ABOVE (LINE 213)
 
         return True
 

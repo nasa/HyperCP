@@ -1170,7 +1170,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
         ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
         ConfigFile.settings["fL2SZAMax"] = float(self.l2SZAMaxLineEdit.text())
-        ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2EnableSpecQualityCheckBox.isChecked())
+        ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2SpecQualityCheckBox.isChecked())
         ConfigFile.settings["fL2SpecFilterEs"] = float(self.l2SpecFilterEsLineEdit.text())
         ConfigFile.settings["fL2SpecFilterLi"] = float(self.l2SpecFilterLiLineEdit.text())
         ConfigFile.settings["fL2SpecFilterLt"] = float(self.l2SpecFilterLtLineEdit.text())
