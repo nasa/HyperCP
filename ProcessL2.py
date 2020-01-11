@@ -33,11 +33,10 @@ class ProcessL2:
             # print(" ")         
             start = Utilities.timeTag2ToSec(timeTag[0])
             stop = Utilities.timeTag2ToSec(timeTag[1])                
-            # badIndex = ([i for i in range(lenDataSec) if start <= dataSec[i] and stop >= dataSec[i]])      
                     
-            msg = f'   Remove {group.id}  Data'
+            # msg = f'   Remove {group.id}  Data'
             # print(msg)
-            Utilities.writeLogFile(msg)
+            # Utilities.writeLogFile(msg)
             #  timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
             # Ancillary still has datetag and tt2 broken out...
             if group.id == "ANCILLARY":
@@ -46,14 +45,6 @@ class ProcessL2:
                 timeData = group.getDataset("ES").data["Timetag2"]
             if group.id == "RADIANCE":
                 timeData = group.getDataset("LI").data["Timetag2"]
-            # if group.id == "SOLARTRACKER":
-            #     timeData = group.getDataset("AZIMUTH").data["Timetag2"]
-            # if group.id == "SOLARTRACKER_STATUS":
-            #     return # Nothing we can do without a timetag
-            # if group.id == "GPS":
-            #     timeData = group.getDataset("COURSE").data["Timetag2"]
-            # if group.id == "PYROMETER":
-            #     timeData = group.getDataset("T").data["Timetag2"]
 
             dataSec = []
             for i in range(timeData.shape[0]):
@@ -123,7 +114,7 @@ class ProcessL2:
         # Plot results to see what to do next.... '''
     @staticmethod
     def specQualityCheck(group, inFilePath):
-        
+        badTimes = []
         if group.id == 'IRRADIANCE':
             Data = group.getDataset("ES") 
             timeStamp = group.getDataset("ES").data["Timetag2"]
@@ -151,7 +142,8 @@ class ProcessL2:
 
             badTimes = np.append(badTimes1,badTimes2, axis=0)
         
-
+        if len(badTimes) == 0:
+            badTimes = None
         return badTimes
         
 
@@ -229,6 +221,13 @@ class ProcessL2:
                 badTimes.append(timeTag)
         
         badTimes = np.unique(badTimes)
+        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
+        msg = f'{len(np.unique(badTimes))/len(esTime)*100:.1f}% of spectra flagged'
+        print(msg)
+        Utilities.writeLogFile(msg) 
+
+        if len(badTimes) == 0:
+            badTimes = None
         return badTimes
 
 
@@ -266,7 +265,7 @@ class ProcessL2:
             radSeconds.append((radDatetime[i]-epoch).total_seconds())
         
         if ancData:
-            # These are the entire ancillary record for the cruise
+            # These are the entire ancillary records for the cruise
             dateTime = ancData.getColumn("DATETIME")[0]
             wind = ancData.getColumn("WINDSPEED")[0]
             salt = ancData.getColumn("SALINITY")[0]
@@ -309,10 +308,10 @@ class ProcessL2:
 
         # Populate with field data if possible
         if ancData:
-            for i, value in enumerate(ancInRadSeconds):
-                idx = Utilities.find_nearest(ancSeconds,value)
+            for i, value in enumerate(ancInRadSeconds): # step through InRad...
+                idx = Utilities.find_nearest(ancSeconds,value) # ...identify from entire anc record...
                 # Make sure the time difference between field anc and rad is <= 1hr
-                if abs(ancSeconds[i] - value)/60/60 < 1:                    
+                if abs(ancSeconds[idx] - value)/60/60 < 1:  # ... and place nearest into InRad
                     windInRad[i] = wind[idx]                    
                     saltInRad[i] = salt[idx]
                     sstInRad[i] = sst[idx]
@@ -349,17 +348,17 @@ class ProcessL2:
             Utilities.writeLogFile(msg)
             for i,value in enumerate(windInRad):
                 if np.isnan(value):   
-                    msg = 'Replacing wind with model data'
+                    # msg = 'Replacing wind with model data'
                     # print(msg)
-                    Utilities.writeLogFile(msg)
+                    # Utilities.writeLogFile(msg)
                     idx = Utilities.find_nearest(modSeconds,ancInRadSeconds[i])
                     windInRad[i] = modData.groups[0].datasets['Wind'][idx]   
                     windFlag[i] = 'model'                     
             for i, value in enumerate(aodInRad):
                 if np.isnan(value):
-                    msg = 'Replacing AOD with model data'
+                    # msg = 'Replacing AOD with model data'
                     # print(msg)
-                    Utilities.writeLogFile(msg)
+                    # Utilities.writeLogFile(msg)
                     idx = Utilities.find_nearest(modSeconds,ancInRadSeconds[i])
                     aodInRad[i] = modData.groups[0].datasets['AOD'][idx]
                     aodFlag[i] = 'model'
@@ -443,12 +442,21 @@ class ProcessL2:
             value = ancGroup.datasets[ds]            
             ancDict[key] = value
 
-        datetag = ancDict['Datetag'].data
-        timetag = ancDict['Timetag2'].data
+        # dateSlice = ProcessL2.columnToSlice(ancDict['Datetag'].columns, start, end)
+        # timeSlice = ProcessL2.columnToSlice(ancDict['Timetag2'].columns, start, end)
+        # datetag = ancDict['Datetag'].data
+        # timetag = ancDict['Timetag2'].data
+        # datetag = np.array(dateSlice['Datetag'])
+        # timetag = np.array(timeSlice['Timetag2'])
+        dateSlice=ancDict['Datetag'].data[start:end]
+        timeSlice=ancDict['Timetag2'].data[start:end]
         # Stores the middle element
-        if len(datetag) > 0:
-            date = datetag[int(len(datetag)/2)]
-            time = timetag[int(len(timetag)/2)]
+        # if len(datetag) > 0:
+        #     date = datetag[int(len(datetag)/2)]
+        #     time = timetag[int(len(timetag)/2)]
+        if len(dateSlice) > 0:
+            date = dateSlice[int(len(dateSlice)/2)]
+            time = timeSlice[int(len(timeSlice)/2)]
 
         for ds in ancDict: 
             if ds != 'Datetag' and ds != 'Timetag2':
@@ -466,8 +474,10 @@ class ProcessL2:
 
                         if dsXSlice is None:
                             dsXSlice = collections.OrderedDict()                        
-                            dsXSlice['Datetag'] = date
-                            dsXSlice['Timetag2'] = time
+                            dsXSlice['Datetag'] = date.tolist()
+                            dsXSlice['Timetag2'] = time.tolist()
+                            # dsXSlice['Datetag'] = date
+                            # dsXSlice['Timetag2'] = time
 
                         if subset.endswith('FLAG'):
                             if not subset in dsXSlice:
@@ -477,7 +487,7 @@ class ProcessL2:
                         else:
                             if subset not in dsXSlice:
                                 dsXSlice[subset] = []                            
-                            dsXSlice[subset].append([np.mean(v)])
+                            dsXSlice[subset].append(np.mean(v)) 
                         
                 if subset not in newDS.columns:
                     newDS.columns = dsXSlice
@@ -525,7 +535,7 @@ class ProcessL2:
         esSlice = ProcessL2.columnToSlice(esColumns,start, end)
         liSlice = ProcessL2.columnToSlice(liColumns,start, end)
         ltSlice = ProcessL2.columnToSlice(ltColumns,start, end)
-
+        n = len(list(ltSlice.values())[0])
     
         rhoSkyDefault = float(ConfigFile.settings["fL2RhoSky"])
         RuddickRho = int(ConfigFile.settings["bL2RuddickRho"])
@@ -563,10 +573,9 @@ class ProcessL2:
         X will depend on FOV and integration time of instrument. Hooker cites a rate of 2 Hz.
         It remains unclear to me from Hooker 2002 whether the recommendation is to take the average of the ir/radiances
         within the threshold and calculate Rrs, or to calculate the Rrs within the threshold, and then average, however IOCCG
-        Protocols pretty clearly state to average the ir/radiances first, then calculate the Rrs...as done here.'''
-        n = len(list(ltSlice.values())[0])
+        Protocols pretty clearly state to average the ir/radiances first, then calculate the Rrs...as done here.'''        
         x = round(n*percentLt/100) # number of retained values
-        msg = f'{n} data points in slice (ensemble).'
+        msg = f'{n} spectra in slice (ensemble).'
         print(msg)
         Utilities.writeLogFile(msg)
         
@@ -583,7 +592,7 @@ class ProcessL2:
             y = index[0:x] 
         else:
             y = index # If Percent Lt is turned off, this will average the whole slice
-        msg = f'{len(y)} data points remaining in slice to average after low light filter.'
+        msg = f'{len(y)} spectra remaining in slice to average after filtering to lowest {percentLt}%.'
         print(msg)
         Utilities.writeLogFile(msg)
 
@@ -599,6 +608,7 @@ class ProcessL2:
         # Slice average the ancillary group for the slice and the X% criteria
         ProcessL2.sliceAveAnc(root, start, end, y, ancGroup)
         newAncGroup = root.getGroup("ANCILLARY") # Just populated above
+        newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
 
         WINDSPEEDXSlice = newAncGroup.getDataset('WINDSPEED').data['WINDSPEED'][-1].copy() # Returns the last element (latest slice)
         if isinstance(WINDSPEEDXSlice, list):
@@ -834,7 +844,7 @@ class ProcessL2:
         if start==0 and stop==index: # All records are bad                           
             return False
         
-        if badTimes is not None:
+        if badTimes is not None and len(badTimes) != 0:
             print('Removing records...')
             ProcessL2.filterData(referenceGroup, badTimes)            
             ProcessL2.filterData(sasGroup, badTimes)
@@ -850,7 +860,12 @@ class ProcessL2:
             inFilePath = root.attributes['In_Filepath']
             badTimes1 = ProcessL2.specQualityCheck(referenceGroup, inFilePath)
             badTimes2 = ProcessL2.specQualityCheck(sasGroup, inFilePath)
-            badTimes = np.append(badTimes1,badTimes2, axis=0)
+            if badTimes1 is not None and badTimes2 is not None:
+                badTimes = np.append(badTimes1,badTimes2, axis=0)
+            elif badTimes1 is not None:
+                badTimes = badTimes1
+            elif badTimes2 is not None:
+                badTimes = badTimes2
 
             if badTimes is not None:
                 print('Removing records...')
@@ -862,6 +877,9 @@ class ProcessL2:
         # Meteorological Filtering   
         enableMetQualityCheck = int(ConfigFile.settings["bL2EnableQualityFlags"])          
         if enableMetQualityCheck:
+            msg = "Applying meteorological filtering to eliminate spectra."
+            print(msg)
+            Utilities.writeLogFile(msg)
             badTimes = ProcessL2.metQualityCheck(referenceGroup, sasGroup)
                 
             if badTimes is not None:
@@ -877,6 +895,12 @@ class ProcessL2:
 
         # # Test
         esLength = len(list(esColumns.values())[0])
+        if esLength == 0:
+            msg = "No spectra remaining. Abort."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return False
+
         # ltLength = len(list(ltColumns.values())[0])
 
         # if ltLength > esLength:
@@ -906,25 +930,39 @@ class ProcessL2:
             # Iterate over the time ensembles
             start = 0
             endTime = Utilities.timeTag2ToSec(tt2[0]) + interval
+            endFileTime = Utilities.timeTag2ToSec(tt2[-1])
+            timeFlag = False
+            if endTime > endFileTime:
+                endTime = endFileTime
+                timeFlag = True # In case the whole file is shorter than the selected interval
+
             for i in range(0, esLength):
                 time = Utilities.timeTag2ToSec(tt2[i])
-                if time > endTime: # end of increment reached
-                    endTime = time + interval # increment for the next bin loop
-                    # end = i-1
-                    end = i # end of the slice is up to and not including...so -1 is not needed                    
+                if (time > endTime) or timeFlag: # end of increment reached
+                                        
+                    if timeFlag:
+                        end = len(tt2)-1 # File shorter than interval; include all spectra
+                    else:
+                        endTime = time + interval # increment for the next bin loop
+                        end = i # end of the slice is up to and not including...so -1 is not needed   
+                    if endTime > endFileTime:
+                        endTime = endFileTime                 
 
                     if not ProcessL2.calculateREFLECTANCE2(root, sasGroup, referenceGroup, ancGroup, start, end):
                         msg = 'ProcessL2.calculateREFLECTANCE2 with slices failed. Abort.'
                         print(msg)
                         Utilities.writeLogFile(msg)    
 
-                        start = i                        
+                        start = i                       
                         continue                          
                     start = i
+
+                    if timeFlag:
+                        break
             # Try converting any remaining
             end = esLength-1
-            time = Utilities.timeTag2ToSec(tt2[end])
-            if time < endTime:                
+            time = Utilities.timeTag2ToSec(tt2[start])
+            if time < (endTime-interval):                
 
                 if not ProcessL2.calculateREFLECTANCE2(root,sasGroup, referenceGroup, ancGroup, start, end):
                     msg = 'ProcessL2.calculateREFLECTANCE2 ender failed. Abort.'
@@ -962,9 +1000,7 @@ class ProcessL2:
 
         if satnavGroup is not None or gpsGroup is not None or pyrGroup is not None:
             node.addGroup("ANCILLARY")
-            root.addGroup("ANCILLARY")
-        # if pyrGroup is not None:
-        #     root.addGroup("PYROMETER")    
+            root.addGroup("ANCILLARY")            
 
         # Retrieve MERRA2 model ancillary data        
         if ConfigFile.settings["bL2pGetAnc"] ==1:            

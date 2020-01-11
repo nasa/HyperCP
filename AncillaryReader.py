@@ -24,6 +24,7 @@ class AncillaryReader:
             Utilities.writeLogFile(msg)  
             return None
         else:
+            print('This may take a moment on large SeaBASS files...')
             metData=readSB(fp, no_warn=True)
 
         # metData = readSB(fp, no_warn=False)
@@ -39,7 +40,7 @@ class AncillaryReader:
         aot = False   
         wt = False
         sal = False
-        for ds in metData.data:
+        for ds in metData.data:            
             # Remember, all lower case...
             if ds == "wind":
                 wind = True

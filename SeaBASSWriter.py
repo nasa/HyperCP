@@ -482,17 +482,14 @@ class SeaBASSWriter:
             ltData.columnsToDataset()
             rrsData.columnsToDataset()
         
-        # # Append azimuth, heading, rotator, relAz, and solar elevation
-        # if root.getGroup("SOLARTRACKER"):
-        #     satnavGroup = root.getGroup("SOLARTRACKER")
-
-            azimuthData = ancGroup.getDataset("SOLAR_AZIMUTH")
+            # # Append azimuth, heading, rotator, relAz, and solar elevation
+            azimuthData = ancGroup.getDataset("AZIMUTH")
             headingData = ancGroup.getDataset("HEADING") # SAS_TRUE & SHIP_TRUE
             # pitchData = ancGroup.getDataset("PITCH")
             pointingData = ancGroup.getDataset("POINTING")
             # rollData = ancGroup.getDataset("ROLL")
             relAzData = ancGroup.getDataset("REL_AZ")
-            elevationData = ancGroup.getDataset("SOLAR_ELEVATION")
+            elevationData = ancGroup.getDataset("ELEVATION")
 
             azimuthData.datasetToColumns()
             headingData.datasetToColumns()
@@ -503,7 +500,7 @@ class SeaBASSWriter:
             elevationData.datasetToColumns() 
 
             azimuth = azimuthData.columns["SUN"]
-            shipTrue = headingData.columns["SHIP_True"]
+            shipTrue = headingData.columns["SHIP_TRUE"]
             # sasTrue = headingData.columns["SAS_True"]
             # pitch = pitchData.columns["SAS"]
             rotator = pointingData.columns["ROTATOR"]

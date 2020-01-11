@@ -637,7 +637,7 @@ class Utilities:
                     badTimes.append(timeStamp[j])
 
         badTimes = np.unique(badTimes)
-        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
+        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
         
         for i in badIndx:
             plt.plot(wave, normSpec[i,:], color='red', linewidth=0.5, linestyle='dashed')

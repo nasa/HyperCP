@@ -189,7 +189,7 @@ class HDFDataset:
                     if length > maxlength:
                         maxlength = length
 
-                dtype.append((name, "|S" + str(maxlength)))
+                dtype.append((name, "|S" + str(maxlength))) # immutable tuple(())
             else:
 
                 item = self.columns[name][0]
@@ -205,12 +205,11 @@ class HDFDataset:
                 else:
                     dtype.append((name, type(item)))
 
-        #shape = (len(list(ds.columns.values())[0]), len(ds.columns))
         shape = (len(list(self.columns.values())[0]), )
         #print("Id:", self.id)
         #print("Dtype:", dtype)
         #print("Shape:", shape)
-        self.data = np.empty(shape, dtype=dtype)
+        self.data = np.empty(shape, dtype=dtype) # empty means uninitialized, i.e. random values.
         for k,v in self.columns.items():            
             if k.endswith('FLAG'):
                     # Interpret as undeclared, field, model, or default: 0, 1, 2, 3
@@ -222,8 +221,10 @@ class HDFDataset:
                         v = 2
                     elif v[0] == 'default':
                         v = 3
-            
-            self.data[k] = v ''' NOW THIS WONT POPULATE THE DATE AND TIME DATA AFTER REGENERATING IT ABOVE (LINE 213)
+            # if len(v[0]) == 1:
+            #     v = v[0]
+            #     print(v)
+            self.data[k] = v 
 
         return True
 
