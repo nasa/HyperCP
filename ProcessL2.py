@@ -147,6 +147,42 @@ class ProcessL2:
         return badTimes
         
 
+    # Perform Lt Quality checking
+    @staticmethod
+    def ltQuality(sasGroup):   
+        
+        ltData = sasGroup.getDataset("LT")
+        ltData.datasetToColumns()
+        ltColumns = ltData.columns
+        ltColumns.pop('Datetag')
+        ltTime = ltColumns.pop('Timetag2')
+                        
+        badTimes = []
+        for indx, timeTag in enumerate(ltTime):                        
+            # If the Lt spectrum in the NIR is brighter than in the UVA, something is very wrong
+            UVA = [350,400]
+            NIR = [780,850]
+            ltUVA = []
+            ltNIR = []
+            for wave in ltColumns:
+                if float(wave) > UVA[0] and float(wave) < UVA[1]:
+                    ltUVA.append(ltColumns[wave][indx])
+                elif float(wave) > NIR[0] and float(wave) < NIR[1]:
+                    ltNIR.append(ltColumns[wave][indx])
+
+            if np.nanmean(ltUVA) < np.nanmean(ltNIR):
+                badTimes.append(timeTag)
+        
+        badTimes = np.unique(badTimes)
+        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
+        msg = f'{len(np.unique(badTimes))/len(ltTime)*100:.1f}% of spectra flagged'
+        print(msg)
+        Utilities.writeLogFile(msg) 
+
+        if len(badTimes) == 0:
+            badTimes = None
+        return badTimes
+
     # Perform meteorological flag checking
     @staticmethod
     def metQualityCheck(refGroup, sasGroup):   
@@ -417,7 +453,7 @@ class ProcessL2:
 
     # Take the slice median of the lowest X% of hyperspectral slices
     @staticmethod
-    def sliceAveHyper(y, hyperSlice, xSlice):
+    def sliceAveHyper(y, hyperSlice, xSlice, xStd):
         hasNan = False
         # Ignore runtime warnings when array is all NaNs
         with warnings.catch_warnings():
@@ -425,7 +461,9 @@ class ProcessL2:
             for k in hyperSlice: # each k is a time series at a waveband.
                 v = [hyperSlice[k][i] for i in y] # selects the lowest 5% within the interval window...
                 mean = np.nanmean(v) # ... and averages them
+                std = np.nanstd(v) # ... and the stdev for uncertainty estimates
                 xSlice[k] = [mean]
+                xStd[k] = [std]
                 if np.isnan(mean):
                     hasNan = True
         return hasNan
@@ -526,11 +564,21 @@ class ProcessL2:
             newESData = newIrradianceGroup.addDataset("ES")        
             newLIData = newRadianceGroup.addDataset("LI")
             newLTData = newRadianceGroup.addDataset("LT") 
+
+            newRrsDeltaData = newReflectanceGroup.addDataset("Rrs_delta")
+            newESDeltaData = newIrradianceGroup.addDataset("ES_delta")       
+            newLIDeltaData = newRadianceGroup.addDataset("LI_delta")
+            newLTDeltaData = newRadianceGroup.addDataset("LT_delta")
         else:
             newRrsData = newReflectanceGroup.getDataset("Rrs")
             newESData = newIrradianceGroup.getDataset("ES")        
             newLIData = newRadianceGroup.getDataset("LI")
             newLTData = newRadianceGroup.getDataset("LT") 
+
+            newRrsDeltaData = newReflectanceGroup.getDataset("Rrs_delta")
+            newESDeltaData = newIrradianceGroup.getDataset("ES_delta")    
+            newLIDeltaData = newRadianceGroup.getDataset("LI_delta")
+            newLTDeltaData = newRadianceGroup.getDataset("LT_delta")
 
         esSlice = ProcessL2.columnToSlice(esColumns,start, end)
         liSlice = ProcessL2.columnToSlice(liColumns,start, end)
@@ -599,11 +647,14 @@ class ProcessL2:
         # Take the mean of the lowest X%
         esXSlice = collections.OrderedDict()
         liXSlice = collections.OrderedDict()
-        ltXSlice = collections.OrderedDict()        
+        ltXSlice = collections.OrderedDict()  
+        esXstd = collections.OrderedDict()  
+        liXstd = collections.OrderedDict()  
+        ltXstd = collections.OrderedDict()  
 
-        hasNan = ProcessL2.sliceAveHyper(y, esSlice, esXSlice)
-        hasNan = ProcessL2.sliceAveHyper(y, liSlice, liXSlice)
-        hasNan = ProcessL2.sliceAveHyper(y, ltSlice, ltXSlice)
+        hasNan = ProcessL2.sliceAveHyper(y, esSlice, esXSlice, esXstd)
+        hasNan = ProcessL2.sliceAveHyper(y, liSlice, liXSlice, liXstd)
+        hasNan = ProcessL2.sliceAveHyper(y, ltSlice, ltXSlice, ltXstd)
 
         # Slice average the ancillary group for the slice and the X% criteria
         ProcessL2.sliceAveAnc(root, start, end, y, ancGroup)
@@ -648,11 +699,11 @@ class ProcessL2:
             es750 = ProcessL2.interpolateColumn(esXSlice, 750.0)
             sky750 = li750[0]/es750[0]
 
-            p_sky = RhoCorrections.RuddickCorr(sky750, rhoSkyDefault, WINDSPEEDXSlice)
+            rhoSky, rhoDelta = RhoCorrections.RuddickCorr(sky750, rhoSkyDefault, WINDSPEEDXSlice)
 
         elif ZhangRho:            
 
-            p_sky = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice,CloudXSlice,SOL_ELXSlice,SSTXSlice,SalXSlice)
+            rhoSky, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice,CloudXSlice,SOL_ELXSlice,SSTXSlice,SalXSlice)
 
         # Add date/time data to Rrs dataset
         if not ("Datetag" in newRrsData.columns):
@@ -663,7 +714,16 @@ class ProcessL2:
             newESData.columns["Timetag2"] = [time]
             newLIData.columns["Timetag2"] = [time]
             newLTData.columns["Timetag2"] = [time]
-            newRrsData.columns["Timetag2"] = [time]            
+            newRrsData.columns["Timetag2"] = [time]
+
+            newESDeltaData.columns["Datetag"] = [date]
+            newLIDeltaData.columns["Datetag"] = [date]
+            newLTDeltaData.columns["Datetag"] = [date]
+            newRrsDeltaData.columns["Datetag"] = [date]
+            newESDeltaData.columns["Timetag2"] = [time]
+            newLIDeltaData.columns["Timetag2"] = [time]
+            newLTDeltaData.columns["Timetag2"] = [time]
+            newRrsDeltaData.columns["Timetag2"] = [time]
         else:
             newESData.columns["Datetag"].append(date)
             newLIData.columns["Datetag"].append(date)
@@ -673,6 +733,15 @@ class ProcessL2:
             newLIData.columns["Timetag2"].append(time)
             newLTData.columns["Timetag2"].append(time)
             newRrsData.columns["Timetag2"].append(time)           
+
+            newESDeltaData.columns["Datetag"].append(date)
+            newLIDeltaData.columns["Datetag"].append(date)
+            newLTDeltaData.columns["Datetag"].append(date)
+            newRrsDeltaData.columns["Datetag"].append(date)
+            newESDeltaData.columns["Timetag2"].append(time)
+            newLIDeltaData.columns["Timetag2"].append(time)
+            newLTDeltaData.columns["Timetag2"].append(time)
+            newRrsDeltaData.columns["Timetag2"].append(time)
 
         rrsSlice = {}
                 
@@ -686,17 +755,32 @@ class ProcessL2:
                     newLTData.columns[k] = []
                     newRrsData.columns[k] = []
 
+                    newESDeltaData.columns[k] = []
+                    newLIDeltaData.columns[k] = []
+                    newLTDeltaData.columns[k] = []
+                    newRrsDeltaData.columns[k] = []
+
                 es = esXSlice[k][0]
                 li = liXSlice[k][0]
                 lt = ltXSlice[k][0]
 
+                esDelta = esXstd[k][0]
+                liDelta = liXstd[k][0]
+                ltDelta = ltXstd[k][0]
+
                 # Calculate the Rrs
-                rrs = (lt - (p_sky * li)) / es
+                rrs = (lt - (rhoSky * li)) / es
+
+                rrsDelta = rrs * ( (liDelta/li)**2 + (rhoDelta/rhoSky)**2 + (liDelta/li)**2 + (esDelta/es)**2 )**0.5
 
                 newESData.columns[k].append(es)
                 newLIData.columns[k].append(li)
                 newLTData.columns[k].append(lt)
+                newESDeltaData.columns[k].append(esDelta)
+                newLIDeltaData.columns[k].append(liDelta)
+                newLTDeltaData.columns[k].append(ltDelta)
                 #newRrsData.columns[k].append(rrs)
+                newRrsDeltaData.columns[k].append(rrsDelta)
                 rrsSlice[k] = rrs
 
         # Perfrom near-infrared correction to remove additional atmospheric and glint contamination
@@ -726,6 +810,10 @@ class ProcessL2:
         newLIData.columnsToDataset()
         newLTData.columnsToDataset()
         newRrsData.columnsToDataset()
+        newESDeltaData.columnsToDataset()   
+        newLIDeltaData.columnsToDataset()
+        newLTDeltaData.columnsToDataset()
+        newRrsDeltaData.columnsToDataset()
         return True
 
 
@@ -887,6 +975,19 @@ class ProcessL2:
                 ProcessL2.filterData(referenceGroup, badTimes)            
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
+
+        ''' Next apply the Lt quality filter prior to slicing'''     
+        # Lt Quality Filtering; anomalous elevation in the NIR
+        msg = "Applying Lt quality filtering to eliminate spectra."
+        print(msg)
+        Utilities.writeLogFile(msg)
+        badTimes = ProcessL2.ltQuality(sasGroup)
+            
+        if badTimes is not None:
+            print('Removing records...')
+            ProcessL2.filterData(referenceGroup, badTimes)            
+            ProcessL2.filterData(sasGroup, badTimes)
+            ProcessL2.filterData(ancGroup, badTimes)
 
         # # Copy datasets to dictionary
         esData.datasetToColumns()

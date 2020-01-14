@@ -356,16 +356,16 @@ class Controller:
         dirpath = './'
         if root is not None and ConfigFile.settings['bL2PlotRrs']==1:            
             _, filename = os.path.split(outFilePath)
-            Utilities.plotRadiometry(root, dirpath, filename, rType='Rrs')
+            Utilities.plotRadiometry(root, dirpath, filename, rType='Rrs', plotDelta = True)
         if root is not None and ConfigFile.settings['bL2PlotEs']==1:
             _, filename = os.path.split(outFilePath)
-            Utilities.plotRadiometry(root, dirpath, filename, rType='ES')
+            Utilities.plotRadiometry(root, dirpath, filename, rType='ES', plotDelta = True)
         if root is not None and ConfigFile.settings['bL2PlotLi']==1:
             _, filename = os.path.split(outFilePath)
-            Utilities.plotRadiometry(root, dirpath, filename, rType='LI')
+            Utilities.plotRadiometry(root, dirpath, filename, rType='LI', plotDelta = True)
         if root is not None and ConfigFile.settings['bL2PlotLt']==1:
             _, filename = os.path.split(outFilePath)
-            Utilities.plotRadiometry(root, dirpath, filename, rType='LT')
+            Utilities.plotRadiometry(root, dirpath, filename, rType='LT', plotDelta = True)
 
         # Write output file
         if root is not None:

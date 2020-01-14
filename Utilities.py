@@ -23,6 +23,7 @@ if "LOGFILE" not in os.environ:
 
 class Utilities:
 
+
     @staticmethod
     def mostFrequent(List): 
         occurence_count = Counter(List) 
@@ -386,12 +387,17 @@ class Utilities:
 
 
     @staticmethod
-    def plotRadiometry(root, dirpath, filename, rType):
+    def plotRadiometry(root, dirpath, filename, rType, plotDelta = False):
 
+        dataDelta = None
         if rType=='Rrs':
             print('Plotting Rrs')
             group = root.getGroup("REFLECTANCE")
-            Data = group.getDataset(rType)            
+            Data = group.getDataset(rType)
+            if plotDelta:
+                dataDelta = group.getDataset(f'{rType}_delta')
+
+
             if not os.path.exists("Plots/L2_Rrs/"):
                 os.makedirs("Plots/L2_Rrs/")
             plotdir = os.path.join(dirpath, 'Plots/L2_Rrs/')
@@ -406,16 +412,22 @@ class Utilities:
             print('Plotting Es')
             group = root.getGroup("IRRADIANCE")
             Data = group.getDataset(rType)
+            if plotDelta:
+                dataDelta = group.getDataset(f'{rType}_delta')
             
         if rType=='LI':
             print('Plotting Li')
             group = root.getGroup("RADIANCE")
             Data = group.getDataset(rType)
+            if plotDelta:
+                dataDelta = group.getDataset(f'{rType}_delta')
             
         if rType=='LT':
             print('Plotting Lt')
             group = root.getGroup("RADIANCE")
-            Data = group.getDataset(rType)            
+            Data = group.getDataset(rType)  
+            if plotDelta:
+                dataDelta = group.getDataset(f'{rType}_delta')          
 
         font = {'family': 'serif',
             'color':  'darkred',
@@ -423,14 +435,16 @@ class Utilities:
             'size': 16,
             }
 
-        x = []
+        x = []        
         wave = []
         
+        # For each waveband
         for k in Data.data.dtype.names:
             if Utilities.isFloat(k):
-                if float(k)>=plotRange[0] and float(k)<=plotRange[1]:
+                if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
                     x.append(k)
                     wave.append(float(k))
+
 
         total = Data.data.shape[0]
         maxRad = 0
@@ -440,18 +454,33 @@ class Utilities:
         plt.figure(1, figsize=(6,4))
         for i in range(total):
             y = []
-            for k in x:
+            dy = []
+            for k in x:                
                 y.append(Data.data[k][i])
+                if plotDelta:
+                    dy.append(dataDelta.data[k][i])
 
             c=next(color)
             if max(y) > maxRad:
-                maxRad = max(y)
+                maxRad = max(y)+0.1*max(y)
             if rType == 'LI' and maxRad > 20:
                 maxRad = 20
             if rType == 'LT' and maxRad > 2:
                 maxRad = 2
 
+            # Plot the spectrum
             plt.plot(wave, y, 'k', c=c)
+            
+            if plotDelta:
+                # Generate the polygon for uncertainty bounds
+                deltaPolyx = wave + list(reversed(wave))
+                dPolyyPlus = [(y[i]+dy[i]) for i in range(len(y))]
+                dPolyyMinus = [(y[i]-dy[i]) for i in range(len(y))]
+                deltaPolyyPlus = y + list(reversed(dPolyyPlus))
+                deltaPolyyMinus = y + list(reversed(dPolyyMinus))
+
+                plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.3, c=c)
+                plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.3, c=c)
             #if (i % 25) == 0:
             #    plt.plot(x, y, 'k', color=(i/total, 0, 1-i/total, 1))
         # x1,x2,y1,y2 = plt.axis()
