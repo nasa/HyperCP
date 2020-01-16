@@ -679,6 +679,9 @@ class ProcessL2:
         SalXSlice = newAncGroup.getDataset('SAL').data['SAL'][-1].copy()
         if isinstance(SalXSlice, list):
             SalXSlice = SalXSlice[0]
+        RelAzXSlice = newAncGroup.getDataset('REL_AZ').data['REL_AZ'][-1].copy()
+        if isinstance(RelAzXSlice, list):
+            RelAzXSlice = RelAzXSlice[0]
        
         if hasNan:            
             msg = 'ProcessL2.calculateREFLECTANCE2: Slice X"%" average error: Dataset all NaNs.'
@@ -702,8 +705,13 @@ class ProcessL2:
             rhoSky, rhoDelta = RhoCorrections.RuddickCorr(sky750, rhoSkyDefault, WINDSPEEDXSlice)
 
         elif ZhangRho:            
+            wavebands = [*esColumns]
+            wavebands.pop(0) # Datetag
+            wavebands.pop(0) # Timetag2
+            wave = [float(i) for i in wavebands]
 
-            rhoSky, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice,CloudXSlice,SOL_ELXSlice,SSTXSlice,SalXSlice)
+            rhoSky, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
+                CloudXSlice,SOL_ELXSlice,SSTXSlice,SalXSlice,RelAzXSlice,wave)
 
         # Add date/time data to Rrs dataset
         if not ("Datetag" in newRrsData.columns):

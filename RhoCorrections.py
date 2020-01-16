@@ -1,6 +1,9 @@
 
+import collections
+
 from ConfigFile import ConfigFile
 from Utilities import Utilities
+import get_sky_sun_rho
 
 class RhoCorrections:
 
@@ -30,9 +33,32 @@ class RhoCorrections:
         return rhoSky, rhoDelta
 
     @staticmethod
-    def ZhangCorr(windSpeedMean,AOD,Cloud,solZen,wTemp,Sal):
+    def ZhangCorr(windSpeedMean,AOD,cloud,solZen,wTemp,sal,relAz,waveBands):
+        ''' Requires xarray: http://xarray.pydata.org/en/stable/installing.html
+        Recommended installation using Anaconda:
+        
+        $ conda install xarray dask netCDF4 bottleneck'''
 
-        rhoSky=3.14159
+        # === environmental conditions during experiment ===
+        env = collections.OrderedDict()
+        env['wind'] = windSpeedMean
+        env['od'] = AOD
+        env['C'] = cloud 
+        env['zen_sun'] = solZen
+        env['wtem'] = wTemp
+        env['sal'] = sal
+
+        # === The sensor ===
+        # the zenith and azimuth angles of light that the sensor will see
+        # 0 azimuth angle is where the sun located
+        # positive z is upward
+        sensor = collections.OrderedDict()
+        sensor['ang'] = [40,180-relAz]
+        sensor['wv'] = waveBands
+
+        rhoSky = get_sky_sun_rho.Main(env,sensor)
+
+        # rhoSky=3.14159
         rhoDelta = 0.003 # Unknown
         
         return rhoSky, rhoDelta
