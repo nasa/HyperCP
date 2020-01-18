@@ -409,6 +409,31 @@ def fresnel(m ,ang):
     return [R, R12, R33]
 
 
+def my_interpn(dbPoints, dbArray, interpArray):
+    '''
+    Interpolates the n-D array from the database defined by axes/values dbPoints 
+    to the points defined in interArray
+    
+    Inputs
+    ---
+    dbPoints : tuple of n arrays, each defining the values that result in values in dbArray
+    dbArray : n-D array of model outputs in the database
+    interpPoints : tuple of n arrays, each defining the new values at which to interpolate dbArray
+    
+    Outputs
+    ---
+    interpArray : dbArray values interpolated to interPoints
+    '''            
+    # mg = np.meshgrid(interpArray)
+    # interp_points = np.moveaxis(mg, 0, -1)
+    # result_presqueeze = interpn(dbPoints,
+    #                             skyrad0, interp_points)
+    # result = np.squeeze(result_presqueeze, axis=(0,1))
+    
+    # da = xr.DataArray(name='dbArray',
+    #                 data=dbArray,
+    #                 dims=[])
+    # return result
 
 
 def Main(env, sensor):
@@ -456,8 +481,23 @@ def Main(env, sensor):
     tprob = np.sum(prob,1)
     ref = sw_fresnel(sensor['wv'],angr_sky,env['wtem'],env['sal'])
 
-    skyrad = np.squeeze(interpn(db.zen_sun.data,db.od.data,tmp,db.wv.data,skyrad0.data,
-        env['zen_sun'],env['od'],tmp,sensor['wv']))
+    # skyrad = np.squeeze(interpn(db.zen_sun.data,db.od.data,tmp,db.wv.data,skyrad0.data,
+    #     env['zen_sun'],env['od'],tmp,sensor['wv']))
+    # skyrad = my_interpn(db.zen_sun.data,db.od.data,tmp,db.wv.data,skyrad0.data,
+    #     env['zen_sun'],env['od'],tmp,sensor['wv'])
+    solzen = db.zen_sun.data.flatten()
+    aod = db.od.data.flatten()
+    index = np.arange(1,skyrad0.data.shape[1]+1)
+    wave = db.wv.data.flatten()
+    da = xr.DataArray(name='skyrad0',
+                data=skyrad0.data,
+                dims=['wave','index','aod','solzen'],
+                coords=[wave, index, aod, solzen])
+    skyradXR = da.loc[sensor['wv'], index, env['od'], env['zen_sun']].squeeze()
+    skyrad = np.swapaxes(skyradXR.data, 0, 1)
+    # skyrad = skyrad0.loc[env['zen_sun'],env['od'],tmp,sensor['wv']].squeeze()
+
+
     N0 = skyrad[sensor.loc2.data]
     N = skyrad/N0
     # rho.sky = sum(bsxfun(@times,ref.*N,prob/tprob),1)

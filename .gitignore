@@ -1,6 +1,7 @@
 Data/
 Plots/
 Logs/
+Zhang_rho/
 Config/main.config
 .vscode/settings.json
 *.pyc

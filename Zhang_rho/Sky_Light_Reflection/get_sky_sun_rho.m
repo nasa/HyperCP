@@ -3,7 +3,7 @@ persistent db quads skyrad0 sunrad0 sdb vdb Radiance_BOA_sca Radiance_BOA_vec
 if isempty(db) || isempty(quads) || isempty(skyrad0) || isempty(sunrad0) || ...
         isempty(sdb) || isempty(vdb) || isempty(Radiance_BOA_sca) || ...
         isempty(Radiance_BOA_vec)
-    load('db.mat');
+    load('../../Data/db.mat');
 end
 tmp = [1:size(skyrad0,3)];
 
