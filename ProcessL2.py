@@ -13,6 +13,7 @@ from Utilities import Utilities
 from ConfigFile import ConfigFile
 from RhoCorrections import RhoCorrections
 from GetAnc import GetAnc
+from SB_support import readSB
 
 
 class ProcessL2:
@@ -541,6 +542,15 @@ class ProcessL2:
         '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for meteorological quality flags, 
         Perform rho correction with wind. Calculate the Rrs. Correct for NIR.'''
 
+        def dop(year):
+            # day of perihelion            
+            years = list(range(2001,2031))
+            key = [str(x) for x in years]
+            day = [4, 2, 4, 4, 2, 4, 3, 2, 4, 3, 3, 5, 2, 4, 4, 2, 4, 3, 3, 5, 2, 4, 4, 3, 4, 3, 3, 5, 2, 3]            
+            dop = {key[i]: day[i] for i in range(0, len(key))}            
+            result = dop[str(year)]
+            return result
+
         esData = refGroup.getDataset("ES")
         liData = sasGroup.getDataset("LI")
         ltData = sasGroup.getDataset("LT") 
@@ -780,6 +790,35 @@ class ProcessL2:
                 rrs = (lt - (rhoSky * li)) / es
 
                 rrsDelta = rrs * ( (liDelta/li)**2 + (rhoDelta/rhoSky)**2 + (liDelta/li)**2 + (esDelta/es)**2 )**0.5
+
+                # Calculate the normalized water leaving radiance (not exact; no BRDF here)
+                fp = 'Data/Thuillier_F0.sb'
+                print("SB_support.readSB: " + fp)
+                if not readSB(fp, no_warn=True):
+                    msg = "Unable to read Thuillier file. Make sure it is in SeaBASS format."
+                    print(msg)
+                    Utilities.writeLogFile(msg)  
+                    return None
+                else:
+                    F0_raw = readSB(fp, no_warn=True)
+                    F0 = np.array(F0_raw.data['esun'])*10 # convert uW cm^-2 nm^-1 to W m^-2 nm^1
+                    F0_wv = np.array(F0_raw.data['wavelength'])
+                    # Earth-Sun distance
+                    day = int(str(datetag[0])[4:7])  
+                    year = int(str(datetag[0])[0:4])  
+                    eccentricity = 0.01672
+                    dayFactor = 360/365.256363
+                    dayOfPerihelion = dop(year); 
+                    dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
+                    F0_fs = F0*dES
+
+                    wavelength = list(esColumns.keys())[2:]
+                    wavelength  = list(map(float, wavelength))
+                    
+                    
+
+                
+
 
                 newESData.columns[k].append(es)
                 newLIData.columns[k].append(li)

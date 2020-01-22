@@ -57,8 +57,7 @@ class RhoCorrections:
         sensor['wv'] = waveBands
 
         rhoSky = get_sky_sun_rho.Main(env,sensor)
-
-        # rhoSky=3.14159
-        rhoDelta = 0.003 # Unknown
+        
+        rhoDelta = 0.003 # Unknown; estimated from Ruddick 2006
         
         return rhoSky, rhoDelta

@@ -6,7 +6,7 @@ import get_sky_sun_rho
 relAz = 135
  # === environmental conditions during experiment ===
 env = collections.OrderedDict()
-env['wind'] = [10]
+env['wind'] = 10
 env['od'] = 0.1
 env['C'] = 0 
 env['zen_sun'] = 30
@@ -21,4 +21,6 @@ sensor = collections.OrderedDict()
 sensor['ang'] = [40,180-relAz]
 sensor['wv'] = np.arange(350, 1001,10).tolist()
 
-rhoSky = get_sky_sun_rho.Main(env,sensor)
+rho = get_sky_sun_rho.Main(env,sensor)
+
+print(rho['rho'])

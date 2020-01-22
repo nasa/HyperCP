@@ -32,6 +32,7 @@ class Window(QtWidgets.QWidget):
         if not os.path.exists("Data"):  
            os.makedirs("Data")
            os.rename("./db.mat", "./Data/db.mat")
+           os.rename("./Thuillier_F0.sb", "./Data/Thuillier_F0.sb")
         if not os.path.exists("Plots"):
            os.makedirs("Plots")
         if not os.path.exists("Config"):
