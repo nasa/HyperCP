@@ -4,7 +4,7 @@ import urllib.request as ur
 import requests
 import platform
 import numpy as np
-from dataclasses import dataclass
+# from dataclasses import dataclass
 
 from HDFRoot import HDFRoot
 from HDFGroup import HDFGroup
