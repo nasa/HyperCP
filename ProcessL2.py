@@ -29,16 +29,13 @@ class ProcessL2:
 
             # msg = f'Eliminate data between: {timeTag} (HHMMSSMSS)'
             # print(msg)
-            # Utilities.writeLogFile(msg)
-            # print(timeTag)
-            # print(" ")         
+            # Utilities.writeLogFile(msg)        
             start = Utilities.timeTag2ToSec(timeTag[0])
             stop = Utilities.timeTag2ToSec(timeTag[1])                
                     
             # msg = f'   Remove {group.id}  Data'
             # print(msg)
             # Utilities.writeLogFile(msg)
-            #  timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
             # Ancillary still has datetag and tt2 broken out...
             if group.id == "ANCILLARY":
                 timeData = group.getDataset("Timetag2").data["Timetag2"]                
@@ -73,7 +70,7 @@ class ProcessL2:
                 Utilities.writeLogFile(msg)
 
         # return finalCount/startLength
-        return
+        return finalCount
 
     # Interpolate to a single column
     @staticmethod
@@ -1032,9 +1029,15 @@ class ProcessL2:
         
         if badTimes is not None and len(badTimes) != 0:
             print('Removing records...')
-            ProcessL2.filterData(referenceGroup, badTimes)            
+            check = ProcessL2.filterData(referenceGroup, badTimes)   
+            if check == 0:
+                msg = "No spectra remaining. Abort."
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False         
             ProcessL2.filterData(sasGroup, badTimes)
-            ProcessL2.filterData(ancGroup, badTimes)            
+            ProcessL2.filterData(ancGroup, badTimes)
+
         
        # Spectral Outlier Filter
         enableSpecQualityCheck = ConfigFile.settings['bL2EnableSpecQualityCheck']
@@ -1055,7 +1058,12 @@ class ProcessL2:
 
             if badTimes is not None:
                 print('Removing records...')
-                ProcessL2.filterData(referenceGroup, badTimes)            
+                check = ProcessL2.filterData(referenceGroup, badTimes)   
+                if check == 0:
+                    msg = "No spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False                 
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)                
 
@@ -1070,7 +1078,12 @@ class ProcessL2:
                 
             if badTimes is not None:
                 print('Removing records...')
-                ProcessL2.filterData(referenceGroup, badTimes)            
+                check = ProcessL2.filterData(referenceGroup, badTimes)   
+                if check == 0:
+                    msg = "No spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False              
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
 
@@ -1083,7 +1096,12 @@ class ProcessL2:
             
         if badTimes is not None:
             print('Removing records...')
-            ProcessL2.filterData(referenceGroup, badTimes)            
+            check = ProcessL2.filterData(referenceGroup, badTimes)   
+            if check == 0:
+                msg = "No spectra remaining. Abort."
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False                  
             ProcessL2.filterData(sasGroup, badTimes)
             ProcessL2.filterData(ancGroup, badTimes)
 
@@ -1094,11 +1112,11 @@ class ProcessL2:
 
         # # Test
         esLength = len(list(esColumns.values())[0])
-        if esLength == 0:
-            msg = "No spectra remaining. Abort."
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return False
+        # if esLength == 0:
+        #     msg = "No spectra remaining. Abort."
+        #     print(msg)
+        #     Utilities.writeLogFile(msg)
+        #     return False
 
         # ltLength = len(list(ltColumns.values())[0])
 
