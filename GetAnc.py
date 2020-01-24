@@ -2,46 +2,54 @@
 import os
 import urllib.request as ur
 import requests
-# import base64
+import platform
 import numpy as np
 from dataclasses import dataclass
 
 from HDFRoot import HDFRoot
 from HDFGroup import HDFGroup
 from Utilities import Utilities
+import obpgSession
 
 class GetAnc:    
 
+    @staticmethod
+    def userCreds(usr,pwd):
+        home = os.path.expanduser('~')
+        if platform.system() == 'Windows':    
+            netrcFile = os.path.join(home,'_netrc')
+        else: 
+            netrcFile = os.path.join(home,'.netrc')
+
+        if not os.path.exists(netrcFile):
+            with open(netrcFile, 'w') as fo:
+                fo.write(f'machine urs.earthdata.nasa.gov login {usr} password {pwd}\n')
+        else:
+            # print('netrc found')
+            fo = open(netrcFile)
+            lines = fo.readlines()
+            fo.close()
+            # This will find and replace or add the Earthdata server
+            foundED = False
+            for i, line in enumerate(lines):
+                if 'machine urs.earthdata.nasa.gov login' in line:
+                    foundED = True
+                    lineIndx = i
+
+            if foundED == True:
+                lines[lineIndx] = f'machine urs.earthdata.nasa.gov login {usr} password {pwd}\n'
+            else:
+                lines = lines + [f'\nmachine urs.earthdata.nasa.gov login {usr} password {pwd}\n']
+
+            # with open(netrcFile, "w") as fo:
+            fo = open(netrcFile,"w")
+            fo.writelines(lines)
+            fo.close()
 
     @staticmethod 
-    def getAnc(inputGroup):
-        
-        username = "daurin"
-        password = "EarthData2019"
-
-        # # create a password manager
-        # password_mgr = ur.HTTPPasswordMgrWithDefaultRealm()
-
-        # # Add the username and password.
-        # # If we knew the realm, we could use it instead of None.
-        # top_level_url = "https://urs.earthdata.nasa.gov"
-        # password_mgr.add_password(None, top_level_url, username, password)
-        # handler = ur.HTTPBasicAuthHandler(password_mgr)
-
-        # # create "opener" (OpenerDirector instance)
-        # opener = ur.build_opener(handler)
-
-        # # use the opener to fetch a URL
-        # opener.open("https://oceandata.sci.gsfc.nasa.gov/")
-
-        # # Install the opener.
-        # # Now all calls to urllib.request.urlopen use our opener.
-        # ur.install_opener(opener)
-
-
-        # base64string = base64.b64encode(bytes('%s:%s' % (username, password),'ascii'))
-        # request.add_header("Authorization", "Basic %s" % base64string.decode('utf-8'))
-        cwd = os.getcwd()
+    def getAnc(inputGroup):                        
+        server = 'oceandata.sci.gsfc.nasa.gov'
+        cwd = os.getcwd()        
 
         if not os.path.exists(os.path.join(cwd,"Data","Anc")):  
             os.makedirs(os.path.join(cwd,"Data","Anc")) 
@@ -51,7 +59,6 @@ class GetAnc:
         latTime = inputGroup.getDataset('LATITUDE').data["Timetag2"]
         lat = inputGroup.getDataset('LATITUDE').data["NONE"]            
         lon = inputGroup.getDataset('LONGITUDE').data["NONE"]
-
 
         modWind = []
         modAOD = []
@@ -64,47 +71,33 @@ class GetAnc:
             doy = int(str(int(dateTag))[4:7])
             hr = Utilities.timeTag2ToSec(latTime[index])/60/60               
 
-            # file1 = f"{year}/{doy:03.0f}/N{year}{doy:03.0f}{hr:02.0f}_AER_MERRA2_1h.nc"
             file1 = f"N{year}{doy:03.0f}{hr:02.0f}_MERRA2_1h.nc"
             if oldFile != file1:
-                # print(file1)
+                ancPath = os.path.join(cwd,"Data","Anc")
                 filePath1 = os.path.join(cwd,"Data","Anc",file1)
                 if not os.path.exists(filePath1):
-                    # url = f"https://oceandata.sci.gsfc.nasa.gov/Ancillary/Meteorological/{file1}"
-                    url = f"https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/{file1}"
-                    # ur.urlretrieve(url, filePath1)                    
-                    
+                    request = f"/cgi/getfile/{file1}"
                     msg = f'Retrieving anchillary file from server: {file1}'
                     print(msg)
                     Utilities.writeLogFile(msg) 
-                    
-                    # filedata = ur.urlopen(url).read()
-                    filedata = requests.get(url, auth=(username,password))
 
-                    if filedata.status_code == 200:
-                        with open(filePath1, 'wb') as out:
-                            for bits in filedata.iter_content():
-                                out.write(bits)
-
-                    # print(filedata, file=fo)
-                    # fo.close()
-                    pass
+                    status = obpgSession.httpdl(server, request, localpath=ancPath, 
+                        outputfilename=file1, uncompress=False, verbose=2)                    
                 else:
                     msg = f'Ancillary file found locally: {file1}'
                     print(msg)
                     Utilities.writeLogFile(msg) 
 
-
                 file2 = f"N{year}{doy:03.0f}{hr:02.0f}_AER_MERRA2_1h.nc"
-                # print(file2)
                 filePath2 = os.path.join(cwd,"Data","Anc",file2)
                 if not os.path.exists(filePath2):
-                    # url = f"https://oceandata.sci.gsfc.nasa.gov/Ancillary/Meteorological/{file1}"
-                    url = f"https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/{file2}"
-                    ur.urlretrieve(url, filePath2)
+                    request = f"/cgi/getfile/{file2}"
                     msg = f'Retrieving anchillary file from server: {file2}'
                     print(msg)
                     Utilities.writeLogFile(msg) 
+
+                    status = obpgSession.httpdl(server, request, localpath=ancPath, 
+                        outputfilename=file2, uncompress=False, verbose=2)
                 else:
                     msg = f'Ancillary file found locally: {file2}'
                     print(msg)

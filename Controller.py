@@ -353,7 +353,7 @@ class Controller:
         root = ProcessL2.processL2(root, ancillaryData)
 
         # Create Plots
-        dirpath = '.'
+        dirpath = os.getcwd()
         if root is not None and ConfigFile.settings['bL2PlotRrs']==1:            
             _, filename = os.path.split(outFilePath)
             Utilities.plotRadiometry(root, dirpath, filename, rType='Rrs', plotDelta = True)

@@ -11,7 +11,7 @@ import xarray as xr
 
 π = np.pi
 
-db_path = './Data/db.mat'
+db_path = './Data/Zhang_rho_db.mat'
 #Groups in db.mat
 db, quads, sdb, vdb = None, None, None, None
 #Vars. in db.mat

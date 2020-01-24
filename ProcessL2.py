@@ -791,7 +791,7 @@ class ProcessL2:
             return None
         else:
             Thuillier = readSB(fp, no_warn=True)
-            F0_raw = np.array(Thuillier.data['esun'])*10 # convert uW cm^-2 nm^-1 to W m^-2 nm^1
+            F0_raw = np.array(Thuillier.data['esun']) # uW cm^-2 nm^-1
             wv_raw = np.array(Thuillier.data['wavelength'])
             # Earth-Sun distance
             day = int(str(datetag[0])[4:7])  
@@ -802,8 +802,10 @@ class ProcessL2:
             dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
             F0_fs = F0_raw*dES
 
+            # Map to float for interpolation
             wavelength  = list(map(float, list(esColumns.keys())[2:]))
             F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
+            # Use the strings for the dict
             wavelength = list(esColumns.keys())[2:]
             F0 = collections.OrderedDict(zip(wavelength, F0))
 
@@ -863,9 +865,8 @@ class ProcessL2:
 
         # Perfrom near-infrared correction to remove additional atmospheric and glint contamination
         if performNIRCorrection:
-
             # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
-            # Find the minimum between 750 and 800, and subtract it from spectrum
+            # Find the minimum between 700 and 800, and subtract it from spectrum
             
             # rrs correction
             NIRRRs = []
@@ -1214,7 +1215,7 @@ class ProcessL2:
             return None
 
         root.attributes["Rrs_UNITS"] = "sr^-1"
-        root.attributes["nLw_UNITS"] = "sr^-1"
+        root.attributes["nLw_UNITS"] = "uW cm^-2 nm^-1 sr^-1"
         
         # Check to insure at least some data survived quality checks
         if root.getGroup("REFLECTANCE").getDataset("Rrs").data is None:

@@ -25,9 +25,10 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         doubleValidator = QtGui.QDoubleValidator()
 
         self.nameLabel = QtWidgets.QLabel(f'Editing: {self.name}', self)
-        linkSeaBASSLabel = QtWidgets.QLabel("Separate multiple entries with commas, and replace spaces with underscores. For input assistance, go to \
+        linkSeaBASSLabel = QtWidgets.QLabel(
+            "Separate multiple entries with commas, and replace spaces with underscores. For input assistance, go to \
             <a href=\"https://seabass.gsfc.nasa.gov/wiki/metadataheaders\"> SeaBASS Metadata Headers</a>")
-        linkSeaBASSLabel.setOpenExternalLinks(True)                
+        linkSeaBASSLabel.setOpenExternalLinks(True)
 
         instructionLabel = QtWidgets.QLabel("Separate multiple entries with commas, and replace spaces with underscores.")        
         instructionLabel_font = instructionLabel.font()
@@ -35,7 +36,9 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         instructionLabel_font.setBold(True)
         instructionLabel.setFont(instructionLabel_font)
         instructionLabelSub = QtWidgets.QLabel("To match fields to existing SeaBASS entries,")
-        instructionLabelSub1 = QtWidgets.QLabel("check the 'Lists' pull-down menu  <a href=\"https://seabass.gsfc.nasa.gov\"> here</a>.")
+        instructionLabelSub1 = QtWidgets.QLabel(
+            "check the 'Lists' pull-down menu<a href=\"https://seabass.gsfc.nasa.gov\"> here</a>.")
+        instructionLabelSub1.setOpenExternalLinks(True)
 
        
         investigatorsLabel = QtWidgets.QLabel("Investigators", self)

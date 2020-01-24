@@ -8,6 +8,7 @@ from ConfigFile import ConfigFile
 from AnomalyDetection import AnomalyDetection
 from SeaBASSHeader import SeaBASSHeader
 from SeaBASSHeaderWindow import SeaBASSHeaderWindow
+from GetAnc import GetAnc
 
 
 
@@ -280,7 +281,11 @@ class ConfigWindow(QtWidgets.QDialog):
         l2pLabel_font.setBold(True)
         l2pLabel.setFont(l1eLabel_font)
         l2pSublabel = QtWidgets.QLabel(" Select here to download GMAO MERRA2 ancillary met data", self)
-        l2pSublabel2 = QtWidgets.QLabel(" Required for Zhang correction & fills in gaps in wind data.", self)
+        l2pSublabel2 = QtWidgets.QLabel(" Required for Zhang correction and fills in gaps in wind data.", self)
+        l2pSublabel3 = QtWidgets.QLabel(" WILL PROMPT FOR EARTHDATA USERNAME/PASSWORD", self)
+        l2pSublabel4 = QtWidgets.QLabel(
+            "<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">       Register here.</a>", self)
+        l2pSublabel4.setOpenExternalLinks(True)
 
         l2pGetAncLabel = QtWidgets.QLabel("       Download ancillary models", self)        
         self.l2pGetAncCheckBox = QtWidgets.QCheckBox("", self)                    
@@ -411,7 +416,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.RhoRadioButtonZhang.setChecked(True)
         self.RhoRadioButtonZhang.clicked.connect(self.l2RhoCorrectionRadioButtonClicked)        
 
-        self.l2pGetAncCheckBoxUpdate()        
+        # self.l2pGetAncCheckBoxUpdate()        
 
         # L2 NIR AtmoCorr
         l2NIRCorrectionLabel = QtWidgets.QLabel("  Enable NIR Correction (blue water only)", self)
@@ -659,6 +664,8 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addWidget(l2pLabel)
         VBox2.addWidget(l2pSublabel)
         VBox2.addWidget(l2pSublabel2)
+        VBox2.addWidget(l2pSublabel3)
+        VBox2.addWidget(l2pSublabel4)
 
         l2pGetAncHBox = QtWidgets.QHBoxLayout()
         l2pGetAncHBox.addWidget(l2pGetAncLabel)
@@ -1060,13 +1067,28 @@ class ConfigWindow(QtWidgets.QDialog):
             QtWidgets.QMessageBox.critical(self, "Error", message)
 
     def l2pGetAncCheckBoxUpdate(self):
-        print("ConfigWindow - l2pGetAncCheckBoxUpdate")
+        print("ConfigWindow - l2pGetAncCheckBoxUpdate")        
+            
         if self.l2pGetAncCheckBox.isChecked():
+            if not ConfigFile.settings["bL2pObpgCreds"]:
+                usr = QtWidgets.QInputDialog.getText(None, 
+                                                "Earthdata Username",
+                                                "username:", 
+                                                QtWidgets.QLineEdit.Normal, 
+                                                "") 
+                pwd = QtWidgets.QInputDialog.getText(None, 
+                                                "Earthdata Password",
+                                                "password:", 
+                                                QtWidgets.QLineEdit.Normal, 
+                                                "") 
+                GetAnc.userCreds(usr[0],pwd[0])
+                
             ConfigFile.settings["bL2pGetAnc"] = 1
             self.RhoRadioButtonRuddick.setDisabled(0)
             self.RhoRadioButtonZhang.setDisabled(0)
         else:            
             ConfigFile.settings["bL2pGetAnc"] = 0
+            ConfigFile.settings["bL2pObpgCreds"] = False
             self.RhoRadioButtonZhang.setChecked(0)
             self.RhoRadioButtonZhang.setDisabled(1)
             self.RhoRadioButtonRuddick.setChecked(1)
