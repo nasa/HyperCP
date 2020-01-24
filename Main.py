@@ -31,8 +31,10 @@ class Window(QtWidgets.QWidget):
         #    os.makedirs("RawData")
         if not os.path.exists("Data"):  
            os.makedirs("Data")
-           os.rename("./db.mat", "./Data/db.mat")
+           os.rename("./Zhang_rho_db.mat", "./Data/Zhang_rho_db.mat")
            os.rename("./Thuillier_F0.sb", "./Data/Thuillier_F0.sb")
+           os.rename("./banner.jpg", "./Data/banner.jpg")
+           
         if not os.path.exists("Plots"):
            os.makedirs("Plots")
         if not os.path.exists("Config"):
@@ -51,7 +53,7 @@ class Window(QtWidgets.QWidget):
         # print(MainConfig.settings)   
 
         banner = QtWidgets.QLabel(self)
-        pixmap = QtGui.QPixmap('banner.jpg')
+        pixmap = QtGui.QPixmap("./Data/banner.jpg")
         # banner.setPixmap(pixmap.scaled(banner.size(),QtCore.Qt.IgnoreAspectRatio))
         banner.setPixmap(pixmap)
         # banner.resize(self.width(),100)        

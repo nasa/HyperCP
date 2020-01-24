@@ -389,6 +389,10 @@ class Utilities:
     @staticmethod
     def plotRadiometry(root, dirpath, filename, rType, plotDelta = False):
 
+        if not os.path.exists(os.path.join('Plots','L2')):
+            os.makedirs(os.path.join('Plots','L2'))        
+        plotdir = os.path.join(dirpath,'Plots','L2')
+
         dataDelta = None
         if rType=='Rrs':
             print('Plotting Rrs')
@@ -396,17 +400,15 @@ class Utilities:
             Data = group.getDataset(rType)
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_delta')
-
-
-            if not os.path.exists("Plots/L2_Rrs/"):
-                os.makedirs("Plots/L2_Rrs/")
-            plotdir = os.path.join(dirpath, 'Plots/L2_Rrs/')
             plotRange = [380, 800]
-        else:
-            if not os.path.exists("Plots/L2_EsLiLt"):
-                os.makedirs("Plots/L2_EsLiLt")
-            plotdir = os.path.join(dirpath, 'Plots/L2_EsLiLt/')
-            plotRange = [305, 1140]
+
+        if rType=='nLw':
+            print('Plotting nLw')
+            group = root.getGroup("RADIANCE")
+            Data = group.getDataset(rType)
+            if plotDelta:
+                dataDelta = group.getDataset(f'{rType}_delta')
+            plotRange = [380, 800]                    
 
         if rType=='ES':
             print('Plotting Es')
@@ -414,6 +416,7 @@ class Utilities:
             Data = group.getDataset(rType)
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_delta')
+            plotRange = [305, 1140]
             
         if rType=='LI':
             print('Plotting Li')
@@ -421,6 +424,7 @@ class Utilities:
             Data = group.getDataset(rType)
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_delta')
+            plotRange = [305, 1140]
             
         if rType=='LT':
             print('Plotting Lt')
@@ -428,6 +432,7 @@ class Utilities:
             Data = group.getDataset(rType)  
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_delta')          
+            plotRange = [305, 1140]
 
         font = {'family': 'serif',
             'color':  'darkred',
@@ -503,17 +508,14 @@ class Utilities:
         transform=axes.transAxes,
         color='black', fontdict=font)
 
-        # Create output directory        
-        os.makedirs(plotdir, exist_ok=True)
+        # # Create output directory        
+        # os.makedirs(plotdir, exist_ok=True)
 
         # Save the plot
         filebasename,_ = filename.split('_')
         fp = os.path.join(plotdir, filebasename + '_' + rType + '.png')
         plt.savefig(fp)
-        plt.close() # This prevents displaying the plot on screen with certain IDEs
-        # except:
-        #     e = sys.exc_info()[0]
-        #     print("Error: %s" % e)        
+        plt.close() # This prevents displaying the plot on screen with certain IDEs          
    
 
     @staticmethod
@@ -605,9 +607,9 @@ class Utilities:
     @staticmethod
     def specFilter(inFilePath, Dataset, timeStamp, filterRange, filterFactor, rType):
         dirpath = './'
-        if not os.path.exists("Plots/L2_Spectral_Filter/"):
-            os.makedirs("Plots/L2_Spectral_Filter/")
-        plotdir = os.path.join(dirpath, 'Plots/L2_Spectral_Filter/')
+        if not os.path.exists(os.path.join('Plots','L2_Spectral_Filter')):
+            os.makedirs(os.path.join('Plots','L2_Spectral_Filter'))
+        plotdir = os.path.join(dirpath,'Plots','L2_Spectral_Filter')
 
         font = {'family': 'serif',
                 'color':  'darkred',

@@ -307,7 +307,7 @@ class ProcessL1c:
                     badTimes.append(startstop)
 
             if start==0 and stop==index: # All records are bad                           
-                return False
+                return None
 
         # Apply Rotator Delay Filter (delete records within so many seconds of a rotation)
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
@@ -431,7 +431,7 @@ class ProcessL1c:
                         badTimes.append(startstop)
 
                 if start==0 and stop==index: # All records are bad                           
-                    return False
+                    return None
             else:
                 msg = f'No rotator data found. Filtering on absolute rotator angle failed.'
                 print(msg)

@@ -403,6 +403,27 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
     def configUpdateButtonPressed(self):
         print("Updating comments from values in ConFigWindow")
 
+        if ConfigFile.settings["bL2RuddickRho"]:
+            rhoCorr = "Ruddick2006"
+        else:
+            rhoCorr = "Zhang2017"
+        if ConfigFile.settings["bL2EnableSpecQualityCheck"]:
+            specFilt = "On"
+        else:
+            specFilt = "Off"
+        if ConfigFile.settings["bL2EnableQualityFlags"]:
+            metFilt = "On"
+        else:
+            metFilt = "Off"
+        if ConfigFile.settings["bL2EnablePercentLt"]:
+            ltFilt = "On"
+        else:
+            ltFilt = "Off"
+        if ConfigFile.settings["bL2PerformNIRCorrection"]:
+            NIRFilt = "On"
+        else:
+            NIRFilt = "Off"
+
         SeaBASSHeader.settings["comments"] =\
             f'! SZA Filter = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
             f'! Rotator Home Angle = {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'+\
@@ -418,13 +439,27 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! Dark Sigma = {ConfigFile.settings["fL1dDeglitch2"]}\n'+\
             f'! Light Sigma = {ConfigFile.settings["fL1dDeglitch3"]}\n'+\
             f'! Wavelength Interp Int = {ConfigFile.settings["fL1eInterpInterval"]}\n'+\
-            f'! Rho Sky = {ConfigFile.settings["fL2RhoSky"]}\n'+\
-            f'! Default Wind = {ConfigFile.settings["fL2DefaultWindSpeed"]}\n'+\
+            f'! Max Wind = {ConfigFile.settings["fL2MaxWind"]}\n'+\
+            f'! Min SZA = {ConfigFile.settings["fL2SZAMin"]}\n'+\
+            f'! Max SZA = {ConfigFile.settings["fL2SZAMax"]}\n'+\
+            f'! Spectral Filter = {specFilt}\n'+\
+            f'! Filter Sigma Es = {ConfigFile.settings["fL2SpecFilterEs"]}\n'+\
+            f'! Filter Sigma Li = {ConfigFile.settings["fL2SpecFilterLi"]}\n'+\
+            f'! Filter Sigma Lt = {ConfigFile.settings["fL2SpecFilterLt"]}\n'+\
+            f'! Meteorological Filter = {metFilt}\n'+\
+            f'! Cloud Flag = {ConfigFile.settings["fL2CloudFlag"]}\n'+\
             f'! Es Flag = {ConfigFile.settings["fL2SignificantEsFlag"]}\n'+\
             f'! Dawn/Dusk Flag = {ConfigFile.settings["fL2DawnDuskFlag"]}\n'+\
             f'! Rain/Humidity Flag = {ConfigFile.settings["fL2RainfallHumidityFlag"]}\n'+\
-            f'! Rrs Time Interval = {ConfigFile.settings["fL2TimeInterval"]}\n'+\
-            f'! Percent Light = {ConfigFile.settings["fL2PercentLt"]}'
+            f'! Ensemble Interval = {ConfigFile.settings["fL2TimeInterval"]}\n'+\
+            f'! Percent Lt Filter = {ltFilt}\n'+\
+            f'! Percent Light = {ConfigFile.settings["fL2PercentLt"]}\n'+\
+            f'! Glint_Correction = {rhoCorr}\n'+\
+            f'! Default Wind = {ConfigFile.settings["fL2DefaultWindSpeed"]}\n'+\
+            f'! Default AOD = {ConfigFile.settings["fL2DefaultAOD"]}\n'+\
+            f'! Default Salt = {ConfigFile.settings["fL2DefaultSalt"]}\n'+\
+            f'! Default SST = {ConfigFile.settings["fL2DefaultSST"]}\n'+\
+            f'! NIR Correction = {NIRFilt}'
 
         self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
         self.commentsLineEdit.update()

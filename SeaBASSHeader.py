@@ -92,29 +92,63 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["west_longitude"] = ''
         SeaBASSHeader.settings["wind_speed"] = 'NA'
 
-        # This should update from the ConfigFile on demand
+        # This will update subsequently from the ConfigFile on demand
+        if ConfigFile.settings["bL2RuddickRho"]:
+            rhoCorr = "Ruddick2006"
+        else:
+            rhoCorr = "Zhang2017"
+        if ConfigFile.settings["bL2EnableSpecQualityCheck"]:
+            specFilt = "On"
+        else:
+            specFilt = "Off"
+        if ConfigFile.settings["bL2EnableQualityFlags"]:
+            metFilt = "On"
+        else:
+            metFilt = "Off"
+        if ConfigFile.settings["bL2EnablePercentLt"]:
+            ltFilt = "On"
+        else:
+            ltFilt = "Off"
+        if ConfigFile.settings["bL2PerformNIRCorrection"]:
+            NIRFilt = "On"
+        else:
+            NIRFilt = "Off"
         SeaBASSHeader.settings["comments"] =\
             f'! SZA Filter = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
-            f'! Rotator Home Angle = {ConfigFile.settings["fL1bRotatorHomeAngle"]}\n'+\
-            f'! Rotator Delay = {ConfigFile.settings["fL1bRotatorDelay"]}\n'+\
-            f'! Max Pitch = {ConfigFile.settings["fL1bPitchRollPitch"]}\n'+\
-            f'! Max Roll = {ConfigFile.settings["fL1bPitchRollRoll"]}\n'+\
-            f'! Rotator Min = {ConfigFile.settings["fL1bRotatorAngleMin"]}\n'+\
-            f'! Rotator Max = {ConfigFile.settings["fL1bRotatorAngleMax"]}\n'+\
-            f'! Rel Azimuth Min = {ConfigFile.settings["fL1bSunAngleMin"]}\n'+\
-            f'! Rel Azimuth Max = {ConfigFile.settings["fL1bSunAngleMax"]}\n'+\
-            f'! Dark Window = {ConfigFile.settings["fL2Deglitch0"]}\n'+\
-            f'! Light Window = {ConfigFile.settings["fL2Deglitch1"]}\n'+\
-            f'! Dark Sigma = {ConfigFile.settings["fL2Deglitch2"]}\n'+\
-            f'! Light Sigma = {ConfigFile.settings["fL2Deglitch3"]}\n'+\
-            f'! Wavelength Interp Int = {ConfigFile.settings["fL3InterpInterval"]}\n'+\
-            f'! Rho Sky = {ConfigFile.settings["fL4RhoSky"]}\n'+\
-            f'! Default Wind = {ConfigFile.settings["fL4DefaultWindSpeed"]}\n'+\
-            f'! Es Flag = {ConfigFile.settings["fL4SignificantEsFlag"]}\n'+\
-            f'! Dawn/Dusk Flag = {ConfigFile.settings["fL4DawnDuskFlag"]}\n'+\
-            f'! Rain/Humidity Flag = {ConfigFile.settings["fL4RainfallHumidityFlag"]}\n'+\
-            f'! Rrs Time Interval = {ConfigFile.settings["fL4TimeInterval"]}\n'+\
-            f'! Percent Light = {ConfigFile.settings["fL4PercentLt"]}'
+            f'! Rotator Home Angle = {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'+\
+            f'! Rotator Delay = {ConfigFile.settings["fL1cRotatorDelay"]}\n'+\
+            f'! Max Pitch = {ConfigFile.settings["fL1cPitchRollPitch"]}\n'+\
+            f'! Max Roll = {ConfigFile.settings["fL1cPitchRollRoll"]}\n'+\
+            f'! Rotator Min = {ConfigFile.settings["fL1cRotatorAngleMin"]}\n'+\
+            f'! Rotator Max = {ConfigFile.settings["fL1cRotatorAngleMax"]}\n'+\
+            f'! Rel Azimuth Min = {ConfigFile.settings["fL1cSunAngleMin"]}\n'+\
+            f'! Rel Azimuth Max = {ConfigFile.settings["fL1cSunAngleMax"]}\n'+\
+            f'! Dark Window = {ConfigFile.settings["fL1dDeglitch0"]}\n'+\
+            f'! Light Window = {ConfigFile.settings["fL1dDeglitch1"]}\n'+\
+            f'! Dark Sigma = {ConfigFile.settings["fL1dDeglitch2"]}\n'+\
+            f'! Light Sigma = {ConfigFile.settings["fL1dDeglitch3"]}\n'+\
+            f'! Wavelength Interp Int = {ConfigFile.settings["fL1eInterpInterval"]}\n'+\
+            f'! Max Wind = {ConfigFile.settings["fL2MaxWind"]}\n'+\
+            f'! Min SZA = {ConfigFile.settings["fL2SZAMin"]}\n'+\
+            f'! Max SZA = {ConfigFile.settings["fL2SZAMax"]}\n'+\
+            f'! Spectral Filter = {specFilt}\n'+\
+            f'! Filter Sigma Es = {ConfigFile.settings["fL2SpecFilterEs"]}\n'+\
+            f'! Filter Sigma Li = {ConfigFile.settings["fL2SpecFilterLi"]}\n'+\
+            f'! Filter Sigma Lt = {ConfigFile.settings["fL2SpecFilterLt"]}\n'+\
+            f'! Meteorological Filter = {metFilt}\n'+\
+            f'! Cloud Flag = {ConfigFile.settings["fL2CloudFlag"]}\n'+\
+            f'! Es Flag = {ConfigFile.settings["fL2SignificantEsFlag"]}\n'+\
+            f'! Dawn/Dusk Flag = {ConfigFile.settings["fL2DawnDuskFlag"]}\n'+\
+            f'! Rain/Humidity Flag = {ConfigFile.settings["fL2RainfallHumidityFlag"]}\n'+\
+            f'! Ensemble Interval = {ConfigFile.settings["fL2TimeInterval"]}\n'+\
+            f'! Percent Lt Filter = {ltFilt}\n'+\
+            f'! Percent Light = {ConfigFile.settings["fL2PercentLt"]}\n'+\
+            f'! Glint_Correction = {rhoCorr}\n'+\
+            f'! Default Wind = {ConfigFile.settings["fL2DefaultWindSpeed"]}\n'+\
+            f'! Default AOD = {ConfigFile.settings["fL2DefaultAOD"]}\n'+\
+            f'! Default Salt = {ConfigFile.settings["fL2DefaultSalt"]}\n'+\
+            f'! Default SST = {ConfigFile.settings["fL2DefaultSST"]}\n'+\
+            f'! NIR Correction = {NIRFilt}'
 
         SeaBASSHeader.settings["other_comments"] = f'!\n'\
             '! Other comments...\n'\

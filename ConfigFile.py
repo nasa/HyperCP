@@ -42,24 +42,34 @@ class ConfigFile:
         print("fL2MaxWind", ConfigFile.settings["fL2MaxWind"])
         print("fL2SZAMin", ConfigFile.settings["fL2SZAMin"])
         print("fL2SZAMax", ConfigFile.settings["fL2SZAMax"])
+        
         print("bL2EnableSpecQualityCheck", ConfigFile.settings["bL2EnableSpecQualityCheck"])
+        print("fL2SpecFilterEs", ConfigFile.settings["fL2SpecFilterEs"])
+        print("fL2SpecFilterLi", ConfigFile.settings["fL2SpecFilterLi"])
+        print("fL2SpecFilterLt", ConfigFile.settings["fL2SpecFilterLt"])
+        
+        print("bL2EnableQualityFlags", ConfigFile.settings["bL2EnableQualityFlags"])
+        print("fL2CloudFlag", ConfigFile.settings["fL2CloudFlag"])
+        print("fL2SignificantEsFlag", ConfigFile.settings["fL2SignificantEsFlag"])
+        print("fL2DawnDuskFlag", ConfigFile.settings["fL2DawnDuskFlag"])
+        print("fL2RainfallHumidityFlag", ConfigFile.settings["fL2RainfallHumidityFlag"]) 
+
+        print("fL2TimeInterval", ConfigFile.settings["fL2TimeInterval"])
+        print("bL2EnablePercentLt", ConfigFile.settings["bL2EnablePercentLt"])
+        print("fL2PercentLt", ConfigFile.settings["fL2PercentLt"])
+
         print("fL2RhoSky", ConfigFile.settings["fL2RhoSky"])
         print("fL2DefaultWindSpeed", ConfigFile.settings["fL2DefaultWindSpeed"])   
         print("fL2DefaultAOD", ConfigFile.settings["fL2DefaultAOD"])
         print("fL2DefaultSalt", ConfigFile.settings["fL2DefaultSalt"])
         print("fL2DefaultSST", ConfigFile.settings["fL2DefaultSST"])
         print("bL2RuddickRho", ConfigFile.settings["bL2RuddickRho"])
-        print("bL2ZhangRho", ConfigFile.settings["bL2ZhangRho"])             
-        print("bL2EnableQualityFlags", ConfigFile.settings["bL2EnableQualityFlags"])
-        print("fL2CloudFlag", ConfigFile.settings["fL2CloudFlag"])
-        print("fL2SignificantEsFlag", ConfigFile.settings["fL2SignificantEsFlag"])
-        print("fL2DawnDuskFlag", ConfigFile.settings["fL2DawnDuskFlag"])
-        print("fL2RainfallHumidityFlag", ConfigFile.settings["fL2RainfallHumidityFlag"])                        
-        print("fL2TimeInterval", ConfigFile.settings["fL2TimeInterval"])
+        print("bL2ZhangRho", ConfigFile.settings["bL2ZhangRho"])                                            
+        
         print("bL2PerformNIRCorrection", ConfigFile.settings["bL2PerformNIRCorrection"])        
-        print("bL2EnablePercentLt", ConfigFile.settings["bL2EnablePercentLt"])
-        print("fL2PercentLt", ConfigFile.settings["fL2PercentLt"])
+        
         print("bL2PlotRrs", ConfigFile.settings["bL2PlotRrs"])
+        print("bL2PlotnLw", ConfigFile.settings["bL2PlotnLw"])
         print("bL2PlotEs", ConfigFile.settings["bL2PlotEs"])
         print("bL2PlotLi", ConfigFile.settings["bL2PlotLi"])
         print("bL2PlotLt", ConfigFile.settings["bL2PlotLt"])
@@ -113,28 +123,34 @@ class ConfigFile:
         ConfigFile.settings["fL2MaxWind"] = 7.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009, 
         ConfigFile.settings["fL2SZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
         ConfigFile.settings["fL2SZAMax"] = 60 # e.g. 60:Brewin 2016,
+        
         ConfigFile.settings["bL2EnableSpecQualityCheck"] = 1
         ConfigFile.settings["fL2SpecFilterEs"] = 5
         ConfigFile.settings["fL2SpecFilterLi"] = 8
         ConfigFile.settings["fL2SpecFilterLt"] = 3
 
-        ConfigFile.settings["fL2RhoSky"] = 0.0256 # Mobley 1999
-        ConfigFile.settings["bL2RuddickRho"] = 1
-        ConfigFile.settings["bL2ZhangRho"] = 0
-        ConfigFile.settings["fL2DefaultWindSpeed"] = 5.0        
-        ConfigFile.settings["fL2DefaultAOD"] = 0.5
-        ConfigFile.settings["fL2DefaultSalt"] = 35.0
-        ConfigFile.settings["fL2DefaultSST"] = 26.0
         ConfigFile.settings["bL2EnableQualityFlags"] = 1
         ConfigFile.settings["fL2CloudFlag"] = 5.0 # Ruddick 2006, IOCCG Protocols
         ConfigFile.settings["fL2SignificantEsFlag"] = 2.0 # Wernand 2002
         ConfigFile.settings["fL2DawnDuskFlag"] = 1.0 # Wernand 2002
         ConfigFile.settings["fL2RainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain      
+
         ConfigFile.settings["fL2TimeInterval"] = 60
-        ConfigFile.settings["bL2PerformNIRCorrection"] = 0 # Recommended in Mobley 1999 to correct after rho-correction (Rrs = Rrs-Rrs(750))
         ConfigFile.settings["bL2EnablePercentLt"] = 0
         ConfigFile.settings["fL2PercentLt"] = 5 # 5% Hooker et al. 2002, Hooker and Morel 2003; <10% IOCCG Protocols
+
+        ConfigFile.settings["fL2RhoSky"] = 0.0256 # Mobley 1999
+        ConfigFile.settings["fL2DefaultWindSpeed"] = 5.0        
+        ConfigFile.settings["fL2DefaultAOD"] = 0.5
+        ConfigFile.settings["fL2DefaultSalt"] = 35.0
+        ConfigFile.settings["fL2DefaultSST"] = 26.0
+        ConfigFile.settings["bL2RuddickRho"] = 1
+        ConfigFile.settings["bL2ZhangRho"] = 0        
+        
+        ConfigFile.settings["bL2PerformNIRCorrection"] = 0 # Recommended in Mobley 1999 to correct after rho-correction (Rrs = Rrs-Rrs(750))
+       
         ConfigFile.settings["bL2PlotRrs"] = 0
+        ConfigFile.settings["bL2PlotnLw"] = 0
         ConfigFile.settings["bL2PlotEs"] = 0
         ConfigFile.settings["bL2PlotLi"] = 0
         ConfigFile.settings["bL2PlotLt"] = 0
@@ -160,7 +176,6 @@ class ConfigFile:
         ConfigFile.createCalibrationFolder()
 
     # Loads the cfg file
-    # ToDo: Apply default values to any settings that are missing (in case settings are updated)
     @staticmethod
     def loadConfig(filename):
         # print("ConfigFile - Load Config")

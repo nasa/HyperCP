@@ -419,11 +419,17 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
             self.l2NIRCorrectionCheckBox.setChecked(True)
 
+        # Plots
         l2PlotsLabel = QtWidgets.QLabel("  Generate Spectral Plots", self)
-        l2PlotRrsLabel = QtWidgets.QLabel("Rrs", self)     
+        l2PlotRrsLabel = QtWidgets.QLabel("Rrs", self)             
         self.l2PlotRrsCheckBox = QtWidgets.QCheckBox("", self)      
         if int(ConfigFile.settings["bL2PlotRrs"]) == 1:
             self.l2PlotRrsCheckBox.setChecked(True)
+
+        l2PlotnLwLabel = QtWidgets.QLabel("nLw", self)     
+        self.l2PlotnLwCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2PlotnLw"]) == 1:
+            self.l2PlotnLwCheckBox.setChecked(True)
 
         l2PlotEsLabel = QtWidgets.QLabel("Es", self)     
         self.l2PlotEsCheckBox = QtWidgets.QCheckBox("", self)      
@@ -453,7 +459,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2SaveSeaBASSCheckBox.setChecked(True)
 
 
-        self.saveButton = QtWidgets.QPushButton("Save")
+        self.saveButton = QtWidgets.QPushButton("Save")        
         self.saveAsButton = QtWidgets.QPushButton("Save As")
         self.cancelButton = QtWidgets.QPushButton("Cancel")                      
             
@@ -797,6 +803,8 @@ class ConfigWindow(QtWidgets.QDialog):
         l2PlotHBox.addSpacing(45)
         l2PlotHBox.addWidget(l2PlotRrsLabel)
         l2PlotHBox.addWidget(self.l2PlotRrsCheckBox)    
+        l2PlotHBox.addWidget(l2PlotnLwLabel)
+        l2PlotHBox.addWidget(self.l2PlotnLwCheckBox)    
         l2PlotHBox.addWidget(l2PlotEsLabel)
         l2PlotHBox.addWidget(self.l2PlotEsCheckBox)
         l2PlotHBox.addWidget(l2PlotLiLabel)
@@ -855,19 +863,11 @@ class ConfigWindow(QtWidgets.QDialog):
         
     def deleteCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Remove Calibration File Pressed")
-        # fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files")
-        # print(fnames)
-
         configName = self.name
         calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
         configPath = os.path.join("Config", calibrationDir)
-        # for src in fnames[0]:
-        #     (_, filename) = os.path.split(src)
-        #     dest = os.path.join(configPath, filename)
-        #     print(src)
-        #     print(dest)
-        #     shutil.copy(src, dest)
-        os.remove(os.path.join(configPath,self.calibrationFileComboBox.currentText()))
+        # os.remove(os.path.join(configPath,self.calibrationFileComboBox.currentText()))
+        os.remove(configPath)
 
 
     def getCalibrationSettings(self):
@@ -875,8 +875,6 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.refreshCalibrationFiles()
         calFileName = self.calibrationFileComboBox.currentText()
         calConfig = ConfigFile.getCalibrationConfig(calFileName)
-        #print(calConfig["enabled"])
-        #print(calConfig["frameType"])
         self.calibrationEnabledCheckBox.blockSignals(True)
         self.calibrationFrameTypeComboBox.blockSignals(True)
 
@@ -1183,7 +1181,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL2DefaultSalt"] = float(self.l2DefaultSaltLineEdit.text())
         ConfigFile.settings["fL2DefaultSST"] = float(self.l2DefaultSSTLineEdit.text())
         ConfigFile.settings["bL2EnableQualityFlags"] = int(self.l2QualityFlagCheckBox.isChecked())
-        ConfigFile.settings["fL2SignificantEsFlag"] = float(self.l2CloudFlagLineEdit.text())
+        ConfigFile.settings["fL2CloudFlag"] = float(self.l2CloudFlagLineEdit.text())
         ConfigFile.settings["fL2SignificantEsFlag"] = float(self.l2EsFlagLineEdit.text())
         ConfigFile.settings["fL2DawnDuskFlag"] = float(self.l2DawnDuskFlagLineEdit.text())
         ConfigFile.settings["fL2RainfallHumidityFlag"] = float(self.l2RainfallHumidityFlagLineEdit.text())
@@ -1192,6 +1190,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2EnablePercentLt"] = int(self.l2EnablePercentLtCheckBox.isChecked())
         ConfigFile.settings["fL2PercentLt"] = float(self.l2PercentLtLineEdit.text())
         ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())
+        ConfigFile.settings["bL2PlotnLw"] = int(self.l2PlotnLwCheckBox.isChecked())
         ConfigFile.settings["bL2PlotEs"] = int(self.l2PlotEsCheckBox.isChecked())
         ConfigFile.settings["bL2PlotLi"] = int(self.l2PlotLiCheckBox.isChecked())
         ConfigFile.settings["bL2PlotLt"] = int(self.l2PlotLtCheckBox.isChecked())
@@ -1199,8 +1198,21 @@ class ConfigWindow(QtWidgets.QDialog):
 
         ConfigFile.saveConfig(self.name)
 
-        QtWidgets.QMessageBox.about(self, "Edit Config File", "Config File Saved")
-        self.close()
+        QtWidgets.QMessageBox.about(self, "Edit Config File", "Config File Saved")  
+
+        # Confirm that SeaBASS Headers need to be/are updated
+        if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL1eSaveSeaBASS"]: 
+            reply = QtWidgets.QMessageBox.question(self, "Message", "Did you remember to update SeaBASS Headers?", \
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
+
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.close()
+            else:
+                note = QtWidgets.QMessageBox()
+                note.setText('Update SeaBASS Headers in Level 1E Processing')
+                note.exec_()
+        else:
+            self.close()
 
     def saveAsButtonPressed(self):
         print("ConfigWindow - Save As Pressed")
@@ -1253,26 +1265,28 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
             ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
             ConfigFile.settings["fL2SZAMax"] = float(self.l2SZAMaxLineEdit.text())
-            ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2EnableSpecQualityCheckBox.isChecked())
+            ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2SpecQualityCheckBox.isChecked())
             ConfigFile.settings["fL2SpecFilterEs"] = float(self.l2SpecFilterEsLineEdit.text())
             ConfigFile.settings["fL2SpecFilterLi"] = float(self.l2SpecFilterLiLineEdit.text())
             ConfigFile.settings["fL2SpecFilterLt"] = float(self.l2SpecFilterLtLineEdit.text())
-            ConfigFile.settings["fL2RhoSky"] = float(self.l2RhoSkyLineEdit.text())
-            ConfigFile.settings["bL2RuddickRho"] = int(self.l2RuddickRhoCheckBox.isChecked())
-            ConfigFile.settings["fL2DefaultWindSpeed"] = float(self.l2DefaultWindSpeedLineEdit.text())
-            ConfigFile.settings["fL2DefaultAOD"] = float(self.l2DefaultAODLineEdit.text())
-            ConfigFile.settings["fL2DefaultSalt"] = float(self.l2DefaultSaltLineEdit.text())
-            ConfigFile.settings["fL2DefaultSST"] = float(self.l2DefaultSSTLineEdit.text())
             ConfigFile.settings["bL2EnableQualityFlags"] = int(self.l2QualityFlagCheckBox.isChecked())
-            ConfigFile.settings["fL2SignificantEsFlag"] = float(self.l2CloudFlagLineEdit.text())
+            ConfigFile.settings["fL2CloudFlag"] = float(self.l2CloudFlagLineEdit.text())
             ConfigFile.settings["fL2SignificantEsFlag"] = float(self.l2EsFlagLineEdit.text())
             ConfigFile.settings["fL2DawnDuskFlag"] = float(self.l2DawnDuskFlagLineEdit.text())
             ConfigFile.settings["fL2RainfallHumidityFlag"] = float(self.l2RainfallHumidityFlagLineEdit.text())
-            ConfigFile.settings["fL2TimeInterval"] = int(self.l2TimeIntervalLineEdit.text())                
-            ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())
+            ConfigFile.settings["fL2TimeInterval"] = int(self.l2TimeIntervalLineEdit.text())                            
             ConfigFile.settings["bL2EnablePercentLt"] = int(self.l2EnablePercentLtCheckBox.isChecked())
             ConfigFile.settings["fL2PercentLt"] = float(self.l2PercentLtLineEdit.text())
-            ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())  
+            ConfigFile.settings["fL2RhoSky"] = float(self.l2RhoSkyLineEdit.text())            
+            ConfigFile.settings["fL2DefaultWindSpeed"] = float(self.l2DefaultWindSpeedLineEdit.text())
+            ConfigFile.settings["fL2DefaultAOD"] = float(self.l2DefaultAODLineEdit.text())
+            ConfigFile.settings["fL2DefaultSalt"] = float(self.l2DefaultSaltLineEdit.text())
+            ConfigFile.settings["fL2DefaultSST"] = float(self.l2DefaultSSTLineEdit.text())  
+            ConfigFile.settings["bL2RuddickRho"] = int(self.RhoRadioButtonRuddick.isChecked())
+            ConfigFile.settings["bL2ZhangRho"] = int(self.RhoRadioButtonZhang.isChecked())
+            ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())          
+            ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())
+            ConfigFile.settings["bL2PlotnLw"] = int(self.l2PlotnLwCheckBox.isChecked())
             ConfigFile.settings["bL2PlotEs"] = int(self.l2PlotEsCheckBox.isChecked())  
             ConfigFile.settings["bL2PlotLi"] = int(self.l2PlotLiCheckBox.isChecked())  
             ConfigFile.settings["bL2PlotLt"] = int(self.l2PlotLtCheckBox.isChecked())  
@@ -1298,8 +1312,20 @@ class ConfigWindow(QtWidgets.QDialog):
                 print(srcPath)
                 print(destPath)
                 shutil.copy(srcPath, destPath)
-            # self.configComboBox.update()
-            self.close()
+            
+            # Confirm that SeaBASS Headers need to be/are updated
+            if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL1eSaveSeaBASS"]: 
+                reply = QtWidgets.QMessageBox.question(self, "Message", "Did you remember to update SeaBASS Headers?", \
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
+
+                if reply == QtWidgets.QMessageBox.Yes:
+                    self.close()
+                else:
+                    note = QtWidgets.QMessageBox()
+                    note.setText('Update SeaBASS Headers in Level 1E Processing')
+                    note.exec_()
+            else:
+                self.close()
         
 
     def cancelButtonPressed(self):

@@ -1,6 +1,7 @@
 
 import os
 import urllib.request as ur
+# import base64
 import numpy as np
 from dataclasses import dataclass
 
@@ -13,9 +14,37 @@ class GetAnc:
 
     @staticmethod 
     def getAnc(inputGroup):
-            
-        if not os.path.exists("./Data/Anc/"):  
-            os.makedirs("./Data/Anc/") 
+        
+        username = "daurin"
+        password = "EarthData2019"
+
+        # create a password manager
+        password_mgr = ur.HTTPPasswordMgrWithDefaultRealm()
+
+        # Add the username and password.
+        # If we knew the realm, we could use it instead of None.
+        # top_level_url = "https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/"
+        top_level_url = "https://urs.earthdata.nasa.gov"
+        password_mgr.add_password(None, top_level_url, username, password)
+        handler = ur.HTTPBasicAuthHandler(password_mgr)
+
+        # create "opener" (OpenerDirector instance)
+        opener = ur.build_opener(handler)
+
+        # use the opener to fetch a URL
+        opener.open("https://oceandata.sci.gsfc.nasa.gov/")
+
+        # Install the opener.
+        # Now all calls to urllib.request.urlopen use our opener.
+        ur.install_opener(opener)
+
+
+        # base64string = base64.b64encode(bytes('%s:%s' % (username, password),'ascii'))
+        # request.add_header("Authorization", "Basic %s" % base64string.decode('utf-8'))
+        cwd = os.getcwd()
+
+        if not os.path.exists(os.path.join(cwd,"Data","Anc")):  
+            os.makedirs(os.path.join(cwd,"Data","Anc")) 
 
         # Get the dates, times, and locations from the input group        
         latDate = inputGroup.getDataset('LATITUDE').data["Datetag"]
@@ -39,14 +68,21 @@ class GetAnc:
             file1 = f"N{year}{doy:03.0f}{hr:02.0f}_MERRA2_1h.nc"
             if oldFile != file1:
                 # print(file1)
-                filePath1 = f"./Data/Anc/{file1}"
+                filePath1 = os.path.join(cwd,"Data","Anc",file1)
                 if not os.path.exists(filePath1):
                     # url = f"https://oceandata.sci.gsfc.nasa.gov/Ancillary/Meteorological/{file1}"
                     url = f"https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/{file1}"
-                    ur.urlretrieve(url, filePath1)
+                    # ur.urlretrieve(url, filePath1)                    
+                    
                     msg = f'Retrieving anchillary file from server: {file1}'
                     print(msg)
                     Utilities.writeLogFile(msg) 
+                    
+                    filedata = ur.urlopen(url).read()
+                    fo = open(filePath1, 'w')
+                    print(filedata, file=fo)
+                    fo.close()
+                    pass
                 else:
                     msg = f'Ancillary file found locally: {file1}'
                     print(msg)
@@ -55,7 +91,7 @@ class GetAnc:
 
                 file2 = f"N{year}{doy:03.0f}{hr:02.0f}_AER_MERRA2_1h.nc"
                 # print(file2)
-                filePath2 = f"./Data/Anc/{file2}"
+                filePath2 = os.path.join(cwd,"Data","Anc",file2)
                 if not os.path.exists(filePath2):
                     # url = f"https://oceandata.sci.gsfc.nasa.gov/Ancillary/Meteorological/{file1}"
                     url = f"https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/{file2}"

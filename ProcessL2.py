@@ -109,12 +109,14 @@ class ProcessL2:
 
         return return_y
 
-    '''# Perform spectral filtering
-     # First try: calculate the STD of the normalized (at some max value) average ensemble.
-        # Then test each normalized spectrum against the ensemble average and STD.
-        # Plot results to see what to do next.... '''
+    
     @staticmethod
     def specQualityCheck(group, inFilePath):
+        ''' Perform spectral filtering
+        Calculate the STD of the normalized (at some max value) average ensemble.
+        Then test each normalized spectrum against the ensemble average and STD.
+        Plot results'''
+
         badTimes = []
         if group.id == 'IRRADIANCE':
             Data = group.getDataset("ES") 
@@ -574,21 +576,25 @@ class ProcessL2:
             newESData = newIrradianceGroup.addDataset("ES")        
             newLIData = newRadianceGroup.addDataset("LI")
             newLTData = newRadianceGroup.addDataset("LT") 
+            newnLwData = newRadianceGroup.addDataset("nLw")
 
             newRrsDeltaData = newReflectanceGroup.addDataset("Rrs_delta")
             newESDeltaData = newIrradianceGroup.addDataset("ES_delta")       
             newLIDeltaData = newRadianceGroup.addDataset("LI_delta")
             newLTDeltaData = newRadianceGroup.addDataset("LT_delta")
+            newnLwDeltaData = newRadianceGroup.addDataset("nLw_delta")
         else:
             newRrsData = newReflectanceGroup.getDataset("Rrs")
             newESData = newIrradianceGroup.getDataset("ES")        
             newLIData = newRadianceGroup.getDataset("LI")
             newLTData = newRadianceGroup.getDataset("LT") 
+            newnLwData = newRadianceGroup.getDataset("nLw")
 
             newRrsDeltaData = newReflectanceGroup.getDataset("Rrs_delta")
             newESDeltaData = newIrradianceGroup.getDataset("ES_delta")    
             newLIDeltaData = newRadianceGroup.getDataset("LI_delta")
             newLTDeltaData = newRadianceGroup.getDataset("LT_delta")
+            newnLwDeltaData = newRadianceGroup.getDataset("nLw_delta")
 
         esSlice = ProcessL2.columnToSlice(esColumns,start, end)
         liSlice = ProcessL2.columnToSlice(liColumns,start, end)
@@ -637,7 +643,8 @@ class ProcessL2:
         print(msg)
         Utilities.writeLogFile(msg)
         
-        # IS THIS NECESSARY?...There are often few data points, and given 10% of 10 points is just one data point...(?)
+        # IS THIS NECESSARY?
+        # ...There are often few data points, and given 10% of 10 points is just one data point...(?)
         if n <= 5 or x == 0:
             x = n # if only 5 or fewer records retained, use them all...
         
@@ -729,42 +736,77 @@ class ProcessL2:
             newLIData.columns["Datetag"] = [date]
             newLTData.columns["Datetag"] = [date]
             newRrsData.columns["Datetag"] = [date]
+            newnLwData.columns["Datetag"] = [date]
             newESData.columns["Timetag2"] = [time]
             newLIData.columns["Timetag2"] = [time]
             newLTData.columns["Timetag2"] = [time]
             newRrsData.columns["Timetag2"] = [time]
+            newnLwData.columns["Timetag2"] = [time]
 
             newESDeltaData.columns["Datetag"] = [date]
             newLIDeltaData.columns["Datetag"] = [date]
             newLTDeltaData.columns["Datetag"] = [date]
             newRrsDeltaData.columns["Datetag"] = [date]
+            newnLwDeltaData.columns["Datetag"] = [date]
             newESDeltaData.columns["Timetag2"] = [time]
             newLIDeltaData.columns["Timetag2"] = [time]
             newLTDeltaData.columns["Timetag2"] = [time]
             newRrsDeltaData.columns["Timetag2"] = [time]
+            newnLwDeltaData.columns["Timetag2"] = [time]
         else:
             newESData.columns["Datetag"].append(date)
             newLIData.columns["Datetag"].append(date)
             newLTData.columns["Datetag"].append(date)
             newRrsData.columns["Datetag"].append(date)
+            newnLwData.columns["Datetag"].append(date)
             newESData.columns["Timetag2"].append(time)
             newLIData.columns["Timetag2"].append(time)
             newLTData.columns["Timetag2"].append(time)
             newRrsData.columns["Timetag2"].append(time)           
+            newnLwData.columns["Timetag2"].append(time)           
 
             newESDeltaData.columns["Datetag"].append(date)
             newLIDeltaData.columns["Datetag"].append(date)
             newLTDeltaData.columns["Datetag"].append(date)
             newRrsDeltaData.columns["Datetag"].append(date)
+            newnLwDeltaData.columns["Datetag"].append(date)
             newESDeltaData.columns["Timetag2"].append(time)
             newLIDeltaData.columns["Timetag2"].append(time)
             newLTDeltaData.columns["Timetag2"].append(time)
             newRrsDeltaData.columns["Timetag2"].append(time)
+            newnLwDeltaData.columns["Timetag2"].append(time)
 
         rrsSlice = {}
+        nLwSlice = {}
                 
-        # Calculate Rrs
+        # Calculate Rrs & nLw and uncertainties
         '''# No bidirectional correction is made here.....'''
+        # Calculate the normalized water leaving radiance (not exact; no BRDF here)
+        fp = 'Data/Thuillier_F0.sb'
+        print("SB_support.readSB: " + fp)
+        if not readSB(fp, no_warn=True):
+            msg = "Unable to read Thuillier file. Make sure it is in SeaBASS format."
+            print(msg)
+            Utilities.writeLogFile(msg)  
+            return None
+        else:
+            Thuillier = readSB(fp, no_warn=True)
+            F0_raw = np.array(Thuillier.data['esun'])*10 # convert uW cm^-2 nm^-1 to W m^-2 nm^1
+            wv_raw = np.array(Thuillier.data['wavelength'])
+            # Earth-Sun distance
+            day = int(str(datetag[0])[4:7])  
+            year = int(str(datetag[0])[0:4])  
+            eccentricity = 0.01672
+            dayFactor = 360/365.256363
+            dayOfPerihelion = dop(year)
+            dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
+            F0_fs = F0_raw*dES
+
+            wavelength  = list(map(float, list(esColumns.keys())[2:]))
+            F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
+            wavelength = list(esColumns.keys())[2:]
+            F0 = collections.OrderedDict(zip(wavelength, F0))
+
         for k in esXSlice:
             if (k in liXSlice) and (k in ltXSlice):
                 if k not in newESData.columns:
@@ -772,68 +814,60 @@ class ProcessL2:
                     newLIData.columns[k] = []
                     newLTData.columns[k] = []
                     newRrsData.columns[k] = []
+                    newnLwData.columns[k] = []
 
                     newESDeltaData.columns[k] = []
                     newLIDeltaData.columns[k] = []
                     newLTDeltaData.columns[k] = []
                     newRrsDeltaData.columns[k] = []
+                    newnLwDeltaData.columns[k] = []
 
+                # At this waveband (k)
                 es = esXSlice[k][0]
                 li = liXSlice[k][0]
                 lt = ltXSlice[k][0]
+                f0  = F0[k]
 
                 esDelta = esXstd[k][0]
                 liDelta = liXstd[k][0]
                 ltDelta = ltXstd[k][0]
 
-                # Calculate the Rrs
+                # Calculate the remote sensing reflectance
                 rrs = (lt - (rhoSky * li)) / es
 
-                rrsDelta = rrs * ( (liDelta/li)**2 + (rhoDelta/rhoSky)**2 + (liDelta/li)**2 + (esDelta/es)**2 )**0.5
+                # Rrs uncertainty
+                rrsDelta = rrs * ( 
+                        (liDelta/li)**2 + (rhoDelta/rhoSky)**2 + (liDelta/li)**2 + (esDelta/es)**2 
+                        )**0.5
+               
+                #Calculate the normalized water leaving radiance
+                nLw = rrs*f0
 
-                # Calculate the normalized water leaving radiance (not exact; no BRDF here)
-                fp = 'Data/Thuillier_F0.sb'
-                print("SB_support.readSB: " + fp)
-                if not readSB(fp, no_warn=True):
-                    msg = "Unable to read Thuillier file. Make sure it is in SeaBASS format."
-                    print(msg)
-                    Utilities.writeLogFile(msg)  
-                    return None
-                else:
-                    F0_raw = readSB(fp, no_warn=True)
-                    F0 = np.array(F0_raw.data['esun'])*10 # convert uW cm^-2 nm^-1 to W m^-2 nm^1
-                    F0_wv = np.array(F0_raw.data['wavelength'])
-                    # Earth-Sun distance
-                    day = int(str(datetag[0])[4:7])  
-                    year = int(str(datetag[0])[0:4])  
-                    eccentricity = 0.01672
-                    dayFactor = 360/365.256363
-                    dayOfPerihelion = dop(year); 
-                    dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
-                    F0_fs = F0*dES
-
-                    wavelength = list(esColumns.keys())[2:]
-                    wavelength  = list(map(float, wavelength))
-                    
-                    
-
-                
-
+                # nLw uncertainty; no provision for F0 uncertainty here
+                nLwDelta = nLw * (
+                        (liDelta/li)**2 + (rhoDelta/rhoSky)**2 + (liDelta/li)**2 + (esDelta/es)**2
+                        )**0.5
 
                 newESData.columns[k].append(es)
                 newLIData.columns[k].append(li)
                 newLTData.columns[k].append(lt)
+
                 newESDeltaData.columns[k].append(esDelta)
                 newLIDeltaData.columns[k].append(liDelta)
                 newLTDeltaData.columns[k].append(ltDelta)
                 #newRrsData.columns[k].append(rrs)
                 newRrsDeltaData.columns[k].append(rrsDelta)
+                newnLwDeltaData.columns[k].append(nLwDelta)
                 rrsSlice[k] = rrs
+                nLwSlice[k] = nLw
 
         # Perfrom near-infrared correction to remove additional atmospheric and glint contamination
         if performNIRCorrection:
 
             # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
+            # Find the minimum between 750 and 800, and subtract it from spectrum
+            
+            # rrs correction
             NIRRRs = []
             for k in rrsSlice:
                 # if float(k) >= 750 and float(k) <= 800:
@@ -844,23 +878,39 @@ class ProcessL2:
             # avg /= num
             # avg = np.median(NIRRRs)
             minNIR = min(NIRRRs)
-    
             # Subtract average from each waveband
             for k in rrsSlice:
                 # rrsSlice[k] -= avg
                 rrsSlice[k] -= minNIR
+                newRrsData.columns[k].append(rrsSlice[k])
 
-        for k in rrsSlice:
-            newRrsData.columns[k].append(rrsSlice[k])
+            # nLw correction
+            NIRRRs = []
+            for k in nLwSlice:
+                if float(k) >= 700 and float(k) <= 800:
+                    NIRRRs.append(nLwSlice[k])
+            minNIR = min(NIRRRs)
+            # Subtract average from each waveband
+            for k in nLwSlice:
+                nLwSlice[k] -= minNIR
+                newnLwData.columns[k].append(nLwSlice[k])
+        else:
+            for k in rrsSlice:
+                newRrsData.columns[k].append(rrsSlice[k])
+            for k in nLwSlice:
+                newnLwData.columns[k].append(nLwSlice[k])
 
         newESData.columnsToDataset()   
         newLIData.columnsToDataset()
         newLTData.columnsToDataset()
         newRrsData.columnsToDataset()
+        newnLwData.columnsToDataset()
+
         newESDeltaData.columnsToDataset()   
         newLIDeltaData.columnsToDataset()
         newLTDeltaData.columnsToDataset()
         newRrsDeltaData.columnsToDataset()
+        newnLwDeltaData.columnsToDataset()
         return True
 
 
@@ -1116,7 +1166,6 @@ class ProcessL2:
                     msg = 'ProcessL2.calculateREFLECTANCE2 ender failed. Abort.'
                     print(msg)
                     Utilities.writeLogFile(msg)                      
-                                                            
 
         return True
 
@@ -1165,6 +1214,7 @@ class ProcessL2:
             return None
 
         root.attributes["Rrs_UNITS"] = "sr^-1"
+        root.attributes["nLw_UNITS"] = "sr^-1"
         
         # Check to insure at least some data survived quality checks
         if root.getGroup("REFLECTANCE").getDataset("Rrs").data is None:
