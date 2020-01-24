@@ -50,6 +50,6 @@ request = f"/cgi/getfile/{file1}"
 print(f'File to get: {request}')
 
 status = obpgSession.httpdl(server, request, localpath=filePath1, 
-    outputfilename=file1, uncompress=False, verbose=True)
+    outputfilename=file1, uncompress=False, verbose=2)
 
 
