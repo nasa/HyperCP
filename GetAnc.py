@@ -1,6 +1,7 @@
 
 import os
 import urllib.request as ur
+import requests
 # import base64
 import numpy as np
 from dataclasses import dataclass
@@ -18,25 +19,24 @@ class GetAnc:
         username = "daurin"
         password = "EarthData2019"
 
-        # create a password manager
-        password_mgr = ur.HTTPPasswordMgrWithDefaultRealm()
+        # # create a password manager
+        # password_mgr = ur.HTTPPasswordMgrWithDefaultRealm()
 
-        # Add the username and password.
-        # If we knew the realm, we could use it instead of None.
-        # top_level_url = "https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/"
-        top_level_url = "https://urs.earthdata.nasa.gov"
-        password_mgr.add_password(None, top_level_url, username, password)
-        handler = ur.HTTPBasicAuthHandler(password_mgr)
+        # # Add the username and password.
+        # # If we knew the realm, we could use it instead of None.
+        # top_level_url = "https://urs.earthdata.nasa.gov"
+        # password_mgr.add_password(None, top_level_url, username, password)
+        # handler = ur.HTTPBasicAuthHandler(password_mgr)
 
-        # create "opener" (OpenerDirector instance)
-        opener = ur.build_opener(handler)
+        # # create "opener" (OpenerDirector instance)
+        # opener = ur.build_opener(handler)
 
-        # use the opener to fetch a URL
-        opener.open("https://oceandata.sci.gsfc.nasa.gov/")
+        # # use the opener to fetch a URL
+        # opener.open("https://oceandata.sci.gsfc.nasa.gov/")
 
-        # Install the opener.
-        # Now all calls to urllib.request.urlopen use our opener.
-        ur.install_opener(opener)
+        # # Install the opener.
+        # # Now all calls to urllib.request.urlopen use our opener.
+        # ur.install_opener(opener)
 
 
         # base64string = base64.b64encode(bytes('%s:%s' % (username, password),'ascii'))
@@ -78,10 +78,16 @@ class GetAnc:
                     print(msg)
                     Utilities.writeLogFile(msg) 
                     
-                    filedata = ur.urlopen(url).read()
-                    fo = open(filePath1, 'w')
-                    print(filedata, file=fo)
-                    fo.close()
+                    # filedata = ur.urlopen(url).read()
+                    filedata = requests.get(url, auth=(username,password))
+
+                    if filedata.status_code == 200:
+                        with open(filePath1, 'wb') as out:
+                            for bits in filedata.iter_content():
+                                out.write(bits)
+
+                    # print(filedata, file=fo)
+                    # fo.close()
                     pass
                 else:
                     msg = f'Ancillary file found locally: {file1}'
