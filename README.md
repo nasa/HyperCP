@@ -6,8 +6,8 @@ Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.g
 Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
 ## Version
-1.0.&beta;
-While this version has been substantially updated from 1.0.&alpha to (among other things) better accomodate a standard format into which data from above water radiometry suites other than HyperSAS/SolarTracker can be assimilated, the instrumentation available on the market today is highly varied. Therefore, we would appreciate any feedback from the community regarding the instruments and data formats you are interested in seeing implemented in HyperInSPACE in the future.
+1.0.b;
+While this version has been substantially updated from 1.0.a to (among other things) better accomodate a standard format into which data from above water radiometry suites other than HyperSAS/SolarTracker can be assimilated, the instrumentation available on the market today is highly varied. Therefore, we would appreciate any feedback from the community regarding the instruments and data formats you are interested in seeing implemented in HyperInSPACE in the future.
 ---
 ```
                  NASA Goddard Space Flight Center (GSFC) 
@@ -37,7 +37,8 @@ HyperInSPACE is a Main-View-Controller Python package that can be launched in se
 prompt$ python Main.py
 ```
 
-The following folders will be created automatically when you first run the program:    
+The following folders will be created automatically when you first run the program: 
+
 - Config - Configuration and instrument files (by subdirectory - auto-created), SeaBASS header configuration files
 - Data - Optional location for input and/or output data. Data delivered at the top level directory in the original distribution will be moved here when Main.py is run the first time.
 - Logs - Most command line output messages generated during processing are captured for later reference in .log text files here
@@ -124,74 +125,75 @@ L1B Format:
 *Data being processed from non-HyperSAS SOLARTRACKER systems should be formatted to match L1B in order to be successfully processed to L2 in HyperInSPACE.* An example of a L1B HDF file is provided in /Data for reference. Datasets are grouped by instrument and contain their data in an array called .data. For example, latitude data is stored in the group 'GPS' under LATPOS.data. Data should also contain 'dtype', a list of column headers strings (e.g. wavelength, see example file). The following datasets and attributes and groups are generally required:
 
 Root level attributes:
+
 - 'CAL_FILE_NAMES' - list of TDF and CAL file names
 - 'ES'/'LI'/'LT_UNITS' - calibrated data units for Es, Li, and Lt
 - 'FILE_CREATION_TIME' - DD-MMM-YYYY HH:MM:SS in UTC
 - 'PROCESSING_LEVEL' - '1b'
 - 'WAVELENGTH UNITS' - 'nm'
 
-Group id: 'GPS'
-        attributes: 'CalFileName' (TDF file), 'Frametag' ('$GPRMC'), 'InstrumentType' ('GPS')
+Group id: 'GPS', attributes: 'CalFileName' (TDF file), 'Frametag' ('$GPRMC'), 'InstrumentType' ('GPS')
 
 datasets: (where y is the number of samples in the file)
+
 - 'LATPOS' - y-length vector of latitude, DDMM.MM (D-Degree(positive), M-Decimal minute)
 - 'LATHEMI' - y-length vector of latitude hemisphere 'N' or 'S'
 - 'LONPOS' - y-length vector of longitude, DDDMM.MM (D-Degree(positive) , M-Decimal minute)
 - 'LONHEMI' - y-length vector of longitude hemisphere 'W' or 'E'
 - 'UTCPOS' - y-length vector of UTC, HHMMSS.SS (no leading zeroes, e.g. 12:01:00AM is 100.0)
 
-Group id: 'ES_DARK'
-        attributes: 'CalFileName' (CAL file), 'Frametag' ('SAT'+instrument code+serial number), 'FrameType' ('ShutterDark'), 'InstrumentType' ('Reference')
+Group id: 'ES_DARK', attributes: 'CalFileName' (CAL file), 'Frametag' ('SAT'+instrument code+serial number), 'FrameType' ('ShutterDark'), 'InstrumentType' ('Reference')
         
 datasets: 
+
 - 'DATETAG' - Vector of length y, YYYYDOY.0, where DOY is the UTC sequential day of the year
 - 'TIMETAG2' - Vector of length y, HHMMSSUUU UTC (hour, minute, second, millisecond)
 - 'ES' - Array x by y, where x is waveband, y is series. Calibrated Es dark shutter data
 
-Group id: 'ES_LIGHT'
-        attributes: 'CalFileName' (CAL file), 'Frametag' ('SAT'+instrument code+serial number), 'FrameType' ('ShutterLight'), 'InstrumentType' ('Reference')
+Group id: 'ES_LIGHT', attributes: 'CalFileName' (CAL file), 'Frametag' ('SAT'+instrument code+serial number), 'FrameType' ('ShutterLight'), 'InstrumentType' ('Reference')
         
 datasets: 
+
 - 'DATETAG' - Vector of length y, YYYYDOY.0, where DOY is the UTC sequential day of the year
 - 'TIMETAG2' - Vector of length y, HHMMSSUUU UTC (hour, minute, second, millisecond)
 - 'ES' - Array x by y, where x is waveband, y is series. Calibrated Es light shutter data
 
-Group id: 'LI_DARK'
-        attributes: 'CalFileName' (CAL file), 'Frametag' ('SAT'+instrument code+serial number), 'FrameType' ('ShutterDark'), 'InstrumentType' ('SAS')
+Group id: 'LI_DARK', attributes: 'CalFileName' (CAL file), 'Frametag' ('SAT'+instrument code+serial number), 'FrameType' ('ShutterDark'), 'InstrumentType' ('SAS')
         
 datasets: 
+
 - 'DATETAG' - Vector of length y, YYYYDOY.0, where DOY is the UTC sequential day of the year
 - 'TIMETAG2' - Vector of length y, HHMMSSUUU UTC (hour, minute, second, millisecond)
 - 'LI' - Array x by y, where x is waveband, y is series. Calibrated Li dark shutter data
 
-Group id: 'LI_LIGHT'
-        attributes: 'CalFileName' (CAL file), 'Frametag' ('SAT'+instrument code+serial number), 'FrameType' ('ShutterLight'), 'InstrumentType' ('SAS')
+Group id: 'LI_LIGHT', attributes: 'CalFileName' (CAL file), 'Frametag' ('SAT'+instrument code+serial number), 'FrameType' ('ShutterLight'), 'InstrumentType' ('SAS')
         
 datasets: 
+
 - 'DATETAG' - Vector of length y, YYYYDOY.0, where DOY is the UTC sequential day of the year
 - 'TIMETAG2' - Vector of length y, HHMMSSUUU UTC (hour, minute, second, millisecond)
 - 'LI' - Array x by y, where x is waveband, y is series. Calibrated Li light shutter data
 
-Group id: 'LT_DARK'
-        attributes: 'CalFileName' (CAL file), 'Frametag' ('SAT'+instrument code+serial number), 'FrameType' ('ShutterDark'), 'InstrumentType' ('SAS')
+Group id: 'LT_DARK', attributes: 'CalFileName' (CAL file), 'Frametag' ('SAT'+instrument code+serial number), 'FrameType' ('ShutterDark'), 'InstrumentType' ('SAS')
 
 datasets: 
+
 - 'DATETAG' - Vector of length y, YYYYDOY.0, where DOY is the UTC sequential day of the year
 - 'TIMETAG2' - Vector of length y, HHMMSSUUU UTC (hour, minute, second, millisecond)
 - 'LT' - Array x by y, where x is waveband, y is series. Calibrated Lt dark shutter data
 
-Group id: 'LT_LIGHT'
-        attributes: 'CalFileName' (CAL file), 'Frametag' ('SAT'+instrument code+serial number), 'FrameType' ('ShutterLight'), 'InstrumentType' ('SAS')
+Group id: 'LT_LIGHT', attributes: 'CalFileName' (CAL file), 'Frametag' ('SAT'+instrument code+serial number), 'FrameType' ('ShutterLight'), 'InstrumentType' ('SAS')
 
 datasets: 
+
 - 'DATETAG' - Vector of length y, YYYYDOY.0, where DOY is the UTC sequential day of the year
 - 'TIMETAG2' - Vector of length y, HHMMSSUUU UTC (hour, minute, second, millisecond)
 - 'LT' - Array x by y, where x is waveband, y is series. Calibrated Lt light shutter data
 
-Group id: 'SOLARTRACKER'
-        attributes: 'CalFileName' (CAL file), 'Frametag' ('SATNAV'+instrument code+serial number), 'FrameType' ('SATNAVNNNN'), 'InstrumentType' ('SAS')
+Group id: 'SOLARTRACKER', attributes: 'CalFileName' (CAL file), 'Frametag' ('SATNAV'+instrument code+serial number), 'FrameType' ('SATNAVNNNN'), 'InstrumentType' ('SAS')
 
 datasets:
+
 - 'DATETAG' - Vector of length y, YYYYDOY.0, where DOY is the UTC sequential day of the year
 - 'TIMETAG2' - Vector of length y, HHMMSSUUU UTC (hour, minute, second, millisecond)
 - 'AZIMUTH' - Vector of length y, Solar Azimuth Angle (dtype 'SUN')
