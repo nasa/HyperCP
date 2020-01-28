@@ -298,6 +298,7 @@ class ProcessL1e:
         newSATNAVRollData = newSATNAVGroup.addDataset("ROLL")
         newSATNAVRelAzData = newSATNAVGroup.addDataset("REL_AZ")
         newSATNAVElevationData = newSATNAVGroup.addDataset("ELEVATION")
+        newSATNAVHumidityData = newSATNAVGroup.addDataset("HUMIDITY")
 
         # Add Datetag, Timetag2 data to satnav groups
         # This matches ES data after interpolation
@@ -315,6 +316,8 @@ class ProcessL1e:
         newSATNAVRelAzData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
         newSATNAVElevationData.columns["Datetag"] = esData.data["Datetag"].tolist()
         newSATNAVElevationData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
+        newSATNAVHumidityData.columns["Datetag"] = esData.data["Datetag"].tolist()
+        newSATNAVHumidityData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
 
         # Convert GPS UTC time values to seconds to be used for interpolation
         xTimer = []
@@ -339,6 +342,7 @@ class ProcessL1e:
         ProcessL1e.interpolateL1e(satnavRollData, xTimer, yTimer, newSATNAVRollData, 'Roll', 'linear', fileName)
         ProcessL1e.interpolateL1e(satnavRelAzData, xTimer, yTimer, newSATNAVRelAzData, 'RelAz', 'linear', fileName)
         ProcessL1e.interpolateL1e(satnavElevationData, xTimer, yTimer, newSATNAVElevationData, 'Elevation', 'linear', fileName)
+        ProcessL1e.interpolateL1e(satnavHumidityData, xTimer, yTimer, newSATNAVHumidityData, 'Humidity', 'linear', fileName)
 
         newSATNAVAzimuthData.columnsToDataset()
         newSATNAVHeadingData.columnsToDataset()
@@ -347,6 +351,7 @@ class ProcessL1e:
         newSATNAVRollData.columnsToDataset()
         newSATNAVRelAzData.columnsToDataset()
         newSATNAVElevationData.columnsToDataset()
+        newSATNAVHumidity.columnsToDataset()
 
     # Interpolates by wavelength
     @staticmethod

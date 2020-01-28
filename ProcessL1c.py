@@ -242,7 +242,9 @@ class ProcessL1c:
     # Filters data for pitch, roll, yaw, and rotator.
     # Calibrates raw data from L1a using information from calibration file
     @staticmethod
-    def processL1c(node, calibrationMap):         
+    def processL1c(node, calibrationMap):    
+
+        node.attributes["PROCESSING_LEVEL"] = "1c"     
 
         badTimes = None   
         # Apply Pitch & Roll Filter   

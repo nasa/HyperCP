@@ -4,6 +4,7 @@ import urllib.request as ur
 import requests
 import platform
 import numpy as np
+from PyQt5 import QtWidgets
 # from dataclasses import dataclass
 
 from HDFRoot import HDFRoot
@@ -102,6 +103,17 @@ class GetAnc:
                     msg = f'Ancillary file found locally: {file2}'
                     print(msg)
                     Utilities.writeLogFile(msg) 
+
+                if status in (400, 401, 403, 404, 416):
+                    msg = f'Request error: {status}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    alert = QtWidgets.QMessageBox()
+                    alert.setText(f'Request error: {status}\n \
+                                    Enter server credentials in the\n \
+                                    Configuration Window L2 Preliminary')
+                    alert.exec_() 
+                    return None
 
                 # GMAO Atmospheric model data
                 node = HDFRoot.readHDF5(filePath1)

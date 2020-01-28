@@ -1206,6 +1206,8 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)  
             modData = GetAnc.getAnc(gpsGroup)
+            if modData == None:
+                return None
         else:
             modData = None
 

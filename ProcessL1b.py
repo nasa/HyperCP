@@ -231,6 +231,7 @@ class ProcessL1b:
                     pyrUnits = cf.getUnits("T") #Pyrometer
 
         #print(esUnits, luUnits)
+        node.attributes["PROCESSING_LEVEL"] = "1b"
         node.attributes["LI_UNITS"] = liUnits
         node.attributes["LT_UNITS"] = ltUnits
         node.attributes["ES_UNITS"] = esUnits

@@ -102,8 +102,8 @@ class ConfigWindow(QtWidgets.QDialog):
         l1cLabel_font.setBold(True)
         l1cLabel.setFont(l1cLabel_font)
         l1cSublabel = QtWidgets.QLabel(" Filter on pitch, roll, rotator, yaw,", self)        
-        l1cSublabel2 = QtWidgets.QLabel("   and relative solar azimuth. Apply", self)
-        l1cSublabel3 = QtWidgets.QLabel("   factory calibrations.", self)        
+        l1cSublabel2 = QtWidgets.QLabel("   and relative solar azimuth.", self)
+        # l1cSublabel3 = QtWidgets.QLabel("   factory calibrations.", self)        
 
         # L1C Rotator 
         self.l1cRotatorHomeAngleLabel = QtWidgets.QLabel(" Rotator Home Angle", self)
@@ -518,7 +518,7 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox1.addWidget(l1cLabel)
         VBox1.addWidget(l1cSublabel)
         VBox1.addWidget(l1cSublabel2)
-        VBox1.addWidget(l1cSublabel3)
+        # VBox1.addWidget(l1cSublabel3)
 
         # L1C Rotator
         RotHomeAngleHBox = QtWidgets.QHBoxLayout()       
