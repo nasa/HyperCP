@@ -288,6 +288,7 @@ class ProcessL1e:
         satnavRollData = satnavGroup.getDataset("ROLL")
         satnavRelAzData = satnavGroup.getDataset("REL_AZ")
         satnavElevationData = satnavGroup.getDataset("ELEVATION")
+        satnavHumidityData = satnavGroup.getDataset("HUMIDITY")
 
         # newSATNAVGroup = node.getGroup("Ancillary")
         newSATNAVGroup = node.getGroup("SOLARTRACKER")
@@ -351,7 +352,7 @@ class ProcessL1e:
         newSATNAVRollData.columnsToDataset()
         newSATNAVRelAzData.columnsToDataset()
         newSATNAVElevationData.columnsToDataset()
-        newSATNAVHumidity.columnsToDataset()
+        newSATNAVHumidityData.columnsToDataset()
 
     # Interpolates by wavelength
     @staticmethod

@@ -106,7 +106,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # l1cSublabel3 = QtWidgets.QLabel("   factory calibrations.", self)        
 
         # L1C Rotator 
-        self.l1cRotatorHomeAngleLabel = QtWidgets.QLabel(" Rotator Home Angle", self)
+        self.l1cRotatorHomeAngleLabel = QtWidgets.QLabel(" Rotator Home Angle Offset", self)
         self.l1cRotatorHomeAngleLineEdit = QtWidgets.QLineEdit(self)
         self.l1cRotatorHomeAngleLineEdit.setText(str(ConfigFile.settings["fL1cRotatorHomeAngle"]))
         self.l1cRotatorHomeAngleLineEdit.setValidator(doubleValidator)   

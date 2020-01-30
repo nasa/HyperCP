@@ -618,8 +618,8 @@ class Utilities:
                 deltaPolyyPlus = y + list(reversed(dPolyyPlus))
                 deltaPolyyMinus = y + list(reversed(dPolyyMinus))
 
-                plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.3, c=c, zorder=1)
-                plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.3, c=c, zorder=1)
+                plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.2, c=c, zorder=1)
+                plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.2, c=c, zorder=1)
 
             # Satellite Bands
             ''' For some reason, only one set of satellite bands is plotted'''

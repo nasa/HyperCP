@@ -207,13 +207,16 @@ datasets:
 
 Process data from L1B to L1C. Data are filtered for vessel attitude (pitch and roll), viewing and solar geometry. *It should be noted that viewing geometry should conform to total radiance (Lt) measured at about 40 degrees from nadir, and sky radiance (Li) at about 40 degrees from zenith* **(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**.
 
-**Rotator Home Angle**: The offset between the neutral position of the SolarTracker unit and the bow of the ship. This /should/ be zero if the SAS Home Direction was set at the time of data collection as per Satlantic SAT-DN-635. Set to zero if using a non-Satlantic solar tracker and L1B contains the 'SAS_TRUE' data field.
+**Rotator Home Angle Offset**: The offset between the neutral position of the SolarTracker unit and the bow of the ship. This /should/ be zero if the SAS Home Direction was set at the time of data collection as per Satlantic SAT-DN-635. Set to zero if using a non-Satlantic solar tracker and L1B contains the 'SAS_TRUE' data field.
 
 **Rotator Delay**: Seconds of data discarded after a SAS rotation is detected.  
 **Default: 60 seconds (Vandenberg 2016)**
 
 **Pitch & Roll Filter** (optional): Data outside these thresholds are discarded if this is enabled in the checkbox.  
-**Default 5 degrees (IOCCG Draft Protocols; Zibordi et al. 2019; 2 deg "ideal" to 5 deg "upper limit")**
+**Default: 5 degrees (IOCCG Draft Protocols; Zibordi et al. 2019; 2 deg "ideal" to 5 deg "upper limit")**
+
+**Absolute Rotator Angle Filter** (optional): Angles relative to the SolarTracker neutral angle beyond which data will be excluded due to obstructions. 
+**Default: -40 to +40 (arbitrary)**
 
 **Relative Solar Azimuth Filter** (optional): Relative azimuth angle in degrees between the viewing Li/Lt and the sun.  
 **Default: 90-135 deg (Mobley 1999, Zhang et al. 2017); 135 deg (Mueller 2003 (NASA Protocols)); 90 deg unless certain of platform shadow (Zibordi et al. 2009, IOCCG Draft Protocols)**
