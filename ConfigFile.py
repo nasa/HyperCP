@@ -69,8 +69,12 @@ class ConfigFile:
         
         print("bL2PerformNIRCorrection", ConfigFile.settings["bL2PerformNIRCorrection"])        
         
-        print("bL2WeightMODIS", ConfigFile.settings["bL2WeightMODIS"])
-        print("bL2WeightSentinel3", ConfigFile.settings["bL2WeightSentinel3"])
+        print("bL2WeightMODISA", ConfigFile.settings["bL2WeightMODISA"])
+        print("bL2WeightSentinel3A", ConfigFile.settings["bL2WeightSentinel3A"])
+        print("bL2WeightVIIRSN", ConfigFile.settings["bL2WeightVIIRSN"])
+        print("bL2WeightMODISA", ConfigFile.settings["bL2WeightMODIST"])
+        print("bL2WeightSentinel3A", ConfigFile.settings["bL2WeightSentinel3B"])
+        print("bL2WeightVIIRSN", ConfigFile.settings["bL2WeightVIIRSJ"])
 
         print("bL2PlotRrs", ConfigFile.settings["bL2PlotRrs"])
         print("bL2PlotnLw", ConfigFile.settings["bL2PlotnLw"])
@@ -154,8 +158,12 @@ class ConfigFile:
         
         ConfigFile.settings["bL2PerformNIRCorrection"] = 0 # Recommended in Mobley 1999 to correct after rho-correction (Rrs = Rrs-Rrs(750))
        
-        ConfigFile.settings["bL2WeightMODIS"] = 0
-        ConfigFile.settings["bL2WeightSentinel3"] = 0
+        ConfigFile.settings["bL2WeightMODISA"] = 0
+        ConfigFile.settings["bL2WeightSentinel3A"] = 0
+        ConfigFile.settings["bL2WeightVIIRSN"] = 0        
+        ConfigFile.settings["bL2WeightMODIST"] = 0
+        ConfigFile.settings["bL2WeightSentinel3B"] = 0
+        ConfigFile.settings["bL2WeightVIIRSJ"] = 0        
         ConfigFile.settings["bL2PlotRrs"] = 0
         ConfigFile.settings["bL2PlotnLw"] = 0
         ConfigFile.settings["bL2PlotEs"] = 0

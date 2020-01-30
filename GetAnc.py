@@ -85,6 +85,7 @@ class GetAnc:
                     status = obpgSession.httpdl(server, request, localpath=ancPath, 
                         outputfilename=file1, uncompress=False, verbose=2)                    
                 else:
+                    status = 200
                     msg = f'Ancillary file found locally: {file1}'
                     print(msg)
                     Utilities.writeLogFile(msg) 
@@ -100,6 +101,7 @@ class GetAnc:
                     status = obpgSession.httpdl(server, request, localpath=ancPath, 
                         outputfilename=file2, uncompress=False, verbose=2)
                 else:
+                    status = 200
                     msg = f'Ancillary file found locally: {file2}'
                     print(msg)
                     Utilities.writeLogFile(msg) 

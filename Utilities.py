@@ -316,19 +316,6 @@ class Utilities:
 
         new_y = scipy.interpolate.interp1d(x, y, kind=kind, bounds_error=False, fill_value=fill_value)(new_x)
 
-        '''
-        test = False
-        for i in range(len(new_y)):
-            if np.isnan(new_y[i]):
-                #print("NaN")
-                if test:
-                    new_y[i] = darkData.data[k][darkData.data.shape[0]-1]
-                else:
-                    new_y[i] = darkData.data[k][0]
-            else:
-                test = True
-        '''
-
         return new_y
 
     # Wrapper for scipy interp1d that works even if
@@ -394,6 +381,9 @@ class Utilities:
         plotdir = os.path.join(dirpath,'Plots','L2')
 
         dataDelta = None
+        ''' Note: If only one spectrum is left in a given ensemble, deltas will
+        be zero for Es, Li, and Lt.'''
+        
         if rType=='Rrs':
             print('Plotting Rrs')
             group = root.getGroup("REFLECTANCE")
@@ -401,14 +391,62 @@ class Utilities:
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_delta')
             plotRange = [380, 800]
+            if ConfigFile.settings['bL2WeightMODISA']:
+                Data_MODISA = group.getDataset(f'{rType}_MODISA')
+                if plotDelta:
+                    dataDelta_MODISA = group.getDataset(f'{rType}_MODISA_delta')
+            if ConfigFile.settings['bL2WeightMODIST']:
+                Data_MODIST = group.getDataset(f'{rType}_MODIST')
+                if plotDelta:
+                    dataDelta_MODIST = group.getDataset(f'{rType}_MODIST_delta')
+            if ConfigFile.settings['bL2WeightVIIRSN']:
+                Data_VIIRSN = group.getDataset(f'{rType}_VIIRSN')
+                if plotDelta:
+                    dataDelta_VIIRSN = group.getDataset(f'{rType}_VIIRSN_delta')
+            if ConfigFile.settings['bL2WeightVIIRSJ']:
+                Data_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ')
+                if plotDelta:
+                    dataDelta_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ_delta')
+            if ConfigFile.settings['bL2WeightSentinel3A']:
+                Data_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A')
+                if plotDelta:
+                    dataDelta_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A_delta')
+            if ConfigFile.settings['bL2WeightSentinel3B']:
+                Data_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B')
+                if plotDelta:
+                    dataDelta_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B_delta')
 
         if rType=='nLw':
             print('Plotting nLw')
-            group = root.getGroup("RADIANCE")
+            group = root.getGroup("REFLECTANCE")
             Data = group.getDataset(rType)
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_delta')
-            plotRange = [380, 800]                    
+            plotRange = [380, 800]   
+            if ConfigFile.settings['bL2WeightMODISA']:        
+                Data_MODISA = group.getDataset(f'{rType}_MODISA')
+                if plotDelta:
+                    dataDelta_MODISA = group.getDataset(f'{rType}_MODISA_delta')
+            if ConfigFile.settings['bL2WeightMODIST']:        
+                Data_MODIST = group.getDataset(f'{rType}_MODIST')
+                if plotDelta:
+                    dataDelta_MODIST = group.getDataset(f'{rType}_MODIST_delta')
+            if ConfigFile.settings['bL2WeightVIIRSN']:        
+                Data_VIIRSN = group.getDataset(f'{rType}_VIIRSN')
+                if plotDelta:
+                    dataDelta_VIIRSN = group.getDataset(f'{rType}_VIIRSN_delta')
+            if ConfigFile.settings['bL2WeightVIIRSJ']:        
+                Data_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ')
+                if plotDelta:
+                    dataDelta_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ_delta')
+            if ConfigFile.settings['bL2WeightSentinel3A']:        
+                Data_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A')
+                if plotDelta:
+                    dataDelta_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A_delta')
+            if ConfigFile.settings['bL2WeightSentinel3B']:        
+                Data_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B')
+                if plotDelta:
+                    dataDelta_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B_delta')
 
         if rType=='ES':
             print('Plotting Es')
@@ -440,15 +478,66 @@ class Utilities:
             'size': 16,
             }
 
-        x = []        
-        wave = []
-        
+        # Hyperspectral
+        x = []             
+        wave = []        
         # For each waveband
         for k in Data.data.dtype.names:
             if Utilities.isFloat(k):
                 if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
                     x.append(k)
                     wave.append(float(k))
+        
+        # Satellite Bands
+        ''' For some reason only one set of satellite bands plots.'''
+        x_MODISA = []
+        wave_MODISA = []
+        if ConfigFile.settings['bL2WeightMODISA'] and (rType == 'Rrs' or rType == 'nLw'):
+            for k in Data_MODISA.data.dtype.names:
+                if Utilities.isFloat(k):
+                    if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                        x_MODISA.append(k)
+                        wave_MODISA.append(float(k))
+        x_MODIST = []
+        wave_MODIST = []
+        if ConfigFile.settings['bL2WeightMODIST'] and (rType == 'Rrs' or rType == 'nLw'):
+            for k in Data_MODIST.data.dtype.names:
+                if Utilities.isFloat(k):
+                    if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                        x_MODIST.append(k)
+                        wave_MODIST.append(float(k))
+        x_VIIRSN = []
+        wave_VIIRSN = []
+        if ConfigFile.settings['bL2WeightVIIRSN'] and (rType == 'Rrs' or rType == 'nLw'):
+            for k in Data_VIIRSN.data.dtype.names:
+                if Utilities.isFloat(k):
+                    if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                        x_VIIRSN.append(k)
+                        wave_VIIRSN.append(float(k))
+        x_VIIRSJ = []
+        wave_VIIRSJ = []
+        if ConfigFile.settings['bL2WeightVIIRSJ'] and (rType == 'Rrs' or rType == 'nLw'):
+            for k in Data_VIIRSJ.data.dtype.names:
+                if Utilities.isFloat(k):
+                    if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                        x_VIIRSJ.append(k)
+                        wave_VIIRSJ.append(float(k))
+        x_Sentinel3A = []
+        wave_Sentinel3A = []
+        if ConfigFile.settings['bL2WeightSentinel3A'] and (rType == 'Rrs' or rType == 'nLw'):
+            for k in Data_Sentinel3A.data.dtype.names:
+                if Utilities.isFloat(k):
+                    if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                        x_Sentinel3A.append(k)
+                        wave_Sentinel3A.append(float(k))
+        x_Sentinel3B = []
+        wave_Sentinel3B = []
+        if ConfigFile.settings['bL2WeightSentinel3B'] and (rType == 'Rrs' or rType == 'nLw'):
+            for k in Data_Sentinel3B.data.dtype.names:
+                if Utilities.isFloat(k):
+                    if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                        x_Sentinel3B.append(k)
+                        wave_Sentinel3B.append(float(k))
 
 
         total = Data.data.shape[0]
@@ -456,14 +545,59 @@ class Utilities:
         cmap = cm.get_cmap("jet")
         color=iter(cmap(np.linspace(0,1,total)))
 
-        plt.figure(1, figsize=(6,4))
+        plt.figure(1, figsize=(8,6))
         for i in range(total):
+            # Hyperspectral
             y = []
-            dy = []
+            dy = []            
             for k in x:                
                 y.append(Data.data[k][i])
                 if plotDelta:
                     dy.append(dataDelta.data[k][i])
+
+            # Satellite Bands
+            y_MODISA = []            
+            dy_MODISA = []
+            if ConfigFile.settings['bL2WeightMODISA']  and (rType == 'Rrs' or rType == 'nLw'):
+                for k in x_MODISA:                
+                    y_MODISA.append(Data_MODISA.data[k][i])
+                    if plotDelta:
+                        dy_MODISA.append(dataDelta_MODISA.data[k][i])
+            y_MODIST = []            
+            dy_MODIST = []
+            if ConfigFile.settings['bL2WeightMODIST']  and (rType == 'Rrs' or rType == 'nLw'):
+                for k in x_MODIST:                
+                    y_MODIST.append(Data_MODIST.data[k][i])
+                    if plotDelta:
+                        dy_MODIST.append(dataDelta_MODIST.data[k][i])
+            y_VIIRSN = []            
+            dy_VIIRSN = []
+            if ConfigFile.settings['bL2WeightVIIRSN']  and (rType == 'Rrs' or rType == 'nLw'):
+                for k in x_VIIRSN:                
+                    y_VIIRSN.append(Data_VIIRSN.data[k][i])
+                    if plotDelta:
+                        dy_VIIRSN.append(dataDelta_VIIRSN.data[k][i])
+            y_VIIRSJ = []            
+            dy_VIIRSJ = []
+            if ConfigFile.settings['bL2WeightVIIRSJ']  and (rType == 'Rrs' or rType == 'nLw'):
+                for k in x_VIIRSJ:                
+                    y_VIIRSJ.append(Data_VIIRSJ.data[k][i])
+                    if plotDelta:
+                        dy_VIIRSJ.append(dataDelta_VIIRSJ.data[k][i])
+            y_Sentinel3A = []            
+            dy_Sentinel3A = []
+            if ConfigFile.settings['bL2WeightSentinel3A']  and (rType == 'Rrs' or rType == 'nLw'):
+                for k in x_Sentinel3A:                
+                    y_Sentinel3A.append(Data_Sentinel3A.data[k][i])
+                    if plotDelta:
+                        dy_Sentinel3A.append(dataDelta_Sentinel3A.data[k][i])
+            y_Sentinel3B = []            
+            dy_Sentinel3B = []
+            if ConfigFile.settings['bL2WeightSentinel3B']  and (rType == 'Rrs' or rType == 'nLw'):
+                for k in x_Sentinel3B:                
+                    y_Sentinel3B.append(Data_Sentinel3B.data[k][i])
+                    if plotDelta:
+                        dy_Sentinel3B.append(dataDelta_Sentinel3B.data[k][i])
 
             c=next(color)
             if max(y) > maxRad:
@@ -473,8 +607,8 @@ class Utilities:
             if rType == 'LT' and maxRad > 2:
                 maxRad = 2
 
-            # Plot the spectrum
-            plt.plot(wave, y, 'k', c=c)
+            # Plot the Hyperspectral spectrum
+            plt.plot(wave, y, 'k', c=c, zorder=1)
             
             if plotDelta:
                 # Generate the polygon for uncertainty bounds
@@ -484,12 +618,54 @@ class Utilities:
                 deltaPolyyPlus = y + list(reversed(dPolyyPlus))
                 deltaPolyyMinus = y + list(reversed(dPolyyMinus))
 
-                plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.3, c=c)
-                plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.3, c=c)
-            #if (i % 25) == 0:
-            #    plt.plot(x, y, 'k', color=(i/total, 0, 1-i/total, 1))
-        # x1,x2,y1,y2 = plt.axis()
-        # print(f'{x1} {x2} {y1} {y2}')        
+                plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.3, c=c, zorder=1)
+                plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.3, c=c, zorder=1)
+
+            # Satellite Bands
+            ''' For some reason, only one set of satellite bands is plotted'''
+            if ConfigFile.settings['bL2WeightMODISA']:
+                # Plot the MODISA spectrum                                
+                if plotDelta:
+                    plt.errorbar(wave_MODISA, y_MODISA, yerr=dy_MODISA, fmt='.',
+                        elinewidth=0.1, color=c, ecolor='lightgray')
+                else:
+                    plt.plot(wave_MODISA, y_MODISA, 'o', c=c)
+            if ConfigFile.settings['bL2WeightMODIST']:
+                # Plot the MODIST spectrum                                
+                if plotDelta:
+                    plt.errorbar(wave_MODIST, y_MODIST, yerr=dy_MODIST, fmt='.',
+                        elinewidth=0.1, color=c, ecolor='black')
+                else:
+                    plt.plot(wave_MODIST, y_MODIST, 'o', c=c)
+            if ConfigFile.settings['bL2WeightVIIRSN']:
+                # Plot the VIIRSN spectrum                                
+                if plotDelta:
+                    plt.errorbar(wave_VIIRSN, y_VIIRSN, yerr=dy_VIIRSN, fmt='.',
+                        elinewidth=0.1, color=c, ecolor='lightgray')
+                else:
+                    plt.plot(wave_VIIRSN, y_VIIRSN, 'o', c=c)
+            if ConfigFile.settings['bL2WeightVIIRSJ']:
+                # Plot the VIIRSJ spectrum                                
+                if plotDelta:
+                    plt.errorbar(wave_VIIRSJ, y_VIIRSJ, yerr=dy_VIIRSJ, fmt='.',
+                        elinewidth=0.1, color=c, ecolor='lightgray')
+                else:
+                    plt.plot(wave_VIIRSJ, y_VIIRSJ, 'o', c=c)
+            if ConfigFile.settings['bL2WeightSentinel3A']:
+                # Plot the Sentinel3A spectrum                                
+                if plotDelta:
+                    plt.errorbar(wave_Sentinel3A, y_Sentinel3A, yerr=dy_Sentinel3A, fmt='.',
+                        elinewidth=0.1, color=c, ecolor='lightgray')
+                else:
+                    plt.plot(wave_Sentinel3A, y_Sentinel3A, 'o', c=c)
+            if ConfigFile.settings['bL2WeightSentinel3B']:
+                # Plot the Sentinel3B spectrum                                
+                if plotDelta:
+                    plt.errorbar(wave_Sentinel3B, y_Sentinel3B, yerr=dy_Sentinel3B, fmt='.',
+                        elinewidth=0.1, color=c, ecolor='lightgray')
+                else:
+                    plt.plot(wave_Sentinel3B, y_Sentinel3B, 'o', c=c)
+ 
         axes = plt.gca()
         axes.set_title(filename, fontdict=font)
         # axes.set_xlim([390, 800])
@@ -508,8 +684,7 @@ class Utilities:
         transform=axes.transAxes,
         color='black', fontdict=font)
 
-        # # Create output directory        
-        # os.makedirs(plotdir, exist_ok=True)
+        # plt.show() # --> QCoreApplication::exec: The event loop is already running
 
         # Save the plot
         filebasename,_ = filename.split('_')

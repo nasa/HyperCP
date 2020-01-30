@@ -425,16 +425,37 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2NIRCorrectionCheckBox.setChecked(True)
 
         # Spectral Weighting
-        l2WeightsLabel = QtWidgets.QLabel("  Add spectra weighted to satellite bands:", self)
-        l2WeightMODISLabel = QtWidgets.QLabel("MODIS", self)             
-        self.l2WeightMODISCheckBox = QtWidgets.QCheckBox("", self)      
-        if int(ConfigFile.settings["bL2WeightMODIS"]) == 1:
-            self.l2WeightMODISCheckBox.setChecked(True)
+        l2WeightsLabel = QtWidgets.QLabel("  Add weighted satellite spectra:", self)
 
-        l2WeightSentinel3Label = QtWidgets.QLabel("Sentinel3", self)     
-        self.l2WeightSentinel3CheckBox = QtWidgets.QCheckBox("", self)      
-        if int(ConfigFile.settings["bL2WeightSentinel3"]) == 1:
-            self.l2WeightSentinel3CheckBox.setChecked(True)
+        l2WeightMODISALabel = QtWidgets.QLabel("AQUA", self)             
+        self.l2WeightMODISACheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2WeightMODISA"]) == 1:
+            self.l2WeightMODISACheckBox.setChecked(True)
+
+        l2WeightMODISTLabel = QtWidgets.QLabel("TERRA", self)             
+        self.l2WeightMODISTCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2WeightMODIST"]) == 1:
+            self.l2WeightMODISTCheckBox.setChecked(True)
+                
+        l2WeightVIIRSNLabel = QtWidgets.QLabel("V-NPP", self)             
+        self.l2WeightVIIRSNCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2WeightVIIRSN"]) == 1:
+            self.l2WeightVIIRSNCheckBox.setChecked(True)
+
+        l2WeightVIIRSJLabel = QtWidgets.QLabel("V-JPSS", self)             
+        self.l2WeightVIIRSJCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2WeightVIIRSJ"]) == 1:
+            self.l2WeightVIIRSJCheckBox.setChecked(True)
+
+        l2WeightSentinel3ALabel = QtWidgets.QLabel("Sen-3A", self)     
+        self.l2WeightSentinel3ACheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2WeightSentinel3A"]) == 1:
+            self.l2WeightSentinel3ACheckBox.setChecked(True)
+
+        l2WeightSentinel3BLabel = QtWidgets.QLabel("Sen-3B", self)     
+        self.l2WeightSentinel3BCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2WeightSentinel3B"]) == 1:
+            self.l2WeightSentinel3BCheckBox.setChecked(True)
 
         # Plots
         l2PlotsLabel = QtWidgets.QLabel("  Generate Spectral Plots", self)
@@ -820,17 +841,22 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addWidget(l2WeightsLabel)
         l2WeightHBox = QtWidgets.QHBoxLayout()
         l2WeightHBox.addSpacing(45)
-        l2WeightHBox.addWidget(l2WeightMODISLabel)
-        l2WeightHBox.addWidget(self.l2WeightMODISCheckBox)    
-        l2WeightHBox.addWidget(l2WeightSentinel3Label)
-        l2WeightHBox.addWidget(self.l2WeightSentinel3CheckBox)    
-        # l2WeightHBox.addWidget(l2WeightEsLabel)
-        # l2WeightHBox.addWidget(self.l2WeightEsCheckBox)
-        # l2WeightHBox.addWidget(l2WeightLiLabel)
-        # l2WeightHBox.addWidget(self.l2WeightLiCheckBox)
-        # l2WeightHBox.addWidget(l2WeightLtLabel)
-        # l2WeightHBox.addWidget(self.l2WeightLtCheckBox)
+        l2WeightHBox.addWidget(l2WeightMODISALabel)
+        l2WeightHBox.addWidget(self.l2WeightMODISACheckBox)    
+        l2WeightHBox.addWidget(l2WeightSentinel3ALabel)
+        l2WeightHBox.addWidget(self.l2WeightSentinel3ACheckBox)            
+        l2WeightHBox.addWidget(l2WeightVIIRSNLabel)
+        l2WeightHBox.addWidget(self.l2WeightVIIRSNCheckBox)            
         VBox3.addLayout(l2WeightHBox)  
+        l2WeightHBox2 = QtWidgets.QHBoxLayout()
+        l2WeightHBox2.addSpacing(45)
+        l2WeightHBox2.addWidget(l2WeightMODISTLabel)
+        l2WeightHBox2.addWidget(self.l2WeightMODISTCheckBox)    
+        l2WeightHBox2.addWidget(l2WeightSentinel3BLabel)
+        l2WeightHBox2.addWidget(self.l2WeightSentinel3BCheckBox)  
+        l2WeightHBox2.addWidget(l2WeightVIIRSJLabel)          
+        l2WeightHBox2.addWidget(self.l2WeightVIIRSJCheckBox)  
+        VBox3.addLayout(l2WeightHBox2)  
 
         # L2 Plotting
         VBox3.addWidget(l2PlotsLabel)
@@ -856,22 +882,22 @@ class ConfigWindow(QtWidgets.QDialog):
         l2SeaBASSHBox.addWidget(self.l2SaveSeaBASSCheckBox)    
         VBox3.addLayout(l2SeaBASSHBox)    
 
-        # Add 3 Vertical Boxes to Horizontal Box hBox
-        hBox = QtWidgets.QHBoxLayout()
-        hBox.addLayout(VBox1)
-        hBox.addLayout(VBox2)        
-        hBox.addLayout(VBox3)    
-
         # Save/Cancel
         saveHBox = QtWidgets.QHBoxLayout()
         saveHBox.addStretch(1)
         saveHBox.addWidget(self.saveButton)
         saveHBox.addWidget(self.saveAsButton)
         saveHBox.addWidget(self.cancelButton)
+        VBox3.addLayout(saveHBox)
+
+        # Add 3 Vertical Boxes to Horizontal Box hBox
+        hBox = QtWidgets.QHBoxLayout()
+        hBox.addLayout(VBox1)
+        hBox.addLayout(VBox2)        
+        hBox.addLayout(VBox3)            
 
         # Adds hBox and saveHBox to primary VBox 
-        VBox.addLayout(hBox)
-        VBox.addLayout(saveHBox)
+        VBox.addLayout(hBox)        
 
         self.setLayout(VBox)
         self.setGeometry(300, 100, 0, 0)
@@ -1239,8 +1265,12 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())
         ConfigFile.settings["bL2EnablePercentLt"] = int(self.l2EnablePercentLtCheckBox.isChecked())
         ConfigFile.settings["fL2PercentLt"] = float(self.l2PercentLtLineEdit.text())
-        ConfigFile.settings["bL2WeightMODIS"] = int(self.l2WeightMODISCheckBox.isChecked())
-        ConfigFile.settings["bL2WeightSentinel3"] = int(self.l2WeightSentinel3CheckBox.isChecked())
+        ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
+        ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())
+        ConfigFile.settings["bL2WeightVIIRSN"] = int(self.l2WeightVIIRSNCheckBox.isChecked())
+        ConfigFile.settings["bL2WeightMODIST"] = int(self.l2WeightMODISTCheckBox.isChecked())
+        ConfigFile.settings["bL2WeightSentinel3B"] = int(self.l2WeightSentinel3BCheckBox.isChecked())
+        ConfigFile.settings["bL2WeightVIIRSJ"] = int(self.l2WeightVIIRSJCheckBox.isChecked())
         ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())
         ConfigFile.settings["bL2PlotnLw"] = int(self.l2PlotnLwCheckBox.isChecked())
         ConfigFile.settings["bL2PlotEs"] = int(self.l2PlotEsCheckBox.isChecked())
@@ -1337,8 +1367,12 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2RuddickRho"] = int(self.RhoRadioButtonRuddick.isChecked())
             ConfigFile.settings["bL2ZhangRho"] = int(self.RhoRadioButtonZhang.isChecked())
             ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())          
-            ConfigFile.settings["bL2WeightMODIS"] = int(self.l2WeightMODISCheckBox.isChecked())
-            ConfigFile.settings["bL2WeightSentinel3"] = int(self.l2WeightSentinel3CheckBox.isChecked())
+            ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
+            ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())
+            ConfigFile.settings["bL2WeightVIIRSN"] = int(self.l2WeightVIIRSNCheckBox.isChecked())
+            ConfigFile.settings["bL2WeightMODIST"] = int(self.l2WeightMODISTCheckBox.isChecked())
+            ConfigFile.settings["bL2WeightSentinel3B"] = int(self.l2WeightSentinel3BCheckBox.isChecked())
+            ConfigFile.settings["bL2WeightVIIRSJ"] = int(self.l2WeightVIIRSJCheckBox.isChecked())
             ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())
             ConfigFile.settings["bL2PlotnLw"] = int(self.l2PlotnLwCheckBox.isChecked())
             ConfigFile.settings["bL2PlotEs"] = int(self.l2PlotEsCheckBox.isChecked())  

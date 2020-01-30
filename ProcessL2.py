@@ -14,6 +14,7 @@ from ConfigFile import ConfigFile
 from RhoCorrections import RhoCorrections
 from GetAnc import GetAnc
 from SB_support import readSB
+from Weight_RSR import Weight_RSR
 
 
 class ProcessL2:
@@ -569,32 +570,99 @@ class ProcessL2:
         # Root (new/output) groups:
         newReflectanceGroup = root.getGroup("REFLECTANCE")
         newRadianceGroup = root.getGroup("RADIANCE")
-        newIrradianceGroup = root.getGroup("IRRADIANCE")
+        newIrradianceGroup = root.getGroup("IRRADIANCE")        
 
+        # Test whether this is the first ensemble spectrum
         if not ('Rrs' in newReflectanceGroup.datasets):
-            newRrsData = newReflectanceGroup.addDataset("Rrs")
+            newRrsData = newReflectanceGroup.addDataset("Rrs")            
             newESData = newIrradianceGroup.addDataset("ES")        
             newLIData = newRadianceGroup.addDataset("LI")
             newLTData = newRadianceGroup.addDataset("LT") 
-            newnLwData = newRadianceGroup.addDataset("nLw")
+            newnLwData = newReflectanceGroup.addDataset("nLw")            
 
-            newRrsDeltaData = newReflectanceGroup.addDataset("Rrs_delta")
+            newRrsDeltaData = newReflectanceGroup.addDataset("Rrs_delta")            
             newESDeltaData = newIrradianceGroup.addDataset("ES_delta")       
             newLIDeltaData = newRadianceGroup.addDataset("LI_delta")
             newLTDeltaData = newRadianceGroup.addDataset("LT_delta")
-            newnLwDeltaData = newRadianceGroup.addDataset("nLw_delta")
+            newnLwDeltaData = newReflectanceGroup.addDataset("nLw_delta")
+
+            if ConfigFile.settings['bL2WeightMODISA']:
+                newRrsMODISAData = newReflectanceGroup.addDataset("Rrs_MODISA")
+                newRrsMODISADeltaData = newReflectanceGroup.addDataset("Rrs_MODISA_delta")
+                newnLwMODISAData = newReflectanceGroup.addDataset("nLw_MODISA")
+                newnLwMODISADeltaData = newReflectanceGroup.addDataset("nLw_MODISA_delta")
+            if ConfigFile.settings['bL2WeightMODIST']:
+                newRrsMODISTData = newReflectanceGroup.addDataset("Rrs_MODIST")
+                newRrsMODISTDeltaData = newReflectanceGroup.addDataset("Rrs_MODIST_delta")
+                newnLwMODISTData = newReflectanceGroup.addDataset("nLw_MODIST")
+                newnLwMODISTDeltaData = newReflectanceGroup.addDataset("nLw_MODIST_delta")
+
+            if ConfigFile.settings['bL2WeightVIIRSN']:
+                newRrsVIIRSNData = newReflectanceGroup.addDataset("Rrs_VIIRSN")
+                newRrsVIIRSNDeltaData = newReflectanceGroup.addDataset("Rrs_VIIRSN_delta")
+                newnLwVIIRSNData = newReflectanceGroup.addDataset("nLw_VIIRSN")
+                newnLwVIIRSNDeltaData = newReflectanceGroup.addDataset("nLw_VIIRSN_delta")
+            if ConfigFile.settings['bL2WeightVIIRSJ']:
+                newRrsVIIRSJData = newReflectanceGroup.addDataset("Rrs_VIIRSJ")
+                newRrsVIIRSJDeltaData = newReflectanceGroup.addDataset("Rrs_VIIRSJ_delta")
+                newnLwVIIRSJData = newReflectanceGroup.addDataset("nLw_VIIRSJ")
+                newnLwVIIRSJDeltaData = newReflectanceGroup.addDataset("nLw_VIIRSJ_delta")
+
+            if ConfigFile.settings['bL2WeightSentinel3A']:
+                newRrsSentinel3AData = newReflectanceGroup.addDataset("Rrs_Sentinel3A")
+                newRrsSentinel3ADeltaData = newReflectanceGroup.addDataset("Rrs_Sentinel3A_delta")
+                newnLwSentinel3AData = newReflectanceGroup.addDataset("nLw_Sentinel3A")
+                newnLwSentinel3ADeltaData = newReflectanceGroup.addDataset("nLw_Sentinel3A_delta")
+            if ConfigFile.settings['bL2WeightSentinel3B']:
+                newRrsSentinel3BData = newReflectanceGroup.addDataset("Rrs_Sentinel3B")
+                newRrsSentinel3BDeltaData = newReflectanceGroup.addDataset("Rrs_Sentinel3B_delta")
+                newnLwSentinel3BData = newReflectanceGroup.addDataset("nLw_Sentinel3B")
+                newnLwSentinel3BDeltaData = newReflectanceGroup.addDataset("nLw_Sentinel3B_delta")
         else:
             newRrsData = newReflectanceGroup.getDataset("Rrs")
             newESData = newIrradianceGroup.getDataset("ES")        
             newLIData = newRadianceGroup.getDataset("LI")
             newLTData = newRadianceGroup.getDataset("LT") 
-            newnLwData = newRadianceGroup.getDataset("nLw")
+            newnLwData = newReflectanceGroup.getDataset("nLw")
 
             newRrsDeltaData = newReflectanceGroup.getDataset("Rrs_delta")
             newESDeltaData = newIrradianceGroup.getDataset("ES_delta")    
             newLIDeltaData = newRadianceGroup.getDataset("LI_delta")
             newLTDeltaData = newRadianceGroup.getDataset("LT_delta")
-            newnLwDeltaData = newRadianceGroup.getDataset("nLw_delta")
+            newnLwDeltaData = newReflectanceGroup.getDataset("nLw_delta")
+
+            if ConfigFile.settings['bL2WeightMODISA']:
+                newRrsMODISAData = newReflectanceGroup.getDataset("Rrs_MODISA")
+                newRrsMODISADeltaData = newReflectanceGroup.getDataset("Rrs_MODISA_delta")
+                newnLwMODISAData = newReflectanceGroup.getDataset("nLw_MODISA")
+                newnLwMODISADeltaData = newReflectanceGroup.getDataset("nLw_MODISA_delta")
+            if ConfigFile.settings['bL2WeightMODIST']:
+                newRrsMODISTData = newReflectanceGroup.getDataset("Rrs_MODIST")
+                newRrsMODISTDeltaData = newReflectanceGroup.getDataset("Rrs_MODIST_delta")
+                newnLwMODISTData = newReflectanceGroup.getDataset("nLw_MODIST")
+                newnLwMODISTDeltaData = newReflectanceGroup.getDataset("nLw_MODIST_delta")
+
+            if ConfigFile.settings['bL2WeightVIIRSN']:
+                newRrsVIIRSNData = newReflectanceGroup.getDataset("Rrs_VIIRSN")
+                newRrsVIIRSNDeltaData = newReflectanceGroup.getDataset("Rrs_VIIRSN_delta")
+                newnLwVIIRSNData = newReflectanceGroup.getDataset("nLw_VIIRSN")
+                newnLwVIIRSNDeltaData = newReflectanceGroup.getDataset("nLw_VIIRSN_delta")
+            if ConfigFile.settings['bL2WeightVIIRSJ']:
+                newRrsVIIRSJData = newReflectanceGroup.getDataset("Rrs_VIIRSJ")
+                newRrsVIIRSJDeltaData = newReflectanceGroup.getDataset("Rrs_VIIRSJ_delta")
+                newnLwVIIRSJData = newReflectanceGroup.getDataset("nLw_VIIRSJ")
+                newnLwVIIRSJDeltaData = newReflectanceGroup.getDataset("nLw_VIIRSJ_delta")
+
+            if ConfigFile.settings['bL2WeightSentinel3A']:
+                newRrsSentinel3AData = newReflectanceGroup.getDataset("Rrs_Sentinel3A")
+                newRrsSentinel3ADeltaData = newReflectanceGroup.getDataset("Rrs_Sentinel3A_delta")
+                newnLwSentinel3AData = newReflectanceGroup.getDataset("nLw_Sentinel3A")
+                newnLwSentinel3ADeltaData = newReflectanceGroup.getDataset("nLw_Sentinel3A_delta")
+            if ConfigFile.settings['bL2WeightSentinel3B']:
+                newRrsSentinel3BData = newReflectanceGroup.getDataset("Rrs_Sentinel3B")
+                newRrsSentinel3BDeltaData = newReflectanceGroup.getDataset("Rrs_Sentinel3B_delta")
+                newnLwSentinel3BData = newReflectanceGroup.getDataset("nLw_Sentinel3B")
+                newnLwSentinel3BDeltaData = newReflectanceGroup.getDataset("nLw_Sentinel3B_delta")
 
         esSlice = ProcessL2.columnToSlice(esColumns,start, end)
         liSlice = ProcessL2.columnToSlice(liColumns,start, end)
@@ -730,7 +798,7 @@ class ProcessL2:
             rhoSky, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
                 CloudXSlice,SOL_ELXSlice,SSTXSlice,SalXSlice,RelAzXSlice,wave)
 
-        # Add date/time data to Rrs dataset
+        # Add date/time data to Rrs dataset; If this is the first spectrum, add, otherwise append
         if not ("Datetag" in newRrsData.columns):
             newESData.columns["Datetag"] = [date]
             newLIData.columns["Datetag"] = [date]
@@ -753,6 +821,64 @@ class ProcessL2:
             newLTDeltaData.columns["Timetag2"] = [time]
             newRrsDeltaData.columns["Timetag2"] = [time]
             newnLwDeltaData.columns["Timetag2"] = [time]
+
+            if ConfigFile.settings['bL2WeightMODISA']:
+                newRrsMODISAData.columns["Timetag2"] = [time]
+                newRrsMODISADeltaData.columns["Timetag2"] = [time]
+                newnLwMODISAData.columns["Timetag2"] = [time]
+                newnLwMODISADeltaData.columns["Timetag2"] = [time]
+                newRrsMODISAData.columns["Datetag"] = [date]
+                newRrsMODISADeltaData.columns["Datetag"] = [date]
+                newnLwMODISAData.columns["Datetag"] = [date]
+                newnLwMODISADeltaData.columns["Datetag"] = [date]
+            if ConfigFile.settings['bL2WeightMODIST']:
+                newRrsMODISTData.columns["Timetag2"] = [time]
+                newRrsMODISTDeltaData.columns["Timetag2"] = [time]
+                newnLwMODISTData.columns["Timetag2"] = [time]
+                newnLwMODISTDeltaData.columns["Timetag2"] = [time]
+                newRrsMODISTData.columns["Datetag"] = [date]
+                newRrsMODISTDeltaData.columns["Datetag"] = [date]
+                newnLwMODISTData.columns["Datetag"] = [date]
+                newnLwMODISTDeltaData.columns["Datetag"] = [date]
+
+            if ConfigFile.settings['bL2WeightVIIRSN']:
+                newRrsVIIRSNData.columns["Timetag2"] = [time]
+                newRrsVIIRSNDeltaData.columns["Timetag2"] = [time]
+                newnLwVIIRSNData.columns["Timetag2"] = [time]
+                newnLwVIIRSNDeltaData.columns["Timetag2"] = [time]
+                newRrsVIIRSNData.columns["Datetag"] = [date]
+                newRrsVIIRSNDeltaData.columns["Datetag"] = [date]
+                newnLwVIIRSNData.columns["Datetag"] = [date]
+                newnLwVIIRSNDeltaData.columns["Datetag"] = [date]
+            if ConfigFile.settings['bL2WeightVIIRSJ']:
+                newRrsVIIRSJData.columns["Timetag2"] = [time]
+                newRrsVIIRSJDeltaData.columns["Timetag2"] = [time]
+                newnLwVIIRSJData.columns["Timetag2"] = [time]
+                newnLwVIIRSJDeltaData.columns["Timetag2"] = [time]
+                newRrsVIIRSJData.columns["Datetag"] = [date]
+                newRrsVIIRSJDeltaData.columns["Datetag"] = [date]
+                newnLwVIIRSJData.columns["Datetag"] = [date]
+                newnLwVIIRSJDeltaData.columns["Datetag"] = [date]
+
+
+            if ConfigFile.settings['bL2WeightSentinel3A']:
+                newRrsSentinel3AData.columns["Timetag2"] = [time]
+                newRrsSentinel3ADeltaData.columns["Timetag2"] = [time]
+                newnLwSentinel3AData.columns["Timetag2"] = [time]
+                newnLwSentinel3ADeltaData.columns["Timetag2"] = [time]
+                newRrsSentinel3AData.columns["Datetag"] = [date]
+                newRrsSentinel3ADeltaData.columns["Datetag"] = [date]
+                newnLwSentinel3AData.columns["Datetag"] = [date]
+                newnLwSentinel3ADeltaData.columns["Datetag"] = [date]
+            if ConfigFile.settings['bL2WeightSentinel3B']:
+                newRrsSentinel3BData.columns["Timetag2"] = [time]
+                newRrsSentinel3BDeltaData.columns["Timetag2"] = [time]
+                newnLwSentinel3BData.columns["Timetag2"] = [time]
+                newnLwSentinel3BDeltaData.columns["Timetag2"] = [time]
+                newRrsSentinel3BData.columns["Datetag"] = [date]
+                newRrsSentinel3BDeltaData.columns["Datetag"] = [date]
+                newnLwSentinel3BData.columns["Datetag"] = [date]
+                newnLwSentinel3BDeltaData.columns["Datetag"] = [date]            
         else:
             newESData.columns["Datetag"].append(date)
             newLIData.columns["Datetag"].append(date)
@@ -763,7 +889,7 @@ class ProcessL2:
             newLIData.columns["Timetag2"].append(time)
             newLTData.columns["Timetag2"].append(time)
             newRrsData.columns["Timetag2"].append(time)           
-            newnLwData.columns["Timetag2"].append(time)           
+            newnLwData.columns["Timetag2"].append(time)
 
             newESDeltaData.columns["Datetag"].append(date)
             newLIDeltaData.columns["Datetag"].append(date)
@@ -776,6 +902,63 @@ class ProcessL2:
             newRrsDeltaData.columns["Timetag2"].append(time)
             newnLwDeltaData.columns["Timetag2"].append(time)
 
+            if ConfigFile.settings['bL2WeightMODISA']:
+                newRrsMODISAData.columns["Timetag2"].append(time)
+                newRrsMODISADeltaData.columns["Timetag2"].append(time)
+                newnLwMODISAData.columns["Timetag2"].append(time)
+                newnLwMODISADeltaData.columns["Timetag2"].append(time)
+                newRrsMODISAData.columns["Datetag"].append(date)
+                newRrsMODISADeltaData.columns["Datetag"].append(date)
+                newnLwMODISAData.columns["Datetag"].append(date)
+                newnLwMODISADeltaData.columns["Datetag"].append(date)
+            if ConfigFile.settings['bL2WeightMODIST']:
+                newRrsMODISTData.columns["Timetag2"].append(time)
+                newRrsMODISTDeltaData.columns["Timetag2"].append(time)
+                newnLwMODISTData.columns["Timetag2"].append(time)
+                newnLwMODISTDeltaData.columns["Timetag2"].append(time)
+                newRrsMODISTData.columns["Datetag"].append(date)
+                newRrsMODISTDeltaData.columns["Datetag"].append(date)
+                newnLwMODISTData.columns["Datetag"].append(date)
+                newnLwMODISTDeltaData.columns["Datetag"].append(date)
+
+            if ConfigFile.settings['bL2WeightVIIRSN']:
+                newRrsVIIRSNData.columns["Timetag2"].append(time)
+                newRrsVIIRSNDeltaData.columns["Timetag2"].append(time)
+                newnLwVIIRSNData.columns["Timetag2"].append(time)
+                newnLwVIIRSNDeltaData.columns["Timetag2"].append(time)
+                newRrsVIIRSNData.columns["Datetag"].append(date)
+                newRrsVIIRSNDeltaData.columns["Datetag"].append(date)
+                newnLwVIIRSNData.columns["Datetag"].append(date)
+                newnLwVIIRSNDeltaData.columns["Datetag"].append(date)
+            if ConfigFile.settings['bL2WeightVIIRSJ']:
+                newRrsVIIRSJData.columns["Timetag2"].append(time)
+                newRrsVIIRSJDeltaData.columns["Timetag2"].append(time)
+                newnLwVIIRSJData.columns["Timetag2"].append(time)
+                newnLwVIIRSJDeltaData.columns["Timetag2"].append(time)
+                newRrsVIIRSJData.columns["Datetag"].append(date)
+                newRrsVIIRSJDeltaData.columns["Datetag"].append(date)
+                newnLwVIIRSJData.columns["Datetag"].append(date)
+                newnLwVIIRSJDeltaData.columns["Datetag"].append(date)
+            
+            if ConfigFile.settings['bL2WeightSentinel3A']:
+                newRrsSentinel3AData.columns["Timetag2"].append(time)
+                newRrsSentinel3ADeltaData.columns["Timetag2"].append(time)
+                newnLwSentinel3AData.columns["Timetag2"].append(time)
+                newnLwSentinel3ADeltaData.columns["Timetag2"].append(time)
+                newRrsSentinel3AData.columns["Datetag"].append(date)
+                newRrsSentinel3ADeltaData.columns["Datetag"].append(date)
+                newnLwSentinel3AData.columns["Datetag"].append(date)
+                newnLwSentinel3ADeltaData.columns["Datetag"].append(date)
+            if ConfigFile.settings['bL2WeightSentinel3B']:
+                newRrsSentinel3BData.columns["Timetag2"].append(time)
+                newRrsSentinel3BDeltaData.columns["Timetag2"].append(time)
+                newnLwSentinel3BData.columns["Timetag2"].append(time)
+                newnLwSentinel3BDeltaData.columns["Timetag2"].append(time)
+                newRrsSentinel3BData.columns["Datetag"].append(date)
+                newRrsSentinel3BDeltaData.columns["Datetag"].append(date)
+                newnLwSentinel3BData.columns["Datetag"].append(date)
+                newnLwSentinel3BDeltaData.columns["Datetag"].append(date)   
+            
         rrsSlice = {}
         nLwSlice = {}
                 
@@ -899,7 +1082,7 @@ class ProcessL2:
             for k in rrsSlice:
                 newRrsData.columns[k].append(rrsSlice[k])
             for k in nLwSlice:
-                newnLwData.columns[k].append(nLwSlice[k])
+                newnLwData.columns[k].append(nLwSlice[k])        
 
         newESData.columnsToDataset()   
         newLIData.columnsToDataset()
@@ -912,6 +1095,71 @@ class ProcessL2:
         newLTDeltaData.columnsToDataset()
         newRrsDeltaData.columnsToDataset()
         newnLwDeltaData.columnsToDataset()
+
+        if ConfigFile.settings['bL2WeightMODISA']:
+            print("Process MODIS Aqua Bands")
+            Weight_RSR.processMODISBands(newRrsMODISAData, newRrsData, sensor='A')
+            Weight_RSR.processMODISBands(newRrsMODISADeltaData, newRrsDeltaData, sensor='A')
+            newRrsMODISAData.columnsToDataset()
+            newRrsMODISADeltaData.columnsToDataset()
+            Weight_RSR.processMODISBands(newnLwMODISAData, newnLwData, sensor='A')
+            Weight_RSR.processMODISBands(newnLwMODISADeltaData, newnLwDeltaData, sensor='A')
+            newnLwMODISAData.columnsToDataset()
+            newnLwMODISADeltaData.columnsToDataset()
+        if ConfigFile.settings['bL2WeightMODIST']:
+            print("Process MODIS Terra Bands")
+            Weight_RSR.processMODISBands(newRrsMODISTData, newRrsData, sensor='T')
+            Weight_RSR.processMODISBands(newRrsMODISTDeltaData, newRrsDeltaData, sensor='T')
+            newRrsMODISTData.columnsToDataset()
+            newRrsMODISTDeltaData.columnsToDataset()
+            Weight_RSR.processMODISBands(newnLwMODISTData, newnLwData, sensor='T')
+            Weight_RSR.processMODISBands(newnLwMODISTDeltaData, newnLwDeltaData, sensor='T')
+            newnLwMODISTData.columnsToDataset()
+            newnLwMODISTDeltaData.columnsToDataset()
+
+        if ConfigFile.settings['bL2WeightVIIRSN']:
+            print("Process VIIRS SNPP Bands")
+            Weight_RSR.processVIIRSBands(newRrsVIIRSNData, newRrsData, sensor='N')
+            Weight_RSR.processVIIRSBands(newRrsVIIRSNDeltaData, newRrsDeltaData, sensor='N')
+            newRrsVIIRSNData.columnsToDataset()
+            newRrsVIIRSNDeltaData.columnsToDataset()
+            Weight_RSR.processVIIRSBands(newnLwVIIRSNData, newnLwData, sensor='N')
+            Weight_RSR.processVIIRSBands(newnLwVIIRSNDeltaData, newnLwDeltaData, sensor='N')
+            newnLwVIIRSNData.columnsToDataset()
+            newnLwVIIRSNDeltaData.columnsToDataset()
+        if ConfigFile.settings['bL2WeightVIIRSJ']:
+            print("Process VIIRS JPSS Bands")
+            Weight_RSR.processVIIRSBands(newRrsVIIRSJData, newRrsData, sensor='J')
+            Weight_RSR.processVIIRSBands(newRrsVIIRSJDeltaData, newRrsDeltaData, sensor='J')
+            newRrsVIIRSJData.columnsToDataset()
+            newRrsVIIRSJDeltaData.columnsToDataset()
+            Weight_RSR.processVIIRSBands(newnLwVIIRSJData, newnLwData, sensor='J')
+            Weight_RSR.processVIIRSBands(newnLwVIIRSJDeltaData, newnLwDeltaData, sensor='J')
+            newnLwVIIRSJData.columnsToDataset()
+            newnLwVIIRSJDeltaData.columnsToDataset()
+        
+        if ConfigFile.settings['bL2WeightSentinel3A']:
+            print("Process Sentinel 3A Bands")
+            Weight_RSR.processSentinel3Bands(newRrsSentinel3AData, newRrsData, sensor='A')
+            Weight_RSR.processSentinel3Bands(newRrsSentinel3ADeltaData, newRrsDeltaData, sensor='A')
+            newRrsSentinel3AData.columnsToDataset()
+            newRrsSentinel3ADeltaData.columnsToDataset()
+            Weight_RSR.processSentinel3Bands(newnLwSentinel3AData, newnLwData, sensor='A')
+            Weight_RSR.processSentinel3Bands(newnLwSentinel3ADeltaData, newnLwDeltaData, sensor='A')
+            newnLwSentinel3AData.columnsToDataset()
+            newnLwSentinel3ADeltaData.columnsToDataset()
+        
+        if ConfigFile.settings['bL2WeightSentinel3B']:
+            print("Process Sentinel 3B Bands")
+            Weight_RSR.processSentinel3Bands(newRrsSentinel3BData, newRrsData, sensor='B')
+            Weight_RSR.processSentinel3Bands(newRrsSentinel3BDeltaData, newRrsDeltaData, sensor='B')
+            newRrsSentinel3BData.columnsToDataset()
+            newRrsSentinel3BDeltaData.columnsToDataset()
+            Weight_RSR.processSentinel3Bands(newnLwSentinel3BData, newnLwData, sensor='B')
+            Weight_RSR.processSentinel3Bands(newnLwSentinel3BDeltaData, newnLwDeltaData, sensor='B')
+            newnLwSentinel3BData.columnsToDataset()
+            newnLwSentinel3BDeltaData.columnsToDataset()
+
         return True
 
 
