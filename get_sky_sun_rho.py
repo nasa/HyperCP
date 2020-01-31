@@ -156,24 +156,41 @@ def skylight_reflection2(wind, sensor):
     du = quads.du.data
     dphi = quads.dphi.data
     t0 = time.time()
+    zen = quads.zen.data[0].copy()
+    azm = quads.azm.data[0].copy()
+
+    ''' standard loop. Takes ages.'''
     for i in np.arange(1, prob.size):        
-        # t01 = time.time()
-        sky = gen_vec_quad(quads.zen.data[0][i],du,quads.azm.data[0][i],dphi,num)
-        # t02 = time.time()
-        # print(f'Inside time elapsed: {t02-t01}')
+        # sky = gen_vec_quad(quads.zen.data[0][i],du,quads.azm.data[0][i],dphi,num)
+        sky = gen_vec_quad(zen[i],du,azm[i],dphi,num)
         prob[i],ang[i] = prob_reflection(-sky,sensor,wind)
 
-    # # This should be the equivalent of the loop above but as a comprehension
-    ## Blows up, doesn't work
-    # x, y = [(prob_reflection(
-    #                 -gen_vec_quad(quads.zen.data[0][i],
-    #                 du,quads.azm.data[0][i],
+    ''' vectorized solution for sky. Unable to allocate an array this large 924760x924760'''
+    # sky = gen_vec_quad(zen,du,azm,dphi,num)
+
+    ''' comprehension. CPU 100%+. After lengthy delay -> Exception: Too many values to unpack'''    
+    # prob, ang = [(prob_reflection(
+    #                 -gen_vec_quad(zen[i],
+    #                 du,azm[i],
     #                 dphi,num),sensor,wind)) for i in np.arange(1, prob.size)]
+
+    ''' mapped, nested lambdas. Returns a map? Not callable'''
+    # sky = map(lambda zen : map(lambda azm : gen_vec_quad(zen,du,azm,dphi,num), 
+    #         quads.azm.data[0]), 
+    #         quads.zen.data[0])
+
+    ''' lambda sky plus loop. Takes same time as loop. Resource used is 100%+ CPU, NOT memory'''
+    # sky = lambda x, y: gen_vec_quad(x,du,y,dphi,num)
+    # for i in np.arange(1, prob.size):
+    #     prob[i],ang[i] = prob_reflection(-sky(zen[i], azm[i]),sensor,wind)
+
+    '''nested lambdas. Unable to allocate an array with shape 924760x924760 '''
+    # probref = lambda x, y, z: prob_reflection(-x, y, z)
+    # prob, ang = probref(-sky(quads.zen.data[0], quads.azm.data[0]), sensor, wind)
+    
     t1 = time.time()
     print(f'Time elapsed: {t1-t0}')
                     
-    # prob = x
-    # ang = y
     return prob, ang
     
 def my_cart2sph(n):

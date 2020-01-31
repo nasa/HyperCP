@@ -23,8 +23,8 @@ class ProcessL1a:
         root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
         root.attributes["CAL_FILE_NAMES"] = ','.join(calibrationMap.keys())
         root.attributes["WAVELENGTH_UNITS"] = "nm"
-        root.attributes["LU_UNITS"] = "count"
-        root.attributes["ED_UNITS"] = "count"
+        root.attributes["LI_UNITS"] = "count"
+        root.attributes["LT_UNITS"] = "count"
         root.attributes["ES_UNITS"] = "count"
         root.attributes["SATPYR_UNITS"] = "count"
         root.attributes["RAW_FILE_NAME"] = fileName
@@ -95,7 +95,6 @@ class ProcessL1a:
             if gp.id.startswith("SATMSG"): # Don't convert these strings to datasets.
                 for ds in gp.datasets.values():
                     ds.columnsToDataset()
-                # break
             else:
                 for ds in gp.datasets.values():
                     if not ds.columnsToDataset():                                                

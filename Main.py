@@ -34,6 +34,7 @@ class Window(QtWidgets.QWidget):
            os.rename("./Zhang_rho_db.mat", "./Data/Zhang_rho_db.mat")
            os.rename("./Thuillier_F0.sb", "./Data/Thuillier_F0.sb")
            os.rename("./banner.jpg", "./Data/banner.jpg")
+           os.rename("./EXAMPLE_L1B.hdf", "./Data/EXAMPLE_L1B.hdf")
            
         if not os.path.exists("Plots"):
            os.makedirs("Plots")

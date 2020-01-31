@@ -100,14 +100,15 @@ class RawFileReader:
                                     gp.attributes["CalFileName"] = key
                                     gp.attributes["FrameTag"] = cf.id
 
+                                if key.startswith('SATPYR'):
+                                    print('fungool')
+
                                 try:
                                     num = cf.convertRaw(msg, gp)
                                 except:
                                     pmsg = f'Unable to convert the following raw message: {msg}'
                                     print(pmsg)
                                     Utilities.writeLogFile(pmsg)
-
-
 
                                 if num >= 0:
                                     # Generate POSFRAME

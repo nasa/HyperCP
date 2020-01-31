@@ -22,7 +22,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def initUI(self):
         # print("ConfigWindow - initUI")
-        nameLabel = QtWidgets.QLabel("Editing: " + self.name, self)
+        # nameLabel = QtWidgets.QLabel("Editing: " + self.name, self)
 
         # Calibration Config Settings
         self.addCalibrationFileButton = QtWidgets.QPushButton("Add Cals")
@@ -101,12 +101,12 @@ class ConfigWindow(QtWidgets.QDialog):
         l1cLabel_font.setPointSize(12)
         l1cLabel_font.setBold(True)
         l1cLabel.setFont(l1cLabel_font)
-        l1cSublabel = QtWidgets.QLabel(" Filter on pitch, roll, rotator, yaw,", self)        
-        l1cSublabel2 = QtWidgets.QLabel("   and relative solar azimuth. Apply", self)
-        l1cSublabel3 = QtWidgets.QLabel("   factory calibrations.", self)        
+        l1cSublabel = QtWidgets.QLabel(" Filter on pitch, roll, yaw, and azimuth", self)        
+        # l1cSublabel2 = QtWidgets.QLabel("   relative solar azimuth.", self)
+        # l1cSublabel3 = QtWidgets.QLabel("   factory calibrations.", self)        
 
         # L1C Rotator 
-        self.l1cRotatorHomeAngleLabel = QtWidgets.QLabel(" Rotator Home Angle", self)
+        self.l1cRotatorHomeAngleLabel = QtWidgets.QLabel(" Rotator Home Angle Offset", self)
         self.l1cRotatorHomeAngleLineEdit = QtWidgets.QLineEdit(self)
         self.l1cRotatorHomeAngleLineEdit.setText(str(ConfigFile.settings["fL1cRotatorHomeAngle"]))
         self.l1cRotatorHomeAngleLineEdit.setValidator(doubleValidator)   
@@ -207,9 +207,9 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1dDeglitchCheckBox.clicked.connect(self.l1dDeglitchCheckBoxUpdate)   
 
         # L1D Launch Deglitcher Analysis 
-        l1dAnomalySublabel1 = QtWidgets.QLabel("  Launch Anom. Anal. below to test above",self)
-        l1dAnomalySublabel2 = QtWidgets.QLabel("   params on L1C. Save config when updating",self)
-        l1dAnomalySublabel3 = QtWidgets.QLabel("   params. Results will be saved to Plot/Anoms.", self)  
+        l1dAnomalySublabel1 = QtWidgets.QLabel("  Launch Anom. Anal. to test params on L1C. Save config",self)
+        l1dAnomalySublabel2 = QtWidgets.QLabel("   after updating params. Results saved to /Plot/L1C_Anoms.",self)
+        # l1dAnomalySublabel3 = QtWidgets.QLabel("   ", self)  
         l1dAnomalyStepLabel = QtWidgets.QLabel("   Waveband interval to plot (integer): ", self)  
         self.l1dAnomalyStepLineEdit = QtWidgets.QLineEdit(self)
         self.l1dAnomalyStepLineEdit.setText(str(ConfigFile.settings["bL1dAnomalyStep"]))
@@ -424,6 +424,39 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
             self.l2NIRCorrectionCheckBox.setChecked(True)
 
+        # Spectral Weighting
+        l2WeightsLabel = QtWidgets.QLabel("  Add weighted satellite spectra:", self)
+
+        l2WeightMODISALabel = QtWidgets.QLabel("AQUA", self)             
+        self.l2WeightMODISACheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2WeightMODISA"]) == 1:
+            self.l2WeightMODISACheckBox.setChecked(True)
+
+        l2WeightMODISTLabel = QtWidgets.QLabel("TERRA", self)             
+        self.l2WeightMODISTCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2WeightMODIST"]) == 1:
+            self.l2WeightMODISTCheckBox.setChecked(True)
+                
+        l2WeightVIIRSNLabel = QtWidgets.QLabel("V-NPP", self)             
+        self.l2WeightVIIRSNCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2WeightVIIRSN"]) == 1:
+            self.l2WeightVIIRSNCheckBox.setChecked(True)
+
+        l2WeightVIIRSJLabel = QtWidgets.QLabel("V-JPSS", self)             
+        self.l2WeightVIIRSJCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2WeightVIIRSJ"]) == 1:
+            self.l2WeightVIIRSJCheckBox.setChecked(True)
+
+        l2WeightSentinel3ALabel = QtWidgets.QLabel("Sen-3A", self)     
+        self.l2WeightSentinel3ACheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2WeightSentinel3A"]) == 1:
+            self.l2WeightSentinel3ACheckBox.setChecked(True)
+
+        l2WeightSentinel3BLabel = QtWidgets.QLabel("Sen-3B", self)     
+        self.l2WeightSentinel3BCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL2WeightSentinel3B"]) == 1:
+            self.l2WeightSentinel3BCheckBox.setChecked(True)
+
         # Plots
         l2PlotsLabel = QtWidgets.QLabel("  Generate Spectral Plots", self)
         l2PlotRrsLabel = QtWidgets.QLabel("Rrs", self)             
@@ -474,7 +507,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # Whole Window Box
         VBox = QtWidgets.QVBoxLayout()
-        VBox.addWidget(nameLabel)
+        # VBox.addWidget(nameLabel)
 
         # Vertical Box (left)
         VBox1 = QtWidgets.QVBoxLayout()
@@ -494,12 +527,11 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox1.addWidget(calibrationFrameTypeLabel)
         VBox1.addWidget(self.calibrationFrameTypeComboBox)
 
-        VBox1.addSpacing(10)
+        # VBox1.addSpacing(10)
 
         # L1A
         VBox1.addWidget(l1aLabel)
-        VBox1.addWidget(l1aSublabel)
-               
+        VBox1.addWidget(l1aSublabel)               
         VBox1.addWidget(l1aCleanSZALabel)
         # Horizontal Box; SZA Filter
         szaHBox = QtWidgets.QHBoxLayout()
@@ -507,8 +539,8 @@ class ConfigWindow(QtWidgets.QDialog):
         szaHBox.addWidget(self.l1aCleanSZACheckBox)
         szaHBox.addWidget(self.l1aCleanSZAMaxLineEdit)        
         VBox1.addLayout(szaHBox)
-        
-        VBox1.addSpacing(10)
+
+        # VBox1.addSpacing(10)
 
         # L1B
         VBox1.addWidget(l1bLabel)
@@ -517,8 +549,8 @@ class ConfigWindow(QtWidgets.QDialog):
         # L1C
         VBox1.addWidget(l1cLabel)
         VBox1.addWidget(l1cSublabel)
-        VBox1.addWidget(l1cSublabel2)
-        VBox1.addWidget(l1cSublabel3)
+        # VBox1.addWidget(l1cSublabel2)
+        # VBox1.addWidget(l1cSublabel3)
 
         # L1C Rotator
         RotHomeAngleHBox = QtWidgets.QHBoxLayout()       
@@ -572,19 +604,19 @@ class ConfigWindow(QtWidgets.QDialog):
         SunAngleMaxHBox.addWidget(self.l1cSunAngleMaxLineEdit)
         VBox1.addLayout(SunAngleMaxHBox)         
 
-        # Middle Vertical Box
-        VBox2 = QtWidgets.QVBoxLayout()
-        VBox2.setAlignment(QtCore.Qt.AlignBottom)                            
-
         # L1D 
-        VBox2.addWidget(l1dLabel)
-        VBox2.addWidget(l1dSublabel)
-        
+        VBox1.addWidget(l1dLabel)
+        VBox1.addWidget(l1dSublabel)
+
         # L1D Deglitcher
         deglitchHBox = QtWidgets.QHBoxLayout()
         deglitchHBox.addWidget(self.l1dDeglitchLabel)
         deglitchHBox.addWidget(self.l1dDeglitchCheckBox)
-        VBox2.addLayout(deglitchHBox)
+        VBox1.addLayout(deglitchHBox)
+
+        # Middle Vertical Box
+        VBox2 = QtWidgets.QVBoxLayout()
+        VBox2.setAlignment(QtCore.Qt.AlignBottom)                                                    
 
         deglitch0HBox = QtWidgets.QHBoxLayout()
         deglitch0HBox.addWidget(self.l1dDeglitch0Label)
@@ -606,20 +638,20 @@ class ConfigWindow(QtWidgets.QDialog):
         deglitch3HBox.addWidget(self.l1dDeglitch3LineEdit)
         VBox2.addLayout(deglitch3HBox)
 
-        VBox2.addSpacing(10)
+        # VBox2.addSpacing(10)
 
-        # L1D nomaly Launcher
+        # L1D Anomaly Launcher
         # VBox2.addWidget(l1dAnomalyLabel)
         VBox2.addWidget(l1dAnomalySublabel1)
         VBox2.addWidget(l1dAnomalySublabel2)
-        VBox2.addWidget(l1dAnomalySublabel3)
+        # VBox2.addWidget(l1dAnomalySublabel3)
         stepHBox = QtWidgets.QHBoxLayout()
         stepHBox.addWidget(l1dAnomalyStepLabel)
         stepHBox.addWidget(self.l1dAnomalyStepLineEdit)
         VBox2.addLayout(stepHBox)
         VBox2.addWidget(self.l1dAnomalyButton)
 
-        VBox2.addSpacing(20)   
+        # VBox2.addSpacing(20)   
 
         #L1E 
         VBox2.addWidget(l1eLabel)
@@ -631,14 +663,14 @@ class ConfigWindow(QtWidgets.QDialog):
         interpHBox.addWidget(self.l1eInterpIntervalLineEdit)
         VBox2.addLayout(interpHBox)
 
-        VBox2.addSpacing(10)
+        # VBox2.addSpacing(10)
 
         l1ePlotTimeInterpHBox = QtWidgets.QHBoxLayout()
         l1ePlotTimeInterpHBox.addWidget(l1ePlotTimeInterpLabel)
         l1ePlotTimeInterpHBox.addWidget(self.l1ePlotTimeInterpCheckBox)    
         VBox2.addLayout(l1ePlotTimeInterpHBox)
 
-        VBox2.addSpacing(10)
+        # VBox2.addSpacing(10)
         
         l1eSeaBASSHBox = QtWidgets.QHBoxLayout()
         l1eSeaBASSHBox.addWidget(l1eSaveSeaBASSLabel)
@@ -658,7 +690,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l1eSeaBASSHeaderHBox2.addWidget(self.l1eSeaBASSHeaderDeleteButton)
         VBox2.addLayout(l1eSeaBASSHeaderHBox2)    
 
-        VBox2.addSpacing(20)       
+        # VBox2.addSpacing(20)       
 
         # L2 (Preliminary)
         VBox2.addWidget(l2pLabel)
@@ -671,32 +703,33 @@ class ConfigWindow(QtWidgets.QDialog):
         l2pGetAncHBox.addWidget(l2pGetAncLabel)
         l2pGetAncHBox.addWidget(self.l2pGetAncCheckBox)    
         VBox2.addLayout(l2pGetAncHBox)
-        
-        
-        # Right box
-        VBox3 = QtWidgets.QVBoxLayout()
-        VBox3.setAlignment(QtCore.Qt.AlignBottom)
 
         # L2 
-        VBox3.addWidget(l2Label)
-        VBox3.addWidget(l2Sublabel)
-        VBox3.addWidget(l2Sublabel2)
-        
+        VBox2.addWidget(l2Label)
+        VBox2.addWidget(l2Sublabel)
+        VBox2.addWidget(l2Sublabel2)
+
         # L2 Max wind
         maxWindBox = QtWidgets.QHBoxLayout()
         maxWindBox.addWidget(l2MaxWindLabel)
         maxWindBox.addWidget(self.l2MaxWindLineEdit)
-        VBox3.addLayout(maxWindBox)
-
+        VBox2.addLayout(maxWindBox)              
+        
         # L2 SZA Min/Max
         SZAHBox1 = QtWidgets.QHBoxLayout()
         SZAHBox1.addWidget(l2SZAMinLabel)
         SZAHBox1.addWidget(self.l2SZAMinLineEdit)
-        VBox3.addLayout(SZAHBox1)
+        VBox2.addLayout(SZAHBox1)
+
         SZAHBox2 = QtWidgets.QHBoxLayout()
         SZAHBox2.addWidget(l2SZAMaxLabel)
         SZAHBox2.addWidget(self.l2SZAMaxLineEdit)
-        VBox3.addLayout(SZAHBox2)       
+        VBox2.addLayout(SZAHBox2)
+
+        # Right box
+        VBox3 = QtWidgets.QVBoxLayout()
+        VBox3.setAlignment(QtCore.Qt.AlignBottom)
+        
 
         # L2 Spectral Outlier Filter
         SpecFilterHBox = QtWidgets.QHBoxLayout()
@@ -741,7 +774,7 @@ class ConfigWindow(QtWidgets.QDialog):
         RainFlagHBox.addWidget(self.l2RainfallHumidityFlagLineEdit)
         VBox3.addLayout(RainFlagHBox) 
 
-        VBox3.addSpacing(5)
+        # VBox3.addSpacing(5)
 
         # L2 Time Average Rrs
         TimeAveHBox = QtWidgets.QHBoxLayout()
@@ -794,7 +827,7 @@ class ConfigWindow(QtWidgets.QDialog):
         RhoHBox2.addWidget(self.RhoRadioButtonZhang)
         VBox3.addLayout(RhoHBox2)         
 
-        VBox3.addSpacing(5)
+        # VBox3.addSpacing(5)
 
         # L2 NIR AtmoCorr
         NIRCorrectionHBox = QtWidgets.QHBoxLayout()
@@ -802,7 +835,28 @@ class ConfigWindow(QtWidgets.QDialog):
         NIRCorrectionHBox.addWidget(self.l2NIRCorrectionCheckBox)
         VBox3.addLayout(NIRCorrectionHBox)         
 
-        VBox3.addSpacing(5)
+        # VBox3.addSpacing(5)
+
+        # L2 Spectral weighting to satellites
+        VBox3.addWidget(l2WeightsLabel)
+        l2WeightHBox = QtWidgets.QHBoxLayout()
+        l2WeightHBox.addSpacing(45)
+        l2WeightHBox.addWidget(l2WeightMODISALabel)
+        l2WeightHBox.addWidget(self.l2WeightMODISACheckBox)    
+        l2WeightHBox.addWidget(l2WeightSentinel3ALabel)
+        l2WeightHBox.addWidget(self.l2WeightSentinel3ACheckBox)            
+        l2WeightHBox.addWidget(l2WeightVIIRSNLabel)
+        l2WeightHBox.addWidget(self.l2WeightVIIRSNCheckBox)            
+        VBox3.addLayout(l2WeightHBox)  
+        l2WeightHBox2 = QtWidgets.QHBoxLayout()
+        l2WeightHBox2.addSpacing(45)
+        l2WeightHBox2.addWidget(l2WeightMODISTLabel)
+        l2WeightHBox2.addWidget(self.l2WeightMODISTCheckBox)    
+        l2WeightHBox2.addWidget(l2WeightSentinel3BLabel)
+        l2WeightHBox2.addWidget(self.l2WeightSentinel3BCheckBox)  
+        l2WeightHBox2.addWidget(l2WeightVIIRSJLabel)          
+        l2WeightHBox2.addWidget(self.l2WeightVIIRSJCheckBox)  
+        VBox3.addLayout(l2WeightHBox2)  
 
         # L2 Plotting
         VBox3.addWidget(l2PlotsLabel)
@@ -820,7 +874,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2PlotHBox.addWidget(self.l2PlotLtCheckBox)
         VBox3.addLayout(l2PlotHBox)    
 
-        VBox3.addSpacing(5)
+        # VBox3.addSpacing(5)
 
         # Horizontal Box; Save SeaBASS
         l2SeaBASSHBox = QtWidgets.QHBoxLayout()
@@ -828,26 +882,26 @@ class ConfigWindow(QtWidgets.QDialog):
         l2SeaBASSHBox.addWidget(self.l2SaveSeaBASSCheckBox)    
         VBox3.addLayout(l2SeaBASSHBox)    
 
-        # Add 3 Vertical Boxes to Horizontal Box hBox
-        hBox = QtWidgets.QHBoxLayout()
-        hBox.addLayout(VBox1)
-        hBox.addLayout(VBox2)        
-        hBox.addLayout(VBox3)    
-
         # Save/Cancel
         saveHBox = QtWidgets.QHBoxLayout()
         saveHBox.addStretch(1)
         saveHBox.addWidget(self.saveButton)
         saveHBox.addWidget(self.saveAsButton)
         saveHBox.addWidget(self.cancelButton)
+        VBox3.addLayout(saveHBox)
+
+        # Add 3 Vertical Boxes to Horizontal Box hBox
+        hBox = QtWidgets.QHBoxLayout()
+        hBox.addLayout(VBox1)
+        hBox.addLayout(VBox2)        
+        hBox.addLayout(VBox3)            
 
         # Adds hBox and saveHBox to primary VBox 
-        VBox.addLayout(hBox)
-        VBox.addLayout(saveHBox)
+        VBox.addLayout(hBox)        
 
         self.setLayout(VBox)
         self.setGeometry(300, 100, 0, 0)
-        self.setWindowTitle('Configuration')
+        self.setWindowTitle(f'Configuration: {self.name}')
         #self.show()        
 
         # print("ConfigWindow - initUI Done")
@@ -1211,6 +1265,12 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())
         ConfigFile.settings["bL2EnablePercentLt"] = int(self.l2EnablePercentLtCheckBox.isChecked())
         ConfigFile.settings["fL2PercentLt"] = float(self.l2PercentLtLineEdit.text())
+        ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
+        ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())
+        ConfigFile.settings["bL2WeightVIIRSN"] = int(self.l2WeightVIIRSNCheckBox.isChecked())
+        ConfigFile.settings["bL2WeightMODIST"] = int(self.l2WeightMODISTCheckBox.isChecked())
+        ConfigFile.settings["bL2WeightSentinel3B"] = int(self.l2WeightSentinel3BCheckBox.isChecked())
+        ConfigFile.settings["bL2WeightVIIRSJ"] = int(self.l2WeightVIIRSJCheckBox.isChecked())
         ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())
         ConfigFile.settings["bL2PlotnLw"] = int(self.l2PlotnLwCheckBox.isChecked())
         ConfigFile.settings["bL2PlotEs"] = int(self.l2PlotEsCheckBox.isChecked())
@@ -1307,6 +1367,12 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2RuddickRho"] = int(self.RhoRadioButtonRuddick.isChecked())
             ConfigFile.settings["bL2ZhangRho"] = int(self.RhoRadioButtonZhang.isChecked())
             ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())          
+            ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
+            ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())
+            ConfigFile.settings["bL2WeightVIIRSN"] = int(self.l2WeightVIIRSNCheckBox.isChecked())
+            ConfigFile.settings["bL2WeightMODIST"] = int(self.l2WeightMODISTCheckBox.isChecked())
+            ConfigFile.settings["bL2WeightSentinel3B"] = int(self.l2WeightSentinel3BCheckBox.isChecked())
+            ConfigFile.settings["bL2WeightVIIRSJ"] = int(self.l2WeightVIIRSJCheckBox.isChecked())
             ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())
             ConfigFile.settings["bL2PlotnLw"] = int(self.l2PlotnLwCheckBox.isChecked())
             ConfigFile.settings["bL2PlotEs"] = int(self.l2PlotEsCheckBox.isChecked())  
