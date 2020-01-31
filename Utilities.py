@@ -608,7 +608,7 @@ class Utilities:
                 maxRad = 2
 
             # Plot the Hyperspectral spectrum
-            plt.plot(wave, y, 'k', c=c, zorder=1)
+            plt.plot(wave, y, 'k', c=c, zorder=-1)
             
             if plotDelta:
                 # Generate the polygon for uncertainty bounds
@@ -618,8 +618,8 @@ class Utilities:
                 deltaPolyyPlus = y + list(reversed(dPolyyPlus))
                 deltaPolyyMinus = y + list(reversed(dPolyyMinus))
 
-                plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.2, c=c, zorder=1)
-                plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.2, c=c, zorder=1)
+                plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.2, c=c, zorder=-1)
+                plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.2, c=c, zorder=-1)
 
             # Satellite Bands
             ''' For some reason, only one set of satellite bands is plotted'''
@@ -627,7 +627,7 @@ class Utilities:
                 # Plot the MODISA spectrum                                
                 if plotDelta:
                     plt.errorbar(wave_MODISA, y_MODISA, yerr=dy_MODISA, fmt='.',
-                        elinewidth=0.1, color=c, ecolor='lightgray')
+                        elinewidth=0.1, color=c, ecolor='black', zorder=3) # ecolor is broken
                 else:
                     plt.plot(wave_MODISA, y_MODISA, 'o', c=c)
             if ConfigFile.settings['bL2WeightMODIST']:
@@ -641,28 +641,28 @@ class Utilities:
                 # Plot the VIIRSN spectrum                                
                 if plotDelta:
                     plt.errorbar(wave_VIIRSN, y_VIIRSN, yerr=dy_VIIRSN, fmt='.',
-                        elinewidth=0.1, color=c, ecolor='lightgray')
+                        elinewidth=0.1, color=c, ecolor='black')
                 else:
                     plt.plot(wave_VIIRSN, y_VIIRSN, 'o', c=c)
             if ConfigFile.settings['bL2WeightVIIRSJ']:
                 # Plot the VIIRSJ spectrum                                
                 if plotDelta:
                     plt.errorbar(wave_VIIRSJ, y_VIIRSJ, yerr=dy_VIIRSJ, fmt='.',
-                        elinewidth=0.1, color=c, ecolor='lightgray')
+                        elinewidth=0.1, color=c, ecolor='black')
                 else:
                     plt.plot(wave_VIIRSJ, y_VIIRSJ, 'o', c=c)
             if ConfigFile.settings['bL2WeightSentinel3A']:
                 # Plot the Sentinel3A spectrum                                
                 if plotDelta:
                     plt.errorbar(wave_Sentinel3A, y_Sentinel3A, yerr=dy_Sentinel3A, fmt='.',
-                        elinewidth=0.1, color=c, ecolor='lightgray')
+                        elinewidth=0.1, color=c, ecolor='black')
                 else:
                     plt.plot(wave_Sentinel3A, y_Sentinel3A, 'o', c=c)
             if ConfigFile.settings['bL2WeightSentinel3B']:
                 # Plot the Sentinel3B spectrum                                
                 if plotDelta:
                     plt.errorbar(wave_Sentinel3B, y_Sentinel3B, yerr=dy_Sentinel3B, fmt='.',
-                        elinewidth=0.1, color=c, ecolor='lightgray')
+                        elinewidth=0.1, color=c, ecolor='black')
                 else:
                     plt.plot(wave_Sentinel3B, y_Sentinel3B, 'o', c=c)
  

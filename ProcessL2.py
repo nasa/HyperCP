@@ -1482,8 +1482,8 @@ class ProcessL2:
         if not ProcessL2.calculateREFLECTANCE(root, node, gpsGroup, satnavGroup, pyrGroup, ancillaryData, modData):
             return None
 
-        root.attributes["Rrs_UNITS"] = "sr^-1"
-        root.attributes["nLw_UNITS"] = "uW cm^-2 nm^-1 sr^-1"
+        root.attributes["Rrs_UNITS"] = "1/sr"
+        root.attributes["nLw_UNITS"] = "uW/cm^2/nm/sr"
         
         # Check to insure at least some data survived quality checks
         if root.getGroup("REFLECTANCE").getDataset("Rrs").data is None:

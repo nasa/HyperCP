@@ -1280,7 +1280,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         ConfigFile.saveConfig(self.name)
 
-        QtWidgets.QMessageBox.about(self, "Edit Config File", "Config File Saved")  
+        # QtWidgets.QMessageBox.about(self, "Edit Config File", "Config File Saved")  
 
         # Confirm that SeaBASS Headers need to be/are updated
         if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL1eSaveSeaBASS"]: 
@@ -1380,7 +1380,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2PlotLt"] = int(self.l2PlotLtCheckBox.isChecked())  
             ConfigFile.settings["bL2SaveSeaBASS"] = int(self.l2SaveSeaBASSCheckBox.isChecked())            
 
-            QtWidgets.QMessageBox.about(self, "Save As Config File", "Config File Saved")
+            # QtWidgets.QMessageBox.about(self, "Save As Config File", "Config File Saved")
             ConfigFile.saveConfig(ConfigFile.filename)
 
             # Copy Calibration files into new Config folder

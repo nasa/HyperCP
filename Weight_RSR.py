@@ -44,7 +44,8 @@ class Weight_RSR:
     def processMODISBands(weightedBandData, hyperspecData, sensor='A'):        
         # Read in the RSRs from NASA
         # Aqua
-        fields=[412,443,469,488,531,551,555,645,667,678,748,859,869,1240,1640,2130]
+        fields=['412','443','469','488','531','551','555','645','667',
+                '678','748','859','869','1240','1640','2130']
         if sensor == 'A':
             modisRSRFile = 'Data/HMODISA_RSRs.txt'
         else:
@@ -71,7 +72,8 @@ class Weight_RSR:
             rsrInterp[:,i] = fn(wvInterp)
         
         for i in np.arange(0, len(fields)):
-            weightedBandData.columns[str(fields[i])] = Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
+            weightedBandData.columns[str(fields[i])] = \
+                Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
         
         return weightedBandData
 
@@ -79,7 +81,7 @@ class Weight_RSR:
     def processVIIRSBands(weightedBandData, hyperspecData, sensor='N'):        
         # Read in the RSRs from NASA
         # Aqua
-        fields=['RSR_M1','RSR_M2','RSR_M3','RSR_M4','RSR_M5','RSR_M6','RSR_M7','RSR_M8','RSR_M10','RSR_M11']
+        fields=['412','445','488','555','672','746','865','1240','1610','2250']
         if sensor == 'N':
             modisRSRFile = 'Data/VIIRSN_IDPSv3_RSRs.txt'
         else:
@@ -106,7 +108,8 @@ class Weight_RSR:
             rsrInterp[:,i] = fn(wvInterp)
         
         for i in np.arange(0, len(fields)):
-            weightedBandData.columns[str(fields[i])] = Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
+            weightedBandData.columns[str(fields[i])] = \
+                Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
         
         return weightedBandData
 
@@ -115,7 +118,9 @@ class Weight_RSR:
     def processSentinel3Bands(weightedBandData, hyperspecData, sensor='A'):
         # Read in the RSRs from NASA
         # OLCI Sentinel 3A
-        fields=['b1','b2','b3','b4','b5','b6','b7','b8','b9','b10','b11','b12','b13','b14','b15','b16','b17','b18','b19','b20','b21']
+        fields=['400','412.5','442.5','490','510','560','620','665','673.75',
+                '681.25','708.75','753.75','761.25','764.38','767.5','778.78','865',
+                '885','900','940','1020']
         if sensor == 'A':
             modisRSRFile = 'Data/OLCIA_RSRs.txt'
         else:
@@ -143,6 +148,7 @@ class Weight_RSR:
             rsrInterp[:,i] = fn(wvInterp)
         
         for i in np.arange(0, len(fields)):
-            weightedBandData.columns[fields[i]] = Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
+            weightedBandData.columns[fields[i]] = \
+                Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
         
         return weightedBandData

@@ -110,6 +110,10 @@ It will be helpful to set your 'Input Data Parent' and 'Output Data Parent' dire
 
 Process the data by clicking on one of the buttons for single-level or multi-level processing. A file selection dialogue will appear. Multiple data files can be processed together (successively) by selecting them together in the GUI (Shift- and or Ctrl- click, or Ctrl-A for all). Input files will be checked for match to expected input level (e.g. L1A file input for for L1B processing). Multi-level processing works the same as single-level by processing each input raw file through all levels before moving on to the next raw file. However, it will only continue with a file if the preceding level was created immediately (within 1 minute) prior. In other words, if -- due to changes in QA/QC parameterization -- a file is entirely discarded at a given level, but an old file of the same name still exists in that directory, it will be ignored, and processing for that file will be terminated for higher levels. 
 
+*Bug: When running in MacOS, the Open File dialog window remains frozen open during processing, and closes once complete.*
+
+*Bug: Occasionally, when running the program for the first time, the first RAW binary data file opened for processing is not read in properly. Processing will fail with the error message: [filename] does not match expected input level for outputing L2. The file will process properly if run a second time (assuming it is a healthy file).*
+
 #### Level 1A - Preprocessing
 
 Process data from raw binary (Satlantic HyperSAS '.RAW' collections) to L1A (Hierarchical Data Format 5 '.hdf'). Calibration files and the RawFileReader.py script allow for interpretation of raw data fields, which are read into HDF objects.
