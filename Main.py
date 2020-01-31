@@ -347,6 +347,7 @@ class Window(QtWidgets.QWidget):
         if os.path.exists(subInputDir):
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",subInputDir)
             fileNames = openFileNames[0] # The first element is the whole list
+            # openFileNames.setAttribute(QtCore.WA_DeleteOnClose, True)
         else:    
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",self.inputDirectory)
             fileNames = openFileNames[0] # The first element is the whole list

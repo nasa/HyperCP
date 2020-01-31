@@ -24,8 +24,7 @@ class ProcessL2:
     def filterData(group, badTimes):                    
         
         # Now delete the record from each dataset in the group
-        ticker = 0
-        finalCount = 0
+        finalCount = 1 # simpler than getting dataset len...
         for timeTag in badTimes:
 
             # msg = f'Eliminate data between: {timeTag} (HHMMSSMSS)'
@@ -37,7 +36,6 @@ class ProcessL2:
             # msg = f'   Remove {group.id}  Data'
             # print(msg)
             # Utilities.writeLogFile(msg)
-            # Ancillary still has datetag and tt2 broken out...
             if group.id == "ANCILLARY":
                 timeData = group.getDataset("Timetag2").data["Timetag2"]                
             if group.id == "IRRADIANCE":
@@ -51,26 +49,16 @@ class ProcessL2:
                 dataSec.append(Utilities.timeTag2ToSec(timeData[i])) 
 
             lenDataSec = len(dataSec)
-            if ticker == 0:
-                # startLength = lenDataSec
-                ticker +=1
+            counter = 0
+            for i in range(lenDataSec):
+                if start <= dataSec[i] and stop >= dataSec[i]:                        
+                    # test = group.getDataset("Timetag2").data["NONE"][i - counter]                                            
+                    group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
+                    counter += 1
 
-            if lenDataSec > 0:
-                counter = 0
-                for i in range(lenDataSec):
-                    if start <= dataSec[i] and stop >= dataSec[i]:                        
-                        # test = group.getDataset("Timetag2").data["NONE"][i - counter]                                            
-                        group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
-                        counter += 1
-
-                # test = len(group.getDataset("Timetag2").data["NONE"])
-                finalCount += counter
-            else:
-                msg = 'Data group is empty'
-                print(msg)
-                Utilities.writeLogFile(msg)
-
-        # return finalCount/startLength
+            if i-counter == -1:
+                finalCount = 0
+        
         return finalCount
 
     # Interpolate to a single column
@@ -1284,7 +1272,12 @@ class ProcessL2:
                 Utilities.writeLogFile(msg)
                 return False         
             ProcessL2.filterData(sasGroup, badTimes)
-            ProcessL2.filterData(ancGroup, badTimes)
+            ProcessL2.filterData(ancGroup, badTimes)            
+            # if nSpectra == 0:
+            #     msg = "No spectra remaining. Abort."
+            #     print(msg)
+            #     Utilities.writeLogFile(msg)
+            #     return False
 
         
        # Spectral Outlier Filter
@@ -1313,7 +1306,12 @@ class ProcessL2:
                     Utilities.writeLogFile(msg)
                     return False                 
                 ProcessL2.filterData(sasGroup, badTimes)
-                ProcessL2.filterData(ancGroup, badTimes)                
+                ProcessL2.filterData(ancGroup, badTimes)   
+                # if nSpectra == 0:
+                #     msg = "No spectra remaining. Abort."
+                #     print(msg)
+                #     Utilities.writeLogFile(msg)
+                #     return False             
 
         ''' Next apply the meteorological filter prior to slicing'''     
         # Meteorological Filtering   
@@ -1334,6 +1332,11 @@ class ProcessL2:
                     return False              
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
+                # if nSpectra == 0:
+                #     msg = "No spectra remaining. Abort."
+                #     print(msg)
+                #     Utilities.writeLogFile(msg)
+                #     return False
 
         ''' Next apply the Lt quality filter prior to slicing'''     
         # Lt Quality Filtering; anomalous elevation in the NIR
@@ -1352,28 +1355,17 @@ class ProcessL2:
                 return False                  
             ProcessL2.filterData(sasGroup, badTimes)
             ProcessL2.filterData(ancGroup, badTimes)
+            # if nSpectra == 0:
+            #     msg = "No spectra remaining. Abort."
+            #     print(msg)
+            #     Utilities.writeLogFile(msg)
+            #     return False
 
         # # Copy datasets to dictionary
         esData.datasetToColumns()
         esColumns = esData.columns
         tt2 = esColumns["Timetag2"]
-
-        # # Test
         esLength = len(list(esColumns.values())[0])
-        if esLength == 0:
-            msg = "No spectra remaining. Abort."
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return False
-
-        # ltLength = len(list(ltColumns.values())[0])
-
-        # if ltLength > esLength:
-        #     print('Warning. Why would ltLength be > esLength??************************************')
-        #     for col in ltColumns:
-        #         col = col[0:esLength] # strips off final columns
-        #     for col in liColumns:
-        #         col = col[0:esLength]
 
         interval = float(ConfigFile.settings["fL2TimeInterval"])    
         # Break up data into time intervals, and calculate reflectance

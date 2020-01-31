@@ -45,15 +45,17 @@ class Utilities:
     @staticmethod
     def errorWindow(winText,errorText):        
         msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Information)
+        # msgBox.setIcon(QMessageBox.Information)
+        msgBox.setIcon(QMessageBox.Critical)
         msgBox.setText(errorText)
         msgBox.setWindowTitle(winText)
         msgBox.setStandardButtons(QMessageBox.Ok)
         desktopsize = QDesktopWidget().screenGeometry()
-        size = msgBox.size()
-        top = (desktopsize.height()/2) - (size.height()/2)
-        left = (desktopsize.width() / 2) - (size.width() / 2)
-        msgBox.move(left,top)
+        # size = msgBox.size()
+        # top = (desktopsize.height()/2) - (size.height()/2)
+        # left = (desktopsize.width() / 2) - (size.width() / 2)
+        # msgBox.move(left,top)
+        # msgBox.raise_()
         # msgBox.buttonClicked.connect(msgButtonClick)
         msgBox.exec_()
 
