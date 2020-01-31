@@ -100,7 +100,7 @@ class RawFileReader:
                                     gp.attributes["CalFileName"] = key
                                     gp.attributes["FrameTag"] = cf.id
 
-                                if key.startswith('SATPYR'):
+                                # if key.startswith('SATPYR'):
                                     # print('fungool')
 
                                 try:
