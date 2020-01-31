@@ -4,7 +4,7 @@ import os
 import sys
 import math
 from collections import Counter
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QApplication, QDesktopWidget, QWidget, QPushButton, QMessageBox
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot
 
@@ -43,12 +43,17 @@ class Utilities:
         #     return array[idx]
 
     @staticmethod
-    def errorWindow(winText,errorText):
+    def errorWindow(winText,errorText):        
         msgBox = QMessageBox()
         msgBox.setIcon(QMessageBox.Information)
         msgBox.setText(errorText)
         msgBox.setWindowTitle(winText)
         msgBox.setStandardButtons(QMessageBox.Ok)
+        desktopsize = QDesktopWidget().screenGeometry()
+        size = msgBox.size()
+        top = (desktopsize.height()/2) - (size.height()/2)
+        left = (desktopsize.width() / 2) - (size.width() / 2)
+        msgBox.move(left,top)
         # msgBox.buttonClicked.connect(msgButtonClick)
         msgBox.exec_()
 

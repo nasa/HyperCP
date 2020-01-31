@@ -1360,11 +1360,11 @@ class ProcessL2:
 
         # # Test
         esLength = len(list(esColumns.values())[0])
-        # if esLength == 0:
-        #     msg = "No spectra remaining. Abort."
-        #     print(msg)
-        #     Utilities.writeLogFile(msg)
-        #     return False
+        if esLength == 0:
+            msg = "No spectra remaining. Abort."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return False
 
         # ltLength = len(list(ltColumns.values())[0])
 
