@@ -13,6 +13,7 @@ import sys
 import collections
 import json
 from PyQt5 import QtCore, QtGui, QtWidgets
+import time
 
 from MainConfig import MainConfig
 from Controller import Controller
@@ -313,7 +314,7 @@ class Window(QtWidgets.QWidget):
 
     def processSingle(self, level):
         print("Process Single-Level")
-
+        t0=time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
         configPath = os.path.join("Config", configFileName)
@@ -377,6 +378,8 @@ class Window(QtWidgets.QWidget):
             return            
 
         Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile) 
+        t1 = time.time()
+        print(f'Time elapsed: {t1-t0}')
 
     def closeEvent(self, event):
         reply = QtWidgets.QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
@@ -408,7 +411,7 @@ class Window(QtWidgets.QWidget):
 
     def processMulti(self, level):
         print("Process Multi-Level")
-
+        t0 = time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
         configPath = os.path.join("Config", configFileName)
@@ -444,6 +447,8 @@ class Window(QtWidgets.QWidget):
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
     
         Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, windFile)
+        t1 = time.time()
+        print(f'Time elapsed: {t1-t0}')
 
 
     def multi2Clicked(self):

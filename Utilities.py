@@ -50,7 +50,7 @@ class Utilities:
         msgBox.setText(errorText)
         msgBox.setWindowTitle(winText)
         msgBox.setStandardButtons(QMessageBox.Ok)
-        desktopsize = QDesktopWidget().screenGeometry()
+        # desktopsize = QDesktopWidget().screenGeometry()
         # size = msgBox.size()
         # top = (desktopsize.height()/2) - (size.height()/2)
         # left = (desktopsize.width() / 2) - (size.width() / 2)
