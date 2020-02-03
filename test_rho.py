@@ -23,4 +23,4 @@ sensor['wv'] = np.arange(350, 1001,10).tolist()
 
 rho = get_sky_sun_rho.Main(env,sensor)
 
-print(rho['rho'])
+print(rho['ρ'])

@@ -654,7 +654,7 @@ class ProcessL2:
         ltSlice = ProcessL2.columnToSlice(ltColumns,start, end)
         n = len(list(ltSlice.values())[0])
     
-        rhoSkyDefault = float(ConfigFile.settings["fL2RhoSky"])
+        rhoDefault = float(ConfigFile.settings["fL2RhoSky"])
         RuddickRho = int(ConfigFile.settings["bL2RuddickRho"])
         ZhangRho = int(ConfigFile.settings["bL2ZhangRho"])
         # defaultWindSpeed = float(ConfigFile.settings["fL2DefaultWindSpeed"])
@@ -758,30 +758,6 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)
             return False
-
-        # Calculate Rho_sky
-        if RuddickRho:
-            '''This is the Ruddick, et al. 2006 approach, which has one method for 
-            clear sky, and another for cloudy. Methods of this type (i.e. not accounting
-            for spectral dependence (Lee et al. 2010, Gilerson et al. 2018) or polarization
-            effects (Harmel et al. 2012, Mobley 2015, Hieronumi 2016, D'Alimonte and Kajiyama 2016, 
-            Foster and Gilerson 2016, Gilerson et al. 2018)) are explicitly recommended in the 
-            IOCCG Protocols for Above Water Radiometry Measurements and Data Analysis (Chapter 5, Draft 2019).'''
-            
-            li750 = ProcessL2.interpolateColumn(liXSlice, 750.0)
-            es750 = ProcessL2.interpolateColumn(esXSlice, 750.0)
-            sky750 = li750[0]/es750[0]
-
-            rhoSky, rhoDelta = RhoCorrections.RuddickCorr(sky750, rhoSkyDefault, WINDSPEEDXSlice)
-
-        elif ZhangRho:            
-            wavebands = [*esColumns]
-            wavebands.pop(0) # Datetag
-            wavebands.pop(0) # Timetag2
-            wave = [float(i) for i in wavebands]
-
-            rhoSky, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
-                CloudXSlice,SOL_ELXSlice,SSTXSlice,SalXSlice,RelAzXSlice,wave)
 
         # Add date/time data to Rrs dataset; If this is the first spectrum, add, otherwise append
         if not ("Datetag" in newRrsData.columns):
@@ -943,7 +919,65 @@ class ProcessL2:
                 newRrsSentinel3BDeltaData.columns["Datetag"].append(date)
                 newnLwSentinel3BData.columns["Datetag"].append(date)
                 newnLwSentinel3BDeltaData.columns["Datetag"].append(date)   
+
+        # Calculate Rho_sky
+        if RuddickRho:
+            '''This is the Ruddick, et al. 2006 approach, which has one method for 
+            clear sky, and another for cloudy. Methods of this type (i.e. not accounting
+            for spectral dependence (Lee et al. 2010, Gilerson et al. 2018) or polarization
+            effects (Harmel et al. 2012, Mobley 2015, Hieronumi 2016, D'Alimonte and Kajiyama 2016, 
+            Foster and Gilerson 2016, Gilerson et al. 2018)) are explicitly recommended in the 
+            IOCCG Protocols for Above Water Radiometry Measurements and Data Analysis (Chapter 5, Draft 2019).'''
             
+            li750 = ProcessL2.interpolateColumn(liXSlice, 750.0)
+            es750 = ProcessL2.interpolateColumn(esXSlice, 750.0)
+            sky750 = li750[0]/es750[0]
+
+            rhoScalar, rhoDelta = RhoCorrections.RuddickCorr(sky750, rhoDefault, WINDSPEEDXSlice)
+
+        elif ZhangRho:     
+            ''' Zhang rho is based on Zhang et al. 2017 and calculates the wavelength-dependent rho vector
+            separated for sun and sky to include polarization factors.
+            
+            Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.'''       
+            rhoDict = {}
+            wavebands = [*esColumns]
+            wavebands.pop(0) # Datetag
+            wavebands.pop(0) # Timetag2
+            wave = [float(i) for i in wavebands]
+
+            # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es 
+            # from non-valid wavebands.
+            if AODXSlice >0.2:
+                msg = f'AOD = {AODXSlice}. Maximum Aerosol Optical Depth Reached. Setting to 0.2'
+                print(msg)
+                Utilities.writeLogFile(msg) 
+                AODXSlice = 0.2
+            if SOL_ELXSlice < 30:
+                msg = f'SZA = {90-SOL_ELXSlice}. Maximum Solar Zenith Reached. Setting to 60'
+                print(msg)
+                Utilities.writeLogFile(msg) 
+                SOL_ELXSlice = 30
+            if min(wave) < 350 or max(wave) > 1000:
+                msg = f'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'
+                print(msg)
+                Utilities.writeLogFile(msg) 
+                wave_old = wave.copy()
+                wave_list = [(i, band) for i, band in enumerate(wave_old) if (band >=350) and (band <= 1000)]
+                wave_array = np.array(wave_list)
+                wave = wave_array[:,1].tolist()
+            #     wave_ind = wave_array[:,0].tolist()
+            # else:
+            #     wave_ind = np.arange(0,len(wave)).tolist()
+
+            rhoStructure, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
+                CloudXSlice,SOL_ELXSlice,SSTXSlice,SalXSlice,RelAzXSlice,wave)
+            rhoVector = rhoStructure['ρ']
+            for i, k in enumerate(wave):
+                rhoDict[str(k)] = rhoVector[0,i]
+
+
+
         rrsSlice = {}
         nLwSlice = {}
                 
@@ -977,7 +1011,7 @@ class ProcessL2:
             wavelength = list(esColumns.keys())[2:]
             F0 = collections.OrderedDict(zip(wavelength, F0))
 
-        for k in esXSlice:
+        for k in esXSlice: # loop through wavebands as key 'k'
             if (k in liXSlice) and (k in ltXSlice):
                 if k not in newESData.columns:
                     newESData.columns[k] = []
@@ -1003,20 +1037,37 @@ class ProcessL2:
                 ltDelta = ltXstd[k][0]
 
                 # Calculate the remote sensing reflectance
-                rrs = (lt - (rhoSky * li)) / es
+                if RuddickRho:                    
+                    rrs = (lt - (rhoScalar * li)) / es
 
-                # Rrs uncertainty
-                rrsDelta = rrs * ( 
-                        (liDelta/li)**2 + (rhoDelta/rhoSky)**2 + (liDelta/li)**2 + (esDelta/es)**2 
-                        )**0.5
-               
-                #Calculate the normalized water leaving radiance
-                nLw = rrs*f0
+                    # Rrs uncertainty
+                    rrsDelta = rrs * ( 
+                            (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2 
+                            )**0.5
+                
+                    #Calculate the normalized water leaving radiance
+                    nLw = rrs*f0
 
-                # nLw uncertainty; no provision for F0 uncertainty here
-                nLwDelta = nLw * (
-                        (liDelta/li)**2 + (rhoDelta/rhoSky)**2 + (liDelta/li)**2 + (esDelta/es)**2
-                        )**0.5
+                    # nLw uncertainty; no provision for F0 uncertainty here
+                    nLwDelta = nLw * (
+                            (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2
+                            )**0.5
+                elif ZhangRho:
+                    if float(k) in wave:
+                        rrs = (lt - (rhoDict[k] * li)) / es
+
+                        # Rrs uncertainty
+                        rrsDelta = rrs * ( 
+                                (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2 
+                                )**0.5
+                    
+                        #Calculate the normalized water leaving radiance
+                        nLw = rrs*f0
+
+                        # nLw uncertainty; no provision for F0 uncertainty here
+                        nLwDelta = nLw * (
+                                (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2
+                                )**0.5
 
                 newESData.columns[k].append(es)
                 newLIData.columns[k].append(li)
@@ -1026,10 +1077,18 @@ class ProcessL2:
                 newLIDeltaData.columns[k].append(liDelta)
                 newLTDeltaData.columns[k].append(ltDelta)
                 #newRrsData.columns[k].append(rrs)
-                newRrsDeltaData.columns[k].append(rrsDelta)
-                newnLwDeltaData.columns[k].append(nLwDelta)
-                rrsSlice[k] = rrs
-                nLwSlice[k] = nLw
+                if float(k) in wave:
+                    newRrsDeltaData.columns[k].append(rrsDelta)
+                    newnLwDeltaData.columns[k].append(nLwDelta)
+                    
+                    rrsSlice[k] = rrs
+                    nLwSlice[k] = nLw
+                else:
+                    newRrsDeltaData.columns[k].append(np.nan)
+                    newnLwDeltaData.columns[k].append(np.nan)
+                    
+                    rrsSlice[k] = np.nan
+                    nLwSlice[k] = np.nan
 
         # Perfrom near-infrared correction to remove additional atmospheric and glint contamination
         if performNIRCorrection:
