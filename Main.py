@@ -312,7 +312,7 @@ class Window(QtWidgets.QWidget):
 
     def processSingle(self, level):
         print("Process Single-Level")
-        t0=time.time()
+        t0Single=time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
         configPath = os.path.join("Config", configFileName)
@@ -375,8 +375,8 @@ class Window(QtWidgets.QWidget):
             return            
 
         Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile) 
-        t1 = time.time()
-        print(f'Time elapsed: {(t1-t0)/60} minutes')
+        t1Single = time.time()
+        print(f'Time elapsed: {(t1Single-t0Single)/60} minutes')
 
     def closeEvent(self, event):
         reply = QtWidgets.QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
@@ -408,7 +408,7 @@ class Window(QtWidgets.QWidget):
 
     def processMulti(self, level):
         print("Process Multi-Level")
-        t0 = time.time()
+        t0Multi = time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
         configPath = os.path.join("Config", configFileName)
@@ -443,8 +443,8 @@ class Window(QtWidgets.QWidget):
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
     
         Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, windFile)
-        t1 = time.time()
-        print(f'Time elapsed: {t1-t0}')
+        t1Multi = time.time()
+        print(f'Time elapsed: {(t1Multi-t0Multi)/60} Minutes')
 
 
     def multi2Clicked(self):
