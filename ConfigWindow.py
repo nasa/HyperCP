@@ -231,7 +231,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1eInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1eInterpInterval"]))
         self.l1eInterpIntervalLineEdit.setValidator(doubleValidator)
 
-        l1ePlotTimeInterpLabel = QtWidgets.QLabel("Generate Plots (slow; saved in ./Plots/L3/)", self)        
+        l1ePlotTimeInterpLabel = QtWidgets.QLabel("Generate Plots (slow; saved in ./Plots/L1E/)", self)        
         self.l1ePlotTimeInterpCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL1ePlotTimeInterp"]) == 1:
             self.l1ePlotTimeInterpCheckBox.setChecked(True)   
@@ -414,7 +414,11 @@ class ConfigWindow(QtWidgets.QDialog):
         self.RhoRadioButtonZhang = QtWidgets.QRadioButton("Zhang et al 2017 Rho")
         if ConfigFile.settings["bL2ZhangRho"]==1:
             self.RhoRadioButtonZhang.setChecked(True)
-        self.RhoRadioButtonZhang.clicked.connect(self.l2RhoCorrectionRadioButtonClicked)        
+        self.RhoRadioButtonZhang.clicked.connect(self.l2RhoCorrectionRadioButtonClicked)
+        self.RhoRadioButtonDefault = QtWidgets.QRadioButton("Default Rho")
+        if ConfigFile.settings["bL2DefaultRho"]==1:
+            self.RhoRadioButtonDefault.setChecked(True)
+        self.RhoRadioButtonDefault.clicked.connect(self.l2RhoCorrectionRadioButtonClicked)        
 
         # self.l2pGetAncCheckBoxUpdate()        
 
@@ -826,6 +830,9 @@ class ConfigWindow(QtWidgets.QDialog):
         RhoHBox2.addWidget(self.RhoRadioButtonRuddick)
         RhoHBox2.addWidget(self.RhoRadioButtonZhang)
         VBox3.addLayout(RhoHBox2)         
+        RhoHBox3 = QtWidgets.QHBoxLayout()
+        RhoHBox3.addWidget(self.RhoRadioButtonDefault)
+        VBox3.addLayout(RhoHBox3)
 
         # VBox3.addSpacing(5)
 
@@ -906,7 +913,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # print("ConfigWindow - initUI Done")
 
-
     def addCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Add Calibration File Pressed")
         fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files")
@@ -985,7 +991,9 @@ class ConfigWindow(QtWidgets.QDialog):
         print("ConfigWindow - l1aCleanSZAAngleCheckBoxUpdate")
 
         disabled = (not self.l1aCleanSZACheckBox.isChecked())
-        self.l1aCleanSZAMaxLineEdit.setDisabled(disabled)        
+        self.l1aCleanSZAMaxLineEdit.setDisabled(disabled)  
+        if disabled:
+            ConfigFile.settings["bL1ACleanSZA"] = 0      
 
     def l1cCleanPitchRollCheckBoxUpdate(self):
         print("ConfigWindow - l1cCleanPitchRollCheckBoxUpdate")
@@ -995,6 +1003,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cPitchRollPitchLineEdit.setDisabled(disabled)
         self.l1cPitchRollRollLabel.setDisabled(disabled)
         self.l1cPitchRollRollLineEdit.setDisabled(disabled)
+        if disabled:
+            ConfigFile.settings["bL1cCleanPitchRoll"] = 0
+        #     ConfigFile.settings["fL1cPitchRollPitch"] = "NA"
+        #     ConfigFile.settings["fL1cPitchRollRoll"] = "NA"
 
     def l1cCleanRotatorAngleCheckBoxUpdate(self):
         print("ConfigWindow - l1cCleanRotatorAngleCheckBoxUpdate")
@@ -1004,6 +1016,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cRotatorAngleMinLineEdit.setDisabled(disabled)
         self.l1cRotatorAngleMaxLabel.setDisabled(disabled)
         self.l1cRotatorAngleMaxLineEdit.setDisabled(disabled)
+        if disabled:
+            ConfigFile.settings["bL1cCleanRotatorAngle"] = 0
+        #     ConfigFile.settings["fL1cRotatorAngleMin"] = "NA"
+        #     ConfigFile.settings["fL1cRotatorAngleMax"] = "NA"
 
     def l1cCleanSunAngleCheckBoxUpdate(self):
         print("ConfigWindow - l1cCleanSunAngleCheckBoxUpdate")
@@ -1013,6 +1029,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cSunAngleMinLineEdit.setDisabled(disabled)
         self.l1cSunAngleMaxLabel.setDisabled(disabled)
         self.l1cSunAngleMaxLineEdit.setDisabled(disabled)
+        if disabled:
+            ConfigFile.settings["bL1cCleanSunAngle"] = 0
+        #     ConfigFile.settings["fL1cSunAngleMin"] = "NA"
+        #     ConfigFile.settings["fL1cSunAngleMax"] = "NA"
 
     def l1dAnomalyButtonPressed(self):
         print("CalibrationEditWindow - Launching anomaly analysis module")        
@@ -1029,7 +1049,13 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1dDeglitch2Label.setDisabled(disabled)
         self.l1dDeglitch2LineEdit.setDisabled(disabled)   
         self.l1dDeglitch3Label.setDisabled(disabled)
-        self.l1dDeglitch3LineEdit.setDisabled(disabled)     
+        self.l1dDeglitch3LineEdit.setDisabled(disabled)   
+        if disabled:
+            ConfigFile.settings["bL1dDeglitch"]   = 0
+        #     ConfigFile.settings["fL1dDeglitch0"]   = "NA"
+        #     ConfigFile.settings["fL1dDeglitch1"]   = "NA"
+        #     ConfigFile.settings["fL1dDeglitch2"]   = "NA"
+        #     ConfigFile.settings["fL1dDeglitch3"]   = "NA"
 
     def l1ePlotTimeInterpCheckBoxUpdate(self):
         print("ConfigWindow - l1ePlotTimeInterpCheckBoxUpdate")
@@ -1146,22 +1172,12 @@ class ConfigWindow(QtWidgets.QDialog):
             self.RhoRadioButtonZhang.setChecked(0)
             self.RhoRadioButtonZhang.setDisabled(1)
             self.RhoRadioButtonRuddick.setChecked(1)
-            self.RhoRadioButtonRuddick.setDisabled(1)
+            # self.RhoRadioButtonRuddick.setDisabled(1)
             
             print("ConfigWindow - l2RhoCorrection set to Ruddick")
             ConfigFile.settings["bL2RuddickRho"] = 1
             ConfigFile.settings["bL2ZhangRho"] = 0
-
-    def l2RhoCorrectionRadioButtonClicked(self):
-        # radioButton = self.sender()
-        if self.RhoRadioButtonRuddick.isChecked():
-            print("ConfigWindow - l2RhoCorrection set to Ruddick")
-            ConfigFile.settings["bL2RuddickRho"] = 1
-            ConfigFile.settings["bL2ZhangRho"] = 0
-        else:
-            print("ConfigWindow - l2RhoCorrection set to Zhang")
-            ConfigFile.settings["bL2RuddickRho"] = 0
-            ConfigFile.settings["bL2ZhangRho"] = 1
+            ConfigFile.settings["bL2DefaultRho"] = 0
 
     def l2SpecQualityCheckBoxUpdate(self):
         print("ConfigWindow - l2SpecQualityCheckBoxUpdate")
@@ -1173,6 +1189,11 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2SpecFilterLtLineEdit.setDisabled(disabled)
         self.l2SpecFilterEsLabel.setDisabled(disabled)
         self.l2SpecFilterEsLineEdit.setDisabled(disabled)
+        if disabled:
+            ConfigFile.settings["bL2EnableSpecQualityCheck"] = 0
+        #     ConfigFile.settings["fL2SpecFilterEs"] = "NA"
+        #     ConfigFile.settings["fL2SpecFilterLi"] = "NA"
+        #     ConfigFile.settings["fL2SpecFilterLt"] = "NA"
     
     def l2QualityFlagCheckBoxUpdate(self):
         print("ConfigWindow - l2QualityFlagCheckBoxUpdate")
@@ -1186,17 +1207,47 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2DawnDuskFlagLineEdit.setDisabled(disabled)
         self.l2RainfallHumidityFlagLabel.setDisabled(disabled)
         self.l2RainfallHumidityFlagLineEdit.setDisabled(disabled)
-    
-    def l2NIRCorrectionCheckBoxUpdate(self):
-        print("ConfigWindow - l2NIRCorrectionCheckBoxUpdate")
-        # print("This should do something....?")
+        if disabled:
+            ConfigFile.settings["bL2EnableQualityFlags"] = 0
+        #     ConfigFile.settings["fL2CloudFlag"] = "NA"
+        #     ConfigFile.settings["fL2SignificantEsFlag"] = "NA"
+        #     ConfigFile.settings["fL2DawnDuskFlag"] = "NA"
+        #     ConfigFile.settings["fL2RainfallHumidityFlag"] = "NA"
 
     def l2EnablePercentLtCheckBoxUpdate(self):
         print("ConfigWindow - l2EnablePercentLtCheckBoxUpdate")
         
         disabled = (not self.l2EnablePercentLtCheckBox.isChecked())
         self.l2PercentLtLabel.setDisabled(disabled)
-        self.l2PercentLtLineEdit.setDisabled(disabled)        
+        self.l2PercentLtLineEdit.setDisabled(disabled)
+        if disabled:
+            ConfigFile.settings["bL2EnablePercentLt"] = 0
+        #     ConfigFile.settings["fL2PercentLt"] = "NA"
+
+    def l2RhoCorrectionRadioButtonClicked(self):
+        # radioButton = self.sender()
+        if self.RhoRadioButtonRuddick.isChecked():
+            print("ConfigWindow - l2RhoCorrection set to Ruddick")
+            ConfigFile.settings["bL2RuddickRho"] = 1
+            ConfigFile.settings["bL2ZhangRho"] = 0
+            ConfigFile.settings["bL2DefaultRho"] = 0
+        elif self.RhoRadioButtonZhang.isChecked():
+            print("ConfigWindow - l2RhoCorrection set to Zhang")
+            ConfigFile.settings["bL2RuddickRho"] = 0
+            ConfigFile.settings["bL2ZhangRho"] = 1
+            ConfigFile.settings["bL2DefaultRho"] = 0
+        elif self.RhoRadioButtonDefault.isChecked():
+            print("ConfigWindow - l2RhoCorrection set to Default")
+            ConfigFile.settings["bL2RuddickRho"] = 0
+            ConfigFile.settings["bL2ZhangRho"] = 0
+            ConfigFile.settings["bL2DefaultRho"] = 1
+    
+    def l2NIRCorrectionCheckBoxUpdate(self):
+        print("ConfigWindow - l2NIRCorrectionCheckBoxUpdate")
+        
+        disabled = (not self.l2NIRCorrectionCheckBox.isChecked())     
+        if disabled:
+            ConfigFile.settings["bL2PerformNIRCorrection"] = 0
 
     def l2SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")
@@ -1248,23 +1299,27 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL2SpecFilterEs"] = float(self.l2SpecFilterEsLineEdit.text())
         ConfigFile.settings["fL2SpecFilterLi"] = float(self.l2SpecFilterLiLineEdit.text())
         ConfigFile.settings["fL2SpecFilterLt"] = float(self.l2SpecFilterLtLineEdit.text())
-
-        ConfigFile.settings["fL2RhoSky"] = float(self.l2RhoSkyLineEdit.text())
-        ConfigFile.settings["bL2RuddickRho"] = int(self.RhoRadioButtonRuddick.isChecked())
-        ConfigFile.settings["bL2ZhangRho"] = int(self.RhoRadioButtonZhang.isChecked())
-        ConfigFile.settings["fL2DefaultWindSpeed"] = float(self.l2DefaultWindSpeedLineEdit.text())
-        ConfigFile.settings["fL2DefaultAOD"] = float(self.l2DefaultAODLineEdit.text())
-        ConfigFile.settings["fL2DefaultSalt"] = float(self.l2DefaultSaltLineEdit.text())
-        ConfigFile.settings["fL2DefaultSST"] = float(self.l2DefaultSSTLineEdit.text())
+        
         ConfigFile.settings["bL2EnableQualityFlags"] = int(self.l2QualityFlagCheckBox.isChecked())
         ConfigFile.settings["fL2CloudFlag"] = float(self.l2CloudFlagLineEdit.text())
         ConfigFile.settings["fL2SignificantEsFlag"] = float(self.l2EsFlagLineEdit.text())
         ConfigFile.settings["fL2DawnDuskFlag"] = float(self.l2DawnDuskFlagLineEdit.text())
         ConfigFile.settings["fL2RainfallHumidityFlag"] = float(self.l2RainfallHumidityFlagLineEdit.text())
-        ConfigFile.settings["fL2TimeInterval"] = int(self.l2TimeIntervalLineEdit.text())                
-        ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())
+
+        ConfigFile.settings["fL2TimeInterval"] = int(self.l2TimeIntervalLineEdit.text())                        
         ConfigFile.settings["bL2EnablePercentLt"] = int(self.l2EnablePercentLtCheckBox.isChecked())
         ConfigFile.settings["fL2PercentLt"] = float(self.l2PercentLtLineEdit.text())
+
+        ConfigFile.settings["bL2ZhangRho"] = int(self.RhoRadioButtonZhang.isChecked())
+        ConfigFile.settings["fL2DefaultWindSpeed"] = float(self.l2DefaultWindSpeedLineEdit.text())
+        ConfigFile.settings["fL2DefaultAOD"] = float(self.l2DefaultAODLineEdit.text())
+        ConfigFile.settings["fL2DefaultSalt"] = float(self.l2DefaultSaltLineEdit.text())
+        ConfigFile.settings["fL2DefaultSST"] = float(self.l2DefaultSSTLineEdit.text())
+        ConfigFile.settings["fL2RhoSky"] = float(self.l2RhoSkyLineEdit.text())
+        ConfigFile.settings["bL2RuddickRho"] = int(self.RhoRadioButtonRuddick.isChecked())
+
+        ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())
+        
         ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
         ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())
         ConfigFile.settings["bL2WeightVIIRSN"] = int(self.l2WeightVIIRSNCheckBox.isChecked())
@@ -1366,6 +1421,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["fL2DefaultSST"] = float(self.l2DefaultSSTLineEdit.text())  
             ConfigFile.settings["bL2RuddickRho"] = int(self.RhoRadioButtonRuddick.isChecked())
             ConfigFile.settings["bL2ZhangRho"] = int(self.RhoRadioButtonZhang.isChecked())
+            ConfigFile.settings["bL2DefaultRho"] = int(self.RhoRadioButtonDefault.isChecked())
             ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())          
             ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
             ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())

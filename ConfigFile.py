@@ -16,6 +16,7 @@ class ConfigFile:
 
         print("fL1cRotatorHomeAngle", ConfigFile.settings["fL1cRotatorHomeAngle"])
         print("fL1cRotatorDelay", ConfigFile.settings["fL1cRotatorDelay"]) 
+        print("bL1cCleanPitchRoll", ConfigFile.settings["bL1cCleanPitchRoll"])
         print("fL1cPitchRollPitch", ConfigFile.settings["fL1cPitchRollPitch"]) 
         print("fL1cPitchRollRoll", ConfigFile.settings["fL1cPitchRollRoll"]) 
         print("bL1cCleanRotatorAngle", ConfigFile.settings["bL1cCleanRotatorAngle"])
@@ -66,6 +67,7 @@ class ConfigFile:
         print("fL2DefaultSST", ConfigFile.settings["fL2DefaultSST"])
         print("bL2RuddickRho", ConfigFile.settings["bL2RuddickRho"])
         print("bL2ZhangRho", ConfigFile.settings["bL2ZhangRho"])                                            
+        print("bL2DefaultRho", ConfigFile.settings["bL2DefaultRho"])
         
         print("bL2PerformNIRCorrection", ConfigFile.settings["bL2PerformNIRCorrection"])        
         
@@ -155,6 +157,7 @@ class ConfigFile:
         ConfigFile.settings["fL2DefaultSST"] = 26.0
         ConfigFile.settings["bL2RuddickRho"] = 1
         ConfigFile.settings["bL2ZhangRho"] = 0        
+        ConfigFile.settings["bL2DefaultRho"] = 0   
         
         ConfigFile.settings["bL2PerformNIRCorrection"] = 0 # Recommended in Mobley 1999 to correct after rho-correction (Rrs = Rrs-Rrs(750))
        

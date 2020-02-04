@@ -406,37 +406,65 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
     def configUpdateButtonPressed(self):
         print("Updating comments from values in ConFigWindow")
 
-        if ConfigFile.settings["bL2RuddickRho"]:
-            rhoCorr = "Ruddick2006"
-        else:
-            rhoCorr = "Zhang2017"
+        # This will update subsequently from the ConfigFile on demand        
+        if ConfigFile.settings["bL1aCleanSZA"]:
+            szaFilt = "On"
+        else: 
+            szaFilt = "Off"
+        if ConfigFile.settings["bL1cCleanPitchRoll"]:
+            pitchRollFilt = "On"
+        else: 
+            pitchRollFilt = "Off"
+        if ConfigFile.settings["bL1cCleanRotatorAngle"]:
+            cleanRotFilt = "On"
+        else: 
+            cleanRotFilt = "Off"
+        if ConfigFile.settings["bL1cCleanSunAngle"]:
+            cleanRelAzFilt = "On"
+        else: 
+            cleanRelAzFilt = "Off"
+        if ConfigFile.settings["bL1dDeglitch"]:
+            deglitchFilt = "On"
+        else: 
+            deglitchFilt = "Off"
         if ConfigFile.settings["bL2EnableSpecQualityCheck"]:
             specFilt = "On"
-        else:
+        else: 
             specFilt = "Off"
         if ConfigFile.settings["bL2EnableQualityFlags"]:
             metFilt = "On"
-        else:
+        else: 
             metFilt = "Off"
         if ConfigFile.settings["bL2EnablePercentLt"]:
             ltFilt = "On"
-        else:
+        else: 
             ltFilt = "Off"
+        if ConfigFile.settings["bL2RuddickRho"]:
+            rhoCorr = "Ruddick2006"
+        elif ConfigFile.settings["bL2ZhangRho"]:
+            rhoCorr = "Zhang2017"
+        else:
+            rhoCorr = f"DefaultRho"
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
             NIRFilt = "On"
-        else:
+        else: 
             NIRFilt = "Off"
 
         SeaBASSHeader.settings["comments"] =\
-            f'! SZA Filter = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
+            f'! SZA Filter = {szaFilt}\n'+\
+            f'! SZA Max = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
             f'! Rotator Home Angle = {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'+\
             f'! Rotator Delay = {ConfigFile.settings["fL1cRotatorDelay"]}\n'+\
+            f'! Pitch/Roll Filter = {pitchRollFilt}\n'+\
             f'! Max Pitch = {ConfigFile.settings["fL1cPitchRollPitch"]}\n'+\
             f'! Max Roll = {ConfigFile.settings["fL1cPitchRollRoll"]}\n'+\
+            f'! Rotator Min/Max Filter = {cleanRotFilt}\n'+\
             f'! Rotator Min = {ConfigFile.settings["fL1cRotatorAngleMin"]}\n'+\
             f'! Rotator Max = {ConfigFile.settings["fL1cRotatorAngleMax"]}\n'+\
+            f'! Rel Azimuth Filter = {cleanRelAzFilt}\n'+\
             f'! Rel Azimuth Min = {ConfigFile.settings["fL1cSunAngleMin"]}\n'+\
             f'! Rel Azimuth Max = {ConfigFile.settings["fL1cSunAngleMax"]}\n'+\
+            f'! Deglitch Filter = {deglitchFilt}\n'+\
             f'! Dark Window = {ConfigFile.settings["fL1dDeglitch0"]}\n'+\
             f'! Light Window = {ConfigFile.settings["fL1dDeglitch1"]}\n'+\
             f'! Dark Sigma = {ConfigFile.settings["fL1dDeglitch2"]}\n'+\
