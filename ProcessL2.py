@@ -1068,6 +1068,25 @@ class ProcessL2:
                         nLwDelta = nLw * (
                                 (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2
                                 )**0.5
+                else:
+                    # Default rho
+                    rhoScalar = rhoDefault
+                    rhoDelta = 0.10 # Estimated for range of conditions in Mobley 1999 models
+
+                    rrs = (lt - (rhoScalar * li)) / es
+
+                    # Rrs uncertainty
+                    rrsDelta = rrs * ( 
+                            (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2 
+                            )**0.5
+                
+                    #Calculate the normalized water leaving radiance
+                    nLw = rrs*f0
+
+                    # nLw uncertainty; no provision for F0 uncertainty here
+                    nLwDelta = nLw * (
+                            (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2
+                            )**0.5
 
                 newESData.columns[k].append(es)
                 newLIData.columns[k].append(li)
