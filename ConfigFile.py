@@ -41,6 +41,7 @@ class ConfigFile:
         print("bL2pGetAnc", ConfigFile.settings["bL2pGetAnc"])
         print("bL2pObpgCreds", ConfigFile.settings["bL2pObpgCreds"])
 
+        print("bL2LtUVNIR", ConfigFile.settings["bL2LtUVNIR"])
         print("fL2MaxWind", ConfigFile.settings["fL2MaxWind"])
         print("fL2SZAMin", ConfigFile.settings["fL2SZAMin"])
         print("fL2SZAMax", ConfigFile.settings["fL2SZAMax"])
@@ -128,9 +129,10 @@ class ConfigFile:
         ConfigFile.settings["bL1eSaveSeaBASS"] = 0
         ConfigFile.settings["seaBASSHeaderFileName"] = None
 
-        ConfigFile.settings["bL2pGetAnc"] = 1
-        ConfigFile.settings["bL2pObpgCreds"] = False
+        ConfigFile.settings["bL2pGetAnc"] = 0
+        ConfigFile.settings["bL2pObpgCreds"] = 0
                 
+        ConfigFile.settings["bL2LtUVNIR"] = 1
         ConfigFile.settings["fL2MaxWind"] = 7.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009, 
         ConfigFile.settings["fL2SZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
         ConfigFile.settings["fL2SZAMax"] = 60 # e.g. 60:Brewin 2016,

@@ -303,6 +303,13 @@ class ConfigWindow(QtWidgets.QDialog):
         l2Sublabel = QtWidgets.QLabel(" Quality control filters, glint correction, temporal", self)   
         l2Sublabel2 = QtWidgets.QLabel(" binning, reflectance calculation.", self)   
         
+        # Lt UV<NIR 
+        l2LtUVNIRLabel= QtWidgets.QLabel("     Eliminate where Lt(NIR)>Lt(UV)", self)        
+        self.l2LtUVNIRCheckBox = QtWidgets.QCheckBox("", self)                    
+        if int(ConfigFile.settings["bL2LtUVNIR"]) == 1:
+            self.l2LtUVNIRCheckBox.setChecked(True)   
+        self.l2LtUVNIRCheckBox.clicked.connect(self.l2LtUVNIRCheckBoxUpdate)
+
         # L2 Max Wind
         l2MaxWindLabel = QtWidgets.QLabel("     Max. Wind Speed (m/s)", self)
         self.l2MaxWindLineEdit = QtWidgets.QLineEdit(self)
@@ -421,8 +428,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL2DefaultRho"]==1:
             self.RhoRadioButtonDefault.setChecked(True)
         self.RhoRadioButtonDefault.clicked.connect(self.l2RhoCorrectionRadioButtonClicked)        
-
-        # self.l2pGetAncCheckBoxUpdate()        
+             
 
         # L2 NIR AtmoCorr
         l2NIRCorrectionLabel = QtWidgets.QLabel("  Enable NIR Correction (blue water only)", self)
@@ -713,6 +719,12 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addWidget(l2Label)
         VBox2.addWidget(l2Sublabel)
         VBox2.addWidget(l2Sublabel2)
+
+        # Lt UV<NIR
+        LtUVNIRHBox = QtWidgets.QHBoxLayout()
+        LtUVNIRHBox.addWidget(l2LtUVNIRLabel)
+        LtUVNIRHBox.addWidget(self.l2LtUVNIRCheckBox)    
+        VBox2.addLayout(LtUVNIRHBox)
 
         # L2 Max wind
         maxWindBox = QtWidgets.QHBoxLayout()
@@ -1185,6 +1197,14 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2ZhangRho"] = 0
             ConfigFile.settings["bL2DefaultRho"] = 0
 
+    def l2LtUVNIRCheckBoxUpdate(self):
+        print("ConfigWindow - l2UVNIRCheckBoxUpdate")        
+            
+        if self.l2LtUVNIRCheckBox.isChecked():                            
+            ConfigFile.settings["bL2LtUVNIR"] = 1            
+        else:            
+            ConfigFile.settings["bL2LtUVNIR"] = 0
+
     def l2SpecQualityCheckBoxUpdate(self):
         print("ConfigWindow - l2SpecQualityCheckBoxUpdate")
 
@@ -1297,7 +1317,8 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderLineEdit.text()
 
         ConfigFile.settings["bL2pGetAnc"] = int(self.l2pGetAncCheckBox.isChecked())
-        
+
+        ConfigFile.settings["bL2LtUVNIR"] = int(self.l2LtUVNIRCheckBox.isChecked())        
         ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
         ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
         ConfigFile.settings["fL2SZAMax"] = float(self.l2SZAMaxLineEdit.text())
@@ -1404,7 +1425,8 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderLineEdit.text()
 
             ConfigFile.settings["bL2pGetAnc"] = int(self.l2pGetAncCheckBox.isChecked())
-            
+
+            ConfigFile.settings["bL2LtUVNIR"] = int(self.l2LtUVNIRCheckBox.isChecked())            
             ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
             ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
             ConfigFile.settings["fL2SZAMax"] = float(self.l2SZAMaxLineEdit.text())

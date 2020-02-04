@@ -1322,6 +1322,29 @@ class ProcessL2:
         i=0
         start = -1
         stop = []        
+ 
+        # Lt Quality Filtering; anomalous elevation in the NIR
+        if ConfigFile.settings["bL2LtUvNIRFilt"]:
+            msg = "Applying Lt quality filtering to eliminate spectra."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            badTimes = ProcessL2.ltQuality(sasGroup)
+                
+            if badTimes is not None:
+                print('Removing records...')
+                check = ProcessL2.filterData(referenceGroup, badTimes)   
+                if check == 0:
+                    msg = "No spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False                  
+                ProcessL2.filterData(sasGroup, badTimes)
+                ProcessL2.filterData(ancGroup, badTimes)
+                # if nSpectra == 0:
+                #     msg = "No spectra remaining. Abort."
+                #     print(msg)
+                #     Utilities.writeLogFile(msg)
+                #     return False
 
         # Filter on SZA and Wind limit
         for index in range(len(SZA)):
@@ -1429,28 +1452,7 @@ class ProcessL2:
                 #     Utilities.writeLogFile(msg)
                 #     return False
 
-        ''' Next apply the Lt quality filter prior to slicing'''     
-        # Lt Quality Filtering; anomalous elevation in the NIR
-        msg = "Applying Lt quality filtering to eliminate spectra."
-        print(msg)
-        Utilities.writeLogFile(msg)
-        badTimes = ProcessL2.ltQuality(sasGroup)
-            
-        if badTimes is not None:
-            print('Removing records...')
-            check = ProcessL2.filterData(referenceGroup, badTimes)   
-            if check == 0:
-                msg = "No spectra remaining. Abort."
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return False                  
-            ProcessL2.filterData(sasGroup, badTimes)
-            ProcessL2.filterData(ancGroup, badTimes)
-            # if nSpectra == 0:
-            #     msg = "No spectra remaining. Abort."
-            #     print(msg)
-            #     Utilities.writeLogFile(msg)
-            #     return False
+        
 
         # # Copy datasets to dictionary
         esData.datasetToColumns()
