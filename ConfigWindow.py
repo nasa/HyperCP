@@ -324,6 +324,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2SpecQualityCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2EnableSpecQualityCheck"]) == 1:
             self.l2SpecQualityCheckBox.setChecked(True)   
+
         self.l2SpecFilterEsLabel = QtWidgets.QLabel("      Filter Sigma Es", self)
         self.l2SpecFilterEsLineEdit = QtWidgets.QLineEdit(self)
         self.l2SpecFilterEsLineEdit.setText(str(ConfigFile.settings["fL2SpecFilterEs"]))
@@ -335,11 +336,12 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2SpecFilterLtLabel = QtWidgets.QLabel("      Filter Sigma Lt", self)
         self.l2SpecFilterLtLineEdit = QtWidgets.QLineEdit(self)
         self.l2SpecFilterLtLineEdit.setText(str(ConfigFile.settings["fL2SpecFilterLt"]))
-        self.l2SpecFilterLtLineEdit.setValidator(doubleValidator)     
+        self.l2SpecFilterLtLineEdit.setValidator(doubleValidator)    
+
+        self.l2SpecQualityCheckBoxUpdate()  
 
         # L2 Meteorology Flags
         l2QualityFlagLabel = QtWidgets.QLabel("     Enable Meteorological Filters", self)
-        # l2QualityFlagLabel2 = QtWidgets.QLabel("    (Wernand 2012, OO XVI)", self)
         self.l2QualityFlagCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2EnableQualityFlags"]) == 1:
             self.l2QualityFlagCheckBox.setChecked(True)
@@ -488,9 +490,8 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2PlotLt"]) == 1:
             self.l2PlotLtCheckBox.setChecked(True)
 
-        self.l2QualityFlagCheckBox.clicked.connect(self.l2QualityFlagCheckBoxUpdate)
         self.l2SpecQualityCheckBox.clicked.connect(self.l2SpecQualityCheckBoxUpdate)
-        # self.l2RuddickRhoCheckBox.clicked.connect(self.l2RuddickRhoCheckBoxUpdate)
+        self.l2QualityFlagCheckBox.clicked.connect(self.l2QualityFlagCheckBoxUpdate)        
         self.l2NIRCorrectionCheckBox.clicked.connect(self.l2NIRCorrectionCheckBoxUpdate)
         self.l2EnablePercentLtCheckBox.clicked.connect(self.l2EnablePercentLtCheckBoxUpdate)
 

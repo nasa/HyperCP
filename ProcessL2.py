@@ -921,6 +921,10 @@ class ProcessL2:
                 newnLwSentinel3BDeltaData.columns["Datetag"].append(date)   
 
         # Calculate Rho_sky
+        wavebands = [*esColumns]
+        wavebands.pop(0) # Datetag
+        wavebands.pop(0) # Timetag2
+        wave = [float(i) for i in wavebands]
         if RuddickRho:
             '''This is the Ruddick, et al. 2006 approach, which has one method for 
             clear sky, and another for cloudy. Methods of this type (i.e. not accounting
@@ -941,11 +945,7 @@ class ProcessL2:
             
             Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.'''       
             rhoDict = {}
-            wavebands = [*esColumns]
-            wavebands.pop(0) # Datetag
-            wavebands.pop(0) # Timetag2
-            wave = [float(i) for i in wavebands]
-
+            
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es 
             # from non-valid wavebands.
             if AODXSlice >0.2:
