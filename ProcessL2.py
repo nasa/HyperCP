@@ -1126,7 +1126,16 @@ class ProcessL2:
             for k in rrsSlice:
                 newRrsData.columns[k].append(rrsSlice[k])
             for k in nLwSlice:
-                newnLwData.columns[k].append(nLwSlice[k])        
+                newnLwData.columns[k].append(nLwSlice[k])     
+
+        # Now clear out the columns in Rrs and nLw that have NaNs.        
+        delete = [key for key, value in newRrsData.columns.items() if np.isnan(value)]
+        for key in delete: del newRrsData.columns[key]
+        for key in delete: del newRrsDeltaData.columns[key]
+        delete = [key for key, value in newnLwData.columns.items() if np.isnan(value)]
+        for key in delete: del newnLwData.columns[key]
+        for key in delete: del newnLwDeltaData.columns[key]
+
 
         newESData.columnsToDataset()   
         newLIData.columnsToDataset()

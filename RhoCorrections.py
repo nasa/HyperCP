@@ -3,7 +3,7 @@ import collections
 
 from ConfigFile import ConfigFile
 from Utilities import Utilities
-import get_sky_sun_rho
+import ZhangRho
 
 class RhoCorrections:
 
@@ -63,7 +63,7 @@ class RhoCorrections:
         sensor['ang'] = [40,180-relAz] # relAz should vary from about 90-135
         sensor['wv'] = waveBands        
 
-        rhoStructure = get_sky_sun_rho.Main(env,sensor)
+        rhoStructure = ZhangRho.Main(env,sensor)
         
         rhoDelta = 0.003 # Unknown; estimated from Ruddick 2006
         

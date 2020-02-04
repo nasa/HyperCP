@@ -10,7 +10,7 @@ from PyQt5 import QtWidgets
 from HDFRoot import HDFRoot
 from HDFGroup import HDFGroup
 from Utilities import Utilities
-import obpgSession
+import OBPGSession
 
 class GetAnc:    
 
@@ -82,7 +82,7 @@ class GetAnc:
                     print(msg)
                     Utilities.writeLogFile(msg) 
 
-                    status = obpgSession.httpdl(server, request, localpath=ancPath, 
+                    status = OBPGSession.httpdl(server, request, localpath=ancPath, 
                         outputfilename=file1, uncompress=False, verbose=2)                    
                 else:
                     status = 200
@@ -98,7 +98,7 @@ class GetAnc:
                     print(msg)
                     Utilities.writeLogFile(msg) 
 
-                    status = obpgSession.httpdl(server, request, localpath=ancPath, 
+                    status = OBPGSession.httpdl(server, request, localpath=ancPath, 
                         outputfilename=file2, uncompress=False, verbose=2)
                 else:
                     status = 200

@@ -574,27 +574,4 @@ class Controller:
             # except OSError:
             #     print("Unable to process that file due to an operating system error. Try again.")
         print("processFilesSingleLevel - DONE")
-
-    """ 
-    @staticmethod
-    def processDirectoryTest(path, calibrationMap, level=4):
-        for (dirpath, dirnames, filenames) in os.walk(path):
-            for name in sorted(filenames):
-                #print("infile:", name)
-                if os.path.splitext(name)[1].lower() == ".raw":
-                    Controller.processAll(os.path.join(dirpath, name), calibrationMap)
-                    #Controller.processMultiLevel(os.path.join(dirpath, name), calibrationMap, level)
-            break
-        
-    # # Used to process every file in the specified directory
-    # @staticmethod
-    # def processDirectory(path, calibrationMap, level=4, ancFile=None):
-    #     for (dirpath, dirnames, filenames) in os.walk(path):
-    #         for name in sorted(filenames):
-    #             #print("infile:", name)
-    #             if os.path.splitext(name)[1].lower() == ".raw":
-    #                 #Controller.processAll(os.path.join(dirpath, name), calibrationMap)
-    #                 Controller.processMultiLevel(os.path.join(dirpath, name), calibrationMap, level, ancFile)
-    #         break
-   """
     

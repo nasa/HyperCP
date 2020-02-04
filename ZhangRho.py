@@ -489,7 +489,7 @@ def Main(env, sensor):
     sensor['loc2'] = find_quads(*sensor['pol2'])
     
     # Probability and reflection angle of reflecting skylight into the sensor
-    ''' stop using loop until the efficiency is addressed '''
+    ''' Optionally stop using loop until the efficiency is addressed by saving and loading the result '''
     prob, angr_sky = get_prob(env['wind'], sensor['vec'])
     # np.save('prob.npy',prob)
     # np.save('angr_sky.npy',angr_sky)
