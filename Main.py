@@ -379,7 +379,7 @@ class Window(QtWidgets.QWidget):
 
         Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile) 
         t1 = time.time()
-        print(f'Time elapsed: {t1-t0}')
+        print(f'Time elapsed: {(t1-t0)/60} minutes')
 
     def closeEvent(self, event):
         reply = QtWidgets.QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',

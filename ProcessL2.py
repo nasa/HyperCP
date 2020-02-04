@@ -708,11 +708,11 @@ class ProcessL2:
         if enablePercentLt:
             # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest X% of unsorted lt780
             y = index[0:x] 
+            msg = f'{len(y)} spectra remaining in slice to average after filtering to lowest {percentLt}%.'
+            print(msg)
+            Utilities.writeLogFile(msg)
         else:
             y = index # If Percent Lt is turned off, this will average the whole slice
-        msg = f'{len(y)} spectra remaining in slice to average after filtering to lowest {percentLt}%.'
-        print(msg)
-        Utilities.writeLogFile(msg)
 
         # Take the mean of the lowest X%
         esXSlice = collections.OrderedDict()
@@ -1011,6 +1011,7 @@ class ProcessL2:
             wavelength = list(esColumns.keys())[2:]
             F0 = collections.OrderedDict(zip(wavelength, F0))
 
+        deleteKey = []
         for k in esXSlice: # loop through wavebands as key 'k'
             if (k in liXSlice) and (k in ltXSlice):
                 if k not in newESData.columns:
@@ -1095,7 +1096,9 @@ class ProcessL2:
                 newESDeltaData.columns[k].append(esDelta)
                 newLIDeltaData.columns[k].append(liDelta)
                 newLTDeltaData.columns[k].append(ltDelta)
-                #newRrsData.columns[k].append(rrs)
+                
+                # Only populate valid wavelengths. Mark others for deletion
+                
                 if float(k) in wave:
                     newRrsDeltaData.columns[k].append(rrsDelta)
                     newnLwDeltaData.columns[k].append(nLwDelta)
@@ -1103,11 +1106,21 @@ class ProcessL2:
                     rrsSlice[k] = rrs
                     nLwSlice[k] = nLw
                 else:
-                    newRrsDeltaData.columns[k].append(np.nan)
-                    newnLwDeltaData.columns[k].append(np.nan)
-                    
-                    rrsSlice[k] = np.nan
-                    nLwSlice[k] = np.nan
+                    deleteKey.append(k) 
+                #     newRrsDeltaData.columns[k].append(np.nan)
+                #     newnLwDeltaData.columns[k].append(np.nan)                    
+                #     rrsSlice[k] = np.nan
+                #     nLwSlice[k] = np.nan
+        
+        # Eliminate redundant keys using set, and delete unpopulated wavebands
+        deleteKey = list(set(deleteKey))
+        for key in deleteKey: 
+            # Only need to do this for the first ensemble in file
+            if key in newRrsData.columns:
+                del newRrsData.columns[key]
+                del newnLwData.columns[key]
+                del newRrsDeltaData.columns[key]
+                del newnLwDeltaData.columns[key]
 
         # Perfrom near-infrared correction to remove additional atmospheric and glint contamination
         if performNIRCorrection:
@@ -1146,15 +1159,6 @@ class ProcessL2:
                 newRrsData.columns[k].append(rrsSlice[k])
             for k in nLwSlice:
                 newnLwData.columns[k].append(nLwSlice[k])     
-
-        # Now clear out the columns in Rrs and nLw that have NaNs.        
-        delete = [key for key, value in newRrsData.columns.items() if np.isnan(value)]
-        for key in delete: del newRrsData.columns[key]
-        for key in delete: del newRrsDeltaData.columns[key]
-        delete = [key for key, value in newnLwData.columns.items() if np.isnan(value)]
-        for key in delete: del newnLwData.columns[key]
-        for key in delete: del newnLwDeltaData.columns[key]
-
 
         newESData.columnsToDataset()   
         newLIData.columnsToDataset()

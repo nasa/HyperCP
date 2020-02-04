@@ -1154,15 +1154,20 @@ class ConfigWindow(QtWidgets.QDialog):
             if not ConfigFile.settings["bL2pObpgCreds"]:
                 usr = QtWidgets.QInputDialog.getText(None, 
                                                 "Earthdata Username",
-                                                "username:", 
+                                                "Username (Cancel to use current credentials):", 
                                                 QtWidgets.QLineEdit.Normal, 
                                                 "") 
-                pwd = QtWidgets.QInputDialog.getText(None, 
-                                                "Earthdata Password",
-                                                "password:", 
-                                                QtWidgets.QLineEdit.Normal, 
-                                                "") 
-                GetAnc.userCreds(usr[0],pwd[0])
+                if usr[1]:
+                    pwd = QtWidgets.QInputDialog.getText(None, 
+                                                    "Earthdata Password",
+                                                    "Password:", 
+                                                    QtWidgets.QLineEdit.Normal, 
+                                                    "") 
+                    GetAnc.userCreds(usr[0],pwd[0])
+                else:
+                    # If the user cancels out of these, presume their account is
+                    # already set up properly and skip netrc file creation.
+                    print('Credentials skipped. Will try to use current credentials.')                                
                 
             ConfigFile.settings["bL2pGetAnc"] = 1
             self.RhoRadioButtonRuddick.setDisabled(0)

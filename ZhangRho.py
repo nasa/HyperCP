@@ -194,7 +194,7 @@ def skylight_reflection2(wind, sensor):
     # prob, ang = probref(-sky(quads.zen.data[0], quads.azm.data[0]), sensor, wind)
     
     t1 = time.time()
-    print(f'Time elapsed: {t1-t0}')
+    print(f'Time elapsed: {round(t1-t0)} seconds')
                     
     return prob, ang
     
