@@ -263,7 +263,7 @@ class ProcessL2:
         # Start and end are defined by the interval established in the Config (they are indexes)
         newSlice = collections.OrderedDict()
         for k in columns:
-            newSlice[k] = columns[k][start:end]
+            newSlice[k] = columns[k][start:end+1] #up to not including end+1...
         return newSlice
 
     # Interpolate wind to radiometry
@@ -475,8 +475,8 @@ class ProcessL2:
         # timetag = ancDict['Timetag2'].data
         # datetag = np.array(dateSlice['Datetag'])
         # timetag = np.array(timeSlice['Timetag2'])
-        dateSlice=ancDict['Datetag'].data[start:end]
-        timeSlice=ancDict['Timetag2'].data[start:end]
+        dateSlice=ancDict['Datetag'].data[start:end+1] #up to not including end+1
+        timeSlice=ancDict['Timetag2'].data[start:end+1]
         # Stores the middle element
         # if len(datetag) > 0:
         #     date = datetag[int(len(datetag)/2)]
@@ -1324,7 +1324,7 @@ class ProcessL2:
         stop = []        
  
         # Lt Quality Filtering; anomalous elevation in the NIR
-        if ConfigFile.settings["bL2LtUvNIRFilt"]:
+        if ConfigFile.settings["bL2LtUVNIR"]:
             msg = "Applying Lt quality filtering to eliminate spectra."
             print(msg)
             Utilities.writeLogFile(msg)
@@ -1450,9 +1450,7 @@ class ProcessL2:
                 #     msg = "No spectra remaining. Abort."
                 #     print(msg)
                 #     Utilities.writeLogFile(msg)
-                #     return False
-
-        
+                #     return False        
 
         # # Copy datasets to dictionary
         esData.datasetToColumns()

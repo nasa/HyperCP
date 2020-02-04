@@ -27,15 +27,21 @@ class Window(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        # Create folders if they don't exist
-        # if not os.path.exists("RawData"):
-        #    os.makedirs("RawData")
+        # Create folders if they don't exist, and move data into Data
+        # This will only need to run the first time you run HyperInSPACE
         if not os.path.exists("Data"):  
            os.makedirs("Data")
-           os.rename("./Zhang_rho_db.mat", "./Data/Zhang_rho_db.mat")
-           os.rename("./Thuillier_F0.sb", "./Data/Thuillier_F0.sb")
            os.rename("./banner.jpg", "./Data/banner.jpg")
+           os.rename("./Zhang_rho_db.mat", "./Data/Zhang_rho_db.mat")
+           os.rename("./Thuillier_F0.sb", "./Data/Thuillier_F0.sb")           
            os.rename("./EXAMPLE_L1B.hdf", "./Data/EXAMPLE_L1B.hdf")
+           os.rename("./HMODISA_RSRs.txt", "./Data/HMODISA_RSRs.txt")
+           os.rename("./HMODIST_RSRs.txt", "./Data/HMODIST_RSRs.txt")
+           os.rename("./MERIS_RSRs_avg.txt", "./Data/MERIS_RSRs_avg.txt")
+           os.rename("./OLCIA_RSRs.txt", "./Data/OLCIA_RSRs.txt")
+           os.rename("./OLCIB_RSRs.txt", "./Data/OLCIB_RSRs.txt")
+           os.rename("./VIIRS1_RSRs.txt", "./Data/VIIRS1_RSRs.txt")
+           os.rename("./VIIRSN_IDPSv3_RSRs.txt", "./Data/VIIRSN_IDPSv3_RSRs.txt")
            
         if not os.path.exists("Plots"):
            os.makedirs("Plots")
@@ -59,7 +65,6 @@ class Window(QtWidgets.QWidget):
         # banner.setPixmap(pixmap.scaled(banner.size(),QtCore.Qt.IgnoreAspectRatio))
         banner.setPixmap(pixmap)
         # banner.resize(self.width(),100)        
-
 
         # Configuration File        
         configLabel = QtWidgets.QLabel('Select/Create Configuration File', self)
@@ -226,6 +231,8 @@ class Window(QtWidgets.QWidget):
         self.setWindowTitle('HyperInSPACE')
         self.show()
 
+    ########################################################################################
+    # Build functionality modules    
     def on_directoryLoaded(self, path):
         index = self.configComboBox.findText(MainConfig.settings["cfgFile"])
         self.configComboBox.setCurrentIndex(index)
@@ -244,25 +251,19 @@ class Window(QtWidgets.QWidget):
 
     def configEditButtonPressed(self):
         print("Edit Config Dialogue")
-        # print("index: ", self.configComboBox.currentIndex())
-        # print("text: ", self.configComboBox.currentText())
         configFileName = self.configComboBox.currentText()
         inputDir = self.inputDirectory
         configPath = os.path.join("Config", configFileName)
         if os.path.isfile(configPath):
             ConfigFile.loadConfig(configFileName)
             configDialog = ConfigWindow(configFileName, inputDir, self)
-            #configDialog = CalibrationEditWindow(configFileName, self)
             configDialog.show()
         else:
-            #print("Not a Config File: " + configFileName)
             message = "Not a Config File: " + configFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
 
     def configDeleteButtonPressed(self):
         print("Delete Config Dialogue")
-        # print("index: ", self.configComboBox.currentIndex())
-        # print("text: ", self.configComboBox.currentText())
         configFileName = self.configComboBox.currentText()
         configPath = os.path.join("Config", configFileName)
         if os.path.isfile(configPath):
@@ -274,7 +275,6 @@ class Window(QtWidgets.QWidget):
             if reply == QtWidgets.QMessageBox.Yes:
                 ConfigFile.deleteConfig(configFileName)
         else:
-            #print("Not a Config File: " + configFileName)
             message = "Not a Config File: " + configFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
 
@@ -282,8 +282,7 @@ class Window(QtWidgets.QWidget):
         self.inputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
             self, "Choose Directory.", 
             self.inputDirectory)
-        print('Data input directory changed: ', self.inputDirectory)
-        # (_, inDirName) = os.path.split(self.inputDirectory)        
+        print('Data input directory changed: ', self.inputDirectory)    
         self.inDirButton.setText(self.inputDirectory)
         MainConfig.settings["inDir"] = self.inputDirectory
         return self.inputDirectory
@@ -294,8 +293,7 @@ class Window(QtWidgets.QWidget):
             self.outputDirectory)
         print('Data output directory changed: ', self.outputDirectory)
         print("NOTE: Subdirectories for data levels will be created here")
-        print("      automatically, unless they already exist.")        
-        # (_, outDirName) = os.path.split(self.outputDirectory)        
+        print("      automatically, unless they already exist.")          
         self.outDirButton.setText(self.outputDirectory)
         MainConfig.settings["outDir"] = self.outputDirectory
         return self.outputDirectory
@@ -348,15 +346,15 @@ class Window(QtWidgets.QWidget):
         if os.path.exists(subInputDir):
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",subInputDir)
             fileNames = openFileNames[0] # The first element is the whole list
-            # openFileNames.setAttribute(QtCore.WA_DeleteOnClose, True)
+            # MacOS bug holds Open window open during entire processing period
+            # openFileNames.setAttribute(QtCore.WA_DeleteOnClose, True) # Doesn't work...
         else:    
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",self.inputDirectory)
             fileNames = openFileNames[0] # The first element is the whole list
         
         print("Files:", openFileNames)
         if not fileNames:
-            return
-        
+            return        
 
         windFile = self.windFileLineEdit.text()
         if windFile == '':
@@ -371,7 +369,6 @@ class Window(QtWidgets.QWidget):
             "Check Config directory for your instrument files.")
             return            
             
-        # outputDirectory = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Output Directory")
         print("Output Directory:", os.path.abspath(self.outputDirectory))
         if not self.outputDirectory[0]:
             print("Bad output directory.")
@@ -424,7 +421,8 @@ class Window(QtWidgets.QWidget):
         # Select data files    
         if not self.inputDirectory[0]:
             print("Bad input directory.")
-            return                
+            return  
+        # MacOS bug holds Open window open during entire processing period              
         openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",self.inputDirectory)
 
         print("Files:", openFileNames)
@@ -433,8 +431,6 @@ class Window(QtWidgets.QWidget):
             return
         fileNames = openFileNames[0]
 
-        ## Select Output Directory
-        # outputDirectory = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Output Directory")
         print("Output Directory:", self.outputDirectory)
         if not self.outputDirectory:
             return
