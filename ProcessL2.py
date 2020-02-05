@@ -1217,7 +1217,17 @@ class ProcessL2:
                 for k in nLwSlice:
                     nLwSlice[k] -= ε
                     newnLwData.columns[k].append(nLwSlice[k])
-        else:            
+        else:
+            '''TO DO
+            # Need to remove negative spectra
+            # What should the criteria be?
+            # 1) Any spectrum that has any negative values between
+            #  380 - 700ish, remove the entirespectrum. Otherwise, 
+            # set negative bands to 0.
+            # This should probably wait until further analysis to see
+            # how much overcorrecting is being done by the SimSpec NIR
+            # correction. '''
+            
             for k in rrsSlice:
                 newRrsData.columns[k].append(rrsSlice[k])
             for k in nLwSlice:

@@ -73,6 +73,8 @@ class ConfigFile:
         print("bL2PerformNIRCorrection", ConfigFile.settings["bL2PerformNIRCorrection"])        
         print("bL2SimpleNIRCorrection", ConfigFile.settings["bL2SimpleNIRCorrection"])    
         print("bL2SimSpecNIRCorrection", ConfigFile.settings["bL2SimSpecNIRCorrection"])
+
+        print("bL2NegativeSpec", ConfigFile.settings["bL2NegativeSpec"])
         
         print("bL2WeightMODISA", ConfigFile.settings["bL2WeightMODISA"])
         print("bL2WeightSentinel3A", ConfigFile.settings["bL2WeightSentinel3A"])
@@ -166,6 +168,8 @@ class ConfigFile:
         ConfigFile.settings["bL2PerformNIRCorrection"] = 1
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 0 # Mobley 1999 adapted to minimum 700-800, not 750 nm
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1 # Ruddick 2005, Ruddick 2006 similarity spectrum
+
+        ConfigFile.settings["bL2NegativeSpec"] = 1
        
         ConfigFile.settings["bL2WeightMODISA"] = 0
         ConfigFile.settings["bL2WeightSentinel3A"] = 0

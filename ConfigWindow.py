@@ -175,7 +175,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l1dSublabel = QtWidgets.QLabel("Data deglitching and shutter dark corrections", self)  
         
         # L1D Deglitcher
-        self.l1dDeglitchLabel = QtWidgets.QLabel("  Deglitch data", self)                
+        self.l1dDeglitchLabel = QtWidgets.QLabel("  Deglitch Data", self)                
         self.l1dDeglitchCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1dDeglitch"]) == 1:
             self.l1dDeglitchCheckBox.setChecked(True)
@@ -224,8 +224,8 @@ class ConfigWindow(QtWidgets.QDialog):
         l1eLabel_font.setPointSize(12)
         l1eLabel_font.setBold(True)
         l1eLabel.setFont(l1eLabel_font)
-        l1eSublabel = QtWidgets.QLabel(" Interpolation to common wavelengths.", self)
-        l1eSublabel2 = QtWidgets.QLabel(" Interpolate to common time coordinates.", self)
+        l1eSublabel = QtWidgets.QLabel(" Interpolation to common times and wavebands.", self)
+        # l1eSublabel2 = QtWidgets.QLabel(" Interpolate to common time coordinates.", self)
         l1eInterpIntervalLabel = QtWidgets.QLabel("     Interpolation Interval (nm)", self)
         self.l1eInterpIntervalLineEdit = QtWidgets.QLineEdit(self)
         self.l1eInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1eInterpInterval"]))
@@ -280,14 +280,14 @@ class ConfigWindow(QtWidgets.QDialog):
         l2pLabel_font.setPointSize(12)
         l2pLabel_font.setBold(True)
         l2pLabel.setFont(l1eLabel_font)
-        l2pSublabel = QtWidgets.QLabel(" Select here to download GMAO MERRA2 ancillary met data", self)
-        l2pSublabel2 = QtWidgets.QLabel(" Required for Zhang correction and fills in gaps in wind data.", self)
+        l2pSublabel = QtWidgets.QLabel(" GMAO MERRA2 ancillary data are required for Zhang glint", self)
+        l2pSublabel2 = QtWidgets.QLabel(" Zhang correction and can fill in wind for Ruddick glint.", self)
         l2pSublabel3 = QtWidgets.QLabel(" WILL PROMPT FOR EARTHDATA USERNAME/PASSWORD", self)
         l2pSublabel4 = QtWidgets.QLabel(
             "<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">       Register here.</a>", self)
         l2pSublabel4.setOpenExternalLinks(True)
 
-        l2pGetAncLabel = QtWidgets.QLabel("       Download ancillary models", self)        
+        l2pGetAncLabel = QtWidgets.QLabel("       Download Ancillary Models", self)        
         self.l2pGetAncCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL2pGetAnc"]) == 1:
             self.l2pGetAncCheckBox.setChecked(True)           
@@ -461,8 +461,16 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l2NIRCorrectionCheckBoxUpdate()    
 
+        # L2 Remove negative spectra
+        self.l2NegativeSpecLabel = QtWidgets.QLabel("  Remove Negative Spectra", self)
+        self.l2NegativeSpecCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2NegativeSpec"]) == 1:
+           self.l2NegativeSpecCheckBox.setChecked(True)        
+
+        self.l2NegativeSpecCheckBoxUpdate()
+
         # Spectral Weighting
-        l2WeightsLabel = QtWidgets.QLabel("  Add weighted satellite spectra:", self)
+        l2WeightsLabel = QtWidgets.QLabel("  Add Weighted Satellite Bands:", self)
 
         l2WeightMODISALabel = QtWidgets.QLabel("AQUA", self)             
         self.l2WeightMODISACheckBox = QtWidgets.QCheckBox("", self)      
@@ -523,8 +531,10 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l2SpecQualityCheckBox.clicked.connect(self.l2SpecQualityCheckBoxUpdate)
         self.l2QualityFlagCheckBox.clicked.connect(self.l2QualityFlagCheckBoxUpdate)        
-        self.l2NIRCorrectionCheckBox.clicked.connect(self.l2NIRCorrectionCheckBoxUpdate)
         self.l2EnablePercentLtCheckBox.clicked.connect(self.l2EnablePercentLtCheckBoxUpdate)
+        self.l2NIRCorrectionCheckBox.clicked.connect(self.l2NIRCorrectionCheckBoxUpdate)
+        self.l2NegativeSpecCheckBox.clicked.connect(self.l2NegativeSpecCheckBoxUpdate)
+        
 
         l2SaveSeaBASSLabel = QtWidgets.QLabel("Save SeaBASS text file", self)     
         self.l2SaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)    
@@ -691,7 +701,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         #L1E 
         VBox2.addWidget(l1eLabel)
-        VBox2.addWidget(l1eSublabel2)
+        # VBox2.addWidget(l1eSublabel2)
         VBox2.addWidget(l1eSublabel)
 
         interpHBox = QtWidgets.QHBoxLayout()
@@ -773,17 +783,17 @@ class ConfigWindow(QtWidgets.QDialog):
         SpecFilterHBox.addWidget(l2SpecQualityCheckLabel)
         SpecFilterHBox.addWidget(self.l2SpecQualityCheckBox)
         VBox2.addLayout(SpecFilterHBox)
+        SpecFilterEsHBox = QtWidgets.QHBoxLayout()
+        SpecFilterEsHBox.addWidget(self.l2SpecFilterEsLabel)
+        SpecFilterEsHBox.addWidget(self.l2SpecFilterEsLineEdit)
+        VBox2.addLayout(SpecFilterEsHBox)
 
         # Right box
         VBox3 = QtWidgets.QVBoxLayout()
         VBox3.setAlignment(QtCore.Qt.AlignBottom)
         
 
-        # L2 Spectral Outlier Filter        
-        SpecFilterEsHBox = QtWidgets.QHBoxLayout()
-        SpecFilterEsHBox.addWidget(self.l2SpecFilterEsLabel)
-        SpecFilterEsHBox.addWidget(self.l2SpecFilterEsLineEdit)
-        VBox3.addLayout(SpecFilterEsHBox)
+        # L2 Spectral Outlier Filter     
         SpecFilterLiHBox = QtWidgets.QHBoxLayout()
         SpecFilterLiHBox.addWidget(self.l2SpecFilterLiLabel)
         SpecFilterLiHBox.addWidget(self.l2SpecFilterLiLineEdit)
@@ -886,6 +896,12 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addWidget(self.SimSpecNIRRadioButton)  
 
         # VBox3.addSpacing(5)
+
+        # L2 Remove negative spectra
+        NegativeSpecHBox = QtWidgets.QHBoxLayout()
+        NegativeSpecHBox.addWidget(self.l2NegativeSpecLabel)
+        NegativeSpecHBox.addWidget(self.l2NegativeSpecCheckBox)
+        VBox3.addLayout(NegativeSpecHBox)  
 
         # L2 Spectral weighting to satellites
         VBox3.addWidget(l2WeightsLabel)
@@ -1326,7 +1342,14 @@ class ConfigWindow(QtWidgets.QDialog):
         self.SimpleNIRRadioButton.setDisabled(disabled)
         self.SimSpecNIRRadioButton.setDisabled(disabled)
         if disabled:
-            ConfigFile.settings["bL2PerformNIRCorrection"] = 0            
+            ConfigFile.settings["bL2PerformNIRCorrection"] = 0  
+
+    def l2NegativeSpecCheckBoxUpdate(self):
+        print("ConfigWindow - l2NegativeSpecCheckBoxUpdate")
+        
+        disabled = (not self.l2NegativeSpecCheckBox.isChecked())     
+        if disabled:
+            ConfigFile.settings["bL2NegativeSpec"] = 0            
 
     def l2SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")
@@ -1403,6 +1426,8 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2SimpleNIRCorrection"] = int(self.SimpleNIRRadioButton.isChecked())
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = int(self.SimSpecNIRRadioButton.isChecked())
         
+        ConfigFile.settings["bL2NegativeSpec"] = int(self.l2NegativeSpecCheckBox.isChecked())
+
         ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
         ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())
         ConfigFile.settings["bL2WeightVIIRSN"] = int(self.l2WeightVIIRSNCheckBox.isChecked())
@@ -1514,6 +1539,8 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())
             ConfigFile.settings["bL2SimpleNIRCorrection"] = int(self.SimpleNIRRadioButton.isChecked())
             ConfigFile.settings["bL2SimSpecNIRCorrection"] = int(self.SimSpecNIRRadioButton.isChecked())
+
+            ConfigFile.settings["bL2NegativeSpec"] = int(self.l2NegativeSpecCheckBox.isChecked())
             
             ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
             ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())
