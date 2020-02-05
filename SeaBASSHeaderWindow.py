@@ -449,6 +449,10 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             NIRFilt = "On"
         else: 
             NIRFilt = "Off"
+        if ConfigFile.settings["bL2NegativeSpec"]:
+            NegativeFilt = "On"
+        else: 
+            NegativeFilt = "Off"
 
         SeaBASSHeader.settings["comments"] =\
             f'! SZA Filter = {szaFilt}\n'+\
@@ -490,7 +494,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! Default AOD = {ConfigFile.settings["fL2DefaultAOD"]}\n'+\
             f'! Default Salt = {ConfigFile.settings["fL2DefaultSalt"]}\n'+\
             f'! Default SST = {ConfigFile.settings["fL2DefaultSST"]}\n'+\
-            f'! NIR Correction = {NIRFilt}'
+            f'! Default SST = {NIRFilt}\n'+\
+            f'! NIR Correction = {NegativeFilt}'
 
         self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
         self.commentsLineEdit.update()
