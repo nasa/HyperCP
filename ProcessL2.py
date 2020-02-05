@@ -1123,98 +1123,99 @@ class ProcessL2:
                 del newnLwDeltaData.columns[key]
 
         # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
-        if simpleNIRCorrection:
-            # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
-            # Find the minimum between 700 and 800, and subtract it from spectrum (spectrally flat)
-            
-            # rrs correction
-            NIRRRs = []
-            for k in rrsSlice:
-                # if float(k) >= 750 and float(k) <= 800:
-                if float(k) >= 700 and float(k) <= 800:
-                    # avg += rrsSlice[k]
-                    # num += 1
-                    NIRRRs.append(rrsSlice[k])
-            # avg /= num
-            # avg = np.median(NIRRRs)
-            minNIR = min(NIRRRs)
-            # Subtract average from each waveband
-            for k in rrsSlice:
-                # rrsSlice[k] -= avg
-                rrsSlice[k] -= minNIR
-                newRrsData.columns[k].append(rrsSlice[k])
+        if ConfigFile.settings["bL2PerformNIRCorrection"]:
+            if simpleNIRCorrection:
+                # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
+                # Find the minimum between 700 and 800, and subtract it from spectrum (spectrally flat)
+                
+                # rrs correction
+                NIRRRs = []
+                for k in rrsSlice:
+                    # if float(k) >= 750 and float(k) <= 800:
+                    if float(k) >= 700 and float(k) <= 800:
+                        # avg += rrsSlice[k]
+                        # num += 1
+                        NIRRRs.append(rrsSlice[k])
+                # avg /= num
+                # avg = np.median(NIRRRs)
+                minNIR = min(NIRRRs)
+                # Subtract average from each waveband
+                for k in rrsSlice:
+                    # rrsSlice[k] -= avg
+                    rrsSlice[k] -= minNIR
+                    newRrsData.columns[k].append(rrsSlice[k])
 
-            # nLw correction
-            NIRRRs = []
-            for k in nLwSlice:
-                if float(k) >= 700 and float(k) <= 800:
-                    NIRRRs.append(nLwSlice[k])
-            minNIR = min(NIRRRs)
-            # Subtract average from each waveband
-            for k in nLwSlice:
-                nLwSlice[k] -= minNIR
-                newnLwData.columns[k].append(nLwSlice[k])
+                # nLw correction
+                NIRRRs = []
+                for k in nLwSlice:
+                    if float(k) >= 700 and float(k) <= 800:
+                        NIRRRs.append(nLwSlice[k])
+                minNIR = min(NIRRRs)
+                # Subtract average from each waveband
+                for k in nLwSlice:
+                    nLwSlice[k] -= minNIR
+                    newnLwData.columns[k].append(nLwSlice[k])
 
-        elif simSpecNIRCorrection:
-            # From Ruddick 2005, Ruddick 2006 use NIR normalized similarity spectrum
-            # (spectrally flat)
-            α = 1.820 # 779/865
+            elif simSpecNIRCorrection:
+                # From Ruddick 2005, Ruddick 2006 use NIR normalized similarity spectrum
+                # (spectrally flat)
+                α = 1.820 # 779/865
 
-            # Rrs
-            ρ1ish = [] # 779
-            x = []
-            for k in rrsSlice:                
-                if float(k) >= 769 and float(k) <= 789:
-                    x.append(float(k))
-                    ρ1ish.append(rrsSlice[k])
-            if not ρ1ish:
-                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
-            ρ1 = sp.interpolate.interp1d(x,ρ1ish)(779)
-            ρ2ish = [] # 865
-            x = []
-            for k in rrsSlice:                
-                if float(k) >= 860 and float(k) <= 870:
-                    x.append(float(k))
-                    ρ2ish.append(rrsSlice[k])
-            if not ρ2ish:
-                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
-            ρ2 = sp.interpolate.interp1d(x,ρ2ish)(865)
+                # Rrs
+                ρ1ish = [] # 779
+                x = []
+                for k in rrsSlice:                
+                    if float(k) >= 769 and float(k) <= 789:
+                        x.append(float(k))
+                        ρ1ish.append(rrsSlice[k])
+                if not ρ1ish:
+                    QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+                ρ1 = sp.interpolate.interp1d(x,ρ1ish)(779)
+                ρ2ish = [] # 865
+                x = []
+                for k in rrsSlice:                
+                    if float(k) >= 860 and float(k) <= 870:
+                        x.append(float(k))
+                        ρ2ish.append(rrsSlice[k])
+                if not ρ2ish:
+                    QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+                ρ2 = sp.interpolate.interp1d(x,ρ2ish)(865)
 
-            ε = (α*ρ2 - ρ1)/(α-1)
-            for k in rrsSlice:
-                rrsSlice[k] -= ε
-                newRrsData.columns[k].append(rrsSlice[k])
+                ε = (α*ρ2 - ρ1)/(α-1)
+                for k in rrsSlice:
+                    rrsSlice[k] -= ε
+                    newRrsData.columns[k].append(rrsSlice[k])
 
-            # nLw
-            ρ1ish = [] # 779
-            x = []
-            for k in nLwSlice:                
-                if float(k) >= 769 and float(k) <= 789:
-                    x.append(float(k))
-                    ρ1ish.append(nLwSlice[k])
-            if not ρ1ish:
-                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
-            ρ1 = sp.interpolate.interp1d(x,ρ1ish)(779)
-            ρ2ish = [] # 865
-            x = []
-            for k in nLwSlice:                
-                if float(k) >= 860 and float(k) <= 870:
-                    x.append(float(k))
-                    ρ2ish.append(nLwSlice[k])
-            if not ρ2ish:
-                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
-            ρ2 = sp.interpolate.interp1d(x,ρ2ish)(865)
+                # nLw
+                ρ1ish = [] # 779
+                x = []
+                for k in nLwSlice:                
+                    if float(k) >= 769 and float(k) <= 789:
+                        x.append(float(k))
+                        ρ1ish.append(nLwSlice[k])
+                if not ρ1ish:
+                    QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+                ρ1 = sp.interpolate.interp1d(x,ρ1ish)(779)
+                ρ2ish = [] # 865
+                x = []
+                for k in nLwSlice:                
+                    if float(k) >= 860 and float(k) <= 870:
+                        x.append(float(k))
+                        ρ2ish.append(nLwSlice[k])
+                if not ρ2ish:
+                    QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+                ρ2 = sp.interpolate.interp1d(x,ρ2ish)(865)
 
-            ε = (α*ρ2 - ρ1)/(α-1)
-            for k in nLwSlice:
-                nLwSlice[k] -= ε
-                newnLwData.columns[k].append(nLwSlice[k])
+                ε = (α*ρ2 - ρ1)/(α-1)
+                for k in nLwSlice:
+                    nLwSlice[k] -= ε
+                    newnLwData.columns[k].append(nLwSlice[k])
 
-        else:
-            for k in rrsSlice:
-                newRrsData.columns[k].append(rrsSlice[k])
-            for k in nLwSlice:
-                newnLwData.columns[k].append(nLwSlice[k])     
+            else:
+                for k in rrsSlice:
+                    newRrsData.columns[k].append(rrsSlice[k])
+                for k in nLwSlice:
+                    newnLwData.columns[k].append(nLwSlice[k])     
 
         newESData.columnsToDataset()   
         newLIData.columnsToDataset()

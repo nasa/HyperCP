@@ -70,7 +70,7 @@ class ConfigFile:
         print("bL2ZhangRho", ConfigFile.settings["bL2ZhangRho"])                                            
         print("bL2DefaultRho", ConfigFile.settings["bL2DefaultRho"])
         
-        # print("bL2PerformNIRCorrection", ConfigFile.settings["bL2PerformNIRCorrection"])        
+        print("bL2PerformNIRCorrection", ConfigFile.settings["bL2PerformNIRCorrection"])        
         print("bL2SimpleNIRCorrection", ConfigFile.settings["bL2SimpleNIRCorrection"])    
         print("bL2SimSpecNIRCorrection", ConfigFile.settings["bL2SimSpecNIRCorrection"])
         
@@ -163,6 +163,7 @@ class ConfigFile:
         ConfigFile.settings["bL2ZhangRho"] = 0        
         ConfigFile.settings["bL2DefaultRho"] = 0   
                 
+        ConfigFile.settings["bL2PerformNIRCorrection"] = 1
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 0 # Mobley 1999 adapted to minimum 700-800, not 750 nm
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1 # Ruddick 2005, Ruddick 2006 similarity spectrum
        
