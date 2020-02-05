@@ -1210,12 +1210,12 @@ class ProcessL2:
                 for k in nLwSlice:
                     nLwSlice[k] -= ε
                     newnLwData.columns[k].append(nLwSlice[k])
+        else:
+            for k in rrsSlice:
+                newRrsData.columns[k].append(rrsSlice[k])
+            for k in nLwSlice:
+                newnLwData.columns[k].append(nLwSlice[k])     
 
-            else:
-                for k in rrsSlice:
-                    newRrsData.columns[k].append(rrsSlice[k])
-                for k in nLwSlice:
-                    newnLwData.columns[k].append(nLwSlice[k])     
 
         newESData.columnsToDataset()   
         newLIData.columnsToDataset()

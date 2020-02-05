@@ -457,7 +457,9 @@ class ConfigWindow(QtWidgets.QDialog):
         self.SimSpecNIRRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL2SimSpecNIRCorrection"] == 1:
             self.SimSpecNIRRadioButton.setChecked(True)
-        self.SimSpecNIRRadioButton.clicked.connect(self.l2SimSpecNIRRadioButtonClicked)        
+        self.SimSpecNIRRadioButton.clicked.connect(self.l2SimSpecNIRRadioButtonClicked)     
+
+        self.l2NIRCorrectionCheckBoxUpdate()    
 
         # Spectral Weighting
         l2WeightsLabel = QtWidgets.QLabel("  Add weighted satellite spectra:", self)
