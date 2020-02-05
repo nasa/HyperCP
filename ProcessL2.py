@@ -1127,6 +1127,9 @@ class ProcessL2:
             if simpleNIRCorrection:
                 # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
                 # Find the minimum between 700 and 800, and subtract it from spectrum (spectrally flat)
+                msg = "Perform simple residual NIR subtraction."
+                print(msg)
+                Utilities.writeLogFile(msg)  
                 
                 # rrs correction
                 NIRRRs = []
@@ -1159,6 +1162,10 @@ class ProcessL2:
             elif simSpecNIRCorrection:
                 # From Ruddick 2005, Ruddick 2006 use NIR normalized similarity spectrum
                 # (spectrally flat)
+                msg = "Perform simulated spectrum residual NIR subtraction."
+                print(msg)
+                Utilities.writeLogFile(msg)  
+
                 α = 1.820 # 779/865
 
                 # Rrs
@@ -1210,7 +1217,7 @@ class ProcessL2:
                 for k in nLwSlice:
                     nLwSlice[k] -= ε
                     newnLwData.columns[k].append(nLwSlice[k])
-        else:
+        else:            
             for k in rrsSlice:
                 newRrsData.columns[k].append(rrsSlice[k])
             for k in nLwSlice:
