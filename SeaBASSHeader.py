@@ -135,6 +135,10 @@ class SeaBASSHeader:
             NIRFilt = "On"
         else: 
             NIRFilt = "Off"
+        if ConfigFile.settings["bL2NegativeSpec"]:
+            NegativeFilt = "On"
+        else: 
+            NegativeFilt = "Off"
 
         SeaBASSHeader.settings["comments"] =\
             f'! SZA Filter = {szaFilt}\n'+\
@@ -176,7 +180,8 @@ class SeaBASSHeader:
             f'! Default AOD = {ConfigFile.settings["fL2DefaultAOD"]}\n'+\
             f'! Default Salt = {ConfigFile.settings["fL2DefaultSalt"]}\n'+\
             f'! Default SST = {ConfigFile.settings["fL2DefaultSST"]}\n'+\
-            f'! NIR Correction = {NIRFilt}'
+            f'! NIR Correction = {NIRFilt}\n'+\
+            f'! Remove Negatives = {NegativeFilt}'
 
         SeaBASSHeader.settings["other_comments"] = f'!\n'\
             '! Other comments...\n'\

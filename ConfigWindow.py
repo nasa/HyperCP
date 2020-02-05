@@ -1052,7 +1052,9 @@ class ConfigWindow(QtWidgets.QDialog):
         disabled = (not self.l1aCleanSZACheckBox.isChecked())
         self.l1aCleanSZAMaxLineEdit.setDisabled(disabled)  
         if disabled:
-            ConfigFile.settings["bL1ACleanSZA"] = 0      
+            ConfigFile.settings["bL1aCleanSZA"] = 0      
+        else:
+            ConfigFile.settings["bL1aCleanSZA"] = 1
 
     def l1cCleanPitchRollCheckBoxUpdate(self):
         print("ConfigWindow - l1cCleanPitchRollCheckBoxUpdate")
@@ -1064,6 +1066,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cPitchRollRollLineEdit.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL1cCleanPitchRoll"] = 0
+        else:
+            ConfigFile.settings["bL1cCleanPitchRoll"] = 1
         #     ConfigFile.settings["fL1cPitchRollPitch"] = "NA"
         #     ConfigFile.settings["fL1cPitchRollRoll"] = "NA"
 
@@ -1077,6 +1081,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cRotatorAngleMaxLineEdit.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL1cCleanRotatorAngle"] = 0
+        else:
+            ConfigFile.settings["bL1cCleanRotatorAngle"] = 1
         #     ConfigFile.settings["fL1cRotatorAngleMin"] = "NA"
         #     ConfigFile.settings["fL1cRotatorAngleMax"] = "NA"
 
@@ -1090,6 +1096,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cSunAngleMaxLineEdit.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL1cCleanSunAngle"] = 0
+        else:
+            ConfigFile.settings["bL1cCleanSunAngle"] = 1
         #     ConfigFile.settings["fL1cSunAngleMin"] = "NA"
         #     ConfigFile.settings["fL1cSunAngleMax"] = "NA"
 
@@ -1111,6 +1119,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1dDeglitch3LineEdit.setDisabled(disabled)   
         if disabled:
             ConfigFile.settings["bL1dDeglitch"]   = 0
+        else:
+            ConfigFile.settings["bL1dDeglitch"]   = 1
         #     ConfigFile.settings["fL1dDeglitch0"]   = "NA"
         #     ConfigFile.settings["fL1dDeglitch1"]   = "NA"
         #     ConfigFile.settings["fL1dDeglitch2"]   = "NA"
@@ -1264,6 +1274,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2SpecFilterEsLineEdit.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL2EnableSpecQualityCheck"] = 0
+        else:
+            ConfigFile.settings["bL2EnableSpecQualityCheck"] = 1
         #     ConfigFile.settings["fL2SpecFilterEs"] = "NA"
         #     ConfigFile.settings["fL2SpecFilterLi"] = "NA"
         #     ConfigFile.settings["fL2SpecFilterLt"] = "NA"
@@ -1282,6 +1294,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2RainfallHumidityFlagLineEdit.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL2EnableQualityFlags"] = 0
+        else:
+            ConfigFile.settings["bL2EnableQualityFlags"] = 1
         #     ConfigFile.settings["fL2CloudFlag"] = "NA"
         #     ConfigFile.settings["fL2SignificantEsFlag"] = "NA"
         #     ConfigFile.settings["fL2DawnDuskFlag"] = "NA"
@@ -1295,6 +1309,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2PercentLtLineEdit.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL2EnablePercentLt"] = 0
+        else:
+            ConfigFile.settings["bL2EnablePercentLt"] = 1
         #     ConfigFile.settings["fL2PercentLt"] = "NA"
 
     def l2RhoRadioButtonRuddickClicked(self):
@@ -1343,13 +1359,17 @@ class ConfigWindow(QtWidgets.QDialog):
         self.SimSpecNIRRadioButton.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL2PerformNIRCorrection"] = 0  
+        else:
+            ConfigFile.settings["bL2PerformNIRCorrection"] = 1
 
     def l2NegativeSpecCheckBoxUpdate(self):
         print("ConfigWindow - l2NegativeSpecCheckBoxUpdate")
         
         disabled = (not self.l2NegativeSpecCheckBox.isChecked())     
         if disabled:
-            ConfigFile.settings["bL2NegativeSpec"] = 0            
+            ConfigFile.settings["bL2NegativeSpec"] = 0          
+        else:
+            ConfigFile.settings["bL2NegativeSpec"] = 1
 
     def l2SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")

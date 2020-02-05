@@ -494,8 +494,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! Default AOD = {ConfigFile.settings["fL2DefaultAOD"]}\n'+\
             f'! Default Salt = {ConfigFile.settings["fL2DefaultSalt"]}\n'+\
             f'! Default SST = {ConfigFile.settings["fL2DefaultSST"]}\n'+\
-            f'! Default SST = {NIRFilt}\n'+\
-            f'! NIR Correction = {NegativeFilt}'
+            f'! NIR Correction = {NIRFilt}\n'+\
+            f'! Remove Negatives = {NegativeFilt}'
 
         self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
         self.commentsLineEdit.update()
