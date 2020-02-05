@@ -70,7 +70,12 @@ class GetAnc:
          
             year = int(str(int(dateTag))[0:4])
             doy = int(str(int(dateTag))[4:7])
-            hr = Utilities.timeTag2ToSec(latTime[index])/60/60               
+            # Casting below can push hr to 24. Truncate the hr decimal using
+            # int() so the script always calls from within the hour in question, 
+            # and no rounding occurs.
+            hr = int(Utilities.timeTag2ToSec(latTime[index])/60/60)
+            
+                      
 
             file1 = f"N{year}{doy:03.0f}{hr:02.0f}_MERRA2_1h.nc"
             if oldFile != file1:

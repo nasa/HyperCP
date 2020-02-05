@@ -1373,12 +1373,7 @@ class ProcessL2:
         wind = ancGroup.getDataset("WINDSPEED").data["WINDSPEED"]
         
 
-        ''' # Now filter the spectra from the entire collection before slicing the intervals'''
-        badTimes = None
-        i=0
-        start = -1
-        stop = []        
- 
+        ''' # Now filter the spectra from the entire collection before slicing the intervals'''               
         # Lt Quality Filtering; anomalous elevation in the NIR
         if ConfigFile.settings["bL2LtUVNIR"]:
             msg = "Applying Lt quality filtering to eliminate spectra."
@@ -1396,13 +1391,12 @@ class ProcessL2:
                     return False                  
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
-                # if nSpectra == 0:
-                #     msg = "No spectra remaining. Abort."
-                #     print(msg)
-                #     Utilities.writeLogFile(msg)
-                #     return False
-
+                
         # Filter on SZA and Wind limit
+        badTimes = None
+        i=0
+        start = -1
+        stop = []         
         for index in range(len(SZA)):
             # Check for angles spanning north
             if SZA[index] < SZAMin or SZA[index] > SZAMax or wind[index] > maxWind:
@@ -1443,13 +1437,7 @@ class ProcessL2:
                 return False         
             ProcessL2.filterData(sasGroup, badTimes)
             ProcessL2.filterData(ancGroup, badTimes)            
-            # if nSpectra == 0:
-            #     msg = "No spectra remaining. Abort."
-            #     print(msg)
-            #     Utilities.writeLogFile(msg)
-            #     return False
-
-        
+                    
        # Spectral Outlier Filter
         enableSpecQualityCheck = ConfigFile.settings['bL2EnableSpecQualityCheck']
         if enableSpecQualityCheck:
@@ -1476,12 +1464,7 @@ class ProcessL2:
                     Utilities.writeLogFile(msg)
                     return False                 
                 ProcessL2.filterData(sasGroup, badTimes)
-                ProcessL2.filterData(ancGroup, badTimes)   
-                # if nSpectra == 0:
-                #     msg = "No spectra remaining. Abort."
-                #     print(msg)
-                #     Utilities.writeLogFile(msg)
-                #     return False             
+                ProcessL2.filterData(ancGroup, badTimes)       
 
         ''' Next apply the meteorological filter prior to slicing'''     
         # Meteorological Filtering   
@@ -1502,13 +1485,8 @@ class ProcessL2:
                     return False              
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
-                # if nSpectra == 0:
-                #     msg = "No spectra remaining. Abort."
-                #     print(msg)
-                #     Utilities.writeLogFile(msg)
-                #     return False        
 
-        # # Copy datasets to dictionary
+        # Copy Es dataset to dictionary for length and Timetag2
         esData.datasetToColumns()
         esColumns = esData.columns
         tt2 = esColumns["Timetag2"]
@@ -1572,13 +1550,12 @@ class ProcessL2:
                     msg = 'ProcessL2.calculateREFLECTANCE2 ender failed. Abort.'
                     print(msg)
                     Utilities.writeLogFile(msg)                      
-
         return True
-
-
-    # Calculates Rrs
+    
     @staticmethod
     def processL2(node, ancillaryData=None):
+        '''Calculates Rrs and nLw after quality checks and filtering, glint removal, residual 
+            subtraction. Weights for satellite bands, and outputs plots and SeaBASS data'''
 
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
