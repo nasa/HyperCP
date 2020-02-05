@@ -290,7 +290,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2pGetAncLabel = QtWidgets.QLabel("       Download ancillary models", self)        
         self.l2pGetAncCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL2pGetAnc"]) == 1:
-            self.l2pGetAncCheckBox.setChecked(True)   
+            self.l2pGetAncCheckBox.setChecked(True)           
         self.l2pGetAncCheckBox.clicked.connect(self.l2pGetAncCheckBoxUpdate)
 
         
@@ -417,24 +417,43 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2DefaultSSTLineEdit.setValidator(doubleValidator)
 
         self.RhoRadioButtonRuddick = QtWidgets.QRadioButton("Ruddick et al 2006 Rho")
+        self.RhoRadioButtonRuddick.setAutoExclusive(False)
         if ConfigFile.settings["bL2RuddickRho"]==1:
             self.RhoRadioButtonRuddick.setChecked(True)
-        self.RhoRadioButtonRuddick.clicked.connect(self.l2RhoCorrectionRadioButtonClicked)        
+        self.RhoRadioButtonRuddick.clicked.connect(self.l2RhoRadioButtonRuddickClicked)  
+
         self.RhoRadioButtonZhang = QtWidgets.QRadioButton("Zhang et al 2017 Rho")
+        self.RhoRadioButtonZhang.setAutoExclusive(False)
         if ConfigFile.settings["bL2ZhangRho"]==1:
-            self.RhoRadioButtonZhang.setChecked(True)
-        self.RhoRadioButtonZhang.clicked.connect(self.l2RhoCorrectionRadioButtonClicked)
+            self.RhoRadioButtonZhang.setChecked(True)            
+        if ConfigFile.settings["bL2pGetAnc"]==0:
+            self.RhoRadioButtonZhang.setChecked(False)
+            self.RhoRadioButtonZhang.setDisabled(1)
+        self.RhoRadioButtonZhang.clicked.connect(self.l2RhoRadioButtonZhangClicked)
+
         self.RhoRadioButtonDefault = QtWidgets.QRadioButton("Default Rho")
+        self.RhoRadioButtonDefault.setAutoExclusive(False)
         if ConfigFile.settings["bL2DefaultRho"]==1:
             self.RhoRadioButtonDefault.setChecked(True)
-        self.RhoRadioButtonDefault.clicked.connect(self.l2RhoCorrectionRadioButtonClicked)        
+        self.RhoRadioButtonDefault.clicked.connect(self.l2RhoRadioButtonDefaultClicked)        
              
 
         # L2 NIR AtmoCorr
-        l2NIRCorrectionLabel = QtWidgets.QLabel("  Enable NIR Correction (blue water only)", self)
-        self.l2NIRCorrectionCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
-            self.l2NIRCorrectionCheckBox.setChecked(True)
+        # l2NIRCorrectionLabel = QtWidgets.QLabel("  Enable NIR Correction (blue water only)", self)
+        # self.l2NIRCorrectionCheckBox = QtWidgets.QCheckBox("", self)
+        # if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
+        #     self.l2NIRCorrectionCheckBox.setChecked(True)
+        
+        self.SimpleNIRRadioButton = QtWidgets.QRadioButton("Simple NIR Resid Corr (blue water only)")
+        self.SimpleNIRRadioButton.setAutoExclusive(False)
+        if ConfigFile.settings["bL2SimpleNIRCorrection"] == 1:
+            self.SimpleNIRRadioButton.setChecked(True)
+        self.SimpleNIRRadioButton.clicked.connect(self.l2SimpleNIRRadioButtonClicked)        
+        self.SimSpecNIRRadioButton = QtWidgets.QRadioButton("Sim SpecNIR Resid Corr")
+        self.SimSpecNIRRadioButton.setAutoExclusive(False)
+        if ConfigFile.settings["bL2SimSpecNIRCorrection"] == 1:
+            self.SimSpecNIRRadioButton.setChecked(True)
+        self.SimSpecNIRRadioButton.clicked.connect(self.l2SimSpecNIRRadioButtonClicked)        
 
         # Spectral Weighting
         l2WeightsLabel = QtWidgets.QLabel("  Add weighted satellite spectra:", self)
@@ -498,7 +517,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l2SpecQualityCheckBox.clicked.connect(self.l2SpecQualityCheckBoxUpdate)
         self.l2QualityFlagCheckBox.clicked.connect(self.l2QualityFlagCheckBoxUpdate)        
-        self.l2NIRCorrectionCheckBox.clicked.connect(self.l2NIRCorrectionCheckBoxUpdate)
+        # self.l2NIRCorrectionCheckBox.clicked.connect(self.l2NIRCorrectionCheckBoxUpdate)
         self.l2EnablePercentLtCheckBox.clicked.connect(self.l2EnablePercentLtCheckBoxUpdate)
 
         l2SaveSeaBASSLabel = QtWidgets.QLabel("Save SeaBASS text file", self)     
@@ -838,22 +857,25 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addLayout(SSTHBox2)         
         
         # Rho model
+        RhoVBox = QtWidgets.QVBoxLayout()
         RhoHBox2 = QtWidgets.QHBoxLayout()
         # WindSpeedHBox = QtWidgets.QHBoxLayout()
         RhoHBox2.addWidget(self.RhoRadioButtonRuddick)
         RhoHBox2.addWidget(self.RhoRadioButtonZhang)
-        VBox3.addLayout(RhoHBox2)         
+        RhoVBox.addLayout(RhoHBox2)         
         RhoHBox3 = QtWidgets.QHBoxLayout()
+        RhoHBox3.addSpacing(60)
         RhoHBox3.addWidget(self.RhoRadioButtonDefault)
-        VBox3.addLayout(RhoHBox3)
+        RhoVBox.addLayout(RhoHBox3)
+        VBox3.addLayout(RhoVBox)
 
         # VBox3.addSpacing(5)
 
         # L2 NIR AtmoCorr
-        NIRCorrectionHBox = QtWidgets.QHBoxLayout()
-        NIRCorrectionHBox.addWidget(l2NIRCorrectionLabel)
-        NIRCorrectionHBox.addWidget(self.l2NIRCorrectionCheckBox)
-        VBox3.addLayout(NIRCorrectionHBox)         
+        NIRCorrectionVBox = QtWidgets.QVBoxLayout()
+        NIRCorrectionVBox.addWidget(self.SimpleNIRRadioButton)
+        NIRCorrectionVBox.addWidget(self.SimSpecNIRRadioButton)
+        VBox3.addLayout(NIRCorrectionVBox)         
 
         # VBox3.addSpacing(5)
 
@@ -1180,17 +1202,18 @@ class ConfigWindow(QtWidgets.QDialog):
                     # If the user cancels out of these, presume their account is
                     # already set up properly and skip netrc file creation.
                     print('Credentials skipped. Will try to use current credentials.')                                
+                    ConfigFile.settings["bL2pObpgCreds"] = 1
                 
             ConfigFile.settings["bL2pGetAnc"] = 1
             self.RhoRadioButtonRuddick.setDisabled(0)
             self.RhoRadioButtonZhang.setDisabled(0)
         else:            
             ConfigFile.settings["bL2pGetAnc"] = 0
-            ConfigFile.settings["bL2pObpgCreds"] = False
+            ConfigFile.settings["bL2pObpgCreds"] = 0
             self.RhoRadioButtonZhang.setChecked(0)
             self.RhoRadioButtonZhang.setDisabled(1)
             self.RhoRadioButtonRuddick.setChecked(1)
-            # self.RhoRadioButtonRuddick.setDisabled(1)
+            self.RhoRadioButtonDefault.setChecked(0)
             
             print("ConfigWindow - l2RhoCorrection set to Ruddick")
             ConfigFile.settings["bL2RuddickRho"] = 1
@@ -1250,30 +1273,50 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2EnablePercentLt"] = 0
         #     ConfigFile.settings["fL2PercentLt"] = "NA"
 
-    def l2RhoCorrectionRadioButtonClicked(self):
-        # radioButton = self.sender()
-        if self.RhoRadioButtonRuddick.isChecked():
-            print("ConfigWindow - l2RhoCorrection set to Ruddick")
-            ConfigFile.settings["bL2RuddickRho"] = 1
-            ConfigFile.settings["bL2ZhangRho"] = 0
-            ConfigFile.settings["bL2DefaultRho"] = 0
-        elif self.RhoRadioButtonZhang.isChecked():
-            print("ConfigWindow - l2RhoCorrection set to Zhang")
-            ConfigFile.settings["bL2RuddickRho"] = 0
-            ConfigFile.settings["bL2ZhangRho"] = 1
-            ConfigFile.settings["bL2DefaultRho"] = 0
-        elif self.RhoRadioButtonDefault.isChecked():
-            print("ConfigWindow - l2RhoCorrection set to Default")
-            ConfigFile.settings["bL2RuddickRho"] = 0
-            ConfigFile.settings["bL2ZhangRho"] = 0
-            ConfigFile.settings["bL2DefaultRho"] = 1
+    def l2RhoRadioButtonRuddickClicked(self):
+        print("ConfigWindow - l2RhoCorrection set to Ruddick")
+        self.RhoRadioButtonRuddick.setChecked(True)
+        self.RhoRadioButtonZhang.setChecked(False)
+        self.RhoRadioButtonDefault.setChecked(False)
+        ConfigFile.settings["bL2RuddickRho"] = 1
+        ConfigFile.settings["bL2ZhangRho"] = 0
+        ConfigFile.settings["bL2DefaultRho"] = 0
+    def l2RhoRadioButtonZhangClicked(self):
+        print("ConfigWindow - l2RhoCorrection set to Zhang")
+        self.RhoRadioButtonRuddick.setChecked(False)
+        self.RhoRadioButtonZhang.setChecked(True)
+        self.RhoRadioButtonDefault.setChecked(False)
+        ConfigFile.settings["bL2RuddickRho"] = 0
+        ConfigFile.settings["bL2ZhangRho"] = 1
+        ConfigFile.settings["bL2DefaultRho"] = 0
+    def l2RhoRadioButtonDefaultClicked(self):
+        print("ConfigWindow - l2RhoCorrection set to Default")
+        self.RhoRadioButtonRuddick.setChecked(False)
+        self.RhoRadioButtonZhang.setChecked(False)
+        self.RhoRadioButtonDefault.setChecked(True)
+        ConfigFile.settings["bL2RuddickRho"] = 0
+        ConfigFile.settings["bL2ZhangRho"] = 0
+        ConfigFile.settings["bL2DefaultRho"] = 1
+
+    def l2SimpleNIRRadioButtonClicked(self):
+        print("ConfigWindow - l2NIRCorrection set to Simple")
+        self.SimpleNIRRadioButton.setChecked(True)
+        self.SimSpecNIRRadioButton.setChecked(False)
+        ConfigFile.settings["bL2SimpleNIRCorrection"] = 1
+        ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
+    def l2SimSpecNIRRadioButtonClicked(self):
+        self.SimpleNIRRadioButton.setChecked(False)
+        self.SimSpecNIRRadioButton.setChecked(True)
+        print("ConfigWindow - l2NIRCorrection set to SimSpec")
+        ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
+        ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
     
-    def l2NIRCorrectionCheckBoxUpdate(self):
-        print("ConfigWindow - l2NIRCorrectionCheckBoxUpdate")
+    # def l2NIRCorrectionCheckBoxUpdate(self):
+    #     print("ConfigWindow - l2NIRCorrectionCheckBoxUpdate")
         
-        disabled = (not self.l2NIRCorrectionCheckBox.isChecked())     
-        if disabled:
-            ConfigFile.settings["bL2PerformNIRCorrection"] = 0
+    #     disabled = (not self.l2NIRCorrectionCheckBox.isChecked())     
+    #     if disabled:
+    #         ConfigFile.settings["bL2PerformNIRCorrection"] = 0
 
     def l2SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")
@@ -1336,16 +1379,19 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL2TimeInterval"] = int(self.l2TimeIntervalLineEdit.text())                        
         ConfigFile.settings["bL2EnablePercentLt"] = int(self.l2EnablePercentLtCheckBox.isChecked())
         ConfigFile.settings["fL2PercentLt"] = float(self.l2PercentLtLineEdit.text())
-
-        ConfigFile.settings["bL2ZhangRho"] = int(self.RhoRadioButtonZhang.isChecked())
+        
         ConfigFile.settings["fL2DefaultWindSpeed"] = float(self.l2DefaultWindSpeedLineEdit.text())
         ConfigFile.settings["fL2DefaultAOD"] = float(self.l2DefaultAODLineEdit.text())
         ConfigFile.settings["fL2DefaultSalt"] = float(self.l2DefaultSaltLineEdit.text())
         ConfigFile.settings["fL2DefaultSST"] = float(self.l2DefaultSSTLineEdit.text())
-        ConfigFile.settings["fL2RhoSky"] = float(self.l2RhoSkyLineEdit.text())
+        ConfigFile.settings["fL2RhoSky"] = float(self.l2RhoSkyLineEdit.text())        
         ConfigFile.settings["bL2RuddickRho"] = int(self.RhoRadioButtonRuddick.isChecked())
+        ConfigFile.settings["bL2ZhangRho"] = int(self.RhoRadioButtonZhang.isChecked())
+        ConfigFile.settings["bL2DefaultRho"] = int(self.RhoRadioButtonDefault.isChecked())
 
-        ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())
+        # ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())
+        ConfigFile.settings["bL2SimpleNIRCorrection"] = int(self.SimpleNIRRadioButton.isChecked())
+        ConfigFile.settings["bL2SimSpecNIRCorrection"] = int(self.SimSpecNIRRadioButton.isChecked())
         
         ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
         ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())

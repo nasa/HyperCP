@@ -7,6 +7,7 @@ import numpy as np
 from numpy import matlib as mb
 import scipy as sp
 import datetime as dt
+from PyQt5 import QtWidgets
 
 import HDFRoot
 from Utilities import Utilities
@@ -659,7 +660,8 @@ class ProcessL2:
         ZhangRho = int(ConfigFile.settings["bL2ZhangRho"])
         # defaultWindSpeed = float(ConfigFile.settings["fL2DefaultWindSpeed"])
         # windSpeedMean = defaultWindSpeed # replaced later with met file, if present                         
-        performNIRCorrection = int(ConfigFile.settings["bL2PerformNIRCorrection"])                        
+        simpleNIRCorrection = int(ConfigFile.settings["bL2SimpleNIRCorrection"])
+        simSpecNIRCorrection = int(ConfigFile.settings["bL2SimSpecNIRCorrection"])                        
         enablePercentLt = float(ConfigFile.settings["bL2EnablePercentLt"])
         percentLt = float(ConfigFile.settings["fL2PercentLt"])
 
@@ -976,8 +978,6 @@ class ProcessL2:
             for i, k in enumerate(wave):
                 rhoDict[str(k)] = rhoVector[0,i]
 
-
-
         rrsSlice = {}
         nLwSlice = {}
                 
@@ -1122,10 +1122,10 @@ class ProcessL2:
                 del newRrsDeltaData.columns[key]
                 del newnLwDeltaData.columns[key]
 
-        # Perfrom near-infrared correction to remove additional atmospheric and glint contamination
-        if performNIRCorrection:
+        # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
+        if simpleNIRCorrection:
             # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
-            # Find the minimum between 700 and 800, and subtract it from spectrum
+            # Find the minimum between 700 and 800, and subtract it from spectrum (spectrally flat)
             
             # rrs correction
             NIRRRs = []
@@ -1154,6 +1154,62 @@ class ProcessL2:
             for k in nLwSlice:
                 nLwSlice[k] -= minNIR
                 newnLwData.columns[k].append(nLwSlice[k])
+
+        elif simSpecNIRCorrection:
+            # From Ruddick 2005, Ruddick 2006 use NIR normalized similarity spectrum
+            # (spectrally flat)
+            α = 1.820 # 779/865
+
+            # Rrs
+            ρ1ish = [] # 779
+            x = []
+            for k in rrsSlice:                
+                if float(k) >= 769 and float(k) <= 789:
+                    x.append(float(k))
+                    ρ1ish.append(rrsSlice[k])
+            if not ρ1ish:
+                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+            ρ1 = sp.interpolate.interp1d(x,ρ1ish)(779)
+            ρ2ish = [] # 865
+            x = []
+            for k in rrsSlice:                
+                if float(k) >= 860 and float(k) <= 870:
+                    x.append(float(k))
+                    ρ2ish.append(rrsSlice[k])
+            if not ρ2ish:
+                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+            ρ2 = sp.interpolate.interp1d(x,ρ2ish)(865)
+
+            ε = (α*ρ2 - ρ1)/(α-1)
+            for k in rrsSlice:
+                rrsSlice[k] -= ε
+                newRrsData.columns[k].append(rrsSlice[k])
+
+            # nLw
+            ρ1ish = [] # 779
+            x = []
+            for k in nLwSlice:                
+                if float(k) >= 769 and float(k) <= 789:
+                    x.append(float(k))
+                    ρ1ish.append(nLwSlice[k])
+            if not ρ1ish:
+                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+            ρ1 = sp.interpolate.interp1d(x,ρ1ish)(779)
+            ρ2ish = [] # 865
+            x = []
+            for k in nLwSlice:                
+                if float(k) >= 860 and float(k) <= 870:
+                    x.append(float(k))
+                    ρ2ish.append(nLwSlice[k])
+            if not ρ2ish:
+                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+            ρ2 = sp.interpolate.interp1d(x,ρ2ish)(865)
+
+            ε = (α*ρ2 - ρ1)/(α-1)
+            for k in nLwSlice:
+                nLwSlice[k] -= ε
+                newnLwData.columns[k].append(nLwSlice[k])
+
         else:
             for k in rrsSlice:
                 newRrsData.columns[k].append(rrsSlice[k])
