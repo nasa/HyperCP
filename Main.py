@@ -58,13 +58,11 @@ class Window(QtWidgets.QWidget):
         # Main window configuration restore
         MainConfig.loadConfig(MainConfig.fileName)  
         MainConfig.settings["version"] = "1.0.b"
-        # print(MainConfig.settings)   
 
         banner = QtWidgets.QLabel(self)
         pixmap = QtGui.QPixmap("./Data/banner.jpg")
-        # banner.setPixmap(pixmap.scaled(banner.size(),QtCore.Qt.IgnoreAspectRatio))
         banner.setPixmap(pixmap)
-        # banner.resize(self.width(),100)        
+        banner.setAlignment(QtCore.Qt.AlignCenter)
 
         # Configuration File        
         configLabel = QtWidgets.QLabel('Select/Create Configuration File', self)
@@ -228,6 +226,7 @@ class Window(QtWidgets.QWidget):
         self.setLayout(vBox)
 
         self.setGeometry(300, 300, 290, 600)
+        # self.setGeometry(300, 300, 250, 600) This does nothing.
         self.setWindowTitle('HyperInSPACE')
         self.show()
 
