@@ -37,7 +37,7 @@ class RhoCorrections:
         return rhoScalar, rhoDelta
 
     @staticmethod
-    def ZhangCorr(windSpeedMean,AOD,cloud,solZen,wTemp,sal,relAz,waveBands):
+    def ZhangCorr(windSpeedMean,AOD,cloud,solElev,wTemp,sal,relAz,waveBands):
         ''' Requires xarray: http://xarray.pydata.org/en/stable/installing.html
         Recommended installation using Anaconda:        
         $ conda install xarray dask netCDF4 bottleneck'''
@@ -51,7 +51,7 @@ class RhoCorrections:
         env['wind'] = windSpeedMean
         env['od'] = AOD
         env['C'] = cloud # Not used
-        env['zen_sun'] = solZen
+        env['zen_sun'] = 90 - solElev
         env['wtem'] = wTemp
         env['sal'] = sal
 

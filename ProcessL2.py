@@ -1072,7 +1072,7 @@ class ProcessL2:
                 else:
                     # Default rho
                     rhoScalar = rhoDefault
-                    rhoDelta = 0.10 # Estimated for range of conditions in Mobley 1999 models
+                    rhoDelta = 0.01 # Estimated for range of conditions in Mobley 1999 models; it's actually higher...
 
                     rrs = (lt - (rhoScalar * li)) / es
 
@@ -1227,7 +1227,7 @@ class ProcessL2:
             # This should probably wait until further analysis to see
             # how much overcorrecting is being done by the SimSpec NIR
             # correction. '''
-            
+
             for k in rrsSlice:
                 newRrsData.columns[k].append(rrsSlice[k])
             for k in nLwSlice:
@@ -1420,17 +1420,21 @@ class ProcessL2:
             if SZA[index] < SZAMin or SZA[index] > SZAMax or wind[index] > maxWind:
                 i += 1                              
                 if start == -1:
-                    print('Low SZA. SZA: ' + str(round(SZA[index])))
+                    msg =f'Low SZA. SZA: {round(SZA[index])}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)                                               
                     start = index
                 stop = index 
                 if badTimes is None:
                     badTimes = []                               
             else:                                
                 if start != -1:
-                    print('SZA passed. SZA: ' + str(round(SZA[index])))
+                    msg = f'SZA passed. SZA: {round(SZA[index])}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)                                               
                     startstop = [timeStamp[start],timeStamp[stop]]
                     msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
-                    print(msg)
+                    # print(msg)
                     Utilities.writeLogFile(msg)                                               
                     badTimes.append(startstop)
                     start = -1
