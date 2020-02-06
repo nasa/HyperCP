@@ -15,6 +15,7 @@ import numpy as np
 from HDFGroup import HDFGroup
 from HDFDataset import HDFDataset
 
+''' May need to >>conda install hdf5=1.8.18<< in the future '''
 
 class HDFRoot:
     def __init__(self):
