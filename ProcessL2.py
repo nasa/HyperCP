@@ -1228,59 +1228,61 @@ class ProcessL2:
                 print(msg)
                 Utilities.writeLogFile(msg)  
 
-                α = 1.820 # 779/865
+                # These ratios are for rho = pi*Rrs
+                α1 = 2.35 # 720/780 only good for rho(720)<0.03
+                α2 = 1.91 # 780/870 try to avoid, data is noisy here
+                threshold = 0.03
+
+                # Retrieve Thuilliers
+                wavelength = [float(key) for key in F0.keys()]
+                F0 = [value for value in F0.values()]
 
                 # Rrs
-                ρ1ish = [] # 779
+                ρ720 = []
                 x = []
                 for k in rrsSlice:                
-                    if float(k) >= 769 and float(k) <= 789:
+                    if float(k) >= 700 and float(k) <= 740:
                         x.append(float(k))
-                        ρ1ish.append(rrsSlice[k])
-                if not ρ1ish:
+                        ρ720.append(np.pi*rrsSlice[k])
+                if not ρ720:
                     QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
-                ρ1 = sp.interpolate.interp1d(x,ρ1ish)(779)
-                ρ2ish = [] # 865
+                ρ1 = sp.interpolate.interp1d(x,ρ720)(720)
+                F01 = sp.interpolate.interp1d(wavelength,F0)(720)
+                ρ780 = []
                 x = []
                 for k in rrsSlice:                
-                    if float(k) >= 860 and float(k) <= 870:
+                    if float(k) >= 760 and float(k) <= 800:
                         x.append(float(k))
-                        ρ2ish.append(rrsSlice[k])
-                if not ρ2ish:
+                        ρ780.append(rrsSlice[k])
+                if not ρ780:
                     QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
-                ρ2 = sp.interpolate.interp1d(x,ρ2ish)(865)
-
-                ε = (α*ρ2 - ρ1)/(α-1)
+                ρ2 = sp.interpolate.interp1d(x,ρ780)(780)
+                F02 = sp.interpolate.interp1d(wavelength,F0)(780)
+                ρ870 = []
+                x = []
+                for k in rrsSlice:                
+                    if float(k) >= 850 and float(k) <= 890:
+                        x.append(float(k))
+                        ρ870.append(rrsSlice[k])
+                if not ρ870:
+                    QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+                ρ3 = sp.interpolate.interp1d(x,ρ870)(870)
+                F03 = sp.interpolate.interp1d(wavelength,F0)(870)
+                
+                if ρ1 < threshold:
+                    ε = (α1*ρ2 - ρ1)/(α1-1)
+                    ε = ε/np.pi # convert to Rrs units
+                    εnLw = (α1*ρ2*F02 - ρ1*F01)/(α1-1) # convert to nLw units
+                else:
+                    ε = (α2*ρ3 - ρ2)/(α2-1)
+                    ε = ε/np.pi # convert to Rrs units
+                    εnLw = (α2*ρ3*F03 - ρ2*F02)/(α2-1) # convert to nLw units              
                 for k in rrsSlice:
                     rrsSlice[k] -= ε
                     newRrsData.columns[k].append(rrsSlice[k])
-
-                # nLw
-                ρ1ish = [] # 779
-                x = []
-                for k in nLwSlice:                
-                    if float(k) >= 769 and float(k) <= 789:
-                        x.append(float(k))
-                        ρ1ish.append(nLwSlice[k])
-                if not ρ1ish:
-                    QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
-                ρ1 = sp.interpolate.interp1d(x,ρ1ish)(779)
-                ρ2ish = [] # 865
-                x = []
-                for k in nLwSlice:                
-                    if float(k) >= 860 and float(k) <= 870:
-                        x.append(float(k))
-                        ρ2ish.append(nLwSlice[k])
-                if not ρ2ish:
-                    QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
-                ρ2 = sp.interpolate.interp1d(x,ρ2ish)(865)
-
-                ε = (α*ρ2 - ρ1)/(α-1)
-                for k in nLwSlice:
-                    nLwSlice[k] -= ε
-                    newnLwData.columns[k].append(nLwSlice[k])
+                    rrsSlice[k] -= εnLw
+                    newnLwData.columns[k].append(nLwSlice[k])                   
         else:            
-
             for k in rrsSlice:
                 newRrsData.columns[k].append(rrsSlice[k])
             for k in nLwSlice:
