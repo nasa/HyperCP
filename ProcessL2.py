@@ -38,7 +38,11 @@ class ProcessL2:
             # print(msg)
             # Utilities.writeLogFile(msg)
             if group.id == "ANCILLARY":
-                timeData = group.getDataset("Timetag2").data["Timetag2"]                
+                # Early on, Date/Timetags are not appended, but later they are
+                if group.getDataset("Timetag2"):
+                    timeData = group.getDataset("Timetag2").data["Timetag2"]                
+                else:
+                    timeData = group.getDataset("AOD").data["Timetag2"]
             if group.id == "IRRADIANCE":
                 timeData = group.getDataset("ES").data["Timetag2"]
             if group.id == "RADIANCE":
@@ -61,7 +65,7 @@ class ProcessL2:
 
             if i-counter == -1:
                 finalCount = 0
-                
+
         for ds in group.datasets: group.datasets[ds].datasetToColumns()
         return finalCount
 
