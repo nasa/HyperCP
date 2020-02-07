@@ -173,6 +173,54 @@ class ProcessL2:
             badTimes = None
         return badTimes
 
+    # Perform negative reflectance spectra checking
+    @staticmethod
+    def negReflectance(reflGroup):   
+        # For the ensemble average; should have one one spectrum
+
+        rrsData = reflGroup.getDataset("Rrs")
+        # rrsData.datasetToColumns()
+        rrsColumns = rrsData.columns
+        rrsDate = rrsColumns.pop('Datetag')
+        rrsTime = rrsColumns.pop('Timetag2')
+                        
+        badTimes = []
+        for indx, timeTag in enumerate(rrsTime):                        
+            # If any spectra in the vis are negative, delete the whole spectrum
+            VIS = [400,700]            
+            rrsVIS = []
+            wavelengths = []
+            for wave in rrsColumns:
+                wavelengths.append(float(wave))
+                if float(wave) > VIS[0] and float(wave) < VIS[1]:
+                    rrsVIS.append(rrsColumns[wave][indx])
+                # elif float(wave) > NIR[0] and float(wave) < NIR[1]:
+                #     ltNIR.append(ltColumns[wave][indx])
+
+            # Flag entire record for removal
+            if any(item < 0 for item in rrsVIS):
+                badTimes.append(timeTag)
+            # Set negatives to 0
+            NIR = [701,max(wavelengths)]
+            UV = [min(wavelengths),399]
+            for wave in rrsColumns:
+                if ((float(wave) >= UV[0] and float(wave) < UV[1]) or \
+                            (float(wave) >= NIR[0] and float(wave) < NIR[1])) and \
+                            rrsColumns[wave][0] < 0:
+                    rrsColumns[wave] = [0]
+                            
+        badTimes = np.unique(badTimes)
+        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
+        msg = f'{len(np.unique(badTimes))/len(rrsTime)*100:.1f}% of spectra flagged'
+        print(msg)
+        Utilities.writeLogFile(msg) 
+
+        rrsColumns['Datetag'] = rrsDate
+        rrsColumns['Timetag2'] = rrsTime
+        if len(badTimes) == 0:
+            badTimes = None
+        return badTimes
+
     # Perform meteorological flag checking
     @staticmethod
     def metQualityCheck(refGroup, sasGroup):   
@@ -1217,21 +1265,41 @@ class ProcessL2:
                 for k in nLwSlice:
                     nLwSlice[k] -= ε
                     newnLwData.columns[k].append(nLwSlice[k])
-        else:
-            '''TO DO
-            # Need to remove negative spectra
-            # What should the criteria be?
-            # 1) Any spectrum that has any negative values between
-            #  380 - 700ish, remove the entirespectrum. Otherwise, 
-            # set negative bands to 0.
-            # This should probably wait until further analysis to see
-            # how much overcorrecting is being done by the SimSpec NIR
-            # correction. '''
+        else:            
 
             for k in rrsSlice:
                 newRrsData.columns[k].append(rrsSlice[k])
             for k in nLwSlice:
-                newnLwData.columns[k].append(nLwSlice[k])     
+                newnLwData.columns[k].append(nLwSlice[k])   
+
+        # Filter reflectances for negative spectra  
+        '''TO DO
+            # Need to remove negative spectra
+            # What should the criteria be?
+            # 1) Any spectrum that has any negative values between
+            #  380 - 700ish, remove the entire spectrum. Otherwise, 
+            # set negative bands to 0.
+            # This should probably wait until further analysis to see
+            # how much overcorrecting is being done by the SimSpec NIR
+            # correction. '''
+        if ConfigFile.settings["bL2NegativeSpec"]:
+            msg = "Filtering reflectance spectra for negative values."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            badTimes = ProcessL2.negReflectance(newReflectanceGroup)
+                
+            if badTimes is not None:
+                print('Removing records...')
+                check = ProcessL2.filterData(newReflectanceGroup, badTimes)   
+                if check == 0:
+                    msg = "No spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False                  
+                ProcessL2.filterData(newRadianceGroup, badTimes)
+                ProcessL2.filterData(newIrradianceGroup, badTimes)
+                ProcessL2.filterData(ancGroup, badTimes)
+        
 
 
         newESData.columnsToDataset()   
