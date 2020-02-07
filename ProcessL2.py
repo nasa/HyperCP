@@ -43,6 +43,8 @@ class ProcessL2:
                 timeData = group.getDataset("ES").data["Timetag2"]
             if group.id == "RADIANCE":
                 timeData = group.getDataset("LI").data["Timetag2"]
+            if group.id == "REFLECTANCE":
+                timeData = group.getDataset("Rrs").data["Timetag2"]
 
             dataSec = []
             for i in range(timeData.shape[0]):
@@ -59,7 +61,8 @@ class ProcessL2:
 
             if i-counter == -1:
                 finalCount = 0
-        
+                
+        for ds in group.datasets: group.datasets[ds].datasetToColumns()
         return finalCount
 
     # Interpolate to a single column
@@ -175,48 +178,55 @@ class ProcessL2:
 
     # Perform negative reflectance spectra checking
     @staticmethod
-    def negReflectance(reflGroup):   
-        # For the ensemble average; should have one one spectrum
+    def negReflectance(reflGroup,field):   
+        # Run for entire file, not just this ensemble
 
-        rrsData = reflGroup.getDataset("Rrs")
-        # rrsData.datasetToColumns()
-        rrsColumns = rrsData.columns
-        rrsDate = rrsColumns.pop('Datetag')
-        rrsTime = rrsColumns.pop('Timetag2')
+        reflData = reflGroup.getDataset(field)
+        # reflData.datasetToColumns()
+        reflColumns = reflData.columns
+        reflDate = reflColumns.pop('Datetag')
+        reflTime = reflColumns.pop('Timetag2')
                         
         badTimes = []
-        for indx, timeTag in enumerate(rrsTime):                        
+        for indx, timeTag in enumerate(reflTime):                        
             # If any spectra in the vis are negative, delete the whole spectrum
             VIS = [400,700]            
-            rrsVIS = []
+            reflVIS = []
             wavelengths = []
-            for wave in rrsColumns:
+            for wave in reflColumns:
                 wavelengths.append(float(wave))
                 if float(wave) > VIS[0] and float(wave) < VIS[1]:
-                    rrsVIS.append(rrsColumns[wave][indx])
+                    reflVIS.append(reflColumns[wave][indx])
                 # elif float(wave) > NIR[0] and float(wave) < NIR[1]:
                 #     ltNIR.append(ltColumns[wave][indx])
 
             # Flag entire record for removal
-            if any(item < 0 for item in rrsVIS):
+            if any(item < 0 for item in reflVIS):
                 badTimes.append(timeTag)
+
             # Set negatives to 0
             NIR = [701,max(wavelengths)]
             UV = [min(wavelengths),399]
-            for wave in rrsColumns:
+            for wave in reflColumns:
                 if ((float(wave) >= UV[0] and float(wave) < UV[1]) or \
                             (float(wave) >= NIR[0] and float(wave) < NIR[1])) and \
-                            rrsColumns[wave][0] < 0:
-                    rrsColumns[wave] = [0]
+                            reflColumns[wave][indx] < 0:
+                    reflColumns[wave][indx] = 0
                             
         badTimes = np.unique(badTimes)
-        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
-        msg = f'{len(np.unique(badTimes))/len(rrsTime)*100:.1f}% of spectra flagged'
+        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements (start, stop)
+        msg = f'{len(np.unique(badTimes))/len(reflTime)*100:.1f}% of {field} spectra flagged'
         print(msg)
         Utilities.writeLogFile(msg) 
 
-        rrsColumns['Datetag'] = rrsDate
-        rrsColumns['Timetag2'] = rrsTime
+        # Need to add these at the beginning of the ODict
+        reflColumns['Datetag'] = reflDate
+        reflColumns['Timetag2'] = reflTime
+        reflColumns.move_to_end('Timetag2', last=False)
+        reflColumns.move_to_end('Datetag', last=False)
+
+        reflData.columnsToDataset()        
+
         if len(badTimes) == 0:
             badTimes = None
         return badTimes
@@ -1271,37 +1281,7 @@ class ProcessL2:
                 newRrsData.columns[k].append(rrsSlice[k])
             for k in nLwSlice:
                 newnLwData.columns[k].append(nLwSlice[k])   
-
-        # Filter reflectances for negative spectra  
-        '''TO DO
-            # Need to remove negative spectra
-            # What should the criteria be?
-            # 1) Any spectrum that has any negative values between
-            #  380 - 700ish, remove the entire spectrum. Otherwise, 
-            # set negative bands to 0.
-            # This should probably wait until further analysis to see
-            # how much overcorrecting is being done by the SimSpec NIR
-            # correction. '''
-        if ConfigFile.settings["bL2NegativeSpec"]:
-            msg = "Filtering reflectance spectra for negative values."
-            print(msg)
-            Utilities.writeLogFile(msg)
-            badTimes = ProcessL2.negReflectance(newReflectanceGroup)
-                
-            if badTimes is not None:
-                print('Removing records...')
-                check = ProcessL2.filterData(newReflectanceGroup, badTimes)   
-                if check == 0:
-                    msg = "No spectra remaining. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False                  
-                ProcessL2.filterData(newRadianceGroup, badTimes)
-                ProcessL2.filterData(newIrradianceGroup, badTimes)
-                ProcessL2.filterData(ancGroup, badTimes)
         
-
-
         newESData.columnsToDataset()   
         newLIData.columnsToDataset()
         newLTData.columnsToDataset()
@@ -1639,13 +1619,49 @@ class ProcessL2:
                 if not ProcessL2.calculateREFLECTANCE2(root,sasGroup, referenceGroup, ancGroup, start, end):
                     msg = 'ProcessL2.calculateREFLECTANCE2 ender failed. Abort.'
                     print(msg)
-                    Utilities.writeLogFile(msg)                      
+                    Utilities.writeLogFile(msg)    
+
+        # Filter reflectances for negative spectra  
+        ''' # 1) Any spectrum that has any negative values between
+            #  380 - 700ish, remove the entire spectrum. Otherwise, 
+            # set negative bands to 0.
+            # This should probably wait until further analysis to see
+            # how much overcorrecting is being done by the SimSpec NIR
+            # correction. '''
+        if ConfigFile.settings["bL2NegativeSpec"]:
+            msg = "Filtering reflectance spectra for negative values."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            newReflectanceGroup = root.groups[0]
+            badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs')
+            badTimes2 = ProcessL2.negReflectance(newReflectanceGroup, 'nLw')
+
+            if badTimes1 is not None and badTimes2 is not None:
+                badTimes = np.append(badTimes1,badTimes2, axis=0)
+            elif badTimes1 is not None:
+                badTimes = badTimes1
+            elif badTimes2 is not None:
+                badTimes = badTimes2
+                
+            if badTimes is not None:
+                print('Removing records...')               
+                
+                check = ProcessL2.filterData(newReflectanceGroup, badTimes)
+                if check == 0:
+                    msg = "No spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False                  
+                ProcessL2.filterData(root.groups[1], badTimes)
+                ProcessL2.filterData(root.groups[2], badTimes)
+                ProcessL2.filterData(root.groups[3], badTimes)        
+
         return True
     
     @staticmethod
     def processL2(node, ancillaryData=None):
         '''Calculates Rrs and nLw after quality checks and filtering, glint removal, residual 
-            subtraction. Weights for satellite bands, and outputs plots and SeaBASS data'''
+            subtraction. Weights for satellite bands, and outputs plots and SeaBASS tasetta'''
 
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
