@@ -3,6 +3,7 @@ import csv
 import os
 import datetime
 import numpy as np
+import time
 
 from HDFRoot import HDFRoot
 from SeaBASSHeader import SeaBASSHeader
@@ -27,9 +28,15 @@ class SeaBASSWriter:
         if level == '2':
             referenceGroup = node.getGroup("IRRADIANCE")
             esData = referenceGroup.getDataset("ES")
+            ancillaryGroup = node.getGroup("ANCILLARY")
+            wind = ancillaryGroup.getDataset("WINDSPEED")
+            wind.datasetToColumns()
+            winCol = wind.columns["WINDSPEED"]
+            aveWind = np.nanmean(winCol)
 
         headerBlock['original_file_name'] = node.attributes['RAW_FILE_NAME']
         headerBlock['data_file_name'] = os.path.split(fp)[1]
+        headerBlock["comments"] = headerBlock["comments"] + f'\n! DateTime Processed = {time.asctime()}'
 
         # Convert Dates and Times
         dateDay = esData.data['Datetag'].tolist()
@@ -70,6 +77,8 @@ class SeaBASSWriter:
             headerBlock['east_longitude'] = eastLon
         if headerBlock['west_longitude'] is '':
             headerBlock['west_longitude'] = westLon
+        if level == 2:
+            headerBlock['wind_speed'] = aveWind
         
         return headerBlock
 
@@ -251,30 +260,6 @@ class SeaBASSWriter:
             outFile.write(f'{line}\n')
         
         outFile.close()
-
-        # # Create output directory
-        # csvdir = os.path.join(dirpath, 'csv')
-        # os.makedirs(csvdir, exist_ok=True)
-
-        # # Write csv file
-        # filename = name + "_" + sensorName + "_" + level
-        # csvPath = os.path.join(csvdir, filename + ".csv")
-        # #np.savetxt(csvPath, data, delimiter=',')
-        # with open(csvPath, 'w') as f:
-        #     writer = csv.writer(f)
-        #     writer.writerows(data)
-
-    # @staticmethod
-    # def outputTXT_L3(fp):
-    #     print('Writing type 3 SeaBASS file')
-    #     SeaBASSWriter.outputTXT_Type1e(fp, "L3")
-
-    # @staticmethod
-    # def outputTXT_L4(fp):
-    #     print('Writing type 4 SeaBASS file')
-    #     SeaBASSWriter.outputTXT_Type2(fp, "L4")
-    # #     SeaBASSWriter.outputTXT_Type2(fp, "L4-flags")
-
 
     # Convert Level 3 data to SeaBASS file
     @staticmethod

@@ -3,6 +3,7 @@ import collections
 import json
 import os
 import shutil
+# import time
 
 from ConfigFile import ConfigFile
 
@@ -86,11 +87,12 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["end_date"] = ''     
         SeaBASSHeader.settings["start_time"] = ''
         SeaBASSHeader.settings["end_time"] = ''
+
         SeaBASSHeader.settings["north_latitude"] = ''
         SeaBASSHeader.settings["south_latitude"] = ''
         SeaBASSHeader.settings["east_longitude"] = ''                        
         SeaBASSHeader.settings["west_longitude"] = ''
-        SeaBASSHeader.settings["wind_speed"] = 'NA'
+        SeaBASSHeader.settings["wind_speed"] = ''
 
         # This will update subsequently from the ConfigFile on demand        
         if ConfigFile.settings["bL1aCleanSZA"]:
@@ -182,6 +184,7 @@ class SeaBASSHeader:
             f'! Default SST = {ConfigFile.settings["fL2DefaultSST"]}\n'+\
             f'! NIR Correction = {NIRFilt}\n'+\
             f'! Remove Negatives = {NegativeFilt}'
+            # f'! Processing DateTime = {time.asctime()}'
 
         SeaBASSHeader.settings["other_comments"] = f'!\n'\
             '! Other comments...\n'\
@@ -230,26 +233,14 @@ class SeaBASSHeader:
         seaBASSHeaderPath = os.path.join("Config", filename)
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.filename = filename
-            calibrationPath = ConfigFile.getCalibrationDirectory()
             os.remove(seaBASSHeaderPath)
-            # shutil.rmtree(calibrationPath)
-        
+            # shutil.rmtree(calibrationPath)        
 
     @staticmethod
     def refreshCalibrationFiles():
         print("SeaBASSHeader - refreshCalibrationFiles")
         calibrationPath = ConfigFile.getCalibrationDirectory()
         files = os.listdir(calibrationPath)
-
-        # newCalibrationFiles = {}
-        # calibrationFiles = ConfigFile.settings["CalibrationFiles"]
-        
-        # for file in files:
-        #     if file in calibrationFiles:
-        #         newCalibrationFiles[file] = calibrationFiles[file]
-        #     else:
-        #         newCalibrationFiles[file] = {"enabled": 0, "frameType": "Not Required"}
-
         SeaBASSHeader.settings["calibration_files"] = (','.join(files))
     
 

@@ -1,6 +1,7 @@
 import os
 import shutil
 from PyQt5 import QtCore, QtGui, QtWidgets
+# import time
 
 
 from SeaBASSHeader import SeaBASSHeader
@@ -98,27 +99,29 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         water_depthLabel = QtWidgets.QLabel("water_depth (use -999 for missing)", self)
         self.water_depthLineEdit = QtWidgets.QLineEdit(self)
         self.water_depthLineEdit.setText(str(SeaBASSHeader.settings["water_depth"]))
-        self.water_depthLineEdit.setValidator(doubleValidator)
+        ''' doubleValidator causing a block to data entry'''
+        # self.water_depthLineEdit.setValidator(doubleValidator)
 
         measurement_depthLabel = QtWidgets.QLabel("measurement_depth", self)
         self.measurement_depthLineEdit = QtWidgets.QLineEdit(self)
         self.measurement_depthLineEdit.setText(str(SeaBASSHeader.settings["measurement_depth"]))
-        self.measurement_depthLineEdit.setValidator(doubleValidator)
+        # self.measurement_depthLineEdit.setValidator(doubleValidator)
 
         cloud_percentLabel = QtWidgets.QLabel("cloud_percent", self)
         self.cloud_percentLineEdit = QtWidgets.QLineEdit(self)
         self.cloud_percentLineEdit.setText(str(SeaBASSHeader.settings["cloud_percent"]))
-        self.cloud_percentLineEdit.setValidator(intValidator)
+        ''' intValidator causing block to data entry '''
+        # self.cloud_percentLineEdit.setValidator(intValidator)
         
         wave_heightLabel = QtWidgets.QLabel("wave_height", self)
         self.wave_heightLineEdit = QtWidgets.QLineEdit(self)
         self.wave_heightLineEdit.setText(str(SeaBASSHeader.settings["wave_height"]))
-        self.wave_heightLineEdit.setValidator(doubleValidator)
+        # self.wave_heightLineEdit.setValidator(doubleValidator)
 
         secchi_depthLabel = QtWidgets.QLabel("secchi_depth", self)
         self.secchi_depthLineEdit = QtWidgets.QLineEdit(self)
         self.secchi_depthLineEdit.setText(str(SeaBASSHeader.settings["secchi_depth"]))
-        self.secchi_depthLineEdit.setValidator(doubleValidator)
+        # self.secchi_depthLineEdit.setValidator(doubleValidator)
 
         #############################
         commentsLabel = QtWidgets.QLabel("Config Comments (lead with !)", self)
@@ -167,27 +170,27 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         north_latitudeLabel = QtWidgets.QLabel("north_latitude [dec deg]", self)
         self.north_latitudeLineEdit = QtWidgets.QLineEdit(self)
         self.north_latitudeLineEdit.setText(str(SeaBASSHeader.settings["north_latitude"]))
-        self.north_latitudeLineEdit.setValidator(doubleValidator)
+        # self.north_latitudeLineEdit.setValidator(doubleValidator)
 
         south_latitudeLabel = QtWidgets.QLabel("south_latitude", self)
         self.south_latitudeLineEdit = QtWidgets.QLineEdit(self)
         self.south_latitudeLineEdit.setText(str(SeaBASSHeader.settings["south_latitude"]))
-        self.south_latitudeLineEdit.setValidator(doubleValidator)
+        # self.south_latitudeLineEdit.setValidator(doubleValidator)
 
         east_longitudeLabel = QtWidgets.QLabel("east_longitude", self)
         self.east_longitudeLineEdit = QtWidgets.QLineEdit(self)
         self.east_longitudeLineEdit.setText(str(SeaBASSHeader.settings["east_longitude"]))
-        self.east_longitudeLineEdit.setValidator(doubleValidator)
+        # self.east_longitudeLineEdit.setValidator(doubleValidator)
 
         west_longitudeLabel = QtWidgets.QLabel("west_longitude", self)
         self.west_longitudeLineEdit = QtWidgets.QLineEdit(self)
         self.west_longitudeLineEdit.setText(str(SeaBASSHeader.settings["west_longitude"]))
-        self.west_longitudeLineEdit.setValidator(doubleValidator)
+        # self.west_longitudeLineEdit.setValidator(doubleValidator)
 
         wind_speedLabel = QtWidgets.QLabel("wind_speed (only autopopulated at L4)", self)
         self.wind_speedLineEdit = QtWidgets.QLineEdit(self)
         self.wind_speedLineEdit.setText(str(SeaBASSHeader.settings["wind_speed"]))
-        self.wind_speedLineEdit.setValidator(doubleValidator)       
+        # self.wind_speedLineEdit.setValidator(doubleValidator)       
         ##
 
         self.saveButton = QtWidgets.QPushButton("Save")
@@ -446,7 +449,10 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         else:
             rhoCorr = f"DefaultRho"
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
-            NIRFilt = "On"
+            if ConfigFile.settings["bL2SimpleNIRCorrection"]:
+                NIRFilt = "Hooker2003"
+            else:
+                NIRFilt = "Ruddick2006"
         else: 
             NIRFilt = "Off"
         if ConfigFile.settings["bL2NegativeSpec"]:
@@ -496,6 +502,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! Default SST = {ConfigFile.settings["fL2DefaultSST"]}\n'+\
             f'! NIR Correction = {NIRFilt}\n'+\
             f'! Remove Negatives = {NegativeFilt}'
+            # f'! Processing DateTime = {time.asctime()}'
 
         self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
         self.commentsLineEdit.update()
@@ -536,7 +543,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.settings["south_latitude"] = self.south_latitudeLineEdit.text()
         SeaBASSHeader.settings["east_longitude"] = self.east_longitudeLineEdit.text()
         SeaBASSHeader.settings["west_longitude"] = self.west_longitudeLineEdit.text()                
-        SeaBASSHeader.settings["wind_speed"] = self.wind_speedLineEdit.text()        
+        SeaBASSHeader.settings["wind_speed"] = self.wind_speedLineEdit.text()  
+
         SeaBASSHeader.settings["comments"] = self.commentsLineEdit.toPlainText()
         SeaBASSHeader.settings["other_comments"] = self.other_commentsLineEdit.toPlainText()
 
@@ -555,11 +563,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
                 self.name = self.name + ".hdr"            
 
             self.nameLabel.update()
-            SeaBASSHeaderWindow.saveButtonPressed(self) 
-                      
-
-
-
+            SeaBASSHeaderWindow.saveButtonPressed(self)                       
 
     def cancelButtonPressed(self):
         print("SeaBASSWindow - Cancel Pressed")
