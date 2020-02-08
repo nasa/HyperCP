@@ -5,9 +5,10 @@ HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE m
 Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>\
 Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
-## Version
-1.0.b;
-While this version has been substantially updated from 1.0.a to (among other things) better accomodate a standard format into which data from above water radiometry suites other than HyperSAS/SolarTracker can be assimilated, the instrumentation available on the market today is highly varied. Therefore, we would appreciate any feedback from the community regarding the instruments and data formats you are interested in seeing implemented in HyperInSPACE in the future.
+## Version 1.0.β;
+
+While this version has been substantially updated from 1.0.α to (among other things) better accomodate a standard format into which data from above water radiometry suites other than HyperSAS/SolarTracker can be assimilated, the instrumentation available on the market today is highly varied. Therefore, we would appreciate any feedback from the community regarding the instruments and data formats you are interested in seeing implemented in HyperInSPACE in the future.
+
 ---
 ```
                  NASA Goddard Space Flight Center (GSFC) 
@@ -30,7 +31,7 @@ While this version has been substantially updated from 1.0.a to (among other thi
 Requires Python 3.X is installed on a Linux, MacOS, or Windows computer. The Anaconda distribution is encouraged. A nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. The Zhang (et al. 2017) sky/sunglint correction also requires Xarray (instructions here: http://xarray.pydata.org/en/stable/installing.html). Utilization of GMAO atmospheric models for use in the Zhang 2017 glint correction and filling in environmental conditions not otherwise provided in field logs will now require a user account on the NASA EARTHDATA server. New profiles can be created here: https://urs.earthdata.nasa.gov/users/new
 
 
-Save this entire HyperInSPACE file repository to a convenient, sensibly named directory on your computer such  as Users/yourname/HyperInSPACE/. When Main.py is launched for the first time, data and directories within this location will be updated as described below.
+Save this entire HyperInSPACE file repository (~2.5 GB) to a convenient, sensibly named directory on your computer such  as Users/yourname/HyperInSPACE/. When Main.py is launched for the first time, data and directories within this location will be updated as described below.
 
 HyperInSPACE is a Main-View-Controller Python package that can be launched in several ways to run the Main.py module, such as by navigating to the program folder on the command line and typing the following command:
 ```
