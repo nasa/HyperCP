@@ -548,6 +548,7 @@ class Utilities:
 
         total = Data.data.shape[0]
         maxRad = 0
+        minRad = 0
         cmap = cm.get_cmap("jet")
         color=iter(cmap(np.linspace(0,1,total)))
 
@@ -612,6 +613,14 @@ class Utilities:
                 maxRad = 20
             if rType == 'LT' and maxRad > 2:
                 maxRad = 2
+            if min(y) < minRad:
+                minRad = min(y)-0.1*min(y)
+            if rType == 'LI':
+                minRad = 0
+            if rType == 'LT':
+                minRad = 0
+            if rType == 'ES':
+                minRad = 0
 
             # Plot the Hyperspectral spectrum
             plt.plot(wave, y, 'k', c=c, zorder=-1)
@@ -674,7 +683,7 @@ class Utilities:
         axes = plt.gca()
         axes.set_title(filename, fontdict=font)
         # axes.set_xlim([390, 800])
-        axes.set_ylim([0, maxRad])
+        axes.set_ylim([minRad, maxRad])
         
         plt.xlabel('wavelength (nm)', fontdict=font)
         plt.ylabel(rType, fontdict=font)
