@@ -496,7 +496,6 @@ class Utilities:
                     wave.append(float(k))
         
         # Satellite Bands
-        ''' For some reason only one set of satellite bands plots.'''
         x_MODISA = []
         wave_MODISA = []
         if ConfigFile.settings['bL2WeightMODISA'] and (rType == 'Rrs' or rType == 'nLw'):
@@ -629,7 +628,6 @@ class Utilities:
                 plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.2, c=c, zorder=-1)
 
             # Satellite Bands
-            ''' For some reason, only one set of satellite bands is plotted'''
             if ConfigFile.settings['bL2WeightMODISA']:
                 # Plot the MODISA spectrum                                
                 if plotDelta:
@@ -690,6 +688,7 @@ class Utilities:
         verticalalignment='top', horizontalalignment='right',
         transform=axes.transAxes,
         color='black', fontdict=font)
+        axes.grid()
 
         # plt.show() # --> QCoreApplication::exec: The event loop is already running
 

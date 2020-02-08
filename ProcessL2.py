@@ -1272,15 +1272,29 @@ class ProcessL2:
                 if ρ1 < threshold:
                     ε = (α1*ρ2 - ρ1)/(α1-1)
                     ε = ε/np.pi # convert to Rrs units
-                    εnLw = (α1*ρ2*F02 - ρ1*F01)/(α1-1) # convert to nLw units
+                    εnLw = (α1*ρ2*F02/np.pi - ρ1*F01/np.pi)/(α1-1) # convert to nLw units
+                    msg = f'offset(rrs) = {ε}; offset(nLw) = {εnLw}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)  
                 else:
+                    msg = "SimSpec threshold tripped. Using 780/870 instead."
+                    print(msg)
+                    Utilities.writeLogFile(msg)  
                     ε = (α2*ρ3 - ρ2)/(α2-1)
                     ε = ε/np.pi # convert to Rrs units
-                    εnLw = (α2*ρ3*F03 - ρ2*F02)/(α2-1) # convert to nLw units              
+                    εnLw = (α2*ρ3*F03/np.pi - ρ2*F02/np.pi)/(α2-1) # convert to nLw units              
+                    msg = f'offset(rrs) = {ε}; offset(nLw) = {εnLw}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)  
                 for k in rrsSlice:
-                    rrsSlice[k] -= ε
+                    ''' There seems to be some confusion in the Ruddick 2005 SPIE paper.
+                    By this method, ε is (and should be) negative, and so must be added 
+                    rather than subtracted.''' 
+                    # rrsSlice[k] -= ε
+                    rrsSlice[k] += ε
                     newRrsData.columns[k].append(rrsSlice[k])
-                    rrsSlice[k] -= εnLw
+                    # nLwSlice[k] -= εnLw
+                    nLwSlice[k] += εnLw
                     newnLwData.columns[k].append(nLwSlice[k])                   
         else:            
             for k in rrsSlice:
