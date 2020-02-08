@@ -435,7 +435,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.RhoRadioButtonZhang.setDisabled(1)
         self.RhoRadioButtonZhang.clicked.connect(self.l2RhoRadioButtonZhangClicked)
 
-        self.RhoRadioButtonDefault = QtWidgets.QRadioButton("Default Rho")
+        self.RhoRadioButtonDefault = QtWidgets.QRadioButton("Mobley 1999 Rho")
         self.RhoRadioButtonDefault.setAutoExclusive(False)
         if ConfigFile.settings["bL2DefaultRho"]==1:
             self.RhoRadioButtonDefault.setChecked(True)
