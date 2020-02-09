@@ -447,7 +447,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         elif ConfigFile.settings["bL2ZhangRho"]:
             rhoCorr = "Zhang2017"
         else:
-            rhoCorr = f"DefaultRho"
+            rhoCorr = f"Mobley1999"
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
             if ConfigFile.settings["bL2SimpleNIRCorrection"]:
                 NIRFilt = "Hooker2003"
