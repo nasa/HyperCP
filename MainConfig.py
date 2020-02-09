@@ -10,7 +10,7 @@ class MainConfig:
     # Saves the cfg file
     @staticmethod
     def saveConfig(fileName):
-        print("ConfigFile - Save Config")        
+        print("ConfigFile - Save Config")              
         jsn = json.dumps(MainConfig.settings)
         fp = os.path.join("Config", fileName)
 

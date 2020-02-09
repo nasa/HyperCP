@@ -342,7 +342,7 @@ class ProcessL2:
         aodDataset = ancGroup.addDataset("AOD")
         saltDataset = ancGroup.addDataset("SAL")
         sstDataset = ancGroup.addDataset("SST")
-        ancGroup.copyAttributes(ancData)        
+        # ancGroup.copyAttributes(ancData)        
 
         # Convert radData date and time to datetime and then to seconds for interpolation
         radTime = radData.data["Timetag2"].tolist()
@@ -353,6 +353,7 @@ class ProcessL2:
             radSeconds.append((radDatetime[i]-epoch).total_seconds())
         
         if ancData:
+            ancGroup.copyAttributes(ancData)    
             # These are the entire ancillary records for the cruise
             dateTime = ancData.getColumn("DATETIME")[0]
             wind = ancData.getColumn("WINDSPEED")[0]

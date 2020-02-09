@@ -308,6 +308,7 @@ class Window(QtWidgets.QWidget):
     def windRemoveButtonPressed(self):
         print("Wind File Remove Dialogue")
         self.windFileLineEdit.setText("")
+        MainConfig.settings["metFile"] = ""
 
     def processSingle(self, level):
         print("Process Single-Level")
@@ -382,8 +383,8 @@ class Window(QtWidgets.QWidget):
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
 
         if reply == QtWidgets.QMessageBox.Yes:
-            event.accept()
             MainConfig.saveConfig(MainConfig.fileName)
+            event.accept()            
         else:
             event.ignore()
 

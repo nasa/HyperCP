@@ -549,6 +549,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.settings["other_comments"] = self.other_commentsLineEdit.toPlainText()
 
         SeaBASSHeader.saveSeaBASSHeader(self.name)
+        print(SeaBASSHeader.settings["comments"])
 
         QtWidgets.QMessageBox.about(self, "Edit SeaBASSHeader File", "SeaBASSHeader File Saved")
         self.close()

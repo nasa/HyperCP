@@ -512,12 +512,12 @@ class ProcessL1c:
                     if relAzimuthAngle > relAzimuthMax or relAzimuthAngle < relAzimuthMin or math.isnan(relAzimuthAngle):   
                         i += 1                              
                         if start == -1:
-                            # print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle)))
+                            print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle)))
                             start = index
                         stop = index                                
                     else:                                
                         if start != -1:
-                            # print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle)))
+                            print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle)))
                             startstop = [timeStamp[start],timeStamp[stop]]
                             msg = f'   Flag data from TT2: {startstop[0]}  to {startstop[1]} (HHMMSSMSS)'
                             # print(msg)
