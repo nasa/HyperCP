@@ -223,7 +223,7 @@ class ConfigFile:
     def deleteConfig(filename):
         print("ConfigFile - Delete Config")
         configPath = os.path.join("Config", filename)
-        if ConfigFile.settings["seaBASSHeaderFileName"]:
+        if "seaBASSHeaderFileName" in ConfigFile.settings:
             seaBassConfig = os.path.join("Config", ConfigFile.settings["seaBASSHeaderFileName"])
             if os.path.isfile(seaBassConfig):
                 os.remove(seaBassConfig)

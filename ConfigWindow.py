@@ -3,7 +3,8 @@ import os
 import shutil
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-
+from MainConfig import MainConfig
+# from Main import Window
 from ConfigFile import ConfigFile
 from AnomalyDetection import AnomalyDetection
 from SeaBASSHeader import SeaBASSHeader
@@ -1704,9 +1705,10 @@ class ConfigWindow(QtWidgets.QDialog):
                         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
 
                 if reply == QtWidgets.QMessageBox.Yes:
-
                     # Change Main window Config File selection
-                    
+                    MainConfig.settings["cfgFile"] = ConfigFile.filename                                    
+                    '''TO DO: Pass signal to MainWindow to update the Config file selection'''
+                    # Window.comboBox1Changed(self,ConfigFile.filename)
                     self.close()
                 else:
                     note = QtWidgets.QMessageBox()

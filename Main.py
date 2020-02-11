@@ -238,6 +238,9 @@ class Window(QtWidgets.QWidget):
 
     def comboBox1Changed(self,value):
         MainConfig.settings["cfgFile"] = value
+        '''TO DO: Force the combo box to be on the value'''
+        index = self.configComboBox.findText(MainConfig.settings["cfgFile"])
+        self.configComboBox.setCurrentIndex(index)
         print("MainConfig: Configuration file changed to: ", value)    
 
     def configNewButtonPressed(self):
@@ -257,8 +260,9 @@ class Window(QtWidgets.QWidget):
             ConfigFile.loadConfig(configFileName)
             configDialog = ConfigWindow(configFileName, inputDir, self)
             configDialog.show()
-            # ToDo: Add code to change text for the combobox once file is edited in case of a SaveAs           
-            MainConfig.settings["cfgFile"] = ConfigFile.filename
+
+            '''ToDo: Capture signal from Config window to update the config file in main window'''
+            
         else:
             message = "Not a Config File: " + configFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
@@ -391,21 +395,28 @@ class Window(QtWidgets.QWidget):
             event.ignore()
 
     def singleL1aClicked(self):
+        ''' Sneaky work around until I can pass signals btw. windows'''
+        Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L1A")
 
-    def singleL1bClicked(self):
+    def singleL1bClicked(self):        
+        Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L1B")
 
     def singleL1cClicked(self):
+        Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L1C")
 
     def singleL1dClicked(self):
+        Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L1D")
 
     def singleL1eClicked(self):
+        Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L1E")      
 
     def singleL2Clicked(self):
+        Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L2")   
 
     def processMulti(self, level):
@@ -450,6 +461,8 @@ class Window(QtWidgets.QWidget):
 
 
     def multi2Clicked(self):
+        ''' Sneaky work around until I can pass signals btw. windows'''
+        Window.comboBox1Changed(self,ConfigFile.filename)
         self.processMulti(2)
 
     def popQueryCheckBoxUpdate(self):
