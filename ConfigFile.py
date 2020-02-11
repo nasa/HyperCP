@@ -104,6 +104,10 @@ class ConfigFile:
     def createDefaultConfig(name):
         print("ConfigFile - Create Default Config")
 
+        if not name.endswith(".cfg"):
+            name = name + ".cfg"
+        ConfigFile.filename = name
+
         ConfigFile.settings["CalibrationFiles"] = {}
 
         ConfigFile.settings["bL1aCleanSZA"] = 0
@@ -131,7 +135,7 @@ class ConfigFile:
         ConfigFile.settings["fL1eInterpInterval"] = 3.5 # Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1ePlotTimeInterp"] = 0
         ConfigFile.settings["bL1eSaveSeaBASS"] = 0
-        ConfigFile.settings["seaBASSHeaderFileName"] = None
+        ConfigFile.settings["seaBASSHeaderFileName"] = os.path.splitext(name)[0] + ".hdr" # 
 
         ConfigFile.settings["bL2pGetAnc"] = 0
         ConfigFile.settings["bL2pObpgCreds"] = 0
@@ -183,10 +187,7 @@ class ConfigFile:
         ConfigFile.settings["bL2PlotLi"] = 0
         ConfigFile.settings["bL2PlotLt"] = 0
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
-
-        if not name.endswith(".cfg"):
-            name = name + ".cfg"
-        ConfigFile.filename = name
+        
         ConfigFile.saveConfig(name)
 
 
@@ -222,11 +223,16 @@ class ConfigFile:
     def deleteConfig(filename):
         print("ConfigFile - Delete Config")
         configPath = os.path.join("Config", filename)
+        if ConfigFile.settings["seaBASSHeaderFileName"]:
+            seaBassConfig = os.path.join("Config", ConfigFile.settings["seaBASSHeaderFileName"])
+            if os.path.isfile(seaBassConfig):
+                os.remove(seaBassConfig)
         if os.path.isfile(configPath):
             ConfigFile.filename = filename
             calibrationPath = ConfigFile.getCalibrationDirectory()
             os.remove(configPath)
             shutil.rmtree(calibrationPath)
+        
         
 
     @staticmethod

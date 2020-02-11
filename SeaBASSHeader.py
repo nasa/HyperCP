@@ -142,7 +142,10 @@ class SeaBASSHeader:
         else: 
             NegativeFilt = "Off"
 
+        ''' TO DO: Update the version dynamically'''
         SeaBASSHeader.settings["comments"] =\
+            f'! HyperInSPACE vers = 1.0.b\n'+\
+            f'! HyperInSPACE Config = {ConfigFile.filename}\n'+\
             f'! SZA Filter = {szaFilt}\n'+\
             f'! SZA Max = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
             f'! Rotator Home Angle = {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'+\

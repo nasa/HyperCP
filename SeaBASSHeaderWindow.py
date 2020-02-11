@@ -22,8 +22,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         # print("ConfigWindow - initUI")
         #self.label = QtWidgets.QLabel("Popup", self)
 
-        intValidator = QtGui.QIntValidator()
-        doubleValidator = QtGui.QDoubleValidator()
+        # intValidator = QtGui.QIntValidator()
+        # doubleValidator = QtGui.QDoubleValidator()
 
         self.nameLabel = QtWidgets.QLabel(f'Editing: {self.name}', self)
         linkSeaBASSLabel = QtWidgets.QLabel(
@@ -193,12 +193,14 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         # self.wind_speedLineEdit.setValidator(doubleValidator)       
         ##
 
+        self.openButton = QtWidgets.QPushButton("Open/Copy")
         self.saveButton = QtWidgets.QPushButton("Save")
-        self.saveAsButton = QtWidgets.QPushButton("Save As")
+        # self.saveAsButton = QtWidgets.QPushButton("Save As")
         self.cancelButton = QtWidgets.QPushButton("Cancel")                      
             
+        self.openButton.clicked.connect(self.openButtonPressed)
         self.saveButton.clicked.connect(self.saveButtonPressed)
-        self.saveAsButton.clicked.connect(self.saveAsButtonPressed)
+        # self.saveAsButton.clicked.connect(self.saveAsButtonPressed)
         self.cancelButton.clicked.connect(self.cancelButtonPressed)
 
         # ####################################################################################
@@ -393,8 +395,9 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         # Save/Cancel
         saveHBox = QtWidgets.QHBoxLayout()
         saveHBox.addStretch(1)
+        saveHBox.addWidget(self.openButton)
         saveHBox.addWidget(self.saveButton)
-        saveHBox.addWidget(self.saveAsButton)
+        # saveHBox.addWidget(self.saveAsButton)
         saveHBox.addWidget(self.cancelButton)
 
         # Adds hBox and saveHBox to primary VBox 
@@ -460,7 +463,10 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         else: 
             NegativeFilt = "Off"
 
+        ''' TO DO: Update the version dynamically'''
         SeaBASSHeader.settings["comments"] =\
+            f'! HyperInSPACE vers = 1.0.b\n'+\
+            f'! HyperInSPACE Config = {ConfigFile.filename}\n'+\
             f'! SZA Filter = {szaFilt}\n'+\
             f'! SZA Max = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
             f'! Rotator Home Angle = {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'+\
@@ -508,6 +514,22 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.commentsLineEdit.update()
 
         # print(SeaBASSHeader.settings["comments"])
+
+    def openButtonPressed(self):
+        print('SeaBASSHeaderWindow - Open/Copy Pressed')
+
+        # fileToCopy, ok = QtWidgets.QInputDialog.getText(self, 'Save As SeaBASS Header File', 'Enter File Name')
+        caption =  "Select .hdr File to Copy"
+        directory = "Config"
+        fpfToCopy, ok = QtWidgets.QFileDialog.getOpenFileNames(self,caption,directory,filter="*.hdr")
+        (_, fileToCopy) = os.path.split(fpfToCopy[0])
+        if ok:
+            print("Copying SeaBASS Header: ", fileToCopy)
+            SeaBASSHeader.loadSeaBASSHeader(fileToCopy)
+
+            # How to refresh...
+            SeaBASSHeaderWindow.refreshWindow(self)
+
        
     def saveButtonPressed(self):
         print("SeaBASSHeaderWindow - Save Pressed")        
@@ -549,22 +571,49 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.settings["other_comments"] = self.other_commentsLineEdit.toPlainText()
 
         SeaBASSHeader.saveSeaBASSHeader(self.name)
-        print(SeaBASSHeader.settings["comments"])
+        # print(SeaBASSHeader.settings["comments"])
 
         QtWidgets.QMessageBox.about(self, "Edit SeaBASSHeader File", "SeaBASSHeader File Saved")
         self.close()
 
-    def saveAsButtonPressed(self):
-        print("ConfigWindow - Save As Pressed")
-        self.name, ok = QtWidgets.QInputDialog.getText(self, 'Save As SeaBASS Header File', 'Enter File Name')
-        if ok:
-            print("Create SeaBASS Header: ", self.name)
+    def refreshWindow(self):
+        print("SeaBASSHeaderWindow - refreshWindow")
+        
+        self.investigatorsLineEdit.setText(str(SeaBASSHeader.settings["investigators"]))
+        self.affiliationsLineEdit.setText(str(SeaBASSHeader.settings["affiliations"]))
+        self.contactLineEdit.setText(str(SeaBASSHeader.settings["contact"]))
+        self.experimentLineEdit.setText(str(SeaBASSHeader.settings["experiment"]))
+        self.cruiseLineEdit.setText(str(SeaBASSHeader.settings["cruise"]))
+        self.stationLineEdit.setText(str(SeaBASSHeader.settings["station"]))
+        self.documentsLineEdit.setText(str(SeaBASSHeader.settings["documents"]))
+        self.instrument_manufacturerLineEdit.setText(str(SeaBASSHeader.settings["instrument_manufacturer"]))
+        self.instrument_modelLineEdit.setText(str(SeaBASSHeader.settings["instrument_model"]))
+        self.calibration_dateLineEdit.setText(str(SeaBASSHeader.settings["calibration_date"]))
+        self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
+        self.other_commentsLineEdit.setText(SeaBASSHeader.settings["other_comments"])
 
-            if not self.name.endswith(".hdr"):
-                self.name = self.name + ".hdr"            
+        # # These will always be refreshed from the ConfigFile
+        # SeaBASSHeader.refreshCalibrationFiles()
+        # self.calibration_filesLineEdit.setText(str(SeaBASSHeader.settings["calibration_files"]))
+        # self.data_typeLineEdit.setText(str(SeaBASSHeader.settings["data_type"]))
+        # self.data_statusLineEdit.setText(str(SeaBASSHeader.settings["data_status"]))
+        # self.water_depthLineEdit.setText(str(SeaBASSHeader.settings["water_depth"]))
+        # self.measurement_depthLineEdit.setText(str(SeaBASSHeader.settings["measurement_depth"]))
+        # self.cloud_percentLineEdit.setText(str(SeaBASSHeader.settings["cloud_percent"]))
+        # self.wave_heightLineEdit.setText(str(SeaBASSHeader.settings["wave_height"]))
+        # self.secchi_depthLineEdit.setText(str(SeaBASSHeader.settings["secchi_depth"]))
+        
+    # def saveAsButtonPressed(self):
+    #     print("ConfigWindow - Save As Pressed")
+    #     self.name, ok = QtWidgets.QInputDialog.getText(self, 'Save As SeaBASS Header File', 'Enter File Name')
+    #     if ok:
+    #         print("Create SeaBASS Header: ", self.name)
 
-            self.nameLabel.update()
-            SeaBASSHeaderWindow.saveButtonPressed(self)                       
+    #         if not self.name.endswith(".hdr"):
+    #             self.name = self.name + ".hdr"            
+
+    #         self.nameLabel.update()
+    #         SeaBASSHeaderWindow.saveButtonPressed(self)                       
 
     def cancelButtonPressed(self):
         print("SeaBASSWindow - Cancel Pressed")

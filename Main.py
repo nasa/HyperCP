@@ -246,7 +246,7 @@ class Window(QtWidgets.QWidget):
         if ok:
             print("Create Config File: ", text)
             ConfigFile.createDefaultConfig(text)
-            # ToDo: Add code to change text for the combobox once file is created            
+            MainConfig.settings["cfgFile"] = ConfigFile.filename
 
     def configEditButtonPressed(self):
         print("Edit Config Dialogue")
@@ -257,6 +257,8 @@ class Window(QtWidgets.QWidget):
             ConfigFile.loadConfig(configFileName)
             configDialog = ConfigWindow(configFileName, inputDir, self)
             configDialog.show()
+            # ToDo: Add code to change text for the combobox once file is edited in case of a SaveAs           
+            MainConfig.settings["cfgFile"] = ConfigFile.filename
         else:
             message = "Not a Config File: " + configFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)

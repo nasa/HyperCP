@@ -231,13 +231,13 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1eInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1eInterpInterval"]))
         self.l1eInterpIntervalLineEdit.setValidator(doubleValidator)
 
-        l1ePlotTimeInterpLabel = QtWidgets.QLabel("Generate Plots (slow; saved in ./Plots/L1E/)", self)        
+        l1ePlotTimeInterpLabel = QtWidgets.QLabel("     Generate Plots (slow; saved in ./Plots/L1E/)", self)        
         self.l1ePlotTimeInterpCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL1ePlotTimeInterp"]) == 1:
             self.l1ePlotTimeInterpCheckBox.setChecked(True)   
         self.l1ePlotTimeInterpCheckBox.clicked.connect(self.l1ePlotTimeInterpCheckBoxUpdate)   
 
-        l1eSaveSeaBASSLabel = QtWidgets.QLabel("Save SeaBASS text file", self)        
+        l1eSaveSeaBASSLabel = QtWidgets.QLabel('     Save SeaBASS Text Files', self)        
         self.l1eSaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL1eSaveSeaBASS"]) == 1:
             self.l1eSaveSeaBASSCheckBox.setChecked(True)   
@@ -248,7 +248,7 @@ class ConfigWindow(QtWidgets.QDialog):
          a lineedit instead. It should be a pull-down, then drop the "Open" box.'''
         # l1eSeaBASSfsm = QtWidgets.QFileSystemModel()
         # index = l1eSeaBASSfsm.setRootPath("Config")        
-        self.l1eSeaBASSHeaderLabel = QtWidgets.QLabel('       SeaBASS Header File', self)
+        # self.l1eSeaBASSHeaderLabel = QtWidgets.QLabel('       SeaBASS Header File', self)
         # #self.l1eSeaBASSHeaderLabel.move(30, 20)
         # self.l1eSeaBASSHeaderComboBox = QtWidgets.QComboBox(self)
         # self.l1eSeaBASSHeaderComboBox.setModel(l1eSeaBASSfsm)
@@ -261,18 +261,18 @@ class ConfigWindow(QtWidgets.QDialog):
         # print(headFileIndex)
         # self.l1eSeaBASSHeaderComboBox.setCurrentIndex(headFileIndex)
         #self.l1eSeaBASSHeaderComboBox.move(30, 50)        
-        self.l1eSeaBASSHeaderLineEdit = QtWidgets.QLineEdit(ConfigFile.settings["seaBASSHeaderFileName"])        
-        self.l1eSeaBASSHeaderNewButton = QtWidgets.QPushButton("New", self)
-        self.l1eSeaBASSHeaderOpenButton = QtWidgets.QPushButton("Open", self)
-        self.l1eSeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit", self)
+        # self.l1eSeaBASSHeaderLineEdit = QtWidgets.QLineEdit(ConfigFile.settings["seaBASSHeaderFileName"])        
+        # self.l1eSeaBASSHeaderNewButton = QtWidgets.QPushButton("New", self)
+        # self.l1eSeaBASSHeaderOpenButton = QtWidgets.QPushButton("Open", self)
+        self.l1eSeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit SeaBASS Header", self)
         #self.l1eSeaBASSHeaderEditButton.move(130, 80)
-        self.l1eSeaBASSHeaderDeleteButton = QtWidgets.QPushButton("Delete", self)
-        self.l1eSeaBASSHeaderNewButton.clicked.connect(self.l1eSeaBASSHeaderNewButtonPressed)
-        self.l1eSeaBASSHeaderOpenButton.clicked.connect(self.l1eSeaBASSHeaderOpenButtonPressed)
+        # self.l1eSeaBASSHeaderDeleteButton = QtWidgets.QPushButton("Delete", self)
+        # self.l1eSeaBASSHeaderNewButton.clicked.connect(self.l1eSeaBASSHeaderNewButtonPressed)
+        # self.l1eSeaBASSHeaderOpenButton.clicked.connect(self.l1eSeaBASSHeaderOpenButtonPressed)
         self.l1eSeaBASSHeaderEditButton.clicked.connect(self.l1eSeaBASSHeaderEditButtonPressed)
-        self.l1eSeaBASSHeaderDeleteButton.clicked.connect(self.l1eSeaBASSHeaderDeleteButtonPressed)  
+        # self.l1eSeaBASSHeaderDeleteButton.clicked.connect(self.l1eSeaBASSHeaderDeleteButtonPressed)  
 
-        self.l1eSaveSeaBASSCheckBoxUpdate()
+        # self.l1eSaveSeaBASSCheckBoxUpdate()
 
         # L2 (Preliminary)
         l2pLabel = QtWidgets.QLabel("Level 2 Preliminary", self)
@@ -535,13 +535,14 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2NIRCorrectionCheckBox.clicked.connect(self.l2NIRCorrectionCheckBoxUpdate)
         self.l2NegativeSpecCheckBox.clicked.connect(self.l2NegativeSpecCheckBoxUpdate)
         
-
-        l2SaveSeaBASSLabel = QtWidgets.QLabel("Save SeaBASS text file", self)     
+        l2SaveSeaBASSLabel = QtWidgets.QLabel("Save SeaBASS Files (Edit Header in L1E)", self)     
         self.l2SaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)    
         self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)        
         if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
             self.l2SaveSeaBASSCheckBox.setChecked(True)
-
+        self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)
+        self.l1eSaveSeaBASSCheckBoxUpdate()
+        self.l2SaveSeaBASSCheckBoxUpdate()
 
         self.saveButton = QtWidgets.QPushButton("Save")        
         self.saveAsButton = QtWidgets.QPushButton("Save As")
@@ -723,17 +724,17 @@ class ConfigWindow(QtWidgets.QDialog):
         l1eSeaBASSHBox.addWidget(self.l1eSaveSeaBASSCheckBox)    
         VBox2.addLayout(l1eSeaBASSHBox)
 
-        l1eSeaBASSHeaderHBox = QtWidgets.QHBoxLayout()
-        l1eSeaBASSHeaderHBox.addWidget(self.l1eSeaBASSHeaderLabel)
-        # l1eSeaBASSHeaderHBox.addWidget(self.l1eSeaBASSHeaderComboBox)
-        l1eSeaBASSHeaderHBox.addWidget(self.l1eSeaBASSHeaderLineEdit)
-        VBox2.addLayout(l1eSeaBASSHeaderHBox)
+        # l1eSeaBASSHeaderHBox = QtWidgets.QHBoxLayout()
+        # l1eSeaBASSHeaderHBox.addWidget(self.l1eSeaBASSHeaderLabel)
+        # # l1eSeaBASSHeaderHBox.addWidget(self.l1eSeaBASSHeaderComboBox)
+        # # l1eSeaBASSHeaderHBox.addWidget(self.l1eSeaBASSHeaderLineEdit)
+        # VBox2.addLayout(l1eSeaBASSHeaderHBox)
 
         l1eSeaBASSHeaderHBox2 = QtWidgets.QHBoxLayout()
-        l1eSeaBASSHeaderHBox2.addWidget(self.l1eSeaBASSHeaderNewButton)
-        l1eSeaBASSHeaderHBox2.addWidget(self.l1eSeaBASSHeaderOpenButton)
+        # l1eSeaBASSHeaderHBox2.addWidget(self.l1eSeaBASSHeaderNewButton)
+        # l1eSeaBASSHeaderHBox2.addWidget(self.l1eSeaBASSHeaderOpenButton)
         l1eSeaBASSHeaderHBox2.addWidget(self.l1eSeaBASSHeaderEditButton)
-        l1eSeaBASSHeaderHBox2.addWidget(self.l1eSeaBASSHeaderDeleteButton)
+        # l1eSeaBASSHeaderHBox2.addWidget(self.l1eSeaBASSHeaderDeleteButton)
         VBox2.addLayout(l1eSeaBASSHeaderHBox2)    
 
         # VBox2.addSpacing(20)       
@@ -1131,58 +1132,59 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def l1eSaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l1eSaveSeaBASSCheckBoxUpdate")
-        disabled = (not self.l1eSaveSeaBASSCheckBox.isChecked())
-        self.l1eSeaBASSHeaderNewButton.setDisabled(disabled)
-        self.l1eSeaBASSHeaderOpenButton.setDisabled(disabled)
+        disabled = (not self.l1eSaveSeaBASSCheckBox.isChecked()) \
+                and (not self.l2SaveSeaBASSCheckBox.isChecked())
+        # self.l1eSeaBASSHeaderNewButton.setDisabled(disabled)
+        # self.l1eSeaBASSHeaderOpenButton.setDisabled(disabled)
         self.l1eSeaBASSHeaderEditButton.setDisabled(disabled)
-        self.l1eSeaBASSHeaderDeleteButton.setDisabled(disabled)
+        # self.l1eSeaBASSHeaderDeleteButton.setDisabled(disabled)
 
-    def l1eSeaBASSHeaderNewButtonPressed(self):
-        print("New SeaBASSHeader Dialogue")
-        text, ok = QtWidgets.QInputDialog.getText(self, 'New SeaBASSHeader File', 'Enter File Name')
-        seaBASSHeaderFileName = f'{text}.hdr'
-        if ok:
-            print("Create SeaBASSHeader File: ", seaBASSHeaderFileName)
+    # def l1eSeaBASSHeaderNewButtonPressed(self):
+    #     print("New SeaBASSHeader Dialogue")
+    #     text, ok = QtWidgets.QInputDialog.getText(self, 'New SeaBASSHeader File', 'Enter File Name')
+    #     seaBASSHeaderFileName = f'{text}.hdr'
+    #     if ok:
+    #         print("Create SeaBASSHeader File: ", seaBASSHeaderFileName)
             
-            inputDir = self.inputDirectory
-            seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
-            # Now open the new file
+    #         inputDir = self.inputDirectory
+    #         seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
+    #         # Now open the new file
             
-            if os.path.isfile(seaBASSHeaderPath):
-                seaBASSHeaderDeleteMessage = "Overwrite " + seaBASSHeaderFileName + "?"
+    #         if os.path.isfile(seaBASSHeaderPath):
+    #             seaBASSHeaderDeleteMessage = "Overwrite " + seaBASSHeaderFileName + "?"
 
-                reply = QtWidgets.QMessageBox.question(self, 'Message', seaBASSHeaderDeleteMessage, \
-                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+    #             reply = QtWidgets.QMessageBox.question(self, 'Message', seaBASSHeaderDeleteMessage, \
+    #                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
 
-                if reply == QtWidgets.QMessageBox.Yes:
-                    SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
-                    SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-                    seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
-                    #seaBASSHeaderDialog = CalibrationEditWindow(seaBASSHeaderFileName, self)
-                    seaBASSHeaderDialog.show()                
-            else:
-                SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
-                SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-                seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
-                seaBASSHeaderDialog.show()  
+    #             if reply == QtWidgets.QMessageBox.Yes:
+    #                 SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
+    #                 SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+    #                 seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
+    #                 #seaBASSHeaderDialog = CalibrationEditWindow(seaBASSHeaderFileName, self)
+    #                 seaBASSHeaderDialog.show()                
+    #         else:
+    #             SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
+    #             SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+    #             seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
+    #             seaBASSHeaderDialog.show()  
             
-            self.l1eSeaBASSHeaderLineEdit.setText(seaBASSHeaderFileName)  
+    #         self.l1eSeaBASSHeaderLineEdit.setText(seaBASSHeaderFileName)  
 
-    def l1eSeaBASSHeaderOpenButtonPressed(self):
-        print("SeaBASSHeader Open Dialogue")
-        text, ok = QtWidgets.QFileDialog.getOpenFileNames(self, "Select SeaBASS Header File","Config","hdr(*.hdr)")
-        if ok:
-            (_, fname) = os.path.split(text[0])
-            print(fname)
-            if len(fname[0]) == 1:
-                self.l1eSeaBASSHeaderLineEdit.setText(fname)            
+    # def l1eSeaBASSHeaderOpenButtonPressed(self):
+    #     print("SeaBASSHeader Open Dialogue")
+    #     text, ok = QtWidgets.QFileDialog.getOpenFileNames(self, "Select SeaBASS Header File","Config","hdr(*.hdr)")
+    #     if ok:
+    #         (_, fname) = os.path.split(text[0])
+    #         print(fname)
+    #         if len(fname[0]) == 1:
+    #             self.l1eSeaBASSHeaderLineEdit.setText(fname)            
 
     def l1eSeaBASSHeaderEditButtonPressed(self):
         print("Edit seaBASSHeader Dialogue")
         
         # seaBASSHeaderFileName = self.l1eSeaBASSHeaderComboBox.currentText()
         ConfigWindow.refreshConfig(self)
-        seaBASSHeaderFileName = self.l1eSeaBASSHeaderLineEdit.text()
+        seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
         inputDir = self.inputDirectory
         seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
         if os.path.isfile(seaBASSHeaderPath):
@@ -1191,30 +1193,35 @@ class ConfigWindow(QtWidgets.QDialog):
             #seaBASSHeaderDialog = CalibrationEditWindow(seaBASSHeaderFileName, self)
             seaBASSHeaderDialog.show()
         else:
-            #print("Not a SeaBASSHeader File: " + seaBASSHeaderFileName)
-            message = "Not a seaBASSHeader File: " + seaBASSHeaderFileName
-            QtWidgets.QMessageBox.critical(self, "Error", message)
+            print("Creating New SeaBASSHeader File: ", seaBASSHeaderFileName)   
+            SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
+            SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+            seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
+            seaBASSHeaderDialog.show()                
 
-    def l1eSeaBASSHeaderDeleteButtonPressed(self):
-        print("Delete seaBASSHeader Dialogue")
-        # print("index: ", self.seaBASSHeaderComboBox.currentIndex())
-        # print("text: ", self.seaBASSHeaderComboBox.currentText())
-        # seaBASSHeaderFileName = self.l1eSeaBASSHeaderComboBox.currentText()
-        seaBASSHeaderFileName = self.l1eSeaBASSHeaderLineEdit.text()
-        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
-        if os.path.isfile(seaBASSHeaderPath):
-            seaBASSHeaderDeleteMessage = "Delete " + seaBASSHeaderFileName + "?"
+            # message = "Not a seaBASSHeader File: " + seaBASSHeaderFileName
+            # QtWidgets.QMessageBox.critical(self, "Error", message)
 
-            reply = QtWidgets.QMessageBox.question(self, 'Message', seaBASSHeaderDeleteMessage, \
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+    # def l1eSeaBASSHeaderDeleteButtonPressed(self):
+    #     print("Delete seaBASSHeader Dialogue")
+    #     # print("index: ", self.seaBASSHeaderComboBox.currentIndex())
+    #     # print("text: ", self.seaBASSHeaderComboBox.currentText())
+    #     # seaBASSHeaderFileName = self.l1eSeaBASSHeaderComboBox.currentText()
+    #     seaBASSHeaderFileName = self.l1eSeaBASSHeaderLineEdit.text()
+    #     seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
+    #     if os.path.isfile(seaBASSHeaderPath):
+    #         seaBASSHeaderDeleteMessage = "Delete " + seaBASSHeaderFileName + "?"
 
-            if reply == QtWidgets.QMessageBox.Yes:
-                SeaBASSHeader.deleteSeaBASSHeader(seaBASSHeaderFileName)
-                self.l1eSeaBASSHeaderLineEdit.setText('')              
-        else:
-            #print("Not a seaBASSHeader File: " + seaBASSHeaderFileName)
-            message = "Not a seaBASSHeader File: " + seaBASSHeaderFileName
-            QtWidgets.QMessageBox.critical(self, "Error", message)
+    #         reply = QtWidgets.QMessageBox.question(self, 'Message', seaBASSHeaderDeleteMessage, \
+    #                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+
+    #         if reply == QtWidgets.QMessageBox.Yes:
+    #             SeaBASSHeader.deleteSeaBASSHeader(seaBASSHeaderFileName)
+    #             self.l1eSeaBASSHeaderLineEdit.setText('')              
+    #     else:
+    #         #print("Not a seaBASSHeader File: " + seaBASSHeaderFileName)
+    #         message = "Not a seaBASSHeader File: " + seaBASSHeaderFileName
+    #         QtWidgets.QMessageBox.critical(self, "Error", message)
 
     def l2pGetAncCheckBoxUpdate(self):
         print("ConfigWindow - l2pGetAncCheckBoxUpdate")        
@@ -1373,7 +1380,13 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2NegativeSpec"] = 1
 
     def l2SaveSeaBASSCheckBoxUpdate(self):
-        print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")
+        print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")        
+        disabled = (not self.l1eSaveSeaBASSCheckBox.isChecked()) \
+                and (not self.l2SaveSeaBASSCheckBox.isChecked())
+        # self.l1eSeaBASSHeaderNewButton.setDisabled(disabled)
+        # self.l1eSeaBASSHeaderOpenButton.setDisabled(disabled)
+        self.l1eSeaBASSHeaderEditButton.setDisabled(disabled)
+        # self.l1eSeaBASSHeaderDeleteButton.setDisabled(disabled)
 
     def saveButtonPressed(self):
         print("ConfigWindow - Save Pressed")
@@ -1411,7 +1424,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL1ePlotTimeInterp"] = int(self.l1ePlotTimeInterpCheckBox.isChecked())
         ConfigFile.settings["bL1eSaveSeaBASS"] = int(self.l1eSaveSeaBASSCheckBox.isChecked())
         # ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderComboBox.currentText()
-        ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderLineEdit.text()
+        # ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderLineEdit.text()
 
         ConfigFile.settings["bL2pGetAnc"] = int(self.l2pGetAncCheckBox.isChecked())
 
@@ -1467,7 +1480,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # QtWidgets.QMessageBox.about(self, "Edit Config File", "Config File Saved")  
 
         # Confirm that SeaBASS Headers need to be/are updated
-        if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL1eSaveSeaBASS"]: 
+        if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL2SaveSeaBASS"]: 
             reply = QtWidgets.QMessageBox.question(self, "Message", "Did you remember to update SeaBASS Headers?", \
                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
 
@@ -1475,7 +1488,7 @@ class ConfigWindow(QtWidgets.QDialog):
                 self.close()
             else:
                 note = QtWidgets.QMessageBox()
-                note.setText('Update SeaBASS Headers in Level 1E Processing')
+                note.setText('Edit/Save SeaBASS Headers in Level 1E Processing')
                 note.exec_()
         else:
             self.close()
@@ -1514,7 +1527,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL1ePlotTimeInterp"] = int(self.l1ePlotTimeInterpCheckBox.isChecked())
         ConfigFile.settings["bL1eSaveSeaBASS"] = int(self.l1eSaveSeaBASSCheckBox.isChecked())
         # ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderComboBox.currentText()
-        ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderLineEdit.text()
+        # ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderLineEdit.text()
 
         ConfigFile.settings["bL2pGetAnc"] = int(self.l2pGetAncCheckBox.isChecked())
 
@@ -1613,7 +1626,7 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1ePlotTimeInterp"] = int(self.l1ePlotTimeInterpCheckBox.isChecked())
             ConfigFile.settings["bL1eSaveSeaBASS"] = int(self.l1eSaveSeaBASSCheckBox.isChecked())
             # ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderComboBox.currentText()
-            ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderLineEdit.text()
+            # ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderLineEdit.text()
 
             ConfigFile.settings["bL2pGetAnc"] = int(self.l2pGetAncCheckBox.isChecked())
 
@@ -1691,6 +1704,9 @@ class ConfigWindow(QtWidgets.QDialog):
                         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
 
                 if reply == QtWidgets.QMessageBox.Yes:
+
+                    # Change Main window Config File selection
+                    
                     self.close()
                 else:
                     note = QtWidgets.QMessageBox()
