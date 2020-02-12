@@ -244,36 +244,9 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1eSaveSeaBASSCheckBox.setChecked(True)   
         self.l1eSaveSeaBASSCheckBox.clicked.connect(self.l1eSaveSeaBASSCheckBoxUpdate)         
 
-        # L1E SeaBASSHeader File
-        '''# Can't figure out how to change the index when the window is drawn, so creating
-         a lineedit instead. It should be a pull-down, then drop the "Open" box.'''
-        # l1eSeaBASSfsm = QtWidgets.QFileSystemModel()
-        # index = l1eSeaBASSfsm.setRootPath("Config")        
-        # self.l1eSeaBASSHeaderLabel = QtWidgets.QLabel('       SeaBASS Header File', self)
-        # #self.l1eSeaBASSHeaderLabel.move(30, 20)
-        # self.l1eSeaBASSHeaderComboBox = QtWidgets.QComboBox(self)
-        # self.l1eSeaBASSHeaderComboBox.setModel(l1eSeaBASSfsm)
-        # l1eSeaBASSfsm.setNameFilters(["*.hdr"]) 
-        # l1eSeaBASSfsm.setNameFilterDisables(False) 
-        # l1eSeaBASSfsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
-        # self.l1eSeaBASSHeaderComboBox.setRootModelIndex(index) # Sets directory to Config        
-        # headFileIndex=self.l1eSeaBASSHeaderComboBox.findText(ConfigFile.settings["seaBASSHeaderFileName"])
-        # print(ConfigFile.settings["seaBASSHeaderFileName"])
-        # print(headFileIndex)
-        # self.l1eSeaBASSHeaderComboBox.setCurrentIndex(headFileIndex)
-        #self.l1eSeaBASSHeaderComboBox.move(30, 50)        
-        # self.l1eSeaBASSHeaderLineEdit = QtWidgets.QLineEdit(ConfigFile.settings["seaBASSHeaderFileName"])        
-        # self.l1eSeaBASSHeaderNewButton = QtWidgets.QPushButton("New", self)
-        # self.l1eSeaBASSHeaderOpenButton = QtWidgets.QPushButton("Open", self)
-        self.l1eSeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit SeaBASS Header", self)
-        #self.l1eSeaBASSHeaderEditButton.move(130, 80)
-        # self.l1eSeaBASSHeaderDeleteButton = QtWidgets.QPushButton("Delete", self)
-        # self.l1eSeaBASSHeaderNewButton.clicked.connect(self.l1eSeaBASSHeaderNewButtonPressed)
-        # self.l1eSeaBASSHeaderOpenButton.clicked.connect(self.l1eSeaBASSHeaderOpenButtonPressed)
-        self.l1eSeaBASSHeaderEditButton.clicked.connect(self.l1eSeaBASSHeaderEditButtonPressed)
-        # self.l1eSeaBASSHeaderDeleteButton.clicked.connect(self.l1eSeaBASSHeaderDeleteButtonPressed)  
 
-        # self.l1eSaveSeaBASSCheckBoxUpdate()
+        self.l1eSeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit/Update SeaBASS Header", self)
+        self.l1eSeaBASSHeaderEditButton.clicked.connect(self.l1eSeaBASSHeaderEditButtonPressed)
 
         # L2 (Preliminary)
         l2pLabel = QtWidgets.QLabel("Level 2 Preliminary", self)

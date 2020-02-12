@@ -1,0 +1,18 @@
+######################################################################################
+# Telemetry Definition File:
+#
+# Type: SAS Solar Tracker Pyrometer Frames
+# Date: June 24 2014
+# Version: 1
+# Format:
+# SATPYR[Temperature]<CR><LF>
+#######################################################################################
+
+#Header
+INSTRUMENT SATPYR '' 6 AS 0 NONE
+
+#Temperature
+T   IR  'Celsius' 4   BF  0   COUNT
+
+# Frame Terminator
+CRLF TERMINATOR '' 2 BU 0 NONE
