@@ -1077,7 +1077,8 @@ class ConfigWindow(QtWidgets.QDialog):
         #     ConfigFile.settings["fL1cSunAngleMax"] = "NA"
 
     def l1dAnomalyButtonPressed(self):
-        print("CalibrationEditWindow - Launching anomaly analysis module")        
+        print("CalibrationEditWindow - Launching anomaly analysis module")  
+        ConfigWindow.refreshConfig(self)      
         AnomalyDetection(self,self.inputDirectory)
 
     def l1dDeglitchCheckBoxUpdate(self):
