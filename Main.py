@@ -238,7 +238,6 @@ class Window(QtWidgets.QWidget):
 
     def comboBox1Changed(self,value):
         MainConfig.settings["cfgFile"] = value
-        '''TO DO: Force the combo box to be on the value'''
         index = self.configComboBox.findText(MainConfig.settings["cfgFile"])
         self.configComboBox.setCurrentIndex(index)
         print("MainConfig: Configuration file changed to: ", value)    

@@ -326,7 +326,7 @@ class ProcessL2:
         # Start and end are defined by the interval established in the Config (they are indexes)
         newSlice = collections.OrderedDict()
         for k in columns:
-            newSlice[k] = columns[k][start:end+1] #up to not including end+1...
+            newSlice[k] = columns[k][start:end] #up to not including end...
         return newSlice
 
     # Interpolate wind to radiometry
@@ -591,8 +591,9 @@ class ProcessL2:
        
     @staticmethod
     def calculateREFLECTANCE2(root, sasGroup, refGroup, ancGroup, start, end):
-        '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for meteorological quality flags, 
-        Perform rho correction with wind. Calculate the Rrs. Correct for NIR.'''
+        '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for 
+        meteorological quality flags. Perform glint corrections. Calculate the Rrs. Correct for NIR
+        residuals.'''
 
         def dop(year):
             # day of perihelion            
@@ -762,7 +763,8 @@ class ProcessL2:
         Utilities.writeLogFile(msg)
         
         # IS THIS NECESSARY?
-        # ...There are often few data points, and given 10% of 10 points is just one data point...(?)
+        # There are sometimes only a small number of spectra in the slice,
+        #  so the percent Lt estimation becomes questionable and is overridden.
         if n <= 5 or x == 0:
             x = n # if only 5 or fewer records retained, use them all...
         
@@ -770,14 +772,16 @@ class ProcessL2:
         lt780 = ProcessL2.interpolateColumn(ltSlice, 780.0)
         index = np.argsort(lt780) # gives indexes if values were to be sorted
                 
-        if enablePercentLt:
+        if enablePercentLt and x > 1:
             # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest X% of unsorted lt780
             y = index[0:x] 
             msg = f'{len(y)} spectra remaining in slice to average after filtering to lowest {percentLt}%.'
             print(msg)
             Utilities.writeLogFile(msg)
         else:
-            y = index # If Percent Lt is turned off, this will average the whole slice
+            # If Percent Lt is turned off, this will average the whole slice, and if
+            # ensemble is off (set to 0), just the one spectrum will be used.
+            y = index 
 
         # Take the mean of the lowest X%
         esXSlice = collections.OrderedDict()
