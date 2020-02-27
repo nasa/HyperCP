@@ -36,12 +36,31 @@ class AncillaryReader:
         else:
             ancDatetime = metData.fd_datetime()
 
+        '''TO DO: could add cloud cover, wave height, etc. here'''
+        lat = False
+        lon = False
         wind = False
         aot = False   
         wt = False
         sal = False
+        heading = False
+        homeangle = False # sensor azimuth relative to heading
         for ds in metData.data:            
             # Remember, all lower case...
+            if ds == "lat":
+                lat = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                lat = metData.data[ds]
+                latUnits = metData.variables[ds][1]
+            if ds == "lon":
+                lon = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                lon = metData.data[ds]
+                lonUnits = metData.variables[ds][1]
             if ds == "wind":
                 wind = True
                 msg = f'Found data: {ds}'                
@@ -76,12 +95,32 @@ class AncillaryReader:
                 Utilities.writeLogFile(msg)  
                 S = metData.data[ds]
                 SUnits = metData.variables[ds][1] 
+            if ds == "heading":
+                heading = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                heading = metData.data[ds]
+                headingUnits = metData.variables[ds][1]
+            if ds == "relaz": # Note: this misnomer is to trick readSB into accepting a non-conventional data field (home angle)
+                homeangle = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                homeAngle = metData.data[ds]
+                homeAngleUnits = metData.variables[ds][1] 
 
 
         # Generate HDFDataset
         ancillaryData = HDFDataset()
         ancillaryData.id = "AncillaryData"
         ancillaryData.appendColumn("DATETIME", ancDatetime)
+        if lat:
+            ancillaryData.appendColumn("LATITUDE", lat)
+            ancillaryData.attributes["Lat_Units"]=latUnits
+        if lon:
+            ancillaryData.appendColumn("LONGITUDE", lon)
+            ancillaryData.attributes["Wind_Units"]=lonUnits            
         if wind:
             ancillaryData.appendColumn("WINDSPEED", wspd)
             ancillaryData.attributes["Wind_Units"]=windUnits
@@ -97,6 +136,12 @@ class AncillaryReader:
             ancillaryData.attributes["SALINITY_Units"]=SUnits
         #ancillaryData.appendColumn("LATPOS", lat)
         #ancillaryData.appendColumn("LONPOS", lon)
+        if heading:
+            ancillaryData.appendColumn("HEADING", heading)
+            ancillaryData.attributes["HEADING_Units"]=headingUnits
+        if homeangle:
+            ancillaryData.appendColumn("HOMEANGLE", homeAngle)
+            ancillaryData.attributes["HOMEANGLE_Units"]=homeAngleUnits
         
         ancillaryData.columnsToDataset()        
 

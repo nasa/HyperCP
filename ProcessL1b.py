@@ -153,7 +153,7 @@ class ProcessL1b:
     def processGroup(gp, cf): # group, calibration file
 
         # Rename the groups to more generic ids rather than the names of the cal files
-        if gp.id.startswith("GPRMC"):
+        if gp.id.startswith("GPRMC") or gp.id.startswith("GPGAA"):
             gp.id = "GPS"
         if gp.id.startswith("SATNAV"):
             gp.id = "SOLARTRACKER"

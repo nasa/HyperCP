@@ -106,16 +106,27 @@ class ConfigWindow(QtWidgets.QDialog):
         # l1cSublabel2 = QtWidgets.QLabel("   relative solar azimuth.", self)
         # l1cSublabel3 = QtWidgets.QLabel("   factory calibrations.", self)        
 
-        # L1C Rotator 
+        # SolarTracker
+        self.l1cSolarTrackerLabel = QtWidgets.QLabel(" SolarTracker", self)
+        self.l1cSolarTrackerCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL1cSolarTracker"]) == 1:
+            self.l1cSolarTrackerCheckBox.setChecked(True)
+
+
+        # L1C Rotator         
         self.l1cRotatorHomeAngleLabel = QtWidgets.QLabel(" Rotator Home Angle Offset", self)
         self.l1cRotatorHomeAngleLineEdit = QtWidgets.QLineEdit(self)
         self.l1cRotatorHomeAngleLineEdit.setText(str(ConfigFile.settings["fL1cRotatorHomeAngle"]))
         self.l1cRotatorHomeAngleLineEdit.setValidator(doubleValidator)   
 
         self.l1cRotatorDelayLabel = QtWidgets.QLabel(" Rotator Delay (Seconds)", self)
+        self.l1cRotatorDelayCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL1cRotatorDelay"]) == 1:
+            self.l1cRotatorDelayCheckBox.setChecked(True)
         self.l1cRotatorDelayLineEdit = QtWidgets.QLineEdit(self)
         self.l1cRotatorDelayLineEdit.setText(str(ConfigFile.settings["fL1cRotatorDelay"]))
-        self.l1cRotatorDelayLineEdit.setValidator(doubleValidator)     
+        self.l1cRotatorDelayLineEdit.setValidator(doubleValidator)                   
+        self.l1cRotatorDelayCheckBoxUpdate()   
 
         # L1C Pitch and Roll
         l1cCleanPitchRollLabel = QtWidgets.QLabel(" Pitch & Roll Filter", self)                        
@@ -133,10 +144,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cCleanPitchRollCheckBoxUpdate()        
 
          # L1C Rotator                
-        l1cCleanRotatorAngleLabel = QtWidgets.QLabel(" Absolute Rotator Angle Filter", self)                        
-        self.l1cCleanRotatorAngleCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL1cCleanRotatorAngle"]) == 1:
-            self.l1cCleanRotatorAngleCheckBox.setChecked(True)
+        self.l1cRotatorAngleLabel = QtWidgets.QLabel(" Absolute Rotator Angle Filter", self)                        
+        self.l1cRotatorAngleCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL1cRotatorAngle"]) == 1:
+            self.l1cRotatorAngleCheckBox.setChecked(True)
         self.l1cRotatorAngleMinLabel = QtWidgets.QLabel("       Rotator Angle Min", self)
         self.l1cRotatorAngleMinLineEdit = QtWidgets.QLineEdit(self)
         self.l1cRotatorAngleMinLineEdit.setText(str(ConfigFile.settings["fL1cRotatorAngleMin"]))
@@ -144,8 +155,9 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cRotatorAngleMaxLabel = QtWidgets.QLabel("       Rotator Angle Max", self)
         self.l1cRotatorAngleMaxLineEdit = QtWidgets.QLineEdit(self)
         self.l1cRotatorAngleMaxLineEdit.setText(str(ConfigFile.settings["fL1cRotatorAngleMax"]))
-        self.l1cRotatorAngleMaxLineEdit.setValidator(doubleValidator)        
-        self.l1cCleanRotatorAngleCheckBoxUpdate()        
+        self.l1cRotatorAngleMaxLineEdit.setValidator(doubleValidator)    
+        self.l1cSolarTrackerCheckBoxUpdate()      
+        self.l1cRotatorAngleCheckBoxUpdate()        
 
         # L1C Relative SZA
         l1cCleanSunAngleLabel = QtWidgets.QLabel(" Relative Solar Azimuth Filter", self)
@@ -161,9 +173,11 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cSunAngleMaxLineEdit.setText(str(ConfigFile.settings["fL1cSunAngleMax"]))
         self.l1cSunAngleMaxLineEdit.setValidator(doubleValidator)
         self.l1cCleanSunAngleCheckBoxUpdate() 
-        
+
+        self.l1cSolarTrackerCheckBox.clicked.connect(self.l1cSolarTrackerCheckBoxUpdate)        
+        self.l1cRotatorDelayCheckBox.clicked.connect(self.l1cRotatorDelayCheckBoxUpdate)
         self.l1cCleanPitchRollCheckBox.clicked.connect(self.l1cCleanPitchRollCheckBoxUpdate)
-        self.l1cCleanRotatorAngleCheckBox.clicked.connect(self.l1cCleanRotatorAngleCheckBoxUpdate)
+        self.l1cRotatorAngleCheckBox.clicked.connect(self.l1cRotatorAngleCheckBoxUpdate)
         self.l1cCleanSunAngleCheckBox.clicked.connect(self.l1cCleanSunAngleCheckBoxUpdate)
 
 
@@ -573,13 +587,20 @@ class ConfigWindow(QtWidgets.QDialog):
         # VBox1.addWidget(l1cSublabel2)
         # VBox1.addWidget(l1cSublabel3)
 
-        # L1C Rotator
+        # SolarTracker
+        SolarTrackerHBox = QtWidgets.QHBoxLayout()               
+        SolarTrackerHBox.addWidget(self.l1cSolarTrackerLabel)
+        SolarTrackerHBox.addWidget(self.l1cSolarTrackerCheckBox)
+        VBox1.addLayout(SolarTrackerHBox)
+
+        # L1C Rotator        
         RotHomeAngleHBox = QtWidgets.QHBoxLayout()       
         RotHomeAngleHBox.addWidget(self.l1cRotatorHomeAngleLabel)
         RotHomeAngleHBox.addWidget(self.l1cRotatorHomeAngleLineEdit)        
         VBox1.addLayout(RotHomeAngleHBox)    
         RotatorDelayHBox = QtWidgets.QHBoxLayout()
         RotatorDelayHBox.addWidget(self.l1cRotatorDelayLabel)
+        RotatorDelayHBox.addWidget(self.l1cRotatorDelayCheckBox)
         RotatorDelayHBox.addWidget(self.l1cRotatorDelayLineEdit)
         VBox1.addLayout(RotatorDelayHBox)
 
@@ -599,8 +620,8 @@ class ConfigWindow(QtWidgets.QDialog):
         
         # L1C Rotator
         rotateHBox = QtWidgets.QHBoxLayout()
-        rotateHBox.addWidget(l1cCleanRotatorAngleLabel)
-        rotateHBox.addWidget(self.l1cCleanRotatorAngleCheckBox)
+        rotateHBox.addWidget(self.l1cRotatorAngleLabel)
+        rotateHBox.addWidget(self.l1cRotatorAngleCheckBox)
         VBox1.addLayout(rotateHBox)
         RotMinHBox = QtWidgets.QHBoxLayout()
         RotMinHBox.addWidget(self.l1cRotatorAngleMinLabel)
@@ -967,8 +988,8 @@ class ConfigWindow(QtWidgets.QDialog):
         configName = self.name
         calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
         configPath = os.path.join("Config", calibrationDir)
-        # os.remove(os.path.join(configPath,self.calibrationFileComboBox.currentText()))
-        os.remove(configPath)
+        os.remove(os.path.join(configPath,self.calibrationFileComboBox.currentText()))
+        # os.remove(configPath)
 
 
     def getCalibrationSettings(self):
@@ -1031,6 +1052,35 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL1aCleanSZA"] = 1
 
+    def l1cSolarTrackerCheckBoxUpdate(self):
+        print("ConfigWindow - l1cSolarTrackerCheckBoxUpdate")
+        
+        disabled = (not self.l1cSolarTrackerCheckBox.isChecked())
+        self.l1cRotatorDelayLabel.setDisabled(disabled)
+        self.l1cRotatorDelayLineEdit.setDisabled(disabled)
+        self.l1cRotatorDelayCheckBox.setDisabled(disabled)
+        self.l1cRotatorAngleLabel.setDisabled(disabled)
+        self.l1cRotatorAngleCheckBox.setDisabled(disabled)
+        self.l1cRotatorAngleMinLabel.setDisabled(disabled)
+        self.l1cRotatorAngleMinLineEdit.setDisabled(disabled)
+        self.l1cRotatorAngleMaxLabel.setDisabled(disabled)
+        self.l1cRotatorAngleMaxLineEdit.setDisabled(disabled)        
+        if disabled:
+            ConfigFile.settings["bL1cSolarTracker"] = 0
+        else:
+            ConfigFile.settings["bL1cSolarTracker"] = 1
+
+    def l1cRotatorDelayCheckBoxUpdate(self):
+        print("ConfigWindow - l1cRotatorDelayCheckBoxUpdate")
+        
+        disabled = (not self.l1cRotatorDelayCheckBox.isChecked())
+        # self.l1cRotatorDelayLabel.setDisabled(disabled)
+        self.l1cRotatorDelayLineEdit.setDisabled(disabled)        
+        if disabled:
+            ConfigFile.settings["bL1cRotatorDelay"] = 0
+        else:
+            ConfigFile.settings["bL1cRotatorDelay"] = 1
+
     def l1cCleanPitchRollCheckBoxUpdate(self):
         print("ConfigWindow - l1cCleanPitchRollCheckBoxUpdate")
         
@@ -1046,18 +1096,18 @@ class ConfigWindow(QtWidgets.QDialog):
         #     ConfigFile.settings["fL1cPitchRollPitch"] = "NA"
         #     ConfigFile.settings["fL1cPitchRollRoll"] = "NA"
 
-    def l1cCleanRotatorAngleCheckBoxUpdate(self):
-        print("ConfigWindow - l1cCleanRotatorAngleCheckBoxUpdate")
+    def l1cRotatorAngleCheckBoxUpdate(self):
+        print("ConfigWindow - l1cRotatorAngleCheckBoxUpdate")
         
-        disabled = (not self.l1cCleanRotatorAngleCheckBox.isChecked())
+        disabled = (not self.l1cRotatorAngleCheckBox.isChecked())
         self.l1cRotatorAngleMinLabel.setDisabled(disabled)
         self.l1cRotatorAngleMinLineEdit.setDisabled(disabled)
         self.l1cRotatorAngleMaxLabel.setDisabled(disabled)
         self.l1cRotatorAngleMaxLineEdit.setDisabled(disabled)
         if disabled:
-            ConfigFile.settings["bL1cCleanRotatorAngle"] = 0
+            ConfigFile.settings["bL1cRotatorAngle"] = 0
         else:
-            ConfigFile.settings["bL1cCleanRotatorAngle"] = 1
+            ConfigFile.settings["bL1cRotatorAngle"] = 1
         #     ConfigFile.settings["fL1cRotatorAngleMin"] = "NA"
         #     ConfigFile.settings["fL1cRotatorAngleMax"] = "NA"
 
@@ -1375,13 +1425,15 @@ class ConfigWindow(QtWidgets.QDialog):
 
         ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
         ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())
-        
+
+        ConfigFile.settings["bL1cSolarTracker"] = int(self.l1cSolarTrackerCheckBox.isChecked())        
         ConfigFile.settings["fL1cRotatorHomeAngle"] = float(self.l1cRotatorHomeAngleLineEdit.text())
+        ConfigFile.settings["bL1cRotatorDelay"] = int(self.l1cRotatorDelayCheckBox.isChecked())
         ConfigFile.settings["fL1cRotatorDelay"] = float(self.l1cRotatorDelayLineEdit.text())     
         ConfigFile.settings["bL1cCleanPitchRoll"] = int(self.l1cCleanPitchRollCheckBox.isChecked())        
         ConfigFile.settings["fL1cPitchRollPitch"] = float(self.l1cPitchRollPitchLineEdit.text())
         ConfigFile.settings["fL1cPitchRollRoll"] = float(self.l1cPitchRollRollLineEdit.text())         
-        ConfigFile.settings["bL1cCleanRotatorAngle"] = int(self.l1cCleanRotatorAngleCheckBox.isChecked())        
+        ConfigFile.settings["bL1cRotatorAngle"] = int(self.l1cRotatorAngleCheckBox.isChecked())        
         ConfigFile.settings["fL1cRotatorAngleMin"] = float(self.l1cRotatorAngleMinLineEdit.text())
         ConfigFile.settings["fL1cRotatorAngleMax"] = float(self.l1cRotatorAngleMaxLineEdit.text())                
         ConfigFile.settings["bL1cCleanSunAngle"] = int(self.l1cCleanSunAngleCheckBox.isChecked())        
@@ -1479,12 +1531,14 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
         ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())
         
+        ConfigFile.settings["bL1cSolarTracker"] = int(self.l1cSolarTrackerCheckBox.isChecked())
         ConfigFile.settings["fL1cRotatorHomeAngle"] = float(self.l1cRotatorHomeAngleLineEdit.text())
+        ConfigFile.settings["bL1cRotatorDelay"] = int(self.l1cRotatorDelayCheckBox.isChecked())
         ConfigFile.settings["fL1cRotatorDelay"] = float(self.l1cRotatorDelayLineEdit.text())     
         ConfigFile.settings["bL1cCleanPitchRoll"] = int(self.l1cCleanPitchRollCheckBox.isChecked())        
         ConfigFile.settings["fL1cPitchRollPitch"] = float(self.l1cPitchRollPitchLineEdit.text())
         ConfigFile.settings["fL1cPitchRollRoll"] = float(self.l1cPitchRollRollLineEdit.text())         
-        ConfigFile.settings["bL1cCleanRotatorAngle"] = int(self.l1cCleanRotatorAngleCheckBox.isChecked())        
+        ConfigFile.settings["bL1cRotatorAngle"] = int(self.l1cRotatorAngleCheckBox.isChecked())        
         ConfigFile.settings["fL1cRotatorAngleMin"] = float(self.l1cRotatorAngleMinLineEdit.text())
         ConfigFile.settings["fL1cRotatorAngleMax"] = float(self.l1cRotatorAngleMaxLineEdit.text())                
         ConfigFile.settings["bL1cCleanSunAngle"] = int(self.l1cCleanSunAngleCheckBox.isChecked())        
@@ -1578,12 +1632,14 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
             ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())
             
+            ConfigFile.settings["bL1cSolarTracker"] = int(self.l1cSolarTrackerCheckBox.isChecked())
             ConfigFile.settings["fL1cRotatorHomeAngle"] = float(self.l1cRotatorHomeAngleLineEdit.text())
+            ConfigFile.settings["bL1cRotatorDelay"] = int(self.l1cRotatorDelayCheckBox.isChecked())
             ConfigFile.settings["fL1cRotatorDelay"] = float(self.l1cRotatorDelayLineEdit.text())     
             ConfigFile.settings["bL1cCleanPitchRoll"] = int(self.l1cCleanPitchRollCheckBox.isChecked())        
             ConfigFile.settings["fL1cPitchRollPitch"] = float(self.l1cPitchRollPitchLineEdit.text())
             ConfigFile.settings["fL1cPitchRollRoll"] = float(self.l1cPitchRollRollLineEdit.text())         
-            ConfigFile.settings["bL1cCleanRotatorAngle"] = int(self.l1cCleanRotatorAngleCheckBox.isChecked())        
+            ConfigFile.settings["bL1cRotatorAngle"] = int(self.l1cRotatorAngleCheckBox.isChecked())        
             ConfigFile.settings["fL1cRotatorAngleMin"] = float(self.l1cRotatorAngleMinLineEdit.text())
             ConfigFile.settings["fL1cRotatorAngleMax"] = float(self.l1cRotatorAngleMaxLineEdit.text())                
             ConfigFile.settings["bL1cCleanSunAngle"] = int(self.l1cCleanSunAngleCheckBox.isChecked())        

@@ -14,12 +14,14 @@ class ConfigFile:
         print("bL1aCleanSZA", ConfigFile.settings["bL1aCleanSZA"])
         print("fL1aCleanSZAMax", ConfigFile.settings["fL1aCleanSZAMax"])
 
+        print("bL1cSolarTracker", ConfigFile.settings["bL1cSolarTracker"]) 
         print("fL1cRotatorHomeAngle", ConfigFile.settings["fL1cRotatorHomeAngle"])
+        print("bL1cRotatorDelay", ConfigFile.settings["bL1cRotatorDelay"]) 
         print("fL1cRotatorDelay", ConfigFile.settings["fL1cRotatorDelay"]) 
         print("bL1cCleanPitchRoll", ConfigFile.settings["bL1cCleanPitchRoll"])
         print("fL1cPitchRollPitch", ConfigFile.settings["fL1cPitchRollPitch"]) 
         print("fL1cPitchRollRoll", ConfigFile.settings["fL1cPitchRollRoll"]) 
-        print("bL1cCleanRotatorAngle", ConfigFile.settings["bL1cCleanRotatorAngle"])
+        print("bL1cRotatorAngle", ConfigFile.settings["bL1cRotatorAngle"])
         print("fL1cRotatorAngleMin", ConfigFile.settings["fL1cRotatorAngleMin"])
         print("fL1cRotatorAngleMax", ConfigFile.settings["fL1cRotatorAngleMax"])
         print("bL1cCleanSunAngle", ConfigFile.settings["bL1cCleanSunAngle"])
@@ -113,12 +115,14 @@ class ConfigFile:
         ConfigFile.settings["bL1aCleanSZA"] = 0
         ConfigFile.settings["fL1aCleanSZAMax"] = 60.0 # e.g. 60:Brewin 2016, 
 
+        ConfigFile.settings["bL1cSolarTracker"] = 1 
         ConfigFile.settings["bL1cCleanPitchRoll"] = 0
         ConfigFile.settings["fL1cPitchRollPitch"] = 5 # 2-5 deg. IOCCG Draft Protocols
         ConfigFile.settings["fL1cPitchRollRoll"] = 5 # 2-5 deg. IOCCG Draft Protocols
         ConfigFile.settings["fL1cRotatorHomeAngle"] = 0.0 # Require knowledge of deployment set-up
+        ConfigFile.settings["bL1cRotatorDelay"] = 0 
         ConfigFile.settings["fL1cRotatorDelay"] = 60.0 # Vandenberg 2016
-        ConfigFile.settings["bL1cCleanRotatorAngle"] = 0
+        ConfigFile.settings["bL1cRotatorAngle"] = 0
         ConfigFile.settings["fL1cRotatorAngleMin"] = -40.0 # Require knowledge of deployment set-up
         ConfigFile.settings["fL1cRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
         ConfigFile.settings["bL1cCleanSunAngle"] = 0

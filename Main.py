@@ -102,9 +102,9 @@ class Window(QtWidgets.QWidget):
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
         
 
-        self.windFileLabel = QtWidgets.QLabel("Ancillary Data File for L2 (SeaBASS format)")
-        self.windFileLineEdit = QtWidgets.QLineEdit()
-        self.windFileLineEdit.setText(str(MainConfig.settings["metFile"]))
+        self.ancFileLabel = QtWidgets.QLabel("Ancillary Data File for L2 (SeaBASS format)")
+        self.ancFileLineEdit = QtWidgets.QLineEdit()
+        self.ancFileLineEdit.setText(str(MainConfig.settings["metFile"]))
         self.windAddButton = QtWidgets.QPushButton("Add", self)
         self.windRemoveButton = QtWidgets.QPushButton("Remove", self)                
 
@@ -191,8 +191,8 @@ class Window(QtWidgets.QWidget):
 
         vBox.addSpacing(10)
 
-        vBox.addWidget(self.windFileLabel)        
-        vBox.addWidget(self.windFileLineEdit)
+        vBox.addWidget(self.ancFileLabel)        
+        vBox.addWidget(self.ancFileLineEdit)
 
         windHBox = QtWidgets.QHBoxLayout()        
         windHBox.addWidget(self.windAddButton)
@@ -307,12 +307,12 @@ class Window(QtWidgets.QWidget):
         fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Select Meteorologic Data File",self.inputDirectory)
         print(fnames)
         if len(fnames[0]) == 1:
-            self.windFileLineEdit.setText(fnames[0][0])
+            self.ancFileLineEdit.setText(fnames[0][0])
         MainConfig.settings["metFile"] = fnames[0][0]
 
     def windRemoveButtonPressed(self):
         print("Wind File Remove Dialogue")
-        self.windFileLineEdit.setText("")
+        self.ancFileLineEdit.setText("")
         MainConfig.settings["metFile"] = ""
 
     def processSingle(self, level):
@@ -351,8 +351,10 @@ class Window(QtWidgets.QWidget):
         if os.path.exists(subInputDir):
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",subInputDir)
             fileNames = openFileNames[0] # The first element is the whole list
-            # MacOS bug holds Open window open during entire processing period
-            # openFileNames.setAttribute(QtCore.WA_DeleteOnClose, True) # Doesn't work...
+            
+            ''' BUG: MacOS bug holds OPEN window open during entire processing period
+            openFileNames.setAttribute(QtCore.WA_DeleteOnClose, True) # Doesn't work... '''
+
         else:    
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",self.inputDirectory)
             fileNames = openFileNames[0] # The first element is the whole list
@@ -361,9 +363,9 @@ class Window(QtWidgets.QWidget):
         if not fileNames:
             return        
 
-        windFile = self.windFileLineEdit.text()
-        if windFile == '':
-            windFile = None
+        ancFile = self.ancFileLineEdit.text()
+        if ancFile == '':
+            ancFile = None
 
         print("Process Calibration Files")
         filename = ConfigFile.filename
@@ -379,7 +381,7 @@ class Window(QtWidgets.QWidget):
             print("Bad output directory.")
             return            
 
-        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, windFile) 
+        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, ancFile) 
         t1Single = time.time()
         print(f'Time elapsed: {(t1Single-t0Single)/60} minutes')
 
@@ -395,27 +397,27 @@ class Window(QtWidgets.QWidget):
 
     def singleL1aClicked(self):
         ''' Sneaky work around until I can pass signals btw. windows'''
-        Window.comboBox1Changed(self,ConfigFile.filename)
+        # Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L1A")
 
     def singleL1bClicked(self):        
-        Window.comboBox1Changed(self,ConfigFile.filename)
+        # Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L1B")
 
     def singleL1cClicked(self):
-        Window.comboBox1Changed(self,ConfigFile.filename)
+        # Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L1C")
 
     def singleL1dClicked(self):
-        Window.comboBox1Changed(self,ConfigFile.filename)
+        # Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L1D")
 
     def singleL1eClicked(self):
-        Window.comboBox1Changed(self,ConfigFile.filename)
+        # Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L1E")      
 
     def singleL2Clicked(self):
-        Window.comboBox1Changed(self,ConfigFile.filename)
+        # Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L2")   
 
     def processMulti(self, level):
@@ -447,21 +449,21 @@ class Window(QtWidgets.QWidget):
         if not self.outputDirectory:
             return
 
-        windFile = self.windFileLineEdit.text()
+        ancFile = self.ancFileLineEdit.text()
 
         print("Process Calibration Files")
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings["CalibrationFiles"]
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
     
-        Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, windFile)
+        Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, ancFile)
         t1Multi = time.time()
         print(f'Time elapsed: {(t1Multi-t0Multi)/60} Minutes')
 
 
     def multi2Clicked(self):
         ''' Sneaky work around until I can pass signals btw. windows'''
-        Window.comboBox1Changed(self,ConfigFile.filename)
+        # Window.comboBox1Changed(self,ConfigFile.filename)
         self.processMulti(2)
 
     def popQueryCheckBoxUpdate(self):

@@ -19,7 +19,7 @@ class RawFileReader:
         else:
             end = hdr.find(bytes(b"\x0D\x0A".decode("unicode_escape"), "utf-8"))
 
-        # TO DO: This is still screwing up the SAS SERIAL NUMBER hdr
+        ''' BUG: TO DO: This is still screwing up the SAS SERIAL NUMBER hdr'''
         sp1 = hdr.find(b" ") # returns the first occurence where substring is found
         # sp2 = hdr.rfind(b" ") # returns the highest index where substring is found
         sp2 = hdr.find(b"(") - 1

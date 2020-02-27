@@ -209,7 +209,7 @@ class Controller:
             return None
 
     @staticmethod
-    def processL1c(inFilePath, outFilePath):
+    def processL1c(inFilePath, outFilePath, ancillaryData=None):
 
         _,fileName = os.path.split(outFilePath)
         
@@ -230,7 +230,7 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None
 
-        root = ProcessL1c.processL1c(root, fileName)     
+        root = ProcessL1c.processL1c(root, fileName, ancillaryData)     
 
         # Write output file
         if root is not None:
@@ -433,7 +433,9 @@ class Controller:
             elif level == "L1B":
                 Controller.processL1b(inFilePath, outFilePath, calibrationMap) 
             elif level == "L1C":
-                Controller.processL1c(inFilePath, outFilePath)
+                if ConfigFile.settings["bL1cSolarTracker"] == 0:
+                    ancillaryData = Controller.processAncData(ancFile)
+                Controller.processL1c(inFilePath, outFilePath, ancillaryData)
             elif level == "L1D":
                 Controller.processL1d(inFilePath, outFilePath) 
 
@@ -553,7 +555,8 @@ class Controller:
         # print("processFilesSingleLevel")
         for fp in inFiles:            
             # Check that the input file matches what is expected for this processing level
-            fileName = os.path.split(fp)[1]
+            # Not case sensitive
+            fileName = str.lower(os.path.split(fp)[1])
             if level == "L1A":
                 srchStr = 'RAW'
             elif level == 'L1B':
@@ -566,7 +569,7 @@ class Controller:
                 srchStr = 'L1D'
             elif level == 'L2':
                 srchStr = 'L1E'
-            if fileName.find(srchStr) == -1:
+            if fileName.find(str.lower(srchStr)) == -1:
                 msg = f'{fileName} does not match expected input level for outputing {level}'
                 print(msg)
                 Utilities.writeLogFile(msg)

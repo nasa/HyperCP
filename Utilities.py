@@ -170,6 +170,17 @@ class Utilities:
         
         return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us)
 
+    # Converts datetime to Timetag2
+    @staticmethod
+    def datetime2TimeTag2(dt):
+        h = dt.hour
+        m = dt.minute
+        s = dt.second
+        ms = 1000*dt.microsecond
+        return float("%d%02d%02d%03d" % (h, m, s, ms))
+
+
+
     # @staticmethod
     # def epochSecToDateTagTimeTag2(eSec):
     #     dateTime = datetime.datetime.utcfromtimestamp(eSec)

@@ -329,7 +329,7 @@ class ProcessL2:
             newSlice[k] = columns[k][start:end] #up to not including end...
         return newSlice
 
-    # Interpolate wind to radiometry
+    # Interpolate ancillary to radiometry
     @staticmethod
     def interpAncillary(node, ancData, modData, radData):
         print('Interpolating field ancillary and/or modeled ancillary data to radiometry times...')

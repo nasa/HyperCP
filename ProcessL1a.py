@@ -72,7 +72,7 @@ class ProcessL1a:
                 hse += 1
             if gp.id.startswith("HED"):
                 hed += 1
-            if gp.id.startswith("GPRMC"):
+            if gp.id.startswith("GPRMC") or gp.id.startswith("GPGGA"):
                 gps += 1
         if hld != 2 or hsl != 2 or hse != 1 or hed != 1 or gps != 1:
             msg = "ProcessL1a.processL1a: Essential dataset missing. Aborting."
