@@ -160,10 +160,12 @@ class Window(QtWidgets.QWidget):
         self.popQueryCheckBox = QtWidgets.QCheckBox("", self)
         if int(MainConfig.settings["popQuery"]) == 1:
             self.popQueryCheckBox.setChecked(True)
-
         self.popQueryCheckBoxUpdate()      
-
         self.popQueryCheckBox.clicked.connect(self.popQueryCheckBoxUpdate)  
+
+        saveLabel = QtWidgets.QLabel("(Automatic on Window Close -->)")
+        self.saveButton = QtWidgets.QPushButton("Save Settings", self)
+        self.saveButton.clicked.connect(self.saveButtonClicked)
 
         ########################################################################################
         # Add QtWidgets to the Window
@@ -220,6 +222,11 @@ class Window(QtWidgets.QWidget):
         popQueryBox.addWidget(popQueryLabel)
         popQueryBox.addWidget(self.popQueryCheckBox)
         vBox.addLayout(popQueryBox)
+
+        saveQueryBox = QtWidgets.QHBoxLayout()  
+        saveQueryBox.addWidget(saveLabel)
+        saveQueryBox.addWidget(self.saveButton)
+        vBox.addLayout(saveQueryBox)
 
         vBox.addStretch(1)
 
@@ -470,7 +477,10 @@ class Window(QtWidgets.QWidget):
         print("Main - popQueryCheckBoxUpdate")
         MainConfig.settings["popQuery"] = int(self.popQueryCheckBox.isChecked())
         pass
-        
+    
+    def saveButtonClicked(self):
+        print("Main - saveButtonClicked")        
+        MainConfig.saveConfig(MainConfig.fileName)
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
