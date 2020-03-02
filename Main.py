@@ -4,7 +4,7 @@ above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 
 See README.md or README.pdf for installation instructions and guide.
 
-Version 1.0.b: Under development November 2019
+Version 1.0.b: Under development March 2020
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 """
 import os
@@ -27,7 +27,7 @@ class Window(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        # Create folders if they don't exist, and move data into Data
+        # First time run: Create folders if they don't exist, and move data into Data
         # This will only need to run the first time you run HyperInSPACE
         if not os.path.exists("Data"):  
            os.makedirs("Data")

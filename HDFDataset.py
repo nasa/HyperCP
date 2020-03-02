@@ -26,11 +26,10 @@ class HDFDataset:
         for k,v in ds.attributes.items():
             self.attributes[k] = v
 
-#    def getData(self, name='NONE'):
-#        return self.data[name]
-
-#    def setData(self, name, data):
-#        self.data[name] = data
+    def colDeleteRow(self, i):
+        for k in self.columns:
+            col = self.columns[k]
+            del col[0][i]
 
 
     def printd(self):

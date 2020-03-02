@@ -104,15 +104,7 @@ class Utilities:
         dm = (d*100) + m
         return dm
 
-
-    # Converts seconds to UTC
-    @staticmethod
-    def secToUtc(sec):
-        m, s = divmod(sec, 60)
-        h, m = divmod(m, 60)
-        return float("%d%02d%02d" % (h, m, s))
-
-    # Converts GPS UTC time to seconds
+    # Converts GPS UTC time (hhmmss.s)to seconds
     # Note: Does not support multiple days
     @staticmethod
     def utcToSec(utc):
@@ -125,6 +117,11 @@ class Utilities:
         s = int(t[4:])
         return ((h*60)+m)*60+s
 
+    # # Converts seconds to datetime
+    # @staticmethod
+    # def utcToDateTime(sec):
+    #     pass
+
     # Converts datetag to date string
     @staticmethod
     def dateTagToDate(dateTag):
@@ -136,6 +133,13 @@ class Utilities:
     def dateTagToDateTime(dateTag):
         dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
         return dt
+
+    # Converts seconds of the day (NOT GPS UTCPOS) to UTC
+    @staticmethod
+    def secToUtc(sec):
+        m, s = divmod(sec, 60)
+        h, m = divmod(m, 60)
+        return float("%d%02d%02d" % (h, m, s))
 
     # Converts seconds of the day to TimeTag2
     @staticmethod
@@ -166,8 +170,7 @@ class Utilities:
         m = int(t[2:4])
         s = int(t[4:6])
         us = 1000*int(t[6:])
-        # print(h, m, s, us)
-        
+        # print(h, m, s, us)        
         return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us)
 
     # Converts datetime to Timetag2
@@ -179,15 +182,14 @@ class Utilities:
         ms = 1000*dt.microsecond
         return float("%d%02d%02d%03d" % (h, m, s, ms))
 
-
-
-    # @staticmethod
-    # def epochSecToDateTagTimeTag2(eSec):
-    #     dateTime = datetime.datetime.utcfromtimestamp(eSec)
-    #     year = dateTime.timetuple()[0]
+    # Converts datetime to Datetag
+    @staticmethod
+    def datetime2DateTag(dt):
+        y = dt.year
+        # mon = dt.month
+        day = dt.timetuple().tm_yday
         
-
-    #     return
+        return float("%d%03d" % (y, day))
 
     # Converts HDFRoot timestamp attribute to seconds
     @staticmethod
@@ -198,7 +200,14 @@ class Utilities:
         m = int(t[1])
         s = int(t[2])
         return ((h*60)+m)*60+s
+
     
+    # @staticmethod
+    # def epochSecToDateTagTimeTag2(eSec):
+    #     dateTime = datetime.datetime.utcfromtimestamp(eSec)
+    #     year = dateTime.timetuple()[0]
+    #     return
+        
     # Checks if a string is a floating point number
     @staticmethod
     def isFloat(text):

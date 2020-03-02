@@ -17,90 +17,79 @@ class ProcessL1c:
     @staticmethod
     def filterData(group, badTimes):                    
         
-        # Now delete the record from each dataset in the group
-        ticker = 0
-        finalCount = 0
-        for timeTag in badTimes:                           
-                             
-            start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
-            stop = Utilities.timeTag2ToSec(list(timeTag[1])[0])                
-            
-            # Convert all time stamps to milliseconds UTC
-            if group.id.startswith("GPS"):
-                # This is handled seperately in order to deal with the UTC fields in GPS            
-                if ticker ==0:
-                    msg = "   Remove GPS Data"
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+        # Convert all time stamps to milliseconds UTC
+        if group.id.startswith("GP"):
+            # This is handled seperately in order to deal with the UTC fields in GPS            
+            msg = "   Remove GPS Data"
+            print(msg)
+            Utilities.writeLogFile(msg)
 
-                gpsTimeData = group.getDataset("UTCPOS")        
-                # gpsLonData = group.getDataset("LONPOS")
-                dataSec = []
-                for i in range(gpsTimeData.data.shape[0]):
-                    # Screen raw GPS UTCPOS data for NaN (ECOA-1)
-                    if not np.isnan(gpsTimeData.data["NONE"][i]):
-                        # UTC format (hhmmss.) similar to TT2 (hhmmssmss.) with the miliseconds truncated
-                        dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))    
-                    # print(dataSec[i])   
-            # elif group.id == "SOLARTRACKER_STATUS":                
-            #     msg = "   Ignore SOLARTRACKER_STATUSs"
-            #     print(msg)
-            #     Utilities.writeLogFile(msg)
-            #     return 1
-            else:
-                if ticker ==0:
-                    msg = f'   Remove {group.id} Data'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                timeData = group.getDataset("TIMETAG2")        
-                dataSec = []
-                for i in range(timeData.data.shape[0]):
-                    # Converts from TT2 (hhmmssmss. UTC) to milliseconds UTC
-                    dataSec.append(Utilities.timeTag2ToSec(timeData.data["NONE"][i])) 
+            gpsTimeData = group.getDataset("UTCPOS")        
+            # gpsLonData = group.getDataset("LONPOS")
+            dataSec = []
+            for i in range(gpsTimeData.data.shape[0]):
+                # Screen raw GPS UTCPOS data for NaN (ECOA-1)
+                if not np.isnan(gpsTimeData.data["NONE"][i]):
+                    # UTC format (hhmmss.) similar to TT2 (hhmmssmss.) with the miliseconds truncated
+                    dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))    
+                # print(dataSec[i])   
+        # elif group.id == "SOLARTRACKER_STATUS":                
+        #     msg = "   Ignore SOLARTRACKER_STATUS"
+        #     print(msg)
+        #     Utilities.writeLogFile(msg)
+        #     return 1
+        else:
+            msg = f'   Remove {group.id} Data'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            timeData = group.getDataset("TIMETAG2")        
+            dataSec = []
+            for i in range(timeData.data.shape[0]):
+                # Converts from TT2 (hhmmssmss. UTC) to milliseconds UTC
+                dataSec.append(Utilities.timeTag2ToSec(timeData.data["NONE"][i])) 
+
+        startLength = len(dataSec) # Length of either GPS UTCPOS or TimeTag2
+        msg = ('   Length of dataset prior to removal ' + str(startLength) + ' long')
+        print(msg)
+        Utilities.writeLogFile(msg)
+            
+        # Now delete the record from each dataset in the group
+        # finalCount = 0
+
+        # timeTag should be a list of two-element lists
+        counter = 0
+        for timeTag in badTimes:                                                        
+            # start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
+            # stop = Utilities.timeTag2ToSec(list(timeTag[1])[0]) 
+            start = Utilities.timeTag2ToSec(timeTag[0])
+            stop = Utilities.timeTag2ToSec(timeTag[1])                      
 
             msg = f'Eliminate data between: {timeTag}  (HHMMSSMSS)'
-            # print(msg)
-            Utilities.writeLogFile(msg)
-            
-            lenDataSec = len(dataSec)
-            if ticker == 0:
-                startLength = lenDataSec
-                ticker +=1
+            print(msg)
+            Utilities.writeLogFile(msg)            
 
-            # msg = ('   Length of dataset prior to removal ' + str(lenDataSec) + ' long')
-            # print(msg)
-            # Utilities.writeLogFile(msg)
-
-            if lenDataSec > 0:
-                counter = 0
-                for i in range(lenDataSec):
-                    if start <= dataSec[i] and stop >= dataSec[i]:
-                        # if group.id.startswith("GPR"):
-                        #     test = group.getDataset("UTCPOS").data["NONE"][i - counter]
-                        # else:
-                        #     test = group.getDataset("TIMETAG2").data["NONE"][i - counter]                    
-                        # print("     Removing " + str(test) + " " + str(Utilities.secToTimeTag2(dataSec[i])) + " index: " + str(i))                                        
-                        # print(i-counter)
+            if startLength > 0:                
+                for i in range(startLength):
+                    if start <= dataSec[i] and stop >= dataSec[i]:                      
                         group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
                         counter += 1
-                # print(str(counter) + " records eliminated.")
-                # if group.id.startswith("GPR"):
+                # if group.id.startswith("GP"):
                 #     test = len(group.getDataset("UTCPOS").data["NONE"])
                 # else:
                     # test = len(group.getDataset("TIMETAG2").data["NONE"])
                 # msg = ("     Length of dataset after removal " + str(test))
                 # print(msg)
                 # Utilities.writeLogFile(msg)
-                finalCount += counter
+                # finalCount += counter
             else:
-                msg = 'Data group is empty'
+                msg = 'Data group is empty. Continuing.'
                 print(msg)
                 Utilities.writeLogFile(msg)
         
         if badTimes == []:
             startLength = 1 # avoids div by zero below when finalCount is 0
         
-        return finalCount/startLength
+        return counter/startLength
 
     # Used to calibrate raw data (convert from L1a to L1b)
     # Reference: "SAT-DN-00134_Instrument File Format.pdf"
@@ -451,14 +440,12 @@ class ProcessL1c:
             else:
                 msg = f'No rotator data found. Filtering on absolute rotator angle failed.'
                 print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFile(msg)                       
 
-        # Add Relative Azimuth (REL_AZ) Dataset       
-        for group in node.groups:
-                if group.id == "SOLARTRACKER":
-                    gp = group                
-
-        if ConfigFile.settings["bL1cSolarTracker"]:
+        if ConfigFile.settings["bL1cSolarTracker"]:    
+            for group in node.groups:
+                    if group.id == "SOLARTRACKER":
+                        gp = group 
             if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):   
                 # TIMETAG2 format: hhmmssmss.0
                 timeStamp = gp.getDataset("TIMETAG2").data
@@ -474,28 +461,81 @@ class ProcessL1c:
                     print(msg)
                     Utilities.writeLogFile(msg)
         else:
+            # In case there is no SolarTracker to provide sun/sensor geometries, Pysolar will be used
+            # to estimate sun zenith and azimuth using GPS position and time, and sensor azimuth will
+            # come from ancillary data input.
+            
+            # Initialize a new group to host the unconventioal ancillary data
+            ancGroup = node.addGroup("ANCILLARY_NOTRACKER")
 
-            dateTime = ancillaryData.columns["DATETIME"][0]
-            timeStamp = [Utilities.datetime2TimeTag2(dt) for dt in dateTime]
+            ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
+            timeStamp = [Utilities.datetime2TimeTag2(dt) for dt in ancDateTime]
+            # ancSec =  [Utilities.timeTag2ToSec(tt2) for tt2 in timeStamp]
+            # Remove all ancillary data that does not intersect GPS data            
+            for gp in node.groups:
+                if gp.id == "ES_LIGHT":
+                    esTimeTag2 = gp.getDataset("TIMETAG2").data
+                    esDateTag = gp.getDataset("DATETAG").data
+                    esSec = [Utilities.timeTag2ToSec(tt2[0]) for tt2 in esTimeTag2]
+
+                if gp.id.startswith("GP"):
+                    gpsTime = gp.getDataset("UTCPOS").data["NONE"]
+                    gpsDateTime = []
+                    # Need to combine time and date
+                    for n, utc in enumerate(gpsTime):
+                        gpsSec = Utilities.utcToSec(utc)
+                        gpsTimeTag2 = Utilities.secToTimeTag2(gpsSec)
+                        # There is no date data in GPGGA
+                        if gp.id.startswith("GPGGA"):
+                            nearestIndex = Utilities.find_nearest(esSec,gpsSec)
+                            gpsDateTag = esDateTag[nearestIndex]
+                            gpsDate = Utilities.dateTagToDateTime(gpsDateTag[0])
+                            gpsDateTime.append(Utilities.timeTag2ToDateTime(gpsDate,gpsTimeTag2))
+                        else:
+                            gpsDateTag = ancillaryData.columns["DATETAG"][n]
+                            gpsDate = Utilities.dateTagToDateTime(gpsDateTag[0])
+                            gpsDateTime.append(Utilities.timeTag2ToDateTime(gpsDateTag,gpsTimeTag2))
+            
+            # Eliminate all ancillary data outside file times
+            ticker = 0
+            for i, dt in enumerate(ancDateTime):
+                if dt < min(gpsDateTime) or dt > max(gpsDateTime):                    
+                    index = i-ticker # adjusts for deleted rows
+                    ticker += 1
+                    ancillaryData.colDeleteRow(index) # this removes row from data structure as well                
+
+            # Reinitialize with new, smaller dataset
+            ancDateTime = ancillaryData.columns["DATETIME"][0]
             shipAzimuth = ancillaryData.columns["HEADING"][0]
+            # ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
+            timeStamp = [Utilities.datetime2TimeTag2(dt) for dt in ancDateTime]
+            ancDateTag = [Utilities.datetime2DateTag(dt) for dt in ancDateTime]
             home = ancillaryData.columns["HOMEANGLE"][0]
             for i, offset in enumerate(home):
                 if offset > 180:
                     home[i] = offset-360
             sasAzimuth = list(map(add, shipAzimuth, home))
+
             lat = ancillaryData.columns["LATITUDE"][0]
             lon = ancillaryData.columns["LATITUDE"][0]
-            relAz = []
             sunAzimuth = []
-            for i, dt_utc in enumerate(dateTime):
-                sunAzimuth.append(get_azimuth(lat[i],lon[i],pytz.utc.localize(dt_utc),0))            
-            relAz=[]
-
+            sunZenith = []
+            for i, dt_utc in enumerate(ancDateTime):
+                # Run Pysolar to obtain solar geometry
+                sunAzimuth.append(get_azimuth(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
+                sunZenith.append(90 - get_altitude(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
+            
+        relAz=[]
         for index in range(len(sunAzimuth)):
             if ConfigFile.settings["bL1cSolarTracker"]:
+                # Changes in the angle between the bow and the sensor changes are tracked by SolarTracker
+                # This home offset is generally set in .sat file in the field, but can be updated here with
+                # the value from the configuration window (L1C)
                 offset = home
             else:
+                # Changes in the angle between the bow and the sensor changes are tracked in ancillary data
                 offset = home[index]
+
             # Check for angles spanning north
             if sunAzimuth[index] > sasAzimuth[index]:
                 hiAng = sunAzimuth[index] + offset
@@ -510,6 +550,20 @@ class ProcessL1c:
                 relAzimuthAngle = hiAng-loAng
 
             relAz.append(relAzimuthAngle)
+
+        ancGroup.addDataset("TIMETAG2")
+        ancGroup.addDataset("DATETAG")
+        ancGroup.addDataset("SOLAR_AZ")
+        ancGroup.addDataset("SZA")
+        ancGroup.addDataset("HEADING")
+        ancGroup.addDataset("REL_AZ")
+
+        ancGroup.datasets["TIMETAG2"].data = np.array(timeStamp)
+        ancGroup.datasets["DATETAG"].data = np.array(ancDateTag)
+        ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuth)
+        ancGroup.datasets["SZA"].data = np.array(sunZenith)
+        ancGroup.datasets["HEADING"].data = np.array(shipAzimuth)
+        ancGroup.datasets["REL_AZ"].data = np.array(relAz)
 
         if ConfigFile.settings["bL1cSolarTracker"]:               
             newRelAzData.columns["REL_AZ"] = relAz
@@ -527,71 +581,68 @@ class ProcessL1c:
             
             i = 0
             # try:
-            for group in node.groups:
-                if group.id == "SOLARTRACKER":
-                    gp = group
+            # for group in node.groups:
+            #     if group.id == "SOLARTRACKER":
+            #         gp = group
 
-            if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):   
-                # TIMETAG2 format: hhmmssmss.0
-                timeStamp = gp.getDataset("TIMETAG2").data
-                # rotator = gp.getDataset("POINTING").data["ROTATOR"]                        
-                # home = float(ConfigFile.settings["fL1cRotatorHomeAngle"])
-                # sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]
-                # sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
-                # shipAzimuth = gp.getDataset("HEADING").data["SHIP_TRUE"]
-                relAzimuthMin = float(ConfigFile.settings["fL1cSunAngleMin"])
-                relAzimuthMax = float(ConfigFile.settings["fL1cSunAngleMax"])
+            # if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):                           
+            relAzimuthMin = float(ConfigFile.settings["fL1cSunAngleMin"])
+            relAzimuthMax = float(ConfigFile.settings["fL1cSunAngleMax"])
 
-                if badTimes is None:
-                    badTimes = []
+            if badTimes is None:
+                badTimes = []
 
-                start = -1
-                stop = []
-                for index in range(len(relAz)):
-                    relAzimuthAngle = relAz[index]
+            start = -1
+            stop = []
+            # The length of relAz (and therefore the value of i) depends on whether ancillary
+            #  data are used or SolarTracker data
+            for index in range(len(relAz)):
+                relAzimuthAngle = relAz[index]
 
-                    if relAzimuthAngle > relAzimuthMax or relAzimuthAngle < relAzimuthMin or math.isnan(relAzimuthAngle):   
-                        i += 1                              
-                        if start == -1:
-                            print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle)))
-                            start = index
-                        stop = index                                
-                    else:                                
-                        if start != -1:
-                            print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle)))
-                            startstop = [timeStamp[start],timeStamp[stop]]
-                            msg = f'   Flag data from TT2: {startstop[0]}  to {startstop[1]} (HHMMSSMSS)'
-                            # print(msg)
-                            Utilities.writeLogFile(msg)
-                      
-                            badTimes.append(startstop)
-                            start = -1
-                
-                msg = f'Percentage of SATNAV data out of Solar Azimuth bounds: {round(100*i/len(timeStamp))} %'
-                print(msg)
-                Utilities.writeLogFile(msg)
-
-                if start != -1 and stop == index: # Records from a mid-point to the end are bad
-                    startstop = [timeStamp[start],timeStamp[stop]]
-                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
-                    # print(msg)
-                    Utilities.writeLogFile(msg)
-                    if badTimes is None: # only one set of records
-                        badTimes = [startstop]
-                    else:
+                if relAzimuthAngle > relAzimuthMax or relAzimuthAngle < relAzimuthMin or math.isnan(relAzimuthAngle):   
+                    i += 1                              
+                    if start == -1:
+                        print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle,2)))
+                        start = index
+                    stop = index                                
+                else:                                
+                    if start != -1:
+                        print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle,2)))
+                        startstop = [timeStamp[start],timeStamp[stop]]
+                        msg = f'   Flag data from TT2: {startstop[0]}  to {startstop[1]} (HHMMSSMSS)'
+                        # print(msg)
+                        Utilities.writeLogFile(msg)
+                    
                         badTimes.append(startstop)
+                        start = -1
+            
+            for group in node.groups:
+                if group.id.startswith("GP"):
+                    gp = group
+                        
+            msg = f'Percentage of ancillary data out of Solar Azimuth bounds: {round(100*i/len(relAz))} %'
+            print(msg)
+            Utilities.writeLogFile(msg)
 
-                if start==0 and stop==index: # All records are bad  
-                    msg = ("All records out of bounds. Aborting.")
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return None
-            else:
-                msg = f'No rotator, solar azimuth, and/or relative azimuth data found. Filtering on relative azimuth failed.'
+            if start != -1 and stop == index: # Records from a mid-point to the end are bad
+                startstop = [timeStamp[start],timeStamp[stop]]
+                msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
+                # print(msg)
+                Utilities.writeLogFile(msg)
+                if badTimes is None: # only one set of records
+                    badTimes = [startstop]
+                else:
+                    badTimes.append(startstop)
+
+            if start==0 and stop==index: # All records are bad  
+                msg = ("All records out of bounds. Aborting.")
                 print(msg)
                 Utilities.writeLogFile(msg)
-
-        
+                return None
+            # else:
+            #     msg = f'No rotator, solar azimuth, and/or relative azimuth data found. Filtering on relative azimuth failed.'
+            #     print(msg)
+            #     Utilities.writeLogFile(msg)        
                         
         msg = "Eliminate combined filtered data from datasets.*****************************"
         print(msg)
@@ -613,7 +664,7 @@ class ProcessL1c:
                 
                 # Confirm that data were removed from Root    
                 group = node.getGroup(gp.id)
-                if gp.id.startswith("GPS"):
+                if gp.id.startswith("GP"):
                     gpTimeset  = group.getDataset("UTCPOS") 
                 else:
                     gpTimeset  = group.getDataset("TIMETAG2") 

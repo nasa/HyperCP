@@ -216,17 +216,20 @@ datasets:
 
 #### Level 1C
 
-Process data from L1B to L1C. Data are filtered for vessel attitude (pitch and roll), viewing and solar geometry. *It should be noted that viewing geometry should conform to total radiance (Lt) measured at about 40 degrees from nadir, and sky radiance (Li) at about 40 degrees from zenith* **(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**.
+Process data from L1B to L1C. Data are filtered for vessel attitude (pitch, roll, and yaw), viewing and solar geometry. *It should be noted that viewing geometry should conform to total radiance (Lt) measured at about 40 degrees from nadir, and sky radiance (Li) at about 40 degrees from zenith* **(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**.
 
-**Rotator Home Angle Offset**: The offset between the neutral position of the HyperSAS SolarTracker unit and the bow of the ship. This *should* be zero if the SAS Home Direction was set at the time of data collection as per Satlantic SAT-DN-635. Set to zero if using a non-Satlantic solar tracker and L1B contains the 'SAS_TRUE' data field with a pre-adjusted sensor azimuth angle (0 north, clockwise).
+**SolarTracker**: Select when using the SolarTracker unit. In this case data regarding sensor and solor geometries will come from the SolarTracker (i.e. SATNAV**.tdf). If deselected, solar geometries will be calculated from GPS time and position with Pysolar, and sensor azimuth (i.e. ship heading and sensor offset) must either be provided in the ancillary data
 
-**Rotator Delay**: Seconds of data discarded after a SolarTracker rotation is detected. Set to 0 to ignore.
+**Rotator Home Angle Offset**: The offset between the neutral position of the HyperSAS unit and the bow of the ship. This *should* be zero if the SAS Home Direction was set at the time of data collection in the SolarTracker as per Satlantic SAT-DN-635. If no SolarTracker was used, the offset can be set here if stable, or in the ancillary data file if changeable in time. Without SolarTracker, L1C processing will require at a minimum ship heading data in the ancillary file.
+
+**Rotator Delay**: Seconds of data discarded after a SolarTracker rotation is detected. Set to 0 to ignore. Not an option without SolarTracker
 **Default: 60 seconds (Vandenberg 2016)**
 
-**Pitch & Roll Filter** (optional): Data outside these thresholds are discarded if this is enabled in the checkbox.  
+**Pitch & Roll Filter** (optional): Data outside these thresholds are discarded if this is enabled in the checkbox. Not currently an option without SolarTracker. 
+*{To Do: see what other accelerometer data are being collected and accomodate.}*
 **Default: 5 degrees (IOCCG Draft Protocols; Zibordi et al. 2019; 2 deg "ideal" to 5 deg "upper limit")**
 
-**Absolute Rotator Angle Filter** (optional): Angles relative to the SolarTracker neutral angle beyond which data will be excluded due to obstructions blocking the field of view. These are generally set in the SolarTracker software when initialized for a given platform. 
+**Absolute Rotator Angle Filter** (optional): Angles relative to the SolarTracker neutral angle beyond which data will be excluded due to obstructions blocking the field of view. These are generally set in the SolarTracker software when initialized for a given platform. Not an option without SolarTracker.
 **Default: -40 to +40 (arbitrary)**
 
 **Relative Solar Azimuth Filter** (optional): Relative azimuth angle in degrees between the viewing Li/Lt and the sun.  
