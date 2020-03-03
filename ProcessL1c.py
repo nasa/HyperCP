@@ -510,11 +510,18 @@ class ProcessL1c:
             
             # Eliminate all ancillary data outside file times
             ticker = 0
+            print('Removing non-pertinent ancillary data... May take a moment with large SeaBASS file')
             for i, dt in enumerate(ancDateTime):
                 if dt < min(gpsDateTime) or dt > max(gpsDateTime):                    
                     index = i-ticker # adjusts for deleted rows
                     ticker += 1
                     ancillaryData.colDeleteRow(index) # this removes row from data structure as well                
+            # Test if any data is left
+            if not ancillaryData.columns["DATETIME"][0]:
+                msg = "No coincident ancillary data found. Aborting"
+                print(msg)
+                Utilities.writeLogFile(msg)                   
+                return None 
 
             # Reinitialize with new, smaller dataset
             ancDateTime = ancillaryData.columns["DATETIME"][0]

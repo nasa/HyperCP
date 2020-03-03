@@ -16,16 +16,17 @@ class AncillaryReader:
         print("AncillaryReader.readAncillary: " + fp)
 
         # metData = readSB(fp,mask_missing=False, no_warn=True)
-        ''' Note: All field names apparently converted to lower case in readSB.
-        Field names in SeaBASS are case insensitive'''
-        if not readSB(fp, no_warn=True):
+        # Note: All field names apparently converted to lower case in readSB.
+        # Field names in SeaBASS are case insensitive
+        
+        try:                    
+            print('This may take a moment on large SeaBASS files...')
+            metData=readSB(fp, no_warn=True)
+        except IOError:
             msg = "Unable to read ancillary data file. Make sure it is in SeaBASS format."
             print(msg)
             Utilities.writeLogFile(msg)  
             return None
-        else:
-            print('This may take a moment on large SeaBASS files...')
-            metData=readSB(fp, no_warn=True)
 
         # metData = readSB(fp, no_warn=False)
         if not metData.fd_datetime():
