@@ -54,25 +54,34 @@ class ProcessL1c:
         Utilities.writeLogFile(msg)
             
         # Now delete the record from each dataset in the group
-        # finalCount = 0
+        finalCount = 0
+        originalLength = len(dataSec)
+        
+        for timeTag in badTimes:     
+            # Need to reinitialize for each loop
+            startLength = len(dataSec) # Length of either GPS UTCPOS or TimeTag2
+            newDataSec = []
 
-        # timeTag should be a list of two-element lists
-        counter = 0
-        for timeTag in badTimes:                                                        
-            # start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
-            # stop = Utilities.timeTag2ToSec(list(timeTag[1])[0]) 
-            start = Utilities.timeTag2ToSec(timeTag[0])
-            stop = Utilities.timeTag2ToSec(timeTag[1])                      
+            if ConfigFile.settings['bL1cSolarTracker']:
+                start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
+                stop = Utilities.timeTag2ToSec(list(timeTag[1])[0]) 
+            else:
+                start = Utilities.timeTag2ToSec(timeTag[0])
+                stop = Utilities.timeTag2ToSec(timeTag[1])                      
 
-            msg = f'Eliminate data between: {timeTag}  (HHMMSSMSS)'
-            print(msg)
-            Utilities.writeLogFile(msg)            
+            # msg = f'Eliminate data between: {timeTag}  (HHMMSSMSS)'
+            # print(msg)
+            # Utilities.writeLogFile(msg)            
 
-            if startLength > 0:                
+            if startLength > 0:  
+                counter = 0              
                 for i in range(startLength):
                     if start <= dataSec[i] and stop >= dataSec[i]:                      
                         group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
                         counter += 1
+                        finalCount += 1
+                    else:
+                        newDataSec.append(dataSec[i])
                 # if group.id.startswith("GP"):
                 #     test = len(group.getDataset("UTCPOS").data["NONE"])
                 # else:
@@ -85,11 +94,13 @@ class ProcessL1c:
                 msg = 'Data group is empty. Continuing.'
                 print(msg)
                 Utilities.writeLogFile(msg)
-        
+            dataSec = newDataSec.copy()
+
+
         if badTimes == []:
             startLength = 1 # avoids div by zero below when finalCount is 0
         
-        return counter/startLength
+        return finalCount/originalLength
 
     # Used to calibrate raw data (convert from L1a to L1b)
     # Reference: "SAT-DN-00134_Instrument File Format.pdf"
@@ -550,25 +561,25 @@ class ProcessL1c:
             else:
                 relAzimuthAngle = hiAng-loAng
 
-            relAz.append(relAzimuthAngle)
-
-        ancGroup.addDataset("TIMETAG2")
-        ancGroup.addDataset("DATETAG")
-        ancGroup.addDataset("SOLAR_AZ")
-        ancGroup.addDataset("SZA")
-        ancGroup.addDataset("HEADING")
-        ancGroup.addDataset("REL_AZ")
-
-        ancGroup.datasets["TIMETAG2"].data = np.array(timeStamp, dtype=[('NONE', '<f8')])
-        ancGroup.datasets["DATETAG"].data = np.array(ancDateTag, dtype=[('NONE', '<f8')])
-        ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
-        ancGroup.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
-        ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
-        ancGroup.datasets["REL_AZ"].data = np.array(relAz, dtype=[('NONE', '<f8')])
+            relAz.append(relAzimuthAngle)        
 
         if ConfigFile.settings["bL1cSolarTracker"]:               
             newRelAzData.columns["REL_AZ"] = relAz
             newRelAzData.columnsToDataset()
+        else:
+            ancGroup.addDataset("TIMETAG2")
+            ancGroup.addDataset("DATETAG")
+            ancGroup.addDataset("SOLAR_AZ")
+            ancGroup.addDataset("SZA")
+            ancGroup.addDataset("HEADING")
+            ancGroup.addDataset("REL_AZ")
+
+            ancGroup.datasets["TIMETAG2"].data = np.array(timeStamp, dtype=[('NONE', '<f8')])
+            ancGroup.datasets["DATETAG"].data = np.array(ancDateTag, dtype=[('NONE', '<f8')])
+            ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
+            ancGroup.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
+            ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
+            ancGroup.datasets["REL_AZ"].data = np.array(relAz, dtype=[('NONE', '<f8')])
 
 
         # Apply Relative Azimuth filter 
@@ -603,7 +614,7 @@ class ProcessL1c:
                 if relAzimuthAngle > relAzimuthMax or relAzimuthAngle < relAzimuthMin or math.isnan(relAzimuthAngle):   
                     i += 1                              
                     if start == -1:
-                        print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle,2)))
+                        # print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle,2)))
                         start = index
                     stop = index                                
                 else:                                

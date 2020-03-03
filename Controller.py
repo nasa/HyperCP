@@ -435,6 +435,8 @@ class Controller:
             elif level == "L1C":
                 if ConfigFile.settings["bL1cSolarTracker"] == 0:
                     ancillaryData = Controller.processAncData(ancFile)
+                else:
+                    ancillaryData = None
                 Controller.processL1c(inFilePath, outFilePath, ancillaryData)
             elif level == "L1D":
                 Controller.processL1d(inFilePath, outFilePath) 

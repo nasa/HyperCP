@@ -404,7 +404,10 @@ class ProcessL1d:
         for gp in node.groups:
             if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensorType):                
                 node.removeGroup(gp)
-
+        # And rename the corrected light frame
+        for gp in node.groups:
+            if gp.attributes["FrameType"] == "ShutterLight" and gp.getDataset(sensorType):
+                gp.id = gp.id[0:2] # Strip off "_LIGHT" from the name
         return True
 
 
