@@ -558,12 +558,12 @@ class ProcessL1c:
         ancGroup.addDataset("HEADING")
         ancGroup.addDataset("REL_AZ")
 
-        ancGroup.datasets["TIMETAG2"].data = np.array(timeStamp)
-        ancGroup.datasets["DATETAG"].data = np.array(ancDateTag)
-        ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuth)
-        ancGroup.datasets["SZA"].data = np.array(sunZenith)
-        ancGroup.datasets["HEADING"].data = np.array(shipAzimuth)
-        ancGroup.datasets["REL_AZ"].data = np.array(relAz)
+        ancGroup.datasets["TIMETAG2"].data = np.array(timeStamp, dtype=[('NONE', '<f8')])
+        ancGroup.datasets["DATETAG"].data = np.array(ancDateTag, dtype=[('NONE', '<f8')])
+        ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
+        ancGroup.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
+        ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
+        ancGroup.datasets["REL_AZ"].data = np.array(relAz, dtype=[('NONE', '<f8')])
 
         if ConfigFile.settings["bL1cSolarTracker"]:               
             newRelAzData.columns["REL_AZ"] = relAz

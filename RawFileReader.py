@@ -101,7 +101,7 @@ class RawFileReader:
                                     gp.attributes["FrameTag"] = cf.id
 
                                 # if key.startswith('SATPYR'):
-                                    # print('fungool')
+                                    # print('curious...')
 
                                 try:
                                     num = cf.convertRaw(msg, gp)
