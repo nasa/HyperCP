@@ -467,6 +467,7 @@ class ProcessL1c:
             
             # Initialize a new group to host the unconventioal ancillary data
             ancGroup = node.addGroup("ANCILLARY_NOTRACKER")
+            ancGroup.attributes["FrameType"] = "Not Required"
 
             ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
             timeStamp = [Utilities.datetime2TimeTag2(dt) for dt in ancDateTime]
