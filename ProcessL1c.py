@@ -626,7 +626,7 @@ class ProcessL1c:
                     stop = index                                
                 else:                                
                     if start != -1:
-                        print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle,2)))
+                        # print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle,2)))
                         startstop = [timeStamp[start],timeStamp[stop]]
                         msg = f'   Flag data from TT2: {startstop[0]}  to {startstop[1]} (HHMMSSMSS)'
                         # print(msg)

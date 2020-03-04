@@ -179,22 +179,24 @@ class ProcessL1e:
 
         # GPS
         # Creates new gps group with Datetag/Timetag2 columns appended to all datasets
-        gpsTimeData = gpsGroup.getDataset("UTCPOS")
-        gpsCourseData = gpsGroup.getDataset("COURSE")
+        gpsTimeData = gpsGroup.getDataset("UTCPOS")        
         gpsLatPosData = gpsGroup.getDataset("LATPOS")
         gpsLonPosData = gpsGroup.getDataset("LONPOS")
-        # gpsMagVarData = gpsGroup.getDataset("MAGVAR")
-        gpsSpeedData = gpsGroup.getDataset("SPEED")
         gpsLatHemiData = gpsGroup.getDataset("LATHEMI")
-        gpsLonHemiData = gpsGroup.getDataset("LONHEMI")
+        gpsLonHemiData = gpsGroup.getDataset("LONHEMI")        
+        if ConfigFile.settings["bL1cSolarTracker"]:
+            # gpsMagVarData = gpsGroup.getDataset("MAGVAR")
+            gpsCourseData = gpsGroup.getDataset("COURSE")
+            gpsSpeedData = gpsGroup.getDataset("SPEED")
 
         newGPSGroup = node.getGroup("GPS")
-        # newGPSGroup = node.getGroup("Ancillary")
-        newGPSCourseData = newGPSGroup.addDataset("COURSE")
+        # newGPSGroup = node.getGroup("Ancillary")        
         newGPSLatPosData = newGPSGroup.addDataset("LATITUDE")
         newGPSLonPosData = newGPSGroup.addDataset("LONGITUDE")
-        # newGPSMagVarData = newGPSGroup.addDataset("MAGVAR")
-        newGPSSpeedData = newGPSGroup.addDataset("SPEED")
+        if ConfigFile.settings["bL1cSolarTracker"]:
+            # newGPSMagVarData = newGPSGroup.addDataset("MAGVAR")
+            newGPSCourseData = newGPSGroup.addDataset("COURSE")
+            newGPSSpeedData = newGPSGroup.addDataset("SPEED")
 
         # Add Datetag, Timetag2 data to gps groups
         # This matches ES data after interpolation
@@ -251,18 +253,20 @@ class ProcessL1e:
 
         # Interpolate by time values
         # Convert GPS UTC time values to seconds to be used for interpolation        
-        # Angular interpolation is for compass angles 0-360 degrees (i.e. crossing 0, North)       
-        ProcessL1e.interpolateL1eAngular(gpsCourseData, xTimer, yTimer, newGPSCourseData, gpsCourseData.id, fileName)        
         ProcessL1e.interpolateL1e(gpsLatPosData, xTimer, yTimer, newGPSLatPosData, gpsLatPosData.id, 'linear', fileName)
         ProcessL1e.interpolateL1e(gpsLonPosData, xTimer, yTimer, newGPSLonPosData, gpsLonPosData.id, 'linear', fileName)
-        # ProcessL1e.interpolateL1e(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, gpsMagVarData.id, 'linear', fileName)
-        ProcessL1e.interpolateL1e(gpsSpeedData, xTimer, yTimer, newGPSSpeedData, gpsSpeedData.id, 'linear', fileName)
+        if ConfigFile.settings["bL1cSolarTracker"]:
+            # ProcessL1e.interpolateL1e(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, gpsMagVarData.id, 'linear', fileName)
+            # Angular interpolation is for compass angles 0-360 degrees (i.e. crossing 0, North)       
+            ProcessL1e.interpolateL1eAngular(gpsCourseData, xTimer, yTimer, newGPSCourseData, gpsCourseData.id, fileName)        
+            ProcessL1e.interpolateL1e(gpsSpeedData, xTimer, yTimer, newGPSSpeedData, gpsSpeedData.id, 'linear', fileName)
+            newGPSCourseData.columnsToDataset()
+            # newGPSMagVarData.columnsToDataset()
+            newGPSSpeedData.columnsToDataset()
 
-        newGPSCourseData.columnsToDataset()
         newGPSLatPosData.columnsToDataset()
         newGPSLonPosData.columnsToDataset()
-        # newGPSMagVarData.columnsToDataset()
-        newGPSSpeedData.columnsToDataset()
+        
 
     # interpolate SATNAV to match ES
     @staticmethod
@@ -320,7 +324,7 @@ class ProcessL1e:
         newSATNAVHumidityData.columns["Datetag"] = esData.data["Datetag"].tolist()
         newSATNAVHumidityData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
 
-        # Convert GPS UTC time values to seconds to be used for interpolation
+        # Convert SATNAV time values to seconds to be used for interpolation
         xTimer = []
         for i in range(satnavTimeData.data.shape[0]):
             xTimer.append(Utilities.timeTag2ToSec(satnavTimeData.data["NONE"][i]))
@@ -603,6 +607,9 @@ class ProcessL1e:
             elif gp.getDataset("AZIMUTH"):
                 # print("SATNAV")
                 satnavGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
+            elif gp.getDataset("SOLAR_AZ"):
+                # print("ANCILLARY_NOTRACKER")
+                ancGroup = gp 
             elif gp.getDataset("MESSAGE"):
                 # print("SATNAV")
                 satmsgGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
@@ -626,6 +633,8 @@ class ProcessL1e:
             pyrData = newPyrGroup.getDataset("T")
         if satnavGroup is not None:
             root.addGroup("SOLARTRACKER")
+        if ancGroup is not None:
+            root.addGroup("ANCILLARY_NOTRACKER")
         if satmsgGroup is not None:
             newSatMSGGroup = root.addGroup("SOLARTRACKER_STATUS")
             # SATMSG (SOLARTRACKER_STATUS) has no date or time, just propogate it as is
@@ -639,9 +648,10 @@ class ProcessL1e:
             newSatMSG.columnsToDataset()
 
         
-        ''' PysciDON interpolates to the SLOWEST sampling rate, but ProSoft
-        interpolates to the FASTEST. Not much in the literature on this, although
-        Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises.'''
+        # PysciDON interpolates to the SLOWEST sampling rate, but ProSoft
+        # interpolates to the FASTEST. Not much in the literature on this, although
+        # Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises.
+
         # Interpolate all datasets to the SLOWEST radiometric sampling rate
         esLength = len(esData.data["Timetag2"].tolist())
         liLength = len(liData.data["Timetag2"].tolist())
@@ -665,9 +675,9 @@ class ProcessL1e:
             interpData = ltData
 
         # Perform time interpolation
-        ''' Note that only the specified datasets in each group will be interpolated and 
-        carried forward. For radiometers, this means that ancillary metadata such as 
-        SPECC_TEMP and THERMAL_RESP will be dropped at L1E and beyond.'''
+        # Note that only the specified datasets in each group will be interpolated and 
+        # carried forward. For radiometers, this means that ancillary metadata such as 
+        # SPECC_TEMP and THERMAL_RESP will be dropped at L1E and beyond.
         if not ProcessL1e.interpolateData(esData, interpData, "ES", fileName):
             return None
         if not ProcessL1e.interpolateData(liData, interpData, "LI", fileName):
@@ -677,7 +687,8 @@ class ProcessL1e:
         if not ProcessL1e.interpolateData(pyrData, interpData, "T", fileName):
             return None
         ProcessL1e.interpolateGPSData(root, gpsGroup, fileName)
-        ProcessL1e.interpolateSATNAVData(root, satnavGroup, fileName)
+        if ConfigFile.settings["bL1cSolarTracker"]:
+            ProcessL1e.interpolateSATNAVData(root, satnavGroup, fileName)
 
         # Match wavelengths across instruments
         # Calls interpolateWavelengths and matchColumns

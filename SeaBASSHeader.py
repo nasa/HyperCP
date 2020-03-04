@@ -103,7 +103,7 @@ class SeaBASSHeader:
             pitchRollFilt = "On"
         else: 
             pitchRollFilt = "Off"
-        if ConfigFile.settings["bL1cCleanRotatorAngle"]:
+        if ConfigFile.settings["bL1cRotatorAngle"]:
             cleanRotFilt = "On"
         else: 
             cleanRotFilt = "Off"
