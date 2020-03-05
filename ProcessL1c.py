@@ -240,11 +240,13 @@ class ProcessL1c:
     def processTIME2(ds, cd):
         return
         #x = datetime.fromtimestamp(x).strftime("%y-%m-%d %H:%M:%S")
-
-    # Filters data for pitch, roll, yaw, and rotator.
-    # Calibrates raw data from L1a using information from calibration file
+    
     @staticmethod
     def processL1c(node, calibrationMap, ancillaryData=None):    
+        '''
+        Filters data for pitch, roll, yaw, and rotator.
+        Calibrates raw data from L1a using information from calibration file
+        '''
 
         node.attributes["PROCESSING_LEVEL"] = "1c"     
 
@@ -574,10 +576,12 @@ class ProcessL1c:
 
             relAz.append(relAzimuthAngle)        
 
+        # If using a SolarTracker, add RelAz to the SATNAV/SOLARTRACKER group...
         if ConfigFile.settings["bL1cSolarTracker"]:               
             newRelAzData.columns["REL_AZ"] = relAz
-            newRelAzData.columnsToDataset()
+            newRelAzData.columnsToDataset()        
         else:
+            # ... otherwise populate the ancGroup
             ancGroup.addDataset("TIMETAG2")
             ancGroup.addDataset("DATETAG")
             ancGroup.addDataset("SOLAR_AZ")

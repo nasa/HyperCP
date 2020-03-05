@@ -201,7 +201,77 @@ class Utilities:
         s = int(t[2])
         return ((h*60)+m)*60+s
 
-    
+    # Correct TIMETAG2 values if they are not strictly increasing
+    # (strictly increasing values required for interpolation)
+    # Also screens for nonsense timetags like 0.0 or NaN
+    @staticmethod
+    def fixDateTime(gp):
+        tt2 = gp.getDataset("TIMETAG2").data["NONE"]
+        dateTag = gp.getDataset("DATETAG").data["NONE"]
+        dateTimeDataset = gp.getDataset("DATETIME")
+
+        # Test for aberrant values
+        dateTime = []
+        flag = []
+        for i, timeTag in enumerate(tt2):
+            if timeTag != 0.0 and not np.isnan(timeTag):
+                flag.append(0)
+                dateTime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(dateTag[i]), timeTag))
+            else:
+                flag.append(1)
+                dateTime.append(np.nan) # placeholder; will be removed
+                msg = f'Bad TIMETAG2 flagged at {i}'
+                print(msg)
+                Utilities.writeLogFile(msg)
+        
+        # Delete aberrant values
+        total = len(dateTime)
+        i = 0
+        while i < total:
+            if flag[i]==1:
+                gp.datasetDeleteRow(i)
+                del dateTime[i]                
+                msg = f'Aberrant TIMETAG2 row deleted at {i}'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                total = total - 1
+                continue
+            i += 1
+
+        # Allocate the group dataset.data
+        dateTimeDataset.data = dateTime
+
+        # Test for strictly ascending values 
+        # Not sensitive to UTC midnight (i.e. in datetime format)
+        total = len(dateTime)
+        if total >= 2:
+            # Check the first element prior to looping over rest
+            i = 0
+            if dateTime[i+1] <= dateTime[i]:
+                    gp.datasetDeleteRow(i)
+                    total = total - 1
+                    msg = f'Out of order TIMETAG2 row deleted at {i}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+            i = 1
+            while i < total:
+
+                if dateTime[i] <= dateTime[i-1]:
+                    gp.datasetDeleteRow(i)
+                    total = total - 1
+                    msg = f'Out of order TIMETAG2 row deleted at {i}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    continue
+                i += 1
+        else:
+            msg = '************Too few records to test for ascending timestamps. Exiting.'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return False
+
+        return flag
+
     # @staticmethod
     # def epochSecToDateTagTimeTag2(eSec):
     #     dateTime = datetime.datetime.utcfromtimestamp(eSec)

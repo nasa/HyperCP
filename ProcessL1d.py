@@ -270,11 +270,11 @@ class ProcessL1d:
                 
                 # Because x is now a list of datetime tuples, they'll need to be
                 # converted to Unix timestamp values
-
                 ''' WILL THIS WORK IN WINDOWS ??'''
-
                 xTS = [calendar.timegm(xDT.timetuple()) for xDT in x]
                 newXTS = [calendar.timegm(xDT.timetuple()) for xDT in new_x]
+
+                # newDarkData[k] = Utilities.interp(x,y,new_x, fill_value=np.nan)
                 newDarkData[k] = Utilities.interp(xTS,y,newXTS, fill_value=np.nan)
 
 
@@ -297,13 +297,9 @@ class ProcessL1d:
             Utilities.writeLogFile(msg)
             exit
 
-        #print(lightData.data.shape)
-        #print(newDarkData.shape)
-
         # Correct light data by subtracting interpolated dark data from light data
         for k in lightData.data.dtype.fields.keys():
             for x in range(lightData.data.shape[0]):
-                # THIS CHANGES NOT ONLY lightData, BUT THE ROOT OBJECT gp FROM processDarkCorrection
                 lightData.data[k][x] -= newDarkData[k][x]
 
         if Utilities.hasNan(lightData):
@@ -365,76 +361,7 @@ class ProcessL1d:
     #         Utilities.writeLogFile(msg)
     #         return False
 
-    # Correct TIMETAG2 values if they are not strictly increasing
-    # (strictly increasing values required for interpolation)
-    # Also screens for nonsense timetags like 0.0 or NaN
-    @staticmethod
-    def fixDateTime(gp):
-        tt2 = gp.getDataset("TIMETAG2").data["NONE"]
-        dateTag = gp.getDataset("DATETAG").data["NONE"]
-        dateTimeDataset = gp.getDataset("DATETIME")
-        dateTime = []
-        flag = []
-        for i, timeTag in enumerate(tt2):
-            if timeTag != 0.0 and not np.isnan(timeTag):
-                flag.append(0)
-                dateTime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(dateTag[i]), timeTag))
-            else:
-                flag.append(1)
-                dateTime.append(np.nan) # placeholder; will be removed
-                msg = f'Bad TIMETAG2 flagged at {i}'
-                print(msg)
-                Utilities.writeLogFile(msg)
-
-        
-        total = len(dateTime)
-        i = 0
-        while i < total:
-            # if i == 903:
-            #     print('pause')
-            if flag[i]==1:
-                gp.datasetDeleteRow(i)
-                del dateTime[i]                
-                msg = f'Aberrant TIMETAG2 row deleted at {i}'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                total = total - 1
-                continue
-            i += 1
-
-        dateTimeDataset.data = dateTime
-
-
-        total = len(dateTime)
-        if total >= 2:
-            # Check the first element prior to looping over rest
-            i = 0
-            # num = tt2.data["NONE"][i+1] - tt2.data["NONE"][i]
-            if dateTime[i+1] <= dateTime[i]:
-                    gp.datasetDeleteRow(i)
-                    total = total - 1
-                    msg = f'Out of order TIMETAG2 row deleted at {i}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-            i = 1
-            while i < total:
-                # num = tt2.data["NONE"][i] - tt2.data["NONE"][i-1]
-                # if num <= 0:
-                if dateTime[i] <= dateTime[i-1]:
-                    gp.datasetDeleteRow(i)
-                    total = total - 1
-                    msg = f'Out of order TIMETAG2 row deleted at {i}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    continue
-                i += 1
-        else:
-            msg = '************Too few records to test for ascending timestamps. Exiting.'
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return False
-
-        return flag
+ 
 
     @staticmethod
     def processDarkCorrection(node, sensorType):
@@ -473,10 +400,12 @@ class ProcessL1d:
 
         # Fix in case time doesn't increase from one sample to the next
         # or there are fewer than 2 two stamps remaining.
+        # Add a dataset to the group with datetime for interpolation.
+        # This will later be removed as it is not supported by HDF5
         # fixTimeFlagDark = ProcessL1d.fixTimeTag2(darkGroup)
         # fixTimeFlagLight = ProcessL1d.fixTimeTag2(lightGroup)        
-        fixTimeFlagDark = ProcessL1d.fixDateTime(darkGroup)
-        fixTimeFlagLight = ProcessL1d.fixDateTime(lightGroup)        
+        fixTimeFlagDark = Utilities.fixDateTime(darkGroup)
+        fixTimeFlagLight = Utilities.fixDateTime(lightGroup)        
 
         if fixTimeFlagLight is False or fixTimeFlagDark is False:
             return False
@@ -486,7 +415,7 @@ class ProcessL1d:
         # ProcessL1d.copyTimetag2(darkTimer, darkTT2)
         # ProcessL1d.copyTimetag2(lightTimer, lightTT2)
 
-        
+        # Instead of using TT2 or seconds, use python datetimes
         if not ProcessL1d.darkCorrection(darkData, darkDateTime, lightData, lightDateTime):
             msg = f'ProcessL1d.darkCorrection failed  for {sensorType}'
             print(msg)
@@ -503,11 +432,12 @@ class ProcessL1d:
             if gp.attributes["FrameType"] == "ShutterLight" and gp.getDataset(sensorType):
                 gp.id = gp.id[0:2] # Strip off "_LIGHT" from the name
         return True
-
-
-    # Applies dark data correction / data deglitching
+    
     @staticmethod
     def processL1d(node):
+        '''
+        Apply data deglitching to light and shutter-dark data, then apply dark data correction to light.
+        '''
         root = HDFRoot.HDFRoot()
         root.copy(node) 
 
@@ -548,4 +478,8 @@ class ProcessL1d:
             Utilities.writeLogFile(msg)
             return None
 
+        ''' Unfortunately, the datetime format is not supported in HDF5 '''
+        for gp in root.groups:
+            if gp.id == "ES" or gp.id == "LI" or gp.id == "LT":
+                del gp.datasets["DATETIME"]
         return root

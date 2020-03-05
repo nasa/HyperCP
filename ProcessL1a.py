@@ -11,10 +11,12 @@ from RawFileReader import RawFileReader
 
 
 class ProcessL1a:
-
-    # Reads a raw file and generates a L1a HDF file
+    
     @staticmethod
     def processL1a(fp, outFilePath, calibrationMap):
+        '''
+        Reads a raw binary file and generates a L1a HDF5 file
+        '''
         (_, fileName) = os.path.split(fp)
 
         # Generate root header attributes

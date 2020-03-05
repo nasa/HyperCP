@@ -191,11 +191,13 @@ class ProcessL1b:
                 #print("Dataset:", cd.type)
                 ds = gp.getDataset(cd.type)
                 ProcessL1b.processDataset(ds, cd, inttime)
-
-    # Filters data for pitch, roll, yaw, and rotator.
-    # Calibrates raw data from L1a using information from calibration file
+    
     @staticmethod
     def processL1b(node, calibrationMap):                 
+        '''
+        Filters data for pitch, roll, yaw, and rotator.
+        Calibrates raw data from L1a using information from calibration file
+        '''
 
         esUnits = None
         liUnits = None
