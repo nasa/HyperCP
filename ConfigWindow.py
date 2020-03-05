@@ -129,7 +129,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cRotatorDelayCheckBoxUpdate()   
 
         # L1C Pitch and Roll
-        l1cCleanPitchRollLabel = QtWidgets.QLabel(" Pitch & Roll Filter", self)                        
+        self.l1cCleanPitchRollLabel = QtWidgets.QLabel(" Pitch & Roll Filter", self)                        
         self.l1cCleanPitchRollCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1cCleanPitchRoll"]) == 1:
             self.l1cCleanPitchRollCheckBox.setChecked(True)
@@ -606,7 +606,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # L1C Pitch & Roll
         PitchRollHBox = QtWidgets.QHBoxLayout()
-        PitchRollHBox.addWidget(l1cCleanPitchRollLabel)
+        PitchRollHBox.addWidget(self.l1cCleanPitchRollLabel)
         PitchRollHBox.addWidget(self.l1cCleanPitchRollCheckBox)
         VBox1.addLayout(PitchRollHBox)
         RotMinHBox = QtWidgets.QHBoxLayout()
@@ -1059,6 +1059,12 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cRotatorDelayLabel.setDisabled(disabled)
         self.l1cRotatorDelayLineEdit.setDisabled(disabled)
         self.l1cRotatorDelayCheckBox.setDisabled(disabled)
+        self.l1cCleanPitchRollCheckBox.setDisabled(disabled)
+        self.l1cCleanPitchRollLabel.setDisabled(disabled)
+        self.l1cPitchRollPitchLabel.setDisabled(disabled)
+        self.l1cPitchRollPitchLineEdit.setDisabled(disabled)
+        self.l1cPitchRollRollLabel.setDisabled(disabled)
+        self.l1cPitchRollRollLineEdit.setDisabled(disabled)
         self.l1cRotatorAngleLabel.setDisabled(disabled)
         self.l1cRotatorAngleCheckBox.setDisabled(disabled)
         self.l1cRotatorAngleMinLabel.setDisabled(disabled)
@@ -1067,8 +1073,14 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1cRotatorAngleMaxLineEdit.setDisabled(disabled)        
         if disabled:
             ConfigFile.settings["bL1cSolarTracker"] = 0
+            ConfigFile.settings["bL1cCleanPitchRoll"] = 0
+            ConfigFile.settings["bL1cRotatorDelay"] = 0
+            self.l1cRotatorDelayCheckBox.setChecked(False)
+            self.l1cCleanPitchRollCheckBox.setChecked(False)
+            self.l1cRotatorAngleCheckBox.setChecked(False)
         else:
             ConfigFile.settings["bL1cSolarTracker"] = 1
+            
 
     def l1cRotatorDelayCheckBoxUpdate(self):
         print("ConfigWindow - l1cRotatorDelayCheckBoxUpdate")

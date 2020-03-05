@@ -252,7 +252,11 @@ class ProcessL1c:
         # Apply Pitch & Roll Filter   
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
-        # Interpolating them first would introduce error.     
+        # Interpolating them first would introduce error.
+
+        ''' To Do:This is currently unavailable without SolarTracker. Once I come across accelerometer data
+        from other sources or can incorporate it into the ancillary data stream, I can make it available again.'''
+        
         if node is not None and int(ConfigFile.settings["bL1cCleanPitchRoll"]) == 1:
             msg = "Filtering file for high pitch and roll"
             print(msg)
@@ -639,7 +643,7 @@ class ProcessL1c:
                 if group.id.startswith("GP"):
                     gp = group
                         
-            msg = f'Percentage of ancillary data out of Solar Azimuth bounds: {round(100*i/len(relAz))} %'
+            msg = f'Percentage of ancillary data out of Relative Solar Azimuth bounds: {round(100*i/len(relAz))} %'
             print(msg)
             Utilities.writeLogFile(msg)
 

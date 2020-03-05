@@ -275,6 +275,8 @@ class Controller:
         # Write output file
         if root is not None:
             try:
+                ''' BUG: Throws a H5pyDeprecationWarning: File.fid deprecated, and 
+                three <class 'AttrributeError'>s, but the output file looks fine... '''
                 root.writeHDF5(outFilePath)
             except:
                 msg = "Unable to write file. May be open in another application."
