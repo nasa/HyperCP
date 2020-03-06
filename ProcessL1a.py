@@ -74,14 +74,57 @@ class ProcessL1a:
                 hse += 1
             if gp.id.startswith("HED"):
                 hed += 1
-            if gp.id.startswith("GPRMC") or gp.id.startswith("GPGGA"):
+            if gp.id.startswith("GP"):
                 gps += 1
         if hld != 2 or hsl != 2 or hse != 1 or hed != 1 or gps != 1:
             msg = "ProcessL1a.processL1a: Essential dataset missing. Aborting."
             print(msg)
             Utilities.writeLogFile(msg)
             return None
-                
+
+        # Update the GPS group to include a datasets for DATETAG and TIMETAG2
+        for gp in root.groups:
+            if gp.id.startswith("GP"):
+                gpsGroup = gp
+            # Need year-gang and sometimes Datetag from one of the sensors
+            if gp.id.startswith("HSE"):
+                esDateTag = gp.datasets["DATETAG"].columns["NONE"]                
+                esTimeTag2 = gp.datasets["TIMETAG2"].columns["NONE"]             
+        gpsGroup.addDataset("DATETAG")
+        gpsGroup.addDataset("TIMETAG2")
+        gpsTime = gpsGroup.datasets["UTCPOS"].columns["NONE"]
+        # One case for GPRMC input...
+        if gpsGroup.id.startswith("GPRMC"):
+            gpsDate = gpsGroup.datasets["DATE"].columns["NONE"]
+            # Obtain year-gang from Es data
+            year = int(str(esDateTag[0])[0:4])
+            gpsDateTag = []
+            gpsTimeTag2 = []
+            for date in gpsDate:
+                gpsDateTag.append(Utilities.datetime2DateTag(Utilities.gpsDateToDatetime(year,date)))
+            for i, time in enumerate(gpsTime):
+                dtDate = Utilities.dateTagToDateTime(gpsDateTag[i])
+                gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
+            gpsGroup.datasets["DATETAG"].columns["NONE"] = gpsDateTag
+            gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2
+        # One case for GPRMC input...
+        if gpsGroup.id.startswith("GPGGA"):
+            # No date is provided in GPGGA, need to find nearest time in Es and take the Datetag from Es
+            for time in gpsTime:
+                ''' This is a catch22. In order to covert the gps time, I need the year and day. To get
+                these, I could compare to find the nearest DATETAG in Es. In order to compare the gps time
+                to the Es time to find the nearest, I need to convert them to datetimes ... which would 
+                require the year and day.'''
+
+
+
+
+
+
+
+
+
+
                                 
         # Generates root footer attributes
         root.attributes["PROCESSING_LEVEL"] = "1a"

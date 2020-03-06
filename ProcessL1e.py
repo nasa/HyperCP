@@ -2,6 +2,7 @@
 import collections
 import numpy as np
 import scipy as sp
+import calendar
 
 import HDFRoot
 from Utilities import Utilities
@@ -34,7 +35,7 @@ class ProcessL1e:
                         dsTimeTag2.data["NONE"][x] = Utilities.secToTimeTag2(v)       
 
     # Time interpolation
-    # xTimer, yTimer are already converted from TimeTag2 to seconds
+    # xTimer, yTimer are already converted from TimeTag2 to datetimes
     @staticmethod
     def interpolateL1e(xData, xTimer, yTimer, newXData, instr, kind='linear', fileName='default'):    
         for k in xData.data.dtype.names:
@@ -44,14 +45,23 @@ class ProcessL1e:
             x = list(xTimer)
             new_x = list(yTimer)
             y = np.copy(xData.data[k]).tolist()
+
+             # Because x is now a list of datetime tuples, they'll need to be
+            # converted to Unix timestamp values
+            ''' WILL THIS WORK IN WINDOWS ??'''
+            xTS = [calendar.timegm(xDT.timetuple()) for xDT in x]
+            newXTS = [calendar.timegm(xDT.timetuple()) for xDT in new_x]
+            
             if kind == 'cubic':  
                 # test = Utilities.interpSpline(x, y, new_x)   
                 # print('len(test) = ' + str(len(test)))           
-                newXData.columns[k] = Utilities.interpSpline(x, y, new_x)       
+                # newXData.columns[k] = Utilities.interpSpline(x, y, new_x)       
+                newXData.columns[k] = Utilities.interpSpline(xTS, y, newXTS)       
                 # print('len(newXData.columns[k]) = ' + str(len(newXData.columns[k])))  
                 # print('')      
             else:
-                newXData.columns[k] = Utilities.interp(x, y, new_x, kind)
+                # newXData.columns[k] = Utilities.interp(x, y, new_x, kind)
+                newXData.columns[k] = Utilities.interp(xTS,y,newXTS, fill_value=np.nan)
 
         if ConfigFile.settings["bL1ePlotTimeInterp"] == 1:
             print('Plotting time interpolations ' +instr)
@@ -78,14 +88,15 @@ class ProcessL1e:
             Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName)
 
 
-    # Converts a sensor group into the L1E format
-    # The separate DATETAG, TIMETAG2 datasets are combined into the sensor dataset
+    # Converts a sensor group into the L1E format; option to change group name.
+    # The separate DATETAG, TIMETAG2, and DATETIM datasets are combined into the sensor dataset
     # This also adds a temporary column in the sensor data array for datetime to be
     # used in interpolation. This is later removed, as HDF5 does not support datetime
     @staticmethod
     def convertGroup(group, datasetName, newGroup, newDatasetName):        
         # Fix in case time doesn't increase from one sample to the next
         # or there are fewer than 2 two stamps remaining.   
+        dateTimeData = group.addDataset("DATETIME")
         fixTimeFlag = Utilities.fixDateTime(group)
         if fixTimeFlag is False:
             msg = f'Failed to Utilities.fixDateTime {group.id}'
@@ -96,14 +107,14 @@ class ProcessL1e:
         sensorData = group.getDataset(datasetName)
         dateData = group.getDataset("DATETAG")
         timeData = group.getDataset("TIMETAG2")
-        dateTimeData = group.getDataset("DATETIME")
+        # dateTimeData = group.getDataset("DATETIME")
 
         newSensorData = newGroup.addDataset(newDatasetName)
 
         # Datetag, Timetag2, and Datetime columns added to sensor data array
         newSensorData.columns["Datetag"] = dateData.data["NONE"].tolist()
         newSensorData.columns["Timetag2"] = timeData.data["NONE"].tolist()
-        newSensorData.columns["Datetime"] = dateTimeData.data["NONE"].tolist()
+        newSensorData.columns["Datetime"] = dateTimeData.data
 
         # Copies over the dataset from original group to newGroup
         for k in sensorData.data.dtype.names: # For each waveband
@@ -192,6 +203,7 @@ class ProcessL1e:
             return False
 
         # All sensors are already interpolated to common times at this point
+        # Any sensor group will do here
         refGroup = node.getGroup("IRRADIANCE")
         esData = refGroup.getDataset("ES")
 
@@ -207,7 +219,9 @@ class ProcessL1e:
             gpsCourseData = gpsGroup.getDataset("COURSE")
             gpsSpeedData = gpsGroup.getDataset("SPEED")
 
-        newGPSGroup = node.getGroup("GPS")
+        for gp in node.groups:
+            if gp.id.startswith("GP"):
+                newGPSGroup = gp
         # newGPSGroup = node.getGroup("Ancillary")        
         newGPSLatPosData = newGPSGroup.addDataset("LATITUDE")
         newGPSLonPosData = newGPSGroup.addDataset("LONGITUDE")
@@ -216,23 +230,25 @@ class ProcessL1e:
             newGPSCourseData = newGPSGroup.addDataset("COURSE")
             newGPSSpeedData = newGPSGroup.addDataset("SPEED")
 
-        # Add Datetag, Timetag2 data to gps groups
+        # Add Datetag, Timetag2 and Datetime data to gps groups
         # This matches ES data after interpolation        
         newGPSLatPosData.columns["Datetag"] = esData.data["Datetag"].tolist()
         newGPSLatPosData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
+        newGPSLatPosData.columns["Datetime"] = esData.data["Datetime"].tolist()
         newGPSLonPosData.columns["Datetag"] = esData.data["Datetag"].tolist()
         newGPSLonPosData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
+        newGPSLonPosData.columns["Datetime"] = esData.data["Datetime"].tolist()
         if ConfigFile.settings["bL1cSolarTracker"]:
             newGPSCourseData.columns["Datetag"] = esData.data["Datetag"].tolist()
             newGPSCourseData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
+            newGPSCourseData.columns["Datetime"] = esData.data["Datetime"].tolist()
             # newGPSMagVarData.columns["Datetag"] = esData.data["Datetag"].tolist()
             # newGPSMagVarData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
             newGPSSpeedData.columns["Datetag"] = esData.data["Datetag"].tolist()
             newGPSSpeedData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
+            newGPSSpeedData.columns["Datetime"] = esData.data["Datetime"].tolist()
         
 
-        x = []
-        y = []
         # Convert degrees minutes to decimal degrees format
         for i in range(gpsTimeData.data.shape[0]):
             latDM = gpsLatPosData.data["NONE"][i]
@@ -245,26 +261,32 @@ class ProcessL1e:
             lonDD = Utilities.dmToDd(lonDM, lonDirection)            
             gpsLonPosData.data["NONE"][i] = lonDD
 
-            x.append(lonDD)
-            y.append(latDD)            
-
         ''' This is a good idea to persue at some point. No implementation yet.
         #print("PlotGPS")
         #Utilities.plotGPS(x, y, 'test1')
         #print("PlotGPS - DONE")'''        
 
-        # Convert ES TimeTag2 values to seconds to be used for interpolation
+        # # Convert ES TimeTag2 values to seconds to be used for interpolation
+        # xTimer = []
+        # for i in range(gpsTimeData.data.shape[0]):
+        #     xTimer.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))
+        
+        # Convert GPS UTC time to datetime. This requires a datetag for each record.
+        
+
         xTimer = []
         for i in range(gpsTimeData.data.shape[0]):
             xTimer.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))
 
-        yTimer = []
-        for i in range(esData.data.shape[0]):
-            yTimer.append(Utilities.timeTag2ToSec(esData.data["Timetag2"][i]))
+        # yTimer = []
+        yTimer = esData.data["Datetime"]
+        # for i in range(esData.data.shape[0]):
+        #     yTimer.append(Utilities.timeTag2ToSec(esData.data["Timetag2"][i]))
         print('Intperpolating '+str(len(xTimer))+' timestamps from '+\
             str(min(xTimer))+'s to '+str(max(xTimer)))
         print(' To '+str(len(yTimer))+' timestamps from '+str(min(yTimer))+\
             's to '+str(max(yTimer)))
+
 
         # Interpolate by time values
         # Convert GPS UTC time values to seconds to be used for interpolation        

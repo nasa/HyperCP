@@ -104,6 +104,7 @@ class Utilities:
         dm = (d*100) + m
         return dm
 
+
     # Converts GPS UTC time (hhmmss.s)to seconds
     # Note: Does not support multiple days
     @staticmethod
@@ -117,10 +118,15 @@ class Utilities:
         s = int(t[4:])
         return ((h*60)+m)*60+s
 
-    # # Converts seconds to datetime
-    # @staticmethod
-    # def utcToDateTime(sec):
-    #     pass
+    # Converts datetime date and UTC to datetime
+    @staticmethod
+    def utcToDateTime(dt, utc):
+        # Use zfill to ensure correct width, fixes bug when hour is 0 (12 am)
+        t = str(int(utc)).zfill(6)
+        h = int(t[:2])
+        m = int(t[2:4])
+        s = int(t[4:])
+        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,0)
 
     # Converts datetag to date string
     @staticmethod
@@ -189,7 +195,7 @@ class Utilities:
         # mon = dt.month
         day = dt.timetuple().tm_yday
         
-        return float("%d%03d" % (y, day))
+        return int("%d%03d" % (y, day))
 
     # Converts HDFRoot timestamp attribute to seconds
     @staticmethod
@@ -201,6 +207,15 @@ class Utilities:
         s = int(t[2])
         return ((h*60)+m)*60+s
 
+    # Convert GPRMC Date to Datetag
+    @staticmethod
+    def gpsDateToDatetime(year, gpsDate):
+        date = str(gpsDate).zfill(6)
+        day = int(date[:2])
+        mon = int(date[2:4])
+        return datetime.datetime(year,mon,day,0,0,0,0)
+
+
     # Correct TIMETAG2 values if they are not strictly increasing
     # (strictly increasing values required for interpolation)
     # Also screens for nonsense timetags like 0.0 or NaN
@@ -208,7 +223,7 @@ class Utilities:
     def fixDateTime(gp):
         tt2 = gp.getDataset("TIMETAG2").data["NONE"]
         dateTag = gp.getDataset("DATETAG").data["NONE"]
-        dateTimeDataset = gp.getDataset("DATETIME")
+        dateTimeDataset = gp.getDataset("DATETIME") # add this empty dataset before calling fixDateTime
 
         # Test for aberrant values
         dateTime = []

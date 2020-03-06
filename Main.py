@@ -312,10 +312,11 @@ class Window(QtWidgets.QWidget):
     def windAddButtonPressed(self):
         print("Met File Add Dialogue")
         fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Select Meteorologic Data File",self.inputDirectory)
-        print(fnames)
-        if len(fnames[0]) == 1:
-            self.ancFileLineEdit.setText(fnames[0][0])
-        MainConfig.settings["metFile"] = fnames[0][0]
+        if any(fnames):
+            print(fnames)
+            if len(fnames[0]) == 1:
+                self.ancFileLineEdit.setText(fnames[0][0])
+            MainConfig.settings["metFile"] = fnames[0][0]
 
     def windRemoveButtonPressed(self):
         print("Wind File Remove Dialogue")

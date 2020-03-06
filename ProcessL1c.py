@@ -17,6 +17,9 @@ class ProcessL1c:
     @staticmethod
     def filterData(group, badTimes):                    
         
+        ''' BUG: This could cause problems if the data to be filtered spam UTC noon. Needs to be updated
+        to use datetimes rather than seconds of the day. '''
+
         # Convert all time stamps to milliseconds UTC
         if group.id.startswith("GP"):
             # This is handled seperately in order to deal with the UTC fields in GPS            
@@ -25,19 +28,16 @@ class ProcessL1c:
             Utilities.writeLogFile(msg)
 
             gpsTimeData = group.getDataset("UTCPOS")        
-            # gpsLonData = group.getDataset("LONPOS")
             dataSec = []
             for i in range(gpsTimeData.data.shape[0]):
                 # Screen raw GPS UTCPOS data for NaN (ECOA-1)
                 if not np.isnan(gpsTimeData.data["NONE"][i]):
+
+                    ''' To get datetime from GPS UTC, will need date of each record,
+                    which is not included in the GPS datastream '''
+                    
                     # UTC format (hhmmss.) similar to TT2 (hhmmssmss.) with the miliseconds truncated
-                    dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))    
-                # print(dataSec[i])   
-        # elif group.id == "SOLARTRACKER_STATUS":                
-        #     msg = "   Ignore SOLARTRACKER_STATUS"
-        #     print(msg)
-        #     Utilities.writeLogFile(msg)
-        #     return 1
+                    dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))               
         else:
             msg = f'   Remove {group.id} Data'
             print(msg)
