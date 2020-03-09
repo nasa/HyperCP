@@ -16,9 +16,6 @@ class ProcessL1c:
     # Or records within the out-of-bounds for absolute rotator angle.
     @staticmethod
     def filterData(group, badTimes):                    
-        
-        ''' BUG: This could cause problems if the data to be filtered spam UTC noon. Needs to be updated
-        to use datetimes rather than seconds of the day. '''
 
         # Convert all time stamps to milliseconds UTC
         if group.id.startswith("GP"):
@@ -265,14 +262,16 @@ class ProcessL1c:
             Utilities.writeLogFile(msg)
             
             i = 0
-            # try:
             for group in node.groups:
                 if group.id == "SOLARTRACKER":
                     gp = group
 
-            # if gp.getDataset("POINTING"):   
-            # TIMETAG2 format: hhmmssmss.0
-            timeStamp = gp.getDataset("TIMETAG2").data
+            timeTag = gp.getDataset("TIMETAG2").data["NONE"].tolist()
+            dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
+            timeStamp = []
+            for n, time in enumerate(timeTag):
+                dt = Utilities.dateTagToDateTime(dateTag[n])
+                timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
             pitch = gp.getDataset("PITCH").data["SAS"]
             roll = gp.getDataset("ROLL").data["SAS"]
                             
@@ -295,7 +294,7 @@ class ProcessL1c:
                     if start != -1:
                         # print('Pitch or roll angle passed. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
                         startstop = [timeStamp[start],timeStamp[stop]]
-                        msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
+                        msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
                         # print(msg)
                         Utilities.writeLogFile(msg)
                         # startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
@@ -334,9 +333,12 @@ class ProcessL1c:
             
             if 'gp' in locals():
                 if gp.getDataset("POINTING"):   
-                    # TIMETAG2 format: hhmmssmss.0 is unbuffered (i.e. 1234.0 is 1.234 minutes after midnight)
-                    timeStamp = gp.getDataset('TIMETAG2').data['NONE']
-                    timeStampTuple = gp.getDataset("TIMETAG2").data
+                    timeTag = gp.getDataset("TIMETAG2").data
+                    dateTag = gp.getDataset("DATETAG").data
+                    timeStamp = []
+                    for n, time in enumerate(timeTag):
+                        dt = Utilities.dateTagToDateTime(dateTag[n])
+                        timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
                     rotator = gp.getDataset("POINTING").data["ROTATOR"] 
                     # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
                     # It may also be set for when no SolarTracker is present and it's not included in the
@@ -356,20 +358,21 @@ class ProcessL1c:
                             if rotator[index] > (lastAngle + 0.05) or rotator[index] < (lastAngle - 0.05):
                                 i += 1
                                 # Detect angle changed   
-                                timeInt = int(timeStamp[index])                    
+                                start = timeStamp[index]                  
                                 # print('Rotator delay kick-out. ' + str(timeInt) )
-                                startIndex = index
-                                start = Utilities.timeTag2ToSec(timeInt)
+                                startIndex = index                                
                                 lastAngle = rotator[index]
                                 kickout = 1
 
                             else:                        
                                 # Is this X seconds past a kick-out start?
-                                timeInt = int(timeStamp[index])
-                                time = Utilities.timeTag2ToSec(timeInt)
-                                if kickout==1 and time > (start+delay):
-                                    startstop = [timeStampTuple[startIndex],timeStampTuple[index-1]]
-                                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
+                                # timeInt = int(timeStamp[index])
+                                # time = Utilities.timeTag2ToSec(timeInt)
+                                time = timeStamp[index]
+                                if kickout==1 and time > (start + datetime.timedelta(0,delay)):
+                                    # startstop = [timeStampTuple[startIndex],timeStampTuple[index-1]]
+                                    startstop = [timeStamp[startIndex],timeStamp[index-1]]
+                                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
                                     # print(msg)
                                     Utilities.writeLogFile(msg)
                                     badTimes.append(startstop)
@@ -405,9 +408,12 @@ class ProcessL1c:
                     gp = group
 
             if gp.getDataset("POINTING"):   
-                # TIMETAG2 format: hhmmssmss.0
-                timeStamp = gp.getDataset("TIMETAG2").data
-                rotator = gp.getDataset("POINTING").data["ROTATOR"]
+                timeTag = gp.getDataset("TIMETAG2").data
+                dateTag = gp.getDataset("DATETAG").data
+                timeStamp = []
+                for n, time in enumerate(timeTag):
+                    dt = Utilities.dateTagToDateTime(dateTag[n])
+                    timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
                 # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
                 # It may also be set for when no SolarTracker is present and it's not included in the
                 # ancillary data, but that's not relevant here                        
@@ -444,7 +450,7 @@ class ProcessL1c:
 
                 if start != -1 and stop == index: # Records from a mid-point to the end are bad
                     startstop = [timeStamp[start],timeStamp[stop]]
-                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
+                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
                     # print(msg)
                     Utilities.writeLogFile(msg)
                     if badTimes is None: # only one set of records
@@ -459,13 +465,18 @@ class ProcessL1c:
                 print(msg)
                 Utilities.writeLogFile(msg)                       
 
+        # General setup for ancillary or SolarTracker data prior to Relative Solar Azimuth option
         if ConfigFile.settings["bL1cSolarTracker"]:    
             for group in node.groups:
                     if group.id == "SOLARTRACKER":
                         gp = group 
             if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):   
-                # TIMETAG2 format: hhmmssmss.0
-                timeStamp = gp.getDataset("TIMETAG2").data
+                timeTag = gp.getDataset("TIMETAG2").data
+                dateTag = gp.getDataset("DATETAG").data
+                timeStamp = []
+                for n, time in enumerate(timeTag):
+                    dt = Utilities.dateTagToDateTime(dateTag[n])
+                    timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
                 # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
                 # It may also be set here for when no SolarTracker is present and it's not included in the
                 # ancillary data. See below.                 
@@ -486,8 +497,8 @@ class ProcessL1c:
             ancGroup = node.addGroup("ANCILLARY_NOTRACKER")
             ancGroup.attributes["FrameType"] = "Not Required"
 
-            ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
-            timeStamp = [Utilities.datetime2TimeTag2(dt) for dt in ancDateTime]
+            ancDateTime = ancillaryData.columns["DATETIME"][0].copy() #datetime format already
+            # timeStamp = [Utilities.datetime2TimeTag2(dt) for dt in ancDateTime]
             # ancSec =  [Utilities.timeTag2ToSec(tt2) for tt2 in timeStamp]
             # Remove all ancillary data that does not intersect GPS data            
             for gp in node.groups:
@@ -530,11 +541,11 @@ class ProcessL1c:
                 return None 
 
             # Reinitialize with new, smaller dataset
-            ancDateTime = ancillaryData.columns["DATETIME"][0]
+            timeStamp = ancillaryData.columns["DATETIME"][0]
             shipAzimuth = ancillaryData.columns["HEADING"][0]
             # ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
-            timeStamp = [Utilities.datetime2TimeTag2(dt) for dt in ancDateTime]
-            ancDateTag = [Utilities.datetime2DateTag(dt) for dt in ancDateTime]
+            ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
+            ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]
             home = ancillaryData.columns["HOMEANGLE"][0]
             for i, offset in enumerate(home):
                 if offset > 180:
@@ -545,7 +556,7 @@ class ProcessL1c:
             lon = ancillaryData.columns["LATITUDE"][0]
             sunAzimuth = []
             sunZenith = []
-            for i, dt_utc in enumerate(ancDateTime):
+            for i, dt_utc in enumerate(timeStamp):
                 # Run Pysolar to obtain solar geometry
                 sunAzimuth.append(get_azimuth(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
                 sunZenith.append(90 - get_altitude(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
@@ -589,7 +600,7 @@ class ProcessL1c:
             ancGroup.addDataset("HEADING")
             ancGroup.addDataset("REL_AZ")
 
-            ancGroup.datasets["TIMETAG2"].data = np.array(timeStamp, dtype=[('NONE', '<f8')])
+            ancGroup.datasets["TIMETAG2"].data = np.array(ancTimeTag2, dtype=[('NONE', '<f8')])
             ancGroup.datasets["DATETAG"].data = np.array(ancDateTag, dtype=[('NONE', '<f8')])
             ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
             ancGroup.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
@@ -636,7 +647,7 @@ class ProcessL1c:
                     if start != -1:
                         # print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle,2)))
                         startstop = [timeStamp[start],timeStamp[stop]]
-                        msg = f'   Flag data from TT2: {startstop[0]}  to {startstop[1]} (HHMMSSMSS)'
+                        msg = f'   Flag data from: {startstop[0]}  to {startstop[1]}'
                         # print(msg)
                         Utilities.writeLogFile(msg)
                     
