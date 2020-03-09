@@ -89,7 +89,11 @@ class ProcessL1a:
             # Need year-gang and sometimes Datetag from one of the sensors
             if gp.id.startswith("HSE"):
                 esDateTag = gp.datasets["DATETAG"].columns["NONE"]                
-                esTimeTag2 = gp.datasets["TIMETAG2"].columns["NONE"]             
+                esTimeTag2 = gp.datasets["TIMETAG2"].columns["NONE"]
+                esSec = []
+                for time in esTimeTag2:
+                    esSec.append(Utilities.timeTag2ToSec(time))
+
         gpsGroup.addDataset("DATETAG")
         gpsGroup.addDataset("TIMETAG2")
         gpsTime = gpsGroup.datasets["UTCPOS"].columns["NONE"]
@@ -107,31 +111,45 @@ class ProcessL1a:
                 gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
             gpsGroup.datasets["DATETAG"].columns["NONE"] = gpsDateTag
             gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2
-        # One case for GPRMC input...
+        # One case for GPGGA input...
         if gpsGroup.id.startswith("GPGGA"):
             # No date is provided in GPGGA, need to find nearest time in Es and take the Datetag from Es
-            for time in gpsTime:
-                ''' This is a catch22. In order to covert the gps time, I need the year and day. To get
-                these, I could compare to find the nearest DATETAG in Es. In order to compare the gps time
+            ''' Catch-22. In order to covert the gps time, we need the year and day. To get
+                these, could compare to find the nearest DATETAG in Es. In order to compare the gps time
                 to the Es time to find the nearest, I need to convert them to datetimes ... which would 
                 require the year and day.'''
+            # If the date does not change in Es, then no problem, use Seconds to compare. A problem is also unlikely with a
+            # date change, assuming the file is not ~12 hours long            
+            gpsDateTag = []
+            gpsTimeTag2 = []
+            for time in gpsTime:
+                # No crossing of UTC midnight, matching on second is okay
+                gpsSec = Utilities.utcToSec(time)                
+                nearest = Utilities.find_nearest(esSec, gpsSec)
+                # Make sure the time is within 10 minutes
+                if abs(esSec[nearest] - gpsSec) < 600:
+                    gpsDateTag.append(esDateTag[nearest])
+                    dtDate = Utilities.dateTagToDateTime(esDateTag[nearest])
+                    gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
+                else:
+                    msg = f"ProcessL1a.processL1a: GPS time does not intersect Es time; difference = {abs(esSec[nearest] - gpsSec)} s"
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+            
+            if esDateTag[0] == esDateTag[-1]:
+                msg = "ProcessL1a.processL1a: Warning: File crosses UTC 00:00. Check GPS Datetag for (unlikely) errors."
+                print(msg)
+                Utilities.writeLogFile(msg)
 
+            gpsGroup.datasets["DATETAG"].columns["NONE"] = gpsDateTag
+            gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2
 
-
-
-
-
-
-
-
-
-                                
         # Generates root footer attributes
         root.attributes["PROCESSING_LEVEL"] = "1a"
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         root.attributes["FILE_CREATION_TIME"] = timestr
-        msg = "ProcessL1a.processL1a: " + timestr
+        msg = f"ProcessL1a.processL1a: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)
 
