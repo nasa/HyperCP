@@ -402,8 +402,6 @@ class ProcessL1d:
         # or there are fewer than 2 two stamps remaining.
         # Add a dataset to the group with datetime for interpolation.
         # This will later be removed as it is not supported by HDF5
-        # fixTimeFlagDark = ProcessL1d.fixTimeTag2(darkGroup)
-        # fixTimeFlagLight = ProcessL1d.fixTimeTag2(lightGroup)        
         fixTimeFlagDark = Utilities.fixDateTime(darkGroup)
         fixTimeFlagLight = Utilities.fixDateTime(lightGroup)        
 
@@ -436,7 +434,7 @@ class ProcessL1d:
     @staticmethod
     def processL1d(node):
         '''
-        Apply data deglitching to light and shutter-dark data, then apply dark data correction to light.
+        Apply data deglitching to light and shutter-dark data, then apply dark shutter correction to light data.
         '''
         root = HDFRoot.HDFRoot()
         root.copy(node) 
@@ -478,8 +476,10 @@ class ProcessL1d:
             Utilities.writeLogFile(msg)
             return None
 
-        ''' Unfortunately, the datetime format is not supported in HDF5 '''
+        # Datetime format is not supported in HDF5; remove
+        # DATETIME is not supported in HDF5; remove
         for gp in root.groups:
-            if gp.id == "ES" or gp.id == "LI" or gp.id == "LT":
-                del gp.datasets["DATETIME"]
+            if (gp.id == "SOLARTRACKER_STATUS") is False:
+                del gp.datasets["DATETIME"]    
+
         return root

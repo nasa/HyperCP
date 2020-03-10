@@ -4,6 +4,7 @@ import numpy as np
 from pysolar.solar import get_azimuth, get_altitude
 import pytz
 from operator import add
+import datetime
 
 import HDFRoot
 
@@ -16,82 +17,46 @@ class ProcessL1c:
     # Or records within the out-of-bounds for absolute rotator angle.
     @staticmethod
     def filterData(group, badTimes):                    
+        msg = f'   Remove {group.id} Data'
+        print(msg)
+        Utilities.writeLogFile(msg)
+        timeStamp = group.getDataset("DATETIME").data                   
 
-        # Convert all time stamps to milliseconds UTC
-        if group.id.startswith("GP"):
-            # This is handled seperately in order to deal with the UTC fields in GPS            
-            msg = "   Remove GPS Data"
-            print(msg)
-            Utilities.writeLogFile(msg)
-
-            gpsTimeData = group.getDataset("UTCPOS")        
-            dataSec = []
-            for i in range(gpsTimeData.data.shape[0]):
-                # Screen raw GPS UTCPOS data for NaN (ECOA-1)
-                if not np.isnan(gpsTimeData.data["NONE"][i]):
-
-                    ''' To get datetime from GPS UTC, will need date of each record,
-                    which is not included in the GPS datastream '''
-                    
-                    # UTC format (hhmmss.) similar to TT2 (hhmmssmss.) with the miliseconds truncated
-                    dataSec.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))               
-        else:
-            msg = f'   Remove {group.id} Data'
-            print(msg)
-            Utilities.writeLogFile(msg)
-            timeData = group.getDataset("TIMETAG2")        
-            dataSec = []
-            for i in range(timeData.data.shape[0]):
-                # Converts from TT2 (hhmmssmss. UTC) to milliseconds UTC
-                dataSec.append(Utilities.timeTag2ToSec(timeData.data["NONE"][i])) 
-
-        startLength = len(dataSec) # Length of either GPS UTCPOS or TimeTag2
+        startLength = len(timeStamp) # Length of either GPS UTCPOS or TimeTag2
         msg = ('   Length of dataset prior to removal ' + str(startLength) + ' long')
         print(msg)
         Utilities.writeLogFile(msg)
             
         # Now delete the record from each dataset in the group
         finalCount = 0
-        originalLength = len(dataSec)
+        originalLength = len(timeStamp)
         
-        for timeTag in badTimes:     
+        for dateTime in badTimes:     
             # Need to reinitialize for each loop
-            startLength = len(dataSec) # Length of either GPS UTCPOS or TimeTag2
-            newDataSec = []
+            startLength = len(timeStamp) # Length of either GPS UTCPOS or TimeTag2
+            newTimeStamp = []
 
-            if ConfigFile.settings['bL1cSolarTracker']:
-                start = Utilities.timeTag2ToSec(list(timeTag[0])[0])
-                stop = Utilities.timeTag2ToSec(list(timeTag[1])[0]) 
-            else:
-                start = Utilities.timeTag2ToSec(timeTag[0])
-                stop = Utilities.timeTag2ToSec(timeTag[1])                      
+            start = dateTime[0]
+            stop = dateTime[1]
 
-            # msg = f'Eliminate data between: {timeTag}  (HHMMSSMSS)'
+            # msg = f'Eliminate data between: {dateTime}  (HHMMSSMSS)'
             # print(msg)
             # Utilities.writeLogFile(msg)            
 
             if startLength > 0:  
                 counter = 0              
                 for i in range(startLength):
-                    if start <= dataSec[i] and stop >= dataSec[i]:                      
+                    if start <= timeStamp[i] and stop >= timeStamp[i]:                      
                         group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
                         counter += 1
                         finalCount += 1
                     else:
-                        newDataSec.append(dataSec[i])
-                # if group.id.startswith("GP"):
-                #     test = len(group.getDataset("UTCPOS").data["NONE"])
-                # else:
-                    # test = len(group.getDataset("TIMETAG2").data["NONE"])
-                # msg = ("     Length of dataset after removal " + str(test))
-                # print(msg)
-                # Utilities.writeLogFile(msg)
-                # finalCount += counter
+                        newTimeStamp.append(timeStamp[i])
             else:
                 msg = 'Data group is empty. Continuing.'
                 print(msg)
                 Utilities.writeLogFile(msg)
-            dataSec = newDataSec.copy()
+            timeStamp = newTimeStamp.copy()
 
 
         if badTimes == []:
@@ -99,43 +64,43 @@ class ProcessL1c:
         
         return finalCount/originalLength
 
-    # Used to calibrate raw data (convert from L1a to L1b)
-    # Reference: "SAT-DN-00134_Instrument File Format.pdf"
-    @staticmethod
-    def processDataset(ds, cd, inttime=None, immersed=False):
-        #print("FitType:", cd.fitType)
-        if cd.fitType == "OPTIC1":
-            ProcessL1c.processOPTIC1(ds, cd, immersed)
-        elif cd.fitType == "OPTIC2":
-            ProcessL1c.processOPTIC2(ds, cd, immersed)
-        elif cd.fitType == "OPTIC3":
-            ProcessL1c.processOPTIC3(ds, cd, immersed, inttime)
-        elif cd.fitType == "OPTIC4":
-            ProcessL1c.processOPTIC4(ds, cd, immersed)
-        elif cd.fitType == "THERM1":
-            ProcessL1c.processTHERM1(ds, cd)
-        elif cd.fitType == "POW10":
-            ProcessL1c.processPOW10(ds, cd, immersed)
-        elif cd.fitType == "POLYU":
-            ProcessL1c.processPOLYU(ds, cd)
-        elif cd.fitType == "POLYF":
-            ProcessL1c.processPOLYF(ds, cd)
-        elif cd.fitType == "DDMM":
-            ProcessL1c.processDDMM(ds, cd)
-        elif cd.fitType == "HHMMSS":
-            ProcessL1c.processHHMMSS(ds, cd)
-        elif cd.fitType == "DDMMYY":
-            ProcessL1c.processDDMMYY(ds, cd)
-        elif cd.fitType == "TIME2":
-            ProcessL1c.processTIME2(ds, cd)
-        elif cd.fitType == "COUNT":
-            pass
-        elif cd.fitType == "NONE":
-            pass
-        else:
-            msg = f'Unknown Fit Type: {cd.fitType}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+    # # Used to calibrate raw data (convert from L1a to L1b)
+    # # Reference: "SAT-DN-00134_Instrument File Format.pdf"
+    # @staticmethod
+    # def processDataset(ds, cd, inttime=None, immersed=False):
+    #     #print("FitType:", cd.fitType)
+    #     if cd.fitType == "OPTIC1":
+    #         ProcessL1c.processOPTIC1(ds, cd, immersed)
+    #     elif cd.fitType == "OPTIC2":
+    #         ProcessL1c.processOPTIC2(ds, cd, immersed)
+    #     elif cd.fitType == "OPTIC3":
+    #         ProcessL1c.processOPTIC3(ds, cd, immersed, inttime)
+    #     elif cd.fitType == "OPTIC4":
+    #         ProcessL1c.processOPTIC4(ds, cd, immersed)
+    #     elif cd.fitType == "THERM1":
+    #         ProcessL1c.processTHERM1(ds, cd)
+    #     elif cd.fitType == "POW10":
+    #         ProcessL1c.processPOW10(ds, cd, immersed)
+    #     elif cd.fitType == "POLYU":
+    #         ProcessL1c.processPOLYU(ds, cd)
+    #     elif cd.fitType == "POLYF":
+    #         ProcessL1c.processPOLYF(ds, cd)
+    #     elif cd.fitType == "DDMM":
+    #         ProcessL1c.processDDMM(ds, cd)
+    #     elif cd.fitType == "HHMMSS":
+    #         ProcessL1c.processHHMMSS(ds, cd)
+    #     elif cd.fitType == "DDMMYY":
+    #         ProcessL1c.processDDMMYY(ds, cd)
+    #     elif cd.fitType == "TIME2":
+    #         ProcessL1c.processTIME2(ds, cd)
+    #     elif cd.fitType == "COUNT":
+    #         pass
+    #     elif cd.fitType == "NONE":
+    #         pass
+    #     else:
+    #         msg = f'Unknown Fit Type: {cd.fitType}'
+    #         print(msg)
+    #         Utilities.writeLogFile(msg)
 
     # Process OPTIC1 - not implemented
     @staticmethod
@@ -209,51 +174,43 @@ class ProcessL1c:
             num = a0
             for a in cd.coefficients[1:]:
                 num *= (ds.data[k][x] - float(a))
-            ds.data[k][x] = num
-
-    # Process DDMM - not implemented
-    @staticmethod
-    def processDDMM(ds, cd):
-        return
-        #s = "{:.2f}".format(x)
-        #x = s[:1] + " " + s[1:3] + "\' " + s[3:5] + "\""
-
-    # Process HHMMSS - not implemented
-    @staticmethod
-    def processHHMMSS(ds, cd):
-        return
-        #s = "{:.2f}".format(x)
-        #x = s[:2] + ":" + s[2:4] + ":" + s[4:6] + "." + s[6:8]
-
-    # Process DDMMYY - not implemented
-    @staticmethod
-    def processDDMMYY(ds, cd):
-        return
-        #s = str(x)
-        #x = s[:2] + "/" + s[2:4] + "/" + s[4:]
-
-    # Process TIME2 - not implemented
-    @staticmethod
-    def processTIME2(ds, cd):
-        return
-        #x = datetime.fromtimestamp(x).strftime("%y-%m-%d %H:%M:%S")
+            ds.data[k][x] = num    
     
     @staticmethod
     def processL1c(node, calibrationMap, ancillaryData=None):    
         '''
         Filters data for pitch, roll, yaw, and rotator.
-        Calibrates raw data from L1a using information from calibration file
         '''
 
         node.attributes["PROCESSING_LEVEL"] = "1c"     
 
+        # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG        
+        for gp in node.groups:            
+            if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
+                dateTime = gp.addDataset("DATETIME")
+                timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
+                dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
+                timeStamp = []        
+                for i, time in enumerate(timeData):
+                    # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
+                    # Filter for aberrant Datetags
+                    if str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20"):
+                        dt = Utilities.dateTagToDateTime(dateTag[i])
+                        timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
+                    else:                    
+                        gp.datasetDeleteRow(i)
+                        msg = "Bad Datetag found. Eliminating record"
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                dateTime.data = timeStamp
+
         badTimes = None   
         # Apply Pitch & Roll Filter   
-        # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
+        # This has to record the time interval (in datetime) for the bad angles in order to remove these time intervals 
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
 
-        ''' To Do:This is currently unavailable without SolarTracker. Once I come across accelerometer data
+        ''' To Do: This is currently unavailable without SolarTracker. Once I come across accelerometer data
         from other sources or can incorporate it into the ancillary data stream, I can make it available again.'''
         
         if node is not None and int(ConfigFile.settings["bL1cCleanPitchRoll"]) == 1:
@@ -266,12 +223,7 @@ class ProcessL1c:
                 if group.id == "SOLARTRACKER":
                     gp = group
 
-            timeTag = gp.getDataset("TIMETAG2").data["NONE"].tolist()
-            dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
-            timeStamp = []
-            for n, time in enumerate(timeTag):
-                dt = Utilities.dateTagToDateTime(dateTag[n])
-                timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
+            timeStamp = gp.getDataset("DATETIME").data
             pitch = gp.getDataset("PITCH").data["SAS"]
             roll = gp.getDataset("ROLL").data["SAS"]
                             
@@ -297,8 +249,6 @@ class ProcessL1c:
                         msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
                         # print(msg)
                         Utilities.writeLogFile(msg)
-                        # startSec = Utilities.timeTag2ToSec(list(startstop[0])[0])
-                        # stopSec = Utilities.timeTag2ToSec(list(startstop[1])[0])                            
                         badTimes.append(startstop)
                         start = -1
             msg = f'Percentage of SATNAV data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %'
@@ -333,16 +283,11 @@ class ProcessL1c:
             
             if 'gp' in locals():
                 if gp.getDataset("POINTING"):   
-                    timeTag = gp.getDataset("TIMETAG2").data
-                    dateTag = gp.getDataset("DATETAG").data
-                    timeStamp = []
-                    for n, time in enumerate(timeTag):
-                        dt = Utilities.dateTagToDateTime(dateTag[n])
-                        timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
+                    timeStamp = gp.getDataset("DATETIME").data
                     rotator = gp.getDataset("POINTING").data["ROTATOR"] 
                     # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
                     # It may also be set for when no SolarTracker is present and it's not included in the
-                    # ancillary data, but that's not relevant here                       
+                    # ancillary data, but that's not relevant here...              
                     home = float(ConfigFile.settings["fL1cRotatorHomeAngle"])     
                     delay = float(ConfigFile.settings["fL1cRotatorDelay"])
 
@@ -365,9 +310,7 @@ class ProcessL1c:
                                 kickout = 1
 
                             else:                        
-                                # Is this X seconds past a kick-out start?
-                                # timeInt = int(timeStamp[index])
-                                # time = Utilities.timeTag2ToSec(timeInt)
+                                # Test if this is fL1cRotatorDelay seconds past a kick-out start
                                 time = timeStamp[index]
                                 if kickout==1 and time > (start + datetime.timedelta(0,delay)):
                                     # startstop = [timeStampTuple[startIndex],timeStampTuple[index-1]]
@@ -408,12 +351,7 @@ class ProcessL1c:
                     gp = group
 
             if gp.getDataset("POINTING"):   
-                timeTag = gp.getDataset("TIMETAG2").data
-                dateTag = gp.getDataset("DATETAG").data
-                timeStamp = []
-                for n, time in enumerate(timeTag):
-                    dt = Utilities.dateTagToDateTime(dateTag[n])
-                    timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
+                timeStamp = gp.getDataset("DATETIME").data
                 # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
                 # It may also be set for when no SolarTracker is present and it's not included in the
                 # ancillary data, but that's not relevant here                        
@@ -471,12 +409,7 @@ class ProcessL1c:
                     if group.id == "SOLARTRACKER":
                         gp = group 
             if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):   
-                timeTag = gp.getDataset("TIMETAG2").data
-                dateTag = gp.getDataset("DATETAG").data
-                timeStamp = []
-                for n, time in enumerate(timeTag):
-                    dt = Utilities.dateTagToDateTime(dateTag[n])
-                    timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
+                timeStamp = gp.getDataset("DATETIME").data
                 # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
                 # It may also be set here for when no SolarTracker is present and it's not included in the
                 # ancillary data. See below.                 
@@ -497,33 +430,11 @@ class ProcessL1c:
             ancGroup = node.addGroup("ANCILLARY_NOTRACKER")
             ancGroup.attributes["FrameType"] = "Not Required"
 
-            ancDateTime = ancillaryData.columns["DATETIME"][0].copy() #datetime format already
-            # timeStamp = [Utilities.datetime2TimeTag2(dt) for dt in ancDateTime]
-            # ancSec =  [Utilities.timeTag2ToSec(tt2) for tt2 in timeStamp]
+            ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
             # Remove all ancillary data that does not intersect GPS data            
             for gp in node.groups:
-                if gp.id == "ES_LIGHT":
-                    esTimeTag2 = gp.getDataset("TIMETAG2").data
-                    esDateTag = gp.getDataset("DATETAG").data
-                    esSec = [Utilities.timeTag2ToSec(tt2[0]) for tt2 in esTimeTag2]
-
                 if gp.id.startswith("GP"):
-                    gpsTime = gp.getDataset("UTCPOS").data["NONE"]
-                    gpsDateTime = []
-                    # Need to combine time and date
-                    for n, utc in enumerate(gpsTime):
-                        gpsSec = Utilities.utcToSec(utc)
-                        gpsTimeTag2 = Utilities.secToTimeTag2(gpsSec)
-                        # There is no date data in GPGGA
-                        if gp.id.startswith("GPGGA"):
-                            nearestIndex = Utilities.find_nearest(esSec,gpsSec)
-                            gpsDateTag = esDateTag[nearestIndex]
-                            gpsDate = Utilities.dateTagToDateTime(gpsDateTag[0])
-                            gpsDateTime.append(Utilities.timeTag2ToDateTime(gpsDate,gpsTimeTag2))
-                        else:
-                            gpsDateTag = ancillaryData.columns["DATETAG"][n]
-                            gpsDate = Utilities.dateTagToDateTime(gpsDateTag[0])
-                            gpsDateTime.append(Utilities.timeTag2ToDateTime(gpsDateTag,gpsTimeTag2))
+                    gpsDateTime = gp.getDataset("DATETIME").data
             
             # Eliminate all ancillary data outside file times
             ticker = 0
@@ -566,7 +477,7 @@ class ProcessL1c:
             if ConfigFile.settings["bL1cSolarTracker"]:
                 # Changes in the angle between the bow and the sensor changes are tracked by SolarTracker
                 # This home offset is generally set in .sat file in the field, but can be updated here with
-                # the value from the configuration window (L1C)
+                # the value from the Configuration Window (L1C)
                 offset = home
             else:
                 # Changes in the angle between the bow and the sensor changes are tracked in ancillary data
@@ -618,12 +529,6 @@ class ProcessL1c:
             Utilities.writeLogFile(msg)
             
             i = 0
-            # try:
-            # for group in node.groups:
-            #     if group.id == "SOLARTRACKER":
-            #         gp = group
-
-            # if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):                           
             relAzimuthMin = float(ConfigFile.settings["fL1cSunAngleMin"])
             relAzimuthMax = float(ConfigFile.settings["fL1cSunAngleMax"])
 
@@ -677,10 +582,6 @@ class ProcessL1c:
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-            # else:
-            #     msg = f'No rotator, solar azimuth, and/or relative azimuth data found. Filtering on relative azimuth failed.'
-            #     print(msg)
-            #     Utilities.writeLogFile(msg)        
                         
         msg = "Eliminate combined filtered data from datasets.*****************************"
         print(msg)
@@ -701,16 +602,21 @@ class ProcessL1c:
                     return None                            
                 
                 # Confirm that data were removed from Root    
-                group = node.getGroup(gp.id)
-                if gp.id.startswith("GP"):
-                    gpTimeset  = group.getDataset("UTCPOS") 
-                else:
-                    gpTimeset  = group.getDataset("TIMETAG2") 
+                # group = node.getGroup(gp.id)
+                # if gp.id.startswith("GP"):
+                #     gpTimeset  = group.getDataset("UTCPOS") 
+                # else:
+                gpTimeset  = gp.getDataset("TIMETAG2") 
 
                 gpTime = gpTimeset.data["NONE"]
                 lenGpTime = len(gpTime)
                 msg = f'{gp.id}  Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
                 print(msg)
-                Utilities.writeLogFile(msg)                                               
+                Utilities.writeLogFile(msg)    
+
+        # DATETIME is not supported in HDF5; remove
+        for gp in node.groups:
+            if (gp.id == "SOLARTRACKER_STATUS") is False:
+                del gp.datasets["DATETIME"]         
 
         return node

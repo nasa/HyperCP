@@ -137,7 +137,7 @@ class Controller:
 
                         ''' It would be good to add local time as a printed output with SZA'''
                         if (90-np.nanmax(elevation)) > szaLimit:
-                            msg = f'SZA too low. Discarding file. {round(90-np.nanmax(elevation))}'
+                            msg = f'SZA too low. Discarding entire file. {round(90-np.nanmax(elevation))}'
                             print(msg)
                             Utilities.writeLogFile(msg)
                             return None
