@@ -105,7 +105,7 @@ class Utilities:
         return dm
 
 
-    # Converts GPS UTC time (hhmmss.s)to seconds
+    # Converts GPS UTC time (HHMMSS.ds; i.e. 99 ds after midnight is 000000.99)to seconds
     # Note: Does not support multiple days
     @staticmethod
     def utcToSec(utc):
@@ -115,39 +115,40 @@ class Utilities:
         #print(t[:2], t[2:4], t[4:])
         h = int(t[:2])
         m = int(t[2:4])
-        s = int(t[4:])
+        s = float(t[4:])
         return ((h*60)+m)*60+s
 
-    # Converts datetime date and UTC to datetime
+    # Converts datetime date and UTC (HHMMSS.ds) to datetime (uses microseconds)
     @staticmethod
     def utcToDateTime(dt, utc):
         # Use zfill to ensure correct width, fixes bug when hour is 0 (12 am)
-        t = str(int(utc)).zfill(6)
+        t = str(float(utc)).zfill(6)
         h = int(t[:2])
         m = int(t[2:4])
-        s = int(t[4:])
-        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,0)
+        s = int(t[4:6])
+        us = 10000*int(t[7:]) # i.e. 0.55 s = 550,000 us
+        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us)
 
-    # Converts datetag to date string
+    # Converts datetag (YYYYDDD) to date string
     @staticmethod
     def dateTagToDate(dateTag):
         dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
         return dt.strftime('%Y%m%d')
 
-    # Converts datetag to datetime
+    # Converts datetag (YYYYDDD) to datetime
     @staticmethod
     def dateTagToDateTime(dateTag):
         dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
         return dt
 
-    # Converts seconds of the day (NOT GPS UTCPOS) to UTC
+    # Converts seconds of the day (NOT GPS UTCPOS) to GPS UTC (HHMMSS.SS)
     @staticmethod
     def secToUtc(sec):
         m, s = divmod(sec, 60)
         h, m = divmod(m, 60)
         return float("%d%02d%02d" % (h, m, s))
 
-    # Converts seconds of the day to TimeTag2
+    # Converts seconds of the day to TimeTag2 (HHMMSSmmm; i.e. 0.999 sec after midnight = 000000999)
     @staticmethod
     def secToTimeTag2(sec):
         #return float(time.strftime("%H%M%S", time.gmtime(sec)))
@@ -155,9 +156,9 @@ class Utilities:
         s, ms = divmod(t, 1000)
         m, s = divmod(s, 60)
         h, m = divmod(m, 60)
-        return float("%d%02d%02d%03d" % (h, m, s, ms))
+        return int("%d%02d%02d%03d" % (h, m, s, ms))
 
-    # Converts TimeTag2 to seconds
+    # Converts TimeTag2 (HHMMSSmmm) to seconds
     @staticmethod
     def timeTag2ToSec(tt2):
         t = str(int(tt2)).zfill(9)
@@ -168,7 +169,7 @@ class Utilities:
         # print(h, m, s, ms)
         return ((h*60)+m)*60+s+(float(ms)/1000.0)
 
-    # Converts datetime.date and TimeTag2 to datetime
+    # Converts datetime.date and TimeTag2 (HHMMSSmmm) to datetime
     @staticmethod
     def timeTag2ToDateTime(dt,tt2):
         t = str(int(tt2)).zfill(9)
@@ -179,13 +180,13 @@ class Utilities:
         # print(h, m, s, us)        
         return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us)
 
-    # Converts datetime to Timetag2
+    # Converts datetime to Timetag2 (HHMMSSmmm)
     @staticmethod
     def datetime2TimeTag2(dt):
         h = dt.hour
         m = dt.minute
         s = dt.second
-        ms = 1000*dt.microsecond
+        ms = dt.microsecond
         return float("%d%02d%02d%03d" % (h, m, s, ms))
 
     # Converts datetime to Datetag
@@ -215,50 +216,44 @@ class Utilities:
         mon = int(date[2:4])
         return datetime.datetime(year,mon,day,0,0,0,0)
 
-
-    # Correct TIMETAG2 values if they are not strictly increasing
-    # (strictly increasing values required for interpolation)
-    # Also screens for nonsense timetags like 0.0 or NaN
+    
+    # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG   
+    # Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
+    # in the 20th or 21st centuries
     @staticmethod
-    def fixDateTime(gp):
-        tt2 = gp.getDataset("TIMETAG2").data["NONE"]
-        dateTag = gp.getDataset("DATETAG").data["NONE"]
-        dateTimeDataset = gp.getDataset("DATETIME") # add this empty dataset before calling fixDateTime
+    def addDateTime(node):
+        for gp in node.groups:            
+            if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
+                dateTime = gp.addDataset("DATETIME")
+                timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
+                dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
+                timeStamp = [] 
+                for i, time in enumerate(timeData):
+                    # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
+                    # Filter for aberrant Datetags
+                    if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
+                        and time != 0.0 and not np.isnan(time):
+                        dt = Utilities.dateTagToDateTime(dateTag[i])
+                        timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
+                    else:                    
+                        gp.datasetDeleteRow(i)
+                        msg = f"Bad Datetag or Timetag2 found. Eliminating record. {dateTag[i]} : {time}"
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                dateTime.data = timeStamp
+        return node
 
-        # Test for aberrant values
-        dateTime = []
-        flag = []
-        for i, timeTag in enumerate(tt2):
-            if timeTag != 0.0 and not np.isnan(timeTag):
-                flag.append(0)
-                dateTime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(dateTag[i]), timeTag))
-            else:
-                flag.append(1)
-                dateTime.append(np.nan) # placeholder; will be removed
-                msg = f'Bad TIMETAG2 flagged at {i}'
-                print(msg)
-                Utilities.writeLogFile(msg)
-        
-        # Delete aberrant values
-        total = len(dateTime)
-        i = 0
-        while i < total:
-            if flag[i]==1:
-                gp.datasetDeleteRow(i)
-                del dateTime[i]                
-                msg = f'Aberrant TIMETAG2 row deleted at {i}'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                total = total - 1
-                continue
-            i += 1
 
-        # Allocate the group dataset.data
-        dateTimeDataset.data = dateTime
+    # Remove records if values of DATETIME are not strictly increasing
+    # (strictly increasing values required for interpolation)    
+    @staticmethod
+    def fixDateTime(gp):        
+        dateTime = gp.getDataset("DATETIME").data
 
         # Test for strictly ascending values 
         # Not sensitive to UTC midnight (i.e. in datetime format)
         total = len(dateTime)
+        globalTotal = total
         if total >= 2:
             # Check the first element prior to looping over rest
             i = 0
@@ -272,7 +267,12 @@ class Utilities:
             while i < total:
 
                 if dateTime[i] <= dateTime[i-1]:
+
+                    ''' Same values of consecutive TT2s are shockingly common. Confirmed
+                    that 1) they exist from L1A, and 2) sensor data changes while TT2 stays the same '''
+
                     gp.datasetDeleteRow(i)
+                    del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
                     total = total - 1
                     msg = f'Out of order TIMETAG2 row deleted at {i}'
                     print(msg)
@@ -284,8 +284,11 @@ class Utilities:
             print(msg)
             Utilities.writeLogFile(msg)
             return False
+        msg = f'Date eliminated for non-increasing timestamps: {100*total/globalTotal}%'
+        print(msg)
+        Utilities.writeLogFile(msg)
 
-        return flag
+        return True
 
     # @staticmethod
     # def epochSecToDateTagTimeTag2(eSec):

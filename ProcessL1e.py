@@ -94,15 +94,15 @@ class ProcessL1e:
     # used in interpolation. This is later removed, as HDF5 does not support datetime
     @staticmethod
     def convertGroup(group, datasetName, newGroup, newDatasetName):        
-        # Fix in case time doesn't increase from one sample to the next
-        # or there are fewer than 2 two stamps remaining.   
+        # # Fix in case time doesn't increase from one sample to the next
+        # # or there are fewer than 2 two stamps remaining.   
         dateTimeData = group.addDataset("DATETIME")
-        fixTimeFlag = Utilities.fixDateTime(group)
-        if fixTimeFlag is False:
-            msg = f'Failed to Utilities.fixDateTime {group.id}'
-            print(msg)
-            Utilities.writeLogFile(msg)         
-            return False
+        # fixTimeFlag = Utilities.fixDateTime(group)
+        # if fixTimeFlag is False:
+        #     msg = f'Failed to Utilities.fixDateTime {group.id}'
+        #     print(msg)
+        #     Utilities.writeLogFile(msg)         
+        #     return False
 
         sensorData = group.getDataset(datasetName)
         dateData = group.getDataset("DATETAG")

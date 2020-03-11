@@ -20,7 +20,7 @@ class ProcessL1c:
         msg = f'   Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
-        timeStamp = group.getDataset("DATETIME").data                   
+        timeStamp = group.getDataset("DATETIME").data                
 
         startLength = len(timeStamp) # Length of either GPS UTCPOS or TimeTag2
         msg = ('   Length of dataset prior to removal ' + str(startLength) + ' long')
@@ -185,24 +185,7 @@ class ProcessL1c:
         node.attributes["PROCESSING_LEVEL"] = "1c"     
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG        
-        for gp in node.groups:            
-            if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
-                dateTime = gp.addDataset("DATETIME")
-                timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
-                dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
-                timeStamp = []        
-                for i, time in enumerate(timeData):
-                    # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
-                    # Filter for aberrant Datetags
-                    if str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20"):
-                        dt = Utilities.dateTagToDateTime(dateTag[i])
-                        timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
-                    else:                    
-                        gp.datasetDeleteRow(i)
-                        msg = "Bad Datetag found. Eliminating record"
-                        print(msg)
-                        Utilities.writeLogFile(msg)
-                dateTime.data = timeStamp
+        node  = Utilities.addDateTime(node)
 
         badTimes = None   
         # Apply Pitch & Roll Filter   
@@ -516,7 +499,25 @@ class ProcessL1c:
             ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
             ancGroup.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
             ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
-            ancGroup.datasets["REL_AZ"].data = np.array(relAz, dtype=[('NONE', '<f8')])
+            ancGroup.datasets["REL_AZ"].data = np.array(relAz, dtype=[('NONE', '<f8')])            
+                
+            # Convert datetimes
+            dateTime = ancGroup.addDataset("DATETIME")
+            timeData = ancGroup.getDataset("TIMETAG2").data["NONE"].tolist()
+            dateTag = ancGroup.getDataset("DATETAG").data["NONE"].tolist()
+            timeStamp = []        
+            for i, time in enumerate(timeData):
+                # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
+                # Filter for aberrant Datetags
+                if str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20"):
+                    dt = Utilities.dateTagToDateTime(dateTag[i])
+                    timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
+                else:                    
+                    ancGroup.datasetDeleteRow(i)
+                    msg = "Bad Datetag found. Eliminating record"
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+            dateTime.data = timeStamp
 
 
         # Apply Relative Azimuth filter 

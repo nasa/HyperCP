@@ -370,27 +370,21 @@ class ProcessL1d:
         Utilities.writeLogFile(msg)
         darkGroup = None
         darkData = None
-        # darkTimer = None
         darkDateTime = None
         lightGroup = None
         lightData = None
-        # lightTimer = None
         lightDateTime = None
 
         for gp in node.groups:
             if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensorType):
                 darkGroup = gp
                 darkData = gp.getDataset(sensorType)
-                # darkTimer = gp.getDataset("TIMER")
-                # darkTT2 = gp.getDataset("TIMETAG2")
-                darkDateTime = gp.addDataset("DATETIME")
+                darkDateTime = gp.getDataset("DATETIME")
 
             if gp.attributes["FrameType"] == "ShutterLight" and gp.getDataset(sensorType):
                 lightGroup = gp
                 lightData = gp.getDataset(sensorType) 
-                # lightTimer = gp.getDataset("TIMER")
-                # lightTT2 = gp.getDataset("TIMETAG2")
-                lightDateTime = gp.addDataset("DATETIME")
+                lightDateTime = gp.getDataset("DATETIME")
 
         if darkGroup is None or lightGroup is None:
             msg = f'No radiometry found for {sensorType}'
@@ -402,11 +396,13 @@ class ProcessL1d:
         # or there are fewer than 2 two stamps remaining.
         # Add a dataset to the group with datetime for interpolation.
         # This will later be removed as it is not supported by HDF5
-        fixTimeFlagDark = Utilities.fixDateTime(darkGroup)
-        fixTimeFlagLight = Utilities.fixDateTime(lightGroup)        
+        # fixTimeFlagDark = Utilities.fixDateTime(darkGroup)
+        # fixTimeFlagLight = Utilities.fixDateTime(lightGroup)        
 
-        if fixTimeFlagLight is False or fixTimeFlagDark is False:
-            return False
+        # if fixTimeFlagLight is False or fixTimeFlagDark is False:
+        #     return False
+        # Utilities.fixDateTime(darkGroup)
+        # Utilities.fixDateTime(lightGroup)        
 
         # # Replace Timer with TT2 converted to seconds
         # ''' Problematic. If it crosses UTC midnight, it won't be in order for interpolation'''
@@ -438,8 +434,21 @@ class ProcessL1d:
         '''
         root = HDFRoot.HDFRoot()
         root.copy(node) 
-
         root.attributes["PROCESSING_LEVEL"] = "1d"
+        
+        # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG        
+        root  = Utilities.addDateTime(root)
+
+        # Fix in case time doesn't increase from one sample to the next
+        # or there are fewer than 2 two stamps remaining.
+        for gp in root.groups:
+            if gp.id != "SOLARTRACKER_STATUS":
+                if not Utilities.fixDateTime(gp):
+                    msg = '***********Too few records in the file to continue. Exiting.'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return None
+
         if int(ConfigFile.settings["bL1dDeglitch"]) == 1:
             root.attributes["DEGLITCH_PRODAT"] = "ON"
             root.attributes["DEGLITCH_REFDAT"] = "ON"
@@ -458,6 +467,8 @@ class ProcessL1d:
             root.attributes["DEGLITCH_REFDAT"] = "OFF"
             #root.attributes["STRAY_LIGHT_CORRECT"] = "OFF"
             #root.attributes["THERMAL_RESPONSIVITY_CORRECT"] = "OFF"
+
+        
 
         
         if not ProcessL1d.processDarkCorrection(root, "ES"):
