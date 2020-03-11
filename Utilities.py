@@ -186,8 +186,8 @@ class Utilities:
         h = dt.hour
         m = dt.minute
         s = dt.second
-        ms = dt.microsecond
-        return float("%d%02d%02d%03d" % (h, m, s, ms))
+        ms = dt.microsecond/1000
+        return int("%d%02d%02d%03d" % (h, m, s, ms))
 
     # Converts datetime to Datetag
     @staticmethod
