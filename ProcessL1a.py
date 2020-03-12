@@ -130,7 +130,10 @@ class ProcessL1a:
                 if abs(esSec[nearest] - gpsSec) < 600:
                     gpsDateTag.append(esDateTag[nearest])
                     dtDate = Utilities.dateTagToDateTime(esDateTag[nearest])
-                    gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
+                    try:
+                        gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
+                    except:
+                        print('Failed to convert GPS timestamp')
                 else:
                     msg = f"ProcessL1a.processL1a: GPS time does not intersect Es time; difference = {abs(esSec[nearest] - gpsSec)} s"
                     print(msg)

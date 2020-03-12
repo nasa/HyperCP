@@ -1,9 +1,11 @@
 
-import datetime
 import os
 import sys
 import math
+import datetime
+import pytz
 from collections import Counter
+
 from PyQt5.QtWidgets import QApplication, QDesktopWidget, QWidget, QPushButton, QMessageBox
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot
@@ -122,23 +124,28 @@ class Utilities:
     @staticmethod
     def utcToDateTime(dt, utc):
         # Use zfill to ensure correct width, fixes bug when hour is 0 (12 am)
-        t = str(float(utc)).zfill(6)
+        num, dec = str(float(utc)).split('.')
+        t = num.zfill(6)
         h = int(t[:2])
         m = int(t[2:4])
         s = int(t[4:6])
-        us = 10000*int(t[7:]) # i.e. 0.55 s = 550,000 us
-        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us)
+        us = 10000*int(dec) # i.e. 0.55 s = 550,000 us
+        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=datetime.timezone.utc)
 
     # Converts datetag (YYYYDDD) to date string
     @staticmethod
     def dateTagToDate(dateTag):
         dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
+        timezone = pytz.utc
+        dt = timezone.localize(dt)
         return dt.strftime('%Y%m%d')
 
     # Converts datetag (YYYYDDD) to datetime
     @staticmethod
     def dateTagToDateTime(dateTag):
         dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
+        timezone = pytz.utc
+        dt = timezone.localize(dt)
         return dt
 
     # Converts seconds of the day (NOT GPS UTCPOS) to GPS UTC (HHMMSS.SS)
@@ -178,7 +185,7 @@ class Utilities:
         s = int(t[4:6])
         us = 1000*int(t[6:])
         # print(h, m, s, us)        
-        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us)
+        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=datetime.timezone.utc)
 
     # Converts datetime to Timetag2 (HHMMSSmmm)
     @staticmethod
@@ -214,7 +221,7 @@ class Utilities:
         date = str(gpsDate).zfill(6)
         day = int(date[:2])
         mon = int(date[2:4])
-        return datetime.datetime(year,mon,day,0,0,0,0)
+        return datetime.datetime(year,mon,day,0,0,0,0,tzinfo=datetime.timezone.utc)
 
     
     # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG   
@@ -260,7 +267,7 @@ class Utilities:
             if dateTime[i+1] <= dateTime[i]:
                     gp.datasetDeleteRow(i)
                     total = total - 1
-                    msg = f'Out of order TIMETAG2 row deleted at {i}'
+                    msg = f'Out of order timestamp deleted at {i}'
                     print(msg)
                     Utilities.writeLogFile(msg)
             i = 1
@@ -268,14 +275,14 @@ class Utilities:
 
                 if dateTime[i] <= dateTime[i-1]:
 
-                    ''' Same values of consecutive TT2s are shockingly common. Confirmed
+                    ''' BUG?:Same values of consecutive TT2s are shockingly common. Confirmed
                     that 1) they exist from L1A, and 2) sensor data changes while TT2 stays the same '''
 
                     gp.datasetDeleteRow(i)
                     del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
                     total = total - 1
                     msg = f'Out of order TIMETAG2 row deleted at {i}'
-                    print(msg)
+                    # print(msg)
                     Utilities.writeLogFile(msg)
                     continue
                 i += 1
@@ -284,7 +291,7 @@ class Utilities:
             print(msg)
             Utilities.writeLogFile(msg)
             return False
-        msg = f'Date eliminated for non-increasing timestamps: {100*total/globalTotal}%'
+        msg = f'Date eliminated for non-increasing timestamps: {100*round((globalTotal - total)/globalTotal)}%'
         print(msg)
         Utilities.writeLogFile(msg)
 

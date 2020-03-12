@@ -2,6 +2,7 @@
 import csv
 
 from datetime import datetime
+import pytz
 
 from HDFDataset import HDFDataset
 from SB_support import readSB
@@ -14,28 +15,31 @@ class AncillaryReader:
     @staticmethod
     def readAncillary(fp):
         print("AncillaryReader.readAncillary: " + fp)
-
-        # metData = readSB(fp,mask_missing=False, no_warn=True)
-        # Note: All field names apparently converted to lower case in readSB.
-        # Field names in SeaBASS are case insensitive
         
         try:                    
             print('This may take a moment on large SeaBASS files...')
-            metData=readSB(fp, no_warn=True)
+            ancData=readSB(fp, no_warn=True)
         except IOError:
             msg = "Unable to read ancillary data file. Make sure it is in SeaBASS format."
             print(msg)
             Utilities.writeLogFile(msg)  
             return None
 
-        # metData = readSB(fp, no_warn=False)
-        if not metData.fd_datetime():
+        # ancData = readSB(fp, no_warn=False)
+        if not ancData.fd_datetime():
             msg = "SeaBASS ancillary file has no datetimes and cannot be used."
             print(msg)
             Utilities.writeLogFile(msg)  
             return None
         else:
-            ancDatetime = metData.fd_datetime()
+            ancDatetime = ancData.fd_datetime()
+            # Convert to timezone aware
+            ancDatetimeTZ = []
+            for dt in ancDatetime:
+                timezone = pytz.utc
+                ancDatetimeTZ.append(timezone.localize(dt))
+            ancDatetime = ancDatetimeTZ
+
 
         '''TO DO: could add cloud cover, wave height, etc. here'''
         lat = False
@@ -46,37 +50,37 @@ class AncillaryReader:
         sal = False
         heading = False
         homeangle = False # sensor azimuth relative to heading
-        for ds in metData.data:            
+        for ds in ancData.data:            
             # Remember, all lower case...
             if ds == "lat":
                 lat = True
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                lat = metData.data[ds]
-                latUnits = metData.variables[ds][1]
+                lat = ancData.data[ds]
+                latUnits = ancData.variables[ds][1]
             if ds == "lon":
                 lon = True
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                lon = metData.data[ds]
-                lonUnits = metData.variables[ds][1]
+                lon = ancData.data[ds]
+                lonUnits = ancData.variables[ds][1]
             if ds == "wind":
                 wind = True
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                wspd = metData.data[ds]
-                windUnits = metData.variables[ds][1]
+                wspd = ancData.data[ds]
+                windUnits = ancData.variables[ds][1]
             if ds.startswith("aot"):
                 aot = True
                 # Same as AOD or Tot. Aerosol Extinction
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                aot = metData.data[ds]
-                aotUnits = metData.variables[ds][1] 
+                aot = ancData.data[ds]
+                aotUnits = ancData.variables[ds][1] 
                 if len(ds) == 3:
                     # with no waveband present, assume 550 nm
                     wv = '550'
@@ -87,29 +91,29 @@ class AncillaryReader:
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                wT = metData.data[ds]
-                wTUnits = metData.variables[ds][1] 
+                wT = ancData.data[ds]
+                wTUnits = ancData.variables[ds][1] 
             if ds == "sal":
                 sal = True
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                S = metData.data[ds]
-                SUnits = metData.variables[ds][1] 
+                S = ancData.data[ds]
+                SUnits = ancData.variables[ds][1] 
             if ds == "heading":
                 heading = True
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                heading = metData.data[ds]
-                headingUnits = metData.variables[ds][1]
+                heading = ancData.data[ds]
+                headingUnits = ancData.variables[ds][1]
             if ds == "relaz": # Note: this misnomer is to trick readSB into accepting a non-conventional data field (home angle)
                 homeangle = True
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                homeAngle = metData.data[ds]
-                homeAngleUnits = metData.variables[ds][1] 
+                homeAngle = ancData.data[ds]
+                homeAngleUnits = ancData.variables[ds][1] 
 
 
         # Generate HDFDataset

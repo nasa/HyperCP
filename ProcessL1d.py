@@ -69,8 +69,9 @@ class ProcessL1d:
            
     @staticmethod
     def lightDataDeglitching(lightData, sensorType):        
-        # Light deglitching is now based on double-pass discrete linear convolution of the residual
-        # with a ROLLING std over a rolling average
+        ''' Light deglitching is now based on double-pass discrete linear convolution of the residual
+        with a ROLLING std over a rolling average'''
+        
         # print(str(sensorType))
         windowSize = int(ConfigFile.settings["fL1dDeglitch1"])
         sigma = float(ConfigFile.settings["fL1dDeglitch3"])
@@ -327,42 +328,6 @@ class ProcessL1d:
             t = Utilities.timeTag2ToSec(tt2)
             timerDS.data["NONE"][i] = t        
 
-
-    # # Used to correct TIMETAG2 values if they are not strictly increasing
-    # # (strictly increasing values required for interpolation)
-    # @staticmethod
-    # def fixTimeTag2(gp):
-    #     tt2 = gp.getDataset("TIMETAG2")
-    #     total = len(tt2.data["NONE"])
-    #     if total >= 2:
-    #         # Check the first element prior to looping over rest
-    #         i = 0
-    #         num = tt2.data["NONE"][i+1] - tt2.data["NONE"][i]
-    #         if num <= 0:
-    #                 gp.datasetDeleteRow(i)
-    #                 total = total - 1
-    #                 msg = f'Out of order TIMETAG2 row deleted at {i}'
-    #                 print(msg)
-    #                 Utilities.writeLogFile(msg)
-    #         i = 1
-    #         while i < total:
-    #             num = tt2.data["NONE"][i] - tt2.data["NONE"][i-1]
-    #             if num <= 0:
-    #                 gp.datasetDeleteRow(i)
-    #                 total = total - 1
-    #                 msg = f'Out of order TIMETAG2 row deleted at {i}'
-    #                 print(msg)
-    #                 Utilities.writeLogFile(msg)
-    #                 continue
-    #             i = i + 1
-    #     else:
-    #         msg = '************Too few records to test for ascending timestamps. Exiting.'
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #         return False
-
- 
-
     @staticmethod
     def processDarkCorrection(node, sensorType):
         msg = f'Dark Correction: {sensorType}'
@@ -390,26 +355,10 @@ class ProcessL1d:
             msg = f'No radiometry found for {sensorType}'
             print(msg)
             Utilities.writeLogFile(msg)
-            return False
+            return False        
 
-        # Fix in case time doesn't increase from one sample to the next
-        # or there are fewer than 2 two stamps remaining.
-        # Add a dataset to the group with datetime for interpolation.
-        # This will later be removed as it is not supported by HDF5
-        # fixTimeFlagDark = Utilities.fixDateTime(darkGroup)
-        # fixTimeFlagLight = Utilities.fixDateTime(lightGroup)        
-
-        # if fixTimeFlagLight is False or fixTimeFlagDark is False:
-        #     return False
-        # Utilities.fixDateTime(darkGroup)
-        # Utilities.fixDateTime(lightGroup)        
-
-        # # Replace Timer with TT2 converted to seconds
-        # ''' Problematic. If it crosses UTC midnight, it won't be in order for interpolation'''
-        # ProcessL1d.copyTimetag2(darkTimer, darkTT2)
-        # ProcessL1d.copyTimetag2(lightTimer, lightTT2)
-
-        # Instead of using TT2 or seconds, use python datetimes
+        # Instead of using TT2 or seconds, use python datetimes to avoid problems crossing 
+        # UTC midnight.
         if not ProcessL1d.darkCorrection(darkData, darkDateTime, lightData, lightDateTime):
             msg = f'ProcessL1d.darkCorrection failed  for {sensorType}'
             print(msg)
@@ -443,6 +392,9 @@ class ProcessL1d:
         # or there are fewer than 2 two stamps remaining.
         for gp in root.groups:
             if gp.id != "SOLARTRACKER_STATUS":
+                msg = f'Screening {gp.id} for clean timestamps.'
+                print(msg)
+                Utilities.writeLogFile(msg)
                 if not Utilities.fixDateTime(gp):
                     msg = '***********Too few records in the file to continue. Exiting.'
                     print(msg)

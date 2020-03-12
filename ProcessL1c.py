@@ -2,7 +2,7 @@
 import math
 import numpy as np
 from pysolar.solar import get_azimuth, get_altitude
-import pytz
+# import pytz
 from operator import add
 import datetime
 
@@ -452,8 +452,10 @@ class ProcessL1c:
             sunZenith = []
             for i, dt_utc in enumerate(timeStamp):
                 # Run Pysolar to obtain solar geometry
-                sunAzimuth.append(get_azimuth(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
-                sunZenith.append(90 - get_altitude(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
+                # sunAzimuth.append(get_azimuth(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
+                # sunZenith.append(90 - get_altitude(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
+                sunAzimuth.append(get_azimuth(lat[i],lon[i],dt_utc,0))
+                sunZenith.append(90 - get_altitude(lat[i],lon[i],dt_utc,0))
             
         relAz=[]
         for index in range(len(sunAzimuth)):
