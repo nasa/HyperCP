@@ -111,38 +111,49 @@ class ProcessL1a:
                 gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
             gpsGroup.datasets["DATETAG"].columns["NONE"] = gpsDateTag
             gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2
-        # One case for GPGGA input...
+        
+        # Another case for GPGGA input...
         if gpsGroup.id.startswith("GPGGA"):
             # No date is provided in GPGGA, need to find nearest time in Es and take the Datetag from Es
-            ''' Catch-22. In order to covert the gps time, we need the year and day. To get
-                these, could compare to find the nearest DATETAG in Es. In order to compare the gps time
-                to the Es time to find the nearest, I need to convert them to datetimes ... which would 
-                require the year and day.'''
-            # If the date does not change in Es, then no problem, use Seconds to compare. A problem is also unlikely with a
-            # date change, assuming the file is not ~12 hours long            
+            ''' Catch-22. In order to covert the gps time, we need the year and day, which GPGGA does not have. 
+                To get these, could compare to find the nearest DATETAG in Es. In order to compare the gps time
+                to the Es time to find the nearest, I would need to convert them to datetimes ... which would 
+                require the year and day. Instead, I use either the first or last Datetag from Es, depending
+                on whether UTC 00:00 was crossed.'''
+            # If the date does not change in Es, then no problem, use the Datetag of Es first element.
+            # Otherwise, change the datetag at noon by one day 
             gpsDateTag = []
             gpsTimeTag2 = []
-            for time in gpsTime:
-                # No crossing of UTC midnight, matching on second is okay
-                gpsSec = Utilities.utcToSec(time)                
-                nearest = Utilities.find_nearest(esSec, gpsSec)
-                # Make sure the time is within 10 minutes
-                if abs(esSec[nearest] - gpsSec) < 600:
-                    gpsDateTag.append(esDateTag[nearest])
-                    dtDate = Utilities.dateTagToDateTime(esDateTag[nearest])
-                    try:
-                        gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
-                    except:
-                        print('Failed to convert GPS timestamp')
-                else:
-                    msg = f"ProcessL1a.processL1a: GPS time does not intersect Es time; difference = {abs(esSec[nearest] - gpsSec)} s"
-                    print(msg)
-                    Utilities.writeLogFile(msg)
             
-            if esDateTag[0] == esDateTag[-1]:
-                msg = "ProcessL1a.processL1a: Warning: File crosses UTC 00:00. Check GPS Datetag for (unlikely) errors."
+            if esDateTag[0] != esDateTag[-1]:
+                msg = "ProcessL1a.processL1a: Warning: File crosses UTC 00:00. Adjusting timestamps for matchup of Datetag."
                 print(msg)
                 Utilities.writeLogFile(msg)
+                newDay = False
+                for time in gpsTime:                    
+                    gpsSec = Utilities.utcToSec(time)
+                    if not 'gpsSecPrior' in locals():
+                        gpsSecPrior = gpsSec
+                    # Test for a change of ~24 hrs between this sample and the last sample
+                    # To cross 0, gpsSecPrior would need to be approaching 86400 seconds
+                    # In that case, take the final Es Datetag
+                    if (gpsSecPrior - gpsSec) > 86000:
+                        # Once triggered the first time, this will remain true for remainder of file
+                        newDay = True
+                    if newDay == True:
+                        gpsDateTag.append(esDateTag[-1])
+                        dtDate = Utilities.dateTagToDateTime(esDateTag[-1])
+                        gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
+                    else:
+                        gpsDateTag.append(esDateTag[0])
+                        dtDate = Utilities.dateTagToDateTime(esDateTag[0])
+                        gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
+                    gpsSecPrior = gpsSec
+            else:
+                for time in gpsTime:
+                    gpsDateTag.append(esDateTag[0])
+                    dtDate = Utilities.dateTagToDateTime(esDateTag[0])
+                    gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
 
             gpsGroup.datasets["DATETAG"].columns["NONE"] = gpsDateTag
             gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2

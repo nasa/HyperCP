@@ -254,43 +254,43 @@ class ProcessL1e:
     #     #print("PlotGPS - DONE")'''        
 
         
-        # Convert GPS UTC time to datetime. This requires a datetag for each record.
+        # # Convert GPS UTC time to datetime. This requires a datetag for each record.
         
 
-        # xTimer = []
-        # for i in range(gpsTimeData.data.shape[0]):
-        #     xTimer.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))
+        # # xTimer = []
+        # # for i in range(gpsTimeData.data.shape[0]):
+        # #     xTimer.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))
 
-        # # yTimer = []
-        yDatetime = esData.data["Datetime"]
-        # # for i in range(esData.data.shape[0]):
-        # #     yTimer.append(Utilities.timeTag2ToSec(esData.data["Timetag2"][i]))
-        # print('Intperpolating '+str(len(xTimer))+' timestamps from '+\
-        #     str(min(xTimer))+'s to '+str(max(xTimer)))
-        # print(' To '+str(len(yTimer))+' timestamps from '+str(min(yTimer))+\
-        #     's to '+str(max(yTimer)))
+        # # # yTimer = []
+        # yDatetime = esData.data["Datetime"]
+        # # # for i in range(esData.data.shape[0]):
+        # # #     yTimer.append(Utilities.timeTag2ToSec(esData.data["Timetag2"][i]))
+        # # print('Intperpolating '+str(len(xTimer))+' timestamps from '+\
+        # #     str(min(xTimer))+'s to '+str(max(xTimer)))
+        # # print(' To '+str(len(yTimer))+' timestamps from '+str(min(yTimer))+\
+        # #     's to '+str(max(yTimer)))
 
-        xDatetime = gpsDatetime
+        # xDatetime = gpsDatetime
 
-        # Interpolate by time values
-        # Convert GPS UTC time values to seconds to be used for interpolation        
-        # ProcessL1e.interpolateL1e(gpsLatPosData, xTimer, yTimer, newGPSLatPosData, gpsLatPosData.id, 'linear', fileName)
-        # ProcessL1e.interpolateL1e(gpsLonPosData, xTimer, yTimer, newGPSLonPosData, gpsLonPosData.id, 'linear', fileName)
-        ProcessL1e.interpolateL1e(gpsLatPosData, xDatetime, yDatetime, newGPSLatPosData, gpsLatPosData.id, 'linear', fileName)
-        ProcessL1e.interpolateL1e(gpsLonPosData, xDatetime, yDatetime, newGPSLonPosData, gpsLonPosData.id, 'linear', fileName)
-        # ProcessL1e.interpolateL1e(xData, xDatetime, yDatetime, xData, instr, 'linear', fileName)
-        if ConfigFile.settings["bL1cSolarTracker"]:
-            # ProcessL1e.interpolateL1e(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, gpsMagVarData.id, 'linear', fileName)
-            # Angular interpolation is for compass angles 0-360 degrees (i.e. crossing 0, North)       
-            ProcessL1e.interpolateL1eAngular(gpsCourseData, xDatetime, yDatetime, newGPSCourseData, gpsCourseData.id, fileName)        
-            ProcessL1e.interpolateL1e(gpsSpeedData, xDatetime, yDatetime, newGPSSpeedData, gpsSpeedData.id, 'linear', fileName)
-            newGPSCourseData.columnsToDataset()
-            # newGPSMagVarData.columnsToDataset()
-            newGPSSpeedData.columnsToDataset()
+        # # Interpolate by time values
+        # # Convert GPS UTC time values to seconds to be used for interpolation        
+        # # ProcessL1e.interpolateL1e(gpsLatPosData, xTimer, yTimer, newGPSLatPosData, gpsLatPosData.id, 'linear', fileName)
+        # # ProcessL1e.interpolateL1e(gpsLonPosData, xTimer, yTimer, newGPSLonPosData, gpsLonPosData.id, 'linear', fileName)
+        # ProcessL1e.interpolateL1e(gpsLatPosData, xDatetime, yDatetime, newGPSLatPosData, gpsLatPosData.id, 'linear', fileName)
+        # ProcessL1e.interpolateL1e(gpsLonPosData, xDatetime, yDatetime, newGPSLonPosData, gpsLonPosData.id, 'linear', fileName)
+        # # ProcessL1e.interpolateL1e(xData, xDatetime, yDatetime, xData, instr, 'linear', fileName)
+        # if ConfigFile.settings["bL1cSolarTracker"]:
+        #     # ProcessL1e.interpolateL1e(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, gpsMagVarData.id, 'linear', fileName)
+        #     # Angular interpolation is for compass angles 0-360 degrees (i.e. crossing 0, North)       
+        #     ProcessL1e.interpolateL1eAngular(gpsCourseData, xDatetime, yDatetime, newGPSCourseData, gpsCourseData.id, fileName)        
+        #     ProcessL1e.interpolateL1e(gpsSpeedData, xDatetime, yDatetime, newGPSSpeedData, gpsSpeedData.id, 'linear', fileName)
+        #     newGPSCourseData.columnsToDataset()
+        #     # newGPSMagVarData.columnsToDataset()
+        #     newGPSSpeedData.columnsToDataset()
 
-        newGPSLatPosData.columnsToDataset()
-        newGPSLonPosData.columnsToDataset()
-        return True
+        # newGPSLatPosData.columnsToDataset()
+        # newGPSLonPosData.columnsToDataset()
+        # return True
         
 
     # interpolate SATNAV to match ES
@@ -718,29 +718,18 @@ class ProcessL1e:
         
         ProcessL1e.convertGroup(esGroup, "ES", refGroup, "ES")        
         ProcessL1e.convertGroup(liGroup, "LI", sasGroup, "LI")
-        ProcessL1e.convertGroup(ltGroup, "LT", sasGroup, "LT")
+        ProcessL1e.convertGroup(ltGroup, "LT", sasGroup, "LT")        
 
-        
-
-        if gpsGroup is not None:
-            newGPSGroup = root.addGroup("GPS")
-            ProcessL1e.convertGroup(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
-            ProcessL1e.convertGroup(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
-            latData = newGPSGroup.getDataset("LATITUDE")
-            lonData = newGPSGroup.getDataset("LONGITUDE")
-            if gpsGroup.id.startswith("GPRMC"):
-                ProcessL1e.convertGroup(gpsGroup, "COURSE", newGPSGroup, "COURSE")
-                ProcessL1e.convertGroup(gpsGroup, "SPEED", newGPSGroup, "SPEED")            
-                courseData = newGPSGroup.getDataset("COURSE")
-                speedData = newGPSGroup.getDataset("SPEED")
-        if pyrGroup is not None:
-            newPyrGroup = root.addGroup("PYROMETER")
-            ProcessL1e.convertGroup(pyrGroup, "T", newPyrGroup, "T")
-            pyrData = newPyrGroup.getDataset("T")
-        if satnavGroup is not None:
-            newSTGroup = root.addGroup("SOLARTRACKER")
-
-            ''' Need to populate '''
+        newGPSGroup = root.addGroup("GPS")
+        ProcessL1e.convertGroup(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
+        ProcessL1e.convertGroup(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
+        latData = newGPSGroup.getDataset("LATITUDE")
+        lonData = newGPSGroup.getDataset("LONGITUDE")
+        if gpsGroup.id.startswith("GPRMC"):
+            ProcessL1e.convertGroup(gpsGroup, "COURSE", newGPSGroup, "COURSE")
+            ProcessL1e.convertGroup(gpsGroup, "SPEED", newGPSGroup, "SPEED")            
+            courseData = newGPSGroup.getDataset("COURSE")
+            speedData = newGPSGroup.getDataset("SPEED")
 
         if ancGroup is not None:
             newAncGroup = root.addGroup("ANCILLARY_NOTRACKER")
@@ -752,6 +741,12 @@ class ProcessL1e:
             relAzData = newAncGroup.getDataset("REL_AZ")
             solAzData = newAncGroup.getDataset("SOLAR_AZ")
             szaData = newAncGroup.getDataset("SZA")
+        
+        if satnavGroup is not None:
+            newSTGroup = root.addGroup("SOLARTRACKER")
+            ProcessL1e.convertGroup(satnavGroup, "AZIMUTH", newSTGroup, "HEADING")
+            ''' Need to populate '''
+
         if satmsgGroup is not None:
             newSatMSGGroup = root.addGroup("SOLARTRACKER_STATUS")
             # SATMSG (SOLARTRACKER_STATUS) has no date or time, just propogate it as is
@@ -763,6 +758,12 @@ class ProcessL1e:
                 #print("type",type(esData.data[k]))
                 newSatMSG.columns[k] = satMSG.data[k].tolist()
             newSatMSG.columnsToDataset()
+
+        if pyrGroup is not None:
+            newPyrGroup = root.addGroup("PYROMETER")
+            ProcessL1e.convertGroup(pyrGroup, "T", newPyrGroup, "T")
+            pyrData = newPyrGroup.getDataset("T")
+
 
         
         # PysciDON interpolated to the SLOWEST sampling rate and ProSoft
