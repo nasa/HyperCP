@@ -267,7 +267,7 @@ class Window(QtWidgets.QWidget):
             configDialog = ConfigWindow(configFileName, inputDir, self)
             configDialog.show()
 
-            '''ToDo: Capture signal from Config window to update the config file in main window'''
+            '''ToDo: Capture signal from Config window to update the selected config file in main window'''
             
         else:
             message = "Not a Config File: " + configFileName
