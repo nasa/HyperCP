@@ -418,10 +418,7 @@ class ProcessL1d:
             root.attributes["DEGLITCH_PRODAT"] = "OFF"
             root.attributes["DEGLITCH_REFDAT"] = "OFF"
             #root.attributes["STRAY_LIGHT_CORRECT"] = "OFF"
-            #root.attributes["THERMAL_RESPONSIVITY_CORRECT"] = "OFF"
-
-        
-
+            #root.attributes["THERMAL_RESPONSIVITY_CORRECT"] = "OFF"        
         
         if not ProcessL1d.processDarkCorrection(root, "ES"):
             msg = 'Error dark correcting ES'

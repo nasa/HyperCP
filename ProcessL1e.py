@@ -12,9 +12,12 @@ from ConfigFile import ConfigFile
 class ProcessL1e:    
     
     @staticmethod
-    def interpolateL1e(xData, xTimer, yTimer, newXData, instr, kind='linear', fileName='default'):    
+    def interpolateL1e(xData, xTimer, yTimer, newXData, dataName, kind='linear', fileName='default'):    
         ''' Time interpolation
             xTimer, yTimer are already converted from TimeTag2 to Datetimes'''
+        
+        # List of datasets requiring angular interpolation (i.e. through 0 degrees)
+        angList = ['AZIMUTH', 'POINTING', 'REL_AZ', 'HEADING', 'SOLAR_AZ']
 
         for k in xData.data.dtype.names:
             if k == "Datetag" or k == "Timetag2" or k == "Datetime":
@@ -30,38 +33,26 @@ class ProcessL1e:
             xTS = [calendar.timegm(xDT.timetuple()) for xDT in x]
             newXTS = [calendar.timegm(xDT.timetuple()) for xDT in new_x]
             
-            if kind == 'cubic':  
-                newXData.columns[k] = Utilities.interpSpline(xTS, y, newXTS)                       
+            if dataName in angList:
+                newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS)
+                # Some angular measurements (like SAS pointing) are + and -, and get converted 
+                # to all +. Convert them back to - for 180-359
+                if dataName == "POINTING":
+                    pointingData = newXData.columns[k]
+                    for i, angle in enumerate(pointingData):
+                        if angle > 180:
+                            pointingData[i] = angle - 360
             else:
-                newXData.columns[k] = Utilities.interp(xTS,y,newXTS, fill_value=np.nan)
+                if kind == 'cubic':  
+                    newXData.columns[k] = Utilities.interpSpline(xTS, y, newXTS)                       
+                else:
+                    newXData.columns[k] = Utilities.interp(xTS,y,newXTS, fill_value=np.nan)
 
         if ConfigFile.settings["bL1ePlotTimeInterp"] == 1:
-            print('Plotting time interpolations ' +instr)
+            print('Plotting time interpolations ' +dataName)
             # Plots the interpolated data in /Plots/L1E with filename of L1E file and dataset name
-            Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName)
-    
-    @staticmethod
-    def interpolateL1eAngular(xData, xTimer, yTimer, newXData, instr, fileName='default'):        
-        ''' Time interpolation
-            xTimer, yTimer are already converted from TimeTag2 to seconds'''
-
-        for k in xData.data.dtype.names:
-            if k == "Datetag" or k == "Timetag2":
-                continue
-            # print(k)
-            x = list(xTimer)
-            new_x = list(yTimer)
-            y = np.copy(xData.data[k]).tolist()
-            
-            newXData.columns[k] = Utilities.interpAngular(x, y, new_x)
-
-        if ConfigFile.settings["bL1ePlotTimeInterp"] == 1:
-            print('Plotting time interpolations ' +instr)
-            # This plots the interpolated data in Plots
-            Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName)
-
-
-    
+            Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, dataName, fileName)
+        
     @staticmethod
     def convertGroup(group, datasetName, newGroup, newDatasetName):        
         ''' Converts a sensor group into the L1E format; option to change group name.
@@ -105,13 +96,13 @@ class ProcessL1e:
         newSensorData.columnsToDataset()
 
     @staticmethod
-    def interpolateData(xData, yData, instr, fileName):
+    def interpolateData(xData, yData, dataName, fileName):
         ''' Preforms time interpolation to match xData to yData. xData is the dataset to be 
         interpolated, yData is the reference dataset with the times to be interpolated to.'''
 
-        msg = f'Interpolate Data {instr}'
+        msg = f'Interpolate Data {dataName}'
         print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFile(msg)        
 
         # Interpolating to itself
         if xData is yData:
@@ -136,293 +127,14 @@ class ProcessL1e:
         #    print("Found NAN 1")
 
         # Perform interpolation on full hyperspectral time series
-        # ProcessL1e.interpolateL1e(xData, xTimer, yTimer, xData, instr, 'cubic', fileName)
-        # ProcessL1e.interpolateL1e(xData, xTimer, yTimer, xData, instr, 'linear', fileName)
-        ProcessL1e.interpolateL1e(xData, xDatetime, yDatetime, xData, instr, 'linear', fileName)
+        ProcessL1e.interpolateL1e(xData, xDatetime, yDatetime, xData, dataName, 'linear', fileName)
+
         xData.columnsToDataset()
         
         #if Utilities.hasNan(xData):
         #    print("Found NAN 2")
         #    exit
         return True
-    
-    # @staticmethod
-    # def interpolateGPSData(node, gpsGroup, fileName):
-    #     ''' Interpolate GPS to match ES using linear interpolation '''
-
-    #     # This is handled seperately in order to correct the Lat Long and UTC fields
-    #     msg = "Interpolate GPS Data"
-    #     print(msg)
-    #     Utilities.writeLogFile(msg)
-
-    #     if gpsGroup is None:            
-    #         msg = "WARNING, gpsGroup is None"
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #         return False
-
-    #     # All other sensors are already interpolated to common times at this point,
-    #     # so any sensor group will do here
-    #     refGroup = node.getGroup("IRRADIANCE")
-    #     esData = refGroup.getDataset("ES")
-
-    #     # GPS
-    #     # Creates new gps group from old with Datetag/Timetag2/Datetime columns appended to all datasets
-    #     gpsTimeData = gpsGroup.getDataset("UTCPOS")
-    #     gpsDatetime = gpsGroup.getDataset("DATETIME")
-    #     gpsLatPosData = gpsGroup.getDataset("LATPOS")
-    #     gpsLonPosData = gpsGroup.getDataset("LONPOS")
-    #     gpsLatHemiData = gpsGroup.getDataset("LATHEMI")
-    #     gpsLonHemiData = gpsGroup.getDataset("LONHEMI")        
-    #     if ConfigFile.settings["bL1cSolarTracker"]:
-    #         # gpsMagVarData = gpsGroup.getDataset("MAGVAR")
-    #         gpsCourseData = gpsGroup.getDataset("COURSE")
-    #         gpsSpeedData = gpsGroup.getDataset("SPEED")
-
-    #     for gp in node.groups:
-    #         if gp.id.startswith("GP"):
-    #             newGPSGroup = gp
-    #     # newGPSGroup = node.getGroup("Ancillary")        
-    #     newGPSLatPosData = newGPSGroup.addDataset("LATITUDE")
-    #     newGPSLonPosData = newGPSGroup.addDataset("LONGITUDE")
-    #     if ConfigFile.settings["bL1cSolarTracker"]:
-    #         # newGPSMagVarData = newGPSGroup.addDataset("MAGVAR")
-    #         newGPSCourseData = newGPSGroup.addDataset("COURSE")
-    #         newGPSSpeedData = newGPSGroup.addDataset("SPEED")
-
-    #     # Add Datetag, Timetag2 and Datetime data to gps groups
-    #     # This matches ES data records (timestamps) after interpolation        
-    #     newGPSLatPosData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newGPSLatPosData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #     newGPSLatPosData.columns["Datetime"] = esData.data["Datetime"].tolist()
-    #     newGPSLonPosData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newGPSLonPosData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #     newGPSLonPosData.columns["Datetime"] = esData.data["Datetime"].tolist()
-    #     if ConfigFile.settings["bL1cSolarTracker"]:
-    #         newGPSCourseData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #         newGPSCourseData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #         newGPSCourseData.columns["Datetime"] = esData.data["Datetime"].tolist()
-    #         # newGPSMagVarData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #         # newGPSMagVarData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #         newGPSSpeedData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #         newGPSSpeedData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #         newGPSSpeedData.columns["Datetime"] = esData.data["Datetime"].tolist()
-        
-
-    #     # Convert degrees minutes to decimal degrees format
-    #     for i in range(gpsTimeData.data.shape[0]):
-    #         latDM = gpsLatPosData.data["NONE"][i]
-    #         latDirection = gpsLatHemiData.data["NONE"][i]
-    #         latDD = Utilities.dmToDd(latDM, latDirection)
-    #         gpsLatPosData.data["NONE"][i] = latDD
-
-    #         lonDM = gpsLonPosData.data["NONE"][i]
-    #         lonDirection = gpsLonHemiData.data["NONE"][i]
-    #         lonDD = Utilities.dmToDd(lonDM, lonDirection)            
-    #         gpsLonPosData.data["NONE"][i] = lonDD
-
-    #     ''' This is a good idea to persue at some point. No implementation yet.
-    #     #print("PlotGPS")
-    #     #Utilities.plotGPS(x, y, 'test1')
-    #     #print("PlotGPS - DONE")'''        
-
-        
-        # # Convert GPS UTC time to datetime. This requires a datetag for each record.
-        
-
-        # # xTimer = []
-        # # for i in range(gpsTimeData.data.shape[0]):
-        # #     xTimer.append(Utilities.utcToSec(gpsTimeData.data["NONE"][i]))
-
-        # # # yTimer = []
-        # yDatetime = esData.data["Datetime"]
-        # # # for i in range(esData.data.shape[0]):
-        # # #     yTimer.append(Utilities.timeTag2ToSec(esData.data["Timetag2"][i]))
-        # # print('Intperpolating '+str(len(xTimer))+' timestamps from '+\
-        # #     str(min(xTimer))+'s to '+str(max(xTimer)))
-        # # print(' To '+str(len(yTimer))+' timestamps from '+str(min(yTimer))+\
-        # #     's to '+str(max(yTimer)))
-
-        # xDatetime = gpsDatetime
-
-        # # Interpolate by time values
-        # # Convert GPS UTC time values to seconds to be used for interpolation        
-        # # ProcessL1e.interpolateL1e(gpsLatPosData, xTimer, yTimer, newGPSLatPosData, gpsLatPosData.id, 'linear', fileName)
-        # # ProcessL1e.interpolateL1e(gpsLonPosData, xTimer, yTimer, newGPSLonPosData, gpsLonPosData.id, 'linear', fileName)
-        # ProcessL1e.interpolateL1e(gpsLatPosData, xDatetime, yDatetime, newGPSLatPosData, gpsLatPosData.id, 'linear', fileName)
-        # ProcessL1e.interpolateL1e(gpsLonPosData, xDatetime, yDatetime, newGPSLonPosData, gpsLonPosData.id, 'linear', fileName)
-        # # ProcessL1e.interpolateL1e(xData, xDatetime, yDatetime, xData, instr, 'linear', fileName)
-        # if ConfigFile.settings["bL1cSolarTracker"]:
-        #     # ProcessL1e.interpolateL1e(gpsMagVarData, xTimer, yTimer, newGPSMagVarData, gpsMagVarData.id, 'linear', fileName)
-        #     # Angular interpolation is for compass angles 0-360 degrees (i.e. crossing 0, North)       
-        #     ProcessL1e.interpolateL1eAngular(gpsCourseData, xDatetime, yDatetime, newGPSCourseData, gpsCourseData.id, fileName)        
-        #     ProcessL1e.interpolateL1e(gpsSpeedData, xDatetime, yDatetime, newGPSSpeedData, gpsSpeedData.id, 'linear', fileName)
-        #     newGPSCourseData.columnsToDataset()
-        #     # newGPSMagVarData.columnsToDataset()
-        #     newGPSSpeedData.columnsToDataset()
-
-        # newGPSLatPosData.columnsToDataset()
-        # newGPSLonPosData.columnsToDataset()
-        # return True
-        
-
-    # # interpolate SATNAV to match ES
-    # @staticmethod
-    # def interpolateSATNAVData(node, satnavGroup, fileName):
-    #     msg = "Interpolate SATNAV Data"
-    #     print(msg)
-    #     Utilities.writeLogFile(msg)
-
-    #     if satnavGroup is None:
-    #         msg = "WARNING, satnavGroup is None"
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #         return False
-
-    #     refGroup = node.getGroup("IRRADIANCE")
-    #     esData = refGroup.getDataset("ES")
-
-    #     satnavTimeData = satnavGroup.getDataset("TIMETAG2")
-    #     satnavAzimuthData = satnavGroup.getDataset("AZIMUTH")
-    #     satnavHeadingData = satnavGroup.getDataset("HEADING")
-    #     satnavPitchData = satnavGroup.getDataset("PITCH")
-    #     satnavPointingData = satnavGroup.getDataset("POINTING")
-    #     satnavRollData = satnavGroup.getDataset("ROLL")
-    #     satnavRelAzData = satnavGroup.getDataset("REL_AZ")
-    #     satnavElevationData = satnavGroup.getDataset("ELEVATION")
-    #     satnavHumidityData = satnavGroup.getDataset("HUMIDITY")
-
-    #     # newSATNAVGroup = node.getGroup("Ancillary")
-    #     newSATNAVGroup = node.getGroup("SOLARTRACKER")
-    #     newSATNAVAzimuthData = newSATNAVGroup.addDataset("AZIMUTH")
-    #     newSATNAVHeadingData = newSATNAVGroup.addDataset("HEADING")
-    #     newSATNAVPitchData = newSATNAVGroup.addDataset("PITCH")
-    #     newSATNAVPointingData = newSATNAVGroup.addDataset("POINTING")
-    #     newSATNAVRollData = newSATNAVGroup.addDataset("ROLL")
-    #     newSATNAVRelAzData = newSATNAVGroup.addDataset("REL_AZ")
-    #     newSATNAVElevationData = newSATNAVGroup.addDataset("ELEVATION")
-    #     newSATNAVHumidityData = newSATNAVGroup.addDataset("HUMIDITY")
-
-    #     # Add Datetag, Timetag2 data to satnav groups
-    #     # This matches ES data after interpolation
-    #     newSATNAVAzimuthData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newSATNAVAzimuthData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #     newSATNAVHeadingData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newSATNAVHeadingData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #     newSATNAVPitchData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newSATNAVPitchData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #     newSATNAVPointingData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newSATNAVPointingData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #     newSATNAVRollData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newSATNAVRollData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #     newSATNAVRelAzData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newSATNAVRelAzData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #     newSATNAVElevationData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newSATNAVElevationData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #     newSATNAVHumidityData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newSATNAVHumidityData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-
-    #     # Convert SATNAV time values to seconds to be used for interpolation
-    #     xTimer = []
-    #     for i in range(satnavTimeData.data.shape[0]):
-    #         xTimer.append(Utilities.timeTag2ToSec(satnavTimeData.data["NONE"][i]))
-
-    #     # Convert ES TimeTag2 values to seconds to be used for interpolation
-    #     yTimer = []
-    #     for i in range(esData.data.shape[0]):
-    #         yTimer.append(Utilities.timeTag2ToSec(esData.data["Timetag2"][i]))
-    #     print('Intperpolating '+str(len(xTimer))+' timestamps from '+\
-    #         str(min(xTimer))+'s to '+str(max(xTimer)))
-    #     print(' To '+str(len(yTimer))+' timestamps from '+str(min(yTimer))+\
-    #         's to '+str(max(yTimer)))
-
-    #     # Interpolate by time values
-    #     # Angular interpolation is for compass angles 0-360 degrees (i.e. crossing 0, North)
-    #     ProcessL1e.interpolateL1eAngular(satnavAzimuthData, xTimer, yTimer, newSATNAVAzimuthData, 'SunAz', fileName)
-    #     ProcessL1e.interpolateL1eAngular(satnavHeadingData, xTimer, yTimer, newSATNAVHeadingData, 'Heading', fileName)
-    #     ProcessL1e.interpolateL1e(satnavPitchData, xTimer, yTimer, newSATNAVPitchData, 'Pitch', 'linear', fileName)
-    #     ProcessL1e.interpolateL1eAngular(satnavPointingData, xTimer, yTimer, newSATNAVPointingData, 'Pointing', fileName)
-    #     ProcessL1e.interpolateL1e(satnavRollData, xTimer, yTimer, newSATNAVRollData, 'Roll', 'linear', fileName)
-    #     ProcessL1e.interpolateL1e(satnavRelAzData, xTimer, yTimer, newSATNAVRelAzData, 'RelAz', 'linear', fileName)
-    #     ProcessL1e.interpolateL1e(satnavElevationData, xTimer, yTimer, newSATNAVElevationData, 'Elevation', 'linear', fileName)
-    #     ProcessL1e.interpolateL1e(satnavHumidityData, xTimer, yTimer, newSATNAVHumidityData, 'Humidity', 'linear', fileName)
-
-    #     newSATNAVAzimuthData.columnsToDataset()
-    #     newSATNAVHeadingData.columnsToDataset()
-    #     newSATNAVPitchData.columnsToDataset()
-    #     newSATNAVPointingData.columnsToDataset()
-    #     newSATNAVRollData.columnsToDataset()
-    #     newSATNAVRelAzData.columnsToDataset()
-    #     newSATNAVElevationData.columnsToDataset()
-    #     newSATNAVHumidityData.columnsToDataset()
-    #     return True
-
-    # # interpolate SATNAV to match ES
-    # @staticmethod
-    # def interpolateAncData(node, ancGroup, fileName):
-    #     msg = "Interpolate ANCILLARY_NOTRACKER Data"
-    #     print(msg)
-    #     Utilities.writeLogFile(msg)
-
-    #     if ancGroup is None:
-    #         msg = "WARNING, satnavGroup is None"
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #         return False
-
-    #     refGroup = node.getGroup("IRRADIANCE")
-    #     esData = refGroup.getDataset("ES")
-
-    #     ancTimeData = ancGroup.getDataset("TIMETAG2")
-    #     ancAzimuthData = ancGroup.getDataset("SOLAR_AZ")
-    #     ancHeadingData = ancGroup.getDataset("HEADING")        
-    #     ancRelAzData = ancGroup.getDataset("REL_AZ")
-    #     ancSZAData = ancGroup.getDataset("SZA")
-
-    #     newANCGroup = node.getGroup("SOLARTRACKER")
-    #     newANCAzimuthData = newANCGroup.addDataset("SOLAR_AZ")
-    #     newANCHeadingData = newANCGroup.addDataset("HEADING")
-    #     newANCRelAzData = newANCGroup.addDataset("REL_AZ")
-    #     newANCSZAData = newANCGroup.addDataset("SZA")        
-
-    #     # Add Datetag, Timetag2 data to anc groups
-    #     # This matches ES data after interpolation
-    #     newANCAzimuthData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newANCAzimuthData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #     newANCHeadingData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newANCHeadingData.columns["Timetag2"] = esData.data["Timetag2"].tolist()        
-    #     newANCRelAzData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newANCRelAzData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-    #     newANCSZAData.columns["Datetag"] = esData.data["Datetag"].tolist()
-    #     newANCSZAData.columns["Timetag2"] = esData.data["Timetag2"].tolist()
-
-    #     # Convert ANC time values to seconds to be used for interpolation
-    #     xTimer = []
-    #     for i in range(ancTimeData.data.shape[0]):
-    #         xTimer.append(Utilities.timeTag2ToSec(ancTimeData.data["NONE"][i]))
-
-    #     # Convert ES TimeTag2 values to seconds to be used for interpolation
-    #     yTimer = []
-    #     for i in range(esData.data.shape[0]):
-    #         yTimer.append(Utilities.timeTag2ToSec(esData.data["Timetag2"][i]))
-    #     print('Intperpolating '+str(len(xTimer))+' timestamps from '+\
-    #         str(min(xTimer))+'s to '+str(max(xTimer)))
-    #     print(' To '+str(len(yTimer))+' timestamps from '+str(min(yTimer))+\
-    #         's to '+str(max(yTimer)))
-
-    #     # Interpolate by time values
-    #     # Angular interpolation is for compass angles 0-360 degrees (i.e. crossing 0, North)
-    #     ProcessL1e.interpolateL1eAngular(ancAzimuthData, xTimer, yTimer, newANCAzimuthData, 'SunAz', fileName)
-    #     ProcessL1e.interpolateL1eAngular(ancHeadingData, xTimer, yTimer, newANCHeadingData, 'Heading', fileName)
-    #     ProcessL1e.interpolateL1e(ancRelAzData, xTimer, yTimer, newANCRelAzData, 'RelAz', 'linear', fileName)
-    #     ProcessL1e.interpolateL1e(ancSZAData, xTimer, yTimer, newANCSZAData, 'SZA', 'linear', fileName)
-
-    #     newANCAzimuthData.columnsToDataset()
-    #     newANCHeadingData.columnsToDataset()
-    #     newANCRelAzData.columnsToDataset()
-    #     newANCSZAData.columnsToDataset()
-    #     return True
-
     
     @staticmethod
     def interpolateWavelength(ds, newDS, newWavebands):
@@ -719,22 +431,44 @@ class ProcessL1e:
         ProcessL1e.convertGroup(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
         latData = newGPSGroup.getDataset("LATITUDE")
         lonData = newGPSGroup.getDataset("LONGITUDE")
-        if gpsGroup.id.startswith("GPRMC"):
+        # Only if the right NMEA data are provided (e.g. with SolarTracker)      
+        if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
             ProcessL1e.convertGroup(gpsGroup, "COURSE", newGPSGroup, "COURSE")
             ProcessL1e.convertGroup(gpsGroup, "SPEED", newGPSGroup, "SPEED")            
             courseData = newGPSGroup.getDataset("COURSE")
             speedData = newGPSGroup.getDataset("SPEED")
 
+        # Non-SolarTracker ancillary field and Pysolar data
         if ancGroup is not None:
             newAncGroup = root.addGroup("ANCILLARY_NOTRACKER")
-            ProcessL1e.convertGroup(ancGroup, "HEADING", newAncGroup, "HEADING")
-            ProcessL1e.convertGroup(ancGroup, "REL_AZ", newAncGroup, "REL_AZ")
-            ProcessL1e.convertGroup(ancGroup, "SOLAR_AZ", newAncGroup, "SOLAR_AZ")
-            ProcessL1e.convertGroup(ancGroup, "SZA", newAncGroup, "SZA")
+            for ds in ancGroup.datasets:
+                if ds != "DATETAG" and ds != "TIMETAG2" and ds != "DATETIME":
+                    ProcessL1e.convertGroup(ancGroup, ds, newAncGroup, ds)
+
+            # ProcessL1e.convertGroup(ancGroup, "HEADING", newAncGroup, "HEADING")
+            # ProcessL1e.convertGroup(ancGroup, "REL_AZ", newAncGroup, "REL_AZ")
+            # ProcessL1e.convertGroup(ancGroup, "SOLAR_AZ", newAncGroup, "SOLAR_AZ")
+            # ProcessL1e.convertGroup(ancGroup, "SZA", newAncGroup, "SZA")
+            # ProcessL1e.convertGroup(ancGroup, "SALINITY", newAncGroup, "SALINITY")
+            # ProcessL1e.convertGroup(ancGroup, "SST", newAncGroup, "SST")
+            # ProcessL1e.convertGroup(ancGroup, "WINDSPEED", newAncGroup, "WINDSPEED")
+
             headingData = newAncGroup.getDataset("HEADING")
             relAzData = newAncGroup.getDataset("REL_AZ")
             solAzData = newAncGroup.getDataset("SOLAR_AZ")
             szaData = newAncGroup.getDataset("SZA")
+            if "SALINITY" in newAncGroup.datasets:
+                saltData = newAncGroup.getDataset("SALINITY")
+            else:
+                saltData = None
+            if "SST" in newAncGroup.datasets:
+                sstData = newAncGroup.getDataset("SST")
+            else:
+                sstData = None
+            if "WINDSPEED" in newAncGroup.datasets:
+                windData = newAncGroup.getDataset("WINDSPEED")
+            else:
+                windData = None
         
         if satnavGroup is not None:
             newSTGroup = root.addGroup("SOLARTRACKER")
@@ -787,17 +521,17 @@ class ProcessL1e:
         
         interpData = None
         if esLength < liLength and esLength < ltLength:
-            msg = "ES has fewest records - interpolating to ES; This should raise a red flag."
+            msg = f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records"
             print(msg)
             Utilities.writeLogFile(msg)                                       
             interpData = esData
         elif liLength < ltLength:
-            msg = "LI has fewest records - interpolating to LI; This should raise a red flag."
+            msg = f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records"
             print(msg)
             Utilities.writeLogFile(msg)                                       
             interpData = liData
         else:
-            msg = "LT has fewest records (as expected) - interpolating to LT"
+            msg = f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records"
             print(msg)
             Utilities.writeLogFile(msg)                                       
             interpData = ltData
@@ -822,36 +556,31 @@ class ProcessL1e:
             ProcessL1e.interpolateData(speedData, interpData, "SPEED", fileName)             
 
         if satnavGroup is not None:
-            # ProcessL1e.interpolateData(azimuthData, interpData, "AZIMUTH", fileName)        
+            ProcessL1e.interpolateData(azimuthData, interpData, "AZIMUTH", fileName)    
             ProcessL1e.interpolateData(elevationData, interpData, "ELEVATION", fileName)
-            # ProcessL1e.interpolateData(headingData, interpData, "HEADING", fileName)
+            ProcessL1e.interpolateData(headingData, interpData, "HEADING", fileName)
             ProcessL1e.interpolateData(humidityData, interpData, "HUMIDITY", fileName)
             ProcessL1e.interpolateData(pitchData, interpData, "PITCH", fileName)
-            # ProcessL1e.interpolateData(pointingData, interpData, "POINTING", fileName)
-            # if not ProcessL1e.interpolateData(relAzData, interpData, "REL_AZ", fileName):
+            ProcessL1e.interpolateData(pointingData, interpData, "POINTING", fileName)
+            if not ProcessL1e.interpolateData(relAzData, interpData, "REL_AZ", fileName):
                 return None
             ProcessL1e.interpolateData(rollData, interpData, "ROLL", fileName)
             
         if ancGroup is not None:
-            # ProcessL1e.interpolateData(headingData, interpData, "HEADING", fileName)           
-            # if not ProcessL1e.interpolateData(relAzData, interpData, "REL_AZ", fileName):
+            ProcessL1e.interpolateData(headingData, interpData, "HEADING", fileName)           
+            if not ProcessL1e.interpolateData(relAzData, interpData, "REL_AZ", fileName):
                 return None
-            # ProcessL1e.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName)        
-            ProcessL1e.interpolateData(szaData, interpData, "SZA", fileName)  
+            ProcessL1e.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName)        
+            ProcessL1e.interpolateData(szaData, interpData, "SZA", fileName) 
+            if saltData:
+                ProcessL1e.interpolateData(saltData, interpData, "SALINITY", fileName)
+            if sstData:
+                ProcessL1e.interpolateData(sstData, interpData, "SST", fileName)
+            if windData:
+                ProcessL1e.interpolateData(windData, interpData, "WINDSPEED", fileName)
 
         if pyrGroup is not None:
             ProcessL1e.interpolateData(pyrData, interpData, "T", fileName)
-                # return None 
-
-        # if not ProcessL1e.interpolateGPSData(root, gpsGroup, fileName):
-        # #     return None        
-        # if satnavGroup is not None:
-        #     if not ProcessL1e.interpolateSATNAVData(root, satnavGroup, fileName):
-        #         return None
-        # if ancGroup is not None:
-        #     if not ProcessL1e.interpolateAncData(root, ancGroup, fileName):
-        #         return None
-
 
         # Match wavelengths across instruments
         # Calls interpolateWavelengths and matchColumns

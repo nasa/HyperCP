@@ -21,11 +21,12 @@ from ProcessL1e import ProcessL1e
 from ProcessL2 import ProcessL2
 
 
-
 class Controller:
 
     @staticmethod
     def generateContext(calibrationMap):
+        ''' Generate a calibration context map for the instrument suite '''
+
         for key in calibrationMap:
             cf = calibrationMap[key]
             cf.printd()
@@ -53,7 +54,7 @@ class Controller:
                 cf.measMode = "VesselBorne"
                 cf.frameType = "ShutterLight"
                 cf.sensorType = cf.getSensorType()
-            elif cf.id.startswith("$GPRMC"):
+            elif cf.id.startswith("$GPRMC") or cf.id.startswith("$GPGGA"):
                 cf.instrumentType = "GPS"
                 cf.media = "Not Required"
                 cf.measMode = "Not Required"
@@ -74,6 +75,8 @@ class Controller:
 
     @staticmethod
     def processCalibrationConfig(configName, calFiles):
+        ''' Reaad in calibration files/configuration '''
+
         # print("processCalibrationConfig")
         calFolder = os.path.splitext(configName)[0] + "_Calibration"
         calPath = os.path.join("Config", calFolder)
@@ -98,10 +101,11 @@ class Controller:
         # print("calibrationMap keys 2:", calibrationMap.keys())
         # print("processCalibrationConfig - DONE")
         return calibrationMap
-
-    # Read wind speed file
+    
     @staticmethod
     def processAncData(fp):
+        ''' Read in the ancillary field data file '''
+
         if fp is None:
             return None
         elif not os.path.isfile(fp):
@@ -491,7 +495,12 @@ class Controller:
                 Utilities.writeLogFile(msg)
                 return False
 
-            ancillaryData = Controller.processAncData(ancFile)
+            if ConfigFile.settings["bL1cSolarTracker"]:
+                ancillaryData = Controller.processAncData(ancFile)
+            else:
+                # Without the SolarTracker, ancillary data would have been read in at L1C,
+                # and will be extracted from the ANCILLARY_NOTRACKER group later
+                ancillaryData = None
             fileName = fileName.split('_')
             outFilePath = os.path.join(pathOut,fileName[0] + "_" + level + ".hdf")
             Controller.processL2(inFilePath, outFilePath, ancillaryData)  

@@ -17,7 +17,7 @@ class ProcessL1c:
     # Or records within the out-of-bounds for absolute rotator angle.
     @staticmethod
     def filterData(group, badTimes):                    
-        msg = f'   Remove {group.id} Data'
+        msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
         timeStamp = group.getDataset("DATETIME").data                
@@ -435,6 +435,9 @@ class ProcessL1c:
                 return None 
 
             # Reinitialize with new, smaller dataset
+            ''' Essential ancillary data for non-SolarTracker file includes
+                lat, lon, datetime, ship heading and offset between bow and 
+                SAS instrument from which SAS azimuth is calculated '''
             timeStamp = ancillaryData.columns["DATETIME"][0]
             shipAzimuth = ancillaryData.columns["HEADING"][0]
             # ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
@@ -447,7 +450,14 @@ class ProcessL1c:
             sasAzimuth = list(map(add, shipAzimuth, home))
 
             lat = ancillaryData.columns["LATITUDE"][0]
-            lon = ancillaryData.columns["LATITUDE"][0]
+            lon = ancillaryData.columns["LONGITUDE"][0]
+            if "SALINITY" in ancillaryData.columns:
+                salt = ancillaryData.columns["SALINITY"][0]
+            if "SST" in ancillaryData.columns:
+                sst = ancillaryData.columns["SST"][0]
+            if "WINDSPEED" in ancillaryData.columns:
+                wind = ancillaryData.columns["WINDSPEED"][0]
+
             sunAzimuth = []
             sunZenith = []
             for i, dt_utc in enumerate(timeStamp):
@@ -490,19 +500,28 @@ class ProcessL1c:
         else:
             # ... otherwise populate the ancGroup
             ancGroup.addDataset("TIMETAG2")
-            ancGroup.addDataset("DATETAG")
-            ancGroup.addDataset("SOLAR_AZ")
-            ancGroup.addDataset("SZA")
-            ancGroup.addDataset("HEADING")
-            ancGroup.addDataset("REL_AZ")
-
             ancGroup.datasets["TIMETAG2"].data = np.array(ancTimeTag2, dtype=[('NONE', '<f8')])
+            ancGroup.addDataset("DATETAG")
             ancGroup.datasets["DATETAG"].data = np.array(ancDateTag, dtype=[('NONE', '<f8')])
+            ancGroup.addDataset("SOLAR_AZ")
             ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
+            ancGroup.addDataset("SZA")
             ancGroup.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
+            ancGroup.addDataset("HEADING")
             ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
-            ancGroup.datasets["REL_AZ"].data = np.array(relAz, dtype=[('NONE', '<f8')])            
-                
+            ancGroup.addDataset("REL_AZ")
+            ancGroup.datasets["REL_AZ"].data = np.array(relAz, dtype=[('NONE', '<f8')])
+            if "SALINITY" in ancillaryData.columns:
+                ancGroup.addDataset("SALINITY")
+                ancGroup.datasets["SALINITY"].data = np.array(salt, dtype=[('NONE', '<f8')])
+            if "SST" in ancillaryData.columns:
+                ancGroup.addDataset("SST")
+                ancGroup.datasets["SST"].data = np.array(sst, dtype=[('NONE', '<f8')])
+            if "WINDSPEED" in ancillaryData.columns:
+                ancGroup.addDataset("WINDSPEED")
+                ancGroup.datasets["WINDSPEED"].data = np.array(wind, dtype=[('NONE', '<f8')])
+
+            
             # Convert datetimes
             dateTime = ancGroup.addDataset("DATETIME")
             timeData = ancGroup.getDataset("TIMETAG2").data["NONE"].tolist()
@@ -613,7 +632,7 @@ class ProcessL1c:
 
                 gpTime = gpTimeset.data["NONE"]
                 lenGpTime = len(gpTime)
-                msg = f'{gp.id}  Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
+                msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
                 print(msg)
                 Utilities.writeLogFile(msg)    
 

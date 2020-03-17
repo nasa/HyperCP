@@ -28,7 +28,10 @@ class SeaBASSWriter:
         if level == '2':
             referenceGroup = node.getGroup("IRRADIANCE")
             esData = referenceGroup.getDataset("ES")
-            ancillaryGroup = node.getGroup("ANCILLARY")
+            if ConfigFile.settings["bL1cSolarTracker"]:
+                ancillaryGroup = node.getGroup("ANCILLARY")
+            else:
+                ancillaryGroup = node.getGroup("ANCILLARY_NOTRACKER")
             wind = ancillaryGroup.getDataset("WINDSPEED")
             wind.datasetToColumns()
             winCol = wind.columns["WINDSPEED"]
@@ -108,21 +111,17 @@ class SeaBASSWriter:
         newData = SeaBASSWriter.removeColumns(newData,'SZA')
         relAz = dataset.data['REL_AZ'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'REL_AZ')
-        # rotator = dataset.data['ROTATOR'].tolist()
-        newData = SeaBASSWriter.removeColumns(newData,'ROTATOR')
-        # heading = dataset.data['SHIP_TRUE'].tolist() # from SAS
+        # The rest remain unused
         newData = SeaBASSWriter.removeColumns(newData,'SHIP_TRUE')
-        # azimuth = dataset.data['AZIMUTH'].tolist()        
-        newData = SeaBASSWriter.removeColumns(newData,'AZIMUTH')
+        if ConfigFile.settings["bL1cSolarTracker"]:
+            newData = SeaBASSWriter.removeColumns(newData,'ROTATOR')
+            newData = SeaBASSWriter.removeColumns(newData,'AZIMUTH')
 
         dataset.data = newData
 
         # Change field names for SeaBASS compliance
         bands = list(dataset.data.dtype.names)    
         ls = ['date','time','lat','lon','RelAz','SZA']
-        # ls[4]='SAZ'
-        # ls[5]='heading'    # This is SAS -> SHIP_TRUE, not GPS    
-        # pointing         # no SeaBASS field for sensor azimuth
 
         if dtype == 'es':
             fieldName = 'Es'
@@ -130,9 +129,7 @@ class SeaBASSWriter:
             fieldName = 'Lsky'
         elif dtype == 'lt':
             fieldName = 'Lt'
-        # elif dtype == 'rrs':
-        #     fieldName = 'Rrs'
-        # fieldsLineStr = ','.join(ls[:lenNonRad] + [f'{fieldName}{band}' for band in ls[lenNonRad:]])
+
         fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands])
 
         lenRad = (len(dataset.data.dtype.names))
@@ -293,37 +290,37 @@ class SeaBASSWriter:
             return
 
         # Append latpos/lonpos to datasets
-        if root.getGroup("GPS"):
-            gpsGroup = root.getGroup("GPS")
-            latposData = gpsGroup.getDataset("LATITUDE")
-            lonposData = gpsGroup.getDataset("LONGITUDE")
+        gpsGroup = root.getGroup("GPS")
+        latposData = gpsGroup.getDataset("LATITUDE")
+        lonposData = gpsGroup.getDataset("LONGITUDE")
 
-            latposData.datasetToColumns()
-            lonposData.datasetToColumns()
+        latposData.datasetToColumns()
+        lonposData.datasetToColumns()
 
-            latpos = latposData.columns["NONE"]
-            lonpos = lonposData.columns["NONE"]
+        latpos = latposData.columns["NONE"]
+        lonpos = lonposData.columns["NONE"]
 
-            esData.datasetToColumns()
-            liData.datasetToColumns()
-            ltData.datasetToColumns()
+        esData.datasetToColumns()
+        liData.datasetToColumns()
+        ltData.datasetToColumns()
 
-            #print(esData.columns)
+        #print(esData.columns)
 
-            esData.columns["LATITUDE"] = latpos
-            liData.columns["LATITUDE"] = latpos
-            ltData.columns["LATITUDE"] = latpos
+        esData.columns["LATITUDE"] = latpos
+        liData.columns["LATITUDE"] = latpos
+        ltData.columns["LATITUDE"] = latpos
 
-            esData.columns["LONGITUDE"] = lonpos
-            liData.columns["LONGITUDE"] = lonpos
-            ltData.columns["LONGITUDE"] = lonpos
+        esData.columns["LONGITUDE"] = lonpos
+        liData.columns["LONGITUDE"] = lonpos
+        ltData.columns["LONGITUDE"] = lonpos
 
-            esData.columnsToDataset()
-            liData.columnsToDataset()
-            ltData.columnsToDataset()
+        esData.columnsToDataset()
+        liData.columnsToDataset()
+        ltData.columnsToDataset()
         
-        # Append azimuth, heading, rotator, relAz, and solar elevation
-        if root.getGroup("SOLARTRACKER"):
+        # Append azimuth, heading, rotator, relAz, and SZA to the dataset
+        # in order to pass it to formatData1e (bloody awkward...)
+        if ConfigFile.settings["bL1cSolarTracker"]:
             satnavGroup = root.getGroup("SOLARTRACKER")
 
             azimuthData = satnavGroup.getDataset("AZIMUTH")
@@ -350,6 +347,9 @@ class SeaBASSWriter:
             # roll = rollData.columns["SAS"]
             relAz = relAzData.columns["REL_AZ"]
             elevation = elevationData.columns["SUN"]
+            sza = []
+            for elev in elevation:
+                sza.append(90-elev)
 
             esData.datasetToColumns()
             liData.datasetToColumns()
@@ -379,9 +379,44 @@ class SeaBASSWriter:
             liData.columns["REL_AZ"] = relAz
             ltData.columns["REL_AZ"] = relAz
 
-            esData.columns["SZA"] = elevation
-            liData.columns["SZA"] = elevation
-            ltData.columns["SZA"] = elevation
+            esData.columns["SZA"] = sza
+            liData.columns["SZA"] = sza
+            ltData.columns["SZA"] = sza
+
+            esData.columnsToDataset()
+            liData.columnsToDataset()
+            ltData.columnsToDataset()
+
+        else:
+            ancGroup = root.getGroup("ANCILLARY_NOTRACKER")
+
+            headingData = ancGroup.getDataset("HEADING")
+            relAzData = ancGroup.getDataset("REL_AZ")
+            szaData = ancGroup.getDataset("SZA")
+
+            headingData.datasetToColumns()
+            relAzData.datasetToColumns() 
+            szaData.datasetToColumns() 
+
+            shipTrue = headingData.columns["NONE"]            
+            relAz = relAzData.columns["NONE"]
+            sza = szaData.columns["NONE"]
+
+            esData.datasetToColumns()
+            liData.datasetToColumns()
+            ltData.datasetToColumns()
+            
+            esData.columns["SHIP_TRUE"] = shipTrue 
+            liData.columns["SHIP_TRUE"] = shipTrue
+            ltData.columns["SHIP_TRUE"] = shipTrue
+
+            esData.columns["REL_AZ"] = relAz
+            liData.columns["REL_AZ"] = relAz
+            ltData.columns["REL_AZ"] = relAz
+
+            esData.columns["SZA"] = sza
+            liData.columns["SZA"] = sza
+            ltData.columns["SZA"] = sza
 
             esData.columnsToDataset()
             liData.columnsToDataset()

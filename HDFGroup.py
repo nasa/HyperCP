@@ -22,7 +22,6 @@ class HDFGroup:
         self.datasets = collections.OrderedDict()
         self.attributes = collections.OrderedDict()
 
-
     def copy(self, gp):
         self.copyAttributes(gp)
         for k, ds in gp.datasets.items():
@@ -49,16 +48,14 @@ class HDFGroup:
             self.datasets[name] = ds
         return ds
 
-
     def getDataset(self, name):
         if name in self.datasets:
             return self.datasets[name]
         return None
-
-
-    # Generates Head attributes
-    # ToDo: This should get generated from contect file instead
+    
     def getTableHeader(self, name):
+        ''' Generates Head attributes'''
+        # ToDo: This should get generated from context file instead
         if name != "None":
             cnt = 1
             ds = self.getDataset(name)
@@ -67,8 +64,6 @@ class HDFGroup:
             for item in ds.columns:
                 self.attributes["Head_"+str(cnt)] = name + " 1 1 " + item
                 cnt += 1
-
-
 
     def printd(self):
         print("Group:", self.id)
@@ -87,7 +82,6 @@ class HDFGroup:
         for k in self.datasets:
             ds = self.datasets[k]
             ds.printd()
-
 
     def read(self, f):
         name = f.name[f.name.rfind("/")+1:]
@@ -113,7 +107,6 @@ class HDFGroup:
                 self.datasets[k] = ds
                 ds.read(item)
 
-
     def write(self, f):
         #print("Group:", self.id)
         try:
@@ -128,7 +121,6 @@ class HDFGroup:
         except:
             e = sys.exc_info()[0]
             print(e)
-
 
     # # Writing to HDF4 file using PyHdf
     # def writeHDF4(self, v, vs):

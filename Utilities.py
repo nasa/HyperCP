@@ -16,6 +16,7 @@ import numpy as np
 import scipy.interpolate
 from scipy.interpolate import splev, splrep
 import pandas as pd
+from pandas.plotting import register_matplotlib_converters
 
 from ConfigFile import ConfigFile
 
@@ -415,37 +416,50 @@ class Utilities:
     #     badIndex = [s>=m]
     #     return badIndex
 
-
-    # Wrapper for scipy interp1d that works even if
-    # values in new_x are outside the range of values in x
+    
     @staticmethod
     def interp(x, y, new_x, kind='linear', fill_value=0.0):
+        ''' Wrapper for scipy interp1d that works even if
+            values in new_x are outside the range of values in x'''
 
+        ''' BUG: I should probably rewrite this to be more cautious of extrapolation '''
         # If the last value to interp to is larger than the last value interp'ed from,
         # then append that higher value onto the values to interp from
         n0 = len(x)-1
         n1 = len(new_x)-1
         if new_x[n1] > x[n0]:
             #print(new_x[n], x[n])
+            # msg = '********** Warning: extrapolating to beyond end of data record ********'
+            # print(msg)
+            # Utilities.writeLogFile(msg)
+
             x.append(new_x[n1])
             y.append(y[n0])
         # If the first value to interp to is less than the first value interp'd from,
         # then add that lesser value to the beginning of values to interp from
         if new_x[0] < x[0]:
             #print(new_x[0], x[0])
+            # msg = '********** Warning: extrapolating to before beginning of data record ******'
+            # print(msg)
+            # Utilities.writeLogFile(msg)
+            
             x.insert(0, new_x[0])
             y.insert(0, y[0])
 
         new_y = scipy.interpolate.interp1d(x, y, kind=kind, bounds_error=False, fill_value=fill_value)(new_x)
 
         return new_y
-
-    # Wrapper for scipy interp1d that works even if
-    # values in new_x are outside the range of values in x
+    
     @staticmethod
-    def interpAngular(x, y, new_x):        
+    def interpAngular(x, y, new_x):
+        ''' Wrapper for scipy interp1d that works even if
+            values in new_x are outside the range of values in x'''
+
+        # Some angular measurements (like SAS pointing) are + and -. Convert to all +
         # eliminate NaNs
         for i, value in enumerate(y):
+            if value < 0:
+                y[i] = 360 + value
             if np.isnan(value):
                 x.pop(i)
                 y.pop(i)
@@ -824,8 +838,11 @@ class Utilities:
    
 
     @staticmethod
-    def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):     
+    def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):    
+        ''' Plot results of L1E time interpolation '''
+
         fileBaseName,_ = fileName.split('.')
+        register_matplotlib_converters()
         # if not os.path.exists("Plots/L1D"):os.path.join('Plots','L1D'
         if not os.path.exists(os.path.join('Plots','L1E')):
             os.makedirs(os.path.join('Plots','L1E'))
@@ -836,29 +853,28 @@ class Utilities:
                 'size': 16,
                 }
 
-            if instr == 'ES' or instr == 'LI' or instr == 'LT':
-                l = len(xData.data.dtype.names)-2 # skip date and time
-                index = 0
-            # elif instr == 'Heading':
-            #     l = 2
-            else:
-                l = len(xData.data.dtype.names)
-                index = None
-
-            Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-            
             # Steps in wavebands used for plots
             # step = float(ConfigFile.settings["fL3InterpInterval"]) # this is in nm
-            # This happens prior to waveband interpolation, so each interval is ~3.5 nm
-            step = 2 # this is in band intervals
+            # This happens prior to waveband interpolation, so each interval is ~3.3 nm
+            step = 5 # this is in band intervals
             
-            if index == 0:
-                for i, k in enumerate(xData.data.dtype.names):
-                    if index % step == 0: 
-                        Utilities.printProgressBar(i+1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-                        
-                        if k == "Datetag" or k == "Timetag2":
-                            continue                            
+            if instr == 'ES' or instr == 'LI' or instr == 'LT':                
+                l = round((len(xData.data.dtype.names)-3)/step) # skip date and time and datetime
+                index = l
+            else:
+                l = len(xData.data.dtype.names)-3 # skip date and time and datetime
+                index = None
+
+            Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)            
+            
+            ticker = 0
+            if index is not None:
+                for k in xData.data.dtype.names:
+                    if index % step == 0:                                                 
+                        if k == "Datetag" or k == "Timetag2" or k == "Datetime":
+                            continue  
+                        ticker += 1    
+                        Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)                      
                         x = np.copy(xData.data[k]).tolist()
                         new_x = np.copy(newXData.columns[k]).tolist()
 
@@ -868,7 +884,7 @@ class Utilities:
                         ax.plot(yTimer, new_x, 'k.', label='Interpolated')
                         ax.legend()
 
-                        plt.xlabel('Seconds', fontdict=font)
+                        plt.xlabel('Date/Time (UTC)', fontdict=font)
                         plt.ylabel(f'{instr}_{k}', fontdict=font)
                         plt.subplots_adjust(left=0.15)
                         plt.subplots_adjust(bottom=0.15)
@@ -881,11 +897,11 @@ class Utilities:
 
                     index +=1     
             else:
-                for i, k in enumerate(xData.data.dtype.names):
-                    Utilities.printProgressBar(i+1, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-                    
-                    if k == "Datetag" or k == "Timetag2":
-                        continue                            
+                for k in xData.data.dtype.names:                                        
+                    if k == "Datetag" or k == "Timetag2" or k == "Datetime":
+                        continue     
+                    ticker += 1                  
+                    Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
                     x = np.copy(xData.data[k]).tolist()
                     new_x = np.copy(newXData.columns[k]).tolist()
 
@@ -895,8 +911,8 @@ class Utilities:
                     ax.plot(yTimer, new_x, 'k.', label='Interpolated')
                     ax.legend()
 
-                    plt.xlabel('Seconds', fontdict=font)
-                    plt.ylabel('Data', fontdict=font)
+                    plt.xlabel('Date/Time (UTC)', fontdict=font)
+                    plt.ylabel(f'{instr}', fontdict=font)
                     plt.subplots_adjust(left=0.15)
                     plt.subplots_adjust(bottom=0.15)
                     

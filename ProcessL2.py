@@ -6,10 +6,11 @@ import warnings
 import numpy as np
 from numpy import matlib as mb
 import scipy as sp
-import datetime as dt
+import datetime as datetime
 from PyQt5 import QtWidgets
 
 import HDFRoot
+from AncillaryReader import AncillaryReader
 from Utilities import Utilities
 from ConfigFile import ConfigFile
 from RhoCorrections import RhoCorrections
@@ -19,10 +20,10 @@ from Weight_RSR import Weight_RSR
 
 
 class ProcessL2:
-
-    # Delete records within the out-of-bounds SZA
-    @staticmethod
+    
+    @staticmethod    
     def filterData(group, badTimes):                    
+        ''' Delete flagged records '''
         
         # Now delete the record from each dataset in the group
         finalCount = 1 # simpler than getting dataset len...
@@ -68,10 +69,10 @@ class ProcessL2:
 
         for ds in group.datasets: group.datasets[ds].datasetToColumns()
         return finalCount
-
-    # Interpolate to a single column
+    
     @staticmethod
     def interpolateColumn(columns, wl):
+        ''' Interpolate wavebands to estimate a single, unsampled waveband '''
         #print("interpolateColumn")
 
         # Values to return
@@ -142,12 +143,11 @@ class ProcessL2:
         if len(badTimes) == 0:
             badTimes = None
         return badTimes
-        
-
-    # Perform Lt Quality checking
+            
     @staticmethod
     def ltQuality(sasGroup):   
-        
+        ''' Perform Lt Quality checking '''
+
         ltData = sasGroup.getDataset("LT")
         ltData.datasetToColumns()
         ltColumns = ltData.columns
@@ -179,10 +179,10 @@ class ProcessL2:
         if len(badTimes) == 0:
             badTimes = None
         return badTimes
-
-    # Perform negative reflectance spectra checking
+    
     @staticmethod
     def negReflectance(reflGroup,field):   
+        ''' Perform negative reflectance spectra checking '''
         # Run for entire file, not just this ensemble
 
         reflData = reflGroup.getDataset(field)
@@ -234,10 +234,11 @@ class ProcessL2:
         if len(badTimes) == 0:
             badTimes = None
         return badTimes
-
-    # Perform meteorological flag checking
+    
     @staticmethod
     def metQualityCheck(refGroup, sasGroup):   
+        ''' Perform meteorological quality control '''
+
         esFlag = float(ConfigFile.settings["fL2SignificantEsFlag"])
         dawnDuskFlag = float(ConfigFile.settings["fL2DawnDuskFlag"])
         humidityFlag = float(ConfigFile.settings["fL2RainfallHumidityFlag"])     
@@ -260,8 +261,7 @@ class ProcessL2:
         ltData.datasetToColumns()
         ltColumns = ltData.columns
         ltColumns.pop('Datetag')
-        ltColumns.pop('Timetag2')
-        
+        ltColumns.pop('Timetag2')        
         
         li750 = ProcessL2.interpolateColumn(liColumns, 750.0)
         es370 = ProcessL2.interpolateColumn(esColumns, 370.0)
@@ -317,23 +317,24 @@ class ProcessL2:
         if len(badTimes) == 0:
             badTimes = None
         return badTimes
-
-
-    # Take a slice of a dataset stored in columns
+    
     @staticmethod
     def columnToSlice(columns, start, end):
+        ''' Take a slice of a dataset stored in columns '''
+
         # Each column is a time series either at a waveband for radiometer columns, or various grouped datasets for ancillary
         # Start and end are defined by the interval established in the Config (they are indexes)
         newSlice = collections.OrderedDict()
         for k in columns:
             newSlice[k] = columns[k][start:end] #up to not including end...
         return newSlice
-
-    # Interpolate ancillary to radiometry
+    
     @staticmethod
     def interpAncillary(node, ancData, modData, radData):
+        ''' Interpolate ancillary to radiometry and fill with model data or defaults '''
+
         print('Interpolating field ancillary and/or modeled ancillary data to radiometry times...')
-        epoch = dt.datetime(1970, 1, 1)
+        epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc)
 
         ancGroup = node.getGroup("ANCILLARY")
         dateTagDataset = ancGroup.addDataset("Datetag")
@@ -486,7 +487,7 @@ class ProcessL2:
         ancDateTag = []
         ancTimeTag2 = []            
         for sec in radSeconds:
-            radDT = dt.datetime.utcfromtimestamp(sec)
+            radDT = datetime.datetime.utcfromtimestamp(sec)
             ancDateTag.append(float(f'{int(radDT.timetuple()[0]):04}{int(radDT.timetuple()[7]):03}'))
             ancTimeTag2.append(float( \
                 f'{int(radDT.timetuple()[3]):02}{int(radDT.timetuple()[4]):02}{int(radDT.timetuple()[5]):02}{int(radDT.microsecond/1000):03}'))
@@ -503,10 +504,11 @@ class ProcessL2:
         timeTag2Dataset.columnsToDataset()
                                             
         return
-
-    # Take the slice median of the lowest X% of hyperspectral slices
+    
     @staticmethod
     def sliceAveHyper(y, hyperSlice, xSlice, xStd):
+        ''' Take the slice median of the lowest X% of hyperspectral slices '''
+
         hasNan = False
         # Ignore runtime warnings when array is all NaNs
         with warnings.catch_warnings():
@@ -520,10 +522,11 @@ class ProcessL2:
                 if np.isnan(mean):
                     hasNan = True
         return hasNan
-
-    # Take the slice AND the median averages of ancillary data with X%
+    
     @staticmethod
     def sliceAveAnc(root, start, end, y, ancGroup):
+        ''' Take the slice AND the median averages of ancillary data with X% '''
+
         newAncGroup = root.getGroup("ANCILLARY")
 
         # Combine these steps in a loop for ancillary date
@@ -533,18 +536,9 @@ class ProcessL2:
             value = ancGroup.datasets[ds]            
             ancDict[key] = value
 
-        # dateSlice = ProcessL2.columnToSlice(ancDict['Datetag'].columns, start, end)
-        # timeSlice = ProcessL2.columnToSlice(ancDict['Timetag2'].columns, start, end)
-        # datetag = ancDict['Datetag'].data
-        # timetag = ancDict['Timetag2'].data
-        # datetag = np.array(dateSlice['Datetag'])
-        # timetag = np.array(timeSlice['Timetag2'])
         dateSlice=ancDict['Datetag'].data[start:end+1] #up to not including end+1
         timeSlice=ancDict['Timetag2'].data[start:end+1]
         # Stores the middle element
-        # if len(datetag) > 0:
-        #     date = datetag[int(len(datetag)/2)]
-        #     time = timetag[int(len(timetag)/2)]
         if len(dateSlice) > 0:
             date = dateSlice[int(len(dateSlice)/2)]
             time = timeSlice[int(len(timeSlice)/2)]
@@ -585,7 +579,6 @@ class ProcessL2:
                 else:
                     for item in newDS.columns:
                         newDS.columns[item] = np.append(newDS.columns[item], dsXSlice[item])
-
             
                 newDS.columnsToDataset()            
        
@@ -1049,7 +1042,7 @@ class ProcessL2:
         nLwSlice = {}
                 
         # Calculate Rrs & nLw and uncertainties
-        '''# No bidirectional correction is made here.....'''
+        ''' No bidirectional correction is made here.....'''
         # Calculate the normalized water leaving radiance (not exact; no BRDF here)
         fp = 'Data/Thuillier_F0.sb'
         print("SB_support.readSB: " + fp)
@@ -1165,7 +1158,6 @@ class ProcessL2:
                 newLTDeltaData.columns[k].append(ltDelta)
                 
                 # Only populate valid wavelengths. Mark others for deletion
-                
                 if float(k) in wave:
                     newRrsDeltaData.columns[k].append(rrsDelta)
                     newnLwDeltaData.columns[k].append(nLwDelta)
@@ -1174,10 +1166,6 @@ class ProcessL2:
                     nLwSlice[k] = nLw
                 else:
                     deleteKey.append(k) 
-                #     newRrsDeltaData.columns[k].append(np.nan)
-                #     newnLwDeltaData.columns[k].append(np.nan)                    
-                #     rrsSlice[k] = np.nan
-                #     nLwSlice[k] = np.nan
         
         # Eliminate redundant keys using set, and delete unpopulated wavebands
         deleteKey = list(set(deleteKey))
@@ -1385,7 +1373,6 @@ class ProcessL2:
 
         return True
 
-
     @staticmethod
     def calculateREFLECTANCE(root, node, gpsGroup, satnavGroup, pyrGroup, ancData, modData):
         '''Filter out high wind and high/low SZA.
@@ -1398,7 +1385,7 @@ class ProcessL2:
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
 
-        ''' # Filter low SZAs and high winds '''
+        # Filter low SZAs and high winds
         # defaultWindSpeed = float(ConfigFile.settings["fL2DefaultWindSpeed"])
         maxWind = float(ConfigFile.settings["fL2MaxWind"]) 
         SZAMin = float(ConfigFile.settings["fL2SZAMin"])
@@ -1427,6 +1414,9 @@ class ProcessL2:
         ancGroup.addDataset('AZIMUTH')
         ancGroup.addDataset('ELEVATION')
         ancGroup.addDataset('HEADING')
+
+        ''' Need to try to pick the heading and relaz out of the ancData for noTracker '''
+        
         ancGroup.addDataset('PITCH')
         ancGroup.addDataset('POINTING')
         ancGroup.addDataset('REL_AZ')
@@ -1461,10 +1451,9 @@ class ProcessL2:
             ancGroup.datasets['SST_IR'] = pyrGroup.getDataset("T")  
             ancGroup.datasets['SST_IR'].datasetToColumns()
 
-        wind = ancGroup.getDataset("WINDSPEED").data["WINDSPEED"]
-        
+        wind = ancGroup.getDataset("WINDSPEED").data["WINDSPEED"]        
 
-        ''' # Now filter the spectra from the entire collection before slicing the intervals'''               
+        # Now filter the spectra from the entire collection before slicing the intervals
         # Lt Quality Filtering; anomalous elevation in the NIR
         if ConfigFile.settings["bL2LtUVNIR"]:
             msg = "Applying Lt quality filtering to eliminate spectra."
@@ -1561,8 +1550,7 @@ class ProcessL2:
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)       
 
-        ''' Next apply the meteorological filter prior to slicing'''     
-        # Meteorological Filtering   
+        # Next apply the Meteorological Filter prior to slicing
         enableMetQualityCheck = int(ConfigFile.settings["bL2EnableQualityFlags"])          
         if enableMetQualityCheck:
             msg = "Applying meteorological filtering to eliminate spectra."
@@ -1699,6 +1687,7 @@ class ProcessL2:
         pyrGroup = None
         gpsGroup = None
         satnavGroup = None
+        ancGroup = None
         for gp in node.groups:
             if gp.id.startswith("GPS"):
                 gpsGroup = gp
@@ -1708,10 +1697,17 @@ class ProcessL2:
             #     satnavGroup = gp            
             if gp.id.startswith("PYROMETER"):
                 pyrGroup = gp
+            if gp.id.startswith("ANCILLARY_NOTRACKER"):
+                ancGroup = gp
+                ancillaryData = AncillaryReader.ancillaryFromNoTracker(ancGroup)
 
-        if satnavGroup is not None or gpsGroup is not None or pyrGroup is not None:
-            node.addGroup("ANCILLARY")
-            root.addGroup("ANCILLARY")            
+        # if satnavGroup is not None #or gpsGroup is not None or pyrGroup is not None:
+        node.addGroup("ANCILLARY")
+        # if ConfigFile.settings["bL1cSolarTracker"]:            
+        root.addGroup("ANCILLARY")
+        # else:
+            
+        #     pass
 
         # Retrieve MERRA2 model ancillary data        
         if ConfigFile.settings["bL2pGetAnc"] ==1:            
@@ -1723,7 +1719,6 @@ class ProcessL2:
                 return None
         else:
             modData = None
-
 
         # Need to either create a new ancData object, or populate the nans in the current one with the model data
         if not ProcessL2.calculateREFLECTANCE(root, node, gpsGroup, satnavGroup, pyrGroup, ancillaryData, modData):
