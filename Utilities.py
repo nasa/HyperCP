@@ -292,9 +292,10 @@ class Utilities:
             print(msg)
             Utilities.writeLogFile(msg)
             return False
-        msg = f'Date eliminated for non-increasing timestamps: {100*round((globalTotal - total)/globalTotal)}%'
-        print(msg)
-        Utilities.writeLogFile(msg)
+        if (globalTotal - total) > 0:
+            msg = f'Data eliminated for non-increasing timestamps: {100*round((globalTotal - total)/globalTotal)}%'
+            print(msg)
+            Utilities.writeLogFile(msg)
 
         return True
 

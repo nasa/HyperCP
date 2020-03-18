@@ -122,13 +122,13 @@ class AncillaryReader:
         ancillaryData.appendColumn("DATETIME", ancDatetime)
         if lat:
             ancillaryData.appendColumn("LATITUDE", lat)
-            ancillaryData.attributes["Lat_Units"]=latUnits
+            ancillaryData.attributes["LATITUDE_Units"]=latUnits
         if lon:
             ancillaryData.appendColumn("LONGITUDE", lon)
-            ancillaryData.attributes["Wind_Units"]=lonUnits            
+            ancillaryData.attributes["LONGITUDE_Units"]=lonUnits            
         if wind:
             ancillaryData.appendColumn("WINDSPEED", wspd)
-            ancillaryData.attributes["Wind_Units"]=windUnits
+            ancillaryData.attributes["WINDSPEED_Units"]=windUnits
         if aot:
             ancillaryData.appendColumn("AOD", aot)
             ancillaryData.attributes["AOD_Units"]=aotUnits
@@ -138,9 +138,7 @@ class AncillaryReader:
             ancillaryData.attributes["SST_Units"]=wTUnits
         if sal:
             ancillaryData.appendColumn("SALINITY", S)
-            ancillaryData.attributes["SALINITY_Units"]=SUnits
-        #ancillaryData.appendColumn("LATPOS", lat)
-        #ancillaryData.appendColumn("LONPOS", lon)
+            ancillaryData.attributes["SALINITY_Units"]=SUnits        
         if heading:
             ancillaryData.appendColumn("HEADING", heading)
             ancillaryData.attributes["HEADING_Units"]=headingUnits
@@ -157,31 +155,7 @@ class AncillaryReader:
     def ancillaryFromNoTracker(ancGroup):
         ''' Reads ancillary data from ANCILLARY_NOTRACKER group and returns an HDFDataset '''
 
-        print("AncillaryReader.ancillaryFromNoTracker: " + ancGroup.id)
-        
-        # try:                    
-        #     print('This may take a moment on large SeaBASS files...')
-        #     ancData=readSB(fp, no_warn=True)
-        # except IOError:
-        #     msg = "Unable to read ancillary data file. Make sure it is in SeaBASS format."
-        #     print(msg)
-        #     Utilities.writeLogFile(msg)  
-        #     return None
-
-        # # ancData = readSB(fp, no_warn=False)
-        # if not ancData.fd_datetime():
-        #     msg = "SeaBASS ancillary file has no datetimes and cannot be used."
-        #     print(msg)
-        #     Utilities.writeLogFile(msg)  
-        #     return None
-        # else:
-        #     ancDatetime = ancData.fd_datetime()
-        #     # Convert to timezone aware
-        #     ancDatetimeTZ = []
-        #     for dt in ancDatetime:
-        #         timezone = pytz.utc
-        #         ancDatetimeTZ.append(timezone.localize(dt))
-        #     ancDatetime = ancDatetimeTZ        
+        print("AncillaryReader.ancillaryFromNoTracker: " + ancGroup.id)        
 
         # ancGroup here has already been interpolated to radiometry in L1E, so all 
         # datasets have data columns (in data, not in columns) for Datetag and Timetag2
@@ -196,112 +170,112 @@ class AncillaryReader:
 
 
         '''TO DO: could add cloud cover, wave height, etc. here'''
-        # lat = False
-        # lon = False
-        wind = False
-        # aot = False   
-        wt = False
-        sal = False
+        aot = False   
         heading = False
+        lat = False
+        lon = False
         relAz = False # sensor azimuth relative to heading
-        for ds in ancGroup.datasets:            
-            # # Remember, all lower case...
-            # if ds == "lat":
-            #     lat = True
-            #     msg = f'Found data: {ds}'                
-            #     print(msg)
-            #     Utilities.writeLogFile(msg)  
-            #     lat = ancGroup.datasets[ds]
-            #     # latUnits = ancData.variables[ds][1]
-            # if ds == "lon":
-            #     lon = True
-            #     msg = f'Found data: {ds}'                
-            #     print(msg)
-            #     Utilities.writeLogFile(msg)  
-            #     lon = ancGroup.datasets[ds]
-            #     # lonUnits = ancData.variables[ds][1]
-            if ds == "WINDSPEED":
-                wind = True
+        sal = False
+        solAz = False
+        wt = False
+        sza = False
+        wind = False
+        
+        for ds in ancGroup.datasets:  
+            if ds.startswith("AOD"):
+                aot = True
+                # Same as AOD or Tot. Aerosol Extinction
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                wspd = ancGroup.datasets[ds].data["NONE"].tolist()
-                # windUnits = ancData.variables[ds][1]
-            # if ds.startswith("aot"):
-            #     aot = True
-            #     # Same as AOD or Tot. Aerosol Extinction
-            #     msg = f'Found data: {ds}'                
-            #     print(msg)
-            #     Utilities.writeLogFile(msg)  
-            #     aot = ancGroup.datasets[ds]
-            #     # aotUnits = ancData.variables[ds][1] 
-            #     if len(ds) == 3:
-            #         # with no waveband present, assume 550 nm
-            #         wv = '550'
-            #     else:
-            #         wv = ds[3:]   
-            if ds == "SST":
-                wt = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                wT = ancGroup.datasets[ds].data["NONE"].tolist()
-                # wTUnits = ancData.variables[ds][1] 
-            if ds == "SALINITY":
-                sal = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                S = ancGroup.datasets[ds].data["NONE"].tolist()
-                # SUnits = ancData.variables[ds][1] 
+                aot = ancGroup.datasets[ds]
+                if len(ds) == 3:
+                    # with no waveband present, assume 550 nm
+                    wv = '550'
+                else:
+                    wv = ds[3:]  
             if ds == "HEADING":
                 heading = True
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                heading = ancGroup.datasets[ds].data["NONE"].tolist()
-                # headingUnits = ancData.variables[ds][1]
+                heading = ancGroup.datasets[ds].data["NONE"].tolist()          
+            if ds == "LATITUDE":
+                lat = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                lat = ancGroup.datasets[ds]
+            if ds == "LONGITUDE":
+                lon = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                lon = ancGroup.datasets[ds]
             if ds == "REL_AZ":
                 relAz = True
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
                 relAz = ancGroup.datasets[ds].data["NONE"].tolist()
-                # homeAngleUnits = ancData.variables[ds][1] 
-
+            if ds == "SOLAR_AZ":
+                solAz = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                solAZ = ancGroup.datasets[ds].data["NONE"].tolist()
+            if ds == "SST":
+                wt = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                wT = ancGroup.datasets[ds].data["NONE"].tolist()
+            if ds == "SALINITY":
+                sal = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                S = ancGroup.datasets[ds].data["NONE"].tolist()
+            if ds == "SZA":
+                sza = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                SZA = ancGroup.datasets[ds].data["NONE"].tolist()            
+            if ds == "WINDSPEED":
+                wind = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                wspd = ancGroup.datasets[ds].data["NONE"].tolist()
+            # HOMEANGLE not retained
 
         # Generate HDFDataset
         ancillaryData = HDFDataset()
         ancillaryData.id = "AncillaryData"
+        ancillaryData.attributes = ancGroup.attributes.copy()
         ancillaryData.appendColumn("DATETIME", ancDatetime)
-        # if lat:
-        #     ancillaryData.appendColumn("LATITUDE", lat)
-        #     ancillaryData.attributes["Lat_Units"]='degrees'
-        # if lon:
-        #     ancillaryData.appendColumn("LONGITUDE", lon)
-        #     ancillaryData.attributes["Wind_Units"]='degrees'
-        if wind:
-            ancillaryData.appendColumn("WINDSPEED", wspd)
-            ancillaryData.attributes["Wind_Units"]='m/s'
-        # if aot:
-        #     ancillaryData.appendColumn("AOD", aot)
-        #     # ancillaryData.attributes["AOD_Units"]=aotUnits
-        #     ancillaryData.attributes["AOD_wavelength"] = wv
-        if wt:
-            ancillaryData.appendColumn("SST", wT)
-            ancillaryData.attributes["SST_Units"]='degrees_C'
-        if sal:
-            ancillaryData.appendColumn("SALINITY", S)
-            ancillaryData.attributes["SALINITY_Units"]='psu'
+        if aot:
+            ancillaryData.appendColumn("AOD", aot)
+            ancillaryData.attributes["AOD_wavelength"] = wv
         if heading:
             ancillaryData.appendColumn("HEADING", heading)
-            ancillaryData.attributes["HEADING_Units"]='degrees'
-        # if homeangle:
-        #     ancillaryData.appendColumn("HOMEANGLE", homeAngle)
-            # ancillaryData.attributes["HOMEANGLE_Units"]=homeAngleUnits
+        if lat:
+            ancillaryData.appendColumn("LATITUDE", lat)
+        if lon:
+            ancillaryData.appendColumn("LONGITUDE", lon)
         if relAz:
             ancillaryData.appendColumn("REL_AZ", relAz)
-            ancillaryData.attributes["REL_AZ_Units"]='degrees'
+        if sal:
+            ancillaryData.appendColumn("SALINITY", S)
+        if solAz:
+            ancillaryData.appendColumn("SOLAR_AZ", solAZ)
+        if wt:
+            ancillaryData.appendColumn("SST", wT)
+        if sza:
+            ancillaryData.appendColumn("SZA", SZA)
+        if wind:
+            ancillaryData.appendColumn("WINDSPEED", wspd)
         
         ancillaryData.columnsToDataset()        
 

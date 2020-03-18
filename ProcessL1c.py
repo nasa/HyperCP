@@ -457,6 +457,8 @@ class ProcessL1c:
                 sst = ancillaryData.columns["SST"][0]
             if "WINDSPEED" in ancillaryData.columns:
                 wind = ancillaryData.columns["WINDSPEED"][0]
+            if "AOD" in ancillaryData.columns:
+                aod = ancillaryData.columns["AOD"][0]
 
             sunAzimuth = []
             sunZenith = []
@@ -499,18 +501,27 @@ class ProcessL1c:
             newRelAzData.columnsToDataset()        
         else:
             # ... otherwise populate the ancGroup
+            ancGroup.attributes = ancillaryData.attributes.copy()
+            ancGroup.attributes["FrameType"] = "Not Required"
+            ancGroup.addDataset("LATITUDE")
+            ancGroup.datasets["LATITUDE"].data = np.array(lat, dtype=[('NONE', '<f8')])
+            ancGroup.addDataset("LONGITUDE")
+            ancGroup.datasets["LONGITUDE"].data = np.array(lon, dtype=[('NONE', '<f8')])
             ancGroup.addDataset("TIMETAG2")
             ancGroup.datasets["TIMETAG2"].data = np.array(ancTimeTag2, dtype=[('NONE', '<f8')])
             ancGroup.addDataset("DATETAG")
             ancGroup.datasets["DATETAG"].data = np.array(ancDateTag, dtype=[('NONE', '<f8')])
             ancGroup.addDataset("SOLAR_AZ")
+            ancGroup.attributes["SOLAR_AZ_Units"]='degrees'
             ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
             ancGroup.addDataset("SZA")
             ancGroup.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
+            ancGroup.attributes["SZA_Units"]='degrees'
             ancGroup.addDataset("HEADING")
             ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
             ancGroup.addDataset("REL_AZ")
             ancGroup.datasets["REL_AZ"].data = np.array(relAz, dtype=[('NONE', '<f8')])
+            ancGroup.attributes["REL_AZ_Units"]='degrees'
             if "SALINITY" in ancillaryData.columns:
                 ancGroup.addDataset("SALINITY")
                 ancGroup.datasets["SALINITY"].data = np.array(salt, dtype=[('NONE', '<f8')])
@@ -520,7 +531,9 @@ class ProcessL1c:
             if "WINDSPEED" in ancillaryData.columns:
                 ancGroup.addDataset("WINDSPEED")
                 ancGroup.datasets["WINDSPEED"].data = np.array(wind, dtype=[('NONE', '<f8')])
-
+            if "AOD" in ancillaryData.columns:
+                ancGroup.addDataset("AOD")
+                ancGroup.datasets["AOD"].data = np.array(aod, dtype=[('NONE', '<f8')])
             
             # Convert datetimes
             dateTime = ancGroup.addDataset("DATETIME")

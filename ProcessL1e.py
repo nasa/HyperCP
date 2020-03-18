@@ -65,23 +65,25 @@ class ProcessL1e:
         timeData = group.getDataset("TIMETAG2")
         dateTimeData = group.getDataset("DATETIME")
 
-        # Convert degrees minutes to decimal degrees format
-        if newDatasetName == "LATITUDE":
-            latPosData = group.getDataset("LATPOS")
-            latHemiData = group.getDataset("LATHEMI")
-            for i in range(dataset.data.shape[0]):
-                latDM = latPosData.data["NONE"][i]
-                latDirection = latHemiData.data["NONE"][i]
-                latDD = Utilities.dmToDd(latDM, latDirection)
-                latPosData.data["NONE"][i] = latDD          
-        if newDatasetName == "LONGITUDE":
-            lonPosData = group.getDataset("LONPOS")
-            lonHemiData = group.getDataset("LONHEMI")
-            for i in range(dataset.data.shape[0]):
-                lonDM = lonPosData.data["NONE"][i]
-                lonDirection = lonHemiData.data["NONE"][i]
-                lonDD = Utilities.dmToDd(lonDM, lonDirection)
-                lonPosData.data["NONE"][i] = lonDD          
+        # Convert degrees minutes to decimal degrees format; only for GPS, not ANCILLARY_NOTRACKER
+        if group.id.startswith("GP"):
+            if newDatasetName == "LATITUDE":        
+                latPosData = group.getDataset("LATPOS")
+                latHemiData = group.getDataset("LATHEMI")
+                for i in range(dataset.data.shape[0]):
+                    latDM = latPosData.data["NONE"][i]
+                    latDirection = latHemiData.data["NONE"][i]
+                    latDD = Utilities.dmToDd(latDM, latDirection)
+                    latPosData.data["NONE"][i] = latDD                      
+            if newDatasetName == "LONGITUDE":
+                lonPosData = group.getDataset("LONPOS")
+                lonHemiData = group.getDataset("LONHEMI")
+                for i in range(dataset.data.shape[0]):
+                    lonDM = lonPosData.data["NONE"][i]
+                    lonDirection = lonHemiData.data["NONE"][i]
+                    lonDD = Utilities.dmToDd(lonDM, lonDirection)
+                    lonPosData.data["NONE"][i] = lonDD 
+
         newSensorData = newGroup.addDataset(newDatasetName)
 
         # Datetag, Timetag2, and Datetime columns added to sensor data array
@@ -441,34 +443,29 @@ class ProcessL1e:
         # Non-SolarTracker ancillary field and Pysolar data
         if ancGroup is not None:
             newAncGroup = root.addGroup("ANCILLARY_NOTRACKER")
+            newAncGroup.attributes = ancGroup.attributes.copy()
             for ds in ancGroup.datasets:
                 if ds != "DATETAG" and ds != "TIMETAG2" and ds != "DATETIME":
                     ProcessL1e.convertGroup(ancGroup, ds, newAncGroup, ds)
 
-            # ProcessL1e.convertGroup(ancGroup, "HEADING", newAncGroup, "HEADING")
-            # ProcessL1e.convertGroup(ancGroup, "REL_AZ", newAncGroup, "REL_AZ")
-            # ProcessL1e.convertGroup(ancGroup, "SOLAR_AZ", newAncGroup, "SOLAR_AZ")
-            # ProcessL1e.convertGroup(ancGroup, "SZA", newAncGroup, "SZA")
-            # ProcessL1e.convertGroup(ancGroup, "SALINITY", newAncGroup, "SALINITY")
-            # ProcessL1e.convertGroup(ancGroup, "SST", newAncGroup, "SST")
-            # ProcessL1e.convertGroup(ancGroup, "WINDSPEED", newAncGroup, "WINDSPEED")
-
+            latDataAnc = newAncGroup.getDataset("LATITUDE")
+            lonDataAnc = newAncGroup.getDataset("LONGITUDE")
             headingData = newAncGroup.getDataset("HEADING")
             relAzData = newAncGroup.getDataset("REL_AZ")
             solAzData = newAncGroup.getDataset("SOLAR_AZ")
             szaData = newAncGroup.getDataset("SZA")
+            saltData = None
+            sstData = None
+            windData = None
+            aodData = None
             if "SALINITY" in newAncGroup.datasets:
                 saltData = newAncGroup.getDataset("SALINITY")
-            else:
-                saltData = None
             if "SST" in newAncGroup.datasets:
                 sstData = newAncGroup.getDataset("SST")
-            else:
-                sstData = None
             if "WINDSPEED" in newAncGroup.datasets:
                 windData = newAncGroup.getDataset("WINDSPEED")
-            else:
-                windData = None
+            if "AOD" in newAncGroup.datasets:
+                aodData = newAncGroup.getDataset("AOD")
         
         if satnavGroup is not None:
             newSTGroup = root.addGroup("SOLARTRACKER")
@@ -567,7 +564,9 @@ class ProcessL1e:
             ProcessL1e.interpolateData(rollData, interpData, "ROLL", fileName)
             
         if ancGroup is not None:
-            ProcessL1e.interpolateData(headingData, interpData, "HEADING", fileName)           
+            ProcessL1e.interpolateData(headingData, interpData, "HEADING", fileName)
+            ProcessL1e.interpolateData(latDataAnc, interpData, "LATITUDE", fileName)
+            ProcessL1e.interpolateData(lonDataAnc, interpData, "LONGITUDE", fileName)
             if not ProcessL1e.interpolateData(relAzData, interpData, "REL_AZ", fileName):
                 return None
             ProcessL1e.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName)        
@@ -578,6 +577,8 @@ class ProcessL1e:
                 ProcessL1e.interpolateData(sstData, interpData, "SST", fileName)
             if windData:
                 ProcessL1e.interpolateData(windData, interpData, "WINDSPEED", fileName)
+            if aodData:
+                ProcessL1e.interpolateData(aodData, interpData, "AOD", fileName)
 
         if pyrGroup is not None:
             ProcessL1e.interpolateData(pyrData, interpData, "T", fileName)

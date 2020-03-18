@@ -343,7 +343,7 @@ class ProcessL2:
         aodDataset = ancGroup.addDataset("AOD")
         saltDataset = ancGroup.addDataset("SAL")
         sstDataset = ancGroup.addDataset("SST")
-        # ancGroup.copyAttributes(ancData)        
+           
 
         # Convert radData date and time to datetime and then to seconds for interpolation
         radTime = radData.data["Timetag2"].tolist()
@@ -357,9 +357,12 @@ class ProcessL2:
             ancGroup.copyAttributes(ancData)    
             # These are the entire ancillary records for the cruise
             dateTime = ancData.getColumn("DATETIME")[0]
-            wind = ancData.getColumn("WINDSPEED")[0]
-            salt = ancData.getColumn("SALINITY")[0]
-            sst = ancData.getColumn("SST")[0]
+            if "WINDSPEED" in ancData.columns:
+                wind = ancData.getColumn("WINDSPEED")[0]
+            if "SALINITY" in ancData.columns:
+                salt = ancData.getColumn("SALINITY")[0]
+            if "SST" in ancData.columns:
+                sst = ancData.getColumn("SST")[0]
             # Convert ancillary datetime to seconds for interpolation            
             ancSeconds = [(i-epoch).total_seconds() for i in dateTime] 
         else:
@@ -1390,9 +1393,12 @@ class ProcessL2:
         maxWind = float(ConfigFile.settings["fL2MaxWind"]) 
         SZAMin = float(ConfigFile.settings["fL2SZAMin"])
         SZAMax = float(ConfigFile.settings["fL2SZAMax"])
-        SZA = 90 -satnavGroup.getDataset("ELEVATION").data["SUN"]
-        timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
-        
+        if ConfigFile.settings["bL1cSolarTracker"]:
+            SZA = 90 -satnavGroup.getDataset("ELEVATION").data["SUN"]
+            timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
+        else:
+            ancTemp = node.getGroup("TEMPORARY")
+            SZA = ancTemp.datasets["SZA"].data.copy()            
         # If ancillary modeled data is selected, and an ancillary file exists for wind, 
         # use the model data to fill in gaps in the field record prior to interpolating to 
         # L2 timestamps.
@@ -1407,45 +1413,61 @@ class ProcessL2:
         # Now that ancillary data has been interpolated, it is matched up with
         #  additional ancillary data (gps, solartracker, etc.) 1:1
         ancGroup = node.getGroup("ANCILLARY")
-        ancGroup.addDataset('COURSE')
+        ancGroup.addDataset('HEADING')
         ancGroup.addDataset('LATITUDE')
         ancGroup.addDataset('LONGITUDE')
         ancGroup.addDataset('SPEED')
-        ancGroup.addDataset('AZIMUTH')
-        ancGroup.addDataset('ELEVATION')
-        ancGroup.addDataset('HEADING')
-
-        ''' Need to try to pick the heading and relaz out of the ancData for noTracker '''
-        
+        ancGroup.addDataset('SOLAR_AZ')
+        ancGroup.addDataset('SZA')        
         ancGroup.addDataset('PITCH')
         ancGroup.addDataset('POINTING')
         ancGroup.addDataset('REL_AZ')
         ancGroup.addDataset('ROLL')
 
-        if gpsGroup:
-            ancGroup.datasets['COURSE'] = gpsGroup.getDataset('COURSE')
-            ancGroup.datasets['COURSE'].datasetToColumns()
-            ancGroup.datasets['LATITUDE'] = gpsGroup.getDataset('LATITUDE')
-            ancGroup.datasets['LATITUDE'].datasetToColumns()
-            ancGroup.datasets['LONGITUDE'] = gpsGroup.getDataset('LONGITUDE')
-            ancGroup.datasets['LONGITUDE'].datasetToColumns()
+        # These datasets have all already been interpolated to the radiometry in L1E
+        #
+        # GPS Group
+        ancGroup.datasets['LATITUDE'] = gpsGroup.getDataset('LATITUDE')
+        ancGroup.datasets['LATITUDE'].datasetToColumns()
+        ancGroup.datasets['LONGITUDE'] = gpsGroup.getDataset('LONGITUDE')
+        ancGroup.datasets['LONGITUDE'].datasetToColumns()
+        if ConfigFile.settings["bL1cSolarTracker"]:
+            ancGroup.datasets['HEADING'] = gpsGroup.getDataset('COURSE')
+            ancGroup.datasets['HEADING'].datasetToColumns()
             ancGroup.datasets['SPEED'] = gpsGroup.getDataset('SPEED')
             ancGroup.datasets['SPEED'].datasetToColumns()
+        else:
+            # NOTRACKER Group
+            ancGroup.datasets['HEADING'] = ancTemp.getDataset('HEADING')
+            ancGroup.datasets['HEADING'].datasetToColumns()
+            ancGroup.datasets['SZA'] = ancTemp.getDataset('SZA')
+            ancGroup.datasets['SZA'].datasetToColumns()
+            ancGroup.datasets['SOLAR_AZ'] = ancTemp.getDataset('SOLAR_AZ')
+            ancGroup.datasets['SOLAR_AZ'].datasetToColumns()
+            ancGroup.datasets['REL_AZ'] = ancTemp.getDataset('REL_AZ')
+            ancGroup.datasets['REL_AZ'].datasetToColumns()
+            
         if satnavGroup:
-            ancGroup.datasets['AZIMUTH'] = satnavGroup.getDataset('AZIMUTH')
-            ancGroup.datasets['ELEVATION'] = satnavGroup.getDataset('ELEVATION')
+            ancGroup.datasets['SOLAR_AZ'] = satnavGroup.getDataset('AZIMUTH')
+            elevation = satnavGroup.getDataset('ELEVATION')
+            sza = []
+            for k in elevation:
+                sza.append(90-k)
+            ancGroup.datasets['SZA'] = sza    
             ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING')
             ancGroup.datasets['PITCH'] = satnavGroup.getDataset('PITCH')
             ancGroup.datasets['POINTING'] = satnavGroup.getDataset('POINTING')
             ancGroup.datasets['REL_AZ'] = satnavGroup.getDataset('REL_AZ')
-            ancGroup.datasets['ROLL'] = satnavGroup.getDataset('ROLL')        
-            ancGroup.datasets['AZIMUTH'].datasetToColumns()
-            ancGroup.datasets['ELEVATION'].datasetToColumns()
+            ancGroup.datasets['ROLL'] = satnavGroup.getDataset('ROLL')  
+
+            ancGroup.datasets['SOLAR_AZ'].datasetToColumns()
+            ancGroup.datasets['SZA'].datasetToColumns()
             ancGroup.datasets['HEADING'].datasetToColumns()
             ancGroup.datasets['PITCH'].datasetToColumns()
             ancGroup.datasets['POINTING'].datasetToColumns()
             ancGroup.datasets['REL_AZ'].datasetToColumns()
             ancGroup.datasets['ROLL'].datasetToColumns()
+        
         if pyrGroup is not None:
             #PYROMETER
             ancGroup.datasets['SST_IR'] = pyrGroup.getDataset("T")  
@@ -1687,7 +1709,7 @@ class ProcessL2:
         pyrGroup = None
         gpsGroup = None
         satnavGroup = None
-        ancGroup = None
+        ancGroupNoTracker = None
         for gp in node.groups:
             if gp.id.startswith("GPS"):
                 gpsGroup = gp
@@ -1698,19 +1720,25 @@ class ProcessL2:
             if gp.id.startswith("PYROMETER"):
                 pyrGroup = gp
             if gp.id.startswith("ANCILLARY_NOTRACKER"):
-                ancGroup = gp
-                ancillaryData = AncillaryReader.ancillaryFromNoTracker(ancGroup)
-
+                # This copies the ancillary data from NOTRACKER into AncillaryData so it can be
+                # interpolated as in SOLARTRACKER, at which time it is flipped back into ancGroup
+                ancGroupNoTracker = gp
+                ancillaryData = AncillaryReader.ancillaryFromNoTracker(gp)
+                # SZA = ancGroupNoTracker.datasets["SZA"].data["NONE"]                
+                temp = node.addGroup("TEMPORARY")
+                temp.copy(ancGroupNoTracker)
+                # for ds in ancGroupNoTracker.datasets:
+                #     temp.addDataset(ds)
+        node.removeGroup(ancGroupNoTracker)
+                
         # if satnavGroup is not None #or gpsGroup is not None or pyrGroup is not None:
-        node.addGroup("ANCILLARY")
-        # if ConfigFile.settings["bL1cSolarTracker"]:            
         root.addGroup("ANCILLARY")
-        # else:
-            
-        #     pass
+        node.addGroup("ANCILLARY")
+        # szaDS = ancTemp.addDataset("SZA")      
+        # szaDS.data = SZA         
 
         # Retrieve MERRA2 model ancillary data        
-        if ConfigFile.settings["bL2pGetAnc"] ==1:            
+        if ConfigFile.settings["bL2pGetAnc"] ==1:         
             msg = 'Model data for Wind and AOD may be used to replace blank values. Reading in model data...'
             print(msg)
             Utilities.writeLogFile(msg)  
