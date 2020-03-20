@@ -24,51 +24,64 @@ class ProcessL2:
     @staticmethod    
     def filterData(group, badTimes):                    
         ''' Delete flagged records '''
-        
-        # Now delete the record from each dataset in the group
-        finalCount = 1 # simpler than getting dataset len...
-        for timeTag in badTimes:
 
-            # msg = f'Eliminate data between: {timeTag} (HHMMSSMSS)'
-            # print(msg)
-            # Utilities.writeLogFile(msg)        
-            start = Utilities.timeTag2ToSec(timeTag[0])
-            stop = Utilities.timeTag2ToSec(timeTag[1])                
-                    
-            # msg = f'   Remove {group.id}  Data'
+        msg = f'Remove {group.id} Data'
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        if group.id == "ANCILLARY":
+                timeStamp = group.getDataset("LATITUDE").data["Datetime"]
+        if group.id == "IRRADIANCE":
+            timeStamp = group.getDataset("ES").data["Datetime"]
+        if group.id == "RADIANCE":
+            timeStamp = group.getDataset("LI").data["Datetime"]
+        if group.id == "REFLECTANCE":
+            timeStamp = group.getDataset("Rrs").data["Datetime"]
+
+        startLength = len(timeStamp) 
+        msg = f'   Length of dataset prior to removal {startLength} long'
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        # Delete the records in badTime ranges from each dataset in the group
+        finalCount = 0
+        originalLength = len(timeStamp)        
+        for dateTime in badTimes:
+            # Need to reinitialize for each loop
+            startLength = len(timeStamp)
+            newTimeStamp = []
+
+            # msg = f'Eliminate data between: {dateTime}'
             # print(msg)
             # Utilities.writeLogFile(msg)
-            if group.id == "ANCILLARY":
-                # Early on, Date/Timetags are not appended, but later they are
-                if group.getDataset("Timetag2"):
-                    timeData = group.getDataset("Timetag2").data["Timetag2"]                
-                else:
-                    timeData = group.getDataset("AOD").data["Timetag2"]
-            if group.id == "IRRADIANCE":
-                timeData = group.getDataset("ES").data["Timetag2"]
-            if group.id == "RADIANCE":
-                timeData = group.getDataset("LI").data["Timetag2"]
-            if group.id == "REFLECTANCE":
-                timeData = group.getDataset("Rrs").data["Timetag2"]
 
-            dataSec = []
-            for i in range(timeData.shape[0]):
-                # Converts from TT2 (hhmmssmss. UTC) to milliseconds UTC
-                dataSec.append(Utilities.timeTag2ToSec(timeData[i])) 
+            start = dateTime[0]
+            stop = dateTime[1]
 
-            lenDataSec = len(dataSec)
-            counter = 0
-            for i in range(lenDataSec):
-                if start <= dataSec[i] and stop >= dataSec[i]:                        
-                    # test = group.getDataset("Timetag2").data["NONE"][i - counter]                                            
-                    group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
-                    counter += 1
+            if startLength > 0:  
+                counter = 0              
+                for i in range(startLength):
+                    if start <= timeStamp[i] and stop >= timeStamp[i]:                      
+                        group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
+                        counter += 1
+                        finalCount += 1
+                    else:
+                        newTimeStamp.append(timeStamp[i])
+            else:
+                msg = 'Data group is empty. Continuing.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+            timeStamp = newTimeStamp.copy()
 
-            if i-counter == -1:
-                finalCount = 0
+        if badTimes == []:
+            startLength = 1 # avoids div by zero below when finalCount is 0
 
         for ds in group.datasets: group.datasets[ds].datasetToColumns()
-        return finalCount
+
+        msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
+        print(msg)
+        Utilities.writeLogFile(msg)
+        return finalCount/originalLength
     
     @staticmethod
     def interpolateColumn(columns, wl):
@@ -115,7 +128,7 @@ class ProcessL2:
         badTimes = []
         if group.id == 'IRRADIANCE':
             Data = group.getDataset("ES") 
-            timeStamp = group.getDataset("ES").data["Timetag2"]
+            timeStamp = group.getDataset("ES").data["Datetime"]
             badTimes = Utilities.specFilter(inFilePath, Data, timeStamp, filterRange=[400, 700],\
                 filterFactor=5, rType='Es')
             msg = f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of Es data flagged'
@@ -123,7 +136,7 @@ class ProcessL2:
             Utilities.writeLogFile(msg)  
         else:            
             Data = group.getDataset("LI")
-            timeStamp = group.getDataset("LI").data["Timetag2"]
+            timeStamp = group.getDataset("LI").data["Datetime"]
             badTimes1 = Utilities.specFilter(inFilePath, Data, timeStamp, filterRange=[400, 700],\
                 filterFactor=8, rType='Li')
             msg = f'{len(np.unique(badTimes1))/len(timeStamp)*100:.1f}% of Li data flagged'
@@ -131,7 +144,7 @@ class ProcessL2:
             Utilities.writeLogFile(msg)  
 
             Data = group.getDataset("LT")
-            timeStamp = group.getDataset("LT").data["Timetag2"]
+            timeStamp = group.getDataset("LT").data["Datetime"]
             badTimes2 = Utilities.specFilter(inFilePath, Data, timeStamp, filterRange=[400, 700],\
                 filterFactor=3, rType='Lt')
             msg = f'{len(np.unique(badTimes2))/len(timeStamp)*100:.1f}% of Lt data flagged'
@@ -151,11 +164,13 @@ class ProcessL2:
         ltData = sasGroup.getDataset("LT")
         ltData.datasetToColumns()
         ltColumns = ltData.columns
+        # These get popped off the columns, but restored when filterData runs datasetToColumns
         ltColumns.pop('Datetag')
-        ltTime = ltColumns.pop('Timetag2')
+        ltColumns.pop('Timetag2')
+        ltDatetime = ltColumns.pop('Datetime')
                         
         badTimes = []
-        for indx, timeTag in enumerate(ltTime):                        
+        for indx, dateTime in enumerate(ltDatetime):                        
             # If the Lt spectrum in the NIR is brighter than in the UVA, something is very wrong
             UVA = [350,400]
             NIR = [780,850]
@@ -168,11 +183,14 @@ class ProcessL2:
                     ltNIR.append(ltColumns[wave][indx])
 
             if np.nanmean(ltUVA) < np.nanmean(ltNIR):
-                badTimes.append(timeTag)
+                badTimes.append(dateTime)
         
         badTimes = np.unique(badTimes)
-        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
-        msg = f'{len(np.unique(badTimes))/len(ltTime)*100:.1f}% of spectra flagged'
+        # Duplicate each element to a list of two elements in a list
+        # BUG: This is not optimal as it creates one badTimes record for each bad
+        # timestamp, rather than span of timestamps from badtimes[i][0] to badtimes[i][1]
+        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) 
+        msg = f'{len(np.unique(badTimes))/len(ltDatetime)*100:.1f}% of spectra flagged'
         print(msg)
         Utilities.writeLogFile(msg) 
 
@@ -188,11 +206,14 @@ class ProcessL2:
         reflData = reflGroup.getDataset(field)
         # reflData.datasetToColumns()
         reflColumns = reflData.columns
-        reflDate = reflColumns.pop('Datetag')
-        reflTime = reflColumns.pop('Timetag2')
+        # reflDate = reflColumns.pop('Datetag')
+        # reflTime = reflColumns.pop('Timetag2')
+        reflColumns.pop('Datetag')
+        reflColumns.pop('Timetag2')
+        timeStamp = reflColumns.pop('Datetime')
                         
         badTimes = []
-        for indx, timeTag in enumerate(reflTime):                        
+        for indx, timeTag in enumerate(timeStamp):                        
             # If any spectra in the vis are negative, delete the whole spectrum
             VIS = [400,700]            
             reflVIS = []
@@ -219,15 +240,15 @@ class ProcessL2:
                             
         badTimes = np.unique(badTimes)
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements (start, stop)
-        msg = f'{len(np.unique(badTimes))/len(reflTime)*100:.1f}% of {field} spectra flagged'
+        msg = f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of {field} spectra flagged'
         print(msg)
         Utilities.writeLogFile(msg) 
 
-        # Need to add these at the beginning of the ODict
-        reflColumns['Datetag'] = reflDate
-        reflColumns['Timetag2'] = reflTime
-        reflColumns.move_to_end('Timetag2', last=False)
-        reflColumns.move_to_end('Datetag', last=False)
+        # # Need to add these at the beginning of the ODict
+        # reflColumns['Datetag'] = reflDate
+        # reflColumns['Timetag2'] = reflTime
+        # reflColumns.move_to_end('Timetag2', last=False)
+        # reflColumns.move_to_end('Datetag', last=False)
 
         reflData.columnsToDataset()        
 
@@ -244,24 +265,27 @@ class ProcessL2:
         humidityFlag = float(ConfigFile.settings["fL2RainfallHumidityFlag"])     
         cloudFlag = float(ConfigFile.settings["fL2CloudFlag"])
 
-
         esData = refGroup.getDataset("ES")
         esData.datasetToColumns()
         esColumns = esData.columns
+        # These will be restored to columns in filterData
         esColumns.pop('Datetag')
-        esTime =esColumns.pop('Timetag2')
-        #  refGroup.getDataset("ES").data["Timetag2"]
+        esColumns.pop('Timetag2')
+        esTime = esColumns.pop('Datetime')
 
         liData = sasGroup.getDataset("LI")
         liData.datasetToColumns()
         liColumns = liData.columns
         liColumns.pop('Datetag')
         liColumns.pop('Timetag2')
+        liColumns.pop('Datetime')
+
         ltData = sasGroup.getDataset("LT")
         ltData.datasetToColumns()
         ltColumns = ltData.columns
         ltColumns.pop('Datetag')
         ltColumns.pop('Timetag2')        
+        ltColumns.pop('Datetime')    
         
         li750 = ProcessL2.interpolateColumn(liColumns, 750.0)
         es370 = ProcessL2.interpolateColumn(esColumns, 370.0)
@@ -271,7 +295,7 @@ class ProcessL2:
         es720 = ProcessL2.interpolateColumn(esColumns, 720.0)
         es750 = ProcessL2.interpolateColumn(esColumns, 750.0)
         badTimes = []
-        for indx, timeTag in enumerate(esTime):                
+        for indx, dateTime in enumerate(esTime):                
             # Masking spectra affected by clouds (Ruddick 2006, IOCCG Protocols). 
             # The alternative to masking is to process them differently (e.g. See Ruddick_Rho)
             
@@ -279,7 +303,7 @@ class ProcessL2:
                 # msg = f"Quality Check: Li(750)/Es(750) >= cloudFlag:{cloudFlag}"
                 # print(msg)
                 # Utilities.writeLogFile(msg)  
-                badTimes.append(timeTag)
+                badTimes.append(dateTime)
 
 
             # Threshold for significant es
@@ -288,7 +312,7 @@ class ProcessL2:
                 # msg = f"Quality Check: es(480) < esFlag:{esFlag}"
                 # print(msg)
                 # Utilities.writeLogFile(msg)  
-                badTimes.append(timeTag)
+                badTimes.append(dateTime)
 
             # Masking spectra affected by dawn/dusk radiation
             # Wernand 2002
@@ -297,7 +321,7 @@ class ProcessL2:
                 # msg = f'Quality Check: ES(470.0)/ES(680.0) < dawnDuskFlag:{dawnDuskFlag}'
                 # print(msg)
                 # Utilities.writeLogFile(msg)  
-                badTimes.append(timeTag)
+                badTimes.append(dateTime)
 
             # Masking spectra affected by rainfall and high humidity
             # Wernand 2002 (940/370), Garaba et al. 2012 also uses Es(940/370), presumably 720 was developed by Wang...???
@@ -306,7 +330,7 @@ class ProcessL2:
                 # msg = f'Quality Check: ES(720.0)/ES(370.0) < humidityFlag:{humidityFlag}'
                 # print(msg)
                 # Utilities.writeLogFile(msg)  
-                badTimes.append(timeTag)
+                badTimes.append(dateTime)
         
         badTimes = np.unique(badTimes)
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
@@ -336,14 +360,14 @@ class ProcessL2:
         print('Interpolating field ancillary and/or modeled ancillary data to radiometry times...')
         epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc)
 
+        # Only concerned with datasets relevant to GMAO models and GUI defaults initially
         ancGroup = node.getGroup("ANCILLARY")
-        dateTagDataset = ancGroup.addDataset("Datetag")
-        timeTag2Dataset = ancGroup.addDataset("Timetag2")
+        # dateTagDataset = ancGroup.addDataset("Datetag")
+        # timeTag2Dataset = ancGroup.addDataset("Timetag2")
         windDataset = ancGroup.addDataset("WINDSPEED")
         aodDataset = ancGroup.addDataset("AOD")
         saltDataset = ancGroup.addDataset("SAL")
-        sstDataset = ancGroup.addDataset("SST")
-           
+        sstDataset = ancGroup.addDataset("SST")           
 
         # Convert radData date and time to datetime and then to seconds for interpolation
         radTime = radData.data["Timetag2"].tolist()
@@ -378,7 +402,7 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)  
 
-        # Create a framework to hold combined ancillary data
+        # Create a framework to hold combined ancillary data...
         ancInRadSeconds = []
         windFlag = []
         saltFlag = []
@@ -388,6 +412,7 @@ class ProcessL2:
         saltInRad = []
         sstInRad = []
         aodInRad = []
+        # ... the size of the radiometric dataset
         for i, value in enumerate(radSeconds):
             ancInRadSeconds.append(value)
             windFlag.append('undetermined')                   
@@ -404,10 +429,11 @@ class ProcessL2:
             for i, value in enumerate(ancInRadSeconds): # step through InRad...
                 idx = Utilities.find_nearest(ancSeconds,value) # ...identify from entire anc record...
                 # Make sure the time difference between field anc and rad is <= 1hr
-                if abs(ancSeconds[idx] - value)/60/60 < 1:  # ... and place nearest into InRad
+                if abs(ancSeconds[idx] - value)/60/60 < 1:  # ... and place nearest into InRad variable
                     windInRad[i] = wind[idx]                    
                     saltInRad[i] = salt[idx]
                     sstInRad[i] = sst[idx]
+                    # Label the data source in the flag
                     windFlag[i] = 'field'
                     saltFlag[i] = 'field'
                     sstFlag[i] = 'field'
@@ -434,7 +460,9 @@ class ProcessL2:
             for i, modDate in enumerate(modData.groups[0].datasets["Datetag"].tolist()):                
                 modDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(modDate),modTime[i]))
                 modSeconds.append((modDatetime[i]-epoch).total_seconds())  
-        # Replace Wind, AOD Nans with modeled data where possible. These will be within one hour of the field data
+        
+        # Replace Wind, AOD NaNs with modeled data where possible. 
+        # These will be within one hour of the field data.
         if modData is not None:
             msg = 'Filling in field data with model data where needed.'
             print(msg)
@@ -477,6 +505,7 @@ class ProcessL2:
                 sstInRad[i] = ConfigFile.settings["fL2DefaultSST"]
                 sstFlag[i] = 'default'
 
+        # Populate the datasets and flags with the InRad variables
         windDataset.columns["WINDSPEED"] = windInRad
         windDataset.columns["WINDFLAG"] = windFlag
         aodDataset.columns["AOD"] = aodInRad
@@ -486,7 +515,7 @@ class ProcessL2:
         sstDataset.columns["SST"] = sstInRad
         sstDataset.columns["SSTFLAG"] = sstFlag
     
-        # Convert ancillary seconds back to date/timetags
+        # Convert ancillary seconds back to date/timetags ...
         ancDateTag = []
         ancTimeTag2 = []            
         for sec in radSeconds:
@@ -496,17 +525,22 @@ class ProcessL2:
                 f'{int(radDT.timetuple()[3]):02}{int(radDT.timetuple()[4]):02}{int(radDT.timetuple()[5]):02}{int(radDT.microsecond/1000):03}'))
             # ancTimeTag2.append(Utilities.epochSecToDateTagTimeTag2(sec))
         
-        dateTagDataset.columns["Datetag"] = ancDateTag
-        timeTag2Dataset.columns["Timetag2"] = ancTimeTag2
-        
+        # ... and add them to the datasets
+        # dateTagDataset.columns["Datetag"] = ancDateTag
+        # timeTag2Dataset.columns["Timetag2"] = ancTimeTag2
+        # Move the Timetag2 and Datetag into the arrays and remove the datasets
+        for ds in ancGroup.datasets:
+            ancGroup.datasets[ds].columns["Datetag"] = ancDateTag
+            ancGroup.datasets[ds].columns["Timetag2"] = ancTimeTag2
+
+
         windDataset.columnsToDataset()
         aodDataset.columnsToDataset()
         saltDataset.columnsToDataset()
         sstDataset.columnsToDataset()
-        dateTagDataset.columnsToDataset()
-        timeTag2Dataset.columnsToDataset()
-                                            
-        return
+        # dateTagDataset.columnsToDataset()
+        # timeTag2Dataset.columnsToDataset()
+        # return
     
     @staticmethod
     def sliceAveHyper(y, hyperSlice, xSlice, xStd):
@@ -618,7 +652,7 @@ class ProcessL2:
         newRadianceGroup = root.getGroup("RADIANCE")
         newIrradianceGroup = root.getGroup("IRRADIANCE")        
 
-        # Test whether this is the first ensemble spectrum
+        # If this is the first ensemble spectrum, set up the new datasets
         if not ('Rrs' in newReflectanceGroup.datasets):
             newRrsData = newReflectanceGroup.addDataset("Rrs")            
             newESData = newIrradianceGroup.addDataset("ES")        
@@ -824,7 +858,7 @@ class ProcessL2:
             Utilities.writeLogFile(msg)
             return False
 
-        # Add date/time data to Rrs dataset; If this is the first spectrum, add, otherwise append
+        # If this is the first spectrum, add date/time, otherwise append
         if not ("Datetag" in newRrsData.columns):
             newESData.columns["Datetag"] = [date]
             newLIData.columns["Datetag"] = [date]
@@ -1378,66 +1412,76 @@ class ProcessL2:
 
     @staticmethod
     def calculateREFLECTANCE(root, node, gpsGroup, satnavGroup, pyrGroup, ancData, modData):
-        '''Filter out high wind and high/low SZA.
-        Interpolate windspeeds, average intervals.
-        Run meteorology quality checks.
-        Pass to calculateREFLECTANCE2 for rho calcs, Rrs, NIR correction.'''
+        ''' Filter out high wind and high/low SZA.
+            Interpolate ancillary/model data, average intervals.
+            Run meteorology quality checks.
+            Pass to calculateREFLECTANCE2 for rho calcs, Rrs, NIR correction.'''
 
         print("calculateREFLECTANCE")                   
 
+        # These groups have datasets with TT2 and Datetag integrated into the array
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
 
-        # Filter low SZAs and high winds
-        # defaultWindSpeed = float(ConfigFile.settings["fL2DefaultWindSpeed"])
-        maxWind = float(ConfigFile.settings["fL2MaxWind"]) 
-        SZAMin = float(ConfigFile.settings["fL2SZAMin"])
-        SZAMax = float(ConfigFile.settings["fL2SZAMax"])
-        if ConfigFile.settings["bL1cSolarTracker"]:
-            SZA = 90 -satnavGroup.getDataset("ELEVATION").data["SUN"]
-            timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
-        else:
+        # # Filter low SZAs and high winds after interpolating model/ancillary data
+        # maxWind = float(ConfigFile.settings["fL2MaxWind"]) 
+        # SZAMin = float(ConfigFile.settings["fL2SZAMin"])
+        # SZAMax = float(ConfigFile.settings["fL2SZAMax"])
+        # if ConfigFile.settings["bL1cSolarTracker"]:
+        #     SZA = 90 -satnavGroup.getDataset("ELEVATION").data["SUN"]
+        #     # timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
+        # else:
+        if not ConfigFile.settings["bL1cSolarTracker"]:
             ancTemp = node.getGroup("TEMPORARY")
-            SZA = ancTemp.datasets["SZA"].data.copy()            
-        # If ancillary modeled data is selected, and an ancillary file exists for wind, 
-        # use the model data to fill in gaps in the field record prior to interpolating to 
-        # L2 timestamps.
-        # Otherwise, interpolate the field ancillary data if it exists
-        # Otherwise, use the selected default values        
-        esData = referenceGroup.getDataset("ES")
+            # SZA = ancTemp.datasets["SZA"].data["NONE"].copy()    
 
-        # This will populate the root group ANCILLARY with ancillary and/or modelled datasets
-        # and/or default values, all interpolated to the radiometric data timestamps
+        # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
+        # is provided in Main Window, then use the model data to fill in gaps in the field 
+        # record prior to interpolating to L2 timestamps.
+        #   Otherwise, interpolate just the field ancillary data, if it exists
+        #   Otherwise, use the selected default values from ConfigWindow      
+        # This will populate the group ANCILLARY with ancillary and/or modelled datasets
+        # and/or default values, all interpolated to the radiometric data timestamps.
+        #
+        # This interpolation is only necessary for the ancillary datasets that require
+        # either field or GMAO or GUI default values. The remaining ancillary data
+        # are culled from datasets in groups already interpolated in L1E
+        esData = referenceGroup.getDataset("ES")
         ProcessL2.interpAncillary(node, ancData, modData, esData)
         
         # Now that ancillary data has been interpolated, it is matched up with
-        #  additional ancillary data (gps, solartracker, etc.) 1:1
-        ancGroup = node.getGroup("ANCILLARY")
+        #  additional ancillary data (gps, solartracker, non-solartracker, etc.), all @ 1:1.
+        ancGroup = node.getGroup("ANCILLARY") # from interpAncillary above...
+
+        # At this stage, ancGroup has Datetag & Timetag2 integrated into data arrays
+        # tied to AOD, SAL, SST, and WINDSPEED. These sets also have flags.
+        # Add remaining datasets (as needed)
         ancGroup.addDataset('HEADING')
         ancGroup.addDataset('LATITUDE')
-        ancGroup.addDataset('LONGITUDE')
-        ancGroup.addDataset('SPEED')
+        ancGroup.addDataset('LONGITUDE')        
         ancGroup.addDataset('SOLAR_AZ')
         ancGroup.addDataset('SZA')        
-        ancGroup.addDataset('PITCH')
-        ancGroup.addDataset('POINTING')
-        ancGroup.addDataset('REL_AZ')
-        ancGroup.addDataset('ROLL')
+        ancGroup.addDataset('REL_AZ')        
 
-        # These datasets have all already been interpolated to the radiometry in L1E
+        # The following datasets were interpolated to the radiometry timestamps in L1E.
+        # Shift them into the ANCILLARY group as needed.
         #
         # GPS Group
+        # These have TT2/Datetag incorporated in arrays
         ancGroup.datasets['LATITUDE'] = gpsGroup.getDataset('LATITUDE')
         ancGroup.datasets['LATITUDE'].datasetToColumns()
         ancGroup.datasets['LONGITUDE'] = gpsGroup.getDataset('LONGITUDE')
         ancGroup.datasets['LONGITUDE'].datasetToColumns()
         if ConfigFile.settings["bL1cSolarTracker"]:
+            # These have TT2/Datetag incorporated in arrays
             ancGroup.datasets['HEADING'] = gpsGroup.getDataset('COURSE')
             ancGroup.datasets['HEADING'].datasetToColumns()
+            ancGroup.addDataset('SPEED')
             ancGroup.datasets['SPEED'] = gpsGroup.getDataset('SPEED')
             ancGroup.datasets['SPEED'].datasetToColumns()
         else:
             # NOTRACKER Group
+            # These have TT2/Datetag incorporated in arrays
             ancGroup.datasets['HEADING'] = ancTemp.getDataset('HEADING')
             ancGroup.datasets['HEADING'].datasetToColumns()
             ancGroup.datasets['SZA'] = ancTemp.getDataset('SZA')
@@ -1446,6 +1490,11 @@ class ProcessL2:
             ancGroup.datasets['SOLAR_AZ'].datasetToColumns()
             ancGroup.datasets['REL_AZ'] = ancTemp.getDataset('REL_AZ')
             ancGroup.datasets['REL_AZ'].datasetToColumns()
+
+            # Done with the temporary ancillary group; delete it
+            for gp in node.groups:
+                if gp.id == "TEMPORARY":
+                    node.removeGroup(gp)
             
         if satnavGroup:
             ancGroup.datasets['SOLAR_AZ'] = satnavGroup.getDataset('AZIMUTH')
@@ -1455,9 +1504,12 @@ class ProcessL2:
                 sza.append(90-k)
             ancGroup.datasets['SZA'] = sza    
             ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING')
+            ancGroup.addDataset('PITCH')
             ancGroup.datasets['PITCH'] = satnavGroup.getDataset('PITCH')
+            ancGroup.addDataset('POINTING')
             ancGroup.datasets['POINTING'] = satnavGroup.getDataset('POINTING')
             ancGroup.datasets['REL_AZ'] = satnavGroup.getDataset('REL_AZ')
+            ancGroup.addDataset('ROLL')
             ancGroup.datasets['ROLL'] = satnavGroup.getDataset('ROLL')  
 
             ancGroup.datasets['SOLAR_AZ'].datasetToColumns()
@@ -1473,28 +1525,42 @@ class ProcessL2:
             ancGroup.datasets['SST_IR'] = pyrGroup.getDataset("T")  
             ancGroup.datasets['SST_IR'].datasetToColumns()
 
-        wind = ancGroup.getDataset("WINDSPEED").data["WINDSPEED"]        
+        ''' At this stage, all datasets in all groups of node have Timetag2
+            and Datetag incorporated into data arrays. Calculate and add
+            Datetime to each data array. '''
+        Utilities.rootAddDateTimeL2(node)
 
-        # Now filter the spectra from the entire collection before slicing the intervals
+        # Filter the spectra from the entire collection before slicing the intervals
+
         # Lt Quality Filtering; anomalous elevation in the NIR
         if ConfigFile.settings["bL2LtUVNIR"]:
             msg = "Applying Lt quality filtering to eliminate spectra."
             print(msg)
             Utilities.writeLogFile(msg)
+            # This is not well optimized for large files...
             badTimes = ProcessL2.ltQuality(sasGroup)
                 
             if badTimes is not None:
-                print('Removing records...')
-                check = ProcessL2.filterData(referenceGroup, badTimes)   
-                if check == 0:
-                    msg = "No spectra remaining. Abort."
+                print('Removing records... Can be slow for large files')
+                check = ProcessL2.filterData(referenceGroup, badTimes)
+                # check is now fraction removed
+                if check > 0.99:
+                    msg = "Too few spectra remaining. Abort."
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False                  
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
                 
-        # Filter on SZA and Wind limit
+        # Filter low SZAs and high winds after interpolating model/ancillary data
+        maxWind = float(ConfigFile.settings["fL2MaxWind"]) 
+        SZAMin = float(ConfigFile.settings["fL2SZAMin"])
+        SZAMax = float(ConfigFile.settings["fL2SZAMax"])
+
+        wind = ancGroup.getDataset("WINDSPEED").data["WINDSPEED"]
+        SZA = ancGroup.datasets["SZA"].columns["NONE"]        
+        timeStamp = ancGroup.datasets["SZA"].columns["Datetime"]
+        
         badTimes = None
         i=0
         start = -1
@@ -1504,7 +1570,10 @@ class ProcessL2:
             if SZA[index] < SZAMin or SZA[index] > SZAMax or wind[index] > maxWind:
                 i += 1                              
                 if start == -1:
-                    msg =f'Low SZA. SZA: {round(SZA[index])}'
+                    if wind[index] > maxWind:
+                        msg =f'High Wind: {round(wind[index])}'
+                    else:
+                        msg =f'Low SZA. SZA: {round(SZA[index])}'
                     print(msg)
                     Utilities.writeLogFile(msg)                                               
                     start = index
@@ -1513,11 +1582,11 @@ class ProcessL2:
                     badTimes = []                               
             else:                                
                 if start != -1:
-                    msg = f'SZA passed. SZA: {round(SZA[index])}'
+                    msg = f'Passed. SZA: {round(SZA[index])}, Wind: {round(wind[index])}'
                     print(msg)
                     Utilities.writeLogFile(msg)                                               
                     startstop = [timeStamp[start],timeStamp[stop]]
-                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
+                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
                     # print(msg)
                     Utilities.writeLogFile(msg)                                               
                     badTimes.append(startstop)
@@ -1536,8 +1605,8 @@ class ProcessL2:
         if badTimes is not None and len(badTimes) != 0:
             print('Removing records...')
             check = ProcessL2.filterData(referenceGroup, badTimes)   
-            if check == 0:
-                msg = "No spectra remaining. Abort."
+            if check > 0.99:
+                msg = "Too few spectra remaining. Abort."
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False         
@@ -1564,8 +1633,8 @@ class ProcessL2:
             if badTimes is not None:
                 print('Removing records...')
                 check = ProcessL2.filterData(referenceGroup, badTimes)   
-                if check == 0:
-                    msg = "No spectra remaining. Abort."
+                if check > 0.99:
+                    msg = "Too few spectra remaining. Abort."
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False                 
@@ -1579,26 +1648,28 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)
             badTimes = ProcessL2.metQualityCheck(referenceGroup, sasGroup)
-                
+            
+            
             if badTimes is not None:
                 print('Removing records...')
                 check = ProcessL2.filterData(referenceGroup, badTimes)   
-                if check == 0:
-                    msg = "No spectra remaining. Abort."
+                if check > 0.99:
+                    msg = "Too few spectra remaining. Abort."
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False              
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
-
-        # Copy Es dataset to dictionary for length and Timetag2
-        esData.datasetToColumns()
-        esColumns = esData.columns
-        tt2 = esColumns["Timetag2"]
-        esLength = len(list(esColumns.values())[0])
-
-        interval = float(ConfigFile.settings["fL2TimeInterval"])    
+        
+        
         # Break up data into time intervals, and calculate reflectance
+        
+        esColumns = esData.columns
+        timeStamp = esColumns["Datetime"]
+        # tt2 = esColumns["Timetag2"]        
+        esLength = len(list(esColumns.values())[0])
+        interval = float(ConfigFile.settings["fL2TimeInterval"])    
+        
         if interval == 0:
             # Here, take the complete time series
             print("No time binning. This can take a moment.")
@@ -1616,19 +1687,22 @@ class ProcessL2:
         else:
             # Iterate over the time ensembles
             start = 0
-            endTime = Utilities.timeTag2ToSec(tt2[0]) + interval
-            endFileTime = Utilities.timeTag2ToSec(tt2[-1])
+            # endTime = Utilities.timeTag2ToSec(tt2[0]) + interval
+            # endFileTime = Utilities.timeTag2ToSec(tt2[-1])
+            endTime = timeStamp[0] + datetime.timedelta(0,interval)
+            endFileTime = timeStamp[-1]
             timeFlag = False
             if endTime > endFileTime:
                 endTime = endFileTime
                 timeFlag = True # In case the whole file is shorter than the selected interval
 
             for i in range(0, esLength):
-                time = Utilities.timeTag2ToSec(tt2[i])
+                # time = Utilities.timeTag2ToSec(tt2[i])
+                time = timeStamp[i]
                 if (time > endTime) or timeFlag: # end of increment reached
                                         
                     if timeFlag:
-                        end = len(tt2)-1 # File shorter than interval; include all spectra
+                        end = len(timeStamp)-1 # File shorter than interval; include all spectra
                     else:
                         endTime = time + interval # increment for the next bin loop
                         end = i # end of the slice is up to and not including...so -1 is not needed   
@@ -1648,7 +1722,8 @@ class ProcessL2:
                         break
             # Try converting any remaining
             end = esLength-1
-            time = Utilities.timeTag2ToSec(tt2[start])
+            # time = Utilities.timeTag2ToSec(tt2[start])
+            time = timeStamp[start]
             if time < (endTime-interval):                
 
                 if not ProcessL2.calculateREFLECTANCE2(root,sasGroup, referenceGroup, ancGroup, start, end):
@@ -1682,8 +1757,8 @@ class ProcessL2:
                 print('Removing records...')               
                 
                 check = ProcessL2.filterData(newReflectanceGroup, badTimes)
-                if check == 0:
-                    msg = "No spectra remaining. Abort."
+                if check > 0.99:
+                    msg = "Too few spectra remaining. Abort."
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False                  
@@ -1734,8 +1809,6 @@ class ProcessL2:
         # if satnavGroup is not None #or gpsGroup is not None or pyrGroup is not None:
         root.addGroup("ANCILLARY")
         node.addGroup("ANCILLARY")
-        # szaDS = ancTemp.addDataset("SZA")      
-        # szaDS.data = SZA         
 
         # Retrieve MERRA2 model ancillary data        
         if ConfigFile.settings["bL2pGetAnc"] ==1:         
@@ -1761,5 +1834,8 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)  
             return None
+
+        # Now strip datetimes from all datasets
+
 
         return root

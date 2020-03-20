@@ -229,7 +229,7 @@ class Utilities:
     # Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
     # in the 20th or 21st centuries
     @staticmethod
-    def addDateTime(node):
+    def rootAddDateTime(node):
         for gp in node.groups:            
             if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
                 dateTime = gp.addDataset("DATETIME")
@@ -241,6 +241,7 @@ class Utilities:
                     # Filter for aberrant Datetags
                     if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
                         and time != 0.0 and not np.isnan(time):
+
                         dt = Utilities.dateTagToDateTime(dateTag[i])
                         timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
                     else:                    
@@ -251,6 +252,37 @@ class Utilities:
                 dateTime.data = timeStamp
         return node
 
+    # Add a data column to each group dataset for DATETIME, as defined by TIMETAG2 and DATETAG   
+    # Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
+    # in the 20th or 21st centuries
+    @staticmethod
+    def rootAddDateTimeL2(node):
+        for gp in node.groups:            
+            if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
+                for ds in gp.datasets:
+                    # Make sure all datasets have been transcribed to columns
+                    gp.datasets[ds].datasetToColumns()
+                    timeData = gp.datasets[ds].columns["Timetag2"]
+                    dateTag = gp.datasets[ds].columns["Datetag"]
+                    
+                    timeStamp = [] 
+                    for i, time in enumerate(timeData):
+                        # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
+                        # Filter for aberrant Datetags
+                        if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
+                            and time != 0.0 and not np.isnan(time):
+
+                            dt = Utilities.dateTagToDateTime(dateTag[i])
+                            timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
+                        else:                    
+                            gp.datasetDeleteRow(i)
+                            msg = f"Bad Datetag or Timetag2 found. Eliminating record. {dateTag[i]} : {time}"
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+                    gp.datasets[ds].columns["Datetime"] = timeStamp
+                    gp.datasets[ds].columnsToDataset()
+
+        return node
 
     # Remove records if values of DATETIME are not strictly increasing
     # (strictly increasing values required for interpolation)    
@@ -990,7 +1022,8 @@ class Utilities:
                     badTimes.append(timeStamp[j])
 
         badTimes = np.unique(badTimes)
-        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
+        # Duplicates each element to a list of two elements in a list:
+        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) 
         
         for i in badIndx:
             plt.plot(wave, normSpec[i,:], color='red', linewidth=0.5, linestyle='dashed')

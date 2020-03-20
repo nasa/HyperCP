@@ -12,34 +12,34 @@ from Utilities import Utilities
 from ConfigFile import ConfigFile
 
 class ProcessL1c:
-
-    # Delete records within the out-of-bounds times found by filtering on relative solar angle
-    # Or records within the out-of-bounds for absolute rotator angle.
+    
     @staticmethod
     def filterData(group, badTimes):                    
+        ''' Delete flagged records '''
+
         msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
+
         timeStamp = group.getDataset("DATETIME").data                
 
-        startLength = len(timeStamp) # Length of either GPS UTCPOS or TimeTag2
-        msg = ('   Length of dataset prior to removal ' + str(startLength) + ' long')
+        startLength = len(timeStamp) 
+        msg = f'   Length of dataset prior to removal {startLength} long'
         print(msg)
         Utilities.writeLogFile(msg)
             
-        # Now delete the record from each dataset in the group
+        # Delete the records in badTime ranges from each dataset in the group
         finalCount = 0
-        originalLength = len(timeStamp)
-        
+        originalLength = len(timeStamp)        
         for dateTime in badTimes:     
             # Need to reinitialize for each loop
-            startLength = len(timeStamp) # Length of either GPS UTCPOS or TimeTag2
+            startLength = len(timeStamp)
             newTimeStamp = []
 
             start = dateTime[0]
             stop = dateTime[1]
 
-            # msg = f'Eliminate data between: {dateTime}  (HHMMSSMSS)'
+            # msg = f'Eliminate data between: {dateTime}'
             # print(msg)
             # Utilities.writeLogFile(msg)            
 
@@ -185,7 +185,7 @@ class ProcessL1c:
         node.attributes["PROCESSING_LEVEL"] = "1c"     
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG        
-        node  = Utilities.addDateTime(node)
+        node  = Utilities.rootAddDateTime(node)
 
         badTimes = None   
         # Apply Pitch & Roll Filter   

@@ -386,7 +386,7 @@ class ProcessL1d:
         root.attributes["PROCESSING_LEVEL"] = "1d"
         
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG        
-        root  = Utilities.addDateTime(root)
+        root  = Utilities.rootAddDateTime(root)
 
         # Fix in case time doesn't increase from one sample to the next
         # or there are fewer than 2 two stamps remaining.
