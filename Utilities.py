@@ -280,6 +280,7 @@ class Utilities:
                             print(msg)
                             Utilities.writeLogFile(msg)
                     gp.datasets[ds].columns["Datetime"] = timeStamp
+                    gp.datasets[ds].columns.move_to_end('Datetime', last=False)
                     gp.datasets[ds].columnsToDataset()
 
         return node

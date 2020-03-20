@@ -566,19 +566,35 @@ class ProcessL2:
 
         newAncGroup = root.getGroup("ANCILLARY")
 
-        # Combine these steps in a loop for ancillary date
+        # Build a simple dictionary of datasets to reference from (input) ancGrop
         ancDict = collections.OrderedDict()
         for ds in ancGroup.datasets:
             key = ds            
-            value = ancGroup.datasets[ds]            
-            ancDict[key] = value
+            value = ancGroup.datasets[ds]  # reference the dataset
+            ancDict[key] = value # assign the data and columns within the dataset
+            ancDict[key].columns.pop("Datetag")
+            ancDict[key].columns.pop("Timetag2")
+            timeStamp = ancDict[key].columns.pop("Datetime")
+            
 
-        dateSlice=ancDict['Datetag'].data[start:end+1] #up to not including end+1
-        timeSlice=ancDict['Timetag2'].data[start:end+1]
-        # Stores the middle element
-        if len(dateSlice) > 0:
-            date = dateSlice[int(len(dateSlice)/2)]
-            time = timeSlice[int(len(timeSlice)/2)]
+        # dateSlice=ancDict['Datetag'].data[start:end+1] #up to not including end+1
+        # timeSlice=ancDict['Timetag2'].data[start:end+1]
+
+        # Stores the mean datetime
+        if len(timeStamp) > 0:
+            epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
+            tsSeconds = []
+            for dt in timeStamp:
+                tsSeconds.append((dt-epoch).total_seconds())
+            meanSec = np.mean(tsSeconds)
+            dateTime = datetime.datetime.utcfromtimestamp(meanSec)
+            date = Utilities.datetime2DateTag(dateTime)
+            time = Utilities.datetime2TimeTag2(dateTime)
+
+        # # Stores the middle element
+        # if len(dateSlice) > 0:
+        #     date = dateSlice[int(len(dateSlice)/2)]
+        #     time = timeSlice[int(len(timeSlice)/2)]
 
         for ds in ancDict: 
             if ds != 'Datetag' and ds != 'Timetag2':
@@ -596,11 +612,13 @@ class ProcessL2:
 
                         if dsXSlice is None:
                             dsXSlice = collections.OrderedDict()                        
-                            dsXSlice['Datetag'] = date.tolist()
-                            dsXSlice['Timetag2'] = time.tolist()
-                            # dsXSlice['Datetag'] = date
-                            # dsXSlice['Timetag2'] = time
-
+                            # dsXSlice['Datetag'] = date.tolist()
+                            # dsXSlice['Timetag2'] = time.tolist()
+                            # dsXSlice['Datetime'] = Datetime.tolist()
+                            dsXSlice['Datetag'] = [date]
+                            dsXSlice['Timetag2'] = [time]
+                            dsXSlice['Datetime'] = [dateTime]                            
+                            
                         if subset.endswith('FLAG'):
                             if not subset in dsXSlice:
                                 # Find the most frequest element
@@ -610,14 +628,17 @@ class ProcessL2:
                             if subset not in dsXSlice:
                                 dsXSlice[subset] = []                            
                             dsXSlice[subset].append(np.mean(v)) 
-                        
+                
                 if subset not in newDS.columns:
                     newDS.columns = dsXSlice
                 else:
                     for item in newDS.columns:
                         newDS.columns[item] = np.append(newDS.columns[item], dsXSlice[item])
-            
-                newDS.columnsToDataset()            
+
+                newDS.columns.move_to_end('Timetag2', last=False)
+                newDS.columns.move_to_end('Datetag', last=False)
+                newDS.columns.move_to_end('Datetime', last=False)
+                newDS.columnsToDataset()         
        
     @staticmethod
     def calculateREFLECTANCE2(root, sasGroup, refGroup, ancGroup, start, end):
@@ -759,28 +780,32 @@ class ProcessL2:
         enablePercentLt = float(ConfigFile.settings["bL2EnablePercentLt"])
         percentLt = float(ConfigFile.settings["fL2PercentLt"])
 
-        datetag = esSlice["Datetag"]
-        timetag = esSlice["Timetag2"]
+        # Find the central index of the date/times to s
+        # datetag = esSlice["Datetag"]
+        # timetag = esSlice["Timetag2"]
+        timeStamp = esSlice.pop("Datetime")
 
         esSlice.pop("Datetag")
         esSlice.pop("Timetag2")
 
         liSlice.pop("Datetag")
         liSlice.pop("Timetag2")
+        liSlice.pop("Datetime")
 
         ltSlice.pop("Datetag")
         ltSlice.pop("Timetag2")
+        ltSlice.pop("Datetime")
 
-        # Stores the middle element
-        if len(datetag) > 0:
-            date = datetag[int(len(datetag)/2)]
-            time = timetag[int(len(timetag)/2)]
-        # if latpos:
-        #     lat = latpos[int(len(latpos)/2)]
-        # if lonpos:
-        #     lon = lonpos[int(len(lonpos)/2)]
-        # if relAzimuth:
-        #     relAzi = relAzimuth[int(len(relAzimuth)/2)]
+        # Stores the mean datetime
+        if len(timeStamp) > 0:
+            epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
+            tsSeconds = []
+            for dt in timeStamp:
+                tsSeconds.append((dt-epoch).total_seconds())
+            meanSec = np.mean(tsSeconds)
+            dateTime = datetime.datetime.utcfromtimestamp(meanSec)
+            date = Utilities.datetime2DateTag(dateTime)
+            time = Utilities.datetime2TimeTag2(dateTime)
 
         '''# Calculates the lowest X% (based on Hooker & Morel 2003; Hooker et al. 2002; Zibordi et al. 2002, IOCCG Protocols)
         X will depend on FOV and integration time of instrument. Hooker cites a rate of 2 Hz.
@@ -836,9 +861,12 @@ class ProcessL2:
         AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
         if isinstance(AODXSlice, list):
             AODXSlice = AODXSlice[0]
+
         ''' Fix '''
         # CloudXSlice = newAncGroup.getDataset('CLOUD').data['CLOUD']        
         CloudXSlice = 50 # %
+
+        
         SOL_ELXSlice = newAncGroup.getDataset('ELEVATION').data['SUN'][-1].copy()
         if isinstance(SOL_ELXSlice, list):
             SOL_ELXSlice = SOL_ELXSlice[0]
@@ -859,12 +887,23 @@ class ProcessL2:
             return False
 
         # If this is the first spectrum, add date/time, otherwise append
+        # These are empty datasets from root groups.
+        # Groups REFLECTANCE, IRRADIANCE, and RADIANCE are intiallized with empty datasets, but 
+        # ANCILLARY is not.
+
         if not ("Datetag" in newRrsData.columns):
+            # Try looping it
+            for gp in root:
+                if gp.id != "ANCILLARY":
+                    for ds in gp.datasets:
+                        ds.columns["Datetag"] = date
+
             newESData.columns["Datetag"] = [date]
             newLIData.columns["Datetag"] = [date]
             newLTData.columns["Datetag"] = [date]
             newRrsData.columns["Datetag"] = [date]
             newnLwData.columns["Datetag"] = [date]
+
             newESData.columns["Timetag2"] = [time]
             newLIData.columns["Timetag2"] = [time]
             newLTData.columns["Timetag2"] = [time]
@@ -876,6 +915,7 @@ class ProcessL2:
             newLTDeltaData.columns["Datetag"] = [date]
             newRrsDeltaData.columns["Datetag"] = [date]
             newnLwDeltaData.columns["Datetag"] = [date]
+
             newESDeltaData.columns["Timetag2"] = [time]
             newLIDeltaData.columns["Timetag2"] = [time]
             newLTDeltaData.columns["Timetag2"] = [time]
@@ -1649,7 +1689,11 @@ class ProcessL2:
             Utilities.writeLogFile(msg)
             badTimes = ProcessL2.metQualityCheck(referenceGroup, sasGroup)
             
-            
+            if len(badTimes) == esData.data.size:
+                msg = "All data flagged for deletion. Abort."
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False              
             if badTimes is not None:
                 print('Removing records...')
                 check = ProcessL2.filterData(referenceGroup, badTimes)   
@@ -1685,6 +1729,9 @@ class ProcessL2:
                     Utilities.writeLogFile(msg)                      
                     continue                                                      
         else:
+            msg = 'Binning datasets to ensemble time interval.'
+            print(msg)
+            Utilities.writeLogFile(msg)    
             # Iterate over the time ensembles
             start = 0
             # endTime = Utilities.timeTag2ToSec(tt2[0]) + interval
@@ -1704,7 +1751,7 @@ class ProcessL2:
                     if timeFlag:
                         end = len(timeStamp)-1 # File shorter than interval; include all spectra
                     else:
-                        endTime = time + interval # increment for the next bin loop
+                        endTime = time + datetime.timedelta(0,interval) # increment for the next bin loop
                         end = i # end of the slice is up to and not including...so -1 is not needed   
                     if endTime > endFileTime:
                         endTime = endFileTime                 
