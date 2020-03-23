@@ -40,8 +40,6 @@ class AncillaryReader:
                 ancDatetimeTZ.append(timezone.localize(dt))
             ancDatetime = ancDatetimeTZ
 
-
-        '''TO DO: could add cloud cover, wave height, etc. here'''
         lat = False
         lon = False
         wind = False
@@ -50,6 +48,8 @@ class AncillaryReader:
         sal = False
         heading = False
         homeangle = False # sensor azimuth relative to heading
+        cloud = False
+        waveht = False
         for ds in ancData.data:            
             # Remember, all lower case...
             if ds == "lat":
@@ -114,6 +114,20 @@ class AncillaryReader:
                 Utilities.writeLogFile(msg)  
                 homeAngle = ancData.data[ds]
                 homeAngleUnits = ancData.variables[ds][1] 
+            if ds == "cloud":
+                cloud = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                cloud = ancData.data[ds]
+                cloudUnits = ancData.variables[ds][1]
+            if ds == "waveht":
+                heading = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                waveht = ancData.data[ds]
+                waveUnits = ancData.variables[ds][1]
 
 
         # Generate HDFDataset
@@ -145,7 +159,12 @@ class AncillaryReader:
         if homeangle:
             ancillaryData.appendColumn("HOMEANGLE", homeAngle)
             ancillaryData.attributes["HOMEANGLE_Units"]=homeAngleUnits
-        
+        if cloud:
+            ancillaryData.appendColumn("CLOUD", homeAngle)
+            ancillaryData.attributes["CLOUD_Units"]=cloudUnits        
+        if waveht:
+            ancillaryData.appendColumn("WAVE_HT", homeAngle)
+            ancillaryData.attributes["WAVE_Units"]=homeAngleUnits
         ancillaryData.columnsToDataset()        
 
         return ancillaryData
@@ -168,8 +187,6 @@ class AncillaryReader:
         for i, dt in enumerate(dateTag):
             ancDatetime.append(Utilities.timeTag2ToDateTime( Utilities.dateTagToDateTime(dt),tt2[i] ))
 
-
-        '''TO DO: could add cloud cover, wave height, etc. here'''
         aot = False   
         heading = False
         lat = False
@@ -180,6 +197,8 @@ class AncillaryReader:
         wt = False
         sza = False
         wind = False
+        cloud = False
+        waveht = False
         
         for ds in ancGroup.datasets:  
             if ds.startswith("AOD"):
@@ -249,6 +268,18 @@ class AncillaryReader:
                 Utilities.writeLogFile(msg)  
                 wspd = ancGroup.datasets[ds].data["NONE"].tolist()
             # HOMEANGLE not retained
+            if ds == "CLOUD":
+                cloud = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                cloud = ancGroup.datasets[ds].data["NONE"].tolist()
+            if ds == "WAVE_HT":
+                heading = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                waveht = ancGroup.datasets[ds].data["NONE"].tolist()
 
         # Generate HDFDataset
         ancillaryData = HDFDataset()
@@ -276,6 +307,10 @@ class AncillaryReader:
             ancillaryData.appendColumn("SZA", SZA)
         if wind:
             ancillaryData.appendColumn("WINDSPEED", wspd)
+        if cloud:
+            ancillaryData.appendColumn("CLOUD", cloud)
+        if waveht:
+            ancillaryData.appendColumn("WAVE_HT", waveht)
         
         ancillaryData.columnsToDataset()        
 

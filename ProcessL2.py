@@ -362,12 +362,19 @@ class ProcessL2:
 
         # Only concerned with datasets relevant to GMAO models and GUI defaults initially
         ancGroup = node.getGroup("ANCILLARY")
-        # dateTagDataset = ancGroup.addDataset("Datetag")
-        # timeTag2Dataset = ancGroup.addDataset("Timetag2")
+        # These are required and have been filled in with field, model, and/or default values
         windDataset = ancGroup.addDataset("WINDSPEED")
         aodDataset = ancGroup.addDataset("AOD")
         saltDataset = ancGroup.addDataset("SAL")
-        sstDataset = ancGroup.addDataset("SST")           
+        sstDataset = ancGroup.addDataset("SST")  
+        # Optional datasets; CLOUD and WAVE are basically place holders for the moment;
+        # no implementation in Rho corrections     
+        cloud = False
+        wave = False
+        if "CLOUD" in ancData.columns:
+            cloudDataset = ancGroup.addDataset("CLOUD")
+        if "WAVE_HT" in ancData.columns:
+            waveDataset = ancGroup.addDataset("WAVE_HT")
 
         # Convert radData date and time to datetime and then to seconds for interpolation
         radTime = radData.data["Timetag2"].tolist()
@@ -387,6 +394,10 @@ class ProcessL2:
                 salt = ancData.getColumn("SALINITY")[0]
             if "SST" in ancData.columns:
                 sst = ancData.getColumn("SST")[0]
+            if "CLOUD" in ancData.columns:
+                cloud = ancData.getColumn("CLOUD")[0]
+            if "WAVE_HT" in ancData.columns:
+                wave = ancData.getColumn("WAVE_HT")[0]
             # Convert ancillary datetime to seconds for interpolation            
             ancSeconds = [(i-epoch).total_seconds() for i in dateTime] 
         else:
@@ -407,23 +418,35 @@ class ProcessL2:
         windFlag = []
         saltFlag = []
         sstFlag = []
-        aodFlag = []
+        aodFlag = []        
         windInRad = []
         saltInRad = []
         sstInRad = []
         aodInRad = []
+        if cloud:
+            cloudFlag = []
+            cloudInRad = []
+        if wave:
+            waveFlag = []
+            waveInRad = []
         # ... the size of the radiometric dataset
         for i, value in enumerate(radSeconds):
             ancInRadSeconds.append(value)
             windFlag.append('undetermined')                   
             saltFlag.append('undetermined')                   
             sstFlag.append('undetermined')                   
-            aodFlag.append('undetermined')                   
+            aodFlag.append('undetermined')                             
             windInRad.append(np.nan)
             saltInRad.append(np.nan)
             sstInRad.append(np.nan)
             aodInRad.append(np.nan)
-
+            if cloud:
+                cloudFlag.append('field')
+                cloudInRad.append(np.nan)
+            if wave:
+                waveFlag.append('field')
+                waveInRad.append(np.nan)
+            
         # Populate with field data if possible
         if ancData:
             for i, value in enumerate(ancInRadSeconds): # step through InRad...
@@ -436,7 +459,11 @@ class ProcessL2:
                     # Label the data source in the flag
                     windFlag[i] = 'field'
                     saltFlag[i] = 'field'
-                    sstFlag[i] = 'field'
+                    sstFlag[i] = 'field'                    
+                    if cloud:
+                        cloudInRad[i] = cloud[idx]
+                    if wave:
+                        waveInRad.append(np.nan)
         
         # Tallies
         msg = f'Field wind data has {np.isnan(windInRad).sum()} NaNs out of {len(windInRad)} prior to using model data'                
@@ -451,6 +478,14 @@ class ProcessL2:
         msg = f'Field aod data has {np.isnan(aodInRad).sum()} NaNs out of {len(aodInRad)} prior to using model data'                
         print(msg)
         Utilities.writeLogFile(msg)
+        if cloud:
+            msg = f'Field aod data has {np.isnan(cloudInRad).sum()} NaNs out of {len(cloudInRad)}'
+            print(msg)
+            Utilities.writeLogFile(msg)
+        if wave:
+            msg = f'Field aod data has {np.isnan(waveInRad).sum()} NaNs out of {len(waveInRad)}'
+            print(msg)
+            Utilities.writeLogFile(msg)
 
         # Convert model data date and time to datetime and then to seconds for interpolation
         if modData is not None:                
@@ -514,15 +549,22 @@ class ProcessL2:
         saltDataset.columns["SALTFLAG"] = saltFlag
         sstDataset.columns["SST"] = sstInRad
         sstDataset.columns["SSTFLAG"] = sstFlag
-    
+        if cloud:
+            cloudDataset.columns["SST"] = cloudInRad
+            cloudDataset.columns["SSTFLAG"] = cloudFlag
+        if wave:
+            waveDataset.columns["SST"] = waveInRad
+            waveDataset.columns["SSTFLAG"] = waveFlag
+
         # Convert ancillary seconds back to date/timetags ...
         ancDateTag = []
-        ancTimeTag2 = []            
-        for sec in radSeconds:
-            radDT = datetime.datetime.utcfromtimestamp(sec)
-            ancDateTag.append(float(f'{int(radDT.timetuple()[0]):04}{int(radDT.timetuple()[7]):03}'))
+        ancTimeTag2 = []  
+        radDT = []          
+        for i, sec in enumerate(radSeconds):
+            radDT.append(datetime.datetime.utcfromtimestamp(sec))
+            ancDateTag.append(float(f'{int(radDT[i].timetuple()[0]):04}{int(radDT[i].timetuple()[7]):03}'))
             ancTimeTag2.append(float( \
-                f'{int(radDT.timetuple()[3]):02}{int(radDT.timetuple()[4]):02}{int(radDT.timetuple()[5]):02}{int(radDT.microsecond/1000):03}'))
+                f'{int(radDT[i].timetuple()[3]):02}{int(radDT[i].timetuple()[4]):02}{int(radDT[i].timetuple()[5]):02}{int(radDT[i].microsecond/1000):03}'))
             # ancTimeTag2.append(Utilities.epochSecToDateTagTimeTag2(sec))
         
         # ... and add them to the datasets
@@ -532,15 +574,19 @@ class ProcessL2:
         for ds in ancGroup.datasets:
             ancGroup.datasets[ds].columns["Datetag"] = ancDateTag
             ancGroup.datasets[ds].columns["Timetag2"] = ancTimeTag2
-
+            ancGroup.datasets[ds].columns["Datetime"] = radDT
+            ancGroup.datasets[ds].columns.move_to_end('Timetag2', last=False)
+            ancGroup.datasets[ds].columns.move_to_end('Datetag', last=False)
+            ancGroup.datasets[ds].columns.move_to_end('Datetime', last=False)
 
         windDataset.columnsToDataset()
         aodDataset.columnsToDataset()
         saltDataset.columnsToDataset()
         sstDataset.columnsToDataset()
-        # dateTagDataset.columnsToDataset()
-        # timeTag2Dataset.columnsToDataset()
-        # return
+        if cloud:
+            cloudDataset.columnsToDataset()
+        if wave:
+            waveDataset.columnsToDataset()        
     
     @staticmethod
     def sliceAveHyper(y, hyperSlice, xSlice, xStd):
@@ -568,13 +614,16 @@ class ProcessL2:
 
         # Build a simple dictionary of datasets to reference from (input) ancGrop
         ancDict = collections.OrderedDict()
-        for ds in ancGroup.datasets:
-            key = ds            
-            value = ancGroup.datasets[ds]  # reference the dataset
-            ancDict[key] = value # assign the data and columns within the dataset
-            ancDict[key].columns.pop("Datetag")
-            ancDict[key].columns.pop("Timetag2")
-            timeStamp = ancDict[key].columns.pop("Datetime")
+        for dsName in ancGroup.datasets:
+            ds = ancGroup.datasets[dsName] # Full HDF dataset (columns & data)
+            # if dsName != "Datetime" and dsName != "Datetag" and dsName != "Timetag2":                 
+            ancDict[dsName] = ds # assign the data and columns within the dataset
+                # ancDict[dsName].columns.pop("Datetag")
+                # ancDict[dsName].columns.pop("Timetag2")
+            # elif dsName == "Datetime":
+            if dsName == "LATITUDE":
+                timeStamp = ds.columns["Datetime"]
+            # timeStamp = ancDict[ds].columns.pop("Datetime")
             
 
         # dateSlice=ancDict['Datetag'].data[start:end+1] #up to not including end+1
@@ -607,7 +656,7 @@ class ProcessL2:
                 dsXSlice = None
 
                 for subset in dsSlice: # several ancillary datasets are groups which will become columns (including date, time, and flags)
-                    if subset != 'Datetag' and subset != 'Timetag2':
+                    if subset != 'Datetime' and subset != 'Datetag' and subset != 'Timetag2':
                         v = [dsSlice[subset][i] for i in y] # y is an array of indexes for the lowest X%
 
                         if dsXSlice is None:
@@ -781,8 +830,6 @@ class ProcessL2:
         percentLt = float(ConfigFile.settings["fL2PercentLt"])
 
         # Find the central index of the date/times to s
-        # datetag = esSlice["Datetag"]
-        # timetag = esSlice["Timetag2"]
         timeStamp = esSlice.pop("Datetime")
 
         esSlice.pop("Datetag")
@@ -804,8 +851,8 @@ class ProcessL2:
                 tsSeconds.append((dt-epoch).total_seconds())
             meanSec = np.mean(tsSeconds)
             dateTime = datetime.datetime.utcfromtimestamp(meanSec)
-            date = Utilities.datetime2DateTag(dateTime)
-            time = Utilities.datetime2TimeTag2(dateTime)
+            dateTag = Utilities.datetime2DateTag(dateTime)
+            timeTag = Utilities.datetime2TimeTag2(dateTime)
 
         '''# Calculates the lowest X% (based on Hooker & Morel 2003; Hooker et al. 2002; Zibordi et al. 2002, IOCCG Protocols)
         X will depend on FOV and integration time of instrument. Hooker cites a rate of 2 Hz.
@@ -855,30 +902,41 @@ class ProcessL2:
         newAncGroup = root.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
 
-        WINDSPEEDXSlice = newAncGroup.getDataset('WINDSPEED').data['WINDSPEED'][-1].copy() # Returns the last element (latest slice)
+        # Extract the last element (the current slice) for each dataset used in calculating reflectances
+
+        # These are required and will have been filled in with field data, models, and or defaults
+        WINDSPEEDXSlice = newAncGroup.getDataset('WINDSPEED').data['WINDSPEED'][-1].copy()
         if isinstance(WINDSPEEDXSlice, list):
             WINDSPEEDXSlice = WINDSPEEDXSlice[0]
         AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
         if isinstance(AODXSlice, list):
-            AODXSlice = AODXSlice[0]
-
-        ''' Fix '''
-        # CloudXSlice = newAncGroup.getDataset('CLOUD').data['CLOUD']        
-        CloudXSlice = 50 # %
-
-        
-        SOL_ELXSlice = newAncGroup.getDataset('ELEVATION').data['SUN'][-1].copy()
-        if isinstance(SOL_ELXSlice, list):
-            SOL_ELXSlice = SOL_ELXSlice[0]
+            AODXSlice = AODXSlice[0]        
+        # SOL_ELXSlice = newAncGroup.getDataset('ELEVATION').data['SUN'][-1].copy()
+        # if isinstance(SOL_ELXSlice, list):
+        #     SOL_ELXSlice = SOL_ELXSlice[0]
+        SZAXSlice = newAncGroup.getDataset('SZA').data['NONE'][-1].copy()
+        if isinstance(SZAXSlice, list):
+            SZAXSlice = SZAXSlice[0]
         SSTXSlice = newAncGroup.getDataset('SST').data['SST'][-1].copy()
         if isinstance(SSTXSlice, list):
             SSTXSlice = SSTXSlice[0]
         SalXSlice = newAncGroup.getDataset('SAL').data['SAL'][-1].copy()
         if isinstance(SalXSlice, list):
             SalXSlice = SalXSlice[0]
-        RelAzXSlice = newAncGroup.getDataset('REL_AZ').data['REL_AZ'][-1].copy()
+        RelAzXSlice = newAncGroup.getDataset('REL_AZ').data['NONE'][-1].copy()
         if isinstance(RelAzXSlice, list):
             RelAzXSlice = RelAzXSlice[0]
+
+        # These are optional; in fact, there is no implementation of incorporating CLOUD or WAVEs into
+        # any of the current Rho corrections yet (even though cloud IS passed to Zhang_Rho)
+        if "CLOUD" in newAncGroup.datasets:
+            CloudXSlice = newAncGroup.getDataset('CLOUD').data['CLOUD']        
+        else:
+            CloudXSlice = None
+        if "WAVE_HT" in newAncGroup.datasets:
+            WaveXSlice = newAncGroup.getDataset('WAVE_HT').data['WAVE_HT']        
+        else:
+            WaveXSlice = None
        
         if hasNan:            
             msg = 'ProcessL2.calculateREFLECTANCE2: Slice X"%" average error: Dataset all NaNs.'
@@ -892,178 +950,35 @@ class ProcessL2:
         # ANCILLARY is not.
 
         if not ("Datetag" in newRrsData.columns):
-            # Try looping it
-            for gp in root:
-                if gp.id != "ANCILLARY":
-                    for ds in gp.datasets:
-                        ds.columns["Datetag"] = date
-
-            newESData.columns["Datetag"] = [date]
-            newLIData.columns["Datetag"] = [date]
-            newLTData.columns["Datetag"] = [date]
-            newRrsData.columns["Datetag"] = [date]
-            newnLwData.columns["Datetag"] = [date]
-
-            newESData.columns["Timetag2"] = [time]
-            newLIData.columns["Timetag2"] = [time]
-            newLTData.columns["Timetag2"] = [time]
-            newRrsData.columns["Timetag2"] = [time]
-            newnLwData.columns["Timetag2"] = [time]
-
-            newESDeltaData.columns["Datetag"] = [date]
-            newLIDeltaData.columns["Datetag"] = [date]
-            newLTDeltaData.columns["Datetag"] = [date]
-            newRrsDeltaData.columns["Datetag"] = [date]
-            newnLwDeltaData.columns["Datetag"] = [date]
-
-            newESDeltaData.columns["Timetag2"] = [time]
-            newLIDeltaData.columns["Timetag2"] = [time]
-            newLTDeltaData.columns["Timetag2"] = [time]
-            newRrsDeltaData.columns["Timetag2"] = [time]
-            newnLwDeltaData.columns["Timetag2"] = [time]
-
-            if ConfigFile.settings['bL2WeightMODISA']:
-                newRrsMODISAData.columns["Timetag2"] = [time]
-                newRrsMODISADeltaData.columns["Timetag2"] = [time]
-                newnLwMODISAData.columns["Timetag2"] = [time]
-                newnLwMODISADeltaData.columns["Timetag2"] = [time]
-                newRrsMODISAData.columns["Datetag"] = [date]
-                newRrsMODISADeltaData.columns["Datetag"] = [date]
-                newnLwMODISAData.columns["Datetag"] = [date]
-                newnLwMODISADeltaData.columns["Datetag"] = [date]
-            if ConfigFile.settings['bL2WeightMODIST']:
-                newRrsMODISTData.columns["Timetag2"] = [time]
-                newRrsMODISTDeltaData.columns["Timetag2"] = [time]
-                newnLwMODISTData.columns["Timetag2"] = [time]
-                newnLwMODISTDeltaData.columns["Timetag2"] = [time]
-                newRrsMODISTData.columns["Datetag"] = [date]
-                newRrsMODISTDeltaData.columns["Datetag"] = [date]
-                newnLwMODISTData.columns["Datetag"] = [date]
-                newnLwMODISTDeltaData.columns["Datetag"] = [date]
-
-            if ConfigFile.settings['bL2WeightVIIRSN']:
-                newRrsVIIRSNData.columns["Timetag2"] = [time]
-                newRrsVIIRSNDeltaData.columns["Timetag2"] = [time]
-                newnLwVIIRSNData.columns["Timetag2"] = [time]
-                newnLwVIIRSNDeltaData.columns["Timetag2"] = [time]
-                newRrsVIIRSNData.columns["Datetag"] = [date]
-                newRrsVIIRSNDeltaData.columns["Datetag"] = [date]
-                newnLwVIIRSNData.columns["Datetag"] = [date]
-                newnLwVIIRSNDeltaData.columns["Datetag"] = [date]
-            if ConfigFile.settings['bL2WeightVIIRSJ']:
-                newRrsVIIRSJData.columns["Timetag2"] = [time]
-                newRrsVIIRSJDeltaData.columns["Timetag2"] = [time]
-                newnLwVIIRSJData.columns["Timetag2"] = [time]
-                newnLwVIIRSJDeltaData.columns["Timetag2"] = [time]
-                newRrsVIIRSJData.columns["Datetag"] = [date]
-                newRrsVIIRSJDeltaData.columns["Datetag"] = [date]
-                newnLwVIIRSJData.columns["Datetag"] = [date]
-                newnLwVIIRSJDeltaData.columns["Datetag"] = [date]
-
-
-            if ConfigFile.settings['bL2WeightSentinel3A']:
-                newRrsSentinel3AData.columns["Timetag2"] = [time]
-                newRrsSentinel3ADeltaData.columns["Timetag2"] = [time]
-                newnLwSentinel3AData.columns["Timetag2"] = [time]
-                newnLwSentinel3ADeltaData.columns["Timetag2"] = [time]
-                newRrsSentinel3AData.columns["Datetag"] = [date]
-                newRrsSentinel3ADeltaData.columns["Datetag"] = [date]
-                newnLwSentinel3AData.columns["Datetag"] = [date]
-                newnLwSentinel3ADeltaData.columns["Datetag"] = [date]
-            if ConfigFile.settings['bL2WeightSentinel3B']:
-                newRrsSentinel3BData.columns["Timetag2"] = [time]
-                newRrsSentinel3BDeltaData.columns["Timetag2"] = [time]
-                newnLwSentinel3BData.columns["Timetag2"] = [time]
-                newnLwSentinel3BDeltaData.columns["Timetag2"] = [time]
-                newRrsSentinel3BData.columns["Datetag"] = [date]
-                newRrsSentinel3BDeltaData.columns["Datetag"] = [date]
-                newnLwSentinel3BData.columns["Datetag"] = [date]
-                newnLwSentinel3BDeltaData.columns["Datetag"] = [date]            
-        else:
-            newESData.columns["Datetag"].append(date)
-            newLIData.columns["Datetag"].append(date)
-            newLTData.columns["Datetag"].append(date)
-            newRrsData.columns["Datetag"].append(date)
-            newnLwData.columns["Datetag"].append(date)
-            newESData.columns["Timetag2"].append(time)
-            newLIData.columns["Timetag2"].append(time)
-            newLTData.columns["Timetag2"].append(time)
-            newRrsData.columns["Timetag2"].append(time)           
-            newnLwData.columns["Timetag2"].append(time)
-
-            newESDeltaData.columns["Datetag"].append(date)
-            newLIDeltaData.columns["Datetag"].append(date)
-            newLTDeltaData.columns["Datetag"].append(date)
-            newRrsDeltaData.columns["Datetag"].append(date)
-            newnLwDeltaData.columns["Datetag"].append(date)
-            newESDeltaData.columns["Timetag2"].append(time)
-            newLIDeltaData.columns["Timetag2"].append(time)
-            newLTDeltaData.columns["Timetag2"].append(time)
-            newRrsDeltaData.columns["Timetag2"].append(time)
-            newnLwDeltaData.columns["Timetag2"].append(time)
-
-            if ConfigFile.settings['bL2WeightMODISA']:
-                newRrsMODISAData.columns["Timetag2"].append(time)
-                newRrsMODISADeltaData.columns["Timetag2"].append(time)
-                newnLwMODISAData.columns["Timetag2"].append(time)
-                newnLwMODISADeltaData.columns["Timetag2"].append(time)
-                newRrsMODISAData.columns["Datetag"].append(date)
-                newRrsMODISADeltaData.columns["Datetag"].append(date)
-                newnLwMODISAData.columns["Datetag"].append(date)
-                newnLwMODISADeltaData.columns["Datetag"].append(date)
-            if ConfigFile.settings['bL2WeightMODIST']:
-                newRrsMODISTData.columns["Timetag2"].append(time)
-                newRrsMODISTDeltaData.columns["Timetag2"].append(time)
-                newnLwMODISTData.columns["Timetag2"].append(time)
-                newnLwMODISTDeltaData.columns["Timetag2"].append(time)
-                newRrsMODISTData.columns["Datetag"].append(date)
-                newRrsMODISTDeltaData.columns["Datetag"].append(date)
-                newnLwMODISTData.columns["Datetag"].append(date)
-                newnLwMODISTDeltaData.columns["Datetag"].append(date)
-
-            if ConfigFile.settings['bL2WeightVIIRSN']:
-                newRrsVIIRSNData.columns["Timetag2"].append(time)
-                newRrsVIIRSNDeltaData.columns["Timetag2"].append(time)
-                newnLwVIIRSNData.columns["Timetag2"].append(time)
-                newnLwVIIRSNDeltaData.columns["Timetag2"].append(time)
-                newRrsVIIRSNData.columns["Datetag"].append(date)
-                newRrsVIIRSNDeltaData.columns["Datetag"].append(date)
-                newnLwVIIRSNData.columns["Datetag"].append(date)
-                newnLwVIIRSNDeltaData.columns["Datetag"].append(date)
-            if ConfigFile.settings['bL2WeightVIIRSJ']:
-                newRrsVIIRSJData.columns["Timetag2"].append(time)
-                newRrsVIIRSJDeltaData.columns["Timetag2"].append(time)
-                newnLwVIIRSJData.columns["Timetag2"].append(time)
-                newnLwVIIRSJDeltaData.columns["Timetag2"].append(time)
-                newRrsVIIRSJData.columns["Datetag"].append(date)
-                newRrsVIIRSJDeltaData.columns["Datetag"].append(date)
-                newnLwVIIRSJData.columns["Datetag"].append(date)
-                newnLwVIIRSJDeltaData.columns["Datetag"].append(date)
             
-            if ConfigFile.settings['bL2WeightSentinel3A']:
-                newRrsSentinel3AData.columns["Timetag2"].append(time)
-                newRrsSentinel3ADeltaData.columns["Timetag2"].append(time)
-                newnLwSentinel3AData.columns["Timetag2"].append(time)
-                newnLwSentinel3ADeltaData.columns["Timetag2"].append(time)
-                newRrsSentinel3AData.columns["Datetag"].append(date)
-                newRrsSentinel3ADeltaData.columns["Datetag"].append(date)
-                newnLwSentinel3AData.columns["Datetag"].append(date)
-                newnLwSentinel3ADeltaData.columns["Datetag"].append(date)
-            if ConfigFile.settings['bL2WeightSentinel3B']:
-                newRrsSentinel3BData.columns["Timetag2"].append(time)
-                newRrsSentinel3BDeltaData.columns["Timetag2"].append(time)
-                newnLwSentinel3BData.columns["Timetag2"].append(time)
-                newnLwSentinel3BDeltaData.columns["Timetag2"].append(time)
-                newRrsSentinel3BData.columns["Datetag"].append(date)
-                newRrsSentinel3BDeltaData.columns["Datetag"].append(date)
-                newnLwSentinel3BData.columns["Datetag"].append(date)
-                newnLwSentinel3BDeltaData.columns["Datetag"].append(date)   
+            for gp in root.groups:
+                # Ancillary is already populated.
+                # The other groups only have empty (named) datasets
+                if gp.id != "ANCILLARY":
+                    for ds in gp.datasets:                                                
+                        gp.datasets[ds].columns["Datetime"] = [dateTime] # mean of the ensemble
+                        gp.datasets[ds].columns["Datetag"] = [dateTag]
+                        gp.datasets[ds].columns["Timetag2"] = [timeTag]                  
+        else:
+            # Ancillary is already populated.
+            # The other groups only have empty (named) datasets
+            for gp in root.groups:
+                if gp.id != "ANCILLARY":
+                    for ds in gp.datasets:                                                
+                        gp.datasets[ds].columns["Datetime"].append(dateTime) 
+                        # mean of the ensemble
+                        gp.datasets[ds].columns["Datetag"].append(dateTag)
+                        gp.datasets[ds].columns["Timetag2"].append(timeTag)
 
         # Calculate Rho_sky
-        wavebands = [*esColumns]
-        wavebands.pop(0) # Datetag
-        wavebands.pop(0) # Timetag2
-        wave = [float(i) for i in wavebands]
+        wavebands = [*esColumns] # just grabs the keys
+        wavelength = []
+        wavelengthStr = []
+        for k in wavebands:            
+            if k != "Datetag" and k != "Datetime" and k != "Timetag2":
+                wavelengthStr.append(k)
+                wavelength.append(float(k))   
+        # wave = [float(i) for i in wave]
         if RuddickRho:
             '''This is the Ruddick, et al. 2006 approach, which has one method for 
             clear sky, and another for cloudy. Methods of this type (i.e. not accounting
@@ -1092,27 +1007,30 @@ class ProcessL2:
                 print(msg)
                 Utilities.writeLogFile(msg) 
                 AODXSlice = 0.2
-            if SOL_ELXSlice < 30:
-                msg = f'SZA = {90-SOL_ELXSlice}. Maximum Solar Zenith Reached. Setting to 60'
+            if SZAXSlice > 60:
+                # msg = f'SZA = {SZAXSlice}. Maximum Solar Zenith Reached. Setting to 60'
+                # SZA is too important to the model. If it's out of bounds, skip the record...
+                msg = f'SZA = {SZAXSlice}. Maximum Solar Zenith Exceeded. Aborting slice.'
                 print(msg)
                 Utilities.writeLogFile(msg) 
-                SOL_ELXSlice = 30
-            if min(wave) < 350 or max(wave) > 1000:
+                # SZAXSlice = 60
+                return False
+
+            if min(wavelength) < 350 or max(wavelength) > 1000:
                 msg = f'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'
                 print(msg)
                 Utilities.writeLogFile(msg) 
-                wave_old = wave.copy()
+                wave_old = wavelength.copy()
                 wave_list = [(i, band) for i, band in enumerate(wave_old) if (band >=350) and (band <= 1000)]
                 wave_array = np.array(wave_list)
-                wave = wave_array[:,1].tolist()
-            #     wave_ind = wave_array[:,0].tolist()
-            # else:
-            #     wave_ind = np.arange(0,len(wave)).tolist()
+                # wavelength is now truncated to only valid wavebands for use in Zhang models
+                wavelength = wave_array[:,1].tolist()
+            
 
             rhoStructure, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
-                CloudXSlice,SOL_ELXSlice,SSTXSlice,SalXSlice,RelAzXSlice,wave)
+                CloudXSlice,SZAXSlice,SSTXSlice,SalXSlice,RelAzXSlice,wavelength)
             rhoVector = rhoStructure['ρ']
-            for i, k in enumerate(wave):
+            for i, k in enumerate(wavelength):
                 rhoDict[str(k)] = rhoVector[0,i]
 
         rrsSlice = {}
@@ -1133,8 +1051,8 @@ class ProcessL2:
             F0_raw = np.array(Thuillier.data['esun']) # uW cm^-2 nm^-1
             wv_raw = np.array(Thuillier.data['wavelength'])
             # Earth-Sun distance
-            day = int(str(datetag[0])[4:7])  
-            year = int(str(datetag[0])[0:4])  
+            day = int(str(dateTag)[4:7])  
+            year = int(str(dateTag)[0:4])  
             eccentricity = 0.01672
             dayFactor = 360/365.256363
             dayOfPerihelion = dop(year)
@@ -1142,11 +1060,12 @@ class ProcessL2:
             F0_fs = F0_raw*dES
 
             # Map to float for interpolation
-            wavelength  = list(map(float, list(esColumns.keys())[2:]))
+            # wavelength  = list(map(float, list(esColumns.keys())[2:]))
             F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
-            # Use the strings for the dict
-            wavelength = list(esColumns.keys())[2:]
-            F0 = collections.OrderedDict(zip(wavelength, F0))
+            # Use the strings for the F0 dict
+            # wavelengthStr = list(esColumns.keys())[2:]
+            wavelengthStr = [str(wave) for wave in wavelength]
+            F0 = collections.OrderedDict(zip(wavelengthStr, F0))
 
         deleteKey = []
         for k in esXSlice: # loop through wavebands as key 'k'
@@ -1191,7 +1110,8 @@ class ProcessL2:
                             (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2
                             )**0.5
                 elif ZhangRho:
-                    if float(k) in wave:
+                    # Only populate the valid wavelengths
+                    if float(k) in wavelength:
                         rrs = (lt - (rhoDict[k] * li)) / es
 
                         # Rrs uncertainty
@@ -1235,7 +1155,7 @@ class ProcessL2:
                 newLTDeltaData.columns[k].append(ltDelta)
                 
                 # Only populate valid wavelengths. Mark others for deletion
-                if float(k) in wave:
+                if float(k) in wavelength:
                     newRrsDeltaData.columns[k].append(rrsDelta)
                     newnLwDeltaData.columns[k].append(nLwDelta)
                     
@@ -1244,7 +1164,7 @@ class ProcessL2:
                 else:
                     deleteKey.append(k) 
         
-        # Eliminate redundant keys using set, and delete unpopulated wavebands
+        # Eliminate reflectance keys/values in wavebands outside of valid set
         deleteKey = list(set(deleteKey))
         for key in deleteKey: 
             # Only need to do this for the first ensemble in file
@@ -1304,7 +1224,7 @@ class ProcessL2:
                 threshold = 0.03
 
                 # Retrieve Thuilliers
-                wavelength = [float(key) for key in F0.keys()]
+                # wavelength = [float(key) for key in F0.keys()]
                 F0 = [value for value in F0.values()]
 
                 # Rrs
@@ -1372,7 +1292,7 @@ class ProcessL2:
             for k in nLwSlice:
                 newnLwData.columns[k].append(nLwSlice[k])   
         
-        newESData.columnsToDataset()   
+        newESData.columnsToDataset() 
         newLIData.columnsToDataset()
         newLTData.columnsToDataset()
         newRrsData.columnsToDataset()
@@ -1384,6 +1304,7 @@ class ProcessL2:
         newRrsDeltaData.columnsToDataset()
         newnLwDeltaData.columnsToDataset()
 
+        # Weight reflectances to satellite bands
         if ConfigFile.settings['bL2WeightMODISA']:
             print("Process MODIS Aqua Bands")
             Weight_RSR.processMODISBands(newRrsMODISAData, newRrsData, sensor='A')
@@ -1769,9 +1690,8 @@ class ProcessL2:
                         break
             # Try converting any remaining
             end = esLength-1
-            # time = Utilities.timeTag2ToSec(tt2[start])
             time = timeStamp[start]
-            if time < (endTime-interval):                
+            if time < (endTime - datetime.timedelta(0,interval)):          
 
                 if not ProcessL2.calculateREFLECTANCE2(root,sasGroup, referenceGroup, ancGroup, start, end):
                     msg = 'ProcessL2.calculateREFLECTANCE2 ender failed. Abort.'

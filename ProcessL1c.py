@@ -459,6 +459,8 @@ class ProcessL1c:
                 wind = ancillaryData.columns["WINDSPEED"][0]
             if "AOD" in ancillaryData.columns:
                 aod = ancillaryData.columns["AOD"][0]
+            if "CLOUD" in ancillaryData.columns:
+                cloud = ancillaryData.columns["CLOUD"][0]
 
             sunAzimuth = []
             sunZenith = []
@@ -534,6 +536,10 @@ class ProcessL1c:
             if "AOD" in ancillaryData.columns:
                 ancGroup.addDataset("AOD")
                 ancGroup.datasets["AOD"].data = np.array(aod, dtype=[('NONE', '<f8')])
+
+            if "CLOUD" in ancillaryData.columns:
+                ancGroup.addDataset("CLOUD")
+                ancGroup.datasets["CLOUD"].data = np.array(cloud, dtype=[('NONE', '<f8')])
             
             # Convert datetimes
             dateTime = ancGroup.addDataset("DATETIME")

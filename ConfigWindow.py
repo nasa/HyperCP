@@ -346,7 +346,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2CloudFlagLineEdit.setText(str(ConfigFile.settings["fL2CloudFlag"]))
         self.l2CloudFlagLineEdit.setValidator(doubleValidator)
 
-        self.l2EsFlagLabel = QtWidgets.QLabel("      Significant Es(480) (uW cm^-2 nm^-1)", self)
+        self.l2EsFlagLabel = QtWidgets.QLabel("      Sig. Es(480) (uW cm^-2 nm^-1)", self)
         self.l2EsFlagLineEdit = QtWidgets.QLineEdit(self)
         self.l2EsFlagLineEdit.setText(str(ConfigFile.settings["fL2SignificantEsFlag"]))
         self.l2EsFlagLineEdit.setValidator(doubleValidator)

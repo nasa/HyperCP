@@ -59,7 +59,7 @@ class Weight_RSR:
         keys = hyperspecData.columns.keys()
         wvInterp = np.empty([1,len(keys)-2])*0
         for i, key in enumerate(keys):
-            if key == 'Datetag' or key == 'Timetag2':
+            if key == 'Datetime' or key == 'Datetag' or key == 'Timetag2':
                 continue
             wvInterp[0,i-2] = float(key)
         wvInterp = wvInterp[0].tolist()
@@ -95,7 +95,7 @@ class Weight_RSR:
         keys = hyperspecData.columns.keys()
         wvInterp = np.empty([1,len(keys)-2])*0
         for i, key in enumerate(keys):
-            if key == 'Datetag' or key == 'Timetag2':
+            if key == 'Datetime' or key == 'Datetag' or key == 'Timetag2':
                 continue
             wvInterp[0,i-2] = float(key)
         wvInterp = wvInterp[0].tolist()
@@ -135,7 +135,7 @@ class Weight_RSR:
         wvInterp = np.empty([1,len(keys)-2])*0
         pass
         for i, key in enumerate(keys):
-            if key == 'Datetag' or key == 'Timetag2':
+            if key == 'Datetime' or key == 'Datetag' or key == 'Timetag2':
                 continue
             wvInterp[0,i-2] = float(key)
         wvInterp = wvInterp[0].tolist()
