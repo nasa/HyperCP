@@ -201,15 +201,15 @@ class ProcessL2:
     @staticmethod
     def negReflectance(reflGroup,field):   
         ''' Perform negative reflectance spectra checking '''
-        # Run for entire file, not just this ensemble
+        # Run for entire file, not just one ensemble
 
         reflData = reflGroup.getDataset(field)
         # reflData.datasetToColumns()
         reflColumns = reflData.columns
-        # reflDate = reflColumns.pop('Datetag')
-        # reflTime = reflColumns.pop('Timetag2')
-        reflColumns.pop('Datetag')
-        reflColumns.pop('Timetag2')
+        reflDate = reflColumns.pop('Datetag')
+        reflTime = reflColumns.pop('Timetag2')
+        # reflColumns.pop('Datetag')
+        # reflColumns.pop('Timetag2')
         timeStamp = reflColumns.pop('Datetime')
                         
         badTimes = []
@@ -234,7 +234,7 @@ class ProcessL2:
             UV = [min(wavelengths),399]
             for wave in reflColumns:
                 if ((float(wave) >= UV[0] and float(wave) < UV[1]) or \
-                            (float(wave) >= NIR[0] and float(wave) < NIR[1])) and \
+                            (float(wave) >= NIR[0] and float(wave) <= NIR[1])) and \
                             reflColumns[wave][indx] < 0:
                     reflColumns[wave][indx] = 0
                             
@@ -244,11 +244,13 @@ class ProcessL2:
         print(msg)
         Utilities.writeLogFile(msg) 
 
-        # # Need to add these at the beginning of the ODict
-        # reflColumns['Datetag'] = reflDate
-        # reflColumns['Timetag2'] = reflTime
-        # reflColumns.move_to_end('Timetag2', last=False)
-        # reflColumns.move_to_end('Datetag', last=False)
+        # # Need to add these at the beginning of the ODict        
+        reflColumns['Timetag2'] = reflTime
+        reflColumns['Datetag'] = reflDate
+        reflColumns['Datetime'] = timeStamp
+        reflColumns.move_to_end('Timetag2', last=False)
+        reflColumns.move_to_end('Datetag', last=False)
+        reflColumns.move_to_end('Datetime', last=False)
 
         reflData.columnsToDataset()        
 
@@ -561,7 +563,7 @@ class ProcessL2:
         ancTimeTag2 = []  
         radDT = []          
         for i, sec in enumerate(radSeconds):
-            radDT.append(datetime.datetime.utcfromtimestamp(sec))
+            radDT.append(datetime.datetime.utcfromtimestamp(sec).replace(tzinfo=datetime.timezone.utc))
             ancDateTag.append(float(f'{int(radDT[i].timetuple()[0]):04}{int(radDT[i].timetuple()[7]):03}'))
             ancTimeTag2.append(float( \
                 f'{int(radDT[i].timetuple()[3]):02}{int(radDT[i].timetuple()[4]):02}{int(radDT[i].timetuple()[5]):02}{int(radDT[i].microsecond/1000):03}'))
@@ -636,7 +638,7 @@ class ProcessL2:
             for dt in timeStamp:
                 tsSeconds.append((dt-epoch).total_seconds())
             meanSec = np.mean(tsSeconds)
-            dateTime = datetime.datetime.utcfromtimestamp(meanSec)
+            dateTime = datetime.datetime.utcfromtimestamp(meanSec).replace(tzinfo=datetime.timezone.utc)
             date = Utilities.datetime2DateTag(dateTime)
             time = Utilities.datetime2TimeTag2(dateTime)
 
@@ -850,7 +852,7 @@ class ProcessL2:
             for dt in timeStamp:
                 tsSeconds.append((dt-epoch).total_seconds())
             meanSec = np.mean(tsSeconds)
-            dateTime = datetime.datetime.utcfromtimestamp(meanSec)
+            dateTime = datetime.datetime.utcfromtimestamp(meanSec).replace(tzinfo=datetime.timezone.utc)
             dateTag = Utilities.datetime2DateTag(dateTime)
             timeTag = Utilities.datetime2TimeTag2(dateTime)
 
@@ -1709,7 +1711,8 @@ class ProcessL2:
             msg = "Filtering reflectance spectra for negative values."
             print(msg)
             Utilities.writeLogFile(msg)
-            newReflectanceGroup = root.groups[0]
+            # newReflectanceGroup = root.groups[0]
+            newReflectanceGroup = root.getGroup("REFLECTANCE")
             badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs')
             badTimes2 = ProcessL2.negReflectance(newReflectanceGroup, 'nLw')
 
@@ -1729,9 +1732,12 @@ class ProcessL2:
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False                  
-                ProcessL2.filterData(root.groups[1], badTimes)
-                ProcessL2.filterData(root.groups[2], badTimes)
-                ProcessL2.filterData(root.groups[3], badTimes)        
+                # ProcessL2.filterData(root.groups[1], badTimes)
+                ProcessL2.filterData(root.getGroup("IRRADIANCE"), badTimes)
+                # ProcessL2.filterData(root.groups[2], badTimes)
+                ProcessL2.filterData(root.getGroup("RADIANCE"), badTimes)
+                # ProcessL2.filterData(root.groups[3], badTimes)        
+                ProcessL2.filterData(root.getGroup("ANCILLARY"), badTimes)
 
         return True
     
@@ -1803,6 +1809,11 @@ class ProcessL2:
             return None
 
         # Now strip datetimes from all datasets
-
+        for gp in root.groups:
+            for dsName in gp.datasets:                
+                ds = gp.datasets[dsName]
+                if "Datetime" in ds.columns:
+                    ds.columns.pop("Datetime")
+                ds.columnsToDataset() 
 
         return root

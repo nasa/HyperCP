@@ -1,19 +1,16 @@
 
 import collections
 import sys
+import h5py
+import numpy as np
 
+from HDFGroup import HDFGroup
+from HDFDataset import HDFDataset
 # For testing HDF4 support with pyhdf
 #from pyhdf.HDF import *
 #from pyhdf.SD import *
 #from pyhdf.V import *
 #from pyhdf.VS import *
-
-import h5py
-import numpy as np
-#import scipy as sp
-
-from HDFGroup import HDFGroup
-from HDFDataset import HDFDataset
 
 ''' May need to >>conda install hdf5=1.8.18<< in the future '''
 
@@ -24,8 +21,6 @@ class HDFRoot:
         self.datasets = []
         self.attributes = collections.OrderedDict()
 
-
-    # Creates a copy
     def copy(self, node):
         self.copyAttributes(node)
         for gp in node.groups:
@@ -36,7 +31,6 @@ class HDFRoot:
         for k,v in node.attributes.items():
             self.attributes[k] = v
 
-
     def addGroup(self, name):
         gp = self.getGroup(name)
         if not gp:
@@ -44,7 +38,6 @@ class HDFRoot:
             gp.id = name
             self.groups.append(gp)
         return gp
-
 
     def getGroup(self, name):
         for gp in self.groups:
@@ -64,7 +57,6 @@ class HDFRoot:
             return self.datasets[name]
         return None
 
-
     def printd(self):
         print("Root:", self.id)
         #print("Processing Level:", self.processingLevel)
@@ -72,7 +64,6 @@ class HDFRoot:
         #    print("Attribute:", k, self.attributes[k])
         for gp in self.groups:
             gp.printd()
-
 
     @staticmethod
     def readHDF5(fp):
@@ -111,7 +102,6 @@ class HDFRoot:
                     ds.read(item)
 
         return root
-
 
     # Writing to HDF5 file
     def writeHDF5(self, fp):

@@ -22,16 +22,16 @@ class SeaBASSWriter:
         headerBlock = SeaBASSHeader.settings        
 
         # Dataset leading columns can be taken from any sensor 
-        if level == '1e':
-            referenceGroup = node.getGroup("IRRADIANCE")
-            esData = referenceGroup.getDataset("ES")
+        # if level == '1e':
+        referenceGroup = node.getGroup("IRRADIANCE")
+        esData = referenceGroup.getDataset("ES")
         if level == '2':
-            referenceGroup = node.getGroup("IRRADIANCE")
-            esData = referenceGroup.getDataset("ES")
-            if ConfigFile.settings["bL1cSolarTracker"]:
-                ancillaryGroup = node.getGroup("ANCILLARY")
-            else:
-                ancillaryGroup = node.getGroup("ANCILLARY_NOTRACKER")
+            # referenceGroup = node.getGroup("IRRADIANCE")
+            # esData = referenceGroup.getDataset("ES")
+            # if ConfigFile.settings["bL1cSolarTracker"]:
+            ancillaryGroup = node.getGroup("ANCILLARY")
+            # else:
+            #     ancillaryGroup = node.getGroup("ANCILLARY_NOTRACKER")
             wind = ancillaryGroup.getDataset("WINDSPEED")
             wind.datasetToColumns()
             winCol = wind.columns["WINDSPEED"]
@@ -42,13 +42,14 @@ class SeaBASSWriter:
         headerBlock["comments"] = headerBlock["comments"] + f'\n! DateTime Processed = {time.asctime()}'
 
         # Convert Dates and Times
+        # timeDT = esData.data['Datetime'].tolist() # Datetime has already been stripped off for saving the HDF
         dateDay = esData.data['Datetag'].tolist()
         dateDT = [Utilities.dateTagToDateTime(x) for x in dateDay]
         timeTag2 = esData.data['Timetag2'].tolist()
         timeDT = []
         for i in range(len(dateDT)):
             timeDT.append(Utilities.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
-        # time = [Utilities.timeTagToDateTime(y,x) for x,y in date,timeTag]  
+        
         # Python 2 format operator       
         startTime = "%02d:%02d:%02d[GMT]" % (min(timeDT).hour, min(timeDT).minute, min(timeDT).second)
         endTime = "%02d:%02d:%02d[GMT]" % (max(timeDT).hour, max(timeDT).minute, max(timeDT).second)
@@ -178,11 +179,11 @@ class SeaBASSWriter:
         relAz = dataset.data['REL_AZ'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'REL_AZ')
         # rotator = dataset.data['ROTATOR'].tolist()
-        newData = SeaBASSWriter.removeColumns(newData,'ROTATOR')
+        # newData = SeaBASSWriter.removeColumns(newData,'ROTATOR')
         # heading = dataset.data['SHIP_TRUE'].tolist() # from SAS
-        newData = SeaBASSWriter.removeColumns(newData,'SHIP_TRUE')
+        newData = SeaBASSWriter.removeColumns(newData,'HEADING')
         # azimuth = dataset.data['AZIMUTH'].tolist()        
-        newData = SeaBASSWriter.removeColumns(newData,'AZIMUTH')
+        newData = SeaBASSWriter.removeColumns(newData,'SOLAR_AZ')
 
         dataset.data = newData
 
@@ -502,55 +503,67 @@ class SeaBASSWriter:
             ltData.columnsToDataset()
             rrsData.columnsToDataset()
         
+            ''' Retooled for L2, may need to rework again for L1E '''
             # # Append azimuth, heading, rotator, relAz, and solar elevation
-            azimuthData = ancGroup.getDataset("AZIMUTH")
+            # azimuthData = ancGroup.getDataset("AZIMUTH")
+            azimuthData = ancGroup.getDataset("SOLAR_AZ")
             headingData = ancGroup.getDataset("HEADING") # SAS_TRUE & SHIP_TRUE
             # pitchData = ancGroup.getDataset("PITCH")
-            pointingData = ancGroup.getDataset("POINTING")
+            # pointingData = ancGroup.getDataset("POINTING")
             # rollData = ancGroup.getDataset("ROLL")
             relAzData = ancGroup.getDataset("REL_AZ")
-            elevationData = ancGroup.getDataset("ELEVATION")
+            # elevationData = ancGroup.getDataset("ELEVATION")
+            szaData = ancGroup.getDataset("SZA")
 
             azimuthData.datasetToColumns()
             headingData.datasetToColumns()
             # pitchData.datasetToColumns()
-            pointingData.datasetToColumns()
+            # pointingData.datasetToColumns()
             # rollData.datasetToColumns()            
             relAzData.datasetToColumns() 
-            elevationData.datasetToColumns() 
+            # elevationData.datasetToColumns() 
+            szaData.datasetToColumns() 
 
-            azimuth = azimuthData.columns["SUN"]
-            shipTrue = headingData.columns["SHIP_TRUE"]
+            # azimuth = azimuthData.columns["SUN"]
+            azimuth = azimuthData.columns["NONE"]
+            # shipTrue = headingData.columns["SHIP_TRUE"]
+            shipTrue = headingData.columns["NONE"]
             # sasTrue = headingData.columns["SAS_True"]
             # pitch = pitchData.columns["SAS"]
-            rotator = pointingData.columns["ROTATOR"]
+            # rotator = pointingData.columns["ROTATOR"]
             # roll = rollData.columns["SAS"]
-            relAz = relAzData.columns["REL_AZ"]
-            elevation = elevationData.columns["SUN"]
+            # relAz = relAzData.columns["REL_AZ"]
+            relAz = relAzData.columns["NONE"]
+            # elevation = elevationData.columns["SUN"]
+            sza = szaData.columns["NONE"]
 
             esData.datasetToColumns()
             liData.datasetToColumns()
             ltData.datasetToColumns()
             rrsData.datasetToColumns()
             
-            esData.columns["SOL_AZIMUTH"] = azimuth
-            liData.columns["SOL_AZIMUTH"] = azimuth
-            ltData.columns["SOL_AZIMUTH"] = azimuth
-            rrsData.columns["SOL_AZIMUTH"] = azimuth
+            esData.columns["SOLAR_AZ"] = azimuth
+            liData.columns["SOLAR_AZ"] = azimuth
+            ltData.columns["SOLAR_AZ"] = azimuth
+            rrsData.columns["SOLAR_AZ"] = azimuth
 
-            esData.columns["SHIP_TRUE"] = shipTrue # From SAS, not GPS...
-            liData.columns["SHIP_TRUE"] = shipTrue
-            ltData.columns["SHIP_TRUE"] = shipTrue
-            rrsData.columns["SHIP_TRUE"] = shipTrue
+            # esData.columns["SHIP_TRUE"] = shipTrue # From SAS, not GPS...
+            # liData.columns["SHIP_TRUE"] = shipTrue
+            # ltData.columns["SHIP_TRUE"] = shipTrue
+            # rrsData.columns["SHIP_TRUE"] = shipTrue
+            esData.columns["HEADING"] = shipTrue
+            liData.columns["HEADING"] = shipTrue
+            ltData.columns["HEADING"] = shipTrue
+            rrsData.columns["HEADING"] = shipTrue
 
             # esData.columns["PITCH"] = pitch
             # liData.columns["PITCH"] = pitch
             # ltData.columns["PITCH"] = pitch
             
-            esData.columns["ROTATOR"] = rotator
-            liData.columns["ROTATOR"] = rotator
-            ltData.columns["ROTATOR"] = rotator
-            rrsData.columns["ROTATOR"] = rotator
+            # esData.columns["ROTATOR"] = rotator
+            # liData.columns["ROTATOR"] = rotator
+            # ltData.columns["ROTATOR"] = rotator
+            # rrsData.columns["ROTATOR"] = rotator
             
             # esData.columns["ROLL"] = roll
             # liData.columns["ROLL"] = roll
@@ -561,10 +574,10 @@ class SeaBASSWriter:
             ltData.columns["REL_AZ"] = relAz
             rrsData.columns["REL_AZ"] = relAz
 
-            esData.columns["SZA"] = elevation
-            liData.columns["SZA"] = elevation
-            ltData.columns["SZA"] = elevation
-            rrsData.columns["SZA"] = elevation
+            esData.columns["SZA"] = sza
+            liData.columns["SZA"] = sza
+            ltData.columns["SZA"] = sza
+            rrsData.columns["SZA"] = sza
 
             esData.columnsToDataset()
             liData.columnsToDataset()

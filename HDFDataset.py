@@ -17,7 +17,6 @@ class HDFDataset:
         self.columns = collections.OrderedDict()
         self.data = None
 
-
     def copy(self, ds):
         self.copyAttributes(ds)
         self.data = np.copy(ds.data)
@@ -31,19 +30,9 @@ class HDFDataset:
             col = self.columns[k]
             del col[0][i]
 
-
     def printd(self):
         print("Dataset:", self.id)
-        #self.datasetToColumns()
-        #self.datasetToColumns2()
-        #self.columnsToDataset()
-        #for k in self.attributes:
-        #    print(k, self.attributes[k])
-        #print(self.data)
-        #for d in self.data:
-        #    print(d)
-
-
+        
     def read(self, f):
         name = f.name[f.name.rfind("/")+1:]
         self.id = name
@@ -72,7 +61,6 @@ class HDFDataset:
 
         #print("Dataset:", name)
         #print("Data:", self.data.dtype)
-
 
     def write(self, f):
         #print("id:", self.id)        
@@ -107,9 +95,7 @@ class HDFDataset:
     #                     dt.append((k, HC.CHAR8, 2))
     #                     #print("char8")
     #             #print(dt)
-
     #             vd = vs.create(name, dt)
-
     #             records = []
     #             for x in range(self.data.shape[0]):
     #                 rec = []
@@ -120,15 +106,12 @@ class HDFDataset:
     #             #print(records)
     #             vd.write(records)
     #             vg.insert(vd)
-
     #         except:
     #             print("HDFDataset Error:", sys.exc_info()[0])
     #         finally:
     #             vd.detach()
-
     #     else:
     #         print("Dataset.write(): Data is None")
-
 
     def getColumn(self, name):
         if name in self.columns:
@@ -141,8 +124,8 @@ class HDFDataset:
         else:
             self.columns[name].append(val)
 
-    # Converts numpy array into columns (stored as a dictionary)
     def datasetToColumns(self):
+        ''' Converts numpy array into columns (stored as a dictionary) '''
         if self.data is None:
             print("Warning - datasetToColumns: data is empty")
             return
@@ -150,9 +133,9 @@ class HDFDataset:
         for k in self.data.dtype.names:
             #print("type",type(ltData.data[k]))
             self.columns[k] = self.data[k].tolist()
-
-    # Convert Prosoft format numpy array to columns    
+    
     def datasetToColumns2(self):
+        ''' Convert Prosoft format numpy array to columns '''
         if self.data is None:
             print("Warning - datasetToColumns2: data is empty")
             return
@@ -162,11 +145,9 @@ class HDFDataset:
             self.columns[k] = []
         for k in ids:
             self.columns[k].append(self.data[0][ids.index(k)])
-        
-
-    # Converts columns into numpy array
-    def columnsToDataset(self):
-        
+            
+    def columnsToDataset(self):        
+        ''' Converts columns into numpy array '''
         #dtype0 = np.dtype([(name, type(ds.columns[name][0])) for name in ds.columns.keys()])
 
         if not self.columns:
@@ -226,4 +207,3 @@ class HDFDataset:
             self.data[k] = v 
 
         return True
-
