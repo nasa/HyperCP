@@ -30,7 +30,7 @@ class ProcessL2:
         Utilities.writeLogFile(msg)
 
         if group.id == "ANCILLARY":
-                timeStamp = group.getDataset("LATITUDE").data["Datetime"]
+            timeStamp = group.getDataset("LATITUDE").data["Datetime"]
         if group.id == "IRRADIANCE":
             timeStamp = group.getDataset("ES").data["Datetime"]
         if group.id == "RADIANCE":
@@ -592,7 +592,7 @@ class ProcessL2:
     
     @staticmethod
     def sliceAveHyper(y, hyperSlice, xSlice, xStd):
-        ''' Take the slice median of the lowest X% of hyperspectral slices '''
+        ''' Take the slice mean of the lowest X% of hyperspectral slices '''
 
         hasNan = False
         # Ignore runtime warnings when array is all NaNs
@@ -610,7 +610,7 @@ class ProcessL2:
     
     @staticmethod
     def sliceAveAnc(root, start, end, y, ancGroup):
-        ''' Take the slice AND the median averages of ancillary data with X% '''
+        ''' Take the slice AND the mean averages of ancillary data with X% '''
 
         newAncGroup = root.getGroup("ANCILLARY")
 
@@ -623,8 +623,8 @@ class ProcessL2:
                 # ancDict[dsName].columns.pop("Datetag")
                 # ancDict[dsName].columns.pop("Timetag2")
             # elif dsName == "Datetime":
-            if dsName == "LATITUDE":
-                timeStamp = ds.columns["Datetime"]
+            # if dsName == "LATITUDE":
+            #     timeStamp = ds.columns["Datetime"]
             # timeStamp = ancDict[ds].columns.pop("Datetime")
             
 
@@ -632,15 +632,15 @@ class ProcessL2:
         # timeSlice=ancDict['Timetag2'].data[start:end+1]
 
         # Stores the mean datetime
-        if len(timeStamp) > 0:
-            epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
-            tsSeconds = []
-            for dt in timeStamp:
-                tsSeconds.append((dt-epoch).total_seconds())
-            meanSec = np.mean(tsSeconds)
-            dateTime = datetime.datetime.utcfromtimestamp(meanSec).replace(tzinfo=datetime.timezone.utc)
-            date = Utilities.datetime2DateTag(dateTime)
-            time = Utilities.datetime2TimeTag2(dateTime)
+        # if len(timeStamp) > 0:
+        #     epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
+        #     tsSeconds = []
+        #     for dt in timeStamp:
+        #         tsSeconds.append((dt-epoch).total_seconds())
+        #     meanSec = np.mean(tsSeconds)
+        #     dateTime = datetime.datetime.utcfromtimestamp(meanSec).replace(tzinfo=datetime.timezone.utc)
+        #     date = Utilities.datetime2DateTag(dateTime)
+        #     time = Utilities.datetime2TimeTag2(dateTime)
 
         # # Stores the middle element
         # if len(dateSlice) > 0:
@@ -648,7 +648,7 @@ class ProcessL2:
         #     time = timeSlice[int(len(timeSlice)/2)]
 
         for ds in ancDict: 
-            if ds != 'Datetag' and ds != 'Timetag2':
+            # if ds != 'Datetag' and ds != 'Timetag2':
                 if not newAncGroup.getDataset(ds):
                     newDS = newAncGroup.addDataset(ds)
                 else:
@@ -658,6 +658,18 @@ class ProcessL2:
                 dsXSlice = None
 
                 for subset in dsSlice: # several ancillary datasets are groups which will become columns (including date, time, and flags)
+                    if subset == 'Datetime':
+                        timeStamp = dsSlice[subset]
+                        # Stores the mean datetime by converting to (and back from) epoch second
+                        if len(timeStamp) > 0:
+                            epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
+                            tsSeconds = []
+                            for dt in timeStamp:
+                                tsSeconds.append((dt-epoch).total_seconds())
+                            meanSec = np.mean(tsSeconds)
+                            dateTime = datetime.datetime.utcfromtimestamp(meanSec).replace(tzinfo=datetime.timezone.utc)
+                            date = Utilities.datetime2DateTag(dateTime)
+                            time = Utilities.datetime2TimeTag2(dateTime)
                     if subset != 'Datetime' and subset != 'Datetag' and subset != 'Timetag2':
                         v = [dsSlice[subset][i] for i in y] # y is an array of indexes for the lowest X%
 
@@ -868,7 +880,7 @@ class ProcessL2:
         
         # IS THIS NECESSARY?
         # There are sometimes only a small number of spectra in the slice,
-        #  so the percent Lt estimation becomes questionable and is overridden.
+        #  so the percent Lt estimation becomes highly questionable and is overridden.
         if n <= 5 or x == 0:
             x = n # if only 5 or fewer records retained, use them all...
         
@@ -900,6 +912,7 @@ class ProcessL2:
         hasNan = ProcessL2.sliceAveHyper(y, ltSlice, ltXSlice, ltXstd)
 
         # Slice average the ancillary group for the slice and the X% criteria
+        # (Combines Slice and XSlice in one method)
         ProcessL2.sliceAveAnc(root, start, end, y, ancGroup)
         newAncGroup = root.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
@@ -932,11 +945,15 @@ class ProcessL2:
         # These are optional; in fact, there is no implementation of incorporating CLOUD or WAVEs into
         # any of the current Rho corrections yet (even though cloud IS passed to Zhang_Rho)
         if "CLOUD" in newAncGroup.datasets:
-            CloudXSlice = newAncGroup.getDataset('CLOUD').data['CLOUD']        
+            CloudXSlice = newAncGroup.getDataset('CLOUD').data['CLOUD'].copy()
+            if isinstance(CloudXSlice, list):
+                CloudXSlice = CloudXSlice[0]     
         else:
             CloudXSlice = None
         if "WAVE_HT" in newAncGroup.datasets:
-            WaveXSlice = newAncGroup.getDataset('WAVE_HT').data['WAVE_HT']        
+            WaveXSlice = newAncGroup.getDataset('WAVE_HT').data['WAVE_HT'].copy()
+            if isinstance(WaveXSlice, list):
+                WaveXSlice = WaveXSlice[0]        
         else:
             WaveXSlice = None
        
@@ -950,9 +967,7 @@ class ProcessL2:
         # These are empty datasets from root groups.
         # Groups REFLECTANCE, IRRADIANCE, and RADIANCE are intiallized with empty datasets, but 
         # ANCILLARY is not.
-
-        if not ("Datetag" in newRrsData.columns):
-            
+        if not ("Datetag" in newRrsData.columns):            
             for gp in root.groups:
                 # Ancillary is already populated.
                 # The other groups only have empty (named) datasets
@@ -1466,7 +1481,7 @@ class ProcessL2:
             for k in elevation:
                 sza.append(90-k)
             ancGroup.datasets['SZA'] = sza    
-            ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING')
+            # ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING')
             ancGroup.addDataset('PITCH')
             ancGroup.datasets['PITCH'] = satnavGroup.getDataset('PITCH')
             ancGroup.addDataset('POINTING')
@@ -1477,7 +1492,7 @@ class ProcessL2:
 
             ancGroup.datasets['SOLAR_AZ'].datasetToColumns()
             ancGroup.datasets['SZA'].datasetToColumns()
-            ancGroup.datasets['HEADING'].datasetToColumns()
+            # ancGroup.datasets['HEADING'].datasetToColumns()
             ancGroup.datasets['PITCH'].datasetToColumns()
             ancGroup.datasets['POINTING'].datasetToColumns()
             ancGroup.datasets['REL_AZ'].datasetToColumns()
@@ -1628,9 +1643,9 @@ class ProcessL2:
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
         
-        
+        #
         # Break up data into time intervals, and calculate reflectance
-        
+        #
         esColumns = esData.columns
         timeStamp = esColumns["Datetime"]
         # tt2 = esColumns["Timetag2"]        
