@@ -465,7 +465,7 @@ class ProcessL2:
                     if cloud:
                         cloudInRad[i] = cloud[idx]
                     if wave:
-                        waveInRad.append(np.nan)
+                        waveInRad[i] = wave[idx]
         
         # Tallies
         msg = f'Field wind data has {np.isnan(windInRad).sum()} NaNs out of {len(windInRad)} prior to using model data'                
@@ -552,11 +552,11 @@ class ProcessL2:
         sstDataset.columns["SST"] = sstInRad
         sstDataset.columns["SSTFLAG"] = sstFlag
         if cloud:
-            cloudDataset.columns["SST"] = cloudInRad
-            cloudDataset.columns["SSTFLAG"] = cloudFlag
+            cloudDataset.columns["CLOUD"] = cloudInRad
+            cloudDataset.columns["CLOUDFLAG"] = cloudFlag
         if wave:
-            waveDataset.columns["SST"] = waveInRad
-            waveDataset.columns["SSTFLAG"] = waveFlag
+            waveDataset.columns["WAVE_HT"] = waveInRad
+            waveDataset.columns["WAVEFLAG"] = waveFlag
 
         # Convert ancillary seconds back to date/timetags ...
         ancDateTag = []
@@ -588,7 +588,7 @@ class ProcessL2:
         if cloud:
             cloudDataset.columnsToDataset()
         if wave:
-            waveDataset.columnsToDataset()        
+            waveDataset.columnsToDataset()      
     
     @staticmethod
     def sliceAveHyper(y, hyperSlice, xSlice, xStd):
@@ -1478,9 +1478,10 @@ class ProcessL2:
             ancGroup.datasets['SOLAR_AZ'] = satnavGroup.getDataset('AZIMUTH')
             elevation = satnavGroup.getDataset('ELEVATION')
             sza = []
-            for k in elevation:
+            for k in elevation.data["SUN"]:
                 sza.append(90-k)
-            ancGroup.datasets['SZA'] = sza    
+            elevation.data["SUN"] = sza
+            ancGroup.datasets['SZA'] = elevation
             # ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING')
             ancGroup.addDataset('PITCH')
             ancGroup.datasets['PITCH'] = satnavGroup.getDataset('PITCH')
@@ -1536,7 +1537,10 @@ class ProcessL2:
         SZAMax = float(ConfigFile.settings["fL2SZAMax"])
 
         wind = ancGroup.getDataset("WINDSPEED").data["WINDSPEED"]
-        SZA = ancGroup.datasets["SZA"].columns["NONE"]        
+        if satnavGroup:
+            SZA = ancGroup.datasets["SZA"].columns["SUN"]
+        else:
+            SZA = ancGroup.datasets["SZA"].columns["NONE"]
         timeStamp = ancGroup.datasets["SZA"].columns["Datetime"]
         
         badTimes = None
@@ -1626,13 +1630,13 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)
             badTimes = ProcessL2.metQualityCheck(referenceGroup, sasGroup)
-            
-            if len(badTimes) == esData.data.size:
-                msg = "All data flagged for deletion. Abort."
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return False              
+                                  
             if badTimes is not None:
+                if len(badTimes) == esData.data.size:
+                    msg = "All data flagged for deletion. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
                 print('Removing records...')
                 check = ProcessL2.filterData(referenceGroup, badTimes)   
                 if check > 0.99:
