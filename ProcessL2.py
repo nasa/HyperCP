@@ -436,7 +436,7 @@ class ProcessL2:
         if wave:
             waveFlag = []
             waveInRad = []
-        # ... the size of the radiometric dataset
+        # Populate the fields to the size of the radiometric dataset with NaNs (or flag placeholders)
         for i, value in enumerate(radSeconds):
             ancInRadSeconds.append(value)
             windFlag.append('undetermined')                   
@@ -454,7 +454,7 @@ class ProcessL2:
                 waveFlag.append('field')
                 waveInRad.append(np.nan)
             
-        # Populate with field data if possible
+        # Populate with nearest field data if possible
         if ancData:
             for i, value in enumerate(ancInRadSeconds): # step through InRad...
                 idx = Utilities.find_nearest(ancSeconds,value) # ...identify from entire anc record...

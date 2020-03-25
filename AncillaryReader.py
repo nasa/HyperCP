@@ -224,13 +224,13 @@ class AncillaryReader:
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                lat = ancGroup.datasets[ds]
+                lat = ancGroup.datasets[ds].data["NONE"].tolist()
             if ds == "LONGITUDE":
                 # lon = True
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                lon = ancGroup.datasets[ds]
+                lon = ancGroup.datasets[ds].data["NONE"].tolist()
             if ds == "REL_AZ":
                 # relAz = True
                 msg = f'Found data: {ds}'                

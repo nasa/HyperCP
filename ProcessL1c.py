@@ -421,11 +421,14 @@ class ProcessL1c:
             
             # Eliminate all ancillary data outside file times
             ticker = 0
+            l = len(ancDateTime)
+            Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
             print('Removing non-pertinent ancillary data... May take a moment with large SeaBASS file')
             for i, dt in enumerate(ancDateTime):
                 if dt < min(gpsDateTime) or dt > max(gpsDateTime):                    
                     index = i-ticker # adjusts for deleted rows
                     ticker += 1
+                    Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
                     ancillaryData.colDeleteRow(index) # this removes row from data structure as well                
             # Test if any data is left
             if not ancillaryData.columns["DATETIME"][0]:
@@ -461,6 +464,8 @@ class ProcessL1c:
                 aod = ancillaryData.columns["AOD"][0]
             if "CLOUD" in ancillaryData.columns:
                 cloud = ancillaryData.columns["CLOUD"][0]
+            if "WAVE_HT" in ancillaryData.columns:
+                wave = ancillaryData.columns["WAVE_HT"][0]
 
             sunAzimuth = []
             sunZenith = []
@@ -536,10 +541,12 @@ class ProcessL1c:
             if "AOD" in ancillaryData.columns:
                 ancGroup.addDataset("AOD")
                 ancGroup.datasets["AOD"].data = np.array(aod, dtype=[('NONE', '<f8')])
-
             if "CLOUD" in ancillaryData.columns:
                 ancGroup.addDataset("CLOUD")
                 ancGroup.datasets["CLOUD"].data = np.array(cloud, dtype=[('NONE', '<f8')])
+            if "WAVE_HT" in ancillaryData.columns:
+                ancGroup.addDataset("WAVE_HT")
+                ancGroup.datasets["WAVE_HT"].data = np.array(wave, dtype=[('NONE', '<f8')])
             
             # Convert datetimes
             dateTime = ancGroup.addDataset("DATETIME")

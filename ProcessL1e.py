@@ -445,11 +445,13 @@ class ProcessL1e:
             headingData = None
             latDataAnc = None
             lonDataAnc = None
+            cloudData = None
+            waveData = None
             # Optional, assured with MERRA2 models when selected
             saltData = None
             sstData = None
             windData = None
-            aodData = None
+            aodData = None            
             # Optional:
             if "HEADING" in newAncGroup.datasets:
                 headingData = newAncGroup.getDataset("HEADING")
@@ -467,6 +469,10 @@ class ProcessL1e:
                 windData = newAncGroup.getDataset("WINDSPEED")
             if "AOD" in newAncGroup.datasets:
                 aodData = newAncGroup.getDataset("AOD")
+            if "CLOUD" in newAncGroup.datasets:
+                cloudData = newAncGroup.getDataset("CLOUD")
+            if "WAVE_HT" in newAncGroup.datasets:
+                waveData = newAncGroup.getDataset("WAVE_HT")
         
         if satnavGroup is not None:
             newSTGroup = root.addGroup("SOLARTRACKER")
@@ -593,6 +599,10 @@ class ProcessL1e:
                 ProcessL1e.interpolateData(sstData, interpData, "SST", fileName)
             if windData:
                 ProcessL1e.interpolateData(windData, interpData, "WINDSPEED", fileName)
+            if cloudData:
+                ProcessL1e.interpolateData(cloudData, interpData, "CLOUD", fileName)
+            if waveData:
+                ProcessL1e.interpolateData(waveData, interpData, "WAVE_HT", fileName)
             
         if pyrGroup is not None:
             # Optional:
