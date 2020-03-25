@@ -192,7 +192,7 @@ class AncillaryReader:
         lat = False
         lon = False
         relAz = False # misnomer: sensor azimuth relative to heading for ancillary seabass file
-        sal = False
+        S = False
         solAZ = False
         wT = False
         SZA = False
@@ -297,7 +297,7 @@ class AncillaryReader:
             ancillaryData.appendColumn("LONGITUDE", lon)
         if relAz:
             ancillaryData.appendColumn("REL_AZ", relAz)
-        if sal:
+        if S:
             ancillaryData.appendColumn("SALINITY", S)
         if solAZ:
             ancillaryData.appendColumn("SOLAR_AZ", solAZ)

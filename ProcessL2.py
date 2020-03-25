@@ -1473,13 +1473,13 @@ class ProcessL2:
             # NOTRACKER Group
             # These have TT2/Datetag incorporated in arrays
             ancGroup.datasets['HEADING'] = ancTemp.getDataset('HEADING')
-            ancGroup.datasets['HEADING'].datasetToColumns()
+            ancGroup.datasets['HEADING'].changeColName('NONE','HEADING')
             ancGroup.datasets['SZA'] = ancTemp.getDataset('SZA')
-            ancGroup.datasets['SZA'].datasetToColumns()
+            ancGroup.datasets['SZA'].changeColName('NONE','SZA')
             ancGroup.datasets['SOLAR_AZ'] = ancTemp.getDataset('SOLAR_AZ')
-            ancGroup.datasets['SOLAR_AZ'].datasetToColumns()
+            ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
             ancGroup.datasets['REL_AZ'] = ancTemp.getDataset('REL_AZ')
-            ancGroup.datasets['REL_AZ'].datasetToColumns()
+            ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
 
             # Done with the temporary ancillary group; delete it
             for gp in node.groups:
