@@ -262,26 +262,28 @@ class Utilities:
                 for ds in gp.datasets:
                     # Make sure all datasets have been transcribed to columns
                     gp.datasets[ds].datasetToColumns()
-                    timeData = gp.datasets[ds].columns["Timetag2"]
-                    dateTag = gp.datasets[ds].columns["Datetag"]
                     
-                    timeStamp = [] 
-                    for i, time in enumerate(timeData):
-                        # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
-                        # Filter for aberrant Datetags
-                        if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
-                            and time != 0.0 and not np.isnan(time):
+                    if not 'Datetime' in gp.datasets[ds].columns:
+                        timeData = gp.datasets[ds].columns["Timetag2"]
+                        dateTag = gp.datasets[ds].columns["Datetag"]
+                        
+                        timeStamp = [] 
+                        for i, time in enumerate(timeData):
+                            # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
+                            # Filter for aberrant Datetags
+                            if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
+                                and time != 0.0 and not np.isnan(time):
 
-                            dt = Utilities.dateTagToDateTime(dateTag[i])
-                            timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
-                        else:                    
-                            gp.datasetDeleteRow(i)
-                            msg = f"Bad Datetag or Timetag2 found. Eliminating record. {dateTag[i]} : {time}"
-                            print(msg)
-                            Utilities.writeLogFile(msg)
-                    gp.datasets[ds].columns["Datetime"] = timeStamp
-                    gp.datasets[ds].columns.move_to_end('Datetime', last=False)
-                    gp.datasets[ds].columnsToDataset()
+                                dt = Utilities.dateTagToDateTime(dateTag[i])
+                                timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
+                            else:                    
+                                gp.datasetDeleteRow(i)
+                                msg = f"Bad Datetag or Timetag2 found. Eliminating record. {dateTag[i]} : {time}"
+                                print(msg)
+                                Utilities.writeLogFile(msg)
+                        gp.datasets[ds].columns["Datetime"] = timeStamp
+                        gp.datasets[ds].columns.move_to_end('Datetime', last=False)
+                        gp.datasets[ds].columnsToDataset()
 
         return node
 

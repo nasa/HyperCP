@@ -207,3 +207,13 @@ class HDFDataset:
             self.data[k] = v 
 
         return True
+
+    def changeColName(self,oldName,newName):        
+        ''' Change the name of a column and push to dataset '''
+        self.datasetToColumns()        
+        for name in self.columns:
+            if name == oldName:
+                # self.appendColumn(newName, self.columns[oldName])
+                self.columns[newName] = self.columns[oldName]
+                del self.columns[oldName]
+        self.columnsToDataset()

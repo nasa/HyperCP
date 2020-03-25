@@ -470,119 +470,107 @@ class SeaBASSWriter:
             return
 
         # Append latpos/lonpos to datasets
-        if root.getGroup("ANCILLARY"):
-            ancGroup = root.getGroup("ANCILLARY")
-            latposData = ancGroup.getDataset("LATITUDE")
-            lonposData = ancGroup.getDataset("LONGITUDE")
+        ancGroup = root.getGroup("ANCILLARY")
+        latposData = ancGroup.getDataset("LATITUDE")
+        lonposData = ancGroup.getDataset("LONGITUDE")
+        latposData.datasetToColumns()
+        lonposData.datasetToColumns()
+        latpos = latposData.columns["LATITUDE"]
+        lonpos = lonposData.columns["LONGITUDE"]
 
-            latposData.datasetToColumns()
-            lonposData.datasetToColumns()
+        esData.datasetToColumns()
+        liData.datasetToColumns()
+        ltData.datasetToColumns()
+        rrsData.datasetToColumns()
 
-            latpos = latposData.columns["NONE"]
-            lonpos = lonposData.columns["NONE"]
+        esData.columns["LATITUDE"] = latpos
+        liData.columns["LATITUDE"] = latpos
+        ltData.columns["LATITUDE"] = latpos
+        rrsData.columns["LATITUDE"] = latpos
+        esData.columns["LONGITUDE"] = lonpos
+        liData.columns["LONGITUDE"] = lonpos
+        ltData.columns["LONGITUDE"] = lonpos
+        rrsData.columns["LONGITUDE"] = lonpos
 
-            esData.datasetToColumns()
-            liData.datasetToColumns()
-            ltData.datasetToColumns()
-            rrsData.datasetToColumns()
+        esData.columnsToDataset()
+        liData.columnsToDataset()
+        ltData.columnsToDataset()
+        rrsData.columnsToDataset()
+    
+        # # Append azimuth, heading, rotator, relAz, and solar elevation
+        # azimuthData = ancGroup.getDataset("AZIMUTH")
+        azimuthData = ancGroup.getDataset("SOLAR_AZ")
+        headingData = ancGroup.getDataset("HEADING") # GPS
+        # pitchData = ancGroup.getDataset("PITCH")
+        # pointingData = ancGroup.getDataset("POINTING")
+        # rollData = ancGroup.getDataset("ROLL")
+        relAzData = ancGroup.getDataset("REL_AZ")
+        # elevationData = ancGroup.getDataset("ELEVATION")
+        szaData = ancGroup.getDataset("SZA")
+        azimuthData.datasetToColumns()
+        headingData.datasetToColumns()
+        # pitchData.datasetToColumns()
+        # pointingData.datasetToColumns()
+        # rollData.datasetToColumns()            
+        relAzData.datasetToColumns() 
+        # elevationData.datasetToColumns() 
+        szaData.datasetToColumns() 
 
-            #print(esData.columns)
+        # Ancillary group, unlike most groups, will have named data columns in datasets (i.e. not NONE)
+        # This allows for multiple data arrays in one dataset (e.g. FLAGS)
+        azimuth = azimuthData.columns["SOLAR_AZ"]
+        heading = headingData.columns["HEADING"] # Where is this from in no_tracker?
+        # sasTrue = headingData.columns["SAS_True"]
+        # pitch = pitchData.columns["SAS"]
+        # rotator = pointingData.columns["ROTATOR"]
+        # roll = rollData.columns["SAS"]
+        relAz = relAzData.columns["REL_AZ"]
+        # relAz = relAzData.columns["NONE"]
+        # elevation = elevationData.columns["SUN"]
+        sza = szaData.columns["SZA"]
 
-            esData.columns["LATITUDE"] = latpos
-            liData.columns["LATITUDE"] = latpos
-            ltData.columns["LATITUDE"] = latpos
-            rrsData.columns["LATITUDE"] = latpos
-
-            esData.columns["LONGITUDE"] = lonpos
-            liData.columns["LONGITUDE"] = lonpos
-            ltData.columns["LONGITUDE"] = lonpos
-            rrsData.columns["LONGITUDE"] = lonpos
-
-            esData.columnsToDataset()
-            liData.columnsToDataset()
-            ltData.columnsToDataset()
-            rrsData.columnsToDataset()
+        esData.datasetToColumns()
+        liData.datasetToColumns()
+        ltData.datasetToColumns()
+        rrsData.datasetToColumns()
         
-            ''' Retooled for L2, may need to rework again for L1E '''
-            # # Append azimuth, heading, rotator, relAz, and solar elevation
-            # azimuthData = ancGroup.getDataset("AZIMUTH")
-            azimuthData = ancGroup.getDataset("SOLAR_AZ")
-            headingData = ancGroup.getDataset("HEADING") # SAS_TRUE & SHIP_TRUE
-            # pitchData = ancGroup.getDataset("PITCH")
-            # pointingData = ancGroup.getDataset("POINTING")
-            # rollData = ancGroup.getDataset("ROLL")
-            relAzData = ancGroup.getDataset("REL_AZ")
-            # elevationData = ancGroup.getDataset("ELEVATION")
-            szaData = ancGroup.getDataset("SZA")
+        esData.columns["SOLAR_AZ"] = azimuth
+        liData.columns["SOLAR_AZ"] = azimuth
+        ltData.columns["SOLAR_AZ"] = azimuth
+        rrsData.columns["SOLAR_AZ"] = azimuth
 
-            azimuthData.datasetToColumns()
-            headingData.datasetToColumns()
-            # pitchData.datasetToColumns()
-            # pointingData.datasetToColumns()
-            # rollData.datasetToColumns()            
-            relAzData.datasetToColumns() 
-            # elevationData.datasetToColumns() 
-            szaData.datasetToColumns() 
+        esData.columns["HEADING"] = heading
+        liData.columns["HEADING"] = heading
+        ltData.columns["HEADING"] = heading
+        rrsData.columns["HEADING"] = heading
 
-            # azimuth = azimuthData.columns["SUN"]
-            azimuth = azimuthData.columns["NONE"]
-            # shipTrue = headingData.columns["SHIP_TRUE"]
-            shipTrue = headingData.columns["NONE"]
-            # sasTrue = headingData.columns["SAS_True"]
-            # pitch = pitchData.columns["SAS"]
-            # rotator = pointingData.columns["ROTATOR"]
-            # roll = rollData.columns["SAS"]
-            # relAz = relAzData.columns["REL_AZ"]
-            relAz = relAzData.columns["NONE"]
-            # elevation = elevationData.columns["SUN"]
-            sza = szaData.columns["NONE"]
+        # esData.columns["PITCH"] = pitch
+        # liData.columns["PITCH"] = pitch
+        # ltData.columns["PITCH"] = pitch
+        
+        # esData.columns["ROTATOR"] = rotator
+        # liData.columns["ROTATOR"] = rotator
+        # ltData.columns["ROTATOR"] = rotator
+        # rrsData.columns["ROTATOR"] = rotator
+        
+        # esData.columns["ROLL"] = roll
+        # liData.columns["ROLL"] = roll
+        # ltData.columns["ROLL"] = roll
 
-            esData.datasetToColumns()
-            liData.datasetToColumns()
-            ltData.datasetToColumns()
-            rrsData.datasetToColumns()
-            
-            esData.columns["SOLAR_AZ"] = azimuth
-            liData.columns["SOLAR_AZ"] = azimuth
-            ltData.columns["SOLAR_AZ"] = azimuth
-            rrsData.columns["SOLAR_AZ"] = azimuth
+        esData.columns["REL_AZ"] = relAz
+        liData.columns["REL_AZ"] = relAz
+        ltData.columns["REL_AZ"] = relAz
+        rrsData.columns["REL_AZ"] = relAz
 
-            # esData.columns["SHIP_TRUE"] = shipTrue # From SAS, not GPS...
-            # liData.columns["SHIP_TRUE"] = shipTrue
-            # ltData.columns["SHIP_TRUE"] = shipTrue
-            # rrsData.columns["SHIP_TRUE"] = shipTrue
-            esData.columns["HEADING"] = shipTrue
-            liData.columns["HEADING"] = shipTrue
-            ltData.columns["HEADING"] = shipTrue
-            rrsData.columns["HEADING"] = shipTrue
+        esData.columns["SZA"] = sza
+        liData.columns["SZA"] = sza
+        ltData.columns["SZA"] = sza
+        rrsData.columns["SZA"] = sza
 
-            # esData.columns["PITCH"] = pitch
-            # liData.columns["PITCH"] = pitch
-            # ltData.columns["PITCH"] = pitch
-            
-            # esData.columns["ROTATOR"] = rotator
-            # liData.columns["ROTATOR"] = rotator
-            # ltData.columns["ROTATOR"] = rotator
-            # rrsData.columns["ROTATOR"] = rotator
-            
-            # esData.columns["ROLL"] = roll
-            # liData.columns["ROLL"] = roll
-            # ltData.columns["ROLL"] = roll
-
-            esData.columns["REL_AZ"] = relAz
-            liData.columns["REL_AZ"] = relAz
-            ltData.columns["REL_AZ"] = relAz
-            rrsData.columns["REL_AZ"] = relAz
-
-            esData.columns["SZA"] = sza
-            liData.columns["SZA"] = sza
-            ltData.columns["SZA"] = sza
-            rrsData.columns["SZA"] = sza
-
-            esData.columnsToDataset()
-            liData.columnsToDataset()
-            ltData.columnsToDataset()
-            rrsData.columnsToDataset()
+        esData.columnsToDataset()
+        liData.columnsToDataset()
+        ltData.columnsToDataset()
+        rrsData.columnsToDataset()
 
         # Format the non-specific header block
         headerBlock = SeaBASSWriter.formatHeader(fp,root, level='2')

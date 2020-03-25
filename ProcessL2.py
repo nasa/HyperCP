@@ -76,7 +76,8 @@ class ProcessL2:
         if badTimes == []:
             startLength = 1 # avoids div by zero below when finalCount is 0
 
-        for ds in group.datasets: group.datasets[ds].datasetToColumns()
+        for ds in group.datasets: 
+            group.datasets[ds].datasetToColumns()
 
         msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
         print(msg)
@@ -270,9 +271,9 @@ class ProcessL2:
         esData = refGroup.getDataset("ES")
         esData.datasetToColumns()
         esColumns = esData.columns
-        # These will be restored to columns in filterData
-        esColumns.pop('Datetag')
-        esColumns.pop('Timetag2')
+            
+        dateTag = esColumns.pop('Datetag')
+        timeTag2 = esColumns.pop('Timetag2')
         esTime = esColumns.pop('Datetime')
 
         liData = sasGroup.getDataset("LI")
@@ -338,9 +339,13 @@ class ProcessL2:
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
         msg = f'{len(np.unique(badTimes))/len(esTime)*100:.1f}% of spectra flagged'
         print(msg)
-        Utilities.writeLogFile(msg) 
+        Utilities.writeLogFile(msg)
 
         if len(badTimes) == 0:
+            # Restore timestamps to columns (since it's not going to filterData, where it otherwise happens)
+            esData.datasetToColumns()
+            liData.datasetToColumns()
+            ltData.datasetToColumns()
             badTimes = None
         return badTimes
     
@@ -369,8 +374,8 @@ class ProcessL2:
         aodDataset = ancGroup.addDataset("AOD")
         saltDataset = ancGroup.addDataset("SAL")
         sstDataset = ancGroup.addDataset("SST")  
-        # Optional datasets; CLOUD and WAVE are basically place holders for the moment;
-        # no implementation in Rho corrections     
+        # Optional datasets; CLOUD and WAVE are basically place holders as of ver 1.0.beta;
+        # (i.e. no implementation in Rho corrections)
         cloud = False
         wave = False
         if "CLOUD" in ancData.columns:
@@ -919,6 +924,9 @@ class ProcessL2:
 
         # Extract the last element (the current slice) for each dataset used in calculating reflectances
 
+        # Ancillary group, unlike most groups, will have named data columns in datasets (i.e. not NONE)
+        # This allows for multiple data arrays in one dataset (e.g. FLAGS)
+
         # These are required and will have been filled in with field data, models, and or defaults
         WINDSPEEDXSlice = newAncGroup.getDataset('WINDSPEED').data['WINDSPEED'][-1].copy()
         if isinstance(WINDSPEEDXSlice, list):
@@ -929,7 +937,7 @@ class ProcessL2:
         # SOL_ELXSlice = newAncGroup.getDataset('ELEVATION').data['SUN'][-1].copy()
         # if isinstance(SOL_ELXSlice, list):
         #     SOL_ELXSlice = SOL_ELXSlice[0]
-        SZAXSlice = newAncGroup.getDataset('SZA').data['NONE'][-1].copy()
+        SZAXSlice = newAncGroup.getDataset('SZA').data['SZA'][-1].copy()
         if isinstance(SZAXSlice, list):
             SZAXSlice = SZAXSlice[0]
         SSTXSlice = newAncGroup.getDataset('SST').data['SST'][-1].copy()
@@ -938,7 +946,7 @@ class ProcessL2:
         SalXSlice = newAncGroup.getDataset('SAL').data['SAL'][-1].copy()
         if isinstance(SalXSlice, list):
             SalXSlice = SalXSlice[0]
-        RelAzXSlice = newAncGroup.getDataset('REL_AZ').data['NONE'][-1].copy()
+        RelAzXSlice = newAncGroup.getDataset('REL_AZ').data['REL_AZ'][-1].copy()
         if isinstance(RelAzXSlice, list):
             RelAzXSlice = RelAzXSlice[0]
 
@@ -1424,7 +1432,9 @@ class ProcessL2:
         # This interpolation is only necessary for the ancillary datasets that require
         # either field or GMAO or GUI default values. The remaining ancillary data
         # are culled from datasets in groups already interpolated in L1E
-        esData = referenceGroup.getDataset("ES")
+        esData = referenceGroup.getDataset("ES") # From node, the input file
+        # InterpAncillary is basically only concerned with datasets that must be filled
+        # in with model or default data (wind, sst, wt, sal, cloud, wave)
         ProcessL2.interpAncillary(node, ancData, modData, esData)
         
         # Now that ancillary data has been interpolated, it is matched up with
@@ -1446,17 +1456,19 @@ class ProcessL2:
         #
         # GPS Group
         # These have TT2/Datetag incorporated in arrays
+        # Change their column names from NONE to something appropriate to be consistent in 
+        # ancillary group going forward
         ancGroup.datasets['LATITUDE'] = gpsGroup.getDataset('LATITUDE')
-        ancGroup.datasets['LATITUDE'].datasetToColumns()
+        ancGroup.datasets['LATITUDE'].changeColName('NONE','LATITUDE')
         ancGroup.datasets['LONGITUDE'] = gpsGroup.getDataset('LONGITUDE')
-        ancGroup.datasets['LONGITUDE'].datasetToColumns()
+        ancGroup.datasets['LONGITUDE'].changeColName('NONE','LONGITUDE')
         if ConfigFile.settings["bL1cSolarTracker"]:
             # These have TT2/Datetag incorporated in arrays
             ancGroup.datasets['HEADING'] = gpsGroup.getDataset('COURSE')
-            ancGroup.datasets['HEADING'].datasetToColumns()
+            ancGroup.datasets['HEADING'].changeColName('TRUE','HEADING')
             ancGroup.addDataset('SPEED')
             ancGroup.datasets['SPEED'] = gpsGroup.getDataset('SPEED')
-            ancGroup.datasets['SPEED'].datasetToColumns()
+            ancGroup.datasets['SPEED'].changeColName('NONE','SPEED')
         else:
             # NOTRACKER Group
             # These have TT2/Datetag incorporated in arrays
@@ -1476,33 +1488,34 @@ class ProcessL2:
             
         if satnavGroup:
             ancGroup.datasets['SOLAR_AZ'] = satnavGroup.getDataset('AZIMUTH')
+            ancGroup.datasets['SOLAR_AZ'].changeColName('SUN','SOLAR_AZ')
             elevation = satnavGroup.getDataset('ELEVATION')
             sza = []
             for k in elevation.data["SUN"]:
                 sza.append(90-k)
-            elevation.data["SUN"] = sza
-            ancGroup.datasets['SZA'] = elevation
-            # ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING')
-            ancGroup.addDataset('PITCH')
+            elevation.data["SUN"] = sza # changed for sza
+            ancGroup.datasets['SZA'] = elevation # actually sza
+            ancGroup.datasets['SZA'].changeColName('SUN','SZA')
+            ancGroup.datasets['HUMIDITY'] = satnavGroup.getDataset('HUMIDITY')
+            ancGroup.datasets['HUMIDITY'].changeColName('NONE','HUMIDITY')
+            # ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING') # Use GPS heading instead
+            ancGroup.addDataset('PITCH')            
             ancGroup.datasets['PITCH'] = satnavGroup.getDataset('PITCH')
+            ancGroup.datasets['PITCH'].changeColName('SAS','PITCH')
             ancGroup.addDataset('POINTING')
             ancGroup.datasets['POINTING'] = satnavGroup.getDataset('POINTING')
+            ancGroup.datasets['POINTING'].changeColName('ROTATOR','POINTING')
             ancGroup.datasets['REL_AZ'] = satnavGroup.getDataset('REL_AZ')
+            ancGroup.datasets['REL_AZ'].datasetToColumns()
             ancGroup.addDataset('ROLL')
             ancGroup.datasets['ROLL'] = satnavGroup.getDataset('ROLL')  
-
-            ancGroup.datasets['SOLAR_AZ'].datasetToColumns()
-            ancGroup.datasets['SZA'].datasetToColumns()
-            # ancGroup.datasets['HEADING'].datasetToColumns()
-            ancGroup.datasets['PITCH'].datasetToColumns()
-            ancGroup.datasets['POINTING'].datasetToColumns()
-            ancGroup.datasets['REL_AZ'].datasetToColumns()
-            ancGroup.datasets['ROLL'].datasetToColumns()
+            ancGroup.datasets['ROLL'].changeColName('SAS','ROLL')
         
         if pyrGroup is not None:
             #PYROMETER
             ancGroup.datasets['SST_IR'] = pyrGroup.getDataset("T")  
             ancGroup.datasets['SST_IR'].datasetToColumns()
+            ancGroup.datasets['SST_IR'].changeColName('IR','SST_IR')
 
         ''' At this stage, all datasets in all groups of node have Timetag2
             and Datetag incorporated into data arrays. Calculate and add
@@ -1537,10 +1550,7 @@ class ProcessL2:
         SZAMax = float(ConfigFile.settings["fL2SZAMax"])
 
         wind = ancGroup.getDataset("WINDSPEED").data["WINDSPEED"]
-        if satnavGroup:
-            SZA = ancGroup.datasets["SZA"].columns["SUN"]
-        else:
-            SZA = ancGroup.datasets["SZA"].columns["NONE"]
+        SZA = ancGroup.datasets["SZA"].columns["SZA"]
         timeStamp = ancGroup.datasets["SZA"].columns["Datetime"]
         
         badTimes = None
@@ -1798,7 +1808,6 @@ class ProcessL2:
                 #     temp.addDataset(ds)
         node.removeGroup(ancGroupNoTracker)
                 
-        # if satnavGroup is not None #or gpsGroup is not None or pyrGroup is not None:
         root.addGroup("ANCILLARY")
         node.addGroup("ANCILLARY")
 
