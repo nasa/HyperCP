@@ -155,7 +155,7 @@ class ConfigFile:
         ConfigFile.settings["fL2SpecFilterLt"] = 3
 
         ConfigFile.settings["bL2EnableQualityFlags"] = 1
-        ConfigFile.settings["fL2CloudFlag"] = 5.0 # Ruddick 2006, IOCCG Protocols
+        ConfigFile.settings["fL2CloudFlag"] = 0.05 # Ruddick 2006, IOCCG Protocols
         ConfigFile.settings["fL2SignificantEsFlag"] = 2.0 # Wernand 2002
         ConfigFile.settings["fL2DawnDuskFlag"] = 1.0 # Wernand 2002
         ConfigFile.settings["fL2RainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain      

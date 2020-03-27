@@ -557,7 +557,7 @@ class Controller:
                                 Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2', ancFile) 
         print("processFilesMultiLevel - DONE")
         t1 = time.time()
-        print(f'Elapsed time: {(t1-t0)/60} minutes')
+        # print(f'Elapsed time: {(t1-t0)/60} minutes')
 
 
     # Process every file in a list of files 1 level

@@ -262,17 +262,17 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1eSeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit/Update SeaBASS Header", self)
         self.l1eSeaBASSHeaderEditButton.clicked.connect(self.l1eSeaBASSHeaderEditButtonPressed)
 
-        # L2 (Preliminary)
-        l2pLabel = QtWidgets.QLabel("Level 2 Preliminary", self)
-        l2pLabel_font = l1eLabel.font()
-        l2pLabel_font.setPointSize(12)
-        l2pLabel_font.setBold(True)
-        l2pLabel.setFont(l1eLabel_font)
+        # # L2 (Preliminary)
+        # l2pLabel = QtWidgets.QLabel("Level 2 Preliminary", self)
+        # l2pLabel_font = l1eLabel.font()
+        # l2pLabel_font.setPointSize(12)
+        # l2pLabel_font.setBold(True)
+        # l2pLabel.setFont(l1eLabel_font)
         l2pSublabel = QtWidgets.QLabel(" GMAO MERRA2 ancillary data are required for Zhang glint", self)
         l2pSublabel2 = QtWidgets.QLabel(" Zhang correction and can fill in wind for Ruddick glint.", self)
         l2pSublabel3 = QtWidgets.QLabel(" WILL PROMPT FOR EARTHDATA USERNAME/PASSWORD", self)
         l2pSublabel4 = QtWidgets.QLabel(
-            "<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">       Register here.</a>", self)
+            "<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">         Register here</a>", self)
         l2pSublabel4.setOpenExternalLinks(True)
 
         l2pGetAncLabel = QtWidgets.QLabel("       Download Ancillary Models", self)        
@@ -341,7 +341,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2EnableQualityFlags"]) == 1:
             self.l2QualityFlagCheckBox.setChecked(True)
 
-        self.l2CloudFlagLabel = QtWidgets.QLabel("      Cloud Li(750)Es(750)>", self)
+        self.l2CloudFlagLabel = QtWidgets.QLabel("      Cloud Li(750)/Es(750)>", self)
         self.l2CloudFlagLineEdit = QtWidgets.QLineEdit("", self)
         self.l2CloudFlagLineEdit.setText(str(ConfigFile.settings["fL2CloudFlag"]))
         self.l2CloudFlagLineEdit.setValidator(doubleValidator)
@@ -363,6 +363,13 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l2QualityFlagCheckBoxUpdate()     
 
+        # # L2 (Ensemble)
+        l2ensLabel = QtWidgets.QLabel("L2 Ensembles", self)
+        l2ensLabel_font = l2ensLabel.font()
+        l2ensLabel_font.setPointSize(12)
+        l2ensLabel_font.setBold(True)
+        l2ensLabel.setFont(l2ensLabel_font)
+
         # L2 Time Average Rrs
         l2TimeIntervalLabel = QtWidgets.QLabel("  Ensemble Interval (secs; 0=None)", self)
         self.l2TimeIntervalLineEdit = QtWidgets.QLineEdit(self)
@@ -382,7 +389,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2EnablePercentLtCheckBoxUpdate()
 
         # L2 Rho Sky Correction
-        l2RhoSkyLabel = QtWidgets.QLabel("  Skyglint/Sunglint Correction (Rho)", self)
+        l2RhoSkyLabel = QtWidgets.QLabel("L2 Sky/Sunglint Correction (ρ)", self)
         l2RhoSkyLabel_font = l1eLabel.font()
         # l2RhoSkyLabel_font.setPointSize(12)
         l2RhoSkyLabel_font.setBold(True)
@@ -655,20 +662,19 @@ class ConfigWindow(QtWidgets.QDialog):
         deglitchHBox.addWidget(self.l1dDeglitchLabel)
         deglitchHBox.addWidget(self.l1dDeglitchCheckBox)
         VBox1.addLayout(deglitchHBox)
-
-        # Middle Vertical Box
-        VBox2 = QtWidgets.QVBoxLayout()
-        VBox2.setAlignment(QtCore.Qt.AlignBottom)                                                    
-
         deglitch0HBox = QtWidgets.QHBoxLayout()
         deglitch0HBox.addWidget(self.l1dDeglitch0Label)
         deglitch0HBox.addWidget(self.l1dDeglitch0LineEdit)
-        VBox2.addLayout(deglitch0HBox)
+        VBox1.addLayout(deglitch0HBox)
 
         deglitch1HBox = QtWidgets.QHBoxLayout()
         deglitch1HBox.addWidget(self.l1dDeglitch1Label)
         deglitch1HBox.addWidget(self.l1dDeglitch1LineEdit)
-        VBox2.addLayout(deglitch1HBox)
+        VBox1.addLayout(deglitch1HBox)
+
+        # Middle Vertical Box
+        VBox2 = QtWidgets.QVBoxLayout()
+        VBox2.setAlignment(QtCore.Qt.AlignBottom)                                                            
         
         deglitch2HBox = QtWidgets.QHBoxLayout()
         deglitch2HBox.addWidget(self.l1dDeglitch2Label)
@@ -734,18 +740,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # VBox2.addSpacing(20)       
 
-        # L2 (Preliminary)
-        VBox2.addWidget(l2pLabel)
-        VBox2.addWidget(l2pSublabel)
-        VBox2.addWidget(l2pSublabel2)
-        VBox2.addWidget(l2pSublabel3)
-        VBox2.addWidget(l2pSublabel4)
-
-        l2pGetAncHBox = QtWidgets.QHBoxLayout()
-        l2pGetAncHBox.addWidget(l2pGetAncLabel)
-        l2pGetAncHBox.addWidget(self.l2pGetAncCheckBox)    
-        VBox2.addLayout(l2pGetAncHBox)
-
         # L2 
         VBox2.addWidget(l2Label)
         VBox2.addWidget(l2Sublabel)
@@ -784,20 +778,15 @@ class ConfigWindow(QtWidgets.QDialog):
         SpecFilterEsHBox.addWidget(self.l2SpecFilterEsLineEdit)
         VBox2.addLayout(SpecFilterEsHBox)
 
-        # Right box
-        VBox3 = QtWidgets.QVBoxLayout()
-        VBox3.setAlignment(QtCore.Qt.AlignBottom)
-        
-
         # L2 Spectral Outlier Filter     
         SpecFilterLiHBox = QtWidgets.QHBoxLayout()
         SpecFilterLiHBox.addWidget(self.l2SpecFilterLiLabel)
         SpecFilterLiHBox.addWidget(self.l2SpecFilterLiLineEdit)
-        VBox3.addLayout(SpecFilterLiHBox)
+        VBox2.addLayout(SpecFilterLiHBox)
         SpecFilterLtHBox = QtWidgets.QHBoxLayout()
         SpecFilterLtHBox.addWidget(self.l2SpecFilterLtLabel)
         SpecFilterLtHBox.addWidget(self.l2SpecFilterLtLineEdit)
-        VBox3.addLayout(SpecFilterLtHBox)
+        VBox2.addLayout(SpecFilterLtHBox)       
 
         # VBox3.addSpacing(5)
 
@@ -806,25 +795,30 @@ class ConfigWindow(QtWidgets.QDialog):
         QualityFlagHBox.addWidget(l2QualityFlagLabel)
         # QualityFlagHBox.addWidget(l2QualityFlagLabel2)
         QualityFlagHBox.addWidget(self.l2QualityFlagCheckBox)
-        VBox3.addLayout(QualityFlagHBox) 
+        VBox2.addLayout(QualityFlagHBox) 
         CloudFlagHBox = QtWidgets.QHBoxLayout()        
         CloudFlagHBox.addWidget(self.l2CloudFlagLabel)
         CloudFlagHBox.addWidget(self.l2CloudFlagLineEdit)
-        VBox3.addLayout(CloudFlagHBox) 
+        VBox2.addLayout(CloudFlagHBox)         
         EsFlagHBox = QtWidgets.QHBoxLayout()        
         EsFlagHBox.addWidget(self.l2EsFlagLabel)
         EsFlagHBox.addWidget(self.l2EsFlagLineEdit)
-        VBox3.addLayout(EsFlagHBox) 
+        VBox2.addLayout(EsFlagHBox) 
         DawnFlagHBox =QtWidgets.QHBoxLayout()
         DawnFlagHBox.addWidget(self.l2DawnDuskFlagLabel)
         DawnFlagHBox.addWidget(self.l2DawnDuskFlagLineEdit)
-        VBox3.addLayout(DawnFlagHBox) 
+        VBox2.addLayout(DawnFlagHBox) 
         RainFlagHBox = QtWidgets.QHBoxLayout()
         RainFlagHBox.addWidget(self.l2RainfallHumidityFlagLabel)
         RainFlagHBox.addWidget(self.l2RainfallHumidityFlagLineEdit)
-        VBox3.addLayout(RainFlagHBox) 
+        VBox2.addLayout(RainFlagHBox) 
 
-        # VBox3.addSpacing(5)
+         # Right box
+        VBox3 = QtWidgets.QVBoxLayout()
+        VBox3.setAlignment(QtCore.Qt.AlignBottom)
+
+        # L2 Ensembles        
+        VBox3.addWidget(l2ensLabel)
 
         # L2 Time Average Rrs
         TimeAveHBox = QtWidgets.QHBoxLayout()
@@ -844,6 +838,19 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # L2 Rho Skyglint/Sunglint Correction
         VBox3.addWidget(l2RhoSkyLabel)
+
+        # L2 (Preliminary)
+        # VBox2.addWidget(l2pLabel)
+        VBox3.addWidget(l2pSublabel)
+        VBox3.addWidget(l2pSublabel2)
+        VBox3.addWidget(l2pSublabel3)
+        # VBox2.addWidget(l2pSublabel4)
+        l2pGetAncHBox = QtWidgets.QHBoxLayout()
+        l2pGetAncHBox.addWidget(l2pSublabel4)
+        l2pGetAncHBox.addWidget(l2pGetAncLabel)
+        l2pGetAncHBox.addWidget(self.l2pGetAncCheckBox)    
+        VBox3.addLayout(l2pGetAncHBox)
+
         # Default Rho
         RhoHBox = QtWidgets.QHBoxLayout()
         RhoHBox.addWidget(l2DefaultRhoSkyLabel)
@@ -880,8 +887,6 @@ class ConfigWindow(QtWidgets.QDialog):
         RhoHBox3.addWidget(self.RhoRadioButtonDefault)        
         VBox3.addLayout(RhoHBox3)
 
-        # VBox3.addSpacing(5)
-
         # L2 NIR AtmoCorr
         # NIRCorrectionVBox = QtWidgets.QVBoxLayout()
         NIRCorrectionHBox = QtWidgets.QHBoxLayout()
@@ -898,6 +903,8 @@ class ConfigWindow(QtWidgets.QDialog):
         NegativeSpecHBox.addWidget(self.l2NegativeSpecLabel)
         NegativeSpecHBox.addWidget(self.l2NegativeSpecCheckBox)
         VBox3.addLayout(NegativeSpecHBox)  
+
+        VBox3.addSpacing(20)
 
         # L2 Spectral weighting to satellites
         VBox3.addWidget(l2WeightsLabel)
@@ -920,6 +927,8 @@ class ConfigWindow(QtWidgets.QDialog):
         l2WeightHBox2.addWidget(self.l2WeightVIIRSJCheckBox)  
         VBox3.addLayout(l2WeightHBox2)  
 
+        VBox3.addSpacing(20)
+
         # L2 Plotting
         VBox3.addWidget(l2PlotsLabel)
         l2PlotHBox = QtWidgets.QHBoxLayout()
@@ -936,13 +945,15 @@ class ConfigWindow(QtWidgets.QDialog):
         l2PlotHBox.addWidget(self.l2PlotLtCheckBox)
         VBox3.addLayout(l2PlotHBox)    
 
-        # VBox3.addSpacing(5)
+        VBox3.addSpacing(20)
 
         # Horizontal Box; Save SeaBASS
         l2SeaBASSHBox = QtWidgets.QHBoxLayout()
         l2SeaBASSHBox.addWidget(l2SaveSeaBASSLabel)
         l2SeaBASSHBox.addWidget(self.l2SaveSeaBASSCheckBox)    
-        VBox3.addLayout(l2SeaBASSHBox)    
+        VBox3.addLayout(l2SeaBASSHBox)   
+
+        VBox3.addSpacing(20) 
 
         # Save/Cancel
         saveHBox = QtWidgets.QHBoxLayout()

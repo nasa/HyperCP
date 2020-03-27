@@ -391,7 +391,7 @@ class Window(QtWidgets.QWidget):
 
         Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, ancFile) 
         t1Single = time.time()
-        print(f'Time elapsed: {(t1Single-t0Single)/60} minutes')
+        print(f'Time elapsed: {str(round((t1Single-t0Single)/60)/2)} minutes')
 
     def closeEvent(self, event):
         reply = QtWidgets.QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
@@ -466,8 +466,7 @@ class Window(QtWidgets.QWidget):
     
         Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, ancFile)
         t1Multi = time.time()
-        print(f'Time elapsed: {(t1Multi-t0Multi)/60} Minutes')
-
+        print(f'Time elapsed: {str(round((t1Multi-t0Multi)/60)/2)} Minutes')
 
     def multi2Clicked(self):
         ''' Sneaky work around until I can pass signals btw. windows'''

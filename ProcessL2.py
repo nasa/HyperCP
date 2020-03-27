@@ -61,7 +61,7 @@ class ProcessL2:
             if startLength > 0:  
                 counter = 0              
                 for i in range(startLength):
-                    if start <= timeStamp[i] and stop >= timeStamp[i]:                      
+                    if start <= timeStamp[i] and stop >= timeStamp[i]:                          
                         group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
                         counter += 1
                         finalCount += 1
@@ -266,7 +266,7 @@ class ProcessL2:
         esFlag = float(ConfigFile.settings["fL2SignificantEsFlag"])
         dawnDuskFlag = float(ConfigFile.settings["fL2DawnDuskFlag"])
         humidityFlag = float(ConfigFile.settings["fL2RainfallHumidityFlag"])     
-        cloudFlag = float(ConfigFile.settings["fL2CloudFlag"])
+        cloudFLAG = float(ConfigFile.settings["fL2CloudFlag"]) # Not to be confused with cloudFlag...
 
         esData = refGroup.getDataset("ES")
         esData.datasetToColumns()
@@ -301,9 +301,9 @@ class ProcessL2:
         for indx, dateTime in enumerate(esTime):                
             # Masking spectra affected by clouds (Ruddick 2006, IOCCG Protocols). 
             # The alternative to masking is to process them differently (e.g. See Ruddick_Rho)
-            
-            if li750[indx]/es750[indx] >= cloudFlag:
-                # msg = f"Quality Check: Li(750)/Es(750) >= cloudFlag:{cloudFlag}"
+            # Therefore, set this very high if you don't want it triggered (e.g. 1.0, see Readme)            
+            if li750[indx]/es750[indx] >= cloudFLAG:
+                # msg = f"Quality Check: Li(750)/Es(750) >= cloudFLAG:{cloudFLAG}"
                 # print(msg)
                 # Utilities.writeLogFile(msg)  
                 badTimes.append(dateTime)
@@ -1004,6 +1004,8 @@ class ProcessL2:
                 wavelengthStr.append(k)
                 wavelength.append(float(k))   
         # wave = [float(i) for i in wave]
+        waveSubset = wavelength # No subsetting for Ruddick or Mobley corrections
+
         if RuddickRho:
             '''This is the Ruddick, et al. 2006 approach, which has one method for 
             clear sky, and another for cloudy. Methods of this type (i.e. not accounting
@@ -1016,7 +1018,7 @@ class ProcessL2:
             es750 = ProcessL2.interpolateColumn(esXSlice, 750.0)
             sky750 = li750[0]/es750[0]
 
-            rhoScalar, rhoDelta = RhoCorrections.RuddickCorr(sky750, rhoDefault, WINDSPEEDXSlice)
+            rhoScalar, rhoDelta = RhoCorrections.RuddickCorr(sky750, rhoDefault, WINDSPEEDXSlice)            
 
         elif ZhangRho:     
             ''' Zhang rho is based on Zhang et al. 2017 and calculates the wavelength-dependent rho vector
@@ -1049,13 +1051,13 @@ class ProcessL2:
                 wave_list = [(i, band) for i, band in enumerate(wave_old) if (band >=350) and (band <= 1000)]
                 wave_array = np.array(wave_list)
                 # wavelength is now truncated to only valid wavebands for use in Zhang models
-                wavelength = wave_array[:,1].tolist()
+                waveSubset = wave_array[:,1].tolist()
             
 
             rhoStructure, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
-                CloudXSlice,SZAXSlice,SSTXSlice,SalXSlice,RelAzXSlice,wavelength)
+                CloudXSlice,SZAXSlice,SSTXSlice,SalXSlice,RelAzXSlice,waveSubset)
             rhoVector = rhoStructure['ρ']
-            for i, k in enumerate(wavelength):
+            for i, k in enumerate(waveSubset):
                 rhoDict[str(k)] = rhoVector[0,i]
 
         rrsSlice = {}
@@ -1089,7 +1091,7 @@ class ProcessL2:
             F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
             # Use the strings for the F0 dict
             # wavelengthStr = list(esColumns.keys())[2:]
-            wavelengthStr = [str(wave) for wave in wavelength]
+            # wavelengthStr = [str(wave) for wave in wavelength]
             F0 = collections.OrderedDict(zip(wavelengthStr, F0))
 
         deleteKey = []
@@ -1108,7 +1110,7 @@ class ProcessL2:
                     newRrsDeltaData.columns[k] = []
                     newnLwDeltaData.columns[k] = []
 
-                # At this waveband (k)
+                # At this waveband (k); still using complete wavelength set
                 es = esXSlice[k][0]
                 li = liXSlice[k][0]
                 lt = ltXSlice[k][0]
@@ -1136,7 +1138,7 @@ class ProcessL2:
                             )**0.5
                 elif ZhangRho:
                     # Only populate the valid wavelengths
-                    if float(k) in wavelength:
+                    if float(k) in waveSubset:
                         rrs = (lt - (rhoDict[k] * li)) / es
 
                         # Rrs uncertainty
@@ -1180,7 +1182,7 @@ class ProcessL2:
                 newLTDeltaData.columns[k].append(ltDelta)
                 
                 # Only populate valid wavelengths. Mark others for deletion
-                if float(k) in wavelength:
+                if float(k) in waveSubset:
                     newRrsDeltaData.columns[k].append(rrsDelta)
                     newnLwDeltaData.columns[k].append(nLwDelta)
                     

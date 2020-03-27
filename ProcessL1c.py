@@ -442,7 +442,7 @@ class ProcessL1c:
                 lat, lon, datetime, ship heading and offset between bow and 
                 SAS instrument from which SAS azimuth is calculated '''
             timeStamp = ancillaryData.columns["DATETIME"][0]
-            shipAzimuth = ancillaryData.columns["HEADING"][0]
+            shipAzimuth = ancillaryData.columns["HEADING"][0] # HEADING/shipAzimuth comes from ancillary data file here (not GPS or SATNAV)
             # ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
             ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
             ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]

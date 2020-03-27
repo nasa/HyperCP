@@ -454,7 +454,7 @@ class ProcessL1e:
             aodData = None            
             # Optional:
             if "HEADING" in newAncGroup.datasets:
-                headingData = newAncGroup.getDataset("HEADING")
+                headingData = newAncGroup.getDataset("HEADING") # This HEADING derives from ancillary data file (NOT GPS)
             if "LATITUDE" in newAncGroup.datasets:
                 latDataAnc = newAncGroup.getDataset("LATITUDE")
             if "LONGITUDE" in newAncGroup.datasets:
@@ -478,7 +478,7 @@ class ProcessL1e:
             newSTGroup = root.addGroup("SOLARTRACKER")
             ProcessL1e.convertDataset(satnavGroup, "AZIMUTH", newSTGroup, "AZIMUTH")
             ProcessL1e.convertDataset(satnavGroup, "ELEVATION", newSTGroup, "ELEVATION")
-            ProcessL1e.convertDataset(satnavGroup, "HEADING", newSTGroup, "HEADING")
+            ProcessL1e.convertDataset(satnavGroup, "HEADING", newSTGroup, "HEADING") # Use SATNAV Heading if available (not GPS COURSE)
             ProcessL1e.convertDataset(satnavGroup, "HUMIDITY", newSTGroup, "HUMIDITY")
             ProcessL1e.convertDataset(satnavGroup, "PITCH", newSTGroup, "PITCH")
             ProcessL1e.convertDataset(satnavGroup, "POINTING", newSTGroup, "POINTING")
@@ -557,9 +557,9 @@ class ProcessL1e:
             return None
         if not ProcessL1e.interpolateData(lonData, interpData, "LONGITUDE", fileName):
             return None
-        if gpsGroup.id.startswith("GPRMC"):
+        if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
             # Optional:
-            ProcessL1e.interpolateData(courseData, interpData, "COURSE", fileName)
+            ProcessL1e.interpolateData(courseData, interpData, "COURSE", fileName) # COG (not heading), presumably?
             ProcessL1e.interpolateData(speedData, interpData, "SPEED", fileName)             
 
         if satnavGroup is not None:
