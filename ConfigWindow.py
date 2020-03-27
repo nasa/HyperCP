@@ -218,7 +218,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1dDeglitch3LineEdit.setValidator(doubleValidator)
 
         self.l1dDeglitchCheckBoxUpdate()      
-
         self.l1dDeglitchCheckBox.clicked.connect(self.l1dDeglitchCheckBoxUpdate)   
 
         # L1D Launch Deglitcher Analysis 
@@ -258,29 +257,14 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1eSaveSeaBASSCheckBox.setChecked(True)   
         self.l1eSaveSeaBASSCheckBox.clicked.connect(self.l1eSaveSeaBASSCheckBoxUpdate)         
 
-
         self.l1eSeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit/Update SeaBASS Header", self)
-        self.l1eSeaBASSHeaderEditButton.clicked.connect(self.l1eSeaBASSHeaderEditButtonPressed)
-
-        # # L2 (Preliminary)
-        # l2pLabel = QtWidgets.QLabel("Level 2 Preliminary", self)
-        # l2pLabel_font = l1eLabel.font()
-        # l2pLabel_font.setPointSize(12)
-        # l2pLabel_font.setBold(True)
-        # l2pLabel.setFont(l1eLabel_font)
-        l2pSublabel = QtWidgets.QLabel(" GMAO MERRA2 ancillary data are required for Zhang glint", self)
-        l2pSublabel2 = QtWidgets.QLabel(" Zhang correction and can fill in wind for Ruddick glint.", self)
-        l2pSublabel3 = QtWidgets.QLabel(" WILL PROMPT FOR EARTHDATA USERNAME/PASSWORD", self)
-        l2pSublabel4 = QtWidgets.QLabel(
-            "<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">         Register here</a>", self)
-        l2pSublabel4.setOpenExternalLinks(True)
+        self.l1eSeaBASSHeaderEditButton.clicked.connect(self.l1eSeaBASSHeaderEditButtonPressed)       
 
         l2pGetAncLabel = QtWidgets.QLabel("       Download Ancillary Models", self)        
         self.l2pGetAncCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL2pGetAnc"]) == 1:
             self.l2pGetAncCheckBox.setChecked(True)           
         self.l2pGetAncCheckBox.clicked.connect(self.l2pGetAncCheckBoxUpdate)
-
         
         # L2     
         l2Label = QtWidgets.QLabel("Level 2 Processing", self)
@@ -388,6 +372,19 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l2EnablePercentLtCheckBoxUpdate()
 
+        # # L2 (Preliminary)
+        # l2pLabel = QtWidgets.QLabel("Level 2 Preliminary", self)
+        # l2pLabel_font = l1eLabel.font()
+        # l2pLabel_font.setPointSize(12)
+        # l2pLabel_font.setBold(True)
+        # l2pLabel.setFont(l1eLabel_font)
+        l2pSublabel = QtWidgets.QLabel(" GMAO MERRA2 ancillary data are required for Zhang glint", self)
+        l2pSublabel2 = QtWidgets.QLabel(" Zhang correction and can fill in wind for Ruddick glint.", self)
+        l2pSublabel3 = QtWidgets.QLabel(" WILL PROMPT FOR EARTHDATA USERNAME/PASSWORD", self)
+        l2pSublabel4 = QtWidgets.QLabel(
+            "<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">         Register here</a>", self)
+        l2pSublabel4.setOpenExternalLinks(True)
+
         # L2 Rho Sky Correction
         l2RhoSkyLabel = QtWidgets.QLabel("L2 Sky/Sunglint Correction (ρ)", self)
         l2RhoSkyLabel_font = l1eLabel.font()
@@ -415,13 +412,13 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2DefaultSSTLineEdit.setText(str(ConfigFile.settings["fL2DefaultSST"]))
         self.l2DefaultSSTLineEdit.setValidator(doubleValidator)
 
-        self.RhoRadioButtonRuddick = QtWidgets.QRadioButton("Ruddick 2006 Rho")
+        self.RhoRadioButtonRuddick = QtWidgets.QRadioButton("Ruddick 2006 ρ")
         self.RhoRadioButtonRuddick.setAutoExclusive(False)
         if ConfigFile.settings["bL2RuddickRho"]==1:
             self.RhoRadioButtonRuddick.setChecked(True)
         self.RhoRadioButtonRuddick.clicked.connect(self.l2RhoRadioButtonRuddickClicked)  
 
-        self.RhoRadioButtonZhang = QtWidgets.QRadioButton("Zhang 2017 Rho")
+        self.RhoRadioButtonZhang = QtWidgets.QRadioButton("Zhang 2017 ρ")
         self.RhoRadioButtonZhang.setAutoExclusive(False)
         if ConfigFile.settings["bL2ZhangRho"]==1:
             self.RhoRadioButtonZhang.setChecked(True)            
@@ -430,7 +427,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.RhoRadioButtonZhang.setDisabled(1)
         self.RhoRadioButtonZhang.clicked.connect(self.l2RhoRadioButtonZhangClicked)
 
-        self.RhoRadioButtonDefault = QtWidgets.QRadioButton("Mobley 1999 Rho")
+        self.RhoRadioButtonDefault = QtWidgets.QRadioButton("Mobley 1999 ρ")
         self.RhoRadioButtonDefault.setAutoExclusive(False)
         if ConfigFile.settings["bL2DefaultRho"]==1:
             self.RhoRadioButtonDefault.setChecked(True)
@@ -438,7 +435,7 @@ class ConfigWindow(QtWidgets.QDialog):
              
 
         # L2 NIR AtmoCorr
-        l2NIRCorrectionLabel = QtWidgets.QLabel("  NIR Residual Correction", self)
+        l2NIRCorrectionLabel = QtWidgets.QLabel("NIR Residual Correction", self)
         self.l2NIRCorrectionCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
             self.l2NIRCorrectionCheckBox.setChecked(True)
@@ -457,7 +454,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2NIRCorrectionCheckBoxUpdate()    
 
         # L2 Remove negative spectra
-        self.l2NegativeSpecLabel = QtWidgets.QLabel("  Remove Negative Spectra", self)
+        self.l2NegativeSpecLabel = QtWidgets.QLabel("Remove Negative Spectra", self)
         self.l2NegativeSpecCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2NegativeSpec"]) == 1:
            self.l2NegativeSpecCheckBox.setChecked(True)        
@@ -465,7 +462,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2NegativeSpecCheckBoxUpdate()
 
         # Spectral Weighting
-        l2WeightsLabel = QtWidgets.QLabel("  Add Weighted Satellite Bands:", self)
+        l2WeightsLabel = QtWidgets.QLabel("Add Weighted Satellite Bands:", self)
 
         l2WeightMODISALabel = QtWidgets.QLabel("AQUA", self)             
         self.l2WeightMODISACheckBox = QtWidgets.QCheckBox("", self)      
@@ -498,7 +495,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2WeightSentinel3BCheckBox.setChecked(True)
 
         # Plots
-        l2PlotsLabel = QtWidgets.QLabel("  Generate Spectral Plots", self)
+        l2PlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
         l2PlotRrsLabel = QtWidgets.QLabel("Rrs", self)             
         self.l2PlotRrsCheckBox = QtWidgets.QCheckBox("", self)      
         if int(ConfigFile.settings["bL2PlotRrs"]) == 1:
@@ -887,6 +884,8 @@ class ConfigWindow(QtWidgets.QDialog):
         RhoHBox3.addWidget(self.RhoRadioButtonDefault)        
         VBox3.addLayout(RhoHBox3)
 
+        VBox3.addSpacing(10)
+
         # L2 NIR AtmoCorr
         # NIRCorrectionVBox = QtWidgets.QVBoxLayout()
         NIRCorrectionHBox = QtWidgets.QHBoxLayout()
@@ -896,7 +895,7 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addWidget(self.SimpleNIRRadioButton)
         VBox3.addWidget(self.SimSpecNIRRadioButton)  
 
-        # VBox3.addSpacing(5)
+        VBox3.addSpacing(10)
 
         # L2 Remove negative spectra
         NegativeSpecHBox = QtWidgets.QHBoxLayout()
@@ -904,7 +903,7 @@ class ConfigWindow(QtWidgets.QDialog):
         NegativeSpecHBox.addWidget(self.l2NegativeSpecCheckBox)
         VBox3.addLayout(NegativeSpecHBox)  
 
-        VBox3.addSpacing(20)
+        VBox3.addSpacing(10)
 
         # L2 Spectral weighting to satellites
         VBox3.addWidget(l2WeightsLabel)
@@ -927,7 +926,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2WeightHBox2.addWidget(self.l2WeightVIIRSJCheckBox)  
         VBox3.addLayout(l2WeightHBox2)  
 
-        VBox3.addSpacing(20)
+        VBox3.addSpacing(10)
 
         # L2 Plotting
         VBox3.addWidget(l2PlotsLabel)
@@ -945,7 +944,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2PlotHBox.addWidget(self.l2PlotLtCheckBox)
         VBox3.addLayout(l2PlotHBox)    
 
-        VBox3.addSpacing(20)
+        VBox3.addSpacing(10)
 
         # Horizontal Box; Save SeaBASS
         l2SeaBASSHBox = QtWidgets.QHBoxLayout()
