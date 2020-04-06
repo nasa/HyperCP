@@ -629,38 +629,39 @@ class ProcessL1c:
                 msg = ("All records out of bounds. Aborting.")
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return None
-                        
-        msg = "Eliminate combined filtered data from datasets.*****************************"
-        print(msg)
-        Utilities.writeLogFile(msg)
+                return None                               
 
-        # For each dataset in each group, find the badTimes to remove and delete those rows                
-        for gp in node.groups:                                                    
-            
-            # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
-            if (gp.id == "SOLARTRACKER_STATUS") is False:                
-                fractionRemoved = ProcessL1c.filterData(gp, badTimes)
+        # For each dataset in each group, find the badTimes to remove and delete those rows      
+        if badTimes is not None:  
+            msg = "Eliminate combined filtered data from datasets.*****************************"
+            print(msg)
+            Utilities.writeLogFile(msg)
 
-                # Now test whether the overlap has eliminated all radiometric data
-                if fractionRemoved > 0.98 and gp.id.startswith("H"):
-                    msg = "Radiometric data >98'%' eliminated. Aborting."
-                    print(msg)
-                    Utilities.writeLogFile(msg)                   
-                    return None                            
+            for gp in node.groups:                                                    
                 
-                # Confirm that data were removed from Root    
-                # group = node.getGroup(gp.id)
-                # if gp.id.startswith("GP"):
-                #     gpTimeset  = group.getDataset("UTCPOS") 
-                # else:
-                gpTimeset  = gp.getDataset("TIMETAG2") 
+                # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
+                if (gp.id == "SOLARTRACKER_STATUS") is False:                
+                    fractionRemoved = ProcessL1c.filterData(gp, badTimes)
 
-                gpTime = gpTimeset.data["NONE"]
-                lenGpTime = len(gpTime)
-                msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
-                print(msg)
-                Utilities.writeLogFile(msg)    
+                    # Now test whether the overlap has eliminated all radiometric data
+                    if fractionRemoved > 0.98 and gp.id.startswith("H"):
+                        msg = "Radiometric data >98'%' eliminated. Aborting."
+                        print(msg)
+                        Utilities.writeLogFile(msg)                   
+                        return None                            
+                    
+                    # Confirm that data were removed from Root    
+                    # group = node.getGroup(gp.id)
+                    # if gp.id.startswith("GP"):
+                    #     gpTimeset  = group.getDataset("UTCPOS") 
+                    # else:
+                    gpTimeset  = gp.getDataset("TIMETAG2") 
+
+                    gpTime = gpTimeset.data["NONE"]
+                    lenGpTime = len(gpTime)
+                    msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
+                    print(msg)
+                    Utilities.writeLogFile(msg)    
 
         # DATETIME is not supported in HDF5; remove
         for gp in node.groups:

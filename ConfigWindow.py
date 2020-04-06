@@ -536,7 +536,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1eSaveSeaBASSCheckBoxUpdate()
         self.l2SaveSeaBASSCheckBoxUpdate()
 
-        self.saveButton = QtWidgets.QPushButton("Save")        
+        self.saveButton = QtWidgets.QPushButton("Save/Close")        
         self.saveAsButton = QtWidgets.QPushButton("Save As")
         self.cancelButton = QtWidgets.QPushButton("Cancel")                      
             

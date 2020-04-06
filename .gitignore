@@ -1,8 +1,10 @@
 Data/
 Plots/
 Logs/
-Zhang_rho/
 Config/main.config
+EsDarkThresh.txt
+angr_sky.npy
+prob.npy
 .vscode/settings.json
 *.pyc
 *.log
