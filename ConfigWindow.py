@@ -1384,6 +1384,11 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2RuddickRho"] = 0
         ConfigFile.settings["bL2ZhangRho"] = 1
         ConfigFile.settings["bL2DefaultRho"] = 0
+        if float(self.l2SZAMaxLineEdit.text()) > 60:
+            print("SZA outside model limits; adjusting to 60")
+            ConfigFile.settings["fL2SZAMax"] = 60
+            self.l2SZAMaxLineEdit.setText(str(ConfigFile.settings["fL2SZAMax"]))
+
     def l2RhoRadioButtonDefaultClicked(self):
         print("ConfigWindow - l2RhoCorrection set to Default")
         self.RhoRadioButtonRuddick.setChecked(False)
@@ -1480,6 +1485,9 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2LtUVNIR"] = int(self.l2LtUVNIRCheckBox.isChecked())        
         ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
         ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
+        if int(self.RhoRadioButtonZhang.isChecked()) and float(self.l2SZAMaxLineEdit.text()) > 60:
+            print("SZA outside Zhang model limits; adjusting.")
+            self.l2SZAMaxLineEdit.setText(str(60.0))
         ConfigFile.settings["fL2SZAMax"] = float(self.l2SZAMaxLineEdit.text())
         ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2SpecQualityCheckBox.isChecked())
         ConfigFile.settings["fL2SpecFilterEs"] = float(self.l2SpecFilterEsLineEdit.text())
@@ -1585,6 +1593,9 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2LtUVNIR"] = int(self.l2LtUVNIRCheckBox.isChecked())        
         ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
         ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
+        if int(self.RhoRadioButtonZhang.isChecked()) and float(self.l2SZAMaxLineEdit.text()) > 60:
+            print("SZA outside Zhang model limits; adjusting.")
+            self.l2SZAMaxLineEdit.setText(str(60.0))
         ConfigFile.settings["fL2SZAMax"] = float(self.l2SZAMaxLineEdit.text())
         ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2SpecQualityCheckBox.isChecked())
         ConfigFile.settings["fL2SpecFilterEs"] = float(self.l2SpecFilterEsLineEdit.text())
@@ -1686,6 +1697,9 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2LtUVNIR"] = int(self.l2LtUVNIRCheckBox.isChecked())        
             ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
             ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
+            if int(self.RhoRadioButtonZhang.isChecked()) and float(self.l2SZAMaxLineEdit.text()) > 60:
+                print("SZA outside Zhang model limits; adjusting.")
+                self.l2SZAMaxLineEdit.setText(str(60.0))
             ConfigFile.settings["fL2SZAMax"] = float(self.l2SZAMaxLineEdit.text())
             ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2SpecQualityCheckBox.isChecked())
             ConfigFile.settings["fL2SpecFilterEs"] = float(self.l2SpecFilterEsLineEdit.text())

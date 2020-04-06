@@ -1035,12 +1035,14 @@ class ProcessL2:
                 Utilities.writeLogFile(msg) 
                 AODXSlice = 0.2
             if SZAXSlice > 60:
+                # This should be prevented in the ConfigWindow now.
+
                 # msg = f'SZA = {SZAXSlice}. Maximum Solar Zenith Reached. Setting to 60'
                 # SZA is too important to the model. If it's out of bounds, skip the record...
                 msg = f'SZA = {SZAXSlice}. Maximum Solar Zenith Exceeded. Aborting slice.'
                 print(msg)
                 Utilities.writeLogFile(msg) 
-                # SZAXSlice = 60
+                # SZAXSlice = 60                
                 return False
 
             if min(wavelength) < 350 or max(wavelength) > 1000:
@@ -1560,7 +1562,6 @@ class ProcessL2:
         start = -1
         stop = []         
         for index in range(len(SZA)):
-            # Check for angles spanning north
             if SZA[index] < SZAMin or SZA[index] > SZAMax or wind[index] > maxWind:
                 i += 1                              
                 if start == -1:
@@ -1569,7 +1570,7 @@ class ProcessL2:
                     else:
                         msg =f'Low SZA. SZA: {round(SZA[index])}'
                     print(msg)
-                    Utilities.writeLogFile(msg)                                               
+                    Utilities.writeLogFile(msg)                                                                   
                     start = index
                 stop = index 
                 if badTimes is None:
@@ -1589,9 +1590,15 @@ class ProcessL2:
         print(msg)
         Utilities.writeLogFile(msg)
 
-        if start != -1 and badTimes is None: # Records from a mid-point to the end are bad
+        if start != -1 and stop == index: # Records from a mid-point to the end are bad
             startstop = [timeStamp[start],timeStamp[stop]]
-            badTimes = [startstop]
+            msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+            # print(msg)
+            Utilities.writeLogFile(msg)                                               
+            if badTimes is None: # only one set of records
+                badTimes = [startstop]
+            else:
+                badTimes.append(startstop)
 
         if start==0 and stop==index: # All records are bad                           
             return False
@@ -1711,7 +1718,7 @@ class ProcessL2:
                         endTime = endFileTime                 
 
                     if not ProcessL2.calculateREFLECTANCE2(root, sasGroup, referenceGroup, ancGroup, start, end):
-                        msg = 'ProcessL2.calculateREFLECTANCE2 with slices failed. Abort.'
+                        msg = 'ProcessL2.calculateREFLECTANCE2 with slices failed. Continue.'
                         print(msg)
                         Utilities.writeLogFile(msg)    
 
@@ -1727,7 +1734,7 @@ class ProcessL2:
             if time < (endTime - datetime.timedelta(0,interval)):          
 
                 if not ProcessL2.calculateREFLECTANCE2(root,sasGroup, referenceGroup, ancGroup, start, end):
-                    msg = 'ProcessL2.calculateREFLECTANCE2 ender failed. Abort.'
+                    msg = 'ProcessL2.calculateREFLECTANCE2 ender failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)    
 
