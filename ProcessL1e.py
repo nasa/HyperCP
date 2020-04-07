@@ -167,7 +167,8 @@ class ProcessL1e:
         # Can leave Datetime off at this point
 
         for i in range(newWavebands.shape[0]):
-            newColumns[str(newWavebands[i])] = []
+            # limit to one decimal place
+            newColumns[str(round(10*newWavebands[i])/10)] = []
 
         # Perform interpolation for each timestamp
         for timeIndex in range(len(saveDatetag)):
@@ -181,7 +182,7 @@ class ProcessL1e:
             new_y = sp.interpolate.InterpolatedUnivariateSpline(x, y, k=3)(newWavebands)
 
             for waveIndex in range(newWavebands.shape[0]):
-                newColumns[str(newWavebands[waveIndex])].append(new_y[waveIndex])
+                newColumns[str(round(10*newWavebands[waveIndex])/10)].append(new_y[waveIndex])
 
         newDS.columns = newColumns
         newDS.columnsToDataset()
@@ -354,12 +355,8 @@ class ProcessL1e:
 
         # No extrapolation
         start = max(esStart,liStart,ltStart)
-        end = min(esEnd,liEnd,ltEnd)
-        # Calculate the number of even steps of size interval 
-        # between start and end, and alter end for even steps.
-        steps = round((end-start)/interval)
-        evenEnd = start + steps*interval
-        newWavebands = np.arange(start, evenEnd, interval)
+        end = min(esEnd,liEnd,ltEnd)        
+        newWavebands = np.arange(start, end, interval)        
 
         print('Interpolating Es')
         ProcessL1e.interpolateWavelength(esData, newESData, newWavebands)
