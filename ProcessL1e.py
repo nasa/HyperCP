@@ -355,8 +355,11 @@ class ProcessL1e:
         # No extrapolation
         start = max(esStart,liStart,ltStart)
         end = min(esEnd,liEnd,ltEnd)
-        newWavebands = np.arange(start, end, interval)
-        # print(newWavebands)
+        # Calculate the number of even steps of size interval 
+        # between start and end, and alter end for even steps.
+        steps = round((end-start)/interval)
+        evenEnd = start + steps*interval
+        newWavebands = np.arange(start, evenEnd, interval)
 
         print('Interpolating Es')
         ProcessL1e.interpolateWavelength(esData, newESData, newWavebands)
