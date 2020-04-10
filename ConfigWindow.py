@@ -440,7 +440,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
             self.l2NIRCorrectionCheckBox.setChecked(True)
         
-        self.SimpleNIRRadioButton = QtWidgets.QRadioButton("   Simple resid. Hooker 2003 (blue water)")
+        self.SimpleNIRRadioButton = QtWidgets.QRadioButton("   Simple resid. Mueller 2003 (blue water)")
         self.SimpleNIRRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL2SimpleNIRCorrection"] == 1:
             self.SimpleNIRRadioButton.setChecked(True)
