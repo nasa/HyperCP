@@ -40,6 +40,7 @@ class AncillaryReader:
                 ancDatetimeTZ.append(timezone.localize(dt))
             ancDatetime = ancDatetimeTZ
 
+        station = False
         lat = False
         lon = False
         wspd = False
@@ -52,6 +53,13 @@ class AncillaryReader:
         waveht = False
         for ds in ancData.data:            
             # Remember, all lower case...
+            if ds == "station":
+                # lat = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                station = ancData.data[ds]
+                staUnits = ancData.variables[ds][1]
             if ds == "lat":
                 # lat = True
                 msg = f'Found data: {ds}'                
@@ -134,6 +142,9 @@ class AncillaryReader:
         ancillaryData = HDFDataset()
         ancillaryData.id = "AncillaryData"
         ancillaryData.appendColumn("DATETIME", ancDatetime)
+        if station:
+            ancillaryData.appendColumn("STATION", station)
+            ancillaryData.attributes["STATION_Units"]=staUnits
         if lat:
             ancillaryData.appendColumn("LATITUDE", lat)
             ancillaryData.attributes["LATITUDE_Units"]=latUnits
@@ -189,6 +200,7 @@ class AncillaryReader:
 
         aot = False   
         heading = False
+        station = False
         lat = False
         lon = False
         relAz = False # misnomer: sensor azimuth relative to heading for ancillary seabass file
@@ -218,7 +230,15 @@ class AncillaryReader:
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                heading = ancGroup.datasets[ds].data["NONE"].tolist()          
+                heading = ancGroup.datasets[ds].data["NONE"].tolist()
+
+            if ds == "STATION":
+                # lat = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                station = ancGroup.datasets[ds]
+
             if ds == "LATITUDE":
                 # lat = True
                 msg = f'Found data: {ds}'                
@@ -291,6 +311,8 @@ class AncillaryReader:
             ancillaryData.attributes["AOD_wavelength"] = wv
         if heading:
             ancillaryData.appendColumn("HEADING", heading)
+        if station:
+            ancillaryData.appendColumn("STATION", station)
         if lat:
             ancillaryData.appendColumn("LATITUDE", lat)
         if lon:

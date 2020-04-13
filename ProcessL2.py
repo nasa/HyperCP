@@ -366,22 +366,28 @@ class ProcessL2:
 
         print('Interpolating field ancillary and/or modeled ancillary data to radiometry times...')
         epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc)
-
-        # Only concerned with datasets relevant to GMAO models and GUI defaults initially
+        
         ancGroup = node.getGroup("ANCILLARY")
         # These are required and have been filled in with field, model, and/or default values
         windDataset = ancGroup.addDataset("WINDSPEED")
         aodDataset = ancGroup.addDataset("AOD")
         saltDataset = ancGroup.addDataset("SAL")
         sstDataset = ancGroup.addDataset("SST")  
+
+        # Only concerned here with datasets from the Ancillary Data File (SeaBASS file in Main Window)
+        # Additional ancillary data added after returning from this interp method
+
         # Optional datasets; CLOUD and WAVE are basically place holders as of ver 1.0.beta;
         # (i.e. no implementation in Rho corrections)
         cloud = False
         wave = False
+        station = False
         if "CLOUD" in ancData.columns:
             cloudDataset = ancGroup.addDataset("CLOUD")
         if "WAVE_HT" in ancData.columns:
             waveDataset = ancGroup.addDataset("WAVE_HT")
+        if "STATION" in ancData.columns:
+            stationDataset = ancGroup.addDataset("STATION")
 
         # Convert radData date and time to datetime and then to seconds for interpolation
         radTime = radData.data["Timetag2"].tolist()
@@ -405,6 +411,8 @@ class ProcessL2:
                 cloud = ancData.getColumn("CLOUD")[0]
             if "WAVE_HT" in ancData.columns:
                 wave = ancData.getColumn("WAVE_HT")[0]
+            if "STATION" in ancData.columns:
+                station = ancData.getColumn("STATION")[0]
             # Convert ancillary datetime to seconds for interpolation            
             ancSeconds = [(i-epoch).total_seconds() for i in dateTime] 
         else:
@@ -430,12 +438,16 @@ class ProcessL2:
         saltInRad = []
         sstInRad = []
         aodInRad = []
+        stationInRad = []
         if cloud:
             cloudFlag = []
             cloudInRad = []
         if wave:
             waveFlag = []
             waveInRad = []
+        if station:
+            # stationFlag = []
+            stationInRad = []
         # Populate the fields to the size of the radiometric dataset with NaNs (or flag placeholders)
         for i, value in enumerate(radSeconds):
             ancInRadSeconds.append(value)
@@ -446,13 +458,15 @@ class ProcessL2:
             windInRad.append(np.nan)
             saltInRad.append(np.nan)
             sstInRad.append(np.nan)
-            aodInRad.append(np.nan)
+            aodInRad.append(np.nan)            
             if cloud:
                 cloudFlag.append('field')
                 cloudInRad.append(np.nan)
             if wave:
                 waveFlag.append('field')
                 waveInRad.append(np.nan)
+            if station:
+                stationInRad.append(np.nan)
             
         # Populate with nearest field data if possible
         if ancData:
@@ -471,6 +485,8 @@ class ProcessL2:
                         cloudInRad[i] = cloud[idx]
                     if wave:
                         waveInRad[i] = wave[idx]
+                    if station:
+                        stationInRad[i] = station[idx]
         
         # Tallies
         msg = f'Field wind data has {np.isnan(windInRad).sum()} NaNs out of {len(windInRad)} prior to using model data'                
@@ -486,11 +502,15 @@ class ProcessL2:
         print(msg)
         Utilities.writeLogFile(msg)
         if cloud:
-            msg = f'Field aod data has {np.isnan(cloudInRad).sum()} NaNs out of {len(cloudInRad)}'
+            msg = f'Field cloud data has {np.isnan(cloudInRad).sum()} NaNs out of {len(cloudInRad)}'
             print(msg)
             Utilities.writeLogFile(msg)
         if wave:
-            msg = f'Field aod data has {np.isnan(waveInRad).sum()} NaNs out of {len(waveInRad)}'
+            msg = f'Field wave data has {np.isnan(waveInRad).sum()} NaNs out of {len(waveInRad)}'
+            print(msg)
+            Utilities.writeLogFile(msg)
+        if station:
+            msg = f'Field station data has {np.isnan(stationInRad).sum()} NaNs out of {len(stationInRad)}'
             print(msg)
             Utilities.writeLogFile(msg)
 
@@ -562,6 +582,8 @@ class ProcessL2:
         if wave:
             waveDataset.columns["WAVE_HT"] = waveInRad
             waveDataset.columns["WAVEFLAG"] = waveFlag
+        if station:
+            stationDataset.columns["STATION"] = stationInRad
 
         # Convert ancillary seconds back to date/timetags ...
         ancDateTag = []
@@ -593,7 +615,9 @@ class ProcessL2:
         if cloud:
             cloudDataset.columnsToDataset()
         if wave:
-            waveDataset.columnsToDataset()      
+            waveDataset.columnsToDataset()
+        if station:
+            stationDataset.columnsToDataset()      
     
     @staticmethod
     def sliceAveHyper(y, hyperSlice, xSlice, xStd):
