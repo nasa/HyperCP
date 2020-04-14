@@ -1128,8 +1128,6 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1cCleanPitchRoll"] = 0
         else:
             ConfigFile.settings["bL1cCleanPitchRoll"] = 1
-        #     ConfigFile.settings["fL1cPitchRollPitch"] = "NA"
-        #     ConfigFile.settings["fL1cPitchRollRoll"] = "NA"
 
     def l1cRotatorAngleCheckBoxUpdate(self):
         print("ConfigWindow - l1cRotatorAngleCheckBoxUpdate")
@@ -1143,8 +1141,6 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1cRotatorAngle"] = 0
         else:
             ConfigFile.settings["bL1cRotatorAngle"] = 1
-        #     ConfigFile.settings["fL1cRotatorAngleMin"] = "NA"
-        #     ConfigFile.settings["fL1cRotatorAngleMax"] = "NA"
 
     def l1cCleanSunAngleCheckBoxUpdate(self):
         print("ConfigWindow - l1cCleanSunAngleCheckBoxUpdate")
@@ -1158,8 +1154,6 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1cCleanSunAngle"] = 0
         else:
             ConfigFile.settings["bL1cCleanSunAngle"] = 1
-        #     ConfigFile.settings["fL1cSunAngleMin"] = "NA"
-        #     ConfigFile.settings["fL1cSunAngleMax"] = "NA"
 
     def l1dAnomalyButtonPressed(self):
         print("CalibrationEditWindow - Launching anomaly analysis module")  
@@ -1182,10 +1176,6 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1dDeglitch"]   = 0
         else:
             ConfigFile.settings["bL1dDeglitch"]   = 1
-        #     ConfigFile.settings["fL1dDeglitch0"]   = "NA"
-        #     ConfigFile.settings["fL1dDeglitch1"]   = "NA"
-        #     ConfigFile.settings["fL1dDeglitch2"]   = "NA"
-        #     ConfigFile.settings["fL1dDeglitch3"]   = "NA"
 
     def l1ePlotTimeInterpCheckBoxUpdate(self):
         print("ConfigWindow - l1ePlotTimeInterpCheckBoxUpdate")
@@ -1194,55 +1184,11 @@ class ConfigWindow(QtWidgets.QDialog):
         print("ConfigWindow - l1eSaveSeaBASSCheckBoxUpdate")
         disabled = (not self.l1eSaveSeaBASSCheckBox.isChecked()) \
                 and (not self.l2SaveSeaBASSCheckBox.isChecked())
-        # self.l1eSeaBASSHeaderNewButton.setDisabled(disabled)
-        # self.l1eSeaBASSHeaderOpenButton.setDisabled(disabled)
-        self.l1eSeaBASSHeaderEditButton.setDisabled(disabled)
-        # self.l1eSeaBASSHeaderDeleteButton.setDisabled(disabled)
-
-    # def l1eSeaBASSHeaderNewButtonPressed(self):
-    #     print("New SeaBASSHeader Dialogue")
-    #     text, ok = QtWidgets.QInputDialog.getText(self, 'New SeaBASSHeader File', 'Enter File Name')
-    #     seaBASSHeaderFileName = f'{text}.hdr'
-    #     if ok:
-    #         print("Create SeaBASSHeader File: ", seaBASSHeaderFileName)
-            
-    #         inputDir = self.inputDirectory
-    #         seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
-    #         # Now open the new file
-            
-    #         if os.path.isfile(seaBASSHeaderPath):
-    #             seaBASSHeaderDeleteMessage = "Overwrite " + seaBASSHeaderFileName + "?"
-
-    #             reply = QtWidgets.QMessageBox.question(self, 'Message', seaBASSHeaderDeleteMessage, \
-    #                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
-
-    #             if reply == QtWidgets.QMessageBox.Yes:
-    #                 SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
-    #                 SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-    #                 seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
-    #                 #seaBASSHeaderDialog = CalibrationEditWindow(seaBASSHeaderFileName, self)
-    #                 seaBASSHeaderDialog.show()                
-    #         else:
-    #             SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
-    #             SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-    #             seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
-    #             seaBASSHeaderDialog.show()  
-            
-    #         self.l1eSeaBASSHeaderLineEdit.setText(seaBASSHeaderFileName)  
-
-    # def l1eSeaBASSHeaderOpenButtonPressed(self):
-    #     print("SeaBASSHeader Open Dialogue")
-    #     text, ok = QtWidgets.QFileDialog.getOpenFileNames(self, "Select SeaBASS Header File","Config","hdr(*.hdr)")
-    #     if ok:
-    #         (_, fname) = os.path.split(text[0])
-    #         print(fname)
-    #         if len(fname[0]) == 1:
-    #             self.l1eSeaBASSHeaderLineEdit.setText(fname)            
+        self.l1eSeaBASSHeaderEditButton.setDisabled(disabled)       
 
     def l1eSeaBASSHeaderEditButtonPressed(self):
         print("Edit seaBASSHeader Dialogue")
         
-        # seaBASSHeaderFileName = self.l1eSeaBASSHeaderComboBox.currentText()
         ConfigWindow.refreshConfig(self)
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
         inputDir = self.inputDirectory
@@ -1250,7 +1196,6 @@ class ConfigWindow(QtWidgets.QDialog):
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
             seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
-            #seaBASSHeaderDialog = CalibrationEditWindow(seaBASSHeaderFileName, self)
             seaBASSHeaderDialog.show()
         else:
             print("Creating New SeaBASSHeader File: ", seaBASSHeaderFileName)   
@@ -1258,31 +1203,7 @@ class ConfigWindow(QtWidgets.QDialog):
             SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
             seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
             seaBASSHeaderDialog.show()                
-
-            # message = "Not a seaBASSHeader File: " + seaBASSHeaderFileName
-            # QtWidgets.QMessageBox.critical(self, "Error", message)
-
-    # def l1eSeaBASSHeaderDeleteButtonPressed(self):
-    #     print("Delete seaBASSHeader Dialogue")
-    #     # print("index: ", self.seaBASSHeaderComboBox.currentIndex())
-    #     # print("text: ", self.seaBASSHeaderComboBox.currentText())
-    #     # seaBASSHeaderFileName = self.l1eSeaBASSHeaderComboBox.currentText()
-    #     seaBASSHeaderFileName = self.l1eSeaBASSHeaderLineEdit.text()
-    #     seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
-    #     if os.path.isfile(seaBASSHeaderPath):
-    #         seaBASSHeaderDeleteMessage = "Delete " + seaBASSHeaderFileName + "?"
-
-    #         reply = QtWidgets.QMessageBox.question(self, 'Message', seaBASSHeaderDeleteMessage, \
-    #                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
-
-    #         if reply == QtWidgets.QMessageBox.Yes:
-    #             SeaBASSHeader.deleteSeaBASSHeader(seaBASSHeaderFileName)
-    #             self.l1eSeaBASSHeaderLineEdit.setText('')              
-    #     else:
-    #         #print("Not a seaBASSHeader File: " + seaBASSHeaderFileName)
-    #         message = "Not a seaBASSHeader File: " + seaBASSHeaderFileName
-    #         QtWidgets.QMessageBox.critical(self, "Error", message)
-
+   
     def l2pGetAncCheckBoxUpdate(self):
         print("ConfigWindow - l2pGetAncCheckBoxUpdate")        
             
@@ -1456,111 +1377,15 @@ class ConfigWindow(QtWidgets.QDialog):
     def l2SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")        
         disabled = (not self.l1eSaveSeaBASSCheckBox.isChecked()) \
-                and (not self.l2SaveSeaBASSCheckBox.isChecked())
-        # self.l1eSeaBASSHeaderNewButton.setDisabled(disabled)
-        # self.l1eSeaBASSHeaderOpenButton.setDisabled(disabled)
+                and (not self.l2SaveSeaBASSCheckBox.isChecked())        
         self.l1eSeaBASSHeaderEditButton.setDisabled(disabled)
-        # self.l1eSeaBASSHeaderDeleteButton.setDisabled(disabled)
 
     def saveButtonPressed(self):
         print("ConfigWindow - Save Pressed")
 
         ConfigWindow.refreshConfig(self)
 
-        # # print(self.l1dDeglitch0LineEdit.text())
-        # # print(int(self.l1dDeglitch0LineEdit.text())%2)
-        # if int(self.l1dDeglitch0LineEdit.text())%2 == 0 or int(self.l1dDeglitch1LineEdit.text())%2 ==0:
-        #     alert = QtWidgets.QMessageBox()
-        #     alert.setText('Deglitching windows must be odd integers.')
-        #     alert.exec_()
-        #     return
-
-        # ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
-        # ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())
-
-        # ConfigFile.settings["bL1cSolarTracker"] = int(self.l1cSolarTrackerCheckBox.isChecked())        
-        # ConfigFile.settings["fL1cRotatorHomeAngle"] = float(self.l1cRotatorHomeAngleLineEdit.text())
-        # ConfigFile.settings["bL1cRotatorDelay"] = int(self.l1cRotatorDelayCheckBox.isChecked())
-        # ConfigFile.settings["fL1cRotatorDelay"] = float(self.l1cRotatorDelayLineEdit.text())     
-        # ConfigFile.settings["bL1cCleanPitchRoll"] = int(self.l1cCleanPitchRollCheckBox.isChecked())        
-        # ConfigFile.settings["fL1cPitchRollPitch"] = float(self.l1cPitchRollPitchLineEdit.text())
-        # ConfigFile.settings["fL1cPitchRollRoll"] = float(self.l1cPitchRollRollLineEdit.text())         
-        # ConfigFile.settings["bL1cRotatorAngle"] = int(self.l1cRotatorAngleCheckBox.isChecked())        
-        # ConfigFile.settings["fL1cRotatorAngleMin"] = float(self.l1cRotatorAngleMinLineEdit.text())
-        # ConfigFile.settings["fL1cRotatorAngleMax"] = float(self.l1cRotatorAngleMaxLineEdit.text())                
-        # ConfigFile.settings["bL1cCleanSunAngle"] = int(self.l1cCleanSunAngleCheckBox.isChecked())        
-        # ConfigFile.settings["fL1cSunAngleMin"] = float(self.l1cSunAngleMinLineEdit.text())
-        # ConfigFile.settings["fL1cSunAngleMax"] = float(self.l1cSunAngleMaxLineEdit.text())
-
-        # ConfigFile.settings["bL1dDeglitch"] = int(self.l1dDeglitchCheckBox.isChecked()) 
-        # ConfigFile.settings["fL1dDeglitch0"] = int(self.l1dDeglitch0LineEdit.text())
-        # ConfigFile.settings["fL1dDeglitch1"] = int(self.l1dDeglitch1LineEdit.text())
-        # ConfigFile.settings["fL1dDeglitch2"] = float(self.l1dDeglitch2LineEdit.text())
-        # ConfigFile.settings["fL1dDeglitch3"] = float(self.l1dDeglitch3LineEdit.text())
-        # ConfigFile.settings["bL1dAnomalyStep"] = int(self.l1dAnomalyStepLineEdit.text())
-
-        # ConfigFile.settings["fL1eInterpInterval"] = float(self.l1eInterpIntervalLineEdit.text())
-        # ConfigFile.settings["bL1ePlotTimeInterp"] = int(self.l1ePlotTimeInterpCheckBox.isChecked())
-        # ConfigFile.settings["bL1eSaveSeaBASS"] = int(self.l1eSaveSeaBASSCheckBox.isChecked())
-        # # ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderComboBox.currentText()
-        # # ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderLineEdit.text()
-
-        # ConfigFile.settings["bL2pGetAnc"] = int(self.l2pGetAncCheckBox.isChecked())
-
-        # ConfigFile.settings["bL2LtUVNIR"] = int(self.l2LtUVNIRCheckBox.isChecked())        
-        # ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
-        # ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
-        # if int(self.RhoRadioButtonZhang.isChecked()) and float(self.l2SZAMaxLineEdit.text()) > 60:
-        #     print("SZA outside Zhang model limits; adjusting.")
-        #     self.l2SZAMaxLineEdit.setText(str(60.0))
-        # ConfigFile.settings["fL2SZAMax"] = float(self.l2SZAMaxLineEdit.text())
-        # ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2SpecQualityCheckBox.isChecked())
-        # ConfigFile.settings["fL2SpecFilterEs"] = float(self.l2SpecFilterEsLineEdit.text())
-        # ConfigFile.settings["fL2SpecFilterLi"] = float(self.l2SpecFilterLiLineEdit.text())
-        # ConfigFile.settings["fL2SpecFilterLt"] = float(self.l2SpecFilterLtLineEdit.text())
-        
-        # ConfigFile.settings["bL2EnableQualityFlags"] = int(self.l2QualityFlagCheckBox.isChecked())
-        # ConfigFile.settings["fL2CloudFlag"] = float(self.l2CloudFlagLineEdit.text())
-        # ConfigFile.settings["fL2SignificantEsFlag"] = float(self.l2EsFlagLineEdit.text())
-        # ConfigFile.settings["fL2DawnDuskFlag"] = float(self.l2DawnDuskFlagLineEdit.text())
-        # ConfigFile.settings["fL2RainfallHumidityFlag"] = float(self.l2RainfallHumidityFlagLineEdit.text())
-
-        # ConfigFile.settings["bL2Stations"] = int(self.l2StationsCheckBox.isChecked())
-        # ConfigFile.settings["fL2TimeInterval"] = int(self.l2TimeIntervalLineEdit.text())                        
-        # ConfigFile.settings["bL2EnablePercentLt"] = int(self.l2EnablePercentLtCheckBox.isChecked())
-        # ConfigFile.settings["fL2PercentLt"] = float(self.l2PercentLtLineEdit.text())
-        
-        # ConfigFile.settings["fL2DefaultWindSpeed"] = float(self.l2DefaultWindSpeedLineEdit.text())
-        # ConfigFile.settings["fL2DefaultAOD"] = float(self.l2DefaultAODLineEdit.text())
-        # ConfigFile.settings["fL2DefaultSalt"] = float(self.l2DefaultSaltLineEdit.text())
-        # ConfigFile.settings["fL2DefaultSST"] = float(self.l2DefaultSSTLineEdit.text())
-        # ConfigFile.settings["fL2RhoSky"] = float(self.l2RhoSkyLineEdit.text())        
-        # ConfigFile.settings["bL2RuddickRho"] = int(self.RhoRadioButtonRuddick.isChecked())
-        # ConfigFile.settings["bL2ZhangRho"] = int(self.RhoRadioButtonZhang.isChecked())
-        # ConfigFile.settings["bL2DefaultRho"] = int(self.RhoRadioButtonDefault.isChecked())
-
-        # ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())
-        # ConfigFile.settings["bL2SimpleNIRCorrection"] = int(self.SimpleNIRRadioButton.isChecked())
-        # ConfigFile.settings["bL2SimSpecNIRCorrection"] = int(self.SimSpecNIRRadioButton.isChecked())
-        
-        # ConfigFile.settings["bL2NegativeSpec"] = int(self.l2NegativeSpecCheckBox.isChecked())
-
-        # ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
-        # ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())
-        # ConfigFile.settings["bL2WeightVIIRSN"] = int(self.l2WeightVIIRSNCheckBox.isChecked())
-        # ConfigFile.settings["bL2WeightMODIST"] = int(self.l2WeightMODISTCheckBox.isChecked())
-        # ConfigFile.settings["bL2WeightSentinel3B"] = int(self.l2WeightSentinel3BCheckBox.isChecked())
-        # ConfigFile.settings["bL2WeightVIIRSJ"] = int(self.l2WeightVIIRSJCheckBox.isChecked())
-        # ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())
-        # ConfigFile.settings["bL2PlotnLw"] = int(self.l2PlotnLwCheckBox.isChecked())
-        # ConfigFile.settings["bL2PlotEs"] = int(self.l2PlotEsCheckBox.isChecked())
-        # ConfigFile.settings["bL2PlotLi"] = int(self.l2PlotLiCheckBox.isChecked())
-        # ConfigFile.settings["bL2PlotLt"] = int(self.l2PlotLtCheckBox.isChecked())
-        # ConfigFile.settings["bL2SaveSeaBASS"] = int(self.l2SaveSeaBASSCheckBox.isChecked())
-
         ConfigFile.saveConfig(self.name)
-
-        # QtWidgets.QMessageBox.about(self, "Edit Config File", "Config File Saved")  
 
         # Confirm that SeaBASS Headers need to be/are updated
         if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL2SaveSeaBASS"]: 
@@ -1683,106 +1508,10 @@ class ConfigWindow(QtWidgets.QDialog):
             # self.name = self.newName
 
             ConfigWindow.refreshConfig(self)
-
-            # # self.calibrationFileComboBox.currentIndexChanged.connect(self.calibrationFileChanged)
-            
-            # if int(self.l1dDeglitch0LineEdit.text())%2 == 0 or int(self.l1dDeglitch1LineEdit.text())%2 ==0:
-            #     alert = QtWidgets.QMessageBox()
-            #     alert.setText('Deglitching windows must be odd integers.')
-            #     alert.exec_()
-            #     return
-
-            # ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
-            # ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())
-            
-            # ConfigFile.settings["bL1cSolarTracker"] = int(self.l1cSolarTrackerCheckBox.isChecked())
-            # ConfigFile.settings["fL1cRotatorHomeAngle"] = float(self.l1cRotatorHomeAngleLineEdit.text())
-            # ConfigFile.settings["bL1cRotatorDelay"] = int(self.l1cRotatorDelayCheckBox.isChecked())
-            # ConfigFile.settings["fL1cRotatorDelay"] = float(self.l1cRotatorDelayLineEdit.text())     
-            # ConfigFile.settings["bL1cCleanPitchRoll"] = int(self.l1cCleanPitchRollCheckBox.isChecked())        
-            # ConfigFile.settings["fL1cPitchRollPitch"] = float(self.l1cPitchRollPitchLineEdit.text())
-            # ConfigFile.settings["fL1cPitchRollRoll"] = float(self.l1cPitchRollRollLineEdit.text())         
-            # ConfigFile.settings["bL1cRotatorAngle"] = int(self.l1cRotatorAngleCheckBox.isChecked())        
-            # ConfigFile.settings["fL1cRotatorAngleMin"] = float(self.l1cRotatorAngleMinLineEdit.text())
-            # ConfigFile.settings["fL1cRotatorAngleMax"] = float(self.l1cRotatorAngleMaxLineEdit.text())                
-            # ConfigFile.settings["bL1cCleanSunAngle"] = int(self.l1cCleanSunAngleCheckBox.isChecked())        
-            # ConfigFile.settings["fL1cSunAngleMin"] = float(self.l1cSunAngleMinLineEdit.text())
-            # ConfigFile.settings["fL1cSunAngleMax"] = float(self.l1cSunAngleMaxLineEdit.text())
-
-            # ConfigFile.settings["bL1dDeglitch"] = int(self.l1dDeglitchCheckBox.isChecked()) 
-            # ConfigFile.settings["fL1dDeglitch0"] = int(self.l1dDeglitch0LineEdit.text())
-            # ConfigFile.settings["fL1dDeglitch1"] = int(self.l1dDeglitch1LineEdit.text())
-            # ConfigFile.settings["fL1dDeglitch2"] = float(self.l1dDeglitch2LineEdit.text())
-            # ConfigFile.settings["fL1dDeglitch3"] = float(self.l1dDeglitch3LineEdit.text())
-            # ConfigFile.settings["bL1dAnomalyStep"] = int(self.l1dAnomalyStepLineEdit.text())
-
-            # ConfigFile.settings["fL1eInterpInterval"] = float(self.l1eInterpIntervalLineEdit.text())
-            # ConfigFile.settings["bL1ePlotTimeInterp"] = int(self.l1ePlotTimeInterpCheckBox.isChecked())
-            # ConfigFile.settings["bL1eSaveSeaBASS"] = int(self.l1eSaveSeaBASSCheckBox.isChecked())
-            # # ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderComboBox.currentText()
-            # # ConfigFile.settings["seaBASSHeaderFileName"] = self.l1eSeaBASSHeaderLineEdit.text()
-
-            # ConfigFile.settings["bL2pGetAnc"] = int(self.l2pGetAncCheckBox.isChecked())
-
-            # ConfigFile.settings["bL2LtUVNIR"] = int(self.l2LtUVNIRCheckBox.isChecked())        
-            # ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
-            # ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
-            # if int(self.RhoRadioButtonZhang.isChecked()) and float(self.l2SZAMaxLineEdit.text()) > 60:
-            #     print("SZA outside Zhang model limits; adjusting.")
-            #     self.l2SZAMaxLineEdit.setText(str(60.0))
-            # ConfigFile.settings["fL2SZAMax"] = float(self.l2SZAMaxLineEdit.text())
-            # ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2SpecQualityCheckBox.isChecked())
-            # ConfigFile.settings["fL2SpecFilterEs"] = float(self.l2SpecFilterEsLineEdit.text())
-            # ConfigFile.settings["fL2SpecFilterLi"] = float(self.l2SpecFilterLiLineEdit.text())
-            # ConfigFile.settings["fL2SpecFilterLt"] = float(self.l2SpecFilterLtLineEdit.text())
-            
-            # ConfigFile.settings["bL2EnableQualityFlags"] = int(self.l2QualityFlagCheckBox.isChecked())
-            # ConfigFile.settings["fL2CloudFlag"] = float(self.l2CloudFlagLineEdit.text())
-            # ConfigFile.settings["fL2SignificantEsFlag"] = float(self.l2EsFlagLineEdit.text())
-            # ConfigFile.settings["fL2DawnDuskFlag"] = float(self.l2DawnDuskFlagLineEdit.text())
-            # ConfigFile.settings["fL2RainfallHumidityFlag"] = float(self.l2RainfallHumidityFlagLineEdit.text())
-
-            # ConfigFile.settings["bL2Stations"] = int(self.l2StationsCheckBox.isChecked())
-            # ConfigFile.settings["fL2TimeInterval"] = int(self.l2TimeIntervalLineEdit.text())                        
-            # ConfigFile.settings["bL2EnablePercentLt"] = int(self.l2EnablePercentLtCheckBox.isChecked())
-            # ConfigFile.settings["fL2PercentLt"] = float(self.l2PercentLtLineEdit.text())
-            
-            # ConfigFile.settings["fL2DefaultWindSpeed"] = float(self.l2DefaultWindSpeedLineEdit.text())
-            # ConfigFile.settings["fL2DefaultAOD"] = float(self.l2DefaultAODLineEdit.text())
-            # ConfigFile.settings["fL2DefaultSalt"] = float(self.l2DefaultSaltLineEdit.text())
-            # ConfigFile.settings["fL2DefaultSST"] = float(self.l2DefaultSSTLineEdit.text())
-            # ConfigFile.settings["fL2RhoSky"] = float(self.l2RhoSkyLineEdit.text())        
-            # ConfigFile.settings["bL2RuddickRho"] = int(self.RhoRadioButtonRuddick.isChecked())
-            # ConfigFile.settings["bL2ZhangRho"] = int(self.RhoRadioButtonZhang.isChecked())
-            # ConfigFile.settings["bL2DefaultRho"] = int(self.RhoRadioButtonDefault.isChecked())
-
-            # ConfigFile.settings["bL2PerformNIRCorrection"] = int(self.l2NIRCorrectionCheckBox.isChecked())
-            # ConfigFile.settings["bL2SimpleNIRCorrection"] = int(self.SimpleNIRRadioButton.isChecked())
-            # ConfigFile.settings["bL2SimSpecNIRCorrection"] = int(self.SimSpecNIRRadioButton.isChecked())
-
-            # ConfigFile.settings["bL2NegativeSpec"] = int(self.l2NegativeSpecCheckBox.isChecked())
-            
-            # ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
-            # ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())
-            # ConfigFile.settings["bL2WeightVIIRSN"] = int(self.l2WeightVIIRSNCheckBox.isChecked())
-            # ConfigFile.settings["bL2WeightMODIST"] = int(self.l2WeightMODISTCheckBox.isChecked())
-            # ConfigFile.settings["bL2WeightSentinel3B"] = int(self.l2WeightSentinel3BCheckBox.isChecked())
-            # ConfigFile.settings["bL2WeightVIIRSJ"] = int(self.l2WeightVIIRSJCheckBox.isChecked())
-            # ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())
-            # ConfigFile.settings["bL2PlotnLw"] = int(self.l2PlotnLwCheckBox.isChecked())
-            # ConfigFile.settings["bL2PlotEs"] = int(self.l2PlotEsCheckBox.isChecked())
-            # ConfigFile.settings["bL2PlotLi"] = int(self.l2PlotLiCheckBox.isChecked())
-            # ConfigFile.settings["bL2PlotLt"] = int(self.l2PlotLtCheckBox.isChecked())
-            # ConfigFile.settings["bL2SaveSeaBASS"] = int(self.l2SaveSeaBASSCheckBox.isChecked())           
-
-            # QtWidgets.QMessageBox.about(self, "Save As Config File", "Config File Saved")
             ConfigFile.saveConfig(ConfigFile.filename)
 
-            # Copy Calibration files into new Config folder
-            # fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files")
+            # Copy Calibration files into new Config folder            
             fnames = ConfigFile.settings['CalibrationFiles']
-
-            # oldCalibrationDir = os.path.splitext(oldConfigName)[0] + "_Calibration"
             oldConfigName = self.name
             newConfigName = ConfigFile.filename
             oldCalibrationDir = os.path.splitext(oldConfigName)[0] + "_Calibration"

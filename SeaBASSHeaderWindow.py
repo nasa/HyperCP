@@ -573,7 +573,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
         SeaBASSHeader.saveSeaBASSHeader(self.name)
         # print(SeaBASSHeader.settings["comments"])
-
+        ConfigFile.settings["seaBASSHeaderFileName"] = self.name
+        
         QtWidgets.QMessageBox.about(self, "Edit SeaBASSHeader File", "SeaBASSHeader File Saved")
         self.close()
 
@@ -591,18 +592,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.instrument_modelLineEdit.setText(str(SeaBASSHeader.settings["instrument_model"]))
         self.calibration_dateLineEdit.setText(str(SeaBASSHeader.settings["calibration_date"]))
         self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
-        self.other_commentsLineEdit.setText(SeaBASSHeader.settings["other_comments"])
-
-        # # These will always be refreshed from the ConfigFile
-        # SeaBASSHeader.refreshCalibrationFiles()
-        # self.calibration_filesLineEdit.setText(str(SeaBASSHeader.settings["calibration_files"]))
-        # self.data_typeLineEdit.setText(str(SeaBASSHeader.settings["data_type"]))
-        # self.data_statusLineEdit.setText(str(SeaBASSHeader.settings["data_status"]))
-        # self.water_depthLineEdit.setText(str(SeaBASSHeader.settings["water_depth"]))
-        # self.measurement_depthLineEdit.setText(str(SeaBASSHeader.settings["measurement_depth"]))
-        # self.cloud_percentLineEdit.setText(str(SeaBASSHeader.settings["cloud_percent"]))
-        # self.wave_heightLineEdit.setText(str(SeaBASSHeader.settings["wave_height"]))
-        # self.secchi_depthLineEdit.setText(str(SeaBASSHeader.settings["secchi_depth"]))
+        self.other_commentsLineEdit.setText(SeaBASSHeader.settings["other_comments"])        
         
     def saveAsButtonPressed(self):
         print("ConfigWindow - Save As Pressed")
