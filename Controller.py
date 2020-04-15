@@ -359,21 +359,22 @@ class Controller:
 
         # Create Plots
         dirpath = os.getcwd()
-        if root is not None and ConfigFile.settings['bL2PlotRrs']==1:            
-            _, filename = os.path.split(outFilePath)
-            Utilities.plotRadiometry(root, dirpath, filename, rType='Rrs', plotDelta = True)
-        if root is not None and ConfigFile.settings['bL2PlotnLw']==1:            
-            _, filename = os.path.split(outFilePath)
-            Utilities.plotRadiometry(root, dirpath, filename, rType='nLw', plotDelta = True)            
-        if root is not None and ConfigFile.settings['bL2PlotEs']==1:
-            _, filename = os.path.split(outFilePath)
-            Utilities.plotRadiometry(root, dirpath, filename, rType='ES', plotDelta = True)
-        if root is not None and ConfigFile.settings['bL2PlotLi']==1:
-            _, filename = os.path.split(outFilePath)
-            Utilities.plotRadiometry(root, dirpath, filename, rType='LI', plotDelta = True)
-        if root is not None and ConfigFile.settings['bL2PlotLt']==1:
-            _, filename = os.path.split(outFilePath)
-            Utilities.plotRadiometry(root, dirpath, filename, rType='LT', plotDelta = True)
+        outPath, filename = os.path.split(outFilePath)
+        if root is not None:
+            if ConfigFile.settings["bL2Stations"]:
+                station = np.unique(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"]).tolist()
+                filename = f'STATION_{str(station[0])}_{filename}'
+                outFilePath = os.path.join(outPath,filename)
+            if ConfigFile.settings['bL2PlotRrs']==1:                        
+                Utilities.plotRadiometry(root, dirpath, filename, rType='Rrs', plotDelta = True)
+            if ConfigFile.settings['bL2PlotnLw']==1:            
+                Utilities.plotRadiometry(root, dirpath, filename, rType='nLw', plotDelta = True)            
+            if ConfigFile.settings['bL2PlotEs']==1:
+                Utilities.plotRadiometry(root, dirpath, filename, rType='ES', plotDelta = True)
+            if ConfigFile.settings['bL2PlotLi']==1:
+                Utilities.plotRadiometry(root, dirpath, filename, rType='LI', plotDelta = True)
+            if ConfigFile.settings['bL2PlotLt']==1:
+                Utilities.plotRadiometry(root, dirpath, filename, rType='LT', plotDelta = True)
 
         # Write output file
         if root is not None:

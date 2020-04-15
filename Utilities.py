@@ -867,8 +867,8 @@ class Utilities:
         # plt.show() # --> QCoreApplication::exec: The event loop is already running
 
         # Save the plot
-        filebasename,_ = filename.split('_')
-        fp = os.path.join(plotdir, filebasename + '_' + rType + '.png')
+        filebasename = filename.split('_')
+        fp = os.path.join(plotdir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
         plt.savefig(fp)
         plt.close() # This prevents displaying the plot on screen with certain IDEs          
    
@@ -962,7 +962,8 @@ class Utilities:
             print("Error: %s" % e)
 
     @staticmethod
-    def specFilter(inFilePath, Dataset, timeStamp, filterRange, filterFactor, rType):
+    def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 700],\
+                filterFactor=3, rType='None'):
         dirpath = './'
         if not os.path.exists(os.path.join('Plots','L2_Spectral_Filter')):
             os.makedirs(os.path.join('Plots','L2_Spectral_Filter'))
@@ -1042,7 +1043,10 @@ class Utilities:
         # Save the plot
         _,filename = os.path.split(inFilePath)
         filebasename,_ = filename.split('_')
-        fp = os.path.join(plotdir, filebasename + '_' + rType + '.png')
+        if station:
+            fp = os.path.join(plotdir, f'{station}_{filebasename}_{rType}.png')
+        else:            
+            fp = os.path.join(plotdir, f'{filebasename}_{rType}.png')
         plt.savefig(fp)
         plt.close()
 

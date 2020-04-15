@@ -160,6 +160,7 @@ class ConfigFile:
         ConfigFile.settings["fL2DawnDuskFlag"] = 1.0 # Wernand 2002
         ConfigFile.settings["fL2RainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain      
 
+        ConfigFile.settings["bL2Stations"] = 0
         ConfigFile.settings["fL2TimeInterval"] = 300
         ConfigFile.settings["bL2EnablePercentLt"] = 0
         ConfigFile.settings["fL2PercentLt"] = 5 # 5% Hooker et al. 2002, Hooker and Morel 2003; <10% IOCCG Protocols

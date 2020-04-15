@@ -120,7 +120,7 @@ class ProcessL2:
 
     
     @staticmethod
-    def specQualityCheck(group, inFilePath):
+    def specQualityCheck(group, inFilePath, station=None):
         ''' Perform spectral filtering
         Calculate the STD of the normalized (at some max value) average ensemble.
         Then test each normalized spectrum against the ensemble average and STD.
@@ -130,7 +130,7 @@ class ProcessL2:
         if group.id == 'IRRADIANCE':
             Data = group.getDataset("ES") 
             timeStamp = group.getDataset("ES").data["Datetime"]
-            badTimes = Utilities.specFilter(inFilePath, Data, timeStamp, filterRange=[400, 700],\
+            badTimes = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=[400, 700],\
                 filterFactor=5, rType='Es')
             msg = f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of Es data flagged'
             print(msg)
@@ -138,7 +138,7 @@ class ProcessL2:
         else:            
             Data = group.getDataset("LI")
             timeStamp = group.getDataset("LI").data["Datetime"]
-            badTimes1 = Utilities.specFilter(inFilePath, Data, timeStamp, filterRange=[400, 700],\
+            badTimes1 = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=[400, 700],\
                 filterFactor=8, rType='Li')
             msg = f'{len(np.unique(badTimes1))/len(timeStamp)*100:.1f}% of Li data flagged'
             print(msg)
@@ -146,7 +146,7 @@ class ProcessL2:
 
             Data = group.getDataset("LT")
             timeStamp = group.getDataset("LT").data["Datetime"]
-            badTimes2 = Utilities.specFilter(inFilePath, Data, timeStamp, filterRange=[400, 700],\
+            badTimes2 = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=[400, 700],\
                 filterFactor=3, rType='Lt')
             msg = f'{len(np.unique(badTimes2))/len(timeStamp)*100:.1f}% of Lt data flagged'
             print(msg)
@@ -1437,17 +1437,8 @@ class ProcessL2:
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
 
-        # # Filter low SZAs and high winds after interpolating model/ancillary data
-        # maxWind = float(ConfigFile.settings["fL2MaxWind"]) 
-        # SZAMin = float(ConfigFile.settings["fL2SZAMin"])
-        # SZAMax = float(ConfigFile.settings["fL2SZAMax"])
-        # if ConfigFile.settings["bL1cSolarTracker"]:
-        #     SZA = 90 -satnavGroup.getDataset("ELEVATION").data["SUN"]
-        #     # timeStamp = satnavGroup.getDataset("ELEVATION").data["Timetag2"]
-        # else:
         if not ConfigFile.settings["bL1cSolarTracker"]:
             ancTemp = node.getGroup("TEMPORARY")
-            # SZA = ancTemp.datasets["SZA"].data["NONE"].copy()    
 
         # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
         # is provided in Main Window, then use the model data to fill in gaps in the field 
@@ -1552,6 +1543,69 @@ class ProcessL2:
 
         # Filter the spectra from the entire collection before slicing the intervals
 
+        # Stations
+        # The simplest approach is to run station extraction seperately from underway data.
+        # This means, if station extraction is selected in the GUI, all non-station data will be
+        # discarded here prior to any further filtering or processing.
+        station = None
+        if ConfigFile.settings["bL2Stations"]:
+            msg = "Extracting station data only. All other records will be discarded."
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+            try:
+                stations = ancGroup.getDataset("STATION").columns["STATION"]
+                dateTime = ancGroup.getDataset("STATION").columns["Datetime"]
+            except:
+                msg = "No station data found in ancGroup. Aborting."
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
+
+            badTimes = []
+            start = False
+            stop = False         
+            for index, station in enumerate(stations):
+                # print(f'index: {index}, station: {station}, datetime: {dateTime[index]}')
+                if np.isnan(station) and start == False:
+                    start = dateTime[index]
+                if not np.isnan(station) and not (start == False) and (stop == False):
+                    stop = dateTime[index-1]
+                    badTimes.append([start, stop])
+                    start = False
+                    stop = False 
+                # End of file, no active station
+                if np.isnan(station) and not (start == False) and (index == len(stations)-1):
+                    stop = dateTime[index]
+                    badTimes.append([start, stop])            
+
+            if badTimes is not None and len(badTimes) != 0:
+                print('Removing records...')
+                check = ProcessL2.filterData(referenceGroup, badTimes)   
+                if check > 0.99:
+                    msg = "Too few spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False         
+                ProcessL2.filterData(sasGroup, badTimes)
+                ProcessL2.filterData(ancGroup, badTimes) 
+            
+            # What to do if there are multiple, non-unique station numbers??
+            ''' TO DO: This needs to be addressed for non-SolarTracker files, which can
+                be much longer than one hour long and capture more than one station ''' 
+            
+            stations = ancGroup.getDataset("STATION").columns["STATION"]
+            station = np.unique(stations)
+            if len(station) > 1:
+                msg = "Multiple non-unique station names found in this file. Abort."
+                alert = QtWidgets.QMessageBox()
+                alert.setText(msg)
+                alert.exec_()
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False        
+            station = str(station[0]) 
+
         # Lt Quality Filtering; anomalous elevation in the NIR
         if ConfigFile.settings["bL2LtUVNIR"]:
             msg = "Applying Lt quality filtering to eliminate spectra."
@@ -1646,8 +1700,8 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)
             inFilePath = root.attributes['In_Filepath']
-            badTimes1 = ProcessL2.specQualityCheck(referenceGroup, inFilePath)
-            badTimes2 = ProcessL2.specQualityCheck(sasGroup, inFilePath)
+            badTimes1 = ProcessL2.specQualityCheck(referenceGroup, inFilePath, station)
+            badTimes2 = ProcessL2.specQualityCheck(sasGroup, inFilePath, station)
             if badTimes1 is not None and badTimes2 is not None:
                 badTimes = np.append(badTimes1,badTimes2, axis=0)
             elif badTimes1 is not None:
@@ -1806,7 +1860,7 @@ class ProcessL2:
     @staticmethod
     def processL2(node, ancillaryData=None):
         '''Calculates Rrs and nLw after quality checks and filtering, glint removal, residual 
-            subtraction. Weights for satellite bands, and outputs plots and SeaBASS tasetta'''
+            subtraction. Weights for satellite bands, and outputs plots and SeaBASS datasets'''
 
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
