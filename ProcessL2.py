@@ -76,8 +76,9 @@ class ProcessL2:
         if badTimes == []:
             startLength = 1 # avoids div by zero below when finalCount is 0
 
-        for ds in group.datasets: 
-            group.datasets[ds].datasetToColumns()
+        for ds in group.datasets:
+            if ds != "STATION": 
+                group.datasets[ds].datasetToColumns()
 
         msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
         print(msg)
@@ -466,7 +467,7 @@ class ProcessL2:
                 waveFlag.append('field')
                 waveInRad.append(np.nan)
             if station:
-                stationInRad.append(np.nan)
+                stationInRad.append('underway')
             
         # Populate with nearest field data if possible
         if ancData:
@@ -486,7 +487,9 @@ class ProcessL2:
                     if wave:
                         waveInRad[i] = wave[idx]
                     if station:
-                        stationInRad[i] = station[idx]
+                        if not np.isnan(station[idx]):
+                            stationTidy = str(round(station[idx]*100)/100)
+                            stationInRad[i] = stationTidy
         
         # Tallies
         msg = f'Field wind data has {np.isnan(windInRad).sum()} NaNs out of {len(windInRad)} prior to using model data'                
@@ -510,7 +513,8 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)
         if station:
-            msg = f'Field station data has {np.isnan(stationInRad).sum()} NaNs out of {len(stationInRad)}'
+            count = stationInRad.count('underway')
+            msg = f'Field station data has {count} non-stations out of {len(stationInRad)}'
             print(msg)
             Utilities.writeLogFile(msg)
 
@@ -617,6 +621,12 @@ class ProcessL2:
         if wave:
             waveDataset.columnsToDataset()
         if station:
+            '''BUG: There does not seem to be any way to force non-homogeneous np.array of 
+                data without changing its dtype to OBJECT, which can't be assigned the same
+                way as conventional arrays (i.e. by name of column, like 'STATION'). Try ignoring
+                conversion to dataset for STATION.
+                See the hack to ignore the conversion of the STATION np.array to a column in
+                HDFDataset.datasetToColumns.'''
             stationDataset.columnsToDataset()      
     
     @staticmethod
@@ -711,7 +721,7 @@ class ProcessL2:
                             dsXSlice['Timetag2'] = [time]
                             dsXSlice['Datetime'] = [dateTime]                            
                             
-                        if subset.endswith('FLAG'):
+                        if (subset.endswith('FLAG')) or (subset.endswith('STATION')):
                             if not subset in dsXSlice:
                                 # Find the most frequest element
                                 dsXSlice[subset] = []
@@ -729,7 +739,7 @@ class ProcessL2:
 
                 newDS.columns.move_to_end('Timetag2', last=False)
                 newDS.columns.move_to_end('Datetag', last=False)
-                newDS.columns.move_to_end('Datetime', last=False)
+                newDS.columns.move_to_end('Datetime', last=False)                
                 newDS.columnsToDataset()         
        
     @staticmethod
@@ -988,6 +998,12 @@ class ProcessL2:
                 WaveXSlice = WaveXSlice[0]        
         else:
             WaveXSlice = None
+        if "STATION" in newAncGroup.datasets:
+            StationSlice = newAncGroup.getDataset('STATION').data['STATION'].copy()
+            if isinstance(StationSlice, list):
+                StationSlice = StationSlice[0]        
+        else:
+            StationSlice = None
        
         if hasNan:            
             msg = 'ProcessL2.calculateREFLECTANCE2: Slice X"%" average error: Dataset all NaNs.'
@@ -1567,15 +1583,15 @@ class ProcessL2:
             stop = False         
             for index, station in enumerate(stations):
                 # print(f'index: {index}, station: {station}, datetime: {dateTime[index]}')
-                if np.isnan(station) and start == False:
+                if (station=="underway") and start == False:
                     start = dateTime[index]
-                if not np.isnan(station) and not (start == False) and (stop == False):
+                if not (station=="underway") and not (start == False) and (stop == False):
                     stop = dateTime[index-1]
                     badTimes.append([start, stop])
                     start = False
                     stop = False 
                 # End of file, no active station
-                if np.isnan(station) and not (start == False) and (index == len(stations)-1):
+                if (station=="underway") and not (start == False) and (index == len(stations)-1):
                     stop = dateTime[index]
                     badTimes.append([start, stop])            
 

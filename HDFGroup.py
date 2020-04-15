@@ -29,7 +29,12 @@ class HDFGroup:
     def datasetDeleteRow(self, i):
         for k in self.datasets:
             ds = self.datasets[k]
-            ds.data = np.delete(ds.data, (i), axis=0)            
+            ds.data = np.delete(ds.data, (i), axis=0)
+            '''BUG: Hack is to remove the column data rather than the data in
+                the case of stations'''
+            if k == "STATION":
+                for col in ds.columns:
+                    ds.columns[col] = np.delete(ds.columns[col], (i), axis=0)
 
     def addDataset(self, name):
         if len(name) == 0:

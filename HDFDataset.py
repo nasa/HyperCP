@@ -132,7 +132,10 @@ class HDFDataset:
         self.columns = collections.OrderedDict()
         for k in self.data.dtype.names:
             #print("type",type(ltData.data[k]))
-            self.columns[k] = self.data[k].tolist()
+            '''BUG: Hack: To maintain station names as strings, do not utilize the
+                numpy dataset structures'''
+            if k != "STATION":
+                self.columns[k] = self.data[k].tolist()
     
     def datasetToColumns2(self):
         ''' Convert Prosoft format numpy array to columns '''
@@ -203,8 +206,9 @@ class HDFDataset:
                         v = 3
             # if len(v[0]) == 1:
             #     v = v[0]
-            #     print(v)
-            self.data[k] = v 
+            #     print(v)            
+            if k != 'STATIONS':
+                self.data[k] = v 
 
         return True
 
