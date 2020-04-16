@@ -176,6 +176,7 @@ class AncillaryReader:
         if waveht:
             ancillaryData.appendColumn("WAVE_HT", waveht)
             ancillaryData.attributes["WAVE_Units"]=waveUnits
+
         ancillaryData.columnsToDataset()        
 
         return ancillaryData

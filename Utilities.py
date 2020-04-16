@@ -261,11 +261,8 @@ class Utilities:
             if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
                 for ds in gp.datasets:
                     # Make sure all datasets have been transcribed to columns
-                    '''BUG: try ignoring for STATIONS so they can be maintained 
-                        as string format'''
-                    if ds != "STATION":
-                        gp.datasets[ds].datasetToColumns()
-                    
+                    gp.datasets[ds].datasetToColumns()
+                                        
                     if not 'Datetime' in gp.datasets[ds].columns:
                         timeData = gp.datasets[ds].columns["Timetag2"]
                         dateTag = gp.datasets[ds].columns["Datetag"]

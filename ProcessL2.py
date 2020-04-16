@@ -77,8 +77,8 @@ class ProcessL2:
             startLength = 1 # avoids div by zero below when finalCount is 0
 
         for ds in group.datasets:
-            if ds != "STATION": 
-                group.datasets[ds].datasetToColumns()
+            # if ds != "STATION": 
+            group.datasets[ds].datasetToColumns()
 
         msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
         print(msg)
@@ -189,8 +189,8 @@ class ProcessL2:
         
         badTimes = np.unique(badTimes)
         # Duplicate each element to a list of two elements in a list
-        # BUG: This is not optimal as it creates one badTimes record for each bad
-        # timestamp, rather than span of timestamps from badtimes[i][0] to badtimes[i][1]
+        ''' BUG: This is not optimal as it creates one badTimes record for each bad
+            timestamp, rather than span of timestamps from badtimes[i][0] to badtimes[i][1]'''
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) 
         msg = f'{len(np.unique(badTimes))/len(ltDatetime)*100:.1f}% of spectra flagged'
         print(msg)
@@ -452,6 +452,8 @@ class ProcessL2:
         # Populate the fields to the size of the radiometric dataset with NaNs (or flag placeholders)
         for i, value in enumerate(radSeconds):
             ancInRadSeconds.append(value)
+            # HDF5 deliberately makes including string vectors difficult
+            # These will all be changed to floats or ints in HDFDataset.columnsToDataset
             windFlag.append('undetermined')                   
             saltFlag.append('undetermined')                   
             sstFlag.append('undetermined')                   
@@ -467,7 +469,8 @@ class ProcessL2:
                 waveFlag.append('field')
                 waveInRad.append(np.nan)
             if station:
-                stationInRad.append('underway')
+                # HDF5 deliberately makes including string vectors difficult
+                stationInRad.append(np.nan)
             
         # Populate with nearest field data if possible
         if ancData:
@@ -487,9 +490,11 @@ class ProcessL2:
                     if wave:
                         waveInRad[i] = wave[idx]
                     if station:
-                        if not np.isnan(station[idx]):
-                            stationTidy = str(round(station[idx]*100)/100)
-                            stationInRad[i] = stationTidy
+                        # if not np.isnan(station[idx]):
+                        #     # This will be converted back to a float in columnsToDataset
+                        #     stationTidy = str(round(station[idx]*100)/100)
+                        #     stationInRad[i] = stationTidy
+                        stationInRad[i] = station[idx]
         
         # Tallies
         msg = f'Field wind data has {np.isnan(windInRad).sum()} NaNs out of {len(windInRad)} prior to using model data'                
@@ -513,8 +518,8 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)
         if station:
-            count = stationInRad.count('underway')
-            msg = f'Field station data has {count} non-stations out of {len(stationInRad)}'
+            # count = stationInRad.count('underway')
+            msg = f'Field station data has {np.isnan(stationInRad).sum()} non-stations out of {len(stationInRad)}'
             print(msg)
             Utilities.writeLogFile(msg)
 
@@ -604,7 +609,7 @@ class ProcessL2:
         # dateTagDataset.columns["Datetag"] = ancDateTag
         # timeTag2Dataset.columns["Timetag2"] = ancTimeTag2
         # Move the Timetag2 and Datetag into the arrays and remove the datasets
-        for ds in ancGroup.datasets:
+        for ds in ancGroup.datasets:           
             ancGroup.datasets[ds].columns["Datetag"] = ancDateTag
             ancGroup.datasets[ds].columns["Timetag2"] = ancTimeTag2
             ancGroup.datasets[ds].columns["Datetime"] = radDT
@@ -621,12 +626,6 @@ class ProcessL2:
         if wave:
             waveDataset.columnsToDataset()
         if station:
-            '''BUG: There does not seem to be any way to force non-homogeneous np.array of 
-                data without changing its dtype to OBJECT, which can't be assigned the same
-                way as conventional arrays (i.e. by name of column, like 'STATION'). Try ignoring
-                conversion to dataset for STATION.
-                See the hack to ignore the conversion of the STATION np.array to a column in
-                HDFDataset.datasetToColumns.'''
             stationDataset.columnsToDataset()      
     
     @staticmethod
@@ -1552,17 +1551,17 @@ class ProcessL2:
             ancGroup.datasets['SST_IR'].datasetToColumns()
             ancGroup.datasets['SST_IR'].changeColName('IR','SST_IR')
 
-        ''' At this stage, all datasets in all groups of node have Timetag2
-            and Datetag incorporated into data arrays. Calculate and add
-            Datetime to each data array. '''
+        # At this stage, all datasets in all groups of node have Timetag2
+        #     and Datetag incorporated into data arrays. Calculate and add
+        #     Datetime to each data array.
         Utilities.rootAddDateTimeL2(node)
 
         # Filter the spectra from the entire collection before slicing the intervals
 
         # Stations
-        # The simplest approach is to run station extraction seperately from underway data.
-        # This means, if station extraction is selected in the GUI, all non-station data will be
-        # discarded here prior to any further filtering or processing.
+        #   The simplest approach is to run station extraction seperately from underway data.
+        #   This means, if station extraction is selected in the GUI, all non-station data will be
+        #   discarded here prior to any further filtering or processing.
         station = None
         if ConfigFile.settings["bL2Stations"]:
             msg = "Extracting station data only. All other records will be discarded."
@@ -1583,15 +1582,15 @@ class ProcessL2:
             stop = False         
             for index, station in enumerate(stations):
                 # print(f'index: {index}, station: {station}, datetime: {dateTime[index]}')
-                if (station=="underway") and start == False:
+                if np.isnan(station) and start == False:
                     start = dateTime[index]
-                if not (station=="underway") and not (start == False) and (stop == False):
+                if not np.isnan(station) and not (start == False) and (stop == False):
                     stop = dateTime[index-1]
                     badTimes.append([start, stop])
                     start = False
                     stop = False 
                 # End of file, no active station
-                if (station=="underway") and not (start == False) and (index == len(stations)-1):
+                if np.isnan(station) and not (start == False) and (index == len(stations)-1):
                     stop = dateTime[index]
                     badTimes.append([start, stop])            
 
@@ -1620,7 +1619,8 @@ class ProcessL2:
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False        
-            station = str(station[0]) 
+
+            station = str(round(station[0]*100)/100)
 
         # Lt Quality Filtering; anomalous elevation in the NIR
         if ConfigFile.settings["bL2LtUVNIR"]:

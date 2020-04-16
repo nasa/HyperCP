@@ -131,11 +131,8 @@ class HDFDataset:
             return
         self.columns = collections.OrderedDict()
         for k in self.data.dtype.names:
-            #print("type",type(ltData.data[k]))
-            '''BUG: Hack: To maintain station names as strings, do not utilize the
-                numpy dataset structures'''
-            if k != "STATION":
-                self.columns[k] = self.data[k].tolist()
+            #print("type",type(ltData.data[k]))           
+            self.columns[k] = self.data[k].tolist()
     
     def datasetToColumns2(self):
         ''' Convert Prosoft format numpy array to columns '''
@@ -193,22 +190,21 @@ class HDFDataset:
         #print("Dtype:", dtype)
         #print("Shape:", shape)
         self.data = np.empty(shape, dtype=dtype) # empty means uninitialized, i.e. random values.
-        for k,v in self.columns.items():            
+        for k,v in self.columns.items():   
+            # HDF5 deliberately makes including string vectors difficult
+            # These will all be changed to floats or ints in HDFDataset.columnsToDataset         
             if k.endswith('FLAG'):
-                    # Interpret as undeclared, field, model, or default: 0, 1, 2, 3
-                    if v[0] == 'undetermined':
-                        v = 0
-                    elif v[0] == 'field':
-                        v = 1
-                    elif v[0] == 'model':
-                        v = 2
-                    elif v[0] == 'default':
-                        v = 3
-            # if len(v[0]) == 1:
-            #     v = v[0]
-            #     print(v)            
-            if k != 'STATIONS':
-                self.data[k] = v 
+                # Interpret as undeclared, field, model, or default: 0, 1, 2, 3
+                if v[0] == 'undetermined':
+                    v = 0
+                elif v[0] == 'field':
+                    v = 1
+                elif v[0] == 'model':
+                    v = 2
+                elif v[0] == 'default':
+                    v = 3
+
+            self.data[k] = v 
 
         return True
 

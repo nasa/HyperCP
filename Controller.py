@@ -363,7 +363,8 @@ class Controller:
         if root is not None:
             if ConfigFile.settings["bL2Stations"]:
                 station = np.unique(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"]).tolist()
-                filename = f'STATION_{str(station[0])}_{filename}'
+                station = str( round(station[0]*100)/100 )
+                filename = f'STATION_{station}_{filename}'
                 outFilePath = os.path.join(outPath,filename)
             if ConfigFile.settings['bL2PlotRrs']==1:                        
                 Utilities.plotRadiometry(root, dirpath, filename, rType='Rrs', plotDelta = True)
