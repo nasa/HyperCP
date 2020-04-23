@@ -420,6 +420,8 @@ class ProcessL1c:
                     gpsDateTime = gp.getDataset("DATETIME").data
             
             # Eliminate all ancillary data outside file times
+            # This is very slow, but necessary to build a new group at L1C rather than just matching
+            # to the existing ancillary group when run from L2.
             ticker = 0
             l = len(ancDateTime)
             Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
@@ -454,6 +456,8 @@ class ProcessL1c:
 
             lat = ancillaryData.columns["LATITUDE"][0]
             lon = ancillaryData.columns["LONGITUDE"][0]
+            if "STATION" in ancillaryData.columns:
+                station = ancillaryData.columns["STATION"][0]
             if "SALINITY" in ancillaryData.columns:
                 salt = ancillaryData.columns["SALINITY"][0]
             if "SST" in ancillaryData.columns:
@@ -528,6 +532,10 @@ class ProcessL1c:
             ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
             ancGroup.addDataset("REL_AZ")
             ancGroup.datasets["REL_AZ"].data = np.array(relAz, dtype=[('NONE', '<f8')])
+            ancGroup.attributes["REL_AZ_Units"]='degrees'
+            if "STATION" in ancillaryData.columns:
+                ancGroup.addDataset("STATION")
+                ancGroup.datasets["STATION"].data = np.array(station, dtype=[('NONE', '<f8')])
             ancGroup.attributes["REL_AZ_Units"]='degrees'
             if "SALINITY" in ancillaryData.columns:
                 ancGroup.addDataset("SALINITY")
