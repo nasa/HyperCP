@@ -6,6 +6,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 from SeaBASSHeader import SeaBASSHeader
 from ConfigFile import ConfigFile
+from MainConfig import MainConfig
 
 
 class SeaBASSHeaderWindow(QtWidgets.QDialog):
@@ -465,7 +466,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
         ''' TO DO: Update the version dynamically'''
         SeaBASSHeader.settings["comments"] =\
-            f'! HyperInSPACE vers = 1.0.b\n'+\
+            f'! HyperInSPACE vers = {MainConfig.settings["version"]}\n'+\
             f'! HyperInSPACE Config = {ConfigFile.filename}\n'+\
             f'! SZA Filter = {szaFilt}\n'+\
             f'! SZA Max = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\

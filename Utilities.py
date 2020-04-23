@@ -354,8 +354,12 @@ class Utilities:
     def hasNan(ds):
         for k in ds.data.dtype.fields.keys():
             for x in range(ds.data.shape[0]):
-                if np.isnan(ds.data[k][x]):
-                    return True
+                if k != 'Datetime':
+                    if np.isnan(ds.data[k][x]):
+                        return True
+                # else:
+                #     if np.isnan(ds.data[k][x]):
+                #         return True
         return False
 
     # Check if the list contains strictly increasing values

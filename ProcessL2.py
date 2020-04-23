@@ -358,7 +358,10 @@ class ProcessL2:
         # Start and end are defined by the interval established in the Config (they are indexes)
         newSlice = collections.OrderedDict()
         for k in columns:
-            newSlice[k] = columns[k][start:end] #up to not including end...
+            if start == end:
+                newSlice[k] = columns[k][start:end+1] # otherwise you get nada []
+            else:
+                newSlice[k] = columns[k][start:end] # up to not including end...next slice will pick it up
         return newSlice
     
     @staticmethod

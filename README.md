@@ -5,7 +5,7 @@ HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE m
 Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>\
 Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
-## Version 1.0.β;
+## Version 1.0.0 (see Changelog.md);
 
 While this version has been substantially updated from 1.0.α to (among other things) better accomodate a standard format into which data from above water radiometry suites other than HyperSAS/SolarTracker can be assimilated, the instrumentation available on the market today is highly varied. Therefore, we would appreciate any feedback from the community regarding not only the general functionality of this version, but also the instruments and data formats you are interested in seeing implemented in HyperInSPACE in the future.
 

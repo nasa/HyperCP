@@ -29,9 +29,8 @@ class ProcessL1e:
 
             # Because x is now a list of datetime tuples, they'll need to be
             # converted to Unix timestamp values
-            ''' WILL THIS WORK IN WINDOWS ??'''
-            xTS = [calendar.timegm(xDT.timetuple()) for xDT in x]
-            newXTS = [calendar.timegm(xDT.timetuple()) for xDT in new_x]
+            xTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in x]
+            newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
             
             if dataName in angList:
                 newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS)
@@ -127,8 +126,8 @@ class ProcessL1e:
         xData.columns["Timetag2"] = yData.data["Timetag2"].tolist()
         xData.columns["Datetime"] = yData.data["Datetime"].tolist()
 
-        #if Utilities.hasNan(xData):
-        #    print("Found NAN 1")
+        if Utilities.hasNan(xData):
+           print("Found NAN 1")
 
         # Perform interpolation on full hyperspectral time series
         ProcessL1e.interpolateL1e(xData, xDatetime, yDatetime, xData, dataName, 'linear', fileName)

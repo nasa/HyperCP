@@ -271,9 +271,8 @@ class ProcessL1d:
                 
                 # Because x is now a list of datetime tuples, they'll need to be
                 # converted to Unix timestamp values
-                ''' WILL THIS WORK IN WINDOWS ??'''
-                xTS = [calendar.timegm(xDT.timetuple()) for xDT in x]
-                newXTS = [calendar.timegm(xDT.timetuple()) for xDT in new_x]
+                xTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in x]
+                newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
 
                 # newDarkData[k] = Utilities.interp(x,y,new_x, fill_value=np.nan)
                 newDarkData[k] = Utilities.interp(xTS,y,newXTS, fill_value=np.nan)
