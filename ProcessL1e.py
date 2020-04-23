@@ -442,6 +442,7 @@ class ProcessL1e:
             # Required and assured with Pysolar
             szaData = newAncGroup.getDataset("SZA")
             # Optional:
+            stationData = None
             headingData = None
             latDataAnc = None
             lonDataAnc = None
@@ -453,6 +454,8 @@ class ProcessL1e:
             windData = None
             aodData = None            
             # Optional:
+            if "STATION" in newAncGroup.datasets:
+                stationData = newAncGroup.getDataset("STATION")
             if "HEADING" in newAncGroup.datasets:
                 headingData = newAncGroup.getDataset("HEADING") # This HEADING derives from ancillary data file (NOT GPS)
             if "LATITUDE" in newAncGroup.datasets:
@@ -583,6 +586,8 @@ class ProcessL1e:
             if not ProcessL1e.interpolateData(szaData, interpData, "SZA", fileName):
                 return None
             # Optional:
+            if stationData:
+                ProcessL1e.interpolateData(stationData, interpData, "STATION", fileName)
             if aodData:
                 ProcessL1e.interpolateData(aodData, interpData, "AOD", fileName)
             if headingData:

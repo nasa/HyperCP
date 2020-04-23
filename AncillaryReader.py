@@ -238,7 +238,7 @@ class AncillaryReader:
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                station = ancGroup.datasets[ds]
+                station = ancGroup.datasets[ds].data["NONE"].tolist()
 
             if ds == "LATITUDE":
                 # lat = True

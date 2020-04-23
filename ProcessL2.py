@@ -1373,6 +1373,9 @@ class ProcessL2:
         newnLwDeltaData.columnsToDataset()
 
         # Weight reflectances to satellite bands
+        '''TO DO: This convolution needs to be changed. It should be on the (ir)radiances, not the
+        reflectances.'''
+
         if ConfigFile.settings['bL2WeightMODISA']:
             print("Process MODIS Aqua Bands")
             Weight_RSR.processMODISBands(newRrsMODISAData, newRrsData, sensor='A')
