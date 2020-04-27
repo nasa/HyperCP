@@ -1,7 +1,11 @@
-v1.0.0: Unreleased
+v1.0.1: Unreleased
+* Correct spectral convolution to operate on (ir)radiances rather than reflectances
+* Change the output of plots to match the path of output data directory (i.e. rather than within the HyperInSPACE path)
 
+v1.0.0: Dirk A. Aurin <dirk.a.aurin@nasa.gov> 2020-04-27
 
-
+2020-04-23: DAA
+* Implement station extraction in the GUI and fix errors in the ConfigWindow Save As method. SeaBASSHeaderWindow debugged to properly track its SeaBASS header name. Tried to allow for string-type station names, but ultimately had to revert to floats as HDF5 struggled with string-type data fields. Station information is now input via the SeaBASS ancillary file in the Main window. Interpolation issue for samples within <1 second resolved by adding microseconds to the conversions to serial times from Python datetime objects in L1D and L1E. Minor updates to ConfigWindow text and layout. Outstanding issue with station extraction: if more than one station is visited in the same L1E file, output fails with notification. This is rare, and only happens in files collected without the SolarTracker when nobody resets file collection manually for several hours. Need to develop a way to isolate each station from a given file into its own node to be processed sequentially.
 
 2020-04-07: DAA
 * Clean up the wavelength interpolation to one decimal place when using as column/file names.

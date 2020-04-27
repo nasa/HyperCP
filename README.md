@@ -28,7 +28,7 @@ While this version has been substantially updated from 1.0.α to (among other th
 
 ## Requirements and Installation
 
-Requires Python 3.X is installed on a Linux, MacOS, or Windows computer. The Anaconda distribution is encouraged. A nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. The Zhang (et al. 2017) sky/sunglint correction also requires Xarray (instructions here: http://xarray.pydata.org/en/stable/installing.html). To install Xarray with Anaconda:
+Requires Python 3.X is installed on a Linux, MacOS, or Windows computer. The Anaconda distribution is encouraged. A nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. HDF5 data files will be read and written using the included h5py module (2.9.0 at the time of writing). The Zhang (et al. 2017) sky/sunglint correction also requires Xarray, which requires installation (instructions here: http://xarray.pydata.org/en/stable/installing.html). To install Xarray with Anaconda:
 ```
 prompt$ conda install xarray dask netCDF4 bottleneck
 ```
@@ -53,6 +53,7 @@ The following folders will be created automatically when you first run the progr
 directories (i.e. 'L1C_Anoms', 'L1D', 'L1E', 'L2', 'L2_Spectral_Filter')
 
 (Note: Data, Plots, and Logs directories are not tracked on git.)
+*{To Do: Change output path of plots to match output path of data.}
 
 ## Guide
 
@@ -64,14 +65,14 @@ The 'New' button allows creation of a new configuration file. 'Edit' allows edit
 
 The 'Input...' and 'Output Data Parent Directory' buttons allow optional selection of data directories from any mounted/mapped drive. Note that output data sub-directories (e.g. for processing levels) are also auto-created during processing as described below. The parent directory is the directory containing the sub-directories for processing levels (e.g. "/L1A", "/L1B", etc.) If no input or output data directories are selected, '/Data' under the HyperInSPACE directory will be used by default as the parent data directory.
 
-Ancillary Data files for environmental conditions and relevant geometries used in L2 processing (including relative sensor azimuth, solar azimuth and zenith angles, sensor zenith angle and/or nadir angle, aerosol optical depth, cloud cover, salinity, water temperature, and wind speed) must be text files in SeaBASS format with columns for date, time, lat, and lon. See https://seabass.gsfc.nasa.gov/ for a description of SeaBASS format. An example ancillary file is included for use as a template. It is recommended that ancillary files are checked with the 'FCHECK' utility as described on the SeaBASS website. They will be interpreted using the included SB_support.py module from NASA/OBPG. In case environmental conditions were not logged in the field, or for filling in gaps in logged data, they will be retrieved from GMAO models as described below. The ancillary data file is optional (though strongly advised for adding wind speed at a minimum) provided the sensor suite is equipped with a SolarTracker or equivalent to supply the relevant sensor/solar geometries.
+Ancillary Data files for environmental conditions and relevant geometries used in L2 processing (including station number if applicable, ship heading, relative sensor azimuth, aerosol optical depth, cloud cover, salinity, water temperature, and wind speed) must be text files in SeaBASS format with columns for date, time, lat, and lon. See https://seabass.gsfc.nasa.gov/ for a description of SeaBASS format. An example ancillary file is included for use as a template. It is recommended that ancillary files are checked with the 'FCHECK' utility as described on the SeaBASS website. They will be interpreted using the included SB_support.py module from NASA/OBPG. In case environmental conditions were not logged in the field, or for filling in gaps in logged data, they will be retrieved from GMAO models as described below. The ancillary data file is optional (though strongly advised for adding wind speed at a minimum) provided the sensor suite is equipped with a SolarTracker or equivalent to supply the relevant sensor/solar geometries. If no SolarTracker-type instrument is present to report the relative sensor/solar geometries, the ancillary file must be provided with at least the ship heading and relative angle between the bow of the ship and the sensor azimuth as a function of time. These ancillary data files are provided by the users depending their needs.
 
 ### Configuration
 
 Launch the configuration module and GUI (ConfigWindow.py) from the Main window by selecting/editing a configuration file or creating a new one as described above. This file will be instrument-suite-specific, and is also deployment-specific according to which factory calibration files are needed, as well as how the instrument was configured on the platform or ship. Some cruises (e.g. moving between significantly different water types) may also require multiple configurations to obtain the highest quality ocean color products at Level 2. Sharp gradients in environmental conditions could also warrant multiple configurations for the same cruise (e.g. sharp changes in temperature may effect how data deglitching is parameterized, as described below).
 
 ##### Calibration & Instrument Files:
-In the 'Configuration' window, click 'Add Calibration Files' to add the calibration and instrument files (HyperOCR and ancillary instrument telemetry definition files) from the relevant extracted Satlantic '.sip' file (i.e. the '.cal' and '.tdf' files). Adding new .cal and .tdf files will allow the user to input the files from the directory they are stored, but they will be copied into the Config directory once the Configuration is saved. The calibration or instrument file can be selected using the drop-down menu. Enable (in the neighboring checkbox) only the files that correspond to the data you want to process with this configuration. You will need to know which .cal/.tdf files correspond to each sensor/instrument, and which represent light and dark shutter measurements. For example:
+In the 'Configuration' window, click 'Add Calibration Files' to add the calibration and instrument files (HyperOCR and ancillary instrument telemetry definition files) from the relevant extracted Satlantic '.sip' file (i.e. the '.cal' and '.tdf' files). Each instrument requires at least one .cal or .tdf file for raw data to be interpreted (two in the case of radiometers calibrated for shutter open (light) and shutter closed (dark) calibrations. Instruments with no calibration (e.g. GPS, SolarTracker, etc.) still require a .tdf file to be properly interpreted. Adding new .cal and .tdf files will allow the user to input the files from the directory they are stored, but they will be copied into the Config directory once the Configuration is saved. The calibration or instrument file can be selected using the drop-down menu. Enable (in the neighboring checkbox) only the files that correspond to the data you want to process with this configuration. You will need to know which .cal/.tdf files correspond to each sensor/instrument, and which represent light and dark shutter measurements. For example:
 
 - SATMSG.tdf > SAS Solar Tracker status message string (Frame Type: Not Required)
 
@@ -133,7 +134,7 @@ Process data from raw binary (Satlantic HyperSAS '.RAW' collections) to L1A (Hie
 Process data from L1A to L1B. Factory calibrations are applied and data arranged in a standard HDF5 format.
 
 L1B Format:
-*Data being processed from non-HyperSAS SOLARTRACKER systems should be formatted in HDF5 to match L1B in order to be successfully processed to L2 in HyperInSPACE.* An example of an L1B HDF file is provided in /Data for reference. Datasets are grouped by instrument and contain their data in an array referenced '.data'. For example, latitude data is stored in the group 'GPS' under 'LATPOS.data'. Data should also contain 'dtype', a list of column headers strings (e.g. the wavelength of sample '304.37', or for many instruments simply 'NONE' if the data is already well described in the group name; see example file). The following datasets and attributes and groups are generally required:
+*Data being processed from non-HyperSAS SOLARTRACKER systems should be formatted in HDF5 to match L1B in order to be successfully processed to L2 in HyperInSPACE. HyperSAS data with no SolarTracker can be processed from raw data, provided the relative geometries are included in the ancillary data file as described above and below.* An example of an L1B HDF file is provided in /Data for reference. Datasets are grouped by instrument and contain their data in an array referenced '.data'. For example, latitude data is stored in the group 'GPS' under 'LATPOS.data'. Data should also contain 'dtype', a list of column headers strings (e.g. the wavelength of sample '304.37', or for many instruments simply 'NONE' if the data is already well described in the group name; see example file). The following datasets and attributes and groups are generally required:
 
 Root level attributes:
 
@@ -260,6 +261,8 @@ For each waveband of each sensor, and for both light and dark shutter measuremen
 
 'Waveband interval to plot' selects which waveband time-series plots will be generated (e.g. a value of 2 results in plots every 6.6 nm for HyperOCR of resolution 3.3 nm). Time-series plots of Es, Li, and Lt showing the results of the anomaly detection are saved to /Plots/L1C_Anoms. Data flagged for removal given the parameterizations chosen in the Configuration window are shown for the filter first pass (red box) and second pass (blue star). Review of these plots and adjustment of the parameters allow the user to optimize the low-pass filters for a given instrument and collection environment prior to L1E processing.
 
+*{To Do: Include a data input check to insure L1C data are being used.}*
+
 #### Level 1E
 
 Process data from L1D to L1E. Interpolates radiometric data to common timestamps and wavebands, optionally generates temporal plots of Li, Lt, and Es, and ancillary data to show how data were interpolated. L1E also optionally outputs text files (see 'SeaBASS File and Header' below) containing the data and metadata for submission to the SeaWiFS Bio-optical Archive and Storage System (SeaBASS; https://seabass.gsfc.nasa.gov/)
@@ -274,6 +277,7 @@ Each HyperOCR radiometer collects data in a unique set of wavebands nominally at
 Optional plots of Es, Li, and Lt of L1E data can be generated which show the temporal interpolation for each parameter and each waveband to the slowest sampling radiometer timestamp. They are saved in /Plots/L1E. Plotting is time and memory intensive, and so may not be adviseable for processing an entire cruise.
 
 *{To Do: Allow provision for above water radiometers that operate simultaneously and/or in the exact same wavebands.}*
+*{To Do: Change output of plots to match data output path.}*
 
 ##### SeaBASS File and Header
 
@@ -297,7 +301,10 @@ Prior to ensemble binning, data may be filtered for **Maximum Wind Speed**.
 
 **Meteorological flags** based on **(Ruddick et al. 2006, Mobley, 1999, Wernand et al. 2002, Garaba et al. 2012, Vandenberg 2017)** can be optionally applied to screen for undesirable data. Specifically, data are filtered for cloud cover, unusually low downwelling irradiance at **480 nm < default 2.0 uW cm^-2 nm^-1** for data likely to have been collected near dawn or dusk, or **(Es(470)/Es(680) < 1.0**), and for data likely to have high relative humidity or rain (**Es(720)/Es(370) < 1.095**). Cloud screening (**Li(750)/Es(750) >= 0.05**) is optional and not well parameterized. Clear skies are approximately 0.02 (Mobley 1999) and fully overcast are of order 0.3 (Ruddick et al. 2006). However, the Ruddick skyglint correction (below) can partially compensate for clear versus cloudy skies, so to avoid eliminating non-clear skies prior to glint correction, set this high (e.g. 1.0). Further investigation with automated sky photography for cloud cover is warranted.
 
-**Ensemble Interval** can be set to the user's requirements depending on sampling conditions and instrument rate (**default 300 sec**). Setting this to zero avoids temporal bin-averaging, preserving the common timestamps established in L1E. Processing the data without ensenble averages can be very slow, as the reflectances are calculated for each spectrum collected (i.e. nominally every 3.5 seconds of data for HyperSAS). The ensemble period is used to process the spectra within the lowest percentile of Lt(780) as defined below. The ensemble average spectra for Es, Li, and Lt is calculated, as well as variability in spectra within the ensemble, which is used to help estimate sample uncertainty.
+**Ensembles**
+**Extract Cruise Stations** can be selected if station information is provided in the ancillary data file identified in the Main window. If selected, only data collected on station will be processed, and the output data/plot files will have the station number appended to their names. At current writing, stations must be numeric, not string-type. If this option is deselected, all automated data (underway and on station) will be included in the ensemble processing.
+
+**Ensemble Interval** can be set to the user's requirements depending on sampling conditions and instrument rate (**default 300 sec**). Setting this to zero avoids temporal bin-averaging, preserving the common timestamps established in L1E. Processing the data without ensenble averages can be very slow, as the reflectances are calculated for each spectrum collected (i.e. nominally every 3.3 seconds of data for HyperSAS). The ensemble period is used to process the spectra within the lowest percentile of Lt(780) as defined/set below. The ensemble average spectra for Es, Li, and Lt is calculated, as well as variability in spectra within the ensemble, which is used to help estimate sample uncertainty.
 
 **Percent Lt Calculation** Data are optionally limited to the darkest percentile of Lt data at 780 nm within the sampling interval (if binning is performed; otherwise across the entire file) to minimize the effects of surface glitter from capillary waves. The percentile chosen is sensitive to the sampling rate. The 5% default recommended in Hooker et al. 2002 was devised for a multispectral system with rapid sampling rate.
 **Default: 5 % (Hooker et al. 2002, Zibordi et al. 2002, Hooker and Morel 2003); <10% (IOCCG Draft Protocols)**.
@@ -328,6 +335,7 @@ Negative reflectances can be removed as follows: any spectrum with any negative 
 
 Spectral wavebands for a few satellite ocean color sensors can be optionally calculated using their spectral weighting functions. These will be included with the hyperspectral output in the L2 HDF files.
 
+*{To Do: Correct spectral convolution to use (ir)radiances rather than reflectances.}*
 *{To Do: Output of satellite bands to SeaBASS files.}*
 
 Plots of processed L2 data from each radiometer and calculated reflectances can be created and stored in /Plots/L2. Uncertainties are shown for each spectrum as shaded regions, and satellite bands (if selected) are superimposed on the hyperspectral data.
