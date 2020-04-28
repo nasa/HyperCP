@@ -20,7 +20,145 @@ from Weight_RSR import Weight_RSR
 
 
 class ProcessL2:
+
     
+    @staticmethod
+    def spectralReflectance(esXSlice, esXstd, liXSlice, liXstd, ltXSlice, ltXstd, F0, rhoScalar, rhoDict, rhoDelta, waveSubset):
+        rhoDefault = float(ConfigFile.settings["fL2RhoSky"])
+        RuddickRho = int(ConfigFile.settings["bL2RuddickRho"])
+        ZhangRho = int(ConfigFile.settings["bL2ZhangRho"])
+        
+        tempNode = HDFRoot.HDFRoot()
+        newReflectanceGroup = tempNode.addGroup("REFLECTANCE")
+        newRadianceGroup = tempNode.addGroup("RADIANCE")
+        newIrradianceGroup = tempNode.addGroup("IRRADIANCE") 
+
+        newRrsData = newReflectanceGroup.addDataset("Rrs_preNIR")            
+        newESData = newIrradianceGroup.addDataset("ES")        
+        newLIData = newRadianceGroup.addDataset("LI")
+        newLTData = newRadianceGroup.addDataset("LT") 
+        newnLwData = newReflectanceGroup.addDataset("nLw_preNIR")            
+
+        newRrsDeltaData = newReflectanceGroup.addDataset("Rrs_delta")            
+        newESDeltaData = newIrradianceGroup.addDataset("ES_delta")       
+        newLIDeltaData = newRadianceGroup.addDataset("LI_delta")
+        newLTDeltaData = newRadianceGroup.addDataset("LT_delta")
+        newnLwDeltaData = newReflectanceGroup.addDataset("nLw_delta")
+
+        rrsSlice = {}
+        nLwSlice = {}
+        deleteKey = []
+        for k in esXSlice: # loop through wavebands as key 'k'
+            if (k in liXSlice) and (k in ltXSlice):
+                if k not in newESData.columns:
+                    newESData.columns[k] = []
+                    newLIData.columns[k] = []
+                    newLTData.columns[k] = []
+                    newRrsData.columns[k] = []
+                    newnLwData.columns[k] = []
+
+                    newESDeltaData.columns[k] = []
+                    newLIDeltaData.columns[k] = []
+                    newLTDeltaData.columns[k] = []
+                    newRrsDeltaData.columns[k] = []
+                    newnLwDeltaData.columns[k] = []
+
+                # At this waveband (k); still using complete wavelength set
+                es = esXSlice[k][0]
+                li = liXSlice[k][0]
+                lt = ltXSlice[k][0]
+                f0  = F0[k]
+
+                esDelta = esXstd[k][0]
+                liDelta = liXstd[k][0]
+                ltDelta = ltXstd[k][0]
+
+                # Calculate the remote sensing reflectance
+                if RuddickRho:                    
+                    rrs = (lt - (rhoScalar * li)) / es
+
+                    # Rrs uncertainty
+                    rrsDelta = rrs * ( 
+                            (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2 
+                            )**0.5
+                
+                    #Calculate the normalized water leaving radiance
+                    nLw = rrs*f0
+
+                    # nLw uncertainty; no provision for F0 uncertainty here
+                    nLwDelta = nLw * (
+                            (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2
+                            )**0.5
+                elif ZhangRho:
+                    # Only populate the valid wavelengths
+                    if float(k) in waveSubset:
+                        rrs = (lt - (rhoDict[k] * li)) / es
+
+                        # Rrs uncertainty
+                        rrsDelta = rrs * ( 
+                                (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2 
+                                )**0.5
+                    
+                        #Calculate the normalized water leaving radiance
+                        nLw = rrs*f0
+
+                        # nLw uncertainty; no provision for F0 uncertainty here
+                        nLwDelta = nLw * (
+                                (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2
+                                )**0.5
+                else:
+                    # Default rho
+                    rhoScalar = rhoDefault
+                    rhoDelta = 0.01 # Estimated for range of conditions in Mobley 1999 models; it's actually higher...
+
+                    rrs = (lt - (rhoScalar * li)) / es
+
+                    # Rrs uncertainty
+                    rrsDelta = rrs * ( 
+                            (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2 
+                            )**0.5
+                
+                    #Calculate the normalized water leaving radiance
+                    nLw = rrs*f0
+
+                    # nLw uncertainty; no provision for F0 uncertainty here
+                    nLwDelta = nLw * (
+                            (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2
+                            )**0.5
+
+                newESData.columns[k].append(es)
+                newLIData.columns[k].append(li)
+                newLTData.columns[k].append(lt)                
+
+
+                newESDeltaData.columns[k].append(esDelta)
+                newLIDeltaData.columns[k].append(liDelta)
+                newLTDeltaData.columns[k].append(ltDelta)
+                
+                # Only populate valid wavelengths. Mark others for deletion
+                if float(k) in waveSubset:
+                    newRrsDeltaData.columns[k].append(rrsDelta)
+                    newnLwDeltaData.columns[k].append(nLwDelta)
+                    newRrsData.columns[k].append(rrs)
+                    newnLwData.columns[k].append(nLw)
+                    
+                    # rrsSlice[k] = rrs
+                    # nLwSlice[k] = nLw
+                else:
+                    deleteKey.append(k) 
+        
+        # Eliminate reflectance keys/values in wavebands outside of valid set
+        deleteKey = list(set(deleteKey))
+        for key in deleteKey: 
+            # Only need to do this for the first ensemble in file
+            if key in newRrsData.columns:
+                del newRrsData.columns[key]
+                del newnLwData.columns[key]
+                del newRrsDeltaData.columns[key]
+                del newnLwDeltaData.columns[key]
+
+        return tempNode
+        
     @staticmethod    
     def filterData(group, badTimes):                    
         ''' Delete flagged records '''
@@ -898,6 +1036,14 @@ class ProcessL2:
         ltSlice.pop("Timetag2")
         ltSlice.pop("Datetime")
 
+        ''' Calculate the convolved es/li/lt slices here '''
+        if ConfigFile.settings['bL2WeightMODISA']:
+            print("Process MODIS Aqua Bands")
+            esSliceMODISA = Weight_RSR.processMODISBands(esSlice, sensor='A') # dictionary
+            liSliceMODISA = Weight_RSR.processMODISBands(liSlice, sensor='A')
+            ltSliceMODISA = Weight_RSR.processMODISBands(ltSlice, sensor='A')
+
+
         # Stores the mean datetime
         if len(timeStamp) > 0:
             epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
@@ -951,6 +1097,20 @@ class ProcessL2:
         hasNan = ProcessL2.sliceAveHyper(y, esSlice, esXSlice, esXstd)
         hasNan = ProcessL2.sliceAveHyper(y, liSlice, liXSlice, liXstd)
         hasNan = ProcessL2.sliceAveHyper(y, ltSlice, ltXSlice, ltXstd)
+
+        ''' slice average the convolved es, li, lt here '''
+        if ConfigFile.settings['bL2WeightMODISA']:
+            esXSliceMODISA = collections.OrderedDict()
+            liXSliceMODISA = collections.OrderedDict()
+            ltXSliceMODISA = collections.OrderedDict()  
+            esXstdMODISA = collections.OrderedDict()  
+            liXstdMODISA = collections.OrderedDict()  
+            ltXstdMODISA = collections.OrderedDict()  
+
+            hasNan = ProcessL2.sliceAveHyper(y, esSliceMODISA, esXSliceMODISA, esXstdMODISA)
+            hasNan = ProcessL2.sliceAveHyper(y, liSliceMODISA, liXSliceMODISA, liXstdMODISA)
+            hasNan = ProcessL2.sliceAveHyper(y, ltSliceMODISA, ltXSliceMODISA, ltXstdMODISA)
+
 
         # Slice average the ancillary group for the slice and the X% criteria
         # (Combines Slice and XSlice in one method)
@@ -1037,6 +1197,7 @@ class ProcessL2:
                         gp.datasets[ds].columns["Datetag"].append(dateTag)
                         gp.datasets[ds].columns["Timetag2"].append(timeTag)
 
+
         # Calculate Rho_sky
         wavebands = [*esColumns] # just grabs the keys
         wavelength = []
@@ -1045,9 +1206,10 @@ class ProcessL2:
             if k != "Datetag" and k != "Datetime" and k != "Timetag2":
                 wavelengthStr.append(k)
                 wavelength.append(float(k))   
-        # wave = [float(i) for i in wave]
-        waveSubset = wavelength # No subsetting for Ruddick or Mobley corrections
+        
+        waveSubset = wavelength # Only used for Zhang; No subsetting for Ruddick or Mobley corrections
 
+        rhoDict = {}
         if RuddickRho:
             '''This is the Ruddick, et al. 2006 approach, which has one method for 
             clear sky, and another for cloudy. Methods of this type (i.e. not accounting
@@ -1066,8 +1228,7 @@ class ProcessL2:
             ''' Zhang rho is based on Zhang et al. 2017 and calculates the wavelength-dependent rho vector
             separated for sun and sky to include polarization factors.
             
-            Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.'''       
-            rhoDict = {}
+            Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.'''                   
             
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es 
             # from non-valid wavebands.
@@ -1097,15 +1258,20 @@ class ProcessL2:
                 # wavelength is now truncated to only valid wavebands for use in Zhang models
                 waveSubset = wave_array[:,1].tolist()
             
-
+            
             rhoStructure, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
                 CloudXSlice,SZAXSlice,SSTXSlice,SalXSlice,RelAzXSlice,waveSubset)
             rhoVector = rhoStructure['ρ']
             for i, k in enumerate(waveSubset):
                 rhoDict[str(k)] = rhoVector[0,i]
 
-        rrsSlice = {}
-        nLwSlice = {}
+
+            ''' Calculate rho vectors (Zhang) for each of the satellite bandsets requested here: '''
+            if ConfigFile.settings['bL2WeightMODISA']:
+                rhoDictMODISA = Weight_RSR.processMODISBands(rhoDict,sensor='A')
+
+
+        
                 
         # Calculate Rrs & nLw and uncertainties
         ''' No bidirectional correction is made here.....'''
@@ -1138,112 +1304,130 @@ class ProcessL2:
             # wavelengthStr = [str(wave) for wave in wavelength]
             F0 = collections.OrderedDict(zip(wavelengthStr, F0))
 
-        deleteKey = []
-        for k in esXSlice: # loop through wavebands as key 'k'
-            if (k in liXSlice) and (k in ltXSlice):
-                if k not in newESData.columns:
-                    newESData.columns[k] = []
-                    newLIData.columns[k] = []
-                    newLTData.columns[k] = []
-                    newRrsData.columns[k] = []
-                    newnLwData.columns[k] = []
+            ''' Extract Thuillier for each of the satellite bandsets here: '''
+            if ConfigFile.settings['bL2WeightMODISA']:
+                F0MODISA = Weight_RSR.processMODISBands(F0, sensor='A')
 
-                    newESDeltaData.columns[k] = []
-                    newLIDeltaData.columns[k] = []
-                    newLTDeltaData.columns[k] = []
-                    newRrsDeltaData.columns[k] = []
-                    newnLwDeltaData.columns[k] = []
 
-                # At this waveband (k); still using complete wavelength set
-                es = esXSlice[k][0]
-                li = liXSlice[k][0]
-                lt = ltXSlice[k][0]
-                f0  = F0[k]
+        ''' Now this would need to be run once for hyperspectral, and then once each for satellites. '''
+        es = esXSlice
+        esSTD = esXstd
+        li = liXSlice
+        liSTD = liXstd
+        lt = ltXSlice
+        ltSTD = ltXstd
 
-                esDelta = esXstd[k][0]
-                liDelta = liXstd[k][0]
-                ltDelta = ltXstd[k][0]
+        tempNode = ProcessL2.spectralReflectance(es, esSTD, li, liSTD, lt, ltSTD, F0, rhoScalar, rhoDict, rhoDelta, waveSubset)
 
-                # Calculate the remote sensing reflectance
-                if RuddickRho:                    
-                    rrs = (lt - (rhoScalar * li)) / es
+        reflectanceGroup = tempNode.getGroup('REFLECTANCE')
+        rrsSlice = reflectanceGroup.datasets['Rrs_preNIR'].columns
+        nLwSlice = reflectanceGroup.datasets['nLw_preNIR'].columns
+        # deleteKey = []
+        # for k in esXSlice: # loop through wavebands as key 'k'
+        #     if (k in liXSlice) and (k in ltXSlice):
+        #         if k not in newESData.columns:
+        #             newESData.columns[k] = []
+        #             newLIData.columns[k] = []
+        #             newLTData.columns[k] = []
+        #             newRrsData.columns[k] = []
+        #             newnLwData.columns[k] = []
 
-                    # Rrs uncertainty
-                    rrsDelta = rrs * ( 
-                            (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2 
-                            )**0.5
+        #             newESDeltaData.columns[k] = []
+        #             newLIDeltaData.columns[k] = []
+        #             newLTDeltaData.columns[k] = []
+        #             newRrsDeltaData.columns[k] = []
+        #             newnLwDeltaData.columns[k] = []
+
+        #         # At this waveband (k); still using complete wavelength set
+        #         es = esXSlice[k][0]
+        #         li = liXSlice[k][0]
+        #         lt = ltXSlice[k][0]
+        #         f0  = F0[k]
+
+        #         esDelta = esXstd[k][0]
+        #         liDelta = liXstd[k][0]
+        #         ltDelta = ltXstd[k][0]
+
+        #         # Calculate the remote sensing reflectance
+        #         if RuddickRho:                    
+        #             rrs = (lt - (rhoScalar * li)) / es
+
+        #             # Rrs uncertainty
+        #             rrsDelta = rrs * ( 
+        #                     (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2 
+        #                     )**0.5
                 
-                    #Calculate the normalized water leaving radiance
-                    nLw = rrs*f0
+        #             #Calculate the normalized water leaving radiance
+        #             nLw = rrs*f0
 
-                    # nLw uncertainty; no provision for F0 uncertainty here
-                    nLwDelta = nLw * (
-                            (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2
-                            )**0.5
-                elif ZhangRho:
-                    # Only populate the valid wavelengths
-                    if float(k) in waveSubset:
-                        rrs = (lt - (rhoDict[k] * li)) / es
+        #             # nLw uncertainty; no provision for F0 uncertainty here
+        #             nLwDelta = nLw * (
+        #                     (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2
+        #                     )**0.5
+        #         elif ZhangRho:
+        #             # Only populate the valid wavelengths
+        #             if float(k) in waveSubset:
+        #                 rrs = (lt - (rhoDict[k] * li)) / es
 
-                        # Rrs uncertainty
-                        rrsDelta = rrs * ( 
-                                (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2 
-                                )**0.5
+        #                 # Rrs uncertainty
+        #                 rrsDelta = rrs * ( 
+        #                         (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2 
+        #                         )**0.5
                     
-                        #Calculate the normalized water leaving radiance
-                        nLw = rrs*f0
+        #                 #Calculate the normalized water leaving radiance
+        #                 nLw = rrs*f0
 
-                        # nLw uncertainty; no provision for F0 uncertainty here
-                        nLwDelta = nLw * (
-                                (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2
-                                )**0.5
-                else:
-                    # Default rho
-                    rhoScalar = rhoDefault
-                    rhoDelta = 0.01 # Estimated for range of conditions in Mobley 1999 models; it's actually higher...
+        #                 # nLw uncertainty; no provision for F0 uncertainty here
+        #                 nLwDelta = nLw * (
+        #                         (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2
+        #                         )**0.5
+        #         else:
+        #             # Default rho
+        #             rhoScalar = rhoDefault
+        #             rhoDelta = 0.01 # Estimated for range of conditions in Mobley 1999 models; it's actually higher...
 
-                    rrs = (lt - (rhoScalar * li)) / es
+        #             rrs = (lt - (rhoScalar * li)) / es
 
-                    # Rrs uncertainty
-                    rrsDelta = rrs * ( 
-                            (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2 
-                            )**0.5
+        #             # Rrs uncertainty
+        #             rrsDelta = rrs * ( 
+        #                     (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2 
+        #                     )**0.5
                 
-                    #Calculate the normalized water leaving radiance
-                    nLw = rrs*f0
+        #             #Calculate the normalized water leaving radiance
+        #             nLw = rrs*f0
 
-                    # nLw uncertainty; no provision for F0 uncertainty here
-                    nLwDelta = nLw * (
-                            (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2
-                            )**0.5
+        #             # nLw uncertainty; no provision for F0 uncertainty here
+        #             nLwDelta = nLw * (
+        #                     (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2
+        #                     )**0.5
 
-                newESData.columns[k].append(es)
-                newLIData.columns[k].append(li)
-                newLTData.columns[k].append(lt)
+        #         newESData.columns[k].append(es)
+        #         newLIData.columns[k].append(li)
+        #         newLTData.columns[k].append(lt)
 
-                newESDeltaData.columns[k].append(esDelta)
-                newLIDeltaData.columns[k].append(liDelta)
-                newLTDeltaData.columns[k].append(ltDelta)
+        #         newESDeltaData.columns[k].append(esDelta)
+        #         newLIDeltaData.columns[k].append(liDelta)
+        #         newLTDeltaData.columns[k].append(ltDelta)
                 
-                # Only populate valid wavelengths. Mark others for deletion
-                if float(k) in waveSubset:
-                    newRrsDeltaData.columns[k].append(rrsDelta)
-                    newnLwDeltaData.columns[k].append(nLwDelta)
+        #         # Only populate valid wavelengths. Mark others for deletion
+        #         if float(k) in waveSubset:
+        #             newRrsDeltaData.columns[k].append(rrsDelta)
+        #             newnLwDeltaData.columns[k].append(nLwDelta)
                     
-                    rrsSlice[k] = rrs
-                    nLwSlice[k] = nLw
-                else:
-                    deleteKey.append(k) 
+        #             rrsSlice[k] = rrs
+        #             nLwSlice[k] = nLw
+        #         else:
+        #             deleteKey.append(k) 
         
-        # Eliminate reflectance keys/values in wavebands outside of valid set
-        deleteKey = list(set(deleteKey))
-        for key in deleteKey: 
-            # Only need to do this for the first ensemble in file
-            if key in newRrsData.columns:
-                del newRrsData.columns[key]
-                del newnLwData.columns[key]
-                del newRrsDeltaData.columns[key]
-                del newnLwDeltaData.columns[key]
+        # # Eliminate reflectance keys/values in wavebands outside of valid set
+        # deleteKey = list(set(deleteKey))
+        # for key in deleteKey: 
+        #     # Only need to do this for the first ensemble in file
+        #     if key in newRrsData.columns:
+        #         del newRrsData.columns[key]
+        #         del newnLwData.columns[key]
+        #         del newRrsDeltaData.columns[key]
+        #         del newnLwDeltaData.columns[key]
 
         # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
@@ -1375,73 +1559,73 @@ class ProcessL2:
         newRrsDeltaData.columnsToDataset()
         newnLwDeltaData.columnsToDataset()
 
-        # Weight reflectances to satellite bands
-        '''TO DO: This convolution needs to be changed. It should be on the (ir)radiances, not the
-        reflectances.'''
+        # # Weight reflectances to satellite bands
+        # '''TO DO: This convolution needs to be changed. It should be on the (ir)radiances, not the
+        # reflectances.'''
 
-        if ConfigFile.settings['bL2WeightMODISA']:
-            print("Process MODIS Aqua Bands")
-            Weight_RSR.processMODISBands(newRrsMODISAData, newRrsData, sensor='A')
-            Weight_RSR.processMODISBands(newRrsMODISADeltaData, newRrsDeltaData, sensor='A')
-            newRrsMODISAData.columnsToDataset()
-            newRrsMODISADeltaData.columnsToDataset()
-            Weight_RSR.processMODISBands(newnLwMODISAData, newnLwData, sensor='A')
-            Weight_RSR.processMODISBands(newnLwMODISADeltaData, newnLwDeltaData, sensor='A')
-            newnLwMODISAData.columnsToDataset()
-            newnLwMODISADeltaData.columnsToDataset()
-        if ConfigFile.settings['bL2WeightMODIST']:
-            print("Process MODIS Terra Bands")
-            Weight_RSR.processMODISBands(newRrsMODISTData, newRrsData, sensor='T')
-            Weight_RSR.processMODISBands(newRrsMODISTDeltaData, newRrsDeltaData, sensor='T')
-            newRrsMODISTData.columnsToDataset()
-            newRrsMODISTDeltaData.columnsToDataset()
-            Weight_RSR.processMODISBands(newnLwMODISTData, newnLwData, sensor='T')
-            Weight_RSR.processMODISBands(newnLwMODISTDeltaData, newnLwDeltaData, sensor='T')
-            newnLwMODISTData.columnsToDataset()
-            newnLwMODISTDeltaData.columnsToDataset()
+        # if ConfigFile.settings['bL2WeightMODISA']:
+        #     print("Process MODIS Aqua Bands")
+        #     Weight_RSR.processMODISBands(newRrsMODISAData, newRrsData, sensor='A')
+        #     Weight_RSR.processMODISBands(newRrsMODISADeltaData, newRrsDeltaData, sensor='A')
+        #     newRrsMODISAData.columnsToDataset()
+        #     newRrsMODISADeltaData.columnsToDataset()
+        #     Weight_RSR.processMODISBands(newnLwMODISAData, newnLwData, sensor='A')
+        #     Weight_RSR.processMODISBands(newnLwMODISADeltaData, newnLwDeltaData, sensor='A')
+        #     newnLwMODISAData.columnsToDataset()
+        #     newnLwMODISADeltaData.columnsToDataset()
+        # if ConfigFile.settings['bL2WeightMODIST']:
+        #     print("Process MODIS Terra Bands")
+        #     Weight_RSR.processMODISBands(newRrsMODISTData, newRrsData, sensor='T')
+        #     Weight_RSR.processMODISBands(newRrsMODISTDeltaData, newRrsDeltaData, sensor='T')
+        #     newRrsMODISTData.columnsToDataset()
+        #     newRrsMODISTDeltaData.columnsToDataset()
+        #     Weight_RSR.processMODISBands(newnLwMODISTData, newnLwData, sensor='T')
+        #     Weight_RSR.processMODISBands(newnLwMODISTDeltaData, newnLwDeltaData, sensor='T')
+        #     newnLwMODISTData.columnsToDataset()
+        #     newnLwMODISTDeltaData.columnsToDataset()
 
-        if ConfigFile.settings['bL2WeightVIIRSN']:
-            print("Process VIIRS SNPP Bands")
-            Weight_RSR.processVIIRSBands(newRrsVIIRSNData, newRrsData, sensor='N')
-            Weight_RSR.processVIIRSBands(newRrsVIIRSNDeltaData, newRrsDeltaData, sensor='N')
-            newRrsVIIRSNData.columnsToDataset()
-            newRrsVIIRSNDeltaData.columnsToDataset()
-            Weight_RSR.processVIIRSBands(newnLwVIIRSNData, newnLwData, sensor='N')
-            Weight_RSR.processVIIRSBands(newnLwVIIRSNDeltaData, newnLwDeltaData, sensor='N')
-            newnLwVIIRSNData.columnsToDataset()
-            newnLwVIIRSNDeltaData.columnsToDataset()
-        if ConfigFile.settings['bL2WeightVIIRSJ']:
-            print("Process VIIRS JPSS Bands")
-            Weight_RSR.processVIIRSBands(newRrsVIIRSJData, newRrsData, sensor='J')
-            Weight_RSR.processVIIRSBands(newRrsVIIRSJDeltaData, newRrsDeltaData, sensor='J')
-            newRrsVIIRSJData.columnsToDataset()
-            newRrsVIIRSJDeltaData.columnsToDataset()
-            Weight_RSR.processVIIRSBands(newnLwVIIRSJData, newnLwData, sensor='J')
-            Weight_RSR.processVIIRSBands(newnLwVIIRSJDeltaData, newnLwDeltaData, sensor='J')
-            newnLwVIIRSJData.columnsToDataset()
-            newnLwVIIRSJDeltaData.columnsToDataset()
+        # if ConfigFile.settings['bL2WeightVIIRSN']:
+        #     print("Process VIIRS SNPP Bands")
+        #     Weight_RSR.processVIIRSBands(newRrsVIIRSNData, newRrsData, sensor='N')
+        #     Weight_RSR.processVIIRSBands(newRrsVIIRSNDeltaData, newRrsDeltaData, sensor='N')
+        #     newRrsVIIRSNData.columnsToDataset()
+        #     newRrsVIIRSNDeltaData.columnsToDataset()
+        #     Weight_RSR.processVIIRSBands(newnLwVIIRSNData, newnLwData, sensor='N')
+        #     Weight_RSR.processVIIRSBands(newnLwVIIRSNDeltaData, newnLwDeltaData, sensor='N')
+        #     newnLwVIIRSNData.columnsToDataset()
+        #     newnLwVIIRSNDeltaData.columnsToDataset()
+        # if ConfigFile.settings['bL2WeightVIIRSJ']:
+        #     print("Process VIIRS JPSS Bands")
+        #     Weight_RSR.processVIIRSBands(newRrsVIIRSJData, newRrsData, sensor='J')
+        #     Weight_RSR.processVIIRSBands(newRrsVIIRSJDeltaData, newRrsDeltaData, sensor='J')
+        #     newRrsVIIRSJData.columnsToDataset()
+        #     newRrsVIIRSJDeltaData.columnsToDataset()
+        #     Weight_RSR.processVIIRSBands(newnLwVIIRSJData, newnLwData, sensor='J')
+        #     Weight_RSR.processVIIRSBands(newnLwVIIRSJDeltaData, newnLwDeltaData, sensor='J')
+        #     newnLwVIIRSJData.columnsToDataset()
+        #     newnLwVIIRSJDeltaData.columnsToDataset()
         
-        if ConfigFile.settings['bL2WeightSentinel3A']:
-            print("Process Sentinel 3A Bands")
-            Weight_RSR.processSentinel3Bands(newRrsSentinel3AData, newRrsData, sensor='A')
-            Weight_RSR.processSentinel3Bands(newRrsSentinel3ADeltaData, newRrsDeltaData, sensor='A')
-            newRrsSentinel3AData.columnsToDataset()
-            newRrsSentinel3ADeltaData.columnsToDataset()
-            Weight_RSR.processSentinel3Bands(newnLwSentinel3AData, newnLwData, sensor='A')
-            Weight_RSR.processSentinel3Bands(newnLwSentinel3ADeltaData, newnLwDeltaData, sensor='A')
-            newnLwSentinel3AData.columnsToDataset()
-            newnLwSentinel3ADeltaData.columnsToDataset()
+        # if ConfigFile.settings['bL2WeightSentinel3A']:
+        #     print("Process Sentinel 3A Bands")
+        #     Weight_RSR.processSentinel3Bands(newRrsSentinel3AData, newRrsData, sensor='A')
+        #     Weight_RSR.processSentinel3Bands(newRrsSentinel3ADeltaData, newRrsDeltaData, sensor='A')
+        #     newRrsSentinel3AData.columnsToDataset()
+        #     newRrsSentinel3ADeltaData.columnsToDataset()
+        #     Weight_RSR.processSentinel3Bands(newnLwSentinel3AData, newnLwData, sensor='A')
+        #     Weight_RSR.processSentinel3Bands(newnLwSentinel3ADeltaData, newnLwDeltaData, sensor='A')
+        #     newnLwSentinel3AData.columnsToDataset()
+        #     newnLwSentinel3ADeltaData.columnsToDataset()
         
-        if ConfigFile.settings['bL2WeightSentinel3B']:
-            print("Process Sentinel 3B Bands")
-            Weight_RSR.processSentinel3Bands(newRrsSentinel3BData, newRrsData, sensor='B')
-            Weight_RSR.processSentinel3Bands(newRrsSentinel3BDeltaData, newRrsDeltaData, sensor='B')
-            newRrsSentinel3BData.columnsToDataset()
-            newRrsSentinel3BDeltaData.columnsToDataset()
-            Weight_RSR.processSentinel3Bands(newnLwSentinel3BData, newnLwData, sensor='B')
-            Weight_RSR.processSentinel3Bands(newnLwSentinel3BDeltaData, newnLwDeltaData, sensor='B')
-            newnLwSentinel3BData.columnsToDataset()
-            newnLwSentinel3BDeltaData.columnsToDataset()
+        # if ConfigFile.settings['bL2WeightSentinel3B']:
+        #     print("Process Sentinel 3B Bands")
+        #     Weight_RSR.processSentinel3Bands(newRrsSentinel3BData, newRrsData, sensor='B')
+        #     Weight_RSR.processSentinel3Bands(newRrsSentinel3BDeltaData, newRrsDeltaData, sensor='B')
+        #     newRrsSentinel3BData.columnsToDataset()
+        #     newRrsSentinel3BDeltaData.columnsToDataset()
+        #     Weight_RSR.processSentinel3Bands(newnLwSentinel3BData, newnLwData, sensor='B')
+        #     Weight_RSR.processSentinel3Bands(newnLwSentinel3BDeltaData, newnLwDeltaData, sensor='B')
+        #     newnLwSentinel3BData.columnsToDataset()
+        #     newnLwSentinel3BDeltaData.columnsToDataset()
 
         return True
 

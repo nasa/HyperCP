@@ -1,5 +1,6 @@
 
 # from BandData import MODIS, Sentinel3
+import collections
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 
@@ -9,10 +10,13 @@ class Weight_RSR:
     @staticmethod
     def calculateBand(spectralDataset, wavelength, response):
         #print("Calculate Band")
-        n = len(list(spectralDataset.columns.values())[0])        
+        if isinstance(list(spectralDataset.values())[0], float):
+            n=1
+        else:
+            n = len(list(spectralDataset.values())[0])        
         result = []
 
-        # For each row of rrs data
+        # For each row of data within a band
         for i in range(n):
             srf_sum = 0
             c_sum = 0.0
@@ -23,11 +27,14 @@ class Weight_RSR:
                 srf = response[j]
                 #print("ld, srf",ld,srf)
 
-                # Check if lamda in rrs
-                if ld in spectralDataset.columns:
-                    rrs = spectralDataset.columns[ld][i]
-                    #print("srf, rrs", srf, rrs)
-                    srf_sum += rrs*srf
+                # Check if lamda is in spectralDataset
+                if ld in spectralDataset:
+                    if n>1:
+                        dataAtLambda = spectralDataset[ld][i]
+                    else:
+                        dataAtLambda = spectralDataset[ld]
+                    #print("srf, dataAtLambda", srf, dataAtLambda)
+                    srf_sum += dataAtLambda*srf
                     c_sum += response[j]
 
             # Calculate srf value for that band
@@ -39,11 +46,81 @@ class Weight_RSR:
             result.append(c * srf_sum)
         return result
 
+    # @staticmethod
+    # def calculateBand(spectralDataset, wavelength, response):
+    #     #print("Calculate Band")
+    #     n = len(list(spectralDataset.columns.values())[0])        
+    #     result = []
 
+    #     # For each row of rrs data
+    #     for i in range(n):
+    #         srf_sum = 0
+    #         c_sum = 0.0
+
+    #         # For each lamda in band
+    #         for j in np.arange(0, len(wavelength)):
+    #             ld = str(wavelength[j])
+    #             srf = response[j]
+    #             #print("ld, srf",ld,srf)
+
+    #             # Check if lamda in rrs
+    #             if ld in spectralDataset.columns:
+    #                 rrs = spectralDataset.columns[ld][i]
+    #                 #print("srf, rrs", srf, rrs)
+    #                 srf_sum += rrs*srf
+    #                 c_sum += response[j]
+
+    #         # Calculate srf value for that band
+    #         if c_sum == 0:
+    #             # For satellite bands (like 1240 nm) that have all 0 RSR in bands used for hyperspectral data
+    #             c = 0
+    #         else:
+    #             c = 1/c_sum
+    #         result.append(c * srf_sum)
+    #     return result
+
+
+    # @staticmethod
+    # def processMODISBands(weightedBandData, hyperspecData, sensor='A'):        
+    #     # Read in the RSRs from NASA
+    #     # Aqua
+    #     fields=['412','443','469','488','531','551','555','645','667',
+    #             '678','748','859','869','1240','1640','2130']
+    #     if sensor == 'A':
+    #         modisRSRFile = 'Data/HMODISA_RSRs.txt'
+    #     else:
+    #         modisRSRFile = 'Data/HMODIST_RSRs.txt'
+
+    #     data = np.loadtxt(modisRSRFile, skiprows=7)
+    #     wavelength = data[:,0].tolist()
+    #     rsr = data[...,1:]
+
+    #     rsrInterp = np.empty([len(hyperspecData.columns)-2,rsr.shape[1]])
+    #     keys = hyperspecData.columns.keys()
+    #     wvInterp = np.empty([1,len(keys)-2])*0
+    #     for i, key in enumerate(keys):
+    #         if key == 'Datetime' or key == 'Datetag' or key == 'Timetag2':
+    #             continue
+    #         wvInterp[0,i-2] = float(key)
+    #     wvInterp = wvInterp[0].tolist()
+
+    #     # Interpolate the response functions to the wavebands of the OCR
+    #     order = 1
+    #     for i in np.arange(0,rsr.shape[1]):
+    #         # rsrInterp[:,i] = Utilities.interp(wavelength,rsr[:,i].tolist(),wvInterp[0].tolist())
+    #         fn = InterpolatedUnivariateSpline(wavelength,rsr[:,i].tolist(),k=order)
+    #         rsrInterp[:,i] = fn(wvInterp)
+        
+    #     for i in np.arange(0, len(fields)):
+    #         weightedBandData.columns[str(fields[i])] = \
+    #             Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
+        
+    #     return weightedBandData
     @staticmethod
-    def processMODISBands(weightedBandData, hyperspecData, sensor='A'):        
+    def processMODISBands(hyperspecData, sensor='A'):        
+        weightedBandData = collections.OrderedDict()
         # Read in the RSRs from NASA
-        # Aqua
+        # Aqua        
         fields=['412','443','469','488','531','551','555','645','667',
                 '678','748','859','869','1240','1640','2130']
         if sensor == 'A':
@@ -55,8 +132,8 @@ class Weight_RSR:
         wavelength = data[:,0].tolist()
         rsr = data[...,1:]
 
-        rsrInterp = np.empty([len(hyperspecData.columns)-2,rsr.shape[1]])
-        keys = hyperspecData.columns.keys()
+        rsrInterp = np.empty([len(hyperspecData)-2,rsr.shape[1]])
+        keys = hyperspecData.keys()
         wvInterp = np.empty([1,len(keys)-2])*0
         for i, key in enumerate(keys):
             if key == 'Datetime' or key == 'Datetag' or key == 'Timetag2':
@@ -72,7 +149,7 @@ class Weight_RSR:
             rsrInterp[:,i] = fn(wvInterp)
         
         for i in np.arange(0, len(fields)):
-            weightedBandData.columns[str(fields[i])] = \
+            weightedBandData[str(fields[i])] = \
                 Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
         
         return weightedBandData
