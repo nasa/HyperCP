@@ -21,35 +21,314 @@ from Weight_RSR import Weight_RSR
 
 class ProcessL2:
 
+    @staticmethod
+    def Thuillier(dateTag, wavelength):
+        def dop(year):
+            # day of perihelion            
+            years = list(range(2001,2031))
+            key = [str(x) for x in years]
+            day = [4, 2, 4, 4, 2, 4, 3, 2, 4, 3, 3, 5, 2, 4, 4, 2, 4, 3, 3, 5, 2, 4, 4, 3, 4, 3, 3, 5, 2, 3]            
+            dop = {key[i]: day[i] for i in range(0, len(key))}            
+            result = dop[str(year)]
+            return result
+
+        fp = 'Data/Thuillier_F0.sb'
+        print("SB_support.readSB: " + fp)
+        if not readSB(fp, no_warn=True):
+            msg = "Unable to read Thuillier file. Make sure it is in SeaBASS format."
+            print(msg)
+            Utilities.writeLogFile(msg)  
+            return None
+        else:
+            Thuillier = readSB(fp, no_warn=True)
+            F0_raw = np.array(Thuillier.data['esun']) # uW cm^-2 nm^-1
+            wv_raw = np.array(Thuillier.data['wavelength'])
+            # Earth-Sun distance
+            day = int(str(dateTag)[4:7])  
+            year = int(str(dateTag)[0:4])  
+            eccentricity = 0.01672
+            dayFactor = 360/365.256363
+            dayOfPerihelion = dop(year)
+            dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
+            F0_fs = F0_raw*dES
+
+            F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
+            # Use the strings for the F0 dict
+            wavelengthStr = [str(wave) for wave in wavelength]
+            F0 = collections.OrderedDict(zip(wavelengthStr, F0))
+        
+        return F0
+
+    @staticmethod
+    def nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr):        
+        newReflectanceGroup = root.getGroup("REFLECTANCE")
+        # newRadianceGroup = root.getGroup("RADIANCE")
+        # newIrradianceGroup = root.getGroup("IRRADIANCE")    
+        
+        newRrsData = newReflectanceGroup.getDataset(f'Rrs_{sensor}')
+        newnLwData = newReflectanceGroup.getDataset(f'nLw_{sensor}')       
+
+        
+        # These will include all slices in root so far
+        # Below the most recent/current slice [-1] will be selected for processing
+        rrsSlice = newRrsData.columns
+        rrsSlice.pop("Datetime")
+        rrsSlice.pop("Datetag")
+        rrsSlice.pop("Timetag2")
+        nLwSlice = newnLwData.columns
+        nLwSlice.pop("Datetime")
+        nLwSlice.pop("Datetag")
+        nLwSlice.pop("Timetag2")
+
+        for k in rrsSlice:
+            # rrsSlice[k] -= avg
+            rrsSlice[k][-1] -= rrsNIRCorr
+        for k in nLwSlice:
+            nLwSlice[k][-1] -= nLwNIRCorr
+
+    @staticmethod
+    def nirCorrection(root, sensor, F0):
+        # F0 is sensor specific, but ultimately, SimSpec can only be applied to hyperspectral data anyway, 
+        # so output the correction and apply it to satellite bands later.
+        simpleNIRCorrection = int(ConfigFile.settings["bL2SimpleNIRCorrection"])
+        simSpecNIRCorrection = int(ConfigFile.settings["bL2SimSpecNIRCorrection"])   
+
+        newReflectanceGroup = root.getGroup("REFLECTANCE")
+        # newRadianceGroup = root.getGroup("RADIANCE")
+        # newIrradianceGroup = root.getGroup("IRRADIANCE")    
+        
+        newRrsData = newReflectanceGroup.getDataset(f'Rrs_{sensor}')
+        newnLwData = newReflectanceGroup.getDataset(f'nLw_{sensor}')
+        # newESData = newIrradianceGroup.getDataset(f'ES_{sensor}')
+        # newLIData = newRadianceGroup.getDataset(f'LI_{sensor}')
+        # newLTData = newRadianceGroup.getDataset(f'LT_{sensor}')
+
+        newRrsDeltaData = newReflectanceGroup.getDataset(f'Rrs_{sensor}_delta')
+        newnLwDeltaData = newReflectanceGroup.getDataset(f'nLw_{sensor}_delta')
+        # newESDeltaData = newIrradianceGroup.getDataset(f'ES_{sensor}_delta')
+        # newLIDeltaData = newRadianceGroup.getDataset(f'LI_{sensor}_delta')
+        # newLTDeltaData = newRadianceGroup.getDataset(f'LT_{sensor}_delta')
+
+        # These will include all slices in root so far
+        # Below the most recent/current slice [-1] will be selected for processing
+        rrsSlice = newRrsData.columns
+        rrsSlice.pop("Datetime")
+        rrsSlice.pop("Datetag")
+        rrsSlice.pop("Timetag2")
+        nLwSlice = newnLwData.columns
+        nLwSlice.pop("Datetime")
+        nLwSlice.pop("Datetag")
+        nLwSlice.pop("Timetag2")
+
+        # # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
+        # if ConfigFile.settings["bL2PerformNIRCorrection"]:
+        if simpleNIRCorrection:
+            # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
+            # Find the minimum between 700 and 800, and subtract it from spectrum (spectrally flat)
+            msg = "Perform simple residual NIR subtraction."
+            print(msg)
+            Utilities.writeLogFile(msg)  
+            
+            # rrs correction
+            NIRRRs = []
+            for k in rrsSlice:
+                # if float(k) >= 750 and float(k) <= 800:
+                if float(k) >= 700 and float(k) <= 800:
+                    # avg += rrsSlice[k]
+                    # num += 1
+                    NIRRRs.append(rrsSlice[k][-1])
+            # avg /= num
+            # avg = np.median(NIRRRs)
+            rrsNIRCorr = min(NIRRRs)
+            # Subtract average from each waveband
+            for k in rrsSlice:
+                # rrsSlice[k] -= avg
+                rrsSlice[k][-1] -= rrsNIRCorr
+                # newRrsData.columns[k].append(rrsSlice[k])
+
+            # nLw correction
+            NIRRRs = []
+            for k in nLwSlice:
+                if float(k) >= 700 and float(k) <= 800:
+                    NIRRRs.append(nLwSlice[k][-1])
+            nLwNIRCorr = min(NIRRRs)
+            # Subtract average from each waveband
+            for k in nLwSlice:
+                nLwSlice[k][-1] -= nLwNIRCorr
+                # newnLwData.columns[k].append(nLwSlice[k])            
+
+        elif simSpecNIRCorrection:
+            # From Ruddick 2005, Ruddick 2006 use NIR normalized similarity spectrum
+            # (spectrally flat)
+            msg = "Perform simulated spectrum residual NIR subtraction."
+            print(msg)
+            Utilities.writeLogFile(msg)  
+
+            # These ratios are for rho = pi*Rrs
+            α1 = 2.35 # 720/780 only good for rho(720)<0.03
+            α2 = 1.91 # 780/870 try to avoid, data is noisy here
+            threshold = 0.03
+
+            # Retrieve Thuilliers
+            wavelength = [float(key) for key in F0.keys()]
+            F0 = [value for value in F0.values()]
+
+            # Rrs
+            ρ720 = []
+            x = []
+            for k in rrsSlice:                
+                if float(k) >= 700 and float(k) <= 750:
+                    x.append(float(k))
+
+                    ρ720.append(np.pi*rrsSlice[k][-1]) # Using current element/slice
+
+            if not ρ720:
+                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+            ρ1 = sp.interpolate.interp1d(x,ρ720)(720)
+            F01 = sp.interpolate.interp1d(wavelength,F0)(720)
+            ρ780 = []
+            x = []
+            for k in rrsSlice:                
+                if float(k) >= 760 and float(k) <= 800:
+                    x.append(float(k))
+                    ρ780.append(rrsSlice[k][-1])
+            if not ρ780:
+                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+            ρ2 = sp.interpolate.interp1d(x,ρ780)(780)
+            F02 = sp.interpolate.interp1d(wavelength,F0)(780)
+            ρ870 = []
+            x = []
+            for k in rrsSlice:                
+                if float(k) >= 850 and float(k) <= 890:
+                    x.append(float(k))
+                    ρ870.append(rrsSlice[k][-1])
+            if not ρ870:
+                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+            ρ3 = sp.interpolate.interp1d(x,ρ870)(870)
+            F03 = sp.interpolate.interp1d(wavelength,F0)(870)
+            
+            if ρ1 < threshold:
+                ε = (α1*ρ2 - ρ1)/(α1-1)
+                ε = ε/np.pi # convert to Rrs units
+                εnLw = (α1*ρ2*F02/np.pi - ρ1*F01/np.pi)/(α1-1) # convert to nLw units
+                msg = f'offset(rrs) = {ε}; offset(nLw) = {εnLw}'
+                print(msg)
+                Utilities.writeLogFile(msg)  
+            else:
+                msg = "SimSpec threshold tripped. Using 780/870 instead."
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                ε = (α2*ρ3 - ρ2)/(α2-1)
+                ε = ε/np.pi # convert to Rrs units
+                εnLw = (α2*ρ3*F03/np.pi - ρ2*F02/np.pi)/(α2-1) # convert to nLw units              
+                msg = f'offset(rrs) = {ε}; offset(nLw) = {εnLw}'
+                print(msg)
+                Utilities.writeLogFile(msg)  
+            for k in rrsSlice:
+                ''' There seems to be some confusion in the Ruddick 2005 SPIE paper.
+                By this method, ε is (and should be) negative, and so must be added 
+                rather than subtracted.''' 
+                # rrsSlice[k] -= ε
+                rrsSlice[k][-1] += ε
+                # newRrsData.columns[k].append(rrsSlice[k][-1])
+                # nLwSlice[k] -= εnLw
+                nLwSlice[k][-1] += εnLw
+                # newnLwData.columns[k].append(nLwSlice[k])        
+            rrsNIRCorr = -ε
+            nLwNIRCorr = -εnLw
+        
+        # newESData.columnsToDataset() 
+        # newLIData.columnsToDataset()
+        # newLTData.columnsToDataset()
+        newRrsData.columnsToDataset()
+        newnLwData.columnsToDataset()
+
+        # newESDeltaData.columnsToDataset()   
+        # newLIDeltaData.columnsToDataset()
+        # newLTDeltaData.columnsToDataset()
+        newRrsDeltaData.columnsToDataset()
+        newnLwDeltaData.columnsToDataset()
+        
+        return rrsNIRCorr, nLwNIRCorr
     
     @staticmethod
-    def spectralReflectance(esXSlice, esXstd, liXSlice, liXstd, ltXSlice, ltXstd, F0, rhoScalar, rhoDict, rhoDelta, waveSubset):
+    def spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, rhoVecDelta, waveSubset):
+        ''' The slices, stds, F0, rhoVec, and rhoVecDelta here are sensor-waveband specific '''
+        esXSlice = xSlice['es']
+        esXstd = xSlice['esSTD']
+        liXSlice = xSlice['li']
+        liXstd = xSlice['li']
+        ltXSlice = xSlice['lt']
+        ltXstd = xSlice['ltSTD']
+        dateTime = timeObj['dateTime']
+        dateTag = timeObj['dateTag']
+        timeTag = timeObj['timeTag']
+
         rhoDefault = float(ConfigFile.settings["fL2RhoSky"])
         RuddickRho = int(ConfigFile.settings["bL2RuddickRho"])
         ZhangRho = int(ConfigFile.settings["bL2ZhangRho"])
         
-        tempNode = HDFRoot.HDFRoot()
-        newReflectanceGroup = tempNode.addGroup("REFLECTANCE")
-        newRadianceGroup = tempNode.addGroup("RADIANCE")
-        newIrradianceGroup = tempNode.addGroup("IRRADIANCE") 
+       # Root (new/output) groups:
+        newReflectanceGroup = root.getGroup("REFLECTANCE")
+        newRadianceGroup = root.getGroup("RADIANCE")
+        newIrradianceGroup = root.getGroup("IRRADIANCE")        
 
-        newRrsData = newReflectanceGroup.addDataset("Rrs_preNIR")            
-        newESData = newIrradianceGroup.addDataset("ES")        
-        newLIData = newRadianceGroup.addDataset("LI")
-        newLTData = newRadianceGroup.addDataset("LT") 
-        newnLwData = newReflectanceGroup.addDataset("nLw_preNIR")            
+        # If this is the first ensemble spectrum, set up the new datasets
+        if not (f'Rrs_{sensor}' in newReflectanceGroup.datasets):           
+            newRrsData = newReflectanceGroup.addDataset(f"Rrs_{sensor}")
+            newESData = newIrradianceGroup.addDataset(f"ES_{sensor}")      
+            newLIData = newRadianceGroup.addDataset(f"LI_{sensor}")
+            newLTData = newRadianceGroup.addDataset(f"LT_{sensor}")
+            newnLwData = newReflectanceGroup.addDataset(f"nLw_{sensor}")
 
-        newRrsDeltaData = newReflectanceGroup.addDataset("Rrs_delta")            
-        newESDeltaData = newIrradianceGroup.addDataset("ES_delta")       
-        newLIDeltaData = newRadianceGroup.addDataset("LI_delta")
-        newLTDeltaData = newRadianceGroup.addDataset("LT_delta")
-        newnLwDeltaData = newReflectanceGroup.addDataset("nLw_delta")
+            newRrsDeltaData = newReflectanceGroup.addDataset(f"Rrs_{sensor}_delta")
+            newESDeltaData = newIrradianceGroup.addDataset(f"ES_{sensor}_delta")       
+            newLIDeltaData = newRadianceGroup.addDataset(f"LI_{sensor}_delta")
+            newLTDeltaData = newRadianceGroup.addDataset(f"LT_{sensor}_delta")
+            newnLwDeltaData = newReflectanceGroup.addDataset(f"nLw_{sensor}_delta")             
+        else:           
+            newRrsData = newReflectanceGroup.getDataset(f"Rrs_{sensor}")
+            newESData = newIrradianceGroup.getDataset(f"ES_{sensor}")    
+            newLIData = newRadianceGroup.getDataset(f"LI_{sensor}")
+            newLTData = newRadianceGroup.getDataset(f"LT_{sensor}") 
+            newnLwData = newReflectanceGroup.getDataset(f"nLw_{sensor}")
 
-        rrsSlice = {}
-        nLwSlice = {}
+            newRrsDeltaData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_delta")
+            newESDeltaData = newIrradianceGroup.getDataset(f"ES_{sensor}_delta")    
+            newLIDeltaData = newRadianceGroup.getDataset(f"LI_{sensor}_delta")
+            newLTDeltaData = newRadianceGroup.getDataset(f"LT_{sensor}_delta")
+            newnLwDeltaData = newReflectanceGroup.getDataset(f"nLw_{sensor}_delta")        
+
+        # If this is the first spectrum, add date/time, otherwise append
+        # These are empty datasets from root groups.
+        # Groups REFLECTANCE, IRRADIANCE, and RADIANCE are intiallized with empty datasets, but 
+        # ANCILLARY is not.
+        # newRrsData = newReflectanceGroup.addDataset("Rrs")
+        if not ("Datetag" in newRrsData.columns):            
+            for gp in root.groups:
+                # Ancillary is already populated.
+                # The other groups only have empty (named) datasets
+                if gp.id != "ANCILLARY":
+                    for ds in gp.datasets:                                                
+                        gp.datasets[ds].columns["Datetime"] = [dateTime] # mean of the ensemble
+                        gp.datasets[ds].columns["Datetag"] = [dateTag]
+                        gp.datasets[ds].columns["Timetag2"] = [timeTag]                  
+        else:
+            # Ancillary is already populated.
+            # The other groups only have empty (named) datasets
+            for gp in root.groups:
+                if gp.id != "ANCILLARY":
+                    for ds in gp.datasets:                                                
+                        gp.datasets[ds].columns["Datetime"].append(dateTime) 
+                        # mean of the ensemble
+                        gp.datasets[ds].columns["Datetag"].append(dateTag)
+                        gp.datasets[ds].columns["Timetag2"].append(timeTag)
+
         deleteKey = []
         for k in esXSlice: # loop through wavebands as key 'k'
             if (k in liXSlice) and (k in ltXSlice):
+                
+                # Initialize the new dataset if this is the first slice
                 if k not in newESData.columns:
                     newESData.columns[k] = []
                     newLIData.columns[k] = []
@@ -64,7 +343,7 @@ class ProcessL2:
                     newnLwDeltaData.columns[k] = []
 
                 # At this waveband (k); still using complete wavelength set
-                es = esXSlice[k][0]
+                es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and root
                 li = liXSlice[k][0]
                 lt = ltXSlice[k][0]
                 f0  = F0[k]
@@ -92,11 +371,11 @@ class ProcessL2:
                 elif ZhangRho:
                     # Only populate the valid wavelengths
                     if float(k) in waveSubset:
-                        rrs = (lt - (rhoDict[k] * li)) / es
+                        rrs = (lt - (rhoVec[k] * li)) / es
 
                         # Rrs uncertainty
                         rrsDelta = rrs * ( 
-                                (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2 
+                                (liDelta/li)**2 + (rhoVecDelta/rhoVec[k])**2 + (liDelta/li)**2 + (esDelta/es)**2 
                                 )**0.5
                     
                         #Calculate the normalized water leaving radiance
@@ -104,7 +383,7 @@ class ProcessL2:
 
                         # nLw uncertainty; no provision for F0 uncertainty here
                         nLwDelta = nLw * (
-                                (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2
+                                (liDelta/li)**2 + (rhoVecDelta/rhoVec[k])**2 + (liDelta/li)**2 + (esDelta/es)**2
                                 )**0.5
                 else:
                     # Default rho
@@ -140,14 +419,13 @@ class ProcessL2:
                     newRrsDeltaData.columns[k].append(rrsDelta)
                     newnLwDeltaData.columns[k].append(nLwDelta)
                     newRrsData.columns[k].append(rrs)
+                    # newRrsData.columns[k] = rrs
                     newnLwData.columns[k].append(nLw)
-                    
-                    # rrsSlice[k] = rrs
-                    # nLwSlice[k] = nLw
+                    # newnLwData.columns[k] = nLw
                 else:
                     deleteKey.append(k) 
         
-        # Eliminate reflectance keys/values in wavebands outside of valid set
+        # Eliminate reflectance keys/values in wavebands outside of valid set for the sake of Zhang model
         deleteKey = list(set(deleteKey))
         for key in deleteKey: 
             # Only need to do this for the first ensemble in file
@@ -157,7 +435,17 @@ class ProcessL2:
                 del newRrsDeltaData.columns[key]
                 del newnLwDeltaData.columns[key]
 
-        return tempNode
+        newESData.columnsToDataset() 
+        newLIData.columnsToDataset()
+        newLTData.columnsToDataset()
+        newRrsData.columnsToDataset()
+        newnLwData.columnsToDataset()
+
+        newESDeltaData.columnsToDataset()   
+        newLIDeltaData.columnsToDataset()
+        newLTDeltaData.columnsToDataset()
+        newRrsDeltaData.columnsToDataset()
+        newnLwDeltaData.columnsToDataset()
         
     @staticmethod    
     def filterData(group, badTimes):                    
@@ -411,8 +699,8 @@ class ProcessL2:
         esData.datasetToColumns()
         esColumns = esData.columns
             
-        dateTag = esColumns.pop('Datetag')
-        timeTag2 = esColumns.pop('Timetag2')
+        esColumns.pop('Datetag')
+        esColumns.pop('Timetag2')
         esTime = esColumns.pop('Datetime')
 
         liData = sasGroup.getDataset("LI")
@@ -888,14 +1176,14 @@ class ProcessL2:
         meteorological quality flags. Perform glint corrections. Calculate the Rrs. Correct for NIR
         residuals.'''
 
-        def dop(year):
-            # day of perihelion            
-            years = list(range(2001,2031))
-            key = [str(x) for x in years]
-            day = [4, 2, 4, 4, 2, 4, 3, 2, 4, 3, 3, 5, 2, 4, 4, 2, 4, 3, 3, 5, 2, 4, 4, 3, 4, 3, 3, 5, 2, 3]            
-            dop = {key[i]: day[i] for i in range(0, len(key))}            
-            result = dop[str(year)]
-            return result
+        # def dop(year):
+        #     # day of perihelion            
+        #     years = list(range(2001,2031))
+        #     key = [str(x) for x in years]
+        #     day = [4, 2, 4, 4, 2, 4, 3, 2, 4, 3, 3, 5, 2, 4, 4, 2, 4, 3, 3, 5, 2, 4, 4, 3, 4, 3, 3, 5, 2, 3]            
+        #     dop = {key[i]: day[i] for i in range(0, len(key))}            
+        #     result = dop[str(year)]
+        #     return result
 
         esData = refGroup.getDataset("ES")
         liData = sasGroup.getDataset("LI")
@@ -910,102 +1198,10 @@ class ProcessL2:
         ltData.datasetToColumns()
         ltColumns = ltData.columns   
 
-        # Root (new/output) groups:
-        newReflectanceGroup = root.getGroup("REFLECTANCE")
-        newRadianceGroup = root.getGroup("RADIANCE")
-        newIrradianceGroup = root.getGroup("IRRADIANCE")        
-
-        # If this is the first ensemble spectrum, set up the new datasets
-        if not ('Rrs' in newReflectanceGroup.datasets):
-            newRrsData = newReflectanceGroup.addDataset("Rrs")            
-            newESData = newIrradianceGroup.addDataset("ES")        
-            newLIData = newRadianceGroup.addDataset("LI")
-            newLTData = newRadianceGroup.addDataset("LT") 
-            newnLwData = newReflectanceGroup.addDataset("nLw")            
-
-            newRrsDeltaData = newReflectanceGroup.addDataset("Rrs_delta")            
-            newESDeltaData = newIrradianceGroup.addDataset("ES_delta")       
-            newLIDeltaData = newRadianceGroup.addDataset("LI_delta")
-            newLTDeltaData = newRadianceGroup.addDataset("LT_delta")
-            newnLwDeltaData = newReflectanceGroup.addDataset("nLw_delta")
-
-            if ConfigFile.settings['bL2WeightMODISA']:
-                newRrsMODISAData = newReflectanceGroup.addDataset("Rrs_MODISA")
-                newRrsMODISADeltaData = newReflectanceGroup.addDataset("Rrs_MODISA_delta")
-                newnLwMODISAData = newReflectanceGroup.addDataset("nLw_MODISA")
-                newnLwMODISADeltaData = newReflectanceGroup.addDataset("nLw_MODISA_delta")
-            if ConfigFile.settings['bL2WeightMODIST']:
-                newRrsMODISTData = newReflectanceGroup.addDataset("Rrs_MODIST")
-                newRrsMODISTDeltaData = newReflectanceGroup.addDataset("Rrs_MODIST_delta")
-                newnLwMODISTData = newReflectanceGroup.addDataset("nLw_MODIST")
-                newnLwMODISTDeltaData = newReflectanceGroup.addDataset("nLw_MODIST_delta")
-
-            if ConfigFile.settings['bL2WeightVIIRSN']:
-                newRrsVIIRSNData = newReflectanceGroup.addDataset("Rrs_VIIRSN")
-                newRrsVIIRSNDeltaData = newReflectanceGroup.addDataset("Rrs_VIIRSN_delta")
-                newnLwVIIRSNData = newReflectanceGroup.addDataset("nLw_VIIRSN")
-                newnLwVIIRSNDeltaData = newReflectanceGroup.addDataset("nLw_VIIRSN_delta")
-            if ConfigFile.settings['bL2WeightVIIRSJ']:
-                newRrsVIIRSJData = newReflectanceGroup.addDataset("Rrs_VIIRSJ")
-                newRrsVIIRSJDeltaData = newReflectanceGroup.addDataset("Rrs_VIIRSJ_delta")
-                newnLwVIIRSJData = newReflectanceGroup.addDataset("nLw_VIIRSJ")
-                newnLwVIIRSJDeltaData = newReflectanceGroup.addDataset("nLw_VIIRSJ_delta")
-
-            if ConfigFile.settings['bL2WeightSentinel3A']:
-                newRrsSentinel3AData = newReflectanceGroup.addDataset("Rrs_Sentinel3A")
-                newRrsSentinel3ADeltaData = newReflectanceGroup.addDataset("Rrs_Sentinel3A_delta")
-                newnLwSentinel3AData = newReflectanceGroup.addDataset("nLw_Sentinel3A")
-                newnLwSentinel3ADeltaData = newReflectanceGroup.addDataset("nLw_Sentinel3A_delta")
-            if ConfigFile.settings['bL2WeightSentinel3B']:
-                newRrsSentinel3BData = newReflectanceGroup.addDataset("Rrs_Sentinel3B")
-                newRrsSentinel3BDeltaData = newReflectanceGroup.addDataset("Rrs_Sentinel3B_delta")
-                newnLwSentinel3BData = newReflectanceGroup.addDataset("nLw_Sentinel3B")
-                newnLwSentinel3BDeltaData = newReflectanceGroup.addDataset("nLw_Sentinel3B_delta")
-        else:
-            newRrsData = newReflectanceGroup.getDataset("Rrs")
-            newESData = newIrradianceGroup.getDataset("ES")        
-            newLIData = newRadianceGroup.getDataset("LI")
-            newLTData = newRadianceGroup.getDataset("LT") 
-            newnLwData = newReflectanceGroup.getDataset("nLw")
-
-            newRrsDeltaData = newReflectanceGroup.getDataset("Rrs_delta")
-            newESDeltaData = newIrradianceGroup.getDataset("ES_delta")    
-            newLIDeltaData = newRadianceGroup.getDataset("LI_delta")
-            newLTDeltaData = newRadianceGroup.getDataset("LT_delta")
-            newnLwDeltaData = newReflectanceGroup.getDataset("nLw_delta")
-
-            if ConfigFile.settings['bL2WeightMODISA']:
-                newRrsMODISAData = newReflectanceGroup.getDataset("Rrs_MODISA")
-                newRrsMODISADeltaData = newReflectanceGroup.getDataset("Rrs_MODISA_delta")
-                newnLwMODISAData = newReflectanceGroup.getDataset("nLw_MODISA")
-                newnLwMODISADeltaData = newReflectanceGroup.getDataset("nLw_MODISA_delta")
-            if ConfigFile.settings['bL2WeightMODIST']:
-                newRrsMODISTData = newReflectanceGroup.getDataset("Rrs_MODIST")
-                newRrsMODISTDeltaData = newReflectanceGroup.getDataset("Rrs_MODIST_delta")
-                newnLwMODISTData = newReflectanceGroup.getDataset("nLw_MODIST")
-                newnLwMODISTDeltaData = newReflectanceGroup.getDataset("nLw_MODIST_delta")
-
-            if ConfigFile.settings['bL2WeightVIIRSN']:
-                newRrsVIIRSNData = newReflectanceGroup.getDataset("Rrs_VIIRSN")
-                newRrsVIIRSNDeltaData = newReflectanceGroup.getDataset("Rrs_VIIRSN_delta")
-                newnLwVIIRSNData = newReflectanceGroup.getDataset("nLw_VIIRSN")
-                newnLwVIIRSNDeltaData = newReflectanceGroup.getDataset("nLw_VIIRSN_delta")
-            if ConfigFile.settings['bL2WeightVIIRSJ']:
-                newRrsVIIRSJData = newReflectanceGroup.getDataset("Rrs_VIIRSJ")
-                newRrsVIIRSJDeltaData = newReflectanceGroup.getDataset("Rrs_VIIRSJ_delta")
-                newnLwVIIRSJData = newReflectanceGroup.getDataset("nLw_VIIRSJ")
-                newnLwVIIRSJDeltaData = newReflectanceGroup.getDataset("nLw_VIIRSJ_delta")
-
-            if ConfigFile.settings['bL2WeightSentinel3A']:
-                newRrsSentinel3AData = newReflectanceGroup.getDataset("Rrs_Sentinel3A")
-                newRrsSentinel3ADeltaData = newReflectanceGroup.getDataset("Rrs_Sentinel3A_delta")
-                newnLwSentinel3AData = newReflectanceGroup.getDataset("nLw_Sentinel3A")
-                newnLwSentinel3ADeltaData = newReflectanceGroup.getDataset("nLw_Sentinel3A_delta")
-            if ConfigFile.settings['bL2WeightSentinel3B']:
-                newRrsSentinel3BData = newReflectanceGroup.getDataset("Rrs_Sentinel3B")
-                newRrsSentinel3BDeltaData = newReflectanceGroup.getDataset("Rrs_Sentinel3B_delta")
-                newnLwSentinel3BData = newReflectanceGroup.getDataset("nLw_Sentinel3B")
-                newnLwSentinel3BDeltaData = newReflectanceGroup.getDataset("nLw_Sentinel3B_delta")
+        # # Root (new/output) groups:
+        # newReflectanceGroup = root.getGroup("REFLECTANCE")
+        # newRadianceGroup = root.getGroup("RADIANCE")
+        # newIrradianceGroup = root.getGroup("IRRADIANCE")        
 
         esSlice = ProcessL2.columnToSlice(esColumns,start, end)
         liSlice = ProcessL2.columnToSlice(liColumns,start, end)
@@ -1017,8 +1213,8 @@ class ProcessL2:
         ZhangRho = int(ConfigFile.settings["bL2ZhangRho"])
         # defaultWindSpeed = float(ConfigFile.settings["fL2DefaultWindSpeed"])
         # windSpeedMean = defaultWindSpeed # replaced later with met file, if present                         
-        simpleNIRCorrection = int(ConfigFile.settings["bL2SimpleNIRCorrection"])
-        simSpecNIRCorrection = int(ConfigFile.settings["bL2SimSpecNIRCorrection"])                        
+        # simpleNIRCorrection = int(ConfigFile.settings["bL2SimpleNIRCorrection"])
+        # simSpecNIRCorrection = int(ConfigFile.settings["bL2SimSpecNIRCorrection"])                        
         enablePercentLt = float(ConfigFile.settings["bL2EnablePercentLt"])
         percentLt = float(ConfigFile.settings["fL2PercentLt"])
 
@@ -1036,15 +1232,14 @@ class ProcessL2:
         ltSlice.pop("Timetag2")
         ltSlice.pop("Datetime")
 
-        ''' Calculate the convolved es/li/lt slices here '''
+        #Convolve es/li/lt slices to satellite bands using RSRs
         if ConfigFile.settings['bL2WeightMODISA']:
             print("Process MODIS Aqua Bands")
             esSliceMODISA = Weight_RSR.processMODISBands(esSlice, sensor='A') # dictionary
             liSliceMODISA = Weight_RSR.processMODISBands(liSlice, sensor='A')
             ltSliceMODISA = Weight_RSR.processMODISBands(ltSlice, sensor='A')
 
-
-        # Stores the mean datetime
+        # Store the mean datetime of the slice
         if len(timeStamp) > 0:
             epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
             tsSeconds = []
@@ -1054,6 +1249,11 @@ class ProcessL2:
             dateTime = datetime.datetime.utcfromtimestamp(meanSec).replace(tzinfo=datetime.timezone.utc)
             dateTag = Utilities.datetime2DateTag(dateTime)
             timeTag = Utilities.datetime2TimeTag2(dateTime)
+
+            timeObj = {}
+            timeObj['dateTime'] = dateTime
+            timeObj['dateTag'] = dateTag
+            timeObj['timeTag'] = timeTag
 
         '''# Calculates the lowest X% (based on Hooker & Morel 2003; Hooker et al. 2002; Zibordi et al. 2002, IOCCG Protocols)
         X will depend on FOV and integration time of instrument. Hooker cites a rate of 2 Hz.
@@ -1065,9 +1265,8 @@ class ProcessL2:
         print(msg)
         Utilities.writeLogFile(msg)
         
-        # IS THIS NECESSARY?
         # There are sometimes only a small number of spectra in the slice,
-        #  so the percent Lt estimation becomes highly questionable and is overridden.
+        #  so the percent Lt estimation becomes highly questionable and is overridden here.
         if n <= 5 or x == 0:
             x = n # if only 5 or fewer records retained, use them all...
         
@@ -1086,7 +1285,7 @@ class ProcessL2:
             # ensemble is off (set to 0), just the one spectrum will be used.
             y = index 
 
-        # Take the mean of the lowest X%
+        # Take the mean of the lowest X% in the slice
         esXSlice = collections.OrderedDict()
         liXSlice = collections.OrderedDict()
         ltXSlice = collections.OrderedDict()  
@@ -1098,7 +1297,8 @@ class ProcessL2:
         hasNan = ProcessL2.sliceAveHyper(y, liSlice, liXSlice, liXstd)
         hasNan = ProcessL2.sliceAveHyper(y, ltSlice, ltXSlice, ltXstd)
 
-        ''' slice average the convolved es, li, lt here '''
+        # Take the mean of the lowest X% for satellite weighted (ir)radiances in the slice
+        # y indexes are from the hyperspectral data
         if ConfigFile.settings['bL2WeightMODISA']:
             esXSliceMODISA = collections.OrderedDict()
             liXSliceMODISA = collections.OrderedDict()
@@ -1112,14 +1312,14 @@ class ProcessL2:
             hasNan = ProcessL2.sliceAveHyper(y, ltSliceMODISA, ltXSliceMODISA, ltXstdMODISA)
 
 
-        # Slice average the ancillary group for the slice and the X% criteria
-        # (Combines Slice and XSlice in one method)
+        # Take the mean of the lowest X% for the ancillary group in the slice
+        # (Combines Slice and XSlice -- as above -- into one method)
         ProcessL2.sliceAveAnc(root, start, end, y, ancGroup)
         newAncGroup = root.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
 
-        # Extract the last element (the current slice) for each dataset used in calculating reflectances
-
+        # Extract the last element of the current slice for each dataset and hold for use in calculating reflectances
+        ''' why not take the average instead of the last element? '''
         # Ancillary group, unlike most groups, will have named data columns in datasets (i.e. not NONE)
         # This allows for multiple data arrays in one dataset (e.g. FLAGS)
 
@@ -1166,37 +1366,13 @@ class ProcessL2:
                 StationSlice = StationSlice[0]        
         else:
             StationSlice = None
-       
+
+        # Make sure the XSlice averaging didn't bomb       
         if hasNan:            
             msg = 'ProcessL2.calculateREFLECTANCE2: Slice X"%" average error: Dataset all NaNs.'
             print(msg)
             Utilities.writeLogFile(msg)
-            return False
-
-        # If this is the first spectrum, add date/time, otherwise append
-        # These are empty datasets from root groups.
-        # Groups REFLECTANCE, IRRADIANCE, and RADIANCE are intiallized with empty datasets, but 
-        # ANCILLARY is not.
-        if not ("Datetag" in newRrsData.columns):            
-            for gp in root.groups:
-                # Ancillary is already populated.
-                # The other groups only have empty (named) datasets
-                if gp.id != "ANCILLARY":
-                    for ds in gp.datasets:                                                
-                        gp.datasets[ds].columns["Datetime"] = [dateTime] # mean of the ensemble
-                        gp.datasets[ds].columns["Datetag"] = [dateTag]
-                        gp.datasets[ds].columns["Timetag2"] = [timeTag]                  
-        else:
-            # Ancillary is already populated.
-            # The other groups only have empty (named) datasets
-            for gp in root.groups:
-                if gp.id != "ANCILLARY":
-                    for ds in gp.datasets:                                                
-                        gp.datasets[ds].columns["Datetime"].append(dateTime) 
-                        # mean of the ensemble
-                        gp.datasets[ds].columns["Datetag"].append(dateTag)
-                        gp.datasets[ds].columns["Timetag2"].append(timeTag)
-
+            return False        
 
         # Calculate Rho_sky
         wavebands = [*esColumns] # just grabs the keys
@@ -1205,11 +1381,10 @@ class ProcessL2:
         for k in wavebands:            
             if k != "Datetag" and k != "Datetime" and k != "Timetag2":
                 wavelengthStr.append(k)
-                wavelength.append(float(k))   
-        
+                wavelength.append(float(k))           
         waveSubset = wavelength # Only used for Zhang; No subsetting for Ruddick or Mobley corrections
-
-        rhoDict = {}
+        rhoVec = {}
+        
         if RuddickRho:
             '''This is the Ruddick, et al. 2006 approach, which has one method for 
             clear sky, and another for cloudy. Methods of this type (i.e. not accounting
@@ -1222,14 +1397,17 @@ class ProcessL2:
             es750 = ProcessL2.interpolateColumn(esXSlice, 750.0)
             sky750 = li750[0]/es750[0]
 
-            rhoScalar, rhoDelta = RhoCorrections.RuddickCorr(sky750, rhoDefault, WINDSPEEDXSlice)            
+            rhoScalar, rhoDelta = RhoCorrections.RuddickCorr(sky750, rhoDefault, WINDSPEEDXSlice)
+            # The above is not wavelength dependent. No need for seperate values/vectors for satellites  
+            rhoVec = None
+            rhoVecDelta = None
 
         elif ZhangRho:     
             ''' Zhang rho is based on Zhang et al. 2017 and calculates the wavelength-dependent rho vector
             separated for sun and sky to include polarization factors.
             
             Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.'''                   
-            
+
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es 
             # from non-valid wavebands.
             if AODXSlice >0.2:
@@ -1238,8 +1416,7 @@ class ProcessL2:
                 Utilities.writeLogFile(msg) 
                 AODXSlice = 0.2
             if SZAXSlice > 60:
-                # This should be prevented in the ConfigWindow now.
-
+                # SZA>60 should be prevented in the ConfigWindow now anyway. Redundant...
                 # msg = f'SZA = {SZAXSlice}. Maximum Solar Zenith Reached. Setting to 60'
                 # SZA is too important to the model. If it's out of bounds, skip the record...
                 msg = f'SZA = {SZAXSlice}. Maximum Solar Zenith Exceeded. Aborting slice.'
@@ -1247,7 +1424,6 @@ class ProcessL2:
                 Utilities.writeLogFile(msg) 
                 # SZAXSlice = 60                
                 return False
-
             if min(wavelength) < 350 or max(wavelength) > 1000:
                 msg = f'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'
                 print(msg)
@@ -1256,376 +1432,72 @@ class ProcessL2:
                 wave_list = [(i, band) for i, band in enumerate(wave_old) if (band >=350) and (band <= 1000)]
                 wave_array = np.array(wave_list)
                 # wavelength is now truncated to only valid wavebands for use in Zhang models
-                waveSubset = wave_array[:,1].tolist()
+                waveSubset = wave_array[:,1].tolist()            
             
-            
-            rhoStructure, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
+            rhoStructure, rhoVecDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
                 CloudXSlice,SZAXSlice,SSTXSlice,SalXSlice,RelAzXSlice,waveSubset)
             rhoVector = rhoStructure['ρ']
             for i, k in enumerate(waveSubset):
-                rhoDict[str(k)] = rhoVector[0,i]
+                rhoVec[str(k)] = rhoVector[0,i]
 
 
-            ''' Calculate rho vectors (Zhang) for each of the satellite bandsets requested here: '''
-            if ConfigFile.settings['bL2WeightMODISA']:
-                rhoDictMODISA = Weight_RSR.processMODISBands(rhoDict,sensor='A')
-
-
-        
-                
-        # Calculate Rrs & nLw and uncertainties
-        ''' No bidirectional correction is made here.....'''
-        # Calculate the normalized water leaving radiance (not exact; no BRDF here)
-        fp = 'Data/Thuillier_F0.sb'
-        print("SB_support.readSB: " + fp)
-        if not readSB(fp, no_warn=True):
-            msg = "Unable to read Thuillier file. Make sure it is in SeaBASS format."
+        # Calculate hyperspectral Thuillier F0 function
+        F0_hyper = ProcessL2.Thuillier(dateTag, wavelength)
+        if F0_hyper is None:
+            msg = "No hyperspectral ThuillierF0. Aborting."
             print(msg)
-            Utilities.writeLogFile(msg)  
-            return None
-        else:
-            Thuillier = readSB(fp, no_warn=True)
-            F0_raw = np.array(Thuillier.data['esun']) # uW cm^-2 nm^-1
-            wv_raw = np.array(Thuillier.data['wavelength'])
-            # Earth-Sun distance
-            day = int(str(dateTag)[4:7])  
-            year = int(str(dateTag)[0:4])  
-            eccentricity = 0.01672
-            dayFactor = 360/365.256363
-            dayOfPerihelion = dop(year)
-            dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
-            F0_fs = F0_raw*dES
+            Utilities.writeLogFile(msg)
+            return False
 
-            # Map to float for interpolation
-            # wavelength  = list(map(float, list(esColumns.keys())[2:]))
-            F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
-            # Use the strings for the F0 dict
-            # wavelengthStr = list(esColumns.keys())[2:]
-            # wavelengthStr = [str(wave) for wave in wavelength]
-            F0 = collections.OrderedDict(zip(wavelengthStr, F0))
+        # Calculate Thuillier for each of the satellite bandsets
+        if ConfigFile.settings['bL2WeightMODISA']:
+            MODISAwavelength = Weight_RSR.MODISBands()
+            # F0MODISA = Weight_RSR.processMODISBands(F0_hyper, sensor='A')
+            F0_MODISA = ProcessL2.Thuillier(dateTag, MODISAwavelength)
 
-            ''' Extract Thuillier for each of the satellite bandsets here: '''
-            if ConfigFile.settings['bL2WeightMODISA']:
-                F0MODISA = Weight_RSR.processMODISBands(F0, sensor='A')
+        # Build a slice object for (ir)radiances to be passed to spectralReflectance method
+        # These slices are unique and independant of root data or earlier slices in the same file
+        xSlice = {}        
+        # Full hyperspectral
+        sensor = 'HYPER'
+        xSlice['es'] = esXSlice
+        xSlice['li'] = liXSlice
+        xSlice['lt'] = ltXSlice
+        xSlice['esSTD'] = esXstd        
+        xSlice['liSTD'] = liXstd        
+        xSlice['ltSTD'] = ltXstd
+        F0 = F0_hyper
+        # Populate the relevant fields in root      
+        ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, rhoVecDelta, waveSubset)  
 
-
-        ''' Now this would need to be run once for hyperspectral, and then once each for satellites. '''
-        es = esXSlice
-        esSTD = esXstd
-        li = liXSlice
-        liSTD = liXstd
-        lt = ltXSlice
-        ltSTD = ltXstd
-
-        tempNode = ProcessL2.spectralReflectance(es, esSTD, li, liSTD, lt, ltSTD, F0, rhoScalar, rhoDict, rhoDelta, waveSubset)
-
-        reflectanceGroup = tempNode.getGroup('REFLECTANCE')
-        rrsSlice = reflectanceGroup.datasets['Rrs_preNIR'].columns
-        nLwSlice = reflectanceGroup.datasets['nLw_preNIR'].columns
-        # deleteKey = []
-        # for k in esXSlice: # loop through wavebands as key 'k'
-        #     if (k in liXSlice) and (k in ltXSlice):
-        #         if k not in newESData.columns:
-        #             newESData.columns[k] = []
-        #             newLIData.columns[k] = []
-        #             newLTData.columns[k] = []
-        #             newRrsData.columns[k] = []
-        #             newnLwData.columns[k] = []
-
-        #             newESDeltaData.columns[k] = []
-        #             newLIDeltaData.columns[k] = []
-        #             newLTDeltaData.columns[k] = []
-        #             newRrsDeltaData.columns[k] = []
-        #             newnLwDeltaData.columns[k] = []
-
-        #         # At this waveband (k); still using complete wavelength set
-        #         es = esXSlice[k][0]
-        #         li = liXSlice[k][0]
-        #         lt = ltXSlice[k][0]
-        #         f0  = F0[k]
-
-        #         esDelta = esXstd[k][0]
-        #         liDelta = liXstd[k][0]
-        #         ltDelta = ltXstd[k][0]
-
-        #         # Calculate the remote sensing reflectance
-        #         if RuddickRho:                    
-        #             rrs = (lt - (rhoScalar * li)) / es
-
-        #             # Rrs uncertainty
-        #             rrsDelta = rrs * ( 
-        #                     (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2 
-        #                     )**0.5
-                
-        #             #Calculate the normalized water leaving radiance
-        #             nLw = rrs*f0
-
-        #             # nLw uncertainty; no provision for F0 uncertainty here
-        #             nLwDelta = nLw * (
-        #                     (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2
-        #                     )**0.5
-        #         elif ZhangRho:
-        #             # Only populate the valid wavelengths
-        #             if float(k) in waveSubset:
-        #                 rrs = (lt - (rhoDict[k] * li)) / es
-
-        #                 # Rrs uncertainty
-        #                 rrsDelta = rrs * ( 
-        #                         (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2 
-        #                         )**0.5
-                    
-        #                 #Calculate the normalized water leaving radiance
-        #                 nLw = rrs*f0
-
-        #                 # nLw uncertainty; no provision for F0 uncertainty here
-        #                 nLwDelta = nLw * (
-        #                         (liDelta/li)**2 + (rhoDelta/rhoDict[k])**2 + (liDelta/li)**2 + (esDelta/es)**2
-        #                         )**0.5
-        #         else:
-        #             # Default rho
-        #             rhoScalar = rhoDefault
-        #             rhoDelta = 0.01 # Estimated for range of conditions in Mobley 1999 models; it's actually higher...
-
-        #             rrs = (lt - (rhoScalar * li)) / es
-
-        #             # Rrs uncertainty
-        #             rrsDelta = rrs * ( 
-        #                     (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2 
-        #                     )**0.5
-                
-        #             #Calculate the normalized water leaving radiance
-        #             nLw = rrs*f0
-
-        #             # nLw uncertainty; no provision for F0 uncertainty here
-        #             nLwDelta = nLw * (
-        #                     (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2
-        #                     )**0.5
-
-        #         newESData.columns[k].append(es)
-        #         newLIData.columns[k].append(li)
-        #         newLTData.columns[k].append(lt)
-
-        #         newESDeltaData.columns[k].append(esDelta)
-        #         newLIDeltaData.columns[k].append(liDelta)
-        #         newLTDeltaData.columns[k].append(ltDelta)
-                
-        #         # Only populate valid wavelengths. Mark others for deletion
-        #         if float(k) in waveSubset:
-        #             newRrsDeltaData.columns[k].append(rrsDelta)
-        #             newnLwDeltaData.columns[k].append(nLwDelta)
-                    
-        #             rrsSlice[k] = rrs
-        #             nLwSlice[k] = nLw
-        #         else:
-        #             deleteKey.append(k) 
-        
-        # # Eliminate reflectance keys/values in wavebands outside of valid set
-        # deleteKey = list(set(deleteKey))
-        # for key in deleteKey: 
-        #     # Only need to do this for the first ensemble in file
-        #     if key in newRrsData.columns:
-        #         del newRrsData.columns[key]
-        #         del newnLwData.columns[key]
-        #         del newRrsDeltaData.columns[key]
-        #         del newnLwDeltaData.columns[key]
-
+        # Apply residual NIR corrections
         # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
-            if simpleNIRCorrection:
-                # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
-                # Find the minimum between 700 and 800, and subtract it from spectrum (spectrally flat)
-                msg = "Perform simple residual NIR subtraction."
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                
-                # rrs correction
-                NIRRRs = []
-                for k in rrsSlice:
-                    # if float(k) >= 750 and float(k) <= 800:
-                    if float(k) >= 700 and float(k) <= 800:
-                        # avg += rrsSlice[k]
-                        # num += 1
-                        NIRRRs.append(rrsSlice[k])
-                # avg /= num
-                # avg = np.median(NIRRRs)
-                minNIR = min(NIRRRs)
-                # Subtract average from each waveband
-                for k in rrsSlice:
-                    # rrsSlice[k] -= avg
-                    rrsSlice[k] -= minNIR
-                    newRrsData.columns[k].append(rrsSlice[k])
-
-                # nLw correction
-                NIRRRs = []
-                for k in nLwSlice:
-                    if float(k) >= 700 and float(k) <= 800:
-                        NIRRRs.append(nLwSlice[k])
-                minNIR = min(NIRRRs)
-                # Subtract average from each waveband
-                for k in nLwSlice:
-                    nLwSlice[k] -= minNIR
-                    newnLwData.columns[k].append(nLwSlice[k])
-
-            elif simSpecNIRCorrection:
-                # From Ruddick 2005, Ruddick 2006 use NIR normalized similarity spectrum
-                # (spectrally flat)
-                msg = "Perform simulated spectrum residual NIR subtraction."
-                print(msg)
-                Utilities.writeLogFile(msg)  
-
-                # These ratios are for rho = pi*Rrs
-                α1 = 2.35 # 720/780 only good for rho(720)<0.03
-                α2 = 1.91 # 780/870 try to avoid, data is noisy here
-                threshold = 0.03
-
-                # Retrieve Thuilliers
-                # wavelength = [float(key) for key in F0.keys()]
-                F0 = [value for value in F0.values()]
-
-                # Rrs
-                ρ720 = []
-                x = []
-                for k in rrsSlice:                
-                    if float(k) >= 700 and float(k) <= 740:
-                        x.append(float(k))
-                        ρ720.append(np.pi*rrsSlice[k])
-                if not ρ720:
-                    QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
-                ρ1 = sp.interpolate.interp1d(x,ρ720)(720)
-                F01 = sp.interpolate.interp1d(wavelength,F0)(720)
-                ρ780 = []
-                x = []
-                for k in rrsSlice:                
-                    if float(k) >= 760 and float(k) <= 800:
-                        x.append(float(k))
-                        ρ780.append(rrsSlice[k])
-                if not ρ780:
-                    QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
-                ρ2 = sp.interpolate.interp1d(x,ρ780)(780)
-                F02 = sp.interpolate.interp1d(wavelength,F0)(780)
-                ρ870 = []
-                x = []
-                for k in rrsSlice:                
-                    if float(k) >= 850 and float(k) <= 890:
-                        x.append(float(k))
-                        ρ870.append(rrsSlice[k])
-                if not ρ870:
-                    QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
-                ρ3 = sp.interpolate.interp1d(x,ρ870)(870)
-                F03 = sp.interpolate.interp1d(wavelength,F0)(870)
-                
-                if ρ1 < threshold:
-                    ε = (α1*ρ2 - ρ1)/(α1-1)
-                    ε = ε/np.pi # convert to Rrs units
-                    εnLw = (α1*ρ2*F02/np.pi - ρ1*F01/np.pi)/(α1-1) # convert to nLw units
-                    msg = f'offset(rrs) = {ε}; offset(nLw) = {εnLw}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)  
-                else:
-                    msg = "SimSpec threshold tripped. Using 780/870 instead."
-                    print(msg)
-                    Utilities.writeLogFile(msg)  
-                    ε = (α2*ρ3 - ρ2)/(α2-1)
-                    ε = ε/np.pi # convert to Rrs units
-                    εnLw = (α2*ρ3*F03/np.pi - ρ2*F02/np.pi)/(α2-1) # convert to nLw units              
-                    msg = f'offset(rrs) = {ε}; offset(nLw) = {εnLw}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)  
-                for k in rrsSlice:
-                    ''' There seems to be some confusion in the Ruddick 2005 SPIE paper.
-                    By this method, ε is (and should be) negative, and so must be added 
-                    rather than subtracted.''' 
-                    # rrsSlice[k] -= ε
-                    rrsSlice[k] += ε
-                    newRrsData.columns[k].append(rrsSlice[k])
-                    # nLwSlice[k] -= εnLw
-                    nLwSlice[k] += εnLw
-                    newnLwData.columns[k].append(nLwSlice[k])                   
-        else:            
-            for k in rrsSlice:
-                newRrsData.columns[k].append(rrsSlice[k])
-            for k in nLwSlice:
-                newnLwData.columns[k].append(nLwSlice[k])   
+            rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(root, sensor, F0)      
         
-        newESData.columnsToDataset() 
-        newLIData.columnsToDataset()
-        newLTData.columnsToDataset()
-        newRrsData.columnsToDataset()
-        newnLwData.columnsToDataset()
-
-        newESDeltaData.columnsToDataset()   
-        newLIDeltaData.columnsToDataset()
-        newLTDeltaData.columnsToDataset()
-        newRrsDeltaData.columnsToDataset()
-        newnLwDeltaData.columnsToDataset()
-
-        # # Weight reflectances to satellite bands
-        # '''TO DO: This convolution needs to be changed. It should be on the (ir)radiances, not the
-        # reflectances.'''
-
-        # if ConfigFile.settings['bL2WeightMODISA']:
-        #     print("Process MODIS Aqua Bands")
-        #     Weight_RSR.processMODISBands(newRrsMODISAData, newRrsData, sensor='A')
-        #     Weight_RSR.processMODISBands(newRrsMODISADeltaData, newRrsDeltaData, sensor='A')
-        #     newRrsMODISAData.columnsToDataset()
-        #     newRrsMODISADeltaData.columnsToDataset()
-        #     Weight_RSR.processMODISBands(newnLwMODISAData, newnLwData, sensor='A')
-        #     Weight_RSR.processMODISBands(newnLwMODISADeltaData, newnLwDeltaData, sensor='A')
-        #     newnLwMODISAData.columnsToDataset()
-        #     newnLwMODISADeltaData.columnsToDataset()
-        # if ConfigFile.settings['bL2WeightMODIST']:
-        #     print("Process MODIS Terra Bands")
-        #     Weight_RSR.processMODISBands(newRrsMODISTData, newRrsData, sensor='T')
-        #     Weight_RSR.processMODISBands(newRrsMODISTDeltaData, newRrsDeltaData, sensor='T')
-        #     newRrsMODISTData.columnsToDataset()
-        #     newRrsMODISTDeltaData.columnsToDataset()
-        #     Weight_RSR.processMODISBands(newnLwMODISTData, newnLwData, sensor='T')
-        #     Weight_RSR.processMODISBands(newnLwMODISTDeltaData, newnLwDeltaData, sensor='T')
-        #     newnLwMODISTData.columnsToDataset()
-        #     newnLwMODISTDeltaData.columnsToDataset()
-
-        # if ConfigFile.settings['bL2WeightVIIRSN']:
-        #     print("Process VIIRS SNPP Bands")
-        #     Weight_RSR.processVIIRSBands(newRrsVIIRSNData, newRrsData, sensor='N')
-        #     Weight_RSR.processVIIRSBands(newRrsVIIRSNDeltaData, newRrsDeltaData, sensor='N')
-        #     newRrsVIIRSNData.columnsToDataset()
-        #     newRrsVIIRSNDeltaData.columnsToDataset()
-        #     Weight_RSR.processVIIRSBands(newnLwVIIRSNData, newnLwData, sensor='N')
-        #     Weight_RSR.processVIIRSBands(newnLwVIIRSNDeltaData, newnLwDeltaData, sensor='N')
-        #     newnLwVIIRSNData.columnsToDataset()
-        #     newnLwVIIRSNDeltaData.columnsToDataset()
-        # if ConfigFile.settings['bL2WeightVIIRSJ']:
-        #     print("Process VIIRS JPSS Bands")
-        #     Weight_RSR.processVIIRSBands(newRrsVIIRSJData, newRrsData, sensor='J')
-        #     Weight_RSR.processVIIRSBands(newRrsVIIRSJDeltaData, newRrsDeltaData, sensor='J')
-        #     newRrsVIIRSJData.columnsToDataset()
-        #     newRrsVIIRSJDeltaData.columnsToDataset()
-        #     Weight_RSR.processVIIRSBands(newnLwVIIRSJData, newnLwData, sensor='J')
-        #     Weight_RSR.processVIIRSBands(newnLwVIIRSJDeltaData, newnLwDeltaData, sensor='J')
-        #     newnLwVIIRSJData.columnsToDataset()
-        #     newnLwVIIRSJDeltaData.columnsToDataset()
-        
-        # if ConfigFile.settings['bL2WeightSentinel3A']:
-        #     print("Process Sentinel 3A Bands")
-        #     Weight_RSR.processSentinel3Bands(newRrsSentinel3AData, newRrsData, sensor='A')
-        #     Weight_RSR.processSentinel3Bands(newRrsSentinel3ADeltaData, newRrsDeltaData, sensor='A')
-        #     newRrsSentinel3AData.columnsToDataset()
-        #     newRrsSentinel3ADeltaData.columnsToDataset()
-        #     Weight_RSR.processSentinel3Bands(newnLwSentinel3AData, newnLwData, sensor='A')
-        #     Weight_RSR.processSentinel3Bands(newnLwSentinel3ADeltaData, newnLwDeltaData, sensor='A')
-        #     newnLwSentinel3AData.columnsToDataset()
-        #     newnLwSentinel3ADeltaData.columnsToDataset()
-        
-        # if ConfigFile.settings['bL2WeightSentinel3B']:
-        #     print("Process Sentinel 3B Bands")
-        #     Weight_RSR.processSentinel3Bands(newRrsSentinel3BData, newRrsData, sensor='B')
-        #     Weight_RSR.processSentinel3Bands(newRrsSentinel3BDeltaData, newRrsDeltaData, sensor='B')
-        #     newRrsSentinel3BData.columnsToDataset()
-        #     newRrsSentinel3BDeltaData.columnsToDataset()
-        #     Weight_RSR.processSentinel3Bands(newnLwSentinel3BData, newnLwData, sensor='B')
-        #     Weight_RSR.processSentinel3Bands(newnLwSentinel3BDeltaData, newnLwDeltaData, sensor='B')
-        #     newnLwSentinel3BData.columnsToDataset()
-        #     newnLwSentinel3BDeltaData.columnsToDataset()
+        # Satellites
+        if ConfigFile.settings['bL2WeightMODISA']:
+            sensor = 'MODISA'
+            xSlice['es'] = esXSliceMODISA
+            xSlice['li'] = liXSliceMODISA
+            xSlice['lt'] = ltXSliceMODISA
+            xSlice['esSTD'] = esXstdMODISA   
+            xSlice['liSTD'] = liXstdMODISA  
+            xSlice['ltSTD'] = ltXstdMODISA
+            F0 = F0_MODISA
+            if ZhangRho:
+                rhoVecMODISA = Weight_RSR.processMODISBands(rhoVec,sensor='A')
+                rhoDeltaMODISA = Weight_RSR.processMODISBands(rhoVecDelta,sensor='A')
+            else: 
+                rhoVecMODISA = None
+                rhoDeltaMODISA = None
+            ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODISA, rhoDeltaMODISA, waveSubset) 
+            # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
+            # For satellite bands, this cannot use SimSpec...
+            if ConfigFile.settings["bL2PerformNIRCorrection"]:                
+                # Can't apply good NIR corrs, so use factors from hyperspectral instead.
+                ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
+    
 
         return True
 
