@@ -24,7 +24,7 @@ class SeaBASSWriter:
         # Dataset leading columns can be taken from any sensor 
         # if level == '1e':
         referenceGroup = node.getGroup("IRRADIANCE")
-        esData = referenceGroup.getDataset("ES")
+        esData = referenceGroup.getDataset("ES_HYPER")
         if level == '2':
             # referenceGroup = node.getGroup("IRRADIANCE")
             # esData = referenceGroup.getDataset("ES")
@@ -460,10 +460,10 @@ class SeaBASSWriter:
         radianceGroup = root.getGroup("RADIANCE")
         reflectanceGroup = root.getGroup("REFLECTANCE")
 
-        esData = irradianceGroup.getDataset("ES")
-        liData = radianceGroup.getDataset("LI")
-        ltData = radianceGroup.getDataset("LT")
-        rrsData = reflectanceGroup.getDataset("Rrs")
+        esData = irradianceGroup.getDataset("ES_HYPER")
+        liData = radianceGroup.getDataset("LI_HYPER")
+        ltData = radianceGroup.getDataset("LT_HYPER")
+        rrsData = reflectanceGroup.getDataset("Rrs_HYPER")
 
         if esData is None or liData is None or ltData is None or rrsData is None:
             print("SeaBASSWriter: Radiometric data is missing")

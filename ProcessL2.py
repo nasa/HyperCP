@@ -72,19 +72,20 @@ class ProcessL2:
         # These will include all slices in root so far
         # Below the most recent/current slice [-1] will be selected for processing
         rrsSlice = newRrsData.columns
-        rrsSlice.pop("Datetime")
-        rrsSlice.pop("Datetag")
-        rrsSlice.pop("Timetag2")
+        # rrsSlice.pop("Datetime")
+        # rrsSlice.pop("Datetag")
+        # rrsSlice.pop("Timetag2")
         nLwSlice = newnLwData.columns
-        nLwSlice.pop("Datetime")
-        nLwSlice.pop("Datetag")
-        nLwSlice.pop("Timetag2")
+        # nLwSlice.pop("Datetime")
+        # nLwSlice.pop("Datetag")
+        # nLwSlice.pop("Timetag2")
 
         for k in rrsSlice:
-            # rrsSlice[k] -= avg
-            rrsSlice[k][-1] -= rrsNIRCorr
+            if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
+                rrsSlice[k][-1] -= rrsNIRCorr
         for k in nLwSlice:
-            nLwSlice[k][-1] -= nLwNIRCorr
+            if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
+                nLwSlice[k][-1] -= nLwNIRCorr
 
     @staticmethod
     def nirCorrection(root, sensor, F0):
@@ -93,32 +94,22 @@ class ProcessL2:
         simpleNIRCorrection = int(ConfigFile.settings["bL2SimpleNIRCorrection"])
         simSpecNIRCorrection = int(ConfigFile.settings["bL2SimSpecNIRCorrection"])   
 
-        newReflectanceGroup = root.getGroup("REFLECTANCE")
-        # newRadianceGroup = root.getGroup("RADIANCE")
-        # newIrradianceGroup = root.getGroup("IRRADIANCE")    
-        
+        newReflectanceGroup = root.getGroup("REFLECTANCE")        
         newRrsData = newReflectanceGroup.getDataset(f'Rrs_{sensor}')
         newnLwData = newReflectanceGroup.getDataset(f'nLw_{sensor}')
-        # newESData = newIrradianceGroup.getDataset(f'ES_{sensor}')
-        # newLIData = newRadianceGroup.getDataset(f'LI_{sensor}')
-        # newLTData = newRadianceGroup.getDataset(f'LT_{sensor}')
-
         newRrsDeltaData = newReflectanceGroup.getDataset(f'Rrs_{sensor}_delta')
         newnLwDeltaData = newReflectanceGroup.getDataset(f'nLw_{sensor}_delta')
-        # newESDeltaData = newIrradianceGroup.getDataset(f'ES_{sensor}_delta')
-        # newLIDeltaData = newRadianceGroup.getDataset(f'LI_{sensor}_delta')
-        # newLTDeltaData = newRadianceGroup.getDataset(f'LT_{sensor}_delta')
 
         # These will include all slices in root so far
         # Below the most recent/current slice [-1] will be selected for processing
         rrsSlice = newRrsData.columns
-        rrsSlice.pop("Datetime")
-        rrsSlice.pop("Datetag")
-        rrsSlice.pop("Timetag2")
+        # rrsSlice.pop("Datetime")
+        # rrsSlice.pop("Datetag")
+        # rrsSlice.pop("Timetag2")
         nLwSlice = newnLwData.columns
-        nLwSlice.pop("Datetime")
-        nLwSlice.pop("Datetag")
-        nLwSlice.pop("Timetag2")
+        # nLwSlice.pop("Datetime")
+        # nLwSlice.pop("Datetag")
+        # nLwSlice.pop("Timetag2")
 
         # # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
         # if ConfigFile.settings["bL2PerformNIRCorrection"]:
@@ -132,7 +123,8 @@ class ProcessL2:
             # rrs correction
             NIRRRs = []
             for k in rrsSlice:
-                # if float(k) >= 750 and float(k) <= 800:
+                if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
+                    continue
                 if float(k) >= 700 and float(k) <= 800:
                     # avg += rrsSlice[k]
                     # num += 1
@@ -142,6 +134,8 @@ class ProcessL2:
             rrsNIRCorr = min(NIRRRs)
             # Subtract average from each waveband
             for k in rrsSlice:
+                if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
+                    continue
                 # rrsSlice[k] -= avg
                 rrsSlice[k][-1] -= rrsNIRCorr
                 # newRrsData.columns[k].append(rrsSlice[k])
@@ -149,11 +143,15 @@ class ProcessL2:
             # nLw correction
             NIRRRs = []
             for k in nLwSlice:
+                if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
+                    continue
                 if float(k) >= 700 and float(k) <= 800:
                     NIRRRs.append(nLwSlice[k][-1])
             nLwNIRCorr = min(NIRRRs)
             # Subtract average from each waveband
             for k in nLwSlice:
+                if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
+                    continue
                 nLwSlice[k][-1] -= nLwNIRCorr
                 # newnLwData.columns[k].append(nLwSlice[k])            
 
@@ -176,7 +174,9 @@ class ProcessL2:
             # Rrs
             ρ720 = []
             x = []
-            for k in rrsSlice:                
+            for k in rrsSlice: 
+                if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
+                    continue               
                 if float(k) >= 700 and float(k) <= 750:
                     x.append(float(k))
 
@@ -188,7 +188,9 @@ class ProcessL2:
             F01 = sp.interpolate.interp1d(wavelength,F0)(720)
             ρ780 = []
             x = []
-            for k in rrsSlice:                
+            for k in rrsSlice:  
+                if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
+                    continue              
                 if float(k) >= 760 and float(k) <= 800:
                     x.append(float(k))
                     ρ780.append(rrsSlice[k][-1])
@@ -198,7 +200,9 @@ class ProcessL2:
             F02 = sp.interpolate.interp1d(wavelength,F0)(780)
             ρ870 = []
             x = []
-            for k in rrsSlice:                
+            for k in rrsSlice: 
+                if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
+                    continue               
                 if float(k) >= 850 and float(k) <= 890:
                     x.append(float(k))
                     ρ870.append(rrsSlice[k][-1])
@@ -225,27 +229,20 @@ class ProcessL2:
                 print(msg)
                 Utilities.writeLogFile(msg)  
             for k in rrsSlice:
+                if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
+                    continue
                 ''' There seems to be some confusion in the Ruddick 2005 SPIE paper.
                 By this method, ε is (and should be) negative, and so must be added 
                 rather than subtracted.''' 
                 # rrsSlice[k] -= ε
                 rrsSlice[k][-1] += ε
-                # newRrsData.columns[k].append(rrsSlice[k][-1])
-                # nLwSlice[k] -= εnLw
                 nLwSlice[k][-1] += εnLw
-                # newnLwData.columns[k].append(nLwSlice[k])        
+
             rrsNIRCorr = -ε
             nLwNIRCorr = -εnLw
         
-        # newESData.columnsToDataset() 
-        # newLIData.columnsToDataset()
-        # newLTData.columnsToDataset()
         newRrsData.columnsToDataset()
         newnLwData.columnsToDataset()
-
-        # newESDeltaData.columnsToDataset()   
-        # newLIDeltaData.columnsToDataset()
-        # newLTDeltaData.columnsToDataset()
         newRrsDeltaData.columnsToDataset()
         newnLwDeltaData.columnsToDataset()
         
@@ -257,7 +254,7 @@ class ProcessL2:
         esXSlice = xSlice['es']
         esXstd = xSlice['esSTD']
         liXSlice = xSlice['li']
-        liXstd = xSlice['li']
+        liXstd = xSlice['liSTD']
         ltXSlice = xSlice['lt']
         ltXstd = xSlice['ltSTD']
         dateTime = timeObj['dateTime']
@@ -299,30 +296,34 @@ class ProcessL2:
             newLTDeltaData = newRadianceGroup.getDataset(f"LT_{sensor}_delta")
             newnLwDeltaData = newReflectanceGroup.getDataset(f"nLw_{sensor}_delta")        
 
+        # Add datetime stamps back onto ALL datasets associated with the current sensor
         # If this is the first spectrum, add date/time, otherwise append
-        # These are empty datasets from root groups.
         # Groups REFLECTANCE, IRRADIANCE, and RADIANCE are intiallized with empty datasets, but 
         # ANCILLARY is not.
-        # newRrsData = newReflectanceGroup.addDataset("Rrs")
-        if not ("Datetag" in newRrsData.columns):            
+        # conditional = ("Datetag" not in newRrsData.columns)
+        # if True: This is so bizarre...
+        if ("Datetag" not in newRrsData.columns):        
             for gp in root.groups:
-                # Ancillary is already populated.
-                # The other groups only have empty (named) datasets
-                if gp.id != "ANCILLARY":
-                    for ds in gp.datasets:                                                
-                        gp.datasets[ds].columns["Datetime"] = [dateTime] # mean of the ensemble
-                        gp.datasets[ds].columns["Datetag"] = [dateTag]
-                        gp.datasets[ds].columns["Timetag2"] = [timeTag]                  
+                # ''' BUG: There is no reason in world why this line is necessary, but the if/else breaks without it '''
+                # print(gp.id) 
+                if (gp.id == "ANCILLARY"): # Ancillary is already populated. The other groups only have empty (named) datasets  
+                    continue
+                else:
+                    for ds in gp.datasets:
+                        if sensor in ds: # Only add datetime stamps to the current sensor datasets
+                            gp.datasets[ds].columns["Datetime"] = [dateTime] # mean of the ensemble datetime stamp                 
+                            gp.datasets[ds].columns["Datetag"] = [dateTag]
+                            gp.datasets[ds].columns["Timetag2"] = [timeTag]                  
         else:
-            # Ancillary is already populated.
-            # The other groups only have empty (named) datasets
             for gp in root.groups:
-                if gp.id != "ANCILLARY":
+                if (gp.id == "ANCILLARY"):
+                    continue
+                else:
                     for ds in gp.datasets:                                                
-                        gp.datasets[ds].columns["Datetime"].append(dateTime) 
-                        # mean of the ensemble
-                        gp.datasets[ds].columns["Datetag"].append(dateTag)
-                        gp.datasets[ds].columns["Timetag2"].append(timeTag)
+                        if sensor in ds:
+                            gp.datasets[ds].columns["Datetime"].append(dateTime)                         
+                            gp.datasets[ds].columns["Datetag"].append(dateTag)
+                            gp.datasets[ds].columns["Timetag2"].append(timeTag)
 
         deleteKey = []
         for k in esXSlice: # loop through wavebands as key 'k'
@@ -1176,15 +1177,6 @@ class ProcessL2:
         meteorological quality flags. Perform glint corrections. Calculate the Rrs. Correct for NIR
         residuals.'''
 
-        # def dop(year):
-        #     # day of perihelion            
-        #     years = list(range(2001,2031))
-        #     key = [str(x) for x in years]
-        #     day = [4, 2, 4, 4, 2, 4, 3, 2, 4, 3, 3, 5, 2, 4, 4, 2, 4, 3, 3, 5, 2, 4, 4, 3, 4, 3, 3, 5, 2, 3]            
-        #     dop = {key[i]: day[i] for i in range(0, len(key))}            
-        #     result = dop[str(year)]
-        #     return result
-
         esData = refGroup.getDataset("ES")
         liData = sasGroup.getDataset("LI")
         ltData = sasGroup.getDataset("LT") 
@@ -1192,16 +1184,10 @@ class ProcessL2:
         # Copy datasets to dictionary
         esData.datasetToColumns()
         esColumns = esData.columns
-        # tt2 = esColumns["Timetag2"]
         liData.datasetToColumns()
         liColumns = liData.columns        
         ltData.datasetToColumns()
         ltColumns = ltData.columns   
-
-        # # Root (new/output) groups:
-        # newReflectanceGroup = root.getGroup("REFLECTANCE")
-        # newRadianceGroup = root.getGroup("RADIANCE")
-        # newIrradianceGroup = root.getGroup("IRRADIANCE")        
 
         esSlice = ProcessL2.columnToSlice(esColumns,start, end)
         liSlice = ProcessL2.columnToSlice(liColumns,start, end)
@@ -1211,10 +1197,6 @@ class ProcessL2:
         rhoDefault = float(ConfigFile.settings["fL2RhoSky"])
         RuddickRho = int(ConfigFile.settings["bL2RuddickRho"])
         ZhangRho = int(ConfigFile.settings["bL2ZhangRho"])
-        # defaultWindSpeed = float(ConfigFile.settings["fL2DefaultWindSpeed"])
-        # windSpeedMean = defaultWindSpeed # replaced later with met file, if present                         
-        # simpleNIRCorrection = int(ConfigFile.settings["bL2SimpleNIRCorrection"])
-        # simSpecNIRCorrection = int(ConfigFile.settings["bL2SimSpecNIRCorrection"])                        
         enablePercentLt = float(ConfigFile.settings["bL2EnablePercentLt"])
         percentLt = float(ConfigFile.settings["fL2PercentLt"])
 
@@ -1234,10 +1216,13 @@ class ProcessL2:
 
         #Convolve es/li/lt slices to satellite bands using RSRs
         if ConfigFile.settings['bL2WeightMODISA']:
-            print("Process MODIS Aqua Bands")
+            print("Convolving MODIS Aqua (ir)radiances in the slice")
             esSliceMODISA = Weight_RSR.processMODISBands(esSlice, sensor='A') # dictionary
             liSliceMODISA = Weight_RSR.processMODISBands(liSlice, sensor='A')
             ltSliceMODISA = Weight_RSR.processMODISBands(ltSlice, sensor='A')
+
+
+
 
         # Store the mean datetime of the slice
         if len(timeStamp) > 0:
@@ -1312,14 +1297,16 @@ class ProcessL2:
             hasNan = ProcessL2.sliceAveHyper(y, ltSliceMODISA, ltXSliceMODISA, ltXstdMODISA)
 
 
+
+
+
         # Take the mean of the lowest X% for the ancillary group in the slice
         # (Combines Slice and XSlice -- as above -- into one method)
         ProcessL2.sliceAveAnc(root, start, end, y, ancGroup)
         newAncGroup = root.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
 
-        # Extract the last element of the current slice for each dataset and hold for use in calculating reflectances
-        ''' why not take the average instead of the last element? '''
+        # Extract the last/current element/slice for each dataset and hold for use in calculating reflectances        
         # Ancillary group, unlike most groups, will have named data columns in datasets (i.e. not NONE)
         # This allows for multiple data arrays in one dataset (e.g. FLAGS)
 
@@ -1440,7 +1427,6 @@ class ProcessL2:
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[0,i]
 
-
         # Calculate hyperspectral Thuillier F0 function
         F0_hyper = ProcessL2.Thuillier(dateTag, wavelength)
         if F0_hyper is None:
@@ -1451,12 +1437,20 @@ class ProcessL2:
 
         # Calculate Thuillier for each of the satellite bandsets
         if ConfigFile.settings['bL2WeightMODISA']:
-            MODISAwavelength = Weight_RSR.MODISBands()
+            MODISwavelength = Weight_RSR.MODISBands()
+            wave_old = MODISwavelength.copy()
+            wave_list = [(i, band) for i, band in enumerate(wave_old) if (band >=350) and (band <= 1000)]
+            wave_array = np.array(wave_list)
+            # wavelength is now truncated to only valid wavebands for use in Zhang models
+            waveSubsetMODIS = wave_array[:,1].tolist() 
             # F0MODISA = Weight_RSR.processMODISBands(F0_hyper, sensor='A')
-            F0_MODISA = ProcessL2.Thuillier(dateTag, MODISAwavelength)
+            F0_MODISA = ProcessL2.Thuillier(dateTag, MODISwavelength)
+
+
+
 
         # Build a slice object for (ir)radiances to be passed to spectralReflectance method
-        # These slices are unique and independant of root data or earlier slices in the same file
+        # These slices are unique and independant of root data or earlier slices in the same root object
         xSlice = {}        
         # Full hyperspectral
         sensor = 'HYPER'
@@ -1476,7 +1470,8 @@ class ProcessL2:
             rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(root, sensor, F0)      
         
         # Satellites
-        if ConfigFile.settings['bL2WeightMODISA']:
+        if ConfigFile.settings['bL2WeightMODISA']:            
+            print('Processing MODISA')            
             sensor = 'MODISA'
             xSlice['es'] = esXSliceMODISA
             xSlice['li'] = liXSliceMODISA
@@ -1491,14 +1486,14 @@ class ProcessL2:
             else: 
                 rhoVecMODISA = None
                 rhoDeltaMODISA = None
-            ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODISA, rhoDeltaMODISA, waveSubset) 
+            
+            ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODISA, rhoDeltaMODISA, waveSubsetMODIS) 
             # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
             # For satellite bands, this cannot use SimSpec...
             if ConfigFile.settings["bL2PerformNIRCorrection"]:                
-                # Can't apply good NIR corrs, so use factors from hyperspectral instead.
+                # Can't apply good NIR corrs, so use correction factors from hyperspectral instead.
                 ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
     
-
         return True
 
     @staticmethod
@@ -1907,8 +1902,12 @@ class ProcessL2:
             Utilities.writeLogFile(msg)
             # newReflectanceGroup = root.groups[0]
             newReflectanceGroup = root.getGroup("REFLECTANCE")
-            badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs')
-            badTimes2 = ProcessL2.negReflectance(newReflectanceGroup, 'nLw')
+            badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs_HYPER')
+            badTimes2 = ProcessL2.negReflectance(newReflectanceGroup, 'nLw_HYPER')
+
+            # if ConfigFile.settings['bL2WeightMODISA']:
+
+
 
             if badTimes1 is not None and badTimes2 is not None:
                 badTimes = np.append(badTimes1,badTimes2, axis=0)
@@ -1995,7 +1994,7 @@ class ProcessL2:
         root.attributes["nLw_UNITS"] = "uW/cm^2/nm/sr"
         
         # Check to insure at least some data survived quality checks
-        if root.getGroup("REFLECTANCE").getDataset("Rrs").data is None:
+        if root.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None:
             msg = "All data appear to have been eliminated from the file. Aborting."
             print(msg)
             Utilities.writeLogFile(msg)  

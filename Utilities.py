@@ -563,9 +563,9 @@ class Utilities:
         if rType=='Rrs':
             print('Plotting Rrs')
             group = root.getGroup("REFLECTANCE")
-            Data = group.getDataset(rType)
+            Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_delta')
+                dataDelta = group.getDataset(f'{rType}_HYPER_delta')
             plotRange = [380, 800]
             if ConfigFile.settings['bL2WeightMODISA']:
                 Data_MODISA = group.getDataset(f'{rType}_MODISA')
@@ -595,9 +595,9 @@ class Utilities:
         if rType=='nLw':
             print('Plotting nLw')
             group = root.getGroup("REFLECTANCE")
-            Data = group.getDataset(rType)
+            Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_delta')
+                dataDelta = group.getDataset(f'{rType}_HYPER_delta')
             plotRange = [380, 800]   
             if ConfigFile.settings['bL2WeightMODISA']:        
                 Data_MODISA = group.getDataset(f'{rType}_MODISA')
@@ -624,28 +624,29 @@ class Utilities:
                 if plotDelta:
                     dataDelta_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B_delta')
 
+        ''' Could include satellite convolved (ir)radiances in the future '''
         if rType=='ES':
             print('Plotting Es')
             group = root.getGroup("IRRADIANCE")
-            Data = group.getDataset(rType)
+            Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_delta')
+                dataDelta = group.getDataset(f'{rType}_HYPER_delta')
             plotRange = [305, 1140]
             
         if rType=='LI':
             print('Plotting Li')
             group = root.getGroup("RADIANCE")
-            Data = group.getDataset(rType)
+            Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_delta')
+                dataDelta = group.getDataset(f'{rType}_HYPER_delta')
             plotRange = [305, 1140]
             
         if rType=='LT':
             print('Plotting Lt')
             group = root.getGroup("RADIANCE")
-            Data = group.getDataset(rType)  
+            Data = group.getDataset(f'{rType}_HYPER')  
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_delta')          
+                dataDelta = group.getDataset(f'{rType}_HYPER_delta')          
             plotRange = [305, 1140]
 
         font = {'family': 'serif',
