@@ -97,7 +97,7 @@ class Window(QtWidgets.QWidget):
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
 
-        self.outDirLabel = QtWidgets.QLabel("Output Data Parent Directory", self)        
+        self.outDirLabel = QtWidgets.QLabel("Output Data/Plots Parent Directory", self)        
         self.outputDirectory = MainConfig.settings["outDir"]
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
@@ -290,19 +290,29 @@ class Window(QtWidgets.QWidget):
             message = "Not a Config File: " + configFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
 
-    def inDirButtonPressed(self):        
+    def inDirButtonPressed(self):
+        temp = self.inputDirectory   
         self.inputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
             self, "Choose Directory.", 
             self.inputDirectory)
+        if self.inputDirectory == '':
+            self.inputDirectory = temp
+        if self.inputDirectory == '':
+            self.inputDirectory = './Data'
         print('Data input directory changed: ', self.inputDirectory)    
         self.inDirButton.setText(self.inputDirectory)
         MainConfig.settings["inDir"] = self.inputDirectory
         return self.inputDirectory
 
-    def outDirButtonPressed(self):        
+    def outDirButtonPressed(self):  
+        temp = self.outputDirectory
         self.outputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
             self, "SUBDIRECTORIES FOR DATA LEVELS WILL BE CREATED HERE AUTOMATICALLY.",
             self.outputDirectory)
+        if self.outputDirectory == '':
+            self.outputDirectory = temp
+        if self.outputDirectory == '':
+            self.outputDirectory = './Data'
         print('Data output directory changed: ', self.outputDirectory)
         print("NOTE: Subdirectories for data levels will be created here")
         print("      automatically, unless they already exist.")          

@@ -19,6 +19,7 @@ import pandas as pd
 from pandas.plotting import register_matplotlib_converters
 
 from ConfigFile import ConfigFile
+from MainConfig import MainConfig
 
 # This gets reset later in Controller.processSingleLevel to reflect the file being processed.
 if "LOGFILE" not in os.environ:
@@ -552,9 +553,14 @@ class Utilities:
     @staticmethod
     def plotRadiometry(root, dirpath, filename, rType, plotDelta = False):
 
-        if not os.path.exists(os.path.join('Plots','L2')):
-            os.makedirs(os.path.join('Plots','L2'))        
-        plotdir = os.path.join(dirpath,'Plots','L2')
+        outDir = MainConfig.settings["outDir"]
+        # If default output path is used, choose the root HyperInSPACE path, and build on that
+        if os.path.abspath(outDir) == os.path.join(dirpath,'Data'):
+            outDir = dirpath
+
+        if not os.path.exists(os.path.join(outDir,'Plots','L2')):
+            os.makedirs(os.path.join(outDir,'Plots','L2'))        
+        plotdir = os.path.join(outDir,'Plots','L2')
 
         dataDelta = None
         ''' Note: If only one spectrum is left in a given ensemble, deltas will
@@ -884,9 +890,18 @@ class Utilities:
 
         fileBaseName,_ = fileName.split('.')
         register_matplotlib_converters()
-        # if not os.path.exists("Plots/L1D"):os.path.join('Plots','L1D'
-        if not os.path.exists(os.path.join('Plots','L1E')):
-            os.makedirs(os.path.join('Plots','L1E'))
+        
+        outDir = MainConfig.settings["outDir"]
+        # If default output path is used, choose the root HyperInSPACE path, and build on that
+        if os.path.abspath(outDir) == os.path.join('./','Data'):
+            outDir = './'
+
+        if not os.path.exists(os.path.join(outDir,'Plots','L1E')):
+            os.makedirs(os.path.join(outDir,'Plots','L1E'))        
+        plotdir = os.path.join(outDir,'Plots','L1E')
+
+        # if not os.path.exists(os.path.join('Plots','L1E')):
+        #     os.makedirs(os.path.join('Plots','L1E'))
         try:           
             font = {'family': 'serif',
                 'color':  'darkred',
@@ -957,7 +972,7 @@ class Utilities:
                     plt.subplots_adjust(left=0.15)
                     plt.subplots_adjust(bottom=0.15)
                     
-                    plt.savefig(os.path.join('Plots','L1E',f'{fileBaseName}_{instr}_{k}.png'))
+                    plt.savefig(os.path.join(plotdir,f'{fileBaseName}_{instr}_{k}.png'))
                     plt.close()
                     
             print('\n')      
@@ -970,9 +985,16 @@ class Utilities:
     def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 700],\
                 filterFactor=3, rType='None'):
         dirpath = './'
-        if not os.path.exists(os.path.join('Plots','L2_Spectral_Filter')):
-            os.makedirs(os.path.join('Plots','L2_Spectral_Filter'))
-        plotdir = os.path.join(dirpath,'Plots','L2_Spectral_Filter')
+
+        outDir = MainConfig.settings["outDir"]
+        # If default output path is used, choose the root HyperInSPACE path, and build on that
+        if os.path.abspath(outDir) == os.path.join(dirpath,'Data'):
+            outDir = dirpath
+
+        if not os.path.exists(os.path.join(outDir,'Plots','L2_Spectral_Filter')):
+            os.makedirs(os.path.join(outDir,'Plots','L2_Spectral_Filter'))        
+        plotdir = os.path.join(outDir,'Plots','L2_Spectral_Filter')
+                
 
         font = {'family': 'serif',
                 'color':  'darkred',

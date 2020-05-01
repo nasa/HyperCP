@@ -56,10 +56,9 @@ class Weight_RSR:
     @staticmethod
     def processMODISBands(hyperspecData, sensor='A'):        
         weightedBandData = collections.OrderedDict()
-        # Read in the RSRs from NASA
         fields = [str(band) for band in Weight_RSR.MODISBands()]
-        # fields=['412','443','469','488','531','551','555','645','667',
-        #         '678','748','859','869','1240','1640','2130']
+        
+        # Read in the RSRs from NASA
         if sensor == 'A':
             modisRSRFile = 'Data/HMODISA_RSRs.txt'
         else:
@@ -91,11 +90,19 @@ class Weight_RSR:
         
         return weightedBandData
 
+
     @staticmethod
-    def processVIIRSBands(weightedBandData, hyperspecData, sensor='N'):        
-        # Read in the RSRs from NASA
-        # Aqua
-        fields=['412','445','488','555','672','746','865','1240','1610','2250']
+    def VIIRSBands():                        
+        wavelength=[412,445,488,555,672,746,865]# ,'1240','1610','2250']
+        
+        return wavelength
+
+    @staticmethod
+    def processVIIRSBands(hyperspecData, sensor='N'):    
+        weightedBandData = collections.OrderedDict()    
+        fields = [str(band) for band in Weight_RSR.VIIRSBands()]
+
+        # Read in the RSRs from NASA        
         if sensor == 'N':
             modisRSRFile = 'Data/VIIRSN_IDPSv3_RSRs.txt'
         else:
@@ -105,8 +112,8 @@ class Weight_RSR:
         wavelength = data[:,0].tolist()
         rsr = data[...,1:]
 
-        rsrInterp = np.empty([len(hyperspecData.columns)-2,rsr.shape[1]])
-        keys = hyperspecData.columns.keys()
+        rsrInterp = np.empty([len(hyperspecData)-2,rsr.shape[1]])
+        keys = hyperspecData.keys()
         wvInterp = np.empty([1,len(keys)-2])*0
         for i, key in enumerate(keys):
             if key == 'Datetime' or key == 'Datetag' or key == 'Timetag2':
@@ -122,19 +129,27 @@ class Weight_RSR:
             rsrInterp[:,i] = fn(wvInterp)
         
         for i in np.arange(0, len(fields)):
-            weightedBandData.columns[str(fields[i])] = \
+            weightedBandData[str(fields[i])] = \
                 Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
         
         return weightedBandData
 
 
     @staticmethod
-    def processSentinel3Bands(weightedBandData, hyperspecData, sensor='A'):
+    def Sentinel3Bands():                        
+        wavelength=[400,412.5,442.5,490,510,560,620,665,673.75,
+                681.25,708.75,753.75,761.25,764.38,767.5,778.78,865,
+                885,900,940,1020]
+        
+        return wavelength
+
+    @staticmethod
+    def processSentinel3Bands(hyperspecData, sensor='A'):
+        weightedBandData = collections.OrderedDict()
+        fields = [str(band) for band in Weight_RSR.Sentinel3Bands()]
+
         # Read in the RSRs from NASA
-        # OLCI Sentinel 3A
-        fields=['400','412.5','442.5','490','510','560','620','665','673.75',
-                '681.25','708.75','753.75','761.25','764.38','767.5','778.78','865',
-                '885','900','940','1020']
+        # OLCI Sentinel 3A        
         if sensor == 'A':
             modisRSRFile = 'Data/OLCIA_RSRs.txt'
         else:
@@ -144,8 +159,8 @@ class Weight_RSR:
         rsr = data[...,1:]
         rsr[rsr==-999.0] = 0
 
-        rsrInterp = np.empty([len(hyperspecData.columns)-2,rsr.shape[1]])
-        keys = hyperspecData.columns.keys()
+        rsrInterp = np.empty([len(hyperspecData)-2,rsr.shape[1]])
+        keys = hyperspecData.keys()
         wvInterp = np.empty([1,len(keys)-2])*0
         pass
         for i, key in enumerate(keys):
@@ -162,7 +177,7 @@ class Weight_RSR:
             rsrInterp[:,i] = fn(wvInterp)
         
         for i in np.arange(0, len(fields)):
-            weightedBandData.columns[fields[i]] = \
+            weightedBandData[fields[i]] = \
                 Weight_RSR.calculateBand(hyperspecData, wvInterp, rsrInterp[:,i])
         
         return weightedBandData
