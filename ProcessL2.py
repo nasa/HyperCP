@@ -428,21 +428,28 @@ class ProcessL2:
         
 
     @staticmethod    
-    def filterData(group, badTimes):                    
-        ''' Delete flagged records '''
+    def filterData(group, badTimes, sensor = None):                    
+        ''' Delete flagged records. Sensor is only specified to get the timestamp. 
+            All data in the group (including satellite sensors) will be deleted. '''
 
         msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
 
-        if group.id == "ANCILLARY":
-            timeStamp = group.getDataset("LATITUDE").data["Datetime"]
-        if group.id == "IRRADIANCE":
-            timeStamp = group.getDataset("ES").data["Datetime"]
-        if group.id == "RADIANCE":
-            timeStamp = group.getDataset("LI").data["Datetime"]
-        if group.id == "REFLECTANCE":
-            timeStamp = group.getDataset("Rrs").data["Datetime"]
+        if sensor == None:            
+            if group.id == "ANCILLARY":
+                timeStamp = group.getDataset("LATITUDE").data["Datetime"]
+            if group.id == "IRRADIANCE":
+                timeStamp = group.getDataset("ES").data["Datetime"]
+            if group.id == "RADIANCE":
+                timeStamp = group.getDataset("LI").data["Datetime"]            
+        else:
+            if group.id == "IRRADIANCE":
+                timeStamp = group.getDataset(f"ES_{sensor}").data["Datetime"]
+            if group.id == "RADIANCE":
+                timeStamp = group.getDataset(f"LI_{sensor}").data["Datetime"]            
+            if group.id == "REFLECTANCE":
+                timeStamp = group.getDataset(f"Rrs_{sensor}").data["Datetime"]
 
         startLength = len(timeStamp) 
         msg = f'   Length of dataset prior to removal {startLength} long'
@@ -609,9 +616,9 @@ class ProcessL2:
     
 
     @staticmethod
-    def negReflectance(reflGroup,field):   
+    def negReflectance(reflGroup, field, VIS = [400,700]):   
         ''' Perform negative reflectance spectra checking '''
-        # Run for entire file, not just one ensemble
+        # Run for entire file, not just one ensemble        
 
         reflData = reflGroup.getDataset(field)
         # reflData.datasetToColumns()
@@ -624,8 +631,7 @@ class ProcessL2:
                         
         badTimes = []
         for indx, timeTag in enumerate(timeStamp):                        
-            # If any spectra in the vis are negative, delete the whole spectrum
-            VIS = [400,700]            
+            # If any spectra in the vis are negative, delete the whole spectrum                   
             reflVIS = []
             wavelengths = []
             for wave in reflColumns:
@@ -640,8 +646,8 @@ class ProcessL2:
                 badTimes.append(timeTag)
 
             # Set negatives to 0
-            NIR = [701,max(wavelengths)]
-            UV = [min(wavelengths),399]
+            NIR = [VIS[-1]+1,max(wavelengths)]
+            UV = [min(wavelengths),VIS[0]-1]
             for wave in reflColumns:
                 if ((float(wave) >= UV[0] and float(wave) < UV[1]) or \
                             (float(wave) >= NIR[0] and float(wave) <= NIR[1])) and \
@@ -2015,27 +2021,25 @@ class ProcessL2:
                     msg = 'ProcessL2.calculateREFLECTANCE2 ender failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)    
+        #
+        # Reflectance calculations complete
+        #
 
         # Filter reflectances for negative spectra  
-        ''' # 1) Any spectrum that has any negative values between
-            #  380 - 700ish, remove the entire spectrum. Otherwise, 
-            # set negative bands to 0.
-            # This should probably wait until further analysis to see
-            # how much overcorrecting is being done by the SimSpec NIR
-            # correction. '''
+        ''' # Any spectrum that has any negative values between
+            #  400 - 700ish (adjustable below), remove the entire spectrum. Otherwise, 
+            # set negative bands to 0.'''
+
         if ConfigFile.settings["bL2NegativeSpec"]:
             msg = "Filtering reflectance spectra for negative values."
             print(msg)
             Utilities.writeLogFile(msg)
             # newReflectanceGroup = root.groups[0]
             newReflectanceGroup = root.getGroup("REFLECTANCE")
-            badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs_HYPER')
-            badTimes2 = ProcessL2.negReflectance(newReflectanceGroup, 'nLw_HYPER')
+            badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs_HYPER', VIS = [400,700])
+            badTimes2 = ProcessL2.negReflectance(newReflectanceGroup, 'nLw_HYPER', VIS = [400,700])
 
-            # if ConfigFile.settings['bL2WeightMODISA']:
-
-
-
+            badTimes = None
             if badTimes1 is not None and badTimes2 is not None:
                 badTimes = np.append(badTimes1,badTimes2, axis=0)
             elif badTimes1 is not None:
@@ -2046,17 +2050,16 @@ class ProcessL2:
             if badTimes is not None:
                 print('Removing records...')               
                 
-                check = ProcessL2.filterData(newReflectanceGroup, badTimes)
+                # Even though HYPER is specified here, ALL data at badTimes in the group,
+                # including satellite data, will be removed.
+                check = ProcessL2.filterData(newReflectanceGroup, badTimes, sensor = "HYPER")
                 if check > 0.99:
                     msg = "Too few spectra remaining. Abort."
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False                  
-                # ProcessL2.filterData(root.groups[1], badTimes)
-                ProcessL2.filterData(root.getGroup("IRRADIANCE"), badTimes)
-                # ProcessL2.filterData(root.groups[2], badTimes)
-                ProcessL2.filterData(root.getGroup("RADIANCE"), badTimes)
-                # ProcessL2.filterData(root.groups[3], badTimes)        
+                ProcessL2.filterData(root.getGroup("IRRADIANCE"), badTimes, sensor = "HYPER")
+                ProcessL2.filterData(root.getGroup("RADIANCE"), badTimes, sensor = "HYPER")
                 ProcessL2.filterData(root.getGroup("ANCILLARY"), badTimes)
 
         return True
