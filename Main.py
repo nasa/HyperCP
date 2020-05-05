@@ -4,7 +4,7 @@ above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 
 See README.md or README.pdf for installation instructions and guide.
 
-Version 1.0.0: Under development April 2020 (See Changelog.md)
+Version 1.0.1: Under development May 2020 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 
 """
@@ -58,7 +58,7 @@ class Window(QtWidgets.QWidget):
 
         # Main window configuration restore
         MainConfig.loadConfig(MainConfig.fileName)  
-        MainConfig.settings["version"] = "1.0.0"
+        MainConfig.settings["version"] = "1.0.1"
 
         banner = QtWidgets.QLabel(self)
         pixmap = QtGui.QPixmap("./Data/banner.jpg")
