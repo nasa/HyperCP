@@ -1,3 +1,8 @@
+v1.0.2 Unreleased
+ 
+2020-05-05: DAA
+ * Patch SeaBASSWriter (new dataset naming hitch for L1e; added to v.1.0.1 release) and Weight_RSR for calculateBand when slice is only 1 spectrum thick.
+
 v1.0.1: 2020-05-05: DAA
 * Update README and citations
 * Correct spectral convolution to operate on (ir)radiances rather than reflectances

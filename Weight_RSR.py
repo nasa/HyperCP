@@ -29,10 +29,10 @@ class Weight_RSR:
 
                 # Check if lamda is in spectralDataset
                 if ld in spectralDataset:
-                    if n>1:
-                        dataAtLambda = spectralDataset[ld][i]
-                    else:
-                        dataAtLambda = spectralDataset[ld]
+                    # if n>1:
+                    dataAtLambda = spectralDataset[ld][i]
+                    # else:
+                    #     dataAtLambda = spectralDataset[ld]
                     #print("srf, dataAtLambda", srf, dataAtLambda)
                     srf_sum += dataAtLambda*srf
                     c_sum += response[j]
