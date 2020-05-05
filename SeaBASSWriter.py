@@ -21,13 +21,13 @@ class SeaBASSWriter:
         SeaBASSHeader.loadSeaBASSHeader(seaBASSFP)
         headerBlock = SeaBASSHeader.settings        
 
-        # Dataset leading columns can be taken from any sensor 
-        # if level == '1e':
+        # Dataset leading columns can be taken from any sensor         
         referenceGroup = node.getGroup("IRRADIANCE")
-        esData = referenceGroup.getDataset("ES_HYPER")
+        if level == '1e':
+            esData = referenceGroup.getDataset("ES")
         if level == '2':
             # referenceGroup = node.getGroup("IRRADIANCE")
-            # esData = referenceGroup.getDataset("ES")
+            esData = referenceGroup.getDataset("ES_HYPER")
             # if ConfigFile.settings["bL1cSolarTracker"]:
             ancillaryGroup = node.getGroup("ANCILLARY")
             # else:
