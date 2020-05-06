@@ -9,11 +9,14 @@ from Utilities import Utilities
 class Weight_RSR:
     @staticmethod
     def calculateBand(spectralDataset, wavelength, response):
-        #print("Calculate Band")
-        if isinstance(list(spectralDataset.values())[0], float):
-            n=1
-        else:
-            n = len(list(spectralDataset.values())[0])        
+        # In the case of a dictionary of float values rather than lists (e.g. rhoVec), convert to lists
+        if isinstance(list(spectralDataset.values())[0], float):        
+            temp = {}
+            for key, value in spectralDataset.items():
+                temp[key] = [value]
+            spectralDataset = temp
+        
+        n = len(list(spectralDataset.values())[0])        
         result = []
 
         # For each row of data within a band
