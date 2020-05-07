@@ -408,7 +408,10 @@ class Controller:
         fileName = os.path.splitext(inFileName)[0]   
 
         # Initialize the Utility logger, overwriting it if necessary
-        os.environ["LOGFILE"] = (fileName + '_' + level + '.log')
+        if ConfigFile.settings["bL2Stations"] == 1 and level == 'L2': 
+            os.environ["LOGFILE"] = f'Stations_{fileName}_{level}.log'
+        else:
+            os.environ["LOGFILE"] = (fileName + '_' + level + '.log')
         msg = "Process Single Level"
         Utilities.writeLogFile(msg,mode='w')
 
