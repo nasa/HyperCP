@@ -2123,8 +2123,52 @@ class ProcessL2:
         if not ProcessL2.calculateREFLECTANCE(root, node, gpsGroup, satnavGroup, pyrGroup, ancillaryData, modData):
             return None
 
-        root.attributes["Rrs_UNITS"] = "1/sr"
-        root.attributes["nLw_UNITS"] = "uW/cm^2/nm/sr"
+        # Clean up units and push into relevant groups attributes
+        gp = root.getGroup("ANCILLARY")
+        gp.attributes["AOD_UNITS"] = "unitless"
+        gp.attributes["HEADING_UNITS"] = "degrees"
+        gp.attributes["HUMIDITY_UNITS"] = "percent"
+        gp.attributes["LATITUDE_UNITS"] = "dec. deg. N"
+        gp.attributes["LONGITUDE_UNITS"] = "dec. deg. E"
+        gp.attributes["PITCH_UNITS"] = "degrees"
+        gp.attributes["POINTING_UNITS"] = "degrees"
+        gp.attributes["REL_AZ_UNITS"] = "degrees"        
+        gp.attributes["ROLL_UNITS"] = "degrees"
+        gp.attributes["SAL_UNITS"] = "psu"
+        gp.attributes["SOLAR_AZ_UNITS"] = "degrees"
+        gp.attributes["SPEED_UNITS"] = "m/s"
+        gp.attributes["SST_UNITS"] = "degrees C"        
+        gp.attributes["SST_IR_UNITS"] = root.attributes["SATPYR_UNITS"]
+        del(root.attributes["SATPYR_UNITS"])
+        gp.attributes["STATION_UNITS"] = "unitless"
+        gp.attributes["SZA_UNITS"] = "degrees"        
+        gp.attributes["WIND_UNITS"] = "m/s"
+
+        gp = root.getGroup("IRRADIANCE")
+        gp.attributes["ES_UNITS"] = root.attributes["ES_UNITS"]
+        del(root.attributes["ES_UNITS"])
+
+        gp = root.getGroup("RADIANCE")
+        gp.attributes["LI_UNITS"] = root.attributes["LI_UNITS"]
+        del(root.attributes["LI_UNITS"])
+        gp.attributes["LT_UNITS"] = root.attributes["LT_UNITS"]
+        del(root.attributes["LT_UNITS"])
+
+        gp = root.getGroup("REFLECTANCE")
+        gp.attributes["Rrs_UNITS"] = "1/sr"
+        gp.attributes["nLw_UNITS"] = "uW/cm^2/nm/sr"
+
+        root.attributes["DATETAG_UNITS"] = "YYYYDOY"
+        root.attributes["TIMETAG2_UNITS"] = "HHMMSSmmm"
+        del(root.attributes["DATETAG"])
+        del(root.attributes["DEGLITCH_PRODAT"])
+        del(root.attributes["DEGLITCH_REFDAT"])
+        del(root.attributes["DEPTH_RESOLUTION"])
+        root.attributes["SOLARTRACKER_SERIAL_NUMBER"] = root.attributes["SAS SERIAL NUMBER"]        
+        del(root.attributes["SAS SERIAL NUMBER"])
+        del(root.attributes["TIMETAG2"])
+        del(root.attributes["WAVEL_INTERP"])
+
         
         # Check to insure at least some data survived quality checks
         if root.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None:

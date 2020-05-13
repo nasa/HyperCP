@@ -576,10 +576,10 @@ class SeaBASSWriter:
         headerBlock = SeaBASSWriter.formatHeader(fp,root, level='2')
 
         # Format each data block for individual output
-        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData2(esData,'es',root.attributes["ES_UNITS"])        
-        formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData2(liData,'li',root.attributes["LI_UNITS"])
-        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData2(ltData,'lt',root.attributes["LT_UNITS"])
-        formattedRrs, fieldsRrs, unitsRrs  = SeaBASSWriter.formatData2(rrsData,'rrs',root.attributes["Rrs_UNITS"])
+        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData2(esData,'es',irradianceGroup.attributes["ES_UNITS"])        
+        formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData2(liData,'li',radianceGroup.attributes["LI_UNITS"])
+        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData2(ltData,'lt',radianceGroup.attributes["LT_UNITS"])
+        formattedRrs, fieldsRrs, unitsRrs  = SeaBASSWriter.formatData2(rrsData,'rrs',reflectanceGroup.attributes["Rrs_UNITS"])
 
         # # Write SeaBASS files
         SeaBASSWriter.writeSeaBASS('ES',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
