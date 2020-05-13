@@ -78,6 +78,9 @@ class ProcessL2:
             if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
                 nLwSlice[k][-1] -= nLwNIRCorr
 
+        newRrsData.columnsToDataset()
+        newnLwData.columnsToDataset()
+
 
     @staticmethod
     def nirCorrection(root, sensor, F0):
@@ -2036,8 +2039,8 @@ class ProcessL2:
             Utilities.writeLogFile(msg)
             # newReflectanceGroup = root.groups[0]
             newReflectanceGroup = root.getGroup("REFLECTANCE")
-            badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs_HYPER', VIS = [400,700])
-            badTimes2 = ProcessL2.negReflectance(newReflectanceGroup, 'nLw_HYPER', VIS = [400,700])
+            badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs_HYPER', VIS = [400,680])
+            badTimes2 = ProcessL2.negReflectance(newReflectanceGroup, 'nLw_HYPER', VIS = [400,680])
 
             badTimes = None
             if badTimes1 is not None and badTimes2 is not None:

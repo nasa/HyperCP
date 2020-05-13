@@ -130,32 +130,33 @@ class Controller:
         root = ProcessL1a.processL1a(inFilePath, outFilePath, calibrationMap)
 
         # Apply SZA filter 
-        if root is not None:
-            for gp in root.groups:                              
-                # try:
-                if 'FrameTag' in gp.attributes:
-                    if gp.attributes["FrameTag"].startswith("SATNAV"):
-                        elevData = gp.getDataset("ELEVATION")
-                        elevation = elevData.data.tolist()
-                        szaLimit = float(ConfigFile.settings["fL1aCleanSZAMax"])
+        if ConfigFile.settings["bL1aCleanSZA"]:
+            if root is not None:
+                for gp in root.groups:                              
+                    # try:
+                    if 'FrameTag' in gp.attributes:
+                        if gp.attributes["FrameTag"].startswith("SATNAV"):
+                            elevData = gp.getDataset("ELEVATION")
+                            elevation = elevData.data.tolist()
+                            szaLimit = float(ConfigFile.settings["fL1aCleanSZAMax"])
 
-                        ''' It would be good to add local time as a printed output with SZA'''
-                        if (90-np.nanmax(elevation)) > szaLimit:
-                            msg = f'SZA too low. Discarding entire file. {round(90-np.nanmax(elevation))}'
-                            print(msg)
-                            Utilities.writeLogFile(msg)
-                            return None
-                        else:
-                            msg = f'SZA passed filter: {round(90-np.nanmax(elevation))}'
-                            print(msg)
-                            Utilities.writeLogFile(msg)
-                else:
-                    print(f'No FrameTag in {gp.id} group')
-                # except:
-                #     msg = f'FrameTag does not exist in the group {gp.id}.'
-                #     print(msg)
-                #     Utilities.writeLogFile(msg)
-                #     return None
+                            ''' It would be good to add local time as a printed output with SZA'''
+                            if (90-np.nanmax(elevation)) > szaLimit:
+                                msg = f'SZA too low. Discarding entire file. {round(90-np.nanmax(elevation))}'
+                                print(msg)
+                                Utilities.writeLogFile(msg)
+                                return None
+                            else:
+                                msg = f'SZA passed filter: {round(90-np.nanmax(elevation))}'
+                                print(msg)
+                                Utilities.writeLogFile(msg)
+                    else:
+                        print(f'No FrameTag in {gp.id} group')
+                    # except:
+                    #     msg = f'FrameTag does not exist in the group {gp.id}.'
+                    #     print(msg)
+                    #     Utilities.writeLogFile(msg)
+                    #     return None
         
         # Write output file
         if root is not None:

@@ -32,7 +32,8 @@ class Window(QtWidgets.QWidget):
         # This will only need to run the first time you run HyperInSPACE
         if not os.path.exists("Data"):  
            os.makedirs("Data")
-           os.rename("./banner.jpg", "./Data/banner.jpg")
+        #    os.rename("./banner.jpg", "./Data/banner.jpg")
+           os.rename("./banner2.png", "./Data/banner2.png")
            os.rename("./Zhang_rho_db.mat", "./Data/Zhang_rho_db.mat")
            os.rename("./Thuillier_F0.sb", "./Data/Thuillier_F0.sb")           
            os.rename("./EXAMPLE_L1B.hdf", "./Data/EXAMPLE_L1B.hdf")
@@ -61,7 +62,8 @@ class Window(QtWidgets.QWidget):
         MainConfig.settings["version"] = "1.0.1"
 
         banner = QtWidgets.QLabel(self)
-        pixmap = QtGui.QPixmap("./Data/banner.jpg")
+        # pixmap = QtGui.QPixmap("./Data/banner.jpg")
+        pixmap = QtGui.QPixmap("./Data/banner2.png")
         banner.setPixmap(pixmap)
         banner.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -235,7 +237,7 @@ class Window(QtWidgets.QWidget):
 
         self.setGeometry(300, 300, 290, 600)
         # self.setGeometry(300, 300, 250, 600) This does nothing.
-        self.setWindowTitle('HyperInSPACE')
+        self.setWindowTitle('Main')
         self.show()
 
     ########################################################################################
