@@ -506,7 +506,8 @@ class Utilities:
                 y.pop(i)
 
         y_rad = np.deg2rad(y)
-        f = scipy.interpolate.interp1d(x,y_rad,kind='linear', bounds_error=False, fill_value=None)
+        # f = scipy.interpolate.interp1d(x,y_rad,kind='linear', bounds_error=False, fill_value=None)
+        f = scipy.interpolate.interp1d(x,y_rad,kind='linear', bounds_error=False, fill_value="extrapolate")
         new_y_rad = f(new_x)%(2*np.pi)
         new_y = np.rad2deg(new_y_rad)
 
