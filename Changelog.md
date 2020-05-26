@@ -1,6 +1,8 @@
 v1.0.2 Unreleased
+
 2020-05-12: DAA
 * Change banner. Fix L1a SZA filter option.
+
 2020-05-07: DAA
 * Fix log file naming for L2 with stations. Track missing sensors in L1A logs.
 
