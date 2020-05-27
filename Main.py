@@ -59,7 +59,7 @@ class Window(QtWidgets.QWidget):
 
         # Main window configuration restore
         MainConfig.loadConfig(MainConfig.fileName)  
-        MainConfig.settings["version"] = "1.0.1"
+        MainConfig.settings["version"] = "1.0.2"
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap("./Data/banner.jpg")

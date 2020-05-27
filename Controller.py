@@ -535,7 +535,7 @@ class Controller:
     @staticmethod
     def processFilesMultiLevel(pathOut,inFiles, calibrationMap, ancFile=None):
         print("processFilesMultiLevel")
-        t0 = time.time()
+        # t0 = time.time()
         for fp in inFiles:
             print("Processing: " + fp)
             # Controller.processMultiLevel(pathout, fp, calibrationMap, ancFile)
@@ -562,7 +562,7 @@ class Controller:
                                 fp = os.path.join(os.path.abspath(pathOut),fileName)
                                 Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2', ancFile) 
         print("processFilesMultiLevel - DONE")
-        t1 = time.time()
+        # t1 = time.time()
         # print(f'Elapsed time: {(t1-t0)/60} minutes')
 
 

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-
+from MainConfig import MainConfig
 from ConfigFile import ConfigFile
 from HDFRoot import HDFRoot
 from Utilities import Utilities        
@@ -20,8 +20,17 @@ def AnomalyDetection(self,inputDirectory):
     # Steps in wavebands used for plots
     step = float(ConfigFile.settings["bL1dAnomalyStep"])
 
-    if not os.path.exists("Plots/L1C_Anoms"):
-            os.makedirs("Plots/L1C_Anoms")
+    outDir = MainConfig.settings["outDir"]
+    # If default output path is used, choose the root HyperInSPACE path, and build on that
+    if os.path.abspath(outDir) == os.path.join('./','Data'):
+        outDir = './'
+    
+    if not os.path.exists(os.path.join(outDir,'Plots','L1C_Anoms')):
+        os.makedirs(os.path.join(outDir,'Plots','L1C_Anoms'))    
+    plotdir = os.path.join(outDir,'Plots','L1C_Anoms')
+
+    # if not os.path.exists("Plots/L1C_Anoms"):
+    #         os.makedirs("Plots/L1C_Anoms")
 
     # Open L1C HDF5 file for Deglitching   
     inLevel = "L1C"   
@@ -34,6 +43,11 @@ def AnomalyDetection(self,inputDirectory):
             inputDirectory)
     try:
         print(inFilePath[0])
+        if not "hdf" in inFilePath[0] and not "HDF" in inFilePath[0]:
+            msg = "This does not appear to be an HDF file."
+            Utilities.errorWindow("File Error", msg)
+            print(msg)            
+            return
     except:
         print('No file returned')
         return
@@ -46,6 +60,11 @@ def AnomalyDetection(self,inputDirectory):
     sensorTypes = ["ES","LT","LI"]
 
     root = HDFRoot.readHDF5(inFilePath[0])
+    if root.attributes["PROCESSING_LEVEL"] != "1c":
+        msg = "This is not a Level 1C file."
+        Utilities.errorWindow("File Error", msg)
+        print(msg)            
+        return
     fileName = os.path.basename(os.path.splitext(inFilePath[0])[0])
 
 
@@ -77,7 +96,7 @@ def AnomalyDetection(self,inputDirectory):
             index = 0
             for k in columns.items():
                 if index % step == 0:                    
-                    deglitchAndPlot(fileName,k,sensorType,lightDark,windowSizeDark,sigmaDark,\
+                    deglitchAndPlot(fileName,plotdir,k,sensorType,lightDark,windowSizeDark,sigmaDark,\
                         text_ylabel=sensorType + " Darks " + k[0])
                 index +=1
 
@@ -94,13 +113,13 @@ def AnomalyDetection(self,inputDirectory):
             for k in columns.items():
                 if index % step == 0:                    
                     # print('Window: ' + str(windowSizeLight) + ' Sigma: ' + str(sigmaLight))
-                    deglitchAndPlot(fileName,k,sensorType,lightDark,windowSizeLight,sigmaLight,\
+                    deglitchAndPlot(fileName,plotdir,k,sensorType,lightDark,windowSizeLight,sigmaLight,\
                         text_ylabel=sensorType + " Lights " + k[0])
                 index += 1
             print('Complete')
             
 
-def deglitchAndPlot(fileName,k,sensorType,lightDark,windowSize,sigma,\
+def deglitchAndPlot(fileName,plotdir,k,sensorType,lightDark,windowSize,sigma,\
     text_xlabel="Series",\
     text_ylabel="Radiometry"):      
 
@@ -184,8 +203,11 @@ def deglitchAndPlot(fileName,k,sensorType,lightDark,windowSize,sigma,\
         plt.ylabel(text_ylabel, fontdict=font)   
         plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
 
-        plotName = ('Plots/L1C_Anoms/' + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
-            + sensorType + lightDark + '_' + k[0] + '.png')
+        # plotName = (plotdir + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
+        #     + sensorType + lightDark + '_' + k[0] + '.png')
+        fp = os.path.join(plotdir,fileName)
+        plotName = f'{fp}_W{windowSize}S{sigma}_{sensorType}{lightDark}_{k[0]}.png'
+
         print(plotName)
         plt.savefig(plotName)
         plt.close()    

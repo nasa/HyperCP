@@ -28,7 +28,9 @@ While this version has been substantially updated from 1.0.α to (among other th
 
 ## Requirements and Installation
 
-Requires Python 3.X is installed on a Linux, MacOS, or Windows computer. The Anaconda distribution is encouraged. A nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. HDF5 data files will be read and written using the included h5py module (2.9.0 at the time of writing). The Zhang (et al. 2017) sky/sunglint correction also requires Xarray, which requires installation (instructions here: http://xarray.pydata.org/en/stable/installing.html). To install Xarray with Anaconda:
+Requires Python 3.X is installed on a Linux, MacOS, or Windows computer. The Anaconda distribution is encouraged. A nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. (If you are running a minimal, bootstrap distribution such as Miniconda, several additional packages may be needed including: scipy, matplotlib, pyqt5, h5py, and requests.)
+
+HDF5 data files will be read and written using the included h5py module (2.9.0 at the time of writing). The Zhang (et al. 2017) sky/sunglint correction also requires Xarray, which requires installation (instructions here: http://xarray.pydata.org/en/stable/installing.html). To install Xarray with Anaconda:
 ```
 prompt$ conda install xarray dask netCDF4 bottleneck
 ```
@@ -49,29 +51,46 @@ The following folders will be created automatically when you first run the progr
 - Config - Configuration and instrument files (by subdirectory - auto-created), SeaBASS header configuration files, Main view configuration file
 - Data - Optional location for input and/or output data. Data delivered with this original repository at the top level directory (e.g. Thuillier and satellite spectral response functions, banner image, Zhang glint correction database) will be moved here when Main.py is run the first time.
 - Logs - Most command line output messages generated during processing are captured for later reference in .log text files here
-- Plots - A variety of optional plotting routines are included which create name-appropriate sub-directories (i.e. 'L1C_Anoms', 'L1D', 'L1E', 'L2', 'L2_Spectral_Filter'). As with the Data, this path for plots is optional and will be overwritten by choosing an alternate Data/Plots parent directory (see below).
+- Plots - A variety of optional plotting routines are included which create name-appropriate sub-directories (i.e. 'L1C_Anoms', 'L1D', 'L1E', 'L2', 'L2_Spectral_Filter'). As with the Data, this path for outputting plots is optional and will be overwritten by choosing an alternate Data/Plots parent directory (see below).
 
 (Note: Data, Plots, and Logs directories are not tracked on git.)
-*{To Do: Change output path of plots to match output path of data.}
 
 ## Guide
 
+### Overview
+1. Identify the cruise, relevant calibration files, and ancillary data files to be used in processing
+2. Launch HyperInSPACE and set up the Main window for data directories and ancillary file
+3. Create a new Configuration (or edit and existing Configuration)
+4. Add and enable only *relevant* calibration and instrument files to the Configuration; there is no such thing as a standard instrument package
+5. Choose appropriate processing parameters for L1A-L2 (do not depend on software defaults; there is no such thing as a standard data collection)
+
+
 ### Main Window
 
-The Main window appears once Main.py is launched. It has options to specify a configuration file, input/output directories, ancillary input files (i.e. environmental conditions and relevant geometries in a SeaBASS file format), single-level processing, and multi-level processing. For batch processing, pop-up windows from "failed" (no output due to either corrupt raw binary data or stringent quality control filtering) files can be suppressed. Producing no output file at a given processing level is often a normal result of quality control filtering.
+The Main window appears once Main.py is launched. It has options to specify a configuration file, input/output directories, ancillary input files (i.e. environmental conditions and relevant geometries in a SeaBASS file format), single-level processing, and multi-level processing. For batch processing, pop-up windows from "failed" (no output due to either corrupt raw binary data or stringent quality control filtering) files can be suppressed. Producing no output file at a given processing level is often a normal result of quality control filtering, so this option allows batches to continue uninterrupted.
 
-The 'New' button allows creation of a new configuration file. 'Edit' allows editing the currently selected configuration file. 'Delete' is used to delete the currently selected configuration file and corresponding auto-created calibration directories (see Configuration). After creating a new configuration file, select it from the drop-down menu, and select 'Edit' to launch the Configuration module and GUI. Configuration files are saved in the '/Config' subdirectory of HyperInSPACE. Be sure to check that the proper configuration is selected from the pull-down before processing data from the Main window.
+The 'New' button allows creation of a new configuration file. 'Edit' allows editing the currently selected configuration file. 'Delete' is used to delete the currently selected configuration file *and* corresponding auto-created calibration directories (see Configuration). After creating a new configuration file, select it from the drop-down menu, and select 'Edit' to launch the Configuration module and GUI. 
 
-The 'Input...' and 'Output Data/Plots Parent Directory' buttons allow optional selection of data and directories from any mounted/mapped drive. Note that output sub-directories (e.g. for processing levels) are also auto-created during processing as described below. The parent directory is the directory containing the sub-directories for processing levels (e.g. "/L1A", "/L1B", etc.) If no input or output data directories are selected, '/Data' and 'Plots' under the HyperInSPACE directory will be used by default as the parent directories.
+The 'Input...' and 'Output Data/Plots Parent Directory' buttons are fairly self explanatory and allow optional selection of data and directories from any mounted/mapped drive. Note that output data and plot sub-directories (e.g. for processing levels) are also auto-created during processing as described below. The parent directory is the directory containing the sub-directories for processing levels (e.g. "/L1A", "/L1B", etc.) If no input or output data directories are selected, '/Data' and 'Plots' under the HyperInSPACE directory structure will be used by default as the parent directories.
 
-Ancillary Data files for environmental conditions and relevant geometries used in L2 processing (including station number if applicable, ship heading, relative sensor azimuth, aerosol optical depth, cloud cover, salinity, water temperature, and wind speed) must be text files in SeaBASS format with columns for date, time, lat, and lon. See https://seabass.gsfc.nasa.gov/ for a description of SeaBASS format. An example ancillary file is included for use as a template. It is recommended that ancillary files are checked with the 'FCHECK' utility as described on the SeaBASS website. They will be interpreted using the included SB_support.py module from NASA/OBPG. In case environmental conditions were not logged in the field, or for filling in gaps in logged data, they will be retrieved from GMAO models as described below. The ancillary data file is optional (though strongly advised for adding wind speed at a minimum) provided the sensor suite is equipped with a SolarTracker or equivalent to supply the relevant sensor/solar geometries. If no SolarTracker-type instrument is present to report the relative sensor/solar geometries, the ancillary file must be provided with at least the ship heading and relative angle between the bow of the ship and the sensor azimuth as a function of time. These ancillary data files are provided by the users depending their needs.
+Ancillary Data files for environmental conditions and relevant geometries used in L2 processing must be text files in SeaBASS format with columns for date, time, lat, and lon. See https://seabass.gsfc.nasa.gov/ for a description of SeaBASS format. Optional data fields include station number, ship heading, relative sensor azimuth, aerosol optical depth, cloud cover, salinity, water temperature, and wind speed. An example ancillary file is included for use as a template. It is recommended that ancillary files are checked with the 'FCHECK' utility as described on the SeaBASS website. They will be interpreted using the included SB_support.py module from NASA/OBPG. 
+
+In case environmental conditions were not logged in the field, or for filling in gaps in logged data, they will be retrieved from GMAO models as described below. The ancillary data file is optional (though strongly advised for adding wind speed at a minimum) provided the sensor suite is equipped with a SolarTracker or equivalent to supply the relevant sensor/solar geometries. If no SolarTracker-type instrument is present to report the relative sensor/solar geometries, the ancillary file must be provided with at least the ship heading and relative angle between the bow of the ship and the sensor azimuth as a function of time. 
 
 ### Configuration
 
-Launch the configuration module and GUI (ConfigWindow.py) from the Main window by selecting/editing a configuration file or creating a new one as described above. This file will be instrument-suite-specific, and is also deployment-specific according to which factory calibration files are needed, as well as how the instrument was configured on the platform or ship. Some cruises (e.g. moving between significantly different water types) may also require multiple configurations to obtain the highest quality ocean color products at Level 2. Sharp gradients in environmental conditions could also warrant multiple configurations for the same cruise (e.g. sharp changes in temperature may effect how data deglitching is parameterized, as described below).
+Launch the configuration module and GUI (ConfigWindow.py) from the Main window by selecting/editing a configuration file or creating a new one. This file will be instrument-suite-specific, and is also deployment-specific according to which factory calibration files are needed, as well as how the instrument was configured on the platform or ship. Some cruises (e.g. moving between significantly different water types) may also require multiple configurations to obtain the highest quality ocean color products at Level 2. Sharp gradients in environmental conditions could also warrant multiple configurations for the same cruise (e.g. sharp changes in temperature may effect how data deglitching is parameterized, as described below).
 
 ##### Calibration & Instrument Files:
-In the 'Configuration' window, click 'Add Calibration Files' to add the calibration and instrument files (HyperOCR and ancillary instrument telemetry definition files) from the relevant extracted Satlantic '.sip' file (i.e. the '.cal' and '.tdf' files). Each instrument requires at least one .cal or .tdf file for raw data to be interpreted (two in the case of radiometers calibrated for shutter open (light) and shutter closed (dark) calibrations. Instruments with no calibration (e.g. GPS, SolarTracker, etc.) still require a .tdf file to be properly interpreted. Adding new .cal and .tdf files will allow the user to input the files from the directory they are stored, but they will be copied into the Config directory once the Configuration is saved. The calibration or instrument file can be selected using the drop-down menu. Enable (in the neighboring checkbox) only the files that correspond to the data you want to process with this configuration. You will need to know which .cal/.tdf files correspond to each sensor/instrument, and which represent light and dark shutter measurements. For example:
+***NOTE: IT IS IMPORTANT THAT THESE INSTRUCTIONS FOR SELECTING AND ACTIVATING CALIBRATION AND INSTRUMENT FILES ARE FOLLOWED CAREFULLY OR PROCESSING WILL FAIL***
+
+**Note: You do not need to move/copy/paste your calibration and instrument files; HyperInSPACE will take care of that for you.**
+
+In the 'Configuration' window, click 'Add Calibration Files' to add the *relevant* calibration or instrument files (date-specific HyperOCR factory calibrations or ancillary instrument Telemetry Definition Files; i.e. the '.cal' and '.tdf' files). *Only add and enable those calibration and instrument files that are relevant to the cruise/package you wish to process (see below).* Each instrument you add here -- be it a radiometer or an external data instrument such as a tilt-heading sensor -- requires at least one .cal or .tdf file for raw binary data to be interpreted. Two .cal files are required in the case of radiometers calibrated seperately for shutter open (light) and shutter closed (dark) calibrations, as is typical with Satlantic/Seabird HyperOCRs. Instruments with no calibrations (e.g. GPS, SolarTracker, etc.) still require a Telemetry Definition File (.tdf) to be properly interpreted. 
+
+Adding new .cal and .tdf files will automatically copy these files from the directory you identify on your machine into the HyperInSPACE directory structure once the Configuration is saved. 
+
+The calibration or instrument file can now be selected using the drop-down menu. Enable (in the neighboring checkbox) only the files that correspond to the data you want to process with this configuration. You will need to know which .cal/.tdf files correspond to each sensor/instrument, and which represent light and dark shutter measurements. For example:
 
 - SATMSG.tdf > SAS Solar Tracker status message string (Frame Type: Not Required)
 
@@ -95,7 +114,7 @@ In the 'Configuration' window, click 'Add Calibration Files' to add the calibrat
 
 - HSLZZZA.cal > Lt (Frame Type: Light)
 
-where UUUU, VVV, WWW, XXX, YYY, and ZZZ are the serial numbers of the individual instruments, which are followed where appropriate by factory calibration codes (A, B, C, D, E, ...). Be sure to choose the factory calibration files appropriate to the date of data collection.
+where UUUU, VVV, WWW, XXX, YYY, and ZZZ are the serial numbers of the individual instruments, which are followed where appropriate by factory calibration codes (usually A, B, C, etc. associated with the date of calibration) ***Be sure to choose the factory calibration files appropriate to the date of data collection.***
 
 Selections:  
 -Add Calibration Files - Allows loading calibration/instrument files (.cal/.tdf) into HyperInSPACE. Once loaded the drop-down box can be used to select the file to enable the instrument and set the frame type.
@@ -103,13 +122,13 @@ Selections:
 -Frame Type - ShutterLight/ShutterDark/Not Required can be selected. This is used to specify shutter frame type (ShutterLight/ShutterDark) for dark correction.
 
 For each calibration file:  
-Click 'Enable' to enable the calibration file. Select the frame type used for dark data correction, light data, or 'Not Required' for navigational and ancillary data. in version 1.0.b, each radiometer will require two calibration files (light and dark). Data from the GPS and SATNAV instruments are interpreted using the corresponding Telemetry Definition Files ('.tdf').
+Click 'Enable' to enable the calibration file. Select the frame type used for dark data correction, light data, or 'Not Required' for navigational and ancillary data. in version 1.0.2 (which only fully supports Satlantic/Seabird HyperSAS) each radiometer will require two calibration files (light and dark). Data from the GPS and SATNAV instruments are interpreted using the corresponding Telemetry Definition Files ('.tdf').
 
-As you create your new Configuration, CAL/TDF files are copied from their selected locations into the /Config directory within an automatically created sub-directory named for the Configuration (i.e. KORUS.cfg results in /Config/KORUS_Calibration/[calibration & TDF files]).
+Once you have created your new Configuration, CAL/TDF files are copied from their chosen locations into the /Config directory HyperInSPACE directory structure within an automatically created sub-directory named for the Configuration (i.e. a configuration named "KORUS" creates a KORUS.cfg configuration file in /Config and creates the /Config/KORUS_Calibration/directory with the chosen calibration & TDF files.
 
 Level 1A through Level 2 processing configurations are adjusted in the Configuration window. If you are reading this for the first time, the Configuration Window is a good reference to accompany the discussion below regarding processing. *The values set in the configuration file should be considered carefully. They will depend on your viewing geometry and desired quality control thresholds. Do not use default values without consideration.* Level 1d includes a module that can be launched from the Configuration window to assist with data deglitching parameter selection ('Anomaly Analysis'). Spectral filters are also plotted in L2 to help with filter parameterization factors. More details with citations and default setting descriptions are given below. A separate module to assist in the creation of SeaBASS output files is launched in Level 1E processing, and applied to L1E and L2 SeaBASS output as described below.
 
-Click 'Save' or 'Save As' to save the configuration file. If SeaBASS output is selected, a pop-up will remind the user to update the SeaBASS header prior to saving the configuration file. The configuration files are saved to the /Config directory under the HyperInSPACE main directory with a .cfg extension.
+Click 'Save' or 'Save As' to save the configuration file. If SeaBASS output is selected, a pop-up will remind the user to update the SeaBASS Header (the button in L1E) prior to saving the configuration file. The configuration file is saved to the /Config directory under the HyperInSPACE main directory with a .cfg extension.
 
 ### Processing Overview
 
@@ -251,16 +270,15 @@ Analysis), which are then removed from the data (optional, but advised). Shutter
 
 ##### Anomaly Analysis (optional)
 
-Deglitching the data (which must follow L1C processing, as it is evaluated on a L1C file) is highly sensitive to the deglitching parameters described below, as well as some environmental conditions not controlled for in L1C and the variability of the radiometric data itself. Therefore, a separate module was developed to tune these parameters for individual files, instruments, and/or field campaigns and conditions. A sharp temperature change or heavy vibration, for example, could change the optimal deglitching parameterization. The tool is launched (after processing L1C files) by setting the parameters (windows and sigma factors described below) in the Configuration window and then pressing the Anomaly Analysis button to select an example L1C file. Plots produced automatically in the /Plots/L1C_Anoms directory can be used to evaluate and adjust the choice of parameter values.
+Deglitching the data (which must follow after L1C processing, as it is evaluated on a L1C file) is highly sensitive to the deglitching parameters described below, as well as some environmental conditions not controlled for in L1C and the variability of the radiometric data itself. Therefore, a separate module was developed to tune these parameters for individual files, instruments, and/or field campaigns and conditions. A sharp temperature change or heavy vibration, for example, could change the optimal deglitching parameterization. The tool is launched (after processing L1C files) by setting the parameters (windows and sigma factors described below) in the Configuration window and then pressing the Anomaly Analysis button to select an example L1C file. Plots produced automatically in the [output_directory]/Plots/L1C_Anoms directory can be used to evaluate and adjust the choice of parameter values.
 
 For each waveband of each sensor, and for both light and dark shutter measurements, the time series of radiometric data are low-pass filtered with a moving average over time using discrete linear convolution of two one dimensional sequences with adjustable window sizes. For darks, a *STATIONARY** standard deviation anomaly (from the moving average in time) is used to assess whether data are within an adjustable "sigma factor" multiplier within the window. For lights, a *MOVING* standard deviation anomaly (from the moving average of separately adjustable window size) is used to assess whether data are within a separately adjustable sigma. The low-band filter is passed over the data twice. First and last data points for light and dark data cannot be accurately filtered with this method, and are discarded.  
 **Defaults: Dark Window 9, Light Window 11, Dark Sigma 2.7, Light Sigma 3.7 determined empirically from example data on the KORUS cruise**
 **(Abe et al. 2006, Chandola et al. 2009)**  
 **(API Reference: https://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html)**
 
-'Waveband interval to plot' selects which waveband time-series plots will be generated (e.g. a value of 2 results in plots every 6.6 nm for HyperOCR of resolution 3.3 nm). Time-series plots of Es, Li, and Lt showing the results of the anomaly detection are saved to /Plots/L1C_Anoms. Data flagged for removal given the parameterizations chosen in the Configuration window are shown for the filter first pass (red box) and second pass (blue star). Review of these plots and adjustment of the parameters allow the user to optimize the low-pass filters for a given instrument and collection environment prior to L1E processing.
+'Waveband interval to plot' selects which waveband time-series plots will be generated (e.g. a value of 2 results in plots every 6.6 nm for HyperOCR of resolution 3.3 nm). Time-series plots of Es, Li, and Lt showing the results of the anomaly detection are saved to [output_directory]/Plots/L1C_Anoms. Data flagged for removal given the parameterizations chosen in the Configuration window are shown for the filter first pass (red box) and second pass (blue star). Review of these plots and adjustment of the parameters allow the user to optimize the low-pass filters for a given instrument and collection environment prior to L1E processing.
 
-*{To Do: Include a data input check to insure L1C data are being used.}*
 
 #### Level 1E
 
@@ -273,10 +291,9 @@ Each HyperOCR radiometer collects data in a unique set of wavebands nominally at
 
 *Note: only the datasets specified in ProcessL1e.py in each group will be interpolated and carried forward. For radiometers, this means that ancillary instrument data such as SPEC_TEMP and THERMAL_RESP will be dropped at L1E and beyond. See ProcessL1e.py at Perform Time Intepolation comment.*
 
-Optional plots of Es, Li, and Lt of L1E data can be generated which show the temporal interpolation for each parameter and each waveband to the slowest sampling radiometer timestamp. They are saved in /Plots/L1E. Plotting is time and memory intensive, and so may not be adviseable for processing an entire cruise.
+Optional plots of Es, Li, and Lt of L1E data can be generated which show the temporal interpolation for each parameter and each waveband to the slowest sampling radiometer timestamp. They are saved in [output_directory]/Plots/L1E. Plotting is time and memory intensive, and so may not be adviseable for processing an entire cruise.
 
 *{To Do: Allow provision for above water radiometers that operate simultaneously and/or in the exact same wavebands.}*
-*{To Do: Change output of plots to match data output path.}*
 
 ##### SeaBASS File and Header
 
@@ -296,7 +313,7 @@ Prior to ensemble binning, data may be filtered for **Maximum Wind Speed**.
 **Solar Zenith Angle** may be filtered for minimum and maximum values.  
 **Default Min: 20 deg (Zhang et al 2017); Default Max: 60 deg (Brewin et al. 2016)**
 
-**Spectral Outlier Filter** may be applied to remove noisy data prior to binning. This simple filter examines only the spectra of Es, Li, and Lt from 400 - 700 nm, above which the data are noisy in the HyperOCRs. Using the standard deviation of the normalized spectra for the entire sample ensemble, together with a multiplier to establish an "envelope" of acceptable values, spectra with data outside the envelop in any band are rejected. Currently, the arbitrary filter factors are 5.0 for Es, 8.0 for Li, and 3.0 for Lt. Results of spectral filtering are saved as spectral plots in ./Plots/L2_Spectral_Filter. The filter can be optimized by studying these plots for various parameterizations of the filter.
+**Spectral Outlier Filter** may be applied to remove noisy data prior to binning. This simple filter examines only the spectra of Es, Li, and Lt from 400 - 700 nm, above which the data are noisy in the HyperOCRs. Using the standard deviation of the normalized spectra for the entire sample ensemble, together with a multiplier to establish an "envelope" of acceptable values, spectra with data outside the envelop in any band are rejected. Currently, the arbitrary filter factors are 5.0 for Es, 8.0 for Li, and 3.0 for Lt. Results of spectral filtering are saved as spectral plots in [output_directory]/Plots/L2_Spectral_Filter. The filter can be optimized by studying these plots for various parameterizations of the filter.
 
 **Meteorological flags** based on **(Ruddick et al. 2006, Mobley, 1999, Wernand et al. 2002, Garaba et al. 2012, Vandenberg 2017)** can be optionally applied to screen for undesirable data. Specifically, data are filtered for cloud cover, unusually low downwelling irradiance at **480 nm < default 2.0 uW cm^-2 nm^-1** for data likely to have been collected near dawn or dusk, or **(Es(470)/Es(680) < 1.0**), and for data likely to have high relative humidity or rain (**Es(720)/Es(370) < 1.095**). Cloud screening (**Li(750)/Es(750) >= 0.05**) is optional and not well parameterized. Clear skies are approximately 0.02 (Mobley 1999) and fully overcast are of order 0.3 (Ruddick et al. 2006). However, the Ruddick skyglint correction (below) can partially compensate for clear versus cloudy skies, so to avoid eliminating non-clear skies prior to glint correction, set this high (e.g. 1.0). Further investigation with automated sky photography for cloud cover is warranted.
 
@@ -334,10 +351,9 @@ Negative reflectances can be removed as follows: any spectrum with any negative 
 
 Spectral wavebands for a few satellite ocean color sensors can be optionally calculated using their spectral weighting functions. These will be included with the hyperspectral output in the L2 HDF files. Spectral response functions are applied to convolve the (ir)radiances prior to calculating reflectances. **(Burgghoff et al. 2020)**.
 
-*{To Do: Correct spectral convolution to use (ir)radiances rather than reflectances.}*
 *{To Do: Output of satellite bands to SeaBASS files.}*
 
-Plots of processed L2 data from each radiometer and calculated reflectances can be created and stored in /Plots/L2. Uncertainties are shown for each spectrum as shaded regions, and satellite bands (if selected) are superimposed on the hyperspectral data.
+Plots of processed L2 data from each radiometer and calculated reflectances can be created and stored in [output_directory]/Plots/L2. Uncertainties are shown for each spectrum as shaded regions, and satellite bands (if selected) are superimposed on the hyperspectral data.
 
 To output SeaBASS formatted text files, check the box. A subfolder within the L2 directory will be created, and separate text files will be made for Li, Lt, Es, and Rrs hyperspectral data and satellite bands, if selected. Set-up for the SeaBASS header is managed with the 'Edit/Update SeaBASS Header' in the L1E configuration.
 
