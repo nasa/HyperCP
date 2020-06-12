@@ -534,6 +534,11 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2NIRCorrectionCheckBox.clicked.connect(self.l2NIRCorrectionCheckBoxUpdate)
         self.l2NegativeSpecCheckBox.clicked.connect(self.l2NegativeSpecCheckBoxUpdate)
         
+
+        self.l2OCproducts = QtWidgets.QPushButton("Edit/Update SeaBASS Header", self)
+        self.l2OCproducts.clicked.connect(self.l2OCproductsButtonPressed)     
+
+
         l2SaveSeaBASSLabel = QtWidgets.QLabel("Save SeaBASS Files (Edit Header in L1E)", self)     
         self.l2SaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)    
         self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)        
@@ -959,6 +964,10 @@ class ConfigWindow(QtWidgets.QDialog):
 
         VBox3.addSpacing(10)
 
+        l2OCproductsHBox = QtWidgets.QHBoxLayout()
+        l2OCproductsHBox.addWidget(self.l2OCproducts)
+        VBox3.addLayout(l2OCproductsHBox)    
+
         # Horizontal Box; Save SeaBASS
         l2SeaBASSHBox = QtWidgets.QHBoxLayout()
         l2SeaBASSHBox.addWidget(l2SaveSeaBASSLabel)
@@ -1373,6 +1382,14 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2NegativeSpec"] = 0          
         else:
             ConfigFile.settings["bL2NegativeSpec"] = 1
+
+
+    def l2OCproductsButtonPressed(self):
+        print("OC Products Dialogue")
+        
+        ConfigWindow.refreshConfig(self)
+        OCproductsDialog = OCproductsWindow(self)
+        OCproductsDialog.show()
 
     def l2SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")        
