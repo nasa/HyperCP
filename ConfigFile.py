@@ -97,8 +97,24 @@ class ConfigFile:
         print("bL2pic", ConfigFile.settings["bL2pic"])
         print("bL2poc", ConfigFile.settings["bL2poc"])
         print("bL2par", ConfigFile.settings["bL2par"])
+        print("bL2avr", ConfigFile.settings["bL2avr"])
         print("bL2giop", ConfigFile.settings["bL2giop"])
+        print("bL2aGiop", ConfigFile.settings["bL2aGiop"])
+        print("bL2adgGiop", ConfigFile.settings["bL2adgGiop"])
+        print("bL2adgSGiop", ConfigFile.settings["bL2adgSGiop"])
+        print("bL2aphGiop", ConfigFile.settings["bL2aphGiop"])
+        print("bL2aphSGiop", ConfigFile.settings["bL2aphSGiop"])
+        print("bL2bbGiop", ConfigFile.settings["bL2bbGiop"])
+        print("bL2bbpGiop", ConfigFile.settings["bL2bbpGiop"])
+        print("bL2bbpSGiop", ConfigFile.settings["bL2bbpSGiop"])
         print("bL2qaa", ConfigFile.settings["bL2qaa"])
+        print("bL2aQaa", ConfigFile.settings["bL2aQaa"])
+        print("bL2adgQaa", ConfigFile.settings["bL2adgQaa"])
+        print("bL2aphQaa", ConfigFile.settings["bL2aphQaa"])
+        print("bL2bQaa", ConfigFile.settings["bL2bQaa"])
+        print("bL2bbQaa", ConfigFile.settings["bL2bbQaa"])
+        print("bL2bbpQaa", ConfigFile.settings["bL2bbpQaa"])
+        print("bL2cQaa", ConfigFile.settings["bL2cQaa"])
         
 
 
@@ -210,8 +226,24 @@ class ConfigFile:
         ConfigFile.settings["bL2pic"] = 0
         ConfigFile.settings["bL2poc"] = 0
         ConfigFile.settings["bL2par"] = 0
+        ConfigFile.settings["bL2avr"] = 0
         ConfigFile.settings["bL2giop"] = 0
+        ConfigFile.settings["bL2aGiop"] = 0
+        ConfigFile.settings["bL2adgGiop"] = 0
+        ConfigFile.settings["bL2adgSGiop"] = 0
+        ConfigFile.settings["bL2aphGiop"] = 0
+        ConfigFile.settings["bL2aphSGiop"] = 0
+        ConfigFile.settings["bL2bbGiop"] = 0
+        ConfigFile.settings["bL2bbpGiop"] = 0
+        ConfigFile.settings["bL2bbpSGiop"] = 0
         ConfigFile.settings["bL2qaa"] = 0
+        ConfigFile.settings["bL2aQaa"] = 0
+        ConfigFile.settings["bL2adgQaa"] = 0
+        ConfigFile.settings["bL2aphQaa"] = 0
+        ConfigFile.settings["bL2bQaa"] = 0
+        ConfigFile.settings["bL2bbQaa"] = 0
+        ConfigFile.settings["bL2bbpQaa"] = 0
+        ConfigFile.settings["bL2cQaa"] = 0
 
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
         

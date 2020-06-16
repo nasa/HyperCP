@@ -1,6 +1,7 @@
 
 import os
 import shutil
+import threading
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from MainConfig import MainConfig
@@ -823,6 +824,8 @@ class ConfigWindow(QtWidgets.QDialog):
         RainFlagHBox.addWidget(self.l2RainfallHumidityFlagLineEdit)
         VBox2.addLayout(RainFlagHBox) 
 
+        VBox2.addStretch()
+
          # Right box
         VBox3 = QtWidgets.QVBoxLayout()
         VBox3.setAlignment(QtCore.Qt.AlignBottom)
@@ -1329,6 +1332,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2RuddickRho"] = 1
         ConfigFile.settings["bL2ZhangRho"] = 0
         ConfigFile.settings["bL2DefaultRho"] = 0
+
     def l2RhoRadioButtonZhangClicked(self):
         print("ConfigWindow - l2RhoCorrection set to Zhang")
         self.RhoRadioButtonRuddick.setChecked(False)
@@ -1391,6 +1395,17 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigWindow.refreshConfig(self)
         OCproductsDialog = OCproductsWindow(self)
         OCproductsDialog.show()
+
+        # t = threading.Thread(target=OCproductsDialog)
+        # t.start()
+        # self.l2WeightMODISACheckBox.setChecked(True)  
+
+    # @staticmethod
+    # def l2OCprodsSatWeightUpdater(self):
+    #     print("OC Products Updater")
+        
+    #     self.l2WeightMODISACheckBox.setChecked(True)
+
 
     def l2SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")        
