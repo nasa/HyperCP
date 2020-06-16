@@ -90,6 +90,18 @@ class ConfigFile:
         print("bL2PlotEs", ConfigFile.settings["bL2PlotEs"])
         print("bL2PlotLi", ConfigFile.settings["bL2PlotLi"])
         print("bL2PlotLt", ConfigFile.settings["bL2PlotLt"])
+
+        print("bL2oc4", ConfigFile.settings["bL2oc4"])
+        print("bL2aot", ConfigFile.settings["bL2aot"])
+        print("bL2kd490", ConfigFile.settings["bL2kd490"])
+        print("bL2pic", ConfigFile.settings["bL2pic"])
+        print("bL2poc", ConfigFile.settings["bL2poc"])
+        print("bL2par", ConfigFile.settings["bL2par"])
+        print("bL2giop", ConfigFile.settings["bL2giop"])
+        print("bL2qaa", ConfigFile.settings["bL2qaa"])
+        
+
+
         print("bL2SaveSeaBASS", ConfigFile.settings["bL2SaveSeaBASS"])
 
 
@@ -191,6 +203,16 @@ class ConfigFile:
         ConfigFile.settings["bL2PlotEs"] = 0
         ConfigFile.settings["bL2PlotLi"] = 0
         ConfigFile.settings["bL2PlotLt"] = 0
+
+        ConfigFile.settings["bL2oc4"] = 0
+        ConfigFile.settings["bL2aot"] = 0
+        ConfigFile.settings["bL2kd490"] = 0
+        ConfigFile.settings["bL2pic"] = 0
+        ConfigFile.settings["bL2poc"] = 0
+        ConfigFile.settings["bL2par"] = 0
+        ConfigFile.settings["bL2giop"] = 0
+        ConfigFile.settings["bL2qaa"] = 0
+
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
         
         ConfigFile.saveConfig(name)

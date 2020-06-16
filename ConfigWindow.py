@@ -10,6 +10,7 @@ from AnomalyDetection import AnomalyDetection
 from SeaBASSHeader import SeaBASSHeader
 from SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from GetAnc import GetAnc
+from OCproductsWindow import OCproductsWindow
 
 
 
@@ -535,7 +536,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2NegativeSpecCheckBox.clicked.connect(self.l2NegativeSpecCheckBoxUpdate)
         
 
-        self.l2OCproducts = QtWidgets.QPushButton("Edit/Update SeaBASS Header", self)
+        self.l2OCproducts = QtWidgets.QPushButton("Derived L2 Ocean Color Products", self)
         self.l2OCproducts.clicked.connect(self.l2OCproductsButtonPressed)     
 
 
