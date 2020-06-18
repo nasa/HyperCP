@@ -30,32 +30,32 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         oc3mLabel = QtWidgets.QLabel("chlor_a", self)     
         self.oc3mCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2oc3m"]) == 1:
+        if int(ConfigFile.products["bL2Prodoc3m"]) == 1:
             self.oc3mCheckBox.setChecked(True)       
 
         aotLabel = QtWidgets.QLabel("aot", self)     
         self.aotCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2aot"]) == 1:
+        if int(ConfigFile.products["bL2Prodaot"]) == 1:
             self.aotCheckBox.setChecked(True)      
 
         kd490Label = QtWidgets.QLabel("kd490", self)     
         self.kd490CheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2kd490"]) == 1:
+        if int(ConfigFile.products["bL2Prodkd490"]) == 1:
             self.kd490CheckBox.setChecked(True)
 
         picLabel = QtWidgets.QLabel("pic", self)     
         self.picCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2pic"]) == 1:
+        if int(ConfigFile.products["bL2Prodpic"]) == 1:
             self.picCheckBox.setChecked(True)
 
         pocLabel = QtWidgets.QLabel("poc", self)     
         self.pocCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2poc"]) == 1:
+        if int(ConfigFile.products["bL2Prodpoc"]) == 1:
             self.pocCheckBox.setChecked(True)
 
         parLabel = QtWidgets.QLabel("par", self)     
         self.parCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2par"]) == 1:
+        if int(ConfigFile.products["bL2Prodpar"]) == 1:
             self.parCheckBox.setChecked(True)
 
         otherLabel = QtWidgets.QLabel("Other Parameters")
@@ -66,7 +66,7 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         avrLabel = QtWidgets.QLabel("avr (Vandermuellen et al. 2020)", self)     
         self.avrCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2avr"]) == 1:
+        if int(ConfigFile.products["bL2Prodavr"]) == 1:
             self.avrCheckBox.setChecked(True)
 
         iopLabel = QtWidgets.QLabel("Inherent Optical Properties")
@@ -77,39 +77,39 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         giopLabel = QtWidgets.QLabel("GIOP", self)     
         self.giopCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2giop"]) == 1:
+        if int(ConfigFile.products["bL2Prodgiop"]) == 1:
             self.giopCheckBox.setChecked(True)
         self.aGiopLabel = QtWidgets.QLabel("     a", self)     
         self.aGiopCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2aGiop"]) == 1:
+        if int(ConfigFile.products["bL2ProdaGiop"]) == 1:
             self.aGiopCheckBox.setChecked(True)
         self.adgGiopLabel = QtWidgets.QLabel("     adg", self)     
         self.adgGiopCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2adgGiop"]) == 1:
+        if int(ConfigFile.products["bL2ProdadgGiop"]) == 1:
             self.adgGiopCheckBox.setChecked(True)
         self.adgSGiopLabel = QtWidgets.QLabel("     adg_S", self)     
         self.adgSGiopCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2adgSGiop"]) == 1:
+        if int(ConfigFile.products["bL2ProdadgSGiop"]) == 1:
             self.adgSGiopCheckBox.setChecked(True)
         self.aphGiopLabel = QtWidgets.QLabel("     aph", self)     
         self.aphGiopCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2aphGiop"]) == 1:
+        if int(ConfigFile.products["bL2ProdaphGiop"]) == 1:
             self.aphGiopCheckBox.setChecked(True)
         self.aphSGiopLabel = QtWidgets.QLabel("     aph_S", self)     
         self.aphSGiopCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2aphSGiop"]) == 1:
+        if int(ConfigFile.products["bL2ProdaphSGiop"]) == 1:
             self.aphSGiopCheckBox.setChecked(True)
         self.bbGiopLabel = QtWidgets.QLabel("     bb", self)     
         self.bbGiopCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2bbGiop"]) == 1:
+        if int(ConfigFile.products["bL2ProdbbGiop"]) == 1:
             self.bbGiopCheckBox.setChecked(True)
         self.bbpGiopLabel = QtWidgets.QLabel("     bbp", self)     
         self.bbpGiopCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2bbpGiop"]) == 1:
+        if int(ConfigFile.products["bL2ProdbbpGiop"]) == 1:
             self.bbpGiopCheckBox.setChecked(True)
         self.bbpSGiopLabel = QtWidgets.QLabel("     bbp_S", self)     
         self.bbpSGiopCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2bbpSGiop"]) == 1:
+        if int(ConfigFile.products["bL2ProdbbpSGiop"]) == 1:
             self.bbpSGiopCheckBox.setChecked(True)
         
         self.giopCheckBoxUpdate()
@@ -118,35 +118,35 @@ class OCproductsWindow(QtWidgets.QDialog):
         
         qaaLabel = QtWidgets.QLabel("QAA", self)     
         self.qaaCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2qaa"]) == 1:
+        if int(ConfigFile.products["bL2Prodqaa"]) == 1:
             self.qaaCheckBox.setChecked(True)
         self.aQaaLabel = QtWidgets.QLabel("     a", self)     
         self.aQaaCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2aQaa"]) == 1:
+        if int(ConfigFile.products["bL2ProdaQaa"]) == 1:
             self.aQaaCheckBox.setChecked(True)
         self.adgQaaLabel = QtWidgets.QLabel("     adg", self)     
         self.adgQaaCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2adgQaa"]) == 1:
+        if int(ConfigFile.products["bL2ProdadgQaa"]) == 1:
             self.adgQaaCheckBox.setChecked(True)
         self.aphQaaLabel = QtWidgets.QLabel("     aph", self)     
         self.aphQaaCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2aphQaa"]) == 1:
+        if int(ConfigFile.products["bL2ProdaphQaa"]) == 1:
             self.aphQaaCheckBox.setChecked(True)
         self.bQaaLabel = QtWidgets.QLabel("     b", self)     
         self.bQaaCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2bQaa"]) == 1:
+        if int(ConfigFile.products["bL2ProdbQaa"]) == 1:
             self.bQaaCheckBox.setChecked(True)
         self.bbQaaLabel = QtWidgets.QLabel("     bb", self)     
         self.bbQaaCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2bbQaa"]) == 1:
+        if int(ConfigFile.products["bL2ProdbbQaa"]) == 1:
             self.bbQaaCheckBox.setChecked(True)
         self.bbpQaaLabel = QtWidgets.QLabel("     bbp", self)     
         self.bbpQaaCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2bbpQaa"]) == 1:
+        if int(ConfigFile.products["bL2ProdbbpQaa"]) == 1:
             self.bbpQaaCheckBox.setChecked(True)
         self.cQaaLabel = QtWidgets.QLabel("     c", self)     
         self.cQaaCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.settings["bL2cQaa"]) == 1:
+        if int(ConfigFile.products["bL2ProdcQaa"]) == 1:
             self.cQaaCheckBox.setChecked(True)
 
         self.qaaCheckBoxUpdate()
@@ -357,9 +357,9 @@ class OCproductsWindow(QtWidgets.QDialog):
         self.bbpSGiopCheckBox.setDisabled(disabled)
 
         if disabled:
-            ConfigFile.settings["bL2giop"] = 0
+            ConfigFile.products["bL2Prodgiop"] = 0
         else:
-            ConfigFile.settings["bL2giop"] = 1
+            ConfigFile.products["bL2Prodgiop"] = 1
 
     def qaaCheckBoxUpdate(self):
         print("OCproductsWindow - qaaCheckBoxUpdate")
@@ -381,48 +381,45 @@ class OCproductsWindow(QtWidgets.QDialog):
         self.cQaaCheckBox.setDisabled(disabled)
 
         if disabled:
-            ConfigFile.settings["bL2qaa"] = 0
+            ConfigFile.products["bL2Prodqaa"] = 0
         else:
-            ConfigFile.settings["bL2qaa"] = 1
+            ConfigFile.products["bL2Prodqaa"] = 1
        
     def saveButtonPressed(self):
         print("L2 Products - Save/Close Pressed")        
         
-        ConfigFile.settings["bL2oc3m"] = int(self.oc3mCheckBox.isChecked())
-        ConfigFile.settings["bL2aot"] = int(self.aotCheckBox.isChecked())
-        ConfigFile.settings["bL2kd490"] = int(self.kd490CheckBox.isChecked())
-        ConfigFile.settings["bL2pic"] = int(self.picCheckBox.isChecked())
-        ConfigFile.settings["bL2poc"] = int(self.pocCheckBox.isChecked())
-        ConfigFile.settings["bL2par"] = int(self.parCheckBox.isChecked())
-        ConfigFile.settings["bL2avr"] = int(self.avrCheckBox.isChecked())
-        ConfigFile.settings["bL2giop"] = int(self.giopCheckBox.isChecked())
-        ConfigFile.settings["bL2aGiop"] = int(self.aGiopCheckBox.isChecked())
-        ConfigFile.settings["bL2adgGiop"] = int(self.adgGiopCheckBox.isChecked())
-        ConfigFile.settings["bL2adgSGiop"] = int(self.adgSGiopCheckBox.isChecked())
-        ConfigFile.settings["bL2aphGiop"] = int(self.aphGiopCheckBox.isChecked())
-        ConfigFile.settings["bL2aphSGiop"] = int(self.aphSGiopCheckBox.isChecked())
-        ConfigFile.settings["bL2bbGiop"] = int(self.bbGiopCheckBox.isChecked())
-        ConfigFile.settings["bL2bbpGiop"] = int(self.bbpGiopCheckBox.isChecked())
-        ConfigFile.settings["bL2bbpSGiop"] = int(self.bbpSGiopCheckBox.isChecked())
-        ConfigFile.settings["bL2qaa"] = int(self.qaaCheckBox.isChecked())
-        ConfigFile.settings["bL2aQaa"] = int(self.aQaaCheckBox.isChecked())
-        ConfigFile.settings["bL2adgQaa"] = int(self.adgQaaCheckBox.isChecked())
-        ConfigFile.settings["bL2aphQaa"] = int(self.aphQaaCheckBox.isChecked())
-        ConfigFile.settings["bL2bQaa"] = int(self.bQaaCheckBox.isChecked())
-        ConfigFile.settings["bL2bbQaa"] = int(self.bbQaaCheckBox.isChecked())
-        ConfigFile.settings["bL2bbpQaa"] = int(self.bbpQaaCheckBox.isChecked())
-        ConfigFile.settings["bL2cQaa"] = int(self.cQaaCheckBox.isChecked())
+        ConfigFile.products["bL2Prodoc3m"] = int(self.oc3mCheckBox.isChecked())
+        ConfigFile.products["bL2Prodaot"] = int(self.aotCheckBox.isChecked())
+        ConfigFile.products["bL2Prodkd490"] = int(self.kd490CheckBox.isChecked())
+        ConfigFile.products["bL2Prodpic"] = int(self.picCheckBox.isChecked())
+        ConfigFile.products["bL2Prodpoc"] = int(self.pocCheckBox.isChecked())
+        ConfigFile.products["bL2Prodpar"] = int(self.parCheckBox.isChecked())
+        ConfigFile.products["bL2Prodavr"] = int(self.avrCheckBox.isChecked())
+        ConfigFile.products["bL2Prodgiop"] = int(self.giopCheckBox.isChecked())
+        ConfigFile.products["bL2ProdaGiop"] = int(self.aGiopCheckBox.isChecked())
+        ConfigFile.products["bL2ProdadgGiop"] = int(self.adgGiopCheckBox.isChecked())
+        ConfigFile.products["bL2ProdadgSGiop"] = int(self.adgSGiopCheckBox.isChecked())
+        ConfigFile.products["bL2ProdaphGiop"] = int(self.aphGiopCheckBox.isChecked())
+        ConfigFile.products["bL2ProdaphSGiop"] = int(self.aphSGiopCheckBox.isChecked())
+        ConfigFile.products["bL2ProdbbGiop"] = int(self.bbGiopCheckBox.isChecked())
+        ConfigFile.products["bL2ProdbbpGiop"] = int(self.bbpGiopCheckBox.isChecked())
+        ConfigFile.products["bL2ProdbbpSGiop"] = int(self.bbpSGiopCheckBox.isChecked())
+        ConfigFile.products["bL2Prodqaa"] = int(self.qaaCheckBox.isChecked())
+        ConfigFile.products["bL2ProdaQaa"] = int(self.aQaaCheckBox.isChecked())
+        ConfigFile.products["bL2ProdadgQaa"] = int(self.adgQaaCheckBox.isChecked())
+        ConfigFile.products["bL2ProdaphQaa"] = int(self.aphQaaCheckBox.isChecked())
+        ConfigFile.products["bL2ProdbQaa"] = int(self.bQaaCheckBox.isChecked())
+        ConfigFile.products["bL2ProdbbQaa"] = int(self.bbQaaCheckBox.isChecked())
+        ConfigFile.products["bL2ProdbbpQaa"] = int(self.bbpQaaCheckBox.isChecked())
+        ConfigFile.products["bL2ProdcQaa"] = int(self.cQaaCheckBox.isChecked())
 
         # Confirm necessary satellite bands are processed
-        if ConfigFile.settings["bL2oc3m"] or ConfigFile.settings["bL2kd490"] or \
-            ConfigFile.settings["bL2pic"] or ConfigFile.settings["bL2poc"] or \
-            ConfigFile.settings["bL2par"]:
+        if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
+            ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
+            ConfigFile.products["bL2Prodpar"]:
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
-            # ConfigWindow.ConfigWindow.l2OCprodsSatWeightUpdater()
-        # if int(ConfigFile.settings["bL2WeightMODISA"]) == 1:
-            
-
+        
         self.close()
 
     def cancelButtonPressed(self):

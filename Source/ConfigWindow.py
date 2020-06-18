@@ -1394,17 +1394,10 @@ class ConfigWindow(QtWidgets.QDialog):
         
         ConfigWindow.refreshConfig(self)
         OCproductsDialog = OCproductsWindow(self)
-        OCproductsDialog.show()
-
-        # t = threading.Thread(target=OCproductsDialog)
-        # t.start()
-        # self.l2WeightMODISACheckBox.setChecked(True)  
-
-    # @staticmethod
-    # def l2OCprodsSatWeightUpdater(self):
-    #     print("OC Products Updater")
+        OCproductsDialog.exec()
         
-    #     self.l2WeightMODISACheckBox.setChecked(True)
+        if int(ConfigFile.settings["bL2WeightMODISA"]) == 1:
+            self.l2WeightMODISACheckBox.setChecked(True)
 
 
     def l2SaveSeaBASSCheckBoxUpdate(self):

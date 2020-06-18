@@ -7,6 +7,7 @@ import shutil
 class ConfigFile:
     filename = ""
     settings = collections.OrderedDict()
+    products = collections.OrderedDict()
 
     @staticmethod
     def printd():
@@ -91,32 +92,30 @@ class ConfigFile:
         print("bL2PlotLi", ConfigFile.settings["bL2PlotLi"])
         print("bL2PlotLt", ConfigFile.settings["bL2PlotLt"])
 
-        print("bL2oc4", ConfigFile.settings["bL2oc4"])
-        print("bL2aot", ConfigFile.settings["bL2aot"])
-        print("bL2kd490", ConfigFile.settings["bL2kd490"])
-        print("bL2pic", ConfigFile.settings["bL2pic"])
-        print("bL2poc", ConfigFile.settings["bL2poc"])
-        print("bL2par", ConfigFile.settings["bL2par"])
-        print("bL2avr", ConfigFile.settings["bL2avr"])
-        print("bL2giop", ConfigFile.settings["bL2giop"])
-        print("bL2aGiop", ConfigFile.settings["bL2aGiop"])
-        print("bL2adgGiop", ConfigFile.settings["bL2adgGiop"])
-        print("bL2adgSGiop", ConfigFile.settings["bL2adgSGiop"])
-        print("bL2aphGiop", ConfigFile.settings["bL2aphGiop"])
-        print("bL2aphSGiop", ConfigFile.settings["bL2aphSGiop"])
-        print("bL2bbGiop", ConfigFile.settings["bL2bbGiop"])
-        print("bL2bbpGiop", ConfigFile.settings["bL2bbpGiop"])
-        print("bL2bbpSGiop", ConfigFile.settings["bL2bbpSGiop"])
-        print("bL2qaa", ConfigFile.settings["bL2qaa"])
-        print("bL2aQaa", ConfigFile.settings["bL2aQaa"])
-        print("bL2adgQaa", ConfigFile.settings["bL2adgQaa"])
-        print("bL2aphQaa", ConfigFile.settings["bL2aphQaa"])
-        print("bL2bQaa", ConfigFile.settings["bL2bQaa"])
-        print("bL2bbQaa", ConfigFile.settings["bL2bbQaa"])
-        print("bL2bbpQaa", ConfigFile.settings["bL2bbpQaa"])
-        print("bL2cQaa", ConfigFile.settings["bL2cQaa"])
-        
-
+        print("bL2Prodoc4", ConfigFile.products["bL2Prodoc4"])
+        print("bL2Prodaot", ConfigFile.products["bL2Prodaot"])
+        print("bL2Prodkd490", ConfigFile.products["bL2Prodkd490"])
+        print("bL2Prodpic", ConfigFile.products["bL2Prodpic"])
+        print("bL2Prodpoc", ConfigFile.products["bL2Prodpoc"])
+        print("bL2Prodpar", ConfigFile.products["bL2Prodpar"])
+        print("bL2Prodavr", ConfigFile.products["bL2Prodavr"])
+        print("bL2Prodgiop", ConfigFile.products["bL2Prodgiop"])
+        print("bL2ProdaGiop", ConfigFile.products["bL2ProdaGiop"])
+        print("bL2ProdadgGiop", ConfigFile.products["bL2ProdadgGiop"])
+        print("bL2ProdadgSGiop", ConfigFile.products["bL2ProdadgSGiop"])
+        print("bL2ProdaphGiop", ConfigFile.products["bL2ProdaphGiop"])
+        print("bL2ProdaphSGiop", ConfigFile.products["bL2ProdaphSGiop"])
+        print("bL2ProdbbGiop", ConfigFile.products["bL2ProdbbGiop"])
+        print("bL2ProdbbpGiop", ConfigFile.products["bL2ProdbbpGiop"])
+        print("bL2ProdbbpSGiop", ConfigFile.products["bL2ProdbbpSGiop"])
+        print("bL2Prodqaa", ConfigFile.products["bL2Prodqaa"])
+        print("bL2ProdaQaa", ConfigFile.products["bL2ProdaQaa"])
+        print("bL2ProdadgQaa", ConfigFile.products["bL2ProdadgQaa"])
+        print("bL2ProdaphQaa", ConfigFile.products["bL2ProdaphQaa"])
+        print("bL2ProdbQaa", ConfigFile.products["bL2ProdbQaa"])
+        print("bL2ProdbbQaa", ConfigFile.products["bL2ProdbbQaa"])
+        print("bL2ProdbbpQaa", ConfigFile.products["bL2ProdbbpQaa"])
+        print("bL2ProdcQaa", ConfigFile.products["bL2ProdcQaa"])
 
         print("bL2SaveSeaBASS", ConfigFile.settings["bL2SaveSeaBASS"])
 
@@ -220,30 +219,30 @@ class ConfigFile:
         ConfigFile.settings["bL2PlotLi"] = 0
         ConfigFile.settings["bL2PlotLt"] = 0
 
-        ConfigFile.settings["bL2oc4"] = 0
-        ConfigFile.settings["bL2aot"] = 0
-        ConfigFile.settings["bL2kd490"] = 0
-        ConfigFile.settings["bL2pic"] = 0
-        ConfigFile.settings["bL2poc"] = 0
-        ConfigFile.settings["bL2par"] = 0
-        ConfigFile.settings["bL2avr"] = 0
-        ConfigFile.settings["bL2giop"] = 0
-        ConfigFile.settings["bL2aGiop"] = 0
-        ConfigFile.settings["bL2adgGiop"] = 0
-        ConfigFile.settings["bL2adgSGiop"] = 0
-        ConfigFile.settings["bL2aphGiop"] = 0
-        ConfigFile.settings["bL2aphSGiop"] = 0
-        ConfigFile.settings["bL2bbGiop"] = 0
-        ConfigFile.settings["bL2bbpGiop"] = 0
-        ConfigFile.settings["bL2bbpSGiop"] = 0
-        ConfigFile.settings["bL2qaa"] = 0
-        ConfigFile.settings["bL2aQaa"] = 0
-        ConfigFile.settings["bL2adgQaa"] = 0
-        ConfigFile.settings["bL2aphQaa"] = 0
-        ConfigFile.settings["bL2bQaa"] = 0
-        ConfigFile.settings["bL2bbQaa"] = 0
-        ConfigFile.settings["bL2bbpQaa"] = 0
-        ConfigFile.settings["bL2cQaa"] = 0
+        ConfigFile.products["bL2Prodoc4"] = 0
+        ConfigFile.products["bL2Prodaot"] = 0
+        ConfigFile.products["bL2Prodkd490"] = 0
+        ConfigFile.products["bL2Prodpic"] = 0
+        ConfigFile.products["bL2Prodpoc"] = 0
+        ConfigFile.products["bL2Prodpar"] = 0
+        ConfigFile.products["bL2Prodavr"] = 0
+        ConfigFile.products["bL2Prodgiop"] = 0
+        ConfigFile.products["bL2ProdaGiop"] = 0
+        ConfigFile.products["bL2ProdadgGiop"] = 0
+        ConfigFile.products["bL2ProdadgSGiop"] = 0
+        ConfigFile.products["bL2ProdaphGiop"] = 0
+        ConfigFile.products["bL2ProdaphSGiop"] = 0
+        ConfigFile.products["bL2ProdbbGiop"] = 0
+        ConfigFile.products["bL2ProdbbpGiop"] = 0
+        ConfigFile.products["bL2ProdbbpSGiop"] = 0
+        ConfigFile.products["bL2Prodqaa"] = 0
+        ConfigFile.products["bL2ProdaQaa"] = 0
+        ConfigFile.products["bL2ProdadgQaa"] = 0
+        ConfigFile.products["bL2ProdaphQaa"] = 0
+        ConfigFile.products["bL2ProdbQaa"] = 0
+        ConfigFile.products["bL2ProdbbQaa"] = 0
+        ConfigFile.products["bL2ProdbbpQaa"] = 0
+        ConfigFile.products["bL2ProdcQaa"] = 0
 
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
         
@@ -255,12 +254,13 @@ class ConfigFile:
     def saveConfig(filename):
         print("ConfigFile - Save Config")
         ConfigFile.filename = filename
-        jsn = json.dumps(ConfigFile.settings)
+        params = dict(ConfigFile.settings, **ConfigFile.products)
+        jsn = json.dumps(params)        
         fp = os.path.join("Config", filename)
 
         #print(os.path.abspath(os.curdir))
         with open(fp, 'w') as f:
-            f.write(jsn)
+            f.write(jsn1)
         ConfigFile.createCalibrationFolder()
 
     # Loads the cfg file
@@ -273,7 +273,15 @@ class ConfigFile:
             text = ""
             with open(configPath, 'r') as f:
                 text = f.read()
-                ConfigFile.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
+                # ConfigFile.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
+                fullCollection = json.loads(text, object_pairs_hook=collections.OrderedDict)
+
+                for key, value in fullCollection.items():
+                    if key.startswith("bL2Prod"):
+                        ConfigFile.products[key] = value
+                    else:
+                        ConfigFile.settings[key] = value
+                
                 ConfigFile.createCalibrationFolder()
 
 

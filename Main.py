@@ -16,6 +16,8 @@ import json
 from PyQt5 import QtCore, QtGui, QtWidgets
 import time
 
+
+sys.path.append(os.path.join(os.path.dirname(__file__),'Source'))
 from MainConfig import MainConfig
 from Controller import Controller
 from ConfigFile import ConfigFile

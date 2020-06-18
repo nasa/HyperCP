@@ -17,6 +17,7 @@ from RhoCorrections import RhoCorrections
 from GetAnc import GetAnc
 from SB_support import readSB
 from Weight_RSR import Weight_RSR
+from ProcessL2OCproducts import ProcessL2OCproducts
 
 
 class ProcessL2:
@@ -2176,6 +2177,13 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)  
             return None
+
+        # If requested, proceed to calculation of derived geophysical and 
+        # inherent optical properties
+        totalProds = sum(list(ConfigFile.products.values()))
+        if totalProds > 0:
+            ProcessL2OCproducts.procProds(root)
+
 
         # Now strip datetimes from all datasets
         for gp in root.groups:
