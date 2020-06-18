@@ -16,7 +16,7 @@ import json
 from PyQt5 import QtCore, QtGui, QtWidgets
 import time
 
-
+# Why does pylint have a problem with this path formulation?
 sys.path.append(os.path.join(os.path.dirname(__file__),'Source'))
 from MainConfig import MainConfig
 from Controller import Controller
