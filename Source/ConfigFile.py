@@ -93,11 +93,11 @@ class ConfigFile:
         print("bL2PlotLt", ConfigFile.settings["bL2PlotLt"])
 
         print("bL2Prodoc4", ConfigFile.products["bL2Prodoc4"])
-        print("bL2Prodaot", ConfigFile.products["bL2Prodaot"])
+        # print("bL2Prodaot", ConfigFile.products["bL2Prodaot"])
         print("bL2Prodkd490", ConfigFile.products["bL2Prodkd490"])
         print("bL2Prodpic", ConfigFile.products["bL2Prodpic"])
         print("bL2Prodpoc", ConfigFile.products["bL2Prodpoc"])
-        print("bL2Prodpar", ConfigFile.products["bL2Prodpar"])
+        print("bL2Prodipar", ConfigFile.products["bL2Prodipar"])
         print("bL2Prodavr", ConfigFile.products["bL2Prodavr"])
         print("bL2Prodgiop", ConfigFile.products["bL2Prodgiop"])
         print("bL2ProdaGiop", ConfigFile.products["bL2ProdaGiop"])
@@ -220,11 +220,11 @@ class ConfigFile:
         ConfigFile.settings["bL2PlotLt"] = 0
 
         ConfigFile.products["bL2Prodoc4"] = 0
-        ConfigFile.products["bL2Prodaot"] = 0
+        # ConfigFile.products["bL2Prodaot"] = 0
         ConfigFile.products["bL2Prodkd490"] = 0
         ConfigFile.products["bL2Prodpic"] = 0
         ConfigFile.products["bL2Prodpoc"] = 0
-        ConfigFile.products["bL2Prodpar"] = 0
+        ConfigFile.products["bL2Prodipar"] = 0
         ConfigFile.products["bL2Prodavr"] = 0
         ConfigFile.products["bL2Prodgiop"] = 0
         ConfigFile.products["bL2ProdaGiop"] = 0
@@ -260,7 +260,7 @@ class ConfigFile:
 
         #print(os.path.abspath(os.curdir))
         with open(fp, 'w') as f:
-            f.write(jsn1)
+            f.write(jsn)
         ConfigFile.createCalibrationFolder()
 
     # Loads the cfg file

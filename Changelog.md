@@ -1,6 +1,10 @@
 v1.0.3 Unreleased
 * Create a L2 module for ocean color products 
 
+2020-06-18: DAA
+* Move source code into ./Source
+* Build chlor_a into root HDF file
+
 ---
 v1.0.2 2020-05-27: DAA
 

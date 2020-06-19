@@ -19,8 +19,8 @@ class OCproductsWindow(QtWidgets.QDialog):
             <a href=\"https://oceancolor.gsfc.nasa.gov/atbd/\"> NASA's Ocean Color Web</a>")
         linkOCWebLabel.setOpenExternalLinks(True)
         satNoteLabel = QtWidgets.QLabel(
-            "Algorithms requiring satellite bands will activate MODIS waveband convolution" \
-                " processing to L2")
+            "Algorithms requiring satellite bands will activate MODIS Aqua waveband convolution" \
+                " processing in L2")
 
         geoPhysLabel = QtWidgets.QLabel("Geophysical Parameters")
         geoPhysLabel_font = geoPhysLabel.font()
@@ -33,10 +33,10 @@ class OCproductsWindow(QtWidgets.QDialog):
         if int(ConfigFile.products["bL2Prodoc3m"]) == 1:
             self.oc3mCheckBox.setChecked(True)       
 
-        aotLabel = QtWidgets.QLabel("aot", self)     
-        self.aotCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.products["bL2Prodaot"]) == 1:
-            self.aotCheckBox.setChecked(True)      
+        # aotLabel = QtWidgets.QLabel("aot", self)     
+        # self.aotCheckBox = QtWidgets.QCheckBox("", self)              
+        # if int(ConfigFile.products["bL2Prodaot"]) == 1:
+        #     self.aotCheckBox.setChecked(True)      
 
         kd490Label = QtWidgets.QLabel("kd490", self)     
         self.kd490CheckBox = QtWidgets.QCheckBox("", self)              
@@ -53,10 +53,10 @@ class OCproductsWindow(QtWidgets.QDialog):
         if int(ConfigFile.products["bL2Prodpoc"]) == 1:
             self.pocCheckBox.setChecked(True)
 
-        parLabel = QtWidgets.QLabel("par", self)     
-        self.parCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.products["bL2Prodpar"]) == 1:
-            self.parCheckBox.setChecked(True)
+        iparLabel = QtWidgets.QLabel("ipar", self)     
+        self.iparCheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2Prodipar"]) == 1:
+            self.iparCheckBox.setChecked(True)
 
         otherLabel = QtWidgets.QLabel("Other Parameters")
         otherLabel_font = otherLabel.font()
@@ -175,11 +175,11 @@ class OCproductsWindow(QtWidgets.QDialog):
         oc3mHBox.addWidget(self.oc3mCheckBox)
         VBox1.addLayout(oc3mHBox)
 
-        # AOT
-        aotHBox = QtWidgets.QHBoxLayout()
-        aotHBox.addWidget(aotLabel)
-        aotHBox.addWidget(self.aotCheckBox)
-        VBox1.addLayout(aotHBox)
+        # # AOT
+        # aotHBox = QtWidgets.QHBoxLayout()
+        # aotHBox.addWidget(aotLabel)
+        # aotHBox.addWidget(self.aotCheckBox)
+        # VBox1.addLayout(aotHBox)
 
         # Kd490
         kd490HBox = QtWidgets.QHBoxLayout()
@@ -193,6 +193,11 @@ class OCproductsWindow(QtWidgets.QDialog):
         picHBox.addWidget(self.picCheckBox)
         VBox1.addLayout(picHBox)
 
+
+        self.picCheckBox.setDisabled(1)
+
+
+
         # POC
         pocHBox = QtWidgets.QHBoxLayout()
         pocHBox.addWidget(pocLabel)
@@ -200,10 +205,10 @@ class OCproductsWindow(QtWidgets.QDialog):
         VBox1.addLayout(pocHBox)
 
         # PAR
-        parHBox = QtWidgets.QHBoxLayout()
-        parHBox.addWidget(parLabel)
-        parHBox.addWidget(self.parCheckBox)
-        VBox1.addLayout(parHBox)
+        iparHBox = QtWidgets.QHBoxLayout()
+        iparHBox.addWidget(iparLabel)
+        iparHBox.addWidget(self.iparCheckBox)
+        VBox1.addLayout(iparHBox)
 
 
         VBox1.addWidget(otherLabel)  
@@ -389,11 +394,11 @@ class OCproductsWindow(QtWidgets.QDialog):
         print("L2 Products - Save/Close Pressed")        
         
         ConfigFile.products["bL2Prodoc3m"] = int(self.oc3mCheckBox.isChecked())
-        ConfigFile.products["bL2Prodaot"] = int(self.aotCheckBox.isChecked())
+        # ConfigFile.products["bL2Prodaot"] = int(self.aotCheckBox.isChecked())
         ConfigFile.products["bL2Prodkd490"] = int(self.kd490CheckBox.isChecked())
         ConfigFile.products["bL2Prodpic"] = int(self.picCheckBox.isChecked())
         ConfigFile.products["bL2Prodpoc"] = int(self.pocCheckBox.isChecked())
-        ConfigFile.products["bL2Prodpar"] = int(self.parCheckBox.isChecked())
+        ConfigFile.products["bL2Prodipar"] = int(self.iparCheckBox.isChecked())
         ConfigFile.products["bL2Prodavr"] = int(self.avrCheckBox.isChecked())
         ConfigFile.products["bL2Prodgiop"] = int(self.giopCheckBox.isChecked())
         ConfigFile.products["bL2ProdaGiop"] = int(self.aGiopCheckBox.isChecked())
@@ -415,8 +420,7 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         # Confirm necessary satellite bands are processed
         if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
-            ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
-            ConfigFile.products["bL2Prodpar"]:
+            ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"]:
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
         
