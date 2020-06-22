@@ -420,7 +420,8 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         # Confirm necessary satellite bands are processed
         if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
-            ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"]:
+            ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
+                ConfigFile.products["bL2qaa"]:
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
         

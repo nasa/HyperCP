@@ -8,6 +8,7 @@ from L2pic import L2pic
 from L2poc import L2poc
 # from L2par import L2par
 from L2ipar import L2ipar
+from L2avw import L2avw
 
 
 class ProcessL2OCproducts():
@@ -42,3 +43,22 @@ class ProcessL2OCproducts():
         # ipar
         if ConfigFile.products["bL2Prodipar"]:
             L2ipar.L2ipar(root)
+
+        # avw
+        # Vandermuelen et al. 2020
+        if ConfigFile.products["bL2Prodavr"]:
+            L2avw.L2avw(root)
+
+        # GIOP
+
+        # QAA
+        ''' Is there a hyperspectral parameterization of the QAA? I see
+            Guoqing Wang and Ping worked on a related poster in 2014... '''
+        if ConfigFile.products["bL2qaa"]:
+            L2qaa.L2qaa(root)
+
+            
+
+
+
+
