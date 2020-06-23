@@ -66,7 +66,7 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         avrLabel = QtWidgets.QLabel("avr (Vandermuellen et al. 2020)", self)     
         self.avrCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.products["bL2Prodavr"]) == 1:
+        if int(ConfigFile.products["bL2Prodavw"]) == 1:
             self.avrCheckBox.setChecked(True)
 
         iopLabel = QtWidgets.QLabel("Inherent Optical Properties")
@@ -399,7 +399,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         ConfigFile.products["bL2Prodpic"] = int(self.picCheckBox.isChecked())
         ConfigFile.products["bL2Prodpoc"] = int(self.pocCheckBox.isChecked())
         ConfigFile.products["bL2Prodipar"] = int(self.iparCheckBox.isChecked())
-        ConfigFile.products["bL2Prodavr"] = int(self.avrCheckBox.isChecked())
+        ConfigFile.products["bL2Prodavw"] = int(self.avrCheckBox.isChecked())
         ConfigFile.products["bL2Prodgiop"] = int(self.giopCheckBox.isChecked())
         ConfigFile.products["bL2ProdaGiop"] = int(self.aGiopCheckBox.isChecked())
         ConfigFile.products["bL2ProdadgGiop"] = int(self.adgGiopCheckBox.isChecked())

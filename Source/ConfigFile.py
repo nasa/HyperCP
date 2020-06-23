@@ -98,7 +98,7 @@ class ConfigFile:
         print("bL2Prodpic", ConfigFile.products["bL2Prodpic"])
         print("bL2Prodpoc", ConfigFile.products["bL2Prodpoc"])
         print("bL2Prodipar", ConfigFile.products["bL2Prodipar"])
-        print("bL2Prodavr", ConfigFile.products["bL2Prodavr"])
+        print("bL2Prodavw", ConfigFile.products["bL2Prodavw"])
         print("bL2Prodgiop", ConfigFile.products["bL2Prodgiop"])
         print("bL2ProdaGiop", ConfigFile.products["bL2ProdaGiop"])
         print("bL2ProdadgGiop", ConfigFile.products["bL2ProdadgGiop"])
@@ -225,7 +225,7 @@ class ConfigFile:
         ConfigFile.products["bL2Prodpic"] = 0
         ConfigFile.products["bL2Prodpoc"] = 0
         ConfigFile.products["bL2Prodipar"] = 0
-        ConfigFile.products["bL2Prodavr"] = 0
+        ConfigFile.products["bL2Prodavw"] = 0
         ConfigFile.products["bL2Prodgiop"] = 0
         ConfigFile.products["bL2ProdaGiop"] = 0
         ConfigFile.products["bL2ProdadgGiop"] = 0
