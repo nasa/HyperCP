@@ -64,7 +64,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         otherLabel_font.setBold(True)
         otherLabel.setFont(otherLabel_font)
 
-        avrLabel = QtWidgets.QLabel("avr (Vandermuellen et al. 2020)", self)     
+        avrLabel = QtWidgets.QLabel("avw (Vandermuellen et al. 2020)", self)     
         self.avrCheckBox = QtWidgets.QCheckBox("", self)              
         if int(ConfigFile.products["bL2Prodavw"]) == 1:
             self.avrCheckBox.setChecked(True)

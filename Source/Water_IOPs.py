@@ -92,12 +92,12 @@ def water_iops(fp, wave,T,S):
 
     return a_sw, bb_sw
 
-wave = list(range(400, 701))
-T = 20.0
-S = 33.0
-fp = os.path.join(os.path.abspath('.'), 'Data')
-fp = os.path.join(fp,'Water_Absorption.sb')
+# wave = list(range(400, 701))
+# T = 20.0
+# S = 33.0
+# fp = os.path.join(os.path.abspath('.'), 'Data')
+# fp = os.path.join(fp,'Water_Absorption.sb')
 
-a_sw, bb_sw = water_iops(fp, wave, T, S)
-print(a_sw)
+# a_sw, bb_sw = water_iops(fp, wave, T, S)
+# print(a_sw)
 

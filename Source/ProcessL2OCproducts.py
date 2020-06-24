@@ -19,36 +19,96 @@ class ProcessL2OCproducts():
     @staticmethod
     def procProds(root):
 
+        Reflectance = root.getGroup("REFLECTANCE")
+    
+        dateTime = Reflectance.datasets['Rrs_HYPER'].columns['Datetime']
+        dateTag = Reflectance.datasets['Rrs_HYPER'].columns['Datetag']
+        timeTag2 = Reflectance.datasets['Rrs_HYPER'].columns['Timetag2']
+        Rrs412 = Reflectance.datasets["Rrs_MODISA"].columns['412']
+        Rrs443 = Reflectance.datasets["Rrs_MODISA"].columns['443']
+        Rrs488 = Reflectance.datasets["Rrs_MODISA"].columns['488']
+        Rrs547 = Reflectance.datasets["Rrs_MODISA"].columns['551'] # 551 in name only
+        Rrs555 = Reflectance.datasets["Rrs_MODISA"].columns['555']
+        Rrs667 = Reflectance.datasets["Rrs_MODISA"].columns['667'].copy()
+
+        RrsHYPER = Reflectance.datasets["Rrs_HYPER"]
+
+        Ancillary = root.getGroup("ANCILLARY")
+
         if not root.getGroup("DERIVED_PRODUCTS"):
-            root.addGroup("DERIVED_PRODUCTS")
+            DerProd = root.addGroup("DERIVED_PRODUCTS")
 
         # chlor_a
         if ConfigFile.products["bL2Prodoc3m"]:
             msg = "Processing chlor_a"
             print(msg)
             Utilities.writeLogFile(msg)  
-            L2chlor_a.L2chlor_a(root)
+
+            DerProd.attributes['chlor_a_UNITS'] = 'mg m^-3'
+            chlDS = DerProd.addDataset('chlor_a')
+            chlDS.columns['Datetime'] = dateTime
+            chlDS.columns['Datetag'] = dateTag
+            chlDS.columns['Timetag2'] = timeTag2
+
+            chlor_a = [] 
+            for i in range(0, len(dateTime)):
+                chlor_a.append(L2chlor_a(Rrs443[i], Rrs488[i], Rrs547[i], Rrs555[i], Rrs667[i]))
+            
+            chlDS.columns['chlor_a'] = chlor_a
+            chlDS.columnsToDataset()
 
         # kd490
         if ConfigFile.products["bL2Prodkd490"]:
             msg = "Processing kd490"
             print(msg)
             Utilities.writeLogFile(msg)  
-            L2kd490.L2kd490(root)
+
+            kdDS = DerProd.addDataset('kd490')
+            DerProd.attributes['kd490_UNITS'] = 'm^-1'
+            kdDS.columns['Datetime'] = dateTime
+            kdDS.columns['Datetag'] = dateTag
+            kdDS.columns['Timetag2'] = timeTag2
+
+            # Vectorwise
+            kd490 = L2kd490(Rrs488, Rrs547)
+
+            kdDS.columns['kd490'] = kd490.tolist()
+            kdDS.columnsToDataset()
 
         # pic
+        ''' Not yet implemented '''
         if ConfigFile.products["bL2Prodpic"]:
             msg = "Processing pic"
             print(msg)
             Utilities.writeLogFile(msg)  
-            L2pic.L2pic(root)
+
+            picDS = DerProd.addDataset('pic')
+            DerProd.attributes['pic_UNITS'] = 'mol m^-3'
+            picDS.columns['Datetime'] = dateTime
+            picDS.columns['Datetag'] = dateTag
+            picDS.columns['Timetag2'] = timeTag2
+            
+            pic = L2pic(root)
+            picDS.columns['pic'] = pic
+            picDS.columnsToDataset()
 
         # poc
         if ConfigFile.products["bL2Prodpoc"]:
             msg = "Processing poc"
             print(msg)
             Utilities.writeLogFile(msg)  
-            L2poc.L2poc(root)
+            
+            pocDS = DerProd.addDataset('poc')
+            DerProd.attributes['poc_UNITS'] = 'mg m^-3'
+            pocDS.columns['Datetime'] = dateTime
+            pocDS.columns['Datetag'] = dateTag
+            pocDS.columns['Timetag2'] = timeTag2
+
+            # Vectorwise
+            poc = L2poc(Rrs443, Rrs555)
+
+            pocDS.columns['poc'] = poc.tolist()
+            pocDS.columnsToDataset()
 
         # # par
         # if ConfigFile.products["bL2Prodpar"]:
@@ -59,7 +119,27 @@ class ProcessL2OCproducts():
             msg = "Processing ipar"
             print(msg)
             Utilities.writeLogFile(msg)  
-            L2ipar.L2ipar(root)
+
+            Es_ds = root.getGroup("IRRADIANCE").datasets["ES_HYPER"]
+            keys = list(Es_ds.columns.keys())
+            values = list(Es_ds.columns.values())
+            waveStr = keys[3:]
+            Es = np.array(values[3:])
+            wavelength = np.array([float(i) for i in waveStr])
+            fullSpec = np.array(list(range(400, 701)))
+
+            iparDS = DerProd.addDataset('ipar')
+            DerProd.attributes['ipar_UNITS'] = 'Einstein m^-2 d^-1'
+            iparDS.columns['Datetime'] = dateTime
+            iparDS.columns['Datetag'] = dateTag
+            iparDS.columns['Timetag2'] = timeTag2
+
+            ipar = []
+            for n in range(0, len(dateTime)):
+                ipar.append(L2ipar(wavelength, Es[:,n], fullSpec))
+
+            iparDS.columns['ipar'] = ipar
+            iparDS.columnsToDataset()
 
         # avw
         # Vandermuelen et al. 2020
@@ -67,7 +147,28 @@ class ProcessL2OCproducts():
             msg = "Processing avw"
             print(msg)
             Utilities.writeLogFile(msg)  
-            L2avw.L2avw(root)
+
+            keys = list(RrsHYPER.columns.keys())
+            values = list(RrsHYPER.columns.values())
+            waveStr = keys[3:]
+            wavelength = np.array([float(i) for i in waveStr])
+            Rrs = np.array(values[3:])
+
+            avwDS = DerProd.addDataset('avw')
+            DerProd.attributes['avw_UNITS'] = 'nm'
+            DerProd.attributes['lambda_max_UNITS'] = 'nm'
+            DerProd.attributes['brightness_UNITS'] = 'nm/sr'
+            avwDS.columns['Datetime'] = dateTime
+            avwDS.columns['Datetag'] = dateTag
+            avwDS.columns['Timetag2'] = timeTag2
+
+            # Vectorwise
+            avw, lambda_max, brightness = L2avw(wavelength, Rrs)
+
+            avwDS.columns['avw'] = avw
+            avwDS.columns['lambda_max'] = lambda_max
+            avwDS.columns['brightness'] = brightness
+            avwDS.columnsToDataset()
 
         # GIOP
 
@@ -81,8 +182,7 @@ class ProcessL2OCproducts():
             parameters from ancillary file:
 
             eta: powerlaw slope of bbp
-            zeta: ap(411)/aph(443)
-            xi: adg(411)/aph(443) 
+            S: CDOM slope
             
             Also, empirical parameters could be set.
             For now, structure this as QAAv6 for MODIS bands'''
@@ -90,9 +190,99 @@ class ProcessL2OCproducts():
         if ConfigFile.products["bL2Prodqaa"]:
             msg = "Processing qaa"
             print(msg)
-            Utilities.writeLogFile(msg)  
-            L2qaa.L2qaa(root)
+            Utilities.writeLogFile(msg)                              
 
+            # For fun, let's apply it to the full hyperspectral dataset            
+            keys = list(RrsHYPER.columns.keys())
+            values = list(RrsHYPER.columns.values())
+            waveStr = keys[3:]
+            wavelength = np.array([float(i) for i in waveStr])
+            Rrs = np.array(values[3:])
+            
+            T = Ancillary.datasets["SST"].columns["SST"]
+            S = Ancillary.datasets["SAL"].columns["SAL"]
+    
+            a = np.empty(np.shape(Rrs))
+            adg = np.empty(np.shape(Rrs))
+            aph = np.empty(np.shape(Rrs))
+            b = np.empty(np.shape(Rrs))
+            bb = np.empty(np.shape(Rrs))
+            bbp = np.empty(np.shape(Rrs))
+            c = np.empty(np.shape(Rrs))
+            for i in range(0, len(dateTime)):
+                
+                a[:,i], adg[:,i], aph[:,i], b[:,i], bb[:,i], bbp[:,i], c[:,i], msg = \
+                    L2qaa(Rrs412[i], Rrs443[i], Rrs488[i], Rrs555[i], Rrs667[i], \
+                        Rrs[:,i], wavelength, \
+                            T[i], S[i])
+                if msg:
+                    Utilities.writeLogFile(msg)  
+                
+            ''' There must be a more elegant way to work on the data, then convert to column '''
+
+            if ConfigFile.products["bL2ProdaQaa"]:
+                DerProd.attributes['a_UNITS'] = '1/m'
+                aDS = DerProd.addDataset('qaa_a')
+                aDS.columns['Datetime'] = dateTime
+                aDS.columns['Datetag'] = dateTag
+                aDS.columns['Timetag2'] = timeTag2
+                a = dict(zip(waveStr,a.tolist()))
+                for key, value in a.items(): aDS.columns[key] = value
+                aDS.columnsToDataset()
+            if ConfigFile.products["bL2ProdadgQaa"]:
+                DerProd.attributes['adg_UNITS'] = '1/m'
+                adgDS = DerProd.addDataset('qaa_adg')
+                adgDS.columns['Datetime'] = dateTime
+                adgDS.columns['Datetag'] = dateTag
+                adgDS.columns['Timetag2'] = timeTag2
+                adg = dict(zip(waveStr,adg.tolist()))
+                for key, value in adg.items(): adgDS.columns[key] = value
+                adgDS.columnsToDataset()
+            if ConfigFile.products["bL2ProdaphQaa"]:
+                DerProd.attributes['aph_UNITS'] = '1/m'
+                aphDS = DerProd.addDataset('qaa_aph')
+                aphDS.columns['Datetime'] = dateTime
+                aphDS.columns['Datetag'] = dateTag
+                aphDS.columns['Timetag2'] = timeTag2
+                aph = dict(zip(waveStr,aph.tolist()))
+                for key, value in aph.items(): aphDS.columns[key] = value
+                aphDS.columnsToDataset()
+            if ConfigFile.products["bL2ProdbQaa"]:
+                DerProd.attributes['b_UNITS'] = '1/m'
+                bDS = DerProd.addDataset('qaa_b')
+                bDS.columns['Datetime'] = dateTime
+                bDS.columns['Datetag'] = dateTag
+                bDS.columns['Timetag2'] = timeTag2    
+                b = dict(zip(waveStr,b.tolist()))
+                for key, value in b.items(): bDS.columns[key] = value
+                bDS.columnsToDataset()        
+            if ConfigFile.products["bL2ProdbbQaa"]:
+                DerProd.attributes['bb_UNITS'] = '1/m'
+                bbDS = DerProd.addDataset('qaa_bb')
+                bbDS.columns['Datetime'] = dateTime
+                bbDS.columns['Datetag'] = dateTag
+                bbDS.columns['Timetag2'] = timeTag2   
+                bb = dict(zip(waveStr,bb.tolist()))
+                for key, value in bb.items(): bbDS.columns[key] = value
+                bbDS.columnsToDataset()         
+            if ConfigFile.products["bL2ProdbbpQaa"]:
+                DerProd.attributes['bbp_UNITS'] = '1/m'
+                bbpDS = DerProd.addDataset('qaa_bbp')
+                bbpDS.columns['Datetime'] = dateTime
+                bbpDS.columns['Datetag'] = dateTag
+                bbpDS.columns['Timetag2'] = timeTag2 
+                bbp = dict(zip(waveStr,bbp.tolist()))
+                for key, value in bbp.items(): bbpDS.columns[key] = value
+                bbpDS.columnsToDataset()           
+            if ConfigFile.products["bL2ProdcQaa"]:
+                DerProd.attributes['c_UNITS'] = '1/m'
+                cDS = DerProd.addDataset('qaa_c')
+                cDS.columns['Datetime'] = dateTime
+                cDS.columns['Datetag'] = dateTag
+                cDS.columns['Timetag2'] = timeTag2    
+                c = dict(zip(waveStr,c.tolist()))
+                for key, value in c.items(): cDS.columns[key] = value
+                cDS.columnsToDataset()
 
 
 
