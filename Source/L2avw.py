@@ -22,7 +22,7 @@ def L2avw(wavelength, Rrs):
         wavelength = np.transpose(np.matlib.repmat(wavelength,np.shape(Rrs)[1],1))
    
     avw =  np.sum( Rrs / np.sum( Rrs/wavelength, axis = 0) , axis = 0).tolist() 
-    lambda_max = wavelength[np.argmax(Rrs, axis=0)].tolist()
+    lambda_max = wavelength[np.argmax(Rrs, axis=0), 0].tolist()
     brightness =  np.trapz(Rrs, wavelength, axis=0).tolist() 
 
     return avw, lambda_max, brightness

@@ -357,8 +357,8 @@ class Controller:
         
         root.attributes['In_Filepath'] = inFilePath
         root = ProcessL2.processL2(root, ancillaryData)
+        
 
-        # Create Plots
         dirpath = os.getcwd()
         outPath, filename = os.path.split(outFilePath)
         if root is not None:
@@ -367,6 +367,9 @@ class Controller:
                 station = str( round(station[0]*100)/100 )
                 filename = f'STATION_{station}_{filename}'
                 outFilePath = os.path.join(outPath,filename)
+
+            # Create Plots
+            # Radiometry
             if ConfigFile.settings['bL2PlotRrs']==1:                        
                 Utilities.plotRadiometry(root, dirpath, filename, rType='Rrs', plotDelta = True)
             if ConfigFile.settings['bL2PlotnLw']==1:            
@@ -377,6 +380,12 @@ class Controller:
                 Utilities.plotRadiometry(root, dirpath, filename, rType='LI', plotDelta = True)
             if ConfigFile.settings['bL2PlotLt']==1:
                 Utilities.plotRadiometry(root, dirpath, filename, rType='LT', plotDelta = True)
+
+            # IOPs
+            if 1==1:
+                Utilities.plotIOPs(root, dirpath, filename, rType='adg', plotDelta = True)
+                Utilities.plotIOPs(root, dirpath, filename, rType='aph', plotDelta = True)
+                Utilities.plotIOPs(root, dirpath, filename, rType='bbp', plotDelta = True)
 
         # Write output file
         if root is not None:

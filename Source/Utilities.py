@@ -573,7 +573,7 @@ class Utilities:
             Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_HYPER_delta')
-            plotRange = [380, 800]
+            plotRange = [340, 800]
             if ConfigFile.settings['bL2WeightMODISA']:
                 Data_MODISA = group.getDataset(f'{rType}_MODISA')
                 if plotDelta:
@@ -605,7 +605,7 @@ class Utilities:
             Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_HYPER_delta')
-            plotRange = [380, 800]   
+            plotRange = [340, 800]   
             if ConfigFile.settings['bL2WeightMODISA']:        
                 Data_MODISA = group.getDataset(f'{rType}_MODISA')
                 if plotDelta:
@@ -1079,6 +1079,146 @@ class Utilities:
         plt.close()
 
         return badTimes
+
+    @staticmethod
+    def plotIOPs(root, dirpath, filename, rType, plotDelta = False):
+
+        # To Do: uncertainty propagation
+        outDir = MainConfig.settings["outDir"]
+        # If default output path is used, choose the root HyperInSPACE path, and build on that
+        if os.path.abspath(outDir) == os.path.join(dirpath,'Data'):
+            outDir = dirpath
+
+        if not os.path.exists(os.path.join(outDir,'Plots','L2')):
+            os.makedirs(os.path.join(outDir,'Plots','L2'))        
+        plotdir = os.path.join(outDir,'Plots','L2')
+
+        font = {'family': 'serif',
+            'color':  'darkred',
+            'weight': 'normal',
+            'size': 16,
+            }
+
+        cmap = cm.get_cmap("jet")        
+
+        # dataDelta = None
+        
+        group = root.getGroup("DERIVED_PRODUCTS")
+        # if rType=='a':
+        #     print('Plotting absorption')            
+            
+        plotRange = [340, 700]
+        qaaName = f'bL2Prod{rType}Qaa'
+        giopName = f'bL2Prod{rType}Giop'
+        if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products[qaaName]:        
+            DataQAA = group.getDataset(f'qaa_{rType}')
+            # if plotDelta:
+            #     dataDelta = group.getDataset(f'{rType}_HYPER_delta')
+
+            xQAA = []             
+            waveQAA = []
+            # For each waveband
+            for k in DataQAA.data.dtype.names:
+                if Utilities.isFloat(k):
+                    if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                        xQAA.append(k)
+                        waveQAA.append(float(k))
+            totalQAA = DataQAA.data.shape[0]
+            colorQAA = iter(cmap(np.linspace(0,1,totalQAA)))
+
+        if ConfigFile.products["bL2Prodgiop"] and ConfigFile.products[giopName]:
+            DataGIOP = group.getDataset(f'giop_{rType}')
+            # if plotDelta:
+            #     dataDelta = group.getDataset(f'{rType}_HYPER_delta')       
+
+            xGIOP = []
+            waveGIOP = []
+            # For each waveband
+            for k in DataGIOP.data.dtype.names:
+                if Utilities.isFloat(k):
+                    if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                        xGIOP.append(k)
+                        waveGIOP.append(float(k))
+            totalGIOP = DataQAA.data.shape[0]
+            colorGIOP = iter(cmap(np.linspace(0,1,totalGIOP)))
+        
+        maxIOP = 0
+        minIOP = 0        
+
+        # Plot
+        plt.figure(1, figsize=(8,6))
+        if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products[qaaName]:
+            for i in range(totalQAA):                
+                y = []
+                # dy = []            
+                for k in xQAA:                
+                    y.append(DataQAA.data[k][i])
+                    # if plotDelta:
+                    #     dy.append(dataDelta.data[k][i])
+
+                c=next(colorQAA)
+                if max(y) > maxIOP:
+                    maxIOP = max(y)+0.1*max(y)
+                # if rType == 'LI' and maxIOP > 20:
+                #     maxIOP = 20
+
+                # Plot the Hyperspectral spectrum
+                plt.plot(waveQAA, y, 'k', c=c, zorder=-1)
+                
+                # if plotDelta:
+                #     # Generate the polygon for uncertainty bounds
+                #     deltaPolyx = wave + list(reversed(wave))
+                #     dPolyyPlus = [(y[i]+dy[i]) for i in range(len(y))]
+                #     dPolyyMinus = [(y[i]-dy[i]) for i in range(len(y))]
+                #     deltaPolyyPlus = y + list(reversed(dPolyyPlus))
+                #     deltaPolyyMinus = y + list(reversed(dPolyyMinus))
+                #     plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.2, c=c, zorder=-1)
+                #     plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.2, c=c, zorder=-1)
+        if ConfigFile.products["bL2Prodgiop"] and ConfigFile.products[giopName]:
+            for i in range(totalGIOP):   
+                y = []
+                # dy = []            
+                for k in xGIOP:                
+                    y.append(DataGIOP.data[k][i])
+                    # if plotDelta:
+                    #     dy.append(dataDelta.data[k][i])
+
+                c=next(colorGIOP)
+                if max(y) > maxIOP:
+                    maxIOP = max(y)+0.1*max(y)
+                # if rType == 'LI' and maxIOP > 20:
+                #     maxIOP = 20
+
+                # Plot the Hyperspectral spectrum
+                plt.plot(waveGIOP, y, 'k', c=c, ls='--', zorder=-1)
+
+
+ 
+        axes = plt.gca()
+        axes.set_title(filename, fontdict=font)
+        axes.set_ylim([minIOP, maxIOP])
+        
+        plt.xlabel('wavelength (nm)', fontdict=font)
+        plt.ylabel(f'{rType} [1/m]', fontdict=font)
+
+        # Tweak spacing to prevent clipping of labels
+        plt.subplots_adjust(left=0.15)
+        plt.subplots_adjust(bottom=0.15)
+
+        note = f'Interval: {ConfigFile.settings["fL2TimeInterval"]} s'
+        axes.text(0.95, 0.95, note,
+        verticalalignment='top', horizontalalignment='right',
+        transform=axes.transAxes,
+        color='black', fontdict=font)
+        axes.grid()
+
+        # plt.show() # --> QCoreApplication::exec: The event loop is already running
+
+        # Save the plot
+        filebasename = filename.split('_')
+        fp = os.path.join(plotdir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
+        plt.savefig(fp)
+        plt.close() # This prevents displaying the plot on screen with certain IDEs    
 
     
 

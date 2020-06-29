@@ -4,14 +4,14 @@ import numpy as np
 
 from Water_IOPs import water_iops
 
-def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, T, S):
+def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, SST, SAL):
     ''' Use weighted MODIS Aqua bands to calculate IOPs using
         QAA_v6 '''
 
     # Inputs: 
     #   RrsXXX: (float) above water remote sensing reflectance at XXX nm
     #   RrsHyper: (1D numpy array) hyperspectral above water remote sensing reflectance
-    #   wavelength: (1D array) length of RrsHyper
+    #   wavelength: (1D array) length of RrsHyper; will be truncated to Pope&Fry/Smith&Baker pure water
     #   T: (float) sea surface temperature
     #   S: (float) sea surface salinity
     #
@@ -21,8 +21,20 @@ def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, T, S):
     # Adjustable empirical coefficient set-up. Many coefficients remain hard
     #   coded as in SeaDAS qaa.c
 
+    # Maximum range based on P&F/S&B
+    minMax = [380, 800]
+    if min(wavelength) < minMax[0] or max(wavelength) > minMax[1]:
+        waveTemp = []
+        RrsHyperTemp = []
+        for i, wl in enumerate(wavelength):
+            if wl >= minMax[0] and wl <= minMax[1]:
+                waveTemp.append(wl)
+                RrsHyperTemp.append(RrsHyper[i])
+        wavelength = np.array(waveTemp)
+        RrsHyper = np.array(RrsHyperTemp)
+
     # Screen hyperspectral Rrs for zeros
-    RrsHyper[RrsHyper < 1e-6] = 1e-6
+    RrsHyper[RrsHyper < 1e-5] = 1e-5
 
     # Step 1
     g0 = 0.08945
@@ -37,11 +49,11 @@ def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, T, S):
     # Pure seawater. Pope & Fry adjusted for S&T using Sullivan et al. 2006.
     #   (Now considering using inverted values from Lee et al. 2015...)
     fp = os.path.join(os.path.abspath('.'), 'Data', 'Water_Absorption.sb') # <--- Set path to P&F water
-    a_sw412, bb_sw412 = water_iops(fp, [412], T, S)
-    a_sw443, bb_sw443 = water_iops(fp, [443], T, S)
-    a_sw555, bb_sw555 = water_iops(fp, [555], T, S)
-    a_sw667, bb_sw667 = water_iops(fp, [667], T, S)
-    a_sw, bb_sw = water_iops(fp, wavelength, T, S)
+    a_sw412, bb_sw412 = water_iops(fp, [412], SST, SAL)
+    a_sw443, bb_sw443 = water_iops(fp, [443], SST, SAL)
+    a_sw555, bb_sw555 = water_iops(fp, [555], SST, SAL)
+    a_sw667, bb_sw667 = water_iops(fp, [667], SST, SAL)
+    a_sw, bb_sw = water_iops(fp, wavelength, SST, SAL)
     
 
     msg = []
@@ -57,7 +69,7 @@ def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, T, S):
 
 
     # Step 0        
-    rrs = RrsHyper / (0.52 + 1.7 * RrsHyper)
+    rrs =   RrsHyper / (0.52 + 1.7 * RrsHyper)
     rrs412 = Rrs412 / (0.52 + 1.7 * Rrs412)
     rrs443 = Rrs443 / (0.52 + 1.7 * Rrs443)
     rrs488 = Rrs488 / (0.52 + 1.7 * Rrs488)
@@ -88,15 +100,16 @@ def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, T, S):
         bbp0 = u667*a667 / (1 - u667) - bb_sw667
 
     # Step 4
-    eta =  2*( 1 - 1.12 * np.exp( -9*rrs443/rrs555 ))
+    eta =  2*( 1 - 1.2 * np.exp( -0.9*rrs443/rrs555 ))
 
     # Step 5
-    bbp = np.power(bbp0*( lamb0 / wavelength ), eta)
-    bbp412 = np.power(bbp0*( lamb0 / 412 ), eta)
-    bbp443 = np.power(bbp0*( lamb0 / 443 ), eta)
+    bbp = bbp0 * np.power(( lamb0 / wavelength ), eta)
+    bb = bbp + bb_sw
+    bbp412 = bbp0 * np.power(( lamb0 / 412 ), eta)
+    bbp443 = bbp0 * np.power(( lamb0 / 443 ), eta)
 
     # Step 6
-    a = (1 - u) * ( bb_sw + bbp ) / u
+    a = (1 - u) *  bb / u
     a412 = (1 - u412) * ( bb_sw412 + bbp412 ) / u412
     a443 = (1 - u443) * ( bb_sw443 + bbp443 ) / u443
 
@@ -105,16 +118,15 @@ def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, T, S):
 
     # Step 8
     S1 = S + ( 0.002 / (0.6 + rrs443/rrs555) )
-    xi = np.exp( S1 * (442.5 - 415.5))
+    xi = np.exp( S1 * (443 - 412))
 
     #Step 9
     ag443 = ( a412 - zeta * a443 ) / (xi - zeta) - ( a_sw412 - zeta * a_sw443 ) / ( xi - zeta)
 
     # Step 10
-    adg = ag443 * np.exp( -S * (wavelength - 443))
+    adg = ag443 * np.exp( -S1 * (wavelength - 443))
     aph = a - adg - a_sw
-
-    bb = bbp - bb_sw
+    
     b = 2.0 * bb
     c = a + b
         

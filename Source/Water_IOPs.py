@@ -43,7 +43,7 @@ def water_iops(fp, wave,T,S):
     #Pope and Frye pure water absorption 380-730 nm, then Smith and Baker 730-800 nm
     aw_sb = readSB(fp, no_warn=True)
     a_pw = scipy.interpolate.interp1d(aw_sb.data['wavelength'], aw_sb.data['aw'], \
-        kind='linear', bounds_error=False, fill_value=0.0)(wave)
+        kind='linear')(wave)
 
     # #Morel water backscattering
     #     #wl_b=[380	390	400	410	420	430	440	450	460	470	480	490	500	510	520	530	540	550	560	570	580	590	600	610	620	630	640	650	660	670	680	690	700 750];

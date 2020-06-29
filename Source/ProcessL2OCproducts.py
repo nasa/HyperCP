@@ -15,6 +15,7 @@ from L2qaa import L2qaa
 
 class ProcessL2OCproducts():
     ''' Product algorithms can be found at https://oceancolor.gsfc.nasa.gov/atbd/ '''
+    # To Do: Uncertainty propagation
     
     @staticmethod
     def procProds(root):
@@ -201,6 +202,17 @@ class ProcessL2OCproducts():
             
             T = Ancillary.datasets["SST"].columns["SST"]
             S = Ancillary.datasets["SAL"].columns["SAL"]
+
+            # Maximum range based on P&F/S&B
+            minMax = [380, 800]
+            waveTemp = []
+            RrsHyperTemp = []
+            for i, wl in enumerate(wavelength):
+                if wl >= minMax[0] and wl <= minMax[1]:
+                    waveTemp.append(wl)
+                    RrsHyperTemp.append(Rrs[i])
+            wavelength = np.array(waveTemp)
+            Rrs = np.array(RrsHyperTemp)
     
             a = np.empty(np.shape(Rrs))
             adg = np.empty(np.shape(Rrs))
@@ -218,7 +230,7 @@ class ProcessL2OCproducts():
                 if msg:
                     Utilities.writeLogFile(msg)  
                 
-            ''' There must be a more elegant way to work on the data, then convert to column '''
+            ''' There must be a more elegant way to work on the dataset/data, then convert to column '''
 
             if ConfigFile.products["bL2ProdaQaa"]:
                 DerProd.attributes['a_UNITS'] = '1/m'
