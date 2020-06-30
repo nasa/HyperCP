@@ -4,12 +4,14 @@ import numpy as np
 from ConfigFile import ConfigFile
 from Utilities import Utilities
 from L2chlor_a import L2chlor_a
-from L2kd490 import L2kd490
 from L2pic import L2pic
 from L2poc import L2poc
-# from L2par import L2par
+from L2gocad import L2gocad
+
+from L2kd490 import L2kd490
 from L2ipar import L2ipar
 from L2avw import L2avw
+# from L2giop import L2giop
 from L2qaa import L2qaa
 
 
@@ -28,6 +30,7 @@ class ProcessL2OCproducts():
         Rrs412 = Reflectance.datasets["Rrs_MODISA"].columns['412']
         Rrs443 = Reflectance.datasets["Rrs_MODISA"].columns['443']
         Rrs488 = Reflectance.datasets["Rrs_MODISA"].columns['488']
+        Rrs531 = Reflectance.datasets["Rrs_MODISA"].columns['531']
         Rrs547 = Reflectance.datasets["Rrs_MODISA"].columns['551'] # 551 in name only
         Rrs555 = Reflectance.datasets["Rrs_MODISA"].columns['555']
         Rrs667 = Reflectance.datasets["Rrs_MODISA"].columns['667'].copy()
@@ -58,24 +61,7 @@ class ProcessL2OCproducts():
             chlDS.columns['chlor_a'] = chlor_a
             chlDS.columnsToDataset()
 
-        # kd490
-        if ConfigFile.products["bL2Prodkd490"]:
-            msg = "Processing kd490"
-            print(msg)
-            Utilities.writeLogFile(msg)  
-
-            kdDS = DerProd.addDataset('kd490')
-            DerProd.attributes['kd490_UNITS'] = 'm^-1'
-            kdDS.columns['Datetime'] = dateTime
-            kdDS.columns['Datetag'] = dateTag
-            kdDS.columns['Timetag2'] = timeTag2
-
-            # Vectorwise
-            kd490 = L2kd490(Rrs488, Rrs547)
-
-            kdDS.columns['kd490'] = kd490.tolist()
-            kdDS.columnsToDataset()
-
+       
         # pic
         ''' Not yet implemented '''
         if ConfigFile.products["bL2Prodpic"]:
@@ -111,9 +97,23 @@ class ProcessL2OCproducts():
             pocDS.columns['poc'] = poc.tolist()
             pocDS.columnsToDataset()
 
-        # # par
-        # if ConfigFile.products["bL2Prodpar"]:
-        #     L2par.L2par(root)
+        # kd490
+        if ConfigFile.products["bL2Prodkd490"]:
+            msg = "Processing kd490"
+            print(msg)
+            Utilities.writeLogFile(msg)  
+
+            kdDS = DerProd.addDataset('kd490')
+            DerProd.attributes['kd490_UNITS'] = 'm^-1'
+            kdDS.columns['Datetime'] = dateTime
+            kdDS.columns['Datetag'] = dateTag
+            kdDS.columns['Timetag2'] = timeTag2
+
+            # Vectorwise
+            kd490 = L2kd490(Rrs488, Rrs547)
+
+            kdDS.columns['kd490'] = kd490.tolist()
+            kdDS.columnsToDataset()
 
         # ipar
         if ConfigFile.products["bL2Prodipar"]:
@@ -141,7 +141,7 @@ class ProcessL2OCproducts():
 
             iparDS.columns['ipar'] = ipar
             iparDS.columnsToDataset()
-
+        
         # avw
         # Vandermuelen et al. 2020
         if ConfigFile.products["bL2Prodavw"]:
@@ -171,19 +171,70 @@ class ProcessL2OCproducts():
             avwDS.columns['brightness'] = brightness
             avwDS.columnsToDataset()
 
+        # CDOM (GOCAD)
+        ''' Base on Aurin et al. 2018 MLRs for global dataset (GOCAD)'''
+
+        if ConfigFile.products["bL2Prodcdom"]:
+            msg = "Processing CDOM, Sg, DOC"
+            print(msg)
+            Utilities.writeLogFile(msg)                                          
+            
+            SAL = Ancillary.datasets["SAL"].columns["SAL"]
+
+            # ag = np.empty()
+            # b = np.empty(np.shape(Rrs))
+            # bb = np.empty(np.shape(Rrs))
+            # bbp = np.empty(np.shape(Rrs))
+            # c = np.empty(np.shape(Rrs))
+            # for i in range(0, len(dateTime)):
+                
+            waveStr = ['275', '355', '380', '412', '443', '488']
+            waveStrS = ['275', '300', '412']
+
+            # Vectorwise
+            ag, Sg, doc = \
+                L2gocad(Rrs443, Rrs488, Rrs531, Rrs547, SAL, fill=-9999)
+            
+            if ConfigFile.products["bL2Proda275"] or ConfigFile.products["bL2Proda355"] or \
+                ConfigFile.products["bL2Proda380"] or ConfigFile.products["bL2Proda412"] or \
+                    ConfigFile.products["bL2Proda243"] or ConfigFile.products["bL2Proda443"]:
+                DerProd.attributes['ag_UNITS'] = '1/m'
+                agDS = DerProd.addDataset('gocad_ag')
+                agDS.columns['Datetime'] = dateTime
+                agDS.columns['Datetag'] = dateTag
+                agDS.columns['Timetag2'] = timeTag2
+                ag = dict(zip(waveStr,ag.tolist()))
+                for key, value in ag.items(): agDS.columns[key] = value
+                agDS.columnsToDataset()
+            if ConfigFile.products["bL2ProdSg275"] or ConfigFile.products["bL2ProdSg300"] or \
+                ConfigFile.products["bL2ProdSg412"]:
+                DerProd.attributes['Sg_UNITS'] = '1/nm'
+                SgDS = DerProd.addDataset('gocad_Sg')
+                SgDS.columns['Datetime'] = dateTime
+                SgDS.columns['Datetag'] = dateTag
+                SgDS.columns['Timetag2'] = timeTag2
+                Sg = dict(zip(waveStrS,Sg.tolist()))
+                for key, value in Sg.items(): SgDS.columns[key] = value
+                SgDS.columnsToDataset()
+            if ConfigFile.products["bL2ProdDOC"]:
+                DerProd.attributes['doc_UNITS'] = '1/m'
+                docDS = DerProd.addDataset('qaa_c')
+                docDS.columns['Datetime'] = dateTime
+                docDS.columns['Datetag'] = dateTag
+                docDS.columns['Timetag2'] = timeTag2 
+                docDS.columns['doc'] = doc.tolist()
+                docDS.columnsToDataset()
+
+
+
         # GIOP
 
 
 
         # QAA
-        ''' Is there a hyperspectral parameterization of the QAA? I see
-            Guoqing Wang and Ping worked on a related poster in 2014... '''
-
-        ''' ToDo: In the future, this should have inputs to apply IOP 
-            parameters from ancillary file:
-
+        '''
             eta: powerlaw slope of bbp
-            S: CDOM slope
+            S: CDOM base slope
             
             Also, empirical parameters could be set.
             For now, structure this as QAAv6 for MODIS bands'''
@@ -213,6 +264,7 @@ class ProcessL2OCproducts():
                     RrsHyperTemp.append(Rrs[i])
             wavelength = np.array(waveTemp)
             Rrs = np.array(RrsHyperTemp)
+            waveStr = [f'{x}' for x in wavelength]
     
             a = np.empty(np.shape(Rrs))
             adg = np.empty(np.shape(Rrs))

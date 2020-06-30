@@ -99,6 +99,20 @@ class ConfigFile:
         print("bL2Prodpoc", ConfigFile.products["bL2Prodpoc"])
         print("bL2Prodipar", ConfigFile.products["bL2Prodipar"])
         print("bL2Prodavw", ConfigFile.products["bL2Prodavw"])
+
+        print("bL2Prodcdom", ConfigFile.products["bL2Prodcdom"])
+        print("bL2Prodag275", ConfigFile.products["bL2Prodag275"])
+        print("bL2Prodag355", ConfigFile.products["bL2Prodag355"])
+        print("bL2Prodag380", ConfigFile.products["bL2Prodag380"])
+        print("bL2Prodag412", ConfigFile.products["bL2Prodag412"])
+        print("bL2Prodag443", ConfigFile.products["bL2Prodag443"])
+        print("bL2Prodag488", ConfigFile.products["bL2Prodag488"])
+        print("bL2ProdSg275", ConfigFile.products["bL2ProdSg275"])
+        print("bL2ProdSg300", ConfigFile.products["bL2ProdSg300"])
+        print("bL2ProdSg412", ConfigFile.products["bL2ProdSg412"])
+        print("bL2ProdDOC", ConfigFile.products["bL2ProdDOC"])
+
+
         print("bL2Prodgiop", ConfigFile.products["bL2Prodgiop"])
         print("bL2ProdaGiop", ConfigFile.products["bL2ProdaGiop"])
         print("bL2ProdadgGiop", ConfigFile.products["bL2ProdadgGiop"])
@@ -226,6 +240,18 @@ class ConfigFile:
         ConfigFile.products["bL2Prodpoc"] = 0
         ConfigFile.products["bL2Prodipar"] = 0
         ConfigFile.products["bL2Prodavw"] = 0
+        ConfigFile.products["bL2Prodcdom"] = 0
+        ConfigFile.products["bL2Prodag275"] = 0
+        ConfigFile.products["bL2Prodag355"] = 0
+        ConfigFile.products["bL2Prodag380"] = 0
+        ConfigFile.products["bL2Prodag412"] = 0
+        ConfigFile.products["bL2Prodag443"] = 0
+        ConfigFile.products["bL2Prodag488"] = 0
+        ConfigFile.products["bL2ProdSg275"] = 0
+        ConfigFile.products["bL2ProdSg300"] = 0
+        ConfigFile.products["bL2ProdSg412"] = 0
+        ConfigFile.products["bL2ProdDOC"] = 0
+
         ConfigFile.products["bL2Prodgiop"] = 0
         ConfigFile.products["bL2ProdaGiop"] = 0
         ConfigFile.products["bL2ProdadgGiop"] = 0

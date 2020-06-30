@@ -20,28 +20,23 @@ class OCproductsWindow(QtWidgets.QDialog):
         linkOCWebLabel.setOpenExternalLinks(True)
         satNoteLabel = QtWidgets.QLabel(
             "Algorithms requiring satellite bands will activate MODIS Aqua waveband convolution" \
-                " processing in L2")
+                " processing in L2")       
 
-        geoPhysLabel = QtWidgets.QLabel("Geophysical Parameters")
-        geoPhysLabel_font = geoPhysLabel.font()
-        geoPhysLabel_font.setPointSize(12)
-        geoPhysLabel_font.setBold(True)
-        geoPhysLabel.setFont(geoPhysLabel_font)
+        biochemLabel = QtWidgets.QLabel("Biogeochemical Products")
+        biochemLabel_font = biochemLabel.font()
+        biochemLabel_font.setPointSize(12)
+        biochemLabel_font.setBold(True)
+        biochemLabel.setFont(biochemLabel_font)
+        biochemLabel1 = QtWidgets.QLabel("    & Empirical IOPs")
+        biochemLabel_font = biochemLabel1.font()
+        biochemLabel_font.setPointSize(12)
+        biochemLabel_font.setBold(True)
+        biochemLabel1.setFont(biochemLabel_font)
 
         oc3mLabel = QtWidgets.QLabel("chlor_a", self)     
         self.oc3mCheckBox = QtWidgets.QCheckBox("", self)              
         if int(ConfigFile.products["bL2Prodoc3m"]) == 1:
-            self.oc3mCheckBox.setChecked(True)       
-
-        # aotLabel = QtWidgets.QLabel("aot", self)     
-        # self.aotCheckBox = QtWidgets.QCheckBox("", self)              
-        # if int(ConfigFile.products["bL2Prodaot"]) == 1:
-        #     self.aotCheckBox.setChecked(True)      
-
-        kd490Label = QtWidgets.QLabel("kd490", self)     
-        self.kd490CheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.products["bL2Prodkd490"]) == 1:
-            self.kd490CheckBox.setChecked(True)
+            self.oc3mCheckBox.setChecked(True) 
 
         picLabel = QtWidgets.QLabel("pic", self)     
         self.picCheckBox = QtWidgets.QCheckBox("", self)              
@@ -52,24 +47,82 @@ class OCproductsWindow(QtWidgets.QDialog):
         self.pocCheckBox = QtWidgets.QCheckBox("", self)              
         if int(ConfigFile.products["bL2Prodpoc"]) == 1:
             self.pocCheckBox.setChecked(True)
+        
+        cdomLabel = QtWidgets.QLabel("GOCAD (Aurin et al. 2018)", self)     
+        self.cdomCheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2Prodcdom"]) == 1:
+            self.cdomCheckBox.setChecked(True)
+        self.ag275Label = QtWidgets.QLabel("     ag275", self)     
+        self.ag275CheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2Prodag275"]) == 1:
+            self.ag275CheckBox.setChecked(True)
+        self.ag355Label = QtWidgets.QLabel("     ag355", self)     
+        self.ag355CheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2Prodag355"]) == 1:
+            self.ag355CheckBox.setChecked(True)
+        self.ag380Label = QtWidgets.QLabel("     ag380", self)     
+        self.ag380CheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2Prodag380"]) == 1:
+            self.ag380CheckBox.setChecked(True)
+        self.ag412Label = QtWidgets.QLabel("     ag412", self)     
+        self.ag412CheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2Prodag412"]) == 1:
+            self.ag412CheckBox.setChecked(True)
+        self.ag443Label = QtWidgets.QLabel("     ag443", self)     
+        self.ag443CheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2Prodag443"]) == 1:
+            self.ag443CheckBox.setChecked(True)
+        self.ag488Label = QtWidgets.QLabel("     ag488", self)     
+        self.ag488CheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2Prodag488"]) == 1:
+            self.ag488CheckBox.setChecked(True)
+        self.Sg275Label = QtWidgets.QLabel("     Sg275", self)     
+        self.Sg275CheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2ProdSg275"]) == 1:
+            self.Sg275CheckBox.setChecked(True)
+        self.Sg300Label = QtWidgets.QLabel("     Sg300", self)     
+        self.Sg300CheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2ProdSg300"]) == 1:
+            self.Sg300CheckBox.setChecked(True)
+        self.Sg412Label = QtWidgets.QLabel("     Sg412", self)     
+        self.Sg412CheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2ProdSg412"]) == 1:
+            self.Sg412CheckBox.setChecked(True)
+        self.DOCLabel = QtWidgets.QLabel("     doc", self)     
+        self.DOCCheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2ProdDOC"]) == 1:
+            self.DOCCheckBox.setChecked(True)
+
+        self.cdomCheckBoxUpdate()
+        self.cdomCheckBox.clicked.connect(self.cdomCheckBoxUpdate)
+        
+        geoPhysLabel = QtWidgets.QLabel("Geophysical Products")
+        geoPhysLabel_font = geoPhysLabel.font()
+        geoPhysLabel_font.setPointSize(12)
+        geoPhysLabel_font.setBold(True)
+        geoPhysLabel.setFont(geoPhysLabel_font)                  
+
+        kd490Label = QtWidgets.QLabel("kd490", self)     
+        self.kd490CheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2Prodkd490"]) == 1:
+            self.kd490CheckBox.setChecked(True)        
 
         iparLabel = QtWidgets.QLabel("ipar", self)     
         self.iparCheckBox = QtWidgets.QCheckBox("", self)              
         if int(ConfigFile.products["bL2Prodipar"]) == 1:
             self.iparCheckBox.setChecked(True)
 
-        otherLabel = QtWidgets.QLabel("Other Parameters")
-        otherLabel_font = otherLabel.font()
-        otherLabel_font.setPointSize(12)
-        otherLabel_font.setBold(True)
-        otherLabel.setFont(otherLabel_font)
-
-        avrLabel = QtWidgets.QLabel("avw (Vandermuellen et al. 2020)", self)     
-        self.avrCheckBox = QtWidgets.QCheckBox("", self)              
+        avwLabel = QtWidgets.QLabel("avw (Vandermuellen et al. 2020)", self)     
+        self.avwCheckBox = QtWidgets.QCheckBox("", self)              
         if int(ConfigFile.products["bL2Prodavw"]) == 1:
-            self.avrCheckBox.setChecked(True)
+            self.avwCheckBox.setChecked(True)
 
-        iopLabel = QtWidgets.QLabel("Inherent Optical Properties")
+        aotLabel = QtWidgets.QLabel("aot (see Ancillary Data)", self)     
+        # self.aotCheckBox = QtWidgets.QCheckBox("", self)              
+        # if int(ConfigFile.products["bL2Prodaot"]) == 1:
+        #     self.aotCheckBox.setChecked(True)
+
+        iopLabel = QtWidgets.QLabel("Semi-analytical Algorithms")
         iopLabel_font = iopLabel.font()
         iopLabel_font.setPointSize(12)
         iopLabel_font.setBold(True)
@@ -165,9 +218,14 @@ class OCproductsWindow(QtWidgets.QDialog):
         VBox.addWidget(satNoteLabel)
 
         # Left Box
+        # Geophysical
         VBox1 = QtWidgets.QVBoxLayout()
-        VBox1.addWidget(geoPhysLabel)
-        VBox1.addSpacing(10)
+       
+
+        # Biogeochem
+        VBox1.addWidget(biochemLabel)
+        VBox1.addWidget(biochemLabel1)
+        VBox1.addSpacing(10)           
 
         # oc3m
         oc3mHBox = QtWidgets.QHBoxLayout()
@@ -175,28 +233,12 @@ class OCproductsWindow(QtWidgets.QDialog):
         oc3mHBox.addWidget(self.oc3mCheckBox)
         VBox1.addLayout(oc3mHBox)
 
-        # # AOT
-        # aotHBox = QtWidgets.QHBoxLayout()
-        # aotHBox.addWidget(aotLabel)
-        # aotHBox.addWidget(self.aotCheckBox)
-        # VBox1.addLayout(aotHBox)
-
-        # Kd490
-        kd490HBox = QtWidgets.QHBoxLayout()
-        kd490HBox.addWidget(kd490Label)
-        kd490HBox.addWidget(self.kd490CheckBox)
-        VBox1.addLayout(kd490HBox)
-
         # PIC
         picHBox = QtWidgets.QHBoxLayout()
         picHBox.addWidget(picLabel)
         picHBox.addWidget(self.picCheckBox)
         VBox1.addLayout(picHBox)
-
-
         self.picCheckBox.setDisabled(1)
-
-
 
         # POC
         pocHBox = QtWidgets.QHBoxLayout()
@@ -204,26 +246,105 @@ class OCproductsWindow(QtWidgets.QDialog):
         pocHBox.addWidget(self.pocCheckBox)
         VBox1.addLayout(pocHBox)
 
-        # PAR
-        iparHBox = QtWidgets.QHBoxLayout()
-        iparHBox.addWidget(iparLabel)
-        iparHBox.addWidget(self.iparCheckBox)
-        VBox1.addLayout(iparHBox)
+        VBox1.addSpacing(10)
 
+        # CDOM, Sg, DOC
+        cdomVBox = QtWidgets.QVBoxLayout()
+        
+        cdomHBox = QtWidgets.QHBoxLayout()
+        cdomHBox.addWidget(cdomLabel)
+        cdomHBox.addWidget(self.cdomCheckBox)
+        cdomVBox.addLayout(cdomHBox)
 
-        VBox1.addWidget(otherLabel)  
-        VBox1.addSpacing(10)      
-        # AVR
-        avrHBox = QtWidgets.QHBoxLayout()
-        avrHBox.addWidget(avrLabel)
-        avrHBox.addWidget(self.avrCheckBox)
-        VBox1.addLayout(avrHBox)
+        ag275HBox = QtWidgets.QHBoxLayout()
+        ag275HBox.addWidget(self.ag275Label)
+        ag275HBox.addWidget(self.ag275CheckBox)
+        cdomVBox.addLayout(ag275HBox)
+
+        ag355HBox = QtWidgets.QHBoxLayout()
+        ag355HBox.addWidget(self.ag355Label)
+        ag355HBox.addWidget(self.ag355CheckBox)
+        cdomVBox.addLayout(ag355HBox)
+
+        ag380HBox = QtWidgets.QHBoxLayout()
+        ag380HBox.addWidget(self.ag380Label)
+        ag380HBox.addWidget(self.ag380CheckBox)
+        cdomVBox.addLayout(ag380HBox)
+
+        ag412HBox = QtWidgets.QHBoxLayout()
+        ag412HBox.addWidget(self.ag412Label)
+        ag412HBox.addWidget(self.ag412CheckBox)
+        cdomVBox.addLayout(ag412HBox)
+
+        ag443HBox = QtWidgets.QHBoxLayout()
+        ag443HBox.addWidget(self.ag443Label)
+        ag443HBox.addWidget(self.ag443CheckBox)
+        cdomVBox.addLayout(ag443HBox)
+
+        ag488HBox = QtWidgets.QHBoxLayout()
+        ag488HBox.addWidget(self.ag488Label)
+        ag488HBox.addWidget(self.ag488CheckBox)
+        cdomVBox.addLayout(ag488HBox)
+
+        Sg275HBox = QtWidgets.QHBoxLayout()
+        Sg275HBox.addWidget(self.Sg275Label)
+        Sg275HBox.addWidget(self.Sg275CheckBox)
+        cdomVBox.addLayout(Sg275HBox)
+
+        Sg300HBox = QtWidgets.QHBoxLayout()
+        Sg300HBox.addWidget(self.Sg300Label)
+        Sg300HBox.addWidget(self.Sg300CheckBox)
+        cdomVBox.addLayout(Sg300HBox)
+
+        Sg412HBox = QtWidgets.QHBoxLayout()
+        Sg412HBox.addWidget(self.Sg412Label)
+        Sg412HBox.addWidget(self.Sg412CheckBox)
+        cdomVBox.addLayout(Sg412HBox)
+
+        DOCHBox = QtWidgets.QHBoxLayout()
+        DOCHBox.addWidget(self.DOCLabel)
+        DOCHBox.addWidget(self.DOCCheckBox)
+        cdomVBox.addLayout(DOCHBox)
+
+        VBox1.addLayout(cdomVBox)
 
         VBox1.addStretch()
 
         # Right Box
         VBox2 = QtWidgets.QVBoxLayout()
+        VBox2.addWidget(geoPhysLabel)
+        VBox2.addSpacing(10)       
+
+        # Kd490
+        kd490HBox = QtWidgets.QHBoxLayout()
+        kd490HBox.addWidget(kd490Label)
+        kd490HBox.addWidget(self.kd490CheckBox)
+        VBox2.addLayout(kd490HBox)
+
+        # PAR
+        iparHBox = QtWidgets.QHBoxLayout()
+        iparHBox.addWidget(iparLabel)
+        iparHBox.addWidget(self.iparCheckBox)
+        VBox2.addLayout(iparHBox)
+
+        # AVW
+        avwHBox = QtWidgets.QHBoxLayout()
+        avwHBox.addWidget(avwLabel)
+        avwHBox.addWidget(self.avwCheckBox)
+        VBox2.addLayout(avwHBox)
+
+        # AOT
+        aotHBox = QtWidgets.QHBoxLayout()
+        aotHBox.addWidget(aotLabel)
+        # aotHBox.addWidget(self.aotCheckBox)
+        VBox2.addLayout(aotHBox)
+
+        VBox2.addSpacing(10)
+
+        # Semianalyticals
         VBox2.addWidget(iopLabel)
+
+        VBox2.addSpacing(10)
 
         # GIOP
         giopVBox = QtWidgets.QVBoxLayout()
@@ -232,6 +353,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         giopHBox.addWidget(giopLabel)
         giopHBox.addWidget(self.giopCheckBox)
         giopVBox.addLayout(giopHBox)
+        self.giopCheckBox.setDisabled(1)
 
         aGiopHBox = QtWidgets.QHBoxLayout()
         aGiopHBox.addWidget(self.aGiopLabel)
@@ -274,6 +396,8 @@ class OCproductsWindow(QtWidgets.QDialog):
         giopVBox.addLayout(bbpSGiopHBox)
 
         VBox2.addLayout(giopVBox)
+
+        VBox2.addSpacing(10)
 
         # QAA
         qaaVBox = QtWidgets.QVBoxLayout()
@@ -319,6 +443,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         VBox2.addLayout(cQaaHBox)
 
         VBox2.addLayout(qaaVBox)
+        VBox2.addStretch()
        
         # Add 2 Vertical Boxes to Horizontal Box hBox
         hBox = QtWidgets.QHBoxLayout()
@@ -339,6 +464,35 @@ class OCproductsWindow(QtWidgets.QDialog):
         self.setGeometry(300, 100, 0, 0)
         self.setWindowTitle('Derived L2 Geophysical and Inherent Optical Properties')
 
+    def cdomCheckBoxUpdate(self):
+        print("OCproductsWindow - cdomCheckBoxUpdate")
+        
+        disabled = (not self.cdomCheckBox.isChecked())
+        self.ag275Label.setDisabled(disabled)
+        self.ag275CheckBox.setDisabled(disabled)
+        self.ag355Label.setDisabled(disabled)
+        self.ag355CheckBox.setDisabled(disabled)
+        self.ag380Label.setDisabled(disabled)
+        self.ag380CheckBox.setDisabled(disabled)
+        self.ag412Label.setDisabled(disabled)
+        self.ag412CheckBox.setDisabled(disabled)
+        self.ag443Label.setDisabled(disabled)
+        self.ag443CheckBox.setDisabled(disabled)
+        self.ag488Label.setDisabled(disabled)
+        self.ag488CheckBox.setDisabled(disabled)
+        self.Sg275Label.setDisabled(disabled)
+        self.Sg275CheckBox.setDisabled(disabled)
+        self.Sg300Label.setDisabled(disabled)
+        self.Sg300CheckBox.setDisabled(disabled)
+        self.Sg412Label.setDisabled(disabled)
+        self.Sg412CheckBox.setDisabled(disabled)
+        self.DOCLabel.setDisabled(disabled)
+        self.DOCCheckBox.setDisabled(disabled)
+
+        if disabled:
+            ConfigFile.products["bL2Prodcdom"] = 0
+        else:
+            ConfigFile.products["bL2Prodcdom"] = 1
 
     def giopCheckBoxUpdate(self):
         print("OCproductsWindow - giopCheckBoxUpdate")
@@ -399,7 +553,18 @@ class OCproductsWindow(QtWidgets.QDialog):
         ConfigFile.products["bL2Prodpic"] = int(self.picCheckBox.isChecked())
         ConfigFile.products["bL2Prodpoc"] = int(self.pocCheckBox.isChecked())
         ConfigFile.products["bL2Prodipar"] = int(self.iparCheckBox.isChecked())
-        ConfigFile.products["bL2Prodavw"] = int(self.avrCheckBox.isChecked())
+        ConfigFile.products["bL2Prodavw"] = int(self.avwCheckBox.isChecked())
+        ConfigFile.products["bL2Prodcdom"] = int(self.cdomCheckBox.isChecked())
+        ConfigFile.products["bL2Prodag275"] = int(self.ag275CheckBox.isChecked())
+        ConfigFile.products["bL2Prodag355"] = int(self.ag355CheckBox.isChecked())
+        ConfigFile.products["bL2Prodag380"] = int(self.ag380CheckBox.isChecked())
+        ConfigFile.products["bL2Prodag412"] = int(self.ag412CheckBox.isChecked())
+        ConfigFile.products["bL2Prodag443"] = int(self.ag443CheckBox.isChecked())
+        ConfigFile.products["bL2Prodag488"] = int(self.ag488CheckBox.isChecked())
+        ConfigFile.products["bL2ProdSg275"] = int(self.Sg275CheckBox.isChecked())
+        ConfigFile.products["bL2ProdSg300"] = int(self.Sg300CheckBox.isChecked())
+        ConfigFile.products["bL2ProdSg412"] = int(self.Sg412CheckBox.isChecked())
+        ConfigFile.products["bL2ProdDOC"] = int(self.DOCCheckBox.isChecked())
         ConfigFile.products["bL2Prodgiop"] = int(self.giopCheckBox.isChecked())
         ConfigFile.products["bL2ProdaGiop"] = int(self.aGiopCheckBox.isChecked())
         ConfigFile.products["bL2ProdadgGiop"] = int(self.adgGiopCheckBox.isChecked())
@@ -421,6 +586,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         # Confirm necessary satellite bands are processed
         if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
             ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
+                ConfigFile.products["bL2cdom"] or ConfigFile.products["bL2giop"] or \
                 ConfigFile.products["bL2qaa"]:
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
