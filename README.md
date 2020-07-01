@@ -28,6 +28,8 @@ While this version has been substantially updated from 1.0.α to (among other th
 
 ## Requirements and Installation
 
+Save this entire HyperInSPACE file repository (~2.5 GB) to a convenient, sensibly named directory on your computer such  as Users/yourname/HyperInSPACE/. When Main.py is launched for the first time, data and directories will be updated as described below at this location only.
+
 Requires Python 3.X is installed on a Linux, MacOS, or Windows computer. The Anaconda distribution is encouraged. A nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. (If you are running a minimal, bootstrap distribution such as Miniconda, several additional packages may be needed including: scipy, matplotlib, pyqt5, h5py, and requests.)
 
 HDF5 data files will be read and written using the included h5py module (2.9.0 at the time of writing). The Zhang (et al. 2017) sky/sunglint correction also requires Xarray, which requires installation (instructions here: http://xarray.pydata.org/en/stable/installing.html). To install Xarray with Anaconda:
@@ -38,8 +40,10 @@ prompt$ conda install xarray dask netCDF4 bottleneck
 ```
 prompt$ conda install -c conda-forge pysolar
 ```
-
-Save this entire HyperInSPACE file repository (~2.5 GB) to a convenient, sensibly named directory on your computer such  as Users/yourname/HyperInSPACE/. When Main.py is launched for the first time, data and directories will be updated as described below at this location only.
+To generate PDF reports for each file processed at Level-2, the package fpdf will need to be installed:
+```
+prompt$ pip install fpdf
+```
 
 HyperInSPACE is a Main-View-Controller Python package that can be launched in several ways to run the Main.py module, such as by navigating to the program folder on the command line and typing the following command:
 ```
