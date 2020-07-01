@@ -100,7 +100,7 @@ class ConfigFile:
         print("bL2Prodipar", ConfigFile.products["bL2Prodipar"])
         print("bL2Prodavw", ConfigFile.products["bL2Prodavw"])
 
-        print("bL2Prodcdom", ConfigFile.products["bL2Prodcdom"])
+        print("bL2Prodgocad", ConfigFile.products["bL2Prodgocad"])
         print("bL2Prodag275", ConfigFile.products["bL2Prodag275"])
         print("bL2Prodag355", ConfigFile.products["bL2Prodag355"])
         print("bL2Prodag380", ConfigFile.products["bL2Prodag380"])
@@ -240,7 +240,7 @@ class ConfigFile:
         ConfigFile.products["bL2Prodpoc"] = 0
         ConfigFile.products["bL2Prodipar"] = 0
         ConfigFile.products["bL2Prodavw"] = 0
-        ConfigFile.products["bL2Prodcdom"] = 0
+        ConfigFile.products["bL2Prodgocad"] = 0
         ConfigFile.products["bL2Prodag275"] = 0
         ConfigFile.products["bL2Prodag355"] = 0
         ConfigFile.products["bL2Prodag380"] = 0

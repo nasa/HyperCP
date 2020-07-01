@@ -174,7 +174,7 @@ class ProcessL2OCproducts():
         # CDOM (GOCAD)
         ''' Base on Aurin et al. 2018 MLRs for global dataset (GOCAD)'''
 
-        if ConfigFile.products["bL2Prodcdom"]:
+        if ConfigFile.products["bL2Prodgocad"]:
             msg = "Processing CDOM, Sg, DOC"
             print(msg)
             Utilities.writeLogFile(msg)                                          
@@ -195,15 +195,15 @@ class ProcessL2OCproducts():
             ag, Sg, doc = \
                 L2gocad(Rrs443, Rrs488, Rrs531, Rrs547, SAL, fill=-9999)
             
-            if ConfigFile.products["bL2Proda275"] or ConfigFile.products["bL2Proda355"] or \
-                ConfigFile.products["bL2Proda380"] or ConfigFile.products["bL2Proda412"] or \
-                    ConfigFile.products["bL2Proda243"] or ConfigFile.products["bL2Proda443"]:
+            if ConfigFile.products["bL2Prodag275"] or ConfigFile.products["bL2Prodag355"] or \
+                ConfigFile.products["bL2Prodag380"] or ConfigFile.products["bL2Prodag412"] or \
+                    ConfigFile.products["bL2Prodag243"] or ConfigFile.products["bL2Prodag443"]:
                 DerProd.attributes['ag_UNITS'] = '1/m'
                 agDS = DerProd.addDataset('gocad_ag')
                 agDS.columns['Datetime'] = dateTime
                 agDS.columns['Datetag'] = dateTag
                 agDS.columns['Timetag2'] = timeTag2
-                ag = dict(zip(waveStr,ag.tolist()))
+                ag = dict(zip(waveStr,np.transpose(ag).tolist()))
                 for key, value in ag.items(): agDS.columns[key] = value
                 agDS.columnsToDataset()
             if ConfigFile.products["bL2ProdSg275"] or ConfigFile.products["bL2ProdSg300"] or \
@@ -213,12 +213,12 @@ class ProcessL2OCproducts():
                 SgDS.columns['Datetime'] = dateTime
                 SgDS.columns['Datetag'] = dateTag
                 SgDS.columns['Timetag2'] = timeTag2
-                Sg = dict(zip(waveStrS,Sg.tolist()))
+                Sg = dict(zip(waveStrS,np.transpose(Sg).tolist()))
                 for key, value in Sg.items(): SgDS.columns[key] = value
                 SgDS.columnsToDataset()
             if ConfigFile.products["bL2ProdDOC"]:
-                DerProd.attributes['doc_UNITS'] = '1/m'
-                docDS = DerProd.addDataset('qaa_c')
+                DerProd.attributes['doc_UNITS'] = 'umol/L'
+                docDS = DerProd.addDataset('gocad_doc')
                 docDS.columns['Datetime'] = dateTime
                 docDS.columns['Datetag'] = dateTag
                 docDS.columns['Timetag2'] = timeTag2 

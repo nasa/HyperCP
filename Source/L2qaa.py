@@ -6,17 +6,18 @@ from Water_IOPs import water_iops
 
 def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, SST, SAL):
     ''' Use weighted MODIS Aqua bands to calculate IOPs using
-        QAA_v6 '''
+        QAA_v6
 
-    # Inputs: 
-    #   RrsXXX: (float) above water remote sensing reflectance at XXX nm
-    #   RrsHyper: (1D numpy array) hyperspectral above water remote sensing reflectance
-    #   wavelength: (1D array) length of RrsHyper; will be truncated to Pope&Fry/Smith&Baker pure water
-    #   T: (float) sea surface temperature
-    #   S: (float) sea surface salinity
-    #
-    # Outputs:
-    # a, adg, aph, b, bb, bbp, c: (1D lists) hyperspectral inherent optical properties
+    Inputs: 
+      RrsXXX: (float) above water remote sensing reflectance at XXX nm
+      RrsHyper: (1D numpy array) hyperspectral above water remote sensing reflectance
+      wavelength: (1D array) length of RrsHyper; will be truncated to Pope&Fry/Smith&Baker pure water
+      T: (float) sea surface temperature
+      S: (float) sea surface salinity
+        
+    Outputs:
+    a, adg, aph, b, bb, bbp, c: (1D lists) hyperspectral inherent optical properties
+    '''
 
     # Adjustable empirical coefficient set-up. Many coefficients remain hard
     #   coded as in SeaDAS qaa.c
