@@ -1,10 +1,10 @@
 
 import math
+import datetime
 import numpy as np
 from pysolar.solar import get_azimuth, get_altitude
 # import pytz
 from operator import add
-import datetime
 
 import HDFRoot
 
@@ -182,7 +182,13 @@ class ProcessL1c:
         Filters data for pitch, roll, yaw, and rotator.
         '''
 
-        node.attributes["PROCESSING_LEVEL"] = "1c"     
+        node.attributes["PROCESSING_LEVEL"] = "1c"
+        now = datetime.datetime.now()
+        timestr = now.strftime("%d-%b-%Y %H:%M:%S")
+        node.attributes["FILE_CREATION_TIME"] = timestr
+        msg = f"ProcessL1c.processL1c: {timestr}"
+        print(msg)
+        Utilities.writeLogFile(msg)   
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG        
         node  = Utilities.rootAddDateTime(node)

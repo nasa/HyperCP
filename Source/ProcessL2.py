@@ -10,6 +10,7 @@ import datetime as datetime
 from PyQt5 import QtWidgets
 
 import HDFRoot
+from MainConfig import MainConfig
 from AncillaryReader import AncillaryReader
 from Utilities import Utilities
 from ConfigFile import ConfigFile
@@ -2075,7 +2076,7 @@ class ProcessL2:
 
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
-        root.attributes["PROCESSING_LEVEL"] = "2"
+        root.attributes["PROCESSING_LEVEL"] = "2"        
 
         root.addGroup("REFLECTANCE")
         root.addGroup("IRRADIANCE")
@@ -2159,6 +2160,7 @@ class ProcessL2:
         gp.attributes["Rrs_UNITS"] = "1/sr"
         gp.attributes["nLw_UNITS"] = "uW/cm^2/nm/sr"
 
+        root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
         root.attributes["DATETAG_UNITS"] = "YYYYDOY"
         root.attributes["TIMETAG2_UNITS"] = "HHMMSSmmm"
         del(root.attributes["DATETAG"])

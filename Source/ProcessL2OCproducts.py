@@ -189,15 +189,13 @@ class ProcessL2OCproducts():
             # for i in range(0, len(dateTime)):
                 
             waveStr = ['275', '355', '380', '412', '443', '488']
-            waveStrS = ['275', '300', '412']
+            waveStrS = ['275', '300', '350', '380', '412']
 
             # Vectorwise
             ag, Sg, doc = \
                 L2gocad(Rrs443, Rrs488, Rrs531, Rrs547, SAL, fill=-9999)
             
-            if ConfigFile.products["bL2Prodag275"] or ConfigFile.products["bL2Prodag355"] or \
-                ConfigFile.products["bL2Prodag380"] or ConfigFile.products["bL2Prodag412"] or \
-                    ConfigFile.products["bL2Prodag243"] or ConfigFile.products["bL2Prodag443"]:
+            if ConfigFile.products["bL2Prodag"]:
                 DerProd.attributes['ag_UNITS'] = '1/m'
                 agDS = DerProd.addDataset('gocad_ag')
                 agDS.columns['Datetime'] = dateTime
@@ -206,8 +204,7 @@ class ProcessL2OCproducts():
                 ag = dict(zip(waveStr,np.transpose(ag).tolist()))
                 for key, value in ag.items(): agDS.columns[key] = value
                 agDS.columnsToDataset()
-            if ConfigFile.products["bL2ProdSg275"] or ConfigFile.products["bL2ProdSg300"] or \
-                ConfigFile.products["bL2ProdSg412"]:
+            if ConfigFile.products["bL2ProdSg"]:
                 DerProd.attributes['Sg_UNITS'] = '1/nm'
                 SgDS = DerProd.addDataset('gocad_Sg')
                 SgDS.columns['Datetime'] = dateTime

@@ -1081,17 +1081,18 @@ class Utilities:
         return badTimes
 
     @staticmethod
-    def plotIOPs(root, dirpath, filename, rType, plotDelta = False):
-
+    def plotIOPs(root, dirpath, filename, algorithm, iopType, plotDelta = False):
+        
         # To Do: uncertainty propagation
+
         outDir = MainConfig.settings["outDir"]
         # If default output path is used, choose the root HyperInSPACE path, and build on that
         if os.path.abspath(outDir) == os.path.join(dirpath,'Data'):
             outDir = dirpath
 
-        if not os.path.exists(os.path.join(outDir,'Plots','L2')):
-            os.makedirs(os.path.join(outDir,'Plots','L2'))        
-        plotdir = os.path.join(outDir,'Plots','L2')
+        if not os.path.exists(os.path.join(outDir,'Plots','L2_Products')):
+            os.makedirs(os.path.join(outDir,'Plots','L2_Products'))        
+        plotdir = os.path.join(outDir,'Plots','L2_Products')
 
         font = {'family': 'serif',
             'color':  'darkred',
@@ -1104,94 +1105,186 @@ class Utilities:
         # dataDelta = None
         
         group = root.getGroup("DERIVED_PRODUCTS")
-        # if rType=='a':
+        # if iopType=='a':
         #     print('Plotting absorption')            
             
-        plotRange = [340, 700]
-        qaaName = f'bL2Prod{rType}Qaa'
-        giopName = f'bL2Prod{rType}Giop'
-        if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products[qaaName]:        
-            DataQAA = group.getDataset(f'qaa_{rType}')
-            # if plotDelta:
-            #     dataDelta = group.getDataset(f'{rType}_HYPER_delta')
+        if algorithm == "qaa" or algorithm == "giop":
+            plotRange = [340, 700]
+            qaaName = f'bL2Prod{iopType}Qaa'
+            giopName = f'bL2Prod{iopType}Giop'
+            if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products[qaaName]: 
+                label = f'qaa_{iopType}'
+                DataQAA = group.getDataset(label)
+                # if plotDelta:
+                #     dataDelta = group.getDataset(f'{iopType}_HYPER_delta')
 
-            xQAA = []             
-            waveQAA = []
-            # For each waveband
-            for k in DataQAA.data.dtype.names:
-                if Utilities.isFloat(k):
-                    if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
-                        xQAA.append(k)
-                        waveQAA.append(float(k))
-            totalQAA = DataQAA.data.shape[0]
-            colorQAA = iter(cmap(np.linspace(0,1,totalQAA)))
+                xQAA = []             
+                waveQAA = []
+                # For each waveband
+                for k in DataQAA.data.dtype.names:
+                    if Utilities.isFloat(k):
+                        if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                            xQAA.append(k)
+                            waveQAA.append(float(k))
+                totalQAA = DataQAA.data.shape[0]
+                colorQAA = iter(cmap(np.linspace(0,1,totalQAA)))
 
-        if ConfigFile.products["bL2Prodgiop"] and ConfigFile.products[giopName]:
-            DataGIOP = group.getDataset(f'giop_{rType}')
-            # if plotDelta:
-            #     dataDelta = group.getDataset(f'{rType}_HYPER_delta')       
+            if ConfigFile.products["bL2Prodgiop"] and ConfigFile.products[giopName]:
+                label = f'giop_{iopType}'
+                DataGIOP = group.getDataset(label)
+                # if plotDelta:
+                #     dataDelta = group.getDataset(f'{iopType}_HYPER_delta')       
 
-            xGIOP = []
-            waveGIOP = []
-            # For each waveband
-            for k in DataGIOP.data.dtype.names:
-                if Utilities.isFloat(k):
-                    if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
-                        xGIOP.append(k)
-                        waveGIOP.append(float(k))
-            totalGIOP = DataQAA.data.shape[0]
-            colorGIOP = iter(cmap(np.linspace(0,1,totalGIOP)))
+                xGIOP = []
+                waveGIOP = []
+                # For each waveband
+                for k in DataGIOP.data.dtype.names:
+                    if Utilities.isFloat(k):
+                        if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                            xGIOP.append(k)
+                            waveGIOP.append(float(k))
+                totalGIOP = DataQAA.data.shape[0]
+                colorGIOP = iter(cmap(np.linspace(0,1,totalGIOP)))
         
+
+        if algorithm == "gocad":
+            plotRange = [270, 700]
+            gocadName = f'bL2Prod{iopType}'            
+            if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products[gocadName]: 
+
+                # ag
+                label = f'gocad_{iopType}'
+                agDataGOCAD = group.getDataset(label)
+                # if plotDelta:
+                #     dataDelta = group.getDataset(f'{iopType}_HYPER_delta')
+
+                agGOCAD = []             
+                waveGOCAD = []
+                # For each waveband
+                for k in agDataGOCAD.data.dtype.names:
+                    if Utilities.isFloat(k):
+                        if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                            agGOCAD.append(k)
+                            waveGOCAD.append(float(k))
+                totalGOCAD = agDataGOCAD.data.shape[0]
+                colorGOCAD = iter(cmap(np.linspace(0,1,totalGOCAD)))
+
+                # Sg                
+                sgDataGOCAD = group.getDataset(f'gocad_Sg')
+                
+                sgGOCAD = []             
+                waveSgGOCAD = []
+                # For each waveband
+                for k in sgDataGOCAD.data.dtype.names:
+                    if Utilities.isFloat(k):
+                        if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                            sgGOCAD.append(k)
+                            waveSgGOCAD.append(float(k))
+
+                # DOC
+                docDataGOCAD = group.getDataset(f'gocad_doc')
+                
+
         maxIOP = 0
         minIOP = 0        
 
         # Plot
         plt.figure(1, figsize=(8,6))
-        if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products[qaaName]:
-            for i in range(totalQAA):                
-                y = []
-                # dy = []            
-                for k in xQAA:                
-                    y.append(DataQAA.data[k][i])
+
+        if algorithm == "qaa" or algorithm == "giop":
+            if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products[qaaName]:
+                for i in range(totalQAA):                
+                    y = []
+                    # dy = []            
+                    for k in xQAA:                
+                        y.append(DataQAA.data[k][i])
+                        # if plotDelta:
+                        #     dy.append(dataDelta.data[k][i])
+
+                    c=next(colorQAA)
+                    if max(y) > maxIOP:
+                        maxIOP = max(y)+0.1*max(y)
+                    # if iopType == 'LI' and maxIOP > 20:
+                    #     maxIOP = 20
+
+                    # Plot the Hyperspectral spectrum
+                    plt.plot(waveQAA, y, 'k', c=c, zorder=-1)
+                    
                     # if plotDelta:
-                    #     dy.append(dataDelta.data[k][i])
+                    #     # Generate the polygon for uncertainty bounds
+                    #     deltaPolyx = wave + list(reversed(wave))
+                    #     dPolyyPlus = [(y[i]+dy[i]) for i in range(len(y))]
+                    #     dPolyyMinus = [(y[i]-dy[i]) for i in range(len(y))]
+                    #     deltaPolyyPlus = y + list(reversed(dPolyyPlus))
+                    #     deltaPolyyMinus = y + list(reversed(dPolyyMinus))
+                    #     plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.2, c=c, zorder=-1)
+                    #     plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.2, c=c, zorder=-1)
+            if ConfigFile.products["bL2Prodgiop"] and ConfigFile.products[giopName]:
+                for i in range(totalGIOP):   
+                    y = []
+                    for k in xGIOP:                
+                        y.append(DataGIOP.data[k][i])
+                        
+                    c=next(colorGIOP)
+                    if max(y) > maxIOP:
+                        maxIOP = max(y)+0.1*max(y)            
 
-                c=next(colorQAA)
-                if max(y) > maxIOP:
-                    maxIOP = max(y)+0.1*max(y)
-                # if rType == 'LI' and maxIOP > 20:
-                #     maxIOP = 20
+                    # Plot the Hyperspectral spectrum
+                    plt.plot(waveGIOP, y, 'k', c=c, ls='--', zorder=-1)
 
-                # Plot the Hyperspectral spectrum
-                plt.plot(waveQAA, y, 'k', c=c, zorder=-1)
-                
-                # if plotDelta:
-                #     # Generate the polygon for uncertainty bounds
-                #     deltaPolyx = wave + list(reversed(wave))
-                #     dPolyyPlus = [(y[i]+dy[i]) for i in range(len(y))]
-                #     dPolyyMinus = [(y[i]-dy[i]) for i in range(len(y))]
-                #     deltaPolyyPlus = y + list(reversed(dPolyyPlus))
-                #     deltaPolyyMinus = y + list(reversed(dPolyyMinus))
-                #     plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.2, c=c, zorder=-1)
-                #     plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.2, c=c, zorder=-1)
-        if ConfigFile.products["bL2Prodgiop"] and ConfigFile.products[giopName]:
-            for i in range(totalGIOP):   
-                y = []
-                # dy = []            
-                for k in xGIOP:                
-                    y.append(DataGIOP.data[k][i])
-                    # if plotDelta:
-                    #     dy.append(dataDelta.data[k][i])
+        if algorithm == "gocad":
+            if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products[gocadName]:
+                for i in range(totalGOCAD):   
+                    y = []      
+                    for k in agGOCAD:                
+                        y.append(agDataGOCAD.data[k][i])
 
-                c=next(colorGIOP)
-                if max(y) > maxIOP:
-                    maxIOP = max(y)+0.1*max(y)
-                # if rType == 'LI' and maxIOP > 20:
-                #     maxIOP = 20
+                    c=next(colorGOCAD)
+                    if max(y) > maxIOP:
+                        maxIOP = max(y)+0.1*max(y)
 
-                # Plot the Hyperspectral spectrum
-                plt.plot(waveGIOP, y, 'k', c=c, ls='--', zorder=-1)
+                    # Plot the point spectrum
+                    plt.scatter(waveGOCAD, y, s=36, c=c, marker='*', zorder=-1)
 
+                    # Now extrapolate using the slopes
+                    Sg = []      
+                    for k in sgGOCAD:                
+                        Sg.append(sgDataGOCAD.data[k][i])
+                        yScaler = maxIOP*i/totalGOCAD
+                        if k == '275':
+                            wave = np.array(list(range(275, 300)))
+                            ag_extrap = agDataGOCAD.data['275'][i] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 275))
+                            plt.plot(wave, ag_extrap, 'k', c=[0.2, 0.2, 0.2], ls='--', zorder=-1)
+                            plt.text(275, 0.9*maxIOP - 0.1*yScaler, '{} {:.4f}'.format('S275 = ', sgDataGOCAD.data[k][i]), color=c)
+
+                        if k == '300':
+                            wave = np.array(list(range(300, 355)))
+                            # uses the trailing end of the last extrapolation.
+                            ag_extrap = ag_extrap[-1] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 300))
+                            plt.plot(wave, ag_extrap, 'k', c=[0.2, 0.2, 0.2], ls='--', zorder=-1)
+                            plt.text(300, 0.7*maxIOP - 0.1*yScaler, '{} {:.4f}'.format('S300 = ', sgDataGOCAD.data[k][i]), color=c)
+
+                        if k == '350':
+                            # Use the 350 slope starting at 355 (where we have ag)
+                            wave = np.array(list(range(355, 380)))
+                            ag_extrap = agDataGOCAD.data['355'][i] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 355))
+                            plt.plot(wave, ag_extrap, 'k', c=[0.2, 0.2, 0.2], ls='--', zorder=-1)
+                            plt.text(350, 0.5*maxIOP - 0.1*yScaler, '{} {:.4f}'.format('S350 = ', sgDataGOCAD.data[k][i]), color=c)
+
+                        if k == '380':
+                            wave = np.array(list(range(380, 412)))
+                            ag_extrap = agDataGOCAD.data['380'][i] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 380))
+                            plt.plot(wave, ag_extrap, 'k', c=[0.2, 0.2, 0.2], ls='--', zorder=-1)
+                            plt.text(380, 0.3*maxIOP - 0.1*yScaler, '{} {:.4f}'.format('S380 = ', sgDataGOCAD.data[k][i]), color=c)
+
+                        if k == '412':
+                            wave = np.array(list(range(412, 700)))
+                            ag_extrap = agDataGOCAD.data['412'][i] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 412))
+                            plt.plot(wave, ag_extrap, 'k', c=[0.2, 0.2, 0.2], ls='--', zorder=-1)
+                            plt.text(440, 0.15*maxIOP- 0.1*yScaler, '{} {:.4f}'.format('S412 = ', sgDataGOCAD.data[k][i]), color=c)
+
+                    # Now tack on DOC
+                    plt.text(600, 0.1 + 0.1*yScaler, '{} {:3.2f}'.format('DOC = ', docDataGOCAD.data['doc'][i]) , color=c)
 
  
         axes = plt.gca()
@@ -1199,7 +1292,7 @@ class Utilities:
         axes.set_ylim([minIOP, maxIOP])
         
         plt.xlabel('wavelength (nm)', fontdict=font)
-        plt.ylabel(f'{rType} [1/m]', fontdict=font)
+        plt.ylabel(f'{label} [1/m]', fontdict=font)
 
         # Tweak spacing to prevent clipping of labels
         plt.subplots_adjust(left=0.15)
@@ -1216,7 +1309,7 @@ class Utilities:
 
         # Save the plot
         filebasename = filename.split('_')
-        fp = os.path.join(plotdir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
+        fp = os.path.join(plotdir, '_'.join(filebasename[0:-1]) + '_' + label + '.png')
         plt.savefig(fp)
         plt.close() # This prevents displaying the plot on screen with certain IDEs    
 

@@ -17,7 +17,7 @@ class SeaBASSWriter:
     def formatHeader(fp,node, level):
         
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
-        seaBASSFP = os.path.join(os.path.dirname(os.path.realpath(__file__)),'Config',seaBASSHeaderFileName)
+        seaBASSFP = os.path.join(os.getcwd(), 'Config',seaBASSHeaderFileName)
         SeaBASSHeader.loadSeaBASSHeader(seaBASSFP)
         headerBlock = SeaBASSHeader.settings        
 
@@ -39,7 +39,7 @@ class SeaBASSWriter:
 
         headerBlock['original_file_name'] = node.attributes['RAW_FILE_NAME']
         headerBlock['data_file_name'] = os.path.split(fp)[1]
-        headerBlock["comments"] = headerBlock["comments"] + f'\n! DateTime Processed = {time.asctime()}'
+        headerBlock['comments'] = headerBlock['comments'] + f'\n! DateTime Processed = {time.asctime()}'
 
         # Convert Dates and Times
         # timeDT = esData.data['Datetime'].tolist() # Datetime has already been stripped off for saving the HDF

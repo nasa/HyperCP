@@ -1,5 +1,6 @@
 
 import collections
+import datetime as dt
 import numpy as np
 import scipy as sp
 import calendar
@@ -378,6 +379,12 @@ class ProcessL1e:
         root.copyAttributes(node) # Now copy the attributes in from the L1d object
         root.attributes["PROCESSING_LEVEL"] = "1e"
         root.attributes["DEPTH_RESOLUTION"] = "N/A"
+        now = dt.datetime.now()
+        timestr = now.strftime("%d-%b-%Y %H:%M:%S")
+        node.attributes["FILE_CREATION_TIME"] = timestr
+        msg = f"ProcessL1e.processL1e: {timestr}"
+        print(msg)
+        Utilities.writeLogFile(msg)
         
         gpsGroup = None
         pyrGroup = None

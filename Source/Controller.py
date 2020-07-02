@@ -19,6 +19,7 @@ from ProcessL1c import ProcessL1c
 from ProcessL1d import ProcessL1d
 from ProcessL1e import ProcessL1e
 from ProcessL2 import ProcessL2
+from PDFreport import PDF
 
 
 class Controller:
@@ -126,7 +127,7 @@ class Controller:
         # Process the data
         msg = "ProcessL1a"
         print(msg)
-        Utilities.writeLogFile(msg)
+        # Utilities.writeLogFile(msg)
         root = ProcessL1a.processL1a(inFilePath, outFilePath, calibrationMap)
 
         # Apply SZA filter 
@@ -382,15 +383,20 @@ class Controller:
                 Utilities.plotRadiometry(root, dirpath, filename, rType='LT', plotDelta = True)
 
             # IOPs
-            if 1==1:
-                Utilities.plotIOPs(root, dirpath, filename, rType='adg', plotDelta = True)
-                Utilities.plotIOPs(root, dirpath, filename, rType='aph', plotDelta = True)
-                Utilities.plotIOPs(root, dirpath, filename, rType='bbp', plotDelta = True)
+            if 1==1: # For now, always plot these
+                # These three should plot GOIP and QAA together
+                Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
+                Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
+                Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
+
+                # This puts ag, Sg, and DOC on the same plot
+                Utilities.plotIOPs(root, dirpath, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
 
         # Write output file
         if root is not None:
             try:
                 root.writeHDF5(outFilePath)
+                return root
             except:
                 msg = "Unable to write file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
@@ -464,7 +470,7 @@ class Controller:
                 modTime = os.path.getmtime(outFilePath)
                 nowTime = datetime.datetime.now()
                 if nowTime.timestamp() - modTime < 60: # If the file exists and was created in the last minute...
-                    msg = f'{level} file produced: {outFilePath}'
+                    msg = f'{level} file produced: \n {outFilePath}'
                     print(msg)
                     Utilities.writeLogFile(msg)  
                     return True                                        
@@ -488,12 +494,12 @@ class Controller:
                 modTime = os.path.getmtime(outFilePath)
                 nowTime = datetime.datetime.now()
                 if nowTime.timestamp() - modTime < 60:
-                    msg = f'{level} file produced: {outFilePath}'
+                    msg = f'{level} file produced: \n{outFilePath}'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     
                     if int(ConfigFile.settings["bL1eSaveSeaBASS"]) == 1:
-                        msg = f'Output SeaBASS for HDF: {outFilePath}'
+                        msg = f'Output SeaBASS for HDF: Es, Li, Lt files'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         SeaBASSWriter.outputTXT_Type1e(outFilePath)                      
@@ -501,9 +507,15 @@ class Controller:
 
         elif level == "L2":          
             if os.path.isdir(pathOut):
-                pathOut = os.path.join(pathOut,level)
-                if os.path.isdir(pathOut) is False:
-                    os.mkdir(pathOut)
+                # Reports
+                reportPath = os.path.join(pathOut, 'Reports')
+                if os.path.isdir(reportPath) is False:
+                    os.mkdir(reportPath)
+
+                #Data
+                dataPath = os.path.join(pathOut,level)
+                if os.path.isdir(dataPath) is False:
+                    os.mkdir(dataPath)
             else:
                 msg = "Bad output destination. Select new Output Data Directory."
                 print(msg)
@@ -516,24 +528,62 @@ class Controller:
                 # Without the SolarTracker, ancillary data would have been read in at L1C,
                 # and will be extracted from the ANCILLARY_NOTRACKER group later
                 ancillaryData = None
+
             fileName = fileName.split('_')
-            outFilePath = os.path.join(pathOut,fileName[0] + "_" + level + ".hdf")
-            Controller.processL2(inFilePath, outFilePath, ancillaryData)  
+            outFilePath = os.path.join(dataPath,fileName[0] + "_" + level + ".hdf")
+            root = Controller.processL2(inFilePath, outFilePath, ancillaryData)  
             
             if os.path.isfile(outFilePath):
+                # Ensure that the L2 on file is recent before continuing with 
+                # SeaBASS files or reports
                 modTime = os.path.getmtime(outFilePath)
                 nowTime = datetime.datetime.now()
                 if nowTime.timestamp() - modTime < 60: 
-                    msg = f'{level} file produced: {outFilePath}'
+                    msg = f'{level} file produced: \n{outFilePath}'
                     print(msg)
                     Utilities.writeLogFile(msg)
 
+                    # Write SeaBASS
                     if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
-                        msg = f'Output SeaBASS for HDF: {outFilePath}'
+                        msg = f'Output SeaBASS for HDF: \n{outFilePath}'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         SeaBASSWriter.outputTXT_Type2(outFilePath)
-                    return True
+                    # return True
+        
+                    # Write Report
+                    print('Writing PDF Report...')
+                    fileName = fileName[0]
+                    dirPath = os.getcwd()
+                    inLogPath = os.path.join(dirPath, 'Logs')
+                    inPlotPath = os.path.join(pathOut,'Plots')
+                    outPDF = os.path.join(pathOut,'Reports', f'{fileName}.pdf')
+                    title = f'File: {fileName} Collected: {root.attributes["TIME-STAMP"]}'
+
+                    pdf = PDF()
+                    pdf.set_title(title)
+                    pdf.set_author(f'HyperInSPACE_{MainConfig.settings["version"]}')
+
+                    inLog = os.path.join(inLogPath,f'{fileName}_L1A.log')
+                    if os.path.isfile(inLog):
+                        pdf.print_chapter('L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName)
+                    inLog = os.path.join(inLogPath,f'{fileName}_L1A_L1B.log')
+                    if os.path.isfile(inLog):
+                        pdf.print_chapter('L1B', 'Process L1A to L1B', inLog, inPlotPath, fileName)
+                    inLog = os.path.join(inLogPath,f'{fileName}_L1B_L1C.log')
+                    if os.path.isfile(inLog):
+                        pdf.print_chapter('L1C', 'Process L1B to L1C', inLog, inPlotPath, fileName)
+                    inLog = os.path.join(inLogPath,f'{fileName}_L1C_L1D.log')
+                    if os.path.isfile(inLog):
+                        pdf.print_chapter('L1D', 'Process L1C to L1D', inLog, inPlotPath, fileName)
+                    inLog = os.path.join(inLogPath,f'{fileName}_L1D_L1E.log')
+                    if os.path.isfile(inLog):
+                        pdf.print_chapter('L1E', 'Process L1D to L1E', inLog, inPlotPath, fileName)
+                    inLog = os.path.join(inLogPath,f'{fileName}_L1E_L2.log')
+                    if os.path.isfile(inLog):
+                        pdf.print_chapter('L2', 'Process L1E to L2', inLog, inPlotPath, fileName)
+
+                    pdf.output(outPDF, 'F')
 
         msg = f'Process Single Level: {outFilePath} - DONE'
         print(msg)

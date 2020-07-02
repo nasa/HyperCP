@@ -3,12 +3,14 @@ import os
 import glob
 from fpdf import FPDF
 
+
 class PDF(FPDF):
+
     def header(self):
         # Arial bold 15
         self.set_font('Arial', 'B', 15)
         # Calculate width of title and position
-        w = self.get_string_width(title) + 6
+        w = self.get_string_width(self.title) + 6
         self.set_x((210 - w) / 2)
         # Colors of frame, background and text
         self.set_draw_color(0, 80, 180)
@@ -17,7 +19,7 @@ class PDF(FPDF):
         # Thickness of frame (1 mm)
         self.set_line_width(1)
         # Title
-        self.cell(w, 9, title, 1, 1, 'C', 1)
+        self.cell(w, 9, self.title, 1, 1, 'C', 1)
         # Line break
         self.ln(10)
 
@@ -42,7 +44,7 @@ class PDF(FPDF):
         self.ln(4)
 
     def chapter_body(self, inLog, level, inPlotPath, filebasename):
-        # Read text file
+        # Read text log file
         with open(inLog, 'rb') as fh:
             txt = fh.read().decode('latin-1')
         # Times 12
@@ -65,6 +67,12 @@ class PDF(FPDF):
             for i in range(0, len(fileList)):
                 self.image(fileList[i], w = 175)
 
+            inProdPath = os.path.join(inPlotPath, f'{level}_Products')
+            fileList = glob.glob(os.path.join(inProdPath, f'{filebasename}_*.png'))
+            self.cell(0, 6, 'Derived Spectral Products', 0, 1, 'L', 1)
+            for i in range(0, len(fileList)):
+                self.image(fileList[i], w = 175)
+
         # # Mention in italics
         # self.set_font('', 'I')
         # self.cell(0, 5, '(end of excerpt)')
@@ -74,21 +82,11 @@ class PDF(FPDF):
         self.chapter_title(level, title)        
         self.chapter_body(inLog, level, inPlotPath, filebasename)
 
+    # # @staticmethod
+    # def write_report(self, title):
+    #     self.title = title
+        
 
-filebasename = '1614106'
-title = f'{filebasename} lat lon date time'
 
-dirPath = os.getcwd()
-inLogPath = os.path.join(dirPath, 'Logs')
-inPlotPath = os.path.join('D:/','Dirk','NASA','HyperPACE','Field_Data','HyperSAS','Processed','KORUS','Plots')
-outPath = dirPath
-outPDF = os.path.join(outPath, 'AAA.pdf')
 
-pdf = PDF()
-pdf.set_title(title)
-pdf.set_author('Jules Verne')
-inLog = os.path.join(inLogPath,f'{filebasename}_L1D_L1E.log')
-pdf.print_chapter('L1E', 'Process L1D to L1E', inLog, inPlotPath, filebasename)
-inLog = os.path.join(inLogPath,f'{filebasename}_L1E_L2.log')
-pdf.print_chapter('L2', 'Process L1E to L2', inLog, inPlotPath, filebasename)
-pdf.output(outPDF, 'F')
+

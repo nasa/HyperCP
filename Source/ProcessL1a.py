@@ -31,6 +31,15 @@ class ProcessL1a:
         root.attributes["SATPYR_UNITS"] = "count"
         root.attributes["RAW_FILE_NAME"] = fileName
 
+        # Generates root footer attributes
+        root.attributes["PROCESSING_LEVEL"] = "1a"
+        now = dt.datetime.now()
+        timestr = now.strftime("%d-%b-%Y %H:%M:%S")
+        root.attributes["FILE_CREATION_TIME"] = timestr
+        msg = f"ProcessL1a.processL1a: {timestr}"
+        print(msg)
+        Utilities.writeLogFile(msg)
+
         contextMap = collections.OrderedDict()
 
         for key in calibrationMap:
@@ -161,16 +170,7 @@ class ProcessL1a:
                     gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
 
             gpsGroup.datasets["DATETAG"].columns["NONE"] = gpsDateTag
-            gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2
-
-        # Generates root footer attributes
-        root.attributes["PROCESSING_LEVEL"] = "1a"
-        now = dt.datetime.now()
-        timestr = now.strftime("%d-%b-%Y %H:%M:%S")
-        root.attributes["FILE_CREATION_TIME"] = timestr
-        msg = f"ProcessL1a.processL1a: {timestr}"
-        print(msg)
-        Utilities.writeLogFile(msg)
+            gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2        
 
         # Converts gp.columns to numpy array
         for gp in root.groups:

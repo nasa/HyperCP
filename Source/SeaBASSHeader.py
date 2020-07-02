@@ -143,7 +143,6 @@ class SeaBASSHeader:
         else: 
             NegativeFilt = "Off"
 
-        ''' TO DO: Update the version dynamically'''
         SeaBASSHeader.settings["comments"] =\
             f'! HyperInSPACE vers = {MainConfig.settings["version"]}\n'+\
             f'! HyperInSPACE Config = {ConfigFile.filename}\n'+\

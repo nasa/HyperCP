@@ -1,5 +1,6 @@
 
 import numpy as np
+import datetime as dt
 import pandas as pd
 import calendar
 # import matplotlib.pyplot as plt
@@ -383,6 +384,12 @@ class ProcessL1d:
         root = HDFRoot.HDFRoot()
         root.copy(node) 
         root.attributes["PROCESSING_LEVEL"] = "1d"
+        now = dt.datetime.now()
+        timestr = now.strftime("%d-%b-%Y %H:%M:%S")
+        root.attributes["FILE_CREATION_TIME"] = timestr
+        msg = f"ProcessL1d.processL1d: {timestr}"
+        print(msg)
+        Utilities.writeLogFile(msg)
         
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG        
         root  = Utilities.rootAddDateTime(root)

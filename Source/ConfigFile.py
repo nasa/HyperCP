@@ -101,15 +101,17 @@ class ConfigFile:
         print("bL2Prodavw", ConfigFile.products["bL2Prodavw"])
 
         print("bL2Prodgocad", ConfigFile.products["bL2Prodgocad"])
-        print("bL2Prodag275", ConfigFile.products["bL2Prodag275"])
-        print("bL2Prodag355", ConfigFile.products["bL2Prodag355"])
-        print("bL2Prodag380", ConfigFile.products["bL2Prodag380"])
-        print("bL2Prodag412", ConfigFile.products["bL2Prodag412"])
-        print("bL2Prodag443", ConfigFile.products["bL2Prodag443"])
-        print("bL2Prodag488", ConfigFile.products["bL2Prodag488"])
-        print("bL2ProdSg275", ConfigFile.products["bL2ProdSg275"])
-        print("bL2ProdSg300", ConfigFile.products["bL2ProdSg300"])
-        print("bL2ProdSg412", ConfigFile.products["bL2ProdSg412"])
+        print("bL2Prodag", ConfigFile.products["bL2Prodag"])
+        # print("bL2Prodag275", ConfigFile.products["bL2Prodag275"])
+        # print("bL2Prodag355", ConfigFile.products["bL2Prodag355"])
+        # print("bL2Prodag380", ConfigFile.products["bL2Prodag380"])
+        # print("bL2Prodag412", ConfigFile.products["bL2Prodag412"])
+        # print("bL2Prodag443", ConfigFile.products["bL2Prodag443"])
+        # print("bL2Prodag488", ConfigFile.products["bL2Prodag488"])
+        print("bL2ProdSg", ConfigFile.products["bL2ProdSg"])
+        # print("bL2ProdSg275", ConfigFile.products["bL2ProdSg275"])
+        # print("bL2ProdSg300", ConfigFile.products["bL2ProdSg300"])
+        # print("bL2ProdSg412", ConfigFile.products["bL2ProdSg412"])
         print("bL2ProdDOC", ConfigFile.products["bL2ProdDOC"])
 
 
@@ -240,16 +242,19 @@ class ConfigFile:
         ConfigFile.products["bL2Prodpoc"] = 0
         ConfigFile.products["bL2Prodipar"] = 0
         ConfigFile.products["bL2Prodavw"] = 0
+
         ConfigFile.products["bL2Prodgocad"] = 0
-        ConfigFile.products["bL2Prodag275"] = 0
-        ConfigFile.products["bL2Prodag355"] = 0
-        ConfigFile.products["bL2Prodag380"] = 0
-        ConfigFile.products["bL2Prodag412"] = 0
-        ConfigFile.products["bL2Prodag443"] = 0
-        ConfigFile.products["bL2Prodag488"] = 0
-        ConfigFile.products["bL2ProdSg275"] = 0
-        ConfigFile.products["bL2ProdSg300"] = 0
-        ConfigFile.products["bL2ProdSg412"] = 0
+        ConfigFile.products["bL2Prodag"] = 0
+        # ConfigFile.products["bL2Prodag275"] = 0        
+        # ConfigFile.products["bL2Prodag355"] = 0
+        # ConfigFile.products["bL2Prodag380"] = 0
+        # ConfigFile.products["bL2Prodag412"] = 0
+        # ConfigFile.products["bL2Prodag443"] = 0
+        # ConfigFile.products["bL2Prodag488"] = 0
+        ConfigFile.products["bL2ProdSg"] = 0
+        # ConfigFile.products["bL2ProdSg275"] = 0        
+        # ConfigFile.products["bL2ProdSg300"] = 0
+        # ConfigFile.products["bL2ProdSg412"] = 0
         ConfigFile.products["bL2ProdDOC"] = 0
 
         ConfigFile.products["bL2Prodgiop"] = 0
