@@ -913,7 +913,8 @@ class Utilities:
             # Steps in wavebands used for plots
             # step = float(ConfigFile.settings["fL3InterpInterval"]) # this is in nm
             # This happens prior to waveband interpolation, so each interval is ~3.3 nm
-            step = 5 # this is in band intervals
+            ''' To Do: THIS COULD BE SET IN THE CONFIG WINDOW '''
+            step = 20 # this is in band intervals
             
             if instr == 'ES' or instr == 'LI' or instr == 'LT':                
                 l = round((len(xData.data.dtype.names)-3)/step) # skip date and time and datetime
@@ -946,12 +947,9 @@ class Utilities:
                         plt.subplots_adjust(left=0.15)
                         plt.subplots_adjust(bottom=0.15)
                         
-                        plt.savefig(os.path.join('Plots','L1E',f'{fileBaseName}_{instr}_{k}.png'))
-                        # plt.show() # This doesn't work (at least on Ubuntu, haven't tried other platforms yet)  
+                        # plt.savefig(os.path.join('Plots','L1E',f'{fileBaseName}_{instr}_{k}.png'))
+                        plt.savefig(os.path.join(plotdir,f'{fileBaseName}_{instr}_{k}.png'))
                         plt.close()                                      
-                        # # Tweak spacing to prevent clipping of ylabel
-                        # plt.subplots_adjust(left=0.15)     
-
                     index +=1     
             else:
                 for k in xData.data.dtype.names:                                        
@@ -1084,6 +1082,7 @@ class Utilities:
     def plotIOPs(root, dirpath, filename, algorithm, iopType, plotDelta = False):
         
         # To Do: uncertainty propagation
+        print(f'Plotting {algorithm} {iopType}')
 
         outDir = MainConfig.settings["outDir"]
         # If default output path is used, choose the root HyperInSPACE path, and build on that
@@ -1244,7 +1243,8 @@ class Utilities:
                         maxIOP = max(y)+0.1*max(y)
 
                     # Plot the point spectrum
-                    plt.scatter(waveGOCAD, y, s=36, c=c, marker='*', zorder=-1)
+                    # plt.scatter(waveGOCAD, y, s=100, c=c, marker='*', zorder=-1)
+                    plt.plot(waveGOCAD, y, c=c, marker='*', markersize=13, linestyle = '', zorder=-1)
 
                     # Now extrapolate using the slopes
                     Sg = []      
@@ -1254,37 +1254,37 @@ class Utilities:
                         if k == '275':
                             wave = np.array(list(range(275, 300)))
                             ag_extrap = agDataGOCAD.data['275'][i] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 275))
-                            plt.plot(wave, ag_extrap, 'k', c=[0.2, 0.2, 0.2], ls='--', zorder=-1)
-                            plt.text(275, 0.9*maxIOP - 0.1*yScaler, '{} {:.4f}'.format('S275 = ', sgDataGOCAD.data[k][i]), color=c)
+                            plt.plot(wave, ag_extrap, 'k', c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
+                            plt.text(285, 0.9*maxIOP - 0.12*yScaler, '{} {:.4f}'.format('S275 = ', sgDataGOCAD.data[k][i]), color=c)
 
                         if k == '300':
                             wave = np.array(list(range(300, 355)))
                             # uses the trailing end of the last extrapolation.
                             ag_extrap = ag_extrap[-1] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 300))
-                            plt.plot(wave, ag_extrap, 'k', c=[0.2, 0.2, 0.2], ls='--', zorder=-1)
-                            plt.text(300, 0.7*maxIOP - 0.1*yScaler, '{} {:.4f}'.format('S300 = ', sgDataGOCAD.data[k][i]), color=c)
+                            plt.plot(wave, ag_extrap, 'k', c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
+                            plt.text(300, 0.7*maxIOP - 0.12*yScaler, '{} {:.4f}'.format('S300 = ', sgDataGOCAD.data[k][i]), color=c)
 
                         if k == '350':
                             # Use the 350 slope starting at 355 (where we have ag)
                             wave = np.array(list(range(355, 380)))
                             ag_extrap = agDataGOCAD.data['355'][i] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 355))
-                            plt.plot(wave, ag_extrap, 'k', c=[0.2, 0.2, 0.2], ls='--', zorder=-1)
-                            plt.text(350, 0.5*maxIOP - 0.1*yScaler, '{} {:.4f}'.format('S350 = ', sgDataGOCAD.data[k][i]), color=c)
+                            plt.plot(wave, ag_extrap, 'k', c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
+                            plt.text(350, 0.5*maxIOP - 0.12*yScaler, '{} {:.4f}'.format('S350 = ', sgDataGOCAD.data[k][i]), color=c)
 
                         if k == '380':
                             wave = np.array(list(range(380, 412)))
                             ag_extrap = agDataGOCAD.data['380'][i] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 380))
-                            plt.plot(wave, ag_extrap, 'k', c=[0.2, 0.2, 0.2], ls='--', zorder=-1)
-                            plt.text(380, 0.3*maxIOP - 0.1*yScaler, '{} {:.4f}'.format('S380 = ', sgDataGOCAD.data[k][i]), color=c)
+                            plt.plot(wave, ag_extrap, 'k', c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
+                            plt.text(380, 0.3*maxIOP - 0.12*yScaler, '{} {:.4f}'.format('S380 = ', sgDataGOCAD.data[k][i]), color=c)
 
                         if k == '412':
                             wave = np.array(list(range(412, 700)))
                             ag_extrap = agDataGOCAD.data['412'][i] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 412))
-                            plt.plot(wave, ag_extrap, 'k', c=[0.2, 0.2, 0.2], ls='--', zorder=-1)
-                            plt.text(440, 0.15*maxIOP- 0.1*yScaler, '{} {:.4f}'.format('S412 = ', sgDataGOCAD.data[k][i]), color=c)
+                            plt.plot(wave, ag_extrap, 'k', c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
+                            plt.text(440, 0.15*maxIOP- 0.12*yScaler, '{} {:.4f}'.format('S412 = ', sgDataGOCAD.data[k][i]), color=c)
 
                     # Now tack on DOC
-                    plt.text(600, 0.1 + 0.1*yScaler, '{} {:3.2f}'.format('DOC = ', docDataGOCAD.data['doc'][i]) , color=c)
+                    plt.text(600, 0.5 - 0.12*yScaler, '{} {:3.2f}'.format('DOC = ', docDataGOCAD.data['doc'][i]) , color=c)
 
  
         axes = plt.gca()

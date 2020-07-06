@@ -1,6 +1,14 @@
 v1.0.3 Unreleased
 * Create a L2 module for ocean color products 
 
+2020-07-01: DAA
+* Complete modules for GOCAD (CDOM/Sg/DOC)
+* Set up plotting routines for OC products
+* Set up PDF reporting at L2 processing
+
+2020-06-24: DAA
+* Complete modules for chlor_a, kd490, poc, ipar, AVW, QAAv6
+
 2020-06-18: DAA
 * Move source code into ./Source
 * Build chlor_a into root HDF file

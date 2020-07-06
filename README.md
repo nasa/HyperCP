@@ -67,6 +67,7 @@ The following folders will be created automatically when you first run the progr
 3. Create a new Configuration (or edit and existing Configuration)
 4. Add and enable only *relevant* calibration and instrument files to the Configuration; there is no such thing as a standard instrument package
 5. Choose appropriate processing parameters for L1A-L2 (do not depend on software defaults; there is no such thing as a standard data collection)
+6. HDF files will be produced at each level of processing, plus optional SeaBASS files for radiometry at L1E and L2. Plots can be produced at L1D, L1E, and L2. Processing logs and plots are aggregated into PDF Reports at L2 (covering all processing from RAW to L2) written to a dedicated directory in the selected Output directory.
 
 
 ### Main Window
@@ -355,9 +356,9 @@ Negative reflectances can be removed as follows: any spectrum with any negative 
 
 Spectral wavebands for a few satellite ocean color sensors can be optionally calculated using their spectral weighting functions. These will be included with the hyperspectral output in the L2 HDF files. Spectral response functions are applied to convolve the (ir)radiances prior to calculating reflectances. **(Burgghoff et al. 2020)**.
 
-*{To Do: Output of satellite bands to SeaBASS files.}*
-
 Plots of processed L2 data from each radiometer and calculated reflectances can be created and stored in [output_directory]/Plots/L2. Uncertainties are shown for each spectrum as shaded regions, and satellite bands (if selected) are superimposed on the hyperspectral data.
+
+Select the "Derived L2 Ocean Color Products" button to choose, calculate, and plot derived biochemical and inherent optical properties using a variety of ocean color algorithms. Algorithms largely mirror those available in SeaDAS with a few additions. They include OC3M, PIC, POC, Kd490, iPAR, GIOP, QAA, and the Average Visible Wavelength (Vandermuellen et al. 2020) and GOCAD-based CDOM/Sg/DOC algorithms (Aurin et al. 2018).
 
 To output SeaBASS formatted text files, check the box. A subfolder within the L2 directory will be created, and separate text files will be made for Li, Lt, Es, and Rrs hyperspectral data and satellite bands, if selected. Set-up for the SeaBASS header is managed with the 'Edit/Update SeaBASS Header' in the L1E configuration.
 

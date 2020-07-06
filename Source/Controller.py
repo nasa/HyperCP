@@ -566,22 +566,22 @@ class Controller:
 
                     inLog = os.path.join(inLogPath,f'{fileName}_L1A.log')
                     if os.path.isfile(inLog):
-                        pdf.print_chapter('L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName)
+                        pdf.print_chapter(root,'L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName, outFilePath)
                     inLog = os.path.join(inLogPath,f'{fileName}_L1A_L1B.log')
                     if os.path.isfile(inLog):
-                        pdf.print_chapter('L1B', 'Process L1A to L1B', inLog, inPlotPath, fileName)
+                        pdf.print_chapter(root,'L1B', 'Process L1A to L1B', inLog, inPlotPath, fileName, outFilePath)
                     inLog = os.path.join(inLogPath,f'{fileName}_L1B_L1C.log')
                     if os.path.isfile(inLog):
-                        pdf.print_chapter('L1C', 'Process L1B to L1C', inLog, inPlotPath, fileName)
+                        pdf.print_chapter(root,'L1C', 'Process L1B to L1C', inLog, inPlotPath, fileName, outFilePath)
                     inLog = os.path.join(inLogPath,f'{fileName}_L1C_L1D.log')
                     if os.path.isfile(inLog):
-                        pdf.print_chapter('L1D', 'Process L1C to L1D', inLog, inPlotPath, fileName)
+                        pdf.print_chapter(root,'L1D', 'Process L1C to L1D', inLog, inPlotPath, fileName, outFilePath)
                     inLog = os.path.join(inLogPath,f'{fileName}_L1D_L1E.log')
                     if os.path.isfile(inLog):
-                        pdf.print_chapter('L1E', 'Process L1D to L1E', inLog, inPlotPath, fileName)
+                        pdf.print_chapter(root,'L1E', 'Process L1D to L1E', inLog, inPlotPath, fileName, outFilePath)
                     inLog = os.path.join(inLogPath,f'{fileName}_L1E_L2.log')
                     if os.path.isfile(inLog):
-                        pdf.print_chapter('L2', 'Process L1E to L2', inLog, inPlotPath, fileName)
+                        pdf.print_chapter(root,'L2', 'Process L1E to L2', inLog, inPlotPath, fileName, outFilePath)
 
                     pdf.output(outPDF, 'F')
 

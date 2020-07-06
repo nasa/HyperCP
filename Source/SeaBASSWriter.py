@@ -81,7 +81,7 @@ class SeaBASSWriter:
             headerBlock['east_longitude'] = eastLon
         if headerBlock['west_longitude'] is '':
             headerBlock['west_longitude'] = westLon
-        if level == 2:
+        if level == '2':
             headerBlock['wind_speed'] = aveWind
         
         return headerBlock
@@ -156,39 +156,41 @@ class SeaBASSWriter:
         return dataOut, fieldsLineStr, unitsLineStr
 
     @staticmethod
-    def formatData2(dataset,dtype, units):            
+    def formatData2(dataset,dtype, units):      
+
+        dsCopy = dataset.data.copy() # By copying here, we leave the ancillary data tacked on to radiometry for later      
                 
         # Convert Dates and Times and remove from dataset
-        newData = dataset.data
-        dateDay = dataset.data['Datetag'].tolist()
+        newData = dsCopy
+        dateDay = dsCopy['Datetag'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'Datetag')
         dateDT = [Utilities.dateTagToDateTime(x) for x in dateDay]
-        timeTag2 = dataset.data['Timetag2'].tolist()
+        timeTag2 = dsCopy['Timetag2'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'Timetag2')
         timeDT = []
         for i in range(len(dateDT)):
             timeDT.append(Utilities.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
 
         # Retrieve ancillaries and remove from dataset        
-        lat = dataset.data['LATITUDE'].tolist()
+        lat = dsCopy['LATITUDE'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'LATITUDE')
-        lon = dataset.data['LONGITUDE'].tolist()
+        lon = dsCopy['LONGITUDE'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'LONGITUDE')
-        sza = dataset.data['SZA'].tolist()
+        sza = dsCopy['SZA'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'SZA')
-        relAz = dataset.data['REL_AZ'].tolist()
+        relAz = dsCopy['REL_AZ'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'REL_AZ')
-        # rotator = dataset.data['ROTATOR'].tolist()
+        # rotator = dsCopy['ROTATOR'].tolist()
         # newData = SeaBASSWriter.removeColumns(newData,'ROTATOR')
-        # heading = dataset.data['SHIP_TRUE'].tolist() # from SAS
+        # heading = dsCopy['SHIP_TRUE'].tolist() # from SAS
         newData = SeaBASSWriter.removeColumns(newData,'HEADING')
-        # azimuth = dataset.data['AZIMUTH'].tolist()        
+        # azimuth = dsCopy['AZIMUTH'].tolist()        
         newData = SeaBASSWriter.removeColumns(newData,'SOLAR_AZ')
 
-        dataset.data = newData
+        dsCopy = newData
 
         # Change field names for SeaBASS compliance
-        bands = list(dataset.data.dtype.names)    
+        bands = list(dsCopy.dtype.names)    
         ls = ['date','time','lat','lon','RelAz','SZA']
         # ls[4]='SAZ'
         # ls[5]='heading'    # This is SAS -> SHIP_TRUE, not GPS    
@@ -205,7 +207,7 @@ class SeaBASSWriter:
         # fieldsLineStr = ','.join(ls[:lenNonRad] + [f'{fieldName}{band}' for band in ls[lenNonRad:]])
         fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands])
 
-        lenRad = (len(dataset.data.dtype.names))
+        lenRad = (len(dsCopy.dtype.names))
         unitsLine = ['yyyymmdd']
         unitsLine.append('hh:mm:ss')
         unitsLine.extend(['degrees']*6)
@@ -215,10 +217,10 @@ class SeaBASSWriter:
         # Add data for each row
         dataOut = []
         formatStr = str('{:04d}{:02d}{:02d},{:02d}:{:02d}:{:02d},{:.4f},{:.4f},{:.1f},{:.1f}' + ',{:.6f}'*lenRad)
-        for i in range(dataset.data.shape[0]):                        
+        for i in range(dsCopy.shape[0]):                        
             subList = [lat[i],lon[i],relAz[i],sza[i]]
             lineList = [timeDT[i].year,timeDT[i].month,timeDT[i].day,timeDT[i].hour,timeDT[i].minute,timeDT[i].second] +\
-                subList + list(dataset.data[i].tolist())
+                subList + list(dsCopy[i].tolist())
 
             # Replace NaNs with -9999.0
             lineList = [-9999.0 if np.isnan(element) else element for element in lineList]

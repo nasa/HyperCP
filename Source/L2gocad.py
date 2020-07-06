@@ -31,28 +31,28 @@ def L2gocad(Rrs443, Rrs488, Rrs531, Rrs547, SAL, fill=-9999):
                         [-3.7218, -0.3770, -1.4287, 1.4239, 0.2998]])
     ag = np.empty([n_spectra, n_bands])
     for n in range(0, n_bands):
-        ag[:,n] = np.exp( beta[n,0] + beta[n,1]*np.exp(Rrs443) + beta[n,2]* np.exp(Rrs488) + \
-            beta[n,3]*np.exp(Rrs531) + beta[n,4]*np.exp(Rrs547) )
+        ag[:,n] = np.exp( beta[n,0] + beta[n,1]*np.log(Rrs443) + beta[n,2]* np.log(Rrs488) + \
+            beta[n,3]*np.log(Rrs531) + beta[n,4]*np.log(Rrs547) )
     
     for n in range(0, n_spectra):
         ag[n, ag[n,:] > ag_lim] = fill
 
     
     # Sg
-    BANDS = [275, 300, 350, 380, 412] # 275-295, 300-600, 350-400, 380-600, 412-600
+    BANDS = [275, 300, 350, 380, 412] # 275-295, 300-600, 350-600, 380-600, 412-600
     n_bands = len(BANDS)
     # These are the 2nd and 98th percentiles of GOCAD 
-    sg_lim = np.array([[0.0169, 0.0445], [0.0159, 0.0255], [0.0124, 0.0209], [0.0107, 0.0194], [0.0059, 0.0188]])  
+    sg_lim = np.array([[0.0169, 0.0445], [0.0159, 0.0255], [0.0119, 0.0200], [0.0107, 0.0194], [0.0059, 0.0188]])  
     
     beta = np.array([[-3.2892, 0.2697, -0.3346, 1.0507, -0.9211], \
         [-3.6065, 0.0439, -0.1533, 0.8810, -0.7215], \
-            [-3.9239, -0.2415, 0.0546, 0.9353, -0.7097], \
+            [-3.9083, -0.2039, 0.0979, 0.6092, -0.4633], \
                 [-3.9116, -0.1519, 0.1272, 0.2360, -0.1731], \
                     [-4.2190, -0.1799, 0.1366, 0.1676, -0.1311]])
     Sg = np.empty([n_spectra, n_bands])
     for n in range(0, n_bands):
-        Sg[:,n] = np.exp( beta[n,0] + beta[n,1]*np.exp(Rrs443) + beta[n,2]* np.exp(Rrs488) + \
-            beta[n,3]*np.exp(Rrs531) + beta[n,4]*np.exp(Rrs547) )
+        Sg[:,n] = np.exp( beta[n,0] + beta[n,1]*np.log(Rrs443) + beta[n,2]* np.log(Rrs488) + \
+            beta[n,3]*np.log(Rrs531) + beta[n,4]*np.log(Rrs547) )
     
     # Set Sg outside limits to thresholds
     for n in range(0, n_spectra):

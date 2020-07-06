@@ -216,7 +216,6 @@ class SeaBASSHeader:
         # SeaBASSHeader.createCalibrationFolder()
 
     # Loads the hdr file
-    # ToDo: Apply default values to any settings that are missing (in case settings are updated)
     @staticmethod
     def loadSeaBASSHeader(filename):
         # print("SeaBASSHeader - Load seaBASSHeader")

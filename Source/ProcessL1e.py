@@ -48,7 +48,7 @@ class ProcessL1e:
                 else:
                     newXData.columns[k] = Utilities.interp(xTS,y,newXTS, fill_value=np.nan)
 
-        if ConfigFile.settings["bL1ePlotTimeInterp"] == 1:
+        if ConfigFile.settings["bL1ePlotTimeInterp"] == 1 and dataName != 'T':
             print('Plotting time interpolations ' +dataName)
             # Plots the interpolated data in /Plots/L1E with filename of L1E file and dataset name
             Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, dataName, fileName)
