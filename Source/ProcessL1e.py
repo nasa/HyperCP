@@ -51,6 +51,7 @@ class ProcessL1e:
         if ConfigFile.settings["bL1ePlotTimeInterp"] == 1 and dataName != 'T':
             print('Plotting time interpolations ' +dataName)
             # Plots the interpolated data in /Plots/L1E with filename of L1E file and dataset name
+            ''' TO DO: This is still broken on Mac. See the hack to fix it here: https://github.com/pandas-dev/pandas/issues/22859'''
             Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, dataName, fileName)
         
     @staticmethod

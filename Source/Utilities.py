@@ -901,62 +901,36 @@ class Utilities:
             os.makedirs(os.path.join(outDir,'Plots','L1E'))        
         plotdir = os.path.join(outDir,'Plots','L1E')
 
-        # if not os.path.exists(os.path.join('Plots','L1E')):
-        #     os.makedirs(os.path.join('Plots','L1E'))
-        try:           
-            font = {'family': 'serif',
-                'color':  'darkred',
-                'weight': 'normal',
-                'size': 16,
-                }
+        # try:           
+        font = {'family': 'serif',
+            'color':  'darkred',
+            'weight': 'normal',
+            'size': 16,
+            }
 
-            # Steps in wavebands used for plots
-            # step = float(ConfigFile.settings["fL3InterpInterval"]) # this is in nm
-            # This happens prior to waveband interpolation, so each interval is ~3.3 nm
-            ''' To Do: THIS COULD BE SET IN THE CONFIG WINDOW '''
-            step = 20 # this is in band intervals
-            
-            if instr == 'ES' or instr == 'LI' or instr == 'LT':                
-                l = round((len(xData.data.dtype.names)-3)/step) # skip date and time and datetime
-                index = l
-            else:
-                l = len(xData.data.dtype.names)-3 # skip date and time and datetime
-                index = None
+        # Steps in wavebands used for plots
+        # step = float(ConfigFile.settings["fL3InterpInterval"]) # this is in nm
+        # This happens prior to waveband interpolation, so each interval is ~3.3 nm
+        ''' To Do: THIS COULD BE SET IN THE CONFIG WINDOW '''
+        step = 20 # this is in band intervals
+        
+        if instr == 'ES' or instr == 'LI' or instr == 'LT':                
+            l = round((len(xData.data.dtype.names)-3)/step) # skip date and time and datetime
+            index = l
+        else:
+            l = len(xData.data.dtype.names)-3 # skip date and time and datetime
+            index = None
 
-            Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)            
-            
-            ticker = 0
-            if index is not None:
-                for k in xData.data.dtype.names:
-                    if index % step == 0:                                                 
-                        if k == "Datetag" or k == "Timetag2" or k == "Datetime":
-                            continue  
-                        ticker += 1    
-                        Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)                      
-                        x = np.copy(xData.data[k]).tolist()
-                        new_x = np.copy(newXData.columns[k]).tolist()
-
-                        fig = plt.figure(figsize=(12, 4))
-                        ax = fig.add_subplot(1, 1, 1)
-                        ax.plot(xTimer, x, 'bo', label='Raw')
-                        ax.plot(yTimer, new_x, 'k.', label='Interpolated')
-                        ax.legend()
-
-                        plt.xlabel('Date/Time (UTC)', fontdict=font)
-                        plt.ylabel(f'{instr}_{k}', fontdict=font)
-                        plt.subplots_adjust(left=0.15)
-                        plt.subplots_adjust(bottom=0.15)
-                        
-                        # plt.savefig(os.path.join('Plots','L1E',f'{fileBaseName}_{instr}_{k}.png'))
-                        plt.savefig(os.path.join(plotdir,f'{fileBaseName}_{instr}_{k}.png'))
-                        plt.close()                                      
-                    index +=1     
-            else:
-                for k in xData.data.dtype.names:                                        
+        Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)            
+        
+        ticker = 0
+        if index is not None:
+            for k in xData.data.dtype.names:
+                if index % step == 0:                                                 
                     if k == "Datetag" or k == "Timetag2" or k == "Datetime":
-                        continue     
-                    ticker += 1                  
-                    Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+                        continue  
+                    ticker += 1    
+                    Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)                      
                     x = np.copy(xData.data[k]).tolist()
                     new_x = np.copy(newXData.columns[k]).tolist()
 
@@ -967,18 +941,42 @@ class Utilities:
                     ax.legend()
 
                     plt.xlabel('Date/Time (UTC)', fontdict=font)
-                    plt.ylabel(f'{instr}', fontdict=font)
+                    plt.ylabel(f'{instr}_{k}', fontdict=font)
                     plt.subplots_adjust(left=0.15)
                     plt.subplots_adjust(bottom=0.15)
                     
+                    # plt.savefig(os.path.join('Plots','L1E',f'{fileBaseName}_{instr}_{k}.png'))
                     plt.savefig(os.path.join(plotdir,f'{fileBaseName}_{instr}_{k}.png'))
-                    plt.close()
-                    
-            print('\n')      
+                    plt.close()                                      
+                index +=1     
+        else:
+            for k in xData.data.dtype.names:                                        
+                if k == "Datetag" or k == "Timetag2" or k == "Datetime":
+                    continue     
+                ticker += 1                  
+                Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+                x = np.copy(xData.data[k]).tolist()
+                new_x = np.copy(newXData.columns[k]).tolist()
+
+                fig = plt.figure(figsize=(12, 4))
+                ax = fig.add_subplot(1, 1, 1)
+                ax.plot(xTimer, x, 'bo', label='Raw')
+                ax.plot(yTimer, new_x, 'k.', label='Interpolated')
+                ax.legend()
+
+                plt.xlabel('Date/Time (UTC)', fontdict=font)
+                plt.ylabel(f'{instr}', fontdict=font)
+                plt.subplots_adjust(left=0.15)
+                plt.subplots_adjust(bottom=0.15)
                 
-        except:
-            e = sys.exc_info()[0]
-            print("Error: %s" % e)
+                plt.savefig(os.path.join(plotdir,f'{fileBaseName}_{instr}_{k}.png'))
+                plt.close()
+                
+        print('\n')      
+                
+        # except:
+        #     e = sys.exc_info()[0]
+        #     print("Error: %s" % e)
 
     @staticmethod
     def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 700],\

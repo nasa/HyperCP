@@ -165,51 +165,56 @@ class PDF(FPDF):
         # Figures
         if level == "L1D":
             inPath = os.path.join(inPlotPath, 'L1C_Anoms')
-            fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))            
-            self.cell(0, 6, 'Example Deglitching', 0, 1, 'L', 1)
-            self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
-                'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1C_Anoms.')
-            for i in range (0, 5): #range(0, len(fileList)):
-                randIndx = random.randint(0, len(fileList))
-                # self.image(fileList[i], w = 175)
-                self.image(fileList[randIndx], w = 175)
+            fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))   
+            if len(fileList) > 0:         
+                self.cell(0, 6, 'Example Deglitching', 0, 1, 'L', 1)
+                self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
+                    'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1C_Anoms.')
+                for i in range (0, 5): #range(0, len(fileList)):
+                    randIndx = random.randint(0, len(fileList))
+                    # self.image(fileList[i], w = 175)
+                    self.image(fileList[randIndx], w = 175)
                 
         if level == "L1E":
             inPath = os.path.join(inPlotPath, f'{level}')
             fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))            
-            self.cell(0, 6, 'Example Temporal Interpolations', 0, 1, 'L', 1)
-            self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
-                'interpolations can be found in [output_directory]/Plots/L1E.')
-            # for i in range(0, len(fileList)):
-            res = [i for i in fileList if 'L1E_LI' not in i and 'L1E_ES' not in i]            
-            for i in range (0, len(res)): #range(0, len(fileList)):
-                self.image(res[i], w = 175)
-            res = [i for i in fileList if 'L1E_ES' in i]            
-            for i in range (0, 3): #range(0, len(fileList)):
-                randIndx = random.randint(0, len(res))
-                self.image(res[i], w = 175)
-            res = [i for i in fileList if 'L1E_LI' in i]            
-            for i in range (0, 3): #range(0, len(fileList)):
-                randIndx = random.randint(0, len(res))
-                self.image(res[i], w = 175)
+            if len(fileList) > 0:         
+                self.cell(0, 6, 'Example Temporal Interpolations', 0, 1, 'L', 1)
+                self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
+                    'interpolations can be found in [output_directory]/Plots/L1E.')
+                # for i in range(0, len(fileList)):
+                res = [i for i in fileList if 'L1E_LI' not in i and 'L1E_ES' not in i]            
+                for i in range (0, len(res)): #range(0, len(fileList)):
+                    self.image(res[i], w = 175)
+                res = [i for i in fileList if 'L1E_ES' in i]            
+                for i in range (0, 3): #range(0, len(fileList)):
+                    randIndx = random.randint(0, len(res))
+                    self.image(res[i], w = 175)
+                res = [i for i in fileList if 'L1E_LI' in i]            
+                for i in range (0, 3): #range(0, len(fileList)):
+                    randIndx = random.randint(0, len(res))
+                    self.image(res[i], w = 175)
 
         if level == "L2":
             inSpecFilterPath = os.path.join(inPlotPath, f'{level}_Spectral_Filter')
             fileList = glob.glob(os.path.join(inSpecFilterPath, f'{filebasename}_*.png'))
-            self.cell(0, 6, 'Spectral Filters', 0, 1, 'L', 1)
-            for i in range(0, len(fileList)):
-                self.image(fileList[i], w = 175)
+            if len(fileList) > 0:         
+                self.cell(0, 6, 'Spectral Filters', 0, 1, 'L', 1)
+                for i in range(0, len(fileList)):
+                    self.image(fileList[i], w = 175)
 
             fileList = glob.glob(os.path.join(inPlotPath, level, f'{filebasename}_*.png'))
-            self.cell(0, 6, 'Radiometry', 0, 1, 'L', 1)
-            for i in range(0, len(fileList)):
-                self.image(fileList[i], w = 175)
+            if len(fileList) > 0:         
+                self.cell(0, 6, 'Radiometry', 0, 1, 'L', 1)
+                for i in range(0, len(fileList)):
+                    self.image(fileList[i], w = 175)
 
             inProdPath = os.path.join(inPlotPath, f'{level}_Products')
             fileList = glob.glob(os.path.join(inProdPath, f'{filebasename}_*.png'))
-            self.cell(0, 6, 'Derived Spectral Products', 0, 1, 'L', 1)
-            for i in range(0, len(fileList)):
-                self.image(fileList[i], w = 175)
+            if len(fileList) > 0:         
+                self.cell(0, 6, 'Derived Spectral Products', 0, 1, 'L', 1)
+                for i in range(0, len(fileList)):
+                    self.image(fileList[i], w = 175)
 
         # # Mention in italics
         # self.set_font('', 'I')

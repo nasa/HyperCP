@@ -212,7 +212,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         # Biogeochem
         VBox1.addWidget(biochemLabel)
         VBox1.addWidget(biochemLabel1)
-        VBox1.addSpacing(10)           
+        # VBox1.addSpacing(10)           
 
         # oc3m
         oc3mHBox = QtWidgets.QHBoxLayout()
@@ -233,7 +233,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         pocHBox.addWidget(self.pocCheckBox)
         VBox1.addLayout(pocHBox)
 
-        VBox1.addSpacing(10)
+        # VBox1.addSpacing(10)
 
         # CDOM, Sg, DOC
         gocadVBox = QtWidgets.QVBoxLayout()
@@ -310,7 +310,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         # Right Box
         VBox2 = QtWidgets.QVBoxLayout()
         VBox2.addWidget(geoPhysLabel)
-        VBox2.addSpacing(10)       
+        # VBox2.addSpacing(10)       
 
         # Kd490
         kd490HBox = QtWidgets.QHBoxLayout()
@@ -336,12 +336,12 @@ class OCproductsWindow(QtWidgets.QDialog):
         # aotHBox.addWidget(self.aotCheckBox)
         VBox2.addLayout(aotHBox)
 
-        VBox2.addSpacing(10)
+        # VBox2.addSpacing(10)
 
         # Semianalyticals
         VBox2.addWidget(iopLabel)
 
-        VBox2.addSpacing(10)
+        # VBox2.addSpacing(10)
 
         # GIOP
         giopVBox = QtWidgets.QVBoxLayout()
@@ -394,7 +394,7 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         VBox2.addLayout(giopVBox)
 
-        VBox2.addSpacing(10)
+        # VBox2.addSpacing(10)
 
         # QAA
         qaaVBox = QtWidgets.QVBoxLayout()
@@ -458,7 +458,8 @@ class OCproductsWindow(QtWidgets.QDialog):
         VBox.addLayout(saveHBox)
 
         self.setLayout(VBox)
-        self.setGeometry(300, 100, 0, 0)
+        ''' TO DO: I still have no control over the window size or line spacing'''
+        self.setGeometry(100, 100, 0, 0)
         self.setWindowTitle('Derived L2 Geophysical and Inherent Optical Properties')
 
     def gocadCheckBoxUpdate(self):
