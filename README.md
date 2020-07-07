@@ -28,11 +28,11 @@ While this version has been substantially updated from 1.0.α to (among other th
 
 ## Requirements and Installation
 
-Save this entire HyperInSPACE file repository (~2.5 GB) to a convenient, sensibly named directory on your computer such  as Users/yourname/HyperInSPACE/. When Main.py is launched for the first time, data and directories will be updated as described below at this location only.
+Save this entire HyperInSPACE file repository (~2.5 GB) to a convenient, sensibly named directory on your computer such as yourPath/HyperInSPACE/. When Main.py is launched for the first time, data and directories will be updated as described below. No system files will be changed.
 
-Requires Python 3.X is installed on a Linux, MacOS, or Windows computer. The Anaconda distribution is encouraged. A nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. (If you are running a minimal, bootstrap distribution such as Miniconda, several additional packages may be needed including: scipy, matplotlib, pyqt5, h5py, and requests.)
+Requires Python 3.X is installed on a Linux, MacOS, or Windows computer. The Anaconda distribution is encouraged. A nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. (If you are running a minimal, bootstrap distribution such as Miniconda, several additional packages may be needed including: scipy, matplotlib, pyqt5, h5py, fpdf, and requests.)
 
-HDF5 data files will be read and written using the included h5py module (2.9.0 at the time of writing). The Zhang (et al. 2017) sky/sunglint correction also requires Xarray, which requires installation (instructions here: http://xarray.pydata.org/en/stable/installing.html). To install Xarray with Anaconda:
+HDF5 data files will be read and written using the h5py module (2.9.0 at the time of writing) included in a standard Anaconda Python package. The Zhang (et al. 2017) sky/sunglint correction also requires Xarray, which requires installation (complete instructions here: http://xarray.pydata.org/en/stable/installing.html). To install Xarray with Anaconda:
 ```
 prompt$ conda install xarray dask netCDF4 bottleneck
 ```
@@ -53,9 +53,10 @@ prompt$ python Main.py
 The following folders will be created automatically when you first run the program: 
 
 - Config - Configuration and instrument files (by subdirectory - auto-created), SeaBASS header configuration files, Main view configuration file
-- Data - Optional location for input and/or output data. Data delivered with this original repository at the top level directory (e.g. Thuillier and satellite spectral response functions, banner image, Zhang glint correction database) will be moved here when Main.py is run the first time.
 - Logs - Most command line output messages generated during processing are captured for later reference in .log text files here
 - Plots - A variety of optional plotting routines are included which create name-appropriate sub-directories (i.e. 'L1C_Anoms', 'L1D', 'L1E', 'L2', 'L2_Spectral_Filter'). As with the Data, this path for outputting plots is optional and will be overwritten by choosing an alternate Data/Plots parent directory (see below).
+- Data - This directory now comes unpacked in the distribution. By default, it contains only Pope & Fry/Smith & Baker water absorption properties, Thuillier and satellite spectral response functions, banner images for the GUI, and the Zhang glint correction database. This is also the optional fallback location for input and/or output radiometry data, though setting up separate locations for field data is highly recommended (see below).
+- Source - This new directory (which comes unpacked with the distribution) now holds the majority of the code.
 
 (Note: Data, Plots, and Logs directories are not tracked on git.)
 
@@ -67,7 +68,7 @@ The following folders will be created automatically when you first run the progr
 3. Create a new Configuration (or edit and existing Configuration)
 4. Add and enable only *relevant* calibration and instrument files to the Configuration; there is no such thing as a standard instrument package
 5. Choose appropriate processing parameters for L1A-L2 (do not depend on software defaults; there is no such thing as a standard data collection)
-6. HDF files will be produced at each level of processing, plus optional SeaBASS files for radiometry at L1E and L2. Plots can be produced at L1D, L1E, and L2. Processing logs and plots are aggregated into PDF Reports at L2 (covering all processing from RAW to L2) written to a dedicated directory in the selected Output directory.
+6. HDF files will be produced at each level of processing, plus optional SeaBASS text files for radiometry at L1E and L2. Plots can be produced at L1D, L1E, and L2. Processing logs and plots are aggregated into PDF Reports at L2 (covering all processing from RAW to L2) written to a dedicated Reports directory in the selected Output directory.
 
 
 ### Main Window
@@ -361,6 +362,8 @@ Plots of processed L2 data from each radiometer and calculated reflectances can 
 Select the "Derived L2 Ocean Color Products" button to choose, calculate, and plot derived biochemical and inherent optical properties using a variety of ocean color algorithms. Algorithms largely mirror those available in SeaDAS with a few additions. They include OC3M, PIC, POC, Kd490, iPAR, GIOP, QAA, and the Average Visible Wavelength (Vandermuellen et al. 2020) and GOCAD-based CDOM/Sg/DOC algorithms (Aurin et al. 2018).
 
 To output SeaBASS formatted text files, check the box. A subfolder within the L2 directory will be created, and separate text files will be made for Li, Lt, Es, and Rrs hyperspectral data and satellite bands, if selected. Set-up for the SeaBASS header is managed with the 'Edit/Update SeaBASS Header' in the L1E configuration.
+
+Upon completion of L2 processing for each file, a PDF summary report will be produced and saved in [output_directory]/Reports. This contains metadata, processing parameters, processing logs, and plots of QA analysis, radiometry, and derived ocean color products.
 
 
 ## References

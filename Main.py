@@ -4,7 +4,7 @@ above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 
 See README.md or README.pdf for installation instructions and guide.
 
-Version 1.0.3: Under development June 2020 (See Changelog.md)
+Version 1.0.3: Under development July 2020 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 
 """
@@ -29,24 +29,6 @@ class Window(QtWidgets.QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        
-        # First time run: Create folders if they don't exist, and move data into Data
-        # This will only need to run the first time you run HyperInSPACE
-        if not os.path.exists("Data"):  
-           os.makedirs("Data")
-        #    os.rename("./banner.jpg", "./Data/banner.jpg")
-           os.rename("./banner2.png", "./Data/banner2.png")
-           os.rename("./Zhang_rho_db.mat", "./Data/Zhang_rho_db.mat")
-           os.rename("./Thuillier_F0.sb", "./Data/Thuillier_F0.sb")           
-           os.rename("./EXAMPLE_L1B.hdf", "./Data/EXAMPLE_L1B.hdf")
-           os.rename("./HMODISA_RSRs.txt", "./Data/HMODISA_RSRs.txt")
-           os.rename("./HMODIST_RSRs.txt", "./Data/HMODIST_RSRs.txt")
-           os.rename("./MERIS_RSRs_avg.txt", "./Data/MERIS_RSRs_avg.txt")
-           os.rename("./OLCIA_RSRs.txt", "./Data/OLCIA_RSRs.txt")
-           os.rename("./OLCIB_RSRs.txt", "./Data/OLCIB_RSRs.txt")
-           os.rename("./VIIRS1_RSRs.txt", "./Data/VIIRS1_RSRs.txt")
-           os.rename("./VIIRSN_IDPSv3_RSRs.txt", "./Data/VIIRSN_IDPSv3_RSRs.txt")
-           
         if not os.path.exists("Plots"):
            os.makedirs("Plots")
         if not os.path.exists("Config"):
