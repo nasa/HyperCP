@@ -889,6 +889,13 @@ class Utilities:
     def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):    
         ''' Plot results of L1E time interpolation '''
 
+        # For the sake of MacOS, need to hack the datetimes into panda dataframes for plotting
+        dfx = pd.DataFrame(data=xTimer, index=list(range(0,len(xTimer))), columns=['x'])
+        # *** HACK: CONVERT datetime column to string and back again - who knows why this works? ***
+        dfx['x'] = pd.to_datetime(dfx['x'].astype(str))
+        dfy = pd.DataFrame(data=yTimer, index=list(range(0,len(yTimer))), columns=['x'])
+        dfy['x'] = pd.to_datetime(dfy['x'].astype(str))
+
         fileBaseName,_ = fileName.split('.')
         register_matplotlib_converters()
         
@@ -936,8 +943,10 @@ class Utilities:
 
                     fig = plt.figure(figsize=(12, 4))
                     ax = fig.add_subplot(1, 1, 1)
-                    ax.plot(xTimer, x, 'bo', label='Raw')
-                    ax.plot(yTimer, new_x, 'k.', label='Interpolated')
+                    # ax.plot(xTimer, x, 'bo', label='Raw')
+                    ax.plot(dfx['x'], x, 'bo', label='Raw')
+                    # ax.plot(yTimer, new_x, 'k.', label='Interpolated')
+                    ax.plot(dfy['x'], new_x, 'k.', label='Interpolated')
                     ax.legend()
 
                     plt.xlabel('Date/Time (UTC)', fontdict=font)
@@ -960,8 +969,10 @@ class Utilities:
 
                 fig = plt.figure(figsize=(12, 4))
                 ax = fig.add_subplot(1, 1, 1)
-                ax.plot(xTimer, x, 'bo', label='Raw')
-                ax.plot(yTimer, new_x, 'k.', label='Interpolated')
+                # ax.plot(xTimer, x, 'bo', label='Raw')
+                ax.plot(dfx['x'], x, 'bo', label='Raw')
+                # ax.plot(yTimer, new_x, 'k.', label='Interpolated')
+                ax.plot(dfy['x'], new_x, 'k.', label='Interpolated')
                 ax.legend()
 
                 plt.xlabel('Date/Time (UTC)', fontdict=font)
