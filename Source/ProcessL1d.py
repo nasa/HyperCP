@@ -18,8 +18,12 @@ class ProcessL1d:
     @staticmethod
     def darkDataDeglitching(darkData, sensorType):        
         ''' Dark deglitching is now based on double-pass discrete linear convolution of the residual 
-        with a stationary std over a rolling average'''        
-        # print(str(sensorType))
+        with a stationary std over a rolling average.
+        
+        TBD: This is very aggressive in that it eliminates data in all bands if a record in any band fails 
+            the test. This is why the percentages in the logs appear much higher than the knockouts in any
+            given band (as seen in the plots). Could be revisited. '''        
+        
         windowSize = int(ConfigFile.settings["fL1dDeglitch0"])
         sigma = float(ConfigFile.settings["fL1dDeglitch2"])
 

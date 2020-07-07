@@ -2,6 +2,7 @@ v1.0.4 Unreleased
 * Add completed GIOP to L2 OC products
 * Add PIC to L2 OC products
 * Propagate uncertainties from radiometry to OC products
+* Revisit question of overly aggressive deglitching
 
 ---
 v1.0.3 2020-07-07: DAA
