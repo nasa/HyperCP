@@ -1,5 +1,14 @@
-v1.0.3 Unreleased
-* Create a L2 module for ocean color products 
+v1.0.4 Unreleased
+* Add completed GIOP to L2 OC products
+* Add PIC to L2 OC products
+* Propagate uncertainties from radiometry to OC products
+
+---
+v1.0.3 2020-07-07: DAA
+
+2020-07-07: DAA
+* v1.0.3 tested and debugged for MacOS, Win10, Linux
+* L2 PDF reporting per file extended to include comments, metadata, and OC product plots
 
 2020-07-01: DAA
 * Complete modules for GOCAD (CDOM/Sg/DOC)
@@ -10,7 +19,7 @@ v1.0.3 Unreleased
 * Complete modules for chlor_a, kd490, poc, ipar, AVW, QAAv6
 
 2020-06-18: DAA
-* Move source code into ./Source
+* Move most source code into ./Source
 * Build chlor_a into root HDF file
 
 ---

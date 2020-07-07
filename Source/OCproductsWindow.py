@@ -53,12 +53,12 @@ class OCproductsWindow(QtWidgets.QDialog):
         if int(ConfigFile.products["bL2Prodgocad"]) == 1:
             self.gocadCheckBox.setChecked(True)
 
-        self.agLabel = QtWidgets.QLabel("   ag(275,355,380,412,443,488)", self)     
+        self.agLabel = QtWidgets.QLabel("   ag(275, 355, 380, 412, 443, 488)", self)     
         self.agCheckBox = QtWidgets.QCheckBox("", self)              
         if int(ConfigFile.products["bL2Prodag"]) == 1:
             self.agCheckBox.setChecked(True)
 
-        self.SgLabel = QtWidgets.QLabel("   Sg(275,300,350,380,412)", self)     
+        self.SgLabel = QtWidgets.QLabel("   Sg(275, 300, 350, 380, 412)", self)     
         self.SgCheckBox = QtWidgets.QCheckBox("", self)              
         if int(ConfigFile.products["bL2ProdSg"]) == 1:
             self.SgCheckBox.setChecked(True)
@@ -75,7 +75,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         # self.Sg412CheckBox = QtWidgets.QCheckBox("", self)              
         # if int(ConfigFile.products["bL2ProdSg412"]) == 1:
         #     self.Sg412CheckBox.setChecked(True)
-        self.DOCLabel = QtWidgets.QLabel("     doc", self)     
+        self.DOCLabel = QtWidgets.QLabel("   doc", self)     
         self.DOCCheckBox = QtWidgets.QCheckBox("", self)              
         if int(ConfigFile.products["bL2ProdDOC"]) == 1:
             self.DOCCheckBox.setChecked(True)
