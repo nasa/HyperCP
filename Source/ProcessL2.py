@@ -550,7 +550,7 @@ class ProcessL2:
             Data = group.getDataset("ES") 
             timeStamp = group.getDataset("ES").data["Datetime"]
             badTimes = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=[400, 700],\
-                filterFactor=5, rType='Es')
+                filterFactor=ConfigFile.settings["fL2SpecFilterEs"], rType='Es')
             msg = f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of Es data flagged'
             print(msg)
             Utilities.writeLogFile(msg)  
@@ -558,7 +558,7 @@ class ProcessL2:
             Data = group.getDataset("LI")
             timeStamp = group.getDataset("LI").data["Datetime"]
             badTimes1 = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=[400, 700],\
-                filterFactor=8, rType='Li')
+                filterFactor=ConfigFile.settings["fL2SpecFilterLi"], rType='Li')
             msg = f'{len(np.unique(badTimes1))/len(timeStamp)*100:.1f}% of Li data flagged'
             print(msg)
             Utilities.writeLogFile(msg)  
@@ -566,7 +566,7 @@ class ProcessL2:
             Data = group.getDataset("LT")
             timeStamp = group.getDataset("LT").data["Datetime"]
             badTimes2 = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=[400, 700],\
-                filterFactor=3, rType='Lt')
+                filterFactor=ConfigFile.settings["fL2SpecFilterLt"], rType='Lt')
             msg = f'{len(np.unique(badTimes2))/len(timeStamp)*100:.1f}% of Lt data flagged'
             print(msg)
             Utilities.writeLogFile(msg)  

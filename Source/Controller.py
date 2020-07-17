@@ -583,7 +583,13 @@ class Controller:
                     if os.path.isfile(inLog):
                         pdf.print_chapter(root,'L2', 'Process L1E to L2', inLog, inPlotPath, fileName, outFilePath)
 
-                    pdf.output(outPDF, 'F')
+                    try:
+                        pdf.output(outPDF, 'F')
+                    except:
+                        msg = 'Unable to write the PDF file. It may be open in another program.'
+                        Utilities.errorWindow("File Error", msg)
+                        print(msg)
+                        Utilities.writeLogFile(msg)
 
         msg = f'Process Single Level: {outFilePath} - DONE'
         print(msg)

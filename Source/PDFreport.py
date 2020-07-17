@@ -6,6 +6,7 @@ import random
 
 from SeaBASSWriter import SeaBASSWriter
 from SeaBASSHeader import SeaBASSHeader
+from ConfigFile import ConfigFile
 
 
 class PDF(FPDF):
@@ -165,23 +166,76 @@ class PDF(FPDF):
         # Figures
         if level == "L1D":
             inPath = os.path.join(inPlotPath, 'L1C_Anoms')
-            fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))   
-            if len(fileList) > 0:         
-                self.cell(0, 6, 'Example Deglitching', 0, 1, 'L', 1)
-                self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
-                    'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1C_Anoms.')
-                for i in range (0, 5): #range(0, len(fileList)):
-                    randIndx = random.randint(0, len(fileList))
+
+            self.cell(0, 6, 'Example Deglitching', 0, 1, 'L', 1)
+            self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
+                'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1C_Anoms.')
+
+            # ES
+            fileList = glob.glob(os.path.join(inPath, \
+                f'{filebasename}_L1C_W{ConfigFile.settings["fL1dDeglitch0"]}S{ConfigFile.settings["fL1dDeglitch2"]}_*ESDark_*.png' ))  
+
+            if len(fileList) > 0:
+                
+                for i in range (0, 1): #range(0, len(fileList)):
+                    randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
+
+                fileList = glob.glob(os.path.join(inPath, \
+                    f'{filebasename}_L1C_W{ConfigFile.settings["fL1dDeglitch1"]}S{ConfigFile.settings["fL1dDeglitch3"]}_*ESLight_*.png'))   
+
+                for i in range (0, 1): #range(0, len(fileList)):
+                    randIndx = random.randint(0, len(fileList)-1)
+                    # self.image(fileList[i], w = 175)
+                    self.image(fileList[randIndx], w = 175)
+
+                # LI
+                fileList = glob.glob(os.path.join(inPath, \
+                    f'{filebasename}_L1C_W{ConfigFile.settings["fL1dDeglitch0"]}S{ConfigFile.settings["fL1dDeglitch2"]}_*LIDark_*.png'))   
+
+                for i in range (0, 1): #range(0, len(fileList)):
+                    randIndx = random.randint(0, len(fileList)-1)
+                    # self.image(fileList[i], w = 175)
+                    self.image(fileList[randIndx], w = 175)
+
+                fileList = glob.glob(os.path.join(inPath, \
+                    f'{filebasename}_L1C_W{ConfigFile.settings["fL1dDeglitch1"]}S{ConfigFile.settings["fL1dDeglitch3"]}_*LILight_*.png'))   
+
+                for i in range (0, 1): #range(0, len(fileList)):
+                    randIndx = random.randint(0, len(fileList)-1)
+                    # self.image(fileList[i], w = 175)
+                    self.image(fileList[randIndx], w = 175)
+
+                # LT
+                fileList = glob.glob(os.path.join(inPath, \
+                    f'{filebasename}_L1C_W{ConfigFile.settings["fL1dDeglitch0"]}S{ConfigFile.settings["fL1dDeglitch2"]}_*LTDark_*.png'))   
+
+                for i in range (0, 1): #range(0, len(fileList)):
+                    randIndx = random.randint(0, len(fileList)-1)
+                    # self.image(fileList[i], w = 175)
+                    self.image(fileList[randIndx], w = 175)
+
+                fileList = glob.glob(os.path.join(inPath, \
+                    f'{filebasename}_L1C_W{ConfigFile.settings["fL1dDeglitch1"]}S{ConfigFile.settings["fL1dDeglitch3"]}_*LTLight_*.png'))   
+
+                for i in range (0, 1): #range(0, len(fileList)):
+                    randIndx = random.randint(0, len(fileList)-1)
+                    # self.image(fileList[i], w = 175)
+                    self.image(fileList[randIndx], w = 175)
+            else:
+                self.multi_cell(0, 5, "None found.")
                 
         if level == "L1E":
             inPath = os.path.join(inPlotPath, f'{level}')
+            self.cell(0, 6, 'Example Temporal Interpolations', 0, 1, 'L', 1)
+            self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
+                'interpolations can be found in [output_directory]/Plots/L1E.')
+
             fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))            
+            
             if len(fileList) > 0:         
-                self.cell(0, 6, 'Example Temporal Interpolations', 0, 1, 'L', 1)
-                self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
-                    'interpolations can be found in [output_directory]/Plots/L1E.')
+                
                 # for i in range(0, len(fileList)):
                 res = [i for i in fileList if 'L1E_LI' not in i and 'L1E_ES' not in i]            
                 for i in range (0, len(res)): #range(0, len(fileList)):
@@ -194,6 +248,8 @@ class PDF(FPDF):
                 for i in range (0, 3): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(res))
                     self.image(res[i], w = 175)
+            else:
+                self.multi_cell(0, 5, "None found.")
 
         if level == "L2":
             inSpecFilterPath = os.path.join(inPlotPath, f'{level}_Spectral_Filter')

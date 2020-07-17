@@ -1047,6 +1047,8 @@ class Utilities:
         plt.plot(wave, aveSpec + filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
         plt.plot(wave, aveSpec - filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
 
+        plt.title(f'Sigma = {filterFactor}', fontdict=font) 
+
         badTimes  = []
         badIndx = []
         # For each spectral band...
