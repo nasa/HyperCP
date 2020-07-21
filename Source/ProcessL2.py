@@ -2167,8 +2167,9 @@ class ProcessL2:
         del(root.attributes["DEGLITCH_PRODAT"])
         del(root.attributes["DEGLITCH_REFDAT"])
         del(root.attributes["DEPTH_RESOLUTION"])
-        root.attributes["SOLARTRACKER_SERIAL_NUMBER"] = root.attributes["SAS SERIAL NUMBER"]        
-        del(root.attributes["SAS SERIAL NUMBER"])
+        if ConfigFile.settings["bL1cSolarTracker"]:
+            root.attributes["SOLARTRACKER_SERIAL_NUMBER"] = root.attributes["SAS SERIAL NUMBER"]        
+            del(root.attributes["SAS SERIAL NUMBER"])
         del(root.attributes["TIMETAG2"])
         del(root.attributes["WAVEL_INTERP"])
 
