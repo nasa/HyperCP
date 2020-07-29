@@ -3,7 +3,11 @@ import numpy as np
 
 def L2gocad(Rrs443, Rrs488, Rrs531, Rrs547, SAL, fill=-9999):
     ''' Use weighted MODIS Aqua bands to calculate CDOM absorption, spectral 
-        slopes, and DOC base on (Aurin et al. 2018, aka GOCAD) 
+        slopes, and DOC based on
+            
+            D. Aurin, A. Mannino, and D. J. Lary, “Remote sensing of CDOM, CDOM 
+            spectral slope, and dissolved organic carbon in the global ocean,” Appl. 
+            Sci. 8, 2687 (2018).
         
         Inputs: 
             RrsXXX: (float) above water remote sensing reflectance at XXX nm          
@@ -12,7 +16,11 @@ def L2gocad(Rrs443, Rrs488, Rrs531, Rrs547, SAL, fill=-9999):
         
         Outputs:
             ag: (array) CDOM at 275, 355, 380, 412, 443, 488 nm
-            Sg: (array) CDOM slope at 275-295, 300-600, 412-600 nm'''   
+            Sg: (array) CDOM slope at 275-295, 300-600, 412-600 nm
+            
+            
+        2020-07-01: by Dirk Aurin, NASA Goddard Space Flight Center, dirk.a.aurin@nasa.gov
+        '''   
     
     n_spectra = len(Rrs443)
 
