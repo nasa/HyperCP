@@ -60,16 +60,17 @@ class PDF(FPDF):
             metaData += 'Processing Parameters: \n'
             metaData += f'Rotator Home Angle: {commentsDict[" Rotator Home Angle"]}'
             metaData += f'Rotator Delay: {commentsDict[" Rotator Delay"]}'
-            metaData += f'Max Pitch: {commentsDict[" Max Pitch"]}'
-            metaData += f'Max Roll: {commentsDict[" Max Roll"]}'
-            metaData += f'Max Pitch: {commentsDict[" Max Pitch"]}'
+            metaData += f'Pitch/Roll Filter: {commentsDict[" Pitch/Roll Filter"]}'
+            metaData += f'Max Pitch/Roll: {commentsDict[" Max Pitch/Roll"]}'
+            # metaData += f'Max Roll: {commentsDict[" Max Roll"]}'
+            # metaData += f'Max Pitch: {commentsDict[" Max Pitch"]}'
             metaData += f'Rotator Min/Max Filter: {commentsDict[" Rotator Min/Max Filter"]}'
             metaData += f'Rotator Min: {commentsDict[" Rotator Min"]}'
             metaData += f'Rotator Max: {commentsDict[" Rotator Max"]}'
             metaData += f'Rel Azimuth Filter: {commentsDict[" Rel Azimuth Filter"]}'
             metaData += f'Rel Azimuth Min: {commentsDict[" Rel Azimuth Min"]}'
             metaData += f'Rel Azimuth Max: {commentsDict[" Rel Azimuth Max"]}'
-            metaData += f'Pitch/Roll Filter: {commentsDict[" Pitch/Roll Filter"]}'
+            
         if level == "L1D":
             intro = 'Deglitch data and apply shutter dark corrections.'
 
@@ -237,17 +238,24 @@ class PDF(FPDF):
             if len(fileList) > 0:         
                 
                 # for i in range(0, len(fileList)):
-                res = [i for i in fileList if 'L1E_LI' not in i and 'L1E_ES' not in i]            
+                res = [i for i in fileList if 'L1E_LI' not in i and 'L1E_ES' not in i and 'L1E_LT' not in i]            
                 for i in range (0, len(res)): #range(0, len(fileList)):
                     self.image(res[i], w = 175)
-                res = [i for i in fileList if 'L1E_ES' in i]            
-                for i in range (0, 3): #range(0, len(fileList)):
-                    randIndx = random.randint(0, len(res))
-                    self.image(res[i], w = 175)
+                res = [i for i in fileList if 'L1E_ES' in i]  
+                if len(res) >= 3:          
+                    for i in range (0, 3): #range(0, len(fileList)):
+                        randIndx = random.randint(0, len(res))
+                        self.image(res[i], w = 175)
                 res = [i for i in fileList if 'L1E_LI' in i]            
-                for i in range (0, 3): #range(0, len(fileList)):
-                    randIndx = random.randint(0, len(res))
-                    self.image(res[i], w = 175)
+                if len(res) >= 3:     
+                    for i in range (0, 3): #range(0, len(fileList)):
+                        randIndx = random.randint(0, len(res))
+                        self.image(res[i], w = 175)
+                res = [i for i in fileList if 'L1E_LT' in i]            
+                if len(res) >= 3:     
+                    for i in range (0, 3): #range(0, len(fileList)):
+                        randIndx = random.randint(0, len(res))
+                        self.image(res[i], w = 175)
             else:
                 self.multi_cell(0, 5, "None found.")
 

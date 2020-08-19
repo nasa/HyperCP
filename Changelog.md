@@ -4,6 +4,12 @@ v1.0.4 Unreleased
 * Propagate uncertainties from radiometry to OC products
 * Revisit question of overly aggressive deglitching
 
+2020-08-19:
+* Correct PDF report writer for case where Li or Es have fewest records for L1E interpolation.
+
+2020-08-18:
+* Combine pitch/roll filter into one lineedit in the ConfigWindow.
+
 2020-07-14:
 * Add splashscreen for PDF unwriteable. Add sigma to spectral filter plots. Fix hard-coded filter sigmas. Fix which deglitching plots added to report.
 

@@ -473,8 +473,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! Rotator Home Angle = {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'+\
             f'! Rotator Delay = {ConfigFile.settings["fL1cRotatorDelay"]}\n'+\
             f'! Pitch/Roll Filter = {pitchRollFilt}\n'+\
-            f'! Max Pitch = {ConfigFile.settings["fL1cPitchRollPitch"]}\n'+\
-            f'! Max Roll = {ConfigFile.settings["fL1cPitchRollRoll"]}\n'+\
+            f'! Max Pitch/Roll = {ConfigFile.settings["fL1cPitchRollPitch"]}\n'+\
             f'! Rotator Min/Max Filter = {cleanRotFilt}\n'+\
             f'! Rotator Min = {ConfigFile.settings["fL1cRotatorAngleMin"]}\n'+\
             f'! Rotator Max = {ConfigFile.settings["fL1cRotatorAngleMax"]}\n'+\
