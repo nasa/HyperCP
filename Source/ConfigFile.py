@@ -92,7 +92,7 @@ class ConfigFile:
         print("bL2PlotLi", ConfigFile.settings["bL2PlotLi"])
         print("bL2PlotLt", ConfigFile.settings["bL2PlotLt"])
 
-        print("bL2Prodoc4", ConfigFile.products["bL2Prodoc4"])
+        print("bL2Prodoc3m", ConfigFile.products["bL2Prodoc3m"])
         # print("bL2Prodaot", ConfigFile.products["bL2Prodaot"])
         print("bL2Prodkd490", ConfigFile.products["bL2Prodkd490"])
         print("bL2Prodpic", ConfigFile.products["bL2Prodpic"])
@@ -235,7 +235,7 @@ class ConfigFile:
         ConfigFile.settings["bL2PlotLi"] = 0
         ConfigFile.settings["bL2PlotLt"] = 0
 
-        ConfigFile.products["bL2Prodoc4"] = 0
+        ConfigFile.products["bL2Prodoc3m"] = 0
         # ConfigFile.products["bL2Prodaot"] = 0
         ConfigFile.products["bL2Prodkd490"] = 0
         ConfigFile.products["bL2Prodpic"] = 0
