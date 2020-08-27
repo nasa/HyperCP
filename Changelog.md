@@ -4,6 +4,15 @@ v1.0.4 Unreleased
 * Propagate uncertainties from radiometry to OC products
 * Revisit question of overly aggressive deglitching
 
+2020-08-26:
+* Bug fix to force Aqua convolution whenever certain Derived Products are sought
+* Correct SeaBASS file naming errror for station files
+* Fix SeaBASS output units for L2 and L1e.
+* Restore radiometry units at L1b onward to HDF attributes
+
+2020-08-21:
+* Fix bug in ConfigFile defaults for oc3m vs. oc4
+
 2020-08-19:
 * Correct PDF report writer for case where Li or Es have fewest records for L1E interpolation.
 

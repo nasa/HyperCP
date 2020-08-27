@@ -82,7 +82,7 @@ class SeaBASSWriter:
         if headerBlock['west_longitude'] is '':
             headerBlock['west_longitude'] = westLon
         if level == '2':
-            headerBlock['wind_speed'] = aveWind
+            headerBlock['wind_speed'] = aveWind # wind_speed will not be written to l1e
         
         return headerBlock
 
@@ -136,7 +136,7 @@ class SeaBASSWriter:
         lenRad = (len(dataset.data.dtype.names))
         unitsLine = ['yyyymmdd']
         unitsLine.append('hh:mm:ss')
-        unitsLine.extend(['degrees']*6)
+        unitsLine.extend(['degrees']*4) # lat, lon, RelAz, SZA
         unitsLine.extend([units]*lenRad)
         unitsLineStr = ','.join(unitsLine)
 
@@ -210,7 +210,7 @@ class SeaBASSWriter:
         lenRad = (len(dsCopy.dtype.names))
         unitsLine = ['yyyymmdd']
         unitsLine.append('hh:mm:ss')
-        unitsLine.extend(['degrees']*6)
+        unitsLine.extend(['degrees']*4) # lat, lon, relAz, sza
         unitsLine.extend([units]*lenRad)
         unitsLineStr = ','.join(unitsLine)
 
@@ -246,7 +246,7 @@ class SeaBASSWriter:
         outFile = open(outFileName,'w',newline='\n')
         outFile.write('/begin_header\n')
         for key,value in headerBlock.items():
-            if key != 'comments' and key != 'other_comments':
+            if key != 'comments' and key != 'other_comments' and key != 'wind_speed':
                 # Python 3 f-string
                 line = f'/{key}={value}\n'
                 outFile.write(line)

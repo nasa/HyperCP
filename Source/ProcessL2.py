@@ -724,36 +724,35 @@ class ProcessL2:
             # The alternative to masking is to process them differently (e.g. See Ruddick_Rho)
             # Therefore, set this very high if you don't want it triggered (e.g. 1.0, see Readme)            
             if li750[indx]/es750[indx] >= cloudFLAG:
-                # msg = f"Quality Check: Li(750)/Es(750) >= cloudFLAG:{cloudFLAG}"
-                # print(msg)
-                # Utilities.writeLogFile(msg)  
+                msg = f"Quality Check: Li(750)/Es(750) >= cloudFLAG:{cloudFLAG}"
+                print(msg)
+                Utilities.writeLogFile(msg)  
                 badTimes.append(dateTime)
-
 
             # Threshold for significant es
             # Wernand 2002
             if es480[indx] < esFlag:
-                # msg = f"Quality Check: es(480) < esFlag:{esFlag}"
-                # print(msg)
-                # Utilities.writeLogFile(msg)  
+                msg = f"Quality Check: es(480) < esFlag:{esFlag}"
+                print(msg)
+                Utilities.writeLogFile(msg)  
                 badTimes.append(dateTime)
 
             # Masking spectra affected by dawn/dusk radiation
             # Wernand 2002
             #v = esXSlice["470.0"][0] / esXSlice["610.0"][0] # Fix 610 -> 680
             if es470[indx]/es680[indx] < dawnDuskFlag:
-                # msg = f'Quality Check: ES(470.0)/ES(680.0) < dawnDuskFlag:{dawnDuskFlag}'
-                # print(msg)
-                # Utilities.writeLogFile(msg)  
+                msg = f'Quality Check: ES(470.0)/ES(680.0) < dawnDuskFlag:{dawnDuskFlag}'
+                print(msg)
+                Utilities.writeLogFile(msg)  
                 badTimes.append(dateTime)
 
             # Masking spectra affected by rainfall and high humidity
             # Wernand 2002 (940/370), Garaba et al. 2012 also uses Es(940/370), presumably 720 was developed by Wang...???
             ''' Follow up on the source of this flag'''            
             if es720[indx]/es370[indx] < humidityFlag:
-                # msg = f'Quality Check: ES(720.0)/ES(370.0) < humidityFlag:{humidityFlag}'
-                # print(msg)
-                # Utilities.writeLogFile(msg)  
+                msg = f'Quality Check: ES(720.0)/ES(370.0) < humidityFlag:{humidityFlag}'
+                print(msg)
+                Utilities.writeLogFile(msg)  
                 badTimes.append(dateTime)
         
         badTimes = np.unique(badTimes)
@@ -1755,7 +1754,7 @@ class ProcessL2:
 
         # Stations
         #   The simplest approach is to run station extraction seperately from underway data.
-        #   This means, if station extraction is selected in the GUI, all non-station data will be
+        #   This means if station extraction is selected in the GUI, all non-station data will be
         #   discarded here prior to any further filtering or processing.
         station = None
         if ConfigFile.settings["bL2Stations"]:

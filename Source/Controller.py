@@ -341,7 +341,7 @@ class Controller:
         
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
-            return None
+            return None, outFilePath
 
         # Process the data
         msg = ("ProcessL2: " + inFilePath)
@@ -354,7 +354,7 @@ class Controller:
             Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None
+            return None, outFilePath
         
         root.attributes['In_Filepath'] = inFilePath
         root = ProcessL2.processL2(root, ancillaryData)
@@ -396,20 +396,20 @@ class Controller:
         if root is not None:
             try:
                 root.writeHDF5(outFilePath)
-                return root
+                return root, outFilePath
             except:
                 msg = "Unable to write file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return None
+                return None, outFilePath
         else:
             msg = "L2 processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None
+            return None, outFilePath
 
     # Process every file in a list of files 1 level
     @staticmethod
@@ -531,7 +531,7 @@ class Controller:
 
             fileName = fileName.split('_')
             outFilePath = os.path.join(dataPath,fileName[0] + "_" + level + ".hdf")
-            root = Controller.processL2(inFilePath, outFilePath, ancillaryData)  
+            root, outFilePath = Controller.processL2(inFilePath, outFilePath, ancillaryData)  
             
             if os.path.isfile(outFilePath):
                 # Ensure that the L2 on file is recent before continuing with 

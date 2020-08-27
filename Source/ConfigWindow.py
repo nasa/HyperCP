@@ -472,10 +472,11 @@ class ConfigWindow(QtWidgets.QDialog):
         # Spectral Weighting
         l2WeightsLabel = QtWidgets.QLabel("Add Weighted Satellite Bands:", self)
 
-        l2WeightMODISALabel = QtWidgets.QLabel("AQUA", self)             
+        l2WeightMODISALabel = QtWidgets.QLabel("AQUA *", self)             
         self.l2WeightMODISACheckBox = QtWidgets.QCheckBox("", self)      
         if int(ConfigFile.settings["bL2WeightMODISA"]) == 1:
             self.l2WeightMODISACheckBox.setChecked(True)
+        l2WeightMODISALabel2 = QtWidgets.QLabel("* Will be turned on automatically for Derived Products", self)    
 
         l2WeightMODISTLabel = QtWidgets.QLabel("TERRA", self)             
         self.l2WeightMODISTCheckBox = QtWidgets.QCheckBox("", self)      
@@ -947,6 +948,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2WeightHBox2.addWidget(l2WeightVIIRSJLabel)          
         l2WeightHBox2.addWidget(self.l2WeightVIIRSJCheckBox)  
         VBox3.addLayout(l2WeightHBox2)  
+        VBox3.addWidget(l2WeightMODISALabel2)
 
         VBox3.addSpacing(10)
 
@@ -1519,6 +1521,15 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2SaveSeaBASS"] = int(self.l2SaveSeaBASSCheckBox.isChecked())
 
         # ConfigFile.saveConfig(self.name) # overkill?
+
+        # Confirm necessary satellite bands are processed
+        if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
+            ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
+                ConfigFile.products["bL2gocad"] or ConfigFile.products["bL2giop"] or \
+                ConfigFile.products["bL2qaa"]:
+
+            ConfigFile.settings["bL2WeightMODISA"] = 1
+            self.l2WeightMODISACheckBox.setChecked(True)
 
 
     def saveAsButtonPressed(self):

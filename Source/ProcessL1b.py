@@ -206,10 +206,7 @@ class ProcessL1b:
         pyrUnits = None
 
         node.attributes["PROCESSING_LEVEL"] = "1b"
-        node.attributes["LI_UNITS"] = liUnits
-        node.attributes["LT_UNITS"] = ltUnits
-        node.attributes["ES_UNITS"] = esUnits
-        node.attributes["SATPYR_UNITS"] = pyrUnits
+        
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
@@ -244,5 +241,10 @@ class ProcessL1b:
                     ltUnits = cf.getUnits("LT")
                 if pyrUnits == None:
                     pyrUnits = cf.getUnits("T") #Pyrometer
+        
+        node.attributes["LI_UNITS"] = liUnits
+        node.attributes["LT_UNITS"] = ltUnits
+        node.attributes["ES_UNITS"] = esUnits
+        node.attributes["SATPYR_UNITS"] = pyrUnits
 
         return node
