@@ -276,8 +276,8 @@ class ProcessL2OCproducts():
                     L2qaa(Rrs412[i], Rrs443[i], Rrs488[i], Rrs555[i], Rrs667[i], \
                         Rrs[:,i], wavelength, \
                             T[i], S[i])
-                if msg:
-                    Utilities.writeLogFile(msg)  
+                for msgs in msg:
+                    Utilities.writeLogFile(msgs)  
                 
             ''' There must be a more elegant way to work on the dataset/data, then convert to column '''
 
