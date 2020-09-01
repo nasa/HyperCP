@@ -37,6 +37,11 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         instructionLabel_font.setPointSize(10)
         instructionLabel_font.setBold(True)
         instructionLabel.setFont(instructionLabel_font)
+
+        versionLabel = QtWidgets.QLabel("SeaBASS submission verion (e.g. 'R1', 'R2')")
+        self.versionLineEdit = QtWidgets.QLineEdit(self)
+        self.versionLineEdit.setText(str(SeaBASSHeader.settings["version"]))  
+
         instructionLabelSub = QtWidgets.QLabel("To match fields to existing SeaBASS entries,")
         instructionLabelSub1 = QtWidgets.QLabel(
             "check the 'Lists' pull-down menu<a href=\"https://seabass.gsfc.nasa.gov\"> here</a>.")
@@ -213,6 +218,11 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         VBox1 = QtWidgets.QVBoxLayout()
         VBox1.addSpacing(10)
         #VBox1.addWidget(instructionLabel)
+        HBoxVersion = QtWidgets.QHBoxLayout()
+        HBoxVersion.addWidget(versionLabel)
+        HBoxVersion.addWidget(self.versionLineEdit)
+        VBox1.addLayout(HBoxVersion)
+
         VBox1.addWidget(instructionLabelSub)
         VBox1.addWidget(instructionLabelSub1)
         # Horizontal Box 

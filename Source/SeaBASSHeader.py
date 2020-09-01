@@ -15,6 +15,7 @@ class SeaBASSHeader:
     @staticmethod
     def printd():
         print("SeaBASSHeader - Printd")
+        print("version", SeaBASSHeader.settings["version"])
         print("investigators", SeaBASSHeader.settings["investigators"])
         print("affiliations", SeaBASSHeader.settings["affiliations"])
         print("contact", SeaBASSHeader.settings["contact"])
@@ -59,6 +60,7 @@ class SeaBASSHeader:
     def createDefaultSeaBASSHeader(name):
         print("SeaBASSHeader - Create Default SeaBASSHeader")
 
+        SeaBASSHeader.settings["version"] = 'R1'
         SeaBASSHeader.settings["investigators"] = ''
         SeaBASSHeader.settings["affiliations"] = ''
         SeaBASSHeader.settings["contact"] = ''

@@ -184,7 +184,7 @@ class ProcessL2:
                     continue              
                 if float(k) >= 760 and float(k) <= 800:
                     x.append(float(k))
-                    ρ780.append(rrsSlice[k][-1])
+                    ρ780.append(np.pi*rrsSlice[k][-1])
             if not ρ780:
                 QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
             ρ2 = sp.interpolate.interp1d(x,ρ780)(780)
@@ -196,7 +196,7 @@ class ProcessL2:
                     continue               
                 if float(k) >= 850 and float(k) <= 890:
                     x.append(float(k))
-                    ρ870.append(rrsSlice[k][-1])
+                    ρ870.append(np.pi*rrsSlice[k][-1])
             if not ρ870:
                 QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
             ρ3 = sp.interpolate.interp1d(x,ρ870)(870)
@@ -221,16 +221,12 @@ class ProcessL2:
                 Utilities.writeLogFile(msg)  
             for k in rrsSlice:
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
-                    continue
-                ''' There seems to be some confusion in the Ruddick 2005 SPIE paper.
-                By this method, ε is (and should be) negative, and so must be added 
-                rather than subtracted.''' 
-                # rrsSlice[k] -= ε
-                rrsSlice[k][-1] += ε
-                nLwSlice[k][-1] += εnLw
+                    continue                
+                rrsSlice[k][-1] -= float(ε) # Only working on the last (most recent' [-1]) element of the slice
+                nLwSlice[k][-1] -= float(εnLw)                
 
-            rrsNIRCorr = -ε
-            nLwNIRCorr = -εnLw
+            rrsNIRCorr = ε
+            nLwNIRCorr = εnLw
         
         newRrsData.columnsToDataset()
         newnLwData.columnsToDataset()
@@ -402,7 +398,10 @@ class ProcessL2:
                 if float(k) in waveSubset:
                     newRrsDeltaData.columns[k].append(rrsDelta)
                     newnLwDeltaData.columns[k].append(nLwDelta)
-                    newRrsData.columns[k].append(rrs)
+                    try:
+                        newRrsData.columns[k].append(rrs)
+                    except:
+                        disp(k)
                     # newRrsData.columns[k] = rrs
                     newnLwData.columns[k].append(nLw)
                     # newnLwData.columns[k] = nLw

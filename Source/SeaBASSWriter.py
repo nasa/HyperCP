@@ -240,8 +240,10 @@ class SeaBASSWriter:
         if not os.path.exists(os.path.split(fp)[0] + '/SeaBASS'):
             print('Creating a SeaBASS directory')
             os.makedirs(os.path.split(fp)[0] + '/SeaBASS')
+            
+        version = SeaBASSHeader.settings["version"]
         
-        outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{dtype}{os.path.split(fp)[1].replace(".hdf",".sb")}'
+        outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{dtype}{os.path.split(fp)[1].replace(".hdf",f"_{version}.sb")}'
 
         outFile = open(outFileName,'w',newline='\n')
         outFile.write('/begin_header\n')

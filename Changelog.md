@@ -4,6 +4,10 @@ v1.0.4 Unreleased
 * Propagate uncertainties from radiometry to OC products
 * Revisit question of overly aggressive deglitching
 
+2020-08-31:
+* Bug fix to Ruddick SimSpec NIR correction. Pi conversion was missing for rrs to rho.
+* Add version label to SeaBASS file names (e.g. "R1", "R2", etc.)
+
 2020-08-26:
 * Bug fix to force Aqua convolution whenever certain Derived Products are sought
 * Correct SeaBASS file naming errror for station files
