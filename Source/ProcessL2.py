@@ -96,11 +96,14 @@ class ProcessL2:
         newnLwData = newReflectanceGroup.getDataset(f'nLw_{sensor}')
         newRrsDeltaData = newReflectanceGroup.getDataset(f'Rrs_{sensor}_delta')
         newnLwDeltaData = newReflectanceGroup.getDataset(f'nLw_{sensor}_delta')
+        
+        newNIRData = newReflectanceGroup.getDataset(f'nir_{sensor}') 
 
         # These will include all slices in root so far
         # Below the most recent/current slice [-1] will be selected for processing
         rrsSlice = newRrsData.columns
         nLwSlice = newnLwData.columns
+        nirSlice = newNIRData.columns
 
         # # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
         # if ConfigFile.settings["bL2PerformNIRCorrection"]:
@@ -130,6 +133,8 @@ class ProcessL2:
                 # rrsSlice[k] -= avg
                 rrsSlice[k][-1] -= rrsNIRCorr
                 # newRrsData.columns[k].append(rrsSlice[k])
+
+            nirSlice[-1] = rrsNIRCorr
 
             # nLw correction
             NIRRRs = []
@@ -171,7 +176,8 @@ class ProcessL2:
                 if float(k) >= 700 and float(k) <= 750:
                     x.append(float(k))
 
-                    ρ720.append(np.pi*rrsSlice[k][-1]) # Using current element/slice
+                    # convert to surface reflectance ρ = π * Rrs
+                    ρ720.append(np.pi*rrsSlice[k][-1]) # Using current element/slice [-1]
 
             if not ρ720:
                 QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
@@ -227,11 +233,13 @@ class ProcessL2:
 
             rrsNIRCorr = ε
             nLwNIRCorr = εnLw
+            nirSlice['NIR_offset'].append(rrsNIRCorr)
         
         newRrsData.columnsToDataset()
         newnLwData.columnsToDataset()
         newRrsDeltaData.columnsToDataset()
         newnLwDeltaData.columnsToDataset()
+        newNIRData.columnsToDataset()
         
         return rrsNIRCorr, nLwNIRCorr
     
@@ -260,6 +268,7 @@ class ProcessL2:
         # If this is the first ensemble spectrum, set up the new datasets
         if not (f'Rrs_{sensor}' in newReflectanceGroup.datasets):           
             newRrsData = newReflectanceGroup.addDataset(f"Rrs_{sensor}")
+            newRrsUncorrData = newReflectanceGroup.addDataset(f"Rrs_{sensor}_uncorr") # Preserve uncorrected Rrs (= lt/es)
             newESData = newIrradianceGroup.addDataset(f"ES_{sensor}")      
             newLIData = newRadianceGroup.addDataset(f"LI_{sensor}")
             newLTData = newRadianceGroup.addDataset(f"LT_{sensor}")
@@ -269,9 +278,15 @@ class ProcessL2:
             newESDeltaData = newIrradianceGroup.addDataset(f"ES_{sensor}_delta")       
             newLIDeltaData = newRadianceGroup.addDataset(f"LI_{sensor}_delta")
             newLTDeltaData = newRadianceGroup.addDataset(f"LT_{sensor}_delta")
-            newnLwDeltaData = newReflectanceGroup.addDataset(f"nLw_{sensor}_delta")             
+            newnLwDeltaData = newReflectanceGroup.addDataset(f"nLw_{sensor}_delta") 
+
+            if sensor == 'HYPER':
+                newRhoHyper = newReflectanceGroup.addDataset(f"rho_{sensor}")             
+                newNIRData = newReflectanceGroup.addDataset(f'nir_{sensor}') 
+                newLwData = newRadianceGroup.addDataset(f'LW_{sensor}')
         else:           
             newRrsData = newReflectanceGroup.getDataset(f"Rrs_{sensor}")
+            newRrsUncorrData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_uncorr")
             newESData = newIrradianceGroup.getDataset(f"ES_{sensor}")    
             newLIData = newRadianceGroup.getDataset(f"LI_{sensor}")
             newLTData = newRadianceGroup.getDataset(f"LT_{sensor}") 
@@ -281,7 +296,12 @@ class ProcessL2:
             newESDeltaData = newIrradianceGroup.getDataset(f"ES_{sensor}_delta")    
             newLIDeltaData = newRadianceGroup.getDataset(f"LI_{sensor}_delta")
             newLTDeltaData = newRadianceGroup.getDataset(f"LT_{sensor}_delta")
-            newnLwDeltaData = newReflectanceGroup.getDataset(f"nLw_{sensor}_delta")        
+            newnLwDeltaData = newReflectanceGroup.getDataset(f"nLw_{sensor}_delta")   
+
+            if sensor == 'HYPER':
+                newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
+                newNIRData = newReflectanceGroup.getDataset(f'nir_{sensor}')   
+                newLwData = newRadianceGroup.getDataset(f'LW_{sensor}')              
 
         # Add datetime stamps back onto ALL datasets associated with the current sensor
         # If this is the first spectrum, add date/time, otherwise append
@@ -318,6 +338,7 @@ class ProcessL2:
                     newLIData.columns[k] = []
                     newLTData.columns[k] = []
                     newRrsData.columns[k] = []
+                    newRrsUncorrData.columns[k] = []
                     newnLwData.columns[k] = []
 
                     newESDeltaData.columns[k] = []
@@ -325,6 +346,11 @@ class ProcessL2:
                     newLTDeltaData.columns[k] = []
                     newRrsDeltaData.columns[k] = []
                     newnLwDeltaData.columns[k] = []
+
+                    if sensor == 'HYPER':
+                        newRhoHyper.columns[k] = []
+                        newLwData.columns[k] = []
+                        newNIRData.columns['NIR_offset'] = [] # not used until later; highly unpythonic
 
                 # At this waveband (k); still using complete wavelength set
                 es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and root
@@ -338,7 +364,8 @@ class ProcessL2:
 
                 # Calculate the remote sensing reflectance
                 if RuddickRho:                    
-                    rrs = (lt - (rhoScalar * li)) / es
+                    lw = (lt - (rhoScalar * li))
+                    rrs = lw / es
 
                     # Rrs uncertainty
                     rrsDelta = rrs * ( 
@@ -355,7 +382,8 @@ class ProcessL2:
                 elif ZhangRho:
                     # Only populate the valid wavelengths
                     if float(k) in waveSubset:
-                        rrs = (lt - (rhoVec[k] * li)) / es
+                        lw = (lt - (rhoVec[k] * li))
+                        rrs = lw / es
 
                         # Rrs uncertainty
                         rrsDelta = rrs * ( 
@@ -370,8 +398,8 @@ class ProcessL2:
                                 (liDelta/li)**2 + (rhoDelta/rhoVec[k])**2 + (liDelta/li)**2 + (esDelta/es)**2
                                 )**0.5
                 else:                    
-
-                    rrs = (lt - (rhoScalar * li)) / es
+                    lw = (lt - (rhoScalar * li))
+                    rrs = lw / es
 
                     # Rrs uncertainty
                     rrsDelta = rrs * ( 
@@ -386,6 +414,8 @@ class ProcessL2:
                             (liDelta/li)**2 + (rhoDelta/rhoScalar)**2 + (liDelta/li)**2 + (esDelta/es)**2
                             )**0.5
 
+                rrs_uncorr = lt / es
+
                 newESData.columns[k].append(es)
                 newLIData.columns[k].append(li)
                 newLTData.columns[k].append(lt)                
@@ -396,15 +426,21 @@ class ProcessL2:
                 
                 # Only populate valid wavelengths. Mark others for deletion
                 if float(k) in waveSubset:
+                    newRrsUncorrData.columns[k].append(rrs_uncorr)
+                    
+                    newRrsData.columns[k].append(rrs)
                     newRrsDeltaData.columns[k].append(rrsDelta)
-                    newnLwDeltaData.columns[k].append(nLwDelta)
-                    try:
-                        newRrsData.columns[k].append(rrs)
-                    except:
-                        disp(k)
+                    newnLwDeltaData.columns[k].append(nLwDelta)                    
                     # newRrsData.columns[k] = rrs
                     newnLwData.columns[k].append(nLw)
                     # newnLwData.columns[k] = nLw
+
+                    if sensor == 'HYPER':
+                        newLwData.columns[k].append(lw)
+                        if ZhangRho:
+                            newRhoHyper.columns[k].append(rhoVec[k])
+                        else:
+                            newRhoHyper.columns[k].append(rhoScalar)
                 else:
                     deleteKey.append(k) 
         
@@ -413,14 +449,19 @@ class ProcessL2:
         for key in deleteKey: 
             # Only need to do this for the first ensemble in file
             if key in newRrsData.columns:
+                del newRrsUncorrData.columns[key]
                 del newRrsData.columns[key]
                 del newnLwData.columns[key]
                 del newRrsDeltaData.columns[key]
                 del newnLwDeltaData.columns[key]
+                if sensor == 'HYPER':
+                    del newLwData.columns[key]
 
+
+        
         newESData.columnsToDataset() 
         newLIData.columnsToDataset()
-        newLTData.columnsToDataset()
+        newLTData.columnsToDataset()        
         newRrsData.columnsToDataset()
         newnLwData.columnsToDataset()
 
@@ -429,6 +470,11 @@ class ProcessL2:
         newLTDeltaData.columnsToDataset()
         newRrsDeltaData.columnsToDataset()
         newnLwDeltaData.columnsToDataset()
+
+        if sensor == 'HYPER':
+            newLwData.columnsToDataset()
+            newRhoHyper.columnsToDataset()
+            newRrsUncorrData.columnsToDataset()
         
 
     @staticmethod    
@@ -495,7 +541,10 @@ class ProcessL2:
 
         for ds in group.datasets:
             # if ds != "STATION": 
-            group.datasets[ds].datasetToColumns()
+            try:
+                group.datasets[ds].datasetToColumns()
+            except:
+                print('sheeeeit')
 
         msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
         print(msg)
@@ -541,14 +590,18 @@ class ProcessL2:
     def specQualityCheck(group, inFilePath, station=None):
         ''' Perform spectral filtering
         Calculate the STD of the normalized (at some max value) average ensemble.
-        Then test each normalized spectrum against the ensemble average and STD.
+        Then test each normalized spectrum against the ensemble average and STD and negatives (within the spectral range).
         Plot results'''
+
+        # This is the range upon which the spectral filter is applied (and plotted)
+        # It goes up to 900 to include bands used in NIR correction
+        fRange = [350, 900]
 
         badTimes = []
         if group.id == 'IRRADIANCE':
             Data = group.getDataset("ES") 
             timeStamp = group.getDataset("ES").data["Datetime"]
-            badTimes = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=[400, 700],\
+            badTimes = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
                 filterFactor=ConfigFile.settings["fL2SpecFilterEs"], rType='Es')
             msg = f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of Es data flagged'
             print(msg)
@@ -556,7 +609,7 @@ class ProcessL2:
         else:            
             Data = group.getDataset("LI")
             timeStamp = group.getDataset("LI").data["Datetime"]
-            badTimes1 = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=[400, 700],\
+            badTimes1 = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
                 filterFactor=ConfigFile.settings["fL2SpecFilterLi"], rType='Li')
             msg = f'{len(np.unique(badTimes1))/len(timeStamp)*100:.1f}% of Li data flagged'
             print(msg)
@@ -564,7 +617,7 @@ class ProcessL2:
 
             Data = group.getDataset("LT")
             timeStamp = group.getDataset("LT").data["Datetime"]
-            badTimes2 = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=[400, 700],\
+            badTimes2 = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
                 filterFactor=ConfigFile.settings["fL2SpecFilterLt"], rType='Lt')
             msg = f'{len(np.unique(badTimes2))/len(timeStamp)*100:.1f}% of Lt data flagged'
             print(msg)
@@ -1366,9 +1419,7 @@ class ProcessL2:
                 StationSlice = StationSlice[0]        
         else:
             StationSlice = None
-
         
-
         # Calculate Rho_sky
         wavebands = [*esColumns] # just grabs the keys
         wavelength = []
@@ -2034,13 +2085,14 @@ class ProcessL2:
             # set negative bands to 0.'''
 
         if ConfigFile.settings["bL2NegativeSpec"]:
+            fRange = [400, 680]
             msg = "Filtering reflectance spectra for negative values."
             print(msg)
             Utilities.writeLogFile(msg)
             # newReflectanceGroup = root.groups[0]
             newReflectanceGroup = root.getGroup("REFLECTANCE")
-            badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs_HYPER', VIS = [400,680])
-            badTimes2 = ProcessL2.negReflectance(newReflectanceGroup, 'nLw_HYPER', VIS = [400,680])
+            badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs_HYPER', VIS = fRange)
+            badTimes2 = ProcessL2.negReflectance(newReflectanceGroup, 'nLw_HYPER', VIS = fRange)
 
             badTimes = None
             if badTimes1 is not None and badTimes2 is not None:

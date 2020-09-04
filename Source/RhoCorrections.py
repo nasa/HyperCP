@@ -30,7 +30,7 @@ class RhoCorrections:
             rhoScalar = 0.0256 + 0.00039 * w + 0.000034 * w * w
             rhoDelta = 0.003 # Ruddick 2006 Appendix 2; intended for clear skies as defined here
 
-            msg = f'Rho_sky: {rhoScalar:.4f} Wind: {w:.1f} m/s'
+            msg = f'Rho_sky: {rhoScalar:.6f} Wind: {w:.1f} m/s'
             print(msg)
             Utilities.writeLogFile(msg)
             
