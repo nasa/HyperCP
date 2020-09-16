@@ -63,23 +63,23 @@ class SeaBASSWriter:
         eastLon = "{:.4f}[DEG]".format(max(esData.data['LONGITUDE'].tolist()))
         westLon = "{:.4f}[DEG]".format(min(esData.data['LONGITUDE'].tolist()))
 
-        if headerBlock['station'] is '':
+        if headerBlock['station'] == '':
             headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
-        if headerBlock['start_time'] is '':
+        if headerBlock['start_time'] == '':
             headerBlock['start_time'] = startTime
-        if headerBlock['end_time'] is '':
+        if headerBlock['end_time'] == '':
             headerBlock['end_time'] = endTime
-        if headerBlock['start_date'] is '':
+        if headerBlock['start_date'] == '':
             headerBlock['start_date'] = startDate
-        if headerBlock['end_date'] is '':
+        if headerBlock['end_date'] == '':
             headerBlock['end_date'] = endDate
-        if headerBlock['north_latitude'] is '':
+        if headerBlock['north_latitude'] == '':
             headerBlock['north_latitude'] = northLat
-        if headerBlock['south_latitude'] is '':
+        if headerBlock['south_latitude'] == '':
             headerBlock['south_latitude'] = southLat
-        if headerBlock['east_longitude'] is '':
+        if headerBlock['east_longitude'] == '':
             headerBlock['east_longitude'] = eastLon
-        if headerBlock['west_longitude'] is '':
+        if headerBlock['west_longitude'] == '':
             headerBlock['west_longitude'] = westLon
         if level == '2':
             headerBlock['wind_speed'] = aveWind # wind_speed will not be written to l1e
