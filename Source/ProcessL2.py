@@ -7,6 +7,7 @@ import numpy as np
 from numpy import matlib as mb
 import scipy as sp
 import datetime as datetime
+import copy
 from PyQt5 import QtWidgets
 
 import HDFRoot
@@ -158,6 +159,13 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)  
 
+            # For simplicity, follow calculation in rho, then covert to rrs
+            ρSlice = copy.deepcopy(rrsSlice)
+            for k,value in ρSlice.items():
+                if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
+                    continue  
+                ρSlice[k][-1] = value[-1] * np.pi
+
             # These ratios are for rho = pi*Rrs
             α1 = 2.35 # 720/780 only good for rho(720)<0.03
             α2 = 1.91 # 780/870 try to avoid, data is noisy here
@@ -170,14 +178,14 @@ class ProcessL2:
             # Rrs
             ρ720 = []
             x = []
-            for k in rrsSlice: 
+            for k in ρSlice: 
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue               
                 if float(k) >= 700 and float(k) <= 750:
                     x.append(float(k))
 
                     # convert to surface reflectance ρ = π * Rrs
-                    ρ720.append(np.pi*rrsSlice[k][-1]) # Using current element/slice [-1]
+                    ρ720.append(ρSlice[k][-1]) # Using current element/slice [-1]
 
             if not ρ720:
                 QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
@@ -185,33 +193,32 @@ class ProcessL2:
             F01 = sp.interpolate.interp1d(wavelength,F0)(720)
             ρ780 = []
             x = []
-            for k in rrsSlice:  
+            for k in ρSlice:  
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue              
                 if float(k) >= 760 and float(k) <= 800:
                     x.append(float(k))
-                    ρ780.append(np.pi*rrsSlice[k][-1])
+                    ρ780.append(ρSlice[k][-1])
             if not ρ780:
                 QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
             ρ2 = sp.interpolate.interp1d(x,ρ780)(780)
             F02 = sp.interpolate.interp1d(wavelength,F0)(780)
             ρ870 = []
             x = []
-            for k in rrsSlice: 
+            for k in ρSlice: 
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue               
                 if float(k) >= 850 and float(k) <= 890:
                     x.append(float(k))
-                    ρ870.append(np.pi*rrsSlice[k][-1])
+                    ρ870.append(ρSlice[k][-1])
             if not ρ870:
                 QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
             ρ3 = sp.interpolate.interp1d(x,ρ870)(870)
             F03 = sp.interpolate.interp1d(wavelength,F0)(870)
             
             if ρ1 < threshold:
-                ε = (α1*ρ2 - ρ1)/(α1-1)
-                ε = ε/np.pi # convert to Rrs units
-                εnLw = (α1*ρ2*F02/np.pi - ρ1*F01/np.pi)/(α1-1) # convert to nLw units
+                ε = (α1*ρ2 - ρ1)/(α1-1)                
+                εnLw = (α1*ρ2*F02 - ρ1*F01)/(α1-1) 
                 msg = f'offset(rrs) = {ε}; offset(nLw) = {εnLw}'
                 print(msg)
                 Utilities.writeLogFile(msg)  
@@ -219,20 +226,23 @@ class ProcessL2:
                 msg = "SimSpec threshold tripped. Using 780/870 instead."
                 print(msg)
                 Utilities.writeLogFile(msg)  
-                ε = (α2*ρ3 - ρ2)/(α2-1)
-                ε = ε/np.pi # convert to Rrs units
-                εnLw = (α2*ρ3*F03/np.pi - ρ2*F02/np.pi)/(α2-1) # convert to nLw units              
+                ε = (α2*ρ3 - ρ2)/(α2-1)                
+                εnLw = (α2*ρ3*F03 - ρ2*F02)/(α2-1)
                 msg = f'offset(rrs) = {ε}; offset(nLw) = {εnLw}'
                 print(msg)
                 Utilities.writeLogFile(msg)  
+
+            rrsNIRCorr = ε/np.pi
+            nLwNIRCorr = εnLw/np.pi
+
+            # Now apply to rrs and nLw
             for k in rrsSlice:
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue                
-                rrsSlice[k][-1] -= float(ε) # Only working on the last (most recent' [-1]) element of the slice
-                nLwSlice[k][-1] -= float(εnLw)                
+                rrsSlice[k][-1] -= float(rrsNIRCorr) # Only working on the last (most recent' [-1]) element of the slice
+                nLwSlice[k][-1] -= float(nLwNIRCorr)                
 
-            rrsNIRCorr = ε
-            nLwNIRCorr = εnLw
+            
             nirSlice['NIR_offset'].append(rrsNIRCorr)
         
         newRrsData.columnsToDataset()
