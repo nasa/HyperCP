@@ -1,6 +1,7 @@
+<html lang="en">
 # HyperInSPACE 
 
-HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing automated, above-water, hyperspectral ocean color radiometry collected on automated platforms with Satlantic HyperSAS SolarTracker instruments. (Inclusion of additional instrument platforms is in progress.)
+HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing automated, above-water, hyperspectral ocean color radiometry data using state-of-the-art methods and protocols for quality assurance, uncertainty estimation/propagation, sky/sunglint correction, convolution to satellite wavebands, ocean color product retrieval, and data output to formatted text files for submission to the SeaBASS database as well as complete HDF5 record, metadata, and processing reports. This open source package is designed to facilitate rigorous, flexible, and transparent data processing for the NASA/OEL/FSG and partners, as well as any principal investigators funded by NASA to submit such data to SeaBASS. Data will be used for the purpose of water optical classification, ocean color product retrieval algorithm development, and orbital platform validation.
 
 Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>\
 Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)

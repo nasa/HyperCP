@@ -159,7 +159,7 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)  
 
-            # For simplicity, follow calculation in rho, then covert to rrs
+            # For simplicity, follow calculation in rho (surface reflectance), then covert to rrs
             ρSlice = copy.deepcopy(rrsSlice)
             for k,value in ρSlice.items():
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):

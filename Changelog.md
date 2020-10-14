@@ -4,6 +4,9 @@ v1.0.4 Unreleased
 * Propagate uncertainties from radiometry to OC products
 * Revisit question of overly aggressive deglitching
 
+2020-10-14:
+* Add Lw to Lt plots
+
 2020-08-31:
 * Bug fix to Ruddick SimSpec NIR correction. Pi conversion was missing for rrs to rho.
 * Add version label to SeaBASS file names (e.g. "R1", "R2", etc.)

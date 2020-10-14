@@ -652,8 +652,10 @@ class Utilities:
             print('Plotting Lt')
             group = root.getGroup("RADIANCE")
             Data = group.getDataset(f'{rType}_HYPER')  
+            lwData = group.getDataset(f'LW_HYPER')  
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_HYPER_delta')          
+                dataDelta = group.getDataset(f'{rType}_HYPER_delta')    
+                # lwDataDelta = group.getDataset(f'LW_HYPER_delta')    
             plotRange = [305, 1140]
 
         font = {'family': 'serif',
@@ -663,7 +665,8 @@ class Utilities:
             }
 
         # Hyperspectral
-        x = []             
+        x = []
+        xLw = []        
         wave = []        
         # For each waveband
         for k in Data.data.dtype.names:
@@ -671,6 +674,12 @@ class Utilities:
                 if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
                     x.append(k)
                     wave.append(float(k))
+        # Add Lw to Lt plots
+        if rType=='LT':
+            for k in lwData.data.dtype.names:
+                if Utilities.isFloat(k):
+                    if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                        xLw.append(k)
         
         # Satellite Bands
         x_MODISA = []
@@ -738,6 +747,15 @@ class Utilities:
                 y.append(Data.data[k][i])
                 if plotDelta:
                     dy.append(dataDelta.data[k][i])
+            # Add Lw to Lt plots
+            if rType=='LT':
+                yLw = []
+                # dyLw = []
+                for k in xLw:    
+                    yLw.append(lwData.data[k][i])
+                    # if plotDelta:
+                    #     dy.append(dataDelta.data[k][i])
+
 
             # Satellite Bands
             y_MODISA = []            
@@ -801,6 +819,9 @@ class Utilities:
 
             # Plot the Hyperspectral spectrum
             plt.plot(wave, y, 'k', c=c, zorder=-1)
+            # Add Lw to Lt plots
+            if rType=='LT':
+                plt.plot(wave, yLw, 'k', c=c, zorder=-1, linestyle='dashed')
             
             if plotDelta:
                 # Generate the polygon for uncertainty bounds
@@ -863,7 +884,10 @@ class Utilities:
         axes.set_ylim([minRad, maxRad])
         
         plt.xlabel('wavelength (nm)', fontdict=font)
-        plt.ylabel(rType, fontdict=font)
+        if rType=='LT':
+            plt.ylabel('LT (LW dashed)', fontdict=font)
+        else:
+            plt.ylabel(rType, fontdict=font)
 
         # Tweak spacing to prevent clipping of labels
         plt.subplots_adjust(left=0.15)
