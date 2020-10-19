@@ -1,8 +1,12 @@
 v1.0.4 Unreleased
 * Add completed GIOP to L2 OC products
+* Add Wei et al. 2016 Rrs data quality to L2 OC products
 * Add PIC to L2 OC products
 * Propagate uncertainties from radiometry to OC products
 * Revisit question of overly aggressive deglitching
+
+2020-10-19:
+* L2 product list bug corrected in ConfigWindow
 
 2020-10-14:
 * Add Lw to Lt plots

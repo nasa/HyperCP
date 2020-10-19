@@ -1525,8 +1525,8 @@ class ConfigWindow(QtWidgets.QDialog):
         # Confirm necessary satellite bands are processed
         if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
             ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
-                ConfigFile.products["bL2gocad"] or ConfigFile.products["bL2giop"] or \
-                ConfigFile.products["bL2qaa"]:
+                ConfigFile.products["bL2Prodgocad"] or ConfigFile.products["bL2Prodgiop"] or \
+                ConfigFile.products["bL2Prodqaa"]:
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
             self.l2WeightMODISACheckBox.setChecked(True)
