@@ -5,8 +5,12 @@ v1.0.4 Unreleased
 * Propagate uncertainties from radiometry to OC products
 * Revisit question of overly aggressive deglitching
 
+2020-11-05:
+* L1C bug corrected for newer group names and trashing files with no radiometric data left after QA
+
 2020-10-19:
 * L2 product list bug corrected in ConfigWindow
+* Add abort for no SolarTracker (in SolarTracker mode...) found L1C 
 
 2020-10-14:
 * Add Lw to Lt plots

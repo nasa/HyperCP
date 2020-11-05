@@ -208,9 +208,16 @@ class ProcessL1c:
             Utilities.writeLogFile(msg)
             
             i = 0
+            gp = None
             for group in node.groups:
                 if group.id == "SOLARTRACKER":
                     gp = group
+            if gp == None:
+                msg = "SOLARTRACKER instrument not found. Aborting."
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
+
 
             timeStamp = gp.getDataset("DATETIME").data
             pitch = gp.getDataset("PITCH").data["SAS"]
@@ -658,7 +665,7 @@ class ProcessL1c:
                     fractionRemoved = ProcessL1c.filterData(gp, badTimes)
 
                     # Now test whether the overlap has eliminated all radiometric data
-                    if fractionRemoved > 0.98 and gp.id.startswith("H"):
+                    if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
                         msg = "Radiometric data >98'%' eliminated. Aborting."
                         print(msg)
                         Utilities.writeLogFile(msg)                   

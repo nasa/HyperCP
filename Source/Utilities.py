@@ -187,6 +187,7 @@ class Utilities:
         s = int(t[4:6])
         us = 1000*int(t[6:])
         # print(h, m, s, us)        
+        # print(tt2)
         return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=datetime.timezone.utc)
 
     # Converts datetime to Timetag2 (HHMMSSmmm)
@@ -231,7 +232,8 @@ class Utilities:
     # in the 20th or 21st centuries
     @staticmethod
     def rootAddDateTime(node):
-        for gp in node.groups:            
+        for gp in node.groups:  
+            # print(gp.id)          
             if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
                 dateTime = gp.addDataset("DATETIME")
                 timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
@@ -240,8 +242,13 @@ class Utilities:
                 for i, time in enumerate(timeData):
                     # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
                     # Filter for aberrant Datetags
+                    t = str(int(time)).zfill(9)
+                    h = int(t[:2])
+                    m = int(t[2:4])
+                    s = int(t[4:6])
                     if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
-                        and time != 0.0 and not np.isnan(time):
+                        and time != 0.0 and not np.isnan(time) \
+                            and h < 60 and m < 60 and s < 60:
 
                         dt = Utilities.dateTagToDateTime(dateTag[i])
                         timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))

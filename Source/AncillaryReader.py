@@ -116,7 +116,8 @@ class AncillaryReader:
                 heading = ancData.data[ds]
                 headingUnits = ancData.variables[ds][1]
             if ds == "relaz": # Note: this misnomer is to trick readSB into accepting a non-conventional data field (home angle)
-                # homeangle = True
+                # SeaBASS thinks RelAz is between sensor and sun, but this is sensor to ship heading. We will call this dataset
+                # HOMEANGLE.
                 msg = f'Found data: {ds}'                
                 print(msg)
                 Utilities.writeLogFile(msg)  
