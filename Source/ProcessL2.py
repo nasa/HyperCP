@@ -466,6 +466,7 @@ class ProcessL2:
                 del newnLwDeltaData.columns[key]
                 if sensor == 'HYPER':
                     del newLwData.columns[key]
+                    del newRhoHyper.columns[key]
 
 
         

@@ -5,6 +5,9 @@ v1.0.4 Unreleased
 * Propagate uncertainties from radiometry to OC products
 * Revisit question of overly aggressive deglitching
 
+2020-11-09:
+* L2 delete column keys outside Zhang model limits for newRhoHyper
+
 2020-11-05:
 * L1C bug corrected for newer group names and trashing files with no radiometric data left after QA
 

@@ -674,7 +674,8 @@ class Utilities:
         # Hyperspectral
         x = []
         xLw = []        
-        wave = []        
+        wave = [] 
+        subwave = [] # accomodates Zhang, which deletes out-of-bounds wavebands       
         # For each waveband
         for k in Data.data.dtype.names:
             if Utilities.isFloat(k):
@@ -687,6 +688,7 @@ class Utilities:
                 if Utilities.isFloat(k):
                     if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
                         xLw.append(k)
+                        subwave.append(float(k))
         
         # Satellite Bands
         x_MODISA = []
@@ -828,7 +830,7 @@ class Utilities:
             plt.plot(wave, y, 'k', c=c, zorder=-1)
             # Add Lw to Lt plots
             if rType=='LT':
-                plt.plot(wave, yLw, 'k', c=c, zorder=-1, linestyle='dashed')
+                plt.plot(subwave, yLw, 'k', c=c, zorder=-1, linestyle='dashed')
             
             if plotDelta:
                 # Generate the polygon for uncertainty bounds
