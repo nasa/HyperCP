@@ -310,6 +310,7 @@ class Utilities:
             i = 0
             if dateTime[i+1] <= dateTime[i]:
                     gp.datasetDeleteRow(i)
+                    del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
                     total = total - 1
                     msg = f'Out of order timestamp deleted at {i}'
                     print(msg)
@@ -326,9 +327,9 @@ class Utilities:
                     del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
                     total = total - 1
                     msg = f'Out of order TIMETAG2 row deleted at {i}'
-                    # print(msg)
+                    print(msg)
                     Utilities.writeLogFile(msg)
-                    continue
+                    continue # goto while test skipping i incrementation. dateTime[i] is now the next value.
                 i += 1
         else:
             msg = '************Too few records to test for ascending timestamps. Exiting.'
@@ -336,7 +337,7 @@ class Utilities:
             Utilities.writeLogFile(msg)
             return False
         if (globalTotal - total) > 0:
-            msg = f'Data eliminated for non-increasing timestamps: {100*round((globalTotal - total)/globalTotal)}%'
+            msg = f'Data eliminated for non-increasing timestamps: {100*(globalTotal - total)/globalTotal:3.1f}%'
             print(msg)
             Utilities.writeLogFile(msg)
 

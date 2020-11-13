@@ -5,6 +5,9 @@ v1.0.4 Unreleased
 * Propagate uncertainties from radiometry to OC products
 * Revisit question of overly aggressive deglitching
 
+2020-11-13:
+* Fix Utilities.fixDateTime to catch time redundancy in first record
+
 2020-11-09:
 * L2 delete column keys outside Zhang model limits for newRhoHyper
 
