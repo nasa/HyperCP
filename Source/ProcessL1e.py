@@ -425,6 +425,7 @@ class ProcessL1e:
         ProcessL1e.convertDataset(ltGroup, "LT", sasGroup, "LT")        
 
         newGPSGroup = root.addGroup("GPS")
+        # These are from the raw data, not to be confused with those in the ancillary file
         ProcessL1e.convertDataset(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
         ProcessL1e.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
         latData = newGPSGroup.getDataset("LATITUDE")
@@ -600,9 +601,13 @@ class ProcessL1e:
             if headingData:
                 ProcessL1e.interpolateData(headingData, interpData, "HEADING", fileName)
             if latDataAnc:
+                ConfigFile.settings["bL1ePlotTimeInterp"] = 0 # Reserve lat/lon plots for actual GPS, not ancillary file
                 ProcessL1e.interpolateData(latDataAnc, interpData, "LATITUDE", fileName)
+                ConfigFile.settings["bL1ePlotTimeInterp"] = 1
             if lonDataAnc:
+                ConfigFile.settings["bL1ePlotTimeInterp"] = 0
                 ProcessL1e.interpolateData(lonDataAnc, interpData, "LONGITUDE", fileName)
+                ConfigFile.settings["bL1ePlotTimeInterp"] = 1
             if saltData:
                 ProcessL1e.interpolateData(saltData, interpData, "SALINITY", fileName)
             if solAzData:

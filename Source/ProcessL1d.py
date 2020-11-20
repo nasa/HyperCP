@@ -406,7 +406,7 @@ class ProcessL1d:
                 print(msg)
                 Utilities.writeLogFile(msg)
                 if not Utilities.fixDateTime(gp):
-                    msg = '***********Too few records in the file to continue. Exiting.'
+                    msg = f'***********Too few records in the {gp.id} file to continue. Exiting.'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return None

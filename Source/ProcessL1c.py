@@ -102,79 +102,79 @@ class ProcessL1c:
     #         print(msg)
     #         Utilities.writeLogFile(msg)
 
-    # Process OPTIC1 - not implemented
-    @staticmethod
-    def processOPTIC1(ds, cd, immersed):
-        return
+    # # Process OPTIC1 - not implemented
+    # @staticmethod
+    # def processOPTIC1(ds, cd, immersed):
+    #     return
 
-    @staticmethod
-    def processOPTIC2(ds, cd, immersed):
-        a0 = float(cd.coefficients[0])
-        a1 = float(cd.coefficients[1])
-        im = float(cd.coefficients[2]) if immersed else 1.0
-        k = cd.id
-        for x in range(ds.data.shape[0]):
-            ds.data[k][x] = im * a1 * (ds.data[k][x] - a0)
+    # @staticmethod
+    # def processOPTIC2(ds, cd, immersed):
+    #     a0 = float(cd.coefficients[0])
+    #     a1 = float(cd.coefficients[1])
+    #     im = float(cd.coefficients[2]) if immersed else 1.0
+    #     k = cd.id
+    #     for x in range(ds.data.shape[0]):
+    #         ds.data[k][x] = im * a1 * (ds.data[k][x] - a0)
 
-    @staticmethod
-    def processOPTIC3(ds, cd, immersed, inttime):
-        a0 = float(cd.coefficients[0])
-        a1 = float(cd.coefficients[1])
-        im = float(cd.coefficients[2]) if immersed else 1.0
-        cint = float(cd.coefficients[3])
-        #print(inttime.data.shape[0], self.data.shape[0])
-        k = cd.id
-        #print(cint, aint)
-        #print(cd.id)
-        for x in range(ds.data.shape[0]):
-            aint = inttime.data[cd.type][x]
-            #v = self.data[k][x]
-            ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
+    # @staticmethod
+    # def processOPTIC3(ds, cd, immersed, inttime):
+    #     a0 = float(cd.coefficients[0])
+    #     a1 = float(cd.coefficients[1])
+    #     im = float(cd.coefficients[2]) if immersed else 1.0
+    #     cint = float(cd.coefficients[3])
+    #     #print(inttime.data.shape[0], self.data.shape[0])
+    #     k = cd.id
+    #     #print(cint, aint)
+    #     #print(cd.id)
+    #     for x in range(ds.data.shape[0]):
+    #         aint = inttime.data[cd.type][x]
+    #         #v = self.data[k][x]
+    #         ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
 
-    @staticmethod
-    def processOPTIC4(ds, cd, immersed):
-        a0 = float(cd.coefficients[0])
-        a1 = float(cd.coefficients[1])
-        im = float(cd.coefficients[2]) if immersed else 1.0
-        cint = float(cd.coefficients[3])
-        k = cd.id
-        aint = 1
-        for x in range(ds.data.shape[0]):
-            ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
+    # @staticmethod
+    # def processOPTIC4(ds, cd, immersed):
+    #     a0 = float(cd.coefficients[0])
+    #     a1 = float(cd.coefficients[1])
+    #     im = float(cd.coefficients[2]) if immersed else 1.0
+    #     cint = float(cd.coefficients[3])
+    #     k = cd.id
+    #     aint = 1
+    #     for x in range(ds.data.shape[0]):
+    #         ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
 
-    # Process THERM1 - not implemented
-    @staticmethod
-    def processTHERM1(ds, cd):
-        return
+    # # Process THERM1 - not implemented
+    # @staticmethod
+    # def processTHERM1(ds, cd):
+    #     return
 
-    @staticmethod
-    def processPOW10(ds, cd, immersed):
-        a0 = float(cd.coefficients[0])
-        a1 = float(cd.coefficients[1])
-        im = float(cd.coefficients[2]) if immersed else 1.0
-        k = cd.id
-        for x in range(ds.data.shape[0]):
-            ds.data[k][x] = im * pow(10, ((ds.data[k][x]-a0)/a1))
+    # @staticmethod
+    # def processPOW10(ds, cd, immersed):
+    #     a0 = float(cd.coefficients[0])
+    #     a1 = float(cd.coefficients[1])
+    #     im = float(cd.coefficients[2]) if immersed else 1.0
+    #     k = cd.id
+    #     for x in range(ds.data.shape[0]):
+    #         ds.data[k][x] = im * pow(10, ((ds.data[k][x]-a0)/a1))
 
-    @staticmethod
-    def processPOLYU(ds, cd):
-        k = cd.id
-        for x in range(ds.data.shape[0]):
-            num = 0
-            for i in range(0, len(cd.coefficients)):
-                a = float(cd.coefficients[i])
-                num += a * pow(ds.data[k][x],i)
-            ds.data[k][x] = num
+    # @staticmethod
+    # def processPOLYU(ds, cd):
+    #     k = cd.id
+    #     for x in range(ds.data.shape[0]):
+    #         num = 0
+    #         for i in range(0, len(cd.coefficients)):
+    #             a = float(cd.coefficients[i])
+    #             num += a * pow(ds.data[k][x],i)
+    #         ds.data[k][x] = num
 
-    @staticmethod
-    def processPOLYF(ds, cd):
-        a0 = float(cd.coefficients[0])
-        k = cd.id
-        for x in range(ds.data.shape[0]):
-            num = a0
-            for a in cd.coefficients[1:]:
-                num *= (ds.data[k][x] - float(a))
-            ds.data[k][x] = num    
+    # @staticmethod
+    # def processPOLYF(ds, cd):
+    #     a0 = float(cd.coefficients[0])
+    #     k = cd.id
+    #     for x in range(ds.data.shape[0]):
+    #         num = a0
+    #         for a in cd.coefficients[1:]:
+    #             num *= (ds.data[k][x] - float(a))
+    #         ds.data[k][x] = num    
     
     @staticmethod
     def processL1c(node, calibrationMap, ancillaryData=None):    

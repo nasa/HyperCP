@@ -917,6 +917,105 @@ class Utilities:
         fp = os.path.join(plotdir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
         plt.savefig(fp)
         plt.close() # This prevents displaying the plot on screen with certain IDEs          
+
+    @staticmethod
+    def plotRadiometryL1D(root, dirpath, filename, rType):
+
+        outDir = MainConfig.settings["outDir"]
+        # If default output path is used, choose the root HyperInSPACE path, and build on that
+        if os.path.abspath(outDir) == os.path.join(dirpath,'Data'):
+            outDir = dirpath
+
+        if not os.path.exists(os.path.join(outDir,'Plots','L1D')):
+            os.makedirs(os.path.join(outDir,'Plots','L1D'))        
+        plotdir = os.path.join(outDir,'Plots','L1D')        
+        plotRange = [305, 1140]
+
+        if rType=='ES':
+            print('Plotting Es')
+            group = root.getGroup(rType)
+            Data = group.getDataset(rType)
+            
+        if rType=='LI':
+            print('Plotting Li')
+            group = root.getGroup(rType)
+            Data = group.getDataset(rType)
+            
+        if rType=='LT':
+            print('Plotting Lt')
+            group = root.getGroup(rType)
+            Data = group.getDataset(rType)  
+
+        font = {'family': 'serif',
+            'color':  'darkred',
+            'weight': 'normal',
+            'size': 16,
+            }
+
+        # Hyperspectral
+        x = []
+        wave = [] 
+        
+        # For each waveband
+        for k in Data.data.dtype.names:
+            if Utilities.isFloat(k):
+                if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
+                    x.append(k)
+                    wave.append(float(k))               
+
+        total = Data.data.shape[0]
+        maxRad = 0
+        minRad = 0
+        cmap = cm.get_cmap("jet")
+        color=iter(cmap(np.linspace(0,1,total)))
+
+        plt.figure(1, figsize=(8,6))
+        for i in range(total):
+            # Hyperspectral
+            y = []
+            for k in x:                
+                y.append(Data.data[k][i])                           
+
+            c=next(color)
+            if max(y) > maxRad:
+                maxRad = max(y)+0.1*max(y)
+            if rType == 'LI' and maxRad > 20:
+                maxRad = 20
+            if rType == 'LT' and maxRad > 10:
+                maxRad = 10
+            if min(y) < minRad:
+                minRad = min(y)-0.1*min(y)
+            if rType == 'LI':
+                minRad = 0
+            if rType == 'LT':
+                minRad = 0
+            if rType == 'ES':
+                minRad = 0
+
+            # Plot the Hyperspectral spectrum
+            plt.plot(wave, y, 'k', c=c, zorder=-1)                                    
+ 
+        axes = plt.gca()
+        axes.set_title(filename, fontdict=font)
+        # axes.set_xlim([390, 800])
+        axes.set_ylim([minRad, maxRad])
+        
+        plt.xlabel('wavelength (nm)', fontdict=font)
+        plt.ylabel(rType, fontdict=font)
+
+        # Tweak spacing to prevent clipping of labels
+        plt.subplots_adjust(left=0.15)
+        plt.subplots_adjust(bottom=0.15)
+                
+        axes.grid()
+
+        # plt.show() # --> QCoreApplication::exec: The event loop is already running
+
+        # Save the plot
+        filebasename = filename.split('_')
+        fp = os.path.join(plotdir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
+        plt.savefig(fp)
+        plt.close() # This prevents displaying the plot on screen with certain IDEs   
    
 
     @staticmethod
@@ -1105,9 +1204,11 @@ class Utilities:
             plt.plot(wave, normSpec[i,:], color='red', linewidth=0.5, linestyle='dashed')
 
         plt.xlabel('Wavelength [nm]', fontdict=font)
-        plt.ylabel(f'{rType}', fontdict=font)
+        plt.ylabel(f'{rType} [Normalized to peak value]', fontdict=font)
         plt.subplots_adjust(left=0.15)
         plt.subplots_adjust(bottom=0.15)
+        axes = plt.gca()
+        axes.grid()
             
         # Create output directory        
         os.makedirs(plotdir, exist_ok=True)

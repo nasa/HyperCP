@@ -233,6 +233,24 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1dAnomalyButton = QtWidgets.QPushButton("Anomaly Analysis")
         self.l1dAnomalyButton.clicked.connect(self.l1dAnomalyButtonPressed)
 
+        # Plots
+        l1dPlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
+        
+        l1dPlotEsLabel = QtWidgets.QLabel("Es", self)     
+        self.l1dPlotEsCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL1dPlotEs"]) == 1:
+            self.l1dPlotEsCheckBox.setChecked(True)
+
+        l1dPlotLiLabel = QtWidgets.QLabel("Li", self)     
+        self.l1dPlotLiCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL1dPlotLi"]) == 1:
+            self.l1dPlotLiCheckBox.setChecked(True)
+
+        l1dPlotLtLabel = QtWidgets.QLabel("Lt", self)     
+        self.l1dPlotLtCheckBox = QtWidgets.QCheckBox("", self)      
+        if int(ConfigFile.settings["bL1dPlotLt"]) == 1:
+            self.l1dPlotLtCheckBox.setChecked(True)
+
 
         # L1E
         l1eLabel = QtWidgets.QLabel("Level 1E Processing", self)
@@ -711,7 +729,20 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addLayout(stepHBox)
         VBox2.addWidget(self.l1dAnomalyButton)
 
-        # VBox2.addSpacing(20)   
+        # VBox2.addSpacing(20)  
+        # L2 Plotting
+        VBox2.addWidget(l1dPlotsLabel)
+        l1dPlotHBox = QtWidgets.QHBoxLayout()
+        l1dPlotHBox.addSpacing(45)
+        l1dPlotHBox.addWidget(l1dPlotEsLabel)
+        l1dPlotHBox.addWidget(self.l1dPlotEsCheckBox)
+        l1dPlotHBox.addWidget(l1dPlotLiLabel)
+        l1dPlotHBox.addWidget(self.l1dPlotLiCheckBox)
+        l1dPlotHBox.addWidget(l1dPlotLtLabel)
+        l1dPlotHBox.addWidget(self.l1dPlotLtCheckBox)
+        VBox2.addLayout(l1dPlotHBox)    
+
+        VBox2.addSpacing(10) 
 
         #L1E 
         VBox2.addWidget(l1eLabel)

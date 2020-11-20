@@ -35,6 +35,9 @@ class ConfigFile:
         print("fL1dDeglitch2", ConfigFile.settings["fL1dDeglitch2"])
         print("fL1dDeglitch3", ConfigFile.settings["fL1dDeglitch3"])
         print("bL1dAnomalyStep", ConfigFile.settings["bL1dAnomalyStep"])   
+        print("bL1dPlotEs", ConfigFile.settings["bL1dPlotEs"])
+        print("bL1dPlotLi", ConfigFile.settings["bL1dPlotLi"])
+        print("bL1dPlotLt", ConfigFile.settings["bL1dPlotLt"])
 
         print("fL1eInterpInterval", ConfigFile.settings["fL1eInterpInterval"])
         print("bL1ePlotTimeInterp", ConfigFile.settings["bL1ePlotTimeInterp"])
@@ -178,6 +181,9 @@ class ConfigFile:
         ConfigFile.settings["fL1dDeglitch2"] = 2.7
         ConfigFile.settings["fL1dDeglitch3"] = 3.7
         ConfigFile.settings["bL1dAnomalyStep"] = 3
+        ConfigFile.settings["bL1dPlotEs"] = 0
+        ConfigFile.settings["bL1dPlotLi"] = 0
+        ConfigFile.settings["bL1dPlotLt"] = 0
 
         ConfigFile.settings["fL1eInterpInterval"] = 3.5 # Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1ePlotTimeInterp"] = 0

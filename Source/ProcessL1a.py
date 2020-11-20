@@ -13,7 +13,7 @@ from RawFileReader import RawFileReader
 class ProcessL1a:
     
     @staticmethod
-    def processL1a(fp, outFilePath, calibrationMap):
+    def processL1a(fp, calibrationMap):
         '''
         Reads a raw binary file and generates a L1a HDF5 file
         '''

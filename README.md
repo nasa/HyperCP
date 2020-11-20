@@ -314,6 +314,8 @@ An eponymous, linked module allows the user to collect information from the data
 
 Process L1E to L2. Further quality control filters are applied to data, and data are then averaged within optional time interval ensembles prior to calculating the remote sensing reflectance within each ensemble. A typical field collection file for the HyperSAS SolarTracker is one hour, and the optimal ensemble periods within that hour will depend on how rapidly conditions and water-types are changing, as well as the instrument sampling rate. While the use of ensembles is optional (set to 0 to avoid averaging), it is highly recommended, as it allows for the statistical analysis required for Percent Lt calculation (radiance acceptance fraction; see below) within each ensemble, rather than %Lt across an entire (e.g. one hour) collection, and it also improves radiometric uncertainty estimation.
 
+*{I have been unable to track down the reference to the Lt(NIR)> Lt(UV) filter...}*
+
 Prior to ensemble binning, data may be filtered for **Maximum Wind Speed**.  
 **Default 7 m/s (IOCCG Draft Protocols 2019; D'Alimonte pers.comm 2019); 10 m/s Mueller et al. 2003 (NASA Protocols); 15 m/s (Zibordi et al. 2009);**
 

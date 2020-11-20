@@ -5,6 +5,13 @@ v1.0.4 Unreleased
 * Propagate uncertainties from radiometry to OC products
 * Revisit question of overly aggressive deglitching
 
+2020-11-20:
+* Fix NIR dataset for when no NIR residual correction is performed.
+
+2020-11-17:
+* Introduce failure tracking including PDF report generation for lower level processing aborts. Failure codes TBD.
+* Tighten up Controller code
+
 2020-11-13:
 * Fix Utilities.fixDateTime to catch time redundancy in first record
 

@@ -291,9 +291,10 @@ class ProcessL2:
             newnLwDeltaData = newReflectanceGroup.addDataset(f"nLw_{sensor}_delta") 
 
             if sensor == 'HYPER':
-                newRhoHyper = newReflectanceGroup.addDataset(f"rho_{sensor}")             
-                newNIRData = newReflectanceGroup.addDataset(f'nir_{sensor}') 
+                newRhoHyper = newReflectanceGroup.addDataset(f"rho_{sensor}")                             
                 newLwData = newRadianceGroup.addDataset(f'LW_{sensor}')
+                if ConfigFile.settings["bL2PerformNIRCorrection"]:
+                    newNIRData = newReflectanceGroup.addDataset(f'nir_{sensor}') 
         else:           
             newRrsData = newReflectanceGroup.getDataset(f"Rrs_{sensor}")
             newRrsUncorrData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_uncorr")
@@ -309,9 +310,10 @@ class ProcessL2:
             newnLwDeltaData = newReflectanceGroup.getDataset(f"nLw_{sensor}_delta")   
 
             if sensor == 'HYPER':
-                newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
-                newNIRData = newReflectanceGroup.getDataset(f'nir_{sensor}')   
-                newLwData = newRadianceGroup.getDataset(f'LW_{sensor}')              
+                newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")                
+                newLwData = newRadianceGroup.getDataset(f'LW_{sensor}')      
+                if ConfigFile.settings["bL2PerformNIRCorrection"]:
+                    newNIRData = newReflectanceGroup.getDataset(f'nir_{sensor}')           
 
         # Add datetime stamps back onto ALL datasets associated with the current sensor
         # If this is the first spectrum, add date/time, otherwise append
@@ -360,7 +362,8 @@ class ProcessL2:
                     if sensor == 'HYPER':
                         newRhoHyper.columns[k] = []
                         newLwData.columns[k] = []
-                        newNIRData.columns['NIR_offset'] = [] # not used until later; highly unpythonic
+                        if ConfigFile.settings["bL2PerformNIRCorrection"]:
+                            newNIRData.columns['NIR_offset'] = [] # not used until later; highly unpythonic
 
                 # At this waveband (k); still using complete wavelength set
                 es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and root
@@ -1555,7 +1558,8 @@ class ProcessL2:
         # Apply residual NIR corrections
         # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
-            rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(root, sensor, F0)      
+            rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(root, sensor, F0)    
+              
         
         # Satellites
         if ConfigFile.settings['bL2WeightMODISA'] or ConfigFile.settings['bL2WeightMODISA']:
@@ -1879,7 +1883,7 @@ class ProcessL2:
 
         # Lt Quality Filtering; anomalous elevation in the NIR
         if ConfigFile.settings["bL2LtUVNIR"]:
-            msg = "Applying Lt quality filtering to eliminate spectra."
+            msg = "Applying Lt(NIR)>Lt(UV) quality filtering to eliminate spectra."
             print(msg)
             Utilities.writeLogFile(msg)
             # This is not well optimized for large files...
@@ -2225,6 +2229,8 @@ class ProcessL2:
         root.attributes["DATETAG_UNITS"] = "YYYYDOY"
         root.attributes["TIMETAG2_UNITS"] = "HHMMSSmmm"
         del(root.attributes["DATETAG"])
+        del(root.attributes["COMMENT"])
+        del(root.attributes["CLOUD_PERCENT"])
         del(root.attributes["DEGLITCH_PRODAT"])
         del(root.attributes["DEGLITCH_REFDAT"])
         del(root.attributes["DEPTH_RESOLUTION"])

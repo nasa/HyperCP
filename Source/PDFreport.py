@@ -259,6 +259,17 @@ class PDF(FPDF):
             else:
                 self.multi_cell(0, 5, "None found.")
 
+            inPath = os.path.join(inPlotPath, 'L1D')
+            self.cell(0, 6, 'Complete spectral plots', 0, 1, 'L', 1)            
+
+            fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))            
+            
+            if len(fileList) > 0:                                     
+                for i in range(0, len(fileList)):
+                    self.image(fileList[i], w = 175)
+            else:
+                self.multi_cell(0, 5, "None found.")
+
         if level == "L2":
             inSpecFilterPath = os.path.join(inPlotPath, f'{level}_Spectral_Filter')
             fileList = glob.glob(os.path.join(inSpecFilterPath, f'{filebasename}_*.png'))
@@ -285,7 +296,8 @@ class PDF(FPDF):
         # self.cell(0, 5, '(end of excerpt)')
 
     
-    def print_chapter(self, root, level, title, inLog, inPlotPath, filebasename, fp):
+    # def print_chapter(self, root, level, title, inLog, inPlotPath, filebasename, fp):
+    def print_chapter(self, level, title, inLog, inPlotPath, filebasename, fp):
         self.add_page()
         self.chapter_title(level, title)        
 
