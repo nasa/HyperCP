@@ -375,7 +375,8 @@ class ProcessL2OCproducts():
             test_lambda = np.array([412, 443, 488, 551, 670])
             test_Rrs = np.empty((Rrs_mArray.shape[0],len(test_lambda))) * np.nan
             for i, Rrsi in enumerate(Rrs_mArray):
-                test_Rrs[i,:] = Utilities.interp(Rrs_wave, Rrsi, test_lambda, kind='linear', fill_value=0.0)
+                test_Rrs[i,:] = Utilities.interp(Rrs_wave.tolist(), Rrsi.tolist(), test_lambda.tolist(), \
+                    kind='linear', fill_value=0.0)
                 
 
             # maxCos, cos, clusterID, totScore = QAscores_5Bands(test_Rrs, test_lambda)
