@@ -109,6 +109,11 @@ class OCproductsWindow(QtWidgets.QDialog):
         # if int(ConfigFile.products["bL2Prodaot"]) == 1:
         #     self.aotCheckBox.setChecked(True)
 
+        weiLabel = QtWidgets.QLabel("weiQA (Wei et al. 2016)", self)     
+        self.weiCheckBox = QtWidgets.QCheckBox("", self)              
+        if int(ConfigFile.products["bL2Prodoc3m"]) == 1:
+            self.weiCheckBox.setChecked(True) 
+
         iopLabel = QtWidgets.QLabel("Semi-analytical Algorithms")
         iopLabel_font = iopLabel.font()
         iopLabel_font.setPointSize(12)
@@ -312,6 +317,18 @@ class OCproductsWindow(QtWidgets.QDialog):
         VBox2.addWidget(geoPhysLabel)
         # VBox2.addSpacing(10)       
 
+        # AOT
+        aotHBox = QtWidgets.QHBoxLayout()
+        aotHBox.addWidget(aotLabel)
+        # aotHBox.addWidget(self.aotCheckBox)
+        VBox2.addLayout(aotHBox)
+
+        # AVW
+        avwHBox = QtWidgets.QHBoxLayout()
+        avwHBox.addWidget(avwLabel)
+        avwHBox.addWidget(self.avwCheckBox)
+        VBox2.addLayout(avwHBox)
+
         # Kd490
         kd490HBox = QtWidgets.QHBoxLayout()
         kd490HBox.addWidget(kd490Label)
@@ -322,19 +339,13 @@ class OCproductsWindow(QtWidgets.QDialog):
         iparHBox = QtWidgets.QHBoxLayout()
         iparHBox.addWidget(iparLabel)
         iparHBox.addWidget(self.iparCheckBox)
-        VBox2.addLayout(iparHBox)
+        VBox2.addLayout(iparHBox)                
 
-        # AVW
-        avwHBox = QtWidgets.QHBoxLayout()
-        avwHBox.addWidget(avwLabel)
-        avwHBox.addWidget(self.avwCheckBox)
-        VBox2.addLayout(avwHBox)
-
-        # AOT
-        aotHBox = QtWidgets.QHBoxLayout()
-        aotHBox.addWidget(aotLabel)
-        # aotHBox.addWidget(self.aotCheckBox)
-        VBox2.addLayout(aotHBox)
+         # WeiQA
+        weiHBox = QtWidgets.QHBoxLayout()
+        weiHBox.addWidget(weiLabel)
+        weiHBox.addWidget(self.weiCheckBox)
+        VBox2.addLayout(weiHBox)
 
         # VBox2.addSpacing(10)
 
@@ -568,6 +579,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         ConfigFile.products["bL2Prodpoc"] = int(self.pocCheckBox.isChecked())
         ConfigFile.products["bL2Prodipar"] = int(self.iparCheckBox.isChecked())
         ConfigFile.products["bL2Prodavw"] = int(self.avwCheckBox.isChecked())
+        ConfigFile.products["bL2ProdweiQA"] = int(self.weiCheckBox.isChecked())
         ConfigFile.products["bL2Prodgocad"] = int(self.gocadCheckBox.isChecked())
         ConfigFile.products["bL2Prodag"] = int(self.agCheckBox.isChecked())
         # ConfigFile.products["bL2Prodag275"] = int(self.ag275CheckBox.isChecked())
@@ -602,8 +614,8 @@ class OCproductsWindow(QtWidgets.QDialog):
         # Confirm necessary satellite bands are processed
         if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
             ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
-                ConfigFile.products["bL2gocad"] or ConfigFile.products["bL2giop"] or \
-                ConfigFile.products["bL2qaa"]:
+            ConfigFile.products["bL2gocad"] or ConfigFile.products["bL2Prodgiop"] or \
+            ConfigFile.products["bL2qaa"] or ConfigFile.products["bL2ProdweiQA"]:
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
         

@@ -1,5 +1,6 @@
 
 import numpy as np
+import scipy.interpolate
 
 from ConfigFile import ConfigFile
 from Utilities import Utilities
@@ -13,10 +14,11 @@ from L2ipar import L2ipar
 from L2avw import L2avw
 # from L2giop import L2giop
 from L2qaa import L2qaa
+from L2wei_QA import QAscores_5Bands
 
 
 class ProcessL2OCproducts():
-    ''' Product algorithms can be found at https://oceancolor.gsfc.nasa.gov/atbd/ '''
+    ''' Most product algorithms can be found at https://oceancolor.gsfc.nasa.gov/atbd/ '''
     # To Do: Uncertainty propagation
     
     @staticmethod
@@ -34,6 +36,8 @@ class ProcessL2OCproducts():
         Rrs547 = Reflectance.datasets["Rrs_MODISA"].columns['551'] # 551 in name only
         Rrs555 = Reflectance.datasets["Rrs_MODISA"].columns['555']
         Rrs667 = Reflectance.datasets["Rrs_MODISA"].columns['667'].copy()
+
+        waveSat = [412, 443, 488, 532, 547, 555, 667]
 
         RrsHYPER = Reflectance.datasets["Rrs_HYPER"]
 
@@ -344,6 +348,41 @@ class ProcessL2OCproducts():
                 c = dict(zip(waveStr,c.tolist()))
                 for key, value in c.items(): cDS.columns[key] = value
                 cDS.columnsToDataset()
+
+        # Spectral QA
+        '''
+             Wei, Lee, and Shang (2016). 
+             A system to measure the data quality of spectral remote sensing
+             reflectance of aquatic environments. Journal of Geophysical Research, 
+             121, doi:10.1002/2016JC012126'''
+
+        if ConfigFile.products["bL2ProdweiQA"]:
+            msg = "Processing Wei QA"
+            print(msg)
+            Utilities.writeLogFile(msg)      
+
+            DerProd.attributes['wei_QA_UNITS'] = 'score'
+            weiQADS = DerProd.addDataset('wei_QA')
+            weiQADS.columns['Datetime'] = dateTime
+            weiQADS.columns['Datetag'] = dateTag
+            weiQADS.columns['Timetag2'] = timeTag2
+
+            # Reorganize datasets into multidimensional numpy arrays
+            test_Rrs = np.transpose(np.array([ Rrs412, Rrs443, Rrs488, Rrs547, Rrs667 ]))
+            # Rrs_wave = [412, 443, 488, 547, 667]
+            test_lambda = np.array([412,443,488,551,670]) # 547 is 551 in name only, and 670?
+
+            # # Interpolation to QA bands may not be required, depending on Jianwei's reply...
+            # test_Rrs = np.empty((Rrs_mArray.shape[0],len(test_lambda))) * np.nan
+            # for i, Rrsi in enumerate(Rrs_mArray):
+            #     test_Rrs[i,:] = scipy.interpolate.interp1d(Rrs_wave, Rrsi, \
+            #         kind='linear', bounds_error=False, fill_value=np.nan)(test_lambda)
+
+            # maxCos, cos, clusterID, totScore = QAscores_5Bands(test_Rrs, test_lambda)
+            _, _, _, totScore = QAscores_5Bands(test_Rrs, test_lambda)
+
+            weiQADS.columns['QA_score'] = totScore.tolist()
+            weiQADS.columnsToDataset()
 
 
 

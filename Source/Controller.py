@@ -483,7 +483,7 @@ class Controller:
                 Utilities.plotRadiometry(root, dirpath, filename, rType='LT', plotDelta = True)
 
             # IOPs
-            if 1==1: # For now, always plot these
+            if 1==1: # For now, always plot these. Utilities checks to make sure they exist first.
                 # These three should plot GOIP and QAA together
                 Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
                 Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)

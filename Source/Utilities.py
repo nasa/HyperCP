@@ -829,6 +829,19 @@ class Utilities:
 
             # Plot the Hyperspectral spectrum
             plt.plot(wave, y, 'k', c=c, zorder=-1)
+            
+            # Add the Wei QA score to the Rrs plot, if calculated
+            if rType == 'Rrs':
+                if ConfigFile.products['bL2ProdweiQA']:
+                    groupProd = root.getGroup("DERIVED_PRODUCTS")
+                    score = groupProd.getDataset('wei_QA')
+                    QA_note = f"Score: {score.columns['QA_score'][i]}"
+                    axes = plt.gca()
+                    axes.text(1.0,1.1 - (i+1)/len(score.columns['QA_score']), QA_note,
+                        verticalalignment='top', horizontalalignment='right',
+                        transform=axes.transAxes,
+                        color=c, fontdict=font)
+                    
             # Add Lw to Lt plots
             if rType=='LT':
                 plt.plot(subwave, yLw, 'k', c=c, zorder=-1, linestyle='dashed')
@@ -851,7 +864,7 @@ class Utilities:
                     plt.errorbar(wave_MODISA, y_MODISA, yerr=dy_MODISA, fmt='.',
                         elinewidth=0.1, color=c, ecolor='black', zorder=3) # ecolor is broken
                 else:
-                    plt.plot(wave_MODISA, y_MODISA, 'o', c=c)
+                    plt.plot(wave_MODISA, y_MODISA, 'o', c=c)                
             if ConfigFile.settings['bL2WeightMODIST']:
                 # Plot the MODIST spectrum                                
                 if plotDelta:

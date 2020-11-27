@@ -51,7 +51,7 @@ def QAscores_5Bands(test_Rrs, test_lambda):
     # Translated from the original Matlab to python by Dirk Aurin, 2020-11-25
     # ------------------------------------------------------------------------------
 
-    ## check input data
+    ''' Check input data '''
     if test_lambda.ndim > 1:
         row_lam, len_lam = test_lambda.shape
         if row_lam != 1:
@@ -67,7 +67,7 @@ def QAscores_5Bands(test_Rrs, test_lambda):
     elif len_lam == row:
         test_Rrs = np.transpose(test_Rrs)
 
-    ## 
+    ''' 23 Normalized spectral water types ''' 
     ref_lambda = np.array([412,443,488,551,670])
 
     ref_nRrs = np.array([ \
@@ -95,7 +95,6 @@ def QAscores_5Bands(test_Rrs, test_lambda):
         [0.16532,0.21737,0.38643,0.77736,0.41755], \
         [0.18559,0.18272,0.26051,0.74943,0.53272], \
         ])
-
 
     upB = np.array([ \
         [0.78838,0.56847,0.38234,0.10635,0.04743], \
@@ -149,9 +148,9 @@ def QAscores_5Bands(test_Rrs, test_lambda):
         [0.11525,0.14618,0.22647,0.69684,0.47248], \
         ])
         
-    refRow, refCol = ref_nRrs.shape
+    refRow, _ = ref_nRrs.shape
 
-    ## match the ref_lambda and test_lambda
+    ''' Match the ref_lambda and test_lambda '''
     idx0 = np.empty(len(ref_lambda), dtype='int') # for ref_lambda 
     idx1 = np.empty(len(test_lambda), dtype='int') # for test_lambda
 
@@ -163,7 +162,6 @@ def QAscores_5Bands(test_Rrs, test_lambda):
             idx1[i] = i
         else:
             idx1[i] = np.nan
-
             
     pos = np.isnan(idx1)
     np.delete(idx1, pos)
@@ -175,12 +173,11 @@ def QAscores_5Bands(test_Rrs, test_lambda):
     upB = upB[:,idx0]
     lowB = lowB[:,idx0] 
 
-    ## match the ref_nRrs and test_Rrs
+    ''' Match the ref_nRrs and test_Rrs '''
     # keep the original value
     test_Rrs_orig = test_Rrs
-
     
-    ## nromalization
+    ''' Normalization '''
     inRow, inCol = np.shape(test_Rrs)
 
     # transform spectrum to column, inCol*inRow
@@ -196,8 +193,8 @@ def QAscores_5Bands(test_Rrs, test_lambda):
     # SAM input, inCol*inRow*refRow 
     test_Rrs2 = np.repeat(test_Rrs_orig[:, :, np.newaxis], refRow, axis=2)
 
-    #for ref Rrs, inCol*refRow*inRow 
-    test_Rrs2p = np.moveaxis(test_Rrs2, 2, 1)
+    # #for ref Rrs, inCol*refRow*inRow 
+    # test_Rrs2p = np.moveaxis(test_Rrs2, 2, 1)
 
     # inCol*inRow*refRow  
     nRrs2_denom = np.sqrt(np.nansum(test_Rrs2**2, 0))
@@ -208,8 +205,8 @@ def QAscores_5Bands(test_Rrs, test_lambda):
     # inCol*refRow*inRow  
     nRrs2 = np.moveaxis(nRrs2, 2, 1)
 
-    ## adjust the ref_nRrs, according to the matched wavebands
-    #row,  = ref_nRrs.shape
+    ''' Adjust the ref_nRrs, according to the matched wavebands '''
+    #row,_  = ref_nRrs.shape
 
     #### re-normalize the ref_adjusted
     ref_nRrs = np.transpose(ref_nRrs)
@@ -223,7 +220,7 @@ def QAscores_5Bands(test_Rrs, test_lambda):
     ref_nRrs2_denom = np.moveaxis(ref_nRrs2_denom, 2, 0)
     ref_nRrs_corr2 = ref_nRrs2/ref_nRrs2_denom
 
-    ## Classification 
+    ''' Classification '''
     #### calculate the Spectral angle mapper
     # inCol*refRow*inRow 
     cos_denom = np.sqrt(np.nansum(ref_nRrs_corr2**2, 0) * np.nansum(nRrs2**2, 0))
@@ -233,50 +230,41 @@ def QAscores_5Bands(test_Rrs, test_lambda):
     # refRow*inRow 
     cos = np.sum(cos, 0)
     
-    # # 1*inRow
-    # [maxCos,clusterID] = max(cos);
-    # posClusterID = isnan(maxCos);
+    # 1*inRow
+    maxCos = np.amax(cos, axis=0) 
+    clusterID = np.argmax(cos, axis=0) # finds location of max along an axis, returns int64
+    posClusterID = np.isnan(maxCos)
 
-    # #potential bug for vectorized code
-    # #clusterID(pos) = NaN;
+    ''' Scoring '''
+    upB_corr = np.transpose(upB) 
+    lowB_corr = np.transpose(lowB)
 
-    # # if isnan(cos)
-    # #     clusterID = NaN;
-    # # else
-    # #     clusterID = find(cos==maxCos);
-    # # end
+    ''' Comparison '''
+    # inCol*inRow
+    upB_corr2 = upB_corr[:,clusterID] * (1+0.01)
+    lowB_corr2 = lowB_corr[:,clusterID] * (1-0.01)
+    ref_nRrs2 = ref_nRrs[:,clusterID]
 
-    # ## scoring
-    
-    # upB_corr = upB'; 
-    # lowB_corr = lowB'; 
+    #normalization
+    ref_nRrs2_denom = np.sqrt(np.nansum(ref_nRrs2**2, 0))
+    ref_nRrs2_denom = np.transpose(np.repeat(ref_nRrs2_denom[:,np.newaxis], inCol, axis=1))
+    upB_corr2 = upB_corr2 / ref_nRrs2_denom
+    lowB_corr2 = lowB_corr2 / ref_nRrs2_denom
 
-    # ## comparison
-    # # inCol*inRow
-    # upB_corr2 = upB_corr(:,clusterID).*(1+0.01);
-    # lowB_corr2 = lowB_corr(:,clusterID).*(1-0.01);
-    # ref_nRrs2 = ref_nRrs(:,clusterID);
+    upB_diff = upB_corr2 - nRrs
+    lowB_diff = nRrs - lowB_corr2
 
-    # #normalization
-    # ref_nRrs2_denom=sqrt(nansum(ref_nRrs2.^2));
-    # ref_nRrs2_denom = repmat(ref_nRrs2_denom,[inCol,1]);
-    # upB_corr2 = upB_corr2 ./ ref_nRrs2_denom;
-    # lowB_corr2 = lowB_corr2 ./ ref_nRrs2_denom;
+    C = np.empty([inCol,inRow], dtype='float')*0
+    pos = np.logical_and(upB_diff>=0, lowB_diff>=0)
+    C[pos] = 1
 
-    # upB_diff = upB_corr2 - nRrs;
-    # lowB_diff = nRrs - lowB_corr2;
+    #process all NaN spectral 
+    C[:,posClusterID] = np.nan                                               
 
-    # C = zeros(inCol,inRow);
-    # pos = find( upB_diff>=0 & lowB_diff>=0 );
-    # C(pos) = 1;
+    totScore = np.nanmean(C, 0)
+    clusterID = clusterID.astype('float')
+    clusterID[posClusterID] = np.nan
+    # Convert from index to water type 1-23
+    clusterID = clusterID +1
 
-    # #process all NaN spectral 
-    # C(:,posClusterID)=NaN;                                               
-
-
-    # totScore = nanmean(C) ;  
-    # #### jianwei added the following line
-    # clusterID(posClusterID) = NaN;
-
-    # return maxCos, cos, clusterID, totScore
-    return
+    return maxCos, cos, clusterID, totScore
