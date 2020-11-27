@@ -135,7 +135,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
 
         self.configUpdateButton = QtWidgets.QPushButton("Update from Config Window")
-        self.configUpdateButton.clicked.connect(self.configUpdateButtonPressed)
+        self.configUpdateButton.clicked.connect(lambda: self.configUpdateButtonPressed( 'local'))
 
         other_commentsLabel = QtWidgets.QLabel("Other Comments", self)
         other_commentsLabel2 = QtWidgets.QLabel("(lead with !)", self)
@@ -420,7 +420,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.setWindowTitle('Edit SeaBASS Header')
 
 
-    def configUpdateButtonPressed(self):
+    def configUpdateButtonPressed(self, caller):
         print("Updating comments from values in ConFigWindow")
 
         # This will update subsequently from the ConfigFile on demand        
@@ -520,8 +520,9 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! Remove Negatives = {NegativeFilt}'
             # f'! Processing DateTime = {time.asctime()}'
 
-        self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
-        self.commentsLineEdit.update()
+        if caller == 'local':
+            self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
+            self.commentsLineEdit.update()
 
         # print(SeaBASSHeader.settings["comments"])
 
@@ -585,7 +586,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         # print(SeaBASSHeader.settings["comments"])
         ConfigFile.settings["seaBASSHeaderFileName"] = self.name
         
-        QtWidgets.QMessageBox.about(self, "Edit SeaBASSHeader File", "SeaBASSHeader File Saved")
+        # QtWidgets.QMessageBox.about(self, "Edit SeaBASSHeader File", "SeaBASSHeader File Saved")
         self.close()
 
     def refreshWindow(self):
