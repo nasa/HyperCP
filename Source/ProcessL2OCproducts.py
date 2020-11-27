@@ -368,15 +368,15 @@ class ProcessL2OCproducts():
             weiQADS.columns['Timetag2'] = timeTag2
 
             # Reorganize datasets into multidimensional numpy arrays
-            test_Rrs = np.transpose(np.array([ Rrs412, Rrs443, Rrs488, Rrs547, Rrs667 ]))
-            # Rrs_wave = [412, 443, 488, 547, 667]
-            test_lambda = np.array([412,443,488,551,670]) # 547 is 551 in name only, and 670?
+            Rrs_mArray = np.transpose(np.array([ Rrs412, Rrs443, Rrs488, Rrs547, Rrs667 ]))
+            Rrs_wave =    np.array([412, 443, 488, 547, 667])            
 
-            # # Interpolation to QA bands may not be required, depending on Jianwei's reply...
-            # test_Rrs = np.empty((Rrs_mArray.shape[0],len(test_lambda))) * np.nan
-            # for i, Rrsi in enumerate(Rrs_mArray):
-            #     test_Rrs[i,:] = scipy.interpolate.interp1d(Rrs_wave, Rrsi, \
-            #         kind='linear', bounds_error=False, fill_value=np.nan)(test_lambda)
+            # Interpolation to QA bands, which are representative of several missions (see L2wei_QA.py)
+            test_lambda = np.array([412, 443, 488, 551, 670])
+            test_Rrs = np.empty((Rrs_mArray.shape[0],len(test_lambda))) * np.nan
+            for i, Rrsi in enumerate(Rrs_mArray):
+                test_Rrs[i,:] = Utilities.interp(Rrs_wave, Rrsi, test_lambda, kind='linear', fill_value=0.0)
+                
 
             # maxCos, cos, clusterID, totScore = QAscores_5Bands(test_Rrs, test_lambda)
             _, _, _, totScore = QAscores_5Bands(test_Rrs, test_lambda)

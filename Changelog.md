@@ -7,6 +7,7 @@ v1.0.4 Unreleased
 
 2020-11-27:
 * Add Wei et al. 2016 spectral QA score to L2 products. Include on Rrs plots.
+* Automatically save SeaBASS header comments when closing ConfigWindow; remove reminder prompts.
 
 2020-11-20:
 * Fix NIR dataset for when no NIR residual correction is performed.
