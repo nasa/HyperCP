@@ -18,7 +18,7 @@ class ProcessL1e:
             xTimer, yTimer are already converted from TimeTag2 to Datetimes'''
         
         # List of datasets requiring angular interpolation (i.e. through 0 degrees)
-        angList = ['AZIMUTH', 'POINTING', 'REL_AZ', 'HEADING', 'SOLAR_AZ']
+        angList = ['AZIMUTH', 'POINTING', 'REL_AZ', 'HEADING', 'SOLAR_AZ', 'SZA']
 
         for k in xData.data.dtype.names:
             if k == "Datetag" or k == "Timetag2" or k == "Datetime":
@@ -34,7 +34,12 @@ class ProcessL1e:
             newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
             
             if dataName in angList:
-                newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS)
+                ''' BUG: Unlike interp, interpAngular defaults to fill by extrapolation rather than 
+                filling with the last actual value. This is probably only advisable for SOLAR_AZ.'''
+                if dataName == 'SOLAR_AZ' or dataName == 'SZA':
+                    newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value="extrapolate")
+                else:
+                    newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value=0)
                 # Some angular measurements (like SAS pointing) are + and -, and get converted 
                 # to all +. Convert them back to - for 180-359
                 if dataName == "POINTING":

@@ -5,6 +5,9 @@ v1.0.4 Unreleased
 * Propagate uncertainties from radiometry to OC products
 * Revisit question of overly aggressive deglitching
 
+2020-11-30: 
+* Change L1E angular extrapolations to use constant values rather than linear extrapolation except for SOLAR_AZ and SZA.
+
 2020-11-27:
 * Add Wei et al. 2016 spectral QA score to L2 products. Include on Rrs plots.
 * Automatically save SeaBASS header comments when closing ConfigWindow; remove reminder prompts.

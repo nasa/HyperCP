@@ -40,7 +40,8 @@ class Controller:
         inLogPath = os.path.join(dirPath, 'Logs')
         inPlotPath = os.path.join(pathOut,'Plots')
         # outPDF = os.path.join(reportPath,'Reports', f'{fileName}.pdf')
-        outPDF = os.path.join(reportPath, f'{fileName}_{level}.pdf')
+        outHDF = os.path.split(outFilePath)[1]
+        outPDF = os.path.join(reportPath, f'{os.path.splitext(outHDF)[0]}.pdf')
         # title = f'File: {fileName} Collected: {root.attributes["TIME-STAMP"]}'
 
         pdf = PDF()
@@ -619,10 +620,12 @@ class Controller:
                         SeaBASSWriter.outputTXT_Type2(outFilePath)
                     # return True        
 
-        # In case of processing failure, write the report at this Process level
+        # In case of processing failure, write the report at this Process level, unless running stations
         #   Use numeric level for writeReport
         title = f'File: {fileName[0]} Collected: {timeStamp}'
-        if root is None:                        
+        if root is None and ConfigFile.settings["bL2Stations"] == 1:
+            return False
+        if root is None and ConfigFile.settings["bL2Stations"] == 0:                     
             Controller.writeReport(title,fileName, pathOut, outFilePath, level)
             return False
 
