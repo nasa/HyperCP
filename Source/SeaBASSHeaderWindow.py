@@ -38,7 +38,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         instructionLabel_font.setBold(True)
         instructionLabel.setFont(instructionLabel_font)
 
-        versionLabel = QtWidgets.QLabel("SeaBASS submission verion (e.g. 'R1', 'R2')")
+        versionLabel = QtWidgets.QLabel("SeaBASS submission verion (e.g. 'R1', 'R2')", self)
         self.versionLineEdit = QtWidgets.QLineEdit(self)
         self.versionLineEdit.setText(str(SeaBASSHeader.settings["version"]))  
 
@@ -546,6 +546,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
     def saveButtonPressed(self):
         print("SeaBASSHeaderWindow - Save Pressed")        
         
+        SeaBASSHeader.settings["version"] = self.versionLineEdit.text()
         SeaBASSHeader.settings["investigators"] = self.investigatorsLineEdit.text()
         SeaBASSHeader.settings["affiliations"] = self.affiliationsLineEdit.text()  
         SeaBASSHeader.settings["contact"] = self.contactLineEdit.text()
@@ -592,6 +593,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
     def refreshWindow(self):
         print("SeaBASSHeaderWindow - refreshWindow")        
         self.nameLabel.setText(f'Editing: {self.name}')
+        self.versionLineEdit.setText(str(SeaBASSHeader.settings["version"]))
         self.investigatorsLineEdit.setText(str(SeaBASSHeader.settings["investigators"]))
         self.affiliationsLineEdit.setText(str(SeaBASSHeader.settings["affiliations"]))
         self.contactLineEdit.setText(str(SeaBASSHeader.settings["contact"]))

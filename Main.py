@@ -243,6 +243,10 @@ class Window(QtWidgets.QWidget):
             print("Create Config File: ", text)
             ConfigFile.createDefaultConfig(text)
             MainConfig.settings["cfgFile"] = ConfigFile.filename
+            seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
+            print("Creating New SeaBASSHeader File: ", seaBASSHeaderFileName)   
+            SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
+            # SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 
     def configEditButtonPressed(self):
         print("Edit Config Dialogue")

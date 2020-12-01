@@ -484,13 +484,16 @@ class Controller:
                 Utilities.plotRadiometry(root, dirpath, filename, rType='LT', plotDelta = True)
 
             # IOPs
-            if 1==1: # For now, always plot these. Utilities checks to make sure they exist first.
-                # These three should plot GOIP and QAA together
+            # These three should plot GIOP and QAA together (eventually, once GIOP is complete)
+            if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products['adg']:
                 Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
+            if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products['aph']:
                 Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
+            if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products['bbp']:
                 Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
 
-                # This puts ag, Sg, and DOC on the same plot
+            # This puts ag, Sg, and DOC on the same plot
+            if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products['ag']:
                 Utilities.plotIOPs(root, dirpath, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
 
         # Write output file
