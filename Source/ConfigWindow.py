@@ -277,7 +277,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1eSaveSeaBASSCheckBox.setChecked(True)   
         self.l1eSaveSeaBASSCheckBox.clicked.connect(self.l1eSaveSeaBASSCheckBoxUpdate)         
 
-        self.l1eSeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit/Update SeaBASS Header", self)
+        self.l1eSeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit SeaBASS Header", self)
         self.l1eSeaBASSHeaderEditButton.clicked.connect(self.l1eSeaBASSHeaderEditButtonPressed)       
 
         l2pGetAncLabel = QtWidgets.QLabel("       Download Ancillary Models", self)        
@@ -1238,9 +1238,11 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigWindow.refreshConfig(self)
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
         inputDir = self.inputDirectory
-        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
+        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)        
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+            # Update comments to reflect any changes in ConfigWindow
+            SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
             seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
             seaBASSHeaderDialog.show()
         else:

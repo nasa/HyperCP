@@ -6,9 +6,7 @@ HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE m
 Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>\
 Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
-## Version 1.0.3 (see Changelog.md);
-
-While this version has been substantially updated from 1.0.α to (among other things) better accomodate a standard format into which data from above water radiometry suites other than HyperSAS/SolarTracker can be assimilated, the instrumentation available on the market today is highly varied. Therefore, we would appreciate any feedback from the community regarding not only the general functionality of this version, but also the instruments and data formats you are interested in seeing implemented in HyperInSPACE in the future.
+## Version 1.0.4 (see Changelog.md);
 
 ---
 ```
@@ -29,15 +27,15 @@ While this version has been substantially updated from 1.0.α to (among other th
 
 ## Requirements and Installation
 
-Save this entire HyperInSPACE file repository (~2.5 GB) to a convenient, sensibly named directory on your computer such as yourPath/HyperInSPACE/. When Main.py is launched for the first time, data and directories will be updated as described below. No system files will be changed.
+Save this entire HyperInSPACE file repository (~2.5 GB including accompanying databases) to a convenient, sensibly named directory on your computer such as yourPath/HyperInSPACE/. When Main.py is launched for the first time, directories will be created and databases moved into them as described below. No system files will be changed.
 
-Requires Python 3.X is installed on a Linux, MacOS, or Windows computer. The Anaconda distribution is encouraged. A nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. (If you are running a minimal, bootstrap distribution such as Miniconda, several additional packages may be needed including: scipy, matplotlib, pyqt5, h5py, fpdf, and requests.)
+Requires Python 3.X installed on a Linux, MacOS, or Windows computer. The Anaconda distribution is encouraged. A nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. (If you are running a minimal, bootstrap distribution such as Miniconda, several additional packages may be needed including: scipy, matplotlib, pyqt5, h5py, fpdf, and requests.)
 
-HDF5 data files will be read and written using the h5py module (2.9.0 at the time of writing) included in a standard Anaconda Python package. The Zhang (et al. 2017) sky/sunglint correction also requires Xarray, which requires installation (complete instructions here: http://xarray.pydata.org/en/stable/installing.html). To install Xarray with Anaconda:
+HDF5 data files will be read and written using the h5py module (2.9.0 at the time of writing) included in a standard Anaconda Python package. The Zhang et al. 2017 sky/sunglint correction also requires Xarray, which requires installation (complete instructions here: http://xarray.pydata.org/en/stable/installing.html). To install Xarray with Anaconda:
 ```
 prompt$ conda install xarray dask netCDF4 bottleneck
 ```
- Utilization of GMAO atmospheric models for use in the Zhang 2017 glint correction and filling in environmental conditions not otherwise provided in field logs will now require a user account on the NASA EARTHDATA server. New profiles can be created here: https://urs.earthdata.nasa.gov/users/new . The Pysolar module (https://anaconda.org/conda-forge/pysolar) must be installed unless the raw data includes solar geometries (e.g. SolarTracker with SATNAV and associated device file as described below). To install Pysolar with Anaconda :
+ Utilization of GMAO atmospheric models for use in the Zhang et al. 2017 glint correction and filling in environmental conditions not otherwise provided in field logs will require a user account on the NASA EARTHDATA server. These are the same credentials used to download satellite imagery from oceancolor.gsfc.nasa.gov. New profiles can be created here: https://urs.earthdata.nasa.gov/users/new . The Pysolar module (https://anaconda.org/conda-forge/pysolar) must be installed unless the raw data includes solar geometries (e.g. SolarTracker with SATNAV and associated device file as described below). To install Pysolar with Anaconda:
 ```
 prompt$ conda install -c conda-forge pysolar
 ```
@@ -46,7 +44,7 @@ To generate PDF reports for each file processed at Level-2, the package fpdf wil
 prompt$ pip install fpdf
 ```
 
-HyperInSPACE is a Main-View-Controller Python package that can be launched in several ways to run the Main.py module, such as by navigating to the program folder on the command line and typing the following command:
+HyperInSPACE is a Main-View-Controller Python package that can be launched in several ways to run the Main.py module, such as by navigating to the program folder on the command line and typing the following command after the prompt:
 ```
 prompt$ python Main.py
 ```
@@ -57,7 +55,7 @@ The following folders will be created automatically when you first run the progr
 - Logs - Most command line output messages generated during processing are captured for later reference in .log text files here
 - Plots - A variety of optional plotting routines are included which create name-appropriate sub-directories (i.e. 'L1C_Anoms', 'L1D', 'L1E', 'L2', 'L2_Spectral_Filter'). As with the Data, this path for outputting plots is optional and will be overwritten by choosing an alternate Data/Plots parent directory (see below).
 - Data - This directory now comes unpacked in the distribution. By default, it contains only Pope & Fry/Smith & Baker water absorption properties, Thuillier and satellite spectral response functions, banner images for the GUI, and the Zhang glint correction database. This is also the optional fallback location for input and/or output radiometry data, though setting up separate locations for field data is highly recommended (see below).
-- Source - This new directory (which comes unpacked with the distribution) now holds the majority of the code.
+- Source - This directory (which comes unpacked with the distribution) holds the majority of the Python source code.
 
 (Note: Data, Plots, and Logs directories are not tracked on git.)
 
@@ -65,7 +63,7 @@ The following folders will be created automatically when you first run the progr
 
 ### Overview
 1. Identify the cruise, relevant calibration files, and ancillary data files to be used in processing
-2. Launch HyperInSPACE and set up the Main window for data directories and ancillary file
+2. Launch HyperInSPACE and set up the Main window for data directories and the ancillary file
 3. Create a new Configuration (or edit and existing Configuration)
 4. Add and enable only *relevant* calibration and instrument files to the Configuration; there is no such thing as a standard instrument package
 5. Choose appropriate processing parameters for L1A-L2 (do not depend on software defaults; there is no such thing as a standard data collection)
@@ -78,9 +76,9 @@ The Main window appears once Main.py is launched. It has options to specify a co
 
 The 'New' button allows creation of a new configuration file. 'Edit' allows editing the currently selected configuration file. 'Delete' is used to delete the currently selected configuration file *and* corresponding auto-created calibration directories (see Configuration). After creating a new configuration file, select it from the drop-down menu, and select 'Edit' to launch the Configuration module and GUI. 
 
-The 'Input...' and 'Output Data/Plots Parent Directory' buttons are fairly self explanatory and allow optional selection of data and directories from any mounted/mapped drive. Note that output data and plot sub-directories (e.g. for processing levels) are also auto-created during processing as described below. The parent directory is the directory containing the sub-directories for processing levels (e.g. "/L1A", "/L1B", etc.) If no input or output data directories are selected, '/Data' and 'Plots' under the HyperInSPACE directory structure will be used by default as the parent directories.
+The 'Input...' and 'Output Data/Plots Parent Directory' buttons are self explanatory and allow optional selection of data and directories from any mounted/mapped drive. Note that output data and plot sub-directories (e.g. for processing levels) are also auto-created during processing as described below. The parent directory is the directory containing the sub-directories for processing levels (e.g. "/L1A", "/L1B", etc.) If no input or output data directories are selected, '/Data' and '/Plots' under the HyperInSPACE directory structure will be used by default as the parent directories.
 
-Ancillary Data files for environmental conditions and relevant geometries used in L2 processing must be text files in SeaBASS format with columns for date, time, lat, and lon. See https://seabass.gsfc.nasa.gov/ for a description of SeaBASS format. Optional data fields include station number, ship heading, relative sensor azimuth, aerosol optical depth, cloud cover, salinity, water temperature, and wind speed. An example ancillary file is included for use as a template. It is recommended that ancillary files are checked with the 'FCHECK' utility as described on the SeaBASS website. They will be interpreted using the included SB_support.py module from NASA/OBPG. 
+Ancillary data files for environmental conditions and relevant geometries used in L2 processing must be text files in SeaBASS format with columns for date, time, lat, and lon. See https://seabass.gsfc.nasa.gov/ for a description of SeaBASS format. Optional data fields include station number, ship heading, relative sensor azimuth, aerosol optical depth, cloud cover, salinity, water temperature, and wind speed. An example ancillary file is included for use as a template. It is recommended that ancillary files are checked with the 'FCHECK' utility as described on the SeaBASS website. They will be interpreted using the included SB_support.py module from NASA/OBPG. 
 
 In case environmental conditions were not logged in the field, or for filling in gaps in logged data, they will be retrieved from GMAO models as described below. The ancillary data file is optional (though strongly advised for adding wind speed at a minimum) provided the sensor suite is equipped with a SolarTracker or equivalent to supply the relevant sensor/solar geometries. If no SolarTracker-type instrument is present to report the relative sensor/solar geometries, the ancillary file must be provided with at least the ship heading and relative angle between the bow of the ship and the sensor azimuth as a function of time. 
 

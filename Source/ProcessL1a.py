@@ -86,12 +86,12 @@ class ProcessL1a:
             if gp.id.startswith("GP"):
                 gps += 1
         if hld != 2 or hsl != 2 or hse != 1 or hed != 1 or gps != 1:
-            msg = "ProcessL1a.processL1a: Essential dataset missing. Aborting."
-            msg = f'{msg}\ngps: {gps}'
-            msg = f'{msg}\nhed: {hed}'
-            msg = f'{msg}\nhld: {hld}'
-            msg = f'{msg}\nhse: {hse}'
-            msg = f'{msg}\nhsl: {hsl}'
+            msg = "ProcessL1a.processL1a: Essential dataset missing. Check your configuration calibration files match cruise setup. Aborting."
+            msg = f'{msg}\ngps: {gps} :1'
+            msg = f'{msg}\nhed: {hed} :1'
+            msg = f'{msg}\nhld: {hld} :2'
+            msg = f'{msg}\nhse: {hse} :1'
+            msg = f'{msg}\nhsl: {hsl} :2'
             print(msg)
             Utilities.writeLogFile(msg)
             return None

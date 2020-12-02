@@ -1,13 +1,17 @@
-v1.0.4 Unreleased
-* Add completed GIOP to L2 OC products
-* Add Wei et al. 2016 Rrs data quality to L2 OC products
-* Add PIC to L2 OC products
+v1.0.5 Unreleased
+* Read headers from ancillary file to populate SeaBASS header fields
+* Capture filename and line number when errors are thrown (from inspect import currentframe, getframeinfo)
+* Add PIC and GIOP to L2 OC products
 * Propagate uncertainties from radiometry to OC products
 * Revisit question of overly aggressive deglitching
+
+---
+v1.0.4 2020-12-02: DAA
 
 2020-12-01:
 * Create default SeaBASS header file when new Config file is created.
 * Check the L2 OC products were actually generated before plotting.
+* Eliminate "Update" button for SeaBASS header. Updates automatically on opening SeaBASS header window or closing Config window.
 
 2020-11-30: 
 * Change L1E angular extrapolations to use constant values rather than linear extrapolation except for SOLAR_AZ and SZA.

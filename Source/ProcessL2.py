@@ -2229,16 +2229,23 @@ class ProcessL2:
         root.attributes["DATETAG_UNITS"] = "YYYYDOY"
         root.attributes["TIMETAG2_UNITS"] = "HHMMSSmmm"
         del(root.attributes["DATETAG"])
-        del(root.attributes["COMMENT"])
-        del(root.attributes["CLOUD_PERCENT"])
-        del(root.attributes["DEGLITCH_PRODAT"])
-        del(root.attributes["DEGLITCH_REFDAT"])
-        del(root.attributes["DEPTH_RESOLUTION"])
+        if "COMMENT" in root.attributes.keys():
+            del(root.attributes["COMMENT"])
+        if "CLOUD_PERCENT" in root.attributes.keys():
+            del(root.attributes["CLOUD_PERCENT"])
+        if "DEGLITCH_PRODAT" in root.attributes.keys():
+            del(root.attributes["DEGLITCH_PRODAT"])
+        if "DEGLITCH_REFDAT" in root.attributes.keys():
+            del(root.attributes["DEGLITCH_REFDAT"])
+        if "DEPTH_RESOLUTION" in root.attributes.keys():
+            del(root.attributes["DEPTH_RESOLUTION"])
         if ConfigFile.settings["bL1cSolarTracker"]:
-            root.attributes["SOLARTRACKER_SERIAL_NUMBER"] = root.attributes["SAS SERIAL NUMBER"]        
-            del(root.attributes["SAS SERIAL NUMBER"])
+            if "SAS SERIAL NUMBER" in root.attributes.keys():
+                root.attributes["SOLARTRACKER_SERIAL_NUMBER"] = root.attributes["SAS SERIAL NUMBER"]                    
+                del(root.attributes["SAS SERIAL NUMBER"])
         del(root.attributes["TIMETAG2"])
-        del(root.attributes["WAVEL_INTERP"])
+        if "WAVEL_INTERP" in root.attributes.keys():
+            del(root.attributes["WAVEL_INTERP"])
 
         
         # Check to insure at least some data survived quality checks

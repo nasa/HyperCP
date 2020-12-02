@@ -318,7 +318,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         VBoxSub = QtWidgets.QVBoxLayout()
 
         VBoxSub.addWidget(commentsLabel)        
-        VBoxSub.addWidget(self.configUpdateButton)        
+        # VBoxSub.addWidget(self.configUpdateButton)        
         HBoxSub.addLayout(VBoxSub)
 
         HBoxSub.addWidget(self.commentsLineEdit)        

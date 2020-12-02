@@ -485,15 +485,16 @@ class Controller:
 
             # IOPs
             # These three should plot GIOP and QAA together (eventually, once GIOP is complete)
-            if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products['adg']:
+            if ConfigFile.products["bL2ProdadgQaa"]:
                 Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
-            if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products['aph']:
+            if ConfigFile.products["bL2ProdaphQaa"]:
                 Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
-            if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products['bbp']:
+            if ConfigFile.products["bL2ProdbbpQaa"]:
                 Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
 
             # This puts ag, Sg, and DOC on the same plot
-            if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products['ag']:
+            if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products["bL2ProdSg"] \
+                 and ConfigFile.products["bL2Prodag"] and ConfigFile.products["bL2ProdDOC"]:
                 Utilities.plotIOPs(root, dirpath, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
 
         # Write output file
