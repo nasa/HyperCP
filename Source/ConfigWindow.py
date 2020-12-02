@@ -1496,6 +1496,9 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL1dDeglitch2"] = float(self.l1dDeglitch2LineEdit.text())
         ConfigFile.settings["fL1dDeglitch3"] = float(self.l1dDeglitch3LineEdit.text())
         ConfigFile.settings["bL1dAnomalyStep"] = int(self.l1dAnomalyStepLineEdit.text())
+        ConfigFile.settings["bL1dPlotEs"] = int(self.l1dPlotEsCheckBox.isChecked())
+        ConfigFile.settings["bL1dPlotLi"] = int(self.l1dPlotLiCheckBox.isChecked())
+        ConfigFile.settings["bL1dPlotLt"] = int(self.l1dPlotLtCheckBox.isChecked())
 
         ConfigFile.settings["fL1eInterpInterval"] = float(self.l1eInterpIntervalLineEdit.text())
         ConfigFile.settings["bL1ePlotTimeInterp"] = int(self.l1ePlotTimeInterpCheckBox.isChecked())

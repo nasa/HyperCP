@@ -327,16 +327,18 @@ class ConfigFile:
     def deleteConfig(filename):
         print("ConfigFile - Delete Config")
         configPath = os.path.join("Config", filename)
+        seabassPath = os.path.join("Config", filename.split('.')[0], "hdr")
         if "seaBASSHeaderFileName" in ConfigFile.settings:
-            seaBassConfig = os.path.join("Config", ConfigFile.settings["seaBASSHeaderFileName"])
-            if os.path.isfile(seaBassConfig):
-                os.remove(seaBassConfig)
+            seabassPath = os.path.join("Config", ConfigFile.settings["seaBASSHeaderFileName"])
+            if os.path.isfile(seabassPath):
+                os.remove(seabassPath)
         if os.path.isfile(configPath):
             ConfigFile.filename = filename
             calibrationPath = ConfigFile.getCalibrationDirectory()
             os.remove(configPath)
-            shutil.rmtree(calibrationPath)
-        
+            shutil.rmtree(calibrationPath)        
+        if os.path.isfile(seabassPath):
+            os.remove()
         
 
     @staticmethod
