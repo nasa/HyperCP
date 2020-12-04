@@ -4,6 +4,12 @@ v1.0.5 Unreleased
 * Add PIC and GIOP to L2 OC products
 * Propagate uncertainties from radiometry to OC products
 * Revisit question of overly aggressive deglitching
+* Add failure flag. Split Wind and SZA L2.
+* Add geographic plot of file location to report? Maybe produce a kml file for GoogleEarth for the whole cruise<<<---
+
+2020-12-04:
+* Fix default Max Pitch/Roll Config.setting for when SeaBASS header window never opened.
+* Change default wavelength sampling interpolation interval to 3.3 nm.
 
 ---
 v1.0.4 2020-12-02: DAA

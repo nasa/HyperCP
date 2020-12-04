@@ -185,7 +185,7 @@ class ConfigFile:
         ConfigFile.settings["bL1dPlotLi"] = 0
         ConfigFile.settings["bL1dPlotLt"] = 0
 
-        ConfigFile.settings["fL1eInterpInterval"] = 3.5 # Brewin 2016 uses 3.5 nm
+        ConfigFile.settings["fL1eInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1ePlotTimeInterp"] = 0
         ConfigFile.settings["bL1eSaveSeaBASS"] = 0
         ConfigFile.settings["seaBASSHeaderFileName"] = os.path.splitext(name)[0] + ".hdr" # 

@@ -59,8 +59,12 @@ class ProcessL1c:
             timeStamp = newTimeStamp.copy()
 
 
-        if badTimes == []:
-            startLength = 1 # avoids div by zero below when finalCount is 0
+        # if badTimes == []:
+        #     startLength = 1 # avoids div by zero below when finalCount is 0
+
+        msg = f'   Length of dataset after removal {finalCount} long'
+        print(msg)
+        Utilities.writeLogFile(msg)
         
         return finalCount/originalLength
 
@@ -665,7 +669,7 @@ class ProcessL1c:
                     fractionRemoved = ProcessL1c.filterData(gp, badTimes)
 
                     # Now test whether the overlap has eliminated all radiometric data
-                    if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
+                    if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):                        
                         msg = "Radiometric data >98'%' eliminated. Aborting."
                         print(msg)
                         Utilities.writeLogFile(msg)                   
