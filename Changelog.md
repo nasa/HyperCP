@@ -6,6 +6,10 @@ v1.0.5 Unreleased
 * Revisit question of overly aggressive deglitching
 * Add failure flag. Split Wind and SZA L2.
 * Add geographic plot of file location to report? Maybe produce a kml file for GoogleEarth for the whole cruise<<<---
+* Fix non-unique station file problem (EXPORTS_noTracker)
+
+2020-12-16:
+* Fix PDF log plots for L2 with stations
 
 2020-12-04:
 * Fix default Max Pitch/Roll Config.setting for when SeaBASS header window never opened.
