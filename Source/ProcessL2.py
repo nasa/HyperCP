@@ -135,7 +135,8 @@ class ProcessL2:
                 rrsSlice[k][-1] -= rrsNIRCorr
                 # newRrsData.columns[k].append(rrsSlice[k])
 
-            nirSlice[-1] = rrsNIRCorr
+            # nirSlice[-1] = rrsNIRCorr
+            nirSlice['NIR_offset'].append(rrsNIRCorr)
 
             # nLw correction
             NIRRRs = []
@@ -241,9 +242,8 @@ class ProcessL2:
                     continue                
                 rrsSlice[k][-1] -= float(rrsNIRCorr) # Only working on the last (most recent' [-1]) element of the slice
                 nLwSlice[k][-1] -= float(nLwNIRCorr)                
-
             
-            nirSlice['NIR_offset'].append(rrsNIRCorr)
+            nirSlice['NIR_offset'].append(rrsNIRCorr)        
         
         newRrsData.columnsToDataset()
         newnLwData.columnsToDataset()

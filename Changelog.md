@@ -9,7 +9,7 @@ v1.0.5 Unreleased
 * Fix non-unique station file problem (EXPORTS_noTracker)
 
 2020-12-16:
-* Fix PDF log plots for L2 with stations
+* Fix PDF log plots for L2 with stations. Fix No_NIR correction offset object in PL2.
 
 2020-12-04:
 * Fix default Max Pitch/Roll Config.setting for when SeaBASS header window never opened.
