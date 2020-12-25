@@ -60,7 +60,7 @@ class SeaBASSHeader:
     def createDefaultSeaBASSHeader(name):
         print("SeaBASSHeader - Create Default SeaBASSHeader")
 
-        SeaBASSHeader.settings["version"] = 'R1'
+        SeaBASSHeader.settings["version"] = 'R0'
         SeaBASSHeader.settings["investigators"] = ''
         SeaBASSHeader.settings["affiliations"] = ''
         SeaBASSHeader.settings["contact"] = ''

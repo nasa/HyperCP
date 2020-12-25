@@ -159,7 +159,7 @@ class ConfigFile:
         ConfigFile.settings["CalibrationFiles"] = {}
 
         ConfigFile.settings["bL1aCleanSZA"] = 0
-        ConfigFile.settings["fL1aCleanSZAMax"] = 60.0 # e.g. 60:Brewin 2016, 
+        ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016, 
 
         ConfigFile.settings["bL1cSolarTracker"] = 1 
         ConfigFile.settings["bL1cCleanPitchRoll"] = 0
@@ -180,7 +180,7 @@ class ConfigFile:
         ConfigFile.settings["fL1dDeglitch1"] = 11     
         ConfigFile.settings["fL1dDeglitch2"] = 2.7
         ConfigFile.settings["fL1dDeglitch3"] = 3.7
-        ConfigFile.settings["bL1dAnomalyStep"] = 3
+        ConfigFile.settings["bL1dAnomalyStep"] = 10
         ConfigFile.settings["bL1dPlotEs"] = 0
         ConfigFile.settings["bL1dPlotLi"] = 0
         ConfigFile.settings["bL1dPlotLt"] = 0
@@ -194,7 +194,7 @@ class ConfigFile:
         ConfigFile.settings["bL2pObpgCreds"] = 0
                 
         ConfigFile.settings["bL2LtUVNIR"] = 1
-        ConfigFile.settings["fL2MaxWind"] = 7.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009, 
+        ConfigFile.settings["fL2MaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009, 
         ConfigFile.settings["fL2SZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
         ConfigFile.settings["fL2SZAMax"] = 60 # e.g. 60:Brewin 2016,
         
