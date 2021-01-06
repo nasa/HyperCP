@@ -1218,13 +1218,7 @@ class Utilities:
         normSpec = np.array(normSpec)
         
         aveSpec = np.median(normSpec, axis = 0)
-        stdSpec = np.std(normSpec, axis = 0)
-
-        plt.plot(wave, aveSpec, color='black', linewidth=0.5)
-        plt.plot(wave, aveSpec + filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
-        plt.plot(wave, aveSpec - filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
-
-        plt.title(f'Sigma = {filterFactor}', fontdict=font) 
+        stdSpec = np.std(normSpec, axis = 0)        
 
         badTimes  = []
         badIndx = []
@@ -1246,6 +1240,11 @@ class Utilities:
         for i in badIndx:
             plt.plot( wave, normSpec[i,:], color='red', linewidth=0.5, linestyle=(0, (1, 10)) )
 
+        plt.plot(wave, aveSpec, color='black', linewidth=0.5)
+        plt.plot(wave, aveSpec + filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
+        plt.plot(wave, aveSpec - filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
+
+        plt.title(f'Sigma = {filterFactor}', fontdict=font) 
         plt.xlabel('Wavelength [nm]', fontdict=font)
         plt.ylabel(f'{rType} [Normalized to peak value]', fontdict=font)
         plt.subplots_adjust(left=0.15)
