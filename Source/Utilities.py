@@ -1244,7 +1244,7 @@ class Utilities:
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) 
         
         for i in badIndx:
-            plt.plot(wave, normSpec[i,:], color='red', linewidth=0.5, linestyle='dashed')
+            plt.plot( wave, normSpec[i,:], color='red', linewidth=0.5, linestyle=(0, (1, 10)) )
 
         plt.xlabel('Wavelength [nm]', fontdict=font)
         plt.ylabel(f'{rType} [Normalized to peak value]', fontdict=font)
