@@ -1451,6 +1451,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # Confirm that SeaBASS Headers need to be/are updated
         if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL2SaveSeaBASS"]: 
+            SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
             # This now updates the SeaBASS Header comments to reflect the ConfigWindow parameters automatically.
             SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
             SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])

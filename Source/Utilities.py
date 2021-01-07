@@ -3,6 +3,7 @@ import os
 import sys
 import math
 import datetime
+import time
 import pytz
 from collections import Counter
 
@@ -211,8 +212,8 @@ class Utilities:
     # Converts HDFRoot timestamp attribute to seconds
     @staticmethod
     def timestampToSec(timestamp):
-        time = timestamp.split(" ")[3]
-        t = time.split(":")
+        timei = timestamp.split(" ")[3]
+        t = timei.split(":")
         h = int(t[0])
         m = int(t[1])
         s = int(t[2])
@@ -239,22 +240,22 @@ class Utilities:
                 timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
                 dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
                 timeStamp = [] 
-                for i, time in enumerate(timeData):
+                for i, timei in enumerate(timeData):
                     # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
                     # Filter for aberrant Datetags
-                    t = str(int(time)).zfill(9)
+                    t = str(int(timei)).zfill(9)
                     h = int(t[:2])
                     m = int(t[2:4])
                     s = int(t[4:6])
                     if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
-                        and time != 0.0 and not np.isnan(time) \
+                        and timei != 0.0 and not np.isnan(timei) \
                             and h < 60 and m < 60 and s < 60:
 
                         dt = Utilities.dateTagToDateTime(dateTag[i])
-                        timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
+                        timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
                     else:                    
                         gp.datasetDeleteRow(i)
-                        msg = f"Bad Datetag or Timetag2 found. Eliminating record. {dateTag[i]} : {time}"
+                        msg = f"Bad Datetag or Timetag2 found. Eliminating record. {dateTag[i]} : {timei}"
                         print(msg)
                         Utilities.writeLogFile(msg)
                 dateTime.data = timeStamp
@@ -276,17 +277,17 @@ class Utilities:
                         dateTag = gp.datasets[ds].columns["Datetag"]
                         
                         timeStamp = [] 
-                        for i, time in enumerate(timeData):
+                        for i, timei in enumerate(timeData):
                             # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
                             # Filter for aberrant Datetags
                             if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
-                                and time != 0.0 and not np.isnan(time):
+                                and timei != 0.0 and not np.isnan(timei):
 
                                 dt = Utilities.dateTagToDateTime(dateTag[i])
-                                timeStamp.append(Utilities.timeTag2ToDateTime(dt, time))
+                                timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
                             else:                    
                                 gp.datasetDeleteRow(i)
-                                msg = f"Bad Datetag or Timetag2 found. Eliminating record. {dateTag[i]} : {time}"
+                                msg = f"Bad Datetag or Timetag2 found. Eliminating record. {dateTag[i]} : {timei}"
                                 print(msg)
                                 Utilities.writeLogFile(msg)
                         gp.datasets[ds].columns["Datetime"] = timeStamp
@@ -1203,10 +1204,10 @@ class Utilities:
         # color=iter(cmap(np.linspace(0,1,total)))
         print('Creating plots...')
         plt.figure(1, figsize=(10,8))
-        for time in range(total):
+        for timei in range(total):
             y = []
             for waveband in x:
-                y.append(Dataset.data[waveband][time])
+                y.append(Dataset.data[waveband][timei])
             
             specArray.append(y)
             peakIndx = y.index(max(y))
@@ -1222,23 +1223,27 @@ class Utilities:
 
         badTimes  = []
         badIndx = []
-        # For each spectral band...
+        # For each spectral band...        
         for i in range(0, len(normSpec[0])-1):
-            # For each timeserioes radiometric measurement...
+            # For each timeseries radiometric measurement...
             for j, rad in enumerate(normSpec[:,i]):
                 # Identify outliers and negative values for elimination
                 if rad > (aveSpec[i] + filterFactor*stdSpec[i]) or \
                     rad < (aveSpec[i] - filterFactor*stdSpec[i]) or \
                     rad < 0:
                     badIndx.append(j)
-                    badTimes.append(timeStamp[j])
+                    badTimes.append(timeStamp[j])        
 
+        badIndx = np.unique(badIndx)
         badTimes = np.unique(badTimes)
         # Duplicates each element to a list of two elements in a list:
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) 
         
+        t0 = time.time()
         for i in badIndx:
             plt.plot( wave, normSpec[i,:], color='red', linewidth=0.5, linestyle=(0, (1, 10)) )
+        t1 = time.time()
+        print(f'Time elapsed: {str(round((t1-t0)))} Seconds')
 
         plt.plot(wave, aveSpec, color='black', linewidth=0.5)
         plt.plot(wave, aveSpec + filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
@@ -1251,6 +1256,7 @@ class Utilities:
         plt.subplots_adjust(bottom=0.15)
         axes = plt.gca()
         axes.grid()
+        
             
         # Create output directory        
         os.makedirs(plotdir, exist_ok=True)

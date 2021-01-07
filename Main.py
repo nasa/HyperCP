@@ -4,7 +4,7 @@ above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 
 See README.md or README.pdf for installation instructions and guide.
 
-Version 1.0.3: Under development July 2020 (See Changelog.md)
+Version 1.0.5: Under development January 2021 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 
 """
@@ -392,7 +392,7 @@ class Window(QtWidgets.QWidget):
 
         Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, ancFile) 
         t1Single = time.time()
-        print(f'Time elapsed: {str(round((t1Single-t0Single)/60)/2)} minutes')
+        print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
 
     def closeEvent(self, event):
         reply = QtWidgets.QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
@@ -467,7 +467,7 @@ class Window(QtWidgets.QWidget):
     
         Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, ancFile)
         t1Multi = time.time()
-        print(f'Time elapsed: {str(round((t1Multi-t0Multi)/60)/2)} Minutes')
+        print(f'Time elapsed: {str(round((t1Multi-t0Multi)/60))} Minutes')
 
     def multi2Clicked(self):
         ''' Sneaky work around until I can pass signals btw. windows'''
