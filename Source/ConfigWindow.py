@@ -565,9 +565,18 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)        
         if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
             self.l2SaveSeaBASSCheckBox.setChecked(True)
-        self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)
+        # self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)
         self.l1eSaveSeaBASSCheckBoxUpdate()
         self.l2SaveSeaBASSCheckBoxUpdate()
+
+
+        l2WriteReportLabel = QtWidgets.QLabel("Write PDF Report", self)     
+        self.l2WriteReportCheckBox = QtWidgets.QCheckBox("", self)    
+        self.l2WriteReportCheckBox.clicked.connect(self.l2WriteReportCheckBoxUpdate)        
+        if int(ConfigFile.settings["bL2WriteReport"]) == 1:
+            self.l2WriteReportCheckBox.setChecked(True)
+        # self.l2WriteReportCheckBox.clicked.connect(self.l2SWriteReportCheckBoxUpdate)
+        self.l2WriteReportCheckBoxUpdate()
 
         self.saveButton = QtWidgets.QPushButton("Save/Close")        
         self.saveAsButton = QtWidgets.QPushButton("Save As")
@@ -599,7 +608,7 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox1.addWidget(calibrationFrameTypeLabel)
         VBox1.addWidget(self.calibrationFrameTypeComboBox)
 
-        # VBox1.addSpacing(10)
+        # VBox1.addSpacing(5)
 
         # L1A
         VBox1.addWidget(l1aLabel)
@@ -612,7 +621,7 @@ class ConfigWindow(QtWidgets.QDialog):
         szaHBox.addWidget(self.l1aCleanSZAMaxLineEdit)        
         VBox1.addLayout(szaHBox)
 
-        # VBox1.addSpacing(10)
+        # VBox1.addSpacing(5)
 
         # L1B
         VBox1.addWidget(l1bLabel)
@@ -716,7 +725,7 @@ class ConfigWindow(QtWidgets.QDialog):
         deglitch3HBox.addWidget(self.l1dDeglitch3LineEdit)
         VBox2.addLayout(deglitch3HBox)
 
-        # VBox2.addSpacing(10)
+        # VBox2.addSpacing(5)
 
         # L1D Anomaly Launcher
         # VBox2.addWidget(l1dAnomalyLabel)
@@ -730,7 +739,7 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addWidget(self.l1dAnomalyButton)
 
         # VBox2.addSpacing(20)  
-        # L2 Plotting
+        # L1D Plotting
         VBox2.addWidget(l1dPlotsLabel)
         l1dPlotHBox = QtWidgets.QHBoxLayout()
         l1dPlotHBox.addSpacing(45)
@@ -938,7 +947,7 @@ class ConfigWindow(QtWidgets.QDialog):
         RhoHBox3.addWidget(self.RhoRadioButtonDefault)        
         VBox3.addLayout(RhoHBox3)
 
-        VBox3.addSpacing(10)
+        VBox3.addSpacing(5)
 
         # L2 NIR AtmoCorr
         # NIRCorrectionVBox = QtWidgets.QVBoxLayout()
@@ -949,7 +958,7 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addWidget(self.SimpleNIRRadioButton)
         VBox3.addWidget(self.SimSpecNIRRadioButton)  
 
-        VBox3.addSpacing(10)
+        VBox3.addSpacing(5)
 
         # L2 Remove negative spectra
         NegativeSpecHBox = QtWidgets.QHBoxLayout()
@@ -957,7 +966,7 @@ class ConfigWindow(QtWidgets.QDialog):
         NegativeSpecHBox.addWidget(self.l2NegativeSpecCheckBox)
         VBox3.addLayout(NegativeSpecHBox)  
 
-        VBox3.addSpacing(10)
+        VBox3.addSpacing(5)
 
         # L2 Spectral weighting to satellites
         VBox3.addWidget(l2WeightsLabel)
@@ -981,7 +990,7 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addLayout(l2WeightHBox2)  
         VBox3.addWidget(l2WeightMODISALabel2)
 
-        VBox3.addSpacing(10)
+        VBox3.addSpacing(5)
 
         # L2 Plotting
         VBox3.addWidget(l2PlotsLabel)
@@ -999,7 +1008,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2PlotHBox.addWidget(self.l2PlotLtCheckBox)
         VBox3.addLayout(l2PlotHBox)    
 
-        VBox3.addSpacing(10)
+        VBox3.addSpacing(5)
 
         l2OCproductsHBox = QtWidgets.QHBoxLayout()
         l2OCproductsHBox.addWidget(self.l2OCproducts)
@@ -1010,6 +1019,12 @@ class ConfigWindow(QtWidgets.QDialog):
         l2SeaBASSHBox.addWidget(l2SaveSeaBASSLabel)
         l2SeaBASSHBox.addWidget(self.l2SaveSeaBASSCheckBox)    
         VBox3.addLayout(l2SeaBASSHBox)   
+
+        # Horizontal Box; Write Report
+        l2ReportHBox = QtWidgets.QHBoxLayout()
+        l2ReportHBox.addWidget(l2WriteReportLabel)
+        l2ReportHBox.addWidget(self.l2WriteReportCheckBox)    
+        VBox3.addLayout(l2ReportHBox)   
 
         VBox3.addSpacing(20) 
 
@@ -1442,6 +1457,10 @@ class ConfigWindow(QtWidgets.QDialog):
                 and (not self.l2SaveSeaBASSCheckBox.isChecked())        
         self.l1eSeaBASSHeaderEditButton.setDisabled(disabled)
 
+    def l2WriteReportCheckBoxUpdate(self):
+        print("ConfigWindow - l2WriteReportCheckBoxUpdate")        
+        # disabled = not self.l2WriteReportCheckBox.isChecked()        
+
     def saveButtonPressed(self):
         print("ConfigWindow - Save Pressed")
 
@@ -1560,6 +1579,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2PlotLi"] = int(self.l2PlotLiCheckBox.isChecked())
         ConfigFile.settings["bL2PlotLt"] = int(self.l2PlotLtCheckBox.isChecked())
         ConfigFile.settings["bL2SaveSeaBASS"] = int(self.l2SaveSeaBASSCheckBox.isChecked())
+        ConfigFile.settings["bL2WriteReport"] = int(self.l2WriteReportCheckBox.isChecked())
 
         # ConfigFile.saveConfig(self.name) # overkill?
 
@@ -1605,7 +1625,7 @@ class ConfigWindow(QtWidgets.QDialog):
             
             # Confirm that SeaBASS Headers need to be/are updated
             if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL1eSaveSeaBASS"]: 
-                SeaBASSHeaderWindow.configUpdateButtonPressed(self)
+                SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
                 reply = QtWidgets.QMessageBox.question(self, "Message", "Did you remember to update SeaBASS Headers?", \
                         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
 

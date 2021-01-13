@@ -8,6 +8,12 @@ v1.0.5 Unreleased
 * Add geographic plot of file location to report? Maybe produce a kml file for GoogleEarth for the whole cruise<<<---
 * Fix non-unique station file problem (EXPORTS_noTracker)
 
+2021-01-12:
+* Add option to not produce PDF reports in L2 in order to speed up batching when necessary.
+
+2021-01-07:
+* Tidy up spectral plotting and fix SeaBASSHeader file saving on ConfigWindow save/close
+
 2020-12-16:
 * Fix PDF log plots for L2 with stations. Fix No_NIR correction offset object in PL2.
 

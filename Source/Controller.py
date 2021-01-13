@@ -38,7 +38,12 @@ class Controller:
         fileName = fileName[0]
         dirPath = os.getcwd()
         inLogPath = os.path.join(dirPath, 'Logs')
+        
         inPlotPath = os.path.join(pathOut,'Plots')
+        # The inPlotPath is going to be different for L1A-L1E than L2 for many cruises...
+        # In that case, move up one directory
+        if os.path.isdir(os.path.join(inPlotPath, 'L1C_Anoms')) is False:
+            inPlotPath = os.path.join(pathOut,'..','Plots')
         # outPDF = os.path.join(reportPath,'Reports', f'{fileName}.pdf')
         outHDF = os.path.split(outFilePath)[1]
         outPDF = os.path.join(reportPath, f'{os.path.splitext(outHDF)[0]}.pdf')
@@ -78,6 +83,8 @@ class Controller:
                 pdf.print_chapter('L1E', 'Process L1D to L1E', inLog, inPlotPath, fileName, outFilePath)
         
         if numLevel > 5:
+            # For L2, reset Plot directory
+            inPlotPath = os.path.join(pathOut,'Plots')
             inLog = os.path.join(inLogPath,f'{fileName}_L1E_L2.log')
             if os.path.isfile(inLog):
                 # pdf.print_chapter(root,'L2', 'Process L1E to L2', inLog, inPlotPath, fileName, outFilePath)
@@ -630,14 +637,16 @@ class Controller:
         if root is None and ConfigFile.settings["bL2Stations"] == 1:
             return False
         if root is None and ConfigFile.settings["bL2Stations"] == 0:                     
-            Controller.writeReport(title,fileName, pathOut, outFilePath, level)
+            if ConfigFile.settings["bL2WriteReport"] == 1:
+                Controller.writeReport(title,fileName, pathOut, outFilePath, level)
             return False
 
         msg = f'Process Single Level: {outFilePath} - SUCCESSFUL'
         print(msg)
         Utilities.writeLogFile(msg)
         if level == "L2":
-            Controller.writeReport(title,fileName, pathOut, outFilePath, level)
+            if ConfigFile.settings["bL2WriteReport"] == 1:
+                Controller.writeReport(title,fileName, pathOut, outFilePath, level)
         return True  
 
 

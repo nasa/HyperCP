@@ -1212,9 +1212,7 @@ class Utilities:
             specArray.append(y)
             peakIndx = y.index(max(y))
             normSpec.append(y / y[peakIndx])
-            # c=next(color)
-            # plt.plot(wave, y / y[peakIndx], 'k', c=c)
-            plt.plot(wave, y / y[peakIndx], color='grey')
+            # plt.plot(wave, y / y[peakIndx], color='grey')
 
         normSpec = np.array(normSpec)
         
@@ -1239,11 +1237,17 @@ class Utilities:
         # Duplicates each element to a list of two elements in a list:
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) 
         
-        t0 = time.time()
-        for i in badIndx:
-            plt.plot( wave, normSpec[i,:], color='red', linewidth=0.5, linestyle=(0, (1, 10)) )
-        t1 = time.time()
-        print(f'Time elapsed: {str(round((t1-t0)))} Seconds')
+        # t0 = time.time()
+        for timei in range(total):
+        # for i in badIndx:
+            if timei in badIndx:
+                # plt.plot( wave, normSpec[i,:], color='red', linewidth=0.5, linestyle=(0, (1, 10)) ) # long-dot
+                plt.plot( wave, normSpec[timei,:], color='red', linewidth=0.5, linestyle=(0, (5, 5)) ) # dashed
+            else:
+                plt.plot(wave, normSpec[timei,:], color='grey')
+
+        # t1 = time.time()
+        # print(f'Time elapsed: {str(round((t1-t0)))} Seconds')
 
         plt.plot(wave, aveSpec, color='black', linewidth=0.5)
         plt.plot(wave, aveSpec + filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')

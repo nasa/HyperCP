@@ -137,6 +137,7 @@ class ConfigFile:
         print("bL2ProdcQaa", ConfigFile.products["bL2ProdcQaa"])
 
         print("bL2SaveSeaBASS", ConfigFile.settings["bL2SaveSeaBASS"])
+        print("bL2WriteReport", ConfigFile.settings["bL2WriteReport"])
 
 
     # Creates the calibration file folder if not exist
@@ -282,6 +283,7 @@ class ConfigFile:
         ConfigFile.products["bL2ProdcQaa"] = 0
 
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
+        ConfigFile.settings["bL2WriteReportSeaBASS"] = 1
         
         ConfigFile.saveConfig(name)
 
