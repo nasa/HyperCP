@@ -1,5 +1,6 @@
 
 import os
+import stat
 import urllib.request as ur
 import requests
 import platform
@@ -21,10 +22,11 @@ class GetAnc:
             netrcFile = os.path.join(home,'_netrc')
         else: 
             netrcFile = os.path.join(home,'.netrc')
-
+            os.chmod(netrcFile, stat.S_IRUSR | stat.S_IWUSR)
         if not os.path.exists(netrcFile):
             with open(netrcFile, 'w') as fo:
                 fo.write(f'machine urs.earthdata.nasa.gov login {usr} password {pwd}\n')
+
         else:
             # print('netrc found')
             fo = open(netrcFile)
