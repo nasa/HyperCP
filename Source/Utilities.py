@@ -1269,7 +1269,7 @@ class Utilities:
         _,filename = os.path.split(inFilePath)
         filebasename,_ = filename.split('_')
         if station:
-            fp = os.path.join(plotdir, f'{station}_{filebasename}_{rType}.png')
+            fp = os.path.join(plotdir, f'STATION_{station}_{filebasename}_{rType}.png')
         else:            
             fp = os.path.join(plotdir, f'{filebasename}_{rType}.png')
         plt.savefig(fp)

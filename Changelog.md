@@ -8,6 +8,9 @@ v1.0.5 Unreleased
 * Add geographic plot of file location to report? Maybe produce a kml file for GoogleEarth for the whole cruise<<<---
 * Fix non-unique station file problem (EXPORTS_noTracker)
 
+2021-01-13:
+* Fix .netrc file permissions when created by HyperInSPACE
+
 2021-01-12:
 * Add option to not produce PDF reports in L2 in order to speed up batching when necessary.
 

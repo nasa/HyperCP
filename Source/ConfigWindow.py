@@ -1469,22 +1469,22 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.saveConfig(self.name)
 
         # Confirm that SeaBASS Headers need to be/are updated
-        if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL2SaveSeaBASS"]: 
-            SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
-            # This now updates the SeaBASS Header comments to reflect the ConfigWindow parameters automatically.
-            SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
-            SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
-            # reply = QtWidgets.QMessageBox.question(self, "Message", "Did you remember to update SeaBASS Headers?", \
-            #         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
+        # if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL2SaveSeaBASS"]: 
+        SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
+        # This now updates the SeaBASS Header comments to reflect the ConfigWindow parameters automatically.
+        SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
+        SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
+        # reply = QtWidgets.QMessageBox.question(self, "Message", "Did you remember to update SeaBASS Headers?", \
+        #         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
 
-            # if reply == QtWidgets.QMessageBox.Yes:
-            self.close()
-            # else:
-            #     note = QtWidgets.QMessageBox()
-            #     note.setText('Edit/Save SeaBASS Headers in Level 1E Processing')
-            #     note.exec_()
-        else:
-            self.close()
+        # if reply == QtWidgets.QMessageBox.Yes:
+        self.close()
+        # else:
+        #     note = QtWidgets.QMessageBox()
+        #     note.setText('Edit/Save SeaBASS Headers in Level 1E Processing')
+        #     note.exec_()
+        # else:
+            # self.close()
 
     def refreshConfig(self):
         print("ConfigWindow - refreshConfig")
