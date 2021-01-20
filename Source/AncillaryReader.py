@@ -137,6 +137,13 @@ class AncillaryReader:
                 Utilities.writeLogFile(msg)  
                 waveht = ancData.data[ds]
                 waveUnits = ancData.variables[ds][1]
+            if ds == "speed_f_w":
+                # heading = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                speed_f_w = ancData.data[ds]
+                speedUnits = ancData.variables[ds][1]
 
 
         # Generate HDFDataset
@@ -177,6 +184,9 @@ class AncillaryReader:
         if waveht:
             ancillaryData.appendColumn("WAVE_HT", waveht)
             ancillaryData.attributes["WAVE_Units"]=waveUnits
+        if speed_f_w:
+            ancillaryData.appendColumn("SPEED_F_W", speed_f_w)
+            ancillaryData.attributes["SPEED_F_W_Units"]=speedUnits
 
         ancillaryData.columnsToDataset()        
 
@@ -213,6 +223,7 @@ class AncillaryReader:
         wspd = False
         cloud = False
         waveht = False
+        speed_f_w = False
         
         for ds in ancGroup.datasets:  
             if ds.startswith("AOD"):
@@ -302,6 +313,12 @@ class AncillaryReader:
                 print(msg)
                 Utilities.writeLogFile(msg)  
                 waveht = ancGroup.datasets[ds].data["NONE"].tolist()
+            if ds == "SPEED_F_W":
+                # waveht = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                speed_f_w = ancGroup.datasets[ds].data["NONE"].tolist()
 
         # Generate HDFDataset
         ancillaryData = HDFDataset()
@@ -335,6 +352,8 @@ class AncillaryReader:
             ancillaryData.appendColumn("CLOUD", cloud)
         if waveht:
             ancillaryData.appendColumn("WAVE_HT", waveht)
+        if speed_f_w:
+            ancillaryData.appendColumn("SPEED_F_W", waveht)
         
         ancillaryData.columnsToDataset()        
 

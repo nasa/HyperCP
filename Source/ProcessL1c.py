@@ -487,6 +487,8 @@ class ProcessL1c:
                 cloud = ancillaryData.columns["CLOUD"][0]
             if "WAVE_HT" in ancillaryData.columns:
                 wave = ancillaryData.columns["WAVE_HT"][0]
+            if "SPEED_F_W" in ancillaryData.columns:
+                speed_f_w = ancillaryData.columns["SPEED_F_W"][0]
 
             sunAzimuth = []
             sunZenith = []
@@ -572,6 +574,9 @@ class ProcessL1c:
             if "WAVE_HT" in ancillaryData.columns:
                 ancGroup.addDataset("WAVE_HT")
                 ancGroup.datasets["WAVE_HT"].data = np.array(wave, dtype=[('NONE', '<f8')])
+            if "SPEED_F_W" in ancillaryData.columns:
+                ancGroup.addDataset("SPEED_F_W")
+                ancGroup.datasets["SPEED_F_W"].data = np.array(speed_f_w, dtype=[('NONE', '<f8')])
             
             # Convert datetimes
             dateTime = ancGroup.addDataset("DATETIME")

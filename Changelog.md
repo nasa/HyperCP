@@ -10,6 +10,7 @@ v1.0.5 Unreleased
 
 2021-01-13:
 * Fix .netrc file permissions when created by HyperInSPACE
+* Fix spec filter plot filename bug for stations
 
 2021-01-12:
 * Add option to not produce PDF reports in L2 in order to speed up batching when necessary.

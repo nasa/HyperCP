@@ -2165,6 +2165,7 @@ class ProcessL2:
                 # interpolated as in SOLARTRACKER, at which time it is flipped back into ancGroup
                 ancGroupNoTracker = gp
                 ancillaryData = AncillaryReader.ancillaryFromNoTracker(gp)
+                
                 # SZA = ancGroupNoTracker.datasets["SZA"].data["NONE"]                
                 temp = node.addGroup("TEMPORARY")
                 temp.copy(ancGroupNoTracker)
