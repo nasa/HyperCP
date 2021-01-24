@@ -30,14 +30,14 @@ class ConfigFile:
         print("fL1cSunAngleMax", ConfigFile.settings["fL1cSunAngleMax"])
 
         print("bL1dDeglitch", ConfigFile.settings["bL1dDeglitch"])
-        print("fL1dDeglitch0", ConfigFile.settings["fL1dDeglitch0"])
-        print("fL1dDeglitch1", ConfigFile.settings["fL1dDeglitch1"])
-        print("fL1dDeglitch2", ConfigFile.settings["fL1dDeglitch2"])
-        print("fL1dDeglitch3", ConfigFile.settings["fL1dDeglitch3"])
-        print("bL1dAnomalyStep", ConfigFile.settings["bL1dAnomalyStep"])   
-        print("bL1dPlotEs", ConfigFile.settings["bL1dPlotEs"])
-        print("bL1dPlotLi", ConfigFile.settings["bL1dPlotLi"])
-        print("bL1dPlotLt", ConfigFile.settings["bL1dPlotLt"])
+        print("fL1dWindowDark", ConfigFile.settings["fL1dWindowDark"])
+        print("fL1dWindowLight", ConfigFile.settings["fL1dWindowLight"])
+        print("fL1dSigmaDark", ConfigFile.settings["fL1dSigmaDark"])
+        print("fL1dSigmaLight", ConfigFile.settings["fL1dSigmaLight"])
+        print("fL1dAnomalyStep", ConfigFile.settings["fL1dAnomalyStep"])   
+        # print("bL1dPlotEs", ConfigFile.settings["bL1dPlotEs"])
+        # print("bL1dPlotLi", ConfigFile.settings["bL1dPlotLi"])
+        # print("bL1dPlotLt", ConfigFile.settings["bL1dPlotLt"])
 
         print("fL1eInterpInterval", ConfigFile.settings["fL1eInterpInterval"])
         print("bL1ePlotTimeInterp", ConfigFile.settings["bL1ePlotTimeInterp"])
@@ -177,14 +177,14 @@ class ConfigFile:
         ConfigFile.settings["fL1cSunAngleMax"] = 135.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90        
 
         ConfigFile.settings["bL1dDeglitch"] = 0
-        ConfigFile.settings["fL1dDeglitch0"] = 9   # These can be experimentally derived with the AnomalyDetection tool
-        ConfigFile.settings["fL1dDeglitch1"] = 11     
-        ConfigFile.settings["fL1dDeglitch2"] = 2.7
-        ConfigFile.settings["fL1dDeglitch3"] = 3.7
-        ConfigFile.settings["bL1dAnomalyStep"] = 10
-        ConfigFile.settings["bL1dPlotEs"] = 0
-        ConfigFile.settings["bL1dPlotLi"] = 0
-        ConfigFile.settings["bL1dPlotLt"] = 0
+        ConfigFile.settings["fL1dWindowDark"] = 9   # These can be experimentally derived with the AnomalyDetection tool
+        ConfigFile.settings["fL1dWindowLight"] = 11     
+        ConfigFile.settings["fL1dSigmaDark"] = 2.7
+        ConfigFile.settings["fL1dSigmaLight"] = 3.7
+        ConfigFile.settings["fL1dAnomalyStep"] = 10
+        # ConfigFile.settings["bL1dPlotEs"] = 0
+        # ConfigFile.settings["bL1dPlotLi"] = 0
+        # ConfigFile.settings["bL1dPlotLt"] = 0
 
         ConfigFile.settings["fL1eInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1ePlotTimeInterp"] = 0

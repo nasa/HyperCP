@@ -8,6 +8,9 @@ v1.0.5 Unreleased
 * Add geographic plot of file location to report? Maybe produce a kml file for GoogleEarth for the whole cruise<<<---
 * Fix non-unique station file problem (EXPORTS_noTracker)
 
+2021-01-21:
+* Change Anomaly Analysis module to dynamically plot results with a given set of sigmas/windows (requires pyqtgraph install)
+
 2021-01-13:
 * Fix .netrc file permissions when created by HyperInSPACE
 * Fix spec filter plot filename bug for stations
