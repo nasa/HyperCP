@@ -274,17 +274,15 @@ class AnomAnalWindow(QtWidgets.QDialog):
             print(msg)            
             return
 
-        self.fileName = os.path.basename(os.path.splitext(inFilePath[0])[0])         
+        self.fileName = os.path.basename(os.path.splitext(inFilePath[0])[0])  
+        self.setWindowTitle(self.fileName)
         self.root = root
 
     @staticmethod
     def deglitchAndPlot(self, timeSeries, dateTime, sensorType,lightDark):
         # Radiometry at this point is 1D 'column' from the appropriate group/dataset/waveband
         #   in time (timeSeries)
-        # font = {'family': 'serif',
-        #     'color':  'darkred',
-        #     'weight': 'normal',
-        #     'size': 16}   
+
         styles = {'font-size': '18px'}
         text_xlabel="Time Series"   
         if lightDark == 'Dark':
