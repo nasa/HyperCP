@@ -30,14 +30,19 @@ class ConfigFile:
         print("fL1cSunAngleMax", ConfigFile.settings["fL1cSunAngleMax"])
 
         print("bL1dDeglitch", ConfigFile.settings["bL1dDeglitch"])
-        print("fL1dWindowDark", ConfigFile.settings["fL1dWindowDark"])
-        print("fL1dWindowLight", ConfigFile.settings["fL1dWindowLight"])
-        print("fL1dSigmaDark", ConfigFile.settings["fL1dSigmaDark"])
-        print("fL1dSigmaLight", ConfigFile.settings["fL1dSigmaLight"])
+        print("fL1dESWindowDark", ConfigFile.settings["fL1dESWindowDark"])
+        print("fL1dESWindowLight", ConfigFile.settings["fL1dESWindowLight"])
+        print("fL1dESSigmaDark", ConfigFile.settings["fL1dESSigmaDark"])
+        print("fL1dESSigmaLight", ConfigFile.settings["fL1dESSigmaLight"])    
+        print("fL1dLIWindowDark", ConfigFile.settings["fL1dLIWindowDark"])
+        print("fL1dLIWindowLight", ConfigFile.settings["fL1dLIWindowLight"])
+        print("fL1dLISigmaDark", ConfigFile.settings["fL1dLISigmaDark"])
+        print("fL1dLISigmaLight", ConfigFile.settings["fL1dLISigmaLight"]) 
+        print("fL1dLTWindowDark", ConfigFile.settings["fL1dLTWindowDark"])
+        print("fL1dLTWindowLight", ConfigFile.settings["fL1dLTWindowLight"])
+        print("fL1dLTSigmaDark", ConfigFile.settings["fL1dLTSigmaDark"])
+        print("fL1dLTSigmaLight", ConfigFile.settings["fL1dLTSigmaLight"])
         print("fL1dAnomalyStep", ConfigFile.settings["fL1dAnomalyStep"])   
-        # print("bL1dPlotEs", ConfigFile.settings["bL1dPlotEs"])
-        # print("bL1dPlotLi", ConfigFile.settings["bL1dPlotLi"])
-        # print("bL1dPlotLt", ConfigFile.settings["bL1dPlotLt"])
 
         print("fL1eInterpInterval", ConfigFile.settings["fL1eInterpInterval"])
         print("bL1ePlotTimeInterp", ConfigFile.settings["bL1ePlotTimeInterp"])
@@ -150,7 +155,9 @@ class ConfigFile:
 
     # Generates the default configuration
     @staticmethod
-    def createDefaultConfig(name):
+    def createDefaultConfig(name, new=1):
+        # name: the filename of the configuration file without path
+        # new: 1=yes, 0=no
         print("ConfigFile - Create Default Config")
 
         if not name.endswith(".cfg"):
@@ -177,14 +184,20 @@ class ConfigFile:
         ConfigFile.settings["fL1cSunAngleMax"] = 135.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90        
 
         ConfigFile.settings["bL1dDeglitch"] = 0
-        ConfigFile.settings["fL1dWindowDark"] = 9   # These can be experimentally derived with the AnomalyDetection tool
-        ConfigFile.settings["fL1dWindowLight"] = 11     
-        ConfigFile.settings["fL1dSigmaDark"] = 2.7
-        ConfigFile.settings["fL1dSigmaLight"] = 3.7
+        # These can be experimentally derived with the AnomalyDetection tool
+        ConfigFile.settings["fL1dESWindowDark"] = 9   
+        ConfigFile.settings["fL1dESWindowLight"] = 11     
+        ConfigFile.settings["fL1dESSigmaDark"] = 2.7
+        ConfigFile.settings["fL1dESSigmaLight"] = 3.7
+        ConfigFile.settings["fL1dLIWindowDark"] = 9   
+        ConfigFile.settings["fL1dLIWindowLight"] = 11     
+        ConfigFile.settings["fL1dLISigmaDark"] = 2.7
+        ConfigFile.settings["fL1dLISigmaLight"] = 3.7
+        ConfigFile.settings["fL1dLTWindowDark"] = 9   
+        ConfigFile.settings["fL1dLTWindowLight"] = 11     
+        ConfigFile.settings["fL1dLTSigmaDark"] = 2.7
+        ConfigFile.settings["fL1dLTSigmaLight"] = 3.7
         ConfigFile.settings["fL1dAnomalyStep"] = 10
-        # ConfigFile.settings["bL1dPlotEs"] = 0
-        # ConfigFile.settings["bL1dPlotLi"] = 0
-        # ConfigFile.settings["bL1dPlotLt"] = 0
 
         ConfigFile.settings["fL1eInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1ePlotTimeInterp"] = 0
@@ -285,7 +298,9 @@ class ConfigFile:
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
         ConfigFile.settings["bL2WriteReportSeaBASS"] = 1
         
-        ConfigFile.saveConfig(name)
+        # If this is a new config file, save it
+        if new==1:
+            ConfigFile.saveConfig(name)
 
 
     # Saves the cfg file
@@ -306,6 +321,9 @@ class ConfigFile:
     @staticmethod
     def loadConfig(filename):
         # print("ConfigFile - Load Config")
+        # Load the default values first to insure all settings are present, then populate with saved values where possible
+        ConfigFile.createDefaultConfig(filename, 0)
+
         configPath = os.path.join("Config", filename)
         if os.path.isfile(configPath):
             ConfigFile.filename = filename
@@ -321,7 +339,8 @@ class ConfigFile:
                     else:
                         ConfigFile.settings[key] = value
                 
-                ConfigFile.createCalibrationFolder()
+                ConfigFile.createCalibrationFolder()            
+
 
 
     # Deletes a config

@@ -241,7 +241,7 @@ class Window(QtWidgets.QWidget):
         text, ok = QtWidgets.QInputDialog.getText(self, 'New Config File', 'Enter File Name')
         if ok:
             print("Create Config File: ", text)
-            ConfigFile.createDefaultConfig(text)
+            ConfigFile.createDefaultConfig(text, 1)
             MainConfig.settings["cfgFile"] = ConfigFile.filename
             seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
             print("Creating New SeaBASSHeader File: ", seaBASSHeaderFileName)   
@@ -257,8 +257,6 @@ class Window(QtWidgets.QWidget):
             ConfigFile.loadConfig(configFileName)
             configDialog = ConfigWindow(configFileName, inputDir, self)
             configDialog.show()
-
-            '''ToDo: Capture signal from Config window to update the selected config file in main window'''
             
         else:
             message = "Not a Config File: " + configFileName
