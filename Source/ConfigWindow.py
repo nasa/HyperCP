@@ -1482,30 +1482,15 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.saveConfig(self.name)
 
         # Confirm that SeaBASS Headers need to be/are updated
-        # if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL2SaveSeaBASS"]: 
         SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
         # This now updates the SeaBASS Header comments to reflect the ConfigWindow parameters automatically.
         SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
         SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
-        # reply = QtWidgets.QMessageBox.question(self, "Message", "Did you remember to update SeaBASS Headers?", \
-        #         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
-
-        # if reply == QtWidgets.QMessageBox.Yes:
-        self.close()
-        # else:
-        #     note = QtWidgets.QMessageBox()
-        #     note.setText('Edit/Save SeaBASS Headers in Level 1E Processing')
-        #     note.exec_()
-        # else:
-            # self.close()
+        
+        self.close()        
 
     def refreshConfig(self):
         print("ConfigWindow - refreshConfig")
-        # if int(self.l1dWindowDarkLineEdit.text())%2 == 0 or int(self.l1dWindowLightLineEdit.text())%2 ==0:
-        #     alert = QtWidgets.QMessageBox()
-        #     alert.setText('Deglitching windows must be odd integers.')
-        #     alert.exec_()
-        #     return
 
         ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
         ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())

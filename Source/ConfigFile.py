@@ -8,6 +8,8 @@ class ConfigFile:
     filename = ""
     settings = collections.OrderedDict()
     products = collections.OrderedDict()
+    minDeglitchBand = 350
+    maxDeglitchBand = 850
 
     @staticmethod
     def printd():
