@@ -7,16 +7,18 @@ import calendar
 
 import HDFRoot
 from ConfigFile import ConfigFile
+# from AnomalyDetection import AnomAnalWindow
 from Utilities import Utilities
 
 class ProcessL1d:
     '''
     # The Deglitching process departs signicantly from ProSoft and PySciDON
     # Reference: ProSoft 7.7 Rev. K May 8, 2017, SAT-DN-00228
-    # More information can be found in AnomalyDetection.py
-    '''    
+    # More information can be found in AnomalyDetection.py    
+    '''        
+
     @staticmethod
-    def darkDataDeglitching(darkData, sensorType):        
+    def darkDataDeglitching(darkData, sensorType, windowSize, sigma):        
         ''' Dark deglitching is now based on double-pass discrete linear convolution of the residual 
         with a stationary std over a rolling average.
         
@@ -24,126 +26,130 @@ class ProcessL1d:
             the test. This is why the percentages in the logs appear much higher than the knockouts in any
             given band (as seen in the plots). Could be revisited. '''        
         
-        windowSize = int(ConfigFile.settings["fL1dDeglitch0"])
-        sigma = float(ConfigFile.settings["fL1dDeglitch2"])
+        # windowSize = int(ConfigFile.settings["fL1dDeglitch0"])
+        # sigma = float(ConfigFile.settings["fL1dDeglitch2"])
+        # This is a hardcoding of the min/max bands in which to perform deglitching        
+        minBand = ConfigFile.minDeglitchBand
+        maxBand = ConfigFile.maxDeglitchBand
 
         darkData.datasetToColumns()
         columns = darkData.columns
 
-        waveindex = 0
-        badIndex = []
-        for k in columns.items():   # Loop over all wavebands     
-            timeSeries = k[1]   # Ignores waveband label (e.g. '1142.754')
-            # Note: the moving average is not tolerant to 2 or fewer records
-            avg = Utilities.movingAverage(timeSeries, windowSize).tolist()        
-            # avg = Utilities.windowAverage(timeSeries, windowSize).mean().values.tolist()  
-            residual = np.array(timeSeries) - np.array(avg)
-            stdData = np.std(residual)                                  
+        # waveindex = 0
+        badIndex = [False] * len(darkData.data)
+        for key,timeSeries in columns.items():   # Loop over all wavebands 
+            if float(key) > minBand and float(key) < maxBand:    
+                # Note: the moving average is not tolerant to 2 or fewer records
+                avg = Utilities.movingAverage(timeSeries, windowSize).tolist()        
+                # avg = Utilities.windowAverage(timeSeries, windowSize).mean().values.tolist()  
+                residual = np.array(timeSeries) - np.array(avg)
+                stdData = np.std(residual)                                  
 
-            # First pass
-            badIndex1 = Utilities.darkConvolution(timeSeries,avg,stdData,sigma)  
+                # First pass
+                badIndex1 = Utilities.darkConvolution(timeSeries,avg,stdData,sigma)  
 
-            # Second pass
-            timeSeries2 = np.array(timeSeries[:])
-            timeSeries2[badIndex1] = np.nan # BEWARE: NaNs introduced
-            timeSeries2 = timeSeries2.tolist()
-            avg2 = Utilities.movingAverage(timeSeries2, windowSize).tolist()        
-            # avg2 = Utilities.windowAverage(timeSeries2, windowSize).mean().values.tolist()        
-            residual = np.array(timeSeries2) - np.array(avg2)
-            stdData = np.nanstd(residual)        
+                # Second pass
+                timeSeries2 = np.array(timeSeries[:])
+                timeSeries2[badIndex1] = np.nan # BEWARE: NaNs introduced
+                timeSeries2 = timeSeries2.tolist()
+                avg2 = Utilities.movingAverage(timeSeries2, windowSize).tolist()        
+                # avg2 = Utilities.windowAverage(timeSeries2, windowSize).mean().values.tolist()        
+                residual = np.array(timeSeries2) - np.array(avg2)
+                stdData = np.nanstd(residual)        
 
-            badIndex2 = Utilities.darkConvolution(timeSeries2,avg2,stdData,sigma)  
-            
-            # This will eliminate data from all wavebands for glitches found in any one waveband        
-            if waveindex==0:
-                # badIndex = badIndex1[:]
-                for i in range(len(badIndex1)):
-                    if badIndex1[i] is True or badIndex2[i] is True:
-                        badIndex.append(True)
-                    else:
-                        badIndex.append(False)
-            else:
+                badIndex2 = Utilities.darkConvolution(timeSeries2,avg2,stdData,sigma)  
+                
+                # This setup will later eliminate data from all wavebands for glitches found in any one waveband        
+                # if waveindex==0:
+                #     # badIndex = badIndex1[:]
+                #     for i in range(len(badIndex1)):
+                #         if badIndex1[i] is True or badIndex2[i] is True:
+                #             badIndex.append(True)
+                #         else:
+                #             badIndex.append(False)
+                # else:
                 for i in range(len(badIndex)):
                     if badIndex1[i] is True or badIndex2[i] is True or badIndex[i] is True:
                         badIndex[i] = True
                     else:
                         badIndex[i] = False # this is redundant
-            # print(badIndex[i])                
-            waveindex += 1
+                # print(badIndex[i])                
+                # waveindex += 1
         return badIndex
            
     @staticmethod
-    def lightDataDeglitching(lightData, sensorType):        
+    def lightDataDeglitching(lightData, sensorType, windowSize, sigma):        
         ''' Light deglitching is now based on double-pass discrete linear convolution of the residual
         with a ROLLING std over a rolling average'''
         
         # print(str(sensorType))
-        windowSize = int(ConfigFile.settings["fL1dDeglitch1"])
-        sigma = float(ConfigFile.settings["fL1dDeglitch3"])
+        # windowSize = int(ConfigFile.settings["fL1dDeglitch1"])
+        # sigma = float(ConfigFile.settings["fL1dDeglitch3"])
+        minBand = ConfigFile.minDeglitchBand
+        maxBand = ConfigFile.maxDeglitchBand
 
         lightData.datasetToColumns()
         columns = lightData.columns
 
-        waveindex = 0
-        badIndex = []
-        for k in columns.items():        
-            timeSeries = k[1]       
-            # Note: the moving average is not tolerant to 2 or fewer records     
-            avg = Utilities.movingAverage(timeSeries, windowSize).tolist()        
-            residual = np.array(timeSeries) - np.array(avg)
-                           
-             # Calculate the variation in the distribution of the residual
-            residualDf = pd.DataFrame(residual)
-            testing_std_as_df = residualDf.rolling(windowSize).std()
-            rolling_std = testing_std_as_df.replace(np.nan,
-                testing_std_as_df.iloc[windowSize - 1]).round(3).iloc[:,0].tolist() 
-            # This rolling std on the residual has a tendancy to blow up for extreme outliers,
-            # replace it with the median residual std when that happens
-            y = np.array(rolling_std)
-            y[y > np.median(y)+3*np.std(y)] = np.median(y)
-            rolling_std = y.tolist()
+        badIndex = [False] * len(lightData.data)
+        for key,timeSeries in columns.items():   # Loop over all wavebands 
+            if float(key) > minBand and float(key) < maxBand:          
+                # Note: the moving average is not tolerant to 2 or fewer records     
+                avg = Utilities.movingAverage(timeSeries, windowSize).tolist()        
+                residual = np.array(timeSeries) - np.array(avg)
+                            
+                # Calculate the variation in the distribution of the residual
+                residualDf = pd.DataFrame(residual)
+                testing_std_as_df = residualDf.rolling(windowSize).std()
+                rolling_std = testing_std_as_df.replace(np.nan,
+                    testing_std_as_df.iloc[windowSize - 1]).round(3).iloc[:,0].tolist() 
+                # This rolling std on the residual has a tendancy to blow up for extreme outliers,
+                # replace it with the median residual std when that happens
+                y = np.array(rolling_std)
+                y[y > np.median(y)+3*np.std(y)] = np.median(y)
+                rolling_std = y.tolist()
 
-            
-            # First pass
-            badIndex1 = Utilities.lightConvolution(timeSeries,avg,rolling_std,sigma)
+                
+                # First pass
+                badIndex1 = Utilities.lightConvolution(timeSeries,avg,rolling_std,sigma)
 
-            # Second pass
-            timeSeries2 = np.array(timeSeries[:])
-            timeSeries2[badIndex1] = np.nan
-            timeSeries2 = timeSeries2.tolist()
-            avg2 = Utilities.movingAverage(timeSeries2, windowSize).tolist()        
-            # avg2 = Utilities.windowAverage(timeSeries2, windowSize).mean.values.tolist()        
-            residual2 = np.array(timeSeries2) - np.array(avg2)        
-            # Calculate the variation in the distribution of the residual
-            residualDf2 = pd.DataFrame(residual2)
-            testing_std_as_df2 = residualDf2.rolling(windowSize).std()
-            rolling_std2 = testing_std_as_df2.replace(np.nan,
-                testing_std_as_df2.iloc[windowSize - 1]).round(3).iloc[:,0].tolist()
-            # This rolling std on the residual has a tendancy to blow up for extreme outliers,
-            # replace it with the median residual std when that happens
-            y = np.array(rolling_std2)
-            y[np.isnan(y)] = np.nanmedian(y)
-            y[y > np.nanmedian(y)+3*np.nanstd(y)] = np.nanmedian(y)
-            rolling_std2 = y.tolist()
+                # Second pass
+                timeSeries2 = np.array(timeSeries[:])
+                timeSeries2[badIndex1] = np.nan
+                timeSeries2 = timeSeries2.tolist()
+                avg2 = Utilities.movingAverage(timeSeries2, windowSize).tolist()        
+                # avg2 = Utilities.windowAverage(timeSeries2, windowSize).mean.values.tolist()        
+                residual2 = np.array(timeSeries2) - np.array(avg2)        
+                # Calculate the variation in the distribution of the residual
+                residualDf2 = pd.DataFrame(residual2)
+                testing_std_as_df2 = residualDf2.rolling(windowSize).std()
+                rolling_std2 = testing_std_as_df2.replace(np.nan,
+                    testing_std_as_df2.iloc[windowSize - 1]).round(3).iloc[:,0].tolist()
+                # This rolling std on the residual has a tendancy to blow up for extreme outliers,
+                # replace it with the median residual std when that happens
+                y = np.array(rolling_std2)
+                y[np.isnan(y)] = np.nanmedian(y)
+                y[y > np.nanmedian(y)+3*np.nanstd(y)] = np.nanmedian(y)
+                rolling_std2 = y.tolist()
 
-            badIndex2 = Utilities.lightConvolution(timeSeries2,avg2,rolling_std2,sigma)
-            
-            # This will eliminate data from all wavebands for glitches found in any one waveband        
-            if waveindex==0:
-                # badIndex = badIndex1[:]
-                for i in range(len(badIndex1)):
-                    if badIndex1[i] is True or badIndex2[i] is True:
-                        badIndex.append(True)
-                    else:
-                        badIndex.append(False)
-            else:
+                badIndex2 = Utilities.lightConvolution(timeSeries2,avg2,rolling_std2,sigma)
+                
+                # This will eliminate data from all wavebands for glitches found in any one waveband        
+                # if waveindex==0:
+                #     # badIndex = badIndex1[:]
+                #     for i in range(len(badIndex1)):
+                #         if badIndex1[i] is True or badIndex2[i] is True:
+                #             badIndex.append(True)
+                #         else:
+                #             badIndex.append(False)
+                # else:
                 for i in range(len(badIndex)):
                     if badIndex1[i] is True or badIndex2[i] is True or badIndex[i] is True:
                         badIndex[i] = True
                     else:
                         badIndex[i] = False # this is redundant
-            # print(badIndex[i])                
-            waveindex += 1
+                # print(badIndex[i])                
+                # waveindex += 1
         return badIndex
 
     @staticmethod
@@ -154,27 +160,30 @@ class ProcessL1d:
 
         darkData = None
         lightData = None
-        windowSizeDark = int(ConfigFile.settings["fL1dDeglitch0"])
-        windowSizeLight = int(ConfigFile.settings["fL1dDeglitch1"])
+
         for gp in node.groups:
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 darkData = gp.getDataset(sensorType)
+                windowDark = int(ConfigFile.settings[f'fL1d{sensorType}WindowDark'])
+                sigmaDark = float(ConfigFile.settings[f'fL1d{sensorType}SigmaDark'])
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
+                windowLight = int(ConfigFile.settings[f'fL1d{sensorType}WindowLight'])
+                sigmaLight = float(ConfigFile.settings[f'fL1d{sensorType}SigmaLight'])
             
             # Rolling averages required for deglitching of data are intolerant to 2 or fewer data points
             # Furthermore, 5 or fewer datapoints is a suspiciously short sampling time. Finally,
             # Having fewer data points than the size of the rolling window won't work. Exit processing if 
             # these conditions are met.
             
-            # Problems with the sizes of the datasets:
-            if darkData is not None and lightData is not None:
-                if len(darkData.data) <= 2 or \
-                    len(lightData.data) <= 5 or \
-                    len(darkData.data) < windowSizeDark or \
-                    len(lightData.data) < windowSizeLight:
+        # Problems with the sizes of the datasets:
+        if darkData is not None and lightData is not None:
+            if len(darkData.data) <= 2 or \
+                len(lightData.data) <= 5 or \
+                len(darkData.data) < windowDark or \
+                len(lightData.data) < windowLight:
 
-                        return True # Sets the flag to true
+                    return True # Sets the flag to true
 
 
         if darkData is None:
@@ -186,7 +195,7 @@ class ProcessL1d:
             print(msg)
             Utilities.writeLogFile(msg)
 
-            badIndexDark = ProcessL1d.darkDataDeglitching(darkData, sensorType)
+            badIndexDark = ProcessL1d.darkDataDeglitching(darkData, sensorType, windowDark, sigmaDark)
             msg = f'Data reduced by {sum(badIndexDark)} ({round(100*sum(badIndexDark)/len(darkData.data))}%)'
             print(msg)
             Utilities.writeLogFile(msg)
@@ -201,7 +210,7 @@ class ProcessL1d:
             print(msg)
             Utilities.writeLogFile(msg)
 
-            badIndexLight = ProcessL1d.lightDataDeglitching(lightData, sensorType)      
+            badIndexLight = ProcessL1d.lightDataDeglitching(lightData, sensorType, windowLight, sigmaLight)      
             msg = f'Data reduced by {sum(badIndexLight)} ({round(100*sum(badIndexLight)/len(lightData.data))}%)'
             print(msg)
             Utilities.writeLogFile(msg)

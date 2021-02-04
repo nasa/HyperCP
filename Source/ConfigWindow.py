@@ -7,12 +7,13 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from MainConfig import MainConfig
 # from Main import Window
 from ConfigFile import ConfigFile
-from AnomalyDetection import AnomalyDetection
+# from AnomalyDetection import AnomalyDetection
+from AnomalyDetection import AnomAnalWindow
 from SeaBASSHeader import SeaBASSHeader
 from SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from GetAnc import GetAnc
 from OCproductsWindow import OCproductsWindow
-
+# import pyqtgraph as pg
 
 
 class ConfigWindow(QtWidgets.QDialog):
@@ -22,6 +23,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.name = name
         self.inputDirectory = inputDir
         self.initUI()
+
+        # # For pyqtgraph widget is launched from here, so...
+        # pg.setConfigOption('background', 'w')
+        # pg.setConfigOption('foreground', 'k')
 
     def initUI(self):
         # print("ConfigWindow - initUI")
@@ -197,59 +202,59 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL1dDeglitch"]) == 1:
             self.l1dDeglitchCheckBox.setChecked(True)
 
-        self.l1dDeglitch0Label = QtWidgets.QLabel("     Window for Darks (odd)", self)
-        self.l1dDeglitch0LineEdit = QtWidgets.QLineEdit(self)
-        self.l1dDeglitch0LineEdit.setText(str(ConfigFile.settings["fL1dDeglitch0"]))
-        self.l1dDeglitch0LineEdit.setValidator(intValidator)
-        # self.l1dDeglitch0LineEdit.setValidator(oddValidator)
+        # self.l1dWindowDarkLabel = QtWidgets.QLabel("     Window for Darks (odd)", self)
+        # self.l1dWindowDarkLineEdit = QtWidgets.QLineEdit(self)
+        # self.l1dWindowDarkLineEdit.setText(str(ConfigFile.settings["fL1dWindowDark"]))
+        # self.l1dWindowDarkLineEdit.setValidator(intValidator)
+        # # self.l1dWindowDarkLineEdit.setValidator(oddValidator)
 
-        self.l1dDeglitch1Label = QtWidgets.QLabel("     Window for Lights (odd)", self)
-        self.l1dDeglitch1LineEdit = QtWidgets.QLineEdit(self)
-        self.l1dDeglitch1LineEdit.setText(str(ConfigFile.settings["fL1dDeglitch1"]))
-        self.l1dDeglitch1LineEdit.setValidator(intValidator)
-        # self.l1dDeglitch1LineEdit.setValidator(oddValidator)
+        # self.l1dWindowLightLabel = QtWidgets.QLabel("     Window for Lights (odd)", self)
+        # self.l1dWindowLightLineEdit = QtWidgets.QLineEdit(self)
+        # self.l1dWindowLightLineEdit.setText(str(ConfigFile.settings["fL1dWindowLight"]))
+        # self.l1dWindowLightLineEdit.setValidator(intValidator)
+        # # self.l1dWindowLightLineEdit.setValidator(oddValidator)
 
-        self.l1dDeglitch2Label = QtWidgets.QLabel("     Sigma Factor Darks", self)
-        self.l1dDeglitch2LineEdit = QtWidgets.QLineEdit(self)
-        self.l1dDeglitch2LineEdit.setText(str(ConfigFile.settings["fL1dDeglitch2"]))
-        self.l1dDeglitch2LineEdit.setValidator(doubleValidator)
+        # self.l1dSigmaDarkLabel = QtWidgets.QLabel("     Sigma Factor Darks", self)
+        # self.l1dSigmaDarkLineEdit = QtWidgets.QLineEdit(self)
+        # self.l1dSigmaDarkLineEdit.setText(str(ConfigFile.settings["fL1dSigmaDark"]))
+        # self.l1dSigmaDarkLineEdit.setValidator(doubleValidator)
         
-        self.l1dDeglitch3Label = QtWidgets.QLabel("     Sigma Factor Lights", self)
-        self.l1dDeglitch3LineEdit = QtWidgets.QLineEdit(self)
-        self.l1dDeglitch3LineEdit.setText(str(ConfigFile.settings["fL1dDeglitch3"]))
-        self.l1dDeglitch3LineEdit.setValidator(doubleValidator)
+        # self.l1dSigmaLightLabel = QtWidgets.QLabel("     Sigma Factor Lights", self)
+        # self.l1dSigmaLightLineEdit = QtWidgets.QLineEdit(self)
+        # self.l1dSigmaLightLineEdit.setText(str(ConfigFile.settings["fL1dSigmaLight"]))
+        # self.l1dSigmaLightLineEdit.setValidator(doubleValidator)
 
         self.l1dDeglitchCheckBoxUpdate()      
         self.l1dDeglitchCheckBox.clicked.connect(self.l1dDeglitchCheckBoxUpdate)   
 
         # L1D Launch Deglitcher Analysis 
-        l1dAnomalySublabel1 = QtWidgets.QLabel("  Launch Anom. Anal. to test params on L1C. Save config",self)
-        l1dAnomalySublabel2 = QtWidgets.QLabel("   after updating params. Results saved to /Plot/L1C_Anoms.",self)
+        l1dAnomalySublabel1 = QtWidgets.QLabel("  Launch Anom. Anal. to test parameters",self)
+        l1dAnomalySublabel2 = QtWidgets.QLabel("  on L1C files. Saved to Plots/L1C_Anoms.",self)
         # l1dAnomalySublabel3 = QtWidgets.QLabel("   ", self)  
-        l1dAnomalyStepLabel = QtWidgets.QLabel("   Waveband interval to plot (integer): ", self)  
-        self.l1dAnomalyStepLineEdit = QtWidgets.QLineEdit(self)
-        self.l1dAnomalyStepLineEdit.setText(str(ConfigFile.settings["bL1dAnomalyStep"]))
-        self.l1dAnomalyStepLineEdit.setValidator(intValidator)
+        # l1dAnomalyStepLabel = QtWidgets.QLabel("   Waveband interval to plot (integer): ", self)  
+        # self.l1dAnomalyStepLineEdit = QtWidgets.QLineEdit(self)
+        # self.l1dAnomalyStepLineEdit.setText(str(ConfigFile.settings["fL1dAnomalyStep"]))
+        # self.l1dAnomalyStepLineEdit.setValidator(intValidator)
         self.l1dAnomalyButton = QtWidgets.QPushButton("Anomaly Analysis")
         self.l1dAnomalyButton.clicked.connect(self.l1dAnomalyButtonPressed)
 
-        # Plots
-        l1dPlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
+        # # Plots
+        # l1dPlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
         
-        l1dPlotEsLabel = QtWidgets.QLabel("Es", self)     
-        self.l1dPlotEsCheckBox = QtWidgets.QCheckBox("", self)      
-        if int(ConfigFile.settings["bL1dPlotEs"]) == 1:
-            self.l1dPlotEsCheckBox.setChecked(True)
+        # l1dPlotEsLabel = QtWidgets.QLabel("Es", self)     
+        # self.l1dPlotEsCheckBox = QtWidgets.QCheckBox("", self)      
+        # if int(ConfigFile.settings["bL1dPlotEs"]) == 1:
+        #     self.l1dPlotEsCheckBox.setChecked(True)
 
-        l1dPlotLiLabel = QtWidgets.QLabel("Li", self)     
-        self.l1dPlotLiCheckBox = QtWidgets.QCheckBox("", self)      
-        if int(ConfigFile.settings["bL1dPlotLi"]) == 1:
-            self.l1dPlotLiCheckBox.setChecked(True)
+        # l1dPlotLiLabel = QtWidgets.QLabel("Li", self)     
+        # self.l1dPlotLiCheckBox = QtWidgets.QCheckBox("", self)      
+        # if int(ConfigFile.settings["bL1dPlotLi"]) == 1:
+        #     self.l1dPlotLiCheckBox.setChecked(True)
 
-        l1dPlotLtLabel = QtWidgets.QLabel("Lt", self)     
-        self.l1dPlotLtCheckBox = QtWidgets.QCheckBox("", self)      
-        if int(ConfigFile.settings["bL1dPlotLt"]) == 1:
-            self.l1dPlotLtCheckBox.setChecked(True)
+        # l1dPlotLtLabel = QtWidgets.QLabel("Lt", self)     
+        # self.l1dPlotLtCheckBox = QtWidgets.QCheckBox("", self)      
+        # if int(ConfigFile.settings["bL1dPlotLt"]) == 1:
+        #     self.l1dPlotLtCheckBox.setChecked(True)
 
 
         # L1E
@@ -690,7 +695,9 @@ class ConfigWindow(QtWidgets.QDialog):
         SunAngleMaxHBox = QtWidgets.QHBoxLayout()       
         SunAngleMaxHBox.addWidget(self.l1cSunAngleMaxLabel)
         SunAngleMaxHBox.addWidget(self.l1cSunAngleMaxLineEdit)
-        VBox1.addLayout(SunAngleMaxHBox)         
+        VBox1.addLayout(SunAngleMaxHBox)    
+
+                   
 
         # L1D 
         VBox1.addWidget(l1dLabel)
@@ -700,59 +707,62 @@ class ConfigWindow(QtWidgets.QDialog):
         deglitchHBox = QtWidgets.QHBoxLayout()
         deglitchHBox.addWidget(self.l1dDeglitchLabel)
         deglitchHBox.addWidget(self.l1dDeglitchCheckBox)
-        VBox1.addLayout(deglitchHBox)
-        deglitch0HBox = QtWidgets.QHBoxLayout()
-        deglitch0HBox.addWidget(self.l1dDeglitch0Label)
-        deglitch0HBox.addWidget(self.l1dDeglitch0LineEdit)
-        VBox1.addLayout(deglitch0HBox)
+        VBox1.addLayout(deglitchHBox)        
 
-        deglitch1HBox = QtWidgets.QHBoxLayout()
-        deglitch1HBox.addWidget(self.l1dDeglitch1Label)
-        deglitch1HBox.addWidget(self.l1dDeglitch1LineEdit)
-        VBox1.addLayout(deglitch1HBox)
+        # WindowDarkHBox = QtWidgets.QHBoxLayout()
+        # WindowDarkHBox.addWidget(self.l1dWindowDarkLabel)
+        # WindowDarkHBox.addWidget(self.l1dWindowDarkLineEdit)
+        # VBox2.addLayout(WindowDarkHBox)                                                          
 
-        # Middle Vertical Box
-        VBox2 = QtWidgets.QVBoxLayout()
-        VBox2.setAlignment(QtCore.Qt.AlignBottom)                                                            
+        # WindowLightHBox = QtWidgets.QHBoxLayout()
+        # WindowLightHBox.addWidget(self.l1dWindowLightLabel)
+        # WindowLightHBox.addWidget(self.l1dWindowLightLineEdit)
+        # VBox2.addLayout(WindowLightHBox)
+
         
-        deglitch2HBox = QtWidgets.QHBoxLayout()
-        deglitch2HBox.addWidget(self.l1dDeglitch2Label)
-        deglitch2HBox.addWidget(self.l1dDeglitch2LineEdit)
-        VBox2.addLayout(deglitch2HBox)
+        # SigmaDarkHBox = QtWidgets.QHBoxLayout()
+        # SigmaDarkHBox.addWidget(self.l1dSigmaDarkLabel)
+        # SigmaDarkHBox.addWidget(self.l1dSigmaDarkLineEdit)
+        # VBox2.addLayout(SigmaDarkHBox)
 
-        deglitch3HBox = QtWidgets.QHBoxLayout()
-        deglitch3HBox.addWidget(self.l1dDeglitch3Label)
-        deglitch3HBox.addWidget(self.l1dDeglitch3LineEdit)
-        VBox2.addLayout(deglitch3HBox)
+        # SigmaLightHBox = QtWidgets.QHBoxLayout()
+        # SigmaLightHBox.addWidget(self.l1dSigmaLightLabel)
+        # SigmaLightHBox.addWidget(self.l1dSigmaLightLineEdit)
+        # VBox2.addLayout(SigmaLightHBox)
 
         # VBox2.addSpacing(5)
 
         # L1D Anomaly Launcher
         # VBox2.addWidget(l1dAnomalyLabel)
-        VBox2.addWidget(l1dAnomalySublabel1)
-        VBox2.addWidget(l1dAnomalySublabel2)
+        VBox1.addWidget(l1dAnomalySublabel1)
+        VBox1.addWidget(l1dAnomalySublabel2)
         # VBox2.addWidget(l1dAnomalySublabel3)
-        stepHBox = QtWidgets.QHBoxLayout()
-        stepHBox.addWidget(l1dAnomalyStepLabel)
-        stepHBox.addWidget(self.l1dAnomalyStepLineEdit)
-        VBox2.addLayout(stepHBox)
-        VBox2.addWidget(self.l1dAnomalyButton)
+        # stepHBox = QtWidgets.QHBoxLayout()
+        # stepHBox.addWidget(l1dAnomalyStepLabel)
+        # stepHBox.addWidget(self.l1dAnomalyStepLineEdit)
+        # VBox2.addLayout(stepHBox)
+        VBox1.addWidget(self.l1dAnomalyButton)
 
-        # VBox2.addSpacing(20)  
-        # L1D Plotting
-        VBox2.addWidget(l1dPlotsLabel)
-        l1dPlotHBox = QtWidgets.QHBoxLayout()
-        l1dPlotHBox.addSpacing(45)
-        l1dPlotHBox.addWidget(l1dPlotEsLabel)
-        l1dPlotHBox.addWidget(self.l1dPlotEsCheckBox)
-        l1dPlotHBox.addWidget(l1dPlotLiLabel)
-        l1dPlotHBox.addWidget(self.l1dPlotLiCheckBox)
-        l1dPlotHBox.addWidget(l1dPlotLtLabel)
-        l1dPlotHBox.addWidget(self.l1dPlotLtCheckBox)
-        VBox2.addLayout(l1dPlotHBox)    
+        # # VBox2.addSpacing(20)  
+        # # L1D Plotting
+        # VBox2.addWidget(l1dPlotsLabel)
+        # l1dPlotHBox = QtWidgets.QHBoxLayout()
+        # l1dPlotHBox.addSpacing(45)
+        # l1dPlotHBox.addWidget(l1dPlotEsLabel)
+        # l1dPlotHBox.addWidget(self.l1dPlotEsCheckBox)
+        # l1dPlotHBox.addWidget(l1dPlotLiLabel)
+        # l1dPlotHBox.addWidget(self.l1dPlotLiCheckBox)
+        # l1dPlotHBox.addWidget(l1dPlotLtLabel)
+        # l1dPlotHBox.addWidget(self.l1dPlotLtCheckBox)
+        # VBox2.addLayout(l1dPlotHBox)  
+        # 
+        VBox1.addStretch()   
 
-        VBox2.addSpacing(10) 
-
+        # VBox2.addSpacing(10)
+        #  
+        # Middle Vertical Box
+        VBox2 = QtWidgets.QVBoxLayout()
+        VBox2.setAlignment(QtCore.Qt.AlignBottom)   
         #L1E 
         VBox2.addWidget(l1eLabel)
         # VBox2.addWidget(l1eSublabel2)
@@ -863,39 +873,38 @@ class ConfigWindow(QtWidgets.QDialog):
         RainFlagHBox = QtWidgets.QHBoxLayout()
         RainFlagHBox.addWidget(self.l2RainfallHumidityFlagLabel)
         RainFlagHBox.addWidget(self.l2RainfallHumidityFlagLineEdit)
-        VBox2.addLayout(RainFlagHBox) 
-
-        VBox2.addStretch()
-
-         # Right box
-        VBox3 = QtWidgets.QVBoxLayout()
-        VBox3.setAlignment(QtCore.Qt.AlignBottom)
+        VBox2.addLayout(RainFlagHBox)                  
 
         # L2 Ensembles        
-        VBox3.addWidget(l2ensLabel)
+        VBox2.addWidget(l2ensLabel)
 
         # L2 Stations
         StationsHBox = QtWidgets.QHBoxLayout()
         StationsHBox.addWidget(l2StationsLabel)
         StationsHBox.addWidget(self.l2StationsCheckBox)
-        VBox3.addLayout(StationsHBox)  
+        VBox2.addLayout(StationsHBox)  
 
         # L2 Time Average Rrs
         TimeAveHBox = QtWidgets.QHBoxLayout()
         TimeAveHBox.addWidget(l2TimeIntervalLabel)
         TimeAveHBox.addWidget(self.l2TimeIntervalLineEdit)
-        VBox3.addLayout(TimeAveHBox)  
+        VBox2.addLayout(TimeAveHBox)  
 
         # L2 Percent Light; Hooker & Morel 2003
         PercentLtHBox = QtWidgets.QHBoxLayout()
         PercentLtHBox.addWidget(self.l2EnablePercentLtLabel)
         PercentLtHBox.addWidget(self.l2EnablePercentLtCheckBox)
-        VBox3.addLayout(PercentLtHBox)  
+        VBox2.addLayout(PercentLtHBox)  
         PercentLtHBox2 = QtWidgets.QHBoxLayout()
         PercentLtHBox2.addWidget(self.l2PercentLtLabel)
         PercentLtHBox2.addWidget(self.l2PercentLtLineEdit)
-        VBox3.addLayout(PercentLtHBox2)              
+        VBox2.addLayout(PercentLtHBox2)              
 
+        VBox2.addStretch()
+
+        # Right box
+        VBox3 = QtWidgets.QVBoxLayout()
+        VBox3.setAlignment(QtCore.Qt.AlignBottom)
         # L2 Rho Skyglint/Sunglint Correction
         VBox3.addWidget(l2RhoSkyLabel)
 
@@ -1035,6 +1044,8 @@ class ConfigWindow(QtWidgets.QDialog):
         saveHBox.addWidget(self.saveAsButton)
         saveHBox.addWidget(self.cancelButton)
         VBox3.addLayout(saveHBox)
+
+        VBox3.addStretch()
 
         # Add 3 Vertical Boxes to Horizontal Box hBox
         hBox = QtWidgets.QHBoxLayout()
@@ -1219,20 +1230,22 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1dAnomalyButtonPressed(self):
         print("CalibrationEditWindow - Launching anomaly analysis module")  
         ConfigWindow.refreshConfig(self)      
-        AnomalyDetection(self,self.inputDirectory)
+        # AnomalyDetection(self,self.inputDirectory)
+        anomAnalDialog = AnomAnalWindow(self.inputDirectory, self)
+        anomAnalDialog.show()
 
     def l1dDeglitchCheckBoxUpdate(self):
         print("ConfigWindow - l1dDeglitchCheckBoxUpdate")
         
         disabled = (not self.l1dDeglitchCheckBox.isChecked())
-        self.l1dDeglitch0Label.setDisabled(disabled)
-        self.l1dDeglitch0LineEdit.setDisabled(disabled)
-        self.l1dDeglitch1Label.setDisabled(disabled)
-        self.l1dDeglitch1LineEdit.setDisabled(disabled)
-        self.l1dDeglitch2Label.setDisabled(disabled)
-        self.l1dDeglitch2LineEdit.setDisabled(disabled)   
-        self.l1dDeglitch3Label.setDisabled(disabled)
-        self.l1dDeglitch3LineEdit.setDisabled(disabled)   
+        # self.l1dWindowDarkLabel.setDisabled(disabled)
+        # self.l1dWindowDarkLineEdit.setDisabled(disabled)
+        # self.l1dWindowLightLabel.setDisabled(disabled)
+        # self.l1dWindowLightLineEdit.setDisabled(disabled)
+        # self.l1dSigmaDarkLabel.setDisabled(disabled)
+        # self.l1dSigmaDarkLineEdit.setDisabled(disabled)   
+        # self.l1dSigmaLightLabel.setDisabled(disabled)
+        # self.l1dSigmaLightLineEdit.setDisabled(disabled)   
         if disabled:
             ConfigFile.settings["bL1dDeglitch"]   = 0
         else:
@@ -1469,30 +1482,15 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.saveConfig(self.name)
 
         # Confirm that SeaBASS Headers need to be/are updated
-        # if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL2SaveSeaBASS"]: 
         SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
         # This now updates the SeaBASS Header comments to reflect the ConfigWindow parameters automatically.
         SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
         SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
-        # reply = QtWidgets.QMessageBox.question(self, "Message", "Did you remember to update SeaBASS Headers?", \
-        #         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
-
-        # if reply == QtWidgets.QMessageBox.Yes:
-        self.close()
-        # else:
-        #     note = QtWidgets.QMessageBox()
-        #     note.setText('Edit/Save SeaBASS Headers in Level 1E Processing')
-        #     note.exec_()
-        # else:
-            # self.close()
+        
+        self.close()        
 
     def refreshConfig(self):
         print("ConfigWindow - refreshConfig")
-        if int(self.l1dDeglitch0LineEdit.text())%2 == 0 or int(self.l1dDeglitch1LineEdit.text())%2 ==0:
-            alert = QtWidgets.QMessageBox()
-            alert.setText('Deglitching windows must be odd integers.')
-            alert.exec_()
-            return
 
         ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
         ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())
@@ -1512,14 +1510,14 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL1cSunAngleMax"] = float(self.l1cSunAngleMaxLineEdit.text())
 
         ConfigFile.settings["bL1dDeglitch"] = int(self.l1dDeglitchCheckBox.isChecked()) 
-        ConfigFile.settings["fL1dDeglitch0"] = int(self.l1dDeglitch0LineEdit.text())
-        ConfigFile.settings["fL1dDeglitch1"] = int(self.l1dDeglitch1LineEdit.text())
-        ConfigFile.settings["fL1dDeglitch2"] = float(self.l1dDeglitch2LineEdit.text())
-        ConfigFile.settings["fL1dDeglitch3"] = float(self.l1dDeglitch3LineEdit.text())
-        ConfigFile.settings["bL1dAnomalyStep"] = int(self.l1dAnomalyStepLineEdit.text())
-        ConfigFile.settings["bL1dPlotEs"] = int(self.l1dPlotEsCheckBox.isChecked())
-        ConfigFile.settings["bL1dPlotLi"] = int(self.l1dPlotLiCheckBox.isChecked())
-        ConfigFile.settings["bL1dPlotLt"] = int(self.l1dPlotLtCheckBox.isChecked())
+        # ConfigFile.settings["fL1dWindowDark"] = int(self.l1dWindowDarkLineEdit.text())
+        # ConfigFile.settings["fL1dWindowLight"] = int(self.l1dWindowLightLineEdit.text())
+        # ConfigFile.settings["fL1dSigmaDark"] = float(self.l1dSigmaDarkLineEdit.text())
+        # ConfigFile.settings["fL1dSigmaLight"] = float(self.l1dSigmaLightLineEdit.text())
+        # ConfigFile.settings["fL1dAnomalyStep"] = int(self.l1dAnomalyStepLineEdit.text())
+        # ConfigFile.settings["bL1dPlotEs"] = int(self.l1dPlotEsCheckBox.isChecked())
+        # ConfigFile.settings["bL1dPlotLi"] = int(self.l1dPlotLiCheckBox.isChecked())
+        # ConfigFile.settings["bL1dPlotLt"] = int(self.l1dPlotLtCheckBox.isChecked())
 
         ConfigFile.settings["fL1eInterpInterval"] = float(self.l1eInterpIntervalLineEdit.text())
         ConfigFile.settings["bL1ePlotTimeInterp"] = int(self.l1ePlotTimeInterpCheckBox.isChecked())

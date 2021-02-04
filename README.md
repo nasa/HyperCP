@@ -43,7 +43,16 @@ To generate PDF reports for each file processed at Level-2, the package fpdf wil
 ```
 prompt$ pip install fpdf
 ```
-
+The new Anomaly Analysis tool requires pyqtgraph (http://www.pyqtgraph.org/) which can be installed with pip:
+```
+prompt$ pip install pyqtgraph
+```
+or conda
+```
+prompt$ conda install -c conda-forge pyqtgraph
+```
+---
+## Launching
 HyperInSPACE is a Main-View-Controller Python package that can be launched in several ways to run the Main.py module, such as by navigating to the program folder on the command line and typing the following command after the prompt:
 ```
 prompt$ python Main.py
@@ -59,6 +68,7 @@ The following folders will be created automatically when you first run the progr
 
 (Note: Data, Plots, and Logs directories are not tracked on git.)
 
+---
 ## Guide
 
 ### Overview
@@ -263,7 +273,7 @@ Process data from L1B to L1C. Data are filtered for vessel attitude (pitch, roll
 
 #### Level 1D
 
-Process data from L1C to L1D. Light and dark data are screened for electronic noise ("deglitched" - see Anomaly Analysis), which is then removed from the data (optional, but advised). Shutter dark samples are then subtracted from shutter light frames after dark data have been interpolated in time to match light data. 
+Process data from L1C to L1D. Light and dark data are screened for electronic noise ("deglitched" - see Anomaly Analysis), which is then removed from the data (optional, but strongly advised). Shutter dark samples are then subtracted from shutter light frames after dark data have been interpolated in time to match light data. 
 **(e.g. Brewin et al. 2016, Sea-Bird/Satlantic 2017)**
 
 Resulting dark-corrected spectra for Es, Li, and Lt can optionally be plotted, and will be carried forward into the PDF processing report produced at L2.
@@ -274,15 +284,25 @@ Resulting dark-corrected spectra for Es, Li, and Lt can optionally be plotted, a
 
 ##### Anomaly Analysis (optional)
 
-Deglitching the data (which must follow after L1C processing, as it is evaluated on a L1C file) is highly sensitive to the deglitching parameters described below, as well as some environmental conditions not controlled for in L1C and the variability of the radiometric data itself. Therefore, a separate module was developed to tune these parameters for individual files, instruments, and/or field campaigns and conditions. A sharp temperature change, shutter malfunction, or heavy vibration, for example, could change the optimal deglitching parameterization. The tool is launched (after processing L1C files) by setting the parameters (windows and sigma factors described below) in the Configuration window and then pressing the Anomaly Analysis button to select an example L1C file. Plots produced automatically in the [output_directory]/Plots/L1C_Anoms directory can be used to evaluate and adjust the choice of parameter values. Examples of these will also be carried into the PDF processing report produced at L2.
+Deglitching the data (which must follow after L1C processing, as it is evaluated on L1C files) is highly sensitive to the deglitching parameters described below, as well as some environmental conditions not controlled for in L1C and the variability of the radiometric data itself. Therefore, a separate module was developed to tune these parameters for individual files, instruments, and/or field campaigns and conditions. A sharp temperature change, shutter malfunction, or heavy vibration, for example, could change the optimal deglitching parameterization. 
 
-For each waveband of each sensor, and for both light and dark shutter measurements, the time series of radiometric data are low-pass filtered with a moving average over time using discrete linear convolution of two one dimensional sequences with adjustable window sizes. For darks, a *STATIONARY** standard deviation anomaly (from the moving average in time) is used to assess whether data are within an adjustable "sigma factor" multiplier within the window. For lights, a *MOVING* standard deviation anomaly (from the moving average of separately adjustable window size) is used to assess whether data are within a separately adjustable sigma. The low-band filter is passed over the data twice. First and last data points for light and dark data cannot be accurately filtered with this method, and are discarded.  
-**Defaults: Dark Window 9, Light Window 11, Dark Sigma 2.7, Light Sigma 3.7 determined empirically from example data on the KORUS cruise**
+The tool is launched pressing the Anomaly Analysis button. A dialog will appear to select an L1C file for deglitching, after which a GUI will display timeseries plots of the light (shutter open) and dark (shutter closed) data for a given waveband. The slider at the top allows for adjustment of the wavelength to be screened (the Update button will update the figures for any changes in sensor or parameterization), and radio buttons allow selection between Es, Li, or Lt sensors. Sensors can be parameterized for each sensor, and seperately for the light and dark signals. Plots are interactively and can be explored in higher detail by panning with the left mouse button or zooming with the right mouse button.
+
+For each waveband of each sensor, and for both light and dark shutter measurements, the time series of radiometric data are low-pass filtered with a moving average over time using discrete linear convolution of two one dimensional sequences with adjustable window sizes (number of samples in the window). For darks, a *STATIONARY** standard deviation anomaly (from the moving average in time) is used to assess whether data are within an adjustable "sigma factor" multiplier within the window. For lights, a *MOVING* standard deviation anomaly (from the moving average of separately adjustable window size) is used to assess whether data are within a separately adjustable sigma. The low-band filter is passed over the data twice. First and last data points for light and dark data cannot be accurately filtered with this method, and are discarded.  
+
+Adjust the window size and sigma parameters for each instrument and hit Update (or keyboard Enter) to see which data (black circles) are retained or discarded (red 'x' or '+' for first and second pass, respectively). Move the slider and hit update to see how these factors impact data in various portions of the spectrum. The field '% Loss (all bands)' shows how application of the current parameterization decimates the entire spectral/temporal dataset for the given sensor.
+
+Once the parameters have been adjusted for each sensor, they can be saved (Save Sensor Params button) to the current software configuration and to a backup configuration file for later use. This means that once you have 'tuned' these parameters for a given file, the software will be able to load the file (from the Config directory) to reference those parameters. This is useful for reprocessing; you should only need to tune these once for each file. If you find that a given set of deglitching parameterizations is working sufficiently well for all your L1C files for a given cruise, simply save them once and the software configuration will reuse them for all files (i.e. it only applies alternate values for files that were specifically saved).
+
+For record keeping and the PDF processing report, plots of the delitching (similar to those shown in realtime) can be saved to disk. Select the waveband interval at which to save plots (e.g. at 3.3 nm resolution and 20 interval, plots are produced every 66 nm, or 78 PNG files for a typical HyperSAS system), and click Save Anomaly Plots. Results of the anomaly detection are saved to [output_directory]/Plots/L1C_Anoms. Data flagged for removal given the parameterizations chosen in the Configuration window are shown for the filter first pass (red box) and second pass (blue star).
+
+For convenience a shortcut to processing the currently active L1C file to L1D is provided (Process to L1D). 
+
+**Defaults: TBD; experimental**
 **(Abe et al. 2006, Chandola et al. 2009)**  
 **(API Reference: https://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html)**
 
-'Waveband interval to plot' selects which waveband time-series plots will be generated (e.g. a value of 2 results in plots every 6.6 nm for HyperOCR of resolution 3.3 nm). Time-series plots of Es, Li, and Lt showing the results of the anomaly detection are saved to [output_directory]/Plots/L1C_Anoms. Data flagged for removal given the parameterizations chosen in the Configuration window are shown for the filter first pass (red box) and second pass (blue star). Review of these plots and adjustment of the parameters allow the user to optimize the low-pass filters for a given instrument and collection environment prior to L1E processing.
-
+*{A problem with instrument sensitivity to integration time was recently revealed, and a patch to adjust the response to the integration time is under development. This may be applied here, or alternatively in L1B.}*
 
 #### Level 1E
 

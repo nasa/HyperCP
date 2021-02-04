@@ -491,10 +491,10 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! Rel Azimuth Min = {ConfigFile.settings["fL1cSunAngleMin"]}\n'+\
             f'! Rel Azimuth Max = {ConfigFile.settings["fL1cSunAngleMax"]}\n'+\
             f'! Deglitch Filter = {deglitchFilt}\n'+\
-            f'! Dark Window = {ConfigFile.settings["fL1dDeglitch0"]}\n'+\
-            f'! Light Window = {ConfigFile.settings["fL1dDeglitch1"]}\n'+\
-            f'! Dark Sigma = {ConfigFile.settings["fL1dDeglitch2"]}\n'+\
-            f'! Light Sigma = {ConfigFile.settings["fL1dDeglitch3"]}\n'+\
+            f'! Dark Window = {ConfigFile.settings["fL1dWindowDark"]}\n'+\
+            f'! Light Window = {ConfigFile.settings["fL1dWindowLight"]}\n'+\
+            f'! Dark Sigma = {ConfigFile.settings["fL1dSigmaDark"]}\n'+\
+            f'! Light Sigma = {ConfigFile.settings["fL1dSigmaLight"]}\n'+\
             f'! Wavelength Interp Int = {ConfigFile.settings["fL1eInterpInterval"]}\n'+\
             f'! Max Wind = {ConfigFile.settings["fL2MaxWind"]}\n'+\
             f'! Min SZA = {ConfigFile.settings["fL2SZAMin"]}\n'+\

@@ -1,12 +1,25 @@
-v1.0.5 Unreleased
+v1.0.? Unreleased
 * Read headers from ancillary file to populate SeaBASS header fields
 * Capture filename and line number when errors are thrown (from inspect import currentframe, getframeinfo)
-* Add PIC and GIOP to L2 OC products
-* Propagate uncertainties from radiometry to OC products
-* Revisit question of overly aggressive deglitching
 * Add failure flag. Split Wind and SZA L2.
-* Add geographic plot of file location to report? Maybe produce a kml file for GoogleEarth for the whole cruise<<<---
+* Add PIC and GIOP to L2 OC products
+* Add BRDF correction options
+* Improve NIR Residual correction
+* Propagate uncertainties from radiometry to OC products
+* Produce kml files for GoogleEarth on entire cruise/directory
 * Fix non-unique station file problem (EXPORTS_noTracker)
+
+v1.0.5 Unreleased
+* Add configuration parameters to HDF dataset attributes
+
+2021-02-04:
+* Allow for independant deglitching parameterizations for each sensor, light and dark.
+* Set bounding window for deglitching to (hardcoded) 350 - 850 nm
+* Add a CSV file to track AnomAnal parameterizations for each L1C file in case of reprocessing. 
+* Add direct L1D processing option to the AnomAnal widget.
+
+2021-01-21:
+* Change Anomaly Analysis module to dynamically plot results with a given set of sigmas/windows (requires pyqtgraph install)
 
 2021-01-13:
 * Fix .netrc file permissions when created by HyperInSPACE
