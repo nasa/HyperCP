@@ -2142,6 +2142,7 @@ class ProcessL2:
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
         root.attributes["PROCESSING_LEVEL"] = "2"        
+        # Remaining attributes managed below...
 
         root.addGroup("REFLECTANCE")
         root.addGroup("IRRADIANCE")
@@ -2192,6 +2193,7 @@ class ProcessL2:
             return None
 
         # Clean up units and push into relevant groups attributes
+        # Ancillary
         gp = root.getGroup("ANCILLARY")
         gp.attributes["AOD_UNITS"] = "unitless"
         gp.attributes["HEADING_UNITS"] = "degrees"
@@ -2212,42 +2214,107 @@ class ProcessL2:
         gp.attributes["SZA_UNITS"] = "degrees"        
         gp.attributes["WIND_UNITS"] = "m/s"
 
+        # Irradiance
         gp = root.getGroup("IRRADIANCE")
         gp.attributes["ES_UNITS"] = root.attributes["ES_UNITS"]
         del(root.attributes["ES_UNITS"])
+        if ConfigFile.settings['bL2EnableSpecQualityCheck']:
+            gp.attributes['L2_ES_SPEC_FILTER'] = str(ConfigFile.settings['fL2SpecFilterEs'])
+        if root.attributes['L1D_DEGLITCH'] == 'ON':
+            gp.attributes['L1D_DEGLITCH'] = 'ON'
+            gp.attributes['ES_WINDOW_DARK'] = root.attributes['ES_WINDOW_DARK']
+            gp.attributes['ES_WINDOW_LIGHT'] = root.attributes['ES_WINDOW_LIGHT']
+            gp.attributes['ES_SIGMA_DARK'] = root.attributes['ES_SIGMA_DARK']
+            gp.attributes['ES_SIGMA_LIGHT'] = root.attributes['ES_SIGMA_LIGHT']
 
+        # Radiance
         gp = root.getGroup("RADIANCE")
         gp.attributes["LI_UNITS"] = root.attributes["LI_UNITS"]
         del(root.attributes["LI_UNITS"])
         gp.attributes["LT_UNITS"] = root.attributes["LT_UNITS"]
         del(root.attributes["LT_UNITS"])
+        if ConfigFile.settings['bL2EnableSpecQualityCheck']:
+            gp.attributes['L2_LI_SPECT_FILTER'] = str(ConfigFile.settings['fL2SpecFilterLi'])
+            gp.attributes['L2_LT_SPECT_FILTER'] = str(ConfigFile.settings['fL2SpecFilterLt'])
+        if ConfigFile.settings['bL2EnablePercentLt']:
+            gp.attributes['%LT_FILTER'] = str(ConfigFile.settings['fL2PercentLt'])
+        if root.attributes['L1D_DEGLITCH'] == 'ON':
+            gp.attributes['L1D_DEGLITCH'] = 'ON'
+            gp.attributes['LT_WINDOW_DARK'] = root.attributes['LT_WINDOW_DARK']
+            gp.attributes['LT_WINDOW_LIGHT'] = root.attributes['LT_WINDOW_LIGHT']
+            gp.attributes['LT_SIGMA_DARK'] = root.attributes['LT_SIGMA_DARK']
+            gp.attributes['LT_SIGMA_LIGHT'] = root.attributes['LT_SIGMA_LIGHT']
+            gp.attributes['LI_WINDOW_DARK'] = root.attributes['LI_WINDOW_DARK']
+            gp.attributes['LI_WINDOW_LIGHT'] = root.attributes['LI_WINDOW_LIGHT']
+            gp.attributes['LI_SIGMA_DARK'] = root.attributes['LI_SIGMA_DARK']
+            gp.attributes['LI_SIGMA_LIGHT'] = root.attributes['LI_SIGMA_LIGHT']
 
+        # Reflectance
         gp = root.getGroup("REFLECTANCE")
         gp.attributes["Rrs_UNITS"] = "1/sr"
         gp.attributes["nLw_UNITS"] = "uW/cm^2/nm/sr"
+        if ConfigFile.settings['bL2RuddickRho']:
+            gp.attributes['GLINT_CORR'] = 'Ruddick et al. 2006'
+        if ConfigFile.settings['bL2ZhangRho']:
+            gp.attributes['GLINT_CORR'] = 'Zhang et al. 2017'
+        if ConfigFile.settings['bL2DefaultRho']:
+            gp.attributes['GLINT_CORR'] = 'Mobley 1999'
+        if ConfigFile.settings['bL2PerformNIRCorrection']:
+            if ConfigFile.settings['bL2SimplerNIRCorrection']:
+                gp.attributes['NIR_RESID_CORR'] = 'Carder et al. 1995'
+            if ConfigFile.settings['bL2SimSpecNIRCorrection']:
+                gp.attributes['NIR_RESID_CORR'] = 'Ruddick et al. 2005/2006'
 
+        # Root
         root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
         root.attributes["DATETAG_UNITS"] = "YYYYDOY"
         root.attributes["TIMETAG2_UNITS"] = "HHMMSSmmm"
         del(root.attributes["DATETAG"])
+        del(root.attributes["TIMETAG2"])
         if "COMMENT" in root.attributes.keys():
             del(root.attributes["COMMENT"])
         if "CLOUD_PERCENT" in root.attributes.keys():
             del(root.attributes["CLOUD_PERCENT"])
-        if "DEGLITCH_PRODAT" in root.attributes.keys():
-            del(root.attributes["DEGLITCH_PRODAT"])
-        if "DEGLITCH_REFDAT" in root.attributes.keys():
-            del(root.attributes["DEGLITCH_REFDAT"])
+        # if "DEGLITCH_PRODAT" in root.attributes.keys():
+        #     del(root.attributes["DEGLITCH_PRODAT"])
+        # if "DEGLITCH_REFDAT" in root.attributes.keys():
+        #     del(root.attributes["DEGLITCH_REFDAT"])
         if "DEPTH_RESOLUTION" in root.attributes.keys():
             del(root.attributes["DEPTH_RESOLUTION"])
         if ConfigFile.settings["bL1cSolarTracker"]:
             if "SAS SERIAL NUMBER" in root.attributes.keys():
                 root.attributes["SOLARTRACKER_SERIAL_NUMBER"] = root.attributes["SAS SERIAL NUMBER"]                    
-                del(root.attributes["SAS SERIAL NUMBER"])
-        del(root.attributes["TIMETAG2"])
-        if "WAVEL_INTERP" in root.attributes.keys():
-            del(root.attributes["WAVEL_INTERP"])
-
+                del(root.attributes["SAS SERIAL NUMBER"])        
+        # if "WAVEL_INTERP" in root.attributes.keys():
+        #     del(root.attributes["WAVEL_INTERP"])
+        if ConfigFile.settings['bL2LtUVNIR']:
+            root.attributes['LT_UV_NIR_FILTER'] = 'ON'
+        root.attributes['WIND_MAX'] = str(ConfigFile.settings['fL2MaxWind'])
+        root.attributes['SZA_MAX'] = str(ConfigFile.settings['fL2SZAMax'])
+        root.attributes['SZA_MIN'] = str(ConfigFile.settings['fL2SZAMin'])
+        if ConfigFile.settings['bL2EnableQualityFlags']:
+            root.attributes['CLOUD_FILTER'] = str(ConfigFile.settings['fL2CloudFlag'])
+            root.attributes['ES_FILTER'] = str(ConfigFile.settings['fL2SignificantEsFlag'])
+            root.attributes['DAWN_DUSK_FILTER'] = str(ConfigFile.settings['fL2DawnDuskFlag'])
+            root.attributes['RAIN_RH_FILTER'] = str(ConfigFile.settings['fL2RainfallHumidityFlag'])
+        if ConfigFile.settings['bL2Stations']:
+            root.attributes['STATION_EXTRACTION'] = 'ON'
+        root.attributes['ENSEMBLE_DURATION'] = str(ConfigFile.settings['fL2TimeInterval']) + ' sec'
+        if root.attributes['L1D_DEGLITCH'] == 'ON':
+            # Moved into group attributes above
+            del(root.attributes['ES_WINDOW_DARK'])
+            del(root.attributes['ES_WINDOW_LIGHT'])
+            del(root.attributes['ES_SIGMA_DARK'])
+            del(root.attributes['ES_SIGMA_LIGHT'])
+            del(root.attributes['LT_WINDOW_DARK'])
+            del(root.attributes['LT_WINDOW_LIGHT'])
+            del(root.attributes['LT_SIGMA_DARK'])
+            del(root.attributes['LT_SIGMA_LIGHT'])
+            del(root.attributes['LI_WINDOW_DARK'])
+            del(root.attributes['LI_WINDOW_LIGHT'])
+            del(root.attributes['LI_SIGMA_DARK'])
+            del(root.attributes['LI_SIGMA_LIGHT'])
+        
         
         # Check to insure at least some data survived quality checks
         if root.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None:

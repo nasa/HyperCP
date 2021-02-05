@@ -190,6 +190,23 @@ class ProcessL1c:
         now = datetime.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
+
+        # Add configuration parameters (L1C) to root/node attributes
+        if ConfigFile.settings['bL1cSolarTracker']:
+            node.attributes['SOLARTRACKER'] = 'YES'
+
+        ''' The following are currently only valid for SolarTracker, but will evolve to include other platforms '''
+        if ConfigFile.settings['bL1cCleanPitchRoll']:
+            node.attributes['PITCH_ROLL_FILTER'] = ConfigFile.settings['fL1cPitchRollPitch']
+        node.attributes['HOME_ANGLE'] = ConfigFile.settings['fL1cRotatorHomeAngle']
+        node.attributes['ROTATOR_DELAY_FILTER'] = ConfigFile.settings['fL1cRotatorDelay']
+        if ConfigFile.settings['bL1cRotatorAngle']:
+            node.attributes['ROT_ANGLE_MIN'] = ConfigFile.settings['fL1cRotatorAngleMin']
+            node.attributes['ROT_ANGLE_MAX'] = ConfigFile.settings['fL1cRotatorAngleMax']
+        if ConfigFile.settings['bL1cCleanSunAngle']:
+            node.attributes['RELATIVE_AZIMUTH_MIN'] = ConfigFile.settings['fL1cSunAngleMin']
+            node.attributes['RELATIVE_AZIMUTH_MAX'] = ConfigFile.settings['fL1cSunAngleMax']
+
         msg = f"ProcessL1c.processL1c: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)   

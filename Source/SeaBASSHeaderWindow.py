@@ -474,7 +474,6 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         else: 
             NegativeFilt = "Off"
 
-        ''' TO DO: Update the version dynamically'''
         SeaBASSHeader.settings["comments"] =\
             f'! HyperInSPACE vers = {MainConfig.settings["version"]}\n'+\
             f'! HyperInSPACE Config = {ConfigFile.filename}\n'+\
@@ -491,10 +490,18 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! Rel Azimuth Min = {ConfigFile.settings["fL1cSunAngleMin"]}\n'+\
             f'! Rel Azimuth Max = {ConfigFile.settings["fL1cSunAngleMax"]}\n'+\
             f'! Deglitch Filter = {deglitchFilt}\n'+\
-            f'! Dark Window = {ConfigFile.settings["fL1dWindowDark"]}\n'+\
-            f'! Light Window = {ConfigFile.settings["fL1dWindowLight"]}\n'+\
-            f'! Dark Sigma = {ConfigFile.settings["fL1dSigmaDark"]}\n'+\
-            f'! Light Sigma = {ConfigFile.settings["fL1dSigmaLight"]}\n'+\
+            f'! ES Dark Window = {ConfigFile.settings["fL1dESWindowDark"]}\n'+\
+            f'! ES Light Window = {ConfigFile.settings["fL1dESWindowLight"]}\n'+\
+            f'! ES Dark Sigma = {ConfigFile.settings["fL1dESSigmaDark"]}\n'+\
+            f'! ES Light Sigma = {ConfigFile.settings["fL1dESSigmaLight"]}\n'+\
+            f'! LI Dark Window = {ConfigFile.settings["fL1dLIWindowDark"]}\n'+\
+            f'! LI Light Window = {ConfigFile.settings["fL1dLIWindowLight"]}\n'+\
+            f'! LI Dark Sigma = {ConfigFile.settings["fL1dLISigmaDark"]}\n'+\
+            f'! LI Light Sigma = {ConfigFile.settings["fL1dLISigmaLight"]}\n'+\
+            f'! LT Dark Window = {ConfigFile.settings["fL1dLTWindowDark"]}\n'+\
+            f'! LT Light Window = {ConfigFile.settings["fL1dLTWindowLight"]}\n'+\
+            f'! LT Dark Sigma = {ConfigFile.settings["fL1dLTSigmaDark"]}\n'+\
+            f'! LT Light Sigma = {ConfigFile.settings["fL1dLTSigmaLight"]}\n'+\
             f'! Wavelength Interp Int = {ConfigFile.settings["fL1eInterpInterval"]}\n'+\
             f'! Max Wind = {ConfigFile.settings["fL2MaxWind"]}\n'+\
             f'! Min SZA = {ConfigFile.settings["fL2SZAMin"]}\n'+\

@@ -291,7 +291,7 @@ class ProcessL1e:
         
         interval = float(ConfigFile.settings["fL1eInterpInterval"])
         
-        root.attributes["WAVEL_INTERP"] = (str(interval) + " nm") 
+        # root.attributes["WAVEL_INTERP"] = (str(interval) + " nm") 
 
         newReferenceGroup = root.addGroup("IRRADIANCE")
         newSASGroup = root.addGroup("RADIANCE")
@@ -387,7 +387,9 @@ class ProcessL1e:
         root.attributes["DEPTH_RESOLUTION"] = "N/A"
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
-        node.attributes["FILE_CREATION_TIME"] = timestr
+        root.attributes["FILE_CREATION_TIME"] = timestr
+        root.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1eInterpInterval']) + ' nm'
+
         msg = f"ProcessL1e.processL1e: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)

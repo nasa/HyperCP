@@ -10,7 +10,10 @@ v1.0.? Unreleased
 * Fix non-unique station file problem (EXPORTS_noTracker)
 
 v1.0.5 Unreleased
-* Add configuration parameters to HDF dataset attributes
+* Update meta fields in PDF reports and SeaBASS headers to reflect root/group attributes over ConfigFile.settings
+
+2021-02-05:
+* Add all configuration parameters to HDF root and group attributes as appropriate; tidied up at L2
 
 2021-02-04:
 * Allow for independant deglitching parameterizations for each sensor, light and dark.

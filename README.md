@@ -157,7 +157,7 @@ Process the data by clicking on one of the buttons for single-level or multi-lev
 
 Process data from raw binary (Satlantic HyperSAS '.RAW' collections) to L1A (Hierarchical Data Format 5 '.hdf'). Calibration files and the RawFileReader.py script allow for interpretation of raw data fields, which are read into HDF objects.
 
-**Solar Zenith Angle Filter**: prescreens data for high SZA (low solar elevation) to exclude files which may have been collected post-dusk or pre-dawn from further processing. *Triggering the SZA threshold will skip the entire file, not just samples within the file, so do not be overly conservative with this selection, particularly for files collected over a long period.* Further screening for SZA min/max at a sample level is available in L2 processing.
+**Solar Zenith Angle Filter**: prescreens data for high SZA (low solar elevation) to exclude files which may have been collected post-dusk or pre-dawn from further processing. *Triggering the SZA threshold will skip the entire file, not just samples within the file, so do not be overly conservative with this selection, particularly for files collected over a long period.* Further screening for SZA min/max at a sample level is available in L2 processing. This option is currently only applied when using Satlantic SolarTracker (SATNAV) raw data; it is available again for all platforms at L2.
 **Default: 60 degrees (e.g. Brewin et al., 2016)**
 
 #### Level 1B
@@ -297,6 +297,8 @@ Once the parameters have been adjusted for each sensor, they can be saved (Save 
 For record keeping and the PDF processing report, plots of the delitching (similar to those shown in realtime) can be saved to disk. Select the waveband interval at which to save plots (e.g. at 3.3 nm resolution and 20 interval, plots are produced every 66 nm, or 78 PNG files for a typical HyperSAS system), and click Save Anomaly Plots. Results of the anomaly detection are saved to [output_directory]/Plots/L1C_Anoms. Data flagged for removal given the parameterizations chosen in the Configuration window are shown for the filter first pass (red box) and second pass (blue star).
 
 For convenience a shortcut to processing the currently active L1C file to L1D is provided (Process to L1D). 
+
+*{KNOWN BUG: the pyqtgraph GUI interface does not always update as expected. Hitting Update again or switching the sensor radio button generally resolves the issue.}*
 
 **Defaults: TBD; experimental**
 **(Abe et al. 2006, Chandola et al. 2009)**  

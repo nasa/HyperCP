@@ -6,6 +6,7 @@ import datetime
 import time
 import pytz
 from collections import Counter
+import csv
 
 from PyQt5.QtWidgets import QApplication, QDesktopWidget, QWidget, QPushButton, QMessageBox
 from PyQt5.QtGui import QIcon
@@ -1511,6 +1512,21 @@ class Utilities:
         fp = os.path.join(plotdir, '_'.join(filebasename[0:-1]) + '_' + label + '.png')
         plt.savefig(fp)
         plt.close() # This prevents displaying the plot on screen with certain IDEs    
+
+    @staticmethod
+    def readAnomAnalFile(filePath):
+        paramDict = {}
+        with open(filePath, newline='') as csvfile:
+            paramreader = csv.DictReader(csvfile)
+            for row in paramreader:
+                
+                paramDict[row['filename']] = [int(row['ESWindowDark']), int(row['ESWindowLight']), \
+                                    float(row['ESSigmaDark']), float(row['ESSigmaLight']),\
+                                        int(row['LIWindowDark']), int(row['LIWindowLight']),
+                                        float(row['LISigmaDark']), float(row['LISigmaLight']),
+                                        int(row['LTWindowDark']), int(row['LTWindowLight']),
+                                        float(row['LTSigmaDark']), float(row['LTSigmaLight']),]
+        return paramDict
 
     
 

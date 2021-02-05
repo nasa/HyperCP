@@ -400,6 +400,21 @@ class ProcessL1d:
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         root.attributes["FILE_CREATION_TIME"] = timestr
+        if ConfigFile.settings['bL1dDeglitch']:
+            root.attributes['L1D_DEGLITCH'] = 'ON'
+            root.attributes['ES_WINDOW_DARK'] = str(ConfigFile.settings['fL1dESWindowDark'])
+            root.attributes['ES_WINDOW_LIGHT'] = str(ConfigFile.settings['fL1dESWindowLight'])
+            root.attributes['ES_SIGMA_DARK'] = str(ConfigFile.settings['fL1dESSigmaDark'])
+            root.attributes['ES_SIGMA_LIGHT'] = str(ConfigFile.settings['fL1dESSigmaLight'])
+            root.attributes['LI_WINDOW_DARK'] = str(ConfigFile.settings['fL1dLIWindowDark'])
+            root.attributes['LI_WINDOW_LIGHT'] = str(ConfigFile.settings['fL1dLIWindowLight'])
+            root.attributes['LI_SIGMA_DARK'] = str(ConfigFile.settings['fL1dLISigmaDark'])
+            root.attributes['LI_SIGMA_LIGHT'] = str(ConfigFile.settings['fL1dLISigmaLight'])
+            root.attributes['LT_WINDOW_DARK'] = str(ConfigFile.settings['fL1dLTWindowDark'])
+            root.attributes['LT_WINDOW_LIGHT'] = str(ConfigFile.settings['fL1dLTWindowLight'])
+            root.attributes['LT_SIGMA_DARK'] = str(ConfigFile.settings['fL1dLTSigmaDark'])
+            root.attributes['LT_SIGMA_LIGHT'] = str(ConfigFile.settings['fL1dLTSigmaLight'])        
+
         msg = f"ProcessL1d.processL1d: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)
@@ -415,27 +430,22 @@ class ProcessL1d:
                 print(msg)
                 Utilities.writeLogFile(msg)
                 if not Utilities.fixDateTime(gp):
-                    msg = f'***********Too few records in the {gp.id} file to continue. Exiting.'
+                    msg = f'***********Too few records in {gp.id} to continue after timestamp correction. Exiting.'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return None
 
         if int(ConfigFile.settings["bL1dDeglitch"]) == 1:
-            root.attributes["DEGLITCH_PRODAT"] = "ON"
-            root.attributes["DEGLITCH_REFDAT"] = "ON"
             flagES = ProcessL1d.processDataDeglitching(root, "ES")
             flagLI = ProcessL1d.processDataDeglitching(root, "LI")
             flagLT = ProcessL1d.processDataDeglitching(root, "LT")
 
             if flagES or flagLI or flagLT:
-                msg = '***********Too few records in the file to continue. Exiting.'
+                msg = '***********Too few records in the file after deglitching to continue. Exiting.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-
-        else:
-            root.attributes["DEGLITCH_PRODAT"] = "OFF"
-            root.attributes["DEGLITCH_REFDAT"] = "OFF"
+        # else:
             #root.attributes["STRAY_LIGHT_CORRECT"] = "OFF"
             #root.attributes["THERMAL_RESPONSIVITY_CORRECT"] = "OFF"        
         

@@ -81,6 +81,7 @@ class PDF(FPDF):
             metaData += f'Light Window: {commentsDict[" Light Window"]}'
             metaData += f'Dark Sigma: {commentsDict[" Dark Sigma"]}'
             metaData += f'Light Sigma: {commentsDict[" Light Sigma"]}'
+
         if level == "L1E":
             intro = 'Interpolate data to common timestamps and wavebands.'
 

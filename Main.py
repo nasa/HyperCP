@@ -358,9 +358,6 @@ class Window(QtWidgets.QWidget):
         if os.path.exists(subInputDir):
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",subInputDir)
             fileNames = openFileNames[0] # The first element is the whole list
-            
-            ''' BUG: MacOS bug holds OPEN window open during entire processing period
-            openFileNames.setAttribute(QtCore.WA_DeleteOnClose, True) # Doesn't work... '''
 
         else:    
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",self.inputDirectory)

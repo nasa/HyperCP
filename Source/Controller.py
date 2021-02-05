@@ -203,36 +203,6 @@ class Controller:
         msg = "ProcessL1a"
         print(msg)
         root = ProcessL1a.processL1a(inFilePath, calibrationMap)
-
-        # Apply SZA filter 
-        if ConfigFile.settings["bL1aCleanSZA"]:
-            if root is not None:
-                timeStamp = root.attributes['TIME-STAMP'] # a string
-                for gp in root.groups:                              
-                    # try:
-                    if 'FrameTag' in gp.attributes:
-                        if gp.attributes["FrameTag"].startswith("SATNAV"):
-                            elevData = gp.getDataset("ELEVATION")
-                            elevation = elevData.data.tolist()
-                            szaLimit = float(ConfigFile.settings["fL1aCleanSZAMax"])
-
-                            ''' It would be good to add local time as a printed output with SZA'''
-                            if (90-np.nanmax(elevation)) > szaLimit:
-                                msg = f'SZA too low. Discarding entire file. {round(90-np.nanmax(elevation))}'
-                                print(msg)
-                                Utilities.writeLogFile(msg)
-                                return None, timeStamp
-                            else:
-                                msg = f'SZA passed filter: {round(90-np.nanmax(elevation))}'
-                                print(msg)
-                                Utilities.writeLogFile(msg)
-                    else:
-                        print(f'No FrameTag in {gp.id} group')
-                    # except:
-                    #     msg = f'FrameTag does not exist in the group {gp.id}.'
-                    #     print(msg)
-                    #     Utilities.writeLogFile(msg)
-                    #     return None
         
         # Write output file
         if root is not None:
@@ -243,7 +213,7 @@ class Controller:
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return None, timeStamp
+                return None
         else:
             msg = "L1a processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0:
@@ -252,27 +222,25 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None, 'Unknown'
             
-        return root, timeStamp
+        return root
 
     @staticmethod
     def processL1b(inFilePath, outFilePath, calibrationMap):    
-        root = None  
-        timeStamp = 'Unknown'
+        root = None          
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
-            return None, timeStamp
+            return None
 
         # Process the data
         print("ProcessL1b")
         try:
             root = HDFRoot.readHDF5(inFilePath)
-            timeStamp = root.attributes['TIME-STAMP'] # a string
         except:
             msg = "Unable to open file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None, timeStamp
+            return None
 
         root = ProcessL1b.processL1b(root, calibrationMap)
 
@@ -285,26 +253,25 @@ class Controller:
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return None, timeStamp
+                return None
         else:
             msg = "L1b processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None, timeStamp
+            return None
 
-        return root, timeStamp
+        return root
 
     @staticmethod
     def processL1c(inFilePath, outFilePath, ancillaryData=None):
         root = None
-        timeStamp = 'Unknown'
         _,fileName = os.path.split(outFilePath)
         
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
-            return None, timeStamp
+            return None,
 
         # Process the data
         msg = ("ProcessL1c: " + inFilePath)
@@ -312,13 +279,12 @@ class Controller:
         Utilities.writeLogFile(msg,'w')
         try:
             root = HDFRoot.readHDF5(inFilePath)
-            timeStamp = root.attributes['TIME-STAMP'] # a string
         except:
             msg = "Unable to open file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None, timeStamp
+            return None
 
         root = ProcessL1c.processL1c(root, fileName, ancillaryData)     
 
@@ -331,24 +297,23 @@ class Controller:
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return None, timeStamp
+                return None
         else:
             msg = "L1c processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None, timeStamp
+            return None
         
-        return root, timeStamp
+        return root
 
     @staticmethod
     def processL1d(inFilePath, outFilePath):        
         root = None
-        timeStamp = 'Unknown'
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
-            return None, timeStamp
+            return None
 
         # Process the data
         msg = ("ProcessL1d: " + inFilePath)
@@ -356,13 +321,12 @@ class Controller:
         Utilities.writeLogFile(msg,'w')
         try:
             root = HDFRoot.readHDF5(inFilePath)
-            timeStamp = root.attributes['TIME-STAMP'] # a string
         except:
             msg = "Unable to open file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None, timeStamp
+            return None
 
         root = ProcessL1d.processL1d(root)     
 
@@ -386,38 +350,36 @@ class Controller:
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return None, timeStamp
+                return None
         else:
             msg = "L1d processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None, timeStamp    
+            return None  
 
-        return root, timeStamp
+        return root
 
     @staticmethod
     def processL1e(inFilePath, outFilePath):
         root = None
-        timeStamp = 'Unknown'
         _,fileName = os.path.split(outFilePath)
 
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
-            return None, timeStamp
+            return None
 
         # Process the data
         print("ProcessL1e")
         try:
             root = HDFRoot.readHDF5(inFilePath)
-            timeStamp = root.attributes['TIME-STAMP'] # a string
         except:
             msg = "Unable to open file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None, timeStamp
+            return None
 
         root = ProcessL1e.processL1e(root, fileName)
 
@@ -430,25 +392,24 @@ class Controller:
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return None, timeStamp
+                return None,
         else:
             msg = "L1e processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None, timeStamp  
+            return None
         
-        return root, timeStamp
+        return root
 
 
     @staticmethod
     def processL2(inFilePath, outFilePath, ancillaryData):
         root = None
-        timeStamp = 'Unknown'
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
-            return None, outFilePath, timeStamp
+            return None, outFilePath
 
         # Process the data
         msg = ("ProcessL2: " + inFilePath)
@@ -456,18 +417,16 @@ class Controller:
         Utilities.writeLogFile(msg,'w')
         try:
             root = HDFRoot.readHDF5(inFilePath)
-            timeStamp = root.attributes['TIME-STAMP'] # a string
         except:
             msg = "Unable to open file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None, outFilePath, timeStamp
+            return None, outFilePath
         
         root.attributes['In_Filepath'] = inFilePath
         root = ProcessL2.processL2(root, ancillaryData)
         
-
         dirpath = os.getcwd()
         outPath, filename = os.path.split(outFilePath)
         if root is not None:
@@ -508,20 +467,20 @@ class Controller:
         if root is not None:
             try:
                 root.writeHDF5(outFilePath)
-                return root, outFilePath, timeStamp
+                return root, outFilePath
             except:
                 msg = "Unable to write file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return None, outFilePath, timeStamp
+                return None, outFilePath
         else:
             msg = "L2 processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None, outFilePath, timeStamp
+            return None, outFilePath
 
     # Process every file in a list of files 1 level
     @staticmethod
@@ -564,17 +523,48 @@ class Controller:
             level == "L1C" or level == "L1D":                           
             
             if level == "L1A":
-                root, timeStamp = Controller.processL1a(inFilePath, outFilePath, calibrationMap)                 
+                root = Controller.processL1a(inFilePath, outFilePath, calibrationMap)                 
             elif level == "L1B":
-                root, timeStamp = Controller.processL1b(inFilePath, outFilePath, calibrationMap) 
+                root = Controller.processL1b(inFilePath, outFilePath, calibrationMap) 
             elif level == "L1C":
                 if ConfigFile.settings["bL1cSolarTracker"] == 0:
                     ancillaryData = Controller.processAncData(ancFile)
                 else:
                     ancillaryData = None
-                root, timeStamp = Controller.processL1c(inFilePath, outFilePath, ancillaryData)
+                root = Controller.processL1c(inFilePath, outFilePath, ancillaryData)
             elif level == "L1D":
-                root, timeStamp = Controller.processL1d(inFilePath, outFilePath) 
+                # If called locally from Controller and not AnomalyDetection.py, then
+                #   try to load the parameter file for this cruise/configuration and update
+                #   ConfigFile.settings to reflect the appropriate parameterizations for this 
+                #   particular file. If no parameter file exists, or this SAS file is not in it, 
+                #   then fall back on the current ConfigFile.settings.
+                
+                anomAnalFileName,_ = ConfigFile.filename.split('.')
+                anomAnalFileName = anomAnalFileName + '_anoms.csv'
+                fp = os.path.join('Config',anomAnalFileName)
+                if os.path.exists(fp):
+                    params = Utilities.readAnomAnalFile(fp)
+                    # If a parameterization has been saved in the AnomAnalFile, set the properties in the local object
+                    # for all sensors
+                    l1CfileName = fileName[0] + '_L1C'
+                    if l1CfileName in params.keys():
+                        ref = 0
+                        for sensor in ['ES','LI','LT']:
+                            ConfigFile.settings[f'{sensor}WindowDark'] = params[l1CfileName][ref+0]
+                            ConfigFile.settings[f'{sensor}WindowLight']= params[l1CfileName][ref+1]
+                            ConfigFile.settings[f'{sensor}SigmaDark']= params[l1CfileName][ref+2]
+                            ConfigFile.settings[f'{sensor}SigmaLight']= params[l1CfileName][ref+3]
+                            ref += 4
+                    else:
+                        msg = 'This file not found in parameter file. Resorting to values in ConfigFile.settings.'
+                        print(msg)
+                        Utilities.writeLogFile(msg)  
+                else:
+                    msg = 'No deglitching parameter file found. Resorting to values in ConfigFile.settings.'
+                    print(msg)
+                    Utilities.writeLogFile(msg)  
+                
+                root = Controller.processL1d(inFilePath, outFilePath) 
 
             # Confirm output file creation
             if os.path.isfile(outFilePath):
@@ -586,7 +576,7 @@ class Controller:
                     Utilities.writeLogFile(msg)                              
 
         elif level == "L1E":
-            root, timeStamp = Controller.processL1e(inFilePath, outFilePath)   
+            root = Controller.processL1e(inFilePath, outFilePath)   
             
             if os.path.isfile(outFilePath):
                 modTime = os.path.getmtime(outFilePath)
@@ -611,7 +601,7 @@ class Controller:
                 # and will be extracted from the ANCILLARY_NOTRACKER group later
                 ancillaryData = None
 
-            root, outFilePath, timeStamp = Controller.processL2(inFilePath, outFilePath, ancillaryData)  
+            root, outFilePath = Controller.processL2(inFilePath, outFilePath, ancillaryData)  
             
             if os.path.isfile(outFilePath):
                 # Ensure that the L2 on file is recent before continuing with 
@@ -633,6 +623,10 @@ class Controller:
 
         # In case of processing failure, write the report at this Process level, unless running stations
         #   Use numeric level for writeReport
+        if root is not None:
+            timeStamp = root.attributes['TIME-STAMP']
+        else:
+            timeStamp = 'Null'
         title = f'File: {fileName[0]} Collected: {timeStamp}'
         if root is None and ConfigFile.settings["bL2Stations"] == 1:
             return False

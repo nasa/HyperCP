@@ -44,7 +44,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.anomAnalFileName = anomAnalFileName + '_anoms.csv'
         fp = os.path.join('Config',self.anomAnalFileName)
         if os.path.exists(fp):
-            self.params = self.readAnomAnalFile(fp)
+            self.params = Utilities.readAnomAnalFile(fp)
         else:
             self.params = {}
 
@@ -234,19 +234,19 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.loadL1Cfile()
         self.updateButtonPressed()
 
-    def readAnomAnalFile(self, filePath):
-        paramDict = {}
-        with open(filePath, newline='') as csvfile:
-            paramreader = csv.DictReader(csvfile)
-            for row in paramreader:
+    # def readAnomAnalFile(self, filePath):
+    #     paramDict = {}
+    #     with open(filePath, newline='') as csvfile:
+    #         paramreader = csv.DictReader(csvfile)
+    #         for row in paramreader:
                 
-                paramDict[row['filename']] = [int(row['ESWindowDark']), int(row['ESWindowLight']), \
-                                    float(row['ESSigmaDark']), float(row['ESSigmaLight']),\
-                                        int(row['LIWindowDark']), int(row['LIWindowLight']),
-                                        float(row['LISigmaDark']), float(row['LISigmaLight']),
-                                        int(row['LTWindowDark']), int(row['LTWindowLight']),
-                                        float(row['LTSigmaDark']), float(row['LTSigmaLight']),]
-        return paramDict
+    #             paramDict[row['filename']] = [int(row['ESWindowDark']), int(row['ESWindowLight']), \
+    #                                 float(row['ESSigmaDark']), float(row['ESSigmaLight']),\
+    #                                     int(row['LIWindowDark']), int(row['LIWindowLight']),
+    #                                     float(row['LISigmaDark']), float(row['LISigmaLight']),
+    #                                     int(row['LTWindowDark']), int(row['LTWindowLight']),
+    #                                     float(row['LTSigmaDark']), float(row['LTSigmaLight']),]
+    #     return paramDict
 
     def writeAnomAnalFile(self, filePath):
         header = ['filename','ESWindowDark','ESWindowLight','ESSigmaDark','ESSigmaLight',\
@@ -580,9 +580,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         # self.processL1d(inFilePath, outFilePath)
         Controller.processL1d(inFilePath, outFilePath)
-
         print('Process L1D complete')
-
 
 
     def closeButtonPressed(self):
@@ -797,59 +795,3 @@ class AnomAnalWindow(QtWidgets.QDialog):
             dateTime.append(Utilities.timeTag2ToDateTime(dt,timeTags[i]))
         
         return dateTime
-
-    # @staticmethod
-    # def processL1d(inFilePath, outFilePath):        
-    #     root = None
-    #     timeStamp = 'Unknown'
-    #     if not os.path.isfile(inFilePath):
-    #         print('No such input file: ' + inFilePath)
-    #         return None, timeStamp
-
-    #     # Process the data
-    #     msg = ("ProcessL1d: " + inFilePath)
-    #     print(msg)
-    #     Utilities.writeLogFile(msg,'w')
-    #     try:
-    #         root = HDFRoot.readHDF5(inFilePath)
-    #         timeStamp = root.attributes['TIME-STAMP'] # a string
-    #     except:
-    #         msg = "Unable to open file. May be open in another application."
-    #         Utilities.errorWindow("File Error", msg)
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #         return None, timeStamp
-
-    #     root = ProcessL1d.processL1d(root)     
-
-    #     # Write output file
-    #     if root is not None:
-    #         try:                
-    #             root.writeHDF5(outFilePath)
-
-    #             # Create Plots
-    #             # Radiometry
-    #             dirpath = os.getcwd()
-    #             _, filename = os.path.split(outFilePath)
-    #             if ConfigFile.settings['bL2PlotEs']==1:
-    #                 Utilities.plotRadiometryL1D(root, dirpath, filename, rType='ES')
-    #             if ConfigFile.settings['bL2PlotLi']==1:
-    #                 Utilities.plotRadiometryL1D(root, dirpath, filename, rType='LI')
-    #             if ConfigFile.settings['bL2PlotLt']==1:
-    #                 Utilities.plotRadiometryL1D(root, dirpath, filename, rType='LT')
-    #         except:
-    #             msg = "Unable to write file. May be open in another application."
-    #             Utilities.errorWindow("File Error", msg)
-    #             print(msg)
-    #             Utilities.writeLogFile(msg)
-    #             return None, timeStamp
-    #     else:
-    #         msg = "L1d processing failed. Nothing to output."
-    #         if MainConfig.settings["popQuery"] == 0:
-    #             Utilities.errorWindow("File Error", msg)
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #         return None, timeStamp    
-
-    #     return root, timeStamp
-

@@ -2,12 +2,14 @@
 import collections
 import datetime as dt
 import os
+import numpy as np
 
 import HDFRoot
 import HDFGroup
 from MainConfig import MainConfig
 from Utilities import Utilities
 from RawFileReader import RawFileReader
+from ConfigFile import ConfigFile
 
 
 class ProcessL1a:
@@ -19,7 +21,7 @@ class ProcessL1a:
         '''
         (_, fileName) = os.path.split(fp)
 
-        # Generate root header attributes
+        # Generate root attributes
         root = HDFRoot.HDFRoot()
         root.id = "/"
         root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
@@ -30,12 +32,13 @@ class ProcessL1a:
         root.attributes["ES_UNITS"] = "count"
         root.attributes["SATPYR_UNITS"] = "count"
         root.attributes["RAW_FILE_NAME"] = fileName
-
-        # Generates root footer attributes
         root.attributes["PROCESSING_LEVEL"] = "1a"
+
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         root.attributes["FILE_CREATION_TIME"] = timestr
+        # SZA Filter configuration parameter added to attributes below
+
         msg = f"ProcessL1a.processL1a: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)
@@ -184,5 +187,34 @@ class ProcessL1a:
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
+
+        # Apply SZA filter; Currently only works with SolarTracker data at L1A (again possible in L2)
+        if ConfigFile.settings["bL1aCleanSZA"]:
+            root.attributes['SZA_FILTER_L1A'] = ConfigFile.settings["fL1aCleanSZAMax"]
+            for gp in root.groups:                              
+                # try:
+                if 'FrameTag' in gp.attributes:
+                    if gp.attributes["FrameTag"].startswith("SATNAV"):
+                        elevData = gp.getDataset("ELEVATION")
+                        elevation = elevData.data.tolist()
+                        szaLimit = float(ConfigFile.settings["fL1aCleanSZAMax"])
+
+                        ''' It would be good to add local time as a printed output with SZA'''
+                        if (90-np.nanmax(elevation)) > szaLimit:
+                            msg = f'SZA too low. Discarding entire file. {round(90-np.nanmax(elevation))}'
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+                            return None
+                        else:
+                            msg = f'SZA passed filter: {round(90-np.nanmax(elevation))}'
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+                else:
+                    print(f'No FrameTag in {gp.id} group')
+                    # except:
+                    #     msg = f'FrameTag does not exist in the group {gp.id}.'
+                    #     print(msg)
+                    #     Utilities.writeLogFile(msg)
+                    #     return None
 
         return root
