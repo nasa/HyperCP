@@ -30,6 +30,20 @@ class Controller:
         print('Writing PDF Report...')
         numLevelDict = {'L1A':1,'L1B':2,'L1C':3,'L1D':4,'L1E':5,'L2':6}
         numLevel = numLevelDict[level]
+        fp = os.path.join(pathOut, level, f'{fileName[0]}_{level}.hdf')
+
+
+        # The highest level processed will have the correct configurations in the HDF attributes
+        # These are potentially more accurate than value found in the ConfigFile settings
+        # Open the highest level file as root, and pass it to the report writer 
+        try:            
+            root = HDFRoot.readHDF5(fp)
+        except:
+            msg = "Unable to open file. May be open in another application."
+            Utilities.errorWindow("File Error", msg)
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return
         
         # Reports
         reportPath = os.path.join(pathOut, 'Reports')
@@ -48,47 +62,53 @@ class Controller:
         outHDF = os.path.split(outFilePath)[1]
         outPDF = os.path.join(reportPath, f'{os.path.splitext(outHDF)[0]}.pdf')
         # title = f'File: {fileName} Collected: {root.attributes["TIME-STAMP"]}'
-
+        
         pdf = PDF()
         pdf.set_title(title)
         pdf.set_author(f'HyperInSPACE_{MainConfig.settings["version"]}')
 
         inLog = os.path.join(inLogPath,f'{fileName}_L1A.log')
         if os.path.isfile(inLog):
+            print('Level 1A')
             # pdf.print_chapter(root,'L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName, outFilePath)
-            pdf.print_chapter('L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName, outFilePath)
+            pdf.print_chapter('L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName, outFilePath, root)
 
         if numLevel > 1:
+            print('Level 1B')
             inLog = os.path.join(inLogPath,f'{fileName}_L1A_L1B.log')
             if os.path.isfile(inLog):
                 # pdf.print_chapter(root,'L1B', 'Process L1A to L1B', inLog, inPlotPath, fileName, outFilePath)
-                pdf.print_chapter('L1B', 'Process L1A to L1B', inLog, inPlotPath, fileName, outFilePath)
+                pdf.print_chapter('L1B', 'Process L1A to L1B', inLog, inPlotPath, fileName, outFilePath, root)
         
         if numLevel > 2:
+            print('Level 1C')
             inLog = os.path.join(inLogPath,f'{fileName}_L1B_L1C.log')
             if os.path.isfile(inLog):
                 # pdf.print_chapter(root,'L1C', 'Process L1B to L1C', inLog, inPlotPath, fileName, outFilePath)
-                pdf.print_chapter('L1C', 'Process L1B to L1C', inLog, inPlotPath, fileName, outFilePath)
+                pdf.print_chapter('L1C', 'Process L1B to L1C', inLog, inPlotPath, fileName, outFilePath, root)
         
         if numLevel > 3:
+            print('Level 1D')
             inLog = os.path.join(inLogPath,f'{fileName}_L1C_L1D.log')
             if os.path.isfile(inLog):
                 # pdf.print_chapter(root,'L1D', 'Process L1C to L1D', inLog, inPlotPath, fileName, outFilePath)
-                pdf.print_chapter('L1D', 'Process L1C to L1D', inLog, inPlotPath, fileName, outFilePath)
+                pdf.print_chapter('L1D', 'Process L1C to L1D', inLog, inPlotPath, fileName, outFilePath, root)
         
         if numLevel > 4:
+            print('Level 1E')
             inLog = os.path.join(inLogPath,f'{fileName}_L1D_L1E.log')
             if os.path.isfile(inLog):
                 # pdf.print_chapter(root,'L1E', 'Process L1D to L1E', inLog, inPlotPath, fileName, outFilePath)
-                pdf.print_chapter('L1E', 'Process L1D to L1E', inLog, inPlotPath, fileName, outFilePath)
+                pdf.print_chapter('L1E', 'Process L1D to L1E', inLog, inPlotPath, fileName, outFilePath, root)
         
         if numLevel > 5:
+            print('Level 2')
             # For L2, reset Plot directory
             inPlotPath = os.path.join(pathOut,'Plots')
             inLog = os.path.join(inLogPath,f'{fileName}_L1E_L2.log')
             if os.path.isfile(inLog):
                 # pdf.print_chapter(root,'L2', 'Process L1E to L2', inLog, inPlotPath, fileName, outFilePath)
-                pdf.print_chapter('L2', 'Process L1E to L2', inLog, inPlotPath, fileName, outFilePath)
+                pdf.print_chapter('L2', 'Process L1E to L2', inLog, inPlotPath, fileName, outFilePath, root)
 
         try:
             pdf.output(outPDF, 'F')
@@ -549,7 +569,7 @@ class Controller:
                     l1CfileName = fileName[0] + '_L1C'
                     if l1CfileName in params.keys():
                         ref = 0
-                        for sensor in ['ES','LI','LT']:
+                        for sensor in ['ES','LT','LI']:
                             ConfigFile.settings[f'{sensor}WindowDark'] = params[l1CfileName][ref+0]
                             ConfigFile.settings[f'{sensor}WindowLight']= params[l1CfileName][ref+1]
                             ConfigFile.settings[f'{sensor}SigmaDark']= params[l1CfileName][ref+2]
@@ -632,7 +652,7 @@ class Controller:
             return False
         if root is None and ConfigFile.settings["bL2Stations"] == 0:                     
             if ConfigFile.settings["bL2WriteReport"] == 1:
-                Controller.writeReport(title,fileName, pathOut, outFilePath, level)
+                Controller.writeReport(title, fileName, pathOut, outFilePath, level)
             return False
 
         msg = f'Process Single Level: {outFilePath} - SUCCESSFUL'
@@ -640,7 +660,7 @@ class Controller:
         Utilities.writeLogFile(msg)
         if level == "L2":
             if ConfigFile.settings["bL2WriteReport"] == 1:
-                Controller.writeReport(title,fileName, pathOut, outFilePath, level)
+                Controller.writeReport(title, fileName, pathOut, outFilePath, level)
         return True  
 
 

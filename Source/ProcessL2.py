@@ -2219,7 +2219,7 @@ class ProcessL2:
         gp.attributes["ES_UNITS"] = root.attributes["ES_UNITS"]
         del(root.attributes["ES_UNITS"])
         if ConfigFile.settings['bL2EnableSpecQualityCheck']:
-            gp.attributes['L2_ES_SPEC_FILTER'] = str(ConfigFile.settings['fL2SpecFilterEs'])
+            gp.attributes['ES_SPEC_FILTER'] = str(ConfigFile.settings['fL2SpecFilterEs'])
         if root.attributes['L1D_DEGLITCH'] == 'ON':
             gp.attributes['L1D_DEGLITCH'] = 'ON'
             gp.attributes['ES_WINDOW_DARK'] = root.attributes['ES_WINDOW_DARK']
@@ -2234,8 +2234,8 @@ class ProcessL2:
         gp.attributes["LT_UNITS"] = root.attributes["LT_UNITS"]
         del(root.attributes["LT_UNITS"])
         if ConfigFile.settings['bL2EnableSpecQualityCheck']:
-            gp.attributes['L2_LI_SPECT_FILTER'] = str(ConfigFile.settings['fL2SpecFilterLi'])
-            gp.attributes['L2_LT_SPECT_FILTER'] = str(ConfigFile.settings['fL2SpecFilterLt'])
+            gp.attributes['LI_SPEC_FILTER'] = str(ConfigFile.settings['fL2SpecFilterLi'])
+            gp.attributes['LT_SPEC_FILTER'] = str(ConfigFile.settings['fL2SpecFilterLt'])
         if ConfigFile.settings['bL2EnablePercentLt']:
             gp.attributes['%LT_FILTER'] = str(ConfigFile.settings['fL2PercentLt'])
         if root.attributes['L1D_DEGLITCH'] == 'ON':
@@ -2260,10 +2260,12 @@ class ProcessL2:
         if ConfigFile.settings['bL2DefaultRho']:
             gp.attributes['GLINT_CORR'] = 'Mobley 1999'
         if ConfigFile.settings['bL2PerformNIRCorrection']:
-            if ConfigFile.settings['bL2SimplerNIRCorrection']:
+            if ConfigFile.settings['bL2SimpleNIRCorrection']:
                 gp.attributes['NIR_RESID_CORR'] = 'Carder et al. 1995'
             if ConfigFile.settings['bL2SimSpecNIRCorrection']:
                 gp.attributes['NIR_RESID_CORR'] = 'Ruddick et al. 2005/2006'
+        if ConfigFile.settings['bL2NegativeSpec']:
+            gp.attributes['NEGATIVE_VALUE_FILTER'] = 'ON'
 
         # Root
         root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]

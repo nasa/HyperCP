@@ -28,16 +28,19 @@ class PDF(FPDF):
         # Line break
         self.ln(10)
 
-    def format_intro(self, level, headerBlock, commentsDict):        
+    def format_intro(self, level, headerBlock, commentsDict, root):        
         # Intros
         if level == "L1A":
             intro = 'Raw binary to HDF5 and filter data on SZA.'
             
             metaData = ' \n'
             metaData += 'Processing Parameters and metadata: \n'
-            metaData += f'HyperInSPACE version: {commentsDict[" HyperInSPACE vers"]}'
-            metaData += f'SZA Filter (L1A): {commentsDict[" SZA Filter"]}'
-            metaData += f'SZA Limit (L1A): {commentsDict[" SZA Max"]}'
+            # metaData += f'HyperInSPACE version: {commentsDict[" HyperInSPACE vers"]}'
+            metaData += f'HyperInSPACE version: {root.attributes["HYPERINSPACE"]}'
+            # metaData += f'SZA Filter (L1A): {commentsDict[" SZA Filter"]}'
+            if 'SZA_FILTER_L1A' in root.attributes:
+                metaData += f'SZA Filter (L1A): {root.attributes["SZA_FILTER_L1A"]}'
+            # metaData += f'SZA Limit (L1A): {commentsDict[" SZA Max"]}'
             comments2 = headerBlock['other_comments'].split('!')
             for comment in comments2:
                 if comment != '':
@@ -58,60 +61,106 @@ class PDF(FPDF):
             
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
-            metaData += f'Rotator Home Angle: {commentsDict[" Rotator Home Angle"]}'
-            metaData += f'Rotator Delay: {commentsDict[" Rotator Delay"]}'
-            metaData += f'Pitch/Roll Filter: {commentsDict[" Pitch/Roll Filter"]}'
-            metaData += f'Max Pitch/Roll: {commentsDict[" Max Pitch/Roll"]}'
+            if 'HOME_ANGLE' in root.attributes:
+              metaData += f'Rotator Home Angle: {root.attributes["HOME_ANGLE"]}'  
+            if 'ROTATOR_DELAY_FILTER' in root.attributes:
+              metaData += f'Rotator Delay: {root.attributes["ROTATOR_DELAY_FILTER"]}'  
+            # metaData += f'Rotator Home Angle: {commentsDict[" Rotator Home Angle"]}'
+            # metaData += f'Rotator Delay: {commentsDict[" Rotator Delay"]}'
+            if 'PITCH_ROLL_FILTER' in root.attributes:
+                metaData += f'Pitch/Roll Filter: {root.attributes["PITCH_ROLL_FILTER"]}'
+            # metaData += f'Pitch/Roll Filter: {commentsDict[" Pitch/Roll Filter"]}'
+            # metaData += f'Max Pitch/Roll: {commentsDict[" Max Pitch/Roll"]}'
             # metaData += f'Max Roll: {commentsDict[" Max Roll"]}'
             # metaData += f'Max Pitch: {commentsDict[" Max Pitch"]}'
-            metaData += f'Rotator Min/Max Filter: {commentsDict[" Rotator Min/Max Filter"]}'
-            metaData += f'Rotator Min: {commentsDict[" Rotator Min"]}'
-            metaData += f'Rotator Max: {commentsDict[" Rotator Max"]}'
-            metaData += f'Rel Azimuth Filter: {commentsDict[" Rel Azimuth Filter"]}'
-            metaData += f'Rel Azimuth Min: {commentsDict[" Rel Azimuth Min"]}'
-            metaData += f'Rel Azimuth Max: {commentsDict[" Rel Azimuth Max"]}'
+            if 'ROTATOR_ANGLE_MIN' in root.attributes:
+                metaData += f'Rotator Min Filter: {root.attributes["ROTATOR_ANGLE_MIN"]}'
+                metaData += f'Rotator Max Filter: {root.attributes["ROTATOR_ANGLE_MAX"]}'
+            # metaData += f'Rotator Min/Max Filter: {commentsDict[" Rotator Min/Max Filter"]}'
+            # metaData += f'Rotator Min: {commentsDict[" Rotator Min"]}'
+            # metaData += f'Rotator Max: {commentsDict[" Rotator Max"]}'
+            # metaData += f'Rel Azimuth Filter: {commentsDict[" Rel Azimuth Filter"]}'
+            if 'RELATIVE_AZIMUTH_MIN' in root.attributes:
+                metaData += f'Rel Azimuth Min: {root.attributes["RELATIVE_AZIMUTH_MIN"]}'    
+                metaData += f'Rel Azimuth Max: {root.attributes["RELATIVE_AZIMUTH_MAX"]}'    
+            # metaData += f'Rel Azimuth Min: {commentsDict[" Rel Azimuth Min"]}'
+            # metaData += f'Rel Azimuth Max: {commentsDict[" Rel Azimuth Max"]}'
+        
+        gpDict = {}
+        for gp in root.groups: 
+            gpDict[gp.id] = gp
             
         if level == "L1D":
             intro = 'Deglitch data and apply shutter dark corrections.'
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
-            metaData += f'Deglitch Filter: {commentsDict[" Deglitch Filter"]}'
-            metaData += f'Dark Window: {commentsDict[" Dark Window"]}'
-            metaData += f'Light Window: {commentsDict[" Light Window"]}'
-            metaData += f'Dark Sigma: {commentsDict[" Dark Sigma"]}'
-            metaData += f'Light Sigma: {commentsDict[" Light Sigma"]}'
+            if root.attributes['L1D_DEGLITCH'] == 'ON':
+                # These deglitching parameters might be in root.attributes if from files L1D or L1E, 
+                # or within their respective groups at L2
+                if 'ES_WINDOW_DARK' in root.attributes:
+                    metaData += f'ES Dark Window: {root.attributes["ES_WINDOW_DARK"]}'
+                    metaData += f'ES Light Window: {root.attributes["ES_WINDOW_LIGHT"]}'
+                    metaData += f'ES Dark Sigma: {root.attributes["ES_SIGMA_DARK"]}'
+                    metaData += f'ES Light Sigma: {root.attributes["ES_SIGMA_LIGHT"]}'
+                    metaData += f'LT Dark Window: {root.attributes["LT_WINDOW_DARK"]}'
+                    metaData += f'LT Light Window: {root.attributes["LT_WINDOW_LIGHT"]}'
+                    metaData += f'LT Dark Sigma: {root.attributes["LT_SIGMA_DARK"]}'
+                    metaData += f'LT Light Sigma: {root.attributes["LT_SIGMA_LIGHT"]}'
+                    metaData += f'LI Dark Window: {root.attributes["LI_WINDOW_DARK"]}'
+                    metaData += f'LI Light Window: {root.attributes["LI_WINDOW_LIGHT"]}'
+                    metaData += f'LI Dark Sigma: {root.attributes["LI_SIGMA_DARK"]}'
+                    metaData += f'LI Light Sigma: {root.attributes["LI_SIGMA_LIGHT"]}'
+                else:
+                    metaData += f'ES Dark Window: {gpDict["IRRADIANCE"].attributes["ES_WINDOW_DARK"]}'
+                    metaData += f'ES Light Window: {gpDict["IRRADIANCE"].attributes["ES_WINDOW_LIGHT"]}'
+                    metaData += f'ES Dark Sigma: {gpDict["IRRADIANCE"].attributes["ES_SIGMA_DARK"]}'
+                    metaData += f'ES Light Sigma: {gpDict["IRRADIANCE"].attributes["ES_SIGMA_LIGHT"]}'
+                    metaData += f'LT Dark Window: {gpDict["RADIANCE"].attributes["LT_WINDOW_DARK"]}'
+                    metaData += f'LT Light Window: {gpDict["RADIANCE"].attributes["LT_WINDOW_LIGHT"]}'
+                    metaData += f'LT Dark Sigma: {gpDict["RADIANCE"].attributes["LT_SIGMA_DARK"]}'
+                    metaData += f'LT Light Sigma: {gpDict["RADIANCE"].attributes["LT_SIGMA_LIGHT"]}'
+                    metaData += f'LI Dark Window: {gpDict["RADIANCE"].attributes["LI_WINDOW_DARK"]}'
+                    metaData += f'LI Light Window: {gpDict["RADIANCE"].attributes["LI_WINDOW_LIGHT"]}'
+                    metaData += f'LI Dark Sigma: {gpDict["RADIANCE"].attributes["LI_SIGMA_DARK"]}'
+                    metaData += f'LI Light Sigma: {gpDict["RADIANCE"].attributes["LI_SIGMA_LIGHT"]}'
 
         if level == "L1E":
             intro = 'Interpolate data to common timestamps and wavebands.'
 
             metaData = 'Processing Parameters: \n'
-            metaData += f'Wavelength Interp Int: {commentsDict[" Wavelength Interp Int"]}'
+            metaData += f'Wavelength Interp Int: {root.attributes["WAVE_INTERP"]}'
         if level == "L2":
             intro = 'Apply more quality control filters, temporal binning, '\
                 'station selection, glint correction, NIR corrections, reflectance '\
-                    'calculation and OC product calculation.'
+                    'calculation and OC product calculation.'            
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
-            metaData += f'Max Wind: {commentsDict[" Max Wind"]}'
-            metaData += f'Min SZA: {commentsDict[" Min SZA"]}'
-            metaData += f'Max SZA: {commentsDict[" Max SZA"]}'
-            metaData += f'Spectral Filter: {commentsDict[" Spectral Filter"]}'
-            metaData += f'Filter Sigma Es: {commentsDict[" Filter Sigma Es"]}'
-            metaData += f'Filter Sigma Li: {commentsDict[" Filter Sigma Li"]}'
-            metaData += f'Filter Sigma Lt: {commentsDict[" Filter Sigma Lt"]}'
-            metaData += f'Meteorological Filter: {commentsDict[" Meteorological Filter"]}'
-            metaData += f'Cloud Flag: {commentsDict[" Cloud Flag"]}'
-            metaData += f'Es Flag: {commentsDict[" Es Flag"]}'
-            metaData += f'Dawn/Dusk Flag: {commentsDict[" Dawn/Dusk Flag"]}'
-            metaData += f'Rain/Humidity Flag: {commentsDict[" Rain/Humidity Flag"]}'
-            metaData += f'Ensemble Interval: {commentsDict[" Ensemble Interval"]}'
-            metaData += f'Percent Lt Filter: {commentsDict[" Percent Lt Filter"]}'
-            metaData += f'Percent Light: {commentsDict[" Percent Light"]}'
-            metaData += f'Glint_Correction: {commentsDict[" Glint_Correction"]}'
-            metaData += f'NIR Correction: {commentsDict[" NIR Correction"]}'
-            metaData += f'Remove Negatives: {commentsDict[" Remove Negatives"]}'
+            # if 'WIND_MAX' in root.attributes:
+            metaData += f'Max Wind: {root.attributes["WIND_MAX"]}'
+            metaData += f'Min SZA: {root.attributes["SZA_MIN"]}'
+            metaData += f'Max SZA: {root.attributes["SZA_MAX"]}'
+            # metaData += f'Spectral Filter: {root.attributes[" Spectral Filter"]}'
+            if 'ES_SPEC_FILTER' in gpDict['IRRADIANCE'].attributes:
+                metaData += f'Filter Sigma Es: {gpDict["IRRADIANCE"].attributes["ES_SPEC_FILTER"]}'
+                metaData += f'Filter Sigma Li: {gpDict["RADIANCE"].attributes["LI_SPEC_FILTER"]}'
+                metaData += f'Filter Sigma Lt: {gpDict["RADIANCE"].attributes["LT_SPEC_FILTER"]}'
+            # metaData += f'Meteorological Filter: {root.attributes[" Meteorological Filter"]}'
+            if 'CLOUD_FILTER' in root.attributes:
+                metaData += f'Cloud Filter: {root.attributes["CLOUD_FILTER"]}'
+                metaData += f'Es Filter: {root.attributes["ES_FILTER"]}'
+                metaData += f'Dawn/Dusk Filter: {root.attributes["DAWN_DUSK_FILTER"]}'
+                metaData += f'Rain/Humidity Filter: {root.attributes["RAIN_RH_FILTER"]}'
+            metaData += f'Ensemble Duration: {root.attributes["ENSEMBLE_DURATION"]}'            
+            if '%LT_FILTER' in gpDict['RADIANCE'].attributes:                
+                metaData += f'Percent Lt Filter: {gpDict["RADIANCE"].attributes["%LT_FILTER"]}'
+            # metaData += f'Percent Light: {root.attributes[" Percent Light"]}'
+            metaData += f'Glint_Correction: {gpDict["REFLECTANCE"].attributes["GLINT_CORR"]}'
+            if 'NIR_RESID_CORR' in gpDict['REFLECTANCE'].attributes:
+                metaData += f'NIR Correction: {gpDict["REFLECTANCE"].attributes["NIR_RESID_CORR"]}'
+            if 'NEGATIVE_VALUE_FILTER' in gpDict['REFLECTANCE'].attributes:
+                metaData += f'Remove Negatives: {gpDict["REFLECTANCE"].attributes["NEGATIVE_VALUE_FILTER"]}'
 
         metaData += ' \n'
         return intro, metaData
@@ -137,11 +186,13 @@ class PDF(FPDF):
         # Line break
         self.ln(4)
 
-    def chapter_body(self, inLog, headerBlock, level, inPlotPath, filebasename):
+    def chapter_body(self, inLog, headerBlock, level, inPlotPath, filebasename, root):
         
         # Times 12
         self.set_font('Times', '', 12)
 
+        ''' This is the old method of pulling parameters from the SeaBASS Header. 
+            Shift to using root attributes from the file.'''
         comments1 = headerBlock['comments'].split('!')
         commentsDict = {}
         for comment in comments1:
@@ -149,7 +200,7 @@ class PDF(FPDF):
                 else ('','')
             commentsDict[key] = value
 
-        intro, metaData = self.format_intro(level, headerBlock, commentsDict)        
+        intro, metaData = self.format_intro(level, headerBlock, commentsDict, root)        
 
         # Output justified text
         self.multi_cell(0, 5, intro)
@@ -166,16 +217,50 @@ class PDF(FPDF):
         self.ln()
 
         # Figures
-        if level == "L1D":
+        if level == "L1D":            
             inPath = os.path.join(inPlotPath, 'L1C_Anoms')
 
             self.cell(0, 6, 'Example Deglitching', 0, 1, 'L', 1)
             self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
                 'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1C_Anoms.')
 
+            # These deglitching parameters might be in root.attributes if from files L1D or L1E, 
+            # or within their respective groups at L2
+            gpDict = {}
+            for gp in root.groups: 
+                gpDict[gp.id] = gp
+            if 'L1D_DEGLITCH' in root.attributes:
+                if 'ES_SIGMA_DARK' in root.attributes:
+                    ESWindowDark = root.attributes['ES_WINDOW_DARK']
+                    ESWindowLight = root.attributes['ES_WINDOW_LIGHT']
+                    ESSigmaDark = root.attributes['ES_SIGMA_DARK']
+                    ESSigmaLight = root.attributes['ES_SIGMA_DARK']
+                    LIWindowDark = root.attributes['LI_WINDOW_DARK']
+                    LIWindowLight = root.attributes['LI_WINDOW_LIGHT']
+                    LISigmaDark = root.attributes['LI_SIGMA_DARK']
+                    LISigmaLight = root.attributes['LI_SIGMA_DARK']
+                    LTWindowDark = root.attributes['LT_WINDOW_DARK']
+                    LTWindowLight = root.attributes['LT_WINDOW_LIGHT']
+                    LTSigmaDark = root.attributes['LT_SIGMA_DARK']
+                    LTSigmaLight = root.attributes['LT_SIGMA_DARK']
+                else:
+                    ESWindowDark = gpDict["IRRADIANCE"].attributes['ES_WINDOW_DARK']
+                    ESWindowLight = gpDict["IRRADIANCE"].attributes['ES_WINDOW_LIGHT']
+                    ESSigmaDark = gpDict["IRRADIANCE"].attributes['ES_SIGMA_DARK']
+                    ESSigmaLight = gpDict["IRRADIANCE"].attributes['ES_SIGMA_LIGHT']
+                    LIWindowDark = gpDict["RADIANCE"].attributes['LI_WINDOW_DARK']
+                    LIWindowLight = gpDict["RADIANCE"].attributes['LI_WINDOW_LIGHT']
+                    LISigmaDark = gpDict["RADIANCE"].attributes['LI_SIGMA_DARK']
+                    LISigmaLight = gpDict["RADIANCE"].attributes['LI_SIGMA_LIGHT']
+                    LTWindowDark = gpDict["RADIANCE"].attributes['LT_WINDOW_DARK']
+                    LTWindowLight = gpDict["RADIANCE"].attributes['LT_WINDOW_LIGHT']
+                    LTSigmaDark = gpDict["RADIANCE"].attributes['LT_SIGMA_DARK']
+                    LTSigmaLight = gpDict["RADIANCE"].attributes['LT_SIGMA_LIGHT']
+
+            print('Adding deglitching plots...')
             # ES
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_W{ConfigFile.settings["fL1dDeglitch0"]}S{ConfigFile.settings["fL1dDeglitch2"]}_*ESDark_*.png' ))  
+                f'{filebasename}_L1C_W{ESWindowDark}S{ESSigmaDark}_*ESDark_*.png' ))  
 
             if len(fileList) > 0:
                 
@@ -185,7 +270,7 @@ class PDF(FPDF):
                     self.image(fileList[randIndx], w = 175)
 
                 fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{ConfigFile.settings["fL1dDeglitch1"]}S{ConfigFile.settings["fL1dDeglitch3"]}_*ESLight_*.png'))   
+                    f'{filebasename}_L1C_W{ESWindowLight}S{ESSigmaLight}_*ESLight_*.png' )) 
 
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -194,7 +279,7 @@ class PDF(FPDF):
 
                 # LI
                 fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{ConfigFile.settings["fL1dDeglitch0"]}S{ConfigFile.settings["fL1dDeglitch2"]}_*LIDark_*.png'))   
+                    f'{filebasename}_L1C_W{LIWindowDark}S{LISigmaDark}_*LIDark_*.png' ))
 
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -202,7 +287,7 @@ class PDF(FPDF):
                     self.image(fileList[randIndx], w = 175)
 
                 fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{ConfigFile.settings["fL1dDeglitch1"]}S{ConfigFile.settings["fL1dDeglitch3"]}_*LILight_*.png'))   
+                    f'{filebasename}_L1C_W{LIWindowLight}S{LISigmaLight}_*LILight_*.png' ))
 
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -211,7 +296,7 @@ class PDF(FPDF):
 
                 # LT
                 fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{ConfigFile.settings["fL1dDeglitch0"]}S{ConfigFile.settings["fL1dDeglitch2"]}_*LTDark_*.png'))   
+                    f'{filebasename}_L1C_W{LTWindowDark}S{LTSigmaDark}_*LTDark_*.png' ))
 
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -219,7 +304,7 @@ class PDF(FPDF):
                     self.image(fileList[randIndx], w = 175)
 
                 fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{ConfigFile.settings["fL1dDeglitch1"]}S{ConfigFile.settings["fL1dDeglitch3"]}_*LTLight_*.png'))   
+                    f'{filebasename}_L1C_W{LTWindowLight}S{LTSigmaLight}_*LTLight_*.png' ))
 
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -236,6 +321,7 @@ class PDF(FPDF):
 
             fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))            
             
+            print('Adding interpolation plots...')
             if len(fileList) > 0:         
                 
                 # for i in range(0, len(fileList)):
@@ -272,6 +358,7 @@ class PDF(FPDF):
                 self.multi_cell(0, 5, "None found.")
 
         if level == "L2":
+            print('Adding spectral filter plots')
             inSpecFilterPath = os.path.join(inPlotPath, f'{level}_Spectral_Filter')
             fileList = glob.glob(os.path.join(inSpecFilterPath, f'*{filebasename}_*.png'))
             if len(fileList) > 0:         
@@ -279,12 +366,14 @@ class PDF(FPDF):
                 for i in range(0, len(fileList)):
                     self.image(fileList[i], w = 175)
 
+            print('Adding radiometry plots')
             fileList = glob.glob(os.path.join(inPlotPath, level, f'*{filebasename}_*.png'))
             if len(fileList) > 0:         
                 self.cell(0, 6, 'Radiometry', 0, 1, 'L', 1)
                 for i in range(0, len(fileList)):
                     self.image(fileList[i], w = 175)
 
+            print('Adding ocean color product plots')
             inProdPath = os.path.join(inPlotPath, f'{level}_Products')
             fileList = glob.glob(os.path.join(inProdPath, f'*{filebasename}_*.png'))
             if len(fileList) > 0:         
@@ -298,13 +387,13 @@ class PDF(FPDF):
 
     
     # def print_chapter(self, root, level, title, inLog, inPlotPath, filebasename, fp):
-    def print_chapter(self, level, title, inLog, inPlotPath, filebasename, fp):
+    def print_chapter(self, level, title, inLog, inPlotPath, filebasename, fp, root):
         self.add_page()
         self.chapter_title(level, title)        
 
         headerBlock = SeaBASSHeader.settings
 
-        self.chapter_body(inLog, headerBlock, level, inPlotPath, filebasename)
+        self.chapter_body(inLog, headerBlock, level, inPlotPath, filebasename, root)
 
     # # @staticmethod
     # def write_report(self, title):
