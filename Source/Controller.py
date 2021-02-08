@@ -36,8 +36,13 @@ class Controller:
         # The highest level processed will have the correct configurations in the HDF attributes
         # These are potentially more accurate than value found in the ConfigFile settings
         # Open the highest level file as root, and pass it to the report writer 
-        try:            
-            root = HDFRoot.readHDF5(fp)
+        try: 
+            # If writing for L2, use the L2 file attributes, otherwise the current processing 
+            # level will not have an HDF to read, so use ConfigFile settings
+            if numLevel == 6           :
+                root = HDFRoot.readHDF5(fp)
+            else:
+                root = None
         except:
             msg = "Unable to open file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
@@ -240,7 +245,7 @@ class Controller:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None, 'Unknown'
+            return None
             
         return root
 

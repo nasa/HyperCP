@@ -2277,18 +2277,12 @@ class ProcessL2:
             del(root.attributes["COMMENT"])
         if "CLOUD_PERCENT" in root.attributes.keys():
             del(root.attributes["CLOUD_PERCENT"])
-        # if "DEGLITCH_PRODAT" in root.attributes.keys():
-        #     del(root.attributes["DEGLITCH_PRODAT"])
-        # if "DEGLITCH_REFDAT" in root.attributes.keys():
-        #     del(root.attributes["DEGLITCH_REFDAT"])
         if "DEPTH_RESOLUTION" in root.attributes.keys():
             del(root.attributes["DEPTH_RESOLUTION"])
         if ConfigFile.settings["bL1cSolarTracker"]:
             if "SAS SERIAL NUMBER" in root.attributes.keys():
                 root.attributes["SOLARTRACKER_SERIAL_NUMBER"] = root.attributes["SAS SERIAL NUMBER"]                    
-                del(root.attributes["SAS SERIAL NUMBER"])        
-        # if "WAVEL_INTERP" in root.attributes.keys():
-        #     del(root.attributes["WAVEL_INTERP"])
+                del(root.attributes["SAS SERIAL NUMBER"])
         if ConfigFile.settings['bL2LtUVNIR']:
             root.attributes['LT_UV_NIR_FILTER'] = 'ON'
         root.attributes['WIND_MAX'] = str(ConfigFile.settings['fL2MaxWind'])

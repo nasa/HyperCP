@@ -298,7 +298,7 @@ class ConfigFile:
         ConfigFile.products["bL2ProdcQaa"] = 0
 
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
-        ConfigFile.settings["bL2WriteReportSeaBASS"] = 1
+        ConfigFile.settings["bL2WriteReport"] = 1
         
         # If this is a new config file, save it
         if new==1:
