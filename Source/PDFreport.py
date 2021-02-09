@@ -100,8 +100,8 @@ class PDF(FPDF):
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
-            if root.attributes['L1D_DEGLITCH'] == 'ON':
-                if root:
+            if root:
+                if root.attributes['L1D_DEGLITCH'] == 'ON':                
                     # These deglitching parameters might be in root.attributes if from files L1D or L1E, 
                     # or within their respective groups at L2
                     if 'ES_WINDOW_DARK' in root.attributes:
@@ -131,18 +131,19 @@ class PDF(FPDF):
                         metaData += f'LI Dark Sigma: {gpDict["RADIANCE"].attributes["LI_SIGMA_DARK"]}'
                         metaData += f'LI Light Sigma: {gpDict["RADIANCE"].attributes["LI_SIGMA_LIGHT"]}'
             else:
-                metaData += f'ES Dark Window: {ConfigFile.settings["fL1dESWindowDark"]}'
-                metaData += f'ES Light Window: {ConfigFile.settings["fL1dESWindowLight"]}'
-                metaData += f'ES Dark Sigma: {ConfigFile.settings["fL1dESigmaDark"]}'
-                metaData += f'ES Light Sigma: {ConfigFile.settings["fL1dESSigmaLight"]}'
-                metaData += f'LT Dark Window: {ConfigFile.settings["fL1dLTWindowDark"]}'                
-                metaData += f'LT Light Window: {ConfigFile.settings["fL1dLTWindowLight"]}'
-                metaData += f'LT Dark Sigma: {ConfigFile.settings["fL1dLTSigmaDark"]}'
-                metaData += f'LT Light Sigma: {ConfigFile.settings["fL1dLTSigmaLight"]}'
-                metaData += f'LI Dark Window: {ConfigFile.settings["fL1dLIWindowDark"]}'
-                metaData += f'LI Light Window: {ConfigFile.settings["fL1dLIWindowLight"]}'
-                metaData += f'LI Dark Sigma: {ConfigFile.settings["fL1dLISigmaDark"]}'
-                metaData += f'LI Light Sigma: {ConfigFile.settings["fL1dLISigmaLight"]}'
+                if ConfigFile.settings['bL1dDeglitch']:
+                    metaData += f'ES Dark Window: {ConfigFile.settings["fL1dESWindowDark"]}'
+                    metaData += f'ES Light Window: {ConfigFile.settings["fL1dESWindowLight"]}'
+                    metaData += f'ES Dark Sigma: {ConfigFile.settings["fL1dESSigmaDark"]}'
+                    metaData += f'ES Light Sigma: {ConfigFile.settings["fL1dESSigmaLight"]}'
+                    metaData += f'LT Dark Window: {ConfigFile.settings["fL1dLTWindowDark"]}'                
+                    metaData += f'LT Light Window: {ConfigFile.settings["fL1dLTWindowLight"]}'
+                    metaData += f'LT Dark Sigma: {ConfigFile.settings["fL1dLTSigmaDark"]}'
+                    metaData += f'LT Light Sigma: {ConfigFile.settings["fL1dLTSigmaLight"]}'
+                    metaData += f'LI Dark Window: {ConfigFile.settings["fL1dLIWindowDark"]}'
+                    metaData += f'LI Light Window: {ConfigFile.settings["fL1dLIWindowLight"]}'
+                    metaData += f'LI Dark Sigma: {ConfigFile.settings["fL1dLISigmaDark"]}'
+                    metaData += f'LI Light Sigma: {ConfigFile.settings["fL1dLISigmaLight"]}'
 
         if level == "L1E":
             intro = 'Interpolate data to common timestamps and wavebands.'
@@ -160,42 +161,42 @@ class PDF(FPDF):
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
             if root:
-                metaData += f'Max Wind: {root.attributes["WIND_MAX"]}'
-                metaData += f'Min SZA: {root.attributes["SZA_MIN"]}'
-                metaData += f'Max SZA: {root.attributes["SZA_MAX"]}'
+                metaData += f'Max Wind: {root.attributes["WIND_MAX"]}\n'
+                metaData += f'Min SZA: {root.attributes["SZA_MIN"]}\n'
+                metaData += f'Max SZA: {root.attributes["SZA_MAX"]}\n'
                 if 'ES_SPEC_FILTER' in gpDict['IRRADIANCE'].attributes:
-                    metaData += f'Filter Sigma Es: {gpDict["IRRADIANCE"].attributes["ES_SPEC_FILTER"]}'
-                    metaData += f'Filter Sigma Li: {gpDict["RADIANCE"].attributes["LI_SPEC_FILTER"]}'
-                    metaData += f'Filter Sigma Lt: {gpDict["RADIANCE"].attributes["LT_SPEC_FILTER"]}'            
+                    metaData += f'Filter Sigma Es: {gpDict["IRRADIANCE"].attributes["ES_SPEC_FILTER"]}\n'
+                    metaData += f'Filter Sigma Li: {gpDict["RADIANCE"].attributes["LI_SPEC_FILTER"]}\n'
+                    metaData += f'Filter Sigma Lt: {gpDict["RADIANCE"].attributes["LT_SPEC_FILTER"]}\n'            
                 if 'CLOUD_FILTER' in root.attributes:
-                    metaData += f'Cloud Filter: {root.attributes["CLOUD_FILTER"]}'
-                    metaData += f'Es Filter: {root.attributes["ES_FILTER"]}'
-                    metaData += f'Dawn/Dusk Filter: {root.attributes["DAWN_DUSK_FILTER"]}'
-                    metaData += f'Rain/Humidity Filter: {root.attributes["RAIN_RH_FILTER"]}'
-                metaData += f'Ensemble Duration: {root.attributes["ENSEMBLE_DURATION"]}'            
+                    metaData += f'Cloud Filter: {root.attributes["CLOUD_FILTER"]}\n'
+                    metaData += f'Es Filter: {root.attributes["ES_FILTER"]}\n'
+                    metaData += f'Dawn/Dusk Filter: {root.attributes["DAWN_DUSK_FILTER"]}\n'
+                    metaData += f'Rain/Humidity Filter: {root.attributes["RAIN_RH_FILTER"]}\n'
+                metaData += f'Ensemble Duration: {root.attributes["ENSEMBLE_DURATION"]}\n'            
                 if '%LT_FILTER' in gpDict['RADIANCE'].attributes:                
-                    metaData += f'Percent Lt Filter: {gpDict["RADIANCE"].attributes["%LT_FILTER"]}'
-                metaData += f'Glint_Correction: {gpDict["REFLECTANCE"].attributes["GLINT_CORR"]}'
+                    metaData += f'Percent Lt Filter: {gpDict["RADIANCE"].attributes["%LT_FILTER"]}\n'
+                metaData += f'Glint_Correction: {gpDict["REFLECTANCE"].attributes["GLINT_CORR"]}\n'
                 if 'NIR_RESID_CORR' in gpDict['REFLECTANCE'].attributes:
-                    metaData += f'NIR Correction: {gpDict["REFLECTANCE"].attributes["NIR_RESID_CORR"]}'
+                    metaData += f'NIR Correction: {gpDict["REFLECTANCE"].attributes["NIR_RESID_CORR"]}\n'
                 if 'NEGATIVE_VALUE_FILTER' in gpDict['REFLECTANCE'].attributes:
-                    metaData += f'Remove Negatives: {gpDict["REFLECTANCE"].attributes["NEGATIVE_VALUE_FILTER"]}'
+                    metaData += f'Remove Negatives: {gpDict["REFLECTANCE"].attributes["NEGATIVE_VALUE_FILTER"]}\n'
             else:
-                metaData += f'Max Wind: {ConfigFile.settings["fL2MaxWind"]}'
-                metaData += f'Min SZA: {ConfigFile.settings["fL2SZAMin"]}'
-                metaData += f'Max SZA: {ConfigFile.settings["fL2SZAMin"]}'
+                metaData += f'Max Wind: {ConfigFile.settings["fL2MaxWind"]}\n'
+                metaData += f'Min SZA: {ConfigFile.settings["fL2SZAMin"]}\n'
+                metaData += f'Max SZA: {ConfigFile.settings["fL2SZAMin"]}\n'
                 if ConfigFile.settings['bL2EnableSpecQualityCheck']:
-                    metaData += f'Filter Sigma Es: {ConfigFile.settings["fL2SpecFilterEs"]}'
-                    metaData += f'Filter Sigma Li: {ConfigFile.settings["fL2SpecFilterLi"]}'
-                    metaData += f'Filter Sigma Lt: {ConfigFile.settings["fL2SpecFilterLt"]}'            
+                    metaData += f'Filter Sigma Es: {ConfigFile.settings["fL2SpecFilterEs"]}\n'
+                    metaData += f'Filter Sigma Li: {ConfigFile.settings["fL2SpecFilterLi"]}\n'
+                    metaData += f'Filter Sigma Lt: {ConfigFile.settings["fL2SpecFilterLt"]}\n'            
                 if ConfigFile.settings['bL2EnableQualityFlags']:
-                    metaData += f'Cloud Filter: {ConfigFile.settings["fL2CloudFlag"]}'
-                    metaData += f'Es Filter: {ConfigFile.settings["fL2SignificantEsFlag"]}'
-                    metaData += f'Dawn/Dusk Filter: {ConfigFile.settings["fL2DawnDuskFlag"]}'
-                    metaData += f'Rain/Humidity Filter: {ConfigFile.settings["fL2RainfallHumidityFlag"]}'
-                metaData += f'Ensemble Duration: {ConfigFile.settings["fL2TimeInterval"]}'            
+                    metaData += f'Cloud Filter: {ConfigFile.settings["fL2CloudFlag"]}\n'
+                    metaData += f'Es Filter: {ConfigFile.settings["fL2SignificantEsFlag"]}\n'
+                    metaData += f'Dawn/Dusk Filter: {ConfigFile.settings["fL2DawnDuskFlag"]}\n'
+                    metaData += f'Rain/Humidity Filter: {ConfigFile.settings["fL2RainfallHumidityFlag"]}\n'
+                metaData += f'Ensemble Duration: {ConfigFile.settings["fL2TimeInterval"]}\n'            
                 if ConfigFile.settings['bL2PercentLt']:                
-                    metaData += f'Percent Lt Filter: {ConfigFile.settings["fL2PercentLt"]}'
+                    metaData += f'Percent Lt Filter: {ConfigFile.settings["fL2PercentLt"]}\n'
                 if ConfigFile.settings['bL2RuddickRho']:
                     metaData += f'Glint_Correction: Ruddick et al. 2006'
                 if ConfigFile.settings['bL2ZhangRho']:
@@ -272,38 +273,52 @@ class PDF(FPDF):
             self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
                 'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1C_Anoms.')
 
-            # These deglitching parameters might be in root.attributes if from files L1D or L1E, 
-            # or within their respective groups at L2
-            gpDict = {}
-            for gp in root.groups: 
-                gpDict[gp.id] = gp
-            if 'L1D_DEGLITCH' in root.attributes:
-                if 'ES_SIGMA_DARK' in root.attributes:
-                    ESWindowDark = root.attributes['ES_WINDOW_DARK']
-                    ESWindowLight = root.attributes['ES_WINDOW_LIGHT']
-                    ESSigmaDark = root.attributes['ES_SIGMA_DARK']
-                    ESSigmaLight = root.attributes['ES_SIGMA_DARK']
-                    LIWindowDark = root.attributes['LI_WINDOW_DARK']
-                    LIWindowLight = root.attributes['LI_WINDOW_LIGHT']
-                    LISigmaDark = root.attributes['LI_SIGMA_DARK']
-                    LISigmaLight = root.attributes['LI_SIGMA_DARK']
-                    LTWindowDark = root.attributes['LT_WINDOW_DARK']
-                    LTWindowLight = root.attributes['LT_WINDOW_LIGHT']
-                    LTSigmaDark = root.attributes['LT_SIGMA_DARK']
-                    LTSigmaLight = root.attributes['LT_SIGMA_DARK']
-                else:
-                    ESWindowDark = gpDict["IRRADIANCE"].attributes['ES_WINDOW_DARK']
-                    ESWindowLight = gpDict["IRRADIANCE"].attributes['ES_WINDOW_LIGHT']
-                    ESSigmaDark = gpDict["IRRADIANCE"].attributes['ES_SIGMA_DARK']
-                    ESSigmaLight = gpDict["IRRADIANCE"].attributes['ES_SIGMA_LIGHT']
-                    LIWindowDark = gpDict["RADIANCE"].attributes['LI_WINDOW_DARK']
-                    LIWindowLight = gpDict["RADIANCE"].attributes['LI_WINDOW_LIGHT']
-                    LISigmaDark = gpDict["RADIANCE"].attributes['LI_SIGMA_DARK']
-                    LISigmaLight = gpDict["RADIANCE"].attributes['LI_SIGMA_LIGHT']
-                    LTWindowDark = gpDict["RADIANCE"].attributes['LT_WINDOW_DARK']
-                    LTWindowLight = gpDict["RADIANCE"].attributes['LT_WINDOW_LIGHT']
-                    LTSigmaDark = gpDict["RADIANCE"].attributes['LT_SIGMA_DARK']
-                    LTSigmaLight = gpDict["RADIANCE"].attributes['LT_SIGMA_LIGHT']
+            if root:
+                # These deglitching parameters might be in root.attributes if from files L1D or L1E, 
+                # or within their respective groups at L2
+                gpDict = {}
+                for gp in root.groups: 
+                    gpDict[gp.id] = gp
+                if 'L1D_DEGLITCH' in root.attributes:
+                    if 'ES_SIGMA_DARK' in root.attributes:
+                        ESWindowDark = root.attributes['ES_WINDOW_DARK']
+                        ESWindowLight = root.attributes['ES_WINDOW_LIGHT']
+                        ESSigmaDark = root.attributes['ES_SIGMA_DARK']
+                        ESSigmaLight = root.attributes['ES_SIGMA_DARK']
+                        LIWindowDark = root.attributes['LI_WINDOW_DARK']
+                        LIWindowLight = root.attributes['LI_WINDOW_LIGHT']
+                        LISigmaDark = root.attributes['LI_SIGMA_DARK']
+                        LISigmaLight = root.attributes['LI_SIGMA_DARK']
+                        LTWindowDark = root.attributes['LT_WINDOW_DARK']
+                        LTWindowLight = root.attributes['LT_WINDOW_LIGHT']
+                        LTSigmaDark = root.attributes['LT_SIGMA_DARK']
+                        LTSigmaLight = root.attributes['LT_SIGMA_DARK']
+                    else:
+                        ESWindowDark = gpDict["IRRADIANCE"].attributes['ES_WINDOW_DARK']
+                        ESWindowLight = gpDict["IRRADIANCE"].attributes['ES_WINDOW_LIGHT']
+                        ESSigmaDark = gpDict["IRRADIANCE"].attributes['ES_SIGMA_DARK']
+                        ESSigmaLight = gpDict["IRRADIANCE"].attributes['ES_SIGMA_LIGHT']
+                        LIWindowDark = gpDict["RADIANCE"].attributes['LI_WINDOW_DARK']
+                        LIWindowLight = gpDict["RADIANCE"].attributes['LI_WINDOW_LIGHT']
+                        LISigmaDark = gpDict["RADIANCE"].attributes['LI_SIGMA_DARK']
+                        LISigmaLight = gpDict["RADIANCE"].attributes['LI_SIGMA_LIGHT']
+                        LTWindowDark = gpDict["RADIANCE"].attributes['LT_WINDOW_DARK']
+                        LTWindowLight = gpDict["RADIANCE"].attributes['LT_WINDOW_LIGHT']
+                        LTSigmaDark = gpDict["RADIANCE"].attributes['LT_SIGMA_DARK']
+                        LTSigmaLight = gpDict["RADIANCE"].attributes['LT_SIGMA_LIGHT']
+            else:
+                ESWindowDark = ConfigFile.settings['fL1dESWindowDark']
+                ESWindowLight = ConfigFile.settings['fL1dESWindowLight']
+                ESSigmaDark = ConfigFile.settings['fL1dESSigmaDark']
+                ESSigmaLight = ConfigFile.settings['fL1dESSigmaLight']
+                LIWindowDark = ConfigFile.settings['fL1dLIWindowDark']
+                LIWindowLight = ConfigFile.settings['fL1dLIWindowLight']
+                LISigmaDark = ConfigFile.settings['fL1dLISigmaDark']
+                LISigmaLight = ConfigFile.settings['fL1dLISigmaLight']
+                LTWindowDark = ConfigFile.settings['fL1dLTWindowDark']
+                LTWindowLight = ConfigFile.settings['fL1dLTWindowLight']
+                LTSigmaDark = ConfigFile.settings['fL1dLTSigmaDark']
+                LTSigmaLight = ConfigFile.settings['fL1dLTSigmaLight']
 
             print('Adding deglitching plots...')
             # ES
@@ -438,6 +453,11 @@ class PDF(FPDF):
     def print_chapter(self, level, title, inLog, inPlotPath, filebasename, fp, root):
         self.add_page()
         self.chapter_title(level, title)        
+
+        seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
+        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)        
+        if os.path.isfile(seaBASSHeaderPath):
+            SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 
         headerBlock = SeaBASSHeader.settings
 

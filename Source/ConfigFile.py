@@ -185,7 +185,7 @@ class ConfigFile:
         ConfigFile.settings["fL1cSunAngleMin"] = 90.0 # Zhang 2017: 45*, Mobley 1999: 90, Zibordi 2009 (and IOCCG Protocols): 90
         ConfigFile.settings["fL1cSunAngleMax"] = 135.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90        
 
-        ConfigFile.settings["bL1dDeglitch"] = 0
+        ConfigFile.settings["bL1dDeglitch"] = 1
         # These can be experimentally derived with the AnomalyDetection tool
         ConfigFile.settings["fL1dESWindowDark"] = 9   
         ConfigFile.settings["fL1dESWindowLight"] = 11     
@@ -199,7 +199,7 @@ class ConfigFile:
         ConfigFile.settings["fL1dLTWindowLight"] = 11     
         ConfigFile.settings["fL1dLTSigmaDark"] = 2.7
         ConfigFile.settings["fL1dLTSigmaLight"] = 3.7
-        ConfigFile.settings["fL1dAnomalyStep"] = 10
+        ConfigFile.settings["fL1dAnomalyStep"] = 20
 
         ConfigFile.settings["fL1eInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1ePlotTimeInterp"] = 0

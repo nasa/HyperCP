@@ -548,19 +548,6 @@ class SeaBASSWriter:
         ltData.columns["HEADING"] = heading
         rrsData.columns["HEADING"] = heading
 
-        # esData.columns["PITCH"] = pitch
-        # liData.columns["PITCH"] = pitch
-        # ltData.columns["PITCH"] = pitch
-        
-        # esData.columns["ROTATOR"] = rotator
-        # liData.columns["ROTATOR"] = rotator
-        # ltData.columns["ROTATOR"] = rotator
-        # rrsData.columns["ROTATOR"] = rotator
-        
-        # esData.columns["ROLL"] = roll
-        # liData.columns["ROLL"] = roll
-        # ltData.columns["ROLL"] = roll
-
         esData.columns["REL_AZ"] = relAz
         liData.columns["REL_AZ"] = relAz
         ltData.columns["REL_AZ"] = relAz

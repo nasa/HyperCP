@@ -191,10 +191,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
         HBox2.addSpacing(135)
         HBox2.addWidget(self.updateButton)    
         HBox2.addStretch()        
-        
-        HBox2.addWidget(self.saveButton)
+                
         HBox2.addWidget(AnomalyStepLabel)        
         HBox2.addWidget(self.AnomalyStepLineEdit)
+        HBox2.addWidget(self.saveButton)
         HBox2.addWidget(self.plotButton)
         HBox2.addWidget(self.processButton)
         HBox2.addWidget(self.closeButton)
@@ -546,11 +546,13 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
                 index = 0
                 for timeSeries in columns.items():
-                    if index % step == 0:    
-                        radiometry1D = timeSeries[1]
-                        badIndex, badIndex2 = self.deglitchBand(radiometry1D, windowSize, sigma, lightDark)                
-                        self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2)
-                    index +=1
+                    if float(timeSeries[0]) > ConfigFile.minDeglitchBand and\
+                        float(timeSeries[0]) < ConfigFile.maxDeglitchBand:
+                        if index % step == 0:    
+                            radiometry1D = timeSeries[1]
+                            badIndex, badIndex2 = self.deglitchBand(radiometry1D, windowSize, sigma, lightDark)                
+                            self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2)
+                        index +=1
 
             if lightData is None:
                 print("Error: No light data to deglitch")
@@ -564,22 +566,37 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
                 index = 0        
                 for timeSeries in columns.items():
-                    if index % step == 0:           
-                        radiometry1D = timeSeries[1]
-                        badIndex, badIndex2 = self.deglitchBand(radiometry1D, windowSize, sigma, lightDark)              
-                        self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2)
-                    index += 1
+                    if float(timeSeries[0]) > ConfigFile.minDeglitchBand and\
+                        float(timeSeries[0]) < ConfigFile.maxDeglitchBand:
+                        if index % step == 0:           
+                            radiometry1D = timeSeries[1]
+                            badIndex, badIndex2 = self.deglitchBand(radiometry1D, windowSize, sigma, lightDark)              
+                            self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2)
+                        index += 1
                 print('Complete')
 
     def processButtonPressed(self):
-        # Run L1D processing for this file
+        # Run L1D processing for this file        
 
         inFilePath = os.path.join(self.inputDirectory, 'L1C', self.fileName+'.hdf')
-        fileBaseName = self.fileName.split('L1C')
-        outFilePath = os.path.join(self.inputDirectory, 'L1D', fileBaseName[0]+'L1D.hdf')
+        fileBaseName = self.fileName.split('_L1C')
+        outFilePath = os.path.join(self.inputDirectory, 'L1D', fileBaseName[0]+'_L1D.hdf')
 
         # self.processL1d(inFilePath, outFilePath)
-        Controller.processL1d(inFilePath, outFilePath)
+        root = Controller.processL1d(inFilePath, outFilePath)
+
+        # In case of processing failure, write the report at this Process level, unless running stations
+        #   Use numeric level for writeReport
+        pathOut = outFilePath.split('L1D')[0]
+        # outFilePath = os.path.join(self.inputDirectory, 'L1D', fileBaseName[0])
+        if root is not None:
+            timeStamp = root.attributes['TIME-STAMP']
+            title = f'File: {fileBaseName[0]} Collected: {timeStamp}'
+        else:
+            timeStamp = 'Null'
+            title = f'File: {fileBaseName} Collected: {timeStamp}'
+        if ConfigFile.settings["bL2WriteReport"] == 1:
+            Controller.writeReport(title, fileBaseName, pathOut, outFilePath, 'L1D')
         print('Process L1D complete')
 
 
