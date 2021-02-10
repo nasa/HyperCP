@@ -166,10 +166,16 @@ class ProcessL1d:
                 darkData = gp.getDataset(sensorType)
                 windowDark = int(ConfigFile.settings[f'fL1d{sensorType}WindowDark'])
                 sigmaDark = float(ConfigFile.settings[f'fL1d{sensorType}SigmaDark'])
+                minDark = None if ConfigFile.settings[f'fL1d{sensorType}MinDark']=='None' else ConfigFile.settings[f'fL1d{sensorType}MinDark']
+                maxDark = None if ConfigFile.settings[f'fL1d{sensorType}MaxDark']=='None' else ConfigFile.settings[f'fL1d{sensorType}MaxDark']
+                minMaxBandDark = ConfigFile.settings[f'fL1d{sensorType}MinMaxBandDark']
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
                 windowLight = int(ConfigFile.settings[f'fL1d{sensorType}WindowLight'])
                 sigmaLight = float(ConfigFile.settings[f'fL1d{sensorType}SigmaLight'])
+                minLight = None if ConfigFile.settings[f'fL1d{sensorType}MinLight']=='None' else ConfigFile.settings[f'fL1d{sensorType}MinLight']
+                maxLight = None if ConfigFile.settings[f'fL1d{sensorType}MaxLight']=='None' else ConfigFile.settings[f'fL1d{sensorType}MaxLight']
+                minMaxBandLight = ConfigFile.settings[f'fL1d{sensorType}MinMaxBandLight']
             
             # Rolling averages required for deglitching of data are intolerant to 2 or fewer data points
             # Furthermore, 5 or fewer datapoints is a suspiciously short sampling time. Finally,
@@ -184,8 +190,6 @@ class ProcessL1d:
                 len(lightData.data) < windowLight:
 
                     return True # Sets the flag to true
-
-
         if darkData is None:
             msg = "Error: No dark data to deglitch"
             print(msg)
@@ -195,10 +199,34 @@ class ProcessL1d:
             print(msg)
             Utilities.writeLogFile(msg)
 
-            badIndexDark = ProcessL1d.darkDataDeglitching(darkData, sensorType, windowDark, sigmaDark)
-            msg = f'Data reduced by {sum(badIndexDark)} ({round(100*sum(badIndexDark)/len(darkData.data))}%)'
+            darkData.datasetToColumns()
+            columns = darkData.columns    
+            globalBadIndex = []
+            for dark1D in columns.items():
+                band = float(dark1D[0])
+                if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
+                    radiometry1D = dark1D[1]
+                    # window = int(self.WindowLightLineEdit.text())
+                    # window = windowLight
+                    # sigma = sigmaLight
+                    # minLight = None if self.MinLightLineEdit.text()=='None' else float(self.MinLightLineEdit.text())
+                    # maxLight = None if self.MaxLightLineEdit.text()=='None' else float(self.MaxLightLineEdit.text())
+                    # MinMaxLightBand = getattr(self,f'{self.sensor}MinMaxBandLight')
+                    lightDark = 'Dark'
+                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowDark, sigmaDark, lightDark, minDark, maxDark,minMaxBandDark) 
+                    globalBadIndex.append(badIndex)
+                    globalBadIndex.append(badIndex2)
+                    globalBadIndex.append(badIndex3)
+
+            # Collapse the badIndexes from all wavebands into one timeseries
+            # Convert to an array and test along the columns (i.e. each timestamp)
+            gIndex = np.any(np.array(globalBadIndex), 0)
+            percentLoss = 100*(sum(gIndex)/len(gIndex))  
+            # badIndexDark = ProcessL1d.darkDataDeglitching(darkData, sensorType, windowDark, sigmaDark)
+            msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
             print(msg)
             Utilities.writeLogFile(msg)
+            badIndexDark = gIndex
             
 
         if lightData is None:
@@ -210,10 +238,34 @@ class ProcessL1d:
             print(msg)
             Utilities.writeLogFile(msg)
 
-            badIndexLight = ProcessL1d.lightDataDeglitching(lightData, sensorType, windowLight, sigmaLight)      
-            msg = f'Data reduced by {sum(badIndexLight)} ({round(100*sum(badIndexLight)/len(lightData.data))}%)'
+            lightData.datasetToColumns()
+            columns = lightData.columns    
+            globalBadIndex = []
+            for light1D in columns.items():
+                band = float(light1D[0])
+                if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
+                    radiometry1D = light1D[1]
+                    # window = int(self.WindowLightLineEdit.text())
+                    # window = windowLight
+                    # sigma = sigmaLight
+                    # minLight = None if self.MinLightLineEdit.text()=='None' else float(self.MinLightLineEdit.text())
+                    # maxLight = None if self.MaxLightLineEdit.text()=='None' else float(self.MaxLightLineEdit.text())
+                    # MinMaxLightBand = getattr(self,f'{self.sensor}MinMaxBandLight')
+                    lightDark = 'Light'
+                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowLight, sigmaLight, lightDark, minLight, maxLight,minMaxBandLight) 
+                    globalBadIndex.append(badIndex)
+                    globalBadIndex.append(badIndex2)
+                    globalBadIndex.append(badIndex3)
+
+            # Collapse the badIndexes from all wavebands into one timeseries
+            # Convert to an array and test along the columns (i.e. each timestamp)
+            gIndex = np.any(np.array(globalBadIndex), 0)
+            percentLoss = 100*(sum(gIndex)/len(gIndex)) 
+            # badIndexLight = ProcessL1d.lightDataDeglitching(lightData, sensorType, windowLight, sigmaLight)      
+            msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
             print(msg)
             Utilities.writeLogFile(msg)
+            badIndexLight = gIndex
 
         # Delete the glitchy rows of the datasets
         for gp in node.groups:
@@ -402,18 +454,18 @@ class ProcessL1d:
         root.attributes["FILE_CREATION_TIME"] = timestr
         if ConfigFile.settings['bL1dDeglitch']:
             root.attributes['L1D_DEGLITCH'] = 'ON'
-            root.attributes['ES_WINDOW_DARK'] = str(ConfigFile.settings['fL1dESWindowDark'])
-            root.attributes['ES_WINDOW_LIGHT'] = str(ConfigFile.settings['fL1dESWindowLight'])
-            root.attributes['ES_SIGMA_DARK'] = str(ConfigFile.settings['fL1dESSigmaDark'])
-            root.attributes['ES_SIGMA_LIGHT'] = str(ConfigFile.settings['fL1dESSigmaLight'])
-            root.attributes['LI_WINDOW_DARK'] = str(ConfigFile.settings['fL1dLIWindowDark'])
-            root.attributes['LI_WINDOW_LIGHT'] = str(ConfigFile.settings['fL1dLIWindowLight'])
-            root.attributes['LI_SIGMA_DARK'] = str(ConfigFile.settings['fL1dLISigmaDark'])
-            root.attributes['LI_SIGMA_LIGHT'] = str(ConfigFile.settings['fL1dLISigmaLight'])
-            root.attributes['LT_WINDOW_DARK'] = str(ConfigFile.settings['fL1dLTWindowDark'])
-            root.attributes['LT_WINDOW_LIGHT'] = str(ConfigFile.settings['fL1dLTWindowLight'])
-            root.attributes['LT_SIGMA_DARK'] = str(ConfigFile.settings['fL1dLTSigmaDark'])
-            root.attributes['LT_SIGMA_LIGHT'] = str(ConfigFile.settings['fL1dLTSigmaLight'])        
+            for sensor in ["ES","LI","LT"]:  
+                root.attributes[f'{sensor}_WINDOW_DARK'] = str(ConfigFile.settings[f'fL1d{sensor}WindowDark'])
+                root.attributes[f'{sensor}_WINDOW_LIGHT'] = str(ConfigFile.settings[f'fL1d{sensor}WindowLight'])
+                root.attributes[f'{sensor}_SIGMA_DARK'] = str(ConfigFile.settings[f'fL1d{sensor}SigmaDark'])
+                root.attributes[f'{sensor}_SIGMA_LIGHT'] = str(ConfigFile.settings[f'fL1d{sensor}SigmaLight'])  
+                if ConfigFile.settings['bL1dThreshold']:
+                    root.attributes[f'{sensor}_MIN_DARK'] = ConfigFile.settings[f'fL1d{sensor}MinDark']
+                    root.attributes[f'{sensor}_MAX_DARK'] = ConfigFile.settings[f'fL1d{sensor}MaxDark']
+                    root.attributes[f'{sensor}_MINMAX_BAND_DARK'] = ConfigFile.settings[f'fL1d{sensor}MinMaxBandDark']
+                    root.attributes[f'{sensor}_MIN_LIGHT'] = ConfigFile.settings[f'fL1d{sensor}MinLight']
+                    root.attributes[f'{sensor}_MAX_LIGHT'] = ConfigFile.settings[f'fL1d{sensor}MaxLight']
+                    root.attributes[f'{sensor}_MINMAX_BAND_LIGHT'] = ConfigFile.settings[f'fL1d{sensor}MinMaxBandLight']
 
         msg = f"ProcessL1d.processL1d: {timestr}"
         print(msg)

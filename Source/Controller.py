@@ -301,7 +301,7 @@ class Controller:
         # Process the data
         msg = ("ProcessL1c: " + inFilePath)
         print(msg)
-        Utilities.writeLogFile(msg,'w')
+        Utilities.writeLogFile(msg)
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
@@ -343,7 +343,7 @@ class Controller:
         # Process the data
         msg = ("ProcessL1d: " + inFilePath)
         print(msg)
-        Utilities.writeLogFile(msg,'w')
+        Utilities.writeLogFile(msg)
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
@@ -439,7 +439,7 @@ class Controller:
         # Process the data
         msg = ("ProcessL2: " + inFilePath)
         print(msg)
-        Utilities.writeLogFile(msg,'w')
+        Utilities.writeLogFile(msg)
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
@@ -525,7 +525,8 @@ class Controller:
         else:
             os.environ["LOGFILE"] = (fileName + '_' + level + '.log')
         msg = "Process Single Level"
-        Utilities.writeLogFile(msg,mode='w')
+        print(msg)
+        Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
         
         fileName = fileName.split('_') # [basefilename, level]
 

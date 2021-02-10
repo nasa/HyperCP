@@ -325,8 +325,7 @@ class PDF(FPDF):
             fileList = glob.glob(os.path.join(inPath, \
                 f'{filebasename}_L1C_W{ESWindowDark}S{ESSigmaDark}_*ESDark_*.png' ))  
 
-            if len(fileList) > 0:
-                
+            if len(fileList) > 0:                
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
@@ -339,11 +338,13 @@ class PDF(FPDF):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
+            else:
+                self.multi_cell(0, 5, "None found.")
 
-                # LI
-                fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{LIWindowDark}S{LISigmaDark}_*LIDark_*.png' ))
-
+            # LI
+            fileList = glob.glob(os.path.join(inPath, \
+                f'{filebasename}_L1C_W{LIWindowDark}S{LISigmaDark}_*LIDark_*.png' ))
+            if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
@@ -356,11 +357,13 @@ class PDF(FPDF):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
+            else:
+                self.multi_cell(0, 5, "None found.")
 
-                # LT
-                fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{LTWindowDark}S{LTSigmaDark}_*LTDark_*.png' ))
-
+            # LT
+            fileList = glob.glob(os.path.join(inPath, \
+                f'{filebasename}_L1C_W{LTWindowDark}S{LTSigmaDark}_*LTDark_*.png' ))
+            if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)

@@ -8,9 +8,14 @@ v1.0.? Unreleased
 * Propagate uncertainties from radiometry to OC products
 * Produce kml files for GoogleEarth on entire cruise/directory
 * Fix non-unique station file problem (EXPORTS_noTracker)
+* Memory issue with FPDF causes major slowdown in PDF report building with plots
 
 v1.0.5 Unreleased
+
+2021-02-10:
 * Update meta fields in PDF reports and SeaBASS headers to reflect root/group attributes over ConfigFile.settings
+* Add a tool to AnomalyDetection to allow for high/low thresholding of lights/darks; propagate parameters locally and in ConfigFile.settings
+* Move deglitching functionality into Utilities to be called by either AnomalyDetection or ProcessL1d
 
 2021-02-05:
 * Add all configuration parameters to HDF root and group attributes as appropriate; tidied up at L2.

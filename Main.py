@@ -43,7 +43,7 @@ class Window(QtWidgets.QWidget):
 
         # Main window configuration restore
         MainConfig.loadConfig(MainConfig.fileName)  
-        MainConfig.settings["version"] = "1.0.4"
+        MainConfig.settings["version"] = "1.0.5"
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap("./Data/banner.jpg")
@@ -400,7 +400,6 @@ class Window(QtWidgets.QWidget):
             event.ignore()
 
     def singleL1aClicked(self):
-        ''' Sneaky work around until I can pass signals btw. windows'''
         # Window.comboBox1Changed(self,ConfigFile.filename)
         self.processSingle("L1A")
 

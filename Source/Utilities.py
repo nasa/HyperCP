@@ -458,6 +458,26 @@ class Utilities:
                     badIndex.append(False)
         return badIndex
 
+    @staticmethod
+    def l1dThresholds(band,data,minRad,maxRad,minMaxBand):        
+        
+        badIndex = []
+        for i in range(len(data)):
+            badIndex.append(False)
+            # ConfigFile setting updated directly from the checkbox in AnomDetection. 
+            # This insures values of badIndex are false if unthresholded or Min or Max are None
+            if ConfigFile.settings["bL1dThreshold"]:
+                # Only run on the pre-selected waveband
+                if band == minMaxBand:
+                    if minRad or minRad==0: # beware falsy zeros...
+                        if data[i] < minRad:
+                            badIndex[-1] = True
+                    
+                    if maxRad or maxRad==0:
+                        if data[i] > maxRad:
+                            badIndex[-1] = True
+        return badIndex
+
     # @staticmethod
     # def rejectOutliers(data, m):
     #     d = np.abs(data - np.nanmedian(data))
@@ -1521,13 +1541,100 @@ class Utilities:
             for row in paramreader:
                 
                 paramDict[row['filename']] = [int(row['ESWindowDark']), int(row['ESWindowLight']), \
-                                    float(row['ESSigmaDark']), float(row['ESSigmaLight']),\
-                                        int(row['LIWindowDark']), int(row['LIWindowLight']),
-                                        float(row['LISigmaDark']), float(row['LISigmaLight']),
-                                        int(row['LTWindowDark']), int(row['LTWindowLight']),
-                                        float(row['LTSigmaDark']), float(row['LTSigmaLight']),]
+                                    float(row['ESSigmaDark']), float(row['ESSigmaLight']),
+                                    float(row['ESMinDark']), float(row['ESMaxDark']),
+                                    float(row['ESMinMaxBandDark']),float(row['ESMinLight']),
+                                    float(row['ESMaxLight']),float(row['ESMinMaxBandLight']),
+                                    int(row['LIWindowDark']), int(row['LIWindowLight']),
+                                    float(row['LISigmaDark']), float(row['LISigmaLight']),
+                                    float(row['LIMinDark']), float(row['LIMaxDark']),\
+                                    float(row['LIMinMaxBandDark']),float(row['LIMinLight']),\
+                                    float(row['LIMaxLight']),float(row['LIMinMaxBandLight']),\
+                                    int(row['LTWindowDark']), int(row['LTWindowLight']),
+                                    float(row['LTSigmaDark']), float(row['LTSigmaLight']),
+                                    float(row['LTMinDark']), float(row['LTMaxDark']),\
+                                    float(row['LTMinMaxBandDark']),float(row['LTMinLight']),\
+                                    float(row['LTMaxLight']),float(row['LTMinMaxBandLight']),int(row['Threshold']) ]
+                paramDict[row['filename']] = [None if v==-999 else v for v in paramDict[row['filename']]]
+
         return paramDict
 
+    @staticmethod
+    def deglitchBand(band, radiometry1D, windowSize, sigma, lightDark, minRad, maxRad, minMaxBand):    
+        # For a given sensor in a given band (1D), calculate the first and second outliers on the light and dark          
+        if lightDark == 'Dark':
+            avg = Utilities.movingAverage(radiometry1D, windowSize).tolist()        
+            # avg = Utilities.windowAverage(radiometry1D, windowSize).mean().values.tolist()  
+            residual = np.array(radiometry1D) - np.array(avg)
+            stdData = np.std(residual)
+            # x = np.arange(0,len(radiometry1D),1)  
+
+            # First pass
+            badIndex = Utilities.darkConvolution(radiometry1D,avg,stdData,sigma)  
+
+            # Second pass
+            radiometry1D2 = np.array(radiometry1D[:])
+            radiometry1D2[badIndex] = np.nan
+            radiometry1D2 = radiometry1D2.tolist()
+            avg2 = Utilities.movingAverage(radiometry1D2, windowSize).tolist()               
+            residual = np.array(radiometry1D2) - np.array(avg2)
+            stdData = np.nanstd(residual)        
+
+            badIndex2 = Utilities.darkConvolution(radiometry1D2,avg2,stdData,sigma) 
+
+            # Threshold pass
+            # Tolerates "None" for min or max Rad. ConfigFile.setting updated directly from checkbox
+            badIndex3 = Utilities.l1dThresholds(band,radiometry1D,minRad,maxRad, minMaxBand)
+
+
+        else:
+            avg = Utilities.movingAverage(radiometry1D, windowSize).tolist()        
+            # avg = Utilities.windowAverage(radiometry1D, windowSize).mean().values.tolist()  
+            residual = np.array(radiometry1D) - np.array(avg)
+            stdData = np.std(residual)
+            # x = np.arange(0,len(radiometry1D),1)     
+
+            # Calculate the variation in the distribution of the residual
+            residualDf = pd.DataFrame(residual)
+            testing_std_as_df = residualDf.rolling(windowSize).std()
+            rolling_std = testing_std_as_df.replace(np.nan,
+                testing_std_as_df.iloc[windowSize - 1]).round(3).iloc[:,0].tolist() 
+            # This rolling std on the residual has a tendancy to blow up for extreme outliers,
+            # replace it with the median residual std when that happens
+            y = np.array(rolling_std)
+            y[y > np.median(y)+3*np.std(y)] = np.median(y)
+            rolling_std = y.tolist()
+            
+            # First pass
+            badIndex = Utilities.lightConvolution(radiometry1D,avg,rolling_std,sigma)
+
+            # Second pass
+            radiometry1D2 = np.array(radiometry1D[:])
+            radiometry1D2[badIndex] = np.nan
+            radiometry1D2 = radiometry1D2.tolist()
+            avg2 = Utilities.movingAverage(radiometry1D2, windowSize).tolist()        
+            # avg2 = Utilities.windowAverage(radiometry1D2, windowSize).mean.values.tolist()        
+            residual2 = np.array(radiometry1D2) - np.array(avg2)        
+            # Calculate the variation in the distribution of the residual
+            residualDf2 = pd.DataFrame(residual2)
+            testing_std_as_df2 = residualDf2.rolling(windowSize).std()
+            rolling_std2 = testing_std_as_df2.replace(np.nan,
+                testing_std_as_df2.iloc[windowSize - 1]).round(3).iloc[:,0].tolist()
+            # This rolling std on the residual has a tendancy to blow up for extreme outliers,
+            # replace it with the median residual std when that happens
+            y = np.array(rolling_std2)
+            y[np.isnan(y)] = np.nanmedian(y)
+            y[y > np.nanmedian(y)+3*np.nanstd(y)] = np.nanmedian(y)
+            rolling_std2 = y.tolist()
+
+            badIndex2 = Utilities.lightConvolution(radiometry1D2,avg2,rolling_std2,sigma)
+            # print(badIndex2)     
+            # 
+            # Threshold pass
+            # Tolerates "None" for min or max Rad
+            badIndex3 = Utilities.l1dThresholds(band, radiometry1D,minRad,maxRad, minMaxBand)  
+
+        return badIndex, badIndex2, badIndex3
     
 
     

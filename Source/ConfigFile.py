@@ -44,6 +44,27 @@ class ConfigFile:
         print("fL1dLTWindowLight", ConfigFile.settings["fL1dLTWindowLight"])
         print("fL1dLTSigmaDark", ConfigFile.settings["fL1dLTSigmaDark"])
         print("fL1dLTSigmaLight", ConfigFile.settings["fL1dLTSigmaLight"])
+
+        print("bL1dThreshold", ConfigFile.settings["bL1dThreshold"])
+        print("fL1dESMinDark", ConfigFile.settings["fL1dESMinDark"])
+        print("fL1dESMinLight", ConfigFile.settings["fL1dESMinLight"])
+        print("fL1dESMaxDark", ConfigFile.settings["fL1dESMaxDark"])
+        print("fL1dESMaxLight", ConfigFile.settings["fL1dESMaxLight"])    
+        print("fL1dESMinMaxBand", ConfigFile.settings["fL1dESMinMaxBand"])
+        print("fL1dESMinMaxBand", ConfigFile.settings["fL1dESMinMaxBand"])
+        print("fL1dLIMinDark", ConfigFile.settings["fL1dLIMinDark"])
+        print("fL1dLIMinLight", ConfigFile.settings["fL1dLIMinLight"])
+        print("fL1dLIMaxDark", ConfigFile.settings["fL1dLIMaxDark"])
+        print("fL1dLIMaxLight", ConfigFile.settings["fL1dLIMaxLight"]) 
+        print("fL1dLIMinMaxBand", ConfigFile.settings["fL1dLIMinMaxBand"])
+        print("fL1dLIMinMaxBand", ConfigFile.settings["fL1dLIMinMaxBand"])
+        print("fL1dLTMinDark", ConfigFile.settings["fL1dLTMinDark"])
+        print("fL1dLTMinLight", ConfigFile.settings["fL1dLTMinLight"])
+        print("fL1dLTMaxDark", ConfigFile.settings["fL1dLTMaxDark"])
+        print("fL1dLTMaxLight", ConfigFile.settings["fL1dLTMaxLight"])
+        print("fL1dLTMinMaxBand", ConfigFile.settings["fL1dLTMinMaxBand"])
+        print("fL1dLTMinMaxBand", ConfigFile.settings["fL1dLTMinMaxBand"])
+
         print("fL1dAnomalyStep", ConfigFile.settings["fL1dAnomalyStep"])   
 
         print("fL1eInterpInterval", ConfigFile.settings["fL1eInterpInterval"])
@@ -199,6 +220,28 @@ class ConfigFile:
         ConfigFile.settings["fL1dLTWindowLight"] = 11     
         ConfigFile.settings["fL1dLTSigmaDark"] = 2.7
         ConfigFile.settings["fL1dLTSigmaLight"] = 3.7
+
+        # Optional threshold values for L1C-L1D processing of light & dark data (see AnomalyDetection tool)
+        ConfigFile.settings["bL1dThreshold"] = 0
+        ConfigFile.settings["fL1dESMinDark"] = None
+        ConfigFile.settings["fL1dESMinLight"] = None    
+        ConfigFile.settings["fL1dESMaxDark"] = None
+        ConfigFile.settings["fL1dESMaxLight"] = None
+        ConfigFile.settings["fL1dESMinMaxBandDark"] = None
+        ConfigFile.settings["fL1dESMinMaxBandLight"] = None
+        ConfigFile.settings["fL1dLIMinDark"] = None
+        ConfigFile.settings["fL1dLIMinLight"] = None    
+        ConfigFile.settings["fL1dLIMaxDark"] = None
+        ConfigFile.settings["fL1dLIMaxLight"] = None
+        ConfigFile.settings["fL1dLIMinMaxBandDark"] = None
+        ConfigFile.settings["fL1dLIMinMaxBandLight"] = None
+        ConfigFile.settings["fL1dLTMinDark"] = None
+        ConfigFile.settings["fL1dLTMinLight"] = None    
+        ConfigFile.settings["fL1dLTMaxDark"] = None
+        ConfigFile.settings["fL1dLTMaxLight"] = None
+        ConfigFile.settings["fL1dLTMinMaxBandDark"] = None
+        ConfigFile.settings["fL1dLTMinMaxBandLight"] = None
+
         ConfigFile.settings["fL1dAnomalyStep"] = 20
 
         ConfigFile.settings["fL1eInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
