@@ -186,7 +186,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.plotWidgetLight = pg.PlotWidget(self)     
 
         guideLabel = QtWidgets.QLabel(\
-            'Left-click to pan. Right click to zoom. Hit "A" button on bottom left of plot to restore.')
+            'Left-click-hold to pan, right-click-hold to zoom, or right-click-release for more options.')
 
         self.ThresholdCheckBox.clicked.connect(self.ThresholdCheckBoxUpdate) 
 

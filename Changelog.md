@@ -1,33 +1,35 @@
-v1.0.? Unreleased
-* Read headers from ancillary file to populate SeaBASS header fields
-* Capture filename and line number when errors are thrown (from inspect import currentframe, getframeinfo)
-* Add failure flag. Split Wind and SZA L2.
-* Add PIC and GIOP to L2 OC products
+v1.0.6 Unreleased
 * Add BRDF correction options
-* Improve NIR Residual correction
+* Improve/augment to NIR residual corrections
 * Propagate uncertainties from radiometry to OC products
+* Memory issue with FPDF causes major slowdown in PDF report building with figures
+* Use ancillary SeaBASS metadata to populate remaining L1E/L2 SeaBASS header fields
+* Add failure flag. Split Wind and SZA L2.
+    * Capture details when errors thrown (inspect, currentframe, getframeinfo)
+* Add PIC and GIOP to L2 OC products
 * Produce kml files for GoogleEarth on entire cruise/directory
-* Fix non-unique station file problem (EXPORTS_noTracker)
-* Memory issue with FPDF causes major slowdown in PDF report building with plots
+* Fix non-unique station/file bug
 
-v1.0.5 Unreleased
+
+---
+v1.0.5 2021-02-11: DAA
 
 2021-02-10:
-* Update meta fields in PDF reports and SeaBASS headers to reflect root/group attributes over ConfigFile.settings
 * Add a tool to AnomalyDetection to allow for high/low thresholding of lights/darks; propagate parameters locally and in ConfigFile.settings
 * Move deglitching functionality into Utilities to be called by either AnomalyDetection or ProcessL1d
+* Update meta fields in PDF reports and SeaBASS headers to reflect root/group attributes over ConfigFile.settings
 
 2021-02-05:
 * Add all configuration parameters to HDF root and group attributes as appropriate; tidied up at L2.
 
 2021-02-04:
-* Allow for independant deglitching parameterizations for each sensor, light and dark.
-* Set bounding window for deglitching to (hardcoded) 350 - 850 nm
-* Add a CSV file to track AnomAnal parameterizations for each L1C file in case of reprocessing. 
+* Allow for independant deglitching/anomaly parameterizations for each sensor, light and dark.
+* Set bounding window for deglitching to (hard-coded) 350 - 850 nm to avoid NIR noise
+* Add a CSV file to track deglitching parameterizations for each L1C file in case of reprocessing. 
 * Add direct L1D processing option to the AnomAnal widget.
 
 2021-01-21:
-* Change Anomaly Analysis module to dynamically plot results with a given set of sigmas/windows (requires pyqtgraph install)
+* Change AnomalyAnalysis module to dynamically plot results with a given set of sigmas/windows (requires pyqtgraph install)
 
 2021-01-13:
 * Fix .netrc file permissions when created by HyperInSPACE
@@ -37,10 +39,10 @@ v1.0.5 Unreleased
 * Add option to not produce PDF reports in L2 in order to speed up batching when necessary.
 
 2021-01-07:
-* Tidy up spectral plotting and fix SeaBASSHeader file saving on ConfigWindow save/close
+* Tidy up spectral plotting and fix SeaBASSHeader file saving on ConfigWindow Save/Close
 
 2020-12-16:
-* Fix PDF log plots for L2 with stations. Fix No_NIR correction offset object in PL2.
+* Fix PDF Report plots for L2 with stations. Fix No_NIR correction offset object in L2.
 
 2020-12-04:
 * Fix default Max Pitch/Roll Config.setting for when SeaBASS header window never opened.
