@@ -1,4 +1,5 @@
 v1.0.6 Unreleased
+* Adaptations to work with pySAS tower
 * Add BRDF correction options
 * Improve/augment to NIR residual corrections
 * Propagate uncertainties from radiometry to OC products
