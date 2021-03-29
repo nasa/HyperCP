@@ -543,7 +543,11 @@ class Controller:
         if os.path.isdir(pathOutLevel) is False:
             os.mkdir(pathOutLevel)
         
-        outFilePath = os.path.join(pathOutLevel,fileName[0] + "_" + level + ".hdf")        
+        if inFileName.startswith('pySAS'):
+            outFilePath = os.path.join(pathOutLevel,fileName[0] + "_" \
+                + fileName[1] + "_" + fileName[2] + "_" + level + ".hdf")        
+        else:
+            outFilePath = os.path.join(pathOutLevel,fileName[0] + "_" + level + ".hdf")        
     
         if level == "L1A" or level == "L1B" or \
             level == "L1C" or level == "L1D":                           

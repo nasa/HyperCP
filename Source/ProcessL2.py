@@ -873,12 +873,6 @@ class ProcessL2:
         cloud = False
         wave = False
         station = False
-        if "CLOUD" in ancData.columns:
-            cloudDataset = ancGroup.addDataset("CLOUD")
-        if "WAVE_HT" in ancData.columns:
-            waveDataset = ancGroup.addDataset("WAVE_HT")
-        if "STATION" in ancData.columns:
-            stationDataset = ancGroup.addDataset("STATION")
 
         # Convert radData date and time to datetime and then to seconds for interpolation
         radTime = radData.data["Timetag2"].tolist()
@@ -889,6 +883,13 @@ class ProcessL2:
             radSeconds.append((radDatetime[i]-epoch).total_seconds())
         
         if ancData:
+            if "CLOUD" in ancData.columns:
+                cloudDataset = ancGroup.addDataset("CLOUD")
+            if "WAVE_HT" in ancData.columns:
+                waveDataset = ancGroup.addDataset("WAVE_HT")
+            if "STATION" in ancData.columns:
+                stationDataset = ancGroup.addDataset("STATION")
+
             ancGroup.copyAttributes(ancData)    
             # These are the entire ancillary records for the cruise
             dateTime = ancData.getColumn("DATETIME")[0]

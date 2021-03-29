@@ -4,7 +4,7 @@ above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 
 See README.md or README.pdf for installation instructions and guide.
 
-Version 1.0.5: Under development January 2021 (See Changelog.md)
+Version 1.0.5: Under development March 2021 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 
 """

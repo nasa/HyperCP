@@ -84,7 +84,7 @@ class PDF(FPDF):
                     if ConfigFile.settings['bL1cCleanPitchRoll']:
                         metaData += f'Pitch/Roll Filter: {ConfigFile.settings["fL1cPitchRollPitch"]}'
                     if ConfigFile.settings['bL1cRotatorAngle']:
-                        metaData += f'Rotator Min: {ConfigFile.settings["fL1CRotatorAngleMin"]}'
+                        metaData += f'Rotator Min: {ConfigFile.settings["fL1cRotatorAngleMin"]}'
                         metaData += f'Rotator Max: {ConfigFile.settings["fL1cRotatorAngleMax"]}'
                 if ConfigFile.settings['bL1cCleanSunAngle']:
                     metaData += f'Rel Azimuth Min: {ConfigFile.settings["fL1cSunAngleMin"]}'

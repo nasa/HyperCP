@@ -113,21 +113,33 @@ class ProcessL1a:
 
         gpsGroup.addDataset("DATETAG")
         gpsGroup.addDataset("TIMETAG2")
-        gpsTime = gpsGroup.datasets["UTCPOS"].columns["NONE"]
-        # One case for GPRMC input...
-        if gpsGroup.id.startswith("GPRMC"):
-            gpsDate = gpsGroup.datasets["DATE"].columns["NONE"]
-            # Obtain year-gang from Es data
-            year = int(str(esDateTag[0])[0:4])
-            gpsDateTag = []
-            gpsTimeTag2 = []
-            for date in gpsDate:
-                gpsDateTag.append(Utilities.datetime2DateTag(Utilities.gpsDateToDatetime(year,date)))
-            for i, time in enumerate(gpsTime):
-                dtDate = Utilities.dateTagToDateTime(gpsDateTag[i])
-                gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
-            gpsGroup.datasets["DATETAG"].columns["NONE"] = gpsDateTag
-            gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2
+        if "UTCPOS" in gpsGroup.datasets:
+            gpsTime = gpsGroup.datasets["UTCPOS"].columns["NONE"]
+        elif "TIME" in gpsGroup.datasets:
+            # prepSAS output
+            gpsTime = gpsGroup.datasets["TIME"].columns["UTC"]
+        else:
+            msg ='Failed to import GPS data.'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+
+        # # One case for GPRMC input...
+        ''' No longer necesary for GPRMC, it pick up DATETAG and TIMETAG from the binary as with the other
+            Satlantic instruments'''
+        # if gpsGroup.id.startswith("GPRMC"):
+        #     gpsDate = gpsGroup.datasets["DATE"].columns["NONE"]
+        #     # Obtain year-gang from Es data
+        #     year = int(str(esDateTag[0])[0:4])
+        #     gpsDateTag = []
+        #     gpsTimeTag2 = []
+        #     for date in gpsDate:
+        #         gpsDateTag.append(Utilities.datetime2DateTag(Utilities.gpsDateToDatetime(year,date)))
+        #     for i, time in enumerate(gpsTime):
+        #         dtDate = Utilities.dateTagToDateTime(gpsDateTag[i])
+        #         gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
+        #     gpsGroup.datasets["DATETAG"].columns["NONE"] = gpsDateTag
+        #     gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2
         
         # Another case for GPGGA input...
         if gpsGroup.id.startswith("GPGGA"):

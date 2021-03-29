@@ -214,13 +214,16 @@ class CalibrationFile:
 
         # Some instruments produce additional bytes for
         # DATETAG (3 bytes), and TIMETAG2 (4 bytes)        
-        #        apparently SATMSG does not .... comes out jibberish
+        #       apparently SATMSG does not .... comes out jibberish
+        #       $GPGGA also does not work and timetags will be added later from NMEA strings 
         if instrumentId.startswith("SATHED") or \
             instrumentId.startswith("SATHLD") or \
             instrumentId.startswith("SATHSE") or \
             instrumentId.startswith("SATHSL") or \
             instrumentId.startswith("SATPYR") or \
-            instrumentId.startswith("SATNAV"):
+            instrumentId.startswith("SATNAV") or \
+            instrumentId.startswith("$GPRMC") or \
+            instrumentId.startswith("UMTWR"):
             #    instrumentId.startswith("SATMSG") or \
             #print("not gps")
             # Read DATETAG

@@ -413,7 +413,7 @@ class ProcessL1e:
                 liGroup = gp
             if gp.id.startswith("LT"):
                 ltGroup = gp
-            if gp.id == "SOLARTRACKER":
+            if gp.id == "SOLARTRACKER" or gp.id =="SOLARTRACKER_UM":
                 satnavGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
             if gp.id == ("ANCILLARY_NOTRACKER"):
                 ancGroup = gp 

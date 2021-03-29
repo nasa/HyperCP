@@ -156,6 +156,8 @@ class ProcessL1b:
         # Rename the groups to more generic ids rather than the names of the cal files
         if gp.id.startswith("GPRMC") or gp.id.startswith("GPGAA"):
             gp.id = "GPS"
+        if gp.id.startswith("UMTWR"):
+            gp.id = "SOLARTRACKER_UM"
         if gp.id.startswith("SATNAV"):
             gp.id = "SOLARTRACKER"
         if gp.id.startswith("SATMSG"):

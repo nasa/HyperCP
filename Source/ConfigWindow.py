@@ -114,7 +114,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # l1cSublabel3 = QtWidgets.QLabel("   factory calibrations.", self)        
 
         # SolarTracker
-        self.l1cSolarTrackerLabel = QtWidgets.QLabel(" SolarTracker", self)
+        self.l1cSolarTrackerLabel = QtWidgets.QLabel(" SolarTracker or pySAS", self)
         self.l1cSolarTrackerCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1cSolarTracker"]) == 1:
             self.l1cSolarTrackerCheckBox.setChecked(True)

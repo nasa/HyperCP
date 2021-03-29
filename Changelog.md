@@ -1,4 +1,4 @@
-v1.0.6 Unreleased
+v1.0.6 Unreleased; DAA (dirk.a.aurin@nasa.gov)
 * Adaptations to work with pySAS tower
 * Add BRDF correction options
 * Improve/augment to NIR residual corrections
@@ -11,6 +11,9 @@ v1.0.6 Unreleased
 * Produce kml files for GoogleEarth on entire cruise/directory
 * Fix non-unique station/file bug
 
+2021-02-28: DAA
+* CalibrationFile.py reads DATETAG/ TIMETAG2 bytes from binary GPRMC and UMTWR (not GPGGA) frames instead of NMEA string
+* Add UMaine SolarTracker (SOLARTRACKER_UM) to potential groups in ProcessL1B.py
 
 ---
 v1.0.5 2021-02-11: DAA

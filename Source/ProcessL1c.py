@@ -231,7 +231,7 @@ class ProcessL1c:
             i = 0
             gp = None
             for group in node.groups:
-                if group.id == "SOLARTRACKER":
+                if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
                     gp = group
             if gp == None:
                 msg = "SOLARTRACKER instrument not found. Aborting."
@@ -268,7 +268,7 @@ class ProcessL1c:
                         Utilities.writeLogFile(msg)
                         badTimes.append(startstop)
                         start = -1
-            msg = f'Percentage of SATNAV data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %'
+            msg = f'Percentage of SolarTracker data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %'
             print(msg)
             Utilities.writeLogFile(msg)
 
@@ -290,7 +290,7 @@ class ProcessL1c:
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
         for group in node.groups:
-            if group.id == "SOLARTRACKER":
+            if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
                 gp = group
         
         if 'gp' in locals():
@@ -340,7 +340,7 @@ class ProcessL1c:
                                     elif kickout ==1:
                                         i += 1
 
-                        msg = f'Percentage of SATNAV data out of Rotator Delay bounds: {round(100*i/len(timeStamp))} %'
+                        msg = f'Percentage of SolarTracker data out of Rotator Delay bounds: {round(100*i/len(timeStamp))} %'
                         print(msg)
                         Utilities.writeLogFile(msg)    
                     # else:
@@ -364,7 +364,7 @@ class ProcessL1c:
             i = 0
             # try:
             for group in node.groups:
-                if group.id == "SOLARTRACKER":
+                if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
                     gp = group
 
             if gp.getDataset("POINTING"):   
@@ -399,7 +399,7 @@ class ProcessL1c:
                            
                             badTimes.append(startstop)
                             start = -1
-                msg = f'Percentage of SATNAV data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %'
+                msg = f'Percentage of SolarTracker data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %'
                 print(msg)
                 Utilities.writeLogFile(msg)
 
@@ -423,7 +423,7 @@ class ProcessL1c:
         # General setup for ancillary or SolarTracker data prior to Relative Solar Azimuth option
         if ConfigFile.settings["bL1cSolarTracker"]:    
             for group in node.groups:
-                    if group.id == "SOLARTRACKER":
+                    if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
                         gp = group 
             if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):   
                 timeStamp = gp.getDataset("DATETIME").data
@@ -432,7 +432,10 @@ class ProcessL1c:
                 # ancillary data. See below.                 
                 home = float(ConfigFile.settings["fL1cRotatorHomeAngle"])
                 sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]
-                sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]    
+                if group.id == "SOLARTRACKER":
+                    sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
+                elif group.id == "SOLARTRACKER_UM":
+                    sasAzimuth = gp.getDataset("HEADING").data["SAS"]
                 newRelAzData = gp.addDataset("REL_AZ")                            
             else:
                     msg = f"No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
