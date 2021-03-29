@@ -270,7 +270,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1eInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1eInterpInterval"]))
         self.l1eInterpIntervalLineEdit.setValidator(doubleValidator)
 
-        l1ePlotTimeInterpLabel = QtWidgets.QLabel("     Generate Plots (slow; saved in ./Plots/L1E/)", self)        
+        l1ePlotTimeInterpLabel = QtWidgets.QLabel("     Generate Plots (OUTPUTPATH/Plots/L1E/)", self)        
         self.l1ePlotTimeInterpCheckBox = QtWidgets.QCheckBox("", self)                    
         if int(ConfigFile.settings["bL1ePlotTimeInterp"]) == 1:
             self.l1ePlotTimeInterpCheckBox.setChecked(True)   
