@@ -493,7 +493,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2NegativeSpecCheckBoxUpdate()
 
         # Spectral Weighting
-        l2WeightsLabel = QtWidgets.QLabel("Add Weighted Satellite Bands:", self)
+        l2WeightsLabel = QtWidgets.QLabel("Convolve to Satellite Bands:", self)
 
         l2WeightMODISALabel = QtWidgets.QLabel("AQUA *", self)             
         self.l2WeightMODISACheckBox = QtWidgets.QCheckBox("", self)      

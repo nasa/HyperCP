@@ -208,6 +208,8 @@ class PDF(FPDF):
                         metaData += f'NIR Correction: Carder et al 1995'
                     if ConfigFile.settings['bL2SimSpecNIRCorrection']:
                         metaData += f'NIR Correction: Ruddick et al. 2005/2006'
+                else:
+                    metaData += f'NIR Correction: None'
                 if ConfigFile.settings['bL2NegativeSpace']:
                     metaData += f'Remove Negatives: ON'
 

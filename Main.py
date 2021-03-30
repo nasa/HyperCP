@@ -8,6 +8,7 @@ Version 1.0.5: Under development March 2021 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 
 """
+# from Source.Utilities import Utilities
 import os
 import shutil
 import sys
@@ -15,6 +16,7 @@ import collections
 import json
 from PyQt5 import QtCore, QtGui, QtWidgets
 import time
+import requests
 
 # Why does pylint have a problem with this path formulation?
 sys.path.append(os.path.join(os.path.dirname(__file__),'Source'))
@@ -23,18 +25,46 @@ from Controller import Controller
 from ConfigFile import ConfigFile
 from ConfigWindow import ConfigWindow
 from SeaBASSHeader import SeaBASSHeader
+from Utilities import Utilities
 
 """ Window is the main GUI container """
 class Window(QtWidgets.QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        if not os.path.exists("Plots"):
-           os.makedirs("Plots")
-        if not os.path.exists("Config"):
-            os.makedirs("Config")
-        if not os.path.exists("Logs"):
-            os.makedirs("Logs")
+        if not os.path.exists('Plots'):
+           os.makedirs('Plots')
+        if not os.path.exists('Config'):
+            os.makedirs('Config')
+        if not os.path.exists('Logs'):
+            os.makedirs('Logs')
+        
+        # Confirm that core data files are in place. Download if necessary.        
+        if not os.path.exists(os.path.join('Data','Zhang_rho_db.mat')):
+            infoText = 'Zhang database (2.5 GB) not found.\
+                This may be a new installation.\
+                     Click OK to download. If canceled, \
+                         Zhang et al. (2017) glint correction will fail. \
+                             Or download from https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat \
+                                 and place in Data directory.'
+            YNReply = Utilities.YNWindow('Database Download',infoText)
+            if YNReply == QtWidgets.QMessageBox.Ok:
+                # msgBox = Utilities.waitWindow('Database Download','Download underway. \
+                #     This window will close when download is complete...')
+                # msgBox.exec_()
+                # msgBox.done(1)
+                print('##### Downloading 2.5 GB data file. This could take several minutes. #####')
+                print('#####        Program will open when download is complete.            #####')                
+                response = requests.get('https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat')
+                
+                if response.ok:
+                    # file = open('./Data/HyperInSPACE_Data.zip', 'wb+')
+                    file = open(os.path.join('Data','data.zip'), 'wb+')
+                    file.write(response.content)
+                    file.close()
+                else:
+                    print('Failed to download core databases.')
+
 
         self.initUI()
 
@@ -43,11 +73,11 @@ class Window(QtWidgets.QWidget):
 
         # Main window configuration restore
         MainConfig.loadConfig(MainConfig.fileName)  
-        MainConfig.settings["version"] = "1.0.5"
+        MainConfig.settings['version'] = '1.0.5'
 
         banner = QtWidgets.QLabel(self)
-        # pixmap = QtGui.QPixmap("./Data/banner.jpg")
-        pixmap = QtGui.QPixmap("./Data/banner2.png")
+        # pixmap = QtGui.QPixmap('./Data/banner.jpg')
+        pixmap = QtGui.QPixmap('./Data/banner2.png')
         banner.setPixmap(pixmap)
         banner.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -58,42 +88,42 @@ class Window(QtWidgets.QWidget):
         configLabel_font.setBold(True)
         configLabel.setFont(configLabel_font)
         self.fsm = QtWidgets.QFileSystemModel()        
-        self.fsm.setNameFilters(["*.cfg"]) 
+        self.fsm.setNameFilters(['*.cfg']) 
         self.fsm.setNameFilterDisables(False) # This activates the Filter (on Win10)
         self.fsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
         self.configComboBox = QtWidgets.QComboBox(self)
         self.configComboBox.setModel(self.fsm)
-        self.configComboBox.setRootModelIndex(self.fsm.setRootPath("Config"))
+        self.configComboBox.setRootModelIndex(self.fsm.setRootPath('Config'))
         self.fsm.directoryLoaded.connect(self.on_directoryLoaded)         
         self.configComboBox.currentTextChanged.connect(self.comboBox1Changed)             
         #self.configComboBox.move(30, 50)                
 
-        self.configNewButton = QtWidgets.QPushButton("New", self)
+        self.configNewButton = QtWidgets.QPushButton('New', self)
         #self.configNewButton.move(30, 80)
-        self.configEditButton = QtWidgets.QPushButton("Edit", self)
+        self.configEditButton = QtWidgets.QPushButton('Edit', self)
         #self.configEditButton.move(130, 80)
-        self.configDeleteButton = QtWidgets.QPushButton("Delete", self)
+        self.configDeleteButton = QtWidgets.QPushButton('Delete', self)
 
         self.configNewButton.clicked.connect(self.configNewButtonPressed)
         self.configEditButton.clicked.connect(self.configEditButtonPressed)
         self.configDeleteButton.clicked.connect(self.configDeleteButtonPressed)
 
-        self.inDirLabel = QtWidgets.QLabel("Input Data Parent Directory", self)        
-        self.inputDirectory = MainConfig.settings["inDir"]
+        self.inDirLabel = QtWidgets.QLabel('Input Data Parent Directory', self)        
+        self.inputDirectory = MainConfig.settings['inDir']
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
         self.inDirButton.clicked.connect(self.inDirButtonPressed)   
 
-        self.outDirLabel = QtWidgets.QLabel("Output Data/Plots Parent Directory", self)        
-        self.outputDirectory = MainConfig.settings["outDir"]
+        self.outDirLabel = QtWidgets.QLabel('Output Data/Plots Parent Directory', self)        
+        self.outputDirectory = MainConfig.settings['outDir']
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)                
         
 
-        self.ancFileLabel = QtWidgets.QLabel("Ancillary Data File for L2 (SeaBASS format)")
+        self.ancFileLabel = QtWidgets.QLabel('Ancillary Data File for L2 (SeaBASS format)')
         self.ancFileLineEdit = QtWidgets.QLineEdit()
-        self.ancFileLineEdit.setText(str(MainConfig.settings["metFile"]))
-        self.windAddButton = QtWidgets.QPushButton("Add", self)
-        self.windRemoveButton = QtWidgets.QPushButton("Remove", self)                
+        self.ancFileLineEdit.setText(str(MainConfig.settings['metFile']))
+        self.windAddButton = QtWidgets.QPushButton('Add', self)
+        self.windRemoveButton = QtWidgets.QPushButton('Remove', self)                
 
         self.windAddButton.clicked.connect(self.windAddButtonPressed)
         self.windRemoveButton.clicked.connect(self.windRemoveButtonPressed)
@@ -106,22 +136,22 @@ class Window(QtWidgets.QWidget):
         singleLevelLabel.setFont(singleLevelLabel_font)
         #self.singleLevelLabel.move(30, 270)
 
-        self.singleL1aButton = QtWidgets.QPushButton("Raw (BIN) --> Level 1A (HDF5)", self)
+        self.singleL1aButton = QtWidgets.QPushButton('Raw (BIN) --> Level 1A (HDF5)', self)
         #self.singleL0Button.move(30, 300)
 
-        self.singleL1bButton = QtWidgets.QPushButton("L1A --> L1B", self)
+        self.singleL1bButton = QtWidgets.QPushButton('L1A --> L1B', self)
         #self.singleL1aButton.move(30, 350)
 
-        self.singleL1cButton = QtWidgets.QPushButton("L1B --> L1C", self)
+        self.singleL1cButton = QtWidgets.QPushButton('L1B --> L1C', self)
         #self.singleL1cButton.move(30, 450)
 
-        self.singleL1dButton = QtWidgets.QPushButton("L1C --> L1D", self)
+        self.singleL1dButton = QtWidgets.QPushButton('L1C --> L1D', self)
         #self.singleL1bButton.move(30, 400)
 
-        self.singleL1eButton = QtWidgets.QPushButton("L1D --> L1E", self)
+        self.singleL1eButton = QtWidgets.QPushButton('L1D --> L1E', self)
         #self.singleL1bButton.move(30, 400)
 
-        self.singleL2Button = QtWidgets.QPushButton("L1E --> L2", self)
+        self.singleL2Button = QtWidgets.QPushButton('L1E --> L2', self)
         #self.singleL1bButton.move(30, 400)
         
         self.singleL1aButton.clicked.connect(self.singleL1aClicked)
@@ -138,20 +168,20 @@ class Window(QtWidgets.QWidget):
         multiLevelLabel.setFont(multiLevelLabel_font)
         #self.multiLevelLabel.move(30, 140)
 
-        self.multi2Button = QtWidgets.QPushButton("Raw (BIN) ----->> L2 (HDF5)", self)
+        self.multi2Button = QtWidgets.QPushButton('Raw (BIN) ----->> L2 (HDF5)', self)
         #self.multi1Button.move(30, 170)
 
         self.multi2Button.clicked.connect(self.multi2Clicked)
 
         popQueryLabel = QtWidgets.QLabel('Suppress pop-up window on processing fail?', self)
-        self.popQueryCheckBox = QtWidgets.QCheckBox("", self)
-        if int(MainConfig.settings["popQuery"]) == 1:
+        self.popQueryCheckBox = QtWidgets.QCheckBox('', self)
+        if int(MainConfig.settings['popQuery']) == 1:
             self.popQueryCheckBox.setChecked(True)
         self.popQueryCheckBoxUpdate()      
         self.popQueryCheckBox.clicked.connect(self.popQueryCheckBoxUpdate)  
 
-        saveLabel = QtWidgets.QLabel("(Automatic on Window Close -->)")
-        self.saveButton = QtWidgets.QPushButton("Save Settings", self)
+        saveLabel = QtWidgets.QLabel('(Automatic on Window Close -->)')
+        self.saveButton = QtWidgets.QPushButton('Save Settings', self)
         self.saveButton.clicked.connect(self.saveButtonClicked)
 
         ########################################################################################
@@ -227,47 +257,47 @@ class Window(QtWidgets.QWidget):
     ########################################################################################
     # Build functionality modules    
     def on_directoryLoaded(self, path):
-        index = self.configComboBox.findText(MainConfig.settings["cfgFile"])
+        index = self.configComboBox.findText(MainConfig.settings['cfgFile'])
         self.configComboBox.setCurrentIndex(index)
 
     def comboBox1Changed(self,value):
-        MainConfig.settings["cfgFile"] = value
-        index = self.configComboBox.findText(MainConfig.settings["cfgFile"])
+        MainConfig.settings['cfgFile'] = value
+        index = self.configComboBox.findText(MainConfig.settings['cfgFile'])
         self.configComboBox.setCurrentIndex(index)
-        print("MainConfig: Configuration file changed to: ", value)    
+        print('MainConfig: Configuration file changed to: ', value)    
 
     def configNewButtonPressed(self):
-        print("New Config Dialogue")
+        print('New Config Dialogue')
         text, ok = QtWidgets.QInputDialog.getText(self, 'New Config File', 'Enter File Name')
         if ok:
-            print("Create Config File: ", text)
+            print('Create Config File: ', text)
             ConfigFile.createDefaultConfig(text, 1)
-            MainConfig.settings["cfgFile"] = ConfigFile.filename
-            seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
-            print("Creating New SeaBASSHeader File: ", seaBASSHeaderFileName)   
+            MainConfig.settings['cfgFile'] = ConfigFile.filename
+            seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
+            print('Creating New SeaBASSHeader File: ', seaBASSHeaderFileName)   
             SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
             # SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 
     def configEditButtonPressed(self):
-        print("Edit Config Dialogue")
+        print('Edit Config Dialogue')
         configFileName = self.configComboBox.currentText()
         inputDir = self.inputDirectory
-        configPath = os.path.join("Config", configFileName)
+        configPath = os.path.join('Config', configFileName)
         if os.path.isfile(configPath):
             ConfigFile.loadConfig(configFileName)
             configDialog = ConfigWindow(configFileName, inputDir, self)
             configDialog.show()
             
         else:
-            message = "Not a Config File: " + configFileName
-            QtWidgets.QMessageBox.critical(self, "Error", message)
+            message = 'Not a Config File: ' + configFileName
+            QtWidgets.QMessageBox.critical(self, 'Error', message)
 
     def configDeleteButtonPressed(self):
-        print("Delete Config Dialogue")
+        print('Delete Config Dialogue')
         configFileName = self.configComboBox.currentText()
-        configPath = os.path.join("Config", configFileName)
+        configPath = os.path.join('Config', configFileName)
         if os.path.isfile(configPath):
-            configDeleteMessage = "Delete " + configFileName + "?"
+            configDeleteMessage = 'Delete ' + configFileName + '?'
 
             reply = QtWidgets.QMessageBox.question(self, 'Message', configDeleteMessage, \
                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
@@ -275,13 +305,13 @@ class Window(QtWidgets.QWidget):
             if reply == QtWidgets.QMessageBox.Yes:
                 ConfigFile.deleteConfig(configFileName)
         else:
-            message = "Not a Config File: " + configFileName
-            QtWidgets.QMessageBox.critical(self, "Error", message)
+            message = 'Not a Config File: ' + configFileName
+            QtWidgets.QMessageBox.critical(self, 'Error', message)
 
     def inDirButtonPressed(self):
         temp = self.inputDirectory   
         self.inputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Choose Directory.", 
+            self, 'Choose Directory.', 
             self.inputDirectory)
         if self.inputDirectory == '':
             self.inputDirectory = temp
@@ -289,81 +319,81 @@ class Window(QtWidgets.QWidget):
             self.inputDirectory = './Data'
         print('Data input directory changed: ', self.inputDirectory)    
         self.inDirButton.setText(self.inputDirectory)
-        MainConfig.settings["inDir"] = self.inputDirectory
+        MainConfig.settings['inDir'] = self.inputDirectory
         return self.inputDirectory
 
     def outDirButtonPressed(self):  
         temp = self.outputDirectory
         self.outputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "SUBDIRECTORIES FOR DATA LEVELS WILL BE CREATED HERE AUTOMATICALLY.",
+            self, 'SUBDIRECTORIES FOR DATA LEVELS WILL BE CREATED HERE AUTOMATICALLY.',
             self.outputDirectory)
         if self.outputDirectory == '':
             self.outputDirectory = temp
         if self.outputDirectory == '':
             self.outputDirectory = './Data'
         print('Data output directory changed: ', self.outputDirectory)
-        print("NOTE: Subdirectories for data levels will be created here")
-        print("      automatically, unless they already exist.")          
+        print('NOTE: Subdirectories for data levels will be created here')
+        print('      automatically, unless they already exist.')          
         self.outDirButton.setText(self.outputDirectory)
-        MainConfig.settings["outDir"] = self.outputDirectory
+        MainConfig.settings['outDir'] = self.outputDirectory
         return self.outputDirectory
 
     def windAddButtonPressed(self):
-        print("Met File Add Dialogue")
-        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Select Meteorologic Data File",self.inputDirectory)
+        print('Met File Add Dialogue')
+        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Meteorologic Data File',self.inputDirectory)
         if any(fnames):
             print(fnames)
             if len(fnames[0]) == 1:
                 self.ancFileLineEdit.setText(fnames[0][0])
-            MainConfig.settings["metFile"] = fnames[0][0]
+            MainConfig.settings['metFile'] = fnames[0][0]
 
     def windRemoveButtonPressed(self):
-        print("Wind File Remove Dialogue")
-        self.ancFileLineEdit.setText("")
-        MainConfig.settings["metFile"] = ""
+        print('Wind File Remove Dialogue')
+        self.ancFileLineEdit.setText('')
+        MainConfig.settings['metFile'] = ''
 
     def processSingle(self, level):
-        print("Process Single-Level")
+        print('Process Single-Level')
         t0Single=time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
-        configPath = os.path.join("Config", configFileName)
+        configPath = os.path.join('Config', configFileName)
         if not os.path.isfile(configPath):
-            message = "Not valid Config File: " + configFileName
-            QtWidgets.QMessageBox.critical(self, "Error", message)
+            message = 'Not valid Config File: ' + configFileName
+            QtWidgets.QMessageBox.critical(self, 'Error', message)
             return
         ConfigFile.loadConfig(configFileName)
-        seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
+        seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 
         # Select data files    
         if not self.inputDirectory[0]:
-            print("Bad input parent directory.")
+            print('Bad input parent directory.')
             return       
         
-        if level == "L1A":
-            inLevel = "unknown"
-        if level == "L1B":
-            inLevel = "L1A"
-        if level == "L1C":
-            inLevel = "L1B"
-        if level == "L1D":
-            inLevel = "L1C"
-        if level == "L1E":
-            inLevel = "L1D"
-        if level == "L2":
-            inLevel = "L1E"
+        if level == 'L1A':
+            inLevel = 'unknown'
+        if level == 'L1B':
+            inLevel = 'L1A'
+        if level == 'L1C':
+            inLevel = 'L1B'
+        if level == 'L1D':
+            inLevel = 'L1C'
+        if level == 'L1E':
+            inLevel = 'L1D'
+        if level == 'L2':
+            inLevel = 'L1E'
         # Check for subdirectory associated with level chosen
         subInputDir = os.path.join(self.inputDirectory + '/' + inLevel + '/')
         if os.path.exists(subInputDir):
-            openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",subInputDir)
+            openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',subInputDir)
             fileNames = openFileNames[0] # The first element is the whole list
 
         else:    
-            openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",self.inputDirectory)
+            openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',self.inputDirectory)
             fileNames = openFileNames[0] # The first element is the whole list
         
-        print("Files:", openFileNames)
+        print('Files:', openFileNames)
         if not fileNames:
             return        
 
@@ -371,18 +401,18 @@ class Window(QtWidgets.QWidget):
         if ancFile == '':
             ancFile = None
 
-        print("Process Calibration Files")
+        print('Process Calibration Files')
         filename = ConfigFile.filename
-        calFiles = ConfigFile.settings["CalibrationFiles"]
+        calFiles = ConfigFile.settings['CalibrationFiles']
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
         if not calibrationMap.keys():
-            print("No calibration files found. "
-            "Check Config directory for your instrument files.")
+            print('No calibration files found. '
+            'Check Config directory for your instrument files.')
             return            
             
-        print("Output Directory:", os.path.abspath(self.outputDirectory))
+        print('Output Directory:', os.path.abspath(self.outputDirectory))
         if not self.outputDirectory[0]:
-            print("Bad output directory.")
+            print('Bad output directory.')
             return            
 
         Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, ancFile) 
@@ -401,62 +431,62 @@ class Window(QtWidgets.QWidget):
 
     def singleL1aClicked(self):
         # Window.comboBox1Changed(self,ConfigFile.filename)
-        self.processSingle("L1A")
+        self.processSingle('L1A')
 
     def singleL1bClicked(self):        
         # Window.comboBox1Changed(self,ConfigFile.filename)
-        self.processSingle("L1B")
+        self.processSingle('L1B')
 
     def singleL1cClicked(self):
         # Window.comboBox1Changed(self,ConfigFile.filename)
-        self.processSingle("L1C")
+        self.processSingle('L1C')
 
     def singleL1dClicked(self):
         # Window.comboBox1Changed(self,ConfigFile.filename)
-        self.processSingle("L1D")
+        self.processSingle('L1D')
 
     def singleL1eClicked(self):
         # Window.comboBox1Changed(self,ConfigFile.filename)
-        self.processSingle("L1E")      
+        self.processSingle('L1E')      
 
     def singleL2Clicked(self):
         # Window.comboBox1Changed(self,ConfigFile.filename)
-        self.processSingle("L2")   
+        self.processSingle('L2')   
 
     def processMulti(self, level):
-        print("Process Multi-Level")
+        print('Process Multi-Level')
         t0Multi = time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
-        configPath = os.path.join("Config", configFileName)
+        configPath = os.path.join('Config', configFileName)
         if not os.path.isfile(configPath):
-            message = "Not valid Config File: " + configFileName
-            QtWidgets.QMessageBox.critical(self, "Error", message)
+            message = 'Not valid Config File: ' + configFileName
+            QtWidgets.QMessageBox.critical(self, 'Error', message)
             return
         ConfigFile.loadConfig(configFileName)
 
         # Select data files    
         if not self.inputDirectory[0]:
-            print("Bad input directory.")
+            print('Bad input directory.')
             return  
         # MacOS bug holds Open window open during entire processing period              
-        openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, "Open File",self.inputDirectory)
+        openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',self.inputDirectory)
 
-        print("Files:", openFileNames)
+        print('Files:', openFileNames)
         
         if not openFileNames[0]:
             return
         fileNames = openFileNames[0]
 
-        print("Output Directory:", self.outputDirectory)
+        print('Output Directory:', self.outputDirectory)
         if not self.outputDirectory:
             return
 
         ancFile = self.ancFileLineEdit.text()
 
-        print("Process Calibration Files")
+        print('Process Calibration Files')
         filename = ConfigFile.filename
-        calFiles = ConfigFile.settings["CalibrationFiles"]
+        calFiles = ConfigFile.settings['CalibrationFiles']
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
     
         Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, ancFile)
@@ -469,12 +499,12 @@ class Window(QtWidgets.QWidget):
         self.processMulti(2)
 
     def popQueryCheckBoxUpdate(self):
-        print("Main - popQueryCheckBoxUpdate")
-        MainConfig.settings["popQuery"] = int(self.popQueryCheckBox.isChecked())
+        print('Main - popQueryCheckBoxUpdate')
+        MainConfig.settings['popQuery'] = int(self.popQueryCheckBox.isChecked())
         pass
     
     def saveButtonClicked(self):
-        print("Main - saveButtonClicked")        
+        print('Main - saveButtonClicked')        
         MainConfig.saveConfig(MainConfig.fileName)
 
 if __name__ == '__main__':

@@ -8,7 +8,8 @@ import pytz
 from collections import Counter
 import csv
 
-from PyQt5.QtWidgets import QApplication, QDesktopWidget, QWidget, QPushButton, QMessageBox
+# from PyQt5.QtWidgets import QApplication, QDesktopWidget, QWidget, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot
 
@@ -55,15 +56,29 @@ class Utilities:
         msgBox.setIcon(QMessageBox.Critical)
         msgBox.setText(errorText)
         msgBox.setWindowTitle(winText)
-        msgBox.setStandardButtons(QMessageBox.Ok)
-        # desktopsize = QDesktopWidget().screenGeometry()
-        # size = msgBox.size()
-        # top = (desktopsize.height()/2) - (size.height()/2)
-        # left = (desktopsize.width() / 2) - (size.width() / 2)
-        # msgBox.move(left,top)
-        # msgBox.raise_()
-        # msgBox.buttonClicked.connect(msgButtonClick)
+        msgBox.setStandardButtons(QMessageBox.Ok)        
         msgBox.exec_()
+
+    @staticmethod
+    def waitWindow(winText,waitText):        
+        msgBox = QMessageBox()
+        # msgBox.setIcon(QMessageBox.Information)
+        msgBox.setIcon(QMessageBox.Critical)
+        msgBox.setText(waitText)
+        msgBox.setWindowTitle(winText)
+        # msgBox.setStandardButtons(QMessageBox.Ok)        
+        # msgBox.exec_()
+        return msgBox
+
+    @staticmethod
+    def YNWindow(winText,infoText):        
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Information)        
+        msgBox.setText(infoText)
+        msgBox.setWindowTitle(winText)
+        msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)        
+        returnValue = msgBox.exec_()
+        return returnValue
 
     # Print iterations progress
     @staticmethod
@@ -586,30 +601,6 @@ class Utilities:
                 print("NaN")                
 
         return new_y
-
-    '''Below is the problematic interpolation scheme in PySciDON
-    # # Wrapper for scipy UnivariateSpline interpolation
-    # # This method does not seem stable unless points are uniform distance apart - results in all Nan output
-    # @staticmethod
-    # def interpSpline(x, y, new_x):
-
-    #     #print("t0", len(x), len(y))
-    #     n0 = len(x)-1
-    #     n1 = len(new_x)-1
-    #     if new_x[n1] > x[n0]:
-    #         #print(new_x[n], x[n])
-    #         x.append(new_x[n1])
-    #         y.append(y[n0])
-    #     if new_x[0] < x[0]:
-    #         #print(new_x[0], x[0])
-    #         x.insert(0, new_x[0])
-    #         y.insert(0, y[0])
-
-    #     new_y = scipy.interpolate.InterpolatedUnivariateSpline(x, y, k=3)(new_x)
-    #     # print('len(new_y) = ' + str(len(new_y)))
-
-    #     return new_y'''
-
 
     @staticmethod
     def plotRadiometry(root, dirpath, filename, rType, plotDelta = False):

@@ -74,8 +74,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
             'Use autoscaled slider to select the waveband keeping in mind deglitching is only performed from 350 - 850 nm:')
         self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.slider.valueChanged.connect(self.sliderMove)
-        self.slider.setMinimum(min(self.waveBands))
-        self.slider.setMaximum(max(self.waveBands))
+        # self.slider.setMinimum(min(self.waveBands))
+        # self.slider.setMaximum(max(self.waveBands))
+        self.slider.setMinimum(self.minBand)
+        self.slider.setMaximum(self.maxBand)
         self.slider.setTickPosition(QtWidgets.QSlider.TicksBelow)
         self.slider.setTickInterval(interval)
         self.slider.setValue(self.waveBands[0])
@@ -356,6 +358,12 @@ class AnomAnalWindow(QtWidgets.QDialog):
             setattr(self,'Threshold', self.params[self.fileName][30])
             if getattr(self,'Threshold') == 1:
                 self.ThresholdCheckBox.setChecked(True)
+                # if getattr(self,f'{self.sensor}MinMaxBandDark'):
+                #     self.waveBand = getattr(self,f'{self.sensor}MinMaxBandDark')
+                #     self.slider.setValue(self.waveBand)
+                # if getattr(self,f'{self.sensor}MinMaxBandLight'):
+                #     self.waveBand = getattr(self,f'{self.sensor}MinMaxBandLight')
+                #     self.slider.setValue(self.waveBand)
             else:
                 self.ThresholdCheckBox.setChecked(False)
             self.ThresholdCheckBoxUpdate()
@@ -485,14 +493,17 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         # Update the slider
         self.sLabel.setText(f'Deglitching only performed from 350-850 nm: {self.waveBand}')            
-        self.slider.setMinimum(min(waveBands))
-        self.slider.setMaximum(max(waveBands))
+        # self.slider.setMinimum(min(waveBands))
+        # self.slider.setMaximum(max(waveBands))
         # self.slider.setTickInterval(10)
         self.slider.setValue(self.sliderWave)
 
         # Update minmax text
         self.MinMaxDarkLabel.setText(str(getattr(self,f'{self.sensor}MinMaxBandDark')) +'nm' )
         self.MinMaxLightLabel.setText(str(getattr(self,f'{self.sensor}MinMaxBandLight')) +'nm')
+
+        # Try to use the Threshold bands to reset the slider and display
+        self.ThresholdCheckBoxUpdate()
 
         # Deglitch and plot Light from selected band
         if lightData is None:
@@ -746,6 +757,14 @@ class AnomAnalWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL1dThreshold"] = 1
             setattr(self,"Threshold", 1)
+            
+            # # Problem: can either set to the threshold waveband or to the slider position, not both
+            # if getattr(self,f'{self.sensor}MinMaxBandDark'):
+            #     self.waveBand = getattr(self,f'{self.sensor}MinMaxBandDark')
+            #     self.slider.setValue(self.waveBand)
+            # if getattr(self,f'{self.sensor}MinMaxBandLight'):
+            #     self.waveBand = getattr(self,f'{self.sensor}MinMaxBandLight')
+            #     self.slider.setValue(self.waveBand)
 
     def MinMaxDarkButtonPressed(self):
         print('Updating waveband for Dark thresholds')

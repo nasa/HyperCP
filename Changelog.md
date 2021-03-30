@@ -11,6 +11,11 @@ v1.0.6 Unreleased; DAA (dirk.a.aurin@nasa.gov)
 * Produce kml files for GoogleEarth on entire cruise/directory
 * Fix non-unique station/file bug
 
+2021-03-29:
+* Port repo to https://github.com/nasa/HyperInSPACE/tree/master
+* Add Data directory to repo (less Anc and Zhang)
+* Add code to Main to download the Zhang et al. (2017) database for glint correction.
+
 2021-02-28: DAA
 * CalibrationFile.py reads DATETAG/ TIMETAG2 bytes from binary GPRMC and UMTWR (not GPGGA) frames instead of NMEA string
 * Add UMaine SolarTracker (SOLARTRACKER_UM) to potential groups in ProcessL1B.py
