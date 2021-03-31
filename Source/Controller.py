@@ -30,7 +30,7 @@ class Controller:
         print('Writing PDF Report...')
         numLevelDict = {'L1A':1,'L1B':2,'L1C':3,'L1D':4,'L1E':5,'L2':6}
         numLevel = numLevelDict[level]
-        fp = os.path.join(pathOut, level, f'{fileName[0]}_{level}.hdf')
+        fp = os.path.join(pathOut, level, f'{fileName}_{level}.hdf')
 
 
         # The highest level processed will have the correct configurations in the HDF attributes
@@ -53,8 +53,7 @@ class Controller:
         # Reports
         reportPath = os.path.join(pathOut, 'Reports')
         if os.path.isdir(reportPath) is False:
-            os.mkdir(reportPath)
-        fileName = fileName[0]
+            os.mkdir(reportPath)        
         dirPath = os.getcwd()
         inLogPath = os.path.join(dirPath, 'Logs')
         
@@ -580,7 +579,7 @@ class Controller:
                     params = Utilities.readAnomAnalFile(fp)
                     # If a parameterization has been saved in the AnomAnalFile, set the properties in the local object
                     # for all sensors
-                    l1CfileName = fileName[0] + '_L1C'
+                    l1CfileName = fileName + '_L1C'
                     if l1CfileName in params.keys():
                         ref = 0
                         for sensor in ['ES','LT','LI']:
@@ -661,7 +660,7 @@ class Controller:
             timeStamp = root.attributes['TIME-STAMP']
         else:
             timeStamp = 'Null'
-        title = f'File: {fileName[0]} Collected: {timeStamp}'
+        title = f'File: {fileName} Collected: {timeStamp}'
         if root is None and ConfigFile.settings["bL2Stations"] == 1:
             return False
         if root is None and ConfigFile.settings["bL2Stations"] == 0:                     
