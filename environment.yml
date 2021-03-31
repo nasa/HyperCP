@@ -1,5 +1,0 @@
-name: myenv
-channels:
-  - defaults
-prefix: /accounts/daurin/anaconda3/envs/myenv
-

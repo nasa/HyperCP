@@ -41,31 +41,36 @@ class Window(QtWidgets.QWidget):
         
         # Confirm that core data files are in place. Download if necessary.        
         if not os.path.exists(os.path.join('Data','Zhang_rho_db.mat')):
-            infoText = 'Zhang database (2.5 GB) not found.\
-                This may be a new installation.\
-                     Click OK to download. If canceled, \
-                         Zhang et al. (2017) glint correction will fail. \
-                             Or download from https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat \
-                                 and place in Data directory.'
+            infoText = '  NEW INSTALLATION\nGlint database required.\nClick OK to download.\n\nWARNING: THIS IS A 2.5 GB DOWNLOAD.\n\n\
+            If canceled, Zhang et al. (2017) glint correction will fail. If download fails, a link and instructions will be provided in the terminal.'
             YNReply = Utilities.YNWindow('Database Download',infoText)
-            if YNReply == QtWidgets.QMessageBox.Ok:
-                # msgBox = Utilities.waitWindow('Database Download','Download underway. \
-                #     This window will close when download is complete...')
-                # msgBox.exec_()
-                # msgBox.done(1)
+            if YNReply == QtWidgets.QMessageBox.Ok:                
                 print('##### Downloading 2.5 GB data file. This could take several minutes. #####')
-                print('#####        Program will open when download is complete.            #####')                
-                response = requests.get('https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat')
-                
-                if response.ok:
-                    # file = open('./Data/HyperInSPACE_Data.zip', 'wb+')
-                    file = open(os.path.join('Data','data.zip'), 'wb+')
-                    file.write(response.content)
-                    file.close()
+                print('#####        Program will open when download is complete.            #####')
+                url = 'https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat'
+                local_filename = os.path.join('Data','Zhang_rho_db.mat')                
+                try:
+                    r = requests.get(url, stream=True)
+                    r.raise_for_status()
+
+                except requests.exceptions.HTTPError as err:
+                    print('Error in download_file:',err)
+
+                if r.ok:
+                    with open(local_filename, 'wb') as f:
+                        n = 0
+                        for chunk in r.iter_content(chunk_size=1024):
+                            n += 1
+                            if (n % 1000) == 0:
+                                print('.', end='')
+                            if chunk: # filter out keep-alive new chunks
+                                f.write(chunk)    
+                        print(' done.')                                            
                 else:
                     print('Failed to download core databases.')
-
-
+                    print('Download from: \
+                                  https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat \
+                                      and place in HyperInSPACE/Data directory.')
         self.initUI()
 
     def initUI(self):
