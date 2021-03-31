@@ -1279,7 +1279,7 @@ class Utilities:
 
         # Save the plot
         _,filename = os.path.split(inFilePath)
-        filebasename,_ = filename.split('_')
+        filebasename,_ = filename.rsplit('_',1)
         if station:
             fp = os.path.join(plotdir, f'STATION_{station}_{filebasename}_{rType}.png')
         else:            

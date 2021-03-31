@@ -3,9 +3,6 @@ Data/Anc/
 Plots/
 Logs/
 Config/main.config
-EsDarkThresh.txt
-angr_sky.npy
-prob.npy
 .vscode/
 .DS_Store
 Source/.DS_Store

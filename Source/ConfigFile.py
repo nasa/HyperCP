@@ -208,18 +208,18 @@ class ConfigFile:
 
         ConfigFile.settings["bL1dDeglitch"] = 1
         # These can be experimentally derived with the AnomalyDetection tool
-        ConfigFile.settings["fL1dESWindowDark"] = 9   
-        ConfigFile.settings["fL1dESWindowLight"] = 11     
-        ConfigFile.settings["fL1dESSigmaDark"] = 2.7
-        ConfigFile.settings["fL1dESSigmaLight"] = 3.7
-        ConfigFile.settings["fL1dLIWindowDark"] = 9   
-        ConfigFile.settings["fL1dLIWindowLight"] = 11     
-        ConfigFile.settings["fL1dLISigmaDark"] = 2.7
-        ConfigFile.settings["fL1dLISigmaLight"] = 3.7
+        ConfigFile.settings["fL1dESWindowDark"] = 11 
+        ConfigFile.settings["fL1dESWindowLight"] = 9     
+        ConfigFile.settings["fL1dESSigmaDark"] = 3.2
+        ConfigFile.settings["fL1dESSigmaLight"] = 2.4
+        ConfigFile.settings["fL1dLIWindowDark"] = 11  
+        ConfigFile.settings["fL1dLIWindowLight"] = 9     
+        ConfigFile.settings["fL1dLISigmaDark"] = 3.5
+        ConfigFile.settings["fL1dLISigmaLight"] = 2.4
         ConfigFile.settings["fL1dLTWindowDark"] = 9   
-        ConfigFile.settings["fL1dLTWindowLight"] = 11     
-        ConfigFile.settings["fL1dLTSigmaDark"] = 2.7
-        ConfigFile.settings["fL1dLTSigmaLight"] = 3.7
+        ConfigFile.settings["fL1dLTWindowLight"] = 9   
+        ConfigFile.settings["fL1dLTSigmaDark"] = 3.2
+        ConfigFile.settings["fL1dLTSigmaLight"] = 2.3
 
         # Optional threshold values for L1C-L1D processing of light & dark data (see AnomalyDetection tool)
         ConfigFile.settings["bL1dThreshold"] = 0

@@ -21,6 +21,8 @@ Other ideas and To Dos:
 v1.0.6 2021-03-31: DAA
 2021-03-31:
 * Update README and Changelog in preparation for version release
+* Clean up file naming in batch mode to allow more flexibility in name formats
+* Fix bug in AnomalyDetection for f3.2 type waveband naming (lights)
 
 2021-03-29:
 * Port repository over from GitLab to https://github.com/nasa/HyperInSPACE

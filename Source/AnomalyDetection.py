@@ -502,8 +502,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.MinMaxDarkLabel.setText(str(getattr(self,f'{self.sensor}MinMaxBandDark')) +'nm' )
         self.MinMaxLightLabel.setText(str(getattr(self,f'{self.sensor}MinMaxBandLight')) +'nm')
 
-        # Try to use the Threshold bands to reset the slider and display
-        self.ThresholdCheckBoxUpdate()
+        # # Try to use the Threshold bands to reset the slider and display
+        # self.ThresholdCheckBoxUpdate()
 
         # Deglitch and plot Light from selected band
         if lightData is None:
@@ -513,7 +513,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             lightDark = 'Light'       
             lightData.datasetToColumns()
             light2D = lightData.columns
-            radiometry1D = light2D[str(self.waveBand)]
+            radiometry1D = light2D[f'{self.waveBand:03.2f}']
             # print(self.waveBand)      
             
             self.realTimePlot(self, radiometry1D, lightDateTime, sensorType, lightDark)

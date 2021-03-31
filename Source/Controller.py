@@ -516,8 +516,8 @@ class Controller:
         inFilePath = os.path.abspath(inFilePath)        
         # (inpath, inFileName) = os.path.split(inFilePath)        
         inFileName = os.path.split(inFilePath)[1]        
-        # Split off the . suffix (retains the LXx for L1a and above)
-        fileName = os.path.splitext(inFileName)[0]   
+        # Grab input name and extension
+        fileName,extension = os.path.splitext(inFileName)#[0]   
 
         # Initialize the Utility logger, overwriting it if necessary
         if ConfigFile.settings["bL2Stations"] == 1 and level == 'L2': 
@@ -528,7 +528,11 @@ class Controller:
         print(msg)
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
         
-        fileName = fileName.split('_') # [basefilename, level]
+        # If this is an HDF, assume it is not RAW, drop the level from fileName
+        if extension=='.hdf':
+            # [basefilename, level] tolerant of multiple "_" in filename; uses last one for Level
+            fileName = fileName.rsplit('_',1)[0] 
+
 
         # Check for base output directory
         if os.path.isdir(pathOut):
@@ -543,11 +547,11 @@ class Controller:
         if os.path.isdir(pathOutLevel) is False:
             os.mkdir(pathOutLevel)
         
-        if inFileName.startswith('pySAS'):
-            outFilePath = os.path.join(pathOutLevel,fileName[0] + "_" \
-                + fileName[1] + "_" + fileName[2] + "_" + level + ".hdf")        
-        else:
-            outFilePath = os.path.join(pathOutLevel,fileName[0] + "_" + level + ".hdf")        
+        # if inFileName.startswith('pySAS'):
+        #     outFilePath = os.path.join(pathOutLevel,fileName[0] + "_" \
+        #         + fileName[1] + "_" + fileName[2] + "_" + level + ".hdf")        
+        # else:
+        outFilePath = os.path.join(pathOutLevel,fileName + "_" + level + ".hdf")        
     
         if level == "L1A" or level == "L1B" or \
             level == "L1C" or level == "L1D":                           
@@ -685,23 +689,23 @@ class Controller:
             if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A', ancFile):
                 # Going from L0 to L1A, need to account for the underscore
                 inFileName = os.path.split(fp)[1]
-                fileName = f'L1A/{os.path.splitext(inFileName)[0]}_L1A.hdf'
+                fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'_L1A.hdf')
                 fp = os.path.join(os.path.abspath(pathOut),fileName)
                 if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1B', ancFile):
                     inFileName = os.path.split(fp)[1]
-                    fileName = f'L1B/{os.path.splitext(inFileName)[0].split("_")[0]}_L1B.hdf'
+                    fileName = os.path.join('L1B',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1B.hdf')
                     fp = os.path.join(os.path.abspath(pathOut),fileName)
                     if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1C', ancFile):
                         inFileName = os.path.split(fp)[1]
-                        fileName = f'L1C/{os.path.splitext(inFileName)[0].split("_")[0]}_L1C.hdf'
+                        fileName = os.path.join('L1C',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1C.hdf')
                         fp = os.path.join(os.path.abspath(pathOut),fileName)
                         if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1D', ancFile):
                             inFileName = os.path.split(fp)[1]
-                            fileName = f'L1D/{os.path.splitext(inFileName)[0].split("_")[0]}_L1D.hdf'
+                            fileName = os.path.join('L1D',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1D.hdf')
                             fp = os.path.join(os.path.abspath(pathOut),fileName)
                             if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1E', ancFile):
                                 inFileName = os.path.split(fp)[1]
-                                fileName = f'L1E/{os.path.splitext(inFileName)[0].split("_")[0]}_L1E.hdf'
+                                fileName = os.path.join('L1E',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1E.hdf')
                                 fp = os.path.join(os.path.abspath(pathOut),fileName)
                                 Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2', ancFile) 
         print("processFilesMultiLevel - DONE")
