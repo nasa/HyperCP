@@ -1,5 +1,5 @@
-<html lang="en">
 # HyperInSPACE (Hyperspectral In situ Support for PACE)
+<html lang="en">
 
 ![v1.0.6 banner](https://github.com/nasa/HyperInSPACE/blob/master/Data/banner2.png)
 
@@ -33,7 +33,7 @@ Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstr
 
 ## Requirements and Installation
 
-Clone this repository to a convenient directory on your computer. When HyperInSPACE/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved into them as described below. No system files will be changed.
+Clone this repository (branch: "master") to a convenient directory on your computer. When HyperInSPACE/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved into them as described below. No system files will be changed.
 
 Requires Python 3.X installed on a Linux, MacOS, or Windows computer. The <a href='https://www.anaconda.com/'>Anaconda</a> distribution is encouraged. (If you are unfamiliar with Anaconda, a nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. If you are running a minimal, bootstrap distribution such as Miniconda, several additional packages may be needed including: scipy, matplotlib, pyqt5, h5py, fpdf, and requests.)
 
@@ -59,6 +59,9 @@ prompt$ conda install -c conda-forge pyqtgraph
 ```
 ---
 ## Launching
+
+![v1.0.6 banner](https://github.com/nasa/HyperInSPACE/blob/master/Data/banner.png)
+
 HyperInSPACE is a Main-View-Controller Python package with a pyQt5 GUI that can be launched in several ways, such as by navigating to the program folder on the command line and typing the following command after the prompt:
 ```
 prompt$ python Main.py

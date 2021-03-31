@@ -1,22 +1,33 @@
-v1.0.6 Unreleased; DAA (dirk.a.aurin@nasa.gov)
-* Adaptations to work with pySAS tower
-* Add BRDF correction options
+v1.0.7 Unreleased; DAA (dirk.a.aurin@nasa.gov)
+
+Pressing:
 * Improve/augment to NIR residual corrections
+* Add BRDF correction options
 * Propagate uncertainties from radiometry to OC products
 * Memory issue with FPDF causes major slowdown in PDF report building with figures
-* Use ancillary SeaBASS metadata to populate remaining L1E/L2 SeaBASS header fields
-* Add failure flag. Split Wind and SZA L2.
-    * Capture details when errors thrown (inspect, currentframe, getframeinfo)
-* Add PIC and GIOP to L2 OC products
-* Produce kml files for GoogleEarth on entire cruise/directory
 * Fix non-unique station/file bug
 
-2021-03-29:
-* Port repo to https://github.com/nasa/HyperInSPACE/tree/master
-* Add Data directory to repo (less Anc and Zhang)
-* Add code to Main to download the Zhang et al. (2017) database for glint correction.
+Other ideas and To Dos:
+* Incorporate new platforms with collaborators (write to dirk.a.aurin@nasa.gov)
+* Use ancillary SeaBASS metadata to populate remaining L1E/L2 SeaBASS header fields
+* Add failure flags in HDF object attributes:
+    * Capture details when errors thrown (inspect, currentframe, getframeinfo)
+    * Split Wind and SZA bombs in L2
+* Add PIC and GIOP to L2 OC products
+* Produce kml files for GoogleEarth on entire cruise/directory
 
-2021-02-28: DAA
+
+---
+v1.0.6 2021-03-31: DAA
+2021-03-31:
+* Update README and Changelog in preparation for version release
+
+2021-03-29:
+* Port repository over from GitLab to https://github.com/nasa/HyperInSPACE
+* Add Data directory to repo (less Anc and Zhang database)
+* Add code to Main to download the Zhang et al. (2017) database for glint correction after initial clone/launch
+
+2021-02-28:
 * CalibrationFile.py reads DATETAG/ TIMETAG2 bytes from binary GPRMC and UMTWR (not GPGGA) frames instead of NMEA string
 * Add UMaine SolarTracker (SOLARTRACKER_UM) to potential groups in ProcessL1B.py
 
