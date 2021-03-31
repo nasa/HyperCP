@@ -1,12 +1,13 @@
 <html lang="en">
-# HyperInSPACE 
+# HyperInSPACE (Hyperspectral In situ Support for PACE)
 
-HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing automated, above-water, hyperspectral ocean color radiometry data using state-of-the-art methods and protocols for quality assurance, uncertainty estimation/propagation, sky/sunglint correction, convolution to satellite wavebands, ocean color product retrieval, and data output to formatted text files for submission to the SeaBASS database as well as complete HDF5 record, metadata, and processing reports. This open source package is designed to facilitate rigorous, flexible, and transparent data processing for the NASA/OEL/FSG and partners, as well as any principal investigators funded by NASA to submit such data to SeaBASS. Data will be used for the purpose of water optical classification, ocean color product retrieval algorithm development, and orbital platform validation.
+![v1.0.6 banner](https://github.com/nasa/HyperInSPACE/blob/master/Data/banner2.png)
 
-Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>\
-Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
+HyperInSPACE is designed to provide hyperspectral in situ support for the <a href='https://pace.gsfc.nasa.gov/'>PACE mission</a> by processing automated, above-water, hyperspectral ocean color radiometry data using state-of-the-art methods and protocols for quality assurance, uncertainty estimation/propagation, sky/sunglint correction, convolution to satellite wavebands, and ocean color product retrieval. Data output are formatted to text files for submission to the SeaBASS database and saved as comprehensive HDF5 records with automated processing reports. The package is designed to facilitate rigorous, flexible, and transparent data processing for the ocean color remote sensing community, particularly PIs funded by NASA to submit such radiometric data to SeaBASS. Radiometry processed in HyperInSPACE are used for water optical characterization, ocean color product retrieval algorithm development, and orbital platform validation. 
 
-## Version 1.0.5 (see Changelog.md);
+Currently, HyperInSPACE supports <a href='https://www.seabird.com/'>Sea-Bird Scientific</a> HyperSAS packages with and without SolarTracker or pySAS platforms. If you are interested in integrating support for your platform, contact us at the email address below the copyright.
+
+## Version 1.0.6 (see Changelog.md)
 
 ---
 ```
@@ -22,20 +23,25 @@ Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstr
  FOR ANY PURPOSE. IT IS PROVIDED "AS IS" WITHOUT EXPRESS OR IMPLIED
  WARRANTY. NEITHER NASA GSFC NOR THE U.S. GOVERNMENT SHALL BE LIABLE FOR
  ANY DAMAGE SUFFERED BY THE USER OF THIS SOFTWARE.
+
+ Copyright © 2020 United States Government as represented by the Administrator 
+ of the National Aeronautics and Space Administration. All Rights Reserved.
 ```
 ---
+Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>\
+Acknowledgements: Nathan Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
 ## Requirements and Installation
 
-Save this entire HyperInSPACE file repository (~2.5 GB including accompanying databases) to a convenient, sensibly named directory on your computer such as yourPath/HyperInSPACE/. When Main.py is launched for the first time, directories will be created and databases moved into them as described below. No system files will be changed.
+Clone this repository to a convenient directory on your computer. When HyperInSPACE/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved into them as described below. No system files will be changed.
 
-Requires Python 3.X installed on a Linux, MacOS, or Windows computer. The Anaconda distribution is encouraged. A nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. (If you are running a minimal, bootstrap distribution such as Miniconda, several additional packages may be needed including: scipy, matplotlib, pyqt5, h5py, fpdf, and requests.)
+Requires Python 3.X installed on a Linux, MacOS, or Windows computer. The <a href='https://www.anaconda.com/'>Anaconda</a> distribution is encouraged. (If you are unfamiliar with Anaconda, a nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. If you are running a minimal, bootstrap distribution such as Miniconda, several additional packages may be needed including: scipy, matplotlib, pyqt5, h5py, fpdf, and requests.)
 
-HDF5 data files will be read and written using the h5py module (2.9.0 at the time of writing) included in a standard Anaconda Python package. The Zhang et al. 2017 sky/sunglint correction also requires Xarray, which requires installation (complete instructions here: http://xarray.pydata.org/en/stable/installing.html). To install Xarray with Anaconda:
+HDF5 data files will be read and written using the h5py module (2.9.0 at the time of writing) included in a standard Anaconda Python package. The Zhang et al. (2017) sky/sunglint correction also requires Xarray, which requires installation (complete details here: http://xarray.pydata.org/en/stable/installing.html). To install Xarray with Anaconda:
 ```
 prompt$ conda install xarray dask netCDF4 bottleneck
 ```
- Utilization of GMAO atmospheric models for use in the Zhang et al. 2017 glint correction and filling in environmental conditions not otherwise provided in field logs will require a user account on the NASA EARTHDATA server. These are the same credentials used to download satellite imagery from oceancolor.gsfc.nasa.gov. New profiles can be created here: https://urs.earthdata.nasa.gov/users/new . The Pysolar module (https://anaconda.org/conda-forge/pysolar) must be installed unless the raw data includes solar geometries (e.g. SolarTracker with SATNAV and associated device file as described below). To install Pysolar with Anaconda:
+ Utilization of <a href='https://gmao.gsfc.nasa.gov/'>GMAO</a> atmospheric models for use in the Zhang et al. (2017) glint correction and filling in environmental conditions not otherwise provided in field logs will require a user account on the <a href='https://earthdata.nasa.gov/'>NASA EARTHDATA</a> server. These are the same credentials used to download satellite imagery from oceancolor.gsfc.nasa.gov. New profiles can be created here: https://urs.earthdata.nasa.gov/users/new (but HyperInSPACE will prompt and link you when run). The Pysolar module (https://anaconda.org/conda-forge/pysolar) must be installed unless the raw data includes solar geometries (e.g. SolarTracker with SATNAV and associated device file as described below). To install Pysolar with Anaconda:
 ```
 prompt$ conda install -c conda-forge pysolar
 ```
@@ -43,7 +49,7 @@ To generate PDF reports for each file processed at Level-2, the package fpdf wil
 ```
 prompt$ pip install fpdf
 ```
-The new Anomaly Analysis tool requires pyqtgraph (http://www.pyqtgraph.org/) which can be installed with pip:
+The new (v1.0.5) Anomaly Analysis tool requires pyqtgraph (http://www.pyqtgraph.org/) which can be installed with pip:
 ```
 prompt$ pip install pyqtgraph
 ```
@@ -53,12 +59,13 @@ prompt$ conda install -c conda-forge pyqtgraph
 ```
 ---
 ## Launching
-HyperInSPACE is a Main-View-Controller Python package that can be launched in several ways to run the Main.py module, such as by navigating to the program folder on the command line and typing the following command after the prompt:
+HyperInSPACE is a Main-View-Controller Python package with a pyQt5 GUI that can be launched in several ways, such as by navigating to the program folder on the command line and typing the following command after the prompt:
 ```
 prompt$ python Main.py
 ```
+However you launch the GUI, *watch for important feedback at the command line terminal* in addition to informational GUI windows.
 
-The following folders will be created automatically when you first run the program: 
+The following sub-directories will be created automatically (if not present) when you first run the program: 
 
 - Config - Configuration and instrument files (by subdirectory - auto-created), SeaBASS header configuration files, Main view configuration file
 - Logs - Most command line output messages generated during processing are captured for later reference in .log text files here
@@ -66,13 +73,16 @@ The following folders will be created automatically when you first run the progr
 - Data - This directory now comes unpacked in the distribution. By default, it contains only Pope & Fry/Smith & Baker water absorption properties, Thuillier and satellite spectral response functions, banner images for the GUI, and the Zhang glint correction database. This is also the optional fallback location for input and/or output radiometry data, though setting up separate locations for field data is highly recommended (see below).
 - Source - This directory (which comes unpacked with the distribution) holds the majority of the Python source code.
 
-(Note: Data, Plots, and Logs directories are not tracked on git.)
+(Note: Data, Plots, and Logs directories are not tracked with git.)
+
+### Database download
+When you first launch the software, it will need to download a large (2.3 GB) database (Zhang_rho_db.mat) for use in glint correction. If this database is not found in Data, a dialog window will appear before the Main.py GUI with guidance on how to proceed. If this download should fail for any reason, further instructions will be given at the command line terminal where Main.py was launched.
 
 ---
 ## Guide
 
-### Overview
-1. Identify the cruise, relevant calibration files, and ancillary data files to be used in processing
+### Quick Start Overview
+1. Identify the research cruise, relevant calibration files, and ancillary data files to be used in processing
 2. Launch HyperInSPACE and set up the Main window for data directories and the ancillary file
 3. Create a new Configuration (or edit and existing Configuration)
 4. Add and enable only *relevant* calibration and instrument files to the Configuration; there is no such thing as a standard instrument package
