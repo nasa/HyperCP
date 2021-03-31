@@ -1,4 +1,4 @@
-# HyperInSPACE (Hyperspectral In situ Support for PACE)
+# Hyperspectral In situ Support for PACE
 <html lang="en">
 
 <center><img src="Data/banner2.png" alt="Banner"></center>
