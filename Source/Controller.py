@@ -360,15 +360,14 @@ class Controller:
                 root.writeHDF5(outFilePath)
 
                 # Create Plots
-                # Radiometry
-                dirpath = os.getcwd()
+                # Radiometry                
                 _, filename = os.path.split(outFilePath)
                 if ConfigFile.settings['bL2PlotEs']==1:
-                    Utilities.plotRadiometryL1D(root, dirpath, filename, rType='ES')
+                    Utilities.plotRadiometryL1D(root, filename, rType='ES')
                 if ConfigFile.settings['bL2PlotLi']==1:
-                    Utilities.plotRadiometryL1D(root, dirpath, filename, rType='LI')
+                    Utilities.plotRadiometryL1D(root, filename, rType='LI')
                 if ConfigFile.settings['bL2PlotLt']==1:
-                    Utilities.plotRadiometryL1D(root, dirpath, filename, rType='LT')
+                    Utilities.plotRadiometryL1D(root, filename, rType='LT')
             except:
                 msg = "Unable to write file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
@@ -451,7 +450,6 @@ class Controller:
         root.attributes['In_Filepath'] = inFilePath
         root = ProcessL2.processL2(root, ancillaryData)
         
-        dirpath = os.getcwd()
         outPath, filename = os.path.split(outFilePath)
         if root is not None:
             if ConfigFile.settings["bL2Stations"]:
@@ -463,29 +461,29 @@ class Controller:
             # Create Plots
             # Radiometry
             if ConfigFile.settings['bL2PlotRrs']==1:                        
-                Utilities.plotRadiometry(root, dirpath, filename, rType='Rrs', plotDelta = True)
+                Utilities.plotRadiometry(root, filename, rType='Rrs', plotDelta = True)
             if ConfigFile.settings['bL2PlotnLw']==1:            
-                Utilities.plotRadiometry(root, dirpath, filename, rType='nLw', plotDelta = True)            
+                Utilities.plotRadiometry(root, filename, rType='nLw', plotDelta = True)            
             if ConfigFile.settings['bL2PlotEs']==1:
-                Utilities.plotRadiometry(root, dirpath, filename, rType='ES', plotDelta = True)
+                Utilities.plotRadiometry(root, filename, rType='ES', plotDelta = True)
             if ConfigFile.settings['bL2PlotLi']==1:
-                Utilities.plotRadiometry(root, dirpath, filename, rType='LI', plotDelta = True)
+                Utilities.plotRadiometry(root, filename, rType='LI', plotDelta = True)
             if ConfigFile.settings['bL2PlotLt']==1:
-                Utilities.plotRadiometry(root, dirpath, filename, rType='LT', plotDelta = True)
+                Utilities.plotRadiometry(root, filename, rType='LT', plotDelta = True)
 
             # IOPs
             # These three should plot GIOP and QAA together (eventually, once GIOP is complete)
             if ConfigFile.products["bL2ProdadgQaa"]:
-                Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
+                Utilities.plotIOPs(root, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
             if ConfigFile.products["bL2ProdaphQaa"]:
-                Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
+                Utilities.plotIOPs(root, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
             if ConfigFile.products["bL2ProdbbpQaa"]:
-                Utilities.plotIOPs(root, dirpath, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
+                Utilities.plotIOPs(root, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
 
             # This puts ag, Sg, and DOC on the same plot
             if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products["bL2ProdSg"] \
                  and ConfigFile.products["bL2Prodag"] and ConfigFile.products["bL2ProdDOC"]:
-                Utilities.plotIOPs(root, dirpath, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
+                Utilities.plotIOPs(root, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
 
         # Write output file
         if root is not None:
@@ -576,6 +574,9 @@ class Controller:
                 anomAnalFileName = anomAnalFileName + '_anoms.csv'
                 fp = os.path.join('Config',anomAnalFileName)
                 if os.path.exists(fp):
+                    msg = 'Deglitching anomaly file found for this L1C. Using these parameters.'
+                    print(msg)
+                    Utilities.writeLogFile(msg) 
                     params = Utilities.readAnomAnalFile(fp)
                     # If a parameterization has been saved in the AnomAnalFile, set the properties in the local object
                     # for all sensors

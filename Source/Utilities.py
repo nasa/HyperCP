@@ -603,16 +603,20 @@ class Utilities:
         return new_y
 
     @staticmethod
-    def plotRadiometry(root, dirpath, filename, rType, plotDelta = False):
+    def plotRadiometry(root, filename, rType, plotDelta = False):
 
+        dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
-        # If default output path is used, choose the root HyperInSPACE path, and build on that
-        if os.path.abspath(outDir) == os.path.join(dirpath,'Data'):
-            outDir = dirpath
+        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path, 
+        # and build on that (HyperInSPACE/Plots/etc...)
+        if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
+            outDir = dirPath
 
-        if not os.path.exists(os.path.join(outDir,'Plots','L2')):
-            os.makedirs(os.path.join(outDir,'Plots','L2'))        
-        plotdir = os.path.join(outDir,'Plots','L2')
+        # Otherwise, put Plots in the chosen output directory from Main
+        plotDir = os.path.join(outDir,'Plots','L2')
+
+        if not os.path.exists(plotDir):
+            os.makedirs(plotDir)  
 
         dataDelta = None
         ''' Note: If only one spectrum is left in a given ensemble, deltas will
@@ -970,21 +974,26 @@ class Utilities:
 
         # Save the plot
         filebasename = filename.split('_')
-        fp = os.path.join(plotdir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
+        fp = os.path.join(plotDir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
         plt.savefig(fp)
         plt.close() # This prevents displaying the plot on screen with certain IDEs          
 
     @staticmethod
-    def plotRadiometryL1D(root, dirpath, filename, rType):
+    def plotRadiometryL1D(root, filename, rType):
 
+        dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
-        # If default output path is used, choose the root HyperInSPACE path, and build on that
-        if os.path.abspath(outDir) == os.path.join(dirpath,'Data'):
-            outDir = dirpath
+        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path, 
+        # and build on that (HyperInSPACE/Plots/etc...)
+        if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
+            outDir = dirPath
 
-        if not os.path.exists(os.path.join(outDir,'Plots','L1D')):
-            os.makedirs(os.path.join(outDir,'Plots','L1D'))        
-        plotdir = os.path.join(outDir,'Plots','L1D')        
+        # Otherwise, put Plots in the chosen output directory from Main
+        plotDir = os.path.join(outDir,'Plots','L1D')
+
+        if not os.path.exists(plotDir):
+            os.makedirs(plotDir)  
+
         plotRange = [305, 1140]
 
         if rType=='ES':
@@ -1069,7 +1078,7 @@ class Utilities:
 
         # Save the plot
         filebasename = filename.split('_')
-        fp = os.path.join(plotdir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
+        fp = os.path.join(plotDir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
         plt.savefig(fp)
         plt.close() # This prevents displaying the plot on screen with certain IDEs   
    
@@ -1077,6 +1086,19 @@ class Utilities:
     @staticmethod
     def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):    
         ''' Plot results of L1E time interpolation '''
+
+        dirPath = os.getcwd()
+        outDir = MainConfig.settings["outDir"]
+        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path, 
+        # and build on that (HyperInSPACE/Plots/etc...)
+        if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
+            outDir = dirPath
+
+        # Otherwise, put Plots in the chosen output directory from Main
+        plotDir = os.path.join(outDir,'Plots','L1E')
+
+        if not os.path.exists(plotDir):
+            os.makedirs(plotDir)  
 
         # For the sake of MacOS, need to hack the datetimes into panda dataframes for plotting
         dfx = pd.DataFrame(data=xTimer, index=list(range(0,len(xTimer))), columns=['x'])
@@ -1086,18 +1108,8 @@ class Utilities:
         dfy['x'] = pd.to_datetime(dfy['x'].astype(str))
 
         fileBaseName,_ = fileName.split('.')
-        register_matplotlib_converters()
-        
-        outDir = MainConfig.settings["outDir"]
-        # If default output path is used, choose the root HyperInSPACE path, and build on that
-        if os.path.abspath(outDir) == os.path.join('./','Data'):
-            outDir = './'
-
-        if not os.path.exists(os.path.join(outDir,'Plots','L1E')):
-            os.makedirs(os.path.join(outDir,'Plots','L1E'))        
-        plotdir = os.path.join(outDir,'Plots','L1E')
-
-        # try:           
+        register_matplotlib_converters()        
+   
         font = {'family': 'serif',
             'color':  'darkred',
             'weight': 'normal',
@@ -1144,7 +1156,7 @@ class Utilities:
                     plt.subplots_adjust(bottom=0.15)
                     
                     # plt.savefig(os.path.join('Plots','L1E',f'{fileBaseName}_{instr}_{k}.png'))
-                    plt.savefig(os.path.join(plotdir,f'{fileBaseName}_{instr}_{k}.png'))
+                    plt.savefig(os.path.join(plotDir,f'{fileBaseName}_{instr}_{k}.png'))
                     plt.close()                                      
                 index +=1     
         else:
@@ -1169,29 +1181,27 @@ class Utilities:
                 plt.subplots_adjust(left=0.15)
                 plt.subplots_adjust(bottom=0.15)
                 
-                plt.savefig(os.path.join(plotdir,f'{fileBaseName}_{instr}_{k}.png'))
+                plt.savefig(os.path.join(plotDir,f'{fileBaseName}_{instr}_{k}.png'))
                 plt.close()
                 
         print('\n')      
-                
-        # except:
-        #     e = sys.exc_info()[0]
-        #     print("Error: %s" % e)
 
     @staticmethod
     def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 700],\
                 filterFactor=3, rType='None'):
-        dirpath = './'
-
+        
+        dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
-        # If default output path is used, choose the root HyperInSPACE path, and build on that
-        if os.path.abspath(outDir) == os.path.join(dirpath,'Data'):
-            outDir = dirpath
+        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path, 
+        # and build on that (HyperInSPACE/Plots/etc...)
+        if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
+            outDir = dirPath
 
-        if not os.path.exists(os.path.join(outDir,'Plots','L2_Spectral_Filter')):
-            os.makedirs(os.path.join(outDir,'Plots','L2_Spectral_Filter'))        
-        plotdir = os.path.join(outDir,'Plots','L2_Spectral_Filter')
-                
+        # Otherwise, put Plots in the chosen output directory from Main
+        plotDir = os.path.join(outDir,'Plots','L2_Spectral_Filter')
+
+        if not os.path.exists(plotDir):
+            os.makedirs(plotDir)  
 
         font = {'family': 'serif',
                 'color':  'darkred',
@@ -1272,37 +1282,34 @@ class Utilities:
         plt.subplots_adjust(bottom=0.15)
         axes = plt.gca()
         axes.grid()
-        
-            
-        # Create output directory        
-        os.makedirs(plotdir, exist_ok=True)
 
         # Save the plot
         _,filename = os.path.split(inFilePath)
         filebasename,_ = filename.rsplit('_',1)
         if station:
-            fp = os.path.join(plotdir, f'STATION_{station}_{filebasename}_{rType}.png')
+            fp = os.path.join(plotDir, f'STATION_{station}_{filebasename}_{rType}.png')
         else:            
-            fp = os.path.join(plotdir, f'{filebasename}_{rType}.png')
+            fp = os.path.join(plotDir, f'{filebasename}_{rType}.png')
         plt.savefig(fp)
         plt.close()
 
         return badTimes
 
     @staticmethod
-    def plotIOPs(root, dirpath, filename, algorithm, iopType, plotDelta = False):
+    def plotIOPs(root, filename, algorithm, iopType, plotDelta = False):
         
-        # To Do: uncertainty propagation
-        print(f'Plotting {algorithm} {iopType}')
-
+        dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
-        # If default output path is used, choose the root HyperInSPACE path, and build on that
-        if os.path.abspath(outDir) == os.path.join(dirpath,'Data'):
-            outDir = dirpath
+        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path, 
+        # and build on that (HyperInSPACE/Plots/etc...)
+        if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
+            outDir = dirPath
 
-        if not os.path.exists(os.path.join(outDir,'Plots','L2_Products')):
-            os.makedirs(os.path.join(outDir,'Plots','L2_Products'))        
-        plotdir = os.path.join(outDir,'Plots','L2_Products')
+        # Otherwise, put Plots in the chosen output directory from Main
+        plotDir = os.path.join(outDir,'Plots','L2_Products')
+
+        if not os.path.exists(plotDir):
+            os.makedirs(plotDir)
 
         font = {'family': 'serif',
             'color':  'darkred',
@@ -1394,7 +1401,6 @@ class Utilities:
                 # DOC
                 docDataGOCAD = group.getDataset(f'gocad_doc')
                 
-
         maxIOP = 0
         minIOP = 0        
 
@@ -1497,7 +1503,6 @@ class Utilities:
                     # Now tack on DOC
                     plt.text(600, 0.5 - 0.12*yScaler, '{} {:3.2f}'.format('DOC = ', docDataGOCAD.data['doc'][i]) , color=c)
 
- 
         axes = plt.gca()
         axes.set_title(filename, fontdict=font)
         axes.set_ylim([minIOP, maxIOP])
@@ -1520,7 +1525,7 @@ class Utilities:
 
         # Save the plot
         filebasename = filename.split('_')
-        fp = os.path.join(plotdir, '_'.join(filebasename[0:-1]) + '_' + label + '.png')
+        fp = os.path.join(plotDir, '_'.join(filebasename[0:-1]) + '_' + label + '.png')
         plt.savefig(fp)
         plt.close() # This prevents displaying the plot on screen with certain IDEs    
 
