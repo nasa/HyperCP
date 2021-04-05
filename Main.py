@@ -4,7 +4,7 @@ above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 
 See README.md or README.pdf for installation instructions and guide.
 
-Version 1.0.6: Under development March 2021 (See Changelog.md)
+Version 1.0.7: Under development April 2021 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 
 """
@@ -78,7 +78,7 @@ class Window(QtWidgets.QWidget):
 
         # Main window configuration restore
         MainConfig.loadConfig(MainConfig.fileName)  
-        MainConfig.settings['version'] = '1.0.6'
+        MainConfig.settings['version'] = '1.0.7'
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
@@ -256,7 +256,7 @@ class Window(QtWidgets.QWidget):
 
         self.setGeometry(300, 300, 290, 600)
         # self.setGeometry(300, 300, 250, 600) This does nothing.
-        self.setWindowTitle('Main')
+        self.setWindowTitle(f"Main v{MainConfig.settings['version']}")
         self.show()
 
     ########################################################################################

@@ -410,7 +410,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # l2pLabel_font.setBold(True)
         # l2pLabel.setFont(l1eLabel_font)
         l2pSublabel = QtWidgets.QLabel(" GMAO MERRA2 ancillary data are required for Zhang glint", self)
-        l2pSublabel2 = QtWidgets.QLabel(" Zhang correction and can fill in wind for Ruddick glint.", self)
+        l2pSublabel2 = QtWidgets.QLabel(" correction and can fill in wind for Ruddick glint.", self)
         l2pSublabel3 = QtWidgets.QLabel(" WILL PROMPT FOR EARTHDATA USERNAME/PASSWORD", self)
         l2pSublabel4 = QtWidgets.QLabel(
             "<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">         Register here</a>", self)
@@ -443,13 +443,13 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2DefaultSSTLineEdit.setText(str(ConfigFile.settings["fL2DefaultSST"]))
         self.l2DefaultSSTLineEdit.setValidator(doubleValidator)
 
-        self.RhoRadioButtonRuddick = QtWidgets.QRadioButton("Ruddick 2006 ρ")
+        self.RhoRadioButtonRuddick = QtWidgets.QRadioButton("Ruddick et al. (2006) ρ")
         self.RhoRadioButtonRuddick.setAutoExclusive(False)
         if ConfigFile.settings["bL2RuddickRho"]==1:
             self.RhoRadioButtonRuddick.setChecked(True)
         self.RhoRadioButtonRuddick.clicked.connect(self.l2RhoRadioButtonRuddickClicked)  
 
-        self.RhoRadioButtonZhang = QtWidgets.QRadioButton("Zhang 2017 ρ")
+        self.RhoRadioButtonZhang = QtWidgets.QRadioButton("Zhang et al. (2017) ρ")
         self.RhoRadioButtonZhang.setAutoExclusive(False)
         if ConfigFile.settings["bL2ZhangRho"]==1:
             self.RhoRadioButtonZhang.setChecked(True)            
@@ -458,11 +458,17 @@ class ConfigWindow(QtWidgets.QDialog):
             self.RhoRadioButtonZhang.setDisabled(1)
         self.RhoRadioButtonZhang.clicked.connect(self.l2RhoRadioButtonZhangClicked)
 
-        self.RhoRadioButtonDefault = QtWidgets.QRadioButton("Mobley 1999 ρ")
+        self.RhoRadioButtonDefault = QtWidgets.QRadioButton("Mobley (1999) ρ")
         self.RhoRadioButtonDefault.setAutoExclusive(False)
         if ConfigFile.settings["bL2DefaultRho"]==1:
             self.RhoRadioButtonDefault.setChecked(True)
-        self.RhoRadioButtonDefault.clicked.connect(self.l2RhoRadioButtonDefaultClicked)        
+        self.RhoRadioButtonDefault.clicked.connect(self.l2RhoRadioButtonDefaultClicked)    
+
+        self.RhoRadioButtonYour = QtWidgets.QRadioButton("Your (2021) ρ")
+        self.RhoRadioButtonYour.setAutoExclusive(False)
+        # if ConfigFile.settings["bL2YourRho"]==1:
+        #     self.RhoRadioButtonYour.setChecked(True)
+        self.RhoRadioButtonYour.clicked.connect(self.l2RhoRadioButtonYourClicked)      
              
 
         # L2 NIR AtmoCorr
@@ -471,16 +477,21 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
             self.l2NIRCorrectionCheckBox.setChecked(True)
         
-        self.SimpleNIRRadioButton = QtWidgets.QRadioButton("   Mueller/Hooker 2003 (blue water)")
+        self.SimpleNIRRadioButton = QtWidgets.QRadioButton("   NASA Protocols (2003) (blue water)")
         self.SimpleNIRRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL2SimpleNIRCorrection"] == 1:
             self.SimpleNIRRadioButton.setChecked(True)
         self.SimpleNIRRadioButton.clicked.connect(self.l2SimpleNIRRadioButtonClicked)        
-        self.SimSpecNIRRadioButton = QtWidgets.QRadioButton("   SimSpec. Ruddick 2006 (turbid)")
+        self.SimSpecNIRRadioButton = QtWidgets.QRadioButton("   SimSpec. Ruddick et al. (2006) (turbid)")
         self.SimSpecNIRRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL2SimSpecNIRCorrection"] == 1:
             self.SimSpecNIRRadioButton.setChecked(True)
-        self.SimSpecNIRRadioButton.clicked.connect(self.l2SimSpecNIRRadioButtonClicked)     
+        self.SimSpecNIRRadioButton.clicked.connect(self.l2SimSpecNIRRadioButtonClicked)  
+        self.YourNIRRadioButton = QtWidgets.QRadioButton("   Your (2021) (universal)")
+        self.YourNIRRadioButton.setAutoExclusive(False)
+        # if ConfigFile.settings["bL2YourNIRCorrection"] == 1:
+        #     self.YourNIRRadioButton.setChecked(True)
+        self.YourNIRRadioButton.clicked.connect(self.l2YourNIRRadioButtonClicked)    
 
         self.l2NIRCorrectionCheckBoxUpdate()    
 
@@ -952,8 +963,9 @@ class ConfigWindow(QtWidgets.QDialog):
         RhoHBox2.addWidget(self.RhoRadioButtonZhang)
         VBox3.addLayout(RhoHBox2)
         RhoHBox3 = QtWidgets.QHBoxLayout()
-        RhoHBox3.addSpacing(60)
+        # RhoHBox3.addSpacing(60)
         RhoHBox3.addWidget(self.RhoRadioButtonDefault)        
+        RhoHBox3.addWidget(self.RhoRadioButtonYour)  
         VBox3.addLayout(RhoHBox3)
 
         VBox3.addSpacing(5)
@@ -966,6 +978,7 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addLayout(NIRCorrectionHBox)         
         VBox3.addWidget(self.SimpleNIRRadioButton)
         VBox3.addWidget(self.SimSpecNIRRadioButton)  
+        VBox3.addWidget(self.YourNIRRadioButton) 
 
         VBox3.addSpacing(5)
 
@@ -1417,7 +1430,16 @@ class ConfigWindow(QtWidgets.QDialog):
         self.RhoRadioButtonDefault.setChecked(True)
         ConfigFile.settings["bL2RuddickRho"] = 0
         ConfigFile.settings["bL2ZhangRho"] = 0
-        ConfigFile.settings["bL2DefaultRho"] = 1
+        ConfigFile.settings["bL2DefaultRho"] = 1 
+
+    def l2RhoRadioButtonYourClicked(self):
+        print("ConfigWindow - l2RhoCorrection set to Default. You have not submitted your method.")
+        self.RhoRadioButtonRuddick.setChecked(False)
+        self.RhoRadioButtonZhang.setChecked(False)
+        self.RhoRadioButtonYour.setChecked(True)
+        ConfigFile.settings["bL2RuddickRho"] = 0
+        ConfigFile.settings["bL2ZhangRho"] = 0
+        ConfigFile.settings["bL2DefaultRho"] = 1 # This is a mock up. Use Default 
 
     def l2SimpleNIRRadioButtonClicked(self):
         print("ConfigWindow - l2NIRCorrection set to Simple")
@@ -1431,6 +1453,12 @@ class ConfigWindow(QtWidgets.QDialog):
         print("ConfigWindow - l2NIRCorrection set to SimSpec")
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
+    def l2YourNIRRadioButtonClicked(self):
+        self.SimpleNIRRadioButton.setChecked(False)
+        self.YourNIRRadioButton.setChecked(True)
+        print("ConfigWindow - l2NIRCorrection set to Simple. You have not submitted Your method.")
+        ConfigFile.settings["bL2SimpleNIRCorrection"] = 1 # Mock up. Use Simple
+        ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
     
     def l2NIRCorrectionCheckBoxUpdate(self):
         print("ConfigWindow - l2NIRCorrectionCheckBoxUpdate")
