@@ -1445,16 +1445,19 @@ class ConfigWindow(QtWidgets.QDialog):
         print("ConfigWindow - l2NIRCorrection set to Simple")
         self.SimpleNIRRadioButton.setChecked(True)
         self.SimSpecNIRRadioButton.setChecked(False)
+        self.YourNIRRadioButton.setChecked(False)
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 1
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
     def l2SimSpecNIRRadioButtonClicked(self):
         self.SimpleNIRRadioButton.setChecked(False)
         self.SimSpecNIRRadioButton.setChecked(True)
+        self.YourNIRRadioButton.setChecked(False)
         print("ConfigWindow - l2NIRCorrection set to SimSpec")
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
     def l2YourNIRRadioButtonClicked(self):
-        self.SimpleNIRRadioButton.setChecked(False)
+        self.SimpleNIRRadioButton.setChecked(True)
+        self.SimSpecNIRRadioButton.setChecked(False)
         self.YourNIRRadioButton.setChecked(True)
         print("ConfigWindow - l2NIRCorrection set to Simple. You have not submitted Your method.")
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 1 # Mock up. Use Simple
@@ -1466,6 +1469,7 @@ class ConfigWindow(QtWidgets.QDialog):
         disabled = (not self.l2NIRCorrectionCheckBox.isChecked())     
         self.SimpleNIRRadioButton.setDisabled(disabled)
         self.SimSpecNIRRadioButton.setDisabled(disabled)
+        self.YourNIRRadioButton.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL2PerformNIRCorrection"] = 0  
         else:

@@ -39,7 +39,7 @@ class Controller:
         try: 
             # If writing for L2, use the L2 file attributes, otherwise the current processing 
             # level will not have an HDF to read, so use ConfigFile settings
-            if numLevel == 6           :
+            if numLevel == 6:
                 root = HDFRoot.readHDF5(fp)
             else:
                 root = None
@@ -584,11 +584,22 @@ class Controller:
                     if l1CfileName in params.keys():
                         ref = 0
                         for sensor in ['ES','LT','LI']:
-                            ConfigFile.settings[f'{sensor}WindowDark'] = params[l1CfileName][ref+0]
-                            ConfigFile.settings[f'{sensor}WindowLight']= params[l1CfileName][ref+1]
-                            ConfigFile.settings[f'{sensor}SigmaDark']= params[l1CfileName][ref+2]
-                            ConfigFile.settings[f'{sensor}SigmaLight']= params[l1CfileName][ref+3]
-                            ref += 4
+                            # ConfigFile.settings[f'{sensor}WindowDark'] = params[l1CfileName][ref+0]
+                            # ConfigFile.settings[f'{sensor}WindowLight']= params[l1CfileName][ref+1]
+                            # ConfigFile.settings[f'{sensor}SigmaDark']= params[l1CfileName][ref+2]
+                            # ConfigFile.settings[f'{sensor}SigmaLight']= params[l1CfileName][ref+3]
+                            # ref += 4
+                            ConfigFile.settings[f'{sensor}WindowDark'] = params[l1CfileName][ref+0] 
+                            ConfigFile.settings[f'{sensor}WindowLight'] = params[l1CfileName][ref+1]
+                            ConfigFile.settings[f'{sensor}SigmaDark'] = params[l1CfileName][ref+2]
+                            ConfigFile.settings[f'{sensor}SigmaLight'] = params[l1CfileName][ref+3]
+                            ConfigFile.settings[f'{sensor}MinDark'] = params[l1CfileName][ref+4]
+                            ConfigFile.settings[f'{sensor}MaxDark'] = params[l1CfileName][ref+5]
+                            ConfigFile.settings[f'{sensor}MinMaxBandDark'] = params[l1CfileName][ref+6]
+                            ConfigFile.settings[f'{sensor}MinLight'] = params[l1CfileName][ref+7]
+                            ConfigFile.settings[f'{sensor}MaxLight'] = params[l1CfileName][ref+8]
+                            ConfigFile.settings[f'{sensor}MinMaxBandLight'] = params[l1CfileName][ref+9]
+                            ref += 10
                     else:
                         msg = 'This file not found in parameter file. Resorting to values in ConfigFile.settings.'
                         print(msg)

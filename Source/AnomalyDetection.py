@@ -712,13 +712,13 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Run L1D processing for this file        
 
         inFilePath = os.path.join(self.inputDirectory, 'L1C', self.fileName+'.hdf')
-        fileBaseName = self.fileName.split('_L1C')
-        outFilePath = os.path.join(self.inputDirectory, 'L1D', fileBaseName[0]+'_L1D.hdf')
+        fileBaseName = self.fileName.split('_L1C')[0]
+        outFilePath = os.path.join(self.inputDirectory, 'L1D', fileBaseName+'_L1D.hdf')
 
         # self.processL1d(inFilePath, outFilePath)
         # Jumpstart the logger:
         msg = "Process Single Level from Anomaly Analysis"
-        os.environ["LOGFILE"] = (fileBaseName[0] + '_L1C_L1D.log') 
+        os.environ["LOGFILE"] = (fileBaseName + '_L1C_L1D.log') 
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
         root = Controller.processL1d(inFilePath, outFilePath)
 
@@ -728,7 +728,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # outFilePath = os.path.join(self.inputDirectory, 'L1D', fileBaseName[0])
         if root is not None:
             timeStamp = root.attributes['TIME-STAMP']
-            title = f'File: {fileBaseName[0]} Collected: {timeStamp}'
+            title = f'File: {fileBaseName} Collected: {timeStamp}'
         else:
             timeStamp = 'Null'
             title = f'File: {fileBaseName} Collected: {timeStamp}'
@@ -860,12 +860,15 @@ class AnomAnalWindow(QtWidgets.QDialog):
         ''' Use numeric series (x) for now in place of datetime '''
         x = np.arange(0,len(radiometry1D),1)    
 
+        # First Pass
         y_anomaly = np.array(radiometry1D)[badIndex]
         x_anomaly = x[badIndex]
         # x_anomaly = dfx['x'][badIndex]
+        # Second Pass
         y_anomaly2 = np.array(radiometry1D)[badIndex2]
         x_anomaly2 = x[badIndex2]
         # x_anomaly2 = dfx['x'][badIndex2]
+        # Thresholds
         y_anomaly3 = np.array(radiometry1D)[badIndex3]
         x_anomaly3 = x[badIndex3]
 
@@ -891,7 +894,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
     @staticmethod
     def savePlots(fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\
         text_xlabel="Series"
-        text_ylabel="Radiometry"
+        text_ylabel=sensorType
         
 
         #Plot results  
@@ -908,18 +911,23 @@ class AnomAnalWindow(QtWidgets.QDialog):
         try:     
             plt.figure(figsize=(15, 8))
             
-            # y_av = moving_average(radiometry1D, window_size)
-            plt.plot(x[3:-3], avg[3:-3], color='green')
+            
+            # First Pass
             y_anomaly = np.array(radiometry1D)[badIndex]
             x_anomaly = x[badIndex]
+            # Second Pass
             y_anomaly2 = np.array(radiometry1D)[badIndex2]
             x_anomaly2 = x[badIndex2]
+            # Thresholds
             y_anomaly3 = np.array(radiometry1D)[badIndex3]
-            x_anomaly3 = x[badIndex3]
-            plt.plot(x_anomaly, y_anomaly, "rs", markersize=12)
-            plt.plot(x_anomaly2, y_anomaly2, "b*", markersize=12)
-            plt.plot(x_anomaly3, y_anomaly3, "ro", markersize=12)
-            plt.plot(x, radiometry1D, "k.")
+            x_anomaly3 = x[badIndex3]            
+
+            plt.plot(x, radiometry1D, marker='o', color='k', linestyle='', fillstyle='none')
+            plt.plot(x_anomaly, y_anomaly, marker='x', color='red', markersize=12, linestyle='')
+            plt.plot(x_anomaly2, y_anomaly2, marker='+', color='red', markersize=12, linestyle='')
+            plt.plot(x_anomaly3, y_anomaly3, marker='o', color='red', markersize=12, linestyle='', fillstyle='full', markerfacecolor='blue')
+            # y_av = moving_average(radiometry1D, window_size)
+            plt.plot(x[3:-3], avg[3:-3], color='green')
 
             plt.xlabel(text_xlabel, fontdict=font)
             plt.ylabel(text_ylabel, fontdict=font)   

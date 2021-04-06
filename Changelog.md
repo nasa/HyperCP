@@ -1,6 +1,7 @@
 v1.0.7 Unreleased; DAA (dirk.a.aurin@nasa.gov)
 
 Pressing:
+* Investigate integration time issue with HyperOCRs; possibly add a correction (in cal file? another level?)
 * Improve/augment to NIR residual corrections
 * Add BRDF correction options
 * Propagate uncertainties from radiometry to OC products
@@ -13,8 +14,14 @@ Other ideas and To Dos:
 * Add failure flags in HDF object attributes:
     * Capture details when errors thrown (inspect, currentframe, getframeinfo)
     * Split Wind and SZA bombs in L2
+* Add Time Series limits in AnomalyDetection
 * Add PIC and GIOP to L2 OC products
 * Produce kml files for GoogleEarth on entire cruise/directory
+
+2021-04-06:
+* Fix Controller to update /all/ ConfigFile settings with the pre-saved Anomaly parameter
+* Fix bad path for PDF report in AnomalyDetection
+* Clean up AnomalyDetection plots
 
 
 ---
