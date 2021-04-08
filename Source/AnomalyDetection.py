@@ -188,7 +188,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.plotWidgetLight = pg.PlotWidget(self)     
 
         guideLabel = QtWidgets.QLabel(\
-            'Left-click-hold to pan, right-click-hold to zoom, or right-click-release for more options.')
+            'Left-click-hold to pan, right-click-hold to zoom, or right-click-release for more options.\
+                IF PLOT IS BLANK, CLICK THE "A" IN THE BOTTOM LEFT CORNER TO RESET ZOOM.')
 
         self.ThresholdCheckBox.clicked.connect(self.ThresholdCheckBoxUpdate) 
 
@@ -674,15 +675,33 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 maxDark = getattr(self,f'{sensorType}MaxDark')
                 minMaxDarkBand = getattr(self,f'{sensorType}MinMaxBandDark')
 
-                index = 0
+                index = 0                
+                # Loop over bands to populate globBads
+                for timeSeries in columns.items():
+                    if index==0:
+                        # Initialize boolean lists for capturing global badIndex conditions across all wavebands
+                        globBad = [False]*len(timeSeries[1])
+                        globBad2 = [False]*len(timeSeries[1])
+                        globBad3 = [False]*len(timeSeries[1])
+                    band = float(timeSeries[0])
+                    if band > self.minBand and band < self.maxBand:
+                        # if index % step == 0:    
+                        radiometry1D = timeSeries[1]
+                        badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minDark, maxDark,minMaxDarkBand)                
+                        globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
+                        globBad2[:] = (True if val2 else val1 for (val1,val2) in zip(globBad2,badIndex2))
+                        globBad3[:] = (True if val2 else val1 for (val1,val2) in zip(globBad3,badIndex3))
+                            ##It would be good to use an aggregated badIndex on these plots for all bands combined...
+                            # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,badIndex,badIndex2,badIndex3)
+                    index +=1
+                # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
+                index =0
                 for timeSeries in columns.items():
                     band = float(timeSeries[0])
                     if band > self.minBand and band < self.maxBand:
-                        if index % step == 0:    
-                            radiometry1D = timeSeries[1]
-                            badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minDark, maxDark,minMaxDarkBand)                
-                            self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,badIndex,badIndex2,badIndex3)
-                        index +=1
+                        if index % step == 0:
+                            self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                    index +=1
 
             if lightData is None:
                 print("Error: No light data to deglitch")
@@ -699,13 +718,31 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
                 index = 0        
                 for timeSeries in columns.items():
+                    if index==0:
+                        # Initialize boolean lists for capturing global badIndex conditions across all wavebands
+                        globBad = [False]*len(timeSeries[1])
+                        globBad2 = [False]*len(timeSeries[1])
+                        globBad3 = [False]*len(timeSeries[1])
                     band = float(timeSeries[0])
                     if band > self.minBand and band < self.maxBand:
-                        if index % step == 0:           
-                            radiometry1D = timeSeries[1]
-                            badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minLight, maxLight,minMaxLightBand)              
-                            self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,badIndex,badIndex2,badIndex3)
-                        index += 1
+                        # if index % step == 0:           
+                        radiometry1D = timeSeries[1]
+                        badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minLight, maxLight,minMaxLightBand)  
+                        globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
+                        globBad2[:] = (True if val2 else val1 for (val1,val2) in zip(globBad2,badIndex2))
+                        globBad3[:] = (True if val2 else val1 for (val1,val2) in zip(globBad3,badIndex3))
+
+                            # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,badIndex,badIndex2,badIndex3)
+                    index += 1
+                # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
+                index =0
+                for timeSeries in columns.items():
+                    band = float(timeSeries[0])
+                    if band > self.minBand and band < self.maxBand:
+                        if index % step == 0:
+                            self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                    index +=1
+
                 print('Complete')
 
     def processButtonPressed(self):
@@ -892,11 +929,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             print("Error: %s" % e)
 
     @staticmethod
-    def savePlots(fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\
-        text_xlabel="Series"
-        text_ylabel=sensorType
-        
-
+    def savePlots(fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\            
         #Plot results  
         font = {'family': 'serif',
             'color':  'darkred',
@@ -904,13 +937,16 @@ class AnomAnalWindow(QtWidgets.QDialog):
             'size': 16}   
         
         waveBand = timeSeries[0]
+        
         radiometry1D = timeSeries[1]
         x = np.arange(0,len(radiometry1D),1)  
         avg = Utilities.movingAverage(radiometry1D, windowSize).tolist() 
 
         try:     
-            plt.figure(figsize=(15, 8))
-            
+            text_xlabel="Time Series"
+            text_ylabel=f'{sensorType}({waveBand}) {lightDark}'
+            plt.figure(figsize=(15, 8))            
+            # fig, ax = plt.subplot(figsize=(15, 8)) 
             
             # First Pass
             y_anomaly = np.array(radiometry1D)[badIndex]
@@ -929,6 +965,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             # y_av = moving_average(radiometry1D, window_size)
             plt.plot(x[3:-3], avg[3:-3], color='green')
 
+            plt.text(0,0.95,'Marked for exclusions in ALL bands', transform=plt.gcf().transFigure)
             plt.xlabel(text_xlabel, fontdict=font)
             plt.ylabel(text_ylabel, fontdict=font)   
             plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 

@@ -326,16 +326,17 @@ class PDF(FPDF):
             # ES
             fileList = glob.glob(os.path.join(inPath, \
                 f'{filebasename}_L1C_W{ESWindowDark}S{ESSigmaDark}_*ESDark_*.png' ))  
-
-            if len(fileList) > 0:                
+            if len(fileList) > 0:            
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
+            else:
+                self.multi_cell(0, 5, "None found.")
 
-                fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{ESWindowLight}S{ESSigmaLight}_*ESLight_*.png' )) 
-
+            fileList = glob.glob(os.path.join(inPath, \
+                f'{filebasename}_L1C_W{ESWindowLight}S{ESSigmaLight}_*ESLight_*.png' )) 
+            if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
@@ -351,10 +352,12 @@ class PDF(FPDF):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
+            else:
+                self.multi_cell(0, 5, "None found.")
 
-                fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{LIWindowLight}S{LISigmaLight}_*LILight_*.png' ))
-
+            fileList = glob.glob(os.path.join(inPath, \
+                f'{filebasename}_L1C_W{LIWindowLight}S{LISigmaLight}_*LILight_*.png' ))
+            if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
@@ -370,10 +373,12 @@ class PDF(FPDF):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
-
-                fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{LTWindowLight}S{LTSigmaLight}_*LTLight_*.png' ))
-
+            else:
+                self.multi_cell(0, 5, "None found.")
+                
+            fileList = glob.glob(os.path.join(inPath, \
+                f'{filebasename}_L1C_W{LTWindowLight}S{LTSigmaLight}_*LTLight_*.png' ))
+            if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)

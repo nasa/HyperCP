@@ -214,9 +214,9 @@ class ProcessL1d:
                     # MinMaxLightBand = getattr(self,f'{self.sensor}MinMaxBandLight')
                     lightDark = 'Dark'
                     badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowDark, sigmaDark, lightDark, minDark, maxDark,minMaxBandDark) 
-                    globalBadIndex.append(badIndex)
-                    globalBadIndex.append(badIndex2)
-                    globalBadIndex.append(badIndex3)
+                    globalBadIndex.append(badIndex) # First pass
+                    globalBadIndex.append(badIndex2) # Second pass
+                    globalBadIndex.append(badIndex3) # Thresholds
 
             # Collapse the badIndexes from all wavebands into one timeseries
             # Convert to an array and test along the columns (i.e. each timestamp)
