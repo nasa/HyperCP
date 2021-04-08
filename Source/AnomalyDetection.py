@@ -377,7 +377,12 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.MinDarkLineEdit.setText(str(getattr(self,f'{self.sensor}MinDark')))
         self.MinLightLineEdit.setText(str(getattr(self,f'{self.sensor}MinLight')))
         self.MaxDarkLineEdit.setText(str(getattr(self,f'{self.sensor}MaxDark')))
-        self.MaxLightLineEdit.setText(str(getattr(self,f'{self.sensor}MaxLight')))            
+        self.MaxLightLineEdit.setText(str(getattr(self,f'{self.sensor}MaxLight')))           
+
+        # Add an information bar based on metadata
+        ''' Need to load metadata in earlier for SolarTrack, to be more like noSolarTrack'''
+
+        # Would be great to pull up photos here too, if available 
 
         self.updateButtonPressed() 
 

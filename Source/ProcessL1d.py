@@ -188,8 +188,11 @@ class ProcessL1d:
                 len(lightData.data) <= 5 or \
                 len(darkData.data) < windowDark or \
                 len(lightData.data) < windowLight:
-
+                    msg = f'Error: Too few records to deglitch. Darks: {len(darkData.data)} Lights: {len(lightData.data)}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
                     return True # Sets the flag to true
+                    
         if darkData is None:
             msg = "Error: No dark data to deglitch"
             print(msg)
