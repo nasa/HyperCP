@@ -558,10 +558,10 @@ class Controller:
             elif level == "L1B":
                 root = Controller.processL1b(inFilePath, outFilePath, calibrationMap) 
             elif level == "L1C":
-                if ConfigFile.settings["bL1cSolarTracker"] == 0:
-                    ancillaryData = Controller.processAncData(ancFile)
-                else:
-                    ancillaryData = None
+                # if ConfigFile.settings["bL1cSolarTracker"] == 0:
+                ancillaryData = Controller.processAncData(ancFile)
+                # else:
+                #     ancillaryData = None
                 root = Controller.processL1c(inFilePath, outFilePath, ancillaryData)
             elif level == "L1D":
                 # If called locally from Controller and not AnomalyDetection.py, then
@@ -642,8 +642,8 @@ class Controller:
             if ConfigFile.settings["bL1cSolarTracker"]:
                 ancillaryData = Controller.processAncData(ancFile)
             else:
-                # Without the SolarTracker, ancillary data would have been read in at L1C,
-                # and will be extracted from the ANCILLARY_NOTRACKER group later
+                # Ancillary data from metadata have been read in at L1C,
+                # and will be extracted from the ANCILLARY_METADATA group later
                 ancillaryData = None
 
             root, outFilePath = Controller.processL2(inFilePath, outFilePath, ancillaryData)  

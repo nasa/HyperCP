@@ -194,18 +194,19 @@ class AncillaryReader:
 
         
     @staticmethod
-    def ancillaryFromNoTracker(ancGroup):
-        ''' Reads ancillary data from ANCILLARY_NOTRACKER group and returns an HDFDataset '''
+    def ancillaryFromMetadata(ancGroup):
+        ''' Reads ancillary data from ANCILLARY_METADATA group and returns an HDFDataset 
+            This is called from ProcessL2 prior to merging all ancillary datasets. '''
 
-        print("AncillaryReader.ancillaryFromNoTracker: " + ancGroup.id)        
+        print("AncillaryReader.ancillaryFromMetadata: " + ancGroup.id)        
 
         # ancGroup here has already been interpolated to radiometry in L1E, so all 
         # datasets have data columns (in data, not in columns) for Datetag and Timetag2
         # Choose any (required) dataset to find datetime
-        relAz = ancGroup.getDataset("REL_AZ")
-        relAz.datasetToColumns()
-        dateTag = relAz.columns["Datetag"]
-        tt2 = relAz.columns["Timetag2"]
+        lat = ancGroup.getDataset("LATITUDE")
+        lat.datasetToColumns()
+        dateTag = lat.columns["Datetag"]
+        tt2 = lat.columns["Timetag2"]
         ancDatetime = []
         for i, dt in enumerate(dateTag):
             ancDatetime.append(Utilities.timeTag2ToDateTime( Utilities.dateTagToDateTime(dt),tt2[i] ))
@@ -215,7 +216,9 @@ class AncillaryReader:
         station = False
         lat = False
         lon = False
-        relAz = False # misnomer: sensor azimuth relative to heading for ancillary seabass file
+        # Misnomer for ancillary metadata: sensor azimuth relative to HEADING for ancillary seabass file
+        # Not sensor relative to solar azimuth..
+        relAz = False 
         S = False
         solAZ = False
         wT = False

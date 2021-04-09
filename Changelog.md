@@ -18,6 +18,9 @@ Other ideas and To Dos:
 * Add PIC and GIOP to L2 OC products
 * Produce kml files for GoogleEarth on entire cruise/directory
 
+2021-04-09:
+* Reconfigure L1C to ingest the Ancillary Metadata file regardless of whether SolarTracker type system is in use or not. Propagate changes through L2. Tested on TRACKER and NOTRACKER datasets.
+
 2021-04-06:
 * Fix Controller to update /all/ ConfigFile settings with the pre-saved Anomaly parameter
 * Fix bad path for PDF report in AnomalyDetection

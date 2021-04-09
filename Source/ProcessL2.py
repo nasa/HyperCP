@@ -2152,7 +2152,7 @@ class ProcessL2:
         pyrGroup = None
         gpsGroup = None
         satnavGroup = None
-        ancGroupNoTracker = None
+        ancGroupMetadata = None
         for gp in node.groups:
             if gp.id.startswith("GPS"):
                 gpsGroup = gp
@@ -2162,18 +2162,18 @@ class ProcessL2:
             #     satnavGroup = gp            
             if gp.id.startswith("PYROMETER"):
                 pyrGroup = gp
-            if gp.id.startswith("ANCILLARY_NOTRACKER"):
-                # This copies the ancillary data from NOTRACKER into AncillaryData so it can be
-                # interpolated as in SOLARTRACKER, at which time it is flipped back into ancGroup
-                ancGroupNoTracker = gp
-                ancillaryData = AncillaryReader.ancillaryFromNoTracker(gp)
+            if gp.id.startswith("ANCILLARY_METADATA"):
+                # This copies the ancillary data from METADATA into AncillaryData so it can be
+                # interpolated with SOLARTRACKER (if it exists), at which time it is flipped back into ancGroup
+                ancGroupMetadata = gp
+                ancillaryData = AncillaryReader.ancillaryFromMetadata(gp)
                 
-                # SZA = ancGroupNoTracker.datasets["SZA"].data["NONE"]                
+                # SZA = ancGroupMetadata.datasets["SZA"].data["NONE"]                
                 temp = node.addGroup("TEMPORARY")
-                temp.copy(ancGroupNoTracker)
-                # for ds in ancGroupNoTracker.datasets:
+                temp.copy(ancGroupMetadata)
+                # for ds in ancGroupMetadata.datasets:
                 #     temp.addDataset(ds)
-        node.removeGroup(ancGroupNoTracker)
+        node.removeGroup(ancGroupMetadata)
                 
         root.addGroup("ANCILLARY")
         node.addGroup("ANCILLARY")

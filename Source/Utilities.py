@@ -349,7 +349,7 @@ class Utilities:
                     continue # goto while test skipping i incrementation. dateTime[i] is now the next value.
                 i += 1
         else:
-            msg = '************Too few records to test for ascending timestamps. Exiting.'
+            msg = f'************Too few records ({total}) to test for ascending timestamps. Exiting.'
             print(msg)
             Utilities.writeLogFile(msg)
             return False
