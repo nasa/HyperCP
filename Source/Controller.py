@@ -352,6 +352,8 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None
 
+        ''' At this stage the Anomanal parameterizations are current in ConfigFile.settings, regardless of who called this method. 
+            This method will promote them to root.attributes.'''
         root = ProcessL1d.processL1d(root)     
 
         # Write output file
@@ -583,12 +585,8 @@ class Controller:
                     l1CfileName = fileName + '_L1C'
                     if l1CfileName in params.keys():
                         ref = 0
-                        for sensor in ['ES','LT','LI']:
-                            # ConfigFile.settings[f'{sensor}WindowDark'] = params[l1CfileName][ref+0]
-                            # ConfigFile.settings[f'{sensor}WindowLight']= params[l1CfileName][ref+1]
-                            # ConfigFile.settings[f'{sensor}SigmaDark']= params[l1CfileName][ref+2]
-                            # ConfigFile.settings[f'{sensor}SigmaLight']= params[l1CfileName][ref+3]
-                            # ref += 4
+                        for sensor in ['ES','LT','LI']:                            
+                            print(' Setting ConfigFile.settings to match saved parameterization. ')
                             ConfigFile.settings[f'{sensor}WindowDark'] = params[l1CfileName][ref+0] 
                             ConfigFile.settings[f'{sensor}WindowLight'] = params[l1CfileName][ref+1]
                             ConfigFile.settings[f'{sensor}SigmaDark'] = params[l1CfileName][ref+2]

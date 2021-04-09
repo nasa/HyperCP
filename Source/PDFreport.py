@@ -36,14 +36,14 @@ class PDF(FPDF):
             # If level completed (i.e. L2), use the attributes of the file, otherwise, use the ConfigFile settings
             metaData = ' \n'
             metaData += 'Processing Parameters and metadata: \n'            
-            if root:                
-                metaData += f'HyperInSPACE version: {root.attributes["HYPERINSPACE"]}'                
+            if root: # otherwise this is a report of failed process, so root is None.                
+                metaData += f'HyperInSPACE version: {root.attributes["HYPERINSPACE"]}\n'                
                 if 'SZA_FILTER_L1A' in root.attributes:
-                    metaData += f'SZA Filter (L1A): {root.attributes["SZA_FILTER_L1A"]}'                                
+                    metaData += f'SZA Filter (L1A): {root.attributes["SZA_FILTER_L1A"]}\n'                                
             else:
-                metaData += f'HyperInSPACE version: {commentsDict[" HyperInSPACE vers"]}'
+                metaData += f'HyperInSPACE version: {commentsDict[" HyperInSPACE vers"]}\n'
                 if ConfigFile.settings['bL1aCleanSZA']:
-                    metaData += f'SZA Limit (L1A): {ConfigFile.settings["fL1aCleanSZAMax"]}'
+                    metaData += f'SZA Limit (L1A): {ConfigFile.settings["fL1aCleanSZAMax"]}\n'
             comments2 = headerBlock['other_comments'].split('!')
             for comment in comments2:
                 if comment != '':
@@ -62,35 +62,35 @@ class PDF(FPDF):
             
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
-            if root:
+            if root: # otherwise this is a report of failed process, so root is None.
                 if 'HOME_ANGLE' in root.attributes:
-                    metaData += f'Rotator Home Angle: {root.attributes["HOME_ANGLE"]}'  
+                    metaData += f'Rotator Home Angle: {root.attributes["HOME_ANGLE"]}\n'  
                 if 'ROTATOR_DELAY_FILTER' in root.attributes:
-                    metaData += f'Rotator Delay: {root.attributes["ROTATOR_DELAY_FILTER"]}'                  
+                    metaData += f'Rotator Delay: {root.attributes["ROTATOR_DELAY_FILTER"]}\n'                  
                 if 'PITCH_ROLL_FILTER' in root.attributes:
-                    metaData += f'Pitch/Roll Filter: {root.attributes["PITCH_ROLL_FILTER"]}'
+                    metaData += f'Pitch/Roll Filter: {root.attributes["PITCH_ROLL_FILTER"]}\n'
                 if 'ROTATOR_ANGLE_MIN' in root.attributes:
-                    metaData += f'Rotator Min Filter: {root.attributes["ROTATOR_ANGLE_MIN"]}'
-                    metaData += f'Rotator Max Filter: {root.attributes["ROTATOR_ANGLE_MAX"]}'
+                    metaData += f'Rotator Min Filter: {root.attributes["ROTATOR_ANGLE_MIN"]}\n'
+                    metaData += f'Rotator Max Filter: {root.attributes["ROTATOR_ANGLE_MAX"]}\n'
                 if 'RELATIVE_AZIMUTH_MIN' in root.attributes:
-                    metaData += f'Rel Azimuth Min: {root.attributes["RELATIVE_AZIMUTH_MIN"]}'    
-                    metaData += f'Rel Azimuth Max: {root.attributes["RELATIVE_AZIMUTH_MAX"]}'    
+                    metaData += f'Rel Azimuth Min: {root.attributes["RELATIVE_AZIMUTH_MIN"]}\n'    
+                    metaData += f'Rel Azimuth Max: {root.attributes["RELATIVE_AZIMUTH_MAX"]}\n'    
             else:
                 
-                metaData += f'Rotator Home Angle: {ConfigFile.settings["fL1cRotatorHomeAngle"]}'
+                metaData += f'Rotator Home Angle: {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'
                 if ConfigFile.settings['bL1cSolarTracker']:
                     if ConfigFile.settings['bL1cRotatorDelay']:
-                        metaData += f'Rotator Delay: {ConfigFile.settings["fL1cRotatorDelay"]}'
+                        metaData += f'Rotator Delay: {ConfigFile.settings["fL1cRotatorDelay"]}\n'
                     if ConfigFile.settings['bL1cCleanPitchRoll']:
-                        metaData += f'Pitch/Roll Filter: {ConfigFile.settings["fL1cPitchRollPitch"]}'
+                        metaData += f'Pitch/Roll Filter: {ConfigFile.settings["fL1cPitchRollPitch"]}\n'
                     if ConfigFile.settings['bL1cRotatorAngle']:
-                        metaData += f'Rotator Min: {ConfigFile.settings["fL1cRotatorAngleMin"]}'
-                        metaData += f'Rotator Max: {ConfigFile.settings["fL1cRotatorAngleMax"]}'
+                        metaData += f'Rotator Min: {ConfigFile.settings["fL1cRotatorAngleMin"]}\n'
+                        metaData += f'Rotator Max: {ConfigFile.settings["fL1cRotatorAngleMax"]}\n'
                 if ConfigFile.settings['bL1cCleanSunAngle']:
-                    metaData += f'Rel Azimuth Min: {ConfigFile.settings["fL1cSunAngleMin"]}'
-                    metaData += f'Rel Azimuth Max: {ConfigFile.settings["fL1cSunAngleMax"]}'
+                    metaData += f'Rel Azimuth Min: {ConfigFile.settings["fL1cSunAngleMin"]}\n'
+                    metaData += f'Rel Azimuth Max: {ConfigFile.settings["fL1cSunAngleMax"]}\n'
         
-        if root:
+        if root: # otherwise this is a report of failed process, so root is None.
             gpDict = {}
             for gp in root.groups: 
                 gpDict[gp.id] = gp
@@ -100,7 +100,7 @@ class PDF(FPDF):
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
-            if root:
+            if root: # otherwise this is a report of failed process, so root is None.
                 if root.attributes['L1D_DEGLITCH'] == 'ON':                
                     # These deglitching parameters might be in root.attributes if from files L1D or L1E, 
                     # or within their respective groups at L2
@@ -149,7 +149,7 @@ class PDF(FPDF):
             intro = 'Interpolate data to common timestamps and wavebands.'
 
             metaData = 'Processing Parameters: \n'
-            if root:
+            if root: # otherwise this is a report of failed process, so root is None.
                 metaData += f'Wavelength Interp Int: {root.attributes["WAVE_INTERP"]}\n'
             else:
                 metaData += f'Wavelength Interp Int: {ConfigFile.settings["fL1eInterpInterval"]}\n'
@@ -160,7 +160,7 @@ class PDF(FPDF):
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
-            if root:
+            if root: # otherwise this is a report of failed process, so root is None.
                 metaData += f'Max Wind: {root.attributes["WIND_MAX"]}\n'
                 metaData += f'Min SZA: {root.attributes["SZA_MIN"]}\n'
                 metaData += f'Max SZA: {root.attributes["SZA_MAX"]}\n'
@@ -205,7 +205,7 @@ class PDF(FPDF):
                     metaData += f'Glint_Correction: Mobley 1999'
                 if ConfigFile.settings['bL2PerformNIRCorrection']:
                     if ConfigFile.settings['bL2SimpleNIRCorrection']:
-                        metaData += f'NIR Correction: Carder et al 1995'
+                        metaData += f'NIR Correction: Mueller and Austin 1995'
                     if ConfigFile.settings['bL2SimSpecNIRCorrection']:
                         metaData += f'NIR Correction: Ruddick et al. 2005/2006'
                 else:
@@ -275,7 +275,7 @@ class PDF(FPDF):
             self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
                 'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1C_Anoms.')
 
-            if root:
+            if root: # otherwise this is a report of failed process, so root is None.
                 # These deglitching parameters might be in root.attributes if from files L1D or L1E, 
                 # or within their respective groups at L2
                 gpDict = {}

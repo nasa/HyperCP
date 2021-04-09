@@ -458,6 +458,8 @@ class ProcessL1d:
         if ConfigFile.settings['bL1dDeglitch']:
             root.attributes['L1D_DEGLITCH'] = 'ON'
             for sensor in ["ES","LI","LT"]:  
+                ''' If parameters were picked up from an anoms.csv file, ConfigFile.settings were updated in Controller to reflect 
+                    these saved parameters. Now push them into root attributes for posterity.'''
                 root.attributes[f'{sensor}_WINDOW_DARK'] = str(ConfigFile.settings[f'fL1d{sensor}WindowDark'])
                 root.attributes[f'{sensor}_WINDOW_LIGHT'] = str(ConfigFile.settings[f'fL1d{sensor}WindowLight'])
                 root.attributes[f'{sensor}_SIGMA_DARK'] = str(ConfigFile.settings[f'fL1d{sensor}SigmaDark'])

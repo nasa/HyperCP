@@ -464,7 +464,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.RhoRadioButtonDefault.setChecked(True)
         self.RhoRadioButtonDefault.clicked.connect(self.l2RhoRadioButtonDefaultClicked)    
 
-        self.RhoRadioButtonYour = QtWidgets.QRadioButton("Your (2021) ρ")
+        self.RhoRadioButtonYour = QtWidgets.QRadioButton("Your Glint (2021) ρ")
         self.RhoRadioButtonYour.setAutoExclusive(False)
         # if ConfigFile.settings["bL2YourRho"]==1:
         #     self.RhoRadioButtonYour.setChecked(True)
@@ -477,7 +477,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
             self.l2NIRCorrectionCheckBox.setChecked(True)
         
-        self.SimpleNIRRadioButton = QtWidgets.QRadioButton("   NASA Protocols (2003) (blue water)")
+        self.SimpleNIRRadioButton = QtWidgets.QRadioButton("   Mueller and Austin (1995) (blue water)")
         self.SimpleNIRRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL2SimpleNIRCorrection"] == 1:
             self.SimpleNIRRadioButton.setChecked(True)
@@ -487,7 +487,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL2SimSpecNIRCorrection"] == 1:
             self.SimSpecNIRRadioButton.setChecked(True)
         self.SimSpecNIRRadioButton.clicked.connect(self.l2SimSpecNIRRadioButtonClicked)  
-        self.YourNIRRadioButton = QtWidgets.QRadioButton("   Your (2021) (universal)")
+        self.YourNIRRadioButton = QtWidgets.QRadioButton("   Your NIR Residual (2021) (universal)")
         self.YourNIRRadioButton.setAutoExclusive(False)
         # if ConfigFile.settings["bL2YourNIRCorrection"] == 1:
         #     self.YourNIRRadioButton.setChecked(True)
