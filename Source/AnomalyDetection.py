@@ -6,6 +6,7 @@ import csv
 import numpy as np
 import pandas as pd
 # from pandas.plotting import register_matplotlib_converters
+import warnings
 import matplotlib.pyplot as plt
 import matplotlib
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -65,6 +66,15 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         intValidator = QtGui.QIntValidator()
         doubleValidator = QtGui.QDoubleValidator() 
+
+        # Put up the metadata at the top of the window
+        self.fileDateLabel = QtWidgets.QLabel(self)
+        self.windSpeedLabel = QtWidgets.QLabel(self)
+        self.cloudsLabel = QtWidgets.QLabel(self)
+        self.relAzLabel = QtWidgets.QLabel(self)
+        self.szaLabel = QtWidgets.QLabel(self)
+        self.wavesLabel = QtWidgets.QLabel(self)
+        self.speedLabel = QtWidgets.QLabel(self)
 
         # These will be adjusted on the slider once a file is loaded
         interval = 10
@@ -217,7 +227,17 @@ class AnomAnalWindow(QtWidgets.QDialog):
                  symbol='o', name='2nd pass', pen=None)   
                             
         # Layout
-        self.VBox = QtWidgets.QVBoxLayout()         
+        self.VBox = QtWidgets.QVBoxLayout()  
+        self.HBoxMeta = QtWidgets.QHBoxLayout()  
+        self.HBoxMeta.addWidget(self.fileDateLabel)       
+        self.HBoxMeta.addWidget(self.windSpeedLabel)
+        self.HBoxMeta.addWidget(self.cloudsLabel)  
+        self.HBoxMeta.addWidget(self.relAzLabel)       
+        self.HBoxMeta.addWidget(self.szaLabel)       
+        self.HBoxMeta.addWidget(self.wavesLabel)       
+        self.HBoxMeta.addWidget(self.speedLabel)      
+        self.VBox.addLayout(self.HBoxMeta) 
+             
         self.VBox.addWidget(self.sLabel)    
         HBox1 = QtWidgets.QHBoxLayout()     
         HBox1.addWidget(self.slider)
@@ -336,6 +356,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
             print(msg)            
             return
 
+        Utilities.rootAddDateTime(root)
+
         self.fileName = os.path.basename(os.path.splitext(inFilePath[0])[0])  
         self.setWindowTitle(self.fileName)
         self.root = root
@@ -380,7 +402,32 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.MaxLightLineEdit.setText(str(getattr(self,f'{self.sensor}MaxLight')))           
 
         # Add an information bar based on metadata
-        ''' Need to load metadata in earlier for SolarTrack, to be more like noSolarTrack'''
+        ''' Need to load metadata in earlier for SolarTrack, to be more like noSolarTrack'''        
+        for group in root.groups:
+            if group.id == 'ANCILLARY_METADATA':
+                ancGroup = group
+            if group.id.startswith('GP'):
+                gpsGroup = group
+                start = gpsGroup.datasets['DATETIME'].data[0]
+                end = gpsGroup.datasets['DATETIME'].data[-1]
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
+            windSpeed = np.nanmedian(ancGroup.datasets['WINDSPEED'].data.tolist())
+            cloud = np.nanmedian(ancGroup.datasets['CLOUD'].data.tolist())
+            relAz = np.nanmedian(ancGroup.datasets['REL_AZ'].data.tolist())
+            sza = np.nanmedian(ancGroup.datasets['SZA'].data.tolist())
+            waves = np.nanmedian(ancGroup.datasets['WAVE_HT'].data.tolist())
+            speed = np.nanmedian(ancGroup.datasets['SPEED_F_W'].data.tolist())            
+        
+        # self.fileDateLabel.setText(f"Begin: {root.attributes['TIME-STAMP']}") 
+        self.fileDateLabel.setText(f"FROM: {start:%Y-%m-%d %H:%M} TO: {end:%Y-%m-%d %H:%M}") 
+        self.windSpeedLabel.setText(f' (Median) WIND: {windSpeed:.1f} m/s') 
+        self.cloudsLabel.setText(f' CLOUD: {cloud:.0f} %') 
+        self.relAzLabel.setText(f' REL.AZ: {relAz:.0f} deg.') 
+        self.szaLabel.setText(f' SZA: {sza:.0f} deg.') 
+        self.wavesLabel.setText(f' WAVES: {waves:.1f} m') 
+        self.speedLabel.setText(f' SPEED: {speed:.1f} m/s') 
 
         # Would be great to pull up photos here too, if available 
 
@@ -767,15 +814,9 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # In case of processing failure, write the report at this Process level, unless running stations
         #   Use numeric level for writeReport
         pathOut = outFilePath.split('L1D')[0]
-        # outFilePath = os.path.join(self.inputDirectory, 'L1D', fileBaseName[0])
-        if root is not None:
-            timeStamp = root.attributes['TIME-STAMP']
-            title = f'File: {fileBaseName} Collected: {timeStamp}'
-        else:
-            timeStamp = 'Null'
-            title = f'File: {fileBaseName} Collected: {timeStamp}'
+        
         if root is None and ConfigFile.settings["bL2WriteReport"] == 1:
-            Controller.writeReport(title, fileBaseName, pathOut, outFilePath, 'L1D')
+            Controller.writeReport(fileBaseName, pathOut, outFilePath, 'L1D')
         print('Process L1D complete')
 
     def closeButtonPressed(self):
