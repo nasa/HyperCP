@@ -26,30 +26,48 @@ class Controller:
     
 
     @staticmethod
-    def writeReport(title, fileName, pathOut, outFilePath, level):
+    def writeReport(fileName, pathOut, outFilePath, level):
         print('Writing PDF Report...')
         numLevelDict = {'L1A':1,'L1B':2,'L1C':3,'L1D':4,'L1E':5,'L2':6}
         numLevel = numLevelDict[level]
         fp = os.path.join(pathOut, level, f'{fileName}_{level}.hdf')
 
+        # Reports are written during failure at any level or success at L2.
+        # The highest level succesfully processed will have the correct configurations in the HDF attributes.
+        # These are potentially more accurate than values found in the ConfigFile settings.
 
-        # The highest level processed will have the correct configurations in the HDF attributes
-        # These are potentially more accurate than value found in the ConfigFile settings
-        # Open the highest level file as root, and pass it to the report writer 
-        try: 
-            # If writing for L2, use the L2 file attributes, otherwise the current processing 
-            # level will not have an HDF to read, so use ConfigFile settings
-            if numLevel == 6:
-                root = HDFRoot.readHDF5(fp)
-            else:
-                root = None
+        #   Try to open current level. If this fails, open the previous level and use all the parameters 
+        #   from the attributes up to that level, then use the ConfigFile.settings for the current level parameters.
+        try:
+            # Processing successful at this level
+            root = HDFRoot.readHDF5(fp)
+            fail = 0
         except:
-            msg = "Unable to open file. May be open in another application."
-            Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return
-        
+            fail =1
+            # Processing failed at this level. Open the level below it
+            valList = list(numLevelDict.values())
+            keyList = list(numLevelDict.keys())
+            position = valList.index(numLevel - 1)
+            lastLevel = keyList[position]
+            fp = os.path.join(pathOut, lastLevel, f'{fileName}_{lastLevel}.hdf')
+            try:
+                # Processing successful at the next lower level
+                root = HDFRoot.readHDF5(fp)
+            except:
+                msg = "Unable to open file. May be open in another application."
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return
+            
+        if fail:
+            root.attributes['Fail'] = 1
+        else:
+            root.attributes['Fail'] = 0
+
+        timeStamp = root.attributes['TIME-STAMP']        
+        title = f'File: {fileName} Collected: {timeStamp}'
+
         # Reports
         reportPath = os.path.join(pathOut, 'Reports')
         if os.path.isdir(reportPath) is False:
@@ -64,8 +82,11 @@ class Controller:
             inPlotPath = os.path.join(pathOut,'..','Plots')
         # outPDF = os.path.join(reportPath,'Reports', f'{fileName}.pdf')
         outHDF = os.path.split(outFilePath)[1]
-        outPDF = os.path.join(reportPath, f'{os.path.splitext(outHDF)[0]}.pdf')
-        # title = f'File: {fileName} Collected: {root.attributes["TIME-STAMP"]}'
+
+        if fail:
+            outPDF = os.path.join(reportPath, f'{os.path.splitext(outHDF)[0]}_fail.pdf')
+        else:
+            outPDF = os.path.join(reportPath, f'{os.path.splitext(outHDF)[0]}.pdf')
         
         pdf = PDF()
         pdf.set_title(title)
@@ -74,35 +95,30 @@ class Controller:
         inLog = os.path.join(inLogPath,f'{fileName}_L1A.log')
         if os.path.isfile(inLog):
             print('Level 1A')
-            # pdf.print_chapter(root,'L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName, outFilePath)
             pdf.print_chapter('L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName, outFilePath, root)
 
         if numLevel > 1:
             print('Level 1B')
             inLog = os.path.join(inLogPath,f'{fileName}_L1A_L1B.log')
             if os.path.isfile(inLog):
-                # pdf.print_chapter(root,'L1B', 'Process L1A to L1B', inLog, inPlotPath, fileName, outFilePath)
                 pdf.print_chapter('L1B', 'Process L1A to L1B', inLog, inPlotPath, fileName, outFilePath, root)
         
         if numLevel > 2:
             print('Level 1C')
             inLog = os.path.join(inLogPath,f'{fileName}_L1B_L1C.log')
             if os.path.isfile(inLog):
-                # pdf.print_chapter(root,'L1C', 'Process L1B to L1C', inLog, inPlotPath, fileName, outFilePath)
                 pdf.print_chapter('L1C', 'Process L1B to L1C', inLog, inPlotPath, fileName, outFilePath, root)
         
         if numLevel > 3:
             print('Level 1D')
             inLog = os.path.join(inLogPath,f'{fileName}_L1C_L1D.log')
             if os.path.isfile(inLog):
-                # pdf.print_chapter(root,'L1D', 'Process L1C to L1D', inLog, inPlotPath, fileName, outFilePath)
                 pdf.print_chapter('L1D', 'Process L1C to L1D', inLog, inPlotPath, fileName, outFilePath, root)
         
         if numLevel > 4:
             print('Level 1E')
             inLog = os.path.join(inLogPath,f'{fileName}_L1D_L1E.log')
             if os.path.isfile(inLog):
-                # pdf.print_chapter(root,'L1E', 'Process L1D to L1E', inLog, inPlotPath, fileName, outFilePath)
                 pdf.print_chapter('L1E', 'Process L1D to L1E', inLog, inPlotPath, fileName, outFilePath, root)
         
         if numLevel > 5:
@@ -111,7 +127,6 @@ class Controller:
             inPlotPath = os.path.join(pathOut,'Plots')
             inLog = os.path.join(inLogPath,f'{fileName}_L1E_L2.log')
             if os.path.isfile(inLog):
-                # pdf.print_chapter(root,'L2', 'Process L1E to L2', inLog, inPlotPath, fileName, outFilePath)
                 pdf.print_chapter('L2', 'Process L1E to L2', inLog, inPlotPath, fileName, outFilePath, root)
 
         try:
@@ -663,27 +678,28 @@ class Controller:
                         Utilities.writeLogFile(msg)
                         SeaBASSWriter.outputTXT_Type2(outFilePath)
                     # return True        
-
-        # In case of processing failure, write the report at this Process level, unless running stations
-        #   Use numeric level for writeReport
-        if root is not None:
-            timeStamp = root.attributes['TIME-STAMP']
-        else:
-            timeStamp = 'Null'
-        title = f'File: {fileName} Collected: {timeStamp}'
+        
+        # Exempt station writing from reports (So as not to overwrite normal file reports...?)
         if root is None and ConfigFile.settings["bL2Stations"] == 1:
+            print('No report written due to Station search, but root is None. Processing failed.')
             return False
+
+        # If the process failed at any level, write a report and return
         if root is None and ConfigFile.settings["bL2Stations"] == 0:                     
             if ConfigFile.settings["bL2WriteReport"] == 1:
-                Controller.writeReport(title, fileName, pathOut, outFilePath, level)
+                Controller.writeReport(fileName, pathOut, outFilePath, level)
             return False
+        
+        # If L2 successful, write a report
+        if level == "L2":
+            if ConfigFile.settings["bL2WriteReport"] == 1:
+                Controller.writeReport(fileName, pathOut, outFilePath, level)
 
         msg = f'Process Single Level: {outFilePath} - SUCCESSFUL'
         print(msg)
         Utilities.writeLogFile(msg)
-        if level == "L2":
-            if ConfigFile.settings["bL2WriteReport"] == 1:
-                Controller.writeReport(title, fileName, pathOut, outFilePath, level)
+
+        
         return True  
 
 

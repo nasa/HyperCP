@@ -224,11 +224,10 @@ class ProcessL1c:
                 if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
                     gp = group
             if gp == None:
-                msg = "SOLARTRACKER instrument not found. Aborting."
+                msg = "SOLARTRACKER instrument not found for tilt filter. Aborting."
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-
 
             timeStamp = gp.getDataset("DATETIME").data
             pitch = gp.getDataset("PITCH").data["SAS"]
@@ -279,80 +278,80 @@ class ProcessL1c:
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
-        for group in node.groups:
-            if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
-                gp = group
-        
-        if 'gp' in locals():
-            if gp.getDataset("POINTING"):   
-                timeStamp = gp.getDataset("DATETIME").data
-                rotator = gp.getDataset("POINTING").data["ROTATOR"] 
-                # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
-                # It may also be set for when no SolarTracker is present and it's not included in the
-                # ancillary data, but that's not relevant here...              
-                home = float(ConfigFile.settings["fL1cRotatorHomeAngle"])     
-                delay = float(ConfigFile.settings["fL1cRotatorDelay"])
+        if node is not None and ConfigFile.settings["bL1cRotatorDelay"] and ConfigFile.settings["bL1cSolarTracker"]:  
+            gp = None
+            for group in node.groups:
+                if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
+                    gp = group
+            
+            if 'gp' in locals():
+                if gp.getDataset("POINTING"):   
+                    timeStamp = gp.getDataset("DATETIME").data
+                    rotator = gp.getDataset("POINTING").data["ROTATOR"] 
+                    # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
+                    # It may also be set for when no SolarTracker is present and it's not included in the
+                    # ancillary data, but that's not relevant here...              
+                    home = float(ConfigFile.settings["fL1cRotatorHomeAngle"])     
+                    delay = float(ConfigFile.settings["fL1cRotatorDelay"])
 
-                if node is not None and int(ConfigFile.settings["bL1cRotatorDelay"]) == 1:
-                        msg = "Filtering file for Rotator Delay"
-                        print(msg)
-                        Utilities.writeLogFile(msg)
-                        
-                        if badTimes is None:
-                            badTimes = []
+                    # if node is not None and int(ConfigFile.settings["bL1cRotatorDelay"]) == 1:
+                    msg = "Filtering file for Rotator Delay"
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    
+                    if badTimes is None:
+                        badTimes = []
 
-                        kickout = 0
-                        i = 0
-                        for index in range(len(rotator)):  
-                            if index == 0:
+                    kickout = 0
+                    i = 0
+                    for index in range(len(rotator)):  
+                        if index == 0:
+                            lastAngle = rotator[index]
+                        else:
+                            if rotator[index] > (lastAngle + 0.05) or rotator[index] < (lastAngle - 0.05):
+                                i += 1
+                                # Detect angle changed   
+                                start = timeStamp[index]                  
+                                # print('Rotator delay kick-out. ' + str(timeInt) )
+                                startIndex = index                                
                                 lastAngle = rotator[index]
-                            else:
-                                if rotator[index] > (lastAngle + 0.05) or rotator[index] < (lastAngle - 0.05):
+                                kickout = 1
+
+                            else:                        
+                                # Test if this is fL1cRotatorDelay seconds past a kick-out start
+                                time = timeStamp[index]
+                                if kickout==1 and time > (start + datetime.timedelta(0,delay)):
+                                    # startstop = [timeStampTuple[startIndex],timeStampTuple[index-1]]
+                                    startstop = [timeStamp[startIndex],timeStamp[index-1]]
+                                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+                                    # print(msg)
+                                    Utilities.writeLogFile(msg)
+                                    badTimes.append(startstop)
+                                    kickout = 0
+                                elif kickout ==1:
                                     i += 1
-                                    # Detect angle changed   
-                                    start = timeStamp[index]                  
-                                    # print('Rotator delay kick-out. ' + str(timeInt) )
-                                    startIndex = index                                
-                                    lastAngle = rotator[index]
-                                    kickout = 1
 
-                                else:                        
-                                    # Test if this is fL1cRotatorDelay seconds past a kick-out start
-                                    time = timeStamp[index]
-                                    if kickout==1 and time > (start + datetime.timedelta(0,delay)):
-                                        # startstop = [timeStampTuple[startIndex],timeStampTuple[index-1]]
-                                        startstop = [timeStamp[startIndex],timeStamp[index-1]]
-                                        msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
-                                        # print(msg)
-                                        Utilities.writeLogFile(msg)
-                                        badTimes.append(startstop)
-                                        kickout = 0
-                                    elif kickout ==1:
-                                        i += 1
+                    msg = f'Percentage of SolarTracker data out of Rotator Delay bounds: {round(100*i/len(timeStamp))} %'
+                    print(msg)
+                    Utilities.writeLogFile(msg)    
 
-                        msg = f'Percentage of SolarTracker data out of Rotator Delay bounds: {round(100*i/len(timeStamp))} %'
-                        print(msg)
-                        Utilities.writeLogFile(msg)    
-                    # else:
-                    #     msg = f'No rotator data found. Filtering on rotator delay failed.'
-                    #     print(msg)
-                    #     Utilities.writeLogFile(msg)    
-            else:
-                msg = f'No POINTING data found. Filtering on rotator delay failed.'
-                print(msg)
-                Utilities.writeLogFile(msg)    
+                else:
+                    msg = f'No POINTING data found. Filtering on rotator delay failed.'
+                    print(msg)
+                    Utilities.writeLogFile(msg)    
 
         # Apply Absolute Rotator Angle Filter
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
-        if node is not None and int(ConfigFile.settings["bL1cRotatorAngle"]) == 1:
+        if node is not None and ConfigFile.settings["bL1cSolarTracker"] and ConfigFile.settings["bL1cRotatorAngle"]:
             msg = "Filtering file for bad Absolute Rotator Angle"
             print(msg)
             Utilities.writeLogFile(msg)
             
             i = 0
             # try:
+            gp = None
             for group in node.groups:
                 if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
                     gp = group
@@ -411,7 +410,8 @@ class ProcessL1c:
                 Utilities.writeLogFile(msg)                       
 
         # General setup for ancillary or SolarTracker data prior to Relative Solar Azimuth option
-        if ConfigFile.settings["bL1cSolarTracker"]:    
+        if ConfigFile.settings["bL1cSolarTracker"]:
+            gp = None    
             for group in node.groups:
                     if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
                         gp = group 

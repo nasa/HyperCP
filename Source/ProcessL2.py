@@ -2227,6 +2227,16 @@ class ProcessL2:
             gp.attributes['ES_WINDOW_LIGHT'] = root.attributes['ES_WINDOW_LIGHT']
             gp.attributes['ES_SIGMA_DARK'] = root.attributes['ES_SIGMA_DARK']
             gp.attributes['ES_SIGMA_LIGHT'] = root.attributes['ES_SIGMA_LIGHT']
+            
+            gp.attributes['ES_MINMAX_BAND_DARK'] = root.attributes['ES_MINMAX_BAND_DARK']
+            gp.attributes['ES_MINMAX_BAND_LIGHT'] = root.attributes['ES_MINMAX_BAND_LIGHT']
+            gp.attributes['ES_MIN_DARK'] = root.attributes['ES_MIN_DARK']
+            gp.attributes['ES_MAX_DARK'] = root.attributes['ES_MAX_DARK']
+            gp.attributes['ES_MIN_LIGHT'] = root.attributes['ES_MIN_LIGHT']
+            gp.attributes['ES_MAX_LIGHT'] = root.attributes['ES_MAX_LIGHT']
+                        
+        if ConfigFile.settings['bL2EnableQualityFlags']:            
+            gp.attributes['ES_FILTER'] = str(ConfigFile.settings['fL2SignificantEsFlag'])
 
         # Radiance
         gp = root.getGroup("RADIANCE")
@@ -2245,10 +2255,25 @@ class ProcessL2:
             gp.attributes['LT_WINDOW_LIGHT'] = root.attributes['LT_WINDOW_LIGHT']
             gp.attributes['LT_SIGMA_DARK'] = root.attributes['LT_SIGMA_DARK']
             gp.attributes['LT_SIGMA_LIGHT'] = root.attributes['LT_SIGMA_LIGHT']
+            
+            gp.attributes['LT_MINMAX_BAND_DARK'] = root.attributes['LT_MINMAX_BAND_DARK']
+            gp.attributes['LT_MINMAX_BAND_LIGHT'] = root.attributes['LT_MINMAX_BAND_LIGHT']
+            gp.attributes['LT_MAX_DARK'] = root.attributes['LT_MAX_DARK']
+            gp.attributes['LT_MAX_LIGHT'] = root.attributes['LT_MAX_LIGHT']            
+            gp.attributes['LT_MIN_DARK'] = root.attributes['LT_MIN_DARK']
+            gp.attributes['LT_MIN_LIGHT'] = root.attributes['LT_MIN_LIGHT']        
+            
             gp.attributes['LI_WINDOW_DARK'] = root.attributes['LI_WINDOW_DARK']
             gp.attributes['LI_WINDOW_LIGHT'] = root.attributes['LI_WINDOW_LIGHT']
             gp.attributes['LI_SIGMA_DARK'] = root.attributes['LI_SIGMA_DARK']
             gp.attributes['LI_SIGMA_LIGHT'] = root.attributes['LI_SIGMA_LIGHT']
+            
+            gp.attributes['LI_MINMAX_BAND_DARK'] = root.attributes['LI_MINMAX_BAND_DARK']
+            gp.attributes['LI_MINMAX_BAND_LIGHT'] = root.attributes['LI_MINMAX_BAND_LIGHT']
+            gp.attributes['LI_MAX_DARK'] = root.attributes['LI_MAX_DARK']
+            gp.attributes['LI_MAX_LIGHT'] = root.attributes['LI_MAX_LIGHT']            
+            gp.attributes['LI_MIN_DARK'] = root.attributes['LI_MIN_DARK']
+            gp.attributes['LI_MIN_LIGHT'] = root.attributes['LI_MIN_LIGHT']  
 
         # Reflectance
         gp = root.getGroup("REFLECTANCE")
@@ -2291,7 +2316,7 @@ class ProcessL2:
         root.attributes['SZA_MIN'] = str(ConfigFile.settings['fL2SZAMin'])
         if ConfigFile.settings['bL2EnableQualityFlags']:
             root.attributes['CLOUD_FILTER'] = str(ConfigFile.settings['fL2CloudFlag'])
-            root.attributes['ES_FILTER'] = str(ConfigFile.settings['fL2SignificantEsFlag'])
+            # root.attributes['ES_FILTER'] = str(ConfigFile.settings['fL2SignificantEsFlag'])
             root.attributes['DAWN_DUSK_FILTER'] = str(ConfigFile.settings['fL2DawnDuskFlag'])
             root.attributes['RAIN_RH_FILTER'] = str(ConfigFile.settings['fL2RainfallHumidityFlag'])
         if ConfigFile.settings['bL2Stations']:
@@ -2311,8 +2336,28 @@ class ProcessL2:
             del(root.attributes['LI_WINDOW_LIGHT'])
             del(root.attributes['LI_SIGMA_DARK'])
             del(root.attributes['LI_SIGMA_LIGHT'])
-        
-        
+
+            del(root.attributes['ES_MAX_DARK'])
+            del(root.attributes['ES_MAX_LIGHT'])
+            del(root.attributes['ES_MINMAX_BAND_DARK'])
+            del(root.attributes['ES_MINMAX_BAND_LIGHT'])
+            del(root.attributes['ES_MIN_DARK'])
+            del(root.attributes['ES_MIN_LIGHT'])
+            
+            del(root.attributes['LT_MAX_DARK'])
+            del(root.attributes['LT_MAX_LIGHT'])
+            del(root.attributes['LT_MINMAX_BAND_DARK'])
+            del(root.attributes['LT_MINMAX_BAND_LIGHT'])
+            del(root.attributes['LT_MIN_DARK'])
+            del(root.attributes['LT_MIN_LIGHT'])
+            
+            del(root.attributes['LI_MAX_DARK'])
+            del(root.attributes['LI_MAX_LIGHT'])
+            del(root.attributes['LI_MINMAX_BAND_DARK'])
+            del(root.attributes['LI_MINMAX_BAND_LIGHT'])
+            del(root.attributes['LI_MIN_DARK'])
+            del(root.attributes['LI_MIN_LIGHT'])
+
         # Check to insure at least some data survived quality checks
         if root.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None:
             msg = "All data appear to have been eliminated from the file. Aborting."
