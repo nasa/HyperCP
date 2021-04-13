@@ -202,60 +202,14 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL1dDeglitch"]) == 1:
             self.l1dDeglitchCheckBox.setChecked(True)
 
-        # self.l1dWindowDarkLabel = QtWidgets.QLabel("     Window for Darks (odd)", self)
-        # self.l1dWindowDarkLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1dWindowDarkLineEdit.setText(str(ConfigFile.settings["fL1dWindowDark"]))
-        # self.l1dWindowDarkLineEdit.setValidator(intValidator)
-        # # self.l1dWindowDarkLineEdit.setValidator(oddValidator)
-
-        # self.l1dWindowLightLabel = QtWidgets.QLabel("     Window for Lights (odd)", self)
-        # self.l1dWindowLightLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1dWindowLightLineEdit.setText(str(ConfigFile.settings["fL1dWindowLight"]))
-        # self.l1dWindowLightLineEdit.setValidator(intValidator)
-        # # self.l1dWindowLightLineEdit.setValidator(oddValidator)
-
-        # self.l1dSigmaDarkLabel = QtWidgets.QLabel("     Sigma Factor Darks", self)
-        # self.l1dSigmaDarkLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1dSigmaDarkLineEdit.setText(str(ConfigFile.settings["fL1dSigmaDark"]))
-        # self.l1dSigmaDarkLineEdit.setValidator(doubleValidator)
-        
-        # self.l1dSigmaLightLabel = QtWidgets.QLabel("     Sigma Factor Lights", self)
-        # self.l1dSigmaLightLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1dSigmaLightLineEdit.setText(str(ConfigFile.settings["fL1dSigmaLight"]))
-        # self.l1dSigmaLightLineEdit.setValidator(doubleValidator)
-
         self.l1dDeglitchCheckBoxUpdate()      
         self.l1dDeglitchCheckBox.clicked.connect(self.l1dDeglitchCheckBoxUpdate)   
 
         # L1D Launch Deglitcher Analysis 
         l1dAnomalySublabel1 = QtWidgets.QLabel("  Launch Anom. Anal. to test parameters",self)
-        l1dAnomalySublabel2 = QtWidgets.QLabel("  on L1C files. Saved to Plots/L1C_Anoms.",self)
-        # l1dAnomalySublabel3 = QtWidgets.QLabel("   ", self)  
-        # l1dAnomalyStepLabel = QtWidgets.QLabel("   Waveband interval to plot (integer): ", self)  
-        # self.l1dAnomalyStepLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1dAnomalyStepLineEdit.setText(str(ConfigFile.settings["fL1dAnomalyStep"]))
-        # self.l1dAnomalyStepLineEdit.setValidator(intValidator)
+        l1dAnomalySublabel2 = QtWidgets.QLabel("  on L1C files. Saved to Plots/L1C_Anoms.",self)       
         self.l1dAnomalyButton = QtWidgets.QPushButton("Anomaly Analysis")
-        self.l1dAnomalyButton.clicked.connect(self.l1dAnomalyButtonPressed)
-
-        # # Plots
-        # l1dPlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
-        
-        # l1dPlotEsLabel = QtWidgets.QLabel("Es", self)     
-        # self.l1dPlotEsCheckBox = QtWidgets.QCheckBox("", self)      
-        # if int(ConfigFile.settings["bL1dPlotEs"]) == 1:
-        #     self.l1dPlotEsCheckBox.setChecked(True)
-
-        # l1dPlotLiLabel = QtWidgets.QLabel("Li", self)     
-        # self.l1dPlotLiCheckBox = QtWidgets.QCheckBox("", self)      
-        # if int(ConfigFile.settings["bL1dPlotLi"]) == 1:
-        #     self.l1dPlotLiCheckBox.setChecked(True)
-
-        # l1dPlotLtLabel = QtWidgets.QLabel("Lt", self)     
-        # self.l1dPlotLtCheckBox = QtWidgets.QCheckBox("", self)      
-        # if int(ConfigFile.settings["bL1dPlotLt"]) == 1:
-        #     self.l1dPlotLtCheckBox.setChecked(True)
-
+        self.l1dAnomalyButton.clicked.connect(self.l1dAnomalyButtonPressed)       
 
         # L1E
         l1eLabel = QtWidgets.QLabel("Level 1E Processing", self)
@@ -1075,7 +1029,7 @@ class ConfigWindow(QtWidgets.QDialog):
         #self.show()        
 
         # print("ConfigWindow - initUI Done")
-
+    ###############################################################
     def addCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Add Calibration File Pressed")
         fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files")

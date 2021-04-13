@@ -16,17 +16,15 @@ from Controller import Controller
 from MainConfig import MainConfig
 from ConfigFile import ConfigFile
 from HDFRoot import HDFRoot
-from Utilities import Utilities        
+from Utilities import Utilities     
+from FieldPhotos import FieldPhotos   
 
 class AnomAnalWindow(QtWidgets.QDialog):
-# class AnomAnalWindow(QtWidgets.QWidget):
-    def __init__(self, inputDirectory, parent=None):
-    # def __init__(self, inputDirectory):
+
+    def __init__(self, inputDirectory, parent=None):    
         super().__init__(parent)
         self.inputDirectory = inputDirectory
         self.setModal(True)   
-
-        # print(inputDirectory)
 
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k') 
@@ -57,7 +55,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             setattr(self,f'{sensor}MaxLight', ConfigFile.settings[f'fL1d{sensor}MaxLight'] )  
             setattr(self,f'{sensor}MinMaxBandLight', ConfigFile.settings[f'fL1d{sensor}MinMaxBandLight'] )        
         
-        setattr(self,'Threshold', ConfigFile.settings['bL1dThreshold'] )
+        setattr(self,'Threshold', ConfigFile.settings['bL1dThreshold'] )        
 
         # Set up the User Interface    
         self.initUI()
@@ -75,6 +73,21 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.szaLabel = QtWidgets.QLabel(self)
         self.wavesLabel = QtWidgets.QLabel(self)
         self.speedLabel = QtWidgets.QLabel(self)
+
+        # Add a button to launch photo method
+        # photoLabel = QtWidgets.QLabel("Photo",self)   
+        self.photoButton = QtWidgets.QPushButton("Photo")
+        self.photoButton.clicked.connect(self.photoButtonPressed)
+        photoFormatLabel = QtWidgets.QLabel("InputDir/Photos naming (+timezone), e.g. IMG_%Y%m%d_%H%M%S.jpg-0400:", self)
+        self.photoFormat = QtWidgets.QLineEdit(self)
+        if 'sL1dphotoFormat' in ConfigFile.settings:
+            self.photoFormat.setText(ConfigFile.settings["sL1dphotoFormat"])
+        else:
+            self.photoFormat.setText('IMG_%Y%m%d_%H%M%S.jpg-0400')
+            # Adds to Config, and saves 
+            ConfigFile.settings['sL1dphotoFormat'] = 'IMG_%Y%m%d_%H%M%S.jpg-0400'
+            ConfigFile.saveConfig(ConfigFile.filename)
+        
 
         # These will be adjusted on the slider once a file is loaded
         interval = 10
@@ -114,6 +127,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.updateButton = QtWidgets.QPushButton('***  Update  ***', self, clicked=self.updateButtonPressed)
         self.updateButton.setToolTip('Updates all but the Min/Max Bands')
         self.updateButton.setDefault(True)
+
+        self.photoFormat.returnPressed.connect(self.updateButton.click)
 
         self.saveButton = QtWidgets.QPushButton('Save Sensor Params', self, clicked=self.saveButtonPressed)
         self.saveButton.setToolTip('Save these params to Configuration and file')
@@ -226,17 +241,24 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.ph3rdLight = self.plotWidgetLight.plot(x,y, symbolPen='r',\
                  symbol='o', name='2nd pass', pen=None)   
                             
-        # Layout
+        # Layout ######################################################
         self.VBox = QtWidgets.QVBoxLayout()  
-        self.HBoxMeta = QtWidgets.QHBoxLayout()  
-        self.HBoxMeta.addWidget(self.fileDateLabel)       
-        self.HBoxMeta.addWidget(self.windSpeedLabel)
-        self.HBoxMeta.addWidget(self.cloudsLabel)  
-        self.HBoxMeta.addWidget(self.relAzLabel)       
-        self.HBoxMeta.addWidget(self.szaLabel)       
-        self.HBoxMeta.addWidget(self.wavesLabel)       
-        self.HBoxMeta.addWidget(self.speedLabel)      
-        self.VBox.addLayout(self.HBoxMeta) 
+        self.HBoxMeta1 = QtWidgets.QHBoxLayout()  
+        self.HBoxMeta2 = QtWidgets.QHBoxLayout()        
+        self.HBoxMeta1.addWidget(self.fileDateLabel) 
+        self.HBoxMeta1.addSpacing(45)
+        self.HBoxMeta1.addWidget(photoFormatLabel)      
+        self.HBoxMeta1.addWidget(self.photoFormat)
+        self.HBoxMeta1.addWidget(self.photoButton)   
+
+        self.HBoxMeta2.addWidget(self.windSpeedLabel)
+        self.HBoxMeta2.addWidget(self.cloudsLabel)  
+        self.HBoxMeta2.addWidget(self.relAzLabel)       
+        self.HBoxMeta2.addWidget(self.szaLabel)       
+        self.HBoxMeta2.addWidget(self.wavesLabel)       
+        self.HBoxMeta2.addWidget(self.speedLabel)  
+        self.VBox.addLayout(self.HBoxMeta1) 
+        self.VBox.addLayout(self.HBoxMeta2) 
              
         self.VBox.addWidget(self.sLabel)    
         HBox1 = QtWidgets.QHBoxLayout()     
@@ -319,7 +341,28 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         # Run this on first opening the GUI
         self.loadL1Cfile()
-        # self.updateButtonPressed()
+
+        # Set up the photo path
+        format = self.photoFormat.text()
+        tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
+        format = format[0:-5]
+        self.photoFP, self.photoDT = FieldPhotos.photoSetup(self.inputDirectory, self.start, self.end, format, tz)
+        
+        ##############################################
+
+    def photoButtonPressed(self):
+        print("Photo button pressed")          
+        
+        # # Set up the photo path
+        # format = self.photoFormat.text()
+        # tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
+        # format = format[0:-5]
+        # photoFP, dTphoto = FieldPhotos.photoSetup(self.inputDirectory, self.start, self.end, format, tz)
+        print(self.photoFP)
+
+        photoWidget = FieldPhotos(self.photoFP, self.photoDT, self)
+        # photoWidget = FieldPhotos(photoFP)
+        photoWidget.show()
 
     def sliderMove(self):
         self.sliderWave = float(self.slider.value())
@@ -408,8 +451,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 ancGroup = group
             if group.id.startswith('GP'):
                 gpsGroup = group
-                start = gpsGroup.datasets['DATETIME'].data[0]
-                end = gpsGroup.datasets['DATETIME'].data[-1]
+                self.start = gpsGroup.datasets['DATETIME'].data[0]
+                self.end = gpsGroup.datasets['DATETIME'].data[-1]
 
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
@@ -421,8 +464,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
             speed = np.nanmedian(ancGroup.datasets['SPEED_F_W'].data.tolist())            
         
         # self.fileDateLabel.setText(f"Begin: {root.attributes['TIME-STAMP']}") 
-        self.fileDateLabel.setText(f"FROM: {start:%Y-%m-%d %H:%M} TO: {end:%Y-%m-%d %H:%M}") 
-        self.windSpeedLabel.setText(f' (Median) WIND: {windSpeed:.1f} m/s') 
+        self.fileDateLabel.setText(f"FROM: {self.start:%Y-%m-%d %H:%M} TO: {self.end:%Y-%m-%d %H:%M} UTC") 
+        self.windSpeedLabel.setText(f' (Median->) WIND: {windSpeed:.1f} m/s') 
         self.cloudsLabel.setText(f' CLOUD: {cloud:.0f} %') 
         self.relAzLabel.setText(f' REL.AZ: {relAz:.0f} deg.') 
         self.szaLabel.setText(f' SZA: {sza:.0f} deg.') 
@@ -480,6 +523,21 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         sensorType = self.sensor
         print(sensorType)
+
+        # Update photo format
+        ConfigFile.saveConfig(ConfigFile.filename)
+
+        # Match data to photo, if possible
+        format = self.photoFormat.text()
+        tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
+        format = format[0:-5]
+        self.photoFP, self.dTphoto = FieldPhotos.photoSetup(self.inputDirectory, self.start, self.end, format, tz)
+        if self.photoFP:
+            print('Matching photo found')            
+            self.photoButton.setText(os.path.split(self.photoFP)[-1])
+        else:
+            self.photoButton.setText('No Photo Found')
+
         
         # Test for root
         if not hasattr(self, 'root'):

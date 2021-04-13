@@ -21,6 +21,7 @@ Other ideas and To Dos:
 2021-04-12:
 * Incorporate complete deglitching params into PDF report. Complete moves to group from root at L2.
 * Retool PDF reporting for failed level processing
+* Add metadata to the top of the AnomalyDetection window
 
 2021-04-09:
 * Reconfigure L1C to ingest the Ancillary Metadata file regardless of whether SolarTracker type system is in use or not. Propagate changes through L2. Tested on TRACKER and NOTRACKER datasets.
