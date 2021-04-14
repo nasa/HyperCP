@@ -5,7 +5,6 @@ import shutil
 import csv
 import numpy as np
 import pandas as pd
-# from pandas.plotting import register_matplotlib_converters
 import warnings
 import matplotlib.pyplot as plt
 import matplotlib
@@ -18,6 +17,7 @@ from ConfigFile import ConfigFile
 from HDFRoot import HDFRoot
 from Utilities import Utilities     
 from FieldPhotos import FieldPhotos   
+# from FieldTest import FieldPhotos   
 
 class AnomAnalWindow(QtWidgets.QDialog):
 
@@ -78,7 +78,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # photoLabel = QtWidgets.QLabel("Photo",self)   
         self.photoButton = QtWidgets.QPushButton("Photo")
         self.photoButton.clicked.connect(self.photoButtonPressed)
-        photoFormatLabel = QtWidgets.QLabel("InputDir/Photos naming (+timezone), e.g. IMG_%Y%m%d_%H%M%S.jpg-0400:", self)
+        photoFormatLabel = QtWidgets.QLabel(\
+            "InputDir/Photos naming (+timezone), e.g. IMG_%Y%m%d_%H%M%S.jpg-0400:", self)
         self.photoFormat = QtWidgets.QLineEdit(self)
         if 'sL1dphotoFormat' in ConfigFile.settings:
             self.photoFormat.setText(ConfigFile.settings["sL1dphotoFormat"])
@@ -353,15 +354,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
     def photoButtonPressed(self):
         print("Photo button pressed")          
         
-        # # Set up the photo path
-        # format = self.photoFormat.text()
-        # tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
-        # format = format[0:-5]
-        # photoFP, dTphoto = FieldPhotos.photoSetup(self.inputDirectory, self.start, self.end, format, tz)
-        print(self.photoFP)
-
         photoWidget = FieldPhotos(self.photoFP, self.photoDT, self)
-        # photoWidget = FieldPhotos(photoFP)
         photoWidget.show()
 
     def sliderMove(self):
@@ -472,7 +465,18 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.wavesLabel.setText(f' WAVES: {waves:.1f} m') 
         self.speedLabel.setText(f' SPEED: {speed:.1f} m/s') 
 
-        # Would be great to pull up photos here too, if available 
+        # Match data to photo, if possible
+        format = self.photoFormat.text()
+        tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
+        format = format[0:-5]
+        self.photoFP, self.photoDT = FieldPhotos.photoSetup(self.inputDirectory, self.start, self.end, format, tz)
+        if self.photoFP is not None:
+            print('Matching photo found')            
+            self.photoButton.setText(os.path.split(self.photoFP[0])[-1])
+            self.photoButton.setDisabled(0)
+        else:
+            self.photoButton.setText('No Photo Found')
+            self.photoButton.setDisabled(1)
 
         self.updateButtonPressed() 
 
@@ -527,16 +531,16 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Update photo format
         ConfigFile.saveConfig(ConfigFile.filename)
 
-        # Match data to photo, if possible
-        format = self.photoFormat.text()
-        tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
-        format = format[0:-5]
-        self.photoFP, self.dTphoto = FieldPhotos.photoSetup(self.inputDirectory, self.start, self.end, format, tz)
-        if self.photoFP:
-            print('Matching photo found')            
-            self.photoButton.setText(os.path.split(self.photoFP)[-1])
-        else:
-            self.photoButton.setText('No Photo Found')
+        # # Match data to photo, if possible
+        # format = self.photoFormat.text()
+        # tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
+        # format = format[0:-5]
+        # self.photoFP, self.photoDT = FieldPhotos.photoSetup(self.inputDirectory, self.start, self.end, format, tz)
+        # if self.photoFP is not None:
+        #     print('Matching photo found')            
+        #     self.photoButton.setText(os.path.split(self.photoFP[0])[-1])
+        # else:
+        #     self.photoButton.setText('No Photo Found')
 
         
         # Test for root
