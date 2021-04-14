@@ -18,6 +18,9 @@ Other ideas and To Dos:
 * Add PIC and GIOP to L2 OC products
 * Produce kml files for GoogleEarth on entire cruise/directory
 
+2021-04-14:
+* Add a module to L1D Anomaly Analysis for displaying photos taken in the field
+
 2021-04-12:
 * Incorporate complete deglitching params into PDF report. Complete moves to group from root at L2.
 * Retool PDF reporting for failed level processing
