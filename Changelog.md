@@ -1,4 +1,4 @@
-v1.0.7 Unreleased; DAA (dirk.a.aurin@nasa.gov)
+v1.0.8 Unreleased; DAA (dirk.a.aurin@nasa.gov)
 
 Pressing:
 * Investigate integration time issue with HyperOCRs; possibly add a correction (in cal file? another level?)
@@ -14,9 +14,11 @@ Other ideas and To Dos:
 * Add failure flags in HDF object attributes:
     * Capture details when errors thrown (inspect, currentframe, getframeinfo)
     * Split Wind and SZA bombs in L2
-* Add Time Series limits in AnomalyDetection
 * Add PIC and GIOP to L2 OC products
 * Produce kml files for GoogleEarth on entire cruise/directory
+
+---
+v1.0.7 2021-04-15: DAA
 
 2021-04-14:
 * Add a module to L1D Anomaly Analysis for displaying photos taken in the field
@@ -33,7 +35,6 @@ Other ideas and To Dos:
 * Fix Controller to update /all/ ConfigFile settings with the pre-saved Anomaly parameter
 * Fix bad path for PDF report in AnomalyDetection
 * Clean up AnomalyDetection plots
-
 
 ---
 v1.0.6 2021-03-31: DAA
