@@ -103,7 +103,7 @@ class FieldPhotos(QtWidgets.QDialog):
         midDatetime = start + (end-start)/2             
 
         extension = format.split('.')[1]
-        fileList = glob.glob(os.path.join(inPath,'Photos',f'*.{extension}')) 
+        fileList = glob.glob(os.path.join(inPath,f'*.{extension}')) 
         if len(fileList) > 0:            
             
             # dFormat = 'IMG_%Y%m%d_%H%M%S.jpg'
@@ -130,4 +130,4 @@ class FieldPhotos(QtWidgets.QDialog):
             
         else:
             print("None found")
-            return None
+            return None, None

@@ -338,23 +338,26 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.setLayout(self.VBox)
         self.setGeometry(100, 70, 1400, 700)  
 
-        self.sliderWave = float(self.slider.value())
+        self.sliderWave = float(self.slider.value())        
+
+        # Set up the photo path
+        # format = self.photoFormat.text()
+        # tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
+        # format = format[0:-5]
+        self.photoFP = os.path.join(self.inputDirectory,'Photos')
+        if os.path.isdir(self.photoFP) is False:
+            os.mkdir(self.photoFP)
+        # photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, format, tz)
 
         # Run this on first opening the GUI
         self.loadL1Cfile()
-
-        # Set up the photo path
-        format = self.photoFormat.text()
-        tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
-        format = format[0:-5]
-        self.photoFP, self.photoDT = FieldPhotos.photoSetup(self.inputDirectory, self.start, self.end, format, tz)
         
         ##############################################
 
     def photoButtonPressed(self):
         print("Photo button pressed")          
         
-        photoWidget = FieldPhotos(self.photoFP, self.photoDT, self)
+        photoWidget = FieldPhotos(self.photoList, self.photoDT, self)
         photoWidget.show()
 
     def sliderMove(self):
@@ -468,11 +471,11 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Match data to photo, if possible
         format = self.photoFormat.text()
         tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
-        format = format[0:-5]
-        self.photoFP, self.photoDT = FieldPhotos.photoSetup(self.inputDirectory, self.start, self.end, format, tz)
-        if self.photoFP is not None:
+        format = format[0:-5]        
+        self.photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, format, tz)
+        if self.photoList is not None:
             print('Matching photo found')            
-            self.photoButton.setText(os.path.split(self.photoFP[0])[-1])
+            self.photoButton.setText(os.path.split(self.photoList[0])[-1])
             self.photoButton.setDisabled(0)
         else:
             self.photoButton.setText('No Photo Found')
