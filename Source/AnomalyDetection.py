@@ -530,18 +530,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         # Update photo format
         ConfigFile.saveConfig(ConfigFile.filename)
-
-        # # Match data to photo, if possible
-        # format = self.photoFormat.text()
-        # tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
-        # format = format[0:-5]
-        # self.photoFP, self.photoDT = FieldPhotos.photoSetup(self.inputDirectory, self.start, self.end, format, tz)
-        # if self.photoFP is not None:
-        #     print('Matching photo found')            
-        #     self.photoButton.setText(os.path.split(self.photoFP[0])[-1])
-        # else:
-        #     self.photoButton.setText('No Photo Found')
-
         
         # Test for root
         if not hasattr(self, 'root'):

@@ -123,7 +123,7 @@ class Window(QtWidgets.QWidget):
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
         self.outDirButton.clicked.connect(self.outDirButtonPressed)   
 
-        self.outInDirButton = QtWidgets.QPushButton('vvv Mimic Input Dir. vvv',self) 
+        self.outInDirButton = QtWidgets.QPushButton('^^^ Mimic Input Dir. vvv',self) 
         self.outInDirButton.clicked.connect(self.outInDirButtonPressed)             
         
 
