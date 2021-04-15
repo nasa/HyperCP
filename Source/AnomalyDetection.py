@@ -866,7 +866,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         pathOut = outFilePath.split('L1D')[0]
         
         if root is None and ConfigFile.settings["bL2WriteReport"] == 1:
-            Controller.writeReport(fileBaseName, pathOut, outFilePath, 'L1D')
+            Controller.writeReport(fileBaseName, pathOut, outFilePath, 'L1D', inFilePath)
         print('Process L1D complete')
 
     def closeButtonPressed(self):

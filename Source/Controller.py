@@ -26,7 +26,7 @@ class Controller:
     
 
     @staticmethod
-    def writeReport(fileName, pathOut, outFilePath, level):
+    def writeReport(fileName, pathOut, outFilePath, level, inFilePath):
         print('Writing PDF Report...')
         numLevelDict = {'L1A':1,'L1B':2,'L1C':3,'L1D':4,'L1E':5,'L2':6}
         numLevel = numLevelDict[level]
@@ -45,14 +45,15 @@ class Controller:
         except:
             fail =1
             # Processing failed at this level. Open the level below it
-            valList = list(numLevelDict.values())
-            keyList = list(numLevelDict.keys())
-            position = valList.index(numLevel - 1)
-            lastLevel = keyList[position]
-            fp = os.path.join(pathOut, lastLevel, f'{fileName}_{lastLevel}.hdf')
+            # valList = list(numLevelDict.values())
+            # keyList = list(numLevelDict.keys())
+            # position = valList.index(numLevel - 1)
+            # lastLevel = keyList[position]
+            # fp = os.path.join(pathOut, lastLevel, f'{fileName}_{lastLevel}.hdf')            
             try:
                 # Processing successful at the next lower level
-                root = HDFRoot.readHDF5(fp)
+                # Shift from the output to the input directory
+                root = HDFRoot.readHDF5(inFilePath)
             except:
                 msg = "Unable to open file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
@@ -687,13 +688,13 @@ class Controller:
         # If the process failed at any level, write a report and return
         if root is None and ConfigFile.settings["bL2Stations"] == 0:                     
             if ConfigFile.settings["bL2WriteReport"] == 1:
-                Controller.writeReport(fileName, pathOut, outFilePath, level)
+                Controller.writeReport(fileName, pathOut, outFilePath, level, inFilePath)
             return False
         
         # If L2 successful, write a report
         if level == "L2":
             if ConfigFile.settings["bL2WriteReport"] == 1:
-                Controller.writeReport(fileName, pathOut, outFilePath, level)
+                Controller.writeReport(fileName, pathOut, outFilePath, level, inFilePath)
 
         msg = f'Process Single Level: {outFilePath} - SUCCESSFUL'
         print(msg)
