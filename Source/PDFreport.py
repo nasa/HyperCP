@@ -388,7 +388,8 @@ class PDF(FPDF):
             print('Adding deglitching plots...')
             # ES
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_W{ESWindowDark}S{ESSigmaDark}_*ESDark_*.png' ))  
+                f'{filebasename}_L1C_ESDark_*.png' ))  
+                # f'{filebasename}_L1C_W{ESWindowDark}S{ESSigmaDark}_*ESDark_*.png' ))  
             if len(fileList) > 0:            
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -398,7 +399,9 @@ class PDF(FPDF):
                 self.multi_cell(0, 5, "None found.")
 
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_W{ESWindowLight}S{ESSigmaLight}_*ESLight_*.png' )) 
+                f'{filebasename}_L1C_ESLight_*.png' )) 
+                # f'{filebasename}_L1C_W{ESWindowLight}S{ESSigmaLight}_*ESLight_*.png' )) 
+
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -409,7 +412,8 @@ class PDF(FPDF):
 
             # LI
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_W{LIWindowDark}S{LISigmaDark}_*LIDark_*.png' ))
+                f'{filebasename}_L1C_LIDark_*.png' ))
+                # f'{filebasename}_L1C_W{LIWindowDark}S{LISigmaDark}_*LIDark_*.png' ))
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -419,7 +423,8 @@ class PDF(FPDF):
                 self.multi_cell(0, 5, "None found.")
 
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_W{LIWindowLight}S{LISigmaLight}_*LILight_*.png' ))
+                f'{filebasename}_L1C_LILight_*.png' ))
+                # f'{filebasename}_L1C_W{LIWindowLight}S{LISigmaLight}_*LILight_*.png' ))
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -430,7 +435,8 @@ class PDF(FPDF):
 
             # LT
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_W{LTWindowDark}S{LTSigmaDark}_*LTDark_*.png' ))
+                f'{filebasename}_L1C_LTDark_*.png' ))
+                # f'{filebasename}_L1C_W{LTWindowDark}S{LTSigmaDark}_*LTDark_*.png' ))
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -440,7 +446,8 @@ class PDF(FPDF):
                 self.multi_cell(0, 5, "None found.")
                 
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_W{LTWindowLight}S{LTSigmaLight}_*LTLight_*.png' ))
+                f'{filebasename}_L1C_LTLight_*.png' ))
+                # f'{filebasename}_L1C_W{LTWindowLight}S{LTSigmaLight}_*LTLight_*.png' ))
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)

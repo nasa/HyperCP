@@ -332,6 +332,14 @@ class Utilities:
                     msg = f'Out of order timestamp deleted at {i}'
                     print(msg)
                     Utilities.writeLogFile(msg)
+
+                    #In case we went from 2 to 1 element on the first element,
+                    if total == 1:
+                        msg = f'************Too few records ({total}) to test for ascending timestamps. Exiting.'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        return False
+
             i = 1
             while i < total:
 
