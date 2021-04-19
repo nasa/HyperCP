@@ -5,7 +5,7 @@ import numpy as np
 import datetime
 import time
 
-import HDFRoot
+from HDFRoot import HDFRoot
 from SeaBASSWriter import SeaBASSWriter
 from CalibrationFileReader import CalibrationFileReader
 from MainConfig import MainConfig
@@ -62,7 +62,7 @@ class Controller:
             else:
                 # Create a root with nothing but the fail flag in the attributes to pass to PDF reporting
                 #   PDF will contain parameters from ConfigFile.settings
-                root = HDFRoot.HDFRoot()
+                root = HDFRoot()
                 root.id = "/"
                 root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]  
                 root.attributes['TIME-STAMP'] = 'Null' # Collection time not preserved in failed RAW>L1A
@@ -606,16 +606,16 @@ class Controller:
                         ref = 0
                         for sensor in ['ES','LI','LT']:                            
                             print(f'{sensor}: Setting ConfigFile.settings to match saved parameterization. ')
-                            ConfigFile.settings[f'{sensor}WindowDark'] = params[l1CfileName][ref+0] 
-                            ConfigFile.settings[f'{sensor}WindowLight'] = params[l1CfileName][ref+1]
-                            ConfigFile.settings[f'{sensor}SigmaDark'] = params[l1CfileName][ref+2]
-                            ConfigFile.settings[f'{sensor}SigmaLight'] = params[l1CfileName][ref+3]
-                            ConfigFile.settings[f'{sensor}MinDark'] = params[l1CfileName][ref+4]
-                            ConfigFile.settings[f'{sensor}MaxDark'] = params[l1CfileName][ref+5]
-                            ConfigFile.settings[f'{sensor}MinMaxBandDark'] = params[l1CfileName][ref+6]
-                            ConfigFile.settings[f'{sensor}MinLight'] = params[l1CfileName][ref+7]
-                            ConfigFile.settings[f'{sensor}MaxLight'] = params[l1CfileName][ref+8]
-                            ConfigFile.settings[f'{sensor}MinMaxBandLight'] = params[l1CfileName][ref+9]
+                            ConfigFile.settings[f'fL1d{sensor}WindowDark'] = params[l1CfileName][ref+0] 
+                            ConfigFile.settings[f'fL1d{sensor}WindowLight'] = params[l1CfileName][ref+1]
+                            ConfigFile.settings[f'fL1d{sensor}SigmaDark'] = params[l1CfileName][ref+2]
+                            ConfigFile.settings[f'fL1d{sensor}SigmaLight'] = params[l1CfileName][ref+3]
+                            ConfigFile.settings[f'fL1d{sensor}MinDark'] = params[l1CfileName][ref+4]
+                            ConfigFile.settings[f'fL1d{sensor}MaxDark'] = params[l1CfileName][ref+5]
+                            ConfigFile.settings[f'fL1d{sensor}MinMaxBandDark'] = params[l1CfileName][ref+6]
+                            ConfigFile.settings[f'fL1d{sensor}MinLight'] = params[l1CfileName][ref+7]
+                            ConfigFile.settings[f'fL1d{sensor}MaxLight'] = params[l1CfileName][ref+8]
+                            ConfigFile.settings[f'fL1d{sensor}MinMaxBandLight'] = params[l1CfileName][ref+9]
                             ref += 10
                     else:
                         msg = 'This file not found in parameter file. Resorting to values in ConfigFile.settings.'
