@@ -5,9 +5,9 @@ import numpy as np
 import datetime
 import time
 
+import HDFRoot
 from SeaBASSWriter import SeaBASSWriter
 from CalibrationFileReader import CalibrationFileReader
-from HDFRoot import HDFRoot
 from MainConfig import MainConfig
 from ConfigFile import ConfigFile
 from Utilities import Utilities
@@ -42,29 +42,32 @@ class Controller:
             # Processing successful at this level
             root = HDFRoot.readHDF5(fp)
             fail = 0
+            root.attributes['Fail'] = 0
         except:
             fail =1
             # Processing failed at this level. Open the level below it
-            # valList = list(numLevelDict.values())
-            # keyList = list(numLevelDict.keys())
-            # position = valList.index(numLevel - 1)
-            # lastLevel = keyList[position]
-            # fp = os.path.join(pathOut, lastLevel, f'{fileName}_{lastLevel}.hdf')            
-            try:
-                # Processing successful at the next lower level
-                # Shift from the output to the input directory
-                root = HDFRoot.readHDF5(inFilePath)
-            except:
-                msg = "Unable to open file. May be open in another application."
-                Utilities.errorWindow("File Error", msg)
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return
-            
-        if fail:
+            #   This won't work for ProcessL1A looking back for RAW...
+            if level != 'L1A':        
+                try:
+                    # Processing successful at the next lower level
+                    # Shift from the output to the input directory
+                    root = HDFRoot.readHDF5(inFilePath)                    
+                except:
+                    msg = "Unable to open file. May be open in another application."
+                    Utilities.errorWindow("File Error", msg)
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return     
+
+            else:
+                # Create a root with nothing but the fail flag in the attributes to pass to PDF reporting
+                #   PDF will contain parameters from ConfigFile.settings
+                root = HDFRoot.HDFRoot()
+                root.id = "/"
+                root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]  
+                root.attributes['TIME-STAMP'] = 'Null' # Collection time not preserved in failed RAW>L1A
             root.attributes['Fail'] = 1
-        else:
-            root.attributes['Fail'] = 0
+            
 
         timeStamp = root.attributes['TIME-STAMP']        
         title = f'File: {fileName} Collected: {timeStamp}'

@@ -52,7 +52,13 @@ class PDF(FPDF):
                 if key != 'comments' and key != 'other_comments' and \
                     key != 'data_file_name' and key != 'missing' and \
                         key != 'delimiter':
-                    metaData += f'/{key}={value}\n'                            
+                    # L1A data has not populated file-specific metadata into the SeaBASS header yet
+                    if key != 'station' and key != 'original_file_name' and \
+                        not 'start' in key and not 'end' in key and not 'latitude' in key and \
+                            not 'longitude' in key and not 'wind' in key and \
+                                not 'cloud' in key and not 'wave' in key and not 'secchi' in key and \
+                                    not 'water_depth' in key:
+                        metaData += f'/{key}={value}\n'                            
         if level == "L1B":
             intro = 'Apply factory calibrations.'  
             metaData = ' \n'
@@ -217,7 +223,7 @@ class PDF(FPDF):
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
-            if root.attributes['Fail'] == 0 == 0: # otherwise this is a report of failed process, so root is None.
+            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
                 metaData += f'Max Wind: {root.attributes["WIND_MAX"]}\n'
                 metaData += f'Min SZA: {root.attributes["SZA_MIN"]}\n'
                 metaData += f'Max SZA: {root.attributes["SZA_MAX"]}\n'
