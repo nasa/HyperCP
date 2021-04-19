@@ -18,7 +18,10 @@ Other ideas and To Dos:
 * Produce kml files for GoogleEarth on entire cruise/directory
 
 ---
-v1.0.7 2021-04-15: DAA
+v1.0.7 2021-04-19: DAA
+
+2021-04-19:
+* Fix bug in Controller that flipped LI/LT anomaly params from the CSV file.
 
 2021-04-14:
 * Add a module to L1D Anomaly Analysis for displaying photos taken in the field

@@ -601,8 +601,8 @@ class Controller:
                     l1CfileName = fileName + '_L1C'
                     if l1CfileName in params.keys():
                         ref = 0
-                        for sensor in ['ES','LT','LI']:                            
-                            print(' Setting ConfigFile.settings to match saved parameterization. ')
+                        for sensor in ['ES','LI','LT']:                            
+                            print(f'{sensor}: Setting ConfigFile.settings to match saved parameterization. ')
                             ConfigFile.settings[f'{sensor}WindowDark'] = params[l1CfileName][ref+0] 
                             ConfigFile.settings[f'{sensor}WindowLight'] = params[l1CfileName][ref+1]
                             ConfigFile.settings[f'{sensor}SigmaDark'] = params[l1CfileName][ref+2]
