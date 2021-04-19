@@ -1,11 +1,13 @@
 
+import os
 import numpy as np
 import datetime as dt
 import pandas as pd
 import calendar
 # import matplotlib.pyplot as plt
 
-import HDFRoot
+from HDFRoot import HDFRoot
+from MainConfig import MainConfig
 from ConfigFile import ConfigFile
 # from AnomalyDetection import AnomAnalWindow
 from Utilities import Utilities
@@ -158,6 +160,20 @@ class ProcessL1d:
         print(msg)    
         Utilities.writeLogFile(msg)
 
+        step = float(ConfigFile.settings["fL1dAnomalyStep"]) 
+
+        outDir = MainConfig.settings["outDir"]
+        # If default output path is used, choose the root HyperInSPACE path, and build on that
+        if os.path.abspath(outDir) == os.path.join('./','Data'):
+            outDir = './'
+        
+        if not os.path.exists(os.path.join(outDir,'Plots','L1C_Anoms')):
+            os.makedirs(os.path.join(outDir,'Plots','L1C_Anoms'))    
+        plotdir = os.path.join(outDir,'Plots','L1C_Anoms')        
+        # fileName is the pathless basename (no extention) of the L1C file
+        rawFileName = node.attributes['RAW_FILE_NAME']
+        L1CfileName = f"{rawFileName.split('.')[0]}_L1C"
+
         darkData = None
         lightData = None
 
@@ -201,27 +217,60 @@ class ProcessL1d:
             msg = "Deglitching dark"
             print(msg)
             Utilities.writeLogFile(msg)
+            lightDark = 'Dark'
 
             darkData.datasetToColumns()
             columns = darkData.columns    
+            
             globalBadIndex = []
-            for dark1D in columns.items():
-                band = float(dark1D[0])
+            # for dark1D in columns.items():
+            #     band = float(dark1D[0])
+            #     if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
+            #         radiometry1D = dark1D[1]
+
+                    
+            #         badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowDark, sigmaDark, lightDark, minDark, maxDark,minMaxBandDark) 
+            #         globalBadIndex.append(badIndex) # First pass
+            #         globalBadIndex.append(badIndex2) # Second pass
+            #         globalBadIndex.append(badIndex3) # Thresholds
+
+            # # Collapse the badIndexes from all wavebands into one timeseries
+            # # Convert to an array and test along the columns (i.e. each timestamp)
+            # gIndex = np.any(np.array(globalBadIndex), 0)
+            # percentLoss = 100*(sum(gIndex)/len(gIndex))  
+            # # badIndexDark = ProcessL1d.darkDataDeglitching(darkData, sensorType, windowDark, sigmaDark)
+            # msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
+            # print(msg)
+            # Utilities.writeLogFile(msg)
+            # badIndexDark = gIndex
+
+            index = 0                
+            # Loop over bands to populate globBads
+            for timeSeries in columns.items():
+                if index==0:
+                    # Initialize boolean lists for capturing global badIndex conditions across all wavebands
+                    globBad = [False]*len(timeSeries[1])
+                    globBad2 = [False]*len(timeSeries[1])
+                    globBad3 = [False]*len(timeSeries[1])
+                band = float(timeSeries[0])
                 if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
-                    radiometry1D = dark1D[1]
-                    # window = int(self.WindowLightLineEdit.text())
-                    # window = windowLight
-                    # sigma = sigmaLight
-                    # minLight = None if self.MinLightLineEdit.text()=='None' else float(self.MinLightLineEdit.text())
-                    # maxLight = None if self.MaxLightLineEdit.text()=='None' else float(self.MaxLightLineEdit.text())
-                    # MinMaxLightBand = getattr(self,f'{self.sensor}MinMaxBandLight')
-                    lightDark = 'Dark'
-                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowDark, sigmaDark, lightDark, minDark, maxDark,minMaxBandDark) 
+                    # if index % step == 0:    
+                    radiometry1D = timeSeries[1]
+                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowDark, sigmaDark, lightDark, minDark, maxDark,minMaxBandDark)                
+                    
+                    # for the plotting routine:
+                    globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
+                    globBad2[:] = (True if val2 else val1 for (val1,val2) in zip(globBad2,badIndex2))
+                    globBad3[:] = (True if val2 else val1 for (val1,val2) in zip(globBad3,badIndex3))
+
+                    # For the deletion routine:
                     globalBadIndex.append(badIndex) # First pass
                     globalBadIndex.append(badIndex2) # Second pass
-                    globalBadIndex.append(badIndex3) # Thresholds
+                    globalBadIndex.append(badIndex3) # Thresholds                   
+                        
+                index +=1
 
-            # Collapse the badIndexes from all wavebands into one timeseries
+             # Collapse the badIndexes from all wavebands into one timeseries
             # Convert to an array and test along the columns (i.e. each timestamp)
             gIndex = np.any(np.array(globalBadIndex), 0)
             percentLoss = 100*(sum(gIndex)/len(gIndex))  
@@ -230,6 +279,15 @@ class ProcessL1d:
             print(msg)
             Utilities.writeLogFile(msg)
             badIndexDark = gIndex
+
+            # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
+            index =0
+            for timeSeries in columns.items():
+                band = float(timeSeries[0])
+                if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
+                    if index % step == 0:
+                        Utilities.saveDeglitchPlots(L1CfileName,plotdir,timeSeries,sensorType,lightDark,windowDark,sigmaDark,globBad,globBad2,globBad3)
+                index +=1
             
 
         if lightData is None:
@@ -243,22 +301,58 @@ class ProcessL1d:
 
             lightData.datasetToColumns()
             columns = lightData.columns    
+            lightDark = 'Light'
+
             globalBadIndex = []
-            for light1D in columns.items():
-                band = float(light1D[0])
+            # for light1D in columns.items():
+            #     band = float(light1D[0])
+            #     if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
+            #         radiometry1D = light1D[1]
+            #         # window = int(self.WindowLightLineEdit.text())
+            #         # window = windowLight
+            #         # sigma = sigmaLight
+            #         # minLight = None if self.MinLightLineEdit.text()=='None' else float(self.MinLightLineEdit.text())
+            #         # maxLight = None if self.MaxLightLineEdit.text()=='None' else float(self.MaxLightLineEdit.text())
+            #         # MinMaxLightBand = getattr(self,f'{self.sensor}MinMaxBandLight')
+            #         lightDark = 'Light'
+            #         badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowLight, sigmaLight, lightDark, minLight, maxLight,minMaxBandLight) 
+            #         globalBadIndex.append(badIndex)
+            #         globalBadIndex.append(badIndex2)
+            #         globalBadIndex.append(badIndex3)
+
+            # # Collapse the badIndexes from all wavebands into one timeseries
+            # # Convert to an array and test along the columns (i.e. each timestamp)
+            # gIndex = np.any(np.array(globalBadIndex), 0)
+            # percentLoss = 100*(sum(gIndex)/len(gIndex)) 
+            # # badIndexLight = ProcessL1d.lightDataDeglitching(lightData, sensorType, windowLight, sigmaLight)      
+            # msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
+            # print(msg)
+            # Utilities.writeLogFile(msg)
+            # badIndexLight = gIndex
+            index = 0                
+            # Loop over bands to populate globBads
+            for timeSeries in columns.items():
+                if index==0:
+                    # Initialize boolean lists for capturing global badIndex conditions across all wavebands
+                    globBad = [False]*len(timeSeries[1])
+                    globBad2 = [False]*len(timeSeries[1])
+                    globBad3 = [False]*len(timeSeries[1])
+                band = float(timeSeries[0])
                 if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
-                    radiometry1D = light1D[1]
-                    # window = int(self.WindowLightLineEdit.text())
-                    # window = windowLight
-                    # sigma = sigmaLight
-                    # minLight = None if self.MinLightLineEdit.text()=='None' else float(self.MinLightLineEdit.text())
-                    # maxLight = None if self.MaxLightLineEdit.text()=='None' else float(self.MaxLightLineEdit.text())
-                    # MinMaxLightBand = getattr(self,f'{self.sensor}MinMaxBandLight')
-                    lightDark = 'Light'
-                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowLight, sigmaLight, lightDark, minLight, maxLight,minMaxBandLight) 
+                    # if index % step == 0:    
+                    radiometry1D = timeSeries[1]
+                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowLight, sigmaLight, lightDark, minLight, maxLight,minMaxBandLight)                
+                    
+                    # For plotting:
+                    globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
+                    globBad2[:] = (True if val2 else val1 for (val1,val2) in zip(globBad2,badIndex2))
+                    globBad3[:] = (True if val2 else val1 for (val1,val2) in zip(globBad3,badIndex3))
+                        
+                    # For deletion:
                     globalBadIndex.append(badIndex)
                     globalBadIndex.append(badIndex2)
-                    globalBadIndex.append(badIndex3)
+                    globalBadIndex.append(badIndex3)                    
+                index +=1
 
             # Collapse the badIndexes from all wavebands into one timeseries
             # Convert to an array and test along the columns (i.e. each timestamp)
@@ -269,6 +363,15 @@ class ProcessL1d:
             print(msg)
             Utilities.writeLogFile(msg)
             badIndexLight = gIndex
+
+            # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
+            index =0
+            for timeSeries in columns.items():
+                band = float(timeSeries[0])
+                if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
+                    if index % step == 0:
+                        Utilities.saveDeglitchPlots(L1CfileName,plotdir,timeSeries,sensorType,lightDark,windowLight,sigmaLight,globBad,globBad2,globBad3)
+                index +=1
 
         # Delete the glitchy rows of the datasets
         for gp in node.groups:
@@ -449,7 +552,7 @@ class ProcessL1d:
         '''
         Apply data deglitching to light and shutter-dark data, then apply dark shutter correction to light data.
         '''
-        root = HDFRoot.HDFRoot()
+        root = HDFRoot()
         root.copy(node) 
         root.attributes["PROCESSING_LEVEL"] = "1d"
         now = dt.datetime.now()

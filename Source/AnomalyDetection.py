@@ -805,7 +805,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     band = float(timeSeries[0])
                     if band > self.minBand and band < self.maxBand:
                         if index % step == 0:
-                            self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            Utilities.saveDeglitchPlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
                     index +=1
 
             if lightData is None:
@@ -845,7 +846,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     band = float(timeSeries[0])
                     if band > self.minBand and band < self.maxBand:
                         if index % step == 0:
-                            self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            Utilities.saveDeglitchPlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
                     index +=1
 
                 print('Complete')
@@ -1027,59 +1029,59 @@ class AnomAnalWindow(QtWidgets.QDialog):
             e = sys.exc_info()[0]
             print("Error: %s" % e)
 
-    @staticmethod
-    def savePlots(fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\            
-        #Plot results  
-        font = {'family': 'serif',
-            'color':  'darkred',
-            'weight': 'normal',
-            'size': 16}   
+    # @staticmethod
+    # def savePlots(fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\            
+    #     #Plot results  
+    #     font = {'family': 'serif',
+    #         'color':  'darkred',
+    #         'weight': 'normal',
+    #         'size': 16}   
         
-        waveBand = timeSeries[0]
+    #     waveBand = timeSeries[0]
         
-        radiometry1D = timeSeries[1]
-        x = np.arange(0,len(radiometry1D),1)  
-        avg = Utilities.movingAverage(radiometry1D, windowSize).tolist() 
+    #     radiometry1D = timeSeries[1]
+    #     x = np.arange(0,len(radiometry1D),1)  
+    #     avg = Utilities.movingAverage(radiometry1D, windowSize).tolist() 
 
-        try:     
-            text_xlabel="Time Series"
-            text_ylabel=f'{sensorType}({waveBand}) {lightDark}'
-            plt.figure(figsize=(15, 8))            
-            # fig, ax = plt.subplot(figsize=(15, 8)) 
+    #     try:     
+    #         text_xlabel="Time Series"
+    #         text_ylabel=f'{sensorType}({waveBand}) {lightDark}'
+    #         plt.figure(figsize=(15, 8))            
+    #         # fig, ax = plt.subplot(figsize=(15, 8)) 
             
-            # First Pass
-            y_anomaly = np.array(radiometry1D)[badIndex]
-            x_anomaly = x[badIndex]
-            # Second Pass
-            y_anomaly2 = np.array(radiometry1D)[badIndex2]
-            x_anomaly2 = x[badIndex2]
-            # Thresholds
-            y_anomaly3 = np.array(radiometry1D)[badIndex3]
-            x_anomaly3 = x[badIndex3]            
+    #         # First Pass
+    #         y_anomaly = np.array(radiometry1D)[badIndex]
+    #         x_anomaly = x[badIndex]
+    #         # Second Pass
+    #         y_anomaly2 = np.array(radiometry1D)[badIndex2]
+    #         x_anomaly2 = x[badIndex2]
+    #         # Thresholds
+    #         y_anomaly3 = np.array(radiometry1D)[badIndex3]
+    #         x_anomaly3 = x[badIndex3]            
 
-            plt.plot(x, radiometry1D, marker='o', color='k', linestyle='', fillstyle='none')
-            plt.plot(x_anomaly, y_anomaly, marker='x', color='red', markersize=12, linestyle='')
-            plt.plot(x_anomaly2, y_anomaly2, marker='+', color='red', markersize=12, linestyle='')
-            plt.plot(x_anomaly3, y_anomaly3, marker='o', color='red', markersize=12, linestyle='', fillstyle='full', markerfacecolor='blue')
-            # y_av = moving_average(radiometry1D, window_size)
-            plt.plot(x[3:-3], avg[3:-3], color='green')
+    #         plt.plot(x, radiometry1D, marker='o', color='k', linestyle='', fillstyle='none')
+    #         plt.plot(x_anomaly, y_anomaly, marker='x', color='red', markersize=12, linestyle='')
+    #         plt.plot(x_anomaly2, y_anomaly2, marker='+', color='red', markersize=12, linestyle='')
+    #         plt.plot(x_anomaly3, y_anomaly3, marker='o', color='red', markersize=12, linestyle='', fillstyle='full', markerfacecolor='blue')
+    #         # y_av = moving_average(radiometry1D, window_size)
+    #         plt.plot(x[3:-3], avg[3:-3], color='green')
 
-            plt.text(0,0.95,'Marked for exclusions in ALL bands', transform=plt.gcf().transFigure)
-            plt.xlabel(text_xlabel, fontdict=font)
-            plt.ylabel(text_ylabel, fontdict=font)   
-            plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
+    #         plt.text(0,0.95,'Marked for exclusions in ALL bands', transform=plt.gcf().transFigure)
+    #         plt.xlabel(text_xlabel, fontdict=font)
+    #         plt.ylabel(text_ylabel, fontdict=font)   
+    #         plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
 
-            # plotName = (plotdir + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
-            #     + sensorType + lightDark + '_' + k[0] + '.png')
-            fp = os.path.join(plotdir,fileName)
-            plotName = f'{fp}_W{windowSize}S{sigma}_{sensorType}{lightDark}_{waveBand}.png'
+    #         # plotName = (plotdir + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
+    #         #     + sensorType + lightDark + '_' + k[0] + '.png')
+    #         fp = os.path.join(plotdir,fileName)
+    #         plotName = f'{fp}_W{windowSize}S{sigma}_{sensorType}{lightDark}_{waveBand}.png'
 
-            print(plotName)
-            plt.savefig(plotName)
-            plt.close()    
-        except:
-            e = sys.exc_info()[0]
-            print("Error: %s" % e)
+    #         print(plotName)
+    #         plt.savefig(plotName)
+    #         plt.close()    
+    #     except:
+    #         e = sys.exc_info()[0]
+    #         print("Error: %s" % e)
 
 
     @staticmethod

@@ -53,7 +53,7 @@ class Controller:
                     # Shift from the output to the input directory
                     root = HDFRoot.readHDF5(inFilePath)                    
                 except:
-                    msg = "Unable to open file. May be open in another application."
+                    msg = "Controller.writeReport: Unable to open HDF file. May be open in another application."
                     Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -365,7 +365,7 @@ class Controller:
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
-            msg = "Unable to open file. May be open in another application."
+            msg = "Controller.processL1d: Unable to open HDF file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
@@ -390,13 +390,13 @@ class Controller:
                 if ConfigFile.settings['bL2PlotLt']==1:
                     Utilities.plotRadiometryL1D(root, filename, rType='LT')
             except:
-                msg = "Unable to write file. May be open in another application."
+                msg = "Controller.ProcessL1d: Unable to write file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
         else:
-            msg = "L1d processing failed. Nothing to output."
+            msg = "L1d processing failed. Nothing to output. (No deglitching plots created)"
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
