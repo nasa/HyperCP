@@ -23,6 +23,7 @@ v1.0.7 2021-04-19: DAA
 2021-04-19:
 * Fix bug in Controller that flipped LI/LT anomaly params from the CSV file.
 * Fix PDF report root source for RAW?L1A fail and clean up premature SeaBASS header items
+* Restore automatic deglitching plots to ProcessL1d (making AnomalyDetection Save Plots redundant)
 
 2021-04-14:
 * Add a module to L1D Anomaly Analysis for displaying photos taken in the field
