@@ -980,7 +980,13 @@ class AnomAnalWindow(QtWidgets.QDialog):
             minRad = getattr(self,f'{sensorType}MinDark')
             maxRad = getattr(self,f'{sensorType}MaxDark')
             minMaxBand = getattr(self,f'{sensorType}MinMaxBandDark')
-            text_ylabel=f'{sensorType} Darks {self.waveBand}'
+            # Round/truncate waveband and add units
+            if sensorType == 'ES':
+                radUnits = self.root.attributes['ES_UNITS']
+            else:
+                radUnits = self.root.attributes['LI_UNITS']
+
+            text_ylabel=f'[DARKS]  {sensorType}({self.waveBand:.0f}) [{radUnits}]'
             figTitle = f'Band: {self.waveBand} Window: {window} Sigma: {sigma}'
             # self.plotWidgetDark.setWindowTitle(figTitle)            
             print(f'{figTitle} Dark')
@@ -1001,7 +1007,13 @@ class AnomAnalWindow(QtWidgets.QDialog):
             minRad = getattr(self,f'{sensorType}MinLight')
             maxRad = getattr(self,f'{sensorType}MaxLight')
             minMaxBand = getattr(self,f'{sensorType}MinMaxBandLight')
-            text_ylabel=f'{sensorType} Lights {self.waveBand}'
+            # Round/truncate waveband and add units
+            if sensorType == 'ES':
+                radUnits = self.root.attributes['ES_UNITS']
+            else:
+                radUnits = self.root.attributes['LI_UNITS']
+
+            text_ylabel=f'[LIGHTS]  {sensorType}({self.waveBand:.0f}) [{radUnits}]'
             figTitle = f'Band: {self.waveBand} Window: {window} Sigma: {sigma}'
             print(f'{figTitle} Dark')
             # self.plotWidgetLight.setWindowTitle(figTitle, **styles)
