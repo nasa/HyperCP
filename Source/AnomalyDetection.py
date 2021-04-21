@@ -440,8 +440,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.MaxDarkLineEdit.setText(str(getattr(self,f'{self.sensor}MaxDark')))
         self.MaxLightLineEdit.setText(str(getattr(self,f'{self.sensor}MaxLight')))           
 
-        # Add an information bar based on metadata
-        ''' Need to load metadata in earlier for SolarTrack, to be more like noSolarTrack'''        
+        # Add an information bar based on metadata       
         for group in root.groups:
             if group.id == 'ANCILLARY_METADATA':
                 ancGroup = group
@@ -449,15 +448,33 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 gpsGroup = group
                 self.start = gpsGroup.datasets['DATETIME'].data[0]
                 self.end = gpsGroup.datasets['DATETIME'].data[-1]
+            if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
+                    trackerGroup = group
 
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
-            windSpeed = np.nanmedian(ancGroup.datasets['WINDSPEED'].data.tolist())
-            cloud = np.nanmedian(ancGroup.datasets['CLOUD'].data.tolist())
-            relAz = np.nanmedian(ancGroup.datasets['REL_AZ'].data.tolist())
+            if 'WINDSPEED' in ancGroup.datasets:
+                windSpeed = np.nanmedian(ancGroup.datasets['WINDSPEED'].data.tolist())
+            else:
+                windSpeed = np.nan
+            if 'CLOUD' in ancGroup.datasets:
+                cloud = np.nanmedian(ancGroup.datasets['CLOUD'].data.tolist())
+            else:
+                cloud = np.nan
+            if 'REL_AZ' in ancGroup.datasets:
+                relAz = np.nanmedian(ancGroup.datasets['REL_AZ'].data.tolist())
+            else:
+                relAz = np.nanmedian(trackerGroup.datasets['REL_AZ'].data.tolist())                
             sza = np.nanmedian(ancGroup.datasets['SZA'].data.tolist())
-            waves = np.nanmedian(ancGroup.datasets['WAVE_HT'].data.tolist())
-            speed = np.nanmedian(ancGroup.datasets['SPEED_F_W'].data.tolist())            
+            if 'WAVE_HT' in ancGroup.datasets:
+                waves = np.nanmedian(ancGroup.datasets['WAVE_HT'].data.tolist())
+            else:
+                waves = np.nan
+            if 'SPEED_F_W' in ancGroup.datasets:
+                speed = np.nanmedian(ancGroup.datasets['SPEED_F_W'].data.tolist())  
+            else:
+                # Could resort to GPS SOG here, but that makes less sense than NaN
+                speed = np.nan          
         
         # self.fileDateLabel.setText(f"Begin: {root.attributes['TIME-STAMP']}") 
         self.fileDateLabel.setText(f"FROM: {self.start:%Y-%m-%d %H:%M} TO: {self.end:%Y-%m-%d %H:%M} UTC") 
