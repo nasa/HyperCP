@@ -1,6 +1,8 @@
 Data/Zhang_rho_db.mat
 Data/Anc/
 Data/L*/
+Data/Reports/
+Data/Photos/
 Plots/
 Logs/
 Config/*
@@ -11,3 +13,4 @@ Config/*
 Source/.DS_Store
 *.pyc
 *.log
+

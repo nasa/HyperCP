@@ -36,14 +36,14 @@ class PDF(FPDF):
             # If level completed (i.e. L2), use the attributes of the file, otherwise, use the ConfigFile settings
             metaData = ' \n'
             metaData += 'Processing Parameters and metadata: \n'            
-            if root:                
-                metaData += f'HyperInSPACE version: {root.attributes["HYPERINSPACE"]}'                
+            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.                
+                metaData += f'HyperInSPACE version: {root.attributes["HYPERINSPACE"]}\n'                
                 if 'SZA_FILTER_L1A' in root.attributes:
-                    metaData += f'SZA Filter (L1A): {root.attributes["SZA_FILTER_L1A"]}'                                
+                    metaData += f'SZA Filter (L1A): {root.attributes["SZA_FILTER_L1A"]}\n'                                
             else:
-                metaData += f'HyperInSPACE version: {commentsDict[" HyperInSPACE vers"]}'
+                metaData += f'HyperInSPACE version: {commentsDict[" HyperInSPACE vers"]}\n'
                 if ConfigFile.settings['bL1aCleanSZA']:
-                    metaData += f'SZA Limit (L1A): {ConfigFile.settings["fL1aCleanSZAMax"]}'
+                    metaData += f'SZA Limit (L1A): {ConfigFile.settings["fL1aCleanSZAMax"]}\n'
             comments2 = headerBlock['other_comments'].split('!')
             for comment in comments2:
                 if comment != '':
@@ -52,7 +52,13 @@ class PDF(FPDF):
                 if key != 'comments' and key != 'other_comments' and \
                     key != 'data_file_name' and key != 'missing' and \
                         key != 'delimiter':
-                    metaData += f'/{key}={value}\n'                            
+                    # L1A data has not populated file-specific metadata into the SeaBASS header yet
+                    if key != 'station' and key != 'original_file_name' and \
+                        not 'start' in key and not 'end' in key and not 'latitude' in key and \
+                            not 'longitude' in key and not 'wind' in key and \
+                                not 'cloud' in key and not 'wave' in key and not 'secchi' in key and \
+                                    not 'water_depth' in key:
+                        metaData += f'/{key}={value}\n'                            
         if level == "L1B":
             intro = 'Apply factory calibrations.'  
             metaData = ' \n'
@@ -62,35 +68,35 @@ class PDF(FPDF):
             
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
-            if root:
+            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
                 if 'HOME_ANGLE' in root.attributes:
-                    metaData += f'Rotator Home Angle: {root.attributes["HOME_ANGLE"]}'  
+                    metaData += f'Rotator Home Angle: {root.attributes["HOME_ANGLE"]}\n'  
                 if 'ROTATOR_DELAY_FILTER' in root.attributes:
-                    metaData += f'Rotator Delay: {root.attributes["ROTATOR_DELAY_FILTER"]}'                  
+                    metaData += f'Rotator Delay: {root.attributes["ROTATOR_DELAY_FILTER"]}\n'                  
                 if 'PITCH_ROLL_FILTER' in root.attributes:
-                    metaData += f'Pitch/Roll Filter: {root.attributes["PITCH_ROLL_FILTER"]}'
+                    metaData += f'Pitch/Roll Filter: {root.attributes["PITCH_ROLL_FILTER"]}\n'
                 if 'ROTATOR_ANGLE_MIN' in root.attributes:
-                    metaData += f'Rotator Min Filter: {root.attributes["ROTATOR_ANGLE_MIN"]}'
-                    metaData += f'Rotator Max Filter: {root.attributes["ROTATOR_ANGLE_MAX"]}'
+                    metaData += f'Rotator Min Filter: {root.attributes["ROTATOR_ANGLE_MIN"]}\n'
+                    metaData += f'Rotator Max Filter: {root.attributes["ROTATOR_ANGLE_MAX"]}\n'
                 if 'RELATIVE_AZIMUTH_MIN' in root.attributes:
-                    metaData += f'Rel Azimuth Min: {root.attributes["RELATIVE_AZIMUTH_MIN"]}'    
-                    metaData += f'Rel Azimuth Max: {root.attributes["RELATIVE_AZIMUTH_MAX"]}'    
+                    metaData += f'Rel Azimuth Min: {root.attributes["RELATIVE_AZIMUTH_MIN"]}\n'    
+                    metaData += f'Rel Azimuth Max: {root.attributes["RELATIVE_AZIMUTH_MAX"]}\n'    
             else:
                 
-                metaData += f'Rotator Home Angle: {ConfigFile.settings["fL1cRotatorHomeAngle"]}'
+                metaData += f'Rotator Home Angle: {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'
                 if ConfigFile.settings['bL1cSolarTracker']:
                     if ConfigFile.settings['bL1cRotatorDelay']:
-                        metaData += f'Rotator Delay: {ConfigFile.settings["fL1cRotatorDelay"]}'
+                        metaData += f'Rotator Delay: {ConfigFile.settings["fL1cRotatorDelay"]}\n'
                     if ConfigFile.settings['bL1cCleanPitchRoll']:
-                        metaData += f'Pitch/Roll Filter: {ConfigFile.settings["fL1cPitchRollPitch"]}'
+                        metaData += f'Pitch/Roll Filter: {ConfigFile.settings["fL1cPitchRollPitch"]}\n'
                     if ConfigFile.settings['bL1cRotatorAngle']:
-                        metaData += f'Rotator Min: {ConfigFile.settings["fL1cRotatorAngleMin"]}'
-                        metaData += f'Rotator Max: {ConfigFile.settings["fL1cRotatorAngleMax"]}'
+                        metaData += f'Rotator Min: {ConfigFile.settings["fL1cRotatorAngleMin"]}\n'
+                        metaData += f'Rotator Max: {ConfigFile.settings["fL1cRotatorAngleMax"]}\n'
                 if ConfigFile.settings['bL1cCleanSunAngle']:
-                    metaData += f'Rel Azimuth Min: {ConfigFile.settings["fL1cSunAngleMin"]}'
-                    metaData += f'Rel Azimuth Max: {ConfigFile.settings["fL1cSunAngleMax"]}'
+                    metaData += f'Rel Azimuth Min: {ConfigFile.settings["fL1cSunAngleMin"]}\n'
+                    metaData += f'Rel Azimuth Max: {ConfigFile.settings["fL1cSunAngleMax"]}\n'
         
-        if root:
+        if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
             gpDict = {}
             for gp in root.groups: 
                 gpDict[gp.id] = gp
@@ -100,59 +106,116 @@ class PDF(FPDF):
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
-            if root:
+            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
                 if root.attributes['L1D_DEGLITCH'] == 'ON':                
                     # These deglitching parameters might be in root.attributes if from files L1D or L1E, 
                     # or within their respective groups at L2
                     if 'ES_WINDOW_DARK' in root.attributes:
-                        metaData += f'ES Dark Window: {root.attributes["ES_WINDOW_DARK"]}'
-                        metaData += f'ES Light Window: {root.attributes["ES_WINDOW_LIGHT"]}'
-                        metaData += f'ES Dark Sigma: {root.attributes["ES_SIGMA_DARK"]}'
-                        metaData += f'ES Light Sigma: {root.attributes["ES_SIGMA_LIGHT"]}'
-                        metaData += f'LT Dark Window: {root.attributes["LT_WINDOW_DARK"]}'
-                        metaData += f'LT Light Window: {root.attributes["LT_WINDOW_LIGHT"]}'
-                        metaData += f'LT Dark Sigma: {root.attributes["LT_SIGMA_DARK"]}'
-                        metaData += f'LT Light Sigma: {root.attributes["LT_SIGMA_LIGHT"]}'
-                        metaData += f'LI Dark Window: {root.attributes["LI_WINDOW_DARK"]}'
-                        metaData += f'LI Light Window: {root.attributes["LI_WINDOW_LIGHT"]}'
-                        metaData += f'LI Dark Sigma: {root.attributes["LI_SIGMA_DARK"]}'
-                        metaData += f'LI Light Sigma: {root.attributes["LI_SIGMA_LIGHT"]}'
-                    else:
-                        metaData += f'ES Dark Window: {gpDict["IRRADIANCE"].attributes["ES_WINDOW_DARK"]}'
-                        metaData += f'ES Light Window: {gpDict["IRRADIANCE"].attributes["ES_WINDOW_LIGHT"]}'
-                        metaData += f'ES Dark Sigma: {gpDict["IRRADIANCE"].attributes["ES_SIGMA_DARK"]}'
-                        metaData += f'ES Light Sigma: {gpDict["IRRADIANCE"].attributes["ES_SIGMA_LIGHT"]}'
-                        metaData += f'LT Dark Window: {gpDict["RADIANCE"].attributes["LT_WINDOW_DARK"]}'
-                        metaData += f'LT Light Window: {gpDict["RADIANCE"].attributes["LT_WINDOW_LIGHT"]}'
-                        metaData += f'LT Dark Sigma: {gpDict["RADIANCE"].attributes["LT_SIGMA_DARK"]}'
-                        metaData += f'LT Light Sigma: {gpDict["RADIANCE"].attributes["LT_SIGMA_LIGHT"]}'
-                        metaData += f'LI Dark Window: {gpDict["RADIANCE"].attributes["LI_WINDOW_DARK"]}'
-                        metaData += f'LI Light Window: {gpDict["RADIANCE"].attributes["LI_WINDOW_LIGHT"]}'
-                        metaData += f'LI Dark Sigma: {gpDict["RADIANCE"].attributes["LI_SIGMA_DARK"]}'
-                        metaData += f'LI Light Sigma: {gpDict["RADIANCE"].attributes["LI_SIGMA_LIGHT"]}'
-            else:
+                        metaData += f'ES Dark Window: {root.attributes["ES_WINDOW_DARK"]}\n'
+                        metaData += f'ES Light Window: {root.attributes["ES_WINDOW_LIGHT"]}\n'
+                        metaData += f'ES Dark Sigma: {root.attributes["ES_SIGMA_DARK"]}\n'
+                        metaData += f'ES Light Sigma: {root.attributes["ES_SIGMA_LIGHT"]}\n'
+                        metaData += f'LT Dark Window: {root.attributes["LT_WINDOW_DARK"]}\n'
+                        metaData += f'LT Light Window: {root.attributes["LT_WINDOW_LIGHT"]}\n'
+                        metaData += f'LT Dark Sigma: {root.attributes["LT_SIGMA_DARK"]}\n'
+                        metaData += f'LT Light Sigma: {root.attributes["LT_SIGMA_LIGHT"]}\n'
+                        metaData += f'LI Dark Window: {root.attributes["LI_WINDOW_DARK"]}\n'
+                        metaData += f'LI Light Window: {root.attributes["LI_WINDOW_LIGHT"]}\n'
+                        metaData += f'LI Dark Sigma: {root.attributes["LI_SIGMA_DARK"]}\n'
+                        metaData += f'LI Light Sigma: {root.attributes["LI_SIGMA_LIGHT"]}\n'
+                        if ConfigFile.settings['bL1dThreshold']:
+                            metaData += f'ES Light Thresh. Band: {root.attributes["ES_MINMAX_BAND_LIGHT"]}\n'
+                            metaData += f'ES Light Min.: {root.attributes["ES_MIN_LIGHT"]}\n'
+                            metaData += f'ES Light Max.: {root.attributes["ES_MAX_LIGHT"]}\n'
+                            metaData += f'ES Dark Thresh. Band: {root.attributes["ES_MINMAX_BAND_DARK"]}\n'
+                            metaData += f'ES Dark Min.: {root.attributes["ES_MIN_DARK"]}\n'
+                            metaData += f'ES LDark Max.: {root.attributes["ES_MAX_DARK"]}\n'
+
+                            metaData += f'LI Light Thresh. Band: {root.attributes["LI_MINMAX_BAND_LIGHT"]}\n'
+                            metaData += f'LI Light Min.: {root.attributes["LI_MIN_LIGHT"]}\n'
+                            metaData += f'LI Light Max.: {root.attributes["LI_MAX_LIGHT"]}\n'
+                            metaData += f'LI Dark Thresh. Band: {root.attributes["LI_MINMAX_BAND_DARK"]}\n'
+                            metaData += f'LI Dark Min.: {root.attributes["LI_MIN_DARK"]}\n'
+                            metaData += f'LI LDark Max.: {root.attributes["LI_MAX_DARK"]}\n'
+
+                            metaData += f'LT Light Thresh. Band: {root.attributes["LT_MINMAX_BAND_LIGHT"]}\n'
+                            metaData += f'LT Light Min.: {root.attributes["LT_MIN_LIGHT"]}\n'
+                            metaData += f'LT Light Max.: {root.attributes["LT_MAX_LIGHT"]}\n'
+                            metaData += f'LT Dark Thresh. Band: {root.attributes["LT_MINMAX_BAND_DARK"]}\n'
+                            metaData += f'LT Dark Min.: {root.attributes["LT_MIN_DARK"]}\n'
+                            metaData += f'LT LDark Max.: {root.attributes["LT_MAX_DARK"]}\n'                                                        
+
+                    else: # Level 2 files have these in Group attributes
+                        metaData += f'ES Dark Window: {gpDict["IRRADIANCE"].attributes["ES_WINDOW_DARK"]}\n'
+                        metaData += f'ES Light Window: {gpDict["IRRADIANCE"].attributes["ES_WINDOW_LIGHT"]}\n'
+                        metaData += f'ES Dark Sigma: {gpDict["IRRADIANCE"].attributes["ES_SIGMA_DARK"]}\n'
+                        metaData += f'ES Light Sigma: {gpDict["IRRADIANCE"].attributes["ES_SIGMA_LIGHT"]}\n'
+                        metaData += f'LT Dark Window: {gpDict["RADIANCE"].attributes["LT_WINDOW_DARK"]}\n'
+                        metaData += f'LT Light Window: {gpDict["RADIANCE"].attributes["LT_WINDOW_LIGHT"]}\n'
+                        metaData += f'LT Dark Sigma: {gpDict["RADIANCE"].attributes["LT_SIGMA_DARK"]}\n'
+                        metaData += f'LT Light Sigma: {gpDict["RADIANCE"].attributes["LT_SIGMA_LIGHT"]}\n'
+                        metaData += f'LI Dark Window: {gpDict["RADIANCE"].attributes["LI_WINDOW_DARK"]}\n'
+                        metaData += f'LI Light Window: {gpDict["RADIANCE"].attributes["LI_WINDOW_LIGHT"]}\n'
+                        metaData += f'LI Dark Sigma: {gpDict["RADIANCE"].attributes["LI_SIGMA_DARK"]}\n'
+                        metaData += f'LI Light Sigma: {gpDict["RADIANCE"].attributes["LI_SIGMA_LIGHT"]}\n'
+
+                        if ConfigFile.settings['bL1dThreshold']:
+                            metaData += f'ES Light Thresh. Band: {gpDict["IRRADIANCE"].attributes["ES_MINMAX_BAND_LIGHT"]}\n'
+                            metaData += f'ES Light Min.: {gpDict["IRRADIANCE"].attributes["ES_MIN_LIGHT"]}\n'
+                            metaData += f'ES Light Max.: {gpDict["IRRADIANCE"].attributes["ES_MAX_LIGHT"]}\n'
+                            metaData += f'ES Dark Thresh. Band: {gpDict["IRRADIANCE"].attributes["ES_MINMAX_BAND_DARK"]}\n'
+                            metaData += f'ES Dark Min.: {gpDict["IRRADIANCE"].attributes["ES_MIN_DARK"]}\n'
+                            metaData += f'ES LDark Max.: {gpDict["IRRADIANCE"].attributes["ES_MAX_DARK"]}\n'
+
+                            metaData += f'LI Light Thresh. Band: {gpDict["RADIANCE"].attributes["LI_MINMAX_BAND_LIGHT"]}\n'
+                            metaData += f'LI Light Min.: {gpDict["RADIANCE"].attributes["LI_MIN_LIGHT"]}\n'
+                            metaData += f'LI Light Max.: {gpDict["RADIANCE"].attributes["LI_MAX_LIGHT"]}\n'
+                            metaData += f'LI Dark Thresh. Band: {gpDict["RADIANCE"].attributes["LI_MINMAX_BAND_DARK"]}\n'
+                            metaData += f'LI Dark Min.: {gpDict["RADIANCE"].attributes["LI_MIN_DARK"]}\n'
+                            metaData += f'LI LDark Max.: {gpDict["RADIANCE"].attributes["LI_MAX_DARK"]}\n'
+
+                            metaData += f'LT Light Thresh. Band: {gpDict["RADIANCE"].attributes["LT_MINMAX_BAND_LIGHT"]}\n'
+                            metaData += f'LT Light Min.: {gpDict["RADIANCE"].attributes["LT_MIN_LIGHT"]}\n'
+                            metaData += f'LT Light Max.: {gpDict["RADIANCE"].attributes["LT_MAX_LIGHT"]}\n'
+                            metaData += f'LT Dark Thresh. Band: {gpDict["RADIANCE"].attributes["LT_MINMAX_BAND_DARK"]}\n'
+                            metaData += f'LT Dark Min.: {gpDict["RADIANCE"].attributes["LT_MIN_DARK"]}\n'
+                            metaData += f'LT Dark Max.: {gpDict["RADIANCE"].attributes["LT_MAX_DARK"]}\n'
+
+            else: # Root is none; this  is a failure report
                 if ConfigFile.settings['bL1dDeglitch']:
-                    metaData += f'ES Dark Window: {ConfigFile.settings["fL1dESWindowDark"]}'
-                    metaData += f'ES Light Window: {ConfigFile.settings["fL1dESWindowLight"]}'
-                    metaData += f'ES Dark Sigma: {ConfigFile.settings["fL1dESSigmaDark"]}'
-                    metaData += f'ES Light Sigma: {ConfigFile.settings["fL1dESSigmaLight"]}'
-                    metaData += f'LT Dark Window: {ConfigFile.settings["fL1dLTWindowDark"]}'                
-                    metaData += f'LT Light Window: {ConfigFile.settings["fL1dLTWindowLight"]}'
-                    metaData += f'LT Dark Sigma: {ConfigFile.settings["fL1dLTSigmaDark"]}'
-                    metaData += f'LT Light Sigma: {ConfigFile.settings["fL1dLTSigmaLight"]}'
-                    metaData += f'LI Dark Window: {ConfigFile.settings["fL1dLIWindowDark"]}'
-                    metaData += f'LI Light Window: {ConfigFile.settings["fL1dLIWindowLight"]}'
-                    metaData += f'LI Dark Sigma: {ConfigFile.settings["fL1dLISigmaDark"]}'
-                    metaData += f'LI Light Sigma: {ConfigFile.settings["fL1dLISigmaLight"]}'
+                    metaData += f'ES Dark Window: {ConfigFile.settings["fL1dESWindowDark"]}\n'
+                    metaData += f'ES Light Window: {ConfigFile.settings["fL1dESWindowLight"]}\n'
+                    metaData += f'ES Dark Sigma: {ConfigFile.settings["fL1dESSigmaDark"]}\n'
+                    metaData += f'ES Light Sigma: {ConfigFile.settings["fL1dESSigmaLight"]}\n'
+                    metaData += f'LT Dark Window: {ConfigFile.settings["fL1dLTWindowDark"]}\n'                
+                    metaData += f'LT Light Window: {ConfigFile.settings["fL1dLTWindowLight"]}\n'
+                    metaData += f'LT Dark Sigma: {ConfigFile.settings["fL1dLTSigmaDark"]}\n'
+                    metaData += f'LT Light Sigma: {ConfigFile.settings["fL1dLTSigmaLight"]}\n'
+                    metaData += f'LI Dark Window: {ConfigFile.settings["fL1dLIWindowDark"]}\n'
+                    metaData += f'LI Light Window: {ConfigFile.settings["fL1dLIWindowLight"]}\n'
+                    metaData += f'LI Dark Sigma: {ConfigFile.settings["fL1dLISigmaDark"]}\n'
+                    metaData += f'LI Light Sigma: {ConfigFile.settings["fL1dLISigmaLight"]}\n'
+
+                    if ConfigFile.settings['bL1dThreshold']:
+                        metaData += f'ES Light Thresh. Band: {ConfigFile.settings["fL1dESMinMaxBandLight"]}\n'
+                        metaData += f'ES Dark Thresh. Band: {ConfigFile.settings["fL1dESMinMaxBandDark"]}\n'
+                        metaData += f'ES Min.: {ConfigFile.settings["fL1dESMinLight"]}\n'
+                        metaData += f'ES Max.: {ConfigFile.settings["fL1dESMaxLight"]}\n'
+                        metaData += f'LI Dark Thresh. Band: {ConfigFile.settings["fL1dLIMinMaxBandDark"]}\n'
+                        metaData += f'LI Min.: {ConfigFile.settings["fL1dLIMinLight"]}\n'
+                        metaData += f'LI Max.: {ConfigFile.settings["fL1dLIMaxLight"]}\n'
+                        metaData += f'LT Dark Thresh. Band: {ConfigFile.settings["fL1dLTMinMaxBandDark"]}\n'
+                        metaData += f'LT Min.: {ConfigFile.settings["fL1dLTMinLight"]}\n'
+                        metaData += f'LT Max.: {ConfigFile.settings["fL1dLTMaxLight"]}\n'
 
         if level == "L1E":
             intro = 'Interpolate data to common timestamps and wavebands.'
 
             metaData = 'Processing Parameters: \n'
-            if root:
-                metaData += f'Wavelength Interp Int: {root.attributes["WAVE_INTERP"]}'
+            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
+                metaData += f'Wavelength Interp Int: {root.attributes["WAVE_INTERP"]}\n'
             else:
-                metaData += f'Wavelength Interp Int: {ConfigFile.settings["fL1eInterpInterval"]}'
+                metaData += f'Wavelength Interp Int: {ConfigFile.settings["fL1eInterpInterval"]}\n'
         if level == "L2":
             intro = 'Apply more quality control filters, temporal binning, '\
                 'station selection, glint correction, NIR corrections, reflectance '\
@@ -160,7 +223,7 @@ class PDF(FPDF):
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
-            if root:
+            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
                 metaData += f'Max Wind: {root.attributes["WIND_MAX"]}\n'
                 metaData += f'Min SZA: {root.attributes["SZA_MIN"]}\n'
                 metaData += f'Max SZA: {root.attributes["SZA_MAX"]}\n'
@@ -170,7 +233,7 @@ class PDF(FPDF):
                     metaData += f'Filter Sigma Lt: {gpDict["RADIANCE"].attributes["LT_SPEC_FILTER"]}\n'            
                 if 'CLOUD_FILTER' in root.attributes:
                     metaData += f'Cloud Filter: {root.attributes["CLOUD_FILTER"]}\n'
-                    metaData += f'Es Filter: {root.attributes["ES_FILTER"]}\n'
+                    metaData += f'Es Filter: {gpDict["IRRADIANCE"].attributes["ES_FILTER"]}\n'
                     metaData += f'Dawn/Dusk Filter: {root.attributes["DAWN_DUSK_FILTER"]}\n'
                     metaData += f'Rain/Humidity Filter: {root.attributes["RAIN_RH_FILTER"]}\n'
                 metaData += f'Ensemble Duration: {root.attributes["ENSEMBLE_DURATION"]}\n'            
@@ -195,7 +258,7 @@ class PDF(FPDF):
                     metaData += f'Dawn/Dusk Filter: {ConfigFile.settings["fL2DawnDuskFlag"]}\n'
                     metaData += f'Rain/Humidity Filter: {ConfigFile.settings["fL2RainfallHumidityFlag"]}\n'
                 metaData += f'Ensemble Duration: {ConfigFile.settings["fL2TimeInterval"]}\n'            
-                if ConfigFile.settings['bL2PercentLt']:                
+                if ConfigFile.settings['bL2EnablePercentLt']:                
                     metaData += f'Percent Lt Filter: {ConfigFile.settings["fL2PercentLt"]}\n'
                 if ConfigFile.settings['bL2RuddickRho']:
                     metaData += f'Glint_Correction: Ruddick et al. 2006'
@@ -205,12 +268,12 @@ class PDF(FPDF):
                     metaData += f'Glint_Correction: Mobley 1999'
                 if ConfigFile.settings['bL2PerformNIRCorrection']:
                     if ConfigFile.settings['bL2SimpleNIRCorrection']:
-                        metaData += f'NIR Correction: Carder et al 1995'
+                        metaData += f'NIR Correction: Mueller and Austin 1995'
                     if ConfigFile.settings['bL2SimSpecNIRCorrection']:
                         metaData += f'NIR Correction: Ruddick et al. 2005/2006'
                 else:
                     metaData += f'NIR Correction: None'
-                if ConfigFile.settings['bL2NegativeSpace']:
+                if ConfigFile.settings['bL2NegativeSpec']:
                     metaData += f'Remove Negatives: ON'
 
         metaData += ' \n'
@@ -275,7 +338,7 @@ class PDF(FPDF):
             self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
                 'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1C_Anoms.')
 
-            if root:
+            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
                 # These deglitching parameters might be in root.attributes if from files L1D or L1E, 
                 # or within their respective groups at L2
                 gpDict = {}
@@ -325,17 +388,21 @@ class PDF(FPDF):
             print('Adding deglitching plots...')
             # ES
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_W{ESWindowDark}S{ESSigmaDark}_*ESDark_*.png' ))  
-
-            if len(fileList) > 0:                
+                f'{filebasename}_L1C_ESDark_*.png' ))  
+                # f'{filebasename}_L1C_W{ESWindowDark}S{ESSigmaDark}_*ESDark_*.png' ))  
+            if len(fileList) > 0:            
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
+            else:
+                self.multi_cell(0, 5, "None found.")
 
-                fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{ESWindowLight}S{ESSigmaLight}_*ESLight_*.png' )) 
+            fileList = glob.glob(os.path.join(inPath, \
+                f'{filebasename}_L1C_ESLight_*.png' )) 
+                # f'{filebasename}_L1C_W{ESWindowLight}S{ESSigmaLight}_*ESLight_*.png' )) 
 
+            if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
@@ -345,16 +412,20 @@ class PDF(FPDF):
 
             # LI
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_W{LIWindowDark}S{LISigmaDark}_*LIDark_*.png' ))
+                f'{filebasename}_L1C_LIDark_*.png' ))
+                # f'{filebasename}_L1C_W{LIWindowDark}S{LISigmaDark}_*LIDark_*.png' ))
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
+            else:
+                self.multi_cell(0, 5, "None found.")
 
-                fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{LIWindowLight}S{LISigmaLight}_*LILight_*.png' ))
-
+            fileList = glob.glob(os.path.join(inPath, \
+                f'{filebasename}_L1C_LILight_*.png' ))
+                # f'{filebasename}_L1C_W{LIWindowLight}S{LISigmaLight}_*LILight_*.png' ))
+            if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
@@ -364,16 +435,20 @@ class PDF(FPDF):
 
             # LT
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_W{LTWindowDark}S{LTSigmaDark}_*LTDark_*.png' ))
+                f'{filebasename}_L1C_LTDark_*.png' ))
+                # f'{filebasename}_L1C_W{LTWindowDark}S{LTSigmaDark}_*LTDark_*.png' ))
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
-
-                fileList = glob.glob(os.path.join(inPath, \
-                    f'{filebasename}_L1C_W{LTWindowLight}S{LTSigmaLight}_*LTLight_*.png' ))
-
+            else:
+                self.multi_cell(0, 5, "None found.")
+                
+            fileList = glob.glob(os.path.join(inPath, \
+                f'{filebasename}_L1C_LTLight_*.png' ))
+                # f'{filebasename}_L1C_W{LTWindowLight}S{LTSigmaLight}_*LTLight_*.png' ))
+            if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)

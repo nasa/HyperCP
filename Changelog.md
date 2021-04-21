@@ -1,6 +1,7 @@
-v1.0.7 Unreleased; DAA (dirk.a.aurin@nasa.gov)
+v1.0.8 Unreleased; DAA (dirk.a.aurin@nasa.gov)
 
 Pressing:
+* Investigate integration time issue with HyperOCRs; possibly add a correction (in cal file? another level?)
 * Improve/augment to NIR residual corrections
 * Add BRDF correction options
 * Propagate uncertainties from radiometry to OC products
@@ -16,6 +17,29 @@ Other ideas and To Dos:
 * Add PIC and GIOP to L2 OC products
 * Produce kml files for GoogleEarth on entire cruise/directory
 
+---
+v1.0.7 2021-04-19: DAA
+
+2021-04-19:
+* Fix bug in Controller that flipped LI/LT anomaly params from the CSV file.
+* Fix PDF report root source for RAW?L1A fail and clean up premature SeaBASS header items
+* Restore automatic deglitching plots to ProcessL1d (making AnomalyDetection Save Plots redundant)
+
+2021-04-14:
+* Add a module to L1D Anomaly Analysis for displaying photos taken in the field
+
+2021-04-12:
+* Incorporate complete deglitching params into PDF report. Complete moves to group from root at L2.
+* Retool PDF reporting for failed level processing
+* Add metadata to the top of the AnomalyDetection window
+
+2021-04-09:
+* Reconfigure L1C to ingest the Ancillary Metadata file regardless of whether SolarTracker type system is in use or not. Propagate changes through L2. Tested on TRACKER and NOTRACKER datasets.
+
+2021-04-06:
+* Fix Controller to update /all/ ConfigFile settings with the pre-saved Anomaly parameter
+* Fix bad path for PDF report in AnomalyDetection
+* Clean up AnomalyDetection plots
 
 ---
 v1.0.6 2021-03-31: DAA

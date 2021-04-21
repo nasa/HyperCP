@@ -73,7 +73,7 @@ class ProcessL1e:
         timeData = group.getDataset("TIMETAG2")
         dateTimeData = group.getDataset("DATETIME")
 
-        # Convert degrees minutes to decimal degrees format; only for GPS, not ANCILLARY_NOTRACKER
+        # Convert degrees minutes to decimal degrees format; only for GPS, not ANCILLARY_METADATA
         if group.id.startswith("GP"):
             if newDatasetName == "LATITUDE":        
                 latPosData = group.getDataset("LATPOS")
@@ -296,8 +296,8 @@ class ProcessL1e:
         newReferenceGroup = root.addGroup("IRRADIANCE")
         newSASGroup = root.addGroup("RADIANCE")
         root.groups.append(node.getGroup("GPS"))
-        if node.getGroup("ANCILLARY_NOTRACKER"):
-            root.groups.append(node.getGroup("ANCILLARY_NOTRACKER"))
+        if node.getGroup("ANCILLARY_METADATA"):
+            root.groups.append(node.getGroup("ANCILLARY_METADATA"))
         if node.getGroup("SOLARTRACKER"):
             root.groups.append(node.getGroup("SOLARTRACKER"))
         if node.getGroup("SOLARTRACKER_STATUS"):
@@ -415,7 +415,7 @@ class ProcessL1e:
                 ltGroup = gp
             if gp.id == "SOLARTRACKER" or gp.id =="SOLARTRACKER_UM":
                 satnavGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
-            if gp.id == ("ANCILLARY_NOTRACKER"):
+            if gp.id == ("ANCILLARY_METADATA"):
                 ancGroup = gp 
             if gp.id == "SOLARTRACKER_STATUS":
                 satmsgGroup = gp 
@@ -444,9 +444,9 @@ class ProcessL1e:
             courseData = newGPSGroup.getDataset("COURSE")
             speedData = newGPSGroup.getDataset("SPEED")
 
-        # Non-SolarTracker ancillary field and Pysolar data
+        # Metadata ancillary field and Pysolar data
         if ancGroup is not None:
-            newAncGroup = root.addGroup("ANCILLARY_NOTRACKER")
+            newAncGroup = root.addGroup("ANCILLARY_METADATA")
             newAncGroup.attributes = ancGroup.attributes.copy()
             for ds in ancGroup.datasets:
                 if ds != "DATETAG" and ds != "TIMETAG2" and ds != "DATETIME":

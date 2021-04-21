@@ -202,60 +202,14 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL1dDeglitch"]) == 1:
             self.l1dDeglitchCheckBox.setChecked(True)
 
-        # self.l1dWindowDarkLabel = QtWidgets.QLabel("     Window for Darks (odd)", self)
-        # self.l1dWindowDarkLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1dWindowDarkLineEdit.setText(str(ConfigFile.settings["fL1dWindowDark"]))
-        # self.l1dWindowDarkLineEdit.setValidator(intValidator)
-        # # self.l1dWindowDarkLineEdit.setValidator(oddValidator)
-
-        # self.l1dWindowLightLabel = QtWidgets.QLabel("     Window for Lights (odd)", self)
-        # self.l1dWindowLightLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1dWindowLightLineEdit.setText(str(ConfigFile.settings["fL1dWindowLight"]))
-        # self.l1dWindowLightLineEdit.setValidator(intValidator)
-        # # self.l1dWindowLightLineEdit.setValidator(oddValidator)
-
-        # self.l1dSigmaDarkLabel = QtWidgets.QLabel("     Sigma Factor Darks", self)
-        # self.l1dSigmaDarkLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1dSigmaDarkLineEdit.setText(str(ConfigFile.settings["fL1dSigmaDark"]))
-        # self.l1dSigmaDarkLineEdit.setValidator(doubleValidator)
-        
-        # self.l1dSigmaLightLabel = QtWidgets.QLabel("     Sigma Factor Lights", self)
-        # self.l1dSigmaLightLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1dSigmaLightLineEdit.setText(str(ConfigFile.settings["fL1dSigmaLight"]))
-        # self.l1dSigmaLightLineEdit.setValidator(doubleValidator)
-
         self.l1dDeglitchCheckBoxUpdate()      
         self.l1dDeglitchCheckBox.clicked.connect(self.l1dDeglitchCheckBoxUpdate)   
 
         # L1D Launch Deglitcher Analysis 
         l1dAnomalySublabel1 = QtWidgets.QLabel("  Launch Anom. Anal. to test parameters",self)
-        l1dAnomalySublabel2 = QtWidgets.QLabel("  on L1C files. Saved to Plots/L1C_Anoms.",self)
-        # l1dAnomalySublabel3 = QtWidgets.QLabel("   ", self)  
-        # l1dAnomalyStepLabel = QtWidgets.QLabel("   Waveband interval to plot (integer): ", self)  
-        # self.l1dAnomalyStepLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1dAnomalyStepLineEdit.setText(str(ConfigFile.settings["fL1dAnomalyStep"]))
-        # self.l1dAnomalyStepLineEdit.setValidator(intValidator)
+        l1dAnomalySublabel2 = QtWidgets.QLabel("  on L1C files. Saved to Plots/L1C_Anoms.",self)       
         self.l1dAnomalyButton = QtWidgets.QPushButton("Anomaly Analysis")
-        self.l1dAnomalyButton.clicked.connect(self.l1dAnomalyButtonPressed)
-
-        # # Plots
-        # l1dPlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
-        
-        # l1dPlotEsLabel = QtWidgets.QLabel("Es", self)     
-        # self.l1dPlotEsCheckBox = QtWidgets.QCheckBox("", self)      
-        # if int(ConfigFile.settings["bL1dPlotEs"]) == 1:
-        #     self.l1dPlotEsCheckBox.setChecked(True)
-
-        # l1dPlotLiLabel = QtWidgets.QLabel("Li", self)     
-        # self.l1dPlotLiCheckBox = QtWidgets.QCheckBox("", self)      
-        # if int(ConfigFile.settings["bL1dPlotLi"]) == 1:
-        #     self.l1dPlotLiCheckBox.setChecked(True)
-
-        # l1dPlotLtLabel = QtWidgets.QLabel("Lt", self)     
-        # self.l1dPlotLtCheckBox = QtWidgets.QCheckBox("", self)      
-        # if int(ConfigFile.settings["bL1dPlotLt"]) == 1:
-        #     self.l1dPlotLtCheckBox.setChecked(True)
-
+        self.l1dAnomalyButton.clicked.connect(self.l1dAnomalyButtonPressed)       
 
         # L1E
         l1eLabel = QtWidgets.QLabel("Level 1E Processing", self)
@@ -410,7 +364,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # l2pLabel_font.setBold(True)
         # l2pLabel.setFont(l1eLabel_font)
         l2pSublabel = QtWidgets.QLabel(" GMAO MERRA2 ancillary data are required for Zhang glint", self)
-        l2pSublabel2 = QtWidgets.QLabel(" Zhang correction and can fill in wind for Ruddick glint.", self)
+        l2pSublabel2 = QtWidgets.QLabel(" correction and can fill in wind for Ruddick glint.", self)
         l2pSublabel3 = QtWidgets.QLabel(" WILL PROMPT FOR EARTHDATA USERNAME/PASSWORD", self)
         l2pSublabel4 = QtWidgets.QLabel(
             "<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">         Register here</a>", self)
@@ -443,13 +397,13 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2DefaultSSTLineEdit.setText(str(ConfigFile.settings["fL2DefaultSST"]))
         self.l2DefaultSSTLineEdit.setValidator(doubleValidator)
 
-        self.RhoRadioButtonRuddick = QtWidgets.QRadioButton("Ruddick 2006 ρ")
+        self.RhoRadioButtonRuddick = QtWidgets.QRadioButton("Ruddick et al. (2006) ρ")
         self.RhoRadioButtonRuddick.setAutoExclusive(False)
         if ConfigFile.settings["bL2RuddickRho"]==1:
             self.RhoRadioButtonRuddick.setChecked(True)
         self.RhoRadioButtonRuddick.clicked.connect(self.l2RhoRadioButtonRuddickClicked)  
 
-        self.RhoRadioButtonZhang = QtWidgets.QRadioButton("Zhang 2017 ρ")
+        self.RhoRadioButtonZhang = QtWidgets.QRadioButton("Zhang et al. (2017) ρ")
         self.RhoRadioButtonZhang.setAutoExclusive(False)
         if ConfigFile.settings["bL2ZhangRho"]==1:
             self.RhoRadioButtonZhang.setChecked(True)            
@@ -458,11 +412,17 @@ class ConfigWindow(QtWidgets.QDialog):
             self.RhoRadioButtonZhang.setDisabled(1)
         self.RhoRadioButtonZhang.clicked.connect(self.l2RhoRadioButtonZhangClicked)
 
-        self.RhoRadioButtonDefault = QtWidgets.QRadioButton("Mobley 1999 ρ")
+        self.RhoRadioButtonDefault = QtWidgets.QRadioButton("Mobley (1999) ρ")
         self.RhoRadioButtonDefault.setAutoExclusive(False)
         if ConfigFile.settings["bL2DefaultRho"]==1:
             self.RhoRadioButtonDefault.setChecked(True)
-        self.RhoRadioButtonDefault.clicked.connect(self.l2RhoRadioButtonDefaultClicked)        
+        self.RhoRadioButtonDefault.clicked.connect(self.l2RhoRadioButtonDefaultClicked)    
+
+        self.RhoRadioButtonYour = QtWidgets.QRadioButton("Your Glint (2021) ρ")
+        self.RhoRadioButtonYour.setAutoExclusive(False)
+        # if ConfigFile.settings["bL2YourRho"]==1:
+        #     self.RhoRadioButtonYour.setChecked(True)
+        self.RhoRadioButtonYour.clicked.connect(self.l2RhoRadioButtonYourClicked)      
              
 
         # L2 NIR AtmoCorr
@@ -471,16 +431,21 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
             self.l2NIRCorrectionCheckBox.setChecked(True)
         
-        self.SimpleNIRRadioButton = QtWidgets.QRadioButton("   Mueller/Hooker 2003 (blue water)")
+        self.SimpleNIRRadioButton = QtWidgets.QRadioButton("   Mueller and Austin (1995) (blue water)")
         self.SimpleNIRRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL2SimpleNIRCorrection"] == 1:
             self.SimpleNIRRadioButton.setChecked(True)
         self.SimpleNIRRadioButton.clicked.connect(self.l2SimpleNIRRadioButtonClicked)        
-        self.SimSpecNIRRadioButton = QtWidgets.QRadioButton("   SimSpec. Ruddick 2006 (turbid)")
+        self.SimSpecNIRRadioButton = QtWidgets.QRadioButton("   SimSpec. Ruddick et al. (2006) (turbid)")
         self.SimSpecNIRRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL2SimSpecNIRCorrection"] == 1:
             self.SimSpecNIRRadioButton.setChecked(True)
-        self.SimSpecNIRRadioButton.clicked.connect(self.l2SimSpecNIRRadioButtonClicked)     
+        self.SimSpecNIRRadioButton.clicked.connect(self.l2SimSpecNIRRadioButtonClicked)  
+        self.YourNIRRadioButton = QtWidgets.QRadioButton("   Your NIR Residual (2021) (universal)")
+        self.YourNIRRadioButton.setAutoExclusive(False)
+        # if ConfigFile.settings["bL2YourNIRCorrection"] == 1:
+        #     self.YourNIRRadioButton.setChecked(True)
+        self.YourNIRRadioButton.clicked.connect(self.l2YourNIRRadioButtonClicked)    
 
         self.l2NIRCorrectionCheckBoxUpdate()    
 
@@ -952,8 +917,9 @@ class ConfigWindow(QtWidgets.QDialog):
         RhoHBox2.addWidget(self.RhoRadioButtonZhang)
         VBox3.addLayout(RhoHBox2)
         RhoHBox3 = QtWidgets.QHBoxLayout()
-        RhoHBox3.addSpacing(60)
+        # RhoHBox3.addSpacing(60)
         RhoHBox3.addWidget(self.RhoRadioButtonDefault)        
+        RhoHBox3.addWidget(self.RhoRadioButtonYour)  
         VBox3.addLayout(RhoHBox3)
 
         VBox3.addSpacing(5)
@@ -966,6 +932,7 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addLayout(NIRCorrectionHBox)         
         VBox3.addWidget(self.SimpleNIRRadioButton)
         VBox3.addWidget(self.SimSpecNIRRadioButton)  
+        VBox3.addWidget(self.YourNIRRadioButton) 
 
         VBox3.addSpacing(5)
 
@@ -1062,7 +1029,7 @@ class ConfigWindow(QtWidgets.QDialog):
         #self.show()        
 
         # print("ConfigWindow - initUI Done")
-
+    ###############################################################
     def addCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Add Calibration File Pressed")
         fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files")
@@ -1417,20 +1384,38 @@ class ConfigWindow(QtWidgets.QDialog):
         self.RhoRadioButtonDefault.setChecked(True)
         ConfigFile.settings["bL2RuddickRho"] = 0
         ConfigFile.settings["bL2ZhangRho"] = 0
-        ConfigFile.settings["bL2DefaultRho"] = 1
+        ConfigFile.settings["bL2DefaultRho"] = 1 
+
+    def l2RhoRadioButtonYourClicked(self):
+        print("ConfigWindow - l2RhoCorrection set to Default. You have not submitted your method.")
+        self.RhoRadioButtonRuddick.setChecked(False)
+        self.RhoRadioButtonZhang.setChecked(False)
+        self.RhoRadioButtonYour.setChecked(True)
+        ConfigFile.settings["bL2RuddickRho"] = 0
+        ConfigFile.settings["bL2ZhangRho"] = 0
+        ConfigFile.settings["bL2DefaultRho"] = 1 # This is a mock up. Use Default 
 
     def l2SimpleNIRRadioButtonClicked(self):
         print("ConfigWindow - l2NIRCorrection set to Simple")
         self.SimpleNIRRadioButton.setChecked(True)
         self.SimSpecNIRRadioButton.setChecked(False)
+        self.YourNIRRadioButton.setChecked(False)
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 1
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
     def l2SimSpecNIRRadioButtonClicked(self):
         self.SimpleNIRRadioButton.setChecked(False)
         self.SimSpecNIRRadioButton.setChecked(True)
+        self.YourNIRRadioButton.setChecked(False)
         print("ConfigWindow - l2NIRCorrection set to SimSpec")
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
+    def l2YourNIRRadioButtonClicked(self):
+        self.SimpleNIRRadioButton.setChecked(True)
+        self.SimSpecNIRRadioButton.setChecked(False)
+        self.YourNIRRadioButton.setChecked(True)
+        print("ConfigWindow - l2NIRCorrection set to Simple. You have not submitted Your method.")
+        ConfigFile.settings["bL2SimpleNIRCorrection"] = 1 # Mock up. Use Simple
+        ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
     
     def l2NIRCorrectionCheckBoxUpdate(self):
         print("ConfigWindow - l2NIRCorrectionCheckBoxUpdate")
@@ -1438,6 +1423,7 @@ class ConfigWindow(QtWidgets.QDialog):
         disabled = (not self.l2NIRCorrectionCheckBox.isChecked())     
         self.SimpleNIRRadioButton.setDisabled(disabled)
         self.SimSpecNIRRadioButton.setDisabled(disabled)
+        self.YourNIRRadioButton.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL2PerformNIRCorrection"] = 0  
         else:
@@ -1622,21 +1608,21 @@ class ConfigWindow(QtWidgets.QDialog):
                 shutil.copy(srcPath, destPath)
             
             # Confirm that SeaBASS Headers need to be/are updated
-            if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL1eSaveSeaBASS"]: 
+            if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL2SaveSeaBASS"]: 
                 SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
-                reply = QtWidgets.QMessageBox.question(self, "Message", "Did you remember to update SeaBASS Headers?", \
-                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
+                # reply = QtWidgets.QMessageBox.question(self, "Message", "Did you remember to update SeaBASS Headers?", \
+                #         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
 
-                if reply == QtWidgets.QMessageBox.Yes:
-                    # Change Main window Config File selection
-                    MainConfig.settings["cfgFile"] = ConfigFile.filename                                    
-                    '''TO DO: Pass signal to MainWindow to update the Config file selection'''
-                    # Window.comboBox1Changed(self,ConfigFile.filename)
-                    self.close()
-                else:
-                    note = QtWidgets.QMessageBox()
-                    note.setText('Update SeaBASS Headers in Level 1E Processing')
-                    note.exec_()
+                # if reply == QtWidgets.QMessageBox.Yes:
+                #     # Change Main window Config File selection
+                #     MainConfig.settings["cfgFile"] = ConfigFile.filename                                    
+                #     '''TO DO: Pass signal to MainWindow to update the Config file selection'''
+                #     # Window.comboBox1Changed(self,ConfigFile.filename)
+                #     self.close()
+                # else:
+                #     note = QtWidgets.QMessageBox()
+                #     note.setText('Update SeaBASS Headers in Level 1E Processing')
+                #     note.exec_()
             else:
                 self.close()
         

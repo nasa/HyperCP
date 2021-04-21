@@ -4,7 +4,7 @@ above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 
 See README.md or README.pdf for installation instructions and guide.
 
-Version 1.0.6: Under development March 2021 (See Changelog.md)
+Version 1.0.7: Under development April 2021 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 
 """
@@ -78,7 +78,7 @@ class Window(QtWidgets.QWidget):
 
         # Main window configuration restore
         MainConfig.loadConfig(MainConfig.fileName)  
-        MainConfig.settings['version'] = '1.0.6'
+        MainConfig.settings['version'] = '1.0.7'
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
@@ -121,17 +121,20 @@ class Window(QtWidgets.QWidget):
         self.outDirLabel = QtWidgets.QLabel('Output Data/Plots Parent Directory', self)        
         self.outputDirectory = MainConfig.settings['outDir']
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
-        self.outDirButton.clicked.connect(self.outDirButtonPressed)                
+        self.outDirButton.clicked.connect(self.outDirButtonPressed)   
+
+        self.outInDirButton = QtWidgets.QPushButton('^^^ Mimic Input Dir. vvv',self) 
+        self.outInDirButton.clicked.connect(self.outInDirButtonPressed)             
         
 
         self.ancFileLabel = QtWidgets.QLabel('Ancillary Data File for L2 (SeaBASS format)')
         self.ancFileLineEdit = QtWidgets.QLineEdit()
         self.ancFileLineEdit.setText(str(MainConfig.settings['metFile']))
-        self.windAddButton = QtWidgets.QPushButton('Add', self)
-        self.windRemoveButton = QtWidgets.QPushButton('Remove', self)                
+        self.ancAddButton = QtWidgets.QPushButton('Add', self)
+        self.ancRemoveButton = QtWidgets.QPushButton('Remove', self)                
 
-        self.windAddButton.clicked.connect(self.windAddButtonPressed)
-        self.windRemoveButton.clicked.connect(self.windRemoveButtonPressed)
+        self.ancAddButton.clicked.connect(self.ancAddButtonPressed)
+        self.ancRemoveButton.clicked.connect(self.ancRemoveButtonPressed)
 
 
         singleLevelLabel = QtWidgets.QLabel('Single-Level Processing', self)
@@ -210,7 +213,10 @@ class Window(QtWidgets.QWidget):
         vBox.addWidget(self.inDirLabel)
         vBox.addWidget(self.inDirButton)
 
-        vBox.addWidget(self.outDirLabel)
+        outHBox = QtWidgets.QHBoxLayout()
+        outHBox.addWidget(self.outDirLabel)
+        outHBox.addWidget(self.outInDirButton)
+        vBox.addLayout(outHBox)
         vBox.addWidget(self.outDirButton)
 
         vBox.addSpacing(10)
@@ -218,11 +224,11 @@ class Window(QtWidgets.QWidget):
         vBox.addWidget(self.ancFileLabel)        
         vBox.addWidget(self.ancFileLineEdit)
 
-        windHBox = QtWidgets.QHBoxLayout()        
-        windHBox.addWidget(self.windAddButton)
-        windHBox.addWidget(self.windRemoveButton)
+        ancHBox = QtWidgets.QHBoxLayout()        
+        ancHBox.addWidget(self.ancAddButton)
+        ancHBox.addWidget(self.ancRemoveButton)
 
-        vBox.addLayout(windHBox)
+        vBox.addLayout(ancHBox)
         vBox.addStretch(1)
 
         vBox.addStretch(1)
@@ -256,7 +262,7 @@ class Window(QtWidgets.QWidget):
 
         self.setGeometry(300, 300, 290, 600)
         # self.setGeometry(300, 300, 250, 600) This does nothing.
-        self.setWindowTitle('Main')
+        self.setWindowTitle(f"Main v{MainConfig.settings['version']}")
         self.show()
 
     ########################################################################################
@@ -343,7 +349,16 @@ class Window(QtWidgets.QWidget):
         MainConfig.settings['outDir'] = self.outputDirectory
         return self.outputDirectory
 
-    def windAddButtonPressed(self):
+    def outInDirButtonPressed(self):          
+        self.outputDirectory = self.inputDirectory
+        print('Data output directory changed: ', self.outputDirectory)
+        print('NOTE: Subdirectories for data levels will be created here')
+        print('      automatically, unless they already exist.')          
+        self.outDirButton.setText(self.outputDirectory)
+        MainConfig.settings['outDir'] = self.outputDirectory
+        return self.outputDirectory
+
+    def ancAddButtonPressed(self):
         print('Met File Add Dialogue')
         fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Meteorologic Data File',self.inputDirectory)
         if any(fnames):
@@ -352,7 +367,7 @@ class Window(QtWidgets.QWidget):
                 self.ancFileLineEdit.setText(fnames[0][0])
             MainConfig.settings['metFile'] = fnames[0][0]
 
-    def windRemoveButtonPressed(self):
+    def ancRemoveButtonPressed(self):
         print('Wind File Remove Dialogue')
         self.ancFileLineEdit.setText('')
         MainConfig.settings['metFile'] = ''

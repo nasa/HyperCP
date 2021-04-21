@@ -4,8 +4,8 @@ import datetime as dt
 import os
 import numpy as np
 
-import HDFRoot
-import HDFGroup
+from HDFRoot import HDFRoot
+from HDFGroup import HDFGroup
 from MainConfig import MainConfig
 from Utilities import Utilities
 from RawFileReader import RawFileReader
@@ -22,7 +22,7 @@ class ProcessL1a:
         (_, fileName) = os.path.split(fp)
 
         # Generate root attributes
-        root = HDFRoot.HDFRoot()
+        root = HDFRoot()
         root.id = "/"
         root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
         root.attributes["CAL_FILE_NAMES"] = ','.join(calibrationMap.keys())
@@ -47,7 +47,7 @@ class ProcessL1a:
 
         for key in calibrationMap:
             cf = calibrationMap[key]
-            gp = HDFGroup.HDFGroup()
+            gp = HDFGroup()
             gp.id = cf.instrumentType
             contextMap[cf.id] = gp
 

@@ -5,7 +5,7 @@ import shutil
 import csv
 import numpy as np
 import pandas as pd
-# from pandas.plotting import register_matplotlib_converters
+import warnings
 import matplotlib.pyplot as plt
 import matplotlib
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -15,17 +15,16 @@ from Controller import Controller
 from MainConfig import MainConfig
 from ConfigFile import ConfigFile
 from HDFRoot import HDFRoot
-from Utilities import Utilities        
+from Utilities import Utilities     
+from FieldPhotos import FieldPhotos   
+# from FieldTest import FieldPhotos   
 
 class AnomAnalWindow(QtWidgets.QDialog):
-# class AnomAnalWindow(QtWidgets.QWidget):
-    def __init__(self, inputDirectory, parent=None):
-    # def __init__(self, inputDirectory):
+
+    def __init__(self, inputDirectory, parent=None):    
         super().__init__(parent)
         self.inputDirectory = inputDirectory
         self.setModal(True)   
-
-        # print(inputDirectory)
 
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k') 
@@ -56,7 +55,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             setattr(self,f'{sensor}MaxLight', ConfigFile.settings[f'fL1d{sensor}MaxLight'] )  
             setattr(self,f'{sensor}MinMaxBandLight', ConfigFile.settings[f'fL1d{sensor}MinMaxBandLight'] )        
         
-        setattr(self,'Threshold', ConfigFile.settings['bL1dThreshold'] )
+        setattr(self,'Threshold', ConfigFile.settings['bL1dThreshold'] )        
 
         # Set up the User Interface    
         self.initUI()
@@ -65,6 +64,31 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         intValidator = QtGui.QIntValidator()
         doubleValidator = QtGui.QDoubleValidator() 
+
+        # Put up the metadata at the top of the window
+        self.fileDateLabel = QtWidgets.QLabel(self)
+        self.windSpeedLabel = QtWidgets.QLabel(self)
+        self.cloudsLabel = QtWidgets.QLabel(self)
+        self.relAzLabel = QtWidgets.QLabel(self)
+        self.szaLabel = QtWidgets.QLabel(self)
+        self.wavesLabel = QtWidgets.QLabel(self)
+        self.speedLabel = QtWidgets.QLabel(self)
+
+        # Add a button to launch photo method
+        # photoLabel = QtWidgets.QLabel("Photo",self)   
+        self.photoButton = QtWidgets.QPushButton("Photo")
+        self.photoButton.clicked.connect(self.photoButtonPressed)
+        photoFormatLabel = QtWidgets.QLabel(\
+            "InputDir/Photos naming (+timezone), e.g. IMG_%Y%m%d_%H%M%S.jpg-0400:", self)
+        self.photoFormat = QtWidgets.QLineEdit(self)
+        if 'sL1dphotoFormat' in ConfigFile.settings:
+            self.photoFormat.setText(ConfigFile.settings["sL1dphotoFormat"])
+        else:
+            self.photoFormat.setText('IMG_%Y%m%d_%H%M%S.jpg-0400')
+            # Adds to Config, and saves 
+            ConfigFile.settings['sL1dphotoFormat'] = 'IMG_%Y%m%d_%H%M%S.jpg-0400'
+            ConfigFile.saveConfig(ConfigFile.filename)
+        
 
         # These will be adjusted on the slider once a file is loaded
         interval = 10
@@ -104,6 +128,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.updateButton = QtWidgets.QPushButton('***  Update  ***', self, clicked=self.updateButtonPressed)
         self.updateButton.setToolTip('Updates all but the Min/Max Bands')
         self.updateButton.setDefault(True)
+
+        self.photoFormat.returnPressed.connect(self.updateButton.click)
 
         self.saveButton = QtWidgets.QPushButton('Save Sensor Params', self, clicked=self.saveButtonPressed)
         self.saveButton.setToolTip('Save these params to Configuration and file')
@@ -188,7 +214,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.plotWidgetLight = pg.PlotWidget(self)     
 
         guideLabel = QtWidgets.QLabel(\
-            'Left-click-hold to pan, right-click-hold to zoom, or right-click-release for more options.')
+            'Left-click-hold to pan, right-click-hold to zoom, or right-click-release for more options.\
+                IF PLOT IS BLANK, CLICK THE "A" IN THE BOTTOM LEFT CORNER TO RESET ZOOM.')
 
         self.ThresholdCheckBox.clicked.connect(self.ThresholdCheckBoxUpdate) 
 
@@ -215,8 +242,25 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.ph3rdLight = self.plotWidgetLight.plot(x,y, symbolPen='r',\
                  symbol='o', name='2nd pass', pen=None)   
                             
-        # Layout
-        self.VBox = QtWidgets.QVBoxLayout()         
+        # Layout ######################################################
+        self.VBox = QtWidgets.QVBoxLayout()  
+        self.HBoxMeta1 = QtWidgets.QHBoxLayout()  
+        self.HBoxMeta2 = QtWidgets.QHBoxLayout()        
+        self.HBoxMeta1.addWidget(self.fileDateLabel) 
+        self.HBoxMeta1.addSpacing(45)
+        self.HBoxMeta1.addWidget(photoFormatLabel)      
+        self.HBoxMeta1.addWidget(self.photoFormat)
+        self.HBoxMeta1.addWidget(self.photoButton)   
+
+        self.HBoxMeta2.addWidget(self.windSpeedLabel)
+        self.HBoxMeta2.addWidget(self.cloudsLabel)  
+        self.HBoxMeta2.addWidget(self.relAzLabel)       
+        self.HBoxMeta2.addWidget(self.szaLabel)       
+        self.HBoxMeta2.addWidget(self.wavesLabel)       
+        self.HBoxMeta2.addWidget(self.speedLabel)  
+        self.VBox.addLayout(self.HBoxMeta1) 
+        self.VBox.addLayout(self.HBoxMeta2) 
+             
         self.VBox.addWidget(self.sLabel)    
         HBox1 = QtWidgets.QHBoxLayout()     
         HBox1.addWidget(self.slider)
@@ -294,11 +338,27 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.setLayout(self.VBox)
         self.setGeometry(100, 70, 1400, 700)  
 
-        self.sliderWave = float(self.slider.value())
+        self.sliderWave = float(self.slider.value())        
+
+        # Set up the photo path
+        # format = self.photoFormat.text()
+        # tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
+        # format = format[0:-5]
+        self.photoFP = os.path.join(self.inputDirectory,'Photos')
+        if os.path.isdir(self.photoFP) is False:
+            os.mkdir(self.photoFP)
+        # photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, format, tz)
 
         # Run this on first opening the GUI
         self.loadL1Cfile()
-        # self.updateButtonPressed()
+        
+        ##############################################
+
+    def photoButtonPressed(self):
+        print("Photo button pressed")          
+        
+        photoWidget = FieldPhotos(self.photoList, self.photoDT, self)
+        photoWidget.show()
 
     def sliderMove(self):
         self.sliderWave = float(self.slider.value())
@@ -334,6 +394,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
             Utilities.errorWindow("File Error", msg)
             print(msg)            
             return
+
+        Utilities.rootAddDateTime(root)
 
         self.fileName = os.path.basename(os.path.splitext(inFilePath[0])[0])  
         self.setWindowTitle(self.fileName)
@@ -376,7 +438,48 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.MinDarkLineEdit.setText(str(getattr(self,f'{self.sensor}MinDark')))
         self.MinLightLineEdit.setText(str(getattr(self,f'{self.sensor}MinLight')))
         self.MaxDarkLineEdit.setText(str(getattr(self,f'{self.sensor}MaxDark')))
-        self.MaxLightLineEdit.setText(str(getattr(self,f'{self.sensor}MaxLight')))            
+        self.MaxLightLineEdit.setText(str(getattr(self,f'{self.sensor}MaxLight')))           
+
+        # Add an information bar based on metadata
+        ''' Need to load metadata in earlier for SolarTrack, to be more like noSolarTrack'''        
+        for group in root.groups:
+            if group.id == 'ANCILLARY_METADATA':
+                ancGroup = group
+            if group.id.startswith('GP'):
+                gpsGroup = group
+                self.start = gpsGroup.datasets['DATETIME'].data[0]
+                self.end = gpsGroup.datasets['DATETIME'].data[-1]
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
+            windSpeed = np.nanmedian(ancGroup.datasets['WINDSPEED'].data.tolist())
+            cloud = np.nanmedian(ancGroup.datasets['CLOUD'].data.tolist())
+            relAz = np.nanmedian(ancGroup.datasets['REL_AZ'].data.tolist())
+            sza = np.nanmedian(ancGroup.datasets['SZA'].data.tolist())
+            waves = np.nanmedian(ancGroup.datasets['WAVE_HT'].data.tolist())
+            speed = np.nanmedian(ancGroup.datasets['SPEED_F_W'].data.tolist())            
+        
+        # self.fileDateLabel.setText(f"Begin: {root.attributes['TIME-STAMP']}") 
+        self.fileDateLabel.setText(f"FROM: {self.start:%Y-%m-%d %H:%M} TO: {self.end:%Y-%m-%d %H:%M} UTC") 
+        self.windSpeedLabel.setText(f' (Median->) WIND: {windSpeed:.1f} m/s') 
+        self.cloudsLabel.setText(f' CLOUD: {cloud:.0f} %') 
+        self.relAzLabel.setText(f' REL.AZ: {relAz:.0f} deg.') 
+        self.szaLabel.setText(f' SZA: {sza:.0f} deg.') 
+        self.wavesLabel.setText(f' WAVES: {waves:.1f} m') 
+        self.speedLabel.setText(f' SPEED: {speed:.1f} m/s') 
+
+        # Match data to photo, if possible
+        format = self.photoFormat.text()
+        tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
+        format = format[0:-5]        
+        self.photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, format, tz)
+        if self.photoList is not None:
+            print('Matching photo found')            
+            self.photoButton.setText(os.path.split(self.photoList[0])[-1])
+            self.photoButton.setDisabled(0)
+        else:
+            self.photoButton.setText('No Photo Found')
+            self.photoButton.setDisabled(1)
 
         self.updateButtonPressed() 
 
@@ -427,6 +530,9 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         sensorType = self.sensor
         print(sensorType)
+
+        # Update photo format
+        ConfigFile.saveConfig(ConfigFile.filename)
         
         # Test for root
         if not hasattr(self, 'root'):
@@ -674,15 +780,34 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 maxDark = getattr(self,f'{sensorType}MaxDark')
                 minMaxDarkBand = getattr(self,f'{sensorType}MinMaxBandDark')
 
-                index = 0
+                index = 0                
+                # Loop over bands to populate globBads
+                for timeSeries in columns.items():
+                    if index==0:
+                        # Initialize boolean lists for capturing global badIndex conditions across all wavebands
+                        globBad = [False]*len(timeSeries[1])
+                        globBad2 = [False]*len(timeSeries[1])
+                        globBad3 = [False]*len(timeSeries[1])
+                    band = float(timeSeries[0])
+                    if band > self.minBand and band < self.maxBand:
+                        # if index % step == 0:    
+                        radiometry1D = timeSeries[1]
+                        badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minDark, maxDark,minMaxDarkBand)                
+                        globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
+                        globBad2[:] = (True if val2 else val1 for (val1,val2) in zip(globBad2,badIndex2))
+                        globBad3[:] = (True if val2 else val1 for (val1,val2) in zip(globBad3,badIndex3))
+                            ##It would be good to use an aggregated badIndex on these plots for all bands combined...
+                            # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,badIndex,badIndex2,badIndex3)
+                    index +=1
+                # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
+                index =0
                 for timeSeries in columns.items():
                     band = float(timeSeries[0])
                     if band > self.minBand and band < self.maxBand:
-                        if index % step == 0:    
-                            radiometry1D = timeSeries[1]
-                            badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minDark, maxDark,minMaxDarkBand)                
-                            self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,badIndex,badIndex2,badIndex3)
-                        index +=1
+                        if index % step == 0:
+                            # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            Utilities.saveDeglitchPlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                    index +=1
 
             if lightData is None:
                 print("Error: No light data to deglitch")
@@ -699,41 +824,54 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
                 index = 0        
                 for timeSeries in columns.items():
+                    if index==0:
+                        # Initialize boolean lists for capturing global badIndex conditions across all wavebands
+                        globBad = [False]*len(timeSeries[1])
+                        globBad2 = [False]*len(timeSeries[1])
+                        globBad3 = [False]*len(timeSeries[1])
                     band = float(timeSeries[0])
                     if band > self.minBand and band < self.maxBand:
-                        if index % step == 0:           
-                            radiometry1D = timeSeries[1]
-                            badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minLight, maxLight,minMaxLightBand)              
-                            self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,badIndex,badIndex2,badIndex3)
-                        index += 1
+                        # if index % step == 0:           
+                        radiometry1D = timeSeries[1]
+                        badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minLight, maxLight,minMaxLightBand)  
+                        globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
+                        globBad2[:] = (True if val2 else val1 for (val1,val2) in zip(globBad2,badIndex2))
+                        globBad3[:] = (True if val2 else val1 for (val1,val2) in zip(globBad3,badIndex3))
+
+                            # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,badIndex,badIndex2,badIndex3)
+                    index += 1
+                # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
+                index =0
+                for timeSeries in columns.items():
+                    band = float(timeSeries[0])
+                    if band > self.minBand and band < self.maxBand:
+                        if index % step == 0:
+                            # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            Utilities.saveDeglitchPlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                    index +=1
+
                 print('Complete')
 
     def processButtonPressed(self):
         # Run L1D processing for this file        
 
         inFilePath = os.path.join(self.inputDirectory, 'L1C', self.fileName+'.hdf')
-        fileBaseName = self.fileName.split('_L1C')
-        outFilePath = os.path.join(self.inputDirectory, 'L1D', fileBaseName[0]+'_L1D.hdf')
+        fileBaseName = self.fileName.split('_L1C')[0]
+        outFilePath = os.path.join(self.inputDirectory, 'L1D', fileBaseName+'_L1D.hdf')
 
         # self.processL1d(inFilePath, outFilePath)
         # Jumpstart the logger:
         msg = "Process Single Level from Anomaly Analysis"
-        os.environ["LOGFILE"] = (fileBaseName[0] + '_L1C_L1D.log') 
+        os.environ["LOGFILE"] = (fileBaseName + '_L1C_L1D.log') 
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
         root = Controller.processL1d(inFilePath, outFilePath)
 
         # In case of processing failure, write the report at this Process level, unless running stations
         #   Use numeric level for writeReport
         pathOut = outFilePath.split('L1D')[0]
-        # outFilePath = os.path.join(self.inputDirectory, 'L1D', fileBaseName[0])
-        if root is not None:
-            timeStamp = root.attributes['TIME-STAMP']
-            title = f'File: {fileBaseName[0]} Collected: {timeStamp}'
-        else:
-            timeStamp = 'Null'
-            title = f'File: {fileBaseName} Collected: {timeStamp}'
+        
         if root is None and ConfigFile.settings["bL2WriteReport"] == 1:
-            Controller.writeReport(title, fileBaseName, pathOut, outFilePath, 'L1D')
+            Controller.writeReport(fileBaseName, pathOut, outFilePath, 'L1D', inFilePath)
         print('Process L1D complete')
 
     def closeButtonPressed(self):
@@ -860,12 +998,15 @@ class AnomAnalWindow(QtWidgets.QDialog):
         ''' Use numeric series (x) for now in place of datetime '''
         x = np.arange(0,len(radiometry1D),1)    
 
+        # First Pass
         y_anomaly = np.array(radiometry1D)[badIndex]
         x_anomaly = x[badIndex]
         # x_anomaly = dfx['x'][badIndex]
+        # Second Pass
         y_anomaly2 = np.array(radiometry1D)[badIndex2]
         x_anomaly2 = x[badIndex2]
         # x_anomaly2 = dfx['x'][badIndex2]
+        # Thresholds
         y_anomaly3 = np.array(radiometry1D)[badIndex3]
         x_anomaly3 = x[badIndex3]
 
@@ -888,54 +1029,59 @@ class AnomAnalWindow(QtWidgets.QDialog):
             e = sys.exc_info()[0]
             print("Error: %s" % e)
 
-    @staticmethod
-    def savePlots(fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\
-        text_xlabel="Series"
-        text_ylabel="Radiometry"
+    # @staticmethod
+    # def savePlots(fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\            
+    #     #Plot results  
+    #     font = {'family': 'serif',
+    #         'color':  'darkred',
+    #         'weight': 'normal',
+    #         'size': 16}   
         
-
-        #Plot results  
-        font = {'family': 'serif',
-            'color':  'darkred',
-            'weight': 'normal',
-            'size': 16}   
+    #     waveBand = timeSeries[0]
         
-        waveBand = timeSeries[0]
-        radiometry1D = timeSeries[1]
-        x = np.arange(0,len(radiometry1D),1)  
-        avg = Utilities.movingAverage(radiometry1D, windowSize).tolist() 
+    #     radiometry1D = timeSeries[1]
+    #     x = np.arange(0,len(radiometry1D),1)  
+    #     avg = Utilities.movingAverage(radiometry1D, windowSize).tolist() 
 
-        try:     
-            plt.figure(figsize=(15, 8))
+    #     try:     
+    #         text_xlabel="Time Series"
+    #         text_ylabel=f'{sensorType}({waveBand}) {lightDark}'
+    #         plt.figure(figsize=(15, 8))            
+    #         # fig, ax = plt.subplot(figsize=(15, 8)) 
             
-            # y_av = moving_average(radiometry1D, window_size)
-            plt.plot(x[3:-3], avg[3:-3], color='green')
-            y_anomaly = np.array(radiometry1D)[badIndex]
-            x_anomaly = x[badIndex]
-            y_anomaly2 = np.array(radiometry1D)[badIndex2]
-            x_anomaly2 = x[badIndex2]
-            y_anomaly3 = np.array(radiometry1D)[badIndex3]
-            x_anomaly3 = x[badIndex3]
-            plt.plot(x_anomaly, y_anomaly, "rs", markersize=12)
-            plt.plot(x_anomaly2, y_anomaly2, "b*", markersize=12)
-            plt.plot(x_anomaly3, y_anomaly3, "ro", markersize=12)
-            plt.plot(x, radiometry1D, "k.")
+    #         # First Pass
+    #         y_anomaly = np.array(radiometry1D)[badIndex]
+    #         x_anomaly = x[badIndex]
+    #         # Second Pass
+    #         y_anomaly2 = np.array(radiometry1D)[badIndex2]
+    #         x_anomaly2 = x[badIndex2]
+    #         # Thresholds
+    #         y_anomaly3 = np.array(radiometry1D)[badIndex3]
+    #         x_anomaly3 = x[badIndex3]            
 
-            plt.xlabel(text_xlabel, fontdict=font)
-            plt.ylabel(text_ylabel, fontdict=font)   
-            plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
+    #         plt.plot(x, radiometry1D, marker='o', color='k', linestyle='', fillstyle='none')
+    #         plt.plot(x_anomaly, y_anomaly, marker='x', color='red', markersize=12, linestyle='')
+    #         plt.plot(x_anomaly2, y_anomaly2, marker='+', color='red', markersize=12, linestyle='')
+    #         plt.plot(x_anomaly3, y_anomaly3, marker='o', color='red', markersize=12, linestyle='', fillstyle='full', markerfacecolor='blue')
+    #         # y_av = moving_average(radiometry1D, window_size)
+    #         plt.plot(x[3:-3], avg[3:-3], color='green')
 
-            # plotName = (plotdir + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
-            #     + sensorType + lightDark + '_' + k[0] + '.png')
-            fp = os.path.join(plotdir,fileName)
-            plotName = f'{fp}_W{windowSize}S{sigma}_{sensorType}{lightDark}_{waveBand}.png'
+    #         plt.text(0,0.95,'Marked for exclusions in ALL bands', transform=plt.gcf().transFigure)
+    #         plt.xlabel(text_xlabel, fontdict=font)
+    #         plt.ylabel(text_ylabel, fontdict=font)   
+    #         plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
 
-            print(plotName)
-            plt.savefig(plotName)
-            plt.close()    
-        except:
-            e = sys.exc_info()[0]
-            print("Error: %s" % e)
+    #         # plotName = (plotdir + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
+    #         #     + sensorType + lightDark + '_' + k[0] + '.png')
+    #         fp = os.path.join(plotdir,fileName)
+    #         plotName = f'{fp}_W{windowSize}S{sigma}_{sensorType}{lightDark}_{waveBand}.png'
+
+    #         print(plotName)
+    #         plt.savefig(plotName)
+    #         plt.close()    
+    #     except:
+    #         e = sys.exc_info()[0]
+    #         print("Error: %s" % e)
 
 
     @staticmethod

@@ -5,9 +5,9 @@ import numpy as np
 import datetime
 import time
 
+from HDFRoot import HDFRoot
 from SeaBASSWriter import SeaBASSWriter
 from CalibrationFileReader import CalibrationFileReader
-from HDFRoot import HDFRoot
 from MainConfig import MainConfig
 from ConfigFile import ConfigFile
 from Utilities import Utilities
@@ -26,30 +26,52 @@ class Controller:
     
 
     @staticmethod
-    def writeReport(title, fileName, pathOut, outFilePath, level):
+    def writeReport(fileName, pathOut, outFilePath, level, inFilePath):
         print('Writing PDF Report...')
         numLevelDict = {'L1A':1,'L1B':2,'L1C':3,'L1D':4,'L1E':5,'L2':6}
         numLevel = numLevelDict[level]
         fp = os.path.join(pathOut, level, f'{fileName}_{level}.hdf')
 
+        # Reports are written during failure at any level or success at L2.
+        # The highest level succesfully processed will have the correct configurations in the HDF attributes.
+        # These are potentially more accurate than values found in the ConfigFile settings.
 
-        # The highest level processed will have the correct configurations in the HDF attributes
-        # These are potentially more accurate than value found in the ConfigFile settings
-        # Open the highest level file as root, and pass it to the report writer 
-        try: 
-            # If writing for L2, use the L2 file attributes, otherwise the current processing 
-            # level will not have an HDF to read, so use ConfigFile settings
-            if numLevel == 6           :
-                root = HDFRoot.readHDF5(fp)
-            else:
-                root = None
+        #   Try to open current level. If this fails, open the previous level and use all the parameters 
+        #   from the attributes up to that level, then use the ConfigFile.settings for the current level parameters.
+        try:
+            # Processing successful at this level
+            root = HDFRoot.readHDF5(fp)
+            fail = 0
+            root.attributes['Fail'] = 0
         except:
-            msg = "Unable to open file. May be open in another application."
-            Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return
-        
+            fail =1
+            # Processing failed at this level. Open the level below it
+            #   This won't work for ProcessL1A looking back for RAW...
+            if level != 'L1A':        
+                try:
+                    # Processing successful at the next lower level
+                    # Shift from the output to the input directory
+                    root = HDFRoot.readHDF5(inFilePath)                    
+                except:
+                    msg = "Controller.writeReport: Unable to open HDF file. May be open in another application."
+                    Utilities.errorWindow("File Error", msg)
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return     
+
+            else:
+                # Create a root with nothing but the fail flag in the attributes to pass to PDF reporting
+                #   PDF will contain parameters from ConfigFile.settings
+                root = HDFRoot()
+                root.id = "/"
+                root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]  
+                root.attributes['TIME-STAMP'] = 'Null' # Collection time not preserved in failed RAW>L1A
+            root.attributes['Fail'] = 1
+            
+
+        timeStamp = root.attributes['TIME-STAMP']        
+        title = f'File: {fileName} Collected: {timeStamp}'
+
         # Reports
         reportPath = os.path.join(pathOut, 'Reports')
         if os.path.isdir(reportPath) is False:
@@ -64,8 +86,11 @@ class Controller:
             inPlotPath = os.path.join(pathOut,'..','Plots')
         # outPDF = os.path.join(reportPath,'Reports', f'{fileName}.pdf')
         outHDF = os.path.split(outFilePath)[1]
-        outPDF = os.path.join(reportPath, f'{os.path.splitext(outHDF)[0]}.pdf')
-        # title = f'File: {fileName} Collected: {root.attributes["TIME-STAMP"]}'
+
+        if fail:
+            outPDF = os.path.join(reportPath, f'{os.path.splitext(outHDF)[0]}_fail.pdf')
+        else:
+            outPDF = os.path.join(reportPath, f'{os.path.splitext(outHDF)[0]}.pdf')
         
         pdf = PDF()
         pdf.set_title(title)
@@ -74,35 +99,30 @@ class Controller:
         inLog = os.path.join(inLogPath,f'{fileName}_L1A.log')
         if os.path.isfile(inLog):
             print('Level 1A')
-            # pdf.print_chapter(root,'L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName, outFilePath)
             pdf.print_chapter('L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName, outFilePath, root)
 
         if numLevel > 1:
             print('Level 1B')
             inLog = os.path.join(inLogPath,f'{fileName}_L1A_L1B.log')
             if os.path.isfile(inLog):
-                # pdf.print_chapter(root,'L1B', 'Process L1A to L1B', inLog, inPlotPath, fileName, outFilePath)
                 pdf.print_chapter('L1B', 'Process L1A to L1B', inLog, inPlotPath, fileName, outFilePath, root)
         
         if numLevel > 2:
             print('Level 1C')
             inLog = os.path.join(inLogPath,f'{fileName}_L1B_L1C.log')
             if os.path.isfile(inLog):
-                # pdf.print_chapter(root,'L1C', 'Process L1B to L1C', inLog, inPlotPath, fileName, outFilePath)
                 pdf.print_chapter('L1C', 'Process L1B to L1C', inLog, inPlotPath, fileName, outFilePath, root)
         
         if numLevel > 3:
             print('Level 1D')
             inLog = os.path.join(inLogPath,f'{fileName}_L1C_L1D.log')
             if os.path.isfile(inLog):
-                # pdf.print_chapter(root,'L1D', 'Process L1C to L1D', inLog, inPlotPath, fileName, outFilePath)
                 pdf.print_chapter('L1D', 'Process L1C to L1D', inLog, inPlotPath, fileName, outFilePath, root)
         
         if numLevel > 4:
             print('Level 1E')
             inLog = os.path.join(inLogPath,f'{fileName}_L1D_L1E.log')
             if os.path.isfile(inLog):
-                # pdf.print_chapter(root,'L1E', 'Process L1D to L1E', inLog, inPlotPath, fileName, outFilePath)
                 pdf.print_chapter('L1E', 'Process L1D to L1E', inLog, inPlotPath, fileName, outFilePath, root)
         
         if numLevel > 5:
@@ -111,7 +131,6 @@ class Controller:
             inPlotPath = os.path.join(pathOut,'Plots')
             inLog = os.path.join(inLogPath,f'{fileName}_L1E_L2.log')
             if os.path.isfile(inLog):
-                # pdf.print_chapter(root,'L2', 'Process L1E to L2', inLog, inPlotPath, fileName, outFilePath)
                 pdf.print_chapter('L2', 'Process L1E to L2', inLog, inPlotPath, fileName, outFilePath, root)
 
         try:
@@ -346,12 +365,14 @@ class Controller:
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
-            msg = "Unable to open file. May be open in another application."
+            msg = "Controller.processL1d: Unable to open HDF file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
 
+        ''' At this stage the Anomanal parameterizations are current in ConfigFile.settings, regardless of who called this method. 
+            This method will promote them to root.attributes.'''
         root = ProcessL1d.processL1d(root)     
 
         # Write output file
@@ -369,13 +390,13 @@ class Controller:
                 if ConfigFile.settings['bL2PlotLt']==1:
                     Utilities.plotRadiometryL1D(root, filename, rType='LT')
             except:
-                msg = "Unable to write file. May be open in another application."
+                msg = "Controller.ProcessL1d: Unable to write file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
         else:
-            msg = "L1d processing failed. Nothing to output."
+            msg = "L1d processing failed. Nothing to output. (No deglitching plots created)"
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
@@ -558,10 +579,10 @@ class Controller:
             elif level == "L1B":
                 root = Controller.processL1b(inFilePath, outFilePath, calibrationMap) 
             elif level == "L1C":
-                if ConfigFile.settings["bL1cSolarTracker"] == 0:
-                    ancillaryData = Controller.processAncData(ancFile)
-                else:
-                    ancillaryData = None
+                # if ConfigFile.settings["bL1cSolarTracker"] == 0:
+                ancillaryData = Controller.processAncData(ancFile)
+                # else:
+                #     ancillaryData = None
                 root = Controller.processL1c(inFilePath, outFilePath, ancillaryData)
             elif level == "L1D":
                 # If called locally from Controller and not AnomalyDetection.py, then
@@ -583,12 +604,19 @@ class Controller:
                     l1CfileName = fileName + '_L1C'
                     if l1CfileName in params.keys():
                         ref = 0
-                        for sensor in ['ES','LT','LI']:
-                            ConfigFile.settings[f'{sensor}WindowDark'] = params[l1CfileName][ref+0]
-                            ConfigFile.settings[f'{sensor}WindowLight']= params[l1CfileName][ref+1]
-                            ConfigFile.settings[f'{sensor}SigmaDark']= params[l1CfileName][ref+2]
-                            ConfigFile.settings[f'{sensor}SigmaLight']= params[l1CfileName][ref+3]
-                            ref += 4
+                        for sensor in ['ES','LI','LT']:                            
+                            print(f'{sensor}: Setting ConfigFile.settings to match saved parameterization. ')
+                            ConfigFile.settings[f'fL1d{sensor}WindowDark'] = params[l1CfileName][ref+0] 
+                            ConfigFile.settings[f'fL1d{sensor}WindowLight'] = params[l1CfileName][ref+1]
+                            ConfigFile.settings[f'fL1d{sensor}SigmaDark'] = params[l1CfileName][ref+2]
+                            ConfigFile.settings[f'fL1d{sensor}SigmaLight'] = params[l1CfileName][ref+3]
+                            ConfigFile.settings[f'fL1d{sensor}MinDark'] = params[l1CfileName][ref+4]
+                            ConfigFile.settings[f'fL1d{sensor}MaxDark'] = params[l1CfileName][ref+5]
+                            ConfigFile.settings[f'fL1d{sensor}MinMaxBandDark'] = params[l1CfileName][ref+6]
+                            ConfigFile.settings[f'fL1d{sensor}MinLight'] = params[l1CfileName][ref+7]
+                            ConfigFile.settings[f'fL1d{sensor}MaxLight'] = params[l1CfileName][ref+8]
+                            ConfigFile.settings[f'fL1d{sensor}MinMaxBandLight'] = params[l1CfileName][ref+9]
+                            ref += 10
                     else:
                         msg = 'This file not found in parameter file. Resorting to values in ConfigFile.settings.'
                         print(msg)
@@ -631,8 +659,8 @@ class Controller:
             if ConfigFile.settings["bL1cSolarTracker"]:
                 ancillaryData = Controller.processAncData(ancFile)
             else:
-                # Without the SolarTracker, ancillary data would have been read in at L1C,
-                # and will be extracted from the ANCILLARY_NOTRACKER group later
+                # Ancillary data from metadata have been read in at L1C,
+                # and will be extracted from the ANCILLARY_METADATA group later
                 ancillaryData = None
 
             root, outFilePath = Controller.processL2(inFilePath, outFilePath, ancillaryData)  
@@ -654,27 +682,28 @@ class Controller:
                         Utilities.writeLogFile(msg)
                         SeaBASSWriter.outputTXT_Type2(outFilePath)
                     # return True        
-
-        # In case of processing failure, write the report at this Process level, unless running stations
-        #   Use numeric level for writeReport
-        if root is not None:
-            timeStamp = root.attributes['TIME-STAMP']
-        else:
-            timeStamp = 'Null'
-        title = f'File: {fileName} Collected: {timeStamp}'
+        
+        # Exempt station writing from reports (So as not to overwrite normal file reports...?)
         if root is None and ConfigFile.settings["bL2Stations"] == 1:
+            print('No report written due to Station search, but root is None. Processing failed.')
             return False
+
+        # If the process failed at any level, write a report and return
         if root is None and ConfigFile.settings["bL2Stations"] == 0:                     
             if ConfigFile.settings["bL2WriteReport"] == 1:
-                Controller.writeReport(title, fileName, pathOut, outFilePath, level)
+                Controller.writeReport(fileName, pathOut, outFilePath, level, inFilePath)
             return False
+        
+        # If L2 successful, write a report
+        if level == "L2":
+            if ConfigFile.settings["bL2WriteReport"] == 1:
+                Controller.writeReport(fileName, pathOut, outFilePath, level, inFilePath)
 
         msg = f'Process Single Level: {outFilePath} - SUCCESSFUL'
         print(msg)
         Utilities.writeLogFile(msg)
-        if level == "L2":
-            if ConfigFile.settings["bL2WriteReport"] == 1:
-                Controller.writeReport(title, fileName, pathOut, outFilePath, level)
+
+        
         return True  
 
 
