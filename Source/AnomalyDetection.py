@@ -549,6 +549,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         print(sensorType)
 
         # Update photo format
+        ConfigFile.settings['sL1dphotoFormat'] = self.photoFormat.text()
         ConfigFile.saveConfig(ConfigFile.filename)
         
         # Test for root
