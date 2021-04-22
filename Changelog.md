@@ -17,6 +17,9 @@ Other ideas and To Dos:
 * Add PIC and GIOP to L2 OC products
 * Produce kml files for GoogleEarth on entire cruise/directory
 
+2021-04-22:
+* Update photo window with current photo time and filename
+
 ---
 v1.0.7 2021-04-19: DAA
 

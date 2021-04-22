@@ -87,6 +87,8 @@ class FieldPhotos(QtWidgets.QDialog):
         self.pixmapScaled = self.pixmap.scaled(800,800,QtCore.Qt.KeepAspectRatio)
         self.fieldPhoto.setPixmap(self.pixmapScaled) 
         # # self.fieldPhoto.move(0,100)   
+
+        self.setWindowTitle(f'{self.photoDT[self.imageSelect]} {os.path.split(self.photoPath[self.imageSelect])[-1]}')
                           
     @staticmethod
     def photoSetup(inPath, start, end, format='IMG_%Y%m%d_%H%M%S.jpg', tz='+0000'):
