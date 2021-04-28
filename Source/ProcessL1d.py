@@ -180,6 +180,7 @@ class ProcessL1d:
         for gp in node.groups:
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 darkData = gp.getDataset(sensorType)
+                darkDateTime = Utilities.getDateTime(gp)
                 windowDark = int(ConfigFile.settings[f'fL1d{sensorType}WindowDark'])
                 sigmaDark = float(ConfigFile.settings[f'fL1d{sensorType}SigmaDark'])
                 minDark = None if ConfigFile.settings[f'fL1d{sensorType}MinDark']=='None' else ConfigFile.settings[f'fL1d{sensorType}MinDark']
@@ -187,6 +188,7 @@ class ProcessL1d:
                 minMaxBandDark = ConfigFile.settings[f'fL1d{sensorType}MinMaxBandDark']
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
+                lightDateTime = Utilities.getDateTime(gp)
                 windowLight = int(ConfigFile.settings[f'fL1d{sensorType}WindowLight'])
                 sigmaLight = float(ConfigFile.settings[f'fL1d{sensorType}SigmaLight'])
                 minLight = None if ConfigFile.settings[f'fL1d{sensorType}MinLight']=='None' else ConfigFile.settings[f'fL1d{sensorType}MinLight']
@@ -220,29 +222,10 @@ class ProcessL1d:
             lightDark = 'Dark'
 
             darkData.datasetToColumns()
-            columns = darkData.columns    
+            columns = darkData.columns  
+            dateTime = darkDateTime
             
-            globalBadIndex = []
-            # for dark1D in columns.items():
-            #     band = float(dark1D[0])
-            #     if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
-            #         radiometry1D = dark1D[1]
-
-                    
-            #         badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowDark, sigmaDark, lightDark, minDark, maxDark,minMaxBandDark) 
-            #         globalBadIndex.append(badIndex) # First pass
-            #         globalBadIndex.append(badIndex2) # Second pass
-            #         globalBadIndex.append(badIndex3) # Thresholds
-
-            # # Collapse the badIndexes from all wavebands into one timeseries
-            # # Convert to an array and test along the columns (i.e. each timestamp)
-            # gIndex = np.any(np.array(globalBadIndex), 0)
-            # percentLoss = 100*(sum(gIndex)/len(gIndex))  
-            # # badIndexDark = ProcessL1d.darkDataDeglitching(darkData, sensorType, windowDark, sigmaDark)
-            # msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
-            # print(msg)
-            # Utilities.writeLogFile(msg)
-            # badIndexDark = gIndex
+            globalBadIndex = []           
 
             index = 0                
             # Loop over bands to populate globBads
@@ -286,7 +269,7 @@ class ProcessL1d:
                 band = float(timeSeries[0])
                 if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
                     if index % step == 0:
-                        Utilities.saveDeglitchPlots(L1CfileName,plotdir,timeSeries,sensorType,lightDark,windowDark,sigmaDark,globBad,globBad2,globBad3)
+                        Utilities.saveDeglitchPlots(L1CfileName,plotdir,timeSeries,dateTime,sensorType,lightDark,windowDark,sigmaDark,globBad,globBad2,globBad3)
                 index +=1
             
 
@@ -302,33 +285,10 @@ class ProcessL1d:
             lightData.datasetToColumns()
             columns = lightData.columns    
             lightDark = 'Light'
+            dateTime = lightDateTime            
 
             globalBadIndex = []
-            # for light1D in columns.items():
-            #     band = float(light1D[0])
-            #     if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
-            #         radiometry1D = light1D[1]
-            #         # window = int(self.WindowLightLineEdit.text())
-            #         # window = windowLight
-            #         # sigma = sigmaLight
-            #         # minLight = None if self.MinLightLineEdit.text()=='None' else float(self.MinLightLineEdit.text())
-            #         # maxLight = None if self.MaxLightLineEdit.text()=='None' else float(self.MaxLightLineEdit.text())
-            #         # MinMaxLightBand = getattr(self,f'{self.sensor}MinMaxBandLight')
-            #         lightDark = 'Light'
-            #         badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowLight, sigmaLight, lightDark, minLight, maxLight,minMaxBandLight) 
-            #         globalBadIndex.append(badIndex)
-            #         globalBadIndex.append(badIndex2)
-            #         globalBadIndex.append(badIndex3)
-
-            # # Collapse the badIndexes from all wavebands into one timeseries
-            # # Convert to an array and test along the columns (i.e. each timestamp)
-            # gIndex = np.any(np.array(globalBadIndex), 0)
-            # percentLoss = 100*(sum(gIndex)/len(gIndex)) 
-            # # badIndexLight = ProcessL1d.lightDataDeglitching(lightData, sensorType, windowLight, sigmaLight)      
-            # msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
-            # print(msg)
-            # Utilities.writeLogFile(msg)
-            # badIndexLight = gIndex
+            
             index = 0                
             # Loop over bands to populate globBads
             for timeSeries in columns.items():
@@ -370,7 +330,7 @@ class ProcessL1d:
                 band = float(timeSeries[0])
                 if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
                     if index % step == 0:
-                        Utilities.saveDeglitchPlots(L1CfileName,plotdir,timeSeries,sensorType,lightDark,windowLight,sigmaLight,globBad,globBad2,globBad3)
+                        Utilities.saveDeglitchPlots(L1CfileName,plotdir,timeSeries,dateTime,sensorType,lightDark,windowLight,sigmaLight,globBad,globBad2,globBad3)
                 index +=1
 
         # Delete the glitchy rows of the datasets

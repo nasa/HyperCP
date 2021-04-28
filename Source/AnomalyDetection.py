@@ -603,10 +603,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
         for gp in self.root.groups:
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 darkData = gp.getDataset(sensorType)
-                darkDateTime = self.getDateTime(gp)
+                darkDateTime = Utilities.getDateTime(gp)
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
-                lightDateTime = self.getDateTime(gp)            
+                lightDateTime = Utilities.getDateTime(gp)            
 
         # Deglitch and plot Dark from selected band
         if darkData is None:
@@ -797,10 +797,12 @@ class AnomAnalWindow(QtWidgets.QDialog):
             for gp in self.root.groups:
                 if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                     darkData = gp.getDataset(sensorType)
+                    darkDateTime = Utilities.getDateTime(gp)
                     # print(type(darkData))
                     # print(type(darkData.data))
                 if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                     lightData = gp.getDataset(sensorType)
+                    lightDateTime = Utilities.getDateTime(gp)
                 
             if darkData is None:
                 print("Error: No dark data to deglitch")
@@ -809,6 +811,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 lightDark = 'Dark'       
                 darkData.datasetToColumns()
                 columns = darkData.columns
+                dateTime = darkDateTime
                 window = getattr(self,f'{sensorType}WindowDark')
                 sigma = getattr(self,f'{sensorType}SigmaDark')
                 minDark = getattr(self,f'{sensorType}MinDark')
@@ -841,7 +844,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     if band > self.minBand and band < self.maxBand:
                         if index % step == 0:
                             # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
-                            Utilities.saveDeglitchPlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            Utilities.saveDeglitchPlots(self.fileName,plotdir,timeSeries,dateTime,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
                     index +=1
 
             if lightData is None:
@@ -851,6 +854,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 lightDark = 'Light'       
                 lightData.datasetToColumns()
                 columns = lightData.columns
+                dateTime = lightDateTime
                 window = getattr(self,f'{sensorType}WindowLight')
                 sigma = getattr(self,f'{sensorType}SigmaLight')
                 minLight = getattr(self,f'{sensorType}MinLight')
@@ -882,7 +886,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     if band > self.minBand and band < self.maxBand:
                         if index % step == 0:
                             # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
-                            Utilities.saveDeglitchPlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            Utilities.saveDeglitchPlots(self.fileName,plotdir,timeSeries,dateTime,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
                     index +=1
 
                 print('Complete')
@@ -1068,16 +1072,3 @@ class AnomAnalWindow(QtWidgets.QDialog):
             e = sys.exc_info()[0]
             print("Error: %s" % e)
 
-    @staticmethod
-    def getDateTime(gp):
-        dateTagDS = gp.getDataset('DATETAG')
-        dateTags = dateTagDS.data["NONE"].tolist()
-        timeTagDS = gp.getDataset('TIMETAG2')
-        timeTags = timeTagDS.data["NONE"].tolist()
-        # Conversion not set up for vectors, loop it                                          
-        dateTime=[]
-        for i, dateTag in enumerate(dateTags):
-            dt = Utilities.dateTagToDateTime(dateTag)     
-            dateTime.append(Utilities.timeTag2ToDateTime(dt,timeTags[i]))
-        
-        return dateTime

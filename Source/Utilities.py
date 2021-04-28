@@ -20,6 +20,7 @@ import scipy.interpolate
 from scipy.interpolate import splev, splrep
 import pandas as pd
 from pandas.plotting import register_matplotlib_converters
+register_matplotlib_converters()
 
 from ConfigFile import ConfigFile
 from MainConfig import MainConfig
@@ -1643,8 +1644,19 @@ class Utilities:
     
 
     @staticmethod
-    def saveDeglitchPlots(fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\            
+    def saveDeglitchPlots(fileName,plotdir,timeSeries,dateTime,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\            
+        import matplotlib.dates as mdates
         #Plot results  
+
+        # # Set up datetime axis objects
+        # #   https://stackoverflow.com/questions/49046931/how-can-i-use-dateaxisitem-of-pyqtgraph
+        # class TimeAxisItem(pg.AxisItem):
+        #     def tickStrings(self, values, scale, spacing):
+        #         return [datetime.datetime.fromtimestamp(value, pytz.timezone("UTC")) for value in values]
+        
+        # date_axis_Dark = TimeAxisItem(orientation='bottom')
+        # date_axis_Light = TimeAxisItem(orientation='bottom')
+        
         font = {'family': 'serif',
             'color':  'darkred',
             'weight': 'normal',
@@ -1653,44 +1665,63 @@ class Utilities:
         waveBand = timeSeries[0]
         
         radiometry1D = timeSeries[1]
-        x = np.arange(0,len(radiometry1D),1)  
+        # x = np.arange(0,len(radiometry1D),1)  
+        x = np.array(dateTime)
         avg = Utilities.movingAverage(radiometry1D, windowSize).tolist() 
 
-        try:     
-            text_xlabel="Time Series"
-            text_ylabel=f'{sensorType}({waveBand}) {lightDark}'
-            plt.figure(figsize=(15, 8))            
-            # fig, ax = plt.subplot(figsize=(15, 8)) 
-            
-            # First Pass
-            y_anomaly = np.array(radiometry1D)[badIndex]
-            x_anomaly = x[badIndex]
-            # Second Pass
-            y_anomaly2 = np.array(radiometry1D)[badIndex2]
-            x_anomaly2 = x[badIndex2]
-            # Thresholds
-            y_anomaly3 = np.array(radiometry1D)[badIndex3]
-            x_anomaly3 = x[badIndex3]            
+        # try:     
+        text_xlabel="Time Series"
+        text_ylabel=f'{sensorType}({waveBand}) {lightDark}'
+        # plt.figure(figsize=(15, 8))            
+        fig, ax = plt.subplots(1)
+        fig.autofmt_xdate() 
+        
+        # First Pass
+        y_anomaly = np.array(radiometry1D)[badIndex]
+        x_anomaly = x[badIndex]
+        # Second Pass
+        y_anomaly2 = np.array(radiometry1D)[badIndex2]
+        x_anomaly2 = x[badIndex2]
+        # Thresholds
+        y_anomaly3 = np.array(radiometry1D)[badIndex3]
+        x_anomaly3 = x[badIndex3]            
 
-            plt.plot(x, radiometry1D, marker='o', color='k', linestyle='', fillstyle='none')
-            plt.plot(x_anomaly, y_anomaly, marker='x', color='red', markersize=12, linestyle='')
-            plt.plot(x_anomaly2, y_anomaly2, marker='+', color='red', markersize=12, linestyle='')
-            plt.plot(x_anomaly3, y_anomaly3, marker='o', color='red', markersize=12, linestyle='', fillstyle='full', markerfacecolor='blue')
-            # y_av = moving_average(radiometry1D, window_size)
-            plt.plot(x[3:-3], avg[3:-3], color='green')
+        plt.plot(x, radiometry1D, marker='o', color='k', linestyle='', fillstyle='none')
+        plt.plot(x_anomaly, y_anomaly, marker='x', color='red', markersize=12, linestyle='')
+        plt.plot(x_anomaly2, y_anomaly2, marker='+', color='red', markersize=12, linestyle='')
+        plt.plot(x_anomaly3, y_anomaly3, marker='o', color='red', markersize=12, linestyle='', fillstyle='full', markerfacecolor='blue')
+        # y_av = moving_average(radiometry1D, window_size)
+        plt.plot(x[3:-3], avg[3:-3], color='green')
 
-            plt.text(0,0.95,'Marked for exclusions in ALL bands', transform=plt.gcf().transFigure)
-            plt.xlabel(text_xlabel, fontdict=font)
-            plt.ylabel(text_ylabel, fontdict=font)   
-            plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
+        xfmt = mdates.DateFormatter('%y-%m-%d %H:%M')
+        ax.xaxis.set_major_formatter(xfmt)
 
-            fp = os.path.join(plotdir,fileName)
-            # plotName = f'{fp}_W{windowSize}S{sigma}_{sensorType}{lightDark}_{waveBand}.png'
-            plotName = f'{fp}_{sensorType}{lightDark}_{waveBand}.png'
+        plt.text(0,0.95,'Marked for exclusions in ALL bands', transform=plt.gcf().transFigure)
+        # plt.xlabel(text_xlabel, fontdict=font)
+        plt.ylabel(text_ylabel, fontdict=font)   
+        plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
 
-            print(plotName)
-            plt.savefig(plotName)
-            plt.close()    
-        except:
-            e = sys.exc_info()[0]
-            print("Error: %s" % e)
+        fp = os.path.join(plotdir,fileName)
+        # plotName = f'{fp}_W{windowSize}S{sigma}_{sensorType}{lightDark}_{waveBand}.png'
+        plotName = f'{fp}_{sensorType}{lightDark}_{waveBand}.png'
+
+        print(plotName)
+        plt.savefig(plotName)
+        plt.close()    
+        # except:
+        #     e = sys.exc_info()[0]
+        #     print("Error: %s" % e)
+    
+    @staticmethod
+    def getDateTime(gp):
+        dateTagDS = gp.getDataset('DATETAG')
+        dateTags = dateTagDS.data["NONE"].tolist()
+        timeTagDS = gp.getDataset('TIMETAG2')
+        timeTags = timeTagDS.data["NONE"].tolist()
+        # Conversion not set up for vectors, loop it                                          
+        dateTime=[]
+        for i, dateTag in enumerate(dateTags):
+            dt = Utilities.dateTagToDateTime(dateTag)     
+            dateTime.append(Utilities.timeTag2ToDateTime(dt,timeTags[i]))
+        
+        return dateTime

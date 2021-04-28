@@ -396,7 +396,7 @@ class Controller:
                 Utilities.writeLogFile(msg)
                 return None
         else:
-            msg = "L1d processing failed. Nothing to output. (No deglitching plots created)"
+            msg = "L1d processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
