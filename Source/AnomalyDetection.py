@@ -5,6 +5,9 @@ import shutil
 import csv
 import numpy as np
 import pandas as pd
+from datetime import datetime
+import pytz
+
 import warnings
 import matplotlib.pyplot as plt
 import matplotlib
@@ -17,7 +20,6 @@ from ConfigFile import ConfigFile
 from HDFRoot import HDFRoot
 from Utilities import Utilities     
 from FieldPhotos import FieldPhotos   
-# from FieldTest import FieldPhotos   
 
 class AnomAnalWindow(QtWidgets.QDialog):
 
@@ -210,6 +212,16 @@ class AnomAnalWindow(QtWidgets.QDialog):
             self.ThresholdCheckBox.setChecked(False)
         self.ThresholdCheckBoxUpdate()
 
+        # Set up datetime axis objects
+        #   https://stackoverflow.com/questions/49046931/how-can-i-use-dateaxisitem-of-pyqtgraph
+        class TimeAxisItem(pg.AxisItem):
+            def tickStrings(self, values, scale, spacing):
+                return [datetime.fromtimestamp(value, pytz.timezone("UTC")) for value in values]
+        
+        date_axis_Dark = TimeAxisItem(orientation='bottom')
+        date_axis_Light = TimeAxisItem(orientation='bottom')
+
+        # Set up realtime plot widgets
         self.plotWidgetDark = pg.PlotWidget(self)            
         self.plotWidgetLight = pg.PlotWidget(self)     
 
@@ -231,6 +243,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
                  symbol='+', name='2nd pass', pen=None)
         self.ph3rdDark = self.plotWidgetDark.plot(x,y, symbolPen='r',\
                  symbol='o', name='2nd pass', pen=None)
+        # Add datetime object to x axis                
+        self.plotWidgetDark.setAxisItems({'bottom': date_axis_Dark})
 
         self.phLight = self.plotWidgetLight.plot(x,y, symbolPen='b',\
                  symbol='o', name='time series', pen=None)
@@ -241,7 +255,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
                  symbol='+', name='2nd pass', pen=None)   
         self.ph3rdLight = self.plotWidgetLight.plot(x,y, symbolPen='r',\
                  symbol='o', name='2nd pass', pen=None)   
-                            
+        # Add datetime object to x axis
+        self.plotWidgetLight.setAxisItems({'bottom': date_axis_Light})
+
+
         # Layout ######################################################
         self.VBox = QtWidgets.QVBoxLayout()  
         self.HBoxMeta1 = QtWidgets.QHBoxLayout()  
@@ -956,17 +973,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
     @staticmethod
     def realTimePlot(self, radiometry1D, dateTime, sensorType,lightDark):        
         # Radiometry at this point is 1D 'column' from the appropriate group/dataset/waveband
-        #   in time (radiometry1D)
-
-        ''' Still unable to plot against a datetime '''
-        # # For the sake of MacOS, need to hack the datetimes into panda dataframes for plotting
-        # dfx = pd.DataFrame(data=dateTime, index=list(range(0,len(dateTime))), columns=['x'])
-        # # *** HACK: CONVERT datetime column to string and back again - who knows why this works? ***
-        # dfx['x'] = pd.to_datetime(dfx['x'].astype(str))
-        # register_matplotlib_converters()
+        #   in time (radiometry1D)    
 
         styles = {'font-size': '18px'}
-        text_xlabel="Time Series"   
+        # text_xlabel="Time Series"   
 
         # Initialize the plot
         if lightDark == 'Dark':            
@@ -992,10 +1002,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
             print(f'{figTitle} Dark')
             # self.plotWidgetDark.setWindowTitle(figTitle, **styles)
             self.plotWidgetDark.setLabel('left', text_ylabel,**styles)
-            self.plotWidgetDark.setLabel('bottom', text_xlabel,**styles)
+            # self.plotWidgetDark.setLabel('bottom', text_xlabel,**styles)
             self.plotWidgetDark.showGrid(x=True, y=True)
-            ''' legend not working '''
-            self.plotWidgetDark.addLegend()    
+            # ''' legend not working '''
+            # self.plotWidgetDark.addLegend()    
         else:
             ph = self.phLight
             phAve = self.phTimeAveLight
@@ -1018,34 +1028,33 @@ class AnomAnalWindow(QtWidgets.QDialog):
             print(f'{figTitle} Dark')
             # self.plotWidgetLight.setWindowTitle(figTitle, **styles)
             self.plotWidgetLight.setLabel('left', text_ylabel, **styles)
-            self.plotWidgetLight.setLabel('bottom', text_xlabel, **styles)
+            # self.plotWidgetLight.setLabel('bottom', text_xlabel, **styles)
             self.plotWidgetLight.showGrid(x=True, y=True)
-            self.plotWidgetLight.addLegend()    
+            # self.plotWidgetLight.addLegend()                
              
         badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(self.waveBand,radiometry1D, window, sigma, lightDark, minRad, maxRad,minMaxBand)        
         avg = Utilities.movingAverage(radiometry1D, window).tolist() 
 
-        ''' Use numeric series (x) for now in place of datetime '''
-        x = np.arange(0,len(radiometry1D),1)    
+        # ''' Use numeric series (x) for now in place of datetime '''        
+        # x = np.arange(0,len(radiometry1D),1)    
+        x=np.array([x.timestamp() for x in dateTime])
 
         # First Pass
         y_anomaly = np.array(radiometry1D)[badIndex]
         x_anomaly = x[badIndex]
-        # x_anomaly = dfx['x'][badIndex]
+        
         # Second Pass
         y_anomaly2 = np.array(radiometry1D)[badIndex2]
         x_anomaly2 = x[badIndex2]
-        # x_anomaly2 = dfx['x'][badIndex2]
+        
         # Thresholds
         y_anomaly3 = np.array(radiometry1D)[badIndex3]
         x_anomaly3 = x[badIndex3]
 
         #Plot results                  
         try:
-            # ph.setData(dfx['x'], radiometry1D, symbolPen='k', symbolBrush='w', \
             ph.setData(x, radiometry1D, symbolPen='k', symbolBrush='w', \
                 symbol='o', name=sensorType, pen=None)            
-            # phAve.setData(dfx['x'][3:-3], avg[3:-3], name='rMean', \
             phAve.setData(x[3:-3], avg[3:-3], name='rMean', \
                 pen=pg.mkPen('g', width=3))
             ph1st.setData(x_anomaly, y_anomaly, symbolPen=pg.mkPen('r', width=3),\
@@ -1058,61 +1067,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
         except:
             e = sys.exc_info()[0]
             print("Error: %s" % e)
-
-    # @staticmethod
-    # def savePlots(fileName,plotdir,timeSeries,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\            
-    #     #Plot results  
-    #     font = {'family': 'serif',
-    #         'color':  'darkred',
-    #         'weight': 'normal',
-    #         'size': 16}   
-        
-    #     waveBand = timeSeries[0]
-        
-    #     radiometry1D = timeSeries[1]
-    #     x = np.arange(0,len(radiometry1D),1)  
-    #     avg = Utilities.movingAverage(radiometry1D, windowSize).tolist() 
-
-    #     try:     
-    #         text_xlabel="Time Series"
-    #         text_ylabel=f'{sensorType}({waveBand}) {lightDark}'
-    #         plt.figure(figsize=(15, 8))            
-    #         # fig, ax = plt.subplot(figsize=(15, 8)) 
-            
-    #         # First Pass
-    #         y_anomaly = np.array(radiometry1D)[badIndex]
-    #         x_anomaly = x[badIndex]
-    #         # Second Pass
-    #         y_anomaly2 = np.array(radiometry1D)[badIndex2]
-    #         x_anomaly2 = x[badIndex2]
-    #         # Thresholds
-    #         y_anomaly3 = np.array(radiometry1D)[badIndex3]
-    #         x_anomaly3 = x[badIndex3]            
-
-    #         plt.plot(x, radiometry1D, marker='o', color='k', linestyle='', fillstyle='none')
-    #         plt.plot(x_anomaly, y_anomaly, marker='x', color='red', markersize=12, linestyle='')
-    #         plt.plot(x_anomaly2, y_anomaly2, marker='+', color='red', markersize=12, linestyle='')
-    #         plt.plot(x_anomaly3, y_anomaly3, marker='o', color='red', markersize=12, linestyle='', fillstyle='full', markerfacecolor='blue')
-    #         # y_av = moving_average(radiometry1D, window_size)
-    #         plt.plot(x[3:-3], avg[3:-3], color='green')
-
-    #         plt.text(0,0.95,'Marked for exclusions in ALL bands', transform=plt.gcf().transFigure)
-    #         plt.xlabel(text_xlabel, fontdict=font)
-    #         plt.ylabel(text_ylabel, fontdict=font)   
-    #         plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
-
-    #         # plotName = (plotdir + fileName + '_W' + str(windowSize) + 'S' + str(sigma) + '_' \
-    #         #     + sensorType + lightDark + '_' + k[0] + '.png')
-    #         fp = os.path.join(plotdir,fileName)
-    #         plotName = f'{fp}_W{windowSize}S{sigma}_{sensorType}{lightDark}_{waveBand}.png'
-
-    #         print(plotName)
-    #         plt.savefig(plotName)
-    #         plt.close()    
-    #     except:
-    #         e = sys.exc_info()[0]
-    #         print("Error: %s" % e)
-
 
     @staticmethod
     def getDateTime(gp):
