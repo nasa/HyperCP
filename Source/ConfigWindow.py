@@ -1610,19 +1610,6 @@ class ConfigWindow(QtWidgets.QDialog):
             # Confirm that SeaBASS Headers need to be/are updated
             if ConfigFile.settings["bL1eSaveSeaBASS"] or ConfigFile.settings["bL2SaveSeaBASS"]: 
                 SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
-                # reply = QtWidgets.QMessageBox.question(self, "Message", "Did you remember to update SeaBASS Headers?", \
-                #         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No) 
-
-                # if reply == QtWidgets.QMessageBox.Yes:
-                #     # Change Main window Config File selection
-                #     MainConfig.settings["cfgFile"] = ConfigFile.filename                                    
-                #     '''TO DO: Pass signal to MainWindow to update the Config file selection'''
-                #     # Window.comboBox1Changed(self,ConfigFile.filename)
-                #     self.close()
-                # else:
-                #     note = QtWidgets.QMessageBox()
-                #     note.setText('Update SeaBASS Headers in Level 1E Processing')
-                #     note.exec_()
             else:
                 self.close()
         
