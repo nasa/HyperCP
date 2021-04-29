@@ -527,13 +527,13 @@ class ProcessL1d:
                 root.attributes[f'{sensor}_WINDOW_LIGHT'] = str(ConfigFile.settings[f'fL1d{sensor}WindowLight'])
                 root.attributes[f'{sensor}_SIGMA_DARK'] = str(ConfigFile.settings[f'fL1d{sensor}SigmaDark'])
                 root.attributes[f'{sensor}_SIGMA_LIGHT'] = str(ConfigFile.settings[f'fL1d{sensor}SigmaLight'])  
-                if ConfigFile.settings['bL1dThreshold']:
-                    root.attributes[f'{sensor}_MIN_DARK'] = ConfigFile.settings[f'fL1d{sensor}MinDark']
-                    root.attributes[f'{sensor}_MAX_DARK'] = ConfigFile.settings[f'fL1d{sensor}MaxDark']
-                    root.attributes[f'{sensor}_MINMAX_BAND_DARK'] = ConfigFile.settings[f'fL1d{sensor}MinMaxBandDark']
-                    root.attributes[f'{sensor}_MIN_LIGHT'] = ConfigFile.settings[f'fL1d{sensor}MinLight']
-                    root.attributes[f'{sensor}_MAX_LIGHT'] = ConfigFile.settings[f'fL1d{sensor}MaxLight']
-                    root.attributes[f'{sensor}_MINMAX_BAND_LIGHT'] = ConfigFile.settings[f'fL1d{sensor}MinMaxBandLight']
+                # if ConfigFile.settings['bL1dThreshold']:
+                root.attributes[f'{sensor}_MIN_DARK'] = ConfigFile.settings[f'fL1d{sensor}MinDark']
+                root.attributes[f'{sensor}_MAX_DARK'] = ConfigFile.settings[f'fL1d{sensor}MaxDark']
+                root.attributes[f'{sensor}_MINMAX_BAND_DARK'] = ConfigFile.settings[f'fL1d{sensor}MinMaxBandDark']
+                root.attributes[f'{sensor}_MIN_LIGHT'] = ConfigFile.settings[f'fL1d{sensor}MinLight']
+                root.attributes[f'{sensor}_MAX_LIGHT'] = ConfigFile.settings[f'fL1d{sensor}MaxLight']
+                root.attributes[f'{sensor}_MINMAX_BAND_LIGHT'] = ConfigFile.settings[f'fL1d{sensor}MinMaxBandLight']
 
         msg = f"ProcessL1d.processL1d: {timestr}"
         print(msg)
