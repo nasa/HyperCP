@@ -1,11 +1,11 @@
-v1.0.8 Unreleased; DAA (dirk.a.aurin@nasa.gov)
+v1.0.9 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
 ---
 
 Next priorities:
-* Confirm pySAS/UMTower is functional to L2 (EXPORTS2021)
+* Confirm pySAS/UMTower functional to L2 (EXPORTS2021)
 * Integration time issue with HyperOCRs; develop/add correction (in cal file? another level?)
     * Do other users of SeaBird HOCRs see int. time response issues?
-    * Contact me for further info.
+    * Contact me for further info regarding integration time uncertainty
 * Improve/augment to NIR residual corrections
     * Iterative approaches; process time concern.
 * Revise KORUS-OC SeaBASS submission with new AnomAnal results.
@@ -30,6 +30,7 @@ Ideas and To-Dos:
 * Export python scripts to d/l satellite imagery to match
 ___________________________________________________________
 ---
+v1.0.8 2021-05-11: DAA
 
 2021-05-05:
 * Checkout v1.0.8 on pySAS/UMTower system data from EXPORTS_2021. Tests ok, but THS data still missing in raw binary from the UMTower.
