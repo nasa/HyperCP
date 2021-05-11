@@ -7,7 +7,7 @@ HyperInSPACE is designed to provide hyperspectral in situ support for the <a hre
 
 Currently, HyperInSPACE supports <a href='https://www.seabird.com/'>Sea-Bird Scientific</a> HyperSAS packages with and without SolarTracker or pySAS platforms. If you are interested in integrating support for your platform, contact us at the email address below the copyright.
 
-## Version 1.0.7 (see Changelog.md)
+## Version 1.0.8 (see Changelog.md)
 
 ---
 ```

@@ -6,7 +6,7 @@ from pysolar.solar import get_azimuth, get_altitude
 # import pytz
 from operator import add
 
-import HDFRoot
+# import HDFRoot
 
 from Utilities import Utilities
 from ConfigFile import ConfigFile
@@ -108,17 +108,23 @@ class ProcessL1c:
         # to estimate sun zenith and azimuth using GPS position and time, and sensor azimuth will
         # come from ancillary data input.
         
+        
+        # Initialize a new group to host the unconventioal ancillary data
+        ancGroup = node.addGroup("ANCILLARY_METADATA")
+        ancGroup.attributes["FrameType"] = "Not Required"
+        for gp in node.groups:
+            if gp.id.startswith("GP"):
+                gpsDateTime = gp.getDataset("DATETIME").data
+                gpsLat = gp.getDataset('LATPOS')
+                latHemiData = gp.getDataset("LATHEMI")
+                gpsLon = gp.getDataset('LONPOS')
+                lonHemiData = gp.getDataset("LONHEMI")
+    
+        # If ancillary file is provided, use it. Otherwise fill in what you can using the datetime, lat, lon from GPS
         if ancillaryData is not None:
-            # Initialize a new group to host the unconventioal ancillary data
-            ancGroup = node.addGroup("ANCILLARY_METADATA")
-            ancGroup.attributes["FrameType"] = "Not Required"
-
             ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
-            # Remove all ancillary data that does not intersect GPS data            
-            for gp in node.groups:
-                if gp.id.startswith("GP"):
-                    gpsDateTime = gp.getDataset("DATETIME").data
-            
+
+            # Remove all ancillary data that does not intersect GPS data                                    
             # Eliminate all ancillary data outside file times
             # This is very slow, but necessary to build a new group at L1C rather than just matching
             # to the existing ancillary group when run from L2.
@@ -192,16 +198,31 @@ class ProcessL1c:
             if "SPEED_F_W" in ancillaryData.columns:
                 speed_f_w = ancillaryData.columns["SPEED_F_W"][0]
 
-            sunAzimuthAnc = []
-            sunZenith = []
-            for i, dt_utc in enumerate(timeStamp):
-                # Run Pysolar to obtain solar geometry
-                # sunAzimuth.append(get_azimuth(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
-                # sunZenith.append(90 - get_altitude(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
-                sunAzimuthAnc.append(get_azimuth(lat[i],lon[i],dt_utc,0))
-                sunZenith.append(90 - get_altitude(lat[i],lon[i],dt_utc,0))
+        else:
+            timeStamp = gpsDateTime
+            ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
+            ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]
+            
+            lat = []
+            lon = []
+            for i in range(gpsLat.data.shape[0]):
+                latDM = gpsLat.data["NONE"][i]
+                latDirection = latHemiData.data["NONE"][i]
+                latDD = Utilities.dmToDd(latDM, latDirection)                                          
+                lonDM = gpsLon.data["NONE"][i]
+                lonDirection = lonHemiData.data["NONE"][i]
+                lonDD = Utilities.dmToDd(lonDM, lonDirection)
+                lat.append(latDD)
+                lon.append(lonDD)
 
-
+        sunAzimuthAnc = []
+        sunZenith = []
+        for i, dt_utc in enumerate(timeStamp):
+            # Run Pysolar to obtain solar geometry
+            # sunAzimuth.append(get_azimuth(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
+            # sunZenith.append(90 - get_altitude(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
+            sunAzimuthAnc.append(get_azimuth(lat[i],lon[i],dt_utc,0))
+            sunZenith.append(90 - get_altitude(lat[i],lon[i],dt_utc,0))
 
 
         badTimes = None   
@@ -430,88 +451,7 @@ class ProcessL1c:
             else:
                     msg = f"No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
                     print(msg)
-                    Utilities.writeLogFile(msg)
-        # else:
-        #     # In case there is no SolarTracker to provide sun/sensor geometries, Pysolar will be used
-        #     # to estimate sun zenith and azimuth using GPS position and time, and sensor azimuth will
-        #     # come from ancillary data input.
-            
-        #     # Initialize a new group to host the unconventioal ancillary data
-        #     ancGroup = node.addGroup("ANCILLARY_NOTRACKER")
-        #     ancGroup.attributes["FrameType"] = "Not Required"
-
-        #     ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
-        #     # Remove all ancillary data that does not intersect GPS data            
-        #     for gp in node.groups:
-        #         if gp.id.startswith("GP"):
-        #             gpsDateTime = gp.getDataset("DATETIME").data
-            
-        #     # Eliminate all ancillary data outside file times
-        #     # This is very slow, but necessary to build a new group at L1C rather than just matching
-        #     # to the existing ancillary group when run from L2.
-        #     ticker = 0
-        #     l = len(ancDateTime)
-        #     Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-        #     print('Removing non-pertinent ancillary data... May take a moment with large SeaBASS file')
-        #     for i, dt in enumerate(ancDateTime):
-        #         if dt < min(gpsDateTime) or dt > max(gpsDateTime):                    
-        #             index = i-ticker # adjusts for deleted rows
-        #             ancillaryData.colDeleteRow(index) # this removes row from data structure as well 
-                    
-        #             ticker += 1
-        #             Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-        #         # else:
-        #         #     print('hit')
-                                   
-        #     # Test if any data is left
-        #     if not ancillaryData.columns["DATETIME"][0]:
-        #         msg = "No coincident ancillary data found. Aborting"
-        #         print(msg)
-        #         Utilities.writeLogFile(msg)                   
-        #         return None 
-
-        #     # Reinitialize with new, smaller dataset
-        #     ''' Essential ancillary data for non-SolarTracker file includes
-        #         lat, lon, datetime, ship heading and offset between bow and 
-        #         SAS instrument from which SAS azimuth is calculated '''
-        #     timeStamp = ancillaryData.columns["DATETIME"][0]
-        #     shipAzimuth = ancillaryData.columns["HEADING"][0] # HEADING/shipAzimuth comes from ancillary data file here (not GPS or SATNAV)
-        #     # ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
-        #     ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
-        #     ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]
-        #     home = ancillaryData.columns["HOMEANGLE"][0]
-        #     for i, offset in enumerate(home):
-        #         if offset > 180:
-        #             home[i] = offset-360
-        #     sasAzimuth = list(map(add, shipAzimuth, home))
-
-        #     lat = ancillaryData.columns["LATITUDE"][0]
-        #     lon = ancillaryData.columns["LONGITUDE"][0]
-        #     if "STATION" in ancillaryData.columns:
-        #         station = ancillaryData.columns["STATION"][0]
-        #     if "SALINITY" in ancillaryData.columns:
-        #         salt = ancillaryData.columns["SALINITY"][0]
-        #     if "SST" in ancillaryData.columns:
-        #         sst = ancillaryData.columns["SST"][0]
-        #     if "WINDSPEED" in ancillaryData.columns:
-        #         wind = ancillaryData.columns["WINDSPEED"][0]
-        #     if "AOD" in ancillaryData.columns:
-        #         aod = ancillaryData.columns["AOD"][0]
-        #     if "CLOUD" in ancillaryData.columns:
-        #         cloud = ancillaryData.columns["CLOUD"][0]
-        #     if "WAVE_HT" in ancillaryData.columns:
-        #         wave = ancillaryData.columns["WAVE_HT"][0]
-        #     if "SPEED_F_W" in ancillaryData.columns:
-        #         speed_f_w = ancillaryData.columns["SPEED_F_W"][0]
-
-        #     sunAzimuth = []
-        #     sunZenith = []
-        #     for i, dt_utc in enumerate(timeStamp):
-        #         # Run Pysolar to obtain solar geometry
-        #         # sunAzimuth.append(get_azimuth(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
-        #         # sunZenith.append(90 - get_altitude(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
-        #         sunAzimuth.append(get_azimuth(lat[i],lon[i],dt_utc,0))
-        #         sunZenith.append(90 - get_altitude(lat[i],lon[i],dt_utc,0))
+                    Utilities.writeLogFile(msg)        
             
         relAz=[]
         if ConfigFile.settings["bL1cSolarTracker"] == 0:
@@ -555,26 +495,49 @@ class ProcessL1c:
             ancGroup.addDataset("REL_AZ")
             ancGroup.datasets["REL_AZ"].data = np.array(relAz, dtype=[('NONE', '<f8')])
             ancGroup.attributes["REL_AZ_Units"]='degrees'
-            
-        if ancillaryData is not None:
-            # Now including the remaining ancillary data in ancGroup with or w/out SolarTracker
+                
+        # Now including the remaining ancillary data in ancGroup with or w/out SolarTracker
+        ancGroup.addDataset("LATITUDE")
+        ancGroup.datasets["LATITUDE"].data = np.array(lat, dtype=[('NONE', '<f8')])
+        ancGroup.addDataset("LONGITUDE")
+        ancGroup.datasets["LONGITUDE"].data = np.array(lon, dtype=[('NONE', '<f8')])
+        ancGroup.addDataset("TIMETAG2")
+        ancGroup.datasets["TIMETAG2"].data = np.array(ancTimeTag2, dtype=[('NONE', '<f8')])        
+        ancGroup.addDataset("DATETAG")
+        ancGroup.datasets["DATETAG"].data = np.array(ancDateTag, dtype=[('NONE', '<f8')])
+        ancGroup.addDataset("SOLAR_AZ")
+        ancGroup.attributes["SOLAR_AZ_Units"]='degrees'
+        ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuthAnc, dtype=[('NONE', '<f8')])
+        ancGroup.addDataset("SZA")
+        ancGroup.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
+        ancGroup.attributes["SZA_Units"]='degrees'      
+
+        dateTime = ancGroup.addDataset("DATETIME")
+        timeData = ancGroup.getDataset("TIMETAG2").data["NONE"].tolist()
+        dateTag = ancGroup.getDataset("DATETAG").data["NONE"].tolist()
+        timeStampAnc = []        
+        for i, time in enumerate(timeData):
+            # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
+            # Filter for aberrant Datetags
+            if str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20"):
+                dt = Utilities.dateTagToDateTime(dateTag[i])
+                timeStampAnc.append(Utilities.timeTag2ToDateTime(dt, time))
+            else:                    
+                ancGroup.datasetDeleteRow(i)
+                msg = "Bad Datetag found. Eliminating record"
+                print(msg)
+                Utilities.writeLogFile(msg)
+        dateTime.data = timeStampAnc
+
+        # For non-SolarTracker datasets, define the timeStamp around the ancillary data
+        # Otherwise, it was already defined above
+        if ConfigFile.settings['bL1cSolarTracker']==0:
+            # Convert datetimes
+            timeStamp = timeStampAnc   
+        
+        # Look for additional datasets in provided ancillaryData
+        if ancillaryData is not None:    
             ancGroup.attributes = ancillaryData.attributes.copy()
-            ancGroup.attributes["FrameType"] = "Not Required"
-            ancGroup.addDataset("LATITUDE")
-            ancGroup.datasets["LATITUDE"].data = np.array(lat, dtype=[('NONE', '<f8')])
-            ancGroup.addDataset("LONGITUDE")
-            ancGroup.datasets["LONGITUDE"].data = np.array(lon, dtype=[('NONE', '<f8')])
-            ancGroup.addDataset("TIMETAG2")
-            ancGroup.datasets["TIMETAG2"].data = np.array(ancTimeTag2, dtype=[('NONE', '<f8')])
-            ancGroup.addDataset("DATETAG")
-            ancGroup.datasets["DATETAG"].data = np.array(ancDateTag, dtype=[('NONE', '<f8')])
-            ancGroup.addDataset("SOLAR_AZ")
-            ancGroup.attributes["SOLAR_AZ_Units"]='degrees'
-            ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuthAnc, dtype=[('NONE', '<f8')])
-            ancGroup.addDataset("SZA")
-            ancGroup.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
-            ancGroup.attributes["SZA_Units"]='degrees'        
-            
             if "HEADING" in ancillaryData.columns:
                 ancGroup.addDataset("HEADING")
                 ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
@@ -602,33 +565,8 @@ class ProcessL1c:
             if "SPEED_F_W" in ancillaryData.columns:
                 ancGroup.addDataset("SPEED_F_W")
                 ancGroup.datasets["SPEED_F_W"].data = np.array(speed_f_w, dtype=[('NONE', '<f8')])
-                    
-            dateTime = ancGroup.addDataset("DATETIME")
-            timeData = ancGroup.getDataset("TIMETAG2").data["NONE"].tolist()
-            dateTag = ancGroup.getDataset("DATETAG").data["NONE"].tolist()
-            timeStampAnc = []        
-            for i, time in enumerate(timeData):
-                # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
-                # Filter for aberrant Datetags
-                if str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20"):
-                    dt = Utilities.dateTagToDateTime(dateTag[i])
-                    timeStampAnc.append(Utilities.timeTag2ToDateTime(dt, time))
-                else:                    
-                    ancGroup.datasetDeleteRow(i)
-                    msg = "Bad Datetag found. Eliminating record"
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-            dateTime.data = timeStampAnc
-            
-            # For non-SolarTracker datasets, define the timeStamp around the ancillary data
-            # Otherwise, it was already defined above
-            if ConfigFile.settings['bL1cSolarTracker']==0:
-                # Convert datetimes
-                timeStamp = timeStampAnc
-
-
-
-
+                                
+        ######################################################################################################         
 
         # Apply Relative Azimuth filter 
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 

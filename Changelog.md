@@ -1,21 +1,41 @@
 v1.0.8 Unreleased; DAA (dirk.a.aurin@nasa.gov)
+---
 
-Pressing:
-* Investigate integration time issue with HyperOCRs; possibly add a correction (in cal file? another level?)
+Next priorities:
+* Confirm pySAS/UMTower is functional to L2 (EXPORTS2021)
+* Integration time issue with HyperOCRs; develop/add correction (in cal file? another level?)
+    * Do other users of SeaBird HOCRs see int. time response issues?
+    * Contact me for further info.
 * Improve/augment to NIR residual corrections
+    * Iterative approaches; process time concern.
+* Revise KORUS-OC SeaBASS submission with new AnomAnal results.
 * Add BRDF correction options
 * Propagate uncertainties from radiometry to OC products
 * Memory issue with FPDF causes major slowdown in PDF report building with figures
 * Fix non-unique station/file bug
 
-Other ideas and To Dos:
+Ideas and To-Dos:
+* Explore ML approaches to automate filter selection and glint/NIR correction selection
 * Incorporate new platforms with collaborators (write to dirk.a.aurin@nasa.gov)
+    * Next up: TriOS. Late 2021 - early 2022.
 * Use ancillary SeaBASS metadata to populate remaining L1E/L2 SeaBASS header fields
 * Add failure flags in HDF object attributes:
     * Capture details when errors thrown (inspect, currentframe, getframeinfo)
     * Split Wind and SZA bombs in L2
 * Add PIC and GIOP to L2 OC products
 * Produce kml files for GoogleEarth on entire cruise/directory
+* Read in data from SBA, HPro, COPS, etc.
+    * To compare
+    * To process
+* Export python scripts to d/l satellite imagery to match
+___________________________________________________________
+---
+
+2021-05-05:
+* Checkout v1.0.8 on pySAS/UMTower system data from EXPORTS_2021. Tests ok, but THS data still missing in raw binary from the UMTower.
+
+2021-05-05:
+* Update L1C to add ancGroup even when no ancillary data are provided. Take timestamps, lat, lon from GPS, calculat SZA, SAz.
 
 2021-04-22:
 * Update photo window with current photo time and filename
