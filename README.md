@@ -296,7 +296,6 @@ Process data from L1C to L1D. Light and dark data are screened for electronic no
 Resulting dark-corrected spectra for Es, Li, and Lt can optionally be plotted, and will be carried forward into the PDF processing report produced at L2.
 
 *{To Do: Allow provisions for above water radiometer set-ups that do not have a dark shutter correction.}*
-*{To Do: discard dark data outside thresholds as hinted at in Zibordi 2009 (no actual threshold or methods given)}*
 *Currently, spectra with anomalies in any band are deleted in their entirety, but this might be overkill -- certainly it is very conservative. It may be sufficient to set the anomalous values to NaNs, and only delete the entire spectrum if more than, say, 25% of wavebands are anomalous. TBD.*
 
 ##### Anomaly Analysis (optional)
@@ -325,13 +324,18 @@ For convenience a shortcut to processing the currently active L1C file to L1D is
 
 To save the current values from the Anomaly Analysis tool as the defaults for the given cruise, Save Sensor Params > Close > Save/Close the Configuration Window.
 
-*{KNOWN BUG: the pyqtgraph GUI interface does not always update as expected on macOS Catalina. Hitting Update again or switching the sensor radio button generally resolves the issue.}*
+* KNOWN BUG: the pyqtgraph GUI interface does not always update as expected on macOS Catalina. Hitting Update again or switching the sensor radio button generally resolves the issue.
 
 **Defaults: TBD; experimental**
 **(Abe et al. 2006, Chandola et al. 2009)**  
 **(API Reference: https://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html)**
 
-*{A problem with instrument sensitivity to integration time was recently revealed, and a patch to adjust the response to the integration time is under development. This may be applied here, or alternatively in L1B.}*
+* A problem with instrument sensitivity to integration time was recently revealed, and a patch to adjust the response to the integration time is under development. This may be applied here, or alternatively in L1B.
+
+* ATTENTION! Do your SeaBird HyperOCR dark-shutter data often look like a stepped response, like this:
+<center><img src="Data/DarkStepResponse.png" alt="LT Dark"></center>
+If so, please contact me to learn more about this issue if you are willing/able to share your data.
+
 
 #### Level 1E
 
