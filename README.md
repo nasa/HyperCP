@@ -125,25 +125,27 @@ The calibration or instrument file can now be selected using the drop-down menu.
 
 - SATTHSUUUUA.tdf > Tilt-heading sensor (Frame Type: Not Required) (Note: Use of built-in flux-gate compass is extremely inadviseable on a steel ship or platform. Best practice is to use externally supplied heading data from the ship's NMEA datastream or from a seperate, external dual antenna GPS incorporated into the SolarTracker. DO NOT USE COURSE DATA FROM SINGLE GPS SYSTEMS.)
 
-- SATNAVVVVA.tdf > Solar Tracker (Frame Type: Not Required)
+- SATNAVxxxA.tdf > SeaBird Solar Tracker (Frame Type: Not Required)
 
-- GPRMC_NMEAWWW.tdf > GPS (Frame Type: Not Required)
+- UMTWR_v0.tdf > UMaine Solar Tracker (Frame Type: Not Required)
+
+- GPRMC_NMEAxxx.tdf > GPS (Frame Type: Not Required)
 
 - SATPYR.tdf > Pyrometer (Frame Type: Not Required)
 
-- HEDXXXAcal > Es (Frame Type: Dark)
+- HEDxxxAcal > Es (Frame Type: Dark)
 
-- HSEXXXA.cal > Es (Frame Type: Light)
+- HSExxxA.cal > Es (Frame Type: Light)
 
-- HLDYYYA.cal > Li (Frame Type: Dark)
+- HLDxxxA.cal > Li (Frame Type: Dark)
 
-- HSLYYYA.cal > Li (Frame Type: Light)
+- HSLxxxA.cal > Li (Frame Type: Light)
 
-- HLDZZZA.cal > Lt (Frame Type: Dark)
+- HLDxxxA.cal > Lt (Frame Type: Dark)
 
-- HSLZZZA.cal > Lt (Frame Type: Light)
+- HSLxxxA.cal > Lt (Frame Type: Light)
 
-where UUUU, VVV, WWW, XXX, YYY, and ZZZ are the serial numbers of the individual instruments, which are followed where appropriate by factory calibration codes (usually A, B, C, etc. associated with the date of calibration) ***Be sure to choose the factory calibration files appropriate to the date of data collection.***
+where xxx is the serial number of the SeaBird instrument, followed (where appropriate) by factory calibration codes (usually A, B, C, etc. associated with the date of calibration) ***Be sure to choose the factory calibration files appropriate to the date of data collection.***
 
 Selections:  
 -Add Calibration Files - Allows loading calibration/instrument files (.cal/.tdf) into HyperInSPACE. Once loaded the drop-down box can be used to select the file to enable the instrument and set the frame type.
