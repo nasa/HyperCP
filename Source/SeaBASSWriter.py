@@ -213,8 +213,13 @@ class SeaBASSWriter:
         # elif dtype == 'lt':
         #     fieldName = 'Lt'        
         # fieldsLineStr = ','.join(ls[:lenNonRad] + [f'{fieldName}{band}' for band in ls[lenNonRad:]])
-        fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands] \
-            + [f'{fieldName}{band}_sd' for band in bands])
+        
+        if dtype=='rrs':
+            fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands] \
+                + [f'{fieldName}{band}_unc' for band in bands])
+        else:
+            fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands] \
+                + [f'{fieldName}{band}_sd' for band in bands])
 
         lenRad = (len(dsCopy.dtype.names))
         unitsLine = ['yyyymmdd']
@@ -258,7 +263,7 @@ class SeaBASSWriter:
             
         version = SeaBASSHeader.settings["version"]
         
-        outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{dtype}{os.path.split(fp)[1].replace(".hdf",f"_{version}.sb")}'
+        outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{dtype}_{os.path.split(fp)[1].replace(".hdf",f"_{version}.sb")}'
 
         outFile = open(outFileName,'w',newline='\n')
         outFile.write('/begin_header\n')
@@ -483,9 +488,9 @@ class SeaBASSWriter:
         reflectanceGroup = root.getGroup("REFLECTANCE")
 
         rrsData = reflectanceGroup.getDataset("Rrs_HYPER")
-        rrsDataDelta = reflectanceGroup.getDataset("Rrs_HYPER_delta")
+        rrsDataDelta = reflectanceGroup.getDataset("Rrs_HYPER_unc")
         esData = irradianceGroup.getDataset("ES_HYPER")
-        esDataDelta = irradianceGroup.getDataset("ES_HYPER_delta")
+        esDataDelta = irradianceGroup.getDataset("ES_HYPER_sd")
 
         # Keep for now, but these won't be output for SeaBASS
         # They are of little use to others...
@@ -637,7 +642,7 @@ class SeaBASSWriter:
         formattedRrs, fieldsRrs, unitsRrs  = SeaBASSWriter.formatData2(rrsData,rrsDataDelta,'rrs',reflectanceGroup.attributes["Rrs_UNITS"])
 
         # # Write SeaBASS files
-        SeaBASSWriter.writeSeaBASS('ES',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
+        SeaBASSWriter.writeSeaBASS('Es',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
         # SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
         # SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)
         SeaBASSWriter.writeSeaBASS('Rrs',fp,headerBlock,formattedRrs,fieldsRrs,unitsRrs)

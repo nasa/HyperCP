@@ -95,8 +95,8 @@ class ProcessL2:
         newReflectanceGroup = root.getGroup("REFLECTANCE")        
         newRrsData = newReflectanceGroup.getDataset(f'Rrs_{sensor}')
         newnLwData = newReflectanceGroup.getDataset(f'nLw_{sensor}')
-        newRrsDeltaData = newReflectanceGroup.getDataset(f'Rrs_{sensor}_delta')
-        newnLwDeltaData = newReflectanceGroup.getDataset(f'nLw_{sensor}_delta')
+        newRrsDeltaData = newReflectanceGroup.getDataset(f'Rrs_{sensor}_unc')
+        newnLwDeltaData = newReflectanceGroup.getDataset(f'nLw_{sensor}_unc')
         
         newNIRData = newReflectanceGroup.getDataset(f'nir_{sensor}') 
 
@@ -284,11 +284,11 @@ class ProcessL2:
             newLTData = newRadianceGroup.addDataset(f"LT_{sensor}")
             newnLwData = newReflectanceGroup.addDataset(f"nLw_{sensor}")
 
-            newRrsDeltaData = newReflectanceGroup.addDataset(f"Rrs_{sensor}_delta")
-            newESDeltaData = newIrradianceGroup.addDataset(f"ES_{sensor}_delta")       
-            newLIDeltaData = newRadianceGroup.addDataset(f"LI_{sensor}_delta")
-            newLTDeltaData = newRadianceGroup.addDataset(f"LT_{sensor}_delta")
-            newnLwDeltaData = newReflectanceGroup.addDataset(f"nLw_{sensor}_delta") 
+            newRrsDeltaData = newReflectanceGroup.addDataset(f"Rrs_{sensor}_unc")
+            newESDeltaData = newIrradianceGroup.addDataset(f"ES_{sensor}_sd")       
+            newLIDeltaData = newRadianceGroup.addDataset(f"LI_{sensor}_sd")
+            newLTDeltaData = newRadianceGroup.addDataset(f"LT_{sensor}_sd")
+            newnLwDeltaData = newReflectanceGroup.addDataset(f"nLw_{sensor}_unc") 
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.addDataset(f"rho_{sensor}")                             
@@ -303,11 +303,11 @@ class ProcessL2:
             newLTData = newRadianceGroup.getDataset(f"LT_{sensor}") 
             newnLwData = newReflectanceGroup.getDataset(f"nLw_{sensor}")
 
-            newRrsDeltaData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_delta")
-            newESDeltaData = newIrradianceGroup.getDataset(f"ES_{sensor}_delta")    
-            newLIDeltaData = newRadianceGroup.getDataset(f"LI_{sensor}_delta")
-            newLTDeltaData = newRadianceGroup.getDataset(f"LT_{sensor}_delta")
-            newnLwDeltaData = newReflectanceGroup.getDataset(f"nLw_{sensor}_delta")   
+            newRrsDeltaData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_unc")
+            newESDeltaData = newIrradianceGroup.getDataset(f"ES_{sensor}_sd")    
+            newLIDeltaData = newRadianceGroup.getDataset(f"LI_{sensor}_sd")
+            newLTDeltaData = newRadianceGroup.getDataset(f"LT_{sensor}_sd")
+            newnLwDeltaData = newReflectanceGroup.getDataset(f"nLw_{sensor}_unc")   
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")                
