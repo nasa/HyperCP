@@ -31,6 +31,7 @@ Ideas and To-Dos:
 ___________________________________________________________
 2021-05-24: updated to master
 * Add uncertainties to SeaBASS Es & Rrs output
+* Change notation on L2 products (and in SeaBASS) to reflect sd for std and unc for uncertainty
 
 ---
 v1.0.8 2021-05-11: DAA
