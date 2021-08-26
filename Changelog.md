@@ -29,7 +29,13 @@ Ideas and To-Dos:
     * To process
 * Export python scripts to d/l satellite imagery to match
 ___________________________________________________________
-2021-05-24: updated to master
+2021-08-19:
+* Build in capability for pitch/roll in ancillary file
+* Facilitate SATTHS (tilt-heading sensor) as separate data source (SolarTracker had it merged, but not pySAS)
+* Vectorize HDFDataset.colDeleteRow for speed
+* Eliminate ancillary file processing in L2
+
+2021-05-24: 
 * Add uncertainties to SeaBASS Es & Rrs output
 * Change notation on L2 products (and in SeaBASS) to reflect sd for std and unc for uncertainty
 

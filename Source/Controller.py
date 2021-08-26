@@ -184,6 +184,12 @@ class Controller:
                 cf.measMode = "Not Required"
                 cf.frameType = "Not Required"
                 cf.sensorType = cf.getSensorType()
+            elif cf.id.startswith("SATTHS"):
+                cf.instrumentType = "SATTHS"
+                cf.media = "Not Required"
+                cf.measMode = "Not Required"
+                cf.frameType = "Not Required"
+                cf.sensorType = cf.getSensorType()
             else:
                 cf.instrumentType = "SAS"
                 cf.media = "Air"
@@ -310,7 +316,7 @@ class Controller:
     @staticmethod
     def processL1c(inFilePath, outFilePath, ancillaryData=None):
         root = None
-        _,fileName = os.path.split(outFilePath)
+        # _,fileName = os.path.split(outFilePath)
         
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
@@ -329,7 +335,7 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None
 
-        root = ProcessL1c.processL1c(root, fileName, ancillaryData)     
+        root = ProcessL1c.processL1c(root, ancillaryData)             
 
         # Write output file
         if root is not None:            
@@ -449,7 +455,7 @@ class Controller:
 
 
     @staticmethod
-    def processL2(inFilePath, outFilePath, ancillaryData):
+    def processL2(inFilePath, outFilePath):
         root = None
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
@@ -469,7 +475,7 @@ class Controller:
             return None, outFilePath
         
         root.attributes['In_Filepath'] = inFilePath
-        root = ProcessL2.processL2(root, ancillaryData)
+        root = ProcessL2.processL2(root)
         
         outPath, filename = os.path.split(outFilePath)
         if root is not None:
@@ -656,14 +662,13 @@ class Controller:
                     return True
 
         elif level == "L2":          
-            if ConfigFile.settings["bL1cSolarTracker"]:
-                ancillaryData = Controller.processAncData(ancFile)
-            else:
-                # Ancillary data from metadata have been read in at L1C,
-                # and will be extracted from the ANCILLARY_METADATA group later
-                ancillaryData = None
+            # if ConfigFile.settings["bL1cSolarTracker"]:
+            #     ancillaryData = Controller.processAncData(ancFile)
+            # else:
 
-            root, outFilePath = Controller.processL2(inFilePath, outFilePath, ancillaryData)  
+            # Ancillary data from metadata have been read in at L1C,
+            # and will be extracted from the ANCILLARY_METADATA group later            
+            root, outFilePath = Controller.processL2(inFilePath, outFilePath)  
             
             if os.path.isfile(outFilePath):
                 # Ensure that the L2 on file is recent before continuing with 

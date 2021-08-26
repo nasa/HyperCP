@@ -130,6 +130,7 @@ class ConfigFile:
         print("bL2Prodpoc", ConfigFile.products["bL2Prodpoc"])
         print("bL2Prodipar", ConfigFile.products["bL2Prodipar"])
         print("bL2Prodavw", ConfigFile.products["bL2Prodavw"])
+        print("bL2ProdweiQA", ConfigFile.products["bL2ProdweiQA"])
 
         print("bL2Prodgocad", ConfigFile.products["bL2Prodgocad"])
         print("bL2Prodag", ConfigFile.products["bL2Prodag"])
@@ -307,6 +308,7 @@ class ConfigFile:
         ConfigFile.products["bL2Prodpoc"] = 0
         ConfigFile.products["bL2Prodipar"] = 0
         ConfigFile.products["bL2Prodavw"] = 0
+        ConfigFile.products["bL2ProdweiQA"] = 0
 
         ConfigFile.products["bL2Prodgocad"] = 0
         ConfigFile.products["bL2Prodag"] = 0

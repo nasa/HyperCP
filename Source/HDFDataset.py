@@ -28,7 +28,10 @@ class HDFDataset:
     def colDeleteRow(self, i):
         for k in self.columns:
             col = self.columns[k]
-            del col[0][i]
+            # Reverse the order of index to avoid changing index conflict
+            j = sorted(i, reverse=True)
+            for index in j:
+                del col[0][index]
 
     def printd(self):
         print("Dataset:", self.id)

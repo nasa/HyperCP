@@ -5,8 +5,10 @@ import numpy as np
 from pysolar.solar import get_azimuth, get_altitude
 # import pytz
 from operator import add
+import bisect
 
 # import HDFRoot
+from HDFDataset import HDFDataset
 
 from Utilities import Utilities
 from ConfigFile import ConfigFile
@@ -69,7 +71,8 @@ class ProcessL1c:
         return finalCount/originalLength  
     
     @staticmethod
-    def processL1c(node, calibrationMap, ancillaryData=None):    
+    # def processL1c(node, calibrationMap, ancillaryData=None):    
+    def processL1c(node, ancillaryData=None):    
         '''
         Filters data for pitch, roll, yaw, and rotator.
         '''
@@ -83,7 +86,6 @@ class ProcessL1c:
         if ConfigFile.settings['bL1cSolarTracker']:
             node.attributes['SOLARTRACKER'] = 'YES'
 
-        ''' The following are currently only valid for SolarTracker, but will evolve to include other platforms '''
         if ConfigFile.settings['bL1cCleanPitchRoll']:
             node.attributes['PITCH_ROLL_FILTER'] = ConfigFile.settings['fL1cPitchRollPitch']
         node.attributes['HOME_ANGLE'] = ConfigFile.settings['fL1cRotatorHomeAngle']
@@ -103,15 +105,7 @@ class ProcessL1c:
         node  = Utilities.rootAddDateTime(node)
 
         # 2021-04-09: Include ANCILLARY_METADATA in all datasets, regardless of whether they are SOLARTRACKER or not        
-        
-        # In case there is no SolarTracker to provide sun/sensor geometries, Pysolar will be used
-        # to estimate sun zenith and azimuth using GPS position and time, and sensor azimuth will
-        # come from ancillary data input.
-        
-        
-        # Initialize a new group to host the unconventioal ancillary data
-        ancGroup = node.addGroup("ANCILLARY_METADATA")
-        ancGroup.attributes["FrameType"] = "Not Required"
+                
         for gp in node.groups:
             if gp.id.startswith("GP"):
                 gpsDateTime = gp.getDataset("DATETIME").data
@@ -124,27 +118,18 @@ class ProcessL1c:
         if ancillaryData is not None:
             ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
 
-            # Remove all ancillary data that does not intersect GPS data                                    
-            # Eliminate all ancillary data outside file times
-            # This is very slow, but necessary to build a new group at L1C rather than just matching
-            # to the existing ancillary group when run from L2.
-            ticker = 0
-            l = len(ancDateTime)
-            Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-            print('Removing non-pertinent ancillary data... May take a moment with large SeaBASS file')
-            for i, dt in enumerate(ancDateTime):
-                if dt < min(gpsDateTime) or dt > max(gpsDateTime):                    
-                    index = i-ticker # adjusts for deleted rows
-                    ancillaryData.colDeleteRow(index) # this removes row from data structure as well 
-                    
-                    ticker += 1
-                    Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
-                # else:
-                #     print('hit')
+            # Remove all ancillary data that does not intersect GPS data                                                
+            print('Removing non-pertinent ancillary data.')            
+            lower = bisect.bisect_left(ancDateTime, min(gpsDateTime))
+            lower = list(range(0,lower))
+            upper = bisect.bisect_right(ancDateTime, max(gpsDateTime))
+            upper = list(range(upper,len(ancDateTime)))
+            ancillaryData.colDeleteRow(upper)
+            ancillaryData.colDeleteRow(lower)
                                     
             # Test if any data is left
             if not ancillaryData.columns["DATETIME"][0]:
-                msg = "No coincident ancillary data found. Aborting"
+                msg = "No coincident ancillary data found. Check ancillary file. Aborting"
                 print(msg)
                 Utilities.writeLogFile(msg)                   
                 return None 
@@ -197,9 +182,20 @@ class ProcessL1c:
                 wave = ancillaryData.columns["WAVE_HT"][0]
             if "SPEED_F_W" in ancillaryData.columns:
                 speed_f_w = ancillaryData.columns["SPEED_F_W"][0]
+            if "PITCH" in ancillaryData.columns:
+                pitch = ancillaryData.columns["PITCH"][0]
+            if "ROLL" in ancillaryData.columns:
+                roll = ancillaryData.columns["ROLL"][0]
 
         else:
+            # 2021-08-20: Create an ancillary group from GPS regardless of whether an external file is provided
+            # Generate HDFDataset
+            ancillaryData = HDFDataset()
+            ancillaryData.id = "AncillaryData"
+                        
             timeStamp = gpsDateTime
+            ancillaryData.appendColumn("DATETIME", timeStamp)
+
             ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
             ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]
             
@@ -214,52 +210,82 @@ class ProcessL1c:
                 lonDD = Utilities.dmToDd(lonDM, lonDirection)
                 lat.append(latDD)
                 lon.append(lonDD)
+            
+            ancillaryData.appendColumn("LATITUDE", lat)
+            ancillaryData.attributes["LATITUDE_Units"]='degrees'
+            ancillaryData.appendColumn("LONGITUDE", lon)
+            ancillaryData.attributes["LONGITUDE_Units"]='degrees'
 
+        # Run Pysolar to obtain solar geometry. These may be redundant with SolarTracker values
         sunAzimuthAnc = []
         sunZenith = []
-        for i, dt_utc in enumerate(timeStamp):
-            # Run Pysolar to obtain solar geometry
-            # sunAzimuth.append(get_azimuth(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
-            # sunZenith.append(90 - get_altitude(lat[i],lon[i],pytz.utc.localize(dt_utc),0))
+        for i, dt_utc in enumerate(timeStamp):            
             sunAzimuthAnc.append(get_azimuth(lat[i],lon[i],dt_utc,0))
             sunZenith.append(90 - get_altitude(lat[i],lon[i],dt_utc,0))
 
+        #############################################################################################
+        ''' Begin Filtering '''
+        #############################################################################################
 
         badTimes = None   
         # Apply Pitch & Roll Filter   
         # This has to record the time interval (in datetime) for the bad angles in order to remove these time intervals 
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
-        # Interpolating them first would introduce error.
-
-        ''' To Do: This is currently unavailable without SolarTracker. Once I come across accelerometer data
-        from other sources or can incorporate it into the ancillary data stream, I can make it available again.'''
+        # Interpolating them first would introduce error.        
         
         if node is not None and int(ConfigFile.settings["bL1cCleanPitchRoll"]) == 1:
             msg = "Filtering file for high pitch and roll"
             print(msg)
             Utilities.writeLogFile(msg)
-            
-            i = 0
-            gp = None
+                        
+            # Preferentially read PITCH and ROLL from SolarTracker/pySAS THS sensor...
+            pitch = None
+            roll = None
+            gp  = None
             for group in node.groups:
-                if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
+                if group.id == "SOLARTRACKER":
                     gp = group
-            if gp == None:
-                msg = "SOLARTRACKER instrument not found for tilt filter. Aborting."
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return None
-
-            timeStamp = gp.getDataset("DATETIME").data
-            pitch = gp.getDataset("PITCH").data["SAS"]
-            roll = gp.getDataset("ROLL").data["SAS"]
-                            
+                    timeStamp = gp.getDataset("DATETIME").data
+                    if "PITCH" in gp.datasets:
+                        pitch = gp.getDataset("PITCH").data["SAS"]
+                    if "ROLL" in gp.datasets:
+                        roll = gp.getDataset("ROLL").data["SAS"]
+                if group.id.startswith('SATTHS'): # For SATTHS without SolarTracker (i.e. with pySAS)
+                    gp = group
+                    timeStamp = gp.getDataset("DATETIME").data
+                    if "PITCH" in gp.datasets:
+                        pitch = gp.getDataset("PITCH").data["NONE"]
+                    if "ROLL" in gp.datasets:
+                        roll = gp.getDataset("ROLL").data["NONE"]
+            # ...and failing that, try to pull from ancillary data
+            if pitch is None or roll is None:
+                if "PITCH" in ancillaryData.columns:
+                    msg = "Pitch data from ancillary file used."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    pitch = ancillaryData.columns["PITCH"][0]
+                    if "ROLL" in ancillaryData.columns:
+                        msg = "Roll data from ancillary file used."
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        roll = ancillaryData.columns["ROLL"][0]
+                    timeStamp = ancillaryData.columns["DATETIME"][0]
+                else:
+                    msg = "Pitch and roll data not found for tilt filter. Aborting."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return None
+                        
             pitchMax = float(ConfigFile.settings["fL1cPitchRollPitch"])
             rollMax = float(ConfigFile.settings["fL1cPitchRollRoll"])
 
             if badTimes is None:
                 badTimes = []
 
+            # timeStamp may now align with ancillary file or radiometry platform, but this should not matter
+            # since it will align with pitch/roll, and will be applied by value not index to all data (i.e. startstop are
+            # python datetimes).
+            i = 0
             start = -1
             stop =[]
             for index in range(len(pitch)):
@@ -278,7 +304,7 @@ class ProcessL1c:
                         Utilities.writeLogFile(msg)
                         badTimes.append(startstop)
                         start = -1
-            msg = f'Percentage of SolarTracker data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %'
+            msg = f'Percentage of data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %'
             print(msg)
             Utilities.writeLogFile(msg)
 
@@ -294,6 +320,7 @@ class ProcessL1c:
 
             if start==0 and stop==index: # All records are bad                           
                 return None
+
 
         # Apply Rotator Delay Filter (delete records within so many seconds of a rotation)
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
@@ -360,6 +387,7 @@ class ProcessL1c:
                     msg = f'No POINTING data found. Filtering on rotator delay failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)    
+
 
         # Apply Absolute Rotator Angle Filter
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals 
@@ -451,16 +479,15 @@ class ProcessL1c:
             else:
                     msg = f"No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
                     print(msg)
-                    Utilities.writeLogFile(msg)        
-            
-        relAz=[]
-        if ConfigFile.settings["bL1cSolarTracker"] == 0:
+                    Utilities.writeLogFile(msg)                            
+        else:
             if ancillaryData is not None:
                 sunAzimuth = sunAzimuthAnc
             else:
                 print('ERROR: No ancillary file provided. Ancillary data is required if SolarTracker or pySAS is not in use. Abort.')
                 return None  
-                
+        
+        relAz=[]    
         for index in range(len(sunAzimuth)):
             if ConfigFile.settings["bL1cSolarTracker"]:
                 # Changes in the angle between the bow and the sensor changes are tracked by SolarTracker
@@ -486,7 +513,14 @@ class ProcessL1c:
 
             relAz.append(relAzimuthAngle)        
 
-        # If using a SolarTracker, add RelAz to the SATNAV/SOLARTRACKER group...
+        # In case there is no SolarTracker to provide sun/sensor geometries, Pysolar will be used
+        # to estimate sun zenith and azimuth using GPS position and time, and sensor azimuth will
+        # come from ancillary data input. For SolarTracker and pySAS, SZA and solar azimuth go in the
+        # SOLARTRACKER or SOLARTRACKER_UM group, otherwise in the ANCILLARY group.        
+        
+        # Initialize a new group to host the unconventional ancillary data
+        ancGroup = node.addGroup("ANCILLARY_METADATA")        
+        # If using a SolarTracker or pySAS, add RelAz to the SATNAV/SOLARTRACKER group...
         if ConfigFile.settings["bL1cSolarTracker"]:               
             newRelAzData.columns["REL_AZ"] = relAz
             newRelAzData.columnsToDataset()        
@@ -524,7 +558,7 @@ class ProcessL1c:
                 timeStampAnc.append(Utilities.timeTag2ToDateTime(dt, time))
             else:                    
                 ancGroup.datasetDeleteRow(i)
-                msg = "Bad Datetag found. Eliminating record"
+                msg = "Bad Datetag found in ancillary. Eliminating record"
                 print(msg)
                 Utilities.writeLogFile(msg)
         dateTime.data = timeStampAnc
@@ -535,9 +569,10 @@ class ProcessL1c:
             # Convert datetimes
             timeStamp = timeStampAnc   
         
-        # Look for additional datasets in provided ancillaryData
+        # Look for additional datasets in provided ancillaryData and populate the new ancillary group
         if ancillaryData is not None:    
             ancGroup.attributes = ancillaryData.attributes.copy()
+            ancGroup.attributes["FrameType"] = "Not Required"
             if "HEADING" in ancillaryData.columns:
                 ancGroup.addDataset("HEADING")
                 ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
@@ -565,6 +600,12 @@ class ProcessL1c:
             if "SPEED_F_W" in ancillaryData.columns:
                 ancGroup.addDataset("SPEED_F_W")
                 ancGroup.datasets["SPEED_F_W"].data = np.array(speed_f_w, dtype=[('NONE', '<f8')])
+            if "PITCH" in ancillaryData.columns:
+                ancGroup.addDataset("PITCH")
+                ancGroup.datasets["PITCH"].data = np.array(ancillaryData.columns["PITCH"][0], dtype=[('NONE', '<f8')])
+            if "ROLL" in ancillaryData.columns:
+                ancGroup.addDataset("ROLL")
+                ancGroup.datasets["ROLL"].data = np.array(ancillaryData.columns["ROLL"][0], dtype=[('NONE', '<f8')])
                                 
         ######################################################################################################         
 

@@ -111,7 +111,7 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         weiLabel = QtWidgets.QLabel("weiQA (Wei et al. 2016)", self)     
         self.weiCheckBox = QtWidgets.QCheckBox("", self)              
-        if int(ConfigFile.products["bL2Prodoc3m"]) == 1:
+        if int(ConfigFile.products["bL2ProdweiQA"]) == 1:
             self.weiCheckBox.setChecked(True) 
 
         iopLabel = QtWidgets.QLabel("Semi-analytical Algorithms")
@@ -614,8 +614,8 @@ class OCproductsWindow(QtWidgets.QDialog):
         # Confirm necessary satellite bands are processed
         if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
             ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
-            ConfigFile.products["bL2gocad"] or ConfigFile.products["bL2Prodgiop"] or \
-            ConfigFile.products["bL2qaa"] or ConfigFile.products["bL2ProdweiQA"]:
+            ConfigFile.products["bL2Prodgocad"] or ConfigFile.products["bL2Prodgiop"] or \
+            ConfigFile.products["bL2Prodqaa"] or ConfigFile.products["bL2ProdweiQA"]:
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
         

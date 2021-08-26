@@ -1,4 +1,5 @@
 
+from Source.HDFGroup import HDFGroup
 import collections
 import sys
 import warnings
@@ -852,269 +853,339 @@ class ProcessL2:
     
 
     @staticmethod
-    def interpAncillary(node, ancData, modData, radData):
-        ''' Interpolate ancillary to radiometry and fill with model data or defaults '''
+    # def interpAncillary(node, ancData, modRoot, radData):
+    def includeModelDefaults(ancGroup, modRoot):
+        ''' Include model data or defaults for blank ancillary fields '''
+        print('Filling blank ancillary data with models or defaults from Configuration')
 
-        print('Interpolating field ancillary and/or modeled ancillary data to radiometry times...')
-        epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc)
-        
-        ancGroup = node.getGroup("ANCILLARY")
-        # These are required and have been filled in with field, model, and/or default values
-        windDataset = ancGroup.addDataset("WINDSPEED")
-        aodDataset = ancGroup.addDataset("AOD")
-        saltDataset = ancGroup.addDataset("SAL")
-        sstDataset = ancGroup.addDataset("SST")  
+        epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc)                
+        # radData = referenceGroup.getDataset("ES") # From node, the input file        
 
-        # Only concerned here with datasets from the Ancillary Data File (SeaBASS file in Main Window)
-        # Additional ancillary data added after returning from this interp method
-
-        # Optional datasets; CLOUD and WAVE are basically place holders as of ver 1.0.beta;
-        # (i.e. no implementation in Rho corrections)
-        cloud = False
-        wave = False
-        station = False
-
-        # Convert radData date and time to datetime and then to seconds for interpolation
-        radTime = radData.data["Timetag2"].tolist()
-        radSeconds = []
-        radDatetime = []
-        for i, radDate in enumerate(radData.data["Datetag"].tolist()):                
-            radDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(radDate),radTime[i]))
-            radSeconds.append((radDatetime[i]-epoch).total_seconds())
-        
-        if ancData:
-            if "CLOUD" in ancData.columns:
-                cloudDataset = ancGroup.addDataset("CLOUD")
-            if "WAVE_HT" in ancData.columns:
-                waveDataset = ancGroup.addDataset("WAVE_HT")
-            if "STATION" in ancData.columns:
-                stationDataset = ancGroup.addDataset("STATION")
-
-            ancGroup.copyAttributes(ancData)    
-            # These are the entire ancillary records for the cruise
-            dateTime = ancData.getColumn("DATETIME")[0]
-            if "WINDSPEED" in ancData.columns:
-                wind = ancData.getColumn("WINDSPEED")[0]
-            if "SALINITY" in ancData.columns:
-                salt = ancData.getColumn("SALINITY")[0]
-            if "SST" in ancData.columns:
-                sst = ancData.getColumn("SST")[0]
-            if "CLOUD" in ancData.columns:
-                cloud = ancData.getColumn("CLOUD")[0]
-            if "WAVE_HT" in ancData.columns:
-                wave = ancData.getColumn("WAVE_HT")[0]
-            if "STATION" in ancData.columns:
-                station = ancData.getColumn("STATION")[0]
-            # Convert ancillary datetime to seconds for interpolation            
-            ancSeconds = [(i-epoch).total_seconds() for i in dateTime] 
-        else:
-            ancData = None
-            msg = "Ancillary field data missing; reverting to ancillary model or defaults"
-            print(msg)
-            Utilities.writeLogFile(msg)
-
-        # Test for any field ancillary data in timeframe of rad time   
-        if ancData and (max(ancSeconds) <= min(radSeconds) or min(ancSeconds) >= max(radSeconds)):
-            ancData = None
-            msg = "Ancillary field data do not intersect radiometric data; reverting to ancillary model or defaults"
-            print(msg)
-            Utilities.writeLogFile(msg)  
-
-        # Create a framework to hold combined ancillary data...
-        ancInRadSeconds = []
-        windFlag = []
-        saltFlag = []
-        sstFlag = []
-        aodFlag = []        
-        windInRad = []
-        saltInRad = []
-        sstInRad = []
-        aodInRad = []
-        stationInRad = []
-        if cloud:
-            cloudFlag = []
-            cloudInRad = []
-        if wave:
-            waveFlag = []
-            waveInRad = []
-        if station:
-            # stationFlag = []
-            stationInRad = []
-        # Populate the fields to the size of the radiometric dataset with NaNs (or flag placeholders)
-        for i, value in enumerate(radSeconds):
-            ancInRadSeconds.append(value)
-            # HDF5 deliberately makes including string vectors difficult
-            # These will all be changed to floats or ints in HDFDataset.columnsToDataset
-            windFlag.append('undetermined')                   
-            saltFlag.append('undetermined')                   
-            sstFlag.append('undetermined')                   
-            aodFlag.append('undetermined')                             
-            windInRad.append(np.nan)
-            saltInRad.append(np.nan)
-            sstInRad.append(np.nan)
-            aodInRad.append(np.nan)            
-            if cloud:
-                cloudFlag.append('field')
-                cloudInRad.append(np.nan)
-            if wave:
-                waveFlag.append('field')
-                waveInRad.append(np.nan)
-            if station:
-                # HDF5 deliberately makes including string vectors difficult
-                stationInRad.append(np.nan)
-            
-        # Populate with nearest field data if possible
-        if ancData:
-            for i, value in enumerate(ancInRadSeconds): # step through InRad...
-                idx = Utilities.find_nearest(ancSeconds,value) # ...identify from entire anc record...
-                # Make sure the time difference between field anc and rad is <= 1hr
-                if abs(ancSeconds[idx] - value)/60/60 < 1:  # ... and place nearest into InRad variable
-                    windInRad[i] = wind[idx]                    
-                    saltInRad[i] = salt[idx]
-                    sstInRad[i] = sst[idx]
-                    # Label the data source in the flag
-                    windFlag[i] = 'field'
-                    saltFlag[i] = 'field'
-                    sstFlag[i] = 'field'                    
-                    if cloud:
-                        cloudInRad[i] = cloud[idx]
-                    if wave:
-                        waveInRad[i] = wave[idx]
-                    if station:
-                        # if not np.isnan(station[idx]):
-                        #     # This will be converted back to a float in columnsToDataset
-                        #     stationTidy = str(round(station[idx]*100)/100)
-                        #     stationInRad[i] = stationTidy
-                        stationInRad[i] = station[idx]
-        
-        # Tallies
-        msg = f'Field wind data has {np.isnan(windInRad).sum()} NaNs out of {len(windInRad)} prior to using model data'                
-        print(msg)
-        Utilities.writeLogFile(msg)
-        msg = f'Field salt data has {np.isnan(saltInRad).sum()} NaNs out of {len(saltInRad)} prior to using model data'                
-        print(msg)
-        Utilities.writeLogFile(msg)
-        msg = f'Field sst data has {np.isnan(sstInRad).sum()} NaNs out of {len(sstInRad)} prior to using model data'                
-        print(msg)
-        Utilities.writeLogFile(msg)
-        msg = f'Field aod data has {np.isnan(aodInRad).sum()} NaNs out of {len(aodInRad)} prior to using model data'                
-        print(msg)
-        Utilities.writeLogFile(msg)
-        if cloud:
-            msg = f'Field cloud data has {np.isnan(cloudInRad).sum()} NaNs out of {len(cloudInRad)}'
-            print(msg)
-            Utilities.writeLogFile(msg)
-        if wave:
-            msg = f'Field wave data has {np.isnan(waveInRad).sum()} NaNs out of {len(waveInRad)}'
-            print(msg)
-            Utilities.writeLogFile(msg)
-        if station:
-            # count = stationInRad.count('underway')
-            msg = f'Field station data has {np.isnan(stationInRad).sum()} non-stations out of {len(stationInRad)}'
-            print(msg)
-            Utilities.writeLogFile(msg)
-
+        # Convert ancillary date time
+        if ancGroup is not None:                
+            ancGroup.datasets['LATITUDE'].datasetToColumns()
+            ancTime = ancGroup.datasets['LATITUDE'].columns['Timetag2']
+            ancSeconds = []
+            ancDatetime = []
+            for i, ancDate in enumerate(ancGroup.datasets['LATITUDE'].columns['Datetag']):                
+                ancDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(ancDate),ancTime[i]))
+                ancSeconds.append((ancDatetime[i]-epoch).total_seconds())  
         # Convert model data date and time to datetime and then to seconds for interpolation
-        if modData is not None:                
-            modTime = modData.groups[0].datasets["Timetag2"].tolist()
+        if modRoot is not None:                
+            modTime = modRoot.groups[0].datasets["Timetag2"].tolist()
             modSeconds = []
             modDatetime = []
-            for i, modDate in enumerate(modData.groups[0].datasets["Datetag"].tolist()):                
+            for i, modDate in enumerate(modRoot.groups[0].datasets["Datetag"].tolist()):                
                 modDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(modDate),modTime[i]))
                 modSeconds.append((modDatetime[i]-epoch).total_seconds())  
         
+        # Model or default fills
+        if 'WINDSPEED' in ancGroup.datasets:
+            ancGroup.datasets['WINDSPEED'].datasetToColumns()
+            windDataset = ancGroup.datasets['WINDSPEED']
+            wind = windDataset.columns['NONE']
+        else:
+            windDataset = ancGroup.addDataset('WINDSPEED')
+            wind = np.empty((1,len(ancSeconds)))
+            wind[:] = np.nan
+            wind = wind[0].tolist()
+        if 'AOD' in ancGroup.datasets:
+            ancGroup.datasets['AOD'].datasetToColumns()
+            aodDataset = ancGroup.datasets['AOD']
+            aod = aodDataset.columns['NONE']
+        else:
+            aodDataset = ancGroup.addDataset('AOD')
+            aod = np.empty((1,len(ancSeconds)))
+            aod[:] = np.nan
+            aod = aod[0].tolist()
+        # Default fills
+        if 'SALINITY' in ancGroup.datasets:
+            ancGroup.datasets['SALINITY'].datasetToColumns()
+            saltDataset = ancGroup.datasets['SALINITY']
+            salt = saltDataset.columns['NONE']
+        else:
+            saltDataset = ancGroup.addDataset('SALINITY')
+            salt = np.empty((1,len(ancSeconds)))
+            salt[:] = np.nan
+            salt = salt[0].tolist()
+        if 'SST' in ancGroup.datasets:
+            ancGroup.datasets['SST'].datasetToColumns()
+            sstDataset = ancGroup.datasets['SST']
+            sst = sstDataset.columns['NONE']
+        else:
+            sstDataset = ancGroup.addDataset('SST')
+            sst = np.empty((1,len(ancSeconds)))
+            sst[:] = np.nan
+            sst = sst[0].tolist()
+
+        # Initialize flags
+        windFlag = []
+        aodFlag = []
+        for i,ancSec in enumerate(ancSeconds):            
+            if np.isnan(wind[i]):   
+                windFlag.append('undetermined')
+            else:
+                windFlag.append('field')
+            if np.isnan(aod[i]):                   
+                aodFlag.append('undetermined')
+            else:
+                aodFlag.append('field')
+                
         # Replace Wind, AOD NaNs with modeled data where possible. 
         # These will be within one hour of the field data.
-        if modData is not None:
+        if modRoot is not None:
             msg = 'Filling in field data with model data where needed.'
             print(msg)
             Utilities.writeLogFile(msg)
-            for i,value in enumerate(windInRad):
-                if np.isnan(value):   
+
+            for i,ancSec in enumerate(ancSeconds):
+                
+                if np.isnan(wind[i]):   
                     # msg = 'Replacing wind with model data'
                     # print(msg)
                     # Utilities.writeLogFile(msg)
-                    idx = Utilities.find_nearest(modSeconds,ancInRadSeconds[i])
-                    windInRad[i] = modData.groups[0].datasets['Wind'][idx]   
-                    windFlag[i] = 'model'                     
-            for i, value in enumerate(aodInRad):
-                if np.isnan(value):
+                    idx = Utilities.find_nearest(modSeconds,ancSec)
+                    wind[i] = modRoot.groups[0].datasets['Wind'][idx]   
+                    windFlag[i] = 'model'                
+                if np.isnan(aod[i]):   
                     # msg = 'Replacing AOD with model data'
                     # print(msg)
                     # Utilities.writeLogFile(msg)
-                    idx = Utilities.find_nearest(modSeconds,ancInRadSeconds[i])
-                    aodInRad[i] = modData.groups[0].datasets['AOD'][idx]
+                    idx = Utilities.find_nearest(modSeconds,ancSec)
+                    aod[i] = modRoot.groups[0].datasets['AOD'][idx]   
                     aodFlag[i] = 'model'
 
         # Replace Wind, AOD, SST, and Sal with defaults where still nan
         msg = 'Filling in ancillary data with default values where still needed.'
         print(msg)
         Utilities.writeLogFile(msg)
-        for i, value in enumerate(windInRad):
+        
+        saltFlag = []
+        sstFlag = []
+        for i, value in enumerate(wind):
             if np.isnan(value):
-                windInRad[i] = ConfigFile.settings["fL2DefaultWindSpeed"]
+                wind[i] = ConfigFile.settings["fL2DefaultWindSpeed"]
                 windFlag[i] = 'default'
-        for i, value in enumerate(aodInRad):
+        for i, value in enumerate(aod):
             if np.isnan(value):
-                aodInRad[i] = ConfigFile.settings["fL2DefaultAOD"]
+                aod[i] = ConfigFile.settings["fL2DefaultAOD"]
                 aodFlag[i] = 'default'
-        for i, value in enumerate(saltInRad):
+        for i, value in enumerate(salt):
             if np.isnan(value):
-                saltInRad[i] = ConfigFile.settings["fL2DefaultSalt"]
-                saltFlag[i] = 'default'
-        for i, value in enumerate(sstInRad):
+                salt[i] = ConfigFile.settings["fL2DefaultSalt"]
+                saltFlag.append('default')
+            else:
+                saltFlag.append('field')
+        for i, value in enumerate(sst):
             if np.isnan(value):
-                sstInRad[i] = ConfigFile.settings["fL2DefaultSST"]
-                sstFlag[i] = 'default'
+                sst[i] = ConfigFile.settings["fL2DefaultSST"]
+                sstFlag.append('default')
+            else:
+                sstFlag.append('field')
 
         # Populate the datasets and flags with the InRad variables
-        windDataset.columns["WINDSPEED"] = windInRad
+        windDataset.columns["WINDSPEED"] = wind
         windDataset.columns["WINDFLAG"] = windFlag
-        aodDataset.columns["AOD"] = aodInRad
+        windDataset.columnsToDataset()
+        aodDataset.columns["AOD"] = aod
         aodDataset.columns["AODFLAG"] = aodFlag
-        saltDataset.columns["SAL"] = saltInRad
+        aodDataset.columnsToDataset()
+        saltDataset.columns["SALINITY"] = salt
         saltDataset.columns["SALTFLAG"] = saltFlag
-        sstDataset.columns["SST"] = sstInRad
-        sstDataset.columns["SSTFLAG"] = sstFlag
-        if cloud:
-            cloudDataset.columns["CLOUD"] = cloudInRad
-            cloudDataset.columns["CLOUDFLAG"] = cloudFlag
-        if wave:
-            waveDataset.columns["WAVE_HT"] = waveInRad
-            waveDataset.columns["WAVEFLAG"] = waveFlag
-        if station:
-            stationDataset.columns["STATION"] = stationInRad
+        saltDataset.columnsToDataset()
+        sstDataset.columns["SST"] = sst
+        sstDataset.columns["SSTFLAG"] = sstFlag        
+        sstDataset.columnsToDataset()
 
         # Convert ancillary seconds back to date/timetags ...
         ancDateTag = []
         ancTimeTag2 = []  
-        radDT = []          
-        for i, sec in enumerate(radSeconds):
-            radDT.append(datetime.datetime.utcfromtimestamp(sec).replace(tzinfo=datetime.timezone.utc))
-            ancDateTag.append(float(f'{int(radDT[i].timetuple()[0]):04}{int(radDT[i].timetuple()[7]):03}'))
+        ancDT = []          
+        for i, sec in enumerate(ancSeconds):
+            ancDT.append(datetime.datetime.utcfromtimestamp(sec).replace(tzinfo=datetime.timezone.utc))
+            ancDateTag.append(float(f'{int(ancDT[i].timetuple()[0]):04}{int(ancDT[i].timetuple()[7]):03}'))
             ancTimeTag2.append(float( \
-                f'{int(radDT[i].timetuple()[3]):02}{int(radDT[i].timetuple()[4]):02}{int(radDT[i].timetuple()[5]):02}{int(radDT[i].microsecond/1000):03}'))
+                f'{int(ancDT[i].timetuple()[3]):02}{int(ancDT[i].timetuple()[4]):02}{int(ancDT[i].timetuple()[5]):02}{int(ancDT[i].microsecond/1000):03}'))
         
         # Move the Timetag2 and Datetag into the arrays and remove the datasets
         for ds in ancGroup.datasets:           
             ancGroup.datasets[ds].columns["Datetag"] = ancDateTag
             ancGroup.datasets[ds].columns["Timetag2"] = ancTimeTag2
-            ancGroup.datasets[ds].columns["Datetime"] = radDT
+            ancGroup.datasets[ds].columns["Datetime"] = ancDT
             ancGroup.datasets[ds].columns.move_to_end('Timetag2', last=False)
             ancGroup.datasets[ds].columns.move_to_end('Datetag', last=False)
             ancGroup.datasets[ds].columns.move_to_end('Datetime', last=False)
 
-        windDataset.columnsToDataset()
-        aodDataset.columnsToDataset()
-        saltDataset.columnsToDataset()
-        sstDataset.columnsToDataset()
-        if cloud:
-            cloudDataset.columnsToDataset()
-        if wave:
-            waveDataset.columnsToDataset()
-        if station:
-            stationDataset.columnsToDataset()      
-    
+            ancGroup.datasets[ds].columnsToDataset()
+
+        # windDataset.columnsToDataset()
+        # aodDataset.columnsToDataset()
+        # saltDataset.columnsToDataset()
+        # sstDataset.columnsToDataset()
+        # if cloud:
+        #     cloudDataset.columnsToDataset()
+        # if wave:
+        #     waveDataset.columnsToDataset()
+        # if station:
+        #     stationDataset.columnsToDataset()      
+
+        
+        # # These are required and have been filled in with field, model, and/or default values
+        # windDataset = ancGroup.addDataset("WINDSPEED")
+        # aodDataset = ancGroup.addDataset("AOD")
+        # saltDataset = ancGroup.addDataset("SAL")
+        # sstDataset = ancGroup.addDataset("SST")  
+
+        # # Only concerned here with datasets from the Ancillary Data File (SeaBASS file in Main Window)
+        # # Additional ancillary data added after returning from this interp method
+
+        # # Optional datasets; CLOUD and WAVE are basically place holders as of ver 1.0.beta;
+        # # (i.e. no implementation in Rho corrections)
+        # cloud = False
+        # wave = False
+        # station = False
+
+        # # Convert radData date and time to datetime and then to seconds for interpolation
+        # radTime = radData.data["Timetag2"].tolist()
+        # radSeconds = []
+        # radDatetime = []
+        # for i, radDate in enumerate(radData.data["Datetag"].tolist()):                
+        #     radDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(radDate),radTime[i]))
+        #     radSeconds.append((radDatetime[i]-epoch).total_seconds())
+        
+        # if ancData:
+        #     if "CLOUD" in ancData.columns:
+        #         cloudDataset = ancGroup.addDataset("CLOUD")
+        #     if "WAVE_HT" in ancData.columns:
+        #         waveDataset = ancGroup.addDataset("WAVE_HT")
+        #     if "STATION" in ancData.columns:
+        #         stationDataset = ancGroup.addDataset("STATION")
+
+        #     ancGroup.copyAttributes(ancData)    
+        #     # These are the entire ancillary records for the cruise
+        #     dateTime = ancData.getColumn("DATETIME")[0]
+        #     if "WINDSPEED" in ancData.columns:
+        #         wind = ancData.getColumn("WINDSPEED")[0]
+        #     if "SALINITY" in ancData.columns:
+        #         salt = ancData.getColumn("SALINITY")[0]
+        #     if "SST" in ancData.columns:
+        #         sst = ancData.getColumn("SST")[0]
+        #     if "CLOUD" in ancData.columns:
+        #         cloud = ancData.getColumn("CLOUD")[0]
+        #     if "WAVE_HT" in ancData.columns:
+        #         wave = ancData.getColumn("WAVE_HT")[0]
+        #     if "STATION" in ancData.columns:
+        #         station = ancData.getColumn("STATION")[0]
+        #     # Convert ancillary datetime to seconds for interpolation            
+        #     ancSeconds = [(i-epoch).total_seconds() for i in dateTime] 
+        # else:
+        #     ancData = None
+        #     msg = "Ancillary field data missing; reverting to ancillary model or defaults"
+        #     print(msg)
+        #     Utilities.writeLogFile(msg)
+
+        # # Test for any field ancillary data in timeframe of rad time   
+        # if ancData and (max(ancSeconds) <= min(radSeconds) or min(ancSeconds) >= max(radSeconds)):
+        #     ancData = None
+        #     msg = "Ancillary field data do not intersect radiometric data; reverting to ancillary model or defaults"
+        #     print(msg)
+        #     Utilities.writeLogFile(msg)  
+
+        # # Create a framework to hold combined ancillary data...
+        # ancInRadSeconds = []
+        # windFlag = []
+        # saltFlag = []
+        # sstFlag = []
+        # aodFlag = []        
+        # windInRad = []
+        # salt = []
+        # sst = []
+        # aodInRad = []
+        # stationInRad = []
+        # if cloud:
+        #     cloudFlag = []
+        #     cloudInRad = []
+        # if wave:
+        #     waveFlag = []
+        #     waveInRad = []
+        # if station:
+        #     # stationFlag = []
+        #     stationInRad = []
+        # # Populate the fields to the size of the radiometric dataset with NaNs (or flag placeholders)
+        # for i, value in enumerate(radSeconds):
+        #     ancInRadSeconds.append(value)
+        #     # HDF5 deliberately makes including string vectors difficult
+        #     # These will all be changed to floats or ints in HDFDataset.columnsToDataset
+        #     windFlag.append('undetermined')                   
+        #     saltFlag.append('undetermined')                   
+        #     sstFlag.append('undetermined')                   
+        #     aodFlag.append('undetermined')                             
+        #     windInRad.append(np.nan)
+        #     salt.append(np.nan)
+        #     sst.append(np.nan)
+        #     aodInRad.append(np.nan)            
+        #     if cloud:
+        #         cloudFlag.append('field')
+        #         cloudInRad.append(np.nan)
+        #     if wave:
+        #         waveFlag.append('field')
+        #         waveInRad.append(np.nan)
+        #     if station:
+        #         # HDF5 deliberately makes including string vectors difficult
+        #         stationInRad.append(np.nan)
+            
+        # # Populate with nearest field data if possible
+        # if ancData:
+        #     for i, value in enumerate(ancInRadSeconds): # step through InRad...
+        #         idx = Utilities.find_nearest(ancSeconds,value) # ...identify from entire anc record...
+        #         # Make sure the time difference between field anc and rad is <= 1hr
+        #         if abs(ancSeconds[idx] - value)/60/60 < 1:  # ... and place nearest into InRad variable
+        #             windInRad[i] = wind[idx]                    
+        #             salt[i] = salt[idx]
+        #             sst[i] = sst[idx]
+        #             # Label the data source in the flag
+        #             windFlag[i] = 'field'
+        #             saltFlag[i] = 'field'
+        #             sstFlag[i] = 'field'                    
+        #             if cloud:
+        #                 cloudInRad[i] = cloud[idx]
+        #             if wave:
+        #                 waveInRad[i] = wave[idx]
+        #             if station:
+        #                 # if not np.isnan(station[idx]):
+        #                 #     # This will be converted back to a float in columnsToDataset
+        #                 #     stationTidy = str(round(station[idx]*100)/100)
+        #                 #     stationInRad[i] = stationTidy
+        #                 stationInRad[i] = station[idx]
+        
+        # # Tallies
+        # msg = f'Field wind data has {np.isnan(windInRad).sum()} NaNs out of {len(windInRad)} prior to using model data'                
+        # print(msg)
+        # Utilities.writeLogFile(msg)
+        # msg = f'Field salt data has {np.isnan(salt).sum()} NaNs out of {len(salt)} prior to using model data'                
+        # print(msg)
+        # Utilities.writeLogFile(msg)
+        # msg = f'Field sst data has {np.isnan(sst).sum()} NaNs out of {len(sst)} prior to using model data'                
+        # print(msg)
+        # Utilities.writeLogFile(msg)
+        # msg = f'Field aod data has {np.isnan(aodInRad).sum()} NaNs out of {len(aodInRad)} prior to using model data'                
+        # print(msg)
+        # Utilities.writeLogFile(msg)
+        # if cloud:
+        #     msg = f'Field cloud data has {np.isnan(cloudInRad).sum()} NaNs out of {len(cloudInRad)}'
+        #     print(msg)
+        #     Utilities.writeLogFile(msg)
+        # if wave:
+        #     msg = f'Field wave data has {np.isnan(waveInRad).sum()} NaNs out of {len(waveInRad)}'
+        #     print(msg)
+        #     Utilities.writeLogFile(msg)
+        # if station:
+        #     # count = stationInRad.count('underway')
+        #     msg = f'Field station data has {np.isnan(stationInRad).sum()} non-stations out of {len(stationInRad)}'
+        #     print(msg)
+        #     Utilities.writeLogFile(msg)
+
+            
 
     @staticmethod
     def sliceAveHyper(y, hyperSlice):
@@ -1139,65 +1210,76 @@ class ProcessL2:
     @staticmethod
     def sliceAveAnc(root, start, end, y, ancGroup):
         ''' Take the slice AND the mean averages of ancillary data with X% '''
-        newAncGroup = root.getGroup("ANCILLARY")
+        if root.getGroup('ANCILLARY'):
+            newAncGroup = root.getGroup('ANCILLARY')
+        else:
+            newAncGroup = root.addGroup('ANCILLARY')
+        # newAncGroup.copy(ancGroup)
 
-        # Build a simple dictionary of datasets to reference from (input) ancGrop
-        ancDict = collections.OrderedDict()
-        for dsName in ancGroup.datasets:
-            ds = ancGroup.datasets[dsName] # Full HDF dataset (columns & data)
-            ancDict[dsName] = ds # assign the data and columns within the dataset
+        # # Build a simple dictionary of datasets to reference from (input) ancGrop
+        # ancDict = collections.OrderedDict()
+        # for dsName in ancGroup.datasets:
+        #     ds = ancGroup.datasets[dsName] # Full HDF dataset (columns & data)
+        #     ancDict[dsName] = ds # assign the data and columns within the dataset
 
-        for ds in ancDict: 
-                if not newAncGroup.getDataset(ds):
-                    newDS = newAncGroup.addDataset(ds)
-                else:
-                    newDS = newAncGroup.getDataset(ds)
+        # for ds in ancDict: 
+        #     if not newAncGroup.getDataset(ds):
+        #         newDS = newAncGroup.addDataset(ds)
+        #     else:
+        #         newDS = newAncGroup.getDataset(ds)
+        # for ds in newAncGroup.datasets:
+        for ds in ancGroup.datasets:
+            if newAncGroup.getDataset(ds):
+                newDS = newAncGroup.getDataset(ds)
+            else:
+                newDS = newAncGroup.addDataset(ds)
+            DS = ancGroup.getDataset(ds)
+            DS.datasetToColumns()
+            dsSlice = ProcessL2.columnToSlice(DS.columns,start, end)                
+            dsXSlice = None
 
-                dsSlice = ProcessL2.columnToSlice(ancDict[ds].columns,start, end)                
-                dsXSlice = None
+            for subset in dsSlice: # several ancillary datasets are groups which will become columns (including date, time, and flags)
+                if subset == 'Datetime':
+                    timeStamp = dsSlice[subset]
+                    # Stores the mean datetime by converting to (and back from) epoch second
+                    if len(timeStamp) > 0:
+                        epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
+                        tsSeconds = []
+                        for dt in timeStamp:
+                            tsSeconds.append((dt-epoch).total_seconds())
+                        meanSec = np.mean(tsSeconds)
+                        dateTime = datetime.datetime.utcfromtimestamp(meanSec).replace(tzinfo=datetime.timezone.utc)
+                        date = Utilities.datetime2DateTag(dateTime)
+                        time = Utilities.datetime2TimeTag2(dateTime)
+                if subset != 'Datetime' and subset != 'Datetag' and subset != 'Timetag2':
+                    v = [dsSlice[subset][i] for i in y] # y is an array of indexes for the lowest X%
 
-                for subset in dsSlice: # several ancillary datasets are groups which will become columns (including date, time, and flags)
-                    if subset == 'Datetime':
-                        timeStamp = dsSlice[subset]
-                        # Stores the mean datetime by converting to (and back from) epoch second
-                        if len(timeStamp) > 0:
-                            epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
-                            tsSeconds = []
-                            for dt in timeStamp:
-                                tsSeconds.append((dt-epoch).total_seconds())
-                            meanSec = np.mean(tsSeconds)
-                            dateTime = datetime.datetime.utcfromtimestamp(meanSec).replace(tzinfo=datetime.timezone.utc)
-                            date = Utilities.datetime2DateTag(dateTime)
-                            time = Utilities.datetime2TimeTag2(dateTime)
-                    if subset != 'Datetime' and subset != 'Datetag' and subset != 'Timetag2':
-                        v = [dsSlice[subset][i] for i in y] # y is an array of indexes for the lowest X%
+                    if dsXSlice is None:
+                        dsXSlice = collections.OrderedDict()                        
+                        dsXSlice['Datetag'] = [date]
+                        dsXSlice['Timetag2'] = [time]
+                        dsXSlice['Datetime'] = [dateTime]                            
+                        
+                    if (subset.endswith('FLAG')) or (subset.endswith('STATION')):
+                        if not subset in dsXSlice:
+                            # Find the most frequest element
+                            dsXSlice[subset] = []
+                        dsXSlice[subset].append(Utilities.mostFrequent(v))
+                    else:
+                        if subset not in dsXSlice:
+                            dsXSlice[subset] = []                            
+                        dsXSlice[subset].append(np.mean(v)) 
+            
+            if subset not in newDS.columns:
+                newDS.columns = dsXSlice
+            else:
+                for item in newDS.columns:
+                    newDS.columns[item] = np.append(newDS.columns[item], dsXSlice[item])
 
-                        if dsXSlice is None:
-                            dsXSlice = collections.OrderedDict()                        
-                            dsXSlice['Datetag'] = [date]
-                            dsXSlice['Timetag2'] = [time]
-                            dsXSlice['Datetime'] = [dateTime]                            
-                            
-                        if (subset.endswith('FLAG')) or (subset.endswith('STATION')):
-                            if not subset in dsXSlice:
-                                # Find the most frequest element
-                                dsXSlice[subset] = []
-                            dsXSlice[subset].append(Utilities.mostFrequent(v))
-                        else:
-                            if subset not in dsXSlice:
-                                dsXSlice[subset] = []                            
-                            dsXSlice[subset].append(np.mean(v)) 
-                
-                if subset not in newDS.columns:
-                    newDS.columns = dsXSlice
-                else:
-                    for item in newDS.columns:
-                        newDS.columns[item] = np.append(newDS.columns[item], dsXSlice[item])
-
-                newDS.columns.move_to_end('Timetag2', last=False)
-                newDS.columns.move_to_end('Datetag', last=False)
-                newDS.columns.move_to_end('Datetime', last=False)                
-                newDS.columnsToDataset()         
+            newDS.columns.move_to_end('Timetag2', last=False)
+            newDS.columns.move_to_end('Datetag', last=False)
+            newDS.columns.move_to_end('Datetime', last=False)                
+            newDS.columnsToDataset()         
        
 
     @staticmethod
@@ -1383,6 +1465,8 @@ class ProcessL2:
 
         # Take the mean of the lowest X% for the ancillary group in the slice
         # (Combines Slice and XSlice -- as above -- into one method)
+        # root.groups.append(ancGroup)
+
         ProcessL2.sliceAveAnc(root, start, end, y, ancGroup)
         newAncGroup = root.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
@@ -1407,7 +1491,10 @@ class ProcessL2:
         SSTXSlice = newAncGroup.getDataset('SST').data['SST'][-1].copy()
         if isinstance(SSTXSlice, list):
             SSTXSlice = SSTXSlice[0]
-        SalXSlice = newAncGroup.getDataset('SAL').data['SAL'][-1].copy()
+        # if 'SAL' in newAncGroup.datasets:
+        #     SalXSlice = newAncGroup.getDataset('SAL').data['SAL'][-1].copy()
+        if 'SALINITY' in newAncGroup.datasets:
+            SalXSlice = newAncGroup.getDataset('SALINITY').data['SALINITY'][-1].copy()
         if isinstance(SalXSlice, list):
             SalXSlice = SalXSlice[0]
         RelAzXSlice = newAncGroup.getDataset('REL_AZ').data['REL_AZ'][-1].copy()
@@ -1700,7 +1787,8 @@ class ProcessL2:
    
 
     @staticmethod
-    def calculateREFLECTANCE(root, node, gpsGroup, satnavGroup, pyrGroup, ancData, modData):
+    # def calculateREFLECTANCE(root, node, gpsGroup, satnavGroup, pyrGroup, ancData, modRoot):
+    def calculateREFLECTANCE(root, node, modRoot):
         ''' Filter out high wind and high/low SZA.
             Interpolate ancillary/model data, average intervals.
             Run meteorology quality checks.
@@ -1708,103 +1796,106 @@ class ProcessL2:
 
         print("calculateREFLECTANCE")                   
 
-        # These groups have datasets with TT2 and Datetag integrated into the array
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
+        gpsGroup = node.getGroup('GPS')
+        satnavGroup = None
+        ancGroup = None
+        pyrGroup = None
+        for gp in node.groups:            
+            if gp.id.startswith("SOLARTRACKER"):
+                satnavGroup = gp 
+            if gp.id.startswith("ANCILLARY"):
+                ancGroup = gp 
+                ancGroup.id = "ANCILLARY" # shift back from ANCILLARY_METADATA
+            if gp.id.startswith("PYROMETER"):
+                pyrGroup = gp
 
-        if not ConfigFile.settings["bL1cSolarTracker"]:
-            ancTemp = node.getGroup("TEMPORARY")
-
+        # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been 
+        # interpolated in L1E as long as the ancillary file was read in at L1C. Regardless, these need
+        # to have model data and/or default values incorporated.
+        
         # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
         # is provided in Main Window, then use the model data to fill in gaps in the field 
-        # record prior to interpolating to L2 timestamps.
-        #   Otherwise, interpolate just the field ancillary data, if it exists
-        #   Otherwise, use the selected default values from ConfigWindow      
-        # This will populate the group ANCILLARY with ancillary and/or modelled datasets
-        # and/or default values, all interpolated to the radiometric data timestamps.
-        #
-        # This interpolation is only necessary for the ancillary datasets that require
-        # either field or GMAO or GUI default values. The remaining ancillary data
-        # are culled from datasets in groups already interpolated in L1E
-        esData = referenceGroup.getDataset("ES") # From node, the input file
-        # InterpAncillary is basically only concerned with datasets that must be filled
-        # in with model or default data (wind, sst, wt, sal, cloud, wave)
-        ProcessL2.interpAncillary(node, ancData, modData, esData)
+        # record. Otherwise, use the selected default values from ConfigWindow      
         
-        # Now that ancillary data has been interpolated, it is matched up with
-        #  additional ancillary data (gps, solartracker, non-solartracker, etc.), all @ 1:1.
-        ancGroup = node.getGroup("ANCILLARY") # from interpAncillary above...
-
-        # At this stage, ancGroup has Datetag & Timetag2 integrated into data arrays
-        # tied to AOD, SAL, SST, and WINDSPEED. These sets also have flags.
-        # Add remaining datasets (as needed)
-        ancGroup.addDataset('HEADING')
-        ancGroup.addDataset('LATITUDE')
-        ancGroup.addDataset('LONGITUDE')        
-        ancGroup.addDataset('SOLAR_AZ')
-        ancGroup.addDataset('SZA')        
-        ancGroup.addDataset('REL_AZ')        
-
-        # The following datasets were interpolated to the radiometry timestamps in L1E.
-        # Shift them into the ANCILLARY group as needed.
+        # This step is only necessary for the ancillary datasets that REQUIRE
+        # either field or GMAO or GUI default values. The remaining ancillary data
+        # are culled from datasets in groups in L1E        
+        ProcessL2.includeModelDefaults(ancGroup, modRoot)            
+        
+        # Shift metadata into the ANCILLARY group as needed.
         #
         # GPS Group
         # These have TT2/Datetag incorporated in arrays
         # Change their column names from NONE to something appropriate to be consistent in 
-        # ancillary group going forward
+        # ancillary group going forward. 
+        # Replace metadata lat/long with GPS lat/long, in case the former is from the ancillary file
         ancGroup.datasets['LATITUDE'] = gpsGroup.getDataset('LATITUDE')
         ancGroup.datasets['LATITUDE'].changeColName('NONE','LATITUDE')
         ancGroup.datasets['LONGITUDE'] = gpsGroup.getDataset('LONGITUDE')
         ancGroup.datasets['LONGITUDE'].changeColName('NONE','LONGITUDE')
-        if ConfigFile.settings["bL1cSolarTracker"]:
+
+        # Take Heading and Speed preferentially from GPS
+        if 'HEADING' in gpsGroup.datasets:
             # These have TT2/Datetag incorporated in arrays
+            ancGroup.addDataset('HEADING')
             ancGroup.datasets['HEADING'] = gpsGroup.getDataset('COURSE')
             ancGroup.datasets['HEADING'].changeColName('TRUE','HEADING')
+        if 'SPEED' in gpsGroup.datasets:            
             ancGroup.addDataset('SPEED')
             ancGroup.datasets['SPEED'] = gpsGroup.getDataset('SPEED')
             ancGroup.datasets['SPEED'].changeColName('NONE','SPEED')
-        else:
-            # NOTRACKER Group
-            # These have TT2/Datetag incorporated in arrays
-            ancGroup.datasets['HEADING'] = ancTemp.getDataset('HEADING')
+        if 'HEADING' not in gpsGroup.datasets and 'HEADING' in ancGroup.datasets:
+            ancGroup.addDataset('HEADING')
+            # ancGroup.datasets['HEADING'] = ancTemp.getDataset('HEADING')
+            ancGroup.datasets['HEADING'] = ancGroup.getDataset('HEADING')
             ancGroup.datasets['HEADING'].changeColName('NONE','HEADING')
-            ancGroup.datasets['SZA'] = ancTemp.getDataset('SZA')
-            ancGroup.datasets['SZA'].changeColName('NONE','SZA')
-            ancGroup.datasets['SOLAR_AZ'] = ancTemp.getDataset('SOLAR_AZ')
-            ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
-            ancGroup.datasets['REL_AZ'] = ancTemp.getDataset('REL_AZ')
-            ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
+        if 'SPEED' not in gpsGroup.datasets and 'SPEED' in ancGroup.datasets:
+            ancGroup.datasets['SPEED'] = ancGroup.getDataset('SPEED')
+            ancGroup.datasets['SPEED'].changeColName('NONE','SPEED')         
+        if 'SPEED_F_W' in ancGroup.datasets:
+            ancGroup.addDataset('SPEED_F_W')
+            ancGroup.datasets['SPEED_F_W'] = ancGroup.getDataset('SPEED_F_W')
+            ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')    
+        # Take SZA and SOLAR_AZ preferentially from ancGroup (calculated with pysolar in L1C)     
+        ancGroup.datasets['SZA'].changeColName('NONE','SZA')
+        ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
+        if 'CLOUD' in ancGroup.datasets:
+            ancGroup.datasets['CLOUD'].changeColName('NONE','CLOUD')
+        if 'PITCH' in ancGroup.datasets:
+            ancGroup.datasets['PITCH'].changeColName('NONE','PITCH')
+        if 'ROLL' in ancGroup.datasets:
+            ancGroup.datasets['ROLL'].changeColName('NONE','ROLL')
+        if 'STATION' in ancGroup.datasets:
+            ancGroup.datasets['STATION'].changeColName('NONE','STATION')
+        if 'WAVE_HT' in ancGroup.datasets:
+            ancGroup.datasets['WAVE_HT'].changeColName('NONE','WAVE_HT')
 
-            # Done with the temporary ancillary group; delete it
-            for gp in node.groups:
-                if gp.id == "TEMPORARY":
-                    node.removeGroup(gp)
-            
-        if satnavGroup:
-            ancGroup.datasets['SOLAR_AZ'] = satnavGroup.getDataset('AZIMUTH')
-            ancGroup.datasets['SOLAR_AZ'].changeColName('SUN','SOLAR_AZ')
-            elevation = satnavGroup.getDataset('ELEVATION')
-            sza = []
-            for k in elevation.data["SUN"]:
-                sza.append(90-k)
-            elevation.data["SUN"] = sza # changed for sza
-            ancGroup.datasets['SZA'] = elevation # actually sza
-            ancGroup.datasets['SZA'].changeColName('SUN','SZA')
-            ancGroup.datasets['HUMIDITY'] = satnavGroup.getDataset('HUMIDITY')
-            ancGroup.datasets['HUMIDITY'].changeColName('NONE','HUMIDITY')
-            # ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING') # Use GPS heading instead
-            ancGroup.addDataset('PITCH')            
-            ancGroup.datasets['PITCH'] = satnavGroup.getDataset('PITCH')
-            ancGroup.datasets['PITCH'].changeColName('SAS','PITCH')
+        if satnavGroup:     
+            ancGroup.datasets['REL_AZ'] = satnavGroup.getDataset('REL_AZ')       
+            if 'HUMIDITY' in ancGroup.datasets:
+                ancGroup.datasets['HUMIDITY'] = satnavGroup.getDataset('HUMIDITY')
+                ancGroup.datasets['HUMIDITY'].changeColName('NONE','HUMIDITY')
+            # ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING') # Use GPS heading instead                                    
             ancGroup.addDataset('POINTING')
             ancGroup.datasets['POINTING'] = satnavGroup.getDataset('POINTING')
             ancGroup.datasets['POINTING'].changeColName('ROTATOR','POINTING')
             ancGroup.datasets['REL_AZ'] = satnavGroup.getDataset('REL_AZ')
             ancGroup.datasets['REL_AZ'].datasetToColumns()
-            ancGroup.addDataset('ROLL')
-            ancGroup.datasets['ROLL'] = satnavGroup.getDataset('ROLL')  
-            ancGroup.datasets['ROLL'].changeColName('SAS','ROLL')
-        
+            # Use PITCH and ROLL preferentially from SolarTracker
+            if 'PITCH' in satnavGroup.datasets:
+                ancGroup.addDataset('PITCH')
+                ancGroup.datasets['PITCH'] = satnavGroup.getDataset('PITCH')
+                ancGroup.datasets['PITCH'].changeColName('SAS','PITCH')
+            if 'ROLL' in satnavGroup.datasets:
+                ancGroup.addDataset('ROLL')
+                ancGroup.datasets['ROLL'] = satnavGroup.getDataset('ROLL')  
+                ancGroup.datasets['ROLL'].changeColName('SAS','ROLL')
+       
+        if 'NONE' in ancGroup.datasets['REL_AZ'].columns:
+            ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')        
+
         if pyrGroup is not None:
             #PYROMETER
             ancGroup.datasets['SST_IR'] = pyrGroup.getDataset("T")  
@@ -1815,6 +1906,9 @@ class ProcessL2:
         #     and Datetag incorporated into data arrays. Calculate and add
         #     Datetime to each data array.
         Utilities.rootAddDateTimeL2(node)
+
+
+        ################################################################################
 
         # Filter the spectra from the entire collection before slicing the intervals
 
@@ -1997,6 +2091,7 @@ class ProcessL2:
                 ProcessL2.filterData(ancGroup, badTimes)       
 
         # Next apply the Meteorological Filter prior to slicing
+        esData = referenceGroup.getDataset("ES")
         enableMetQualityCheck = int(ConfigFile.settings["bL2EnableQualityFlags"])          
         if enableMetQualityCheck:
             msg = "Applying meteorological filtering to eliminate spectra."
@@ -2136,7 +2231,7 @@ class ProcessL2:
         return True
     
     @staticmethod
-    def processL2(node, ancillaryData=None):
+    def processL2(node):
         '''Calculates Rrs and nLw after quality checks and filtering, glint removal, residual 
             subtraction. Weights for satellite bands, and outputs plots and SeaBASS datasets'''
 
@@ -2145,52 +2240,34 @@ class ProcessL2:
         root.attributes["PROCESSING_LEVEL"] = "2"        
         # Remaining attributes managed below...
 
+        # For completeness, flip datasets into colums in all groups
+        for grp in node.groups:
+            for ds in grp.datasets:
+                grp.datasets[ds].datasetToColumns()
+
         root.addGroup("REFLECTANCE")
         root.addGroup("IRRADIANCE")
         root.addGroup("RADIANCE")    
-
-        pyrGroup = None
-        gpsGroup = None
-        satnavGroup = None
-        ancGroupMetadata = None
+        
+        gpsGroup = None        
         for gp in node.groups:
             if gp.id.startswith("GPS"):
-                gpsGroup = gp
-            if gp.id == ("SOLARTRACKER"):
-                satnavGroup = gp
-            # if gp.id == ("SOLARTRACKER_STATUS"):
-            #     satnavGroup = gp            
-            if gp.id.startswith("PYROMETER"):
-                pyrGroup = gp
-            if gp.id.startswith("ANCILLARY_METADATA"):
-                # This copies the ancillary data from METADATA into AncillaryData so it can be
-                # interpolated with SOLARTRACKER (if it exists), at which time it is flipped back into ancGroup
-                ancGroupMetadata = gp
-                ancillaryData = AncillaryReader.ancillaryFromMetadata(gp)
-                
-                # SZA = ancGroupMetadata.datasets["SZA"].data["NONE"]                
-                temp = node.addGroup("TEMPORARY")
-                temp.copy(ancGroupMetadata)
-                # for ds in ancGroupMetadata.datasets:
-                #     temp.addDataset(ds)
-        node.removeGroup(ancGroupMetadata)
-                
-        root.addGroup("ANCILLARY")
-        node.addGroup("ANCILLARY")
+                gpsGroup = gp             
 
         # Retrieve MERRA2 model ancillary data        
         if ConfigFile.settings["bL2pGetAnc"] ==1:         
             msg = 'Model data for Wind and AOD may be used to replace blank values. Reading in model data...'
             print(msg)
             Utilities.writeLogFile(msg)  
-            modData = GetAnc.getAnc(gpsGroup)
-            if modData == None:
+            modRoot = GetAnc.getAnc(gpsGroup)
+            if modRoot == None:
                 return None
         else:
-            modData = None
+            modRoot = None
 
         # Need to either create a new ancData object, or populate the nans in the current one with the model data
-        if not ProcessL2.calculateREFLECTANCE(root, node, gpsGroup, satnavGroup, pyrGroup, ancillaryData, modData):
+        # if not ProcessL2.calculateREFLECTANCE(root, node, gpsGroup, satnavGroup, pyrGroup, ancillaryData, modRoot):
+        if not ProcessL2.calculateREFLECTANCE(root, node, modRoot):
             return None
 
         # Clean up units and push into relevant groups attributes

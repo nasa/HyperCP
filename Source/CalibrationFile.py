@@ -223,6 +223,7 @@ class CalibrationFile:
             instrumentId.startswith("SATPYR") or \
             instrumentId.startswith("SATNAV") or \
             instrumentId.startswith("$GPRMC") or \
+            instrumentId.startswith("SATTHS") or \
             instrumentId.startswith("UMTWR"):
             #    instrumentId.startswith("SATMSG") or \
             #print("not gps")

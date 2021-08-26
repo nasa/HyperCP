@@ -458,11 +458,14 @@ class ProcessL1e:
             szaData = newAncGroup.getDataset("SZA")
             # Optional:
             stationData = None
-            headingData = None
+            headingDataAnc = None
             latDataAnc = None
             lonDataAnc = None
             cloudData = None
             waveData = None
+            # Optional and may reside in SolarTracker or SATTHS group
+            pitchData = None
+            rollData = None
             # Optional, assured with MERRA2 models when selected
             saltData = None
             sstData = None
@@ -472,7 +475,7 @@ class ProcessL1e:
             if "STATION" in newAncGroup.datasets:
                 stationData = newAncGroup.getDataset("STATION")
             if "HEADING" in newAncGroup.datasets:
-                headingData = newAncGroup.getDataset("HEADING") # This HEADING derives from ancillary data file (NOT GPS)
+                headingDataAnc = newAncGroup.getDataset("HEADING") # This HEADING derives from ancillary data file (NOT GPS or pySAS)
             if "LATITUDE" in newAncGroup.datasets:
                 latDataAnc = newAncGroup.getDataset("LATITUDE")
             if "LONGITUDE" in newAncGroup.datasets:
@@ -491,27 +494,38 @@ class ProcessL1e:
                 cloudData = newAncGroup.getDataset("CLOUD")
             if "WAVE_HT" in newAncGroup.datasets:
                 waveData = newAncGroup.getDataset("WAVE_HT")
+            # Allow for the unlikely option that pitch/roll data are included in both the SolarTracker/pySAS and Ancillary datasets
+            if "PITCH" in newAncGroup.datasets:
+                pitchAncData = newAncGroup.getDataset("PITCH")
+            if "ROLL" in newAncGroup.datasets:
+                rollAncData = newAncGroup.getDataset("ROLL")
         
         if satnavGroup is not None:
             newSTGroup = root.addGroup("SOLARTRACKER")
             ProcessL1e.convertDataset(satnavGroup, "AZIMUTH", newSTGroup, "AZIMUTH")
             ProcessL1e.convertDataset(satnavGroup, "ELEVATION", newSTGroup, "ELEVATION")
-            ProcessL1e.convertDataset(satnavGroup, "HEADING", newSTGroup, "HEADING") # Use SATNAV Heading if available (not GPS COURSE)
-            ProcessL1e.convertDataset(satnavGroup, "HUMIDITY", newSTGroup, "HUMIDITY")
-            ProcessL1e.convertDataset(satnavGroup, "PITCH", newSTGroup, "PITCH")
+            # ProcessL1e.convertDataset(satnavGroup, "HEADING", newSTGroup, "HEADING") # Use SATNAV Heading if available (not GPS COURSE)
+            if "HUMIDITY" in satnavGroup.datasets:
+                ProcessL1e.convertDataset(satnavGroup, "HUMIDITY", newSTGroup, "HUMIDITY")
+                humidityData = newSTGroup.getDataset("HUMIDITY") 
             ProcessL1e.convertDataset(satnavGroup, "POINTING", newSTGroup, "POINTING")
             ProcessL1e.convertDataset(satnavGroup, "REL_AZ", newSTGroup, "REL_AZ")
-            ProcessL1e.convertDataset(satnavGroup, "ROLL", newSTGroup, "ROLL")
+            if "PITCH" in satnavGroup.datasets:
+                ProcessL1e.convertDataset(satnavGroup, "PITCH", newSTGroup, "PITCH")
+                pitchData = newSTGroup.getDataset("PITCH")
+            if "ROLL" in satnavGroup.datasets:
+                ProcessL1e.convertDataset(satnavGroup, "ROLL", newSTGroup, "ROLL")
+                rollData = newSTGroup.getDataset("ROLL")
+            headingData = None
+            if "HEADING" in satnavGroup.datasets:
+                ProcessL1e.convertDataset(satnavGroup, "HEADING", newSTGroup, "HEADING")
+                headingData = newSTGroup.getDataset("HEADING")           
 
             azimuthData = newSTGroup.getDataset("AZIMUTH")
-            elevationData = newSTGroup.getDataset("ELEVATION")
-            headingData = newSTGroup.getDataset("HEADING")
-            humidityData = newSTGroup.getDataset("HUMIDITY")
-            pitchData = newSTGroup.getDataset("PITCH")
+            elevationData = newSTGroup.getDataset("ELEVATION")            
             pointingData = newSTGroup.getDataset("POINTING")
             relAzData = newSTGroup.getDataset("REL_AZ")
-            rollData = newSTGroup.getDataset("ROLL")
-
+            
         if satmsgGroup is not None:
             newSatMSGGroup = root.addGroup("SOLARTRACKER_STATUS")
             # SATMSG (SOLARTRACKER_STATUS) has no date or time, just propogate it as is
@@ -587,12 +601,16 @@ class ProcessL1e:
             if not ProcessL1e.interpolateData(elevationData, interpData, "ELEVATION", fileName):
                 return None
             # Optional, but should all be there with the SOLAR TRACKER
-            ProcessL1e.interpolateData(azimuthData, interpData, "AZIMUTH", fileName)
-            ProcessL1e.interpolateData(headingData, interpData, "HEADING", fileName)
-            ProcessL1e.interpolateData(humidityData, interpData, "HUMIDITY", fileName)
-            ProcessL1e.interpolateData(pitchData, interpData, "PITCH", fileName)
+            ProcessL1e.interpolateData(azimuthData, interpData, "AZIMUTH", fileName)            
             ProcessL1e.interpolateData(pointingData, interpData, "POINTING", fileName)            
-            ProcessL1e.interpolateData(rollData, interpData, "ROLL", fileName)
+            if "HUMIDITY" in satnavGroup.datasets:
+                ProcessL1e.interpolateData(humidityData, interpData, "HUMIDITY", fileName)            
+            if "PITCH" in satnavGroup.datasets:
+                ProcessL1e.interpolateData(pitchData, interpData, "PITCH", fileName)
+            if "ROLL" in satnavGroup.datasets:
+                ProcessL1e.interpolateData(rollData, interpData, "ROLL", fileName)
+            if "HEADING" in satnavGroup.datasets:
+                ProcessL1e.interpolateData(headingData, interpData, "HEADING", fileName)
             
         if ancGroup is not None:
             # Required:
@@ -605,8 +623,8 @@ class ProcessL1e:
                 ProcessL1e.interpolateData(stationData, interpData, "STATION", fileName)
             if aodData:
                 ProcessL1e.interpolateData(aodData, interpData, "AOD", fileName)
-            if headingData:
-                ProcessL1e.interpolateData(headingData, interpData, "HEADING", fileName)
+            if headingDataAnc:
+                ProcessL1e.interpolateData(headingDataAnc, interpData, "HEADING", fileName)
             if latDataAnc:
                 ConfigFile.settings["bL1ePlotTimeInterp"] = 0 # Reserve lat/lon plots for actual GPS, not ancillary file
                 ProcessL1e.interpolateData(latDataAnc, interpData, "LATITUDE", fileName)
@@ -627,6 +645,10 @@ class ProcessL1e:
                 ProcessL1e.interpolateData(cloudData, interpData, "CLOUD", fileName)
             if waveData:
                 ProcessL1e.interpolateData(waveData, interpData, "WAVE_HT", fileName)
+            if "PITCH" in ancGroup.datasets:
+                ProcessL1e.interpolateData(pitchAncData, interpData, "PITCH", fileName)
+            if "ROLL" in ancGroup.datasets:
+                ProcessL1e.interpolateData(rollAncData, interpData, "ROLL", fileName)
             
         if pyrGroup is not None:
             # Optional:

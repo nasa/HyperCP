@@ -568,23 +568,33 @@ class SeaBASSWriter:
         szaData = ancGroup.getDataset("SZA")
         windData = ancGroup.getDataset("WINDSPEED")        
 
-        aodData.datasetToColumns()
-        cloudData.datasetToColumns()
+        aodData.datasetToColumns()        
         azimuthData.datasetToColumns()
         headingData.datasetToColumns()                   
         relAzData.datasetToColumns() 
         szaData.datasetToColumns() 
         windData.datasetToColumns()
 
+        # Optional fields
+        if cloudData is not None:
+            cloudData.datasetToColumns()
+
         # Ancillary group, unlike most groups, will have named data columns in datasets (i.e. not NONE)
         # This allows for multiple data arrays in one dataset (e.g. FLAGS)
-        aod = aodData.columns["AOD"]
-        cloud = cloudData.columns["CLOUD"]
+        aod = aodData.columns["AOD"]        
         azimuth = azimuthData.columns["SOLAR_AZ"]
         heading = headingData.columns["HEADING"] # Where is this from in no_tracker?        
         relAz = relAzData.columns["REL_AZ"]
         sza = szaData.columns["SZA"]
         wind = windData.columns["WINDSPEED"]
+
+        if cloudData is not None:
+            cloud = cloudData.columns["CLOUD"]
+        else:
+            cloud = np.empty((1,len(wind)))
+            cloud = cloud[0]*np.nan
+            cloud = cloud.tolist()
+
 
         # esData.datasetToColumns()
         # liData.datasetToColumns()

@@ -48,9 +48,13 @@ class AncillaryReader:
         wT = False
         S = False
         heading = False
+        speed_f_w = False
         homeAngle = False # sensor azimuth relative to heading
         cloud = False
         waveht = False
+        pitch = False
+        roll = False
+
         for ds in ancData.data:            
             # Remember, all lower case...
             if ds == "station":
@@ -144,6 +148,20 @@ class AncillaryReader:
                 Utilities.writeLogFile(msg)  
                 speed_f_w = ancData.data[ds]
                 speedUnits = ancData.variables[ds][1]
+            if ds == "pitch":
+                # heading = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                pitch = ancData.data[ds]
+                pitchUnits = ancData.variables[ds][1]
+            if ds == "roll":
+                # heading = True
+                msg = f'Found data: {ds}'                
+                print(msg)
+                Utilities.writeLogFile(msg)  
+                roll = ancData.data[ds]
+                rollUnits = ancData.variables[ds][1]
 
 
         # Generate HDFDataset
@@ -187,178 +205,184 @@ class AncillaryReader:
         if speed_f_w:
             ancillaryData.appendColumn("SPEED_F_W", speed_f_w)
             ancillaryData.attributes["SPEED_F_W_Units"]=speedUnits
+        if pitch:
+            ancillaryData.appendColumn("PITCH", pitch)
+            ancillaryData.attributes["PITCH_Units"]=pitchUnits
+        if roll:
+            ancillaryData.appendColumn("ROLL", roll)
+            ancillaryData.attributes["ROLL_Units"]=rollUnits
 
         ancillaryData.columnsToDataset()        
 
         return ancillaryData
 
         
-    @staticmethod
-    def ancillaryFromMetadata(ancGroup):
-        ''' Reads ancillary data from ANCILLARY_METADATA group and returns an HDFDataset 
-            This is called from ProcessL2 prior to merging all ancillary datasets. '''
+    # @staticmethod
+    # def ancillaryFromMetadata(ancGroup):
+    #     ''' Reads ancillary data from ANCILLARY_METADATA group and returns an HDFDataset 
+    #         This is called from ProcessL2 prior to merging all ancillary datasets. '''
 
-        print("AncillaryReader.ancillaryFromMetadata: " + ancGroup.id)        
+    #     print("AncillaryReader.ancillaryFromMetadata: " + ancGroup.id)        
 
-        # ancGroup here has already been interpolated to radiometry in L1E, so all 
-        # datasets have data columns (in data, not in columns) for Datetag and Timetag2
-        # Choose any (required) dataset to find datetime
-        lat = ancGroup.getDataset("LATITUDE")
-        lat.datasetToColumns()
-        dateTag = lat.columns["Datetag"]
-        tt2 = lat.columns["Timetag2"]
-        ancDatetime = []
-        for i, dt in enumerate(dateTag):
-            ancDatetime.append(Utilities.timeTag2ToDateTime( Utilities.dateTagToDateTime(dt),tt2[i] ))
+    #     # ancGroup here has already been interpolated to radiometry in L1E, so all 
+    #     # datasets have data columns (in data, not in columns) for Datetag and Timetag2
+    #     # Choose any (required) dataset to find datetime
+    #     lat = ancGroup.getDataset("LATITUDE")
+    #     lat.datasetToColumns()
+    #     dateTag = lat.columns["Datetag"]
+    #     tt2 = lat.columns["Timetag2"]
+    #     ancDatetime = []
+    #     for i, dt in enumerate(dateTag):
+    #         ancDatetime.append(Utilities.timeTag2ToDateTime( Utilities.dateTagToDateTime(dt),tt2[i] ))
 
-        aot = False   
-        heading = False
-        station = False
-        lat = False
-        lon = False
-        # Misnomer for ancillary metadata: sensor azimuth relative to HEADING for ancillary seabass file
-        # Not sensor relative to solar azimuth..
-        relAz = False 
-        S = False
-        solAZ = False
-        wT = False
-        SZA = False
-        wspd = False
-        cloud = False
-        waveht = False
-        speed_f_w = False
+    #     aot = False   
+    #     heading = False
+    #     station = False
+    #     lat = False
+    #     lon = False
+    #     # Misnomer for ancillary metadata: sensor azimuth relative to HEADING for ancillary seabass file
+    #     # Not sensor relative to solar azimuth..
+    #     relAz = False 
+    #     S = False
+    #     solAZ = False
+    #     wT = False
+    #     SZA = False
+    #     wspd = False
+    #     cloud = False
+    #     waveht = False
+    #     speed_f_w = False
         
-        for ds in ancGroup.datasets:  
-            if ds.startswith("AOD"):
-                # aot = True
-                # Same as AOD or Tot. Aerosol Extinction
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                aot = ancGroup.datasets[ds]
-                if len(ds) == 3:
-                    # with no waveband present, assume 550 nm
-                    wv = '550'
-                else:
-                    wv = ds[3:]  
-            if ds == "HEADING":
-                # heading = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                heading = ancGroup.datasets[ds].data["NONE"].tolist()
+    #     for ds in ancGroup.datasets:  
+    #         if ds.startswith("AOD"):
+    #             # aot = True
+    #             # Same as AOD or Tot. Aerosol Extinction
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             aot = ancGroup.datasets[ds]
+    #             if len(ds) == 3:
+    #                 # with no waveband present, assume 550 nm
+    #                 wv = '550'
+    #             else:
+    #                 wv = ds[3:]  
+    #         if ds == "HEADING":
+    #             # heading = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             heading = ancGroup.datasets[ds].data["NONE"].tolist()
 
-            if ds == "STATION":
-                # lat = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                station = ancGroup.datasets[ds].data["NONE"].tolist()
+    #         if ds == "STATION":
+    #             # lat = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             station = ancGroup.datasets[ds].data["NONE"].tolist()
 
-            if ds == "LATITUDE":
-                # lat = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                lat = ancGroup.datasets[ds].data["NONE"].tolist()
-            if ds == "LONGITUDE":
-                # lon = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                lon = ancGroup.datasets[ds].data["NONE"].tolist()
-            if ds == "REL_AZ":
-                # relAz = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                relAz = ancGroup.datasets[ds].data["NONE"].tolist()
-            if ds == "SOLAR_AZ":
-                # solAz = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                solAZ = ancGroup.datasets[ds].data["NONE"].tolist()
-            if ds == "SST":
-                # wt = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                wT = ancGroup.datasets[ds].data["NONE"].tolist()
-            if ds == "SALINITY":
-                # sal = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                S = ancGroup.datasets[ds].data["NONE"].tolist()
-            if ds == "SZA":
-                # sza = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                SZA = ancGroup.datasets[ds].data["NONE"].tolist()            
-            if ds == "WINDSPEED":
-                # wind = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                wspd = ancGroup.datasets[ds].data["NONE"].tolist()
-            # HOMEANGLE not retained
-            if ds == "CLOUD":
-                # cloud = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                cloud = ancGroup.datasets[ds].data["NONE"].tolist()
-            if ds == "WAVE_HT":
-                # waveht = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                waveht = ancGroup.datasets[ds].data["NONE"].tolist()
-            if ds == "SPEED_F_W":
-                # waveht = True
-                msg = f'Found data: {ds}'                
-                print(msg)
-                Utilities.writeLogFile(msg)  
-                speed_f_w = ancGroup.datasets[ds].data["NONE"].tolist()
+    #         if ds == "LATITUDE":
+    #             # lat = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             lat = ancGroup.datasets[ds].data["NONE"].tolist()
+    #         if ds == "LONGITUDE":
+    #             # lon = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             lon = ancGroup.datasets[ds].data["NONE"].tolist()
+    #         if ds == "REL_AZ":
+    #             # relAz = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             relAz = ancGroup.datasets[ds].data["NONE"].tolist()
+    #         if ds == "SOLAR_AZ":
+    #             # solAz = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             solAZ = ancGroup.datasets[ds].data["NONE"].tolist()
+    #         if ds == "SST":
+    #             # wt = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             wT = ancGroup.datasets[ds].data["NONE"].tolist()
+    #         if ds == "SALINITY":
+    #             # sal = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             S = ancGroup.datasets[ds].data["NONE"].tolist()
+    #         if ds == "SZA":
+    #             # sza = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             SZA = ancGroup.datasets[ds].data["NONE"].tolist()            
+    #         if ds == "WINDSPEED":
+    #             # wind = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             wspd = ancGroup.datasets[ds].data["NONE"].tolist()
+    #         # HOMEANGLE not retained
+    #         if ds == "CLOUD":
+    #             # cloud = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             cloud = ancGroup.datasets[ds].data["NONE"].tolist()
+    #         if ds == "WAVE_HT":
+    #             # waveht = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             waveht = ancGroup.datasets[ds].data["NONE"].tolist()
+    #         if ds == "SPEED_F_W":
+    #             # waveht = True
+    #             msg = f'Found data: {ds}'                
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)  
+    #             speed_f_w = ancGroup.datasets[ds].data["NONE"].tolist()
 
-        # Generate HDFDataset
-        ancillaryData = HDFDataset()
-        ancillaryData.id = "AncillaryData"
-        ancillaryData.attributes = ancGroup.attributes.copy()
-        ancillaryData.appendColumn("DATETIME", ancDatetime)
-        if aot:
-            ancillaryData.appendColumn("AOD", aot)
-            ancillaryData.attributes["AOD_wavelength"] = wv
-        if heading:
-            ancillaryData.appendColumn("HEADING", heading)
-        if station:
-            ancillaryData.appendColumn("STATION", station)
-        if lat:
-            ancillaryData.appendColumn("LATITUDE", lat)
-        if lon:
-            ancillaryData.appendColumn("LONGITUDE", lon)
-        if relAz:
-            ancillaryData.appendColumn("REL_AZ", relAz)
-        if S:
-            ancillaryData.appendColumn("SALINITY", S)
-        if solAZ:
-            ancillaryData.appendColumn("SOLAR_AZ", solAZ)
-        if wT:
-            ancillaryData.appendColumn("SST", wT)
-        if SZA:
-            ancillaryData.appendColumn("SZA", SZA)
-        if wspd:
-            ancillaryData.appendColumn("WINDSPEED", wspd)
-        if cloud:
-            ancillaryData.appendColumn("CLOUD", cloud)
-        if waveht:
-            ancillaryData.appendColumn("WAVE_HT", waveht)
-        if speed_f_w:
-            ancillaryData.appendColumn("SPEED_F_W", waveht)
+    #     # Generate HDFDataset
+    #     ancillaryData = HDFDataset()
+    #     ancillaryData.id = "AncillaryData"
+    #     ancillaryData.attributes = ancGroup.attributes.copy()
+    #     ancillaryData.appendColumn("DATETIME", ancDatetime)
+    #     if aot:
+    #         ancillaryData.appendColumn("AOD", aot)
+    #         ancillaryData.attributes["AOD_wavelength"] = wv
+    #     if heading:
+    #         ancillaryData.appendColumn("HEADING", heading)
+    #     if station:
+    #         ancillaryData.appendColumn("STATION", station)
+    #     if lat:
+    #         ancillaryData.appendColumn("LATITUDE", lat)
+    #     if lon:
+    #         ancillaryData.appendColumn("LONGITUDE", lon)
+    #     if relAz:
+    #         ancillaryData.appendColumn("REL_AZ", relAz)
+    #     if S:
+    #         ancillaryData.appendColumn("SALINITY", S)
+    #     if solAZ:
+    #         ancillaryData.appendColumn("SOLAR_AZ", solAZ)
+    #     if wT:
+    #         ancillaryData.appendColumn("SST", wT)
+    #     if SZA:
+    #         ancillaryData.appendColumn("SZA", SZA)
+    #     if wspd:
+    #         ancillaryData.appendColumn("WINDSPEED", wspd)
+    #     if cloud:
+    #         ancillaryData.appendColumn("CLOUD", cloud)
+    #     if waveht:
+    #         ancillaryData.appendColumn("WAVE_HT", waveht)
+    #     if speed_f_w:
+    #         ancillaryData.appendColumn("SPEED_F_W", waveht)
         
-        ancillaryData.columnsToDataset()        
+    #     ancillaryData.columnsToDataset()        
 
-        return ancillaryData
+    #     return ancillaryData
 
