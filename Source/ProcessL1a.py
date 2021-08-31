@@ -60,6 +60,9 @@ class ProcessL1a:
         for key in calibrationMap:
             cf = calibrationMap[key]
             gp = contextMap[cf.id]
+            # Don't add contexts that did not match any data in RawFileReader
+            if 'CalFileName' not in gp.attributes:
+                continue
             gp.attributes["InstrumentType"] = cf.instrumentType
             gp.attributes["Media"] = cf.media
             gp.attributes["MeasMode"] = cf.measMode
