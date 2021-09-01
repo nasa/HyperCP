@@ -500,11 +500,11 @@ class ProcessL1c:
 
             # Check for angles spanning north
             if sunAzimuth[index] > sasAzimuth[index]: # sasAzimuth is now accurate regardless of SolarTracker or NoTracker
-                hiAng = sunAzimuth[index] + offset
+                hiAng = sunAzimuth[index]
                 loAng = sasAzimuth[index] + offset
             else:
                 hiAng = sasAzimuth[index] + offset
-                loAng = sunAzimuth[index] + offset
+                loAng = sunAzimuth[index]
             # Choose the smallest angle between them
             if hiAng-loAng > 180:
                 relAzimuthAngle = 360 - (hiAng-loAng)

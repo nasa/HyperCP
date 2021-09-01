@@ -100,8 +100,8 @@ class RawFileReader:
                                     gp.attributes["CalFileName"] = key
                                     gp.attributes["FrameTag"] = cf.id
 
-                                # if key.startswith('SATPYR'):
-                                    # print('curious...')
+                                if key.startswith('SATPYR'):
+                                    print('curious...')
 
                                 try:
                                     num = cf.convertRaw(msg, gp)

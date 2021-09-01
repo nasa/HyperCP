@@ -189,8 +189,8 @@ class ProcessL2:
                     # convert to surface reflectance ρ = π * Rrs
                     ρ720.append(ρSlice[k][-1]) # Using current element/slice [-1]
 
-            if not ρ720:
-                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+            # if not ρ720:
+                # QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
             ρ1 = sp.interpolate.interp1d(x,ρ720)(720)
             F01 = sp.interpolate.interp1d(wavelength,F0)(720)
             ρ780 = []
@@ -214,11 +214,16 @@ class ProcessL2:
                     x.append(float(k))
                     ρ870.append(ρSlice[k][-1])
             if not ρ870:
-                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
-            ρ3 = sp.interpolate.interp1d(x,ρ870)(870)
-            F03 = sp.interpolate.interp1d(wavelength,F0)(870)
+                # QtWidgets.QMessageBox(QtWidgets.QMessageBox.Critical, "Error", "NIR wavebands unavailable")
+                msg = 'No data found at 870 nm'
+                print(msg)
+                Utilities.writeLogFile(msg) 
+            else:
+                ρ3 = sp.interpolate.interp1d(x,ρ870)(870)
+                F03 = sp.interpolate.interp1d(wavelength,F0)(870)
             
-            if ρ1 < threshold:
+            # Reverts to primary mode even on threshold trip in cases where no 870nm available
+            if ρ1 < threshold or not ρ870:
                 ε = (α1*ρ2 - ρ1)/(α1-1)                
                 εnLw = (α1*ρ2*F02 - ρ1*F01)/(α1-1) 
                 msg = f'offset(rrs) = {ε}; offset(nLw) = {εnLw}'
