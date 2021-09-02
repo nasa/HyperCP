@@ -43,7 +43,7 @@ All of the package dependencies are listed in the environment.yaml file included
 prompt$ conda create -f environment.yaml
 ```
 
-and follow the prompts to install the additional package dependencies on your machine within the new virtual environment. When completed you should be in the virtual environment and ready to run the package. To return to the environment, navigate to the project directory again and type
+and follow the prompts to install the additional package dependencies on your machine within the new virtual environment. When completed you should be in the virtual environment and ready to run the package. To return to the environment later before launching the program, type
 
 ```
 prompt$ conda activate HyperInSPACE_env
@@ -61,7 +61,7 @@ and the prompt should reflect the shift:
 <center><img src="Data/banner.jpg" alt="banner"></center>
 <!-- ![test](Data/banner.jpg) -->
 
-HyperInSPACE is a Main-View-Controller Python package with a pyQt5 GUI that can be launched in several ways, such as by navigating to the program folder on the command line and typing the following command after the prompt:
+HyperInSPACE is a Main-View-Controller Python package with a GUI that can be launched in several ways, such as by navigating to the project folder on the command line and typing
 ```
 (HyperInSPACE) prompt$ python Main.py
 ```
@@ -71,11 +71,9 @@ The following sub-directories will be created automatically (if not present) whe
 
 - Config - Configuration and instrument files (by subdirectory - auto-created), SeaBASS header configuration files, Main view configuration file
 - Logs - Most command line output messages generated during processing are captured for later reference in .log text files here
-- Plots - A variety of optional plotting routines are included which create name-appropriate sub-directories (i.e. 'L1C_Anoms', 'L1D', 'L1E', 'L2', 'L2_Spectral_Filter'). As with the Data, this path for outputting plots is optional and will be overwritten by choosing an alternate Data/Plots parent directory (see below).
-- Data - This directory now comes unpacked in the distribution. By default, it contains only Pope & Fry/Smith & Baker water absorption properties, Thuillier and satellite spectral response functions, banner images for the GUI, and the Zhang glint correction database. This is also the optional fallback location for input and/or output radiometry data, though setting up separate locations for field data is highly recommended (see below).
+- Plots - A variety of optional plotting routines are included which create name-appropriate sub-directories (i.e. 'L1C_Anoms', 'L1D', 'L1E', 'L2', 'L2_Products','L2_Spectral_Filter'). As with the Data, this path for outputting plots is optional and will be overwritten by choosing an alternate Data/Plots parent directory (see below).
+- Data - This directory now comes unpacked in the distribution. By default, it contains only files for seawater absorption properties, Thuillier solar irradiance, satellite sensor spectral response functions, banner images for the GUI, and the Zhang glint correction database. This is also the optional fallback location for input and/or output radiometry data, though using separate locations for field data is recommended (see below).
 - Source - This directory (which comes unpacked with the distribution) holds the majority of the Python source code.
-
-(Note: Data, Plots, and Logs directories are not tracked with git.)
 
 ### Database download
 When you first launch the software, it will need to download a large (2.3 GB) database (Zhang_rho_db.mat) for use in glint correction. If this database is not found in Data, a dialog window will appear before the Main.py GUI with guidance on how to proceed. If this download should fail for any reason, further instructions will be given at the command line terminal where Main.py was launched.
