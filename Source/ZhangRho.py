@@ -23,14 +23,14 @@ def load_db(db_path=db_path):
     global db, quads, sdb, vdb
     global skyrad0, sunrad0, rad_boa_sca, rad_boa_vec
     
-    db = xr.open_dataset(db_path, group='db')
-    quads = xr.open_dataset(db_path, group='quads')
-    sdb = xr.open_dataset(db_path, group='sdb')
-    vdb = xr.open_dataset(db_path, group='vdb')
-    skyrad0 = xr.open_dataset(db_path)['skyrad0']
-    sunrad0 = xr.open_dataset(db_path)['sunrad0']
-    rad_boa_sca = xr.open_dataset(db_path)['Radiance_BOA_sca']
-    rad_boa_vec = xr.open_dataset(db_path)['Radiance_BOA_vec']
+    db = xr.open_dataset(db_path, group='db', engine='netcdf4')
+    quads = xr.open_dataset(db_path, group='quads', engine='netcdf4')
+    sdb = xr.open_dataset(db_path, group='sdb', engine='netcdf4')
+    vdb = xr.open_dataset(db_path, group='vdb', engine='netcdf4')
+    skyrad0 = xr.open_dataset(db_path, engine='netcdf4')['skyrad0']
+    sunrad0 = xr.open_dataset(db_path, engine='netcdf4')['sunrad0']
+    rad_boa_sca = xr.open_dataset(db_path, engine='netcdf4')['Radiance_BOA_sca']
+    rad_boa_vec = xr.open_dataset(db_path, engine='netcdf4')['Radiance_BOA_vec']
 
 def my_sph2cart(azm, zen, r=1):
     """
