@@ -22,7 +22,7 @@ class GetAnc:
             netrcFile = os.path.join(home,'_netrc')
         else: 
             netrcFile = os.path.join(home,'.netrc')
-            os.chmod(netrcFile, stat.S_IRUSR | stat.S_IWUSR)
+        os.chmod(netrcFile, stat.S_IRUSR | stat.S_IWUSR)
         if not os.path.exists(netrcFile):
             with open(netrcFile, 'w') as fo:
                 fo.write(f'machine urs.earthdata.nasa.gov login {usr} password {pwd}\n')
