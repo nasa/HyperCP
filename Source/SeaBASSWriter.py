@@ -199,20 +199,12 @@ class SeaBASSWriter:
 
         # Change field names for SeaBASS compliance
         bands = list(dsCopy.dtype.names)    
-        ls = ['date','time','lat','lon','RelAz','SZA','AOT','cloud','wind']
-        # ls[4]='SAZ'
-        # ls[5]='heading'    # This is SAS -> SHIP_TRUE, not GPS    
-        # pointing         # no SeaBASS field for sensor azimuth
+        ls = ['date','time','lat','lon','RelAz','SZA','AOT','cloud','wind']        
 
         if dtype == 'rrs':
             fieldName = 'Rrs'
         elif dtype == 'es':
             fieldName = 'Es'
-        # elif dtype == 'li':
-        #     fieldName = 'Lsky'
-        # elif dtype == 'lt':
-        #     fieldName = 'Lt'        
-        # fieldsLineStr = ','.join(ls[:lenNonRad] + [f'{fieldName}{band}' for band in ls[lenNonRad:]])
         
         if dtype=='rrs':
             fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands] \
@@ -350,26 +342,19 @@ class SeaBASSWriter:
 
             azimuthData = satnavGroup.getDataset("AZIMUTH")
             headingData = satnavGroup.getDataset("HEADING") # SAS_TRUE & SHIP_TRUE
-            # pitchData = satnavGroup.getDataset("PITCH")
             pointingData = satnavGroup.getDataset("POINTING")
-            # rollData = satnavGroup.getDataset("ROLL")
             relAzData = satnavGroup.getDataset("REL_AZ")
             elevationData = satnavGroup.getDataset("ELEVATION")
 
             azimuthData.datasetToColumns()
             headingData.datasetToColumns()
-            # pitchData.datasetToColumns()
-            pointingData.datasetToColumns()
-            # rollData.datasetToColumns()            
+            pointingData.datasetToColumns()           
             relAzData.datasetToColumns() 
             elevationData.datasetToColumns() 
 
             azimuth = azimuthData.columns["SUN"]
-            shipTrue = headingData.columns["SHIP_TRUE"]
-            # sasTrue = headingData.columns["SAS_TRUE"]
-            # pitch = pitchData.columns["SAS"]
+            heading = headingData.columns["SHIP_TRUE"]
             rotator = pointingData.columns["ROTATOR"]
-            # roll = rollData.columns["SAS"]
             relAz = relAzData.columns["REL_AZ"]
             elevation = elevationData.columns["SUN"]
             sza = []
@@ -384,21 +369,13 @@ class SeaBASSWriter:
             liData.columns["AZIMUTH"] = azimuth
             ltData.columns["AZIMUTH"] = azimuth
 
-            esData.columns["SHIP_TRUE"] = shipTrue # From SAS, not GPS...
-            liData.columns["SHIP_TRUE"] = shipTrue
-            ltData.columns["SHIP_TRUE"] = shipTrue
-
-            # esData.columns["PITCH"] = pitch
-            # liData.columns["PITCH"] = pitch
-            # ltData.columns["PITCH"] = pitch
+            esData.columns["SHIP_TRUE"] = heading # From SAS, not GPS...
+            liData.columns["SHIP_TRUE"] = heading
+            ltData.columns["SHIP_TRUE"] = heading
             
             esData.columns["ROTATOR"] = rotator
             liData.columns["ROTATOR"] = rotator
-            ltData.columns["ROTATOR"] = rotator
-            
-            # esData.columns["ROLL"] = roll
-            # liData.columns["ROLL"] = roll
-            # ltData.columns["ROLL"] = roll
+            ltData.columns["ROTATOR"] = rotator            
 
             esData.columns["REL_AZ"] = relAz
             liData.columns["REL_AZ"] = relAz
@@ -423,7 +400,13 @@ class SeaBASSWriter:
             relAzData.datasetToColumns() 
             szaData.datasetToColumns() 
 
-            shipTrue = headingData.columns["NONE"]            
+            if headingData is not None:
+                heading = headingData.columns["HEADING"]
+            else:
+                heading = np.empty((1,len(wind)))
+                heading = heading[0]*np.nan
+                heading = heading.tolist()
+
             relAz = relAzData.columns["NONE"]
             sza = szaData.columns["NONE"]
 
@@ -431,9 +414,9 @@ class SeaBASSWriter:
             liData.datasetToColumns()
             ltData.datasetToColumns()
             
-            esData.columns["SHIP_TRUE"] = shipTrue 
-            liData.columns["SHIP_TRUE"] = shipTrue
-            ltData.columns["SHIP_TRUE"] = shipTrue
+            esData.columns["SHIP_TRUE"] = heading 
+            liData.columns["SHIP_TRUE"] = heading
+            ltData.columns["SHIP_TRUE"] = heading
 
             esData.columns["REL_AZ"] = relAz
             liData.columns["REL_AZ"] = relAz
@@ -518,7 +501,6 @@ class SeaBASSWriter:
         liData.datasetToColumns()
         ltData.datasetToColumns()
         
-
         # Truncate wavebands to desired output
         esCols = esData.columns
         esColsD = esDataDelta.columns
@@ -539,14 +521,10 @@ class SeaBASSWriter:
         rrsData.columns = rrsCols
         rrsDataDelta.columns = rrsColsD
 
-        esData.columns["LATITUDE"] = latpos
-        # esDataDelta.columns["LATITUDE"] = latpos        
+        esData.columns["LATITUDE"] = latpos  
         rrsData.columns["LATITUDE"] = latpos
-        # rrsDataDelta.columns["LATITUDE"] = latpos
         esData.columns["LONGITUDE"] = lonpos
-        # esDataDelta.columns["LONGITUDE"] = lonpos        
         rrsData.columns["LONGITUDE"] = lonpos
-        # rrsDataDelta.columns["LONGITUDE"] = lonpos
         liData.columns["LATITUDE"] = latpos
         ltData.columns["LATITUDE"] = latpos
         liData.columns["LONGITUDE"] = lonpos
@@ -563,43 +541,37 @@ class SeaBASSWriter:
         aodData = ancGroup.getDataset("AOD")
         cloudData = ancGroup.getDataset("CLOUD")
         azimuthData = ancGroup.getDataset("SOLAR_AZ")
-        headingData = ancGroup.getDataset("HEADING") # GPS        
+        headingData = ancGroup.getDataset("HEADING")       
         relAzData = ancGroup.getDataset("REL_AZ")        
         szaData = ancGroup.getDataset("SZA")
         windData = ancGroup.getDataset("WINDSPEED")        
 
         aodData.datasetToColumns()        
-        azimuthData.datasetToColumns()
-        headingData.datasetToColumns()                   
+        azimuthData.datasetToColumns()                           
         relAzData.datasetToColumns() 
         szaData.datasetToColumns() 
         windData.datasetToColumns()
 
-        # Optional fields
-        if cloudData is not None:
-            cloudData.datasetToColumns()
-
-        # Ancillary group, unlike most groups, will have named data columns in datasets (i.e. not NONE)
-        # This allows for multiple data arrays in one dataset (e.g. FLAGS)
         aod = aodData.columns["AOD"]        
         azimuth = azimuthData.columns["SOLAR_AZ"]
-        heading = headingData.columns["HEADING"] # Where is this from in no_tracker?        
         relAz = relAzData.columns["REL_AZ"]
         sza = szaData.columns["SZA"]
         wind = windData.columns["WINDSPEED"]
 
         if cloudData is not None:
+            cloudData.datasetToColumns()
             cloud = cloudData.columns["CLOUD"]
         else:
             cloud = np.empty((1,len(wind)))
             cloud = cloud[0]*np.nan
             cloud = cloud.tolist()
-
-
-        # esData.datasetToColumns()
-        # liData.datasetToColumns()
-        # ltData.datasetToColumns()
-        # rrsData.datasetToColumns()
+        if headingData is not None:
+            headingData.datasetToColumns()
+            heading = headingData.columns["HEADING"]
+        else:
+            heading = np.empty((1,len(wind)))
+            heading = heading[0]*np.nan
+            heading = heading.tolist()        
         
         # No need to add all ancillary to the uncertainty deltas
         rrsData.columns["AOD"] = aod        

@@ -1,8 +1,7 @@
-v1.0.9 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
+v1.0.10 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
 ---
 
 Next priorities:
-* Confirm pySAS/UMTower functional to L2 (EXPORTS2021)
 * Integration time issue with HyperOCRs; develop/add correction (in cal file? another level?)
     * Do other users of SeaBird HOCRs see int. time response issues?
     * Contact me for further info regarding integration time uncertainty
@@ -29,6 +28,12 @@ Ideas and To-Dos:
     * To process
 * Export python scripts to d/l satellite imagery to match
 ___________________________________________________________
+---
+v1.0.9 2021-09-01: DAA
+
+2021-09-01:
+* Adapt for HyperOCRs that do not extend into NIR beyond ~800 nm
+
 2021-08-19:
 * Build in capability for pitch/roll in ancillary file
 * Facilitate SATTHS (tilt-heading sensor) as separate data source (SolarTracker had it merged, but not pySAS)

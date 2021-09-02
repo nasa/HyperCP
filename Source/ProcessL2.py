@@ -347,7 +347,7 @@ class ProcessL2:
                             gp.datasets[ds].columns["Timetag2"].append(timeTag)
 
         deleteKey = []
-        for k in esXSlice: # loop through wavebands as key 'k'
+        for k in esXSlice: # loop through wavebands 
             if (k in liXSlice) and (k in ltXSlice):
                 
                 # Initialize the new dataset if this is the first slice
@@ -372,7 +372,7 @@ class ProcessL2:
                             newNIRData.columns['NIR_offset'] = [] # not used until later; highly unpythonic
 
                 # At this waveband (k); still using complete wavelength set
-                es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and root
+                es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and root                
                 li = liXSlice[k][0]
                 lt = ltXSlice[k][0]
                 f0  = F0[k]
@@ -384,7 +384,7 @@ class ProcessL2:
                 # Calculate the remote sensing reflectance
                 if RuddickRho:                    
                     lw = (lt - (rhoScalar * li))
-                    rrs = lw / es
+                    rrs = lw / es                    
 
                     # Rrs uncertainty
                     rrsDelta = rrs * ( 
@@ -476,8 +476,6 @@ class ProcessL2:
                 if sensor == 'HYPER':
                     del newLwData.columns[key]
                     del newRhoHyper.columns[key]
-
-
         
         newESData.columnsToDataset() 
         newLIData.columnsToDataset()
@@ -1023,175 +1021,6 @@ class ProcessL2:
 
             ancGroup.datasets[ds].columnsToDataset()
 
-        # windDataset.columnsToDataset()
-        # aodDataset.columnsToDataset()
-        # saltDataset.columnsToDataset()
-        # sstDataset.columnsToDataset()
-        # if cloud:
-        #     cloudDataset.columnsToDataset()
-        # if wave:
-        #     waveDataset.columnsToDataset()
-        # if station:
-        #     stationDataset.columnsToDataset()      
-
-        
-        # # These are required and have been filled in with field, model, and/or default values
-        # windDataset = ancGroup.addDataset("WINDSPEED")
-        # aodDataset = ancGroup.addDataset("AOD")
-        # saltDataset = ancGroup.addDataset("SAL")
-        # sstDataset = ancGroup.addDataset("SST")  
-
-        # # Only concerned here with datasets from the Ancillary Data File (SeaBASS file in Main Window)
-        # # Additional ancillary data added after returning from this interp method
-
-        # # Optional datasets; CLOUD and WAVE are basically place holders as of ver 1.0.beta;
-        # # (i.e. no implementation in Rho corrections)
-        # cloud = False
-        # wave = False
-        # station = False
-
-        # # Convert radData date and time to datetime and then to seconds for interpolation
-        # radTime = radData.data["Timetag2"].tolist()
-        # radSeconds = []
-        # radDatetime = []
-        # for i, radDate in enumerate(radData.data["Datetag"].tolist()):                
-        #     radDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(radDate),radTime[i]))
-        #     radSeconds.append((radDatetime[i]-epoch).total_seconds())
-        
-        # if ancData:
-        #     if "CLOUD" in ancData.columns:
-        #         cloudDataset = ancGroup.addDataset("CLOUD")
-        #     if "WAVE_HT" in ancData.columns:
-        #         waveDataset = ancGroup.addDataset("WAVE_HT")
-        #     if "STATION" in ancData.columns:
-        #         stationDataset = ancGroup.addDataset("STATION")
-
-        #     ancGroup.copyAttributes(ancData)    
-        #     # These are the entire ancillary records for the cruise
-        #     dateTime = ancData.getColumn("DATETIME")[0]
-        #     if "WINDSPEED" in ancData.columns:
-        #         wind = ancData.getColumn("WINDSPEED")[0]
-        #     if "SALINITY" in ancData.columns:
-        #         salt = ancData.getColumn("SALINITY")[0]
-        #     if "SST" in ancData.columns:
-        #         sst = ancData.getColumn("SST")[0]
-        #     if "CLOUD" in ancData.columns:
-        #         cloud = ancData.getColumn("CLOUD")[0]
-        #     if "WAVE_HT" in ancData.columns:
-        #         wave = ancData.getColumn("WAVE_HT")[0]
-        #     if "STATION" in ancData.columns:
-        #         station = ancData.getColumn("STATION")[0]
-        #     # Convert ancillary datetime to seconds for interpolation            
-        #     ancSeconds = [(i-epoch).total_seconds() for i in dateTime] 
-        # else:
-        #     ancData = None
-        #     msg = "Ancillary field data missing; reverting to ancillary model or defaults"
-        #     print(msg)
-        #     Utilities.writeLogFile(msg)
-
-        # # Test for any field ancillary data in timeframe of rad time   
-        # if ancData and (max(ancSeconds) <= min(radSeconds) or min(ancSeconds) >= max(radSeconds)):
-        #     ancData = None
-        #     msg = "Ancillary field data do not intersect radiometric data; reverting to ancillary model or defaults"
-        #     print(msg)
-        #     Utilities.writeLogFile(msg)  
-
-        # # Create a framework to hold combined ancillary data...
-        # ancInRadSeconds = []
-        # windFlag = []
-        # saltFlag = []
-        # sstFlag = []
-        # aodFlag = []        
-        # windInRad = []
-        # salt = []
-        # sst = []
-        # aodInRad = []
-        # stationInRad = []
-        # if cloud:
-        #     cloudFlag = []
-        #     cloudInRad = []
-        # if wave:
-        #     waveFlag = []
-        #     waveInRad = []
-        # if station:
-        #     # stationFlag = []
-        #     stationInRad = []
-        # # Populate the fields to the size of the radiometric dataset with NaNs (or flag placeholders)
-        # for i, value in enumerate(radSeconds):
-        #     ancInRadSeconds.append(value)
-        #     # HDF5 deliberately makes including string vectors difficult
-        #     # These will all be changed to floats or ints in HDFDataset.columnsToDataset
-        #     windFlag.append('undetermined')                   
-        #     saltFlag.append('undetermined')                   
-        #     sstFlag.append('undetermined')                   
-        #     aodFlag.append('undetermined')                             
-        #     windInRad.append(np.nan)
-        #     salt.append(np.nan)
-        #     sst.append(np.nan)
-        #     aodInRad.append(np.nan)            
-        #     if cloud:
-        #         cloudFlag.append('field')
-        #         cloudInRad.append(np.nan)
-        #     if wave:
-        #         waveFlag.append('field')
-        #         waveInRad.append(np.nan)
-        #     if station:
-        #         # HDF5 deliberately makes including string vectors difficult
-        #         stationInRad.append(np.nan)
-            
-        # # Populate with nearest field data if possible
-        # if ancData:
-        #     for i, value in enumerate(ancInRadSeconds): # step through InRad...
-        #         idx = Utilities.find_nearest(ancSeconds,value) # ...identify from entire anc record...
-        #         # Make sure the time difference between field anc and rad is <= 1hr
-        #         if abs(ancSeconds[idx] - value)/60/60 < 1:  # ... and place nearest into InRad variable
-        #             windInRad[i] = wind[idx]                    
-        #             salt[i] = salt[idx]
-        #             sst[i] = sst[idx]
-        #             # Label the data source in the flag
-        #             windFlag[i] = 'field'
-        #             saltFlag[i] = 'field'
-        #             sstFlag[i] = 'field'                    
-        #             if cloud:
-        #                 cloudInRad[i] = cloud[idx]
-        #             if wave:
-        #                 waveInRad[i] = wave[idx]
-        #             if station:
-        #                 # if not np.isnan(station[idx]):
-        #                 #     # This will be converted back to a float in columnsToDataset
-        #                 #     stationTidy = str(round(station[idx]*100)/100)
-        #                 #     stationInRad[i] = stationTidy
-        #                 stationInRad[i] = station[idx]
-        
-        # # Tallies
-        # msg = f'Field wind data has {np.isnan(windInRad).sum()} NaNs out of {len(windInRad)} prior to using model data'                
-        # print(msg)
-        # Utilities.writeLogFile(msg)
-        # msg = f'Field salt data has {np.isnan(salt).sum()} NaNs out of {len(salt)} prior to using model data'                
-        # print(msg)
-        # Utilities.writeLogFile(msg)
-        # msg = f'Field sst data has {np.isnan(sst).sum()} NaNs out of {len(sst)} prior to using model data'                
-        # print(msg)
-        # Utilities.writeLogFile(msg)
-        # msg = f'Field aod data has {np.isnan(aodInRad).sum()} NaNs out of {len(aodInRad)} prior to using model data'                
-        # print(msg)
-        # Utilities.writeLogFile(msg)
-        # if cloud:
-        #     msg = f'Field cloud data has {np.isnan(cloudInRad).sum()} NaNs out of {len(cloudInRad)}'
-        #     print(msg)
-        #     Utilities.writeLogFile(msg)
-        # if wave:
-        #     msg = f'Field wave data has {np.isnan(waveInRad).sum()} NaNs out of {len(waveInRad)}'
-        #     print(msg)
-        #     Utilities.writeLogFile(msg)
-        # if station:
-        #     # count = stationInRad.count('underway')
-        #     msg = f'Field station data has {np.isnan(stationInRad).sum()} non-stations out of {len(stationInRad)}'
-        #     print(msg)
-        #     Utilities.writeLogFile(msg)
-
-            
-
     @staticmethod
     def sliceAveHyper(y, hyperSlice):
         ''' Take the slice mean of the lowest X% of hyperspectral slices '''
@@ -1219,20 +1048,7 @@ class ProcessL2:
             newAncGroup = root.getGroup('ANCILLARY')
         else:
             newAncGroup = root.addGroup('ANCILLARY')
-        # newAncGroup.copy(ancGroup)
-
-        # # Build a simple dictionary of datasets to reference from (input) ancGrop
-        # ancDict = collections.OrderedDict()
-        # for dsName in ancGroup.datasets:
-        #     ds = ancGroup.datasets[dsName] # Full HDF dataset (columns & data)
-        #     ancDict[dsName] = ds # assign the data and columns within the dataset
-
-        # for ds in ancDict: 
-        #     if not newAncGroup.getDataset(ds):
-        #         newDS = newAncGroup.addDataset(ds)
-        #     else:
-        #         newDS = newAncGroup.getDataset(ds)
-        # for ds in newAncGroup.datasets:
+        
         for ds in ancGroup.datasets:
             if newAncGroup.getDataset(ds):
                 newDS = newAncGroup.getDataset(ds)
@@ -1568,13 +1384,9 @@ class ProcessL2:
                 Utilities.writeLogFile(msg) 
                 AODXSlice = 0.2
             if SZAXSlice > 60:
-                # SZA>60 should be prevented in the ConfigWindow now anyway. Redundant...
-                # msg = f'SZA = {SZAXSlice}. Maximum Solar Zenith Reached. Setting to 60'
-                # SZA is too important to the model. If it's out of bounds, skip the record...
                 msg = f'SZA = {SZAXSlice}. Maximum Solar Zenith Exceeded. Aborting slice.'
                 print(msg)
                 Utilities.writeLogFile(msg) 
-                # SZAXSlice = 60                
                 return False
             if min(wavelength) < 350 or max(wavelength) > 1000:
                 msg = f'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'

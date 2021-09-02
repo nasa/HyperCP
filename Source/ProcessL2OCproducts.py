@@ -252,8 +252,18 @@ class ProcessL2OCproducts():
             wavelength = np.array([float(i) for i in waveStr])
             Rrs = np.array(values[3:])
             
-            T = Ancillary.datasets["SST"].columns["SST"]
-            S = Ancillary.datasets["SAL"].columns["SAL"]
+            # if 'SST' in Ancillary.datasets:
+            T = Ancillary.datasets["SST"].columns["SST"]                
+            # else:
+                # msg = "No SST found in ancillary data. Setting to 15C"
+                # print(msg)
+                # Utilities.writeLogFile(msg)                              
+            # if 'SAL' in Ancillary.datasets:
+            S = Ancillary.datasets["SALINITY"].columns["SALINITY"]
+            # else:
+            #     msg = "No SAL found in ancillary data. Setting to 32psu"
+            #     print(msg)
+            #     Utilities.writeLogFile(msg)                 
 
             # Maximum range based on P&F/S&B
             minMax = [380, 800]
