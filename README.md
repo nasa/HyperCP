@@ -35,28 +35,26 @@ Acknowledgements: N.Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/d
 
 Clone this repository (branch: "master") to a convenient directory on your computer. When HyperInSPACE/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved into them as described below. No system files will be changed.
 
-Requires Python 3.X installed on a Linux, MacOS, or Windows computer. The <a href='https://www.anaconda.com/'>Anaconda</a> distribution is encouraged. (If you are unfamiliar with Anaconda, a nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. If you are running a minimal, bootstrap distribution such as Miniconda, several additional packages may be needed including: scipy, matplotlib, pyqt5, h5py, fpdf, and requests.)
+HyperInSPACE requires Python 3.X installed on a Linux, MacOS, or Windows computer. The <a href='https://www.anaconda.com/'>Anaconda</a> distribution is encouraged. (If you are unfamiliar with Anaconda, a nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk. 
 
-HDF5 data files will be read and written using the h5py module (2.9.0 at the time of writing) included in a standard Anaconda Python package. The Zhang et al. (2017) sky/sunglint correction also requires Xarray, which requires installation (complete details here: http://xarray.pydata.org/en/stable/installing.html). To install Xarray with Anaconda:
+All of the package dependencies are listed in the environment.yaml file included with the package. To make sure you have all of the necessary dependencies, navigate to the HyperInSPACE directory and type
+
 ```
-prompt$ conda install xarray dask netCDF4 bottleneck
+prompt$ conda create -f environment.yaml
 ```
- Utilization of <a href='https://gmao.gsfc.nasa.gov/'>GMAO</a> atmospheric models for use in the Zhang et al. (2017) glint correction and filling in environmental conditions not otherwise provided in field logs will require a user account on the <a href='https://earthdata.nasa.gov/'>NASA EARTHDATA</a> server. These are the same credentials used to download satellite imagery from oceancolor.gsfc.nasa.gov. New profiles can be created here: https://urs.earthdata.nasa.gov/users/new (but HyperInSPACE will prompt and link you when run). The Pysolar module (https://anaconda.org/conda-forge/pysolar) must be installed unless the raw data includes solar geometries (e.g. SolarTracker with SATNAV and associated device file as described below). To install Pysolar with Anaconda:
+
+and follow the prompts to install the additional package dependencies on your machine within the new virtual environment. When completed you should be in the virtual environment and ready to run the package. To return to the environment, navigate to the project directory again and type
+
 ```
-prompt$ conda install -c conda-forge pysolar
+prompt$ conda activate HyperInSPACE_env
 ```
-To generate PDF reports for each file processed at Level-2, the package fpdf will need to be installed:
+
+and the prompt should reflect the shift:
+
 ```
-prompt$ pip install fpdf
+(HyperInSPACE_env) prompt$
 ```
-The new (v1.0.5) Anomaly Analysis tool requires pyqtgraph (http://www.pyqtgraph.org/) which can be installed with pip:
-```
-prompt$ pip install pyqtgraph
-```
-or conda
-```
-prompt$ conda install -c conda-forge pyqtgraph
-```
+
 ---
 ## Launching
 
@@ -65,7 +63,7 @@ prompt$ conda install -c conda-forge pyqtgraph
 
 HyperInSPACE is a Main-View-Controller Python package with a pyQt5 GUI that can be launched in several ways, such as by navigating to the program folder on the command line and typing the following command after the prompt:
 ```
-prompt$ python Main.py
+(HyperInSPACE) prompt$ python Main.py
 ```
 However you launch the GUI, *watch for important feedback at the command line terminal* in addition to informational GUI windows.
 
