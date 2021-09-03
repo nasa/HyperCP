@@ -884,7 +884,7 @@ class Utilities:
                 minRad = 0
 
             # Plot the Hyperspectral spectrum
-            plt.plot(wave, y, 'k', c=c, zorder=-1)
+            plt.plot(wave, y, c=c, zorder=-1)
             
             # Add the Wei QA score to the Rrs plot, if calculated
             if rType == 'Rrs':
@@ -900,7 +900,7 @@ class Utilities:
                     
             # Add Lw to Lt plots
             if rType=='LT':
-                plt.plot(subwave, yLw, 'k', c=c, zorder=-1, linestyle='dashed')
+                plt.plot(subwave, yLw, c=c, zorder=-1, linestyle='dashed')
             
             if plotDelta:
                 # Generate the polygon for uncertainty bounds
@@ -1433,7 +1433,7 @@ class Utilities:
                     #     maxIOP = 20
 
                     # Plot the Hyperspectral spectrum
-                    plt.plot(waveQAA, y, 'k', c=c, zorder=-1)
+                    plt.plot(waveQAA, y, c=c, zorder=-1)
                     
                     # if plotDelta:
                     #     # Generate the polygon for uncertainty bounds
