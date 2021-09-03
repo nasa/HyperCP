@@ -252,8 +252,7 @@ class Utilities:
     def rootAddDateTime(node):
         for gp in node.groups:  
             # print(gp.id)          
-            if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
-                dateTime = gp.addDataset("DATETIME")
+            if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS                
                 timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
                 dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
                 timeStamp = [] 
@@ -275,6 +274,7 @@ class Utilities:
                         print(msg)
                         Utilities.writeLogFile(msg)
                         gp.datasetDeleteRow(i)
+                dateTime = gp.addDataset("DATETIME")
                 dateTime.data = timeStamp
         return node
 

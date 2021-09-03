@@ -40,7 +40,7 @@ HyperInSPACE requires Python 3.X installed on a Linux, MacOS, or Windows compute
 All of the package dependencies are listed in the environment.yaml file included with the package. To make sure you have all of the necessary dependencies, navigate to the HyperInSPACE directory and type
 
 ```
-prompt$ conda create -f environment.yaml
+prompt$ conda env create -f environment.yaml
 ```
 
 and follow the prompts to install the additional package dependencies on your machine within the new virtual environment. When completed you should be in the virtual environment and ready to run the package. To return to the environment later before launching the program, type
@@ -59,7 +59,6 @@ and the prompt should reflect the shift:
 ## Launching
 
 <center><img src="Data/banner.jpg" alt="banner"></center>
-<!-- ![test](Data/banner.jpg) -->
 
 HyperInSPACE is a Main-View-Controller Python package with a GUI that can be launched in several ways, such as by navigating to the project folder on the command line and typing
 ```

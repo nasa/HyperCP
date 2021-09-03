@@ -79,8 +79,6 @@ class HDFGroup:
 
     def read(self, f):
         name = f.name[f.name.rfind("/")+1:]
-        #if len(name) == 0:
-        #    name = "/"
         self.id = name
 
         # Read attributes
@@ -115,23 +113,3 @@ class HDFGroup:
         except:
             e = sys.exc_info()[0]
             print(e)
-
-    # # Writing to HDF4 file using PyHdf
-    # def writeHDF4(self, v, vs):
-    #     print("Group:", self.id)
-    #     name = self.id[:self.id.find("_")]
-    #     if sys.version_info[0] < 3:
-    #         #vg = v.create(self.id.encode('utf-8'))
-    #         vg = v.create(name.encode('utf-8'))
-    #     else:
-    #         #vg = v.create(self.id)
-    #         vg = v.create(name)
-
-    #     for k in self.attributes:
-    #         attr = vg.attr(k)
-    #         attr.set(HC.CHAR8, self.attributes[k])
-
-    #     for key,ds in self.datasets.items():
-    #         #f.create_dataset(ds.id, data=np.asarray(ds.data))
-    #         ds.writeHDF4(vg, vs)
-

@@ -3,13 +3,10 @@ import math
 import datetime
 import numpy as np
 from pysolar.solar import get_azimuth, get_altitude
-# import pytz
 from operator import add
 import bisect
 
-# import HDFRoot
 from HDFDataset import HDFDataset
-
 from Utilities import Utilities
 from ConfigFile import ConfigFile
 
@@ -60,10 +57,6 @@ class ProcessL1c:
                 Utilities.writeLogFile(msg)
             timeStamp = newTimeStamp.copy()
 
-
-        # if badTimes == []:
-        #     startLength = 1 # avoids div by zero below when finalCount is 0
-
         msg = f'   Length of records removed from dataset: {finalCount}'
         print(msg)
         Utilities.writeLogFile(msg)
@@ -71,7 +64,6 @@ class ProcessL1c:
         return finalCount/originalLength  
     
     @staticmethod
-    # def processL1c(node, calibrationMap, ancillaryData=None):    
     def processL1c(node, ancillaryData=None):    
         '''
         Filters data for pitch, roll, yaw, and rotator.
