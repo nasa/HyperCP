@@ -113,7 +113,7 @@ class SeaBASSWriter:
         relAz = dataset.data['REL_AZ'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'REL_AZ')
         # The rest remain unused
-        newData = SeaBASSWriter.removeColumns(newData,'SHIP_TRUE')
+        newData = SeaBASSWriter.removeColumns(newData,'HEADING')
         if ConfigFile.settings["bL1cSolarTracker"]:
             newData = SeaBASSWriter.removeColumns(newData,'ROTATOR')
             newData = SeaBASSWriter.removeColumns(newData,'AZIMUTH')
@@ -341,7 +341,8 @@ class SeaBASSWriter:
             satnavGroup = root.getGroup("SOLARTRACKER")
 
             azimuthData = satnavGroup.getDataset("AZIMUTH")
-            headingData = satnavGroup.getDataset("HEADING") # SAS_TRUE & SHIP_TRUE
+            # HEADING is formatted differently in different SolarTrackers
+            headingData = satnavGroup.getDataset("HEADING")
             pointingData = satnavGroup.getDataset("POINTING")
             relAzData = satnavGroup.getDataset("REL_AZ")
             elevationData = satnavGroup.getDataset("ELEVATION")
@@ -353,7 +354,13 @@ class SeaBASSWriter:
             elevationData.datasetToColumns() 
 
             azimuth = azimuthData.columns["SUN"]
-            heading = headingData.columns["SHIP_TRUE"]
+            if headingData is not None and 'SHIP_TRUE' in headingData.columns:
+                headingData.datasetToColumns()                
+                heading = headingData.columns["SHIP_TRUE"]
+            else:
+                heading = np.empty((1,len(azimuth)))
+                heading = heading[0]*np.nan
+                heading = heading.tolist() 
             rotator = pointingData.columns["ROTATOR"]
             relAz = relAzData.columns["REL_AZ"]
             elevation = elevationData.columns["SUN"]
@@ -369,9 +376,9 @@ class SeaBASSWriter:
             liData.columns["AZIMUTH"] = azimuth
             ltData.columns["AZIMUTH"] = azimuth
 
-            esData.columns["SHIP_TRUE"] = heading # From SAS, not GPS...
-            liData.columns["SHIP_TRUE"] = heading
-            ltData.columns["SHIP_TRUE"] = heading
+            esData.columns["HEADING"] = heading # From SAS, not GPS...not present in newer SolarTrackers?
+            liData.columns["HEADING"] = heading
+            ltData.columns["HEADING"] = heading
             
             esData.columns["ROTATOR"] = rotator
             liData.columns["ROTATOR"] = rotator
@@ -400,23 +407,22 @@ class SeaBASSWriter:
             relAzData.datasetToColumns() 
             szaData.datasetToColumns() 
 
+            relAz = relAzData.columns["NONE"]
+            sza = szaData.columns["NONE"]
             if headingData is not None:
                 heading = headingData.columns["HEADING"]
             else:
-                heading = np.empty((1,len(wind)))
+                heading = np.empty((1,len(sza)))
                 heading = heading[0]*np.nan
                 heading = heading.tolist()
-
-            relAz = relAzData.columns["NONE"]
-            sza = szaData.columns["NONE"]
-
+            
             esData.datasetToColumns()
             liData.datasetToColumns()
             ltData.datasetToColumns()
             
-            esData.columns["SHIP_TRUE"] = heading 
-            liData.columns["SHIP_TRUE"] = heading
-            ltData.columns["SHIP_TRUE"] = heading
+            esData.columns["HEADING"] = heading 
+            liData.columns["HEADING"] = heading
+            ltData.columns["HEADING"] = heading
 
             esData.columns["REL_AZ"] = relAz
             liData.columns["REL_AZ"] = relAz
