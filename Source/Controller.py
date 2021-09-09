@@ -596,8 +596,8 @@ class Controller:
                 #   ConfigFile.settings to reflect the appropriate parameterizations for this 
                 #   particular file. If no parameter file exists, or this SAS file is not in it, 
                 #   then fall back on the current ConfigFile.settings.
-                
-                anomAnalFileName,_ = ConfigFile.filename.split('.')
+
+                anomAnalFileName = os.path.splitext(ConfigFile.filename)[0]
                 anomAnalFileName = anomAnalFileName + '_anoms.csv'
                 fp = os.path.join('Config',anomAnalFileName)
                 if os.path.exists(fp):
