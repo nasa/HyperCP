@@ -36,7 +36,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         # If there is an AnomAnal file, open it for later access
         # to file-specific parameters
-        anomAnalFileName,_ = ConfigFile.filename.split('.')
+        anomAnalFileName = os.path.splitext(ConfigFile.filename)[0]
         self.anomAnalFileName = anomAnalFileName + '_anoms.csv'
         fp = os.path.join('Config',self.anomAnalFileName)
         if os.path.exists(fp):
