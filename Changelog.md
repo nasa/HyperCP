@@ -2,12 +2,12 @@ v1.0.10 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
 ---
 
 Next priorities:
+* Remove RuddickRho option in lieu of complete LUT for M99 at https://www.oceanopticsbook.info/packages/iws_l2h/conversion/files/rhoTable_AO1999.txt
 * Integration time issue with HyperOCRs; develop/add correction (in cal file? another level?)
     * Do other users of SeaBird HOCRs see int. time response issues?
     * Contact me for further info regarding integration time uncertainty
 * Improve/augment to NIR residual corrections
     * Iterative approaches; process time concern.
-* Revise KORUS-OC SeaBASS submission with new AnomAnal results.
 * Add BRDF correction options
 * Propagate uncertainties from radiometry to OC products
 * Memory issue with FPDF causes major slowdown in PDF report building with figures
@@ -28,6 +28,10 @@ Ideas and To-Dos:
     * To process
 * Export python scripts to d/l satellite imagery to match
 ___________________________________________________________
+
+2021-10-29: DAA adapted from M Bretagnon (ACRI)
+* Add command line option for single-level processing
+
 ---
 v1.0.9 2021-09-01: DAA
 

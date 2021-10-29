@@ -6,6 +6,7 @@ Version 1.0.9: Under development September 2021 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 """
 # from Source.Utilities import Utilities
+import argparse
 import os
 import shutil
 import sys
@@ -21,31 +22,32 @@ from MainConfig import MainConfig
 from Controller import Controller
 from ConfigFile import ConfigFile
 from ConfigWindow import ConfigWindow
+from GetAnc import GetAnc
 from SeaBASSHeader import SeaBASSHeader
 from Utilities import Utilities
 
 """ Window is the main GUI container """
 class Window(QtWidgets.QWidget):
-    
+
     def __init__(self, parent=None):
         super().__init__(parent)
         if not os.path.exists('Plots'):
-           os.makedirs('Plots')
+            os.makedirs('Plots')
         if not os.path.exists('Config'):
             os.makedirs('Config')
         if not os.path.exists('Logs'):
             os.makedirs('Logs')
-        
-        # Confirm that core data files are in place. Download if necessary.        
+
+        # Confirm that core data files are in place. Download if necessary.
         if not os.path.exists(os.path.join('Data','Zhang_rho_db.mat')):
             infoText = '  NEW INSTALLATION\nGlint database required.\nClick OK to download.\n\nWARNING: THIS IS A 2.5 GB DOWNLOAD.\n\n\
             If canceled, Zhang et al. (2017) glint correction will fail. If download fails, a link and instructions will be provided in the terminal.'
             YNReply = Utilities.YNWindow('Database Download',infoText)
-            if YNReply == QtWidgets.QMessageBox.Ok:                
+            if YNReply == QtWidgets.QMessageBox.Ok:
                 print('##### Downloading 2.5 GB data file. This could take several minutes. #####')
                 print('#####        Program will open when download is complete.            #####')
                 url = 'https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat'
-                local_filename = os.path.join('Data','Zhang_rho_db.mat')                
+                local_filename = os.path.join('Data','Zhang_rho_db.mat')
                 try:
                     r = requests.get(url, stream=True)
                     r.raise_for_status()
@@ -61,8 +63,8 @@ class Window(QtWidgets.QWidget):
                             if (n % 1000) == 0:
                                 print('.', end='')
                             if chunk: # filter out keep-alive new chunks
-                                f.write(chunk)    
-                        print(' done.')                                            
+                                f.write(chunk)
+                        print(' done.')
                 else:
                     print('Failed to download core databases.')
                     print('Download from: \
@@ -71,10 +73,10 @@ class Window(QtWidgets.QWidget):
         self.initUI()
 
     def initUI(self):
-        """Initialize the user interface"""   
+        """Initialize the user interface"""
 
         # Main window configuration restore
-        MainConfig.loadConfig(MainConfig.fileName)  
+        MainConfig.loadConfig(MainConfig.fileName)
         MainConfig.settings['version'] = '1.0.9'
 
         banner = QtWidgets.QLabel(self)
@@ -83,22 +85,22 @@ class Window(QtWidgets.QWidget):
         banner.setPixmap(pixmap)
         banner.setAlignment(QtCore.Qt.AlignCenter)
 
-        # Configuration File        
+        # Configuration File
         configLabel = QtWidgets.QLabel('Select/Create Configuration File', self)
         configLabel_font = configLabel.font()
         configLabel_font.setPointSize(10)
         configLabel_font.setBold(True)
         configLabel.setFont(configLabel_font)
-        self.fsm = QtWidgets.QFileSystemModel()        
-        self.fsm.setNameFilters(['*.cfg']) 
+        self.fsm = QtWidgets.QFileSystemModel()
+        self.fsm.setNameFilters(['*.cfg'])
         self.fsm.setNameFilterDisables(False) # This activates the Filter (on Win10)
         self.fsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
         self.configComboBox = QtWidgets.QComboBox(self)
         self.configComboBox.setModel(self.fsm)
         self.configComboBox.setRootModelIndex(self.fsm.setRootPath('Config'))
-        self.fsm.directoryLoaded.connect(self.on_directoryLoaded)         
-        self.configComboBox.currentTextChanged.connect(self.comboBox1Changed)             
-        #self.configComboBox.move(30, 50)                
+        self.fsm.directoryLoaded.connect(self.on_directoryLoaded)
+        self.configComboBox.currentTextChanged.connect(self.comboBox1Changed)
+        #self.configComboBox.move(30, 50)
 
         self.configNewButton = QtWidgets.QPushButton('New', self)
         #self.configNewButton.move(30, 80)
@@ -110,25 +112,24 @@ class Window(QtWidgets.QWidget):
         self.configEditButton.clicked.connect(self.configEditButtonPressed)
         self.configDeleteButton.clicked.connect(self.configDeleteButtonPressed)
 
-        self.inDirLabel = QtWidgets.QLabel('Input Data Parent Directory', self)        
+        self.inDirLabel = QtWidgets.QLabel('Input Data Parent Directory', self)
         self.inputDirectory = MainConfig.settings['inDir']
-        self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self) 
-        self.inDirButton.clicked.connect(self.inDirButtonPressed)   
+        self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self)
+        self.inDirButton.clicked.connect(self.inDirButtonPressed)
 
-        self.outDirLabel = QtWidgets.QLabel('Output Data/Plots Parent Directory', self)        
+        self.outDirLabel = QtWidgets.QLabel('Output Data/Plots Parent Directory', self)
         self.outputDirectory = MainConfig.settings['outDir']
-        self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self) 
-        self.outDirButton.clicked.connect(self.outDirButtonPressed)   
+        self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self)
+        self.outDirButton.clicked.connect(self.outDirButtonPressed)
 
-        self.outInDirButton = QtWidgets.QPushButton('^^^ Mimic Input Dir. vvv',self) 
-        self.outInDirButton.clicked.connect(self.outInDirButtonPressed)             
-        
+        self.outInDirButton = QtWidgets.QPushButton('^^^ Mimic Input Dir. vvv',self)
+        self.outInDirButton.clicked.connect(self.outInDirButtonPressed)
 
         self.ancFileLabel = QtWidgets.QLabel('Ancillary Data File for L2 (SeaBASS format)')
         self.ancFileLineEdit = QtWidgets.QLineEdit()
         self.ancFileLineEdit.setText(str(MainConfig.settings['metFile']))
         self.ancAddButton = QtWidgets.QPushButton('Add', self)
-        self.ancRemoveButton = QtWidgets.QPushButton('Remove', self)                
+        self.ancRemoveButton = QtWidgets.QPushButton('Remove', self)
 
         self.ancAddButton.clicked.connect(self.ancAddButtonPressed)
         self.ancRemoveButton.clicked.connect(self.ancRemoveButtonPressed)
@@ -143,24 +144,19 @@ class Window(QtWidgets.QWidget):
 
         self.singleL1aButton = QtWidgets.QPushButton('Raw (BIN) --> Level 1A (HDF5)', self)
         #self.singleL0Button.move(30, 300)
-
         self.singleL1bButton = QtWidgets.QPushButton('L1A --> L1B', self)
         #self.singleL1aButton.move(30, 350)
-
         self.singleL1cButton = QtWidgets.QPushButton('L1B --> L1C', self)
         #self.singleL1cButton.move(30, 450)
-
         self.singleL1dButton = QtWidgets.QPushButton('L1C --> L1D', self)
         #self.singleL1bButton.move(30, 400)
-
         self.singleL1eButton = QtWidgets.QPushButton('L1D --> L1E', self)
         #self.singleL1bButton.move(30, 400)
-
         self.singleL2Button = QtWidgets.QPushButton('L1E --> L2', self)
         #self.singleL1bButton.move(30, 400)
-        
+
         self.singleL1aButton.clicked.connect(self.singleL1aClicked)
-        self.singleL1bButton.clicked.connect(self.singleL1bClicked)            
+        self.singleL1bButton.clicked.connect(self.singleL1bClicked)
         self.singleL1cButton.clicked.connect(self.singleL1cClicked)
         self.singleL1dButton.clicked.connect(self.singleL1dClicked)
         self.singleL1eButton.clicked.connect(self.singleL1eClicked)
@@ -182,8 +178,8 @@ class Window(QtWidgets.QWidget):
         self.popQueryCheckBox = QtWidgets.QCheckBox('', self)
         if int(MainConfig.settings['popQuery']) == 1:
             self.popQueryCheckBox.setChecked(True)
-        self.popQueryCheckBoxUpdate()      
-        self.popQueryCheckBox.clicked.connect(self.popQueryCheckBoxUpdate)  
+        self.popQueryCheckBoxUpdate()
+        self.popQueryCheckBox.clicked.connect(self.popQueryCheckBoxUpdate)
 
         saveLabel = QtWidgets.QLabel('(Automatic on Window Close -->)')
         self.saveButton = QtWidgets.QPushButton('Save Settings', self)
@@ -195,7 +191,6 @@ class Window(QtWidgets.QWidget):
         # vBox.addStretch(1)
 
         vBox.addWidget(banner)
-        
         vBox.addWidget(configLabel)
         vBox.addWidget(self.configComboBox)
 
@@ -204,7 +199,7 @@ class Window(QtWidgets.QWidget):
         configHBox.addWidget(self.configNewButton)
         configHBox.addWidget(self.configEditButton)
         configHBox.addWidget(self.configDeleteButton)
-        vBox.addLayout(configHBox) 
+        vBox.addLayout(configHBox)
         vBox.addStretch(1) # allows vBox to stretch open here when resized
 
         vBox.addWidget(self.inDirLabel)
@@ -218,10 +213,10 @@ class Window(QtWidgets.QWidget):
 
         vBox.addSpacing(10)
 
-        vBox.addWidget(self.ancFileLabel)        
+        vBox.addWidget(self.ancFileLabel)
         vBox.addWidget(self.ancFileLineEdit)
 
-        ancHBox = QtWidgets.QHBoxLayout()        
+        ancHBox = QtWidgets.QHBoxLayout()
         ancHBox.addWidget(self.ancAddButton)
         ancHBox.addWidget(self.ancRemoveButton)
 
@@ -243,12 +238,12 @@ class Window(QtWidgets.QWidget):
         vBox.addWidget(multiLevelLabel)
         vBox.addWidget(self.multi2Button)
 
-        popQueryBox = QtWidgets.QHBoxLayout()  
+        popQueryBox = QtWidgets.QHBoxLayout()
         popQueryBox.addWidget(popQueryLabel)
         popQueryBox.addWidget(self.popQueryCheckBox)
         vBox.addLayout(popQueryBox)
 
-        saveQueryBox = QtWidgets.QHBoxLayout()  
+        saveQueryBox = QtWidgets.QHBoxLayout()
         saveQueryBox.addWidget(saveLabel)
         saveQueryBox.addWidget(self.saveButton)
         vBox.addLayout(saveQueryBox)
@@ -263,7 +258,7 @@ class Window(QtWidgets.QWidget):
         self.show()
 
     ########################################################################################
-    # Build functionality modules    
+    # Build functionality modules
     def on_directoryLoaded(self, path):
         index = self.configComboBox.findText(MainConfig.settings['cfgFile'])
         self.configComboBox.setCurrentIndex(index)
@@ -272,7 +267,7 @@ class Window(QtWidgets.QWidget):
         MainConfig.settings['cfgFile'] = value
         index = self.configComboBox.findText(MainConfig.settings['cfgFile'])
         self.configComboBox.setCurrentIndex(index)
-        print('MainConfig: Configuration file changed to: ', value)    
+        print('MainConfig: Configuration file changed to: ', value)
 
     def configNewButtonPressed(self):
         print('New Config Dialogue')
@@ -282,7 +277,7 @@ class Window(QtWidgets.QWidget):
             ConfigFile.createDefaultConfig(text, 1)
             MainConfig.settings['cfgFile'] = ConfigFile.filename
             seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
-            print('Creating New SeaBASSHeader File: ', seaBASSHeaderFileName)   
+            print('Creating New SeaBASSHeader File: ', seaBASSHeaderFileName)
             SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
             # SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 
@@ -295,7 +290,6 @@ class Window(QtWidgets.QWidget):
             ConfigFile.loadConfig(configFileName)
             configDialog = ConfigWindow(configFileName, inputDir, self)
             configDialog.show()
-            
         else:
             message = 'Not a Config File: ' + configFileName
             QtWidgets.QMessageBox.critical(self, 'Error', message)
@@ -317,20 +311,20 @@ class Window(QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(self, 'Error', message)
 
     def inDirButtonPressed(self):
-        temp = self.inputDirectory   
+        temp = self.inputDirectory
         self.inputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
-            self, 'Choose Directory.', 
+            self, 'Choose Directory.',
             self.inputDirectory)
         if self.inputDirectory == '':
             self.inputDirectory = temp
         if self.inputDirectory == '':
             self.inputDirectory = './Data'
-        print('Data input directory changed: ', self.inputDirectory)    
+        print('Data input directory changed: ', self.inputDirectory)
         self.inDirButton.setText(self.inputDirectory)
         MainConfig.settings['inDir'] = self.inputDirectory
         return self.inputDirectory
 
-    def outDirButtonPressed(self):  
+    def outDirButtonPressed(self):
         temp = self.outputDirectory
         self.outputDirectory = QtWidgets.QFileDialog.getExistingDirectory(
             self, 'SUBDIRECTORIES FOR DATA LEVELS WILL BE CREATED HERE AUTOMATICALLY.',
@@ -341,16 +335,16 @@ class Window(QtWidgets.QWidget):
             self.outputDirectory = './Data'
         print('Data output directory changed: ', self.outputDirectory)
         print('NOTE: Subdirectories for data levels will be created here')
-        print('      automatically, unless they already exist.')          
+        print('      automatically, unless they already exist.')
         self.outDirButton.setText(self.outputDirectory)
         MainConfig.settings['outDir'] = self.outputDirectory
         return self.outputDirectory
 
-    def outInDirButtonPressed(self):          
+    def outInDirButtonPressed(self):
         self.outputDirectory = self.inputDirectory
         print('Data output directory changed: ', self.outputDirectory)
         print('NOTE: Subdirectories for data levels will be created here')
-        print('      automatically, unless they already exist.')          
+        print('      automatically, unless they already exist.')
         self.outDirButton.setText(self.outputDirectory)
         MainConfig.settings['outDir'] = self.outputDirectory
         return self.outputDirectory
@@ -383,11 +377,11 @@ class Window(QtWidgets.QWidget):
         seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 
-        # Select data files    
+        # Select data files
         if not self.inputDirectory[0]:
             print('Bad input parent directory.')
-            return       
-        
+            return
+
         if level == 'L1A':
             inLevel = 'unknown'
         if level == 'L1B':
@@ -406,13 +400,13 @@ class Window(QtWidgets.QWidget):
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',subInputDir)
             fileNames = openFileNames[0] # The first element is the whole list
 
-        else:    
+        else:
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',self.inputDirectory)
             fileNames = openFileNames[0] # The first element is the whole list
-        
+
         print('Files:', openFileNames)
         if not fileNames:
-            return        
+            return
 
         ancFile = self.ancFileLineEdit.text()
         if ancFile == '':
@@ -421,18 +415,19 @@ class Window(QtWidgets.QWidget):
         print('Process Calibration Files')
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings['CalibrationFiles']
+        print('JMR', filename, calFiles) # JMR?
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
         if not calibrationMap.keys():
             print('No calibration files found. '
             'Check Config directory for your instrument files.')
-            return            
-            
+            return
+
         print('Output Directory:', os.path.abspath(self.outputDirectory))
         if not self.outputDirectory[0]:
             print('Bad output directory.')
-            return            
+            return
 
-        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, ancFile) 
+        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, ancFile)
         t1Single = time.time()
         print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
 
@@ -442,14 +437,14 @@ class Window(QtWidgets.QWidget):
 
         if reply == QtWidgets.QMessageBox.Yes:
             MainConfig.saveConfig(MainConfig.fileName)
-            event.accept()            
+            event.accept()
         else:
             event.ignore()
 
     def singleL1aClicked(self):
         self.processSingle('L1A')
 
-    def singleL1bClicked(self):        
+    def singleL1bClicked(self):
         self.processSingle('L1B')
 
     def singleL1cClicked(self):
@@ -459,10 +454,10 @@ class Window(QtWidgets.QWidget):
         self.processSingle('L1D')
 
     def singleL1eClicked(self):
-        self.processSingle('L1E')      
+        self.processSingle('L1E')
 
     def singleL2Clicked(self):
-        self.processSingle('L2')   
+        self.processSingle('L2')
 
     def processMulti(self, level):
         print('Process Multi-Level')
@@ -476,15 +471,15 @@ class Window(QtWidgets.QWidget):
             return
         ConfigFile.loadConfig(configFileName)
 
-        # Select data files    
+        # Select data files
         if not self.inputDirectory[0]:
             print('Bad input directory.')
-            return  
-        # MacOS bug holds Open window open during entire processing period              
+            return
+        # MacOS bug holds Open window open during entire processing period
         openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',self.inputDirectory)
 
         print('Files:', openFileNames)
-        
+
         if not openFileNames[0]:
             return
         fileNames = openFileNames[0]
@@ -499,7 +494,7 @@ class Window(QtWidgets.QWidget):
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings['CalibrationFiles']
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
-    
+
         Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, ancFile)
         t1Multi = time.time()
         print(f'Time elapsed: {str(round((t1Multi-t0Multi)/60))} Minutes')
@@ -512,12 +507,202 @@ class Window(QtWidgets.QWidget):
         print('Main - popQueryCheckBoxUpdate')
         MainConfig.settings['popQuery'] = int(self.popQueryCheckBox.isChecked())
         pass
-    
+
     def saveButtonClicked(self):
-        print('Main - saveButtonClicked')        
+        print('Main - saveButtonClicked')
         MainConfig.saveConfig(MainConfig.fileName)
 
+
+""" Class without using the GUI """
+class Command():
+
+    def __init__(self, configFilePath, inputFile, outputDirectory, level, ancFile):
+
+        # Configuration File
+        self.configFilename = configFilePath
+        # Input File
+        self.inputFile = inputFile
+        # Output Directory
+        self.outputDirectory = outputDirectory
+        # Processing Level
+        self.level = level
+        # Ancillary File
+        self.ancFile = ancFile
+
+        super().__init__()
+
+        # Confirm that core data files are in place. Download if necessary.
+        if not os.path.exists(os.path.join('Data','Zhang_rho_db.mat')):
+            print('##### Downloading 2.5 GB data file. This could take several minutes. #####')
+            print('#####        Program will open when download is complete.            #####')
+            url = 'https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat'
+            local_filename = os.path.join('Data','Zhang_rho_db.mat')
+            try:
+                r = requests.get(url, stream=True)
+                r.raise_for_status()
+
+            except requests.exceptions.HTTPError as err:
+                print('Error in download_file:',err)
+
+            if r.ok:
+                with open(local_filename, 'wb') as f:
+                    n = 0
+                    for chunk in r.iter_content(chunk_size=1024):
+                        n += 1
+                        if (n % 1000) == 0:
+                            print('.', end='')
+                        if chunk: # filter out keep-alive new chunks
+                            f.write(chunk)
+                    print(' done.')
+            else:
+                print('Failed to download core databases.')
+                print('Download from: \
+                                https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat \
+                                    and place in HyperInSPACE/Data directory.')
+        # Main configuration restore
+        MainConfig.loadConfig(MainConfig.fileName)
+        MainConfig.settings['version'] = '1.0.9'
+
+        # For our need, we only use a single processing
+        self.processSingle(self.level)
+
+
+    ########################################################################################
+
+    def processSingle(self, level):
+        print('Process Single-Level')
+        t0Single=time.time()
+        # Load Config file
+        configFileName = self.configFilename
+        configPath = os.path.join('Config', configFileName)
+        if not os.path.isfile(configPath):
+            message = 'Not valid Config File: ' + configFileName
+            return
+        ConfigFile.loadConfig(configFileName)
+        seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
+        SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+
+        if level == 'L1A':
+            inLevel = 'unknown'
+        if level == 'L1B':
+            inLevel = 'L1A'
+        if level == 'L1C':
+            inLevel = 'L1B'
+        if level == 'L1D':
+            inLevel = 'L1C'
+        if level == 'L1E':
+            inLevel = 'L1D'
+        if level == 'L2':
+            inLevel = 'L1E'
+
+        # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
+        # we keep variable fileNames which is an array
+        fileNames = [inputFile]
+        print('Files:', fileNames)
+        if not fileNames:
+            return
+
+        print('Process Calibration Files')
+        filename = ConfigFile.filename
+        calFiles = ConfigFile.settings['CalibrationFiles']
+        calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        if not calibrationMap.keys():
+            print('No calibration files found. '
+            'Check Config directory for your instrument files.')
+            return
+
+        print('Output Directory:', os.path.abspath(self.outputDirectory))
+        if not self.outputDirectory[0]:
+            print('Bad output directory.')
+            return
+
+        Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level, self.ancFile)
+        t1Single = time.time()
+        print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
+
+
+# Arguments declaration
+parser = argparse.ArgumentParser(description='Arguments description')
+# Mandatory arguments
+required = parser.add_argument_group('Required arguments')
+required.add_argument('-cmd',
+                    action="store_true",
+                    dest="cmd",
+                    help='To use for commandline mode. If not given, the GUI mode is run',
+                    default=None
+                    )
+required.add_argument('-c',
+                    action="store",
+                    dest="configFilePath",
+                    help='Path of the configuration file',
+                    default=None,
+                    type=str)
+required.add_argument('-i',
+                    action="store",
+                    dest="inputFile",
+                    help='Path of the input file',
+                    default=None,
+                    type=str)
+required.add_argument('-o',
+                    action="store",
+                    dest="outputDirectory",
+                    help='Path of the output folder',
+                    default=None,
+                    type=str)
+required.add_argument('-l',
+                    action="store",
+                    dest="level",
+                    help='Level of the generated file. e.g.: Computing RAW to L1A means -l L1A',
+                    choices=['L1A', 'L1B', 'L1C', 'L1D', 'L1E', 'L2'],
+                    default=None,
+                    type=str)
+required.add_argument('-a',
+                    action="store",
+                    dest="ancFile",
+                    help='Path of the ancillary file',
+                    default=None,
+                    type=str)
+required.add_argument('-u',
+                    action="store",
+                    dest="username",
+                    help='Username of the account on https://oceancolor.gsfc.nasa.gov/',
+                    default=None,
+                    type=str)
+required.add_argument('-p',
+                    action="store",
+                    dest="password",
+                    help='Password of the account on https://oceancolor.gsfc.nasa.gov/',
+                    default=None,
+                    type=str)
+
+args = parser.parse_args()
+
+# If the commandline option is given, check if all needed information are given
+if args.cmd and (args.configFilePath is None or args.inputFile is None or args.outputDirectory is None or args.level is None):
+    parser.error("-cmd requires -c config -i inputFile -o outputDirectory -l processingLevel")
+# If the commandline option is given, check if all needed information are given
+if args.cmd and args.level=='L2' and (args.username is None or args.password is None):
+    parser.error("L2 processing requires username and password for https://oceancolor.gsfc.nasa.gov/")
+
+# We store all arguments in variables
+cmd = args.cmd
+configFilePath = args.configFilePath
+inputFile = args.inputFile
+outputDirectory = args.outputDirectory
+level = args.level
+ancFile = args.ancFile
+username = args.username
+password = args.password
+
 if __name__ == '__main__':
-    app = QtWidgets.QApplication(sys.argv)
-    win = Window()
-    sys.exit(app.exec_())
+
+    # If the cmd argument is given, run the Command class without the GUI
+    if cmd:
+        if not (args.username is None or args.password is None):
+            # Only for L2 processing set credentials
+            GetAnc.userCreds(username, password)
+        Command(configFilePath, inputFile, outputDirectory, level, ancFile)
+    else:
+        app = QtWidgets.QApplication(sys.argv)
+        win = Window()
+        sys.exit(app.exec_())
