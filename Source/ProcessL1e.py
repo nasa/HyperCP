@@ -10,13 +10,13 @@ from Utilities import Utilities
 from ConfigFile import ConfigFile
 
 
-class ProcessL1e:    
-    
+class ProcessL1e:
+
     @staticmethod
-    def interpolateL1e(xData, xTimer, yTimer, newXData, dataName, kind='linear', fileName='default'):    
+    def interpolateL1e(xData, xTimer, yTimer, newXData, dataName, kind='linear', fileName='default'):
         ''' Time interpolation
             xTimer, yTimer are already converted from TimeTag2 to Datetimes'''
-        
+
         # List of datasets requiring angular interpolation (i.e. through 0 degrees)
         angList = ['AZIMUTH', 'POINTING', 'REL_AZ', 'HEADING', 'SOLAR_AZ', 'SZA']
 
@@ -32,15 +32,15 @@ class ProcessL1e:
             # converted to Unix timestamp values
             xTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in x]
             newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
-            
+
             if dataName in angList:
-                ''' BUG: Unlike interp, interpAngular defaults to fill by extrapolation rather than 
+                ''' BUG: Unlike interp, interpAngular defaults to fill by extrapolation rather than
                 filling with the last actual value. This is probably only advisable for SOLAR_AZ.'''
                 if dataName == 'SOLAR_AZ' or dataName == 'SZA':
                     newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value="extrapolate")
                 else:
                     newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value=0)
-                # Some angular measurements (like SAS pointing) are + and -, and get converted 
+                # Some angular measurements (like SAS pointing) are + and -, and get converted
                 # to all +. Convert them back to - for 180-359
                 if dataName == "POINTING":
                     pointingData = newXData.columns[k]
@@ -48,8 +48,8 @@ class ProcessL1e:
                         if angle > 180:
                             pointingData[i] = angle - 360
             else:
-                if kind == 'cubic':  
-                    newXData.columns[k] = Utilities.interpSpline(xTS, y, newXTS)                       
+                if kind == 'cubic':
+                    newXData.columns[k] = Utilities.interpSpline(xTS, y, newXTS)
                 else:
                     newXData.columns[k] = Utilities.interp(xTS,y,newXTS, fill_value=np.nan)
 
@@ -58,12 +58,12 @@ class ProcessL1e:
             # Plots the interpolated data in /Plots/L1E with filename of L1E file and dataset name
             ''' TO DO: This is still broken on Mac. See the hack to fix it here: https://github.com/pandas-dev/pandas/issues/22859'''
             Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, dataName, fileName)
-        
+
     @staticmethod
-    def convertDataset(group, datasetName, newGroup, newDatasetName):        
+    def convertDataset(group, datasetName, newGroup, newDatasetName):
         ''' Converts a sensor group into the L1E format; option to change dataset name.
             Moves dataset to new group.
-            The separate DATETAG, TIMETAG2, and DATETIME datasets are combined into 
+            The separate DATETAG, TIMETAG2, and DATETIME datasets are combined into
             the sensor dataset. This also adds a temporary column in the sensor data
             array for datetime to be used in interpolation. This is later removed, as
             HDF5 does not support datetime. '''
@@ -75,14 +75,14 @@ class ProcessL1e:
 
         # Convert degrees minutes to decimal degrees format; only for GPS, not ANCILLARY_METADATA
         if group.id.startswith("GP"):
-            if newDatasetName == "LATITUDE":        
+            if newDatasetName == "LATITUDE":
                 latPosData = group.getDataset("LATPOS")
                 latHemiData = group.getDataset("LATHEMI")
                 for i in range(dataset.data.shape[0]):
                     latDM = latPosData.data["NONE"][i]
                     latDirection = latHemiData.data["NONE"][i]
                     latDD = Utilities.dmToDd(latDM, latDirection)
-                    latPosData.data["NONE"][i] = latDD                      
+                    latPosData.data["NONE"][i] = latDD
             if newDatasetName == "LONGITUDE":
                 lonPosData = group.getDataset("LONPOS")
                 lonHemiData = group.getDataset("LONHEMI")
@@ -90,7 +90,7 @@ class ProcessL1e:
                     lonDM = lonPosData.data["NONE"][i]
                     lonDirection = lonHemiData.data["NONE"][i]
                     lonDD = Utilities.dmToDd(lonDM, lonDirection)
-                    lonPosData.data["NONE"][i] = lonDD 
+                    lonPosData.data["NONE"][i] = lonDD
 
         newSensorData = newGroup.addDataset(newDatasetName)
 
@@ -107,12 +107,12 @@ class ProcessL1e:
 
     @staticmethod
     def interpolateData(xData, yData, dataName, fileName):
-        ''' Preforms time interpolation to match xData to yData. xData is the dataset to be 
+        ''' Preforms time interpolation to match xData to yData. xData is the dataset to be
         interpolated, yData is the reference dataset with the times to be interpolated to.'''
 
         msg = f'Interpolate Data {dataName}'
         print(msg)
-        Utilities.writeLogFile(msg)        
+        Utilities.writeLogFile(msg)
 
         # Interpolating to itself
         if xData is yData:
@@ -140,17 +140,17 @@ class ProcessL1e:
         ProcessL1e.interpolateL1e(xData, xDatetime, yDatetime, xData, dataName, 'linear', fileName)
 
         xData.columnsToDataset()
-        
+
         #if Utilities.hasNan(xData):
         #    print("Found NAN 2")
         #    exit
         return True
-    
+
     @staticmethod
     def interpolateWavelength(ds, newDS, newWavebands):
-        ''' Wavelength Interpolation 
-            Use a common waveband set determined by the maximum lowest wavelength 
-            of all sensors, the minimum highest wavelength, and the interval 
+        ''' Wavelength Interpolation
+            Use a common waveband set determined by the maximum lowest wavelength
+            of all sensors, the minimum highest wavelength, and the interval
             set in the Configuration Window. '''
 
         # Copy dataset to dictionary
@@ -159,7 +159,7 @@ class ProcessL1e:
         saveDatetag = columns.pop("Datetag")
         saveTimetag2 = columns.pop("Timetag2")
         columns.pop("Datetime")
-        
+
         # Get wavelength values
         wavelength = []
         for k in columns:
@@ -193,13 +193,13 @@ class ProcessL1e:
         newDS.columns = newColumns
         newDS.columnsToDataset()
 
-    
+
     @staticmethod
     def getDataAverage(n, data, time, width):
         ''' Determines points to average data
             Note: Prosoft always includes 1 point left/right of n
             even if it is outside of specified width.
-            
+
             Not implemented in v1.0.B'''
 
         lst = [data[n]]
@@ -220,11 +220,11 @@ class ProcessL1e:
             avg += v
         avg /= len(lst)
         return avg
-    
+
     @staticmethod
     def matchColumns(esData, liData, ltData):
         ''' Makes each dataset have matching wavelength values
-            
+
             Not required; only for testing '''
 
         msg = "Match Columns"
@@ -281,17 +281,17 @@ class ProcessL1e:
     def matchWavelengths(node):
         ''' Wavelength matching through interpolation.
             PySciDON interpolated each instrument to a different set of bands.
-            Here we use a common set determined by the maximum lowest wavelength 
-            of all sensors, the minimum highest wavelength, and the interval 
+            Here we use a common set determined by the maximum lowest wavelength
+            of all sensors, the minimum highest wavelength, and the interval
             set in the Configuration Window. '''
 
-        print('Interpolating to common wavelengths')        
+        print('Interpolating to common wavelengths')
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
-        
+
         interval = float(ConfigFile.settings["fL1eInterpInterval"])
-        
-        # root.attributes["WAVEL_INTERP"] = (str(interval) + " nm") 
+
+        # root.attributes["WAVEL_INTERP"] = (str(interval) + " nm")
 
         newReferenceGroup = root.addGroup("IRRADIANCE")
         newSASGroup = root.addGroup("RADIANCE")
@@ -314,7 +314,7 @@ class ProcessL1e:
 
         newESData = newReferenceGroup.addDataset("ES")
         newLIData = newSASGroup.addDataset("LI")
-        newLTData = newSASGroup.addDataset("LT")        
+        newLTData = newSASGroup.addDataset("LT")
 
         # Es dataset to dictionary
         esData.datasetToColumns()
@@ -329,7 +329,7 @@ class ProcessL1e:
         # Determine interpolated wavelength values
         esStart = np.ceil(esWavelength[0])
         esEnd = np.floor(esWavelength[len(esWavelength)-1])
-        
+
         # Li dataset to dictionary
         liData.datasetToColumns()
         columns = liData.columns
@@ -343,7 +343,7 @@ class ProcessL1e:
         # Determine interpolated wavelength values
         liStart = np.ceil(liWavelength[0])
         liEnd = np.floor(liWavelength[len(liWavelength)-1])
-        
+
         # Lt dataset to dictionary
         ltData.datasetToColumns()
         columns = ltData.columns
@@ -361,8 +361,8 @@ class ProcessL1e:
 
         # No extrapolation
         start = max(esStart,liStart,ltStart)
-        end = min(esEnd,liEnd,ltEnd)        
-        newWavebands = np.arange(start, end, interval)        
+        end = min(esEnd,liEnd,ltEnd)
+        newWavebands = np.arange(start, end, interval)
 
         print('Interpolating Es')
         ProcessL1e.interpolateWavelength(esData, newESData, newWavebands)
@@ -372,16 +372,16 @@ class ProcessL1e:
         ProcessL1e.interpolateWavelength(ltData, newLTData, newWavebands)
 
         return root
-    
+
     @staticmethod
     def processL1e(node, fileName):
         '''
         Process time and wavelength interpolation across instruments and ancillary data
         '''
-        # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG        
+        # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
-        root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class 
+        root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class
         root.copyAttributes(node) # Now copy the attributes in from the L1d object
         root.attributes["PROCESSING_LEVEL"] = "1e"
         root.attributes["DEPTH_RESOLUTION"] = "N/A"
@@ -393,10 +393,10 @@ class ProcessL1e:
         msg = f"ProcessL1e.processL1e: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)
-        
+
         gpsGroup = None
         pyrGroup = None
-        esGroup = None 
+        esGroup = None
         liGroup = None
         ltGroup = None
         satnavGroup = None
@@ -416,20 +416,20 @@ class ProcessL1e:
             if gp.id == "SOLARTRACKER" or gp.id =="SOLARTRACKER_UM":
                 satnavGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
             if gp.id == ("ANCILLARY_METADATA"):
-                ancGroup = gp 
+                ancGroup = gp
             if gp.id == "SOLARTRACKER_STATUS":
-                satmsgGroup = gp 
+                satmsgGroup = gp
 
         # New group scheme combines both radiance sensors in one group
         refGroup = root.addGroup("IRRADIANCE")
         sasGroup = root.addGroup("RADIANCE")
-        
+
         # Conversion of datasets within groups to move date/timestamps into
         # the data arrays and add datetime column. Also can change dataset name.
         # Places the dataset into the new group.
-        ProcessL1e.convertDataset(esGroup, "ES", refGroup, "ES")        
+        ProcessL1e.convertDataset(esGroup, "ES", refGroup, "ES")
         ProcessL1e.convertDataset(liGroup, "LI", sasGroup, "LI")
-        ProcessL1e.convertDataset(ltGroup, "LT", sasGroup, "LT")        
+        ProcessL1e.convertDataset(ltGroup, "LT", sasGroup, "LT")
 
         newGPSGroup = root.addGroup("GPS")
         # These are from the raw data, not to be confused with those in the ancillary file
@@ -437,12 +437,12 @@ class ProcessL1e:
         ProcessL1e.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
         latData = newGPSGroup.getDataset("LATITUDE")
         lonData = newGPSGroup.getDataset("LONGITUDE")
-        # Only if the right NMEA data are provided (e.g. with SolarTracker)      
+        # Only if the right NMEA data are provided (e.g. with SolarTracker)
         if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
             ProcessL1e.convertDataset(gpsGroup, "COURSE", newGPSGroup, "COURSE")
-            ProcessL1e.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")            
+            ProcessL1e.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")
             courseData = newGPSGroup.getDataset("COURSE")
-            speedData = newGPSGroup.getDataset("SPEED")
+            sogData = newGPSGroup.getDataset("SPEED")
 
         # Metadata ancillary field and Pysolar data
         if ancGroup is not None:
@@ -470,7 +470,7 @@ class ProcessL1e:
             saltData = None
             sstData = None
             windData = None
-            aodData = None            
+            aodData = None
             # Optional:
             if "STATION" in newAncGroup.datasets:
                 stationData = newAncGroup.getDataset("STATION")
@@ -481,7 +481,7 @@ class ProcessL1e:
             if "LONGITUDE" in newAncGroup.datasets:
                 lonDataAnc = newAncGroup.getDataset("LONGITUDE")
             if "SOLAR_AZ" in newAncGroup.datasets:
-                solAzData = newAncGroup.getDataset("SOLAR_AZ")            
+                solAzData = newAncGroup.getDataset("SOLAR_AZ")
             if "SALINITY" in newAncGroup.datasets:
                 saltData = newAncGroup.getDataset("SALINITY")
             if "SST" in newAncGroup.datasets:
@@ -499,7 +499,7 @@ class ProcessL1e:
                 pitchAncData = newAncGroup.getDataset("PITCH")
             if "ROLL" in newAncGroup.datasets:
                 rollAncData = newAncGroup.getDataset("ROLL")
-        
+
         if satnavGroup is not None:
             newSTGroup = root.addGroup("SOLARTRACKER")
             ProcessL1e.convertDataset(satnavGroup, "AZIMUTH", newSTGroup, "AZIMUTH")
@@ -507,7 +507,7 @@ class ProcessL1e:
             # ProcessL1e.convertDataset(satnavGroup, "HEADING", newSTGroup, "HEADING") # Use SATNAV Heading if available (not GPS COURSE)
             if "HUMIDITY" in satnavGroup.datasets:
                 ProcessL1e.convertDataset(satnavGroup, "HUMIDITY", newSTGroup, "HUMIDITY")
-                humidityData = newSTGroup.getDataset("HUMIDITY") 
+                humidityData = newSTGroup.getDataset("HUMIDITY")
             ProcessL1e.convertDataset(satnavGroup, "POINTING", newSTGroup, "POINTING")
             ProcessL1e.convertDataset(satnavGroup, "REL_AZ", newSTGroup, "REL_AZ")
             if "PITCH" in satnavGroup.datasets:
@@ -519,13 +519,13 @@ class ProcessL1e:
             headingData = None
             if "HEADING" in satnavGroup.datasets:
                 ProcessL1e.convertDataset(satnavGroup, "HEADING", newSTGroup, "HEADING")
-                headingData = newSTGroup.getDataset("HEADING")           
+                headingData = newSTGroup.getDataset("HEADING")
 
             azimuthData = newSTGroup.getDataset("AZIMUTH")
-            elevationData = newSTGroup.getDataset("ELEVATION")            
+            elevationData = newSTGroup.getDataset("ELEVATION")
             pointingData = newSTGroup.getDataset("POINTING")
             relAzData = newSTGroup.getDataset("REL_AZ")
-            
+
         if satmsgGroup is not None:
             newSatMSGGroup = root.addGroup("SOLARTRACKER_STATUS")
             # SATMSG (SOLARTRACKER_STATUS) has no date or time, just propogate it as is
@@ -542,7 +542,7 @@ class ProcessL1e:
             newPyrGroup = root.addGroup("PYROMETER")
             ProcessL1e.convertDataset(pyrGroup, "T", newPyrGroup, "T")
             pyrData = newPyrGroup.getDataset("T")
-        
+
         # PysciDON interpolated to the SLOWEST sampling rate and ProSoft
         # interpolates to the FASTEST. Not much in the literature on this, although
         # Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises,
@@ -555,28 +555,28 @@ class ProcessL1e:
         esLength = len(esData.data["Timetag2"].tolist())
         liLength = len(liData.data["Timetag2"].tolist())
         ltLength = len(ltData.data["Timetag2"].tolist())
-        
+
         interpData = None
         if esLength < liLength and esLength < ltLength:
             msg = f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records"
             print(msg)
-            Utilities.writeLogFile(msg)                                       
+            Utilities.writeLogFile(msg)
             interpData = esData
         elif liLength < ltLength:
             msg = f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records"
             print(msg)
-            Utilities.writeLogFile(msg)                                       
+            Utilities.writeLogFile(msg)
             interpData = liData
         else:
             msg = f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records"
             print(msg)
-            Utilities.writeLogFile(msg)                                       
+            Utilities.writeLogFile(msg)
             interpData = ltData
 
         # Perform time interpolation
 
-        # Note that only the specified datasets in each group will be interpolated and 
-        # carried forward. For radiometers, this means that ancillary metadata such as 
+        # Note that only the specified datasets in each group will be interpolated and
+        # carried forward. For radiometers, this means that ancillary metadata such as
         # SPEC_TEMP and THERMAL_RESP will be dropped at L1E and beyond.
         # Required:
         if not ProcessL1e.interpolateData(esData, interpData, "ES", fileName):
@@ -584,7 +584,7 @@ class ProcessL1e:
         if not ProcessL1e.interpolateData(liData, interpData, "LI", fileName):
             return None
         if not ProcessL1e.interpolateData(ltData, interpData, "LT", fileName):
-            return None    
+            return None
         if not ProcessL1e.interpolateData(latData, interpData, "LATITUDE", fileName):
             return None
         if not ProcessL1e.interpolateData(lonData, interpData, "LONGITUDE", fileName):
@@ -592,7 +592,7 @@ class ProcessL1e:
         if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
             # Optional:
             ProcessL1e.interpolateData(courseData, interpData, "COURSE", fileName) # COG (not heading), presumably?
-            ProcessL1e.interpolateData(speedData, interpData, "SPEED", fileName)             
+            ProcessL1e.interpolateData(sogData, interpData, "SPEED", fileName)
 
         if satnavGroup is not None:
             # Required:
@@ -601,17 +601,17 @@ class ProcessL1e:
             if not ProcessL1e.interpolateData(elevationData, interpData, "ELEVATION", fileName):
                 return None
             # Optional, but should all be there with the SOLAR TRACKER
-            ProcessL1e.interpolateData(azimuthData, interpData, "AZIMUTH", fileName)            
-            ProcessL1e.interpolateData(pointingData, interpData, "POINTING", fileName)            
+            ProcessL1e.interpolateData(azimuthData, interpData, "AZIMUTH", fileName)
+            ProcessL1e.interpolateData(pointingData, interpData, "POINTING", fileName)
             if "HUMIDITY" in satnavGroup.datasets:
-                ProcessL1e.interpolateData(humidityData, interpData, "HUMIDITY", fileName)            
+                ProcessL1e.interpolateData(humidityData, interpData, "HUMIDITY", fileName)
             if "PITCH" in satnavGroup.datasets:
                 ProcessL1e.interpolateData(pitchData, interpData, "PITCH", fileName)
             if "ROLL" in satnavGroup.datasets:
                 ProcessL1e.interpolateData(rollData, interpData, "ROLL", fileName)
             if "HEADING" in satnavGroup.datasets:
                 ProcessL1e.interpolateData(headingData, interpData, "HEADING", fileName)
-            
+
         if ancGroup is not None:
             # Required:
             if not ProcessL1e.interpolateData(relAzData, interpData, "REL_AZ", fileName):
@@ -649,7 +649,7 @@ class ProcessL1e:
                 ProcessL1e.interpolateData(pitchAncData, interpData, "PITCH", fileName)
             if "ROLL" in ancGroup.datasets:
                 ProcessL1e.interpolateData(rollAncData, interpData, "ROLL", fileName)
-            
+
         if pyrGroup is not None:
             # Optional:
             ProcessL1e.interpolateData(pyrData, interpData, "T", fileName)
@@ -665,7 +665,7 @@ class ProcessL1e:
 
         # DATETIME is not supported in HDF5; remove from groups that still have it
         for gp in root.groups:
-            for dsName in gp.datasets:                
+            for dsName in gp.datasets:
                 ds = gp.datasets[dsName]
                 if "Datetime" in ds.columns:
                     ds.columns.pop("Datetime")

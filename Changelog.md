@@ -29,6 +29,8 @@ Ideas and To-Dos:
 * Export python scripts to d/l satellite imagery to match
 ___________________________________________________________
 
+2021-10-
+
 2021-10-29: DAA adapted from M Bretagnon (ACRI)
 * Add command line option for single-level processing
 
@@ -44,7 +46,7 @@ v1.0.9 2021-09-01: DAA
 * Vectorize HDFDataset.colDeleteRow for speed
 * Eliminate ancillary file processing in L2
 
-2021-05-24: 
+2021-05-24:
 * Add uncertainties to SeaBASS Es & Rrs output
 * Change notation on L2 products (and in SeaBASS) to reflect sd for std and unc for uncertainty
 
@@ -114,7 +116,7 @@ v1.0.5 2021-02-11: DAA
 2021-02-04:
 * Allow for independant deglitching/anomaly parameterizations for each sensor, light and dark.
 * Set bounding window for deglitching to (hard-coded) 350 - 850 nm to avoid NIR noise
-* Add a CSV file to track deglitching parameterizations for each L1C file in case of reprocessing. 
+* Add a CSV file to track deglitching parameterizations for each L1C file in case of reprocessing.
 * Add direct L1D processing option to the AnomAnal widget.
 
 2021-01-21:
@@ -145,7 +147,7 @@ v1.0.4 2020-12-02: DAA
 * Check the L2 OC products were actually generated before plotting.
 * Eliminate "Update" button for SeaBASS header. Updates automatically on opening SeaBASS header window or closing Config window.
 
-2020-11-30: 
+2020-11-30:
 * Change L1E angular extrapolations to use constant values rather than linear extrapolation except for SOLAR_AZ and SZA.
 
 2020-11-27:
@@ -170,7 +172,7 @@ v1.0.4 2020-12-02: DAA
 
 2020-10-19:
 * L2 product list bug corrected in ConfigWindow
-* Add abort for no SolarTracker (in SolarTracker mode...) found L1C 
+* Add abort for no SolarTracker (in SolarTracker mode...) found L1C
 
 2020-10-14:
 * Add Lw to Lt plots
@@ -258,5 +260,5 @@ v1.0.b: 2020-04-02: Dirk A. Aurin
 
 ---
 
-v1.0.a: 2019-09-04: Dirk A. Aurin <dirk.a.aurin@nasa.gov> 
+v1.0.a: 2019-09-04: Dirk A. Aurin <dirk.a.aurin@nasa.gov>
 * Limited, internal release to NASA/OBPG/OEL/FSG

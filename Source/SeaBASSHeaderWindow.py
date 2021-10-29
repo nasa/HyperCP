@@ -32,7 +32,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             <a href=\"https://seabass.gsfc.nasa.gov/wiki/metadataheaders\"> SeaBASS Metadata Headers</a>")
         linkSeaBASSLabel.setOpenExternalLinks(True)
 
-        instructionLabel = QtWidgets.QLabel("Separate multiple entries with commas, and replace spaces with underscores.")        
+        instructionLabel = QtWidgets.QLabel("Separate multiple entries with commas, and replace spaces with underscores.")
         instructionLabel_font = instructionLabel.font()
         instructionLabel_font.setPointSize(10)
         instructionLabel_font.setBold(True)
@@ -40,14 +40,14 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
         versionLabel = QtWidgets.QLabel("SeaBASS submission verion (e.g. 'R1', 'R2')", self)
         self.versionLineEdit = QtWidgets.QLineEdit(self)
-        self.versionLineEdit.setText(str(SeaBASSHeader.settings["version"]))  
+        self.versionLineEdit.setText(str(SeaBASSHeader.settings["version"]))
 
         instructionLabelSub = QtWidgets.QLabel("To match fields to existing SeaBASS entries,")
         instructionLabelSub1 = QtWidgets.QLabel(
             "check the 'Lists' pull-down menu<a href=\"https://seabass.gsfc.nasa.gov\"> here</a>.")
         instructionLabelSub1.setOpenExternalLinks(True)
 
-       
+
         investigatorsLabel = QtWidgets.QLabel("Investigators", self)
         self.investigatorsLineEdit = QtWidgets.QLineEdit(self)
         self.investigatorsLineEdit.setText(str(SeaBASSHeader.settings["investigators"]))
@@ -101,7 +101,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         data_statusLabel = QtWidgets.QLabel("data_status (e.g. preliminary)", self)
         self.data_statusLineEdit = QtWidgets.QLineEdit(self)
         self.data_statusLineEdit.setText(str(SeaBASSHeader.settings["data_status"]))
-        
+
         water_depthLabel = QtWidgets.QLabel("water_depth (use -999 for missing)", self)
         self.water_depthLineEdit = QtWidgets.QLineEdit(self)
         self.water_depthLineEdit.setText(str(SeaBASSHeader.settings["water_depth"]))
@@ -118,7 +118,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.cloud_percentLineEdit.setText(str(SeaBASSHeader.settings["cloud_percent"]))
         ''' intValidator causing block to data entry '''
         # self.cloud_percentLineEdit.setValidator(intValidator)
-        
+
         wave_heightLabel = QtWidgets.QLabel("wave_height", self)
         self.wave_heightLineEdit = QtWidgets.QLineEdit(self)
         self.wave_heightLineEdit.setText(str(SeaBASSHeader.settings["wave_height"]))
@@ -147,7 +147,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         instructionLabel2_font = instructionLabel2.font()
         instructionLabel2_font.setPointSize(10)
         instructionLabel2_font.setBold(True)
-        instructionLabel2.setFont(instructionLabel2_font)        
+        instructionLabel2.setFont(instructionLabel2_font)
 
         data_file_nameLabel = QtWidgets.QLabel("data_file_name", self)
         self.data_file_nameLineEdit = QtWidgets.QLineEdit(self)
@@ -196,14 +196,14 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         wind_speedLabel = QtWidgets.QLabel("wind_speed (only autopopulated at L4)", self)
         self.wind_speedLineEdit = QtWidgets.QLineEdit(self)
         self.wind_speedLineEdit.setText(str(SeaBASSHeader.settings["wind_speed"]))
-        # self.wind_speedLineEdit.setValidator(doubleValidator)       
+        # self.wind_speedLineEdit.setValidator(doubleValidator)
         ##
 
         self.openButton = QtWidgets.QPushButton("Open/Copy")
         self.saveButton = QtWidgets.QPushButton("Save")
         self.saveAsButton = QtWidgets.QPushButton("Save As")
-        self.cancelButton = QtWidgets.QPushButton("Cancel")                      
-            
+        self.cancelButton = QtWidgets.QPushButton("Cancel")
+
         self.openButton.clicked.connect(self.openButtonPressed)
         self.saveButton.clicked.connect(self.saveButtonPressed)
         self.saveAsButton.clicked.connect(self.saveAsButtonPressed)
@@ -225,11 +225,11 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
         VBox1.addWidget(instructionLabelSub)
         VBox1.addWidget(instructionLabelSub1)
-        # Horizontal Box 
+        # Horizontal Box
         HBox1 = QtWidgets.QHBoxLayout()
         HBox1.addWidget(investigatorsLabel)
         HBox1.addWidget(self.investigatorsLineEdit)
-        VBox1.addLayout(HBox1)   
+        VBox1.addLayout(HBox1)
 
         HBox2 = QtWidgets.QHBoxLayout()
         HBox2.addWidget(affiliationsLabel)
@@ -284,7 +284,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         HBox12 = QtWidgets.QHBoxLayout()
         HBox12.addWidget(data_statusLabel)
         HBox12.addWidget(self.data_statusLineEdit)
-        VBox1.addLayout(HBox12)        
+        VBox1.addLayout(HBox12)
 
         HBox21 = QtWidgets.QHBoxLayout()
         HBox21.addWidget(water_depthLabel)
@@ -299,7 +299,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         HBox23 = QtWidgets.QHBoxLayout()
         HBox23.addWidget(cloud_percentLabel)
         HBox23.addWidget(self.cloud_percentLineEdit)
-        VBox1.addLayout(HBox23)        
+        VBox1.addLayout(HBox23)
 
         HBox25 = QtWidgets.QHBoxLayout()
         HBox25.addWidget(wave_heightLabel)
@@ -317,11 +317,11 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         HBoxSub = QtWidgets.QHBoxLayout()
         VBoxSub = QtWidgets.QVBoxLayout()
 
-        VBoxSub.addWidget(commentsLabel)        
-        # VBoxSub.addWidget(self.configUpdateButton)        
+        VBoxSub.addWidget(commentsLabel)
+        # VBoxSub.addWidget(self.configUpdateButton)
         HBoxSub.addLayout(VBoxSub)
 
-        HBoxSub.addWidget(self.commentsLineEdit)        
+        HBoxSub.addWidget(self.commentsLineEdit)
 
         # HBoxSub.addLayout(VBoxSub)
 
@@ -332,15 +332,15 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         HBox30.addWidget(other_commentsLabel)
         HBox30.addWidget(other_commentsLabel2)
         HBox30.addWidget(self.other_commentsLineEdit)
-        VBox2.addLayout(HBox30) 
+        VBox2.addLayout(HBox30)
 
-        # VBox1.addSpacing(20)         
-        VBox2.addWidget(instructionLabel2) 
+        # VBox1.addSpacing(20)
+        VBox2.addWidget(instructionLabel2)
 
         HBox6 = QtWidgets.QHBoxLayout()
         HBox6.addWidget(stationLabel)
         HBox6.addWidget(self.stationLineEdit)
-        VBox2.addLayout(HBox6)        
+        VBox2.addLayout(HBox6)
 
         HBox7 = QtWidgets.QHBoxLayout()
         HBox7.addWidget(data_file_nameLabel)
@@ -397,11 +397,11 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         HBox24.addWidget(self.wind_speedLineEdit)
         VBox2.addLayout(HBox24)
 
-       
+
         # Add 3 Vertical Boxes to Horizontal Box hBox
         hBox = QtWidgets.QHBoxLayout()
         hBox.addLayout(VBox1)
-        hBox.addLayout(VBox2)                
+        hBox.addLayout(VBox2)
 
         # Save/Cancel
         saveHBox = QtWidgets.QHBoxLayout()
@@ -411,7 +411,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         saveHBox.addWidget(self.saveAsButton)
         saveHBox.addWidget(self.cancelButton)
 
-        # Adds hBox and saveHBox to primary VBox 
+        # Adds hBox and saveHBox to primary VBox
         VBox.addLayout(hBox)
         VBox.addLayout(saveHBox)
 
@@ -423,41 +423,41 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
     def configUpdateButtonPressed(self, caller):
         print("Updating comments from values in ConFigWindow")
 
-        # This will update subsequently from the ConfigFile on demand        
+        # This will update subsequently from the ConfigFile on demand
         if ConfigFile.settings["bL1aCleanSZA"]:
             szaFilt = "On"
-        else: 
+        else:
             szaFilt = "Off"
         if ConfigFile.settings["bL1cCleanPitchRoll"]:
             pitchRollFilt = "On"
-        else: 
+        else:
             pitchRollFilt = "Off"
         if ConfigFile.settings["bL1cRotatorAngle"]:
             cleanRotFilt = "On"
-        else: 
+        else:
             cleanRotFilt = "Off"
         if ConfigFile.settings["bL1cCleanSunAngle"]:
             cleanRelAzFilt = "On"
-        else: 
+        else:
             cleanRelAzFilt = "Off"
         if ConfigFile.settings["bL1dDeglitch"]:
             deglitchFilt = "On"
-        else: 
+        else:
             deglitchFilt = "Off"
         if ConfigFile.settings["bL2EnableSpecQualityCheck"]:
             specFilt = "On"
-        else: 
+        else:
             specFilt = "Off"
         if ConfigFile.settings["bL2EnableQualityFlags"]:
             metFilt = "On"
-        else: 
+        else:
             metFilt = "Off"
         if ConfigFile.settings["bL2EnablePercentLt"]:
             ltFilt = "On"
-        else: 
+        else:
             ltFilt = "Off"
-        if ConfigFile.settings["bL2RuddickRho"]:
-            rhoCorr = "Ruddick2006"
+        if ConfigFile.settings["bL23CRho"]:
+            rhoCorr = "3C"
         elif ConfigFile.settings["bL2ZhangRho"]:
             rhoCorr = "Zhang2017"
         else:
@@ -467,11 +467,11 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
                 NIRFilt = "Hooker2003"
             else:
                 NIRFilt = "Ruddick2006"
-        else: 
+        else:
             NIRFilt = "Off"
         if ConfigFile.settings["bL2NegativeSpec"]:
             NegativeFilt = "On"
-        else: 
+        else:
             NegativeFilt = "Off"
 
         SeaBASSHeader.settings["comments"] =\
@@ -549,24 +549,24 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             self.name = fileToCopy
             SeaBASSHeaderWindow.refreshWindow(self)
 
-       
+
     def saveButtonPressed(self):
-        print("SeaBASSHeaderWindow - Save Pressed")        
-        
+        print("SeaBASSHeaderWindow - Save Pressed")
+
         SeaBASSHeader.settings["version"] = self.versionLineEdit.text()
         SeaBASSHeader.settings["investigators"] = self.investigatorsLineEdit.text()
-        SeaBASSHeader.settings["affiliations"] = self.affiliationsLineEdit.text()  
+        SeaBASSHeader.settings["affiliations"] = self.affiliationsLineEdit.text()
         SeaBASSHeader.settings["contact"] = self.contactLineEdit.text()
         SeaBASSHeader.settings["experiment"] = self.experimentLineEdit.text()
-        SeaBASSHeader.settings["cruise"] = self.cruiseLineEdit.text()        
-        SeaBASSHeader.settings["station"] = self.stationLineEdit.text()        
-        SeaBASSHeader.settings["documents"] = self.documentsLineEdit.text() 
+        SeaBASSHeader.settings["cruise"] = self.cruiseLineEdit.text()
+        SeaBASSHeader.settings["station"] = self.stationLineEdit.text()
+        SeaBASSHeader.settings["documents"] = self.documentsLineEdit.text()
         SeaBASSHeader.settings["calibration_files"] = self.calibration_filesLineEdit.text()
         SeaBASSHeader.settings["data_type"] = self.data_typeLineEdit.text()
-        SeaBASSHeader.settings["data_status"] = self.data_statusLineEdit.text()                
-        SeaBASSHeader.settings["water_depth"] = self.water_depthLineEdit.text()   
-        SeaBASSHeader.settings["measurement_depth"] = self.measurement_depthLineEdit.text()      
-        SeaBASSHeader.settings["cloud_percent"] = self.cloud_percentLineEdit.text()     
+        SeaBASSHeader.settings["data_status"] = self.data_statusLineEdit.text()
+        SeaBASSHeader.settings["water_depth"] = self.water_depthLineEdit.text()
+        SeaBASSHeader.settings["measurement_depth"] = self.measurement_depthLineEdit.text()
+        SeaBASSHeader.settings["cloud_percent"] = self.cloud_percentLineEdit.text()
         SeaBASSHeader.settings["wave_height"] = self.wave_heightLineEdit.text()
         SeaBASSHeader.settings["secchi_depth"] = self.secchi_depthLineEdit.text()
 
@@ -575,7 +575,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.settings["calibration_date"] = self.calibration_dateLineEdit.text()
 
         SeaBASSHeader.settings["data_file_name"] = self.data_file_nameLineEdit.text()
-        SeaBASSHeader.settings["original_file_name"] = self.original_file_nameLineEdit.text()                                       
+        SeaBASSHeader.settings["original_file_name"] = self.original_file_nameLineEdit.text()
         SeaBASSHeader.settings["start_date"] = self.start_dateLineEdit.text()
         SeaBASSHeader.settings["end_date"] = self.end_dateLineEdit.text()
         SeaBASSHeader.settings["start_time"] = self.start_timeLineEdit.text()
@@ -584,8 +584,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.settings["north_latitude"] = self.north_latitudeLineEdit.text()
         SeaBASSHeader.settings["south_latitude"] = self.south_latitudeLineEdit.text()
         SeaBASSHeader.settings["east_longitude"] = self.east_longitudeLineEdit.text()
-        SeaBASSHeader.settings["west_longitude"] = self.west_longitudeLineEdit.text()                
-        SeaBASSHeader.settings["wind_speed"] = self.wind_speedLineEdit.text()  
+        SeaBASSHeader.settings["west_longitude"] = self.west_longitudeLineEdit.text()
+        SeaBASSHeader.settings["wind_speed"] = self.wind_speedLineEdit.text()
 
         SeaBASSHeader.settings["comments"] = self.commentsLineEdit.toPlainText()
         SeaBASSHeader.settings["other_comments"] = self.other_commentsLineEdit.toPlainText()
@@ -593,12 +593,12 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.saveSeaBASSHeader(self.name)
         # print(SeaBASSHeader.settings["comments"])
         ConfigFile.settings["seaBASSHeaderFileName"] = self.name
-        
+
         # QtWidgets.QMessageBox.about(self, "Edit SeaBASSHeader File", "SeaBASSHeader File Saved")
         self.close()
 
     def refreshWindow(self):
-        print("SeaBASSHeaderWindow - refreshWindow")        
+        print("SeaBASSHeaderWindow - refreshWindow")
         self.nameLabel.setText(f'Editing: {self.name}')
         self.versionLineEdit.setText(str(SeaBASSHeader.settings["version"]))
         self.investigatorsLineEdit.setText(str(SeaBASSHeader.settings["investigators"]))
@@ -612,8 +612,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.instrument_modelLineEdit.setText(str(SeaBASSHeader.settings["instrument_model"]))
         self.calibration_dateLineEdit.setText(str(SeaBASSHeader.settings["calibration_date"]))
         self.commentsLineEdit.setPlainText(SeaBASSHeader.settings["comments"])
-        self.other_commentsLineEdit.setText(SeaBASSHeader.settings["other_comments"])        
-        
+        self.other_commentsLineEdit.setText(SeaBASSHeader.settings["other_comments"])
+
     def saveAsButtonPressed(self):
         print("ConfigWindow - Save As Pressed")
         self.name, ok = QtWidgets.QInputDialog.getText(self, 'Save As SeaBASS Header File', 'Enter File Name')
@@ -621,11 +621,11 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             print("Create SeaBASS Header: ", self.name)
 
             if not self.name.endswith(".hdr"):
-                self.name = self.name + ".hdr"            
+                self.name = self.name + ".hdr"
 
             self.nameLabel.update()
-            SeaBASSHeaderWindow.saveButtonPressed(self)      
-            ConfigFile.settings["seaBASSHeaderFileName"] = self.name                
+            SeaBASSHeaderWindow.saveButtonPressed(self)
+            ConfigFile.settings["seaBASSHeaderFileName"] = self.name
 
     def cancelButtonPressed(self):
         print("SeaBASSWindow - Cancel Pressed")

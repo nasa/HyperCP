@@ -33,9 +33,9 @@ class Utilities:
 
 
     @staticmethod
-    def mostFrequent(List): 
-        occurence_count = Counter(List) 
-        return occurence_count.most_common(1)[0][0] 
+    def mostFrequent(List):
+        occurence_count = Counter(List)
+        return occurence_count.most_common(1)[0][0]
 
     @staticmethod
     def find_nearest(array,value):
@@ -51,33 +51,33 @@ class Utilities:
         #     return array[idx]
 
     @staticmethod
-    def errorWindow(winText,errorText):        
+    def errorWindow(winText,errorText):
         msgBox = QMessageBox()
         # msgBox.setIcon(QMessageBox.Information)
         msgBox.setIcon(QMessageBox.Critical)
         msgBox.setText(errorText)
         msgBox.setWindowTitle(winText)
-        msgBox.setStandardButtons(QMessageBox.Ok)        
+        msgBox.setStandardButtons(QMessageBox.Ok)
         msgBox.exec_()
 
     @staticmethod
-    def waitWindow(winText,waitText):        
+    def waitWindow(winText,waitText):
         msgBox = QMessageBox()
         # msgBox.setIcon(QMessageBox.Information)
         msgBox.setIcon(QMessageBox.Critical)
         msgBox.setText(waitText)
         msgBox.setWindowTitle(winText)
-        # msgBox.setStandardButtons(QMessageBox.Ok)        
+        # msgBox.setStandardButtons(QMessageBox.Ok)
         # msgBox.exec_()
         return msgBox
 
     @staticmethod
-    def YNWindow(winText,infoText):        
+    def YNWindow(winText,infoText):
         msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Information)        
+        msgBox.setIcon(QMessageBox.Information)
         msgBox.setText(infoText)
         msgBox.setWindowTitle(winText)
-        msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)        
+        msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         returnValue = msgBox.exec_()
         return returnValue
 
@@ -100,14 +100,14 @@ class Utilities:
         bar = fill * filledLength + '-' * (length - filledLength)
         print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
         # Print New Line on Complete
-        if iteration == total: 
+        if iteration == total:
             print()
 
     @staticmethod
     def writeLogFile(logText, mode='a'):
         with open('Logs/' + os.environ["LOGFILE"], mode) as logFile:
             logFile.write(logText + "\n")
-    
+
     # Converts degrees minutes to decimal degrees format
     @staticmethod # for some reason, these were not set to static method, but didn't refer to self
     def dmToDd(dm, direction):
@@ -204,7 +204,7 @@ class Utilities:
         m = int(t[2:4])
         s = int(t[4:6])
         us = 1000*int(t[6:])
-        # print(h, m, s, us)        
+        # print(h, m, s, us)
         # print(tt2)
         return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=datetime.timezone.utc)
 
@@ -223,7 +223,7 @@ class Utilities:
         y = dt.year
         # mon = dt.month
         day = dt.timetuple().tm_yday
-        
+
         return int("%d%03d" % (y, day))
 
     # Converts HDFRoot timestamp attribute to seconds
@@ -244,18 +244,18 @@ class Utilities:
         mon = int(date[2:4])
         return datetime.datetime(year,mon,day,0,0,0,0,tzinfo=datetime.timezone.utc)
 
-    
-    # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG   
+
+    # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
     # Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
     # in the 20th or 21st centuries
     @staticmethod
     def rootAddDateTime(node):
-        for gp in node.groups:  
-            # print(gp.id)          
-            if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS                
+        for gp in node.groups:
+            # print(gp.id)
+            if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
                 timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
                 dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
-                timeStamp = [] 
+                timeStamp = []
                 for i, timei in enumerate(timeData):
                     # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
                     # Filter for aberrant Datetags
@@ -269,7 +269,7 @@ class Utilities:
 
                         dt = Utilities.dateTagToDateTime(dateTag[i])
                         timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
-                    else:                                            
+                    else:
                         msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} : {dateTag[i]} : {timei}"
                         print(msg)
                         Utilities.writeLogFile(msg)
@@ -278,22 +278,22 @@ class Utilities:
                 dateTime.data = timeStamp
         return node
 
-    # Add a data column to each group dataset for DATETIME, as defined by TIMETAG2 and DATETAG   
+    # Add a data column to each group dataset for DATETIME, as defined by TIMETAG2 and DATETAG
     # Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
     # in the 20th or 21st centuries
     @staticmethod
     def rootAddDateTimeL2(node):
-        for gp in node.groups:            
+        for gp in node.groups:
             if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
                 for ds in gp.datasets:
                     # Make sure all datasets have been transcribed to columns
                     gp.datasets[ds].datasetToColumns()
-                                        
+
                     if not 'Datetime' in gp.datasets[ds].columns:
                         timeData = gp.datasets[ds].columns["Timetag2"]
                         dateTag = gp.datasets[ds].columns["Datetag"]
-                        
-                        timeStamp = [] 
+
+                        timeStamp = []
                         for i, timei in enumerate(timeData):
                             # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
                             # Filter for aberrant Datetags
@@ -302,7 +302,7 @@ class Utilities:
 
                                 dt = Utilities.dateTagToDateTime(dateTag[i])
                                 timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
-                            else:                    
+                            else:
                                 gp.datasetDeleteRow(i)
                                 msg = f"Bad Datetag or Timetag2 found. Eliminating record. {dateTag[i]} : {timei}"
                                 print(msg)
@@ -314,12 +314,12 @@ class Utilities:
         return node
 
     # Remove records if values of DATETIME are not strictly increasing
-    # (strictly increasing values required for interpolation)    
+    # (strictly increasing values required for interpolation)
     @staticmethod
-    def fixDateTime(gp):        
+    def fixDateTime(gp):
         dateTime = gp.getDataset("DATETIME").data
 
-        # Test for strictly ascending values 
+        # Test for strictly ascending values
         # Not sensitive to UTC midnight (i.e. in datetime format)
         total = len(dateTime)
         globalTotal = total
@@ -374,7 +374,7 @@ class Utilities:
     #     dateTime = datetime.datetime.utcfromtimestamp(eSec)
     #     year = dateTime.timetuple()[0]
     #     return
-        
+
     # Checks if a string is a floating point number
     @staticmethod
     def isFloat(text):
@@ -405,7 +405,7 @@ class Utilities:
     @staticmethod
     def windowAverage(data,window_size):
         min_periods = round(window_size/2)
-        df=pd.DataFrame(data)    
+        df=pd.DataFrame(data)
         out=df.rolling(window_size,min_periods,center=True,win_type='boxcar')
         # out = [item for items in out for item in items] #flattening doesn't work
         return out
@@ -413,7 +413,7 @@ class Utilities:
     @staticmethod
     def movingAverage(data, window_size):
         # Window size will be determined experimentally by examining the dark and light data from each instrument.
-        """ Noise detection using a low-pass filter. 
+        """ Noise detection using a low-pass filter.
         https://www.datascience.com/blog/python-anomaly-detection
         Computes moving average using discrete linear convolution of two one dimensional sequences.
         Args:
@@ -427,12 +427,12 @@ class Utilities:
         ------------
         [1] Wikipedia, "Convolution", http://en.wikipedia.org/wiki/Convolution.
         [2] API Reference: https://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html
-        [3] ABE, N., Zadrozny, B., and Langford, J. 2006. Outlier detection by active learning. 
-            In Proceedings of the 12th ACM SIGKDD International Conference on Knowledge Discovery and 
+        [3] ABE, N., Zadrozny, B., and Langford, J. 2006. Outlier detection by active learning.
+            In Proceedings of the 12th ACM SIGKDD International Conference on Knowledge Discovery and
             Data Mining. ACM Press, New York, 504–509
-        [4] V Chandola, A Banerjee and V Kumar 2009. Anomaly Detection: A Survey Article No. 15 in ACM 
+        [4] V Chandola, A Banerjee and V Kumar 2009. Anomaly Detection: A Survey Article No. 15 in ACM
             Computing Surveys"""
-        
+
         # window = np.ones(int(window_size))/float(window_size)
         # Convolve is not nan-tolerant, so use a mask
         data = np.array(data)
@@ -440,12 +440,12 @@ class Utilities:
         K = np.ones(window_size, dtype=int)
         denom = np.convolve(~mask,K)
         denom = np.where(denom != 0, denom, 1) # replace the 0s with 1s to block div0 error; the numerator will be zero anyway
-        
+
         out = np.convolve(np.where(mask,0,data), K)/denom
         # return np.convolve(data, window, 'same')
 
         # Slice out one half window on either side; this requires an odd-sized window
-        return out[int(np.floor(window_size/2)):-int(np.floor(window_size/2))]  
+        return out[int(np.floor(window_size/2)):-int(np.floor(window_size/2))]
 
 
     @staticmethod
@@ -483,12 +483,12 @@ class Utilities:
         return badIndex
 
     @staticmethod
-    def l1dThresholds(band,data,minRad,maxRad,minMaxBand):        
-        
+    def l1dThresholds(band,data,minRad,maxRad,minMaxBand):
+
         badIndex = []
         for i in range(len(data)):
             badIndex.append(False)
-            # ConfigFile setting updated directly from the checkbox in AnomDetection. 
+            # ConfigFile setting updated directly from the checkbox in AnomDetection.
             # This insures values of badIndex are false if unthresholded or Min or Max are None
             if ConfigFile.settings["bL1dThreshold"]:
                 # Only run on the pre-selected waveband
@@ -496,7 +496,7 @@ class Utilities:
                     if minRad or minRad==0: # beware falsy zeros...
                         if data[i] < minRad:
                             badIndex[-1] = True
-                    
+
                     if maxRad or maxRad==0:
                         if data[i] > maxRad:
                             badIndex[-1] = True
@@ -511,7 +511,7 @@ class Utilities:
     #     badIndex = [s>=m]
     #     return badIndex
 
-    
+
     @staticmethod
     def interp(x, y, new_x, kind='linear', fill_value=0.0):
         ''' Wrapper for scipy interp1d that works even if
@@ -539,21 +539,21 @@ class Utilities:
             # msg = '********** Warning: extrapolating to before beginning of data record ******'
             # print(msg)
             # Utilities.writeLogFile(msg)
-            
+
             x.insert(0, new_x[0])
             y.insert(0, y[0])
 
         new_y = scipy.interpolate.interp1d(x, y, kind=kind, bounds_error=False, fill_value=fill_value)(new_x)
 
         return new_y
-    
+
     @staticmethod
     def interpAngular(x, y, new_x, fill_value="extrapolate"):
         ''' Wrapper for scipy interp1d that works even if
             values in new_x are outside the range of values in x'''
 
-        ''' NOTE: Except for SOLAR_AZ and SZA, which are extrapolated, this will fill missing values at the 
-            beginning and end of data record with the nearest actual record. This is fine for integrated 
+        ''' NOTE: Except for SOLAR_AZ and SZA, which are extrapolated, this will fill missing values at the
+            beginning and end of data record with the nearest actual record. This is fine for integrated
             datasets, but may be dramatic for some gappy ancillary records of lower temporal resolution.'''
 
         if fill_value != "extrapolate": # Only extrapolate SOLAR_AZ and SZA, otherwise keep fill values constant
@@ -585,7 +585,7 @@ class Utilities:
                 # msg = '********** Warning: extrapolating to before beginning of data record ******'
                 # print(msg)
                 # Utilities.writeLogFile(msg)
-                
+
                 x.insert(0, new_x[0])
                 y.insert(0, y[0])
 
@@ -602,12 +602,12 @@ class Utilities:
     # interpolate.splrep is intolerant of duplicate or non-ascending inputs, and inputs with fewer than 3 points
     @staticmethod
     def interpSpline(x, y, new_x):
-        spl = splrep(x, y)        
+        spl = splrep(x, y)
         new_y = splev(new_x, spl)
 
         for i in range(len(new_y)):
             if np.isnan(new_y[i]):
-                print("NaN")                
+                print("NaN")
 
         return new_y
 
@@ -616,7 +616,7 @@ class Utilities:
 
         dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
-        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path, 
+        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
         # and build on that (HyperInSPACE/Plots/etc...)
         if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
             outDir = dirPath
@@ -625,12 +625,12 @@ class Utilities:
         plotDir = os.path.join(outDir,'Plots','L2')
 
         if not os.path.exists(plotDir):
-            os.makedirs(plotDir)  
+            os.makedirs(plotDir)
 
         dataDelta = None
         ''' Note: If only one spectrum is left in a given ensemble, deltas will
         be zero for Es, Li, and Lt.'''
-        
+
         if rType=='Rrs':
             print('Plotting Rrs')
             group = root.getGroup("REFLECTANCE")
@@ -669,28 +669,28 @@ class Utilities:
             Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_HYPER_unc')
-            plotRange = [340, 800]   
-            if ConfigFile.settings['bL2WeightMODISA']:        
+            plotRange = [340, 800]
+            if ConfigFile.settings['bL2WeightMODISA']:
                 Data_MODISA = group.getDataset(f'{rType}_MODISA')
                 if plotDelta:
                     dataDelta_MODISA = group.getDataset(f'{rType}_MODISA_unc')
-            if ConfigFile.settings['bL2WeightMODIST']:        
+            if ConfigFile.settings['bL2WeightMODIST']:
                 Data_MODIST = group.getDataset(f'{rType}_MODIST')
                 if plotDelta:
                     dataDelta_MODIST = group.getDataset(f'{rType}_MODIST_unc')
-            if ConfigFile.settings['bL2WeightVIIRSN']:        
+            if ConfigFile.settings['bL2WeightVIIRSN']:
                 Data_VIIRSN = group.getDataset(f'{rType}_VIIRSN')
                 if plotDelta:
                     dataDelta_VIIRSN = group.getDataset(f'{rType}_VIIRSN_unc')
-            if ConfigFile.settings['bL2WeightVIIRSJ']:        
+            if ConfigFile.settings['bL2WeightVIIRSJ']:
                 Data_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ')
                 if plotDelta:
                     dataDelta_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ_unc')
-            if ConfigFile.settings['bL2WeightSentinel3A']:        
+            if ConfigFile.settings['bL2WeightSentinel3A']:
                 Data_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A')
                 if plotDelta:
                     dataDelta_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A_unc')
-            if ConfigFile.settings['bL2WeightSentinel3B']:        
+            if ConfigFile.settings['bL2WeightSentinel3B']:
                 Data_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B')
                 if plotDelta:
                     dataDelta_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B_unc')
@@ -703,7 +703,7 @@ class Utilities:
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_HYPER_sd')
             plotRange = [305, 1140]
-            
+
         if rType=='LI':
             print('Plotting Li')
             group = root.getGroup("RADIANCE")
@@ -711,15 +711,15 @@ class Utilities:
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_HYPER_sd')
             plotRange = [305, 1140]
-            
+
         if rType=='LT':
             print('Plotting Lt')
             group = root.getGroup("RADIANCE")
-            Data = group.getDataset(f'{rType}_HYPER')  
-            lwData = group.getDataset(f'LW_HYPER')  
+            Data = group.getDataset(f'{rType}_HYPER')
+            lwData = group.getDataset(f'LW_HYPER')
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_HYPER_sd')    
-                # lwDataDelta = group.getDataset(f'LW_HYPER_sd')    
+                dataDelta = group.getDataset(f'{rType}_HYPER_sd')
+                # lwDataDelta = group.getDataset(f'LW_HYPER_sd')
             plotRange = [305, 1140]
 
         font = {'family': 'serif',
@@ -730,9 +730,9 @@ class Utilities:
 
         # Hyperspectral
         x = []
-        xLw = []        
-        wave = [] 
-        subwave = [] # accomodates Zhang, which deletes out-of-bounds wavebands       
+        xLw = []
+        wave = []
+        subwave = [] # accomodates Zhang, which deletes out-of-bounds wavebands
         # For each waveband
         for k in Data.data.dtype.names:
             if Utilities.isFloat(k):
@@ -746,7 +746,7 @@ class Utilities:
                     if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
                         xLw.append(k)
                         subwave.append(float(k))
-        
+
         # Satellite Bands
         x_MODISA = []
         wave_MODISA = []
@@ -808,8 +808,8 @@ class Utilities:
         for i in range(total):
             # Hyperspectral
             y = []
-            dy = []            
-            for k in x:                
+            dy = []
+            for k in x:
                 y.append(Data.data[k][i])
                 if plotDelta:
                     dy.append(dataDelta.data[k][i])
@@ -817,52 +817,52 @@ class Utilities:
             if rType=='LT':
                 yLw = []
                 # dyLw = []
-                for k in xLw:    
+                for k in xLw:
                     yLw.append(lwData.data[k][i])
                     # if plotDelta:
                     #     dy.append(dataDelta.data[k][i])
 
 
             # Satellite Bands
-            y_MODISA = []            
+            y_MODISA = []
             dy_MODISA = []
             if ConfigFile.settings['bL2WeightMODISA']  and (rType == 'Rrs' or rType == 'nLw'):
-                for k in x_MODISA:                
+                for k in x_MODISA:
                     y_MODISA.append(Data_MODISA.data[k][i])
                     if plotDelta:
                         dy_MODISA.append(dataDelta_MODISA.data[k][i])
-            y_MODIST = []            
+            y_MODIST = []
             dy_MODIST = []
             if ConfigFile.settings['bL2WeightMODIST']  and (rType == 'Rrs' or rType == 'nLw'):
-                for k in x_MODIST:                
+                for k in x_MODIST:
                     y_MODIST.append(Data_MODIST.data[k][i])
                     if plotDelta:
                         dy_MODIST.append(dataDelta_MODIST.data[k][i])
-            y_VIIRSN = []            
+            y_VIIRSN = []
             dy_VIIRSN = []
             if ConfigFile.settings['bL2WeightVIIRSN']  and (rType == 'Rrs' or rType == 'nLw'):
-                for k in x_VIIRSN:                
+                for k in x_VIIRSN:
                     y_VIIRSN.append(Data_VIIRSN.data[k][i])
                     if plotDelta:
                         dy_VIIRSN.append(dataDelta_VIIRSN.data[k][i])
-            y_VIIRSJ = []            
+            y_VIIRSJ = []
             dy_VIIRSJ = []
             if ConfigFile.settings['bL2WeightVIIRSJ']  and (rType == 'Rrs' or rType == 'nLw'):
-                for k in x_VIIRSJ:                
+                for k in x_VIIRSJ:
                     y_VIIRSJ.append(Data_VIIRSJ.data[k][i])
                     if plotDelta:
                         dy_VIIRSJ.append(dataDelta_VIIRSJ.data[k][i])
-            y_Sentinel3A = []            
+            y_Sentinel3A = []
             dy_Sentinel3A = []
             if ConfigFile.settings['bL2WeightSentinel3A']  and (rType == 'Rrs' or rType == 'nLw'):
-                for k in x_Sentinel3A:                
+                for k in x_Sentinel3A:
                     y_Sentinel3A.append(Data_Sentinel3A.data[k][i])
                     if plotDelta:
                         dy_Sentinel3A.append(dataDelta_Sentinel3A.data[k][i])
-            y_Sentinel3B = []            
+            y_Sentinel3B = []
             dy_Sentinel3B = []
             if ConfigFile.settings['bL2WeightSentinel3B']  and (rType == 'Rrs' or rType == 'nLw'):
-                for k in x_Sentinel3B:                
+                for k in x_Sentinel3B:
                     y_Sentinel3B.append(Data_Sentinel3B.data[k][i])
                     if plotDelta:
                         dy_Sentinel3B.append(dataDelta_Sentinel3B.data[k][i])
@@ -885,7 +885,7 @@ class Utilities:
 
             # Plot the Hyperspectral spectrum
             plt.plot(wave, y, c=c, zorder=-1)
-            
+
             # Add the Wei QA score to the Rrs plot, if calculated
             if rType == 'Rrs':
                 if ConfigFile.products['bL2ProdweiQA']:
@@ -897,11 +897,11 @@ class Utilities:
                         verticalalignment='top', horizontalalignment='right',
                         transform=axes.transAxes,
                         color=c, fontdict=font)
-                    
+
             # Add Lw to Lt plots
             if rType=='LT':
                 plt.plot(subwave, yLw, c=c, zorder=-1, linestyle='dashed')
-            
+
             if plotDelta:
                 # Generate the polygon for uncertainty bounds
                 deltaPolyx = wave + list(reversed(wave))
@@ -915,53 +915,53 @@ class Utilities:
 
             # Satellite Bands
             if ConfigFile.settings['bL2WeightMODISA']:
-                # Plot the MODISA spectrum                                
+                # Plot the MODISA spectrum
                 if plotDelta:
                     plt.errorbar(wave_MODISA, y_MODISA, yerr=dy_MODISA, fmt='.',
                         elinewidth=0.1, color=c, ecolor='black', zorder=3) # ecolor is broken
                 else:
-                    plt.plot(wave_MODISA, y_MODISA, 'o', c=c)                
+                    plt.plot(wave_MODISA, y_MODISA, 'o', c=c)
             if ConfigFile.settings['bL2WeightMODIST']:
-                # Plot the MODIST spectrum                                
+                # Plot the MODIST spectrum
                 if plotDelta:
                     plt.errorbar(wave_MODIST, y_MODIST, yerr=dy_MODIST, fmt='.',
                         elinewidth=0.1, color=c, ecolor='black')
                 else:
                     plt.plot(wave_MODIST, y_MODIST, 'o', c=c)
             if ConfigFile.settings['bL2WeightVIIRSN']:
-                # Plot the VIIRSN spectrum                                
+                # Plot the VIIRSN spectrum
                 if plotDelta:
                     plt.errorbar(wave_VIIRSN, y_VIIRSN, yerr=dy_VIIRSN, fmt='.',
                         elinewidth=0.1, color=c, ecolor='black')
                 else:
                     plt.plot(wave_VIIRSN, y_VIIRSN, 'o', c=c)
             if ConfigFile.settings['bL2WeightVIIRSJ']:
-                # Plot the VIIRSJ spectrum                                
+                # Plot the VIIRSJ spectrum
                 if plotDelta:
                     plt.errorbar(wave_VIIRSJ, y_VIIRSJ, yerr=dy_VIIRSJ, fmt='.',
                         elinewidth=0.1, color=c, ecolor='black')
                 else:
                     plt.plot(wave_VIIRSJ, y_VIIRSJ, 'o', c=c)
             if ConfigFile.settings['bL2WeightSentinel3A']:
-                # Plot the Sentinel3A spectrum                                
+                # Plot the Sentinel3A spectrum
                 if plotDelta:
                     plt.errorbar(wave_Sentinel3A, y_Sentinel3A, yerr=dy_Sentinel3A, fmt='.',
                         elinewidth=0.1, color=c, ecolor='black')
                 else:
                     plt.plot(wave_Sentinel3A, y_Sentinel3A, 'o', c=c)
             if ConfigFile.settings['bL2WeightSentinel3B']:
-                # Plot the Sentinel3B spectrum                                
+                # Plot the Sentinel3B spectrum
                 if plotDelta:
                     plt.errorbar(wave_Sentinel3B, y_Sentinel3B, yerr=dy_Sentinel3B, fmt='.',
                         elinewidth=0.1, color=c, ecolor='black')
                 else:
                     plt.plot(wave_Sentinel3B, y_Sentinel3B, 'o', c=c)
- 
+
         axes = plt.gca()
         axes.set_title(filename, fontdict=font)
         # axes.set_xlim([390, 800])
         axes.set_ylim([minRad, maxRad])
-        
+
         plt.xlabel('wavelength (nm)', fontdict=font)
         if rType=='LT':
             plt.ylabel('LT (LW dashed)', fontdict=font)
@@ -985,14 +985,14 @@ class Utilities:
         filebasename = filename.split('_')
         fp = os.path.join(plotDir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
         plt.savefig(fp)
-        plt.close() # This prevents displaying the plot on screen with certain IDEs          
+        plt.close() # This prevents displaying the plot on screen with certain IDEs
 
     @staticmethod
     def plotRadiometryL1D(root, filename, rType):
 
         dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
-        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path, 
+        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
         # and build on that (HyperInSPACE/Plots/etc...)
         if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
             outDir = dirPath
@@ -1001,7 +1001,7 @@ class Utilities:
         plotDir = os.path.join(outDir,'Plots','L1D')
 
         if not os.path.exists(plotDir):
-            os.makedirs(plotDir)  
+            os.makedirs(plotDir)
 
         plotRange = [305, 1140]
 
@@ -1009,16 +1009,16 @@ class Utilities:
             print('Plotting Es')
             group = root.getGroup(rType)
             Data = group.getDataset(rType)
-            
+
         if rType=='LI':
             print('Plotting Li')
             group = root.getGroup(rType)
             Data = group.getDataset(rType)
-            
+
         if rType=='LT':
             print('Plotting Lt')
             group = root.getGroup(rType)
-            Data = group.getDataset(rType)  
+            Data = group.getDataset(rType)
 
         font = {'family': 'serif',
             'color':  'darkred',
@@ -1028,14 +1028,14 @@ class Utilities:
 
         # Hyperspectral
         x = []
-        wave = [] 
-        
+        wave = []
+
         # For each waveband
         for k in Data.data.dtype.names:
             if Utilities.isFloat(k):
                 if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
                     x.append(k)
-                    wave.append(float(k))               
+                    wave.append(float(k))
 
         total = Data.data.shape[0]
         maxRad = 0
@@ -1047,8 +1047,8 @@ class Utilities:
         for i in range(total):
             # Hyperspectral
             y = []
-            for k in x:                
-                y.append(Data.data[k][i])                           
+            for k in x:
+                y.append(Data.data[k][i])
 
             c=next(color)
             if max(y) > maxRad:
@@ -1067,20 +1067,20 @@ class Utilities:
                 minRad = 0
 
             # Plot the Hyperspectral spectrum
-            plt.plot(wave, y, 'k', c=c, zorder=-1)                                    
- 
+            plt.plot(wave, y, c=c, zorder=-1)
+
         axes = plt.gca()
         axes.set_title(filename, fontdict=font)
         # axes.set_xlim([390, 800])
         axes.set_ylim([minRad, maxRad])
-        
+
         plt.xlabel('wavelength (nm)', fontdict=font)
         plt.ylabel(rType, fontdict=font)
 
         # Tweak spacing to prevent clipping of labels
         plt.subplots_adjust(left=0.15)
         plt.subplots_adjust(bottom=0.15)
-                
+
         axes.grid()
 
         # plt.show() # --> QCoreApplication::exec: The event loop is already running
@@ -1089,16 +1089,16 @@ class Utilities:
         filebasename = filename.split('_')
         fp = os.path.join(plotDir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
         plt.savefig(fp)
-        plt.close() # This prevents displaying the plot on screen with certain IDEs   
-   
+        plt.close() # This prevents displaying the plot on screen with certain IDEs
+
 
     @staticmethod
-    def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):    
+    def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):
         ''' Plot results of L1E time interpolation '''
 
         dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
-        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path, 
+        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
         # and build on that (HyperInSPACE/Plots/etc...)
         if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
             outDir = dirPath
@@ -1107,7 +1107,7 @@ class Utilities:
         plotDir = os.path.join(outDir,'Plots','L1E')
 
         if not os.path.exists(plotDir):
-            os.makedirs(plotDir)  
+            os.makedirs(plotDir)
 
         # For the sake of MacOS, need to hack the datetimes into panda dataframes for plotting
         dfx = pd.DataFrame(data=xTimer, index=list(range(0,len(xTimer))), columns=['x'])
@@ -1117,8 +1117,8 @@ class Utilities:
         dfy['x'] = pd.to_datetime(dfy['x'].astype(str))
 
         fileBaseName,_ = fileName.split('.')
-        register_matplotlib_converters()        
-   
+        register_matplotlib_converters()
+
         font = {'family': 'serif',
             'color':  'darkred',
             'weight': 'normal',
@@ -1130,24 +1130,24 @@ class Utilities:
         # This happens prior to waveband interpolation, so each interval is ~3.3 nm
         ''' To Do: THIS COULD BE SET IN THE CONFIG WINDOW '''
         step = 20 # this is in band intervals
-        
-        if instr == 'ES' or instr == 'LI' or instr == 'LT':                
+
+        if instr == 'ES' or instr == 'LI' or instr == 'LT':
             l = round((len(xData.data.dtype.names)-3)/step) # skip date and time and datetime
             index = l
         else:
             l = len(xData.data.dtype.names)-3 # skip date and time and datetime
             index = None
 
-        Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)            
-        
+        Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+
         ticker = 0
         if index is not None:
             for k in xData.data.dtype.names:
-                if index % step == 0:                                                 
+                if index % step == 0:
                     if k == "Datetag" or k == "Timetag2" or k == "Datetime":
-                        continue  
-                    ticker += 1    
-                    Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)                      
+                        continue
+                    ticker += 1
+                    Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
                     x = np.copy(xData.data[k]).tolist()
                     new_x = np.copy(newXData.columns[k]).tolist()
 
@@ -1163,16 +1163,16 @@ class Utilities:
                     plt.ylabel(f'{instr}_{k}', fontdict=font)
                     plt.subplots_adjust(left=0.15)
                     plt.subplots_adjust(bottom=0.15)
-                    
+
                     # plt.savefig(os.path.join('Plots','L1E',f'{fileBaseName}_{instr}_{k}.png'))
                     plt.savefig(os.path.join(plotDir,f'{fileBaseName}_{instr}_{k}.png'))
-                    plt.close()                                      
-                index +=1     
+                    plt.close()
+                index +=1
         else:
-            for k in xData.data.dtype.names:                                        
+            for k in xData.data.dtype.names:
                 if k == "Datetag" or k == "Timetag2" or k == "Datetime":
-                    continue     
-                ticker += 1                  
+                    continue
+                ticker += 1
                 Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
                 x = np.copy(xData.data[k]).tolist()
                 new_x = np.copy(newXData.columns[k]).tolist()
@@ -1189,19 +1189,19 @@ class Utilities:
                 plt.ylabel(f'{instr}', fontdict=font)
                 plt.subplots_adjust(left=0.15)
                 plt.subplots_adjust(bottom=0.15)
-                
+
                 plt.savefig(os.path.join(plotDir,f'{fileBaseName}_{instr}_{k}.png'))
                 plt.close()
-                
-        print('\n')      
+
+        print('\n')
 
     @staticmethod
     def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 700],\
                 filterFactor=3, rType='None'):
-        
+
         dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
-        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path, 
+        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
         # and build on that (HyperInSPACE/Plots/etc...)
         if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
             outDir = dirPath
@@ -1210,7 +1210,7 @@ class Utilities:
         plotDir = os.path.join(outDir,'Plots','L2_Spectral_Filter')
 
         if not os.path.exists(plotDir):
-            os.makedirs(plotDir)  
+            os.makedirs(plotDir)
 
         font = {'family': 'serif',
                 'color':  'darkred',
@@ -1220,13 +1220,13 @@ class Utilities:
 
         # Collect each column name ignoring Datetag and Timetag2 (i.e. each wavelength) in the desired range
         x = []
-        wave = []        
+        wave = []
         for k in Dataset.data.dtype.names:
             if Utilities.isFloat(k):
                 if float(k)>=filterRange[0] and float(k)<=filterRange[1]:
                     x.append(k)
                     wave.append(float(k))
-        
+
         # Read in each spectrum
         total = Dataset.data.shape[0]
         specArray = []
@@ -1239,20 +1239,20 @@ class Utilities:
             y = []
             for waveband in x:
                 y.append(Dataset.data[waveband][timei])
-            
+
             specArray.append(y)
             peakIndx = y.index(max(y))
             normSpec.append(y / y[peakIndx])
             # plt.plot(wave, y / y[peakIndx], color='grey')
 
         normSpec = np.array(normSpec)
-        
+
         aveSpec = np.median(normSpec, axis = 0)
-        stdSpec = np.std(normSpec, axis = 0)        
+        stdSpec = np.std(normSpec, axis = 0)
 
         badTimes  = []
         badIndx = []
-        # For each spectral band...        
+        # For each spectral band...
         for i in range(0, len(normSpec[0])-1):
             # For each timeseries radiometric measurement...
             for j, rad in enumerate(normSpec[:,i]):
@@ -1261,13 +1261,13 @@ class Utilities:
                     rad < (aveSpec[i] - filterFactor*stdSpec[i]) or \
                     rad < 0:
                     badIndx.append(j)
-                    badTimes.append(timeStamp[j])        
+                    badTimes.append(timeStamp[j])
 
         badIndx = np.unique(badIndx)
         badTimes = np.unique(badTimes)
         # Duplicates each element to a list of two elements in a list:
-        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) 
-        
+        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
+
         # t0 = time.time()
         for timei in range(total):
         # for i in badIndx:
@@ -1284,7 +1284,7 @@ class Utilities:
         plt.plot(wave, aveSpec + filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
         plt.plot(wave, aveSpec - filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
 
-        plt.title(f'Sigma = {filterFactor}', fontdict=font) 
+        plt.title(f'Sigma = {filterFactor}', fontdict=font)
         plt.xlabel('Wavelength [nm]', fontdict=font)
         plt.ylabel(f'{rType} [Normalized to peak value]', fontdict=font)
         plt.subplots_adjust(left=0.15)
@@ -1297,7 +1297,7 @@ class Utilities:
         filebasename,_ = filename.rsplit('_',1)
         if station:
             fp = os.path.join(plotDir, f'STATION_{station}_{filebasename}_{rType}.png')
-        else:            
+        else:
             fp = os.path.join(plotDir, f'{filebasename}_{rType}.png')
         plt.savefig(fp)
         plt.close()
@@ -1306,10 +1306,10 @@ class Utilities:
 
     @staticmethod
     def plotIOPs(root, filename, algorithm, iopType, plotDelta = False):
-        
+
         dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
-        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path, 
+        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
         # and build on that (HyperInSPACE/Plots/etc...)
         if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
             outDir = dirPath
@@ -1326,25 +1326,25 @@ class Utilities:
             'size': 16,
             }
 
-        cmap = cm.get_cmap("jet")        
+        cmap = cm.get_cmap("jet")
 
         # dataDelta = None
-        
+
         group = root.getGroup("DERIVED_PRODUCTS")
         # if iopType=='a':
-        #     print('Plotting absorption')            
-            
+        #     print('Plotting absorption')
+
         if algorithm == "qaa" or algorithm == "giop":
             plotRange = [340, 700]
             qaaName = f'bL2Prod{iopType}Qaa'
             giopName = f'bL2Prod{iopType}Giop'
-            if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products[qaaName]: 
+            if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products[qaaName]:
                 label = f'qaa_{iopType}'
                 DataQAA = group.getDataset(label)
                 # if plotDelta:
                 #     dataDelta = group.getDataset(f'{iopType}_HYPER_delta')
 
-                xQAA = []             
+                xQAA = []
                 waveQAA = []
                 # For each waveband
                 for k in DataQAA.data.dtype.names:
@@ -1359,7 +1359,7 @@ class Utilities:
                 label = f'giop_{iopType}'
                 DataGIOP = group.getDataset(label)
                 # if plotDelta:
-                #     dataDelta = group.getDataset(f'{iopType}_HYPER_delta')       
+                #     dataDelta = group.getDataset(f'{iopType}_HYPER_delta')
 
                 xGIOP = []
                 waveGIOP = []
@@ -1371,12 +1371,12 @@ class Utilities:
                             waveGIOP.append(float(k))
                 totalGIOP = DataQAA.data.shape[0]
                 colorGIOP = iter(cmap(np.linspace(0,1,totalGIOP)))
-        
+
 
         if algorithm == "gocad":
             plotRange = [270, 700]
-            gocadName = f'bL2Prod{iopType}'            
-            if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products[gocadName]: 
+            gocadName = f'bL2Prod{iopType}'
+            if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products[gocadName]:
 
                 # ag
                 label = f'gocad_{iopType}'
@@ -1384,7 +1384,7 @@ class Utilities:
                 # if plotDelta:
                 #     dataDelta = group.getDataset(f'{iopType}_HYPER_delta')
 
-                agGOCAD = []             
+                agGOCAD = []
                 waveGOCAD = []
                 # For each waveband
                 for k in agDataGOCAD.data.dtype.names:
@@ -1395,10 +1395,10 @@ class Utilities:
                 totalGOCAD = agDataGOCAD.data.shape[0]
                 colorGOCAD = iter(cmap(np.linspace(0,1,totalGOCAD)))
 
-                # Sg                
+                # Sg
                 sgDataGOCAD = group.getDataset(f'gocad_Sg')
-                
-                sgGOCAD = []             
+
+                sgGOCAD = []
                 waveSgGOCAD = []
                 # For each waveband
                 for k in sgDataGOCAD.data.dtype.names:
@@ -1409,19 +1409,19 @@ class Utilities:
 
                 # DOC
                 docDataGOCAD = group.getDataset(f'gocad_doc')
-                
+
         maxIOP = 0
-        minIOP = 0        
+        minIOP = 0
 
         # Plot
         plt.figure(1, figsize=(8,6))
 
         if algorithm == "qaa" or algorithm == "giop":
             if ConfigFile.products["bL2Prodqaa"] and ConfigFile.products[qaaName]:
-                for i in range(totalQAA):                
+                for i in range(totalQAA):
                     y = []
-                    # dy = []            
-                    for k in xQAA:                
+                    # dy = []
+                    for k in xQAA:
                         y.append(DataQAA.data[k][i])
                         # if plotDelta:
                         #     dy.append(dataDelta.data[k][i])
@@ -1434,7 +1434,7 @@ class Utilities:
 
                     # Plot the Hyperspectral spectrum
                     plt.plot(waveQAA, y, c=c, zorder=-1)
-                    
+
                     # if plotDelta:
                     #     # Generate the polygon for uncertainty bounds
                     #     deltaPolyx = wave + list(reversed(wave))
@@ -1445,23 +1445,23 @@ class Utilities:
                     #     plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.2, c=c, zorder=-1)
                     #     plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.2, c=c, zorder=-1)
             if ConfigFile.products["bL2Prodgiop"] and ConfigFile.products[giopName]:
-                for i in range(totalGIOP):   
+                for i in range(totalGIOP):
                     y = []
-                    for k in xGIOP:                
+                    for k in xGIOP:
                         y.append(DataGIOP.data[k][i])
-                        
+
                     c=next(colorGIOP)
                     if max(y) > maxIOP:
-                        maxIOP = max(y)+0.1*max(y)            
+                        maxIOP = max(y)+0.1*max(y)
 
                     # Plot the Hyperspectral spectrum
                     plt.plot(waveGIOP, y, 'k', c=c, ls='--', zorder=-1)
 
         if algorithm == "gocad":
             if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products[gocadName]:
-                for i in range(totalGOCAD):   
-                    y = []      
-                    for k in agGOCAD:                
+                for i in range(totalGOCAD):
+                    y = []
+                    for k in agGOCAD:
                         y.append(agDataGOCAD.data[k][i])
 
                     c=next(colorGOCAD)
@@ -1473,8 +1473,8 @@ class Utilities:
                     plt.plot(waveGOCAD, y, c=c, marker='*', markersize=13, linestyle = '', zorder=-1)
 
                     # Now extrapolate using the slopes
-                    Sg = []      
-                    for k in sgGOCAD:                
+                    Sg = []
+                    for k in sgGOCAD:
                         Sg.append(sgDataGOCAD.data[k][i])
                         yScaler = maxIOP*i/totalGOCAD
                         if k == '275':
@@ -1515,7 +1515,7 @@ class Utilities:
         axes = plt.gca()
         axes.set_title(filename, fontdict=font)
         axes.set_ylim([minIOP, maxIOP])
-        
+
         plt.xlabel('wavelength (nm)', fontdict=font)
         plt.ylabel(f'{label} [1/m]', fontdict=font)
 
@@ -1536,7 +1536,7 @@ class Utilities:
         filebasename = filename.split('_')
         fp = os.path.join(plotDir, '_'.join(filebasename[0:-1]) + '_' + label + '.png')
         plt.savefig(fp)
-        plt.close() # This prevents displaying the plot on screen with certain IDEs    
+        plt.close() # This prevents displaying the plot on screen with certain IDEs
 
     @staticmethod
     def readAnomAnalFile(filePath):
@@ -1544,7 +1544,7 @@ class Utilities:
         with open(filePath, newline='') as csvfile:
             paramreader = csv.DictReader(csvfile)
             for row in paramreader:
-                
+
                 paramDict[row['filename']] = [int(row['ESWindowDark']), int(row['ESWindowLight']), \
                                     float(row['ESSigmaDark']), float(row['ESSigmaLight']),
                                     float(row['ESMinDark']), float(row['ESMaxDark']),
@@ -1565,11 +1565,11 @@ class Utilities:
         return paramDict
 
     @staticmethod
-    def deglitchBand(band, radiometry1D, windowSize, sigma, lightDark, minRad, maxRad, minMaxBand):    
-        ''' For a given sensor in a given band (1D), calculate the first and second outliers on the 
+    def deglitchBand(band, radiometry1D, windowSize, sigma, lightDark, minRad, maxRad, minMaxBand):
+        ''' For a given sensor in a given band (1D), calculate the first and second outliers on the
                 light and dark based on moving average filters. Then apply thresholds.
 
-                This may benefit in the future from eliminating the thresholded values from the moving 
+                This may benefit in the future from eliminating the thresholded values from the moving
                 average filter analysis.
         '''
         if lightDark == 'Dark':
@@ -1577,21 +1577,21 @@ class Utilities:
             #   and the OVERALL standard deviation of the residual over the entire file
 
             # First pass
-            avg = Utilities.movingAverage(radiometry1D, windowSize).tolist()        
+            avg = Utilities.movingAverage(radiometry1D, windowSize).tolist()
             residual = np.array(radiometry1D) - np.array(avg)
             stdData = np.std(residual)
-            
-            badIndex = Utilities.darkConvolution(radiometry1D,avg,stdData,sigma)  
+
+            badIndex = Utilities.darkConvolution(radiometry1D,avg,stdData,sigma)
 
             # Second pass
             radiometry1D2 = np.array(radiometry1D[:])
             radiometry1D2[badIndex] = np.nan
             radiometry1D2 = radiometry1D2.tolist()
-            avg2 = Utilities.movingAverage(radiometry1D2, windowSize).tolist()               
+            avg2 = Utilities.movingAverage(radiometry1D2, windowSize).tolist()
             residual = np.array(radiometry1D2) - np.array(avg2)
-            stdData = np.nanstd(residual)        
+            stdData = np.nanstd(residual)
 
-            badIndex2 = Utilities.darkConvolution(radiometry1D2,avg2,stdData,sigma) 
+            badIndex2 = Utilities.darkConvolution(radiometry1D2,avg2,stdData,sigma)
 
             # Threshold pass
             # Tolerates "None" for min or max Rad. ConfigFile.setting updated directly from checkbox
@@ -1602,7 +1602,7 @@ class Utilities:
             #   and the ROLLING standard deviation of the residual
 
             # First pass
-            avg = Utilities.movingAverage(radiometry1D, windowSize).tolist()        
+            avg = Utilities.movingAverage(radiometry1D, windowSize).tolist()
             residual = np.array(radiometry1D) - np.array(avg)
 
             # Calculate the variation in the distribution of the residual
@@ -1616,15 +1616,15 @@ class Utilities:
             y = np.array(rolling_std)
             y[y > np.median(y)+3*np.std(y)] = np.median(y)
             rolling_std = y.tolist()
-                        
+
             badIndex = Utilities.lightConvolution(radiometry1D,avg,rolling_std,sigma)
 
             # Second pass
             radiometry1D2 = np.array(radiometry1D[:])
             radiometry1D2[badIndex] = np.nan
             radiometry1D2 = radiometry1D2.tolist()
-            avg2 = Utilities.movingAverage(radiometry1D2, windowSize).tolist()             
-            residual2 = np.array(radiometry1D2) - np.array(avg2)        
+            avg2 = Utilities.movingAverage(radiometry1D2, windowSize).tolist()
+            residual2 = np.array(radiometry1D2) - np.array(avg2)
             residualDf2 = pd.DataFrame(residual2)
             testing_std_as_df2 = residualDf2.rolling(windowSize).std()
             rolling_std2 = testing_std_as_df2.replace(np.nan,
@@ -1635,47 +1635,47 @@ class Utilities:
             rolling_std2 = y.tolist()
 
             badIndex2 = Utilities.lightConvolution(radiometry1D2,avg2,rolling_std2,sigma)
-            
+
             # Threshold pass
             # Tolerates "None" for min or max Rad
-            badIndex3 = Utilities.l1dThresholds(band, radiometry1D,minRad,maxRad, minMaxBand)  
+            badIndex3 = Utilities.l1dThresholds(band, radiometry1D,minRad,maxRad, minMaxBand)
 
         return badIndex, badIndex2, badIndex3
-    
+
 
     @staticmethod
-    def saveDeglitchPlots(fileName,plotdir,timeSeries,dateTime,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\            
+    def saveDeglitchPlots(fileName,plotdir,timeSeries,dateTime,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\
         import matplotlib.dates as mdates
-        #Plot results  
+        #Plot results
 
         # # Set up datetime axis objects
         # #   https://stackoverflow.com/questions/49046931/how-can-i-use-dateaxisitem-of-pyqtgraph
         # class TimeAxisItem(pg.AxisItem):
         #     def tickStrings(self, values, scale, spacing):
         #         return [datetime.datetime.fromtimestamp(value, pytz.timezone("UTC")) for value in values]
-        
+
         # date_axis_Dark = TimeAxisItem(orientation='bottom')
         # date_axis_Light = TimeAxisItem(orientation='bottom')
-        
+
         font = {'family': 'serif',
             'color':  'darkred',
             'weight': 'normal',
-            'size': 16}   
-        
-        waveBand = timeSeries[0]
-        
-        radiometry1D = timeSeries[1]
-        # x = np.arange(0,len(radiometry1D),1)  
-        x = np.array(dateTime)
-        avg = Utilities.movingAverage(radiometry1D, windowSize).tolist() 
+            'size': 16}
 
-        # try:     
+        waveBand = timeSeries[0]
+
+        radiometry1D = timeSeries[1]
+        # x = np.arange(0,len(radiometry1D),1)
+        x = np.array(dateTime)
+        avg = Utilities.movingAverage(radiometry1D, windowSize).tolist()
+
+        # try:
         text_xlabel="Time Series"
         text_ylabel=f'{sensorType}({waveBand}) {lightDark}'
-        # plt.figure(figsize=(15, 8))            
+        # plt.figure(figsize=(15, 8))
         fig, ax = plt.subplots(1)
-        fig.autofmt_xdate() 
-        
+        fig.autofmt_xdate()
+
         # First Pass
         y_anomaly = np.array(radiometry1D)[badIndex]
         x_anomaly = x[badIndex]
@@ -1684,7 +1684,7 @@ class Utilities:
         x_anomaly2 = x[badIndex2]
         # Thresholds
         y_anomaly3 = np.array(radiometry1D)[badIndex3]
-        x_anomaly3 = x[badIndex3]            
+        x_anomaly3 = x[badIndex3]
 
         plt.plot(x, radiometry1D, marker='o', color='k', linestyle='', fillstyle='none')
         plt.plot(x_anomaly, y_anomaly, marker='x', color='red', markersize=12, linestyle='')
@@ -1698,8 +1698,8 @@ class Utilities:
 
         plt.text(0,0.95,'Marked for exclusions in ALL bands', transform=plt.gcf().transFigure)
         # plt.xlabel(text_xlabel, fontdict=font)
-        plt.ylabel(text_ylabel, fontdict=font)   
-        plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font) 
+        plt.ylabel(text_ylabel, fontdict=font)
+        plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font)
 
         fp = os.path.join(plotdir,fileName)
         # plotName = f'{fp}_W{windowSize}S{sigma}_{sensorType}{lightDark}_{waveBand}.png'
@@ -1707,21 +1707,21 @@ class Utilities:
 
         print(plotName)
         plt.savefig(plotName)
-        plt.close()    
+        plt.close()
         # except:
         #     e = sys.exc_info()[0]
         #     print("Error: %s" % e)
-    
+
     @staticmethod
     def getDateTime(gp):
         dateTagDS = gp.getDataset('DATETAG')
         dateTags = dateTagDS.data["NONE"].tolist()
         timeTagDS = gp.getDataset('TIMETAG2')
         timeTags = timeTagDS.data["NONE"].tolist()
-        # Conversion not set up for vectors, loop it                                          
+        # Conversion not set up for vectors, loop it
         dateTime=[]
         for i, dateTag in enumerate(dateTags):
-            dt = Utilities.dateTagToDateTime(dateTag)     
+            dt = Utilities.dateTagToDateTime(dateTag)
             dateTime.append(Utilities.timeTag2ToDateTime(dt,timeTags[i]))
-        
+
         return dateTime
