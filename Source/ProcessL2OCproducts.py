@@ -20,12 +20,12 @@ from L2wei_QA import QAscores_5Bands
 class ProcessL2OCproducts():
     ''' Most product algorithms can be found at https://oceancolor.gsfc.nasa.gov/atbd/ '''
     # To Do: Uncertainty propagation
-    
+
     @staticmethod
     def procProds(root):
 
         Reflectance = root.getGroup("REFLECTANCE")
-    
+
         dateTime = Reflectance.datasets['Rrs_HYPER'].columns['Datetime']
         dateTag = Reflectance.datasets['Rrs_HYPER'].columns['Datetag']
         timeTag2 = Reflectance.datasets['Rrs_HYPER'].columns['Timetag2']
@@ -50,7 +50,7 @@ class ProcessL2OCproducts():
         if ConfigFile.products["bL2Prodoc3m"]:
             msg = "Processing chlor_a"
             print(msg)
-            Utilities.writeLogFile(msg)  
+            Utilities.writeLogFile(msg)
 
             DerProd.attributes['chlor_a_UNITS'] = 'mg m^-3'
             chlDS = DerProd.addDataset('chlor_a')
@@ -58,27 +58,27 @@ class ProcessL2OCproducts():
             chlDS.columns['Datetag'] = dateTag
             chlDS.columns['Timetag2'] = timeTag2
 
-            chlor_a = [] 
+            chlor_a = []
             for i in range(0, len(dateTime)):
                 chlor_a.append(L2chlor_a(Rrs443[i], Rrs488[i], Rrs547[i], Rrs555[i], Rrs667[i]))
-            
+
             chlDS.columns['chlor_a'] = chlor_a
             chlDS.columnsToDataset()
 
-       
+
         # pic
         ''' Not yet implemented '''
         if ConfigFile.products["bL2Prodpic"]:
             msg = "Processing pic"
             print(msg)
-            Utilities.writeLogFile(msg)  
+            Utilities.writeLogFile(msg)
 
             picDS = DerProd.addDataset('pic')
             DerProd.attributes['pic_UNITS'] = 'mol m^-3'
             picDS.columns['Datetime'] = dateTime
             picDS.columns['Datetag'] = dateTag
             picDS.columns['Timetag2'] = timeTag2
-            
+
             pic = L2pic(root)
             picDS.columns['pic'] = pic
             picDS.columnsToDataset()
@@ -87,8 +87,8 @@ class ProcessL2OCproducts():
         if ConfigFile.products["bL2Prodpoc"]:
             msg = "Processing poc"
             print(msg)
-            Utilities.writeLogFile(msg)  
-            
+            Utilities.writeLogFile(msg)
+
             pocDS = DerProd.addDataset('poc')
             DerProd.attributes['poc_UNITS'] = 'mg m^-3'
             pocDS.columns['Datetime'] = dateTime
@@ -105,7 +105,7 @@ class ProcessL2OCproducts():
         if ConfigFile.products["bL2Prodkd490"]:
             msg = "Processing kd490"
             print(msg)
-            Utilities.writeLogFile(msg)  
+            Utilities.writeLogFile(msg)
 
             kdDS = DerProd.addDataset('kd490')
             DerProd.attributes['kd490_UNITS'] = 'm^-1'
@@ -123,7 +123,7 @@ class ProcessL2OCproducts():
         if ConfigFile.products["bL2Prodipar"]:
             msg = "Processing ipar"
             print(msg)
-            Utilities.writeLogFile(msg)  
+            Utilities.writeLogFile(msg)
 
             Es_ds = root.getGroup("IRRADIANCE").datasets["ES_HYPER"]
             keys = list(Es_ds.columns.keys())
@@ -145,13 +145,13 @@ class ProcessL2OCproducts():
 
             iparDS.columns['ipar'] = ipar
             iparDS.columnsToDataset()
-        
+
         # avw
         # Vandermuelen et al. 2020
         if ConfigFile.products["bL2Prodavw"]:
             msg = "Processing avw"
             print(msg)
-            Utilities.writeLogFile(msg)  
+            Utilities.writeLogFile(msg)
 
             keys = list(RrsHYPER.columns.keys())
             values = list(RrsHYPER.columns.values())
@@ -181,9 +181,9 @@ class ProcessL2OCproducts():
         if ConfigFile.products["bL2Prodgocad"]:
             msg = "Processing CDOM, Sg, DOC"
             print(msg)
-            Utilities.writeLogFile(msg)                                          
-            
-            SAL = Ancillary.datasets["SAL"].columns["SAL"]
+            Utilities.writeLogFile(msg)
+
+            SAL = Ancillary.datasets["SALINITY"].columns["SALINITY"]
 
             # ag = np.empty()
             # b = np.empty(np.shape(Rrs))
@@ -191,14 +191,14 @@ class ProcessL2OCproducts():
             # bbp = np.empty(np.shape(Rrs))
             # c = np.empty(np.shape(Rrs))
             # for i in range(0, len(dateTime)):
-                
+
             waveStr = ['275', '355', '380', '412', '443', '488']
             waveStrS = ['275', '300', '350', '380', '412']
 
             # Vectorwise
             ag, Sg, doc = \
                 L2gocad(Rrs443, Rrs488, Rrs531, Rrs547, SAL, fill=-9999)
-            
+
             if ConfigFile.products["bL2Prodag"]:
                 DerProd.attributes['ag_UNITS'] = '1/m'
                 agDS = DerProd.addDataset('gocad_ag')
@@ -222,7 +222,7 @@ class ProcessL2OCproducts():
                 docDS = DerProd.addDataset('gocad_doc')
                 docDS.columns['Datetime'] = dateTime
                 docDS.columns['Datetag'] = dateTag
-                docDS.columns['Timetag2'] = timeTag2 
+                docDS.columns['Timetag2'] = timeTag2
                 docDS.columns['doc'] = doc.tolist()
                 docDS.columnsToDataset()
 
@@ -236,34 +236,34 @@ class ProcessL2OCproducts():
         '''
             eta: powerlaw slope of bbp
             S: CDOM base slope
-            
+
             Also, empirical parameters could be set.
             For now, structure this as QAAv6 for MODIS bands'''
 
         if ConfigFile.products["bL2Prodqaa"]:
             msg = "Processing qaa"
             print(msg)
-            Utilities.writeLogFile(msg)                              
+            Utilities.writeLogFile(msg)
 
-            # For fun, let's apply it to the full hyperspectral dataset            
+            # For fun, let's apply it to the full hyperspectral dataset
             keys = list(RrsHYPER.columns.keys())
             values = list(RrsHYPER.columns.values())
             waveStr = keys[3:]
             wavelength = np.array([float(i) for i in waveStr])
             Rrs = np.array(values[3:])
-            
+
             # if 'SST' in Ancillary.datasets:
-            T = Ancillary.datasets["SST"].columns["SST"]                
+            T = Ancillary.datasets["SST"].columns["SST"]
             # else:
                 # msg = "No SST found in ancillary data. Setting to 15C"
                 # print(msg)
-                # Utilities.writeLogFile(msg)                              
+                # Utilities.writeLogFile(msg)
             # if 'SAL' in Ancillary.datasets:
             S = Ancillary.datasets["SALINITY"].columns["SALINITY"]
             # else:
             #     msg = "No SAL found in ancillary data. Setting to 32psu"
             #     print(msg)
-            #     Utilities.writeLogFile(msg)                 
+            #     Utilities.writeLogFile(msg)
 
             # Maximum range based on P&F/S&B
             minMax = [380, 800]
@@ -276,7 +276,7 @@ class ProcessL2OCproducts():
             wavelength = np.array(waveTemp)
             Rrs = np.array(RrsHyperTemp)
             waveStr = [f'{x}' for x in wavelength]
-    
+
             a = np.empty(np.shape(Rrs))
             adg = np.empty(np.shape(Rrs))
             aph = np.empty(np.shape(Rrs))
@@ -285,14 +285,14 @@ class ProcessL2OCproducts():
             bbp = np.empty(np.shape(Rrs))
             c = np.empty(np.shape(Rrs))
             for i in range(0, len(dateTime)):
-                
+
                 a[:,i], adg[:,i], aph[:,i], b[:,i], bb[:,i], bbp[:,i], c[:,i], msg = \
                     L2qaa(Rrs412[i], Rrs443[i], Rrs488[i], Rrs555[i], Rrs667[i], \
                         Rrs[:,i], wavelength, \
                             T[i], S[i])
                 for msgs in msg:
-                    Utilities.writeLogFile(msgs)  
-                
+                    Utilities.writeLogFile(msgs)
+
             ''' There must be a more elegant way to work on the dataset/data, then convert to column '''
 
             if ConfigFile.products["bL2ProdaQaa"]:
@@ -327,49 +327,49 @@ class ProcessL2OCproducts():
                 bDS = DerProd.addDataset('qaa_b')
                 bDS.columns['Datetime'] = dateTime
                 bDS.columns['Datetag'] = dateTag
-                bDS.columns['Timetag2'] = timeTag2    
+                bDS.columns['Timetag2'] = timeTag2
                 b = dict(zip(waveStr,b.tolist()))
                 for key, value in b.items(): bDS.columns[key] = value
-                bDS.columnsToDataset()        
+                bDS.columnsToDataset()
             if ConfigFile.products["bL2ProdbbQaa"]:
                 DerProd.attributes['bb_UNITS'] = '1/m'
                 bbDS = DerProd.addDataset('qaa_bb')
                 bbDS.columns['Datetime'] = dateTime
                 bbDS.columns['Datetag'] = dateTag
-                bbDS.columns['Timetag2'] = timeTag2   
+                bbDS.columns['Timetag2'] = timeTag2
                 bb = dict(zip(waveStr,bb.tolist()))
                 for key, value in bb.items(): bbDS.columns[key] = value
-                bbDS.columnsToDataset()         
+                bbDS.columnsToDataset()
             if ConfigFile.products["bL2ProdbbpQaa"]:
                 DerProd.attributes['bbp_UNITS'] = '1/m'
                 bbpDS = DerProd.addDataset('qaa_bbp')
                 bbpDS.columns['Datetime'] = dateTime
                 bbpDS.columns['Datetag'] = dateTag
-                bbpDS.columns['Timetag2'] = timeTag2 
+                bbpDS.columns['Timetag2'] = timeTag2
                 bbp = dict(zip(waveStr,bbp.tolist()))
                 for key, value in bbp.items(): bbpDS.columns[key] = value
-                bbpDS.columnsToDataset()           
+                bbpDS.columnsToDataset()
             if ConfigFile.products["bL2ProdcQaa"]:
                 DerProd.attributes['c_UNITS'] = '1/m'
                 cDS = DerProd.addDataset('qaa_c')
                 cDS.columns['Datetime'] = dateTime
                 cDS.columns['Datetag'] = dateTag
-                cDS.columns['Timetag2'] = timeTag2    
+                cDS.columns['Timetag2'] = timeTag2
                 c = dict(zip(waveStr,c.tolist()))
                 for key, value in c.items(): cDS.columns[key] = value
                 cDS.columnsToDataset()
 
         # Spectral QA
         '''
-             Wei, Lee, and Shang (2016). 
+             Wei, Lee, and Shang (2016).
              A system to measure the data quality of spectral remote sensing
-             reflectance of aquatic environments. Journal of Geophysical Research, 
+             reflectance of aquatic environments. Journal of Geophysical Research,
              121, doi:10.1002/2016JC012126'''
 
         if ConfigFile.products["bL2ProdweiQA"]:
             msg = "Processing Wei QA"
             print(msg)
-            Utilities.writeLogFile(msg)      
+            Utilities.writeLogFile(msg)
 
             DerProd.attributes['wei_QA_UNITS'] = 'score'
             weiQADS = DerProd.addDataset('wei_QA')
@@ -379,7 +379,7 @@ class ProcessL2OCproducts():
 
             # Reorganize datasets into multidimensional numpy arrays
             Rrs_mArray = np.transpose(np.array([ Rrs412, Rrs443, Rrs488, Rrs547, Rrs667 ]))
-            Rrs_wave =    np.array([412, 443, 488, 547, 667])            
+            Rrs_wave =    np.array([412, 443, 488, 547, 667])
 
             # Interpolation to QA bands, which are representative of several missions (see L2wei_QA.py)
             test_lambda = np.array([412, 443, 488, 551, 670])
@@ -387,7 +387,7 @@ class ProcessL2OCproducts():
             for i, Rrsi in enumerate(Rrs_mArray):
                 test_Rrs[i,:] = Utilities.interp(Rrs_wave.tolist(), Rrsi.tolist(), test_lambda.tolist(), \
                     kind='linear', fill_value=0.0)
-                
+
 
             # maxCos, cos, clusterID, totScore = QAscores_5Bands(test_Rrs, test_lambda)
             _, _, _, totScore = QAscores_5Bands(test_Rrs, test_lambda)

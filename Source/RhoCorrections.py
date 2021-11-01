@@ -7,10 +7,38 @@ import ZhangRho
 
 class RhoCorrections:
 
-    @staticmethod 
-    def RuddickCorr(sky750,rhoDefault,windSpeedMean):
-        ''' Ruddick 2006 L&O'''
-        msg = 'Calculating Ruddick glint correction'
+    # @staticmethod
+    # def RuddickCorr(sky750,rhoDefault,windSpeedMean):
+    #     ''' Ruddick 2006 L&O'''
+    #     msg = 'Calculating Ruddick glint correction'
+    #     print(msg)
+    #     Utilities.writeLogFile(msg)
+
+    #     if sky750 >= 0.05:
+    #         # Cloudy conditions: no further correction
+    #         if sky750 >= 0.05:
+    #             msg = f'Sky 750 threshold triggered for cloudy sky. Rho set to {rhoDefault}.'
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)
+    #         rhoScalar = rhoDefault
+    #         rhoDelta = 0.003 # Unknown, presumably higher...
+
+    #     else:
+    #         # Clear sky conditions: correct for wind
+    #         # Set wind speed here
+    #         w = windSpeedMean
+    #         rhoScalar = 0.0256 + 0.00039 * w + 0.000034 * w * w
+    #         rhoDelta = 0.003 # Ruddick 2006 Appendix 2; intended for clear skies as defined here
+
+    #         msg = f'Rho_sky: {rhoScalar:.6f} Wind: {w:.1f} m/s'
+    #         print(msg)
+    #         Utilities.writeLogFile(msg)
+
+    #     return rhoScalar, rhoDelta
+    @staticmethod
+    def threeCCorr(sky750,rhoDefault,windSpeedMean):
+        ''' Groetsch et al. 2017 PLACEHOLDER'''
+        msg = 'Calculating 3C glint correction'
         print(msg)
         Utilities.writeLogFile(msg)
 
@@ -33,13 +61,13 @@ class RhoCorrections:
             msg = f'Rho_sky: {rhoScalar:.6f} Wind: {w:.1f} m/s'
             print(msg)
             Utilities.writeLogFile(msg)
-            
+
         return rhoScalar, rhoDelta
 
     @staticmethod
     def ZhangCorr(windSpeedMean,AOD,cloud,sza,wTemp,sal,relAz,waveBands):
         ''' Requires xarray: http://xarray.pydata.org/en/stable/installing.html
-        Recommended installation using Anaconda:        
+        Recommended installation using Anaconda:
         $ conda install xarray dask netCDF4 bottleneck'''
 
         msg = 'Calculating Zhang glint correction. This can take several minutes.'
@@ -61,10 +89,10 @@ class RhoCorrections:
         # positive z is upward
         sensor = collections.OrderedDict()
         sensor['ang'] = [40,180-relAz] # relAz should vary from about 90-135
-        sensor['wv'] = waveBands        
+        sensor['wv'] = waveBands
 
         rhoStructure = ZhangRho.Main(env,sensor)
-        
+
         rhoDelta = 0.003 # Unknown; estimated from Ruddick 2006
-        
+
         return rhoStructure, rhoDelta

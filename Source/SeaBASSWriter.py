@@ -15,13 +15,13 @@ class SeaBASSWriter:
 
     @staticmethod
     def formatHeader(fp,node, level):
-        
+
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
         seaBASSFP = os.path.join(os.getcwd(), 'Config',seaBASSHeaderFileName)
         SeaBASSHeader.loadSeaBASSHeader(seaBASSFP)
-        headerBlock = SeaBASSHeader.settings        
+        headerBlock = SeaBASSHeader.settings
 
-        # Dataset leading columns can be taken from any sensor         
+        # Dataset leading columns can be taken from any sensor
         referenceGroup = node.getGroup("IRRADIANCE")
         if level == '1e':
             esData = referenceGroup.getDataset("ES")
@@ -49,11 +49,11 @@ class SeaBASSWriter:
         timeDT = []
         for i in range(len(dateDT)):
             timeDT.append(Utilities.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
-        
-        # Python 2 format operator       
+
+        # Python 2 format operator
         startTime = "%02d:%02d:%02d[GMT]" % (min(timeDT).hour, min(timeDT).minute, min(timeDT).second)
         endTime = "%02d:%02d:%02d[GMT]" % (max(timeDT).hour, max(timeDT).minute, max(timeDT).second)
-        startDate = "%04d%02d%02d" % (min(timeDT).year, min(timeDT).month, min(timeDT).day)      
+        startDate = "%04d%02d%02d" % (min(timeDT).year, min(timeDT).month, min(timeDT).day)
         endDate = "%04d%02d%02d" % (max(timeDT).year, max(timeDT).month, max(timeDT).day)
 
         # Convert Position
@@ -83,15 +83,15 @@ class SeaBASSWriter:
             headerBlock['west_longitude'] = westLon
         if level == '2':
             headerBlock['wind_speed'] = aveWind # wind_speed will not be written to l1e
-        
+
         return headerBlock
 
         # headerBlock = print(json.dumps(SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)))
-    
-   
+
+
     @staticmethod
-    def formatData1e(dataset,dtype, units):            
-                
+    def formatData1e(dataset,dtype, units):
+
         # Convert Dates and Times and remove from dataset
         newData = dataset.data
         dateDay = dataset.data['Datetag'].tolist()
@@ -103,7 +103,7 @@ class SeaBASSWriter:
         for i in range(len(dateDT)):
             timeDT.append(Utilities.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
 
-        # Retrieve ancillaries and remove from dataset        
+        # Retrieve ancillaries and remove from dataset
         lat = dataset.data['LATITUDE'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'LATITUDE')
         lon = dataset.data['LONGITUDE'].tolist()
@@ -121,7 +121,7 @@ class SeaBASSWriter:
         dataset.data = newData
 
         # Change field names for SeaBASS compliance
-        bands = list(dataset.data.dtype.names)    
+        bands = list(dataset.data.dtype.names)
         ls = ['date','time','lat','lon','RelAz','SZA']
 
         if dtype == 'es':
@@ -143,7 +143,7 @@ class SeaBASSWriter:
         # Add data for each row
         dataOut = []
         formatStr = str('{:04d}{:02d}{:02d},{:02d}:{:02d}:{:02d},{:.4f},{:.4f},{:.1f},{:.1f}' + ',{:.6f}'*lenRad)
-        for i in range(dataset.data.shape[0]):                        
+        for i in range(dataset.data.shape[0]):
             subList = [lat[i],lon[i],relAz[i],sza[i]]
             lineList = [timeDT[i].year,timeDT[i].month,timeDT[i].day,timeDT[i].hour,timeDT[i].minute,timeDT[i].second] +\
                 subList + list(dataset.data[i].tolist())
@@ -156,10 +156,10 @@ class SeaBASSWriter:
         return dataOut, fieldsLineStr, unitsLineStr
 
     @staticmethod
-    def formatData2(dataset,dsDelta,dtype, units):      
+    def formatData2(dataset,dsDelta,dtype, units):
 
-        dsCopy = dataset.data.copy() # By copying here, we leave the ancillary data tacked on to radiometry for later      
-        # dsDelta = dsDelta.data.copy()                
+        dsCopy = dataset.data.copy() # By copying here, we leave the ancillary data tacked on to radiometry for later
+        # dsDelta = dsDelta.data.copy()
 
         # Convert Dates and Times and remove from dataset
         newData = dsCopy
@@ -177,7 +177,7 @@ class SeaBASSWriter:
         for i in range(len(dateDT)):
             timeDT.append(Utilities.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
 
-        # Retrieve ancillaries and remove from dataset (they are not on deltas)        
+        # Retrieve ancillaries and remove from dataset (they are not on deltas)
         lat = dsCopy['LATITUDE'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'LATITUDE')
         lon = dsCopy['LONGITUDE'].tolist()
@@ -198,14 +198,14 @@ class SeaBASSWriter:
         dsCopy = newData
 
         # Change field names for SeaBASS compliance
-        bands = list(dsCopy.dtype.names)    
-        ls = ['date','time','lat','lon','RelAz','SZA','AOT','cloud','wind']        
+        bands = list(dsCopy.dtype.names)
+        ls = ['date','time','lat','lon','RelAz','SZA','AOT','cloud','wind']
 
         if dtype == 'rrs':
             fieldName = 'Rrs'
         elif dtype == 'es':
             fieldName = 'Es'
-        
+
         if dtype=='rrs':
             fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands] \
                 + [f'{fieldName}{band}_unc' for band in bands])
@@ -220,7 +220,7 @@ class SeaBASSWriter:
         unitsLine.append('unitless') # AOD
         unitsLine.append('%') # cloud
         unitsLine.append('m/s') # wind
-        unitsLine.extend([units]*lenRad) # data 
+        unitsLine.extend([units]*lenRad) # data
         unitsLine.extend([units]*lenRad)    # data uncertainty
         unitsLineStr = ','.join(unitsLine)
 
@@ -229,7 +229,7 @@ class SeaBASSWriter:
         formatStr = str('{:04d}{:02d}{:02d},{:02d}:{:02d}:{:02d},{:.4f},{:.4f},{:.1f},{:.1f}'\
             + ',{:.4f},{:.0f},{:.1f}'\
              + ',{:.6f}'*lenRad  + ',{:.6f}'*lenRad)
-        for i in range(dsCopy.shape[0]):                        
+        for i in range(dsCopy.shape[0]):
             subList = [lat[i],lon[i],relAz[i],sza[i],aod[i],cloud[i],wind[i]]
             lineList = [timeDT[i].year,timeDT[i].month,timeDT[i].day,timeDT[i].hour,timeDT[i].minute,timeDT[i].second] +\
                 subList + list(dsCopy[i].tolist()) + list(dsDelta.data[i].tolist())
@@ -252,9 +252,9 @@ class SeaBASSWriter:
         if not os.path.exists(os.path.split(fp)[0] + '/SeaBASS'):
             print('Creating a SeaBASS directory')
             os.makedirs(os.path.split(fp)[0] + '/SeaBASS')
-            
+
         version = SeaBASSHeader.settings["version"]
-        
+
         outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{dtype}_{os.path.split(fp)[1].replace(".hdf",f"_{version}.sb")}'
 
         outFile = open(outFileName,'w',newline='\n')
@@ -264,15 +264,15 @@ class SeaBASSWriter:
                 # Python 3 f-string
                 line = f'/{key}={value}\n'
                 outFile.write(line)
-        outFile.write(headerBlock['comments']+'\n')        
+        outFile.write(headerBlock['comments']+'\n')
         outFile.write(headerBlock['other_comments']+'\n')
         outFile.write('/fields='+fields+'\n')
         outFile.write('/units='+units+'\n')
         outFile.write('/end_header\n')
-        
+
         for line in formattedData:
             outFile.write(f'{line}\n')
-        
+
         outFile.close()
 
     # Convert Level 3 data to SeaBASS file
@@ -334,7 +334,7 @@ class SeaBASSWriter:
         esData.columnsToDataset()
         liData.columnsToDataset()
         ltData.columnsToDataset()
-        
+
         # Append azimuth, heading, rotator, relAz, and SZA to the dataset
         # in order to pass it to formatData1e (bloody awkward...)
         if ConfigFile.settings["bL1cSolarTracker"]:
@@ -349,18 +349,18 @@ class SeaBASSWriter:
 
             azimuthData.datasetToColumns()
             headingData.datasetToColumns()
-            pointingData.datasetToColumns()           
-            relAzData.datasetToColumns() 
-            elevationData.datasetToColumns() 
+            pointingData.datasetToColumns()
+            relAzData.datasetToColumns()
+            elevationData.datasetToColumns()
 
             azimuth = azimuthData.columns["SUN"]
             if headingData is not None and 'SHIP_TRUE' in headingData.columns:
-                headingData.datasetToColumns()                
+                headingData.datasetToColumns()
                 heading = headingData.columns["SHIP_TRUE"]
             else:
                 heading = np.empty((1,len(azimuth)))
                 heading = heading[0]*np.nan
-                heading = heading.tolist() 
+                heading = heading.tolist()
             rotator = pointingData.columns["ROTATOR"]
             relAz = relAzData.columns["REL_AZ"]
             elevation = elevationData.columns["SUN"]
@@ -371,7 +371,7 @@ class SeaBASSWriter:
             esData.datasetToColumns()
             liData.datasetToColumns()
             ltData.datasetToColumns()
-            
+
             esData.columns["AZIMUTH"] = azimuth
             liData.columns["AZIMUTH"] = azimuth
             ltData.columns["AZIMUTH"] = azimuth
@@ -379,10 +379,10 @@ class SeaBASSWriter:
             esData.columns["HEADING"] = heading # From SAS, not GPS...not present in newer SolarTrackers?
             liData.columns["HEADING"] = heading
             ltData.columns["HEADING"] = heading
-            
+
             esData.columns["ROTATOR"] = rotator
             liData.columns["ROTATOR"] = rotator
-            ltData.columns["ROTATOR"] = rotator            
+            ltData.columns["ROTATOR"] = rotator
 
             esData.columns["REL_AZ"] = relAz
             liData.columns["REL_AZ"] = relAz
@@ -404,23 +404,23 @@ class SeaBASSWriter:
             szaData = ancGroup.getDataset("SZA")
 
             headingData.datasetToColumns()
-            relAzData.datasetToColumns() 
-            szaData.datasetToColumns() 
+            relAzData.datasetToColumns()
+            szaData.datasetToColumns()
 
             relAz = relAzData.columns["NONE"]
             sza = szaData.columns["NONE"]
             if headingData is not None:
-                heading = headingData.columns["HEADING"]
+                heading = headingData.columns["NONE"]
             else:
                 heading = np.empty((1,len(sza)))
                 heading = heading[0]*np.nan
                 heading = heading.tolist()
-            
+
             esData.datasetToColumns()
             liData.datasetToColumns()
             ltData.datasetToColumns()
-            
-            esData.columns["HEADING"] = heading 
+
+            esData.columns["HEADING"] = heading
             liData.columns["HEADING"] = heading
             ltData.columns["HEADING"] = heading
 
@@ -440,9 +440,9 @@ class SeaBASSWriter:
         headerBlock = SeaBASSWriter.formatHeader(fp,root, level='1e')
 
         # Format each data block for individual output
-        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData1e(esData,'es',root.attributes["ES_UNITS"])        
+        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData1e(esData,'es',root.attributes["ES_UNITS"])
         formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData1e(liData,'li',root.attributes["LI_UNITS"])
-        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData1e(ltData,'lt',root.attributes["LT_UNITS"])                        
+        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData1e(ltData,'lt',root.attributes["LT_UNITS"])
 
         # # Write SeaBASS files
         SeaBASSWriter.writeSeaBASS('ES',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
@@ -485,7 +485,7 @@ class SeaBASSWriter:
         # They are of little use to others...
         liData = radianceGroup.getDataset("LI_HYPER")
         ltData = radianceGroup.getDataset("LT_HYPER")
-        
+
 
         if esData is None or liData is None or ltData is None or rrsData is None:
             print("SeaBASSWriter: Radiometric data is missing")
@@ -506,19 +506,19 @@ class SeaBASSWriter:
         esDataDelta.datasetToColumns()
         liData.datasetToColumns()
         ltData.datasetToColumns()
-        
+
         # Truncate wavebands to desired output
         esCols = esData.columns
         esColsD = esDataDelta.columns
         rrsCols = rrsData.columns
         rrsColsD = rrsDataDelta.columns
         for k in list(esCols.keys()):
-            if (k != 'Datetag') and (k != 'Timetag2'):  
+            if (k != 'Datetag') and (k != 'Timetag2'):
                 if float(k) < minWave or float(k) > maxWave:
                      del esCols[k]
                      del esColsD[k]
         for k in list(rrsCols.keys()):
-            if (k != 'Datetag') and (k != 'Timetag2'):  
+            if (k != 'Datetag') and (k != 'Timetag2'):
                 if float(k) < minWave or float(k) > maxWave:
                      del rrsCols[k]
                      del rrsColsD[k]
@@ -527,7 +527,7 @@ class SeaBASSWriter:
         rrsData.columns = rrsCols
         rrsDataDelta.columns = rrsColsD
 
-        esData.columns["LATITUDE"] = latpos  
+        esData.columns["LATITUDE"] = latpos
         rrsData.columns["LATITUDE"] = latpos
         esData.columns["LONGITUDE"] = lonpos
         rrsData.columns["LONGITUDE"] = lonpos
@@ -542,23 +542,23 @@ class SeaBASSWriter:
         esDataDelta.columnsToDataset()
         liData.columnsToDataset()
         ltData.columnsToDataset()
-            
-        # # Append ancillary datasets        
+
+        # # Append ancillary datasets
         aodData = ancGroup.getDataset("AOD")
         cloudData = ancGroup.getDataset("CLOUD")
         azimuthData = ancGroup.getDataset("SOLAR_AZ")
-        headingData = ancGroup.getDataset("HEADING")       
-        relAzData = ancGroup.getDataset("REL_AZ")        
+        headingData = ancGroup.getDataset("HEADING")
+        relAzData = ancGroup.getDataset("REL_AZ")
         szaData = ancGroup.getDataset("SZA")
-        windData = ancGroup.getDataset("WINDSPEED")        
+        windData = ancGroup.getDataset("WINDSPEED")
 
-        aodData.datasetToColumns()        
-        azimuthData.datasetToColumns()                           
-        relAzData.datasetToColumns() 
-        szaData.datasetToColumns() 
+        aodData.datasetToColumns()
+        azimuthData.datasetToColumns()
+        relAzData.datasetToColumns()
+        szaData.datasetToColumns()
         windData.datasetToColumns()
 
-        aod = aodData.columns["AOD"]        
+        aod = aodData.columns["AOD"]
         azimuth = azimuthData.columns["SOLAR_AZ"]
         relAz = relAzData.columns["REL_AZ"]
         sza = szaData.columns["SZA"]
@@ -577,23 +577,23 @@ class SeaBASSWriter:
         else:
             heading = np.empty((1,len(wind)))
             heading = heading[0]*np.nan
-            heading = heading.tolist()        
-        
+            heading = heading.tolist()
+
         # No need to add all ancillary to the uncertainty deltas
-        rrsData.columns["AOD"] = aod        
+        rrsData.columns["AOD"] = aod
         esData.columns["AOD"] = aod
         liData.columns["AOD"] = aod
         ltData.columns["AOD"] = aod
 
-        rrsData.columns["CLOUD"] = cloud        
+        rrsData.columns["CLOUD"] = cloud
         esData.columns["CLOUD"] = cloud
         liData.columns["CLOUD"] = cloud
         ltData.columns["CLOUD"] = cloud
 
-        rrsData.columns["SOLAR_AZ"] = azimuth        
+        rrsData.columns["SOLAR_AZ"] = azimuth
         esData.columns["SOLAR_AZ"] = azimuth
         liData.columns["SOLAR_AZ"] = azimuth
-        ltData.columns["SOLAR_AZ"] = azimuth        
+        ltData.columns["SOLAR_AZ"] = azimuth
 
         esData.columns["HEADING"] = heading
         liData.columns["HEADING"] = heading
@@ -624,7 +624,7 @@ class SeaBASSWriter:
         headerBlock = SeaBASSWriter.formatHeader(fp,root, level='2')
 
         # Format each data block for individual output
-        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData2(esData,esDataDelta,'es',irradianceGroup.attributes["ES_UNITS"])        
+        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData2(esData,esDataDelta,'es',irradianceGroup.attributes["ES_UNITS"])
         # formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData2(liData,'li',radianceGroup.attributes["LI_UNITS"])
         # formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData2(ltData,'lt',radianceGroup.attributes["LT_UNITS"])
         formattedRrs, fieldsRrs, unitsRrs  = SeaBASSWriter.formatData2(rrsData,rrsDataDelta,'rrs',reflectanceGroup.attributes["Rrs_UNITS"])

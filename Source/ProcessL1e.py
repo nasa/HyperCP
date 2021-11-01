@@ -443,6 +443,7 @@ class ProcessL1e:
             ProcessL1e.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")
             courseData = newGPSGroup.getDataset("COURSE")
             sogData = newGPSGroup.getDataset("SPEED")
+            newGPSGroup.datasets['SPEED'].id="SOG"
 
         # Metadata ancillary field and Pysolar data
         if ancGroup is not None:
@@ -463,6 +464,7 @@ class ProcessL1e:
             lonDataAnc = None
             cloudData = None
             waveData = None
+            speedData = None
             # Optional and may reside in SolarTracker or SATTHS group
             pitchData = None
             rollData = None
@@ -494,6 +496,8 @@ class ProcessL1e:
                 cloudData = newAncGroup.getDataset("CLOUD")
             if "WAVE_HT" in newAncGroup.datasets:
                 waveData = newAncGroup.getDataset("WAVE_HT")
+            if "SPEED_F_W" in newAncGroup.datasets:
+                speedData = newAncGroup.getDataset("SPEED_F_W")
             # Allow for the unlikely option that pitch/roll data are included in both the SolarTracker/pySAS and Ancillary datasets
             if "PITCH" in newAncGroup.datasets:
                 pitchAncData = newAncGroup.getDataset("PITCH")
@@ -592,7 +596,7 @@ class ProcessL1e:
         if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
             # Optional:
             ProcessL1e.interpolateData(courseData, interpData, "COURSE", fileName) # COG (not heading), presumably?
-            ProcessL1e.interpolateData(sogData, interpData, "SPEED", fileName)
+            ProcessL1e.interpolateData(sogData, interpData, "SOG", fileName)
 
         if satnavGroup is not None:
             # Required:
@@ -645,6 +649,8 @@ class ProcessL1e:
                 ProcessL1e.interpolateData(cloudData, interpData, "CLOUD", fileName)
             if waveData:
                 ProcessL1e.interpolateData(waveData, interpData, "WAVE_HT", fileName)
+            if speedData:
+                ProcessL1e.interpolateData(speedData, interpData, "SPEED_F_W", fileName)
             if "PITCH" in ancGroup.datasets:
                 ProcessL1e.interpolateData(pitchAncData, interpData, "PITCH", fileName)
             if "ROLL" in ancGroup.datasets:

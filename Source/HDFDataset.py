@@ -35,7 +35,7 @@ class HDFDataset:
 
     def printd(self):
         print("Dataset:", self.id)
-        
+
     def read(self, f):
         name = f.name[f.name.rfind("/")+1:]
         self.id = name
@@ -66,7 +66,7 @@ class HDFDataset:
         #print("Data:", self.data.dtype)
 
     def write(self, f):
-        #print("id:", self.id)        
+        #print("id:", self.id)
         #print("columns:", self.columns)
         #print("data:", self.data)
 
@@ -134,9 +134,9 @@ class HDFDataset:
             return
         self.columns = collections.OrderedDict()
         for k in self.data.dtype.names:
-            #print("type",type(ltData.data[k]))           
+            #print("type",type(ltData.data[k]))
             self.columns[k] = self.data[k].tolist()
-    
+
     def datasetToColumns2(self):
         ''' Convert Prosoft format numpy array to columns '''
         if self.data is None:
@@ -148,8 +148,8 @@ class HDFDataset:
             self.columns[k] = []
         for k in ids:
             self.columns[k].append(self.data[0][ids.index(k)])
-            
-    def columnsToDataset(self):        
+
+    def columnsToDataset(self):
         ''' Converts columns into numpy array '''
         #dtype0 = np.dtype([(name, type(ds.columns[name][0])) for name in ds.columns.keys()])
 
@@ -182,9 +182,9 @@ class HDFDataset:
                     #dtype.append((name, np.dtype(str)))
                 # Note: hdf4 only supports 32 bit int, convert to float64
                 elif isinstance(item, int):
-                    dtype.append((name, np.float64))  
+                    dtype.append((name, np.float64))
                 elif name.endswith('FLAG'):
-                    dtype.append((name, np.int))  
+                    dtype.append((name, np.int))
                 else:
                     dtype.append((name, type(item)))
 
@@ -193,9 +193,9 @@ class HDFDataset:
         #print("Dtype:", dtype)
         #print("Shape:", shape)
         self.data = np.empty(shape, dtype=dtype) # empty means uninitialized, i.e. random values.
-        for k,v in self.columns.items():   
+        for k,v in self.columns.items():
             # HDF5 deliberately makes including string vectors difficult
-            # These will all be changed to floats or ints in HDFDataset.columnsToDataset         
+            # These will all be changed to floats or ints in HDFDataset.columnsToDataset
             if k.endswith('FLAG'):
                 # Interpret as undeclared, field, model, or default: 0, 1, 2, 3
                 if v[0] == 'undetermined':
@@ -207,14 +207,14 @@ class HDFDataset:
                 elif v[0] == 'default':
                     v = 3
 
-            self.data[k] = v 
+            self.data[k] = v
 
         return True
 
-    def changeColName(self,oldName,newName):        
+    def changeColName(self,oldName,newName):
         ''' Change the name of a column and push to dataset '''
-        self.datasetToColumns()        
-        for name in self.columns:
+        self.datasetToColumns()
+        for name in self.columns.copy():
             if name == oldName:
                 # self.appendColumn(newName, self.columns[oldName])
                 self.columns[newName] = self.columns[oldName]

@@ -29,7 +29,10 @@ Ideas and To-Dos:
 * Export python scripts to d/l satellite imagery to match
 ___________________________________________________________
 
-2021-10-
+2021-11-1:
+* Remove Ruddick 2006 rho correction, leave placeholder for Groetsch 3C
+* Change GPS "SPEED" to "SOG" throughout, and ANCILLARY "SAL" to "SALINITY"
+* Numerous bug fixes - mainly associated with AncGroup dataset column keys and Utilities plotting directories
 
 2021-10-29: DAA adapted from M Bretagnon (ACRI)
 * Add command line option for single-level processing

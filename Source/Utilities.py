@@ -1455,7 +1455,7 @@ class Utilities:
                         maxIOP = max(y)+0.1*max(y)
 
                     # Plot the Hyperspectral spectrum
-                    plt.plot(waveGIOP, y, 'k', c=c, ls='--', zorder=-1)
+                    plt.plot(waveGIOP, y,  c=c, ls='--', zorder=-1)
 
         if algorithm == "gocad":
             if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products[gocadName]:
@@ -1480,33 +1480,33 @@ class Utilities:
                         if k == '275':
                             wave = np.array(list(range(275, 300)))
                             ag_extrap = agDataGOCAD.data['275'][i] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 275))
-                            plt.plot(wave, ag_extrap, 'k', c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
+                            plt.plot(wave, ag_extrap,  c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
                             plt.text(285, 0.9*maxIOP - 0.12*yScaler, '{} {:.4f}'.format('S275 = ', sgDataGOCAD.data[k][i]), color=c)
 
                         if k == '300':
                             wave = np.array(list(range(300, 355)))
                             # uses the trailing end of the last extrapolation.
                             ag_extrap = ag_extrap[-1] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 300))
-                            plt.plot(wave, ag_extrap, 'k', c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
+                            plt.plot(wave, ag_extrap,  c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
                             plt.text(300, 0.7*maxIOP - 0.12*yScaler, '{} {:.4f}'.format('S300 = ', sgDataGOCAD.data[k][i]), color=c)
 
                         if k == '350':
                             # Use the 350 slope starting at 355 (where we have ag)
                             wave = np.array(list(range(355, 380)))
                             ag_extrap = agDataGOCAD.data['355'][i] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 355))
-                            plt.plot(wave, ag_extrap, 'k', c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
+                            plt.plot(wave, ag_extrap,  c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
                             plt.text(350, 0.5*maxIOP - 0.12*yScaler, '{} {:.4f}'.format('S350 = ', sgDataGOCAD.data[k][i]), color=c)
 
                         if k == '380':
                             wave = np.array(list(range(380, 412)))
                             ag_extrap = agDataGOCAD.data['380'][i] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 380))
-                            plt.plot(wave, ag_extrap, 'k', c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
+                            plt.plot(wave, ag_extrap,  c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
                             plt.text(380, 0.3*maxIOP - 0.12*yScaler, '{} {:.4f}'.format('S380 = ', sgDataGOCAD.data[k][i]), color=c)
 
                         if k == '412':
                             wave = np.array(list(range(412, 700)))
                             ag_extrap = agDataGOCAD.data['412'][i] * np.exp(-1*sgDataGOCAD.data[k][i] * (wave - 412))
-                            plt.plot(wave, ag_extrap, 'k', c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
+                            plt.plot(wave, ag_extrap,  c=[0.9, 0.9, 0.9], ls='--', zorder=-1)
                             plt.text(440, 0.15*maxIOP- 0.12*yScaler, '{} {:.4f}'.format('S412 = ', sgDataGOCAD.data[k][i]), color=c)
 
                     # Now tack on DOC
@@ -1644,7 +1644,7 @@ class Utilities:
 
 
     @staticmethod
-    def saveDeglitchPlots(fileName,plotdir,timeSeries,dateTime,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\
+    def saveDeglitchPlots(fileName,timeSeries,dateTime,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\
         import matplotlib.dates as mdates
         #Plot results
 
@@ -1656,6 +1656,18 @@ class Utilities:
 
         # date_axis_Dark = TimeAxisItem(orientation='bottom')
         # date_axis_Light = TimeAxisItem(orientation='bottom')
+        dirPath = os.getcwd()
+        outDir = MainConfig.settings["outDir"]
+        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
+        # and build on that (HyperInSPACE/Plots/etc...)
+        if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
+            outDir = dirPath
+
+        # Otherwise, put Plots in the chosen output directory from Main
+        plotDir = os.path.join(outDir,'Plots','L1C_Anoms')
+
+        if not os.path.exists(plotDir):
+            os.makedirs(plotDir)
 
         font = {'family': 'serif',
             'color':  'darkred',
@@ -1701,7 +1713,7 @@ class Utilities:
         plt.ylabel(text_ylabel, fontdict=font)
         plt.title('WindowSize = ' + str(windowSize) + ' Sigma Factor = ' + str(sigma), fontdict=font)
 
-        fp = os.path.join(plotdir,fileName)
+        fp = os.path.join(plotDir,fileName)
         # plotName = f'{fp}_W{windowSize}S{sigma}_{sensorType}{lightDark}_{waveBand}.png'
         plotName = f'{fp}_{sensorType}{lightDark}_{waveBand}.png'
 
