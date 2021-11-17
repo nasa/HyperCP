@@ -835,10 +835,10 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addLayout(l2pGetAncHBox)
 
         # Default Rho
-        RhoHBox = QtWidgets.QHBoxLayout()
-        RhoHBox.addWidget(l2DefaultRhoSkyLabel)
-        RhoHBox.addWidget(self.l2RhoSkyLineEdit)
-        VBox3.addLayout(RhoHBox)
+        # RhoHBox = QtWidgets.QHBoxLayout()
+        # RhoHBox.addWidget(l2DefaultRhoSkyLabel)
+        # RhoHBox.addWidget(self.l2RhoSkyLineEdit)
+        # VBox3.addLayout(RhoHBox)
         # Default Wind
         WindSpeedHBox2 = QtWidgets.QHBoxLayout()
         WindSpeedHBox2.addWidget(self.l2DefaultWindSpeedLabel)
@@ -862,12 +862,12 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # Rho model
         RhoHBox2 = QtWidgets.QHBoxLayout()
-        RhoHBox2.addWidget(self.RhoRadoButton3C)
+        RhoHBox2.addWidget(self.RhoRadioButtonDefault)
         RhoHBox2.addWidget(self.RhoRadioButtonZhang)
         VBox3.addLayout(RhoHBox2)
         RhoHBox3 = QtWidgets.QHBoxLayout()
         # RhoHBox3.addSpacing(60)
-        RhoHBox3.addWidget(self.RhoRadioButtonDefault)
+        RhoHBox3.addWidget(self.RhoRadoButton3C)
         RhoHBox3.addWidget(self.RhoRadioButtonYour)
         VBox3.addLayout(RhoHBox3)
 

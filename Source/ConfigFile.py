@@ -11,6 +11,11 @@ class ConfigFile:
     minDeglitchBand = 350
     maxDeglitchBand = 850
 
+    fpHySP = os.path.dirname(__file__).split(os.path.sep)
+    fpHySP[0] = os.path.sep
+    fpHySP[-1] = ''
+    fpHySP = os.path.join(*fpHySP)
+
     @staticmethod
     def printd():
         print("ConfigFile - Printd")

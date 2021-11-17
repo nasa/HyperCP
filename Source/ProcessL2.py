@@ -1402,9 +1402,8 @@ class ProcessL2:
             rhoScalar = None
 
         else:
-            # Default rho set in the GUI
-            rhoScalar = float(ConfigFile.settings["fL2RhoSky"])
-            rhoDelta = 0.01 # Estimated for range of conditions in Mobley 1999 models; it's actually higher...
+            # Full Mobley 1999 model from LUT
+            rhoScalar, rhoDelta = RhoCorrections.M99Corr(WINDSPEEDXSlice,SZAXSlice, RelAzXSlice)
 
         # Calculate hyperspectral Thuillier F0 function
         F0_hyper = ProcessL2.Thuillier(dateTag, wavelength)

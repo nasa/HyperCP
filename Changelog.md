@@ -29,6 +29,10 @@ Ideas and To-Dos:
 * Export python scripts to d/l satellite imagery to match
 ___________________________________________________________
 
+2021-11-17:
+* Build netCDF LUT for Mobley 1999 glint correction
+* Edit M99 glint corr to utilize complete LUT
+
 2021-11-1:
 * Remove Ruddick 2006 rho correction, leave placeholder for Groetsch 3C
 * Change GPS "SPEED" to "SOG" throughout, and ANCILLARY "SAL" to "SALINITY"
