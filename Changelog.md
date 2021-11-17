@@ -2,7 +2,10 @@ v1.0.10 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
 ---
 
 Next priorities:
-* Remove RuddickRho option in lieu of complete LUT for M99 at https://www.oceanopticsbook.info/packages/iws_l2h/conversion/files/rhoTable_AO1999.txt
+* Implement Groetch et al. 2017 3C glint correction
+* Implement Vandermuelen, Dierssen (in prep) QWIP QC
+* Implement TriOS platform support
+* Implement satellite matchup with fd_mathcup.py
 * Integration time issue with HyperOCRs; develop/add correction (in cal file? another level?)
     * Do other users of SeaBird HOCRs see int. time response issues?
     * Contact me for further info regarding integration time uncertainty
@@ -10,23 +13,20 @@ Next priorities:
     * Iterative approaches; process time concern.
 * Add BRDF correction options
 * Propagate uncertainties from radiometry to OC products
+* Improve uncertainty estimates of glint corrections
 * Memory issue with FPDF causes major slowdown in PDF report building with figures
 * Fix non-unique station/file bug
 
 Ideas and To-Dos:
 * Explore ML approaches to automate filter selection and glint/NIR correction selection
-* Incorporate new platforms with collaborators (write to dirk.a.aurin@nasa.gov)
-    * Next up: TriOS. Late 2021 - early 2022.
+* Incorporate additional platforms with collaborators (write to dirk.a.aurin@nasa.gov)
 * Use ancillary SeaBASS metadata to populate remaining L1E/L2 SeaBASS header fields
 * Add failure flags in HDF object attributes:
     * Capture details when errors thrown (inspect, currentframe, getframeinfo)
     * Split Wind and SZA bombs in L2
 * Add PIC and GIOP to L2 OC products
 * Produce kml files for GoogleEarth on entire cruise/directory
-* Read in data from SBA, HPro, COPS, etc.
-    * To compare
-    * To process
-* Export python scripts to d/l satellite imagery to match
+
 ___________________________________________________________
 
 2021-11-17:
