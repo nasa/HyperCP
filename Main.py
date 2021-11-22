@@ -15,7 +15,7 @@ import json
 from PyQt5 import QtCore, QtGui, QtWidgets
 import time
 import requests
-
+from tqdm import tqdm
 # Why does pylint have a problem with this path formulation?
 sys.path.append(os.path.join(os.path.dirname(__file__),'Source'))
 from MainConfig import MainConfig
@@ -44,32 +44,31 @@ class Window(QtWidgets.QWidget):
             If canceled, Zhang et al. (2017) glint correction will fail. If download fails, a link and instructions will be provided in the terminal.'
             YNReply = Utilities.YNWindow('Database Download',infoText)
             if YNReply == QtWidgets.QMessageBox.Ok:
-                print('##### Downloading 2.5 GB data file. This could take several minutes. #####')
-                print('#####        Program will open when download is complete.            #####')
+
                 url = 'https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat'
+                download_session=requests.Session()
                 local_filename = os.path.join('Data','Zhang_rho_db.mat')
                 try:
-                    r = requests.get(url, stream=True)
-                    r.raise_for_status()
-
+                        file_size=int(download_session.head(url).headers["Content-length"])
+                        file_size_read=round(int(file_size)/(1024**3),2)
+                        print(f"##### Downloading {file_size_read}GB data file. This could take several minutes. ##### ")
+                        download_file=download_session.get(url, stream=True)
+                        download_file.raise_for_status()
                 except requests.exceptions.HTTPError as err:
-                    print('Error in download_file:',err)
-
-                if r.ok:
-                    with open(local_filename, 'wb') as f:
-                        n = 0
-                        for chunk in r.iter_content(chunk_size=1024):
-                            n += 1
-                            if (n % 1000) == 0:
-                                print('.', end='')
-                            if chunk: # filter out keep-alive new chunks
+                                    print('Error in download_file:',err)
+                if download_file.ok:                            
+                        progress_bar = tqdm(total=file_size, unit='iB', unit_scale=True, unit_divisor=1024)
+                        with open(local_filename, 'wb') as f:
+                            for chunk in download_file.iter_content(chunk_size=1024):
+                                progress_bar.update(len(chunk))
                                 f.write(chunk)
-                        print(' done.')
+                        progress_bar.close()
                 else:
                     print('Failed to download core databases.')
                     print('Download from: \
-                                  https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat \
-                                      and place in HyperInSPACE/Data directory.')
+                                             https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat \
+                                                      and place in HyperInSPACE/Data directory.')
+
         self.initUI()
 
     def initUI(self):
