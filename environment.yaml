@@ -123,4 +123,5 @@ dependencies:
   - zstd=1.4.9=h322a384_0
   - pip:
     - fpdf==1.7.2
+    - tqdm==4.62.3
 prefix: /Users/daurin/anaconda3/envs/HyperInSPACE_env
