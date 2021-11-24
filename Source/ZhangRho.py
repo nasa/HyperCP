@@ -8,8 +8,7 @@ import time
 import numpy as np
 from scipy.interpolate import interpn
 import xarray as xr
-
-from Utilities import Utilities # optional, see printProgressBar below
+from tqdm import tqdm
 
 π = np.pi
 
@@ -22,7 +21,7 @@ skyrad0, sunrad0, rad_boa_sca, rad_boa_vec = None, None, None, None
 def load_db(db_path=db_path):
     global db, quads, sdb, vdb
     global skyrad0, sunrad0, rad_boa_sca, rad_boa_vec
-    
+
     db = xr.open_dataset(db_path, group='db', engine='netcdf4')
     quads = xr.open_dataset(db_path, group='quads', engine='netcdf4')
     sdb = xr.open_dataset(db_path, group='sdb', engine='netcdf4')
@@ -38,7 +37,7 @@ def my_sph2cart(azm, zen, r=1):
 
     Inputs
     -------
-    azm [Numpy array] : -azimuth angle 
+    azm [Numpy array] : -azimuth angle
     zen [Numpy array] : zenith angle
     r  [float] : radius = 1
 
@@ -96,23 +95,23 @@ def get_prob(wind, vec):
     prob [np.array] :  probability of sky light reflected into the sensor
     angr_sky[np.array] : reflection angle
     """
-    
+
     # with xr.open_dataset(db_path, group='quads') as quads:
     # zen = quads.zen.data[0]
     # if len(vec.shape) == 1:
     #     vec = vec.reshape(1,vec.size)
     # prob = np.nan * np.ones((len(zen), len(wind)*vec.shape[0]))
     # angr_sky = prob.copy()
-    
+
     # k = -1
     # for w in wind:
     #     for v in vec:
     #         k = k + 1
-    #         prob[:,k], angr_sky[:,k] = skylight_reflection2(w, v)    
+    #         prob[:,k], angr_sky[:,k] = skylight_reflection2(w, v)
     prob, angr_sky = skylight_reflection2(wind, vec)
 
     return prob, angr_sky
-    
+
 def skylight_reflection2(wind, sensor):
     """
     Computes probability of light reflection at angle.
@@ -151,7 +150,7 @@ def skylight_reflection2(wind, sensor):
     p_vec = gen_vec_polar(zen0, quads.sun05.data, num)
     # -p_vec represent vectors coming from the sky
     prob[0], ang[0] = prob_reflection(-p_vec, sensor, wind)
-    
+
     # non-polar quads
     num = 10 # the number of individual vectors
 
@@ -163,9 +162,9 @@ def skylight_reflection2(wind, sensor):
 
     t0 = time.time()
     ''' standard loop. Takes ages on certain machines.'''
-    Utilities.printProgressBar(0, len(prob), prefix = 'Progress:', suffix = 'Complete', length = 50)
-    for i in np.arange(1, prob.size):        
-        Utilities.printProgressBar(i+1, len(prob), prefix = 'Progress:', suffix = 'Complete', length = 50)
+    progressBar = tqdm(total=len(prob), unit_scale=True, unit_divisor=1)
+    for i in np.arange(1, prob.size):
+        progressBar.update(1)
         # sky = gen_vec_quad(quads.zen.data[0][i],du,quads.azm.data[0][i],dphi,num)
         sky = gen_vec_quad(zen[i],du,azm[i],dphi,num)
         prob[i],ang[i] = prob_reflection(-sky,sensor,wind)
@@ -173,15 +172,15 @@ def skylight_reflection2(wind, sensor):
     ''' vectorized solution for sky. Unable to allocate an array this large 924760x924760'''
     # sky = gen_vec_quad(zen,du,azm,dphi,num)
 
-    ''' comprehension. CPU 100%+. After lengthy delay -> Exception: Too many values to unpack'''    
+    ''' comprehension. CPU 100%+. After lengthy delay -> Exception: Too many values to unpack'''
     # prob, ang = [(prob_reflection(
     #                 -gen_vec_quad(zen[i],
     #                 du,azm[i],
     #                 dphi,num),sensor,wind)) for i in np.arange(1, prob.size)]
 
     ''' mapped, nested lambdas. Returns a map? Not callable'''
-    # sky = map(lambda zen : map(lambda azm : gen_vec_quad(zen,du,azm,dphi,num), 
-    #         quads.azm.data[0]), 
+    # sky = map(lambda zen : map(lambda azm : gen_vec_quad(zen,du,azm,dphi,num),
+    #         quads.azm.data[0]),
     #         quads.zen.data[0])
 
     ''' lambda sky plus loop. Takes same time as loop. Resource used is 100%+ CPU, NOT memory'''
@@ -192,12 +191,12 @@ def skylight_reflection2(wind, sensor):
     '''nested lambdas. Unable to allocate an array with shape 924760x924760 '''
     # probref = lambda x, y, z: prob_reflection(-x, y, z)
     # prob, ang = probref(-sky(quads.zen.data[0], quads.azm.data[0]), sensor, wind)
-    
+
     t1 = time.time()
     print(f'Time elapsed: {round(t1-t0)} seconds')
-                    
+
     return prob, ang
-    
+
 def my_cart2sph(n):
     def cart2sph(x,y,z):
         azimuth = np.arctan2(y,x)
@@ -225,11 +224,11 @@ def gen_vec_polar(zen, sun05, num=10):
     -------
     vec : Polar cap vector
     """
-    
+
     ϕ = np.linspace(0, 2*π, num)
     sin_sun05 = np.sin(sun05)
     x = (sin_sun05*np.cos(ϕ)).tolist()
-    x1 = np.insert(x,0,0)    
+    x1 = np.insert(x,0,0)
     y = (sin_sun05*np.sin(ϕ)).tolist()
     y1 = np.insert(y,0,0)
     z = (np.cos(sun05)*np.ones_like(ϕ)).tolist()
@@ -240,7 +239,7 @@ def gen_vec_polar(zen, sun05, num=10):
         [0, 1, 0],
         [-np.sin(zen), 0, np.cos(zen)]]
     vec = np.fliplr(np.rot90(np.matmul(Ry,tmp),-1))
-    return vec    
+    return vec
 
 def prob_reflection(inc, refl, wind):
     """
@@ -294,7 +293,7 @@ def prob_reflection(inc, refl, wind):
     # !!! see document On the Cox and Munk
     sigma = sigma/np.sqrt(2)
     p1 = rayleighcdf(max(slope),sigma)-rayleighcdf(min(slope),sigma)
-    #} !!! 
+    #} !!!
     # azimuth angle ranges from -180 to 180. Need to treat the cases when the
     # azimuth angles cover both positive ang negative ranges.
     # case 1: -2 -1 1 2
@@ -307,7 +306,7 @@ def prob_reflection(inc, refl, wind):
 
     if azm_nx*azm_nn >0: # not an issue
         p2 = (azm_nx-azm_nn)/2/π
-    elif any(abs(azm_n)<π/2): # cases 1 and 3 
+    elif any(abs(azm_n)<π/2): # cases 1 and 3
         p2 = (azm_nx-azm_nn)/2/π
     else: # case 2
         ind = azm_n<0
@@ -317,7 +316,7 @@ def prob_reflection(inc, refl, wind):
         p2 = (azm_nx-azm_nn)/2/π
 
     prob = 2*p1*p2 # factor 2 accounts for 180 degree ambiguity
-    
+
     # incident angle
     # cosw = sum(bsxfun(@times,n,refl),2)
     cosw = np.sum(n*refl,1)
@@ -379,7 +378,7 @@ def fresnel(m ,ang):
     """
     This function calculates the Fresnel reflectances for electric vector
     parallel (Rp), perpendicular (Rr) and unpolarized incident light.
-     The reflection matrix = 
+     The reflection matrix =
      [R11, R12, 0; R12, R11, 0; 0, 0, R33]
      Only accounts for I, Q, U and ignore the V component.
      Revision History
@@ -408,41 +407,41 @@ def fresnel(m ,ang):
     # # reflection coefficient for perpendicular incident light
     tmp = cosangr*m
     Rr1 = (cosang - tmp)/(cosang + tmp)
-    # # Rr1=(cosang-m*cosangr)./(cosang+m*cosangr) 
+    # # Rr1=(cosang-m*cosangr)./(cosang+m*cosangr)
 
     # # reflection coefficient for parallel incident light
     tmp = cosang*m
     # this was previous one
-    # Rp1 = bsxfun(@minus,cosangr,tmp)./bsxfun(@plus,cosangr,tmp)     
+    # Rp1 = bsxfun(@minus,cosangr,tmp)./bsxfun(@plus,cosangr,tmp)
     Rp1 =  (tmp - cosangr)/(cosangr + tmp)
     # Rp1=(cosangr-m*cosang)./(cosangr+m*cosang);
-    
+
     Rr = np.abs(Rr1)**2 # reflectance for perpendicular incident light
 
     Rp = np.abs(Rp1)**2  # reflectance for parallel incident light
 
-    R = (Rr+Rp)/2 
-    R12 = (Rp-Rr)/2 
+    R = (Rr+Rp)/2
+    R12 = (Rp-Rr)/2
     R33 = np.real(Rr1*np.conj(Rp1))
-    
+
     return [R, R12, R33]
 
 
 def my_interpn(dbArray, coords, dims, interpCoords):
     '''
-    Interpolates an n-D array defined by axes/values coords 
+    Interpolates an n-D array defined by axes/values coords
     to the points defined in interpCoords
-    
+
     Inputs
-    ---    
+    ---
     dbArray : n-D array of model outputs in the database
     coords : list of n arrays defining the coordinates in dbArray
     interpCoords : list of n arrays defining the values at which to interpolate dbArray
-    
+
     Outputs
     ---
     interpArray : n-D array of dbArray values interpolated to interpCoords
-    '''            
+    '''
     da = xr.DataArray(name='dbArray',
                 data=dbArray,
                 dims=dims,
@@ -467,27 +466,27 @@ def Main(env, sensor):
     Inputs
     ------
     env : Environmental variables (scalars)
-            C(cloud; not used), od(aerosol optical depth), sal(salinity), 
+            C(cloud; not used), od(aerosol optical depth), sal(salinity),
             wind, wtem(water temp), zen_sun(solar zenith angle)
-    sensor: Sensor configurations 
-            ang([zenith angle (scalar), 180-relative solar azimuth angle (scalar)]), 
+    sensor: Sensor configurations
+            ang([zenith angle (scalar), 180-relative solar azimuth angle (scalar)]),
             wv(list of waveband centers) (vector)
 
     Outputs
     -------
-    ρ : Spectral sea surface reflectance of sun/sky glint including 
+    ρ : Spectral sea surface reflectance of sun/sky glint including
             sun(solar ρ), sky(sky ρ), sca2vec(), ρ(total ρ)
-    """    
+    """
 
     ρ = collections.OrderedDict()
     load_db()
 
     sensor['ang2'] = sensor['ang'] + np.array([0, 180])
     sensor['pol'] = np.deg2rad(sensor['ang']) # the sensor polar coordinate
-    sensor['vec'] = my_sph2cart(sensor['pol'][1], sensor['pol'][0]) # sensor vector    
+    sensor['vec'] = my_sph2cart(sensor['pol'][1], sensor['pol'][0]) # sensor vector
     sensor['pol2'] = np.deg2rad(sensor['ang2']) # the skylight polar coordinate
     sensor['loc2'] = find_quads(*sensor['pol2'])
-    
+
     # Probability and reflection angle of reflecting skylight into the sensor
     ''' Optionally stop using loop until the efficiency is addressed by saving and loading the result '''
     prob, angr_sky = get_prob(env['wind'], sensor['vec'])
@@ -499,13 +498,13 @@ def Main(env, sensor):
 
     tprob = np.sum(prob,0)
     prob = np.reshape(prob, (-1,1))
-    
+
     ref = sw_fresnel(sensor['wv'],angr_sky,env['wtem'],env['sal'])
-    # As currently formulated in Zhang's code, this only captures the 
+    # As currently formulated in Zhang's code, this only captures the
     # total reflectance (R), and ignores R12 and R33; confirmed w/ Zhang
     ref = ref[0]
 
-    print('Interpolating skyrad')
+    print('Interpolating skyrad, takes a moment')
     wave = db.wv.data.flatten()
     index = np.arange(1,skyrad0.data.shape[1]+1)
     aod = db.od.data.flatten() # limit 0 - 0.20
@@ -517,7 +516,7 @@ def Main(env, sensor):
     #     print(f'SZA = {env["zen_sol"]}. Maximum solar elevation reached. Setting to 60')
     #     env['zen_sol'] = 60
     coords = [wave, index, aod, solzen]
-    dims = ['wave','index','aod','solzen'] 
+    dims = ['wave','index','aod','solzen']
     interpCoords = [sensor['wv'], index, env['od'], env['zen_sun']]
     skyrad = my_interpn(skyrad0.data, coords, dims, interpCoords)
 
@@ -538,40 +537,40 @@ def Main(env, sensor):
     ρ['sun']=(sunrad/N0)*(ref_sun*prob_sun/tprob)
 
     print('Interpolating rad_inc')
-    azimuth = sdb.azm_view.data.flatten() 
-    senzen = sdb.zen_view.data.flatten() 
-    wave = sdb.wv.data.flatten()        
-    solzen = sdb.zen_sun.data.flatten() 
-    aod = sdb.od.data[9,:]             
-    wind = sdb.wind.data.flatten()     
+    azimuth = sdb.azm_view.data.flatten()
+    senzen = sdb.zen_view.data.flatten()
+    wave = sdb.wv.data.flatten()
+    solzen = sdb.zen_sun.data.flatten()
+    aod = sdb.od.data[9,:]
+    wind = sdb.wind.data.flatten()
     coords = [azimuth,senzen,wave,solzen,aod,wind]
     dims = ['azimuth','senzen','wave','solzen','aod','wind']
-    interpCoords_inc = [180-sensor['ang'][1], 180-sensor['ang'][0], sensor['wv'], 
+    interpCoords_inc = [180-sensor['ang'][1], 180-sensor['ang'][0], sensor['wv'],
                     env['zen_sun'], env['od'], env['wind']]
     rad_inc_sca = my_interpn(rad_boa_sca.data, coords, dims, interpCoords_inc)
 
     print('Interpolating rad_mea')
-    interpCoords_mea = [180-sensor['ang'][1], sensor['ang'][0], sensor['wv'], 
+    interpCoords_mea = [180-sensor['ang'][1], sensor['ang'][0], sensor['wv'],
                     env['zen_sun'], env['od'], env['wind']]
     rad_mea_sca = my_interpn(rad_boa_sca.data, coords, dims, interpCoords_mea)
-    
+
     ρ_sca = rad_mea_sca/rad_inc_sca
 
     print('Interpolating rad_inc_vec')
-    azimuth = vdb.azm_view.data.flatten() 
-    senzen = vdb.zen_view.data.flatten() 
-    wave = vdb.wv.data.flatten()        
-    solzen = vdb.zen_sun.data.flatten() 
-    aod = vdb.od.data[9,:]             
-    wind = vdb.wind.data.flatten()     
+    azimuth = vdb.azm_view.data.flatten()
+    senzen = vdb.zen_view.data.flatten()
+    wave = vdb.wv.data.flatten()
+    solzen = vdb.zen_sun.data.flatten()
+    aod = vdb.od.data[9,:]
+    wind = vdb.wind.data.flatten()
     coords = [azimuth,senzen,wave,solzen,aod,wind]
-    interpCoords = [180-sensor['ang'][1], 180-sensor['ang'][0], sensor['wv'], 
+    interpCoords = [180-sensor['ang'][1], 180-sensor['ang'][0], sensor['wv'],
                     env['zen_sun'], env['od'], env['wind']]
     rad_inc_vec = my_interpn(rad_boa_vec.data, coords, dims, interpCoords_inc)
 
     print('Interpolating rad_mea_vec')
     rad_mea_vec = my_interpn(rad_boa_vec.data, coords, dims, interpCoords_mea)
-    
+
     ρ_vec = rad_mea_vec/rad_inc_vec
     ρ['sca2vec'] = ρ_vec/ρ_sca
     ρ['ρ'] = ρ['sky']*ρ['sca2vec'] + ρ['sun']

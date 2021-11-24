@@ -21,6 +21,7 @@ from scipy.interpolate import splev, splrep
 import pandas as pd
 from pandas.plotting import register_matplotlib_converters
 register_matplotlib_converters()
+from tqdm import tqdm
 
 from ConfigFile import ConfigFile
 from MainConfig import MainConfig
@@ -80,28 +81,6 @@ class Utilities:
         msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         returnValue = msgBox.exec_()
         return returnValue
-
-    # Print iterations progress
-    @staticmethod
-    def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
-        """
-        Call in a loop to create terminal progress bar
-        @params:
-            iteration   - Required  : current iteration (Int)
-            total       - Required  : total iterations (Int)
-            prefix      - Optional  : prefix string (Str)
-            suffix      - Optional  : suffix string (Str)
-            decimals    - Optional  : positive number of decimals in percent complete (Int)
-            length      - Optional  : character length of bar (Int)
-            fill        - Optional  : bar fill character (Str)
-        """
-        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-        filledLength = int(length * iteration // total)
-        bar = fill * filledLength + '-' * (length - filledLength)
-        print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
-        # Print New Line on Complete
-        if iteration == total:
-            print()
 
     @staticmethod
     def writeLogFile(logText, mode='a'):
@@ -1138,7 +1117,8 @@ class Utilities:
             l = len(xData.data.dtype.names)-3 # skip date and time and datetime
             index = None
 
-        Utilities.printProgressBar(0, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+        if index:
+            progressBar = tqdm(total=l, unit_scale=True, unit_divisor=step)
 
         ticker = 0
         if index is not None:
@@ -1147,7 +1127,8 @@ class Utilities:
                     if k == "Datetag" or k == "Timetag2" or k == "Datetime":
                         continue
                     ticker += 1
-                    Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+                    progressBar.update(1)
+
                     x = np.copy(xData.data[k]).tolist()
                     new_x = np.copy(newXData.columns[k]).tolist()
 
@@ -1172,8 +1153,7 @@ class Utilities:
             for k in xData.data.dtype.names:
                 if k == "Datetag" or k == "Timetag2" or k == "Datetime":
                     continue
-                ticker += 1
-                Utilities.printProgressBar(ticker, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+
                 x = np.copy(xData.data[k]).tolist()
                 new_x = np.copy(newXData.columns[k]).tolist()
 

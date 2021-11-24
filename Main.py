@@ -16,6 +16,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import time
 import requests
 from tqdm import tqdm
+
 # Why does pylint have a problem with this path formulation?
 sys.path.append(os.path.join(os.path.dirname(__file__),'Source'))
 from MainConfig import MainConfig
@@ -56,7 +57,7 @@ class Window(QtWidgets.QWidget):
                         download_file.raise_for_status()
                 except requests.exceptions.HTTPError as err:
                                     print('Error in download_file:',err)
-                if download_file.ok:                            
+                if download_file.ok:
                         progress_bar = tqdm(total=file_size, unit='iB', unit_scale=True, unit_divisor=1024)
                         with open(local_filename, 'wb') as f:
                             for chunk in download_file.iter_content(chunk_size=1024):

@@ -10,6 +10,7 @@ import scipy as sp
 import datetime as datetime
 import copy
 from PyQt5 import QtWidgets
+from tqdm import tqdm
 
 import HDFRoot
 from MainConfig import MainConfig
@@ -1946,9 +1947,9 @@ class ProcessL2:
         if interval == 0:
             # Here, take the complete time series
             print("No time binning. This can take a moment.")
-            # Utilities.printProgressBar(0, esLength-1, prefix = 'Progress:', suffix = 'Complete', length = 50)
+            progressBar = tqdm(total=esLength, unit_scale=True, unit_divisor=1)
             for i in range(0, esLength-1):
-                Utilities.printProgressBar(i+1, esLength-1, prefix = 'Progress:', suffix = 'Complete', length = 50)
+                progressBar.update(1)
                 start = i
                 end = i+1
 

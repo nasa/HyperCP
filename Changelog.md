@@ -29,6 +29,13 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2021-11-24:
+* Change all progress bars to tqdm
+
+2021-11-23: Pseudonymous github contributor
+* Retrieve database size from server on initial download
+* Use tqdm progress bar
+
 2021-11-17:
 * Build netCDF LUT for Mobley 1999 glint correction
 * Edit M99 glint corr to utilize complete LUT
