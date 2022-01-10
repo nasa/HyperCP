@@ -483,6 +483,7 @@ class ProcessL2:
         newLIData.columnsToDataset()
         newLTData.columnsToDataset()
         newRrsData.columnsToDataset()
+        newRrsUncorrData.columnsToDataset()
         newnLwData.columnsToDataset()
 
         newESDeltaData.columnsToDataset()
@@ -545,9 +546,12 @@ class ProcessL2:
                 counter = 0
                 for i in range(startLength):
                     if start <= timeStamp[i] and stop >= timeStamp[i]:
-                        group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
-                        counter += 1
-                        finalCount += 1
+                        try:
+                            group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
+                            counter += 1
+                            finalCount += 1
+                        except:
+                            print('error')
                     else:
                         newTimeStamp.append(timeStamp[i])
             else:

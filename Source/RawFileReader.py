@@ -96,12 +96,12 @@ class RawFileReader:
                                 # Only the first time through
                                 if len(gp.attributes) == 0:
                                     #gp.id += "_" + cf.id
-                                    gp.id = key                                    
+                                    gp.id = key
                                     gp.attributes["CalFileName"] = key
                                     gp.attributes["FrameTag"] = cf.id
 
-                                if key.startswith('SATPYR'):
-                                    print('curious...')
+                                # if key.startswith('SATPYR'):
+                                #     print('curious...')
 
                                 try:
                                     num = cf.convertRaw(msg, gp)

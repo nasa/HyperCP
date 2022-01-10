@@ -29,6 +29,9 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2021-12-14:
+* Fix bug in Rrs_MODISA_Uncorr columns2dataset (PL2 L486)
+
 2021-11-24:
 * Change all progress bars to tqdm
 
