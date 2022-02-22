@@ -475,7 +475,7 @@ class Window(QtWidgets.QWidget):
         if not self.inputDirectory[0]:
             print('Bad input directory.')
             return
-        # MacOS bug holds Open window open during entire processing period
+
         openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',self.inputDirectory)
 
         print('Files:', openFileNames)
