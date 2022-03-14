@@ -1,9 +1,9 @@
 
-import csv
+# import csv
 import os
-import numpy as np
 import datetime
-import time
+import numpy as np
+# import time
 
 from HDFRoot import HDFRoot
 from SeaBASSWriter import SeaBASSWriter
@@ -14,10 +14,9 @@ from Utilities import Utilities
 from AncillaryReader import AncillaryReader
 
 from ProcessL1a import ProcessL1a
+from ProcessL1aqc import ProcessL1aqc
+from ProcessL1adark import ProcessL1adark
 from ProcessL1b import ProcessL1b
-from ProcessL1c import ProcessL1c
-from ProcessL1d import ProcessL1d
-from ProcessL1e import ProcessL1e
 from ProcessL2 import ProcessL2
 from PDFreport import PDF
 
@@ -28,7 +27,8 @@ class Controller:
     @staticmethod
     def writeReport(fileName, pathOut, outFilePath, level, inFilePath):
         print('Writing PDF Report...')
-        numLevelDict = {'L1A':1,'L1B':2,'L1C':3,'L1D':4,'L1E':5,'L2':6}
+        # numLevelDict = {'L1A':1,'L1B':2,'L1C':3,'L1D':4,'L1E':5,'L2':6}
+        numLevelDict = {'L1A':1,'L1AQC':2,'L1ADARK':3,'LB':4,'L2':5}
         numLevel = numLevelDict[level]
         fp = os.path.join(pathOut, level, f'{fileName}_{level}.hdf')
 
@@ -82,7 +82,7 @@ class Controller:
         inPlotPath = os.path.join(pathOut,'Plots')
         # The inPlotPath is going to be different for L1A-L1E than L2 for many cruises...
         # In that case, move up one directory
-        if os.path.isdir(os.path.join(inPlotPath, 'L1C_Anoms')) is False:
+        if os.path.isdir(os.path.join(inPlotPath, 'L1AQC_Anoms')) is False:
             inPlotPath = os.path.join(pathOut,'..','Plots')
         # outPDF = os.path.join(reportPath,'Reports', f'{fileName}.pdf')
         outHDF = os.path.split(outFilePath)[1]
@@ -102,10 +102,10 @@ class Controller:
             pdf.print_chapter('L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName, outFilePath, root)
 
         if numLevel > 1:
-            print('Level 1B')
-            inLog = os.path.join(inLogPath,f'{fileName}_L1A_L1B.log')
+            print('Level 1AQC')
+            inLog = os.path.join(inLogPath,f'{fileName}_L1A_L1AQC.log')
             if os.path.isfile(inLog):
-                pdf.print_chapter('L1B', 'Process L1A to L1B', inLog, inPlotPath, fileName, outFilePath, root)
+                pdf.print_chapter('L1AQC', 'Process L1A to L1AQC', inLog, inPlotPath, fileName, outFilePath, root)
 
         if numLevel > 2:
             print('Level 1C')
@@ -274,14 +274,14 @@ class Controller:
         return root
 
     @staticmethod
-    def processL1b(inFilePath, outFilePath, calibrationMap):
+    def processL1aqc(inFilePath, outFilePath, calibrationMap):
         root = None
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
             return None
 
         # Process the data
-        print("ProcessL1b")
+        print("ProcessL1aqc")
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
@@ -291,7 +291,7 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None
 
-        root = ProcessL1b.processL1b(root, calibrationMap)
+        root = ProcessL1aqc.processL1aqc(root, calibrationMap)
 
         # Write output file
         if root is not None:
@@ -304,7 +304,7 @@ class Controller:
                 Utilities.writeLogFile(msg)
                 return None
         else:
-            msg = "L1b processing failed. Nothing to output."
+            msg = "L1aqc processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
@@ -314,7 +314,7 @@ class Controller:
         return root
 
     @staticmethod
-    def processL1c(inFilePath, outFilePath, ancillaryData=None):
+    def processL1adark(inFilePath, outFilePath, ancillaryData=None):
         root = None
         # _,fileName = os.path.split(outFilePath)
 
@@ -323,7 +323,7 @@ class Controller:
             return None,
 
         # Process the data
-        msg = ("ProcessL1c: " + inFilePath)
+        msg = ("ProcessL1adark: " + inFilePath)
         print(msg)
         Utilities.writeLogFile(msg)
         try:
@@ -335,7 +335,7 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None
 
-        root = ProcessL1c.processL1c(root, ancillaryData)
+        root = ProcessL1adark.processL1adark(root, ancillaryData)
 
         # Write output file
         if root is not None:
@@ -348,7 +348,7 @@ class Controller:
                 Utilities.writeLogFile(msg)
                 return None
         else:
-            msg = "L1c processing failed. Nothing to output."
+            msg = "L1adark processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
@@ -358,20 +358,20 @@ class Controller:
         return root
 
     @staticmethod
-    def processL1d(inFilePath, outFilePath):
+    def processL1b(inFilePath, outFilePath):
         root = None
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
             return None
 
         # Process the data
-        msg = ("ProcessL1d: " + inFilePath)
+        msg = ("ProcessL1b: " + inFilePath)
         print(msg)
         Utilities.writeLogFile(msg)
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
-            msg = "Controller.processL1d: Unable to open HDF file. May be open in another application."
+            msg = "Controller.processL1b: Unable to open HDF file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
@@ -379,7 +379,7 @@ class Controller:
 
         ''' At this stage the Anomanal parameterizations are current in ConfigFile.settings, regardless of who called this method.
             This method will promote them to root.attributes.'''
-        root = ProcessL1d.processL1d(root)
+        root = ProcessL1b.processL1b(root)
 
         # Write output file
         if root is not None:
@@ -396,13 +396,13 @@ class Controller:
                 if ConfigFile.settings['bL2PlotLt']==1:
                     Utilities.plotRadiometryL1D(root, filename, rType='LT')
             except:
-                msg = "Controller.ProcessL1d: Unable to write file. May be open in another application."
+                msg = "Controller.ProcessL1b: Unable to write file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
         else:
-            msg = "L1d processing failed. Nothing to output."
+            msg = "L1b processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
@@ -411,47 +411,47 @@ class Controller:
 
         return root
 
-    @staticmethod
-    def processL1e(inFilePath, outFilePath):
-        root = None
-        _,fileName = os.path.split(outFilePath)
+    # @staticmethod
+    # def processL1e(inFilePath, outFilePath):
+    #     root = None
+    #     _,fileName = os.path.split(outFilePath)
 
-        if not os.path.isfile(inFilePath):
-            print('No such input file: ' + inFilePath)
-            return None
+    #     if not os.path.isfile(inFilePath):
+    #         print('No such input file: ' + inFilePath)
+    #         return None
 
-        # Process the data
-        print("ProcessL1e")
-        try:
-            root = HDFRoot.readHDF5(inFilePath)
-        except:
-            msg = "Unable to open file. May be open in another application."
-            Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return None
+    #     # Process the data
+    #     print("ProcessL1e")
+    #     try:
+    #         root = HDFRoot.readHDF5(inFilePath)
+    #     except:
+    #         msg = "Unable to open file. May be open in another application."
+    #         Utilities.errorWindow("File Error", msg)
+    #         print(msg)
+    #         Utilities.writeLogFile(msg)
+    #         return None
 
-        root = ProcessL1e.processL1e(root, fileName)
+    #     root = ProcessL1e.processL1e(root, fileName)
 
-        # Write output file
-        if root is not None:
-            try:
-                root.writeHDF5(outFilePath)
-            except:
-                msg = "Unable to write file. May be open in another application."
-                Utilities.errorWindow("File Error", msg)
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return None,
-        else:
-            msg = "L1e processing failed. Nothing to output."
-            if MainConfig.settings["popQuery"] == 0:
-                Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return None
+    #     # Write output file
+    #     if root is not None:
+    #         try:
+    #             root.writeHDF5(outFilePath)
+    #         except:
+    #             msg = "Unable to write file. May be open in another application."
+    #             Utilities.errorWindow("File Error", msg)
+    #             print(msg)
+    #             Utilities.writeLogFile(msg)
+    #             return None,
+    #     else:
+    #         msg = "L1e processing failed. Nothing to output."
+    #         if MainConfig.settings["popQuery"] == 0:
+    #             Utilities.errorWindow("File Error", msg)
+    #         print(msg)
+    #         Utilities.writeLogFile(msg)
+    #         return None
 
-        return root
+    #     return root
 
 
     @staticmethod
@@ -577,19 +577,19 @@ class Controller:
         # else:
         outFilePath = os.path.join(pathOutLevel,fileName + "_" + level + ".hdf")
 
-        if level == "L1A" or level == "L1B" or \
+        if level == "L1A" or level == "L1AQC" or \
             level == "L1C" or level == "L1D":
 
             if level == "L1A":
                 root = Controller.processL1a(inFilePath, outFilePath, calibrationMap)
-            elif level == "L1B":
-                root = Controller.processL1b(inFilePath, outFilePath, calibrationMap)
+            elif level == "L1AQC":
+                root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap)
             elif level == "L1C":
-                # if ConfigFile.settings["bL1cSolarTracker"] == 0:
+                # if ConfigFile.settings["bL1adarkSolarTracker"] == 0:
                 ancillaryData = Controller.processAncData(ancFile)
                 # else:
                 #     ancillaryData = None
-                root = Controller.processL1c(inFilePath, outFilePath, ancillaryData)
+                root = Controller.processL1adark(inFilePath, outFilePath, ancillaryData)
             elif level == "L1D":
                 # If called locally from Controller and not AnomalyDetection.py, then
                 #   try to load the parameter file for this cruise/configuration and update
@@ -607,21 +607,21 @@ class Controller:
                     params = Utilities.readAnomAnalFile(fp)
                     # If a parameterization has been saved in the AnomAnalFile, set the properties in the local object
                     # for all sensors
-                    l1CfileName = fileName + '_L1C'
+                    l1CfileName = fileName + '_L1AQC'
                     if l1CfileName in params.keys():
                         ref = 0
                         for sensor in ['ES','LI','LT']:
                             print(f'{sensor}: Setting ConfigFile.settings to match saved parameterization. ')
-                            ConfigFile.settings[f'fL1d{sensor}WindowDark'] = params[l1CfileName][ref+0]
-                            ConfigFile.settings[f'fL1d{sensor}WindowLight'] = params[l1CfileName][ref+1]
-                            ConfigFile.settings[f'fL1d{sensor}SigmaDark'] = params[l1CfileName][ref+2]
-                            ConfigFile.settings[f'fL1d{sensor}SigmaLight'] = params[l1CfileName][ref+3]
-                            ConfigFile.settings[f'fL1d{sensor}MinDark'] = params[l1CfileName][ref+4]
-                            ConfigFile.settings[f'fL1d{sensor}MaxDark'] = params[l1CfileName][ref+5]
-                            ConfigFile.settings[f'fL1d{sensor}MinMaxBandDark'] = params[l1CfileName][ref+6]
-                            ConfigFile.settings[f'fL1d{sensor}MinLight'] = params[l1CfileName][ref+7]
-                            ConfigFile.settings[f'fL1d{sensor}MaxLight'] = params[l1CfileName][ref+8]
-                            ConfigFile.settings[f'fL1d{sensor}MinMaxBandLight'] = params[l1CfileName][ref+9]
+                            ConfigFile.settings[f'fL1aqc{sensor}WindowDark'] = params[l1CfileName][ref+0]
+                            ConfigFile.settings[f'fL1aqc{sensor}WindowLight'] = params[l1CfileName][ref+1]
+                            ConfigFile.settings[f'fL1aqc{sensor}SigmaDark'] = params[l1CfileName][ref+2]
+                            ConfigFile.settings[f'fL1aqc{sensor}SigmaLight'] = params[l1CfileName][ref+3]
+                            ConfigFile.settings[f'fL1aqc{sensor}MinDark'] = params[l1CfileName][ref+4]
+                            ConfigFile.settings[f'fL1aqc{sensor}MaxDark'] = params[l1CfileName][ref+5]
+                            ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandDark'] = params[l1CfileName][ref+6]
+                            ConfigFile.settings[f'fL1aqc{sensor}MinLight'] = params[l1CfileName][ref+7]
+                            ConfigFile.settings[f'fL1aqc{sensor}MaxLight'] = params[l1CfileName][ref+8]
+                            ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandLight'] = params[l1CfileName][ref+9]
                             ref += 10
                     else:
                         msg = 'This file not found in parameter file. Resorting to values in ConfigFile.settings.'
@@ -632,7 +632,7 @@ class Controller:
                     print(msg)
                     Utilities.writeLogFile(msg)
 
-                root = Controller.processL1d(inFilePath, outFilePath)
+                root = Controller.processL1b(inFilePath, outFilePath)
 
             # Confirm output file creation
             if os.path.isfile(outFilePath):
@@ -655,17 +655,13 @@ class Controller:
                     Utilities.writeLogFile(msg)
 
                     if int(ConfigFile.settings["bL1eSaveSeaBASS"]) == 1:
-                        msg = f'Output SeaBASS for HDF: Es, Li, Lt files'
+                        msg = 'Output SeaBASS for HDF: Es, Li, Lt files'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         SeaBASSWriter.outputTXT_Type1e(outFilePath)
                     return True
 
         elif level == "L2":
-            # if ConfigFile.settings["bL1cSolarTracker"]:
-            #     ancillaryData = Controller.processAncData(ancFile)
-            # else:
-
             # Ancillary data from metadata have been read in at L1C,
             # and will be extracted from the ANCILLARY_METADATA group later
             root, outFilePath = Controller.processL2(inFilePath, outFilePath)

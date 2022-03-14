@@ -8,12 +8,13 @@ Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 # from Source.Utilities import Utilities
 import argparse
 import os
-import shutil
+# import shutil
 import sys
-import collections
-import json
-from PyQt5 import QtCore, QtGui, QtWidgets
 import time
+# import collections
+# import json
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 import requests
 from tqdm import tqdm
 
