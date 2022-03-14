@@ -1,4 +1,4 @@
-v1.0.10 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
+v1.1.0 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
 ---
 
 Next priorities:

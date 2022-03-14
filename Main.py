@@ -2,7 +2,7 @@
 HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing
 above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 See README.md or README.pdf for installation instructions and guide.
-Version 1.0.9: Under development September 2021 (See Changelog.md)
+Version 1.1.0: Under development February 2022 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 """
 # from Source.Utilities import Utilities
@@ -27,8 +27,9 @@ from GetAnc import GetAnc
 from SeaBASSHeader import SeaBASSHeader
 from Utilities import Utilities
 
-""" Window is the main GUI container """
+
 class Window(QtWidgets.QWidget):
+    """ Window is the main GUI container """
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -50,20 +51,20 @@ class Window(QtWidgets.QWidget):
                 download_session=requests.Session()
                 local_filename = os.path.join('Data','Zhang_rho_db.mat')
                 try:
-                        file_size=int(download_session.head(url).headers["Content-length"])
-                        file_size_read=round(int(file_size)/(1024**3),2)
-                        print(f"##### Downloading {file_size_read}GB data file. This could take several minutes. ##### ")
-                        download_file=download_session.get(url, stream=True)
-                        download_file.raise_for_status()
+                    file_size=int(download_session.head(url).headers["Content-length"])
+                    file_size_read=round(int(file_size)/(1024**3),2)
+                    print(f"##### Downloading {file_size_read}GB data file. This could take several minutes. ##### ")
+                    download_file=download_session.get(url, stream=True)
+                    download_file.raise_for_status()
                 except requests.exceptions.HTTPError as err:
-                                    print('Error in download_file:',err)
+                    print('Error in download_file:',err)
                 if download_file.ok:
-                        progress_bar = tqdm(total=file_size, unit='iB', unit_scale=True, unit_divisor=1024)
-                        with open(local_filename, 'wb') as f:
-                            for chunk in download_file.iter_content(chunk_size=1024):
-                                progress_bar.update(len(chunk))
-                                f.write(chunk)
-                        progress_bar.close()
+                    progress_bar = tqdm(total=file_size, unit='iB', unit_scale=True, unit_divisor=1024)
+                    with open(local_filename, 'wb') as f:
+                        for chunk in download_file.iter_content(chunk_size=1024):
+                            progress_bar.update(len(chunk))
+                            f.write(chunk)
+                    progress_bar.close()
                 else:
                     print('Failed to download core databases.')
                     print('Download from: \
@@ -259,7 +260,8 @@ class Window(QtWidgets.QWidget):
 
     ########################################################################################
     # Build functionality modules
-    def on_directoryLoaded(self, path):
+    # def on_directoryLoaded(self, path):
+    def on_directoryLoaded(self):
         index = self.configComboBox.findText(MainConfig.settings['cfgFile'])
         self.configComboBox.setCurrentIndex(index)
 
