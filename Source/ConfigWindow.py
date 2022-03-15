@@ -27,7 +27,12 @@ class ConfigWindow(QtWidgets.QDialog):
 
 
     def initUI(self):
-        ''' Initialize the GUI '''
+        ''' Initialize the GUIs '''
+
+        intValidator = QtGui.QIntValidator()
+        doubleValidator = QtGui.QDoubleValidator()
+        # oddValidator = QtGui.QRegExpValidator(rx,self)
+
         # Calibration Config Settings
         self.addCalibrationFileButton = QtWidgets.QPushButton("Add Cals")
         self.addCalibrationFileButton.clicked.connect(self.addCalibrationFileButtonPressed)
@@ -51,23 +56,19 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationFileComboBox.setRootModelIndex(index)
         self.calibrationFileComboBox.currentIndexChanged.connect(self.calibrationFileChanged)
 
-        self.calibrationEnabledCheckBox = QtWidgets.QCheckBox("Enabled", self)
-        self.calibrationEnabledCheckBox.stateChanged.connect(self.calibrationEnabledStateChanged)
-        self.calibrationEnabledCheckBox.setEnabled(False)
-
-        calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
-        self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
-        self.calibrationFrameTypeComboBox.addItem("ShutterLight")
-        self.calibrationFrameTypeComboBox.addItem("ShutterDark")
-        self.calibrationFrameTypeComboBox.addItem("Not Required")
-        # self.calibrationFrameTypeComboBox.addItem("LightAncCombined")
-        self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
-        self.calibrationFrameTypeComboBox.setEnabled(False)
-
         # Config File Settings
-        intValidator = QtGui.QIntValidator()
-        doubleValidator = QtGui.QDoubleValidator()
-        # oddValidator = QtGui.QRegExpValidator(rx,self)
+        # self.calibrationEnabledCheckBox = QtWidgets.QCheckBox("Enabled", self)
+        # self.calibrationEnabledCheckBox.stateChanged.connect(self.calibrationEnabledStateChanged)
+        # self.calibrationEnabledCheckBox.setEnabled(False)
+
+        # calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
+        # self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
+        # self.calibrationFrameTypeComboBox.addItem("ShutterLight")
+        # self.calibrationFrameTypeComboBox.addItem("ShutterDark")
+        # self.calibrationFrameTypeComboBox.addItem("Not Required")
+        # self.calibrationFrameTypeComboBox.addItem("LightAncCombined")
+        # self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
+        # self.calibrationFrameTypeComboBox.setEnabled(False)
 
         # L1A
         l1aLabel = QtWidgets.QLabel("Level 1A Processing", self)
@@ -89,34 +90,21 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aCleanSZACheckBoxUpdate()
         self.l1aCleanSZACheckBox.clicked.connect(self.l1aCleanSZACheckBoxUpdate)
 
-
-        # # L1B
-        # l1bLabel = QtWidgets.QLabel("Level 1B Processing", self)
-        # l1bLabel_font = l1bLabel.font()
-        # l1bLabel_font.setPointSize(12)
-        # l1bLabel_font.setBold(True)
-        # l1bLabel.setFont(l1bLabel_font)
-        # l1bSublabel = QtWidgets.QLabel(" Apply factory calibrations", self)
-
-
         # L1AQC (Main)
         l1aqcLabel = QtWidgets.QLabel("Level 1AQC Processing", self)
-        l1aqcLabel_font = l1aqcLabel.font()
-        l1aqcLabel_font.setPointSize(12)
-        l1aqcLabel_font.setBold(True)
-        l1aqcLabel.setFont(l1aqcLabel_font)
+        # l1aqcLabel_font = l1aqcLabel.font()
+        # l1aqcLabel_font.setPointSize(12)
+        # l1aqcLabel_font.setBold(True)
+        l1aqcLabel.setFont(l1aLabel_font)
         l1aqcSublabel = QtWidgets.QLabel(" Filter on pitch, roll, yaw, and azimuth", self)
-        # l1aqcSublabel2 = QtWidgets.QLabel("   relative solar azimuth.", self)
-        # l1aqcSublabel3 = QtWidgets.QLabel("   factory calibrations.", self)
 
-        # SolarTracker
+        #   SolarTracker
         self.l1aqcSolarTrackerLabel = QtWidgets.QLabel(" SolarTracker or pySAS", self)
         self.l1aqcSolarTrackerCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1aqcSolarTracker"]) == 1:
             self.l1aqcSolarTrackerCheckBox.setChecked(True)
 
-
-        # L1AQC Rotator
+        #   Rotator
         self.l1aqcRotatorHomeAngleLabel = QtWidgets.QLabel(" Rotator Home Angle Offset", self)
         self.l1aqcRotatorHomeAngleLineEdit = QtWidgets.QLineEdit(self)
         self.l1aqcRotatorHomeAngleLineEdit.setText(str(ConfigFile.settings["fL1aqcRotatorHomeAngle"]))
@@ -131,7 +119,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcRotatorDelayLineEdit.setValidator(doubleValidator)
         self.l1aqcRotatorDelayCheckBoxUpdate()
 
-        # L1AQC Pitch and Roll
+        #   Pitch and Roll
         self.l1aqcCleanPitchRollLabel = QtWidgets.QLabel(" Pitch & Roll Filter", self)
         self.l1aqcCleanPitchRollCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1aqcCleanPitchRoll"]) == 1:
@@ -141,7 +129,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcPitchRollPitchLineEdit.setText(str(ConfigFile.settings["fL1aqcPitchRollPitch"]))
         self.l1aqcPitchRollPitchLineEdit.setValidator(doubleValidator)
 
-         # L1AQC Rotator
+         #  Rotator
         self.l1aqcRotatorAngleLabel = QtWidgets.QLabel(" Absolute Rotator Angle Filter", self)
         self.l1aqcRotatorAngleCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1aqcRotatorAngle"]) == 1:
@@ -157,7 +145,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcSolarTrackerCheckBoxUpdate()
         self.l1aqcRotatorAngleCheckBoxUpdate()
 
-        # L1AQC Relative SZA
+        #   Relative SZA
         l1aqcCleanSunAngleLabel = QtWidgets.QLabel(" Relative Solar Azimuth Filter", self)
         self.l1aqcCleanSunAngleCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1aqcCleanSunAngle"]) == 1:
@@ -178,180 +166,165 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcRotatorAngleCheckBox.clicked.connect(self.l1aqcRotatorAngleCheckBoxUpdate)
         self.l1aqcCleanSunAngleCheckBox.clicked.connect(self.l1aqcCleanSunAngleCheckBoxUpdate)
 
-        # L1AQC Deglitcher
+        #   Deglitcher
         self.l1aqcDeglitchLabel = QtWidgets.QLabel("  Deglitch Data", self)
         self.l1aqcDeglitchCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1aqcDeglitch"]) == 1:
             self.l1aqcDeglitchCheckBox.setChecked(True)
-
         self.l1aqcDeglitchCheckBoxUpdate()
         self.l1aqcDeglitchCheckBox.clicked.connect(self.l1aqcDeglitchCheckBoxUpdate)
 
-        # L1AQC Launch Deglitcher Analysis
-        l1aqcAnomalySublabel1 = QtWidgets.QLabel("  Launch Anom. Anal. to test parameters",self)
-        l1aqcAnomalySublabel2 = QtWidgets.QLabel("  on L1AQC files. Saved to Plots/L1AQC_Anoms.",self)
-        self.l1aqcAnomalyButton = QtWidgets.QPushButton("Anomaly Analysis")
+        #   Launch Deglitcher Analysis
+        l1aqcAnomalySublabel1 = QtWidgets.QLabel("  Anomaly Analysis to test parameters",self)
+        l1aqcAnomalySublabel2 = QtWidgets.QLabel("  on L1AQC files:",self)
+        self.l1aqcAnomalyButton = QtWidgets.QPushButton("Launch Anomaly Analysis")
         self.l1aqcAnomalyButton.clicked.connect(self.l1aqcAnomalyButtonPressed)
-
-        # L1ADARK
-        l1adarkLabel = QtWidgets.QLabel("Level 1D Processing", self)
-        l1adarkLabel_font = l1adarkLabel.font()
-        l1adarkLabel_font.setPointSize(12)
-        l1adarkLabel_font.setBold(True)
-        l1adarkLabel.setFont(l1adarkLabel_font)
-        l1adarkSublabel = QtWidgets.QLabel("Shutter dark corrections", self)
 
         # L1B
         l1bLabel = QtWidgets.QLabel("Level 1B Processing", self)
-        l1bLabel_font = l1bLabel.font()
-        l1bLabel_font.setPointSize(12)
-        l1bLabel_font.setBold(True)
-        l1bLabel.setFont(l1bLabel_font)
-        l1bSublabel = QtWidgets.QLabel(" Apply factory calibrations and corrections.", self)
-        l1bSublabel2 = QtWidgets.QLabel(" Interpolate to common time coordinates.", self)
+        # l1bLabel_font = l1bLabel.font()
+        # l1bLabel_font.setPointSize(12)
+        # l1bLabel_font.setBold(True)
+        l1bLabel.setFont(l1aLabel_font)
+        l1bSublabel = QtWidgets.QLabel(" Dark offsets, calibrations and corrections. Interpolate", self)
+        l1bSublabel2 = QtWidgets.QLabel(" to common time coordinates.", self)
 
-        self.CalRadioButtonDefault = QtWidgets.QRadioButton("Default Factory")
-        self.CalRadioButtonDefault.setAutoExclusive(False)
+        l1bCalLabel = QtWidgets.QLabel("     Select calibration/correction regime:", self)
+        self.DefaultCalRadioButton = QtWidgets.QRadioButton("Default/Factory")
+        self.DefaultCalRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL1bDefaultCal"]==1:
-            self.CalRadioButtonDefault.setChecked(True)
-        self.CalRadioButtonDefault.clicked.connect(self.l1bCalRadioButtonDefaultClicked)
-
-        self.CalRadioButtonFull = QtWidgets.QRadioButton("Full Characterization")
-        self.CalRadioButtonFull.setAutoExclusive(False)
+            self.DefaultCalRadioButton.setChecked(True)
+        self.DefaultCalRadioButton.clicked.connect(self.l1bDefaultCalRadioButtonClicked)
+        self.FullCalRadioButton = QtWidgets.QRadioButton("Full Characterization")
+        self.FullCalRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL1bFullCal"]==1:
-            self.CalRadioButtonFull.setChecked(True)
-        if ConfigFile.settings["bL1bFullFiles"]==0:  # <---- Needs to be a test for full cal files
-            self.CalRadioButtonFull.setChecked(False)
-            self.CalRadioButtonFull.setDisabled(1)
-        self.CalRadioButtonFull.clicked.connect(self.l1bCalRadioButtonFullClicked)
+            self.FullCalRadioButton.setChecked(True)
+            self.FullCalRadioButton.setDisabled(1) # <---- Needs to have a test for full cal files
+        self.FullCalRadioButton.clicked.connect(self.l1bFullCalRadioButtonClicked)
 
         l1bInterpIntervalLabel = QtWidgets.QLabel("     Interpolation Interval (nm)", self)
         self.l1bInterpIntervalLineEdit = QtWidgets.QLineEdit(self)
         self.l1bInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1bInterpInterval"]))
         self.l1bInterpIntervalLineEdit.setValidator(doubleValidator)
 
-        l1bPlotTimeInterpLabel = QtWidgets.QLabel("     Generate Plots (OUTPUTPATH/Plots/L1B_Interp/)", self)
+        l1bPlotTimeInterpLabel = QtWidgets.QLabel("     Generate Plots ({OUTPATH}/Plots/L1B_Interp/)", self)
         self.l1bPlotTimeInterpCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bPlotTimeInterp"]) == 1:
             self.l1bPlotTimeInterpCheckBox.setChecked(True)
         self.l1bPlotTimeInterpCheckBox.clicked.connect(self.l1bPlotTimeInterpCheckBoxUpdate)
 
-        l1bSaveSeaBASSLabel = QtWidgets.QLabel('     Save SeaBASS Text Files', self)
-        self.l1bSaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL1bSaveSeaBASS"]) == 1:
-            self.l1bSaveSeaBASSCheckBox.setChecked(True)
-        self.l1bSaveSeaBASSCheckBox.clicked.connect(self.l1bSaveSeaBASSCheckBoxUpdate)
+        # L1BQC
+        l1bqcLabel = QtWidgets.QLabel("Level 1BQC Processing", self)
+        l1bqcLabel_font = l1bqcLabel.font()
+        l1bqcLabel_font.setPointSize(12)
+        l1bqcLabel_font.setBold(True)
+        l1bqcLabel.setFont(l1bqcLabel_font)
+        l1bqcSublabel = QtWidgets.QLabel(" Data quality control filters.", self)
+        # l1bqcSublabel1bqc = QtWidgets.QLabel(" binning, reflectance calculation.", self)
 
-        self.l1bSeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit SeaBASS Header", self)
-        self.l1bSeaBASSHeaderEditButton.clicked.connect(self.l1bSeaBASSHeaderEditButtonPressed)
+        #   Lt UV<NIR
+        l1bqcLtUVNIRLabel= QtWidgets.QLabel("     Eliminate where Lt(NIR)>Lt(UV)", self)
+        self.l1bqcLtUVNIRCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL1bqcLtUVNIR"]) == 1:
+            self.l1bqcLtUVNIRCheckBox.setChecked(True)
+        self.l1bqcLtUVNIRCheckBox.clicked.connect(self.l1bqcLtUVNIRCheckBoxUpdate)
 
-        l2pGetAncLabel = QtWidgets.QLabel("       Download Ancillary Models", self)
-        self.l2pGetAncCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL2pGetAnc"]) == 1:
-            self.l2pGetAncCheckBox.setChecked(True)
-        self.l2pGetAncCheckBox.clicked.connect(self.l2pGetAncCheckBoxUpdate)
+        #   L1BQC Max Wind
+        l1bqcMaxWindLabel = QtWidgets.QLabel("     Max. Wind Speed (m/s)", self)
+        self.l1bqcMaxWindLineEdit = QtWidgets.QLineEdit(self)
+        self.l1bqcMaxWindLineEdit.setText(str(ConfigFile.settings["fL1bqcMaxWind"]))
+        self.l1bqcMaxWindLineEdit.setValidator(doubleValidator)
+
+        #   L1BQC Min/Max SZA
+        l1bqcSZAMinLabel = QtWidgets.QLabel("     SZA Minimum (deg)", self)
+        self.l1bqcSZAMinLineEdit = QtWidgets.QLineEdit(self)
+        self.l1bqcSZAMinLineEdit.setText(str(ConfigFile.settings["fL1bqcSZAMin"]))
+        self.l1bqcSZAMinLineEdit.setValidator(doubleValidator)
+        l1bqcSZAMaxLabel = QtWidgets.QLabel("     SZA Maximum (deg)", self)
+        self.l1bqcSZAMaxLineEdit = QtWidgets.QLineEdit(self)
+        self.l1bqcSZAMaxLineEdit.setText(str(ConfigFile.settings["fL1bqcSZAMax"]))
+        self.l1bqcSZAMaxLineEdit.setValidator(doubleValidator)
+
+        # L1BQC Spectral Outlier Filter
+        l1bqcSpecQualityCheckLabel = QtWidgets.QLabel("     Enable Spectral Outlier Filter", self)
+        self.l1bqcSpecQualityCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL1bqcEnableSpecQualityCheck"]) == 1:
+            self.l1bqcSpecQualityCheckBox.setChecked(True)
+
+        self.l1bqcSpecFilterEsLabel = QtWidgets.QLabel("      Filter Sigma Es", self)
+        self.l1bqcSpecFilterEsLineEdit = QtWidgets.QLineEdit(self)
+        self.l1bqcSpecFilterEsLineEdit.setText(str(ConfigFile.settings["fL1bqcSpecFilterEs"]))
+        self.l1bqcSpecFilterEsLineEdit.setValidator(doubleValidator)
+        self.l1bqcSpecFilterLiLabel = QtWidgets.QLabel("      Filter Sigma Li", self)
+        self.l1bqcSpecFilterLiLineEdit = QtWidgets.QLineEdit(self)
+        self.l1bqcSpecFilterLiLineEdit.setText(str(ConfigFile.settings["fL1bqcSpecFilterLi"]))
+        self.l1bqcSpecFilterLiLineEdit.setValidator(doubleValidator)
+        self.l1bqcSpecFilterLtLabel = QtWidgets.QLabel("      Filter Sigma Lt", self)
+        self.l1bqcSpecFilterLtLineEdit = QtWidgets.QLineEdit(self)
+        self.l1bqcSpecFilterLtLineEdit.setText(str(ConfigFile.settings["fL1bqcSpecFilterLt"]))
+        self.l1bqcSpecFilterLtLineEdit.setValidator(doubleValidator)
+
+        self.l1bqcSpecQualityCheckBoxUpdate()
+
+        # L1BQC Meteorology Flags
+        l1bqcQualityFlagLabel = QtWidgets.QLabel("     Enable Meteorological Filters", self)
+        self.l1bqcQualityFlagCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL1bqcEnableQualityFlags"]) == 1:
+            self.l1bqcQualityFlagCheckBox.setChecked(True)
+
+        self.l1bqcCloudFlagLabel = QtWidgets.QLabel("      Cloud Li(750)/Es(750)>", self)
+        self.l1bqcCloudFlagLineEdit = QtWidgets.QLineEdit("", self)
+        self.l1bqcCloudFlagLineEdit.setText(str(ConfigFile.settings["fL1bqcCloudFlag"]))
+        self.l1bqcCloudFlagLineEdit.setValidator(doubleValidator)
+
+        self.l1bqcEsFlagLabel = QtWidgets.QLabel("      Significant Es(480) (uW cm^-2 nm^-1)", self)
+        self.l1bqcEsFlagLineEdit = QtWidgets.QLineEdit(self)
+        self.l1bqcEsFlagLineEdit.setText(str(ConfigFile.settings["fL1bqcSignificantEsFlag"]))
+        self.l1bqcEsFlagLineEdit.setValidator(doubleValidator)
+
+        self.l1bqcDawnDuskFlagLabel = QtWidgets.QLabel("      Dawn/Dusk Es(470/680)<", self)
+        self.l1bqcDawnDuskFlagLineEdit = QtWidgets.QLineEdit("", self)
+        self.l1bqcDawnDuskFlagLineEdit.setText(str(ConfigFile.settings["fL1bqcDawnDuskFlag"]))
+        self.l1bqcDawnDuskFlagLineEdit.setValidator(doubleValidator)
+
+        self.l1bqcRainfallHumidityFlagLabel = QtWidgets.QLabel("      Rain/Humid. Es(720/370)<", self)
+        self.l1bqcRainfallHumidityFlagLineEdit = QtWidgets.QLineEdit("", self)
+        self.l1bqcRainfallHumidityFlagLineEdit.setText(str(ConfigFile.settings["fL1bqcRainfallHumidityFlag"]))
+        self.l1bqcRainfallHumidityFlagLineEdit.setValidator(doubleValidator)
+
+        self.l1bqcQualityFlagCheckBoxUpdate()
+        self.l1bqcSpecQualityCheckBox.clicked.connect(self.l1bqcSpecQualityCheckBoxUpdate)
+        self.l1bqcQualityFlagCheckBox.clicked.connect(self.l1bqcQualityFlagCheckBoxUpdate)
 
         # L2
         l2Label = QtWidgets.QLabel("Level 2 Processing", self)
-        l2Label_font = l2Label.font()
-        l2Label_font.setPointSize(12)
-        l2Label_font.setBold(True)
-        l2Label.setFont(l2Label_font)
+        # l2Label_font = l2Label.font()
+        # l2Label_font.setPointSize(12)
+        # l2Label_font.setBold(True)
+        l2Label.setFont(l1aLabel_font)
         l2Sublabel = QtWidgets.QLabel(" Quality control filters, glint correction, temporal", self)
         l2Sublabel2 = QtWidgets.QLabel(" binning, reflectance calculation.", self)
 
-        # Lt UV<NIR
-        l2LtUVNIRLabel= QtWidgets.QLabel("     Eliminate where Lt(NIR)>Lt(UV)", self)
-        self.l2LtUVNIRCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL2LtUVNIR"]) == 1:
-            self.l2LtUVNIRCheckBox.setChecked(True)
-        self.l2LtUVNIRCheckBox.clicked.connect(self.l2LtUVNIRCheckBoxUpdate)
-
-        # L2 Max Wind
-        l2MaxWindLabel = QtWidgets.QLabel("     Max. Wind Speed (m/s)", self)
-        self.l2MaxWindLineEdit = QtWidgets.QLineEdit(self)
-        self.l2MaxWindLineEdit.setText(str(ConfigFile.settings["fL2MaxWind"]))
-        self.l2MaxWindLineEdit.setValidator(doubleValidator)
-
-        # L2 Min/Max SZA
-        l2SZAMinLabel = QtWidgets.QLabel("     SZA Minimum (deg)", self)
-        self.l2SZAMinLineEdit = QtWidgets.QLineEdit(self)
-        self.l2SZAMinLineEdit.setText(str(ConfigFile.settings["fL2SZAMin"]))
-        self.l2SZAMinLineEdit.setValidator(doubleValidator)
-        l2SZAMaxLabel = QtWidgets.QLabel("     SZA Maximum (deg)", self)
-        self.l2SZAMaxLineEdit = QtWidgets.QLineEdit(self)
-        self.l2SZAMaxLineEdit.setText(str(ConfigFile.settings["fL2SZAMax"]))
-        self.l2SZAMaxLineEdit.setValidator(doubleValidator)
-
-        # L2 Spectral Outlier Filter
-        l2SpecQualityCheckLabel = QtWidgets.QLabel("     Enable Spectral Outlier Filter", self)
-        self.l2SpecQualityCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL2EnableSpecQualityCheck"]) == 1:
-            self.l2SpecQualityCheckBox.setChecked(True)
-
-        self.l2SpecFilterEsLabel = QtWidgets.QLabel("      Filter Sigma Es", self)
-        self.l2SpecFilterEsLineEdit = QtWidgets.QLineEdit(self)
-        self.l2SpecFilterEsLineEdit.setText(str(ConfigFile.settings["fL2SpecFilterEs"]))
-        self.l2SpecFilterEsLineEdit.setValidator(doubleValidator)
-        self.l2SpecFilterLiLabel = QtWidgets.QLabel("      Filter Sigma Li", self)
-        self.l2SpecFilterLiLineEdit = QtWidgets.QLineEdit(self)
-        self.l2SpecFilterLiLineEdit.setText(str(ConfigFile.settings["fL2SpecFilterLi"]))
-        self.l2SpecFilterLiLineEdit.setValidator(doubleValidator)
-        self.l2SpecFilterLtLabel = QtWidgets.QLabel("      Filter Sigma Lt", self)
-        self.l2SpecFilterLtLineEdit = QtWidgets.QLineEdit(self)
-        self.l2SpecFilterLtLineEdit.setText(str(ConfigFile.settings["fL2SpecFilterLt"]))
-        self.l2SpecFilterLtLineEdit.setValidator(doubleValidator)
-
-        self.l2SpecQualityCheckBoxUpdate()
-
-        # L2 Meteorology Flags
-        l2QualityFlagLabel = QtWidgets.QLabel("     Enable Meteorological Filters", self)
-        self.l2QualityFlagCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL2EnableQualityFlags"]) == 1:
-            self.l2QualityFlagCheckBox.setChecked(True)
-
-        self.l2CloudFlagLabel = QtWidgets.QLabel("      Cloud Li(750)/Es(750)>", self)
-        self.l2CloudFlagLineEdit = QtWidgets.QLineEdit("", self)
-        self.l2CloudFlagLineEdit.setText(str(ConfigFile.settings["fL2CloudFlag"]))
-        self.l2CloudFlagLineEdit.setValidator(doubleValidator)
-
-        self.l2EsFlagLabel = QtWidgets.QLabel("      Sig. Es(480) (uW cm^-2 nm^-1)", self)
-        self.l2EsFlagLineEdit = QtWidgets.QLineEdit(self)
-        self.l2EsFlagLineEdit.setText(str(ConfigFile.settings["fL2SignificantEsFlag"]))
-        self.l2EsFlagLineEdit.setValidator(doubleValidator)
-
-        self.l2DawnDuskFlagLabel = QtWidgets.QLabel("      Dawn/Dusk Es(470/680)<", self)
-        self.l2DawnDuskFlagLineEdit = QtWidgets.QLineEdit("", self)
-        self.l2DawnDuskFlagLineEdit.setText(str(ConfigFile.settings["fL2DawnDuskFlag"]))
-        self.l2DawnDuskFlagLineEdit.setValidator(doubleValidator)
-
-        self.l2RainfallHumidityFlagLabel = QtWidgets.QLabel("      Rain/Humid. Es(720/370)<", self)
-        self.l2RainfallHumidityFlagLineEdit = QtWidgets.QLineEdit("", self)
-        self.l2RainfallHumidityFlagLineEdit.setText(str(ConfigFile.settings["fL2RainfallHumidityFlag"]))
-        self.l2RainfallHumidityFlagLineEdit.setValidator(doubleValidator)
-
-        self.l2QualityFlagCheckBoxUpdate()
-
-        # L2 Ensembles
+        #   L2 Ensembles
         l2ensLabel = QtWidgets.QLabel("L2 Ensembles", self)
-        l2ensLabel_font = l2ensLabel.font()
-        l2ensLabel_font.setPointSize(12)
-        l2ensLabel_font.setBold(True)
-        l2ensLabel.setFont(l2ensLabel_font)
+        # l2ensLabel_font = l2ensLabel.font()
+        # l2ensLabel_font.setPointSize(12)
+        # l2ensLabel_font.setBold(True)
+        l2ensLabel.setFont(l1aLabel_font)
 
-        # L2 Station breakout
+        #   L2 Station breakout
         l2StationsLabel = QtWidgets.QLabel("Extract Cruise Stations", self)
         self.l2StationsCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2Stations"]) == 1:
             self.l2StationsCheckBox.setChecked(True)
 
-        # L2 Time Average Rrs
+        #   L2 Time Average Rrs
         l2TimeIntervalLabel = QtWidgets.QLabel("  Ensemble Interval (secs; 0=None)", self)
         self.l2TimeIntervalLineEdit = QtWidgets.QLineEdit(self)
         self.l2TimeIntervalLineEdit.setText(str(ConfigFile.settings["fL2TimeInterval"]))
         self.l2TimeIntervalLineEdit.setValidator(intValidator)
 
-        # L2 Set percentage Lt filter
+        #   L2 Set percentage Lt filter
         self.l2EnablePercentLtLabel = QtWidgets.QLabel("    Enable Percent Lt Calculation", self)
         self.l2EnablePercentLtCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2EnablePercentLt"]) == 1:
@@ -363,19 +336,24 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l2EnablePercentLtCheckBoxUpdate()
 
+        #   L2 Rho Sky Correction
+        l2RhoSkyLabel = QtWidgets.QLabel("L2 Sky/Sunglint Correction (ρ)", self)
+        # l2RhoSkyLabel_font = l1bLabel.font()
+        #   l2RhoSkyLabel_font.setPointSize(12)
+        # l2RhoSkyLabel_font.setBold(True)
+        l2RhoSkyLabel.setFont(l1aLabel_font)
+
         l2pSublabel = QtWidgets.QLabel(" GMAO MERRA2 ancillary data are required for Zhang glint", self)
         l2pSublabel2 = QtWidgets.QLabel(" correction and can fill in wind for Ruddick glint.", self)
         l2pSublabel3 = QtWidgets.QLabel(" WILL PROMPT FOR EARTHDATA USERNAME/PASSWORD", self)
         l2pSublabel4 = QtWidgets.QLabel(
             "<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">         Register here</a>", self)
         l2pSublabel4.setOpenExternalLinks(True)
-
-        # L2 Rho Sky Correction
-        l2RhoSkyLabel = QtWidgets.QLabel("L2 Sky/Sunglint Correction (ρ)", self)
-        l2RhoSkyLabel_font = l1bLabel.font()
-        # l2RhoSkyLabel_font.setPointSize(12)
-        l2RhoSkyLabel_font.setBold(True)
-        l2RhoSkyLabel.setFont(l1bLabel_font)
+        l2pGetAncLabel = QtWidgets.QLabel("       Download Ancillary Models", self)
+        self.l2pGetAncCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2pGetAnc"]) == 1:
+            self.l2pGetAncCheckBox.setChecked(True)
+        self.l2pGetAncCheckBox.clicked.connect(self.l2pGetAncCheckBoxUpdate)
 
         self.l2DefaultWindSpeedLabel = QtWidgets.QLabel("     Default Wind Speed (m/s)", self)
         self.l2DefaultWindSpeedLineEdit = QtWidgets.QLineEdit(self)
@@ -393,7 +371,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2DefaultSSTLineEdit = QtWidgets.QLineEdit(self)
         self.l2DefaultSSTLineEdit.setText(str(ConfigFile.settings["fL2DefaultSST"]))
         self.l2DefaultSSTLineEdit.setValidator(doubleValidator)
-
 
         self.RhoRadioButtonDefault = QtWidgets.QRadioButton("Mobley (1999) ρ")
         self.RhoRadioButtonDefault.setAutoExclusive(False)
@@ -422,7 +399,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # self.RhoRadioButtonYour.clicked.connect(self.l2RhoRadioButtonYourClicked)
 
 
-        # L2 NIR AtmoCorr
+        #   L2 NIR AtmoCorr
         l2NIRCorrectionLabel = QtWidgets.QLabel("NIR Residual Correction", self)
         self.l2NIRCorrectionCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2PerformNIRCorrection"]) == 1:
@@ -447,7 +424,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l2NIRCorrectionCheckBoxUpdate()
 
-        # L2 Remove negative spectra
+        #   L2 Remove negative spectra
         #   Could add spectral range here
         self.l2NegativeSpecLabel = QtWidgets.QLabel("Remove Negative Spectra", self)
         self.l2NegativeSpecCheckBox = QtWidgets.QCheckBox("", self)
@@ -456,7 +433,10 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l2NegativeSpecCheckBoxUpdate()
 
-        # Spectral Weighting
+        l2ProductLabel = QtWidgets.QLabel("L2 Products", self)
+        l2ProductLabel.setFont(l1aLabel_font)
+
+        #   Spectral Weighting/Convolution
         l2WeightsLabel = QtWidgets.QLabel("Convolve to Satellite Bands:", self)
 
         l2WeightMODISALabel = QtWidgets.QLabel("AQUA *", self)
@@ -490,7 +470,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2WeightSentinel3B"]) == 1:
             self.l2WeightSentinel3BCheckBox.setChecked(True)
 
-        # Plots
+        #   Plots
         l2PlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
         l2PlotRrsLabel = QtWidgets.QLabel("Rrs", self)
         self.l2PlotRrsCheckBox = QtWidgets.QCheckBox("", self)
@@ -517,27 +497,24 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2PlotLt"]) == 1:
             self.l2PlotLtCheckBox.setChecked(True)
 
-        self.l2SpecQualityCheckBox.clicked.connect(self.l2SpecQualityCheckBoxUpdate)
-        self.l2QualityFlagCheckBox.clicked.connect(self.l2QualityFlagCheckBoxUpdate)
         self.l2StationsCheckBox.clicked.connect(self.l2StationsCheckBoxUpdate)
         self.l2EnablePercentLtCheckBox.clicked.connect(self.l2EnablePercentLtCheckBoxUpdate)
         self.l2NIRCorrectionCheckBox.clicked.connect(self.l2NIRCorrectionCheckBoxUpdate)
         self.l2NegativeSpecCheckBox.clicked.connect(self.l2NegativeSpecCheckBoxUpdate)
 
-
         self.l2OCproducts = QtWidgets.QPushButton("Derived L2 Ocean Color Products", self)
         self.l2OCproducts.clicked.connect(self.l2OCproductsButtonPressed)
 
-
-        l2SaveSeaBASSLabel = QtWidgets.QLabel("Save SeaBASS Files (Edit Header in L1E)", self)
+        l2SaveSeaBASSLabel = QtWidgets.QLabel("Save SeaBASS Files", self)
+        self.l2SeaBASSHeaderEditButton = QtWidgets.QPushButton("Edit SeaBASS Header", self)
+        self.l2SeaBASSHeaderEditButton.clicked.connect(self.l2SeaBASSHeaderEditButtonPressed)
         self.l2SaveSeaBASSCheckBox = QtWidgets.QCheckBox("", self)
         self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)
         if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
             self.l2SaveSeaBASSCheckBox.setChecked(True)
         # self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)
-        self.l1bSaveSeaBASSCheckBoxUpdate()
+        # self.l1bSaveSeaBASSCheckBoxUpdate()
         self.l2SaveSeaBASSCheckBoxUpdate()
-
 
         l2WriteReportLabel = QtWidgets.QLabel("Write PDF Report", self)
         self.l2WriteReportCheckBox = QtWidgets.QCheckBox("", self)
@@ -573,11 +550,11 @@ class ConfigWindow(QtWidgets.QDialog):
         # Horizontal Box
         calHBox = QtWidgets.QHBoxLayout()
         calHBox.addWidget(self.calibrationFileComboBox)
-        calHBox.addWidget(self.calibrationEnabledCheckBox)
+        # calHBox.addWidget(self.calibrationEnabledCheckBox)
         VBox1.addLayout(calHBox)
 
-        VBox1.addWidget(calibrationFrameTypeLabel)
-        VBox1.addWidget(self.calibrationFrameTypeComboBox)
+        # VBox1.addWidget(calibrationFrameTypeLabel)
+        # VBox1.addWidget(self.calibrationFrameTypeComboBox)
 
         # L1A
         VBox1.addWidget(l1aLabel)
@@ -594,13 +571,13 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox1.addWidget(l1aqcLabel)
         VBox1.addWidget(l1aqcSublabel)
 
-        # SolarTracker
+        #   SolarTracker
         SolarTrackerHBox = QtWidgets.QHBoxLayout()
         SolarTrackerHBox.addWidget(self.l1aqcSolarTrackerLabel)
         SolarTrackerHBox.addWidget(self.l1aqcSolarTrackerCheckBox)
         VBox1.addLayout(SolarTrackerHBox)
 
-        # L1AQC Rotator
+        #   L1AQC Rotator Home
         RotHomeAngleHBox = QtWidgets.QHBoxLayout()
         RotHomeAngleHBox.addWidget(self.l1aqcRotatorHomeAngleLabel)
         RotHomeAngleHBox.addWidget(self.l1aqcRotatorHomeAngleLineEdit)
@@ -611,7 +588,7 @@ class ConfigWindow(QtWidgets.QDialog):
         RotatorDelayHBox.addWidget(self.l1aqcRotatorDelayLineEdit)
         VBox1.addLayout(RotatorDelayHBox)
 
-        # L1AQC Pitch & Roll
+        #   L1AQC Pitch & Roll
         PitchRollHBox = QtWidgets.QHBoxLayout()
         PitchRollHBox.addWidget(self.l1aqcCleanPitchRollLabel)
         PitchRollHBox.addWidget(self.l1aqcCleanPitchRollCheckBox)
@@ -621,7 +598,7 @@ class ConfigWindow(QtWidgets.QDialog):
         PitchRollHBox2.addWidget(self.l1aqcPitchRollPitchLineEdit)
         VBox1.addLayout(PitchRollHBox2)
 
-        # L1AQC Rotator
+        #   L1AQC Rotator Absolute
         rotateHBox = QtWidgets.QHBoxLayout()
         rotateHBox.addWidget(self.l1aqcRotatorAngleLabel)
         rotateHBox.addWidget(self.l1aqcRotatorAngleCheckBox)
@@ -635,7 +612,7 @@ class ConfigWindow(QtWidgets.QDialog):
         RotMaxHBox.addWidget(self.l1aqcRotatorAngleMaxLineEdit)
         VBox1.addLayout(RotMaxHBox)
 
-        # L1AQC Relative SZA
+        #   L1AQC Relative SZA
         CleanSunAngleHBox = QtWidgets.QHBoxLayout()
         CleanSunAngleHBox.addWidget(l1aqcCleanSunAngleLabel)
         CleanSunAngleHBox.addWidget(self.l1aqcCleanSunAngleCheckBox)
@@ -649,215 +626,198 @@ class ConfigWindow(QtWidgets.QDialog):
         SunAngleMaxHBox.addWidget(self.l1aqcSunAngleMaxLineEdit)
         VBox1.addLayout(SunAngleMaxHBox)
 
-        # L1AQC Deglitcher
+        #   L1AQC Deglitcher
         deglitchHBox = QtWidgets.QHBoxLayout()
         deglitchHBox.addWidget(self.l1aqcDeglitchLabel)
         deglitchHBox.addWidget(self.l1aqcDeglitchCheckBox)
         VBox1.addLayout(deglitchHBox)
-        # L1AQC Anomaly Launcher
+        #       L1AQC Anomaly Launcher
         VBox1.addWidget(l1aqcAnomalySublabel1)
         VBox1.addWidget(l1aqcAnomalySublabel2)
         VBox1.addWidget(self.l1aqcAnomalyButton)
 
         VBox1.addStretch()
 
-        # Middle Vertical Box
+        # Second Vertical Box
         VBox2 = QtWidgets.QVBoxLayout()
-        VBox2.setAlignment(QtCore.Qt.AlignBottom)
+        # VBox2.setAlignment(QtCore.Qt.AlignBottom)
 
-        # L1ADARK
-        VBox2.addWidget(l1adarkLabel)
-        VBox2.addWidget(l1adarkSublabel)
-
-        #L1B
+        # L1B
         VBox2.addWidget(l1bLabel)
         VBox2.addWidget(l1bSublabel)
         VBox2.addWidget(l1bSublabel2)
 
-        # Instrument Files
+        #   Instrument/Cal Files
+        VBox2.addWidget(l1bCalLabel)
         CalHBox2 = QtWidgets.QHBoxLayout()
-        CalHBox2.addWidget(self.CalRadioButtonDefault)
-        CalHBox2.addWidget(self.CalRadioButtonFull)
+        CalHBox2.addWidget(self.DefaultCalRadioButton)
+        CalHBox2.addWidget(self.FullCalRadioButton)
+        VBox2.addLayout(CalHBox2)
 
+        #   Interpolation interval (wavelength)
         interpHBox = QtWidgets.QHBoxLayout()
         interpHBox.addWidget(l1bInterpIntervalLabel)
         interpHBox.addWidget(self.l1bInterpIntervalLineEdit)
         VBox2.addLayout(interpHBox)
-
-        # VBox2.addSpacing(10)
 
         l1bPlotTimeInterpHBox = QtWidgets.QHBoxLayout()
         l1bPlotTimeInterpHBox.addWidget(l1bPlotTimeInterpLabel)
         l1bPlotTimeInterpHBox.addWidget(self.l1bPlotTimeInterpCheckBox)
         VBox2.addLayout(l1bPlotTimeInterpHBox)
 
-        # VBox2.addSpacing(10)
-
-        l1bSeaBASSHBox = QtWidgets.QHBoxLayout()
-        l1bSeaBASSHBox.addWidget(l1bSaveSeaBASSLabel)
-        l1bSeaBASSHBox.addWidget(self.l1bSaveSeaBASSCheckBox)
-        VBox2.addLayout(l1bSeaBASSHBox)
-
-        l1bSeaBASSHeaderHBox2 = QtWidgets.QHBoxLayout()
-        l1bSeaBASSHeaderHBox2.addWidget(self.l1bSeaBASSHeaderEditButton)
-        VBox2.addLayout(l1bSeaBASSHeaderHBox2)
-
-        # VBox2.addSpacing(20)
-
-        # L2
-        VBox2.addWidget(l2Label)
-        VBox2.addWidget(l2Sublabel)
-        VBox2.addWidget(l2Sublabel2)
+        # L1BQC
+        VBox2.addWidget(l1bqcLabel)
+        VBox2.addWidget(l1bqcSublabel)
+        # VBox2.addWidget(l1bqcSublabel1bqc)
 
         # Lt UV<NIR
         LtUVNIRHBox = QtWidgets.QHBoxLayout()
-        LtUVNIRHBox.addWidget(l2LtUVNIRLabel)
-        LtUVNIRHBox.addWidget(self.l2LtUVNIRCheckBox)
+        LtUVNIRHBox.addWidget(l1bqcLtUVNIRLabel)
+        LtUVNIRHBox.addWidget(self.l1bqcLtUVNIRCheckBox)
         VBox2.addLayout(LtUVNIRHBox)
 
-        # L2 Max wind
+        #   Max wind
         maxWindBox = QtWidgets.QHBoxLayout()
-        maxWindBox.addWidget(l2MaxWindLabel)
-        maxWindBox.addWidget(self.l2MaxWindLineEdit)
+        maxWindBox.addWidget(l1bqcMaxWindLabel)
+        maxWindBox.addWidget(self.l1bqcMaxWindLineEdit)
         VBox2.addLayout(maxWindBox)
 
-        # L2 SZA Min/Max
+        #   SZA Min/Max
         SZAHBox1 = QtWidgets.QHBoxLayout()
-        SZAHBox1.addWidget(l2SZAMinLabel)
-        SZAHBox1.addWidget(self.l2SZAMinLineEdit)
+        SZAHBox1.addWidget(l1bqcSZAMinLabel)
+        SZAHBox1.addWidget(self.l1bqcSZAMinLineEdit)
         VBox2.addLayout(SZAHBox1)
 
         SZAHBox2 = QtWidgets.QHBoxLayout()
-        SZAHBox2.addWidget(l2SZAMaxLabel)
-        SZAHBox2.addWidget(self.l2SZAMaxLineEdit)
+        SZAHBox2.addWidget(l1bqcSZAMaxLabel)
+        SZAHBox2.addWidget(self.l1bqcSZAMaxLineEdit)
         VBox2.addLayout(SZAHBox2)
 
-         # L2 Spectral Outlier Filter
+         #  Spectral Outlier Filter
         SpecFilterHBox = QtWidgets.QHBoxLayout()
-        SpecFilterHBox.addWidget(l2SpecQualityCheckLabel)
-        SpecFilterHBox.addWidget(self.l2SpecQualityCheckBox)
+        SpecFilterHBox.addWidget(l1bqcSpecQualityCheckLabel)
+        SpecFilterHBox.addWidget(self.l1bqcSpecQualityCheckBox)
         VBox2.addLayout(SpecFilterHBox)
         SpecFilterEsHBox = QtWidgets.QHBoxLayout()
-        SpecFilterEsHBox.addWidget(self.l2SpecFilterEsLabel)
-        SpecFilterEsHBox.addWidget(self.l2SpecFilterEsLineEdit)
+        SpecFilterEsHBox.addWidget(self.l1bqcSpecFilterEsLabel)
+        SpecFilterEsHBox.addWidget(self.l1bqcSpecFilterEsLineEdit)
         VBox2.addLayout(SpecFilterEsHBox)
 
-        # L2 Spectral Outlier Filter
+        #   Spectral Outlier Filter
         SpecFilterLiHBox = QtWidgets.QHBoxLayout()
-        SpecFilterLiHBox.addWidget(self.l2SpecFilterLiLabel)
-        SpecFilterLiHBox.addWidget(self.l2SpecFilterLiLineEdit)
+        SpecFilterLiHBox.addWidget(self.l1bqcSpecFilterLiLabel)
+        SpecFilterLiHBox.addWidget(self.l1bqcSpecFilterLiLineEdit)
         VBox2.addLayout(SpecFilterLiHBox)
         SpecFilterLtHBox = QtWidgets.QHBoxLayout()
-        SpecFilterLtHBox.addWidget(self.l2SpecFilterLtLabel)
-        SpecFilterLtHBox.addWidget(self.l2SpecFilterLtLineEdit)
+        SpecFilterLtHBox.addWidget(self.l1bqcSpecFilterLtLabel)
+        SpecFilterLtHBox.addWidget(self.l1bqcSpecFilterLtLineEdit)
         VBox2.addLayout(SpecFilterLtHBox)
 
-        # VBox3.addSpacing(5)
-
-        # L2 Meteorology Flags
+        #   Meteorology Flags
         QualityFlagHBox = QtWidgets.QHBoxLayout()
-        QualityFlagHBox.addWidget(l2QualityFlagLabel)
-        # QualityFlagHBox.addWidget(l2QualityFlagLabel2)
-        QualityFlagHBox.addWidget(self.l2QualityFlagCheckBox)
+        QualityFlagHBox.addWidget(l1bqcQualityFlagLabel)
+        QualityFlagHBox.addWidget(self.l1bqcQualityFlagCheckBox)
         VBox2.addLayout(QualityFlagHBox)
         CloudFlagHBox = QtWidgets.QHBoxLayout()
-        CloudFlagHBox.addWidget(self.l2CloudFlagLabel)
-        CloudFlagHBox.addWidget(self.l2CloudFlagLineEdit)
+        CloudFlagHBox.addWidget(self.l1bqcCloudFlagLabel)
+        CloudFlagHBox.addWidget(self.l1bqcCloudFlagLineEdit)
         VBox2.addLayout(CloudFlagHBox)
         EsFlagHBox = QtWidgets.QHBoxLayout()
-        EsFlagHBox.addWidget(self.l2EsFlagLabel)
-        EsFlagHBox.addWidget(self.l2EsFlagLineEdit)
+        EsFlagHBox.addWidget(self.l1bqcEsFlagLabel)
+        EsFlagHBox.addWidget(self.l1bqcEsFlagLineEdit)
         VBox2.addLayout(EsFlagHBox)
         DawnFlagHBox =QtWidgets.QHBoxLayout()
-        DawnFlagHBox.addWidget(self.l2DawnDuskFlagLabel)
-        DawnFlagHBox.addWidget(self.l2DawnDuskFlagLineEdit)
+        DawnFlagHBox.addWidget(self.l1bqcDawnDuskFlagLabel)
+        DawnFlagHBox.addWidget(self.l1bqcDawnDuskFlagLineEdit)
         VBox2.addLayout(DawnFlagHBox)
         RainFlagHBox = QtWidgets.QHBoxLayout()
-        RainFlagHBox.addWidget(self.l2RainfallHumidityFlagLabel)
-        RainFlagHBox.addWidget(self.l2RainfallHumidityFlagLineEdit)
+        RainFlagHBox.addWidget(self.l1bqcRainfallHumidityFlagLabel)
+        RainFlagHBox.addWidget(self.l1bqcRainfallHumidityFlagLineEdit)
         VBox2.addLayout(RainFlagHBox)
 
-        # L2 Ensembles
-        VBox2.addWidget(l2ensLabel)
+        # Third Vertical box
+        VBox3 = QtWidgets.QVBoxLayout()
+        # VBox3.setAlignment(QtCore.Qt.AlignBottom)
 
-        # L2 Stations
+        # L2
+        VBox3.addWidget(l2Label)
+        VBox3.addWidget(l2Sublabel)
+        VBox3.addWidget(l2Sublabel2)
+
+        #   L2 Ensembles
+        VBox3.addWidget(l2ensLabel)
+
+        #   L2 Stations
         StationsHBox = QtWidgets.QHBoxLayout()
         StationsHBox.addWidget(l2StationsLabel)
         StationsHBox.addWidget(self.l2StationsCheckBox)
-        VBox2.addLayout(StationsHBox)
+        VBox3.addLayout(StationsHBox)
 
-        # L2 Time Average Rrs
+        #   L2 Time Average Rrs
         TimeAveHBox = QtWidgets.QHBoxLayout()
         TimeAveHBox.addWidget(l2TimeIntervalLabel)
         TimeAveHBox.addWidget(self.l2TimeIntervalLineEdit)
-        VBox2.addLayout(TimeAveHBox)
+        VBox3.addLayout(TimeAveHBox)
 
-        # L2 Percent Light; Hooker & Morel 2003
+        #   L2 Percent Light; Hooker & Morel 2003
         PercentLtHBox = QtWidgets.QHBoxLayout()
         PercentLtHBox.addWidget(self.l2EnablePercentLtLabel)
         PercentLtHBox.addWidget(self.l2EnablePercentLtCheckBox)
-        VBox2.addLayout(PercentLtHBox)
+        VBox3.addLayout(PercentLtHBox)
         PercentLtHBox2 = QtWidgets.QHBoxLayout()
         PercentLtHBox2.addWidget(self.l2PercentLtLabel)
         PercentLtHBox2.addWidget(self.l2PercentLtLineEdit)
-        VBox2.addLayout(PercentLtHBox2)
+        VBox3.addLayout(PercentLtHBox2)
 
-        VBox2.addStretch()
+        # VBox3.addStretch()
 
-        # Right box
-        VBox3 = QtWidgets.QVBoxLayout()
-        VBox3.setAlignment(QtCore.Qt.AlignBottom)
-        # L2 Rho Skyglint/Sunglint Correction
+        #   L2 Rho Skyglint/Sunglint Correction
         VBox3.addWidget(l2RhoSkyLabel)
 
-        # L2 (Preliminary)
-        # VBox2.addWidget(l2pLabel)
+        #   L2 Ancillary Models
         VBox3.addWidget(l2pSublabel)
         VBox3.addWidget(l2pSublabel2)
         VBox3.addWidget(l2pSublabel3)
-        # VBox2.addWidget(l2pSublabel4)
         l2pGetAncHBox = QtWidgets.QHBoxLayout()
         l2pGetAncHBox.addWidget(l2pSublabel4)
         l2pGetAncHBox.addWidget(l2pGetAncLabel)
         l2pGetAncHBox.addWidget(self.l2pGetAncCheckBox)
         VBox3.addLayout(l2pGetAncHBox)
 
-        # Default Wind
+        #   Default Wind
         WindSpeedHBox2 = QtWidgets.QHBoxLayout()
         WindSpeedHBox2.addWidget(self.l2DefaultWindSpeedLabel)
         WindSpeedHBox2.addWidget(self.l2DefaultWindSpeedLineEdit)
         VBox3.addLayout(WindSpeedHBox2)
-        # Default AOD
+        #   Default AOD
         AODHBox2 = QtWidgets.QHBoxLayout()
         AODHBox2.addWidget(self.l2DefaultAODLabel)
         AODHBox2.addWidget(self.l2DefaultAODLineEdit)
         VBox3.addLayout(AODHBox2)
-        # Default Salt
+        #   Default Salt
         SaltHBox2 = QtWidgets.QHBoxLayout()
         SaltHBox2.addWidget(self.l2DefaultSaltLabel)
         SaltHBox2.addWidget(self.l2DefaultSaltLineEdit)
         VBox3.addLayout(SaltHBox2)
-        # Default SST
+        #   Default SST
         SSTHBox2 = QtWidgets.QHBoxLayout()
         SSTHBox2.addWidget(self.l2DefaultSSTLabel)
         SSTHBox2.addWidget(self.l2DefaultSSTLineEdit)
         VBox3.addLayout(SSTHBox2)
 
-        # Rho model
+        #   Rho model
         RhoHBox2 = QtWidgets.QHBoxLayout()
         RhoHBox2.addWidget(self.RhoRadioButtonDefault)
         RhoHBox2.addWidget(self.RhoRadioButtonZhang)
         VBox3.addLayout(RhoHBox2)
         RhoHBox3 = QtWidgets.QHBoxLayout()
-        # RhoHBox3.addSpacing(60)
         RhoHBox3.addWidget(self.RhoRadoButton3C)
         RhoHBox3.addWidget(self.RhoRadioButtonYour)
         VBox3.addLayout(RhoHBox3)
 
         VBox3.addSpacing(5)
 
-        # L2 NIR AtmoCorr
-        # NIRCorrectionVBox = QtWidgets.QVBoxLayout()
+        #   L2 NIR AtmoCorr
         NIRCorrectionHBox = QtWidgets.QHBoxLayout()
         NIRCorrectionHBox.addWidget(l2NIRCorrectionLabel)
         NIRCorrectionHBox.addWidget(self.l2NIRCorrectionCheckBox)
@@ -868,16 +828,23 @@ class ConfigWindow(QtWidgets.QDialog):
 
         VBox3.addSpacing(5)
 
-        # L2 Remove negative spectra
+        #   L2 Remove negative spectra
         NegativeSpecHBox = QtWidgets.QHBoxLayout()
         NegativeSpecHBox.addWidget(self.l2NegativeSpecLabel)
         NegativeSpecHBox.addWidget(self.l2NegativeSpecCheckBox)
         VBox3.addLayout(NegativeSpecHBox)
 
-        VBox3.addSpacing(5)
+        # VBox4.addSpacing(5)
 
-        # L2 Spectral weighting to satellites
-        VBox3.addWidget(l2WeightsLabel)
+        # Right Vertical box
+        VBox4 = QtWidgets.QVBoxLayout()
+        # VBox4.setAlignment(QtCore.Qt.AlignBottom)
+
+        #   L2 Products
+        VBox4.addWidget(l2ProductLabel)
+
+        #   L2 Spectral weighting to satellites
+        VBox4.addWidget(l2WeightsLabel)
         l2WeightHBox = QtWidgets.QHBoxLayout()
         l2WeightHBox.addSpacing(45)
         l2WeightHBox.addWidget(l2WeightMODISALabel)
@@ -886,7 +853,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2WeightHBox.addWidget(self.l2WeightSentinel3ACheckBox)
         l2WeightHBox.addWidget(l2WeightVIIRSNLabel)
         l2WeightHBox.addWidget(self.l2WeightVIIRSNCheckBox)
-        VBox3.addLayout(l2WeightHBox)
+        VBox4.addLayout(l2WeightHBox)
         l2WeightHBox2 = QtWidgets.QHBoxLayout()
         l2WeightHBox2.addSpacing(45)
         l2WeightHBox2.addWidget(l2WeightMODISTLabel)
@@ -895,13 +862,13 @@ class ConfigWindow(QtWidgets.QDialog):
         l2WeightHBox2.addWidget(self.l2WeightSentinel3BCheckBox)
         l2WeightHBox2.addWidget(l2WeightVIIRSJLabel)
         l2WeightHBox2.addWidget(self.l2WeightVIIRSJCheckBox)
-        VBox3.addLayout(l2WeightHBox2)
-        VBox3.addWidget(l2WeightMODISALabel2)
+        VBox4.addLayout(l2WeightHBox2)
+        VBox4.addWidget(l2WeightMODISALabel2)
 
-        VBox3.addSpacing(5)
+        VBox4.addSpacing(5)
 
-        # L2 Plotting
-        VBox3.addWidget(l2PlotsLabel)
+        #   L2 Plotting
+        VBox4.addWidget(l2PlotsLabel)
         l2PlotHBox = QtWidgets.QHBoxLayout()
         l2PlotHBox.addSpacing(45)
         l2PlotHBox.addWidget(l2PlotRrsLabel)
@@ -914,27 +881,31 @@ class ConfigWindow(QtWidgets.QDialog):
         l2PlotHBox.addWidget(self.l2PlotLiCheckBox)
         l2PlotHBox.addWidget(l2PlotLtLabel)
         l2PlotHBox.addWidget(self.l2PlotLtCheckBox)
-        VBox3.addLayout(l2PlotHBox)
+        VBox4.addLayout(l2PlotHBox)
 
-        VBox3.addSpacing(5)
+        VBox4.addSpacing(5)
 
         l2OCproductsHBox = QtWidgets.QHBoxLayout()
         l2OCproductsHBox.addWidget(self.l2OCproducts)
-        VBox3.addLayout(l2OCproductsHBox)
+        VBox4.addLayout(l2OCproductsHBox)
 
-        # Horizontal Box; Save SeaBASS
+        #   Horizontal Box; Save SeaBASS
         l2SeaBASSHBox = QtWidgets.QHBoxLayout()
         l2SeaBASSHBox.addWidget(l2SaveSeaBASSLabel)
         l2SeaBASSHBox.addWidget(self.l2SaveSeaBASSCheckBox)
-        VBox3.addLayout(l2SeaBASSHBox)
+        VBox4.addLayout(l2SeaBASSHBox)
+        l2SeaBASSHeaderHBox2 = QtWidgets.QHBoxLayout()
+        l2SeaBASSHeaderHBox2.addWidget(self.l2SeaBASSHeaderEditButton)
+        VBox4.addLayout(l2SeaBASSHeaderHBox2)
 
-        # Horizontal Box; Write Report
+
+        #   Horizontal Box; Write Report
         l2ReportHBox = QtWidgets.QHBoxLayout()
         l2ReportHBox.addWidget(l2WriteReportLabel)
         l2ReportHBox.addWidget(self.l2WriteReportCheckBox)
-        VBox3.addLayout(l2ReportHBox)
+        VBox4.addLayout(l2ReportHBox)
 
-        VBox3.addSpacing(20)
+        VBox4.addSpacing(20)
 
         # Save/Cancel
         saveHBox = QtWidgets.QHBoxLayout()
@@ -942,15 +913,16 @@ class ConfigWindow(QtWidgets.QDialog):
         saveHBox.addWidget(self.saveButton)
         saveHBox.addWidget(self.saveAsButton)
         saveHBox.addWidget(self.cancelButton)
-        VBox3.addLayout(saveHBox)
+        VBox4.addLayout(saveHBox)
 
-        VBox3.addStretch()
+        VBox4.addStretch()
 
         # Add 3 Vertical Boxes to Horizontal Box hBox
         hBox = QtWidgets.QHBoxLayout()
         hBox.addLayout(VBox1)
         hBox.addLayout(VBox2)
         hBox.addLayout(VBox3)
+        hBox.addLayout(VBox4)
 
         # Adds hBox and saveHBox to primary VBox
         VBox.addLayout(hBox)
@@ -1138,16 +1110,74 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL1dDeglitch"]   = 1
 
+    def l1bDefaultCalRadioButtonClicked(self):
+        print("ConfigWindow - l2NIRCorrection set to Simple")
+        self.SimpleNIRRadioButton.setChecked(True)
+        self.SimSpecNIRRadioButton.setChecked(False)
+        self.YourNIRRadioButton.setChecked(False)
+        ConfigFile.settings["bL2SimpleNIRCorrection"] = 1
+        ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
+    def l1bFullCalRadioButtonClicked(self):
+        print("ConfigWindow - l2NIRCorrection set to SimSpec")
+        self.SimpleNIRRadioButton.setChecked(False)
+        self.SimSpecNIRRadioButton.setChecked(True)
+        self.YourNIRRadioButton.setChecked(False)
+        ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
+        ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
+
     def l1bPlotTimeInterpCheckBoxUpdate(self):
         print("ConfigWindow - l1bPlotTimeInterpCheckBoxUpdate")
 
-    def l1bSaveSeaBASSCheckBoxUpdate(self):
-        print("ConfigWindow - l1bSaveSeaBASSCheckBoxUpdate")
-        disabled = (not self.l1bSaveSeaBASSCheckBox.isChecked()) \
-                and (not self.l2SaveSeaBASSCheckBox.isChecked())
-        self.l1bSeaBASSHeaderEditButton.setDisabled(disabled)
+    # def l1bSaveSeaBASSCheckBoxUpdate(self):
+    #     print("ConfigWindow - l1bSaveSeaBASSCheckBoxUpdate")
+    #     disabled = (not self.l1bSaveSeaBASSCheckBox.isChecked()) \
+    #             and (not self.l2SaveSeaBASSCheckBox.isChecked())
+    #     self.l1bSeaBASSHeaderEditButton.setDisabled(disabled)
 
-    def l1bSeaBASSHeaderEditButtonPressed(self):
+    def l1bqcLtUVNIRCheckBoxUpdate(self):
+        print("ConfigWindow - l2UVNIRCheckBoxUpdate")
+
+        if self.l1bqcLtUVNIRCheckBox.isChecked():
+            ConfigFile.settings["bL1bqcLtUVNIR"] = 1
+        else:
+            ConfigFile.settings["bL1bqcLtUVNIR"] = 0
+
+    def l1bqcSpecQualityCheckBoxUpdate(self):
+        print("ConfigWindow - l1bqcSpecQualityCheckBoxUpdate")
+
+        disabled = (not self.l1bqcSpecQualityCheckBox.isChecked())
+        self.l1bqcSpecFilterLiLabel.setDisabled(disabled)
+        self.l1bqcSpecFilterLiLineEdit.setDisabled(disabled)
+        self.l1bqcSpecFilterLtLabel.setDisabled(disabled)
+        self.l1bqcSpecFilterLtLineEdit.setDisabled(disabled)
+        self.l1bqcSpecFilterEsLabel.setDisabled(disabled)
+        self.l1bqcSpecFilterEsLineEdit.setDisabled(disabled)
+        if disabled:
+            ConfigFile.settings["bL2EnableSpecQualityCheck"] = 0
+        else:
+            ConfigFile.settings["bL2EnableSpecQualityCheck"] = 1
+        #     ConfigFile.settings["fL2SpecFilterEs"] = "NA"
+        #     ConfigFile.settings["fL2SpecFilterLi"] = "NA"
+        #     ConfigFile.settings["fL2SpecFilterLt"] = "NA"
+
+    def l1bqcQualityFlagCheckBoxUpdate(self):
+        print("ConfigWindow - l1bqcQualityFlagCheckBoxUpdate")
+
+        disabled = (not self.l1bqcQualityFlagCheckBox.isChecked())
+        self.l1bqcCloudFlagLabel.setDisabled(disabled)
+        self.l1bqcCloudFlagLineEdit.setDisabled(disabled)
+        self.l1bqcEsFlagLabel.setDisabled(disabled)
+        self.l1bqcEsFlagLineEdit.setDisabled(disabled)
+        self.l1bqcDawnDuskFlagLabel.setDisabled(disabled)
+        self.l1bqcDawnDuskFlagLineEdit.setDisabled(disabled)
+        self.l1bqcRainfallHumidityFlagLabel.setDisabled(disabled)
+        self.l1bqcRainfallHumidityFlagLineEdit.setDisabled(disabled)
+        if disabled:
+            ConfigFile.settings["bL2EnableQualityFlags"] = 0
+        else:
+            ConfigFile.settings["bL2EnableQualityFlags"] = 1
+
+    def l2SeaBASSHeaderEditButtonPressed(self):
         print("Edit seaBASSHeader Dialogue")
 
         ConfigWindow.refreshConfig(self)
@@ -1166,7 +1196,7 @@ class ConfigWindow(QtWidgets.QDialog):
             # SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
             # seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
             # seaBASSHeaderDialog.show()
-            print("SeaBass Header file lost.")
+            print("SeaBass Header file lost. Please restore to Config directory or recreate.")
 
     def l2pGetAncCheckBoxUpdate(self):
         print("ConfigWindow - l2pGetAncCheckBoxUpdate")
@@ -1207,53 +1237,6 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2ZhangRho"] = 0
             ConfigFile.settings["bL2DefaultRho"] = 1
 
-    def l2LtUVNIRCheckBoxUpdate(self):
-        print("ConfigWindow - l2UVNIRCheckBoxUpdate")
-
-        if self.l2LtUVNIRCheckBox.isChecked():
-            ConfigFile.settings["bL2LtUVNIR"] = 1
-        else:
-            ConfigFile.settings["bL2LtUVNIR"] = 0
-
-    def l2SpecQualityCheckBoxUpdate(self):
-        print("ConfigWindow - l2SpecQualityCheckBoxUpdate")
-
-        disabled = (not self.l2SpecQualityCheckBox.isChecked())
-        self.l2SpecFilterLiLabel.setDisabled(disabled)
-        self.l2SpecFilterLiLineEdit.setDisabled(disabled)
-        self.l2SpecFilterLtLabel.setDisabled(disabled)
-        self.l2SpecFilterLtLineEdit.setDisabled(disabled)
-        self.l2SpecFilterEsLabel.setDisabled(disabled)
-        self.l2SpecFilterEsLineEdit.setDisabled(disabled)
-        if disabled:
-            ConfigFile.settings["bL2EnableSpecQualityCheck"] = 0
-        else:
-            ConfigFile.settings["bL2EnableSpecQualityCheck"] = 1
-        #     ConfigFile.settings["fL2SpecFilterEs"] = "NA"
-        #     ConfigFile.settings["fL2SpecFilterLi"] = "NA"
-        #     ConfigFile.settings["fL2SpecFilterLt"] = "NA"
-
-    def l2QualityFlagCheckBoxUpdate(self):
-        print("ConfigWindow - l2QualityFlagCheckBoxUpdate")
-
-        disabled = (not self.l2QualityFlagCheckBox.isChecked())
-        self.l2CloudFlagLabel.setDisabled(disabled)
-        self.l2CloudFlagLineEdit.setDisabled(disabled)
-        self.l2EsFlagLabel.setDisabled(disabled)
-        self.l2EsFlagLineEdit.setDisabled(disabled)
-        self.l2DawnDuskFlagLabel.setDisabled(disabled)
-        self.l2DawnDuskFlagLineEdit.setDisabled(disabled)
-        self.l2RainfallHumidityFlagLabel.setDisabled(disabled)
-        self.l2RainfallHumidityFlagLineEdit.setDisabled(disabled)
-        if disabled:
-            ConfigFile.settings["bL2EnableQualityFlags"] = 0
-        else:
-            ConfigFile.settings["bL2EnableQualityFlags"] = 1
-        #     ConfigFile.settings["fL2CloudFlag"] = "NA"
-        #     ConfigFile.settings["fL2SignificantEsFlag"] = "NA"
-        #     ConfigFile.settings["fL2DawnDuskFlag"] = "NA"
-        #     ConfigFile.settings["fL2RainfallHumidityFlag"] = "NA"
-
     def l2StationsCheckBoxUpdate(self):
         print("ConfigWindow - l2StationsCheckBoxUpdate")
 
@@ -1273,7 +1256,6 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2EnablePercentLt"] = 0
         else:
             ConfigFile.settings["bL2EnablePercentLt"] = 1
-        #     ConfigFile.settings["fL2PercentLt"] = "NA"
 
     def l2RhoRadoButton3CClicked(self):
         print("ConfigWindow - l2RhoCorrection set to Ruddick")
@@ -1283,7 +1265,6 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL23CRho"] = 1
         ConfigFile.settings["bL2ZhangRho"] = 0
         ConfigFile.settings["bL2DefaultRho"] = 0
-
     def l2RhoRadioButtonZhangClicked(self):
         print("ConfigWindow - l2RhoCorrection set to Zhang")
         self.RhoRadoButton3C.setChecked(False)
@@ -1296,7 +1277,6 @@ class ConfigWindow(QtWidgets.QDialog):
             print("SZA outside model limits; adjusting to 60")
             ConfigFile.settings["fL2SZAMax"] = 60
             self.l2SZAMaxLineEdit.setText(str(ConfigFile.settings["fL2SZAMax"]))
-
     def l2RhoRadioButtonDefaultClicked(self):
         print("ConfigWindow - l2RhoCorrection set to Default")
         self.RhoRadoButton3C.setChecked(False)
@@ -1305,7 +1285,6 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL23CRho"] = 0
         ConfigFile.settings["bL2ZhangRho"] = 0
         ConfigFile.settings["bL2DefaultRho"] = 1
-
     def l2RhoRadioButtonYourClicked(self):
         print("ConfigWindow - l2RhoCorrection set to Default. You have not submitted your method.")
         self.RhoRadoButton3C.setChecked(False)
@@ -1323,23 +1302,21 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 1
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
     def l2SimSpecNIRRadioButtonClicked(self):
+        print("ConfigWindow - l2NIRCorrection set to SimSpec")
         self.SimpleNIRRadioButton.setChecked(False)
         self.SimSpecNIRRadioButton.setChecked(True)
         self.YourNIRRadioButton.setChecked(False)
-        print("ConfigWindow - l2NIRCorrection set to SimSpec")
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
     def l2YourNIRRadioButtonClicked(self):
+        print("ConfigWindow - l2NIRCorrection set to Simple. You have not submitted Your method.")
         self.SimpleNIRRadioButton.setChecked(True)
         self.SimSpecNIRRadioButton.setChecked(False)
         self.YourNIRRadioButton.setChecked(True)
-        print("ConfigWindow - l2NIRCorrection set to Simple. You have not submitted Your method.")
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 1 # Mock up. Use Simple
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
-
     def l2NIRCorrectionCheckBoxUpdate(self):
         print("ConfigWindow - l2NIRCorrectionCheckBoxUpdate")
-
         disabled = (not self.l2NIRCorrectionCheckBox.isChecked())
         self.SimpleNIRRadioButton.setDisabled(disabled)
         self.SimSpecNIRRadioButton.setDisabled(disabled)
@@ -1372,9 +1349,9 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def l2SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")
-        disabled = (not self.l1bSaveSeaBASSCheckBox.isChecked()) \
-                and (not self.l2SaveSeaBASSCheckBox.isChecked())
-        self.l1bSeaBASSHeaderEditButton.setDisabled(disabled)
+        disabled = (not self.l2SaveSeaBASSCheckBox.isChecked())
+
+        self.l2SeaBASSHeaderEditButton.setDisabled(disabled)
 
     def l2WriteReportCheckBoxUpdate(self):
         print("ConfigWindow - l2WriteReportCheckBoxUpdate")
@@ -1415,36 +1392,35 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL1aqcSunAngleMin"] = float(self.l1aqcSunAngleMinLineEdit.text())
         ConfigFile.settings["fL1aqcSunAngleMax"] = float(self.l1aqcSunAngleMaxLineEdit.text())
 
-        ConfigFile.settings["bL1dDeglitch"] = int(self.l1aqcDeglitchCheckBox.isChecked())
+        ConfigFile.settings["bL1aqcDeglitch"] = int(self.l1aqcDeglitchCheckBox.isChecked())
 
         ConfigFile.settings["fL1bInterpInterval"] = float(self.l1bInterpIntervalLineEdit.text())
         ConfigFile.settings["bL1bPlotTimeInterp"] = int(self.l1bPlotTimeInterpCheckBox.isChecked())
-        ConfigFile.settings["bL1bSaveSeaBASS"] = int(self.l1bSaveSeaBASSCheckBox.isChecked())
 
-        ConfigFile.settings["bL2pGetAnc"] = int(self.l2pGetAncCheckBox.isChecked())
-
-        ConfigFile.settings["bL2LtUVNIR"] = int(self.l2LtUVNIRCheckBox.isChecked())
-        ConfigFile.settings["fL2MaxWind"] = float(self.l2MaxWindLineEdit.text())
-        ConfigFile.settings["fL2SZAMin"] = float(self.l2SZAMinLineEdit.text())
-        if int(self.RhoRadioButtonZhang.isChecked()) and float(self.l2SZAMaxLineEdit.text()) > 60:
+        ConfigFile.settings["bL1bqcLtUVNIR"] = int(self.l1bqcLtUVNIRCheckBox.isChecked())
+        ConfigFile.settings["fL1bqcMaxWind"] = float(self.l1bqcMaxWindLineEdit.text())
+        ConfigFile.settings["fL1bqcSZAMin"] = float(self.l1bqcSZAMinLineEdit.text())
+        if int(self.RhoRadioButtonZhang.isChecked()) and float(self.l1bqcSZAMaxLineEdit.text()) > 60:
             print("SZA outside Zhang model limits; adjusting.")
-            self.l2SZAMaxLineEdit.setText(str(60.0))
-        ConfigFile.settings["fL2SZAMax"] = float(self.l2SZAMaxLineEdit.text())
-        ConfigFile.settings["bL2EnableSpecQualityCheck"] = int(self.l2SpecQualityCheckBox.isChecked())
-        ConfigFile.settings["fL2SpecFilterEs"] = float(self.l2SpecFilterEsLineEdit.text())
-        ConfigFile.settings["fL2SpecFilterLi"] = float(self.l2SpecFilterLiLineEdit.text())
-        ConfigFile.settings["fL2SpecFilterLt"] = float(self.l2SpecFilterLtLineEdit.text())
+            self.l1bqcSZAMaxLineEdit.setText(str(60.0))
+        ConfigFile.settings["fL1bqcSZAMax"] = float(self.l1bqcSZAMaxLineEdit.text())
+        ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = int(self.l1bqcSpecQualityCheckBox.isChecked())
+        ConfigFile.settings["fL1bqcSpecFilterEs"] = float(self.l1bqcSpecFilterEsLineEdit.text())
+        ConfigFile.settings["fL1bqcSpecFilterLi"] = float(self.l1bqcSpecFilterLiLineEdit.text())
+        ConfigFile.settings["fL1bqcSpecFilterLt"] = float(self.l1bqcSpecFilterLtLineEdit.text())
 
-        ConfigFile.settings["bL2EnableQualityFlags"] = int(self.l2QualityFlagCheckBox.isChecked())
-        ConfigFile.settings["fL2CloudFlag"] = float(self.l2CloudFlagLineEdit.text())
-        ConfigFile.settings["fL2SignificantEsFlag"] = float(self.l2EsFlagLineEdit.text())
-        ConfigFile.settings["fL2DawnDuskFlag"] = float(self.l2DawnDuskFlagLineEdit.text())
-        ConfigFile.settings["fL2RainfallHumidityFlag"] = float(self.l2RainfallHumidityFlagLineEdit.text())
+        ConfigFile.settings["bL1bqcEnableQualityFlags"] = int(self.l1bqcQualityFlagCheckBox.isChecked())
+        ConfigFile.settings["fL1bqcCloudFlag"] = float(self.l1bqcCloudFlagLineEdit.text())
+        ConfigFile.settings["fL1bqcSignificantEsFlag"] = float(self.l1bqcEsFlagLineEdit.text())
+        ConfigFile.settings["fL1bqcDawnDuskFlag"] = float(self.l1bqcDawnDuskFlagLineEdit.text())
+        ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = float(self.l1bqcRainfallHumidityFlagLineEdit.text())
 
         ConfigFile.settings["bL2Stations"] = int(self.l2StationsCheckBox.isChecked())
         ConfigFile.settings["fL2TimeInterval"] = int(self.l2TimeIntervalLineEdit.text())
         ConfigFile.settings["bL2EnablePercentLt"] = int(self.l2EnablePercentLtCheckBox.isChecked())
         ConfigFile.settings["fL2PercentLt"] = float(self.l2PercentLtLineEdit.text())
+
+        ConfigFile.settings["bL2pGetAnc"] = int(self.l2pGetAncCheckBox.isChecked())
 
         ConfigFile.settings["fL2DefaultWindSpeed"] = float(self.l2DefaultWindSpeedLineEdit.text())
         ConfigFile.settings["fL2DefaultAOD"] = float(self.l2DefaultAODLineEdit.text())

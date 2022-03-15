@@ -12,7 +12,7 @@ from ConfigFile import ConfigFile
 # from AnomalyDetection import AnomAnalWindow
 from Utilities import Utilities
 
-class ProcessL1b:
+class ProcessL1d:
     '''
     # The Deglitching process departs signicantly from ProSoft and PySciDON
     # Reference: ProSoft 7.7 Rev. K May 8, 2017, SAT-DN-00228
@@ -154,195 +154,195 @@ class ProcessL1b:
                 # waveindex += 1
         return badIndex
 
-    # @staticmethod
-    # def processDataDeglitching(node, sensorType):
-    #     msg = sensorType
-    #     print(msg)
-    #     Utilities.writeLogFile(msg)
+    @staticmethod
+    def processDataDeglitching(node, sensorType):
+        msg = sensorType
+        print(msg)
+        Utilities.writeLogFile(msg)
 
-    #     step = float(ConfigFile.settings["fL1dAnomalyStep"])
+        step = float(ConfigFile.settings["fL1dAnomalyStep"])
 
-    #     # outDir = MainConfig.settings["outDir"]
-    #     # # If default output path is used, choose the root HyperInSPACE path, and build on that
-    #     # if os.path.abspath(outDir) == os.path.join('./','Data'):
-    #     #     outDir = './'
+        # outDir = MainConfig.settings["outDir"]
+        # # If default output path is used, choose the root HyperInSPACE path, and build on that
+        # if os.path.abspath(outDir) == os.path.join('./','Data'):
+        #     outDir = './'
 
-    #     # if not os.path.exists(os.path.join(outDir,'Plots','L1C_Anoms')):
-    #     #     os.makedirs(os.path.join(outDir,'Plots','L1C_Anoms'))
-    #     # plotdir = os.path.join(outDir,'Plots','L1C_Anoms')
-    #     # fileName is the pathless basename (no extention) of the L1C file
-    #     rawFileName = node.attributes['RAW_FILE_NAME']
-    #     L1CfileName = f"{rawFileName.split('.')[0]}_L1C"
+        # if not os.path.exists(os.path.join(outDir,'Plots','L1C_Anoms')):
+        #     os.makedirs(os.path.join(outDir,'Plots','L1C_Anoms'))
+        # plotdir = os.path.join(outDir,'Plots','L1C_Anoms')
+        # fileName is the pathless basename (no extention) of the L1C file
+        rawFileName = node.attributes['RAW_FILE_NAME']
+        L1CfileName = f"{rawFileName.split('.')[0]}_L1C"
 
-    #     darkData = None
-    #     lightData = None
+        darkData = None
+        lightData = None
 
-    #     for gp in node.groups:
-    #         if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
-    #             darkData = gp.getDataset(sensorType)
-    #             darkDateTime = Utilities.getDateTime(gp)
-    #             windowDark = int(ConfigFile.settings[f'fL1d{sensorType}WindowDark'])
-    #             sigmaDark = float(ConfigFile.settings[f'fL1d{sensorType}SigmaDark'])
-    #             minDark = None if ConfigFile.settings[f'fL1d{sensorType}MinDark']=='None' else ConfigFile.settings[f'fL1d{sensorType}MinDark']
-    #             maxDark = None if ConfigFile.settings[f'fL1d{sensorType}MaxDark']=='None' else ConfigFile.settings[f'fL1d{sensorType}MaxDark']
-    #             minMaxBandDark = ConfigFile.settings[f'fL1d{sensorType}MinMaxBandDark']
-    #         if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
-    #             lightData = gp.getDataset(sensorType)
-    #             lightDateTime = Utilities.getDateTime(gp)
-    #             windowLight = int(ConfigFile.settings[f'fL1d{sensorType}WindowLight'])
-    #             sigmaLight = float(ConfigFile.settings[f'fL1d{sensorType}SigmaLight'])
-    #             minLight = None if ConfigFile.settings[f'fL1d{sensorType}MinLight']=='None' else ConfigFile.settings[f'fL1d{sensorType}MinLight']
-    #             maxLight = None if ConfigFile.settings[f'fL1d{sensorType}MaxLight']=='None' else ConfigFile.settings[f'fL1d{sensorType}MaxLight']
-    #             minMaxBandLight = ConfigFile.settings[f'fL1d{sensorType}MinMaxBandLight']
+        for gp in node.groups:
+            if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
+                darkData = gp.getDataset(sensorType)
+                darkDateTime = Utilities.getDateTime(gp)
+                windowDark = int(ConfigFile.settings[f'fL1d{sensorType}WindowDark'])
+                sigmaDark = float(ConfigFile.settings[f'fL1d{sensorType}SigmaDark'])
+                minDark = None if ConfigFile.settings[f'fL1d{sensorType}MinDark']=='None' else ConfigFile.settings[f'fL1d{sensorType}MinDark']
+                maxDark = None if ConfigFile.settings[f'fL1d{sensorType}MaxDark']=='None' else ConfigFile.settings[f'fL1d{sensorType}MaxDark']
+                minMaxBandDark = ConfigFile.settings[f'fL1d{sensorType}MinMaxBandDark']
+            if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
+                lightData = gp.getDataset(sensorType)
+                lightDateTime = Utilities.getDateTime(gp)
+                windowLight = int(ConfigFile.settings[f'fL1d{sensorType}WindowLight'])
+                sigmaLight = float(ConfigFile.settings[f'fL1d{sensorType}SigmaLight'])
+                minLight = None if ConfigFile.settings[f'fL1d{sensorType}MinLight']=='None' else ConfigFile.settings[f'fL1d{sensorType}MinLight']
+                maxLight = None if ConfigFile.settings[f'fL1d{sensorType}MaxLight']=='None' else ConfigFile.settings[f'fL1d{sensorType}MaxLight']
+                minMaxBandLight = ConfigFile.settings[f'fL1d{sensorType}MinMaxBandLight']
 
-    #         # Rolling averages required for deglitching of data are intolerant to 2 or fewer data points
-    #         # Furthermore, 5 or fewer datapoints is a suspiciously short sampling time. Finally,
-    #         # Having fewer data points than the size of the rolling window won't work. Exit processing if
-    #         # these conditions are met.
+            # Rolling averages required for deglitching of data are intolerant to 2 or fewer data points
+            # Furthermore, 5 or fewer datapoints is a suspiciously short sampling time. Finally,
+            # Having fewer data points than the size of the rolling window won't work. Exit processing if
+            # these conditions are met.
 
-    #     # Problems with the sizes of the datasets:
-    #     if darkData is not None and lightData is not None:
-    #         if len(darkData.data) <= 2 or \
-    #             len(lightData.data) <= 5 or \
-    #             len(darkData.data) < windowDark or \
-    #             len(lightData.data) < windowLight:
-    #                 msg = f'Error: Too few records to deglitch. Darks: {len(darkData.data)} Lights: {len(lightData.data)}'
-    #                 print(msg)
-    #                 Utilities.writeLogFile(msg)
-    #                 return True # Sets the flag to true
+        # Problems with the sizes of the datasets:
+        if darkData is not None and lightData is not None:
+            if len(darkData.data) <= 2 or \
+                len(lightData.data) <= 5 or \
+                len(darkData.data) < windowDark or \
+                len(lightData.data) < windowLight:
+                    msg = f'Error: Too few records to deglitch. Darks: {len(darkData.data)} Lights: {len(lightData.data)}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return True # Sets the flag to true
 
-    #     if darkData is None:
-    #         msg = "Error: No dark data to deglitch"
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #     else:
-    #         msg = "Deglitching dark"
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #         lightDark = 'Dark'
+        if darkData is None:
+            msg = "Error: No dark data to deglitch"
+            print(msg)
+            Utilities.writeLogFile(msg)
+        else:
+            msg = "Deglitching dark"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            lightDark = 'Dark'
 
-    #         darkData.datasetToColumns()
-    #         columns = darkData.columns
-    #         dateTime = darkDateTime
+            darkData.datasetToColumns()
+            columns = darkData.columns
+            dateTime = darkDateTime
 
-    #         globalBadIndex = []
+            globalBadIndex = []
 
-    #         index = 0
-    #         # Loop over bands to populate globBads
-    #         for timeSeries in columns.items():
-    #             if index==0:
-    #                 # Initialize boolean lists for capturing global badIndex conditions across all wavebands
-    #                 globBad = [False]*len(timeSeries[1])
-    #                 globBad2 = [False]*len(timeSeries[1])
-    #                 globBad3 = [False]*len(timeSeries[1])
-    #             band = float(timeSeries[0])
-    #             if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
-    #                 # if index % step == 0:
-    #                 radiometry1D = timeSeries[1]
-    #                 badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowDark, sigmaDark, lightDark, minDark, maxDark,minMaxBandDark)
+            index = 0
+            # Loop over bands to populate globBads
+            for timeSeries in columns.items():
+                if index==0:
+                    # Initialize boolean lists for capturing global badIndex conditions across all wavebands
+                    globBad = [False]*len(timeSeries[1])
+                    globBad2 = [False]*len(timeSeries[1])
+                    globBad3 = [False]*len(timeSeries[1])
+                band = float(timeSeries[0])
+                if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
+                    # if index % step == 0:
+                    radiometry1D = timeSeries[1]
+                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowDark, sigmaDark, lightDark, minDark, maxDark,minMaxBandDark)
 
-    #                 # for the plotting routine:
-    #                 globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
-    #                 globBad2[:] = (True if val2 else val1 for (val1,val2) in zip(globBad2,badIndex2))
-    #                 globBad3[:] = (True if val2 else val1 for (val1,val2) in zip(globBad3,badIndex3))
+                    # for the plotting routine:
+                    globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
+                    globBad2[:] = (True if val2 else val1 for (val1,val2) in zip(globBad2,badIndex2))
+                    globBad3[:] = (True if val2 else val1 for (val1,val2) in zip(globBad3,badIndex3))
 
-    #                 # For the deletion routine:
-    #                 globalBadIndex.append(badIndex) # First pass
-    #                 globalBadIndex.append(badIndex2) # Second pass
-    #                 globalBadIndex.append(badIndex3) # Thresholds
+                    # For the deletion routine:
+                    globalBadIndex.append(badIndex) # First pass
+                    globalBadIndex.append(badIndex2) # Second pass
+                    globalBadIndex.append(badIndex3) # Thresholds
 
-    #             index +=1
+                index +=1
 
-    #          # Collapse the badIndexes from all wavebands into one timeseries
-    #         # Convert to an array and test along the columns (i.e. each timestamp)
-    #         gIndex = np.any(np.array(globalBadIndex), 0)
-    #         percentLoss = 100*(sum(gIndex)/len(gIndex))
-    #         # badIndexDark = ProcessL1d.darkDataDeglitching(darkData, sensorType, windowDark, sigmaDark)
-    #         msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #         badIndexDark = gIndex
+             # Collapse the badIndexes from all wavebands into one timeseries
+            # Convert to an array and test along the columns (i.e. each timestamp)
+            gIndex = np.any(np.array(globalBadIndex), 0)
+            percentLoss = 100*(sum(gIndex)/len(gIndex))
+            # badIndexDark = ProcessL1d.darkDataDeglitching(darkData, sensorType, windowDark, sigmaDark)
+            msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            badIndexDark = gIndex
 
-    #         # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
-    #         index =0
-    #         for timeSeries in columns.items():
-    #             band = float(timeSeries[0])
-    #             if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
-    #                 if index % step == 0:
-    #                     Utilities.saveDeglitchPlots(L1CfileName,timeSeries,dateTime,sensorType,lightDark,windowDark,sigmaDark,globBad,globBad2,globBad3)
-    #             index +=1
+            # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
+            index =0
+            for timeSeries in columns.items():
+                band = float(timeSeries[0])
+                if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
+                    if index % step == 0:
+                        Utilities.saveDeglitchPlots(L1CfileName,timeSeries,dateTime,sensorType,lightDark,windowDark,sigmaDark,globBad,globBad2,globBad3)
+                index +=1
 
 
-    #     if lightData is None:
-    #         msg = "Error: No light data to deglitch"
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #     else:
-    #         msg = "Deglitching light"
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
+        if lightData is None:
+            msg = "Error: No light data to deglitch"
+            print(msg)
+            Utilities.writeLogFile(msg)
+        else:
+            msg = "Deglitching light"
+            print(msg)
+            Utilities.writeLogFile(msg)
 
-    #         lightData.datasetToColumns()
-    #         columns = lightData.columns
-    #         lightDark = 'Light'
-    #         dateTime = lightDateTime
+            lightData.datasetToColumns()
+            columns = lightData.columns
+            lightDark = 'Light'
+            dateTime = lightDateTime
 
-    #         globalBadIndex = []
+            globalBadIndex = []
 
-    #         index = 0
-    #         # Loop over bands to populate globBads
-    #         for timeSeries in columns.items():
-    #             if index==0:
-    #                 # Initialize boolean lists for capturing global badIndex conditions across all wavebands
-    #                 globBad = [False]*len(timeSeries[1])
-    #                 globBad2 = [False]*len(timeSeries[1])
-    #                 globBad3 = [False]*len(timeSeries[1])
-    #             band = float(timeSeries[0])
-    #             if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
-    #                 # if index % step == 0:
-    #                 radiometry1D = timeSeries[1]
-    #                 badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowLight, sigmaLight, lightDark, minLight, maxLight,minMaxBandLight)
+            index = 0
+            # Loop over bands to populate globBads
+            for timeSeries in columns.items():
+                if index==0:
+                    # Initialize boolean lists for capturing global badIndex conditions across all wavebands
+                    globBad = [False]*len(timeSeries[1])
+                    globBad2 = [False]*len(timeSeries[1])
+                    globBad3 = [False]*len(timeSeries[1])
+                band = float(timeSeries[0])
+                if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
+                    # if index % step == 0:
+                    radiometry1D = timeSeries[1]
+                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowLight, sigmaLight, lightDark, minLight, maxLight,minMaxBandLight)
 
-    #                 # For plotting:
-    #                 globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
-    #                 globBad2[:] = (True if val2 else val1 for (val1,val2) in zip(globBad2,badIndex2))
-    #                 globBad3[:] = (True if val2 else val1 for (val1,val2) in zip(globBad3,badIndex3))
+                    # For plotting:
+                    globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
+                    globBad2[:] = (True if val2 else val1 for (val1,val2) in zip(globBad2,badIndex2))
+                    globBad3[:] = (True if val2 else val1 for (val1,val2) in zip(globBad3,badIndex3))
 
-    #                 # For deletion:
-    #                 globalBadIndex.append(badIndex)
-    #                 globalBadIndex.append(badIndex2)
-    #                 globalBadIndex.append(badIndex3)
-    #             index +=1
+                    # For deletion:
+                    globalBadIndex.append(badIndex)
+                    globalBadIndex.append(badIndex2)
+                    globalBadIndex.append(badIndex3)
+                index +=1
 
-    #         # Collapse the badIndexes from all wavebands into one timeseries
-    #         # Convert to an array and test along the columns (i.e. each timestamp)
-    #         gIndex = np.any(np.array(globalBadIndex), 0)
-    #         percentLoss = 100*(sum(gIndex)/len(gIndex))
-    #         # badIndexLight = ProcessL1d.lightDataDeglitching(lightData, sensorType, windowLight, sigmaLight)
-    #         msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #         badIndexLight = gIndex
+            # Collapse the badIndexes from all wavebands into one timeseries
+            # Convert to an array and test along the columns (i.e. each timestamp)
+            gIndex = np.any(np.array(globalBadIndex), 0)
+            percentLoss = 100*(sum(gIndex)/len(gIndex))
+            # badIndexLight = ProcessL1d.lightDataDeglitching(lightData, sensorType, windowLight, sigmaLight)
+            msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            badIndexLight = gIndex
 
-    #         # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
-    #         index =0
-    #         for timeSeries in columns.items():
-    #             band = float(timeSeries[0])
-    #             if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
-    #                 if index % step == 0:
-    #                     Utilities.saveDeglitchPlots(L1CfileName,timeSeries,dateTime,sensorType,lightDark,windowLight,sigmaLight,globBad,globBad2,globBad3)
-    #             index +=1
+            # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
+            index =0
+            for timeSeries in columns.items():
+                band = float(timeSeries[0])
+                if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
+                    if index % step == 0:
+                        Utilities.saveDeglitchPlots(L1CfileName,timeSeries,dateTime,sensorType,lightDark,windowLight,sigmaLight,globBad,globBad2,globBad3)
+                index +=1
 
-    #     # Delete the glitchy rows of the datasets
-    #     for gp in node.groups:
-    #         if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
-    #            gp.datasetDeleteRow(np.where(badIndexDark))
+        # Delete the glitchy rows of the datasets
+        for gp in node.groups:
+            if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
+               gp.datasetDeleteRow(np.where(badIndexDark))
 
-    #         if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
-    #             lightData = gp.getDataset(sensorType)
-    #             gp.datasetDeleteRow(np.where(badIndexLight))
+            if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
+                lightData = gp.getDataset(sensorType)
+                gp.datasetDeleteRow(np.where(badIndexLight))
 
-    #     return False
+        return False
 
 
     @staticmethod
@@ -508,7 +508,7 @@ class ProcessL1b:
         return True
 
     @staticmethod
-    def processL1b(node):
+    def processL1d(node):
         '''
         Apply data deglitching to light and shutter-dark data, then apply dark shutter correction to light data.
         '''

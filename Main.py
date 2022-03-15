@@ -1,10 +1,10 @@
-"""
+'''
 HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing
 above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 See README.md or README.pdf for installation instructions and guide.
-Version 1.1.0: Under development February 2022 (See Changelog.md)
+Version 1.1.0: Under development March 2022 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
-"""
+'''
 # from Source.Utilities import Utilities
 import argparse
 import os
@@ -30,7 +30,7 @@ from Utilities import Utilities
 
 
 class Window(QtWidgets.QWidget):
-    """ Window is the main GUI container """
+    ''' Window is the main GUI container '''
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -75,11 +75,11 @@ class Window(QtWidgets.QWidget):
         self.initUI()
 
     def initUI(self):
-        """Initialize the user interface"""
+        '''Initialize the user interface'''
 
         # Main window configuration restore
         MainConfig.loadConfig(MainConfig.fileName)
-        MainConfig.settings['version'] = '1.0.9'
+        MainConfig.settings['version'] = '1.1.0'
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
@@ -127,7 +127,7 @@ class Window(QtWidgets.QWidget):
         self.outInDirButton = QtWidgets.QPushButton('^^^ Mimic Input Dir. vvv',self)
         self.outInDirButton.clicked.connect(self.outInDirButtonPressed)
 
-        self.ancFileLabel = QtWidgets.QLabel('Ancillary Data File for L2 (SeaBASS format)')
+        self.ancFileLabel = QtWidgets.QLabel('Ancillary Data File (SeaBASS format)')
         self.ancFileLineEdit = QtWidgets.QLineEdit()
         self.ancFileLineEdit.setText(str(MainConfig.settings['metFile']))
         self.ancAddButton = QtWidgets.QPushButton('Add', self)
@@ -142,26 +142,18 @@ class Window(QtWidgets.QWidget):
         singleLevelLabel_font.setPointSize(10)
         singleLevelLabel_font.setBold(True)
         singleLevelLabel.setFont(singleLevelLabel_font)
-        #self.singleLevelLabel.move(30, 270)
 
-        self.singleL1aButton = QtWidgets.QPushButton('Raw (BIN) --> Level 1A (HDF5)', self)
-        #self.singleL0Button.move(30, 300)
-        self.singleL1bButton = QtWidgets.QPushButton('L1A --> L1B', self)
-        #self.singleL1aButton.move(30, 350)
-        self.singleL1cButton = QtWidgets.QPushButton('L1B --> L1C', self)
-        #self.singleL1cButton.move(30, 450)
-        self.singleL1dButton = QtWidgets.QPushButton('L1C --> L1D', self)
-        #self.singleL1bButton.move(30, 400)
-        self.singleL1eButton = QtWidgets.QPushButton('L1D --> L1E', self)
-        #self.singleL1bButton.move(30, 400)
-        self.singleL2Button = QtWidgets.QPushButton('L1E --> L2', self)
-        #self.singleL1bButton.move(30, 400)
+        self.singleL1aButton = QtWidgets.QPushButton('Level 0 (Raw) --> Level 1A (HDF5)', self)
+        self.singleL1aqcButton = QtWidgets.QPushButton('L1A --> L1AQC', self)
+        self.singleL1bButton = QtWidgets.QPushButton('L1AQC --> L1B', self)
+        self.singleL1bqcButton = QtWidgets.QPushButton('L1B --> L1BQC', self)
+        self.singleL2Button = QtWidgets.QPushButton('L1BQC --> L2', self)
+
 
         self.singleL1aButton.clicked.connect(self.singleL1aClicked)
+        self.singleL1aqcButton.clicked.connect(self.singleL1aqcClicked)
         self.singleL1bButton.clicked.connect(self.singleL1bClicked)
-        self.singleL1cButton.clicked.connect(self.singleL1cClicked)
-        self.singleL1dButton.clicked.connect(self.singleL1dClicked)
-        self.singleL1eButton.clicked.connect(self.singleL1eClicked)
+        self.singleL1bqcButton.clicked.connect(self.singleL1bqcClicked)
         self.singleL2Button.clicked.connect(self.singleL2Clicked)
 
         multiLevelLabel = QtWidgets.QLabel('Multi-Level Processing', self)
@@ -229,10 +221,9 @@ class Window(QtWidgets.QWidget):
 
         vBox.addWidget(singleLevelLabel)
         vBox.addWidget(self.singleL1aButton)
+        vBox.addWidget(self.singleL1aqcButton)
         vBox.addWidget(self.singleL1bButton)
-        vBox.addWidget(self.singleL1cButton)
-        vBox.addWidget(self.singleL1dButton)
-        vBox.addWidget(self.singleL1eButton)
+        vBox.addWidget(self.singleL1bqcButton)
         vBox.addWidget(self.singleL2Button)
 
         vBox.addStretch(1)
@@ -386,17 +377,16 @@ class Window(QtWidgets.QWidget):
             return
 
         if level == 'L1A':
-            inLevel = 'unknown'
-        if level == 'L1B':
+            inLevel = 'raw'
+        if level == 'L1AQC':
             inLevel = 'L1A'
-        if level == 'L1C':
+        if level == 'L1B':
+            inLevel = 'L1AQC'
+        if level == 'L1BQC':
             inLevel = 'L1B'
-        if level == 'L1D':
-            inLevel = 'L1C'
-        if level == 'L1E':
-            inLevel = 'L1D'
-        if level == 'L2':
-            inLevel = 'L1E'
+        if level == 'L12':
+            inLevel = 'L1BQC'
+
         # Check for subdirectory associated with level chosen
         subInputDir = os.path.join(self.inputDirectory + '/' + inLevel + '/')
         if os.path.exists(subInputDir):
@@ -447,17 +437,15 @@ class Window(QtWidgets.QWidget):
     def singleL1aClicked(self):
         self.processSingle('L1A')
 
+    def singleL1aqcClicked(self):
+        self.processSingle('L1AQC')
+
     def singleL1bClicked(self):
         self.processSingle('L1B')
 
-    def singleL1cClicked(self):
-        self.processSingle('L1C')
+    def singleL1bqcClicked(self):
+        self.processSingle('L1BQC')
 
-    def singleL1dClicked(self):
-        self.processSingle('L1D')
-
-    def singleL1eClicked(self):
-        self.processSingle('L1E')
 
     def singleL2Clicked(self):
         self.processSingle('L2')
@@ -516,7 +504,7 @@ class Window(QtWidgets.QWidget):
         MainConfig.saveConfig(MainConfig.fileName)
 
 
-""" Class without using the GUI """
+''' Class without using the GUI '''
 class Command():
 
     def __init__(self, configFilePath, inputFile, outputDirectory, level, ancFile):
@@ -585,18 +573,18 @@ class Command():
         seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 
-        if level == 'L1A':
-            inLevel = 'unknown'
-        if level == 'L1B':
-            inLevel = 'L1A'
-        if level == 'L1C':
-            inLevel = 'L1B'
-        if level == 'L1D':
-            inLevel = 'L1C'
-        if level == 'L1E':
-            inLevel = 'L1D'
-        if level == 'L2':
-            inLevel = 'L1E'
+        # if level == 'L1A':
+        #     inLevel = 'unknown'
+        # if level == 'L1B':
+        #     inLevel = 'L1A'
+        # if level == 'L1C':
+        #     inLevel = 'L1B'
+        # if level == 'L1D':
+        #     inLevel = 'L1C'
+        # if level == 'L1E':
+        #     inLevel = 'L1D'
+        # if level == 'L2':
+        #     inLevel = 'L1E'
 
         # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
         # we keep variable fileNames which is an array
@@ -656,7 +644,7 @@ required.add_argument('-l',
                     action="store",
                     dest="level",
                     help='Level of the generated file. e.g.: Computing RAW to L1A means -l L1A',
-                    choices=['L1A', 'L1B', 'L1C', 'L1D', 'L1E', 'L2'],
+                    choices=['L1A', 'L1AQC', 'L1B', 'L1BQC', 'L2'],
                     default=None,
                     type=str)
 required.add_argument('-a',

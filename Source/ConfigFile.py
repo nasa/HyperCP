@@ -22,17 +22,17 @@ class ConfigFile:
         print("bL1aCleanSZA", ConfigFile.settings["bL1aCleanSZA"])
         print("fL1aCleanSZAMax", ConfigFile.settings["fL1aCleanSZAMax"])
 
-        print("bL1cSolarTracker", ConfigFile.settings["bL1cSolarTracker"])
+        print("bL1aqcSolarTracker", ConfigFile.settings["bL1aqcSolarTracker"])
         print("fL1aqcRotatorHomeAngle", ConfigFile.settings["fL1aqcRotatorHomeAngle"])
-        print("bL1cRotatorDelay", ConfigFile.settings["bL1cRotatorDelay"])
+        print("bL1aqcRotatorDelay", ConfigFile.settings["bL1aqcRotatorDelay"])
         print("fL1aqcRotatorDelay", ConfigFile.settings["fL1aqcRotatorDelay"])
-        print("bL1cCleanPitchRoll", ConfigFile.settings["bL1cCleanPitchRoll"])
+        print("bL1aqcCleanPitchRoll", ConfigFile.settings["bL1aqcCleanPitchRoll"])
         print("fL1aqcPitchRollPitch", ConfigFile.settings["fL1aqcPitchRollPitch"])
         print("fL1aqcPitchRollRoll", ConfigFile.settings["fL1aqcPitchRollRoll"])
-        print("bL1cRotatorAngle", ConfigFile.settings["bL1cRotatorAngle"])
+        print("bL1aqcRotatorAngle", ConfigFile.settings["bL1aqcRotatorAngle"])
         print("fL1aqcRotatorAngleMin", ConfigFile.settings["fL1aqcRotatorAngleMin"])
         print("fL1aqcRotatorAngleMax", ConfigFile.settings["fL1aqcRotatorAngleMax"])
-        print("bL1cCleanSunAngle", ConfigFile.settings["bL1cCleanSunAngle"])
+        print("bL1aqcCleanSunAngle", ConfigFile.settings["bL1aqcCleanSunAngle"])
         print("fL1aqcSunAngleMin", ConfigFile.settings["fL1aqcSunAngleMin"])
         print("fL1aqcSunAngleMax", ConfigFile.settings["fL1aqcSunAngleMax"])
 
@@ -256,27 +256,27 @@ class ConfigFile:
         ConfigFile.settings["bL1bFullFiles"] = 0
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1bPlotTimeInterp"] = 0
-        ConfigFile.settings["bL1bSaveSeaBASS"] = 0
-        ConfigFile.settings["seaBASSHeaderFileName"] = os.path.splitext(name)[0] + ".hdr" #
+        # ConfigFile.settings["bL1bSaveSeaBASS"] = 0
+
+        ConfigFile.settings["bL1bqcLtUVNIR"] = 1
+        ConfigFile.settings["fL1bqcMaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
+        ConfigFile.settings["fL1bqcSZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
+        ConfigFile.settings["fL1bqcSZAMax"] = 60 # e.g. 60:Brewin 2016,
+
+        ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 1
+        ConfigFile.settings["fL1bqcSpecFilterEs"] = 5
+        ConfigFile.settings["fL1bqcSpecFilterLi"] = 8
+        ConfigFile.settings["fL1bqcSpecFilterLt"] = 3
+
+        ConfigFile.settings["bL1bqcEnableQualityFlags"] = 1
+        ConfigFile.settings["fL1bqcCloudFlag"] = 1.0 # 1.0 basically disregards this, though cloud cover can still be used in glint correction; 0.05 Ruddick 2006, IOCCG Protocols
+        ConfigFile.settings["fL1bqcSignificantEsFlag"] = 2.0 # Wernand 2002
+        ConfigFile.settings["fL1bqcDawnDuskFlag"] = 1.0 # Wernand 2002
+        ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain
+
 
         ConfigFile.settings["bL2pGetAnc"] = 0
         ConfigFile.settings["bL2pObpgCreds"] = 0
-
-        ConfigFile.settings["bL2LtUVNIR"] = 1
-        ConfigFile.settings["fL2MaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
-        ConfigFile.settings["fL2SZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
-        ConfigFile.settings["fL2SZAMax"] = 60 # e.g. 60:Brewin 2016,
-
-        ConfigFile.settings["bL2EnableSpecQualityCheck"] = 1
-        ConfigFile.settings["fL2SpecFilterEs"] = 5
-        ConfigFile.settings["fL2SpecFilterLi"] = 8
-        ConfigFile.settings["fL2SpecFilterLt"] = 3
-
-        ConfigFile.settings["bL2EnableQualityFlags"] = 1
-        ConfigFile.settings["fL2CloudFlag"] = 1.0 # 1.0 basically disregards this, though cloud cover can still be used in glint correction; 0.05 Ruddick 2006, IOCCG Protocols
-        ConfigFile.settings["fL2SignificantEsFlag"] = 2.0 # Wernand 2002
-        ConfigFile.settings["fL2DawnDuskFlag"] = 1.0 # Wernand 2002
-        ConfigFile.settings["fL2RainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain
 
         ConfigFile.settings["bL2Stations"] = 0
         ConfigFile.settings["fL2TimeInterval"] = 300
@@ -311,7 +311,6 @@ class ConfigFile:
         ConfigFile.settings["bL2PlotLt"] = 0
 
         ConfigFile.products["bL2Prodoc3m"] = 0
-        # ConfigFile.products["bL2Prodaot"] = 0
         ConfigFile.products["bL2Prodkd490"] = 0
         ConfigFile.products["bL2Prodpic"] = 0
         ConfigFile.products["bL2Prodpoc"] = 0
@@ -351,6 +350,7 @@ class ConfigFile:
         ConfigFile.products["bL2ProdbbpQaa"] = 0
         ConfigFile.products["bL2ProdcQaa"] = 0
 
+        ConfigFile.settings["seaBASSHeaderFileName"] = os.path.splitext(name)[0] + ".hdr" #
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
         ConfigFile.settings["bL2WriteReport"] = 1
 
