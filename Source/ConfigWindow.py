@@ -7,6 +7,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # from MainConfig import MainConfig
 # from Main import Window
 from ConfigFile import ConfigFile
+from CalibrationFileReader import CalibrationFileReader
 # from AnomalyDetection import AnomalyDetection
 from AnomalyDetection import AnomAnalWindow
 from SeaBASSHeader import SeaBASSHeader
@@ -90,11 +91,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aCleanSZACheckBoxUpdate()
         self.l1aCleanSZACheckBox.clicked.connect(self.l1aCleanSZACheckBoxUpdate)
 
-        # L1AQC (Main)
+        # L1AQC
         l1aqcLabel = QtWidgets.QLabel("Level 1AQC Processing", self)
-        # l1aqcLabel_font = l1aqcLabel.font()
-        # l1aqcLabel_font.setPointSize(12)
-        # l1aqcLabel_font.setBold(True)
         l1aqcLabel.setFont(l1aLabel_font)
         l1aqcSublabel = QtWidgets.QLabel(" Filter on pitch, roll, yaw, and azimuth", self)
 
@@ -930,9 +928,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.setLayout(VBox)
         self.setGeometry(300, 100, 0, 0)
         self.setWindowTitle(f'Configuration: {self.name}')
-        #self.show()
 
-        # print("ConfigWindow - initUI Done")
     ###############################################################
     def addCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Add Calibration File Pressed")
@@ -942,12 +938,18 @@ class ConfigWindow(QtWidgets.QDialog):
         configName = self.name
         calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
         configPath = os.path.join("Config", calibrationDir)
-        for src in fnames[0]:
-            (_, filename) = os.path.split(src)
-            dest = os.path.join(configPath, filename)
-            print(src)
-            print(dest)
-            shutil.copy(src, dest)
+
+        if ".sip" in fnames[0][0]:
+            calMap = CalibrationFileReader.readSip(fnames[0][0])
+            configPath
+
+        else:
+            for src in fnames[0]:
+                (_, filename) = os.path.split(src)
+                dest = os.path.join(configPath, filename)
+                print(src)
+                print(dest)
+                shutil.copy(src, dest)
 
     def deleteCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Remove Calibration File Pressed")
