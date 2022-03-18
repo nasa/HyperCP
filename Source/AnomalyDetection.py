@@ -4,7 +4,7 @@ import sys
 # import shutil
 import csv
 import numpy as np
-import pandas as pd
+# import pandas as pd
 from datetime import datetime
 import pytz
 
@@ -20,12 +20,15 @@ from ConfigFile import ConfigFile
 from HDFRoot import HDFRoot
 from Utilities import Utilities
 from FieldPhotos import FieldPhotos
+from CalibrationFileReader import CalibrationFileReader
 
 class AnomAnalWindow(QtWidgets.QDialog):
 
     def __init__(self, inputDirectory, parent=None):
         super().__init__(parent)
         self.inputDirectory = inputDirectory
+        self.waveBand = []
+        self.waveBands = []
         self.setModal(True)
 
         pg.setConfigOption('background', 'w')
@@ -120,12 +123,12 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.radioButton3 = QtWidgets.QRadioButton('LT')
         self.radioButton3.toggled.connect(self.radioClick)
 
-        AnomalyStepLabel = QtWidgets.QLabel("Waveband interval to save plots to disk: ", self)
+        AnomalyStepLabel = QtWidgets.QLabel("Waveband interval to for plots: ", self)
         self.AnomalyStepLineEdit = QtWidgets.QLineEdit(self)
         self.AnomalyStepLineEdit.setText(str(ConfigFile.settings["fL1aqcAnomalyStep"]))
         self.AnomalyStepLineEdit.setValidator(intValidator)
 
-        self.loadButton = QtWidgets.QPushButton('Load L1A', self, clicked=self.loadL1Afile)
+        self.loadButton = QtWidgets.QPushButton('Load L1AQC', self, clicked=self.loadL1AQCfile)
 
         self.updateButton = QtWidgets.QPushButton('***  Update  ***', self, clicked=self.updateButtonPressed)
         self.updateButton.setToolTip('Updates all but the Min/Max Bands')
@@ -358,16 +361,16 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.sliderWave = float(self.slider.value())
 
         # Set up the photo path
-        # format = self.photoFormat.text()
-        # tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
-        # format = format[0:-5]
+        # pFormat = self.photoFormat.text()
+        # tz = pFormat[-5:] # clumsy hardcoding of TZ pFormat: Must be the last 5 characters
+        # pFormat = pFormat[0:-5]
         self.photoFP = os.path.join(self.inputDirectory,'Photos')
         if os.path.isdir(self.photoFP) is False:
             os.mkdir(self.photoFP)
-        # photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, format, tz)
+        # photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, pFormat, tz)
 
         # Run this on first opening the GUI
-        self.loadL1Afile()
+        self.loadL1AQCfile()
 
         ##############################################
 
@@ -383,16 +386,16 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.sLabel.setText(f'Deglitching only performed from 350-850 nm: {self.sliderWave}')
         # print(self.sliderWave)
 
-    def loadL1Afile(self):
+    def loadL1AQCfile(self):
         inputDirectory = self.inputDirectory
         # Open L1A HDF5 file for Deglitching
-        inLevel = "L1A"
+        inLevel = "L1AQC"
         subInputDir = os.path.join(inputDirectory + '/' + inLevel + '/')
         if os.path.exists(subInputDir):
-            inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1A HDF5 file for Deglitching", \
+            inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1AQC HDF5 file for Deglitching", \
                 subInputDir)
         else:
-            inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1A HDF5 file for Deglitching", \
+            inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1AQC HDF5 file for Deglitching", \
                 inputDirectory)
         try:
             print(inFilePath[0])
@@ -406,8 +409,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
             return
 
         root = HDFRoot.readHDF5(inFilePath[0])
-        if root.attributes["PROCESSING_LEVEL"] != "1c":
-            msg = "This is not a Level 1C file."
+        if root.attributes["PROCESSING_LEVEL"] != "1aqc":
+            msg = "This is not a Level 1AQC file."
             Utilities.errorWindow("File Error", msg)
             print(msg)
             return
@@ -465,7 +468,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 gpsGroup = group
                 self.start = gpsGroup.datasets['DATETIME'].data[0]
                 self.end = gpsGroup.datasets['DATETIME'].data[-1]
-            if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
+            if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
                     trackerGroup = group
 
         with warnings.catch_warnings():
@@ -503,10 +506,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.speedLabel.setText(f' SPEED: {speed:.1f} m/s')
 
         # Match data to photo, if possible
-        format = self.photoFormat.text()
-        tz = format[-5:] # clumsy hardcoding of TZ format: Must be the last 5 characters
-        format = format[0:-5]
-        self.photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, format, tz)
+        pFormat = self.photoFormat.text()
+        tz = pFormat[-5:] # clumsy hardcoding of TZ pFormat: Must be the last 5 characters
+        pFormat = pFormat[0:-5]
+        self.photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, pFormat, tz)
         if self.photoList is not None:
             print('Matching photo found')
             self.photoButton.setText(os.path.split(self.photoList[0])[-1])
@@ -565,7 +568,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         sensorType = self.sensor
         print(sensorType)
 
-        # Update photo format
+        # Update photo pFormat
         ConfigFile.settings['sL1aqcphotoFormat'] = self.photoFormat.text()
         ConfigFile.saveConfig(ConfigFile.filename)
 
@@ -777,14 +780,14 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Steps in wavebands used for plots
         step = float(ConfigFile.settings["fL1aqcAnomalyStep"])
 
-        outDir = MainConfig.settings["outDir"]
-        # If default output path is used, choose the root HyperInSPACE path, and build on that
-        if os.path.abspath(outDir) == os.path.join('./','Data'):
-            outDir = './'
+        # outDir = MainConfig.settings["outDir"]
+        # # If default output path is used, choose the root HyperInSPACE path, and build on that
+        # if os.path.abspath(outDir) == os.path.join('./','Data'):
+        #     outDir = './'
 
-        if not os.path.exists(os.path.join(outDir,'Plots','L1A_Anoms')):
-            os.makedirs(os.path.join(outDir,'Plots','L1A_Anoms'))
-        plotdir = os.path.join(outDir,'Plots','L1A_Anoms')
+        # if not os.path.exists(os.path.join(outDir,'Plots','L1A_Anoms')):
+        #     os.makedirs(os.path.join(outDir,'Plots','L1A_Anoms'))
+        # plotdir = os.path.join(outDir,'Plots','L1A_Anoms')
         # fp = os.path.join(plotdir,self.fileName)
 
         sensorTypes = ["ES","LT","LI"]
@@ -843,8 +846,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     band = float(timeSeries[0])
                     if band > self.minBand and band < self.maxBand:
                         if index % step == 0:
-                            # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
-                            Utilities.saveDeglitchPlots(self.fileName,plotdir,timeSeries,dateTime,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            Utilities.saveDeglitchPlots(self.fileName,timeSeries,dateTime,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
                     index +=1
 
             if lightData is None:
@@ -886,7 +888,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     if band > self.minBand and band < self.maxBand:
                         if index % step == 0:
                             # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
-                            Utilities.saveDeglitchPlots(self.fileName,plotdir,timeSeries,dateTime,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            Utilities.saveDeglitchPlots(self.fileName,timeSeries,dateTime,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
                     index +=1
 
                 print('Complete')
@@ -894,8 +896,9 @@ class AnomAnalWindow(QtWidgets.QDialog):
     def processButtonPressed(self):
         # Run L1AQC processing for this file
 
-        inFilePath = os.path.join(self.inputDirectory, 'L1A', self.fileName+'.hdf')
+        # inFilePath = os.path.join(self.inputDirectory, 'L1A', self.fileName+'.hdf')
         fileBaseName = self.fileName.split('_L1A')[0]
+        inFilePath = os.path.join(self.inputDirectory, 'L1A', fileBaseName+'_L1A.hdf')
         outFilePath = os.path.join(self.inputDirectory, 'L1AQC', fileBaseName+'_L1AQC.hdf')
 
         # self.processL1aqc(inFilePath, outFilePath)
@@ -903,7 +906,13 @@ class AnomAnalWindow(QtWidgets.QDialog):
         msg = "Process Single Level from Anomaly Analysis"
         os.environ["LOGFILE"] = (fileBaseName + '_L1A_L1AQC.log')
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
-        root = Controller.processL1aqc(inFilePath, outFilePath)
+
+        calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
+        calPath = os.path.join("Config", calFolder)
+        print("Read CalibrationFile ", calPath)
+        calibrationMap = CalibrationFileReader.read(calPath)
+        ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
+        root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
 
         # In case of processing failure, write the report at this Process level, unless running stations
         #   Use numeric level for writeReport

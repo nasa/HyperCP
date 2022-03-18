@@ -29,6 +29,10 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-03-16:
+* Build new GUI interface for v1.1.0 process flow
+* Allow for "sip" files in calibration file input
+
 2021-12-14:
 * Fix bug in Rrs_MODISA_Uncorr columns2dataset (PL2 L486)
 

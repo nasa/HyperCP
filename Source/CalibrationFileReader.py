@@ -1,6 +1,7 @@
 
 import collections
 import os.path
+import shutil
 import zipfile
 
 from CalibrationFile import CalibrationFile
@@ -34,13 +35,18 @@ class CalibrationFileReader:
 
         with zipfile.ZipFile(fp, 'r') as zf:
             for finfo in zf.infolist():
-                print("infile:", finfo.filename)
-                if os.path.splitext(finfo.filename)[1].lower() == ".cal" or \
-                   os.path.splitext(finfo.filename)[1].lower() == ".tdf":
-                    with zf.open(finfo) as f:
-                        cf = CalibrationFile()
-                        cf.read(f)
-                        #print("id:", cf.id)
-                        calibrationMap[finfo.filename] = cf
+                if not str(finfo.filename).startswith('__MACOSX/'):
+                    print("infile:", finfo.filename)
+                    if os.path.splitext(finfo.filename)[1].lower() == ".cal" or \
+                    os.path.splitext(finfo.filename)[1].lower() == ".tdf":
+                        with zf.open(finfo) as f:
+                            cf = CalibrationFile()
+                            cf.read(f)
+                            #print("id:", cf.id)
+                            calibrationMap[finfo.filename] = cf
+                            [dest,_] = os.path.split(fp)
+                            src = zf.extract(f.name,path=dest)
+                            [_,fname] = os.path.split(f.name)
+                            shutil.move(src, os.path.join(dest,fname))
 
         return calibrationMap

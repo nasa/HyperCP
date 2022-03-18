@@ -28,18 +28,18 @@ class PDF(FPDF):
         # Line break
         self.ln(10)
 
-    def format_intro(self, level, headerBlock, commentsDict, root):        
+    def format_intro(self, level, headerBlock, commentsDict, root):
         # Intros
         if level == "L1A":
             intro = 'Raw binary to HDF5 and filter data on SZA.'
-            
+
             # If level completed (i.e. L2), use the attributes of the file, otherwise, use the ConfigFile settings
             metaData = ' \n'
-            metaData += 'Processing Parameters and metadata: \n'            
-            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.                
-                metaData += f'HyperInSPACE version: {root.attributes["HYPERINSPACE"]}\n'                
+            metaData += 'Processing Parameters and metadata: \n'
+            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
+                metaData += f'HyperInSPACE version: {root.attributes["HYPERINSPACE"]}\n'
                 if 'SZA_FILTER_L1A' in root.attributes:
-                    metaData += f'SZA Filter (L1A): {root.attributes["SZA_FILTER_L1A"]}\n'                                
+                    metaData += f'SZA Filter (L1A): {root.attributes["SZA_FILTER_L1A"]}\n'
             else:
                 metaData += f'HyperInSPACE version: {commentsDict[" HyperInSPACE vers"]}\n'
                 if ConfigFile.settings['bL1aCleanSZA']:
@@ -58,31 +58,31 @@ class PDF(FPDF):
                             not 'longitude' in key and not 'wind' in key and \
                                 not 'cloud' in key and not 'wave' in key and not 'secchi' in key and \
                                     not 'water_depth' in key:
-                        metaData += f'/{key}={value}\n'                            
+                        metaData += f'/{key}={value}\n'
         if level == "L1B":
-            intro = 'Apply factory calibrations.'  
+            intro = 'Apply factory calibrations.'
             metaData = ' \n'
-            metaData += 'Processing Parameters: None\n'          
+            metaData += 'Processing Parameters: None\n'
         if level == "L1C":
             intro = 'Filter data on pitch, roll, yaw, and azimuth angles.'
-            
+
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
             if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
                 if 'HOME_ANGLE' in root.attributes:
-                    metaData += f'Rotator Home Angle: {root.attributes["HOME_ANGLE"]}\n'  
+                    metaData += f'Rotator Home Angle: {root.attributes["HOME_ANGLE"]}\n'
                 if 'ROTATOR_DELAY_FILTER' in root.attributes:
-                    metaData += f'Rotator Delay: {root.attributes["ROTATOR_DELAY_FILTER"]}\n'                  
+                    metaData += f'Rotator Delay: {root.attributes["ROTATOR_DELAY_FILTER"]}\n'
                 if 'PITCH_ROLL_FILTER' in root.attributes:
                     metaData += f'Pitch/Roll Filter: {root.attributes["PITCH_ROLL_FILTER"]}\n'
                 if 'ROTATOR_ANGLE_MIN' in root.attributes:
                     metaData += f'Rotator Min Filter: {root.attributes["ROTATOR_ANGLE_MIN"]}\n'
                     metaData += f'Rotator Max Filter: {root.attributes["ROTATOR_ANGLE_MAX"]}\n'
                 if 'RELATIVE_AZIMUTH_MIN' in root.attributes:
-                    metaData += f'Rel Azimuth Min: {root.attributes["RELATIVE_AZIMUTH_MIN"]}\n'    
-                    metaData += f'Rel Azimuth Max: {root.attributes["RELATIVE_AZIMUTH_MAX"]}\n'    
+                    metaData += f'Rel Azimuth Min: {root.attributes["RELATIVE_AZIMUTH_MIN"]}\n'
+                    metaData += f'Rel Azimuth Max: {root.attributes["RELATIVE_AZIMUTH_MAX"]}\n'
             else:
-                
+
                 metaData += f'Rotator Home Angle: {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'
                 if ConfigFile.settings['bL1cSolarTracker']:
                     if ConfigFile.settings['bL1cRotatorDelay']:
@@ -95,20 +95,20 @@ class PDF(FPDF):
                 if ConfigFile.settings['bL1cCleanSunAngle']:
                     metaData += f'Rel Azimuth Min: {ConfigFile.settings["fL1cSunAngleMin"]}\n'
                     metaData += f'Rel Azimuth Max: {ConfigFile.settings["fL1cSunAngleMax"]}\n'
-        
+
         if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
             gpDict = {}
-            for gp in root.groups: 
+            for gp in root.groups:
                 gpDict[gp.id] = gp
-            
+
         if level == "L1D":
             intro = 'Deglitch data and apply shutter dark corrections.'
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
             if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
-                if root.attributes['L1D_DEGLITCH'] == 'ON':                
-                    # These deglitching parameters might be in root.attributes if from files L1D or L1E, 
+                if root.attributes['L1D_DEGLITCH'] == 'ON':
+                    # These deglitching parameters might be in root.attributes if from files L1D or L1E,
                     # or within their respective groups at L2
                     if 'ES_WINDOW_DARK' in root.attributes:
                         metaData += f'ES Dark Window: {root.attributes["ES_WINDOW_DARK"]}\n'
@@ -143,7 +143,7 @@ class PDF(FPDF):
                             metaData += f'LT Light Max.: {root.attributes["LT_MAX_LIGHT"]}\n'
                             metaData += f'LT Dark Thresh. Band: {root.attributes["LT_MINMAX_BAND_DARK"]}\n'
                             metaData += f'LT Dark Min.: {root.attributes["LT_MIN_DARK"]}\n'
-                            metaData += f'LT LDark Max.: {root.attributes["LT_MAX_DARK"]}\n'                                                        
+                            metaData += f'LT LDark Max.: {root.attributes["LT_MAX_DARK"]}\n'
 
                     else: # Level 2 files have these in Group attributes
                         metaData += f'ES Dark Window: {gpDict["IRRADIANCE"].attributes["ES_WINDOW_DARK"]}\n'
@@ -187,7 +187,7 @@ class PDF(FPDF):
                     metaData += f'ES Light Window: {ConfigFile.settings["fL1dESWindowLight"]}\n'
                     metaData += f'ES Dark Sigma: {ConfigFile.settings["fL1dESSigmaDark"]}\n'
                     metaData += f'ES Light Sigma: {ConfigFile.settings["fL1dESSigmaLight"]}\n'
-                    metaData += f'LT Dark Window: {ConfigFile.settings["fL1dLTWindowDark"]}\n'                
+                    metaData += f'LT Dark Window: {ConfigFile.settings["fL1dLTWindowDark"]}\n'
                     metaData += f'LT Light Window: {ConfigFile.settings["fL1dLTWindowLight"]}\n'
                     metaData += f'LT Dark Sigma: {ConfigFile.settings["fL1dLTSigmaDark"]}\n'
                     metaData += f'LT Light Sigma: {ConfigFile.settings["fL1dLTSigmaLight"]}\n'
@@ -219,7 +219,7 @@ class PDF(FPDF):
         if level == "L2":
             intro = 'Apply more quality control filters, temporal binning, '\
                 'station selection, glint correction, NIR corrections, reflectance '\
-                    'calculation and OC product calculation.'            
+                    'calculation and OC product calculation.'
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
@@ -230,14 +230,14 @@ class PDF(FPDF):
                 if 'ES_SPEC_FILTER' in gpDict['IRRADIANCE'].attributes:
                     metaData += f'Filter Sigma Es: {gpDict["IRRADIANCE"].attributes["ES_SPEC_FILTER"]}\n'
                     metaData += f'Filter Sigma Li: {gpDict["RADIANCE"].attributes["LI_SPEC_FILTER"]}\n'
-                    metaData += f'Filter Sigma Lt: {gpDict["RADIANCE"].attributes["LT_SPEC_FILTER"]}\n'            
+                    metaData += f'Filter Sigma Lt: {gpDict["RADIANCE"].attributes["LT_SPEC_FILTER"]}\n'
                 if 'CLOUD_FILTER' in root.attributes:
                     metaData += f'Cloud Filter: {root.attributes["CLOUD_FILTER"]}\n'
                     metaData += f'Es Filter: {gpDict["IRRADIANCE"].attributes["ES_FILTER"]}\n'
                     metaData += f'Dawn/Dusk Filter: {root.attributes["DAWN_DUSK_FILTER"]}\n'
                     metaData += f'Rain/Humidity Filter: {root.attributes["RAIN_RH_FILTER"]}\n'
-                metaData += f'Ensemble Duration: {root.attributes["ENSEMBLE_DURATION"]}\n'            
-                if '%LT_FILTER' in gpDict['RADIANCE'].attributes:                
+                metaData += f'Ensemble Duration: {root.attributes["ENSEMBLE_DURATION"]}\n'
+                if '%LT_FILTER' in gpDict['RADIANCE'].attributes:
                     metaData += f'Percent Lt Filter: {gpDict["RADIANCE"].attributes["%LT_FILTER"]}\n'
                 metaData += f'Glint_Correction: {gpDict["REFLECTANCE"].attributes["GLINT_CORR"]}\n'
                 if 'NIR_RESID_CORR' in gpDict['REFLECTANCE'].attributes:
@@ -251,26 +251,24 @@ class PDF(FPDF):
                 if ConfigFile.settings['bL2EnableSpecQualityCheck']:
                     metaData += f'Filter Sigma Es: {ConfigFile.settings["fL2SpecFilterEs"]}\n'
                     metaData += f'Filter Sigma Li: {ConfigFile.settings["fL2SpecFilterLi"]}\n'
-                    metaData += f'Filter Sigma Lt: {ConfigFile.settings["fL2SpecFilterLt"]}\n'            
+                    metaData += f'Filter Sigma Lt: {ConfigFile.settings["fL2SpecFilterLt"]}\n'
                 if ConfigFile.settings['bL2EnableQualityFlags']:
                     metaData += f'Cloud Filter: {ConfigFile.settings["fL2CloudFlag"]}\n'
                     metaData += f'Es Filter: {ConfigFile.settings["fL2SignificantEsFlag"]}\n'
                     metaData += f'Dawn/Dusk Filter: {ConfigFile.settings["fL2DawnDuskFlag"]}\n'
                     metaData += f'Rain/Humidity Filter: {ConfigFile.settings["fL2RainfallHumidityFlag"]}\n'
-                metaData += f'Ensemble Duration: {ConfigFile.settings["fL2TimeInterval"]}\n'            
-                if ConfigFile.settings['bL2EnablePercentLt']:                
+                metaData += f'Ensemble Duration: {ConfigFile.settings["fL2TimeInterval"]}\n'
+                if ConfigFile.settings['bL2EnablePercentLt']:
                     metaData += f'Percent Lt Filter: {ConfigFile.settings["fL2PercentLt"]}\n'
-                if ConfigFile.settings['bL2RuddickRho']:
-                    metaData += f'Glint_Correction: Ruddick et al. 2006'
                 if ConfigFile.settings['bL2ZhangRho']:
-                    metaData += f'Glint_Correction: Zhang et al. 2017'
+                    metaData += 'Glint_Correction: Zhang et al. 2017'
                 if ConfigFile.settings['bL2DefaultRho']:
-                    metaData += f'Glint_Correction: Mobley 1999'
+                    metaData += 'Glint_Correction: Mobley 1999'
                 if ConfigFile.settings['bL2PerformNIRCorrection']:
                     if ConfigFile.settings['bL2SimpleNIRCorrection']:
-                        metaData += f'NIR Correction: Mueller and Austin 1995'
+                        metaData += 'NIR Correction: Mueller and Austin 1995'
                     if ConfigFile.settings['bL2SimSpecNIRCorrection']:
-                        metaData += f'NIR Correction: Ruddick et al. 2005/2006'
+                        metaData += 'NIR Correction: Ruddick et al. 2005/2006'
                 else:
                     metaData += f'NIR Correction: None'
                 if ConfigFile.settings['bL2NegativeSpec']:
@@ -301,10 +299,10 @@ class PDF(FPDF):
         self.ln(4)
 
     def chapter_body(self, inLog, headerBlock, level, inPlotPath, filebasename, root):
-               
+
         self.set_font('Times', '', 12)
 
-        ''' This is the old method of pulling parameters from the SeaBASS Header. 
+        ''' This is the old method of pulling parameters from the SeaBASS Header.
             Shift to using root attributes from the file. Preserved here only to retain features not in
             ConfigFile settings'''
         comments1 = headerBlock['comments'].split('!')
@@ -314,24 +312,24 @@ class PDF(FPDF):
                 else ('','')
             commentsDict[key] = value
 
-        intro, metaData = self.format_intro(level, headerBlock, commentsDict, root)        
+        intro, metaData = self.format_intro(level, headerBlock, commentsDict, root)
 
         # Output justified text
         self.multi_cell(0, 5, intro)
         self.multi_cell(0, 5, metaData)
         self.multi_cell(0, 5, "Process log:")
-        
+
         # Read text log file
         with open(inLog, 'rb') as fh:
             txt = fh.read().decode('latin-1')
-        
+
         # Output justified text
         self.multi_cell(0, 5, txt)
         # Line break
         self.ln()
 
         # Figures
-        if level == "L1D":            
+        if level == "L1D":
             inPath = os.path.join(inPlotPath, 'L1C_Anoms')
 
             self.cell(0, 6, 'Example Deglitching', 0, 1, 'L', 1)
@@ -339,10 +337,10 @@ class PDF(FPDF):
                 'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1C_Anoms.')
 
             if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
-                # These deglitching parameters might be in root.attributes if from files L1D or L1E, 
+                # These deglitching parameters might be in root.attributes if from files L1D or L1E,
                 # or within their respective groups at L2
                 gpDict = {}
-                for gp in root.groups: 
+                for gp in root.groups:
                     gpDict[gp.id] = gp
                 if 'L1D_DEGLITCH' in root.attributes:
                     if 'ES_SIGMA_DARK' in root.attributes:
@@ -388,9 +386,9 @@ class PDF(FPDF):
             print('Adding deglitching plots...')
             # ES
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_ESDark_*.png' ))  
-                # f'{filebasename}_L1C_W{ESWindowDark}S{ESSigmaDark}_*ESDark_*.png' ))  
-            if len(fileList) > 0:            
+                f'{filebasename}_L1C_ESDark_*.png' ))
+                # f'{filebasename}_L1C_W{ESWindowDark}S{ESSigmaDark}_*ESDark_*.png' ))
+            if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
                     # self.image(fileList[i], w = 175)
@@ -399,8 +397,8 @@ class PDF(FPDF):
                 self.multi_cell(0, 5, "None found.")
 
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_ESLight_*.png' )) 
-                # f'{filebasename}_L1C_W{ESWindowLight}S{ESSigmaLight}_*ESLight_*.png' )) 
+                f'{filebasename}_L1C_ESLight_*.png' ))
+                # f'{filebasename}_L1C_W{ESWindowLight}S{ESSigmaLight}_*ESLight_*.png' ))
 
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
@@ -444,7 +442,7 @@ class PDF(FPDF):
                     self.image(fileList[randIndx], w = 175)
             else:
                 self.multi_cell(0, 5, "None found.")
-                
+
             fileList = glob.glob(os.path.join(inPath, \
                 f'{filebasename}_L1C_LTLight_*.png' ))
                 # f'{filebasename}_L1C_W{LTWindowLight}S{LTSigmaLight}_*LTLight_*.png' ))
@@ -455,34 +453,34 @@ class PDF(FPDF):
                     self.image(fileList[randIndx], w = 175)
             else:
                 self.multi_cell(0, 5, "None found.")
-                
+
         if level == "L1E":
             inPath = os.path.join(inPlotPath, f'{level}')
             self.cell(0, 6, 'Example Temporal Interpolations', 0, 1, 'L', 1)
             self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
                 'interpolations can be found in [output_directory]/Plots/L1E.')
 
-            fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))            
-            
+            fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))
+
             print('Adding interpolation plots...')
-            if len(fileList) > 0:         
-                
+            if len(fileList) > 0:
+
                 # for i in range(0, len(fileList)):
-                res = [i for i in fileList if 'L1E_LI' not in i and 'L1E_ES' not in i and 'L1E_LT' not in i]            
+                res = [i for i in fileList if 'L1E_LI' not in i and 'L1E_ES' not in i and 'L1E_LT' not in i]
                 for i in range (0, len(res)): #range(0, len(fileList)):
                     self.image(res[i], w = 175)
-                res = [i for i in fileList if 'L1E_ES' in i]  
-                if len(res) >= 3:          
+                res = [i for i in fileList if 'L1E_ES' in i]
+                if len(res) >= 3:
                     for i in range (0, 3): #range(0, len(fileList)):
                         randIndx = random.randint(0, len(res))
                         self.image(res[i], w = 175)
-                res = [i for i in fileList if 'L1E_LI' in i]            
-                if len(res) >= 3:     
+                res = [i for i in fileList if 'L1E_LI' in i]
+                if len(res) >= 3:
                     for i in range (0, 3): #range(0, len(fileList)):
                         randIndx = random.randint(0, len(res))
                         self.image(res[i], w = 175)
-                res = [i for i in fileList if 'L1E_LT' in i]            
-                if len(res) >= 3:     
+                res = [i for i in fileList if 'L1E_LT' in i]
+                if len(res) >= 3:
                     for i in range (0, 3): #range(0, len(fileList)):
                         randIndx = random.randint(0, len(res))
                         self.image(res[i], w = 175)
@@ -490,11 +488,11 @@ class PDF(FPDF):
                 self.multi_cell(0, 5, "None found.")
 
             inPath = os.path.join(inPlotPath, 'L1D')
-            self.cell(0, 6, 'Complete spectral plots', 0, 1, 'L', 1)            
+            self.cell(0, 6, 'Complete spectral plots', 0, 1, 'L', 1)
 
-            fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))            
-            
-            if len(fileList) > 0:                                     
+            fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))
+
+            if len(fileList) > 0:
                 for i in range(0, len(fileList)):
                     self.image(fileList[i], w = 175)
             else:
@@ -504,14 +502,14 @@ class PDF(FPDF):
             print('Adding spectral filter plots')
             inSpecFilterPath = os.path.join(inPlotPath, f'{level}_Spectral_Filter')
             fileList = glob.glob(os.path.join(inSpecFilterPath, f'*{filebasename}_*.png'))
-            if len(fileList) > 0:         
+            if len(fileList) > 0:
                 self.cell(0, 6, 'Spectral Filters', 0, 1, 'L', 1)
                 for i in range(0, len(fileList)):
                     self.image(fileList[i], w = 175)
 
             print('Adding radiometry plots')
             fileList = glob.glob(os.path.join(inPlotPath, level, f'*{filebasename}_*.png'))
-            if len(fileList) > 0:         
+            if len(fileList) > 0:
                 self.cell(0, 6, 'Radiometry', 0, 1, 'L', 1)
                 for i in range(0, len(fileList)):
                     self.image(fileList[i], w = 175)
@@ -519,7 +517,7 @@ class PDF(FPDF):
             print('Adding ocean color product plots')
             inProdPath = os.path.join(inPlotPath, f'{level}_Products')
             fileList = glob.glob(os.path.join(inProdPath, f'*{filebasename}_*.png'))
-            if len(fileList) > 0:         
+            if len(fileList) > 0:
                 self.cell(0, 6, 'Derived Spectral Products', 0, 1, 'L', 1)
                 for i in range(0, len(fileList)):
                     self.image(fileList[i], w = 175)
@@ -528,14 +526,14 @@ class PDF(FPDF):
         # self.set_font('', 'I')
         # self.cell(0, 5, '(end of excerpt)')
 
-    
+
     # def print_chapter(self, root, level, title, inLog, inPlotPath, filebasename, fp):
     def print_chapter(self, level, title, inLog, inPlotPath, filebasename, fp, root):
         self.add_page()
-        self.chapter_title(level, title)        
+        self.chapter_title(level, title)
 
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
-        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)        
+        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 
@@ -546,7 +544,7 @@ class PDF(FPDF):
     # # @staticmethod
     # def write_report(self, title):
     #     self.title = title
-        
+
 
 
 

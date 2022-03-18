@@ -7,6 +7,7 @@ from operator import add
 import bisect
 
 from HDFDataset import HDFDataset
+from Source.ProcessL1aqc_deglitch import ProcessL1aqc_deglitch
 from Utilities import Utilities
 from ConfigFile import ConfigFile
 
@@ -64,9 +65,38 @@ class ProcessL1aqc:
         return finalCount/originalLength
 
     @staticmethod
-    def processL1aqc(node, ancillaryData=None):
+    def renameGroup(gp, cf):
+        ''' Rename the groups to more generic ids rather than the names of the cal files '''
+
+        if gp.id.startswith("GPRMC") or gp.id.startswith("GPGAA"):
+            gp.id = "GPS"
+        if gp.id.startswith("UMTWR"):
+            gp.id = "SOLARTRACKER_pySAS"
+        if gp.id.startswith("SATNAV"):
+            gp.id = "SOLARTRACKER"
+        if gp.id.startswith("SATMSG"):
+            gp.id = "SOLARTRACKER_STATUS"
+        if gp.id.startswith("SATPYR"):
+            gp.id = "PYROMETER"
+        if gp.id.startswith("HED"):
+            gp.id = "ES_DARK"
+        if gp.id.startswith("HSE"):
+            gp.id = "ES_LIGHT"
+        if gp.id.startswith("HLD"):
+            if cf.sensorType == "LI":
+                gp.id = "LI_DARK"
+            if cf.sensorType == "LT":
+                gp.id = "LT_DARK"
+        if gp.id.startswith("HSL"):
+            if cf.sensorType == "LI":
+                gp.id = "LI_LIGHT"
+            if cf.sensorType == "LT":
+                gp.id = "LT_LIGHT"
+
+    @staticmethod
+    def processL1aqc(node, calibrationMap, ancillaryData=None):
         '''
-        Filters data for pitch, roll, yaw, and rotator.
+        Filters data for tilt, yaw, rotator, and azimuth. Deglitching
         '''
 
         node.attributes["PROCESSING_LEVEL"] = "1aqc"
@@ -75,29 +105,33 @@ class ProcessL1aqc:
         node.attributes["FILE_CREATION_TIME"] = timestr
 
         # Add configuration parameters (L1C) to root/node attributes
-        if ConfigFile.settings['bL1cSolarTracker']:
+        if ConfigFile.settings['bL1aqcSolarTracker']:
             node.attributes['SOLARTRACKER'] = 'YES'
 
-        if ConfigFile.settings['bL1cCleanPitchRoll']:
-            node.attributes['PITCH_ROLL_FILTER'] = ConfigFile.settings['fL1cPitchRollPitch']
-        node.attributes['HOME_ANGLE'] = ConfigFile.settings['fL1cRotatorHomeAngle']
-        node.attributes['ROTATOR_DELAY_FILTER'] = ConfigFile.settings['fL1cRotatorDelay']
-        if ConfigFile.settings['bL1cRotatorAngle']:
-            node.attributes['ROT_ANGLE_MIN'] = ConfigFile.settings['fL1cRotatorAngleMin']
-            node.attributes['ROT_ANGLE_MAX'] = ConfigFile.settings['fL1cRotatorAngleMax']
-        if ConfigFile.settings['bL1cCleanSunAngle']:
-            node.attributes['RELATIVE_AZIMUTH_MIN'] = ConfigFile.settings['fL1cSunAngleMin']
-            node.attributes['RELATIVE_AZIMUTH_MAX'] = ConfigFile.settings['fL1cSunAngleMax']
+        if ConfigFile.settings['bL1aqcCleanPitchRoll']:
+            node.attributes['PITCH_ROLL_FILTER'] = ConfigFile.settings['fL1aqcPitchRollPitch']
+        node.attributes['HOME_ANGLE'] = ConfigFile.settings['fL1aqcRotatorHomeAngle']
+        node.attributes['ROTATOR_DELAY_FILTER'] = ConfigFile.settings['fL1aqcRotatorDelay']
+        if ConfigFile.settings['bL1aqcRotatorAngle']:
+            node.attributes['ROT_ANGLE_MIN'] = ConfigFile.settings['fL1aqcRotatorAngleMin']
+            node.attributes['ROT_ANGLE_MAX'] = ConfigFile.settings['fL1aqcRotatorAngleMax']
+        if ConfigFile.settings['bL1aqcCleanSunAngle']:
+            node.attributes['RELATIVE_AZIMUTH_MIN'] = ConfigFile.settings['fL1aqcSunAngleMin']
+            node.attributes['RELATIVE_AZIMUTH_MAX'] = ConfigFile.settings['fL1aqcSunAngleMax']
 
-        msg = f"ProcessL1c.processL1c: {timestr}"
+        msg = f"ProcessL1aqc.processL1aqc: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)
+
+        # Reorganize groups in with new names
+        for gp in node.groups:
+            cf = calibrationMap[gp.attributes["CalFileName"]]
+            ProcessL1aqc.renameGroup(gp,cf)
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
         # 2021-04-09: Include ANCILLARY_METADATA in all datasets, regardless of whether they are SOLARTRACKER or not
-
         for gp in node.groups:
             if gp.id.startswith("GP"):
                 gpsDateTime = gp.getDataset("DATETIME").data
@@ -147,13 +181,13 @@ class ProcessL1aqc:
                             homeAngle[i] = offset-360
                     sasAzimuth = list(map(add, shipAzimuth, homeAngle))
                 else:
-                    if ConfigFile.settings['bL1cSolarTracker'] == 0:
+                    if ConfigFile.settings['bL1aqcSolarTracker'] == 0:
                         msg = 'Required ancillary metadata for sensor offset missing. Abort.'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
             else:
-                if ConfigFile.settings['bL1cSolarTracker'] == 0:
+                if ConfigFile.settings['bL1aqcSolarTracker'] == 0:
                     msg = 'Required ancillary metadata for ship heading missing. Abort.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -216,7 +250,7 @@ class ProcessL1aqc:
             sunZenith.append(90 - get_altitude(lat[i],lon[i],dt_utc,0))
 
         #############################################################################################
-        ''' Begin Filtering '''
+        # Begin Filtering
         #############################################################################################
 
         badTimes = None
@@ -225,7 +259,7 @@ class ProcessL1aqc:
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
 
-        if node is not None and int(ConfigFile.settings["bL1cCleanPitchRoll"]) == 1:
+        if node is not None and int(ConfigFile.settings["bL1aqcCleanPitchRoll"]) == 1:
             msg = "Filtering file for high pitch and roll"
             print(msg)
             Utilities.writeLogFile(msg)
@@ -263,13 +297,13 @@ class ProcessL1aqc:
                         roll = ancillaryData.columns["ROLL"][0]
                     timeStamp = ancillaryData.columns["DATETIME"][0]
                 else:
-                    msg = "Pitch and roll data not found for tilt filter. Aborting."
+                    msg = "Pitch and roll data not found for tilt filter. Try adding to Ancillary Data. Aborting."
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return None
 
-            pitchMax = float(ConfigFile.settings["fL1cPitchRollPitch"])
-            rollMax = float(ConfigFile.settings["fL1cPitchRollRoll"])
+            pitchMax = float(ConfigFile.settings["fL1aqcPitchRollPitch"])
+            rollMax = float(ConfigFile.settings["fL1aqcPitchRollRoll"])
 
             if badTimes is None:
                 badTimes = []
@@ -310,7 +344,7 @@ class ProcessL1aqc:
                 else:
                     badTimes.append(startstop)
 
-            if start==0 and stop==index: # All records are bad
+            if start==0 and stop==index: # All records are badJM
                 return None
 
 
@@ -318,10 +352,10 @@ class ProcessL1aqc:
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
-        if node is not None and ConfigFile.settings["bL1cRotatorDelay"] and ConfigFile.settings["bL1cSolarTracker"]:
+        if node is not None and ConfigFile.settings["bL1aqcRotatorDelay"] and ConfigFile.settings["bL1aqcSolarTracker"]:
             gp = None
             for group in node.groups:
-                if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
+                if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
                     gp = group
 
             if 'gp' in locals():
@@ -331,10 +365,10 @@ class ProcessL1aqc:
                     # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
                     # It may also be set for when no SolarTracker is present and it's not included in the
                     # ancillary data, but that's not relevant here...
-                    home = float(ConfigFile.settings["fL1cRotatorHomeAngle"])
-                    delay = float(ConfigFile.settings["fL1cRotatorDelay"])
+                    home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
+                    delay = float(ConfigFile.settings["fL1aqcRotatorDelay"])
 
-                    # if node is not None and int(ConfigFile.settings["bL1cRotatorDelay"]) == 1:
+                    # if node is not None and int(ConfigFile.settings["bL1aqcRotatorDelay"]) == 1:
                     msg = "Filtering file for Rotator Delay"
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -358,7 +392,7 @@ class ProcessL1aqc:
                                 kickout = 1
 
                             else:
-                                # Test if this is fL1cRotatorDelay seconds past a kick-out start
+                                # Test if this is fL1aqcRotatorDelay seconds past a kick-out start
                                 time = timeStamp[index]
                                 if kickout==1 and time > (start + datetime.timedelta(0,delay)):
                                     # startstop = [timeStampTuple[startIndex],timeStampTuple[index-1]]
@@ -376,7 +410,7 @@ class ProcessL1aqc:
                     Utilities.writeLogFile(msg)
 
                 else:
-                    msg = f'No POINTING data found. Filtering on rotator delay failed.'
+                    msg = 'No POINTING data found. Filtering on rotator delay failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
 
@@ -385,7 +419,7 @@ class ProcessL1aqc:
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
-        if node is not None and ConfigFile.settings["bL1cSolarTracker"] and ConfigFile.settings["bL1cRotatorAngle"]:
+        if node is not None and ConfigFile.settings["bL1aqcSolarTracker"] and ConfigFile.settings["bL1aqcRotatorAngle"]:
             msg = "Filtering file for bad Absolute Rotator Angle"
             print(msg)
             Utilities.writeLogFile(msg)
@@ -394,7 +428,7 @@ class ProcessL1aqc:
             # try:
             gp = None
             for group in node.groups:
-                if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
+                if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
                     gp = group
 
             if gp.getDataset("POINTING"):
@@ -403,10 +437,10 @@ class ProcessL1aqc:
                 # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
                 # It may also be set for when no SolarTracker is present and it's not included in the
                 # ancillary data, but that's not relevant here
-                home = float(ConfigFile.settings["fL1cRotatorHomeAngle"])
+                home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
 
-                absRotatorMin = float(ConfigFile.settings["fL1cRotatorAngleMin"])
-                absRotatorMax = float(ConfigFile.settings["fL1cRotatorAngleMax"])
+                absRotatorMin = float(ConfigFile.settings["fL1aqcRotatorAngleMin"])
+                absRotatorMax = float(ConfigFile.settings["fL1aqcRotatorAngleMax"])
 
                 if badTimes is None:
                     badTimes = []
@@ -447,32 +481,33 @@ class ProcessL1aqc:
                 if start==0 and stop==index: # All records are bad
                     return None
             else:
-                msg = f'No rotator data found. Filtering on absolute rotator angle failed.'
+                msg = 'No rotator data found. Filtering on absolute rotator angle failed.'
                 print(msg)
                 Utilities.writeLogFile(msg)
 
         # General setup for ancillary or SolarTracker data prior to Relative Solar Azimuth option
-        if ConfigFile.settings["bL1cSolarTracker"]:
+        if ConfigFile.settings["bL1aqcSolarTracker"]:
             gp = None
             for group in node.groups:
-                    if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_UM":
+                    if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
                         gp = group
+
             if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):
                 timeStamp = gp.getDataset("DATETIME").data
                 # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
                 # It may also be set here for when no SolarTracker is present and it's not included in the
                 # ancillary data. See below.
-                home = float(ConfigFile.settings["fL1cRotatorHomeAngle"])
+                home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
                 sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]
                 if gp.id == "SOLARTRACKER":
                     sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
-                elif gp.id == "SOLARTRACKER_UM":
+                elif gp.id == "SOLARTRACKER_pySAS":
                     sasAzimuth = gp.getDataset("HEADING").data["SAS"]
                 newRelAzData = gp.addDataset("REL_AZ")
             else:
-                    msg = f"No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
+                print(msg)
+                Utilities.writeLogFile(msg)
         else:
             if ancillaryData is not None:
                 sunAzimuth = sunAzimuthAnc
@@ -482,7 +517,7 @@ class ProcessL1aqc:
 
         relAz=[]
         for index in range(len(sunAzimuth)):
-            if ConfigFile.settings["bL1cSolarTracker"]:
+            if ConfigFile.settings["bL1aqcSolarTracker"]:
                 # Changes in the angle between the bow and the sensor changes are tracked by SolarTracker
                 # This home offset is generally set in .sat file in the field, but can be updated here with
                 # the value from the Configuration Window (L1C)
@@ -509,12 +544,12 @@ class ProcessL1aqc:
         # In case there is no SolarTracker to provide sun/sensor geometries, Pysolar will be used
         # to estimate sun zenith and azimuth using GPS position and time, and sensor azimuth will
         # come from ancillary data input. For SolarTracker and pySAS, SZA and solar azimuth go in the
-        # SOLARTRACKER or SOLARTRACKER_UM group, otherwise in the ANCILLARY group.
+        # SOLARTRACKER or SOLARTRACKER_pySAS group, otherwise in the ANCILLARY group.
 
         # Initialize a new group to host the unconventional ancillary data
         ancGroup = node.addGroup("ANCILLARY_METADATA")
         # If using a SolarTracker or pySAS, add RelAz to the SATNAV/SOLARTRACKER group...
-        if ConfigFile.settings["bL1cSolarTracker"]:
+        if ConfigFile.settings["bL1aqcSolarTracker"]:
             newRelAzData.columns["REL_AZ"] = relAz
             newRelAzData.columnsToDataset()
         else:
@@ -558,7 +593,7 @@ class ProcessL1aqc:
 
         # For non-SolarTracker datasets, define the timeStamp around the ancillary data
         # Otherwise, it was already defined above
-        if ConfigFile.settings['bL1cSolarTracker']==0:
+        if ConfigFile.settings['bL1aqcSolarTracker']==0:
             # Convert datetimes
             timeStamp = timeStampAnc
 
@@ -606,14 +641,14 @@ class ProcessL1aqc:
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
-        if node is not None and int(ConfigFile.settings["bL1cCleanSunAngle"]) == 1:
+        if node is not None and int(ConfigFile.settings["bL1aqcCleanSunAngle"]) == 1:
             msg = "Filtering file for bad Relative Solar Azimuth"
             print(msg)
             Utilities.writeLogFile(msg)
 
             i = 0
-            relAzimuthMin = float(ConfigFile.settings["fL1cSunAngleMin"])
-            relAzimuthMax = float(ConfigFile.settings["fL1cSunAngleMax"])
+            relAzimuthMin = float(ConfigFile.settings["fL1aqcSunAngleMin"])
+            relAzimuthMax = float(ConfigFile.settings["fL1aqcSunAngleMax"])
 
             if badTimes is None:
                 badTimes = []
@@ -676,7 +711,7 @@ class ProcessL1aqc:
 
                 # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
                 if (gp.id == "SOLARTRACKER_STATUS") is False:
-                    fractionRemoved = ProcessL1c.filterData(gp, badTimes)
+                    fractionRemoved = ProcessL1aqc.filterData(gp, badTimes)
 
                     # Now test whether the overlap has eliminated all radiometric data
                     if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
@@ -697,6 +732,9 @@ class ProcessL1aqc:
                     msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
                     print(msg)
                     Utilities.writeLogFile(msg)
+
+        # Now deglitch
+        node = ProcessL1aqc_deglitch.processL1aqc_deglitch(node)
 
         # DATETIME is not supported in HDF5; remove
         for gp in node.groups:

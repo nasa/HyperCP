@@ -278,6 +278,11 @@ class Window(QtWidgets.QWidget):
     def configEditButtonPressed(self):
         print('Edit Config Dialogue')
         configFileName = self.configComboBox.currentText()
+
+        # ConfigFile.settings['AncFile'] = self.ancFileLineEdit.text()
+        # if ConfigFile.settings['AncFile'] == '':
+        #     ConfigFile.settings['AncFile'] = None
+
         inputDir = self.inputDirectory
         configPath = os.path.join('Config', configFileName)
         if os.path.isfile(configPath):
@@ -401,14 +406,14 @@ class Window(QtWidgets.QWidget):
         if not fileNames:
             return
 
-        ancFile = self.ancFileLineEdit.text()
-        if ancFile == '':
-            ancFile = None
+        # ConfigFile.AncFile = self.ancFileLineEdit.text()
+        # if ConfigFile.AncFile == '':
+        #     ConfigFile.AncFile = None
 
         print('Process Calibration Files')
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings['CalibrationFiles']
-        print('JMR', filename, calFiles) # JMR?
+        # print('JMR', filename, calFiles) # JMR?
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
         if not calibrationMap.keys():
             print('No calibration files found. '
@@ -572,19 +577,6 @@ class Command():
         ConfigFile.loadConfig(configFileName)
         seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-
-        # if level == 'L1A':
-        #     inLevel = 'unknown'
-        # if level == 'L1B':
-        #     inLevel = 'L1A'
-        # if level == 'L1C':
-        #     inLevel = 'L1B'
-        # if level == 'L1D':
-        #     inLevel = 'L1C'
-        # if level == 'L1E':
-        #     inLevel = 'L1D'
-        # if level == 'L2':
-        #     inLevel = 'L1E'
 
         # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
         # we keep variable fileNames which is an array

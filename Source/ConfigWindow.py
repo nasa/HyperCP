@@ -58,18 +58,18 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationFileComboBox.currentIndexChanged.connect(self.calibrationFileChanged)
 
         # Config File Settings
-        # self.calibrationEnabledCheckBox = QtWidgets.QCheckBox("Enabled", self)
-        # self.calibrationEnabledCheckBox.stateChanged.connect(self.calibrationEnabledStateChanged)
-        # self.calibrationEnabledCheckBox.setEnabled(False)
+        self.calibrationEnabledCheckBox = QtWidgets.QCheckBox("Enabled", self)
+        self.calibrationEnabledCheckBox.stateChanged.connect(self.calibrationEnabledStateChanged)
+        self.calibrationEnabledCheckBox.setEnabled(False)
 
-        # calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
-        # self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
-        # self.calibrationFrameTypeComboBox.addItem("ShutterLight")
-        # self.calibrationFrameTypeComboBox.addItem("ShutterDark")
-        # self.calibrationFrameTypeComboBox.addItem("Not Required")
-        # self.calibrationFrameTypeComboBox.addItem("LightAncCombined")
-        # self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
-        # self.calibrationFrameTypeComboBox.setEnabled(False)
+        calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
+        self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
+        self.calibrationFrameTypeComboBox.addItem("ShutterLight")
+        self.calibrationFrameTypeComboBox.addItem("ShutterDark")
+        self.calibrationFrameTypeComboBox.addItem("Not Required")
+        self.calibrationFrameTypeComboBox.addItem("LightAncCombined")
+        self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
+        self.calibrationFrameTypeComboBox.setEnabled(False)
 
         # L1A
         l1aLabel = QtWidgets.QLabel("Level 1A Processing", self)
@@ -548,11 +548,11 @@ class ConfigWindow(QtWidgets.QDialog):
         # Horizontal Box
         calHBox = QtWidgets.QHBoxLayout()
         calHBox.addWidget(self.calibrationFileComboBox)
-        # calHBox.addWidget(self.calibrationEnabledCheckBox)
+        calHBox.addWidget(self.calibrationEnabledCheckBox)
         VBox1.addLayout(calHBox)
 
-        # VBox1.addWidget(calibrationFrameTypeLabel)
-        # VBox1.addWidget(self.calibrationFrameTypeComboBox)
+        VBox1.addWidget(calibrationFrameTypeLabel)
+        VBox1.addWidget(self.calibrationFrameTypeComboBox)
 
         # L1A
         VBox1.addWidget(l1aLabel)
@@ -832,8 +832,6 @@ class ConfigWindow(QtWidgets.QDialog):
         NegativeSpecHBox.addWidget(self.l2NegativeSpecCheckBox)
         VBox3.addLayout(NegativeSpecHBox)
 
-        # VBox4.addSpacing(5)
-
         # Right Vertical box
         VBox4 = QtWidgets.QVBoxLayout()
         # VBox4.setAlignment(QtCore.Qt.AlignBottom)
@@ -940,8 +938,15 @@ class ConfigWindow(QtWidgets.QDialog):
         configPath = os.path.join("Config", calibrationDir)
 
         if ".sip" in fnames[0][0]:
-            calMap = CalibrationFileReader.readSip(fnames[0][0])
-            configPath
+            src = fnames[0][0]
+            (_, filename) = os.path.split(src)
+            dest = os.path.join(configPath, filename)
+            print(src)
+            print(dest)
+            shutil.copy(src, dest)
+            CalibrationFileReader.readSip(dest)
+            [folder,_] = filename.split('.')
+            os.rmdir(os.path.join(configPath,folder))
 
         else:
             for src in fnames[0]:
@@ -1096,13 +1101,6 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL1aqcCleanSunAngle"] = 1
 
-    def l1aqcAnomalyButtonPressed(self):
-        print("CalibrationEditWindow - Launching anomaly analysis module")
-        ConfigWindow.refreshConfig(self)
-        # AnomalyDetection(self,self.inputDirectory)
-        anomAnalDialog = AnomAnalWindow(self.inputDirectory, self)
-        anomAnalDialog.show()
-
     def l1aqcDeglitchCheckBoxUpdate(self):
         print("ConfigWindow - l1aqcDeglitchCheckBoxUpdate")
 
@@ -1111,6 +1109,13 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1dDeglitch"]   = 0
         else:
             ConfigFile.settings["bL1dDeglitch"]   = 1
+
+    def l1aqcAnomalyButtonPressed(self):
+        print("CalibrationEditWindow - Launching anomaly analysis module")
+        ConfigWindow.refreshConfig(self)
+        # AnomalyDetection(self,self.inputDirectory)
+        anomAnalDialog = AnomAnalWindow(self.inputDirectory, self)
+        anomAnalDialog.show()
 
     def l1bDefaultCalRadioButtonClicked(self):
         print("ConfigWindow - l2NIRCorrection set to Simple")
@@ -1129,12 +1134,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def l1bPlotTimeInterpCheckBoxUpdate(self):
         print("ConfigWindow - l1bPlotTimeInterpCheckBoxUpdate")
-
-    # def l1bSaveSeaBASSCheckBoxUpdate(self):
-    #     print("ConfigWindow - l1bSaveSeaBASSCheckBoxUpdate")
-    #     disabled = (not self.l1bSaveSeaBASSCheckBox.isChecked()) \
-    #             and (not self.l2SaveSeaBASSCheckBox.isChecked())
-    #     self.l1bSeaBASSHeaderEditButton.setDisabled(disabled)
 
     def l1bqcLtUVNIRCheckBoxUpdate(self):
         print("ConfigWindow - l2UVNIRCheckBoxUpdate")
@@ -1158,9 +1157,6 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2EnableSpecQualityCheck"] = 0
         else:
             ConfigFile.settings["bL2EnableSpecQualityCheck"] = 1
-        #     ConfigFile.settings["fL2SpecFilterEs"] = "NA"
-        #     ConfigFile.settings["fL2SpecFilterLi"] = "NA"
-        #     ConfigFile.settings["fL2SpecFilterLt"] = "NA"
 
     def l1bqcQualityFlagCheckBoxUpdate(self):
         print("ConfigWindow - l1bqcQualityFlagCheckBoxUpdate")
@@ -1453,8 +1449,6 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2SaveSeaBASS"] = int(self.l2SaveSeaBASSCheckBox.isChecked())
         ConfigFile.settings["bL2WriteReport"] = int(self.l2WriteReportCheckBox.isChecked())
 
-        # ConfigFile.saveConfig(self.name) # overkill?
-
         # Confirm necessary satellite bands are processed
         if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
             ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
@@ -1473,9 +1467,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
             if not self.newName.endswith(".cfg"):
                 self.newName = self.newName + ".cfg"
-                # oldConfigName = ConfigFile.filename
             ConfigFile.filename = self.newName
-            # self.name = self.newName
 
             ConfigWindow.refreshConfig(self)
             ConfigFile.saveConfig(ConfigFile.filename)

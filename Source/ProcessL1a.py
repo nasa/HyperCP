@@ -13,7 +13,7 @@ from ConfigFile import ConfigFile
 
 
 class ProcessL1a:
-    
+
     @staticmethod
     def processL1a(fp, calibrationMap):
         '''
@@ -66,7 +66,7 @@ class ProcessL1a:
             gp.attributes["InstrumentType"] = cf.instrumentType
             gp.attributes["Media"] = cf.media
             gp.attributes["MeasMode"] = cf.measMode
-            gp.attributes["FrameType"] = cf.frameType            
+            gp.attributes["FrameType"] = cf.frameType
             gp.getTableHeader(cf.sensorType)
             gp.attributes["DISTANCE_1"] = "Pressure " + cf.sensorType + " 1 1 0"
             gp.attributes["DISTANCE_2"] = "Surface " + cf.sensorType + " 1 1 0"
@@ -108,7 +108,7 @@ class ProcessL1a:
                 gpsGroup = gp
             # Need year-gang and sometimes Datetag from one of the sensors
             if gp.id.startswith("HSE"):
-                esDateTag = gp.datasets["DATETAG"].columns["NONE"]                
+                esDateTag = gp.datasets["DATETAG"].columns["NONE"]
                 esTimeTag2 = gp.datasets["TIMETAG2"].columns["NONE"]
                 esSec = []
                 for time in esTimeTag2:
@@ -127,42 +127,25 @@ class ProcessL1a:
             Utilities.writeLogFile(msg)
             return None
 
-        # # One case for GPRMC input...
-        ''' No longer necesary for GPRMC, it pick up DATETAG and TIMETAG from the binary as with the other
-            Satlantic instruments'''
-        # if gpsGroup.id.startswith("GPRMC"):
-        #     gpsDate = gpsGroup.datasets["DATE"].columns["NONE"]
-        #     # Obtain year-gang from Es data
-        #     year = int(str(esDateTag[0])[0:4])
-        #     gpsDateTag = []
-        #     gpsTimeTag2 = []
-        #     for date in gpsDate:
-        #         gpsDateTag.append(Utilities.datetime2DateTag(Utilities.gpsDateToDatetime(year,date)))
-        #     for i, time in enumerate(gpsTime):
-        #         dtDate = Utilities.dateTagToDateTime(gpsDateTag[i])
-        #         gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
-        #     gpsGroup.datasets["DATETAG"].columns["NONE"] = gpsDateTag
-        #     gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2
-        
         # Another case for GPGGA input...
         if gpsGroup.id.startswith("GPGGA"):
             # No date is provided in GPGGA, need to find nearest time in Es and take the Datetag from Es
-            ''' Catch-22. In order to covert the gps time, we need the year and day, which GPGGA does not have. 
+            ''' Catch-22. In order to covert the gps time, we need the year and day, which GPGGA does not have.
                 To get these, could compare to find the nearest DATETAG in Es. In order to compare the gps time
-                to the Es time to find the nearest, I would need to convert them to datetimes ... which would 
+                to the Es time to find the nearest, I would need to convert them to datetimes ... which would
                 require the year and day. Instead, I use either the first or last Datetag from Es, depending
                 on whether UTC 00:00 was crossed.'''
             # If the date does not change in Es, then no problem, use the Datetag of Es first element.
-            # Otherwise, change the datetag at noon by one day 
+            # Otherwise, change the datetag at noon by one day
             gpsDateTag = []
             gpsTimeTag2 = []
-            
+
             if esDateTag[0] != esDateTag[-1]:
                 msg = "ProcessL1a.processL1a: Warning: File crosses UTC 00:00. Adjusting timestamps for matchup of Datetag."
                 print(msg)
                 Utilities.writeLogFile(msg)
                 newDay = False
-                for time in gpsTime:                    
+                for time in gpsTime:
                     gpsSec = Utilities.utcToSec(time)
                     if not 'gpsSecPrior' in locals():
                         gpsSecPrior = gpsSec
@@ -188,7 +171,7 @@ class ProcessL1a:
                     gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
 
             gpsGroup.datasets["DATETAG"].columns["NONE"] = gpsDateTag
-            gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2        
+            gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2
 
         # Converts gp.columns to numpy array
         for gp in root.groups:
@@ -197,7 +180,7 @@ class ProcessL1a:
                     ds.columnsToDataset()
             else:
                 for ds in gp.datasets.values():
-                    if not ds.columnsToDataset():                                                
+                    if not ds.columnsToDataset():
                         msg = "ProcessL1a.processL1a: Essential column cannot be converted to Dataset. Aborting."
                         print(msg)
                         Utilities.writeLogFile(msg)
@@ -206,7 +189,7 @@ class ProcessL1a:
         # Apply SZA filter; Currently only works with SolarTracker data at L1A (again possible in L2)
         if ConfigFile.settings["bL1aCleanSZA"]:
             root.attributes['SZA_FILTER_L1A'] = ConfigFile.settings["fL1aCleanSZAMax"]
-            for gp in root.groups:                              
+            for gp in root.groups:
                 # try:
                 if 'FrameTag' in gp.attributes:
                     if gp.attributes["FrameTag"].startswith("SATNAV"):

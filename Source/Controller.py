@@ -273,7 +273,6 @@ class Controller:
         return root
 
     @staticmethod
-    # def processL1aqc(inFilePath, outFilePath, calibrationMap):
     def processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData):
         root = None
         if not os.path.isfile(inFilePath):
@@ -291,9 +290,9 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None
 
-        ''' At this stage the Anomanal parameterizations are current in ConfigFile.settings, regardless of who called this method.
-            This method will promote them to root.attributes.'''
-        root = ProcessL1aqc.processL1aqc(root, calibrationMap)
+        # At this stage the Anomanal parameterizations are current in ConfigFile.settings,
+        #   regardless of who called this method.  This method will promote them to root.attributes.
+        root = ProcessL1aqc.processL1aqc(root, calibrationMap, ancillaryData)
 
         # Write output file
         if root is not None:
@@ -314,50 +313,6 @@ class Controller:
             return None
 
         return root
-
-    # @staticmethod
-    # def processL1adark(inFilePath, outFilePath, ancillaryData=None):
-    #     root = None
-    #     # _,fileName = os.path.split(outFilePath)
-
-    #     if not os.path.isfile(inFilePath):
-    #         print('No such input file: ' + inFilePath)
-    #         return None,
-
-    #     # Process the data
-    #     msg = ("ProcessL1adark: " + inFilePath)
-    #     print(msg)
-    #     Utilities.writeLogFile(msg)
-    #     try:
-    #         root = HDFRoot.readHDF5(inFilePath)
-    #     except:
-    #         msg = "Unable to open file. May be open in another application."
-    #         Utilities.errorWindow("File Error", msg)
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #         return None
-
-    #     root = ProcessL1adark.processL1adark(root, ancillaryData)
-
-    #     # Write output file
-    #     if root is not None:
-    #         try:
-    #             root.writeHDF5(outFilePath)
-    #         except:
-    #             msg = "Unable to write file. May be open in another application."
-    #             Utilities.errorWindow("File Error", msg)
-    #             print(msg)
-    #             Utilities.writeLogFile(msg)
-    #             return None
-    #     else:
-    #         msg = "L1adark processing failed. Nothing to output."
-    #         if MainConfig.settings["popQuery"] == 0:
-    #             Utilities.errorWindow("File Error", msg)
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #         return None
-
-    #     return root
 
     @staticmethod
     def processL1b(inFilePath, outFilePath):
@@ -535,7 +490,8 @@ class Controller:
 
     # Process every file in a list of files 1 level
     @staticmethod
-    def processSingleLevel(pathOut, inFilePath, calibrationMap, level, ancFile=None):
+    # def processSingleLevel(pathOut, inFilePath, calibrationMap, level, ancFile=None):
+    def processSingleLevel(pathOut, inFilePath, calibrationMap, level):
         # Find the absolute path to the output directory
         pathOut = os.path.abspath(pathOut)
         # inFilePath is a singleton file complete with path
@@ -583,12 +539,12 @@ class Controller:
                 root = Controller.processL1a(inFilePath, outFilePath, calibrationMap)
 
             elif level == "L1AQC":
-                ancillaryData = Controller.processAncData(ancFile)
+                ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
                 # If called locally from Controller and not AnomalyDetection.py, then
                 #   try to load the parameter file for this cruise/configuration and update
                 #   ConfigFile.settings to reflect the appropriate parameterizations for this
                 #   particular file. If no parameter file exists, or this SAS file is not in it,
-                #   then fall back on the current ConfigFile.settings.
+                #   then fall back on the default ConfigFile.settings.
 
                 anomAnalFileName = os.path.splitext(ConfigFile.filename)[0]
                 anomAnalFileName = anomAnalFileName + '_anoms.csv'
@@ -621,16 +577,11 @@ class Controller:
                         print(msg)
                         Utilities.writeLogFile(msg)
                 else:
-                    msg = 'No deglitching parameter file found. Resorting to values in ConfigFile.settings.'
+                    msg = 'No deglitching parameter file found. Resorting to default values. NOT RECOMMENDED. RUN ANOMALY ANALYSIS.'
                     print(msg)
                     Utilities.writeLogFile(msg)
                 root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
-            # elif level == "L1C":
-                # if ConfigFile.settings["bL1adarkSolarTracker"] == 0:
 
-                # else:
-                #     ancillaryData = None
-                # root = Controller.processL1adark(inFilePath, outFilePath, ancillaryData)
             elif level == "L1B":
                 root = Controller.processL1b(inFilePath, outFilePath)
 
@@ -714,29 +665,30 @@ class Controller:
         # t0 = time.time()
         for fp in inFiles:
             print("Processing: " + fp)
-            # Controller.processMultiLevel(pathout, fp, calibrationMap, ancFile)
-            if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A', ancFile):
+
+            # if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A', ancFile):
+            if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A'):
                 # Going from L0 to L1A, need to account for the underscore
                 inFileName = os.path.split(fp)[1]
                 fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'_L1A.hdf')
                 fp = os.path.join(os.path.abspath(pathOut),fileName)
-                if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1AQC', ancFile):
+                # if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1AQC', ancFile):
+                if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1AQC'):
                     inFileName = os.path.split(fp)[1]
                     fileName = os.path.join('L1AQC',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1AQC.hdf')
                     fp = os.path.join(os.path.abspath(pathOut),fileName)
-                    if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1B', ancFile):
+                    # if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1B', ancFile):
+                    if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1B'):
                         inFileName = os.path.split(fp)[1]
                         fileName = os.path.join('L1B',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1B.hdf')
                         fp = os.path.join(os.path.abspath(pathOut),fileName)
-                        if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1BQC', ancFile):
+                        # if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1BQC', ancFile):
+                        if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1BQC'):
                             inFileName = os.path.split(fp)[1]
                             fileName = os.path.join('L1BQC',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1BQC.hdf')
                             fp = os.path.join(os.path.abspath(pathOut),fileName)
-                            # if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1E', ancFile):
-                            #     inFileName = os.path.split(fp)[1]
-                            #     fileName = os.path.join('L1E',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1E.hdf')
-                            #     fp = os.path.join(os.path.abspath(pathOut),fileName)
-                            Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2', ancFile)
+                            # Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2', ancFile)
+                            Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2')
         print("processFilesMultiLevel - DONE")
         # t1 = time.time()
         # print(f'Elapsed time: {(t1-t0)/60} minutes')
@@ -752,16 +704,14 @@ class Controller:
             fileName = str.lower(os.path.split(fp)[1])
             if level == "L1A":
                 srchStr = 'RAW'
-            elif level == 'L1B':
+            elif level == 'L1AQC':
                 srchStr = 'L1A'
-            elif level == 'L1C':
+            elif level == 'L1B':
+                srchStr = 'L1AQC'
+            elif level == 'L1BQC':
                 srchStr = 'L1B'
-            elif level == 'L1D':
-                srchStr = 'L1C'
-            elif level == 'L1E':
-                srchStr = 'L1D'
             elif level == 'L2':
-                srchStr = 'L1E'
+                srchStr = 'L1BQC'
             if fileName.find(str.lower(srchStr)) == -1:
                 msg = f'{fileName} does not match expected input level for outputing {level}'
                 print(msg)
@@ -770,7 +720,8 @@ class Controller:
 
             print("Processing: " + fp)
             # try:
-            Controller.processSingleLevel(pathOut, fp, calibrationMap, level, ancFile)
+            # Controller.processSingleLevel(pathOut, fp, calibrationMap, level, ancFile)
+            Controller.processSingleLevel(pathOut, fp, calibrationMap, level)
             # except OSError:
             #     print("Unable to process that file due to an operating system error. Try again.")
         print("processFilesSingleLevel - DONE")

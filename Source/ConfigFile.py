@@ -5,7 +5,7 @@ import os
 import shutil
 
 class ConfigFile:
-    filename = ""
+    filename = ''
     settings = collections.OrderedDict()
     products = collections.OrderedDict()
     minDeglitchBand = 350
@@ -19,6 +19,8 @@ class ConfigFile:
     @staticmethod
     def printd():
         print("ConfigFile - Printd")
+        print("AncFile", ConfigFile.settings["AncFile"])
+
         print("bL1aCleanSZA", ConfigFile.settings["bL1aCleanSZA"])
         print("fL1aCleanSZAMax", ConfigFile.settings["fL1aCleanSZAMax"])
 
@@ -195,6 +197,8 @@ class ConfigFile:
 
         ConfigFile.settings["CalibrationFiles"] = {}
 
+        ConfigFile.settings["AncFile"] = ''
+
         ConfigFile.settings["bL1aCleanSZA"] = 0
         ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,
 
@@ -250,13 +254,11 @@ class ConfigFile:
 
         ConfigFile.settings["fL1aqcAnomalyStep"] = 20
 
-
         ConfigFile.settings["bL1bDefaultCal"] = 1
         ConfigFile.settings["bL1bFullCal"] = 0
         ConfigFile.settings["bL1bFullFiles"] = 0
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1bPlotTimeInterp"] = 0
-        # ConfigFile.settings["bL1bSaveSeaBASS"] = 0
 
         ConfigFile.settings["bL1bqcLtUVNIR"] = 1
         ConfigFile.settings["fL1bqcMaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
@@ -396,8 +398,6 @@ class ConfigFile:
                         ConfigFile.settings[key] = value
 
                 ConfigFile.createCalibrationFolder()
-
-
 
     # Deletes a config
     @staticmethod

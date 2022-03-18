@@ -306,30 +306,33 @@ class Utilities:
             # Check the first element prior to looping over rest
             i = 0
             if dateTime[i+1] <= dateTime[i]:
-                    gp.datasetDeleteRow(i)
-                    del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
-                    total = total - 1
-                    msg = f'Out of order timestamp deleted at {i}'
+                gp.datasetDeleteRow(i)
+                # del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
+                dateTime = gp.getDataset("DATETIME").data
+                total = total - 1
+                msg = f'Out of order timestamp deleted at {i}'
+                print(msg)
+                Utilities.writeLogFile(msg)
+
+                #In case we went from 2 to 1 element on the first element,
+                if total == 1:
+                    msg = f'************Too few records ({total}) to test for ascending timestamps. Exiting.'
                     print(msg)
                     Utilities.writeLogFile(msg)
-
-                    #In case we went from 2 to 1 element on the first element,
-                    if total == 1:
-                        msg = f'************Too few records ({total}) to test for ascending timestamps. Exiting.'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
-                        return False
+                    return False
 
             i = 1
             while i < total:
 
                 if dateTime[i] <= dateTime[i-1]:
 
-                    ''' BUG?:Same values of consecutive TT2s are shockingly common. Confirmed
-                    that 1) they exist from L1A, and 2) sensor data changes while TT2 stays the same '''
+                    # BUG?:Same values of consecutive TT2s are shockingly common. Confirmed
+                    #   that 1) they exist from L1A, and 2) sensor data changes while TT2 stays the same
+                    #
 
                     gp.datasetDeleteRow(i)
-                    del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
+                    # del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
+                    dateTime = gp.getDataset("DATETIME").data
                     total = total - 1
                     msg = f'Out of order TIMETAG2 row deleted at {i}'
                     print(msg)
@@ -469,7 +472,7 @@ class Utilities:
             badIndex.append(False)
             # ConfigFile setting updated directly from the checkbox in AnomDetection.
             # This insures values of badIndex are false if unthresholded or Min or Max are None
-            if ConfigFile.settings["bL1dThreshold"]:
+            if ConfigFile.settings["bL1aqcThreshold"]:
                 # Only run on the pre-selected waveband
                 if band == minMaxBand:
                     if minRad or minRad==0: # beware falsy zeros...
@@ -1644,7 +1647,7 @@ class Utilities:
             outDir = dirPath
 
         # Otherwise, put Plots in the chosen output directory from Main
-        plotDir = os.path.join(outDir,'Plots','L1C_Anoms')
+        plotDir = os.path.join(outDir,'Plots','L1AQC_Anoms')
 
         if not os.path.exists(plotDir):
             os.makedirs(plotDir)
