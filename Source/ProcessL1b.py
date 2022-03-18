@@ -3,6 +3,7 @@ import os
 import datetime as dt
 import calendar
 import numpy as np
+from inspect import currentframe, getframeinfo
 
 from HDFRoot import HDFRoot
 from ProcessL1b_DefaultCal import ProcessL1b_DefaultCal
@@ -27,16 +28,12 @@ class ProcessL1b:
 
 
         if Utilities.hasNan(lightData):
-            msg = "**************Found NAN 0"
-            print(msg)
-            Utilities.writeLogFile(msg)
-            exit
+            frameinfo = getframeinfo(currentframe())
+            msg = f'found NaN {frameinfo.lineno}'
 
         if Utilities.hasNan(darkData):
-            msg = "**************Found NAN 1"
-            print(msg)
-            Utilities.writeLogFile(msg)
-            exit
+            frameinfo = getframeinfo(currentframe())
+            msg = f'found NaN {frameinfo.lineno}'
 
         # Interpolate Dark Dataset to match number of elements as Light Dataset
         newDarkData = np.copy(lightData.data)
@@ -74,8 +71,8 @@ class ProcessL1b:
 
                 for val in newDarkData[k]:
                     if np.isnan(val):
-                        print('nan')
-                        exit
+                        frameinfo = getframeinfo(currentframe())
+                        msg = f'found NaN {frameinfo.lineno}'
             else:
                 msg = '**************Record too small for splining. Exiting.'
                 print(msg)
@@ -112,8 +109,6 @@ class ProcessL1b:
             Utilities.writeLogFile(msg)
             return
 
-        #print("Time:", time)
-        #print(ds.data)
         for i in range(0, len(timerDS.data)):
             tt2 = float(tt2DS.data["NONE"][i])
             t = Utilities.timeTag2ToSec(tt2)
@@ -221,10 +216,6 @@ class ProcessL1b:
         #   spectral resolution. HyperSAS instruments operate on different timestamps
         #   and wavebands, so interpolation is required.
         ProcessL1b_Interp.processL1b_Interp(node, outFilePath)
-
-
-
-
 
         # Datetime format is not supported in HDF5; remove
         # DATETIME is not supported in HDF5; remove

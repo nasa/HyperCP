@@ -2,6 +2,7 @@
 import collections
 import datetime as dt
 import calendar
+from inspect import currentframe, getframeinfo
 
 import numpy as np
 import scipy as sp
@@ -135,16 +136,22 @@ class ProcessL1b_Interp:
         xData.columns["Datetime"] = yData.data["Datetime"].tolist()
 
         if Utilities.hasNan(xData):
-           print("Found NAN 1")
+            frameinfo = getframeinfo(currentframe())
+            # print(frameinfo.filename, frameinfo.lineno)
+            msg = f'found NaN {frameinfo.lineno}'
+            print(msg)
+            Utilities.writeLogFile(msg)
 
         # Perform interpolation on full hyperspectral time series
         ProcessL1b_Interp.interpolateL1b_Interp(xData, xDatetime, yDatetime, xData, dataName, 'linear', fileName)
 
         xData.columnsToDataset()
 
-        #if Utilities.hasNan(xData):
-        #    print("Found NAN 2")
-        #    exit
+        if Utilities.hasNan(xData):
+            frameinfo = getframeinfo(currentframe())
+            msg = f'found NaN {frameinfo.lineno}'
+            print(msg)
+            Utilities.writeLogFile(msg)
         return True
 
     @staticmethod
