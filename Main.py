@@ -406,10 +406,6 @@ class Window(QtWidgets.QWidget):
         if not fileNames:
             return
 
-        # ConfigFile.AncFile = self.ancFileLineEdit.text()
-        # if ConfigFile.AncFile == '':
-        #     ConfigFile.AncFile = None
-
         print('Process Calibration Files')
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings['CalibrationFiles']
@@ -508,9 +504,10 @@ class Window(QtWidgets.QWidget):
         print('Main - saveButtonClicked')
         MainConfig.saveConfig(MainConfig.fileName)
 
+###################################################################################
 
-''' Class without using the GUI '''
 class Command():
+    ''' Class without using the GUI '''
 
     def __init__(self, configFilePath, inputFile, outputDirectory, level, ancFile):
 
@@ -579,7 +576,7 @@ class Command():
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 
         # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
-        # we keep variable fileNames which is an array
+        # we keep variable fileNames which is a list
         fileNames = [inputFile]
         print('Files:', fileNames)
         if not fileNames:

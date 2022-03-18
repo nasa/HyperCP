@@ -82,7 +82,6 @@ class Controller:
         # In that case, move up one directory
         if os.path.isdir(os.path.join(inPlotPath, 'L1AQC_Anoms')) is False:
             inPlotPath = os.path.join(pathOut,'..','Plots')
-        # outPDF = os.path.join(reportPath,'Reports', f'{fileName}.pdf')
         outHDF = os.path.split(outFilePath)[1]
 
         if fail:
@@ -221,8 +220,6 @@ class Controller:
                     del calibrationMap[key]
             else:
                 del calibrationMap[key]
-        # print("calibrationMap keys 2:", calibrationMap.keys())
-        # print("processCalibrationConfig - DONE")
         return calibrationMap
 
     @staticmethod
@@ -335,7 +332,7 @@ class Controller:
             return None
 
 
-        root = ProcessL1b.processL1b(root)
+        root = ProcessL1b.processL1b(root, outFilePath)
 
         # Write output file
         if root is not None:
@@ -512,9 +509,7 @@ class Controller:
 
         # If this is an HDF, assume it is not RAW, drop the level from fileName
         if extension=='.hdf':
-            # [basefilename, level] tolerant of multiple "_" in filename; uses last one for Level
             fileName = fileName.rsplit('_',1)[0]
-
 
         # Check for base output directory
         if os.path.isdir(pathOut):
@@ -531,9 +526,7 @@ class Controller:
 
         outFilePath = os.path.join(pathOutLevel,fileName + "_" + level + ".hdf")
 
-        if level == "L1A" or level == "L1AQC":
-            # or \
-            # level == "L1C" or level == "L1D":
+        if level == "L1A" or level == "L1AQC" or level == "L1B" or level == "L1BQC":
 
             if level == "L1A":
                 root = Controller.processL1a(inFilePath, outFilePath, calibrationMap)
@@ -585,6 +578,9 @@ class Controller:
             elif level == "L1B":
                 root = Controller.processL1b(inFilePath, outFilePath)
 
+            elif level == "L1BQC":
+                root = Controller.processL1bqc(inFilePath, outFilePath)
+
             # Confirm output file creation
             if os.path.isfile(outFilePath):
                 modTime = os.path.getmtime(outFilePath)
@@ -593,24 +589,6 @@ class Controller:
                     msg = f'{level} file produced: \n {outFilePath}'
                     print(msg)
                     Utilities.writeLogFile(msg)
-
-        elif level == "L1BQC":
-            root = Controller.processL1bqc(inFilePath, outFilePath)
-
-            if os.path.isfile(outFilePath):
-                modTime = os.path.getmtime(outFilePath)
-                nowTime = datetime.datetime.now()
-                if nowTime.timestamp() - modTime < 60:
-                    msg = f'{level} file produced: \n{outFilePath}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-
-                    # if int(ConfigFile.settings["bL1eSaveSeaBASS"]) == 1:
-                    #     msg = 'Output SeaBASS for HDF: Es, Li, Lt files'
-                    #     print(msg)
-                    #     Utilities.writeLogFile(msg)
-                    #     SeaBASSWriter.outputTXT_Type1e(outFilePath)
-                    return True
 
         elif level == "L2":
             # Ancillary data from metadata have been read in at L1C,

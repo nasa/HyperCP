@@ -173,16 +173,13 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcDeglitchCheckBox.clicked.connect(self.l1aqcDeglitchCheckBoxUpdate)
 
         #   Launch Deglitcher Analysis
-        l1aqcAnomalySublabel1 = QtWidgets.QLabel("  Anomaly Analysis to test parameters",self)
-        l1aqcAnomalySublabel2 = QtWidgets.QLabel("  on L1AQC files:",self)
+        # l1aqcAnomalySublabel1 = QtWidgets.QLabel("  Anomaly Analysis to test parameters",self)
+        # l1aqcAnomalySublabel2 = QtWidgets.QLabel("  on L1AQC files:",self)
         self.l1aqcAnomalyButton = QtWidgets.QPushButton("Launch Anomaly Analysis")
         self.l1aqcAnomalyButton.clicked.connect(self.l1aqcAnomalyButtonPressed)
 
         # L1B
         l1bLabel = QtWidgets.QLabel("Level 1B Processing", self)
-        # l1bLabel_font = l1bLabel.font()
-        # l1bLabel_font.setPointSize(12)
-        # l1bLabel_font.setBold(True)
         l1bLabel.setFont(l1aLabel_font)
         l1bSublabel = QtWidgets.QLabel(" Dark offsets, calibrations and corrections. Interpolate", self)
         l1bSublabel2 = QtWidgets.QLabel(" to common time coordinates.", self)
@@ -210,6 +207,11 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL1bPlotTimeInterp"]) == 1:
             self.l1bPlotTimeInterpCheckBox.setChecked(True)
         self.l1bPlotTimeInterpCheckBox.clicked.connect(self.l1bPlotTimeInterpCheckBoxUpdate)
+
+        l1bPlotIntervalLabel = QtWidgets.QLabel("     Plot Interval (nm)", self)
+        self.l1bPlotIntervalLineEdit = QtWidgets.QLineEdit(self)
+        self.l1bPlotIntervalLineEdit.setText(str(ConfigFile.settings["fL1bPlotInterval"]))
+        self.l1bPlotIntervalLineEdit.setValidator(doubleValidator)
 
         # L1BQC
         l1bqcLabel = QtWidgets.QLabel("Level 1BQC Processing", self)
@@ -336,9 +338,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
         #   L2 Rho Sky Correction
         l2RhoSkyLabel = QtWidgets.QLabel("L2 Sky/Sunglint Correction (ρ)", self)
-        # l2RhoSkyLabel_font = l1bLabel.font()
-        #   l2RhoSkyLabel_font.setPointSize(12)
-        # l2RhoSkyLabel_font.setBold(True)
         l2RhoSkyLabel.setFont(l1aLabel_font)
 
         l2pSublabel = QtWidgets.QLabel(" GMAO MERRA2 ancillary data are required for Zhang glint", self)
@@ -441,7 +440,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2WeightMODISACheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2WeightMODISA"]) == 1:
             self.l2WeightMODISACheckBox.setChecked(True)
-        l2WeightMODISALabel2 = QtWidgets.QLabel("* Will be turned on automatically for Derived Products", self)
+        l2WeightMODISALabel2 = QtWidgets.QLabel("* Automatic for Derived Products", self)
 
         l2WeightMODISTLabel = QtWidgets.QLabel("TERRA", self)
         self.l2WeightMODISTCheckBox = QtWidgets.QCheckBox("", self)
@@ -534,7 +533,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
         # Whole Window Box
         VBox = QtWidgets.QVBoxLayout()
-        # VBox.addWidget(nameLabel)
 
         # Vertical Box (left)
         VBox1 = QtWidgets.QVBoxLayout()
@@ -630,8 +628,8 @@ class ConfigWindow(QtWidgets.QDialog):
         deglitchHBox.addWidget(self.l1aqcDeglitchCheckBox)
         VBox1.addLayout(deglitchHBox)
         #       L1AQC Anomaly Launcher
-        VBox1.addWidget(l1aqcAnomalySublabel1)
-        VBox1.addWidget(l1aqcAnomalySublabel2)
+        # VBox1.addWidget(l1aqcAnomalySublabel1)
+        # VBox1.addWidget(l1aqcAnomalySublabel2)
         VBox1.addWidget(self.l1aqcAnomalyButton)
 
         VBox1.addStretch()
@@ -662,6 +660,12 @@ class ConfigWindow(QtWidgets.QDialog):
         l1bPlotTimeInterpHBox.addWidget(l1bPlotTimeInterpLabel)
         l1bPlotTimeInterpHBox.addWidget(self.l1bPlotTimeInterpCheckBox)
         VBox2.addLayout(l1bPlotTimeInterpHBox)
+
+        #   Plot interval (wavelength)
+        plotInterpHBox = QtWidgets.QHBoxLayout()
+        plotInterpHBox.addWidget(l1bPlotIntervalLabel)
+        plotInterpHBox.addWidget(self.l1bPlotIntervalLineEdit)
+        VBox2.addLayout(plotInterpHBox)
 
         # L1BQC
         VBox2.addWidget(l1bqcLabel)
@@ -733,6 +737,8 @@ class ConfigWindow(QtWidgets.QDialog):
         RainFlagHBox.addWidget(self.l1bqcRainfallHumidityFlagLineEdit)
         VBox2.addLayout(RainFlagHBox)
 
+        VBox2.addStretch()
+
         # Third Vertical box
         VBox3 = QtWidgets.QVBoxLayout()
         # VBox3.setAlignment(QtCore.Qt.AlignBottom)
@@ -767,7 +773,6 @@ class ConfigWindow(QtWidgets.QDialog):
         PercentLtHBox2.addWidget(self.l2PercentLtLineEdit)
         VBox3.addLayout(PercentLtHBox2)
 
-        # VBox3.addStretch()
 
         #   L2 Rho Skyglint/Sunglint Correction
         VBox3.addWidget(l2RhoSkyLabel)
@@ -831,6 +836,8 @@ class ConfigWindow(QtWidgets.QDialog):
         NegativeSpecHBox.addWidget(self.l2NegativeSpecLabel)
         NegativeSpecHBox.addWidget(self.l2NegativeSpecCheckBox)
         VBox3.addLayout(NegativeSpecHBox)
+
+        VBox3.addStretch()
 
         # Right Vertical box
         VBox4 = QtWidgets.QVBoxLayout()
@@ -924,7 +931,7 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox.addLayout(hBox)
 
         self.setLayout(VBox)
-        self.setGeometry(300, 100, 0, 0)
+        # self.setGeometry(300, 100, 0, 0)
         self.setWindowTitle(f'Configuration: {self.name}')
 
     ###############################################################
@@ -1118,19 +1125,17 @@ class ConfigWindow(QtWidgets.QDialog):
         anomAnalDialog.show()
 
     def l1bDefaultCalRadioButtonClicked(self):
-        print("ConfigWindow - l2NIRCorrection set to Simple")
-        self.SimpleNIRRadioButton.setChecked(True)
-        self.SimSpecNIRRadioButton.setChecked(False)
-        self.YourNIRRadioButton.setChecked(False)
-        ConfigFile.settings["bL2SimpleNIRCorrection"] = 1
-        ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
+        print("ConfigWindow - l1bDefaultCalRadioButton set to Default")
+        self.DefaultCalRadioButton.setChecked(True)
+        self.FullCalRadioButton.setChecked(False)
+        ConfigFile.settings["bL1bDefaultCal"] = 1
+        ConfigFile.settings["bL1bFullCal"] = 0
     def l1bFullCalRadioButtonClicked(self):
-        print("ConfigWindow - l2NIRCorrection set to SimSpec")
-        self.SimpleNIRRadioButton.setChecked(False)
-        self.SimSpecNIRRadioButton.setChecked(True)
-        self.YourNIRRadioButton.setChecked(False)
-        ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
-        ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
+        print("ConfigWindow - l1bFullCal set to Full")
+        self.DefaultCalRadioButton.setChecked(False)
+        self.FullCalRadioButton.setChecked(True)
+        ConfigFile.settings["bL1bDefaultCal"] = 0
+        ConfigFile.settings["bL1bFullCal"] = 1
 
     def l1bPlotTimeInterpCheckBoxUpdate(self):
         print("ConfigWindow - l1bPlotTimeInterpCheckBoxUpdate")
@@ -1394,6 +1399,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         ConfigFile.settings["fL1bInterpInterval"] = float(self.l1bInterpIntervalLineEdit.text())
         ConfigFile.settings["bL1bPlotTimeInterp"] = int(self.l1bPlotTimeInterpCheckBox.isChecked())
+        ConfigFile.settings["fL1bPlotInterval"] = float(self.l1bPlotIntervalLineEdit.text())
 
         ConfigFile.settings["bL1bqcLtUVNIR"] = int(self.l1bqcLtUVNIRCheckBox.isChecked())
         ConfigFile.settings["fL1bqcMaxWind"] = float(self.l1bqcMaxWindLineEdit.text())

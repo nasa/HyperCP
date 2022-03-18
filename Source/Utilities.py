@@ -1075,8 +1075,8 @@ class Utilities:
 
 
     @staticmethod
-    def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):
-        ''' Plot results of L1E time interpolation '''
+    def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fp):
+        ''' Plot results of L1B time interpolation '''
 
         dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
@@ -1086,7 +1086,7 @@ class Utilities:
             outDir = dirPath
 
         # Otherwise, put Plots in the chosen output directory from Main
-        plotDir = os.path.join(outDir,'Plots','L1E')
+        plotDir = os.path.join(outDir,'Plots','L1B_Interp')
 
         if not os.path.exists(plotDir):
             os.makedirs(plotDir)
@@ -1098,6 +1098,7 @@ class Utilities:
         dfy = pd.DataFrame(data=yTimer, index=list(range(0,len(yTimer))), columns=['x'])
         dfy['x'] = pd.to_datetime(dfy['x'].astype(str))
 
+        [_,fileName] = os.path.split(fp)
         fileBaseName,_ = fileName.split('.')
         register_matplotlib_converters()
 
@@ -1108,10 +1109,8 @@ class Utilities:
             }
 
         # Steps in wavebands used for plots
-        # step = float(ConfigFile.settings["fL3InterpInterval"]) # this is in nm
         # This happens prior to waveband interpolation, so each interval is ~3.3 nm
-        ''' To Do: THIS COULD BE SET IN THE CONFIG WINDOW '''
-        step = 20 # this is in band intervals
+        step = ConfigFile.settings['fL1bPlotInterval']
 
         if instr == 'ES' or instr == 'LI' or instr == 'LT':
             l = round((len(xData.data.dtype.names)-3)/step) # skip date and time and datetime
@@ -1173,7 +1172,10 @@ class Utilities:
                 plt.subplots_adjust(left=0.15)
                 plt.subplots_adjust(bottom=0.15)
 
-                plt.savefig(os.path.join(plotDir,f'{fileBaseName}_{instr}_{k}.png'))
+                if k == 'NONE':
+                    plt.savefig(os.path.join(plotDir,f'{fileBaseName}_{instr}.png'))
+                else:
+                    plt.savefig(os.path.join(plotDir,f'{fileBaseName}_{instr}_{k}.png'))
                 plt.close()
 
         print('\n')

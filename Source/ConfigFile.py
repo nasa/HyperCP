@@ -74,10 +74,11 @@ class ConfigFile:
 
         print("fL1aqcAnomalyStep", ConfigFile.settings["fL1aqcAnomalyStep"])
 
+        print("bL1bDefaultCal", ConfigFile.settings["bL1bDefaultCal"])
+        print("bL1bFullCal", ConfigFile.settings["bL1bFullCal"])
         print("fL1bInterpInterval", ConfigFile.settings["fL1bInterpInterval"])
         print("bL1bPlotTimeInterp", ConfigFile.settings["bL1bPlotTimeInterp"])
-        print("bL1bSaveSeaBASS", ConfigFile.settings["bL1bSaveSeaBASS"])
-        print("seaBASSHeaderFileName", ConfigFile.settings["seaBASSHeaderFileName"])
+        print("fL1bPlotInterval", ConfigFile.settings["fL1bPlotInterval"])
 
         print("bL2pGetAnc", ConfigFile.settings["bL2pGetAnc"])
         print("bL2pObpgCreds", ConfigFile.settings["bL2pObpgCreds"])
@@ -173,6 +174,7 @@ class ConfigFile:
         print("bL2ProdcQaa", ConfigFile.products["bL2ProdcQaa"])
 
         print("bL2SaveSeaBASS", ConfigFile.settings["bL2SaveSeaBASS"])
+        print("seaBASSHeaderFileName", ConfigFile.settings["seaBASSHeaderFileName"])
         print("bL2WriteReport", ConfigFile.settings["bL2WriteReport"])
 
 
@@ -256,9 +258,9 @@ class ConfigFile:
 
         ConfigFile.settings["bL1bDefaultCal"] = 1
         ConfigFile.settings["bL1bFullCal"] = 0
-        ConfigFile.settings["bL1bFullFiles"] = 0
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1bPlotTimeInterp"] = 0
+        ConfigFile.settings["fL1bPlotInterval"] = 20 # nm
 
         ConfigFile.settings["bL1bqcLtUVNIR"] = 1
         ConfigFile.settings["fL1bqcMaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
