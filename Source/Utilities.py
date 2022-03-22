@@ -8,8 +8,6 @@ import csv
 
 # from PyQt5.QtWidgets import QApplication, QDesktopWidget, QWidget, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSlot
 
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm

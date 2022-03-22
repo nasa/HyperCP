@@ -17,6 +17,7 @@ class GetAnc:
 
     @staticmethod
     def userCreds(usr,pwd):
+        ''' Saves user credentials '''
         home = os.path.expanduser('~')
         if platform.system() == 'Windows':
             netrcFile = os.path.join(home,'_netrc')
@@ -24,11 +25,11 @@ class GetAnc:
             netrcFile = os.path.join(home,'.netrc')
         if os.path.exists(netrcFile):
             os.chmod(netrcFile, stat.S_IRUSR | stat.S_IWUSR)
+
         if not os.path.exists(netrcFile):
             with open(netrcFile, 'w') as fo:
                 fo.write(f'machine urs.earthdata.nasa.gov login {usr} password {pwd}\n')
             os.chmod(netrcFile, stat.S_IRUSR | stat.S_IWUSR)
-
         else:
             # print('netrc found')
             fo = open(netrcFile)
@@ -41,7 +42,7 @@ class GetAnc:
                     foundED = True
                     lineIndx = i
 
-            if foundED == True:
+            if foundED is True:
                 lines[lineIndx] = f'machine urs.earthdata.nasa.gov login {usr} password {pwd}\n'
             else:
                 lines = lines + [f'\nmachine urs.earthdata.nasa.gov login {usr} password {pwd}\n']
@@ -53,6 +54,7 @@ class GetAnc:
 
     @staticmethod
     def getAnc(inputGroup):
+        ''' Retrieve model data and save in Data/Anc and in ModData '''
         server = 'oceandata.sci.gsfc.nasa.gov'
         cwd = os.getcwd()
 
@@ -71,17 +73,17 @@ class GetAnc:
         # Loop through the input group and extract model data for each element
         oldFile = None
         for index, dateTag in enumerate(latDate):
-
-            year = int(str(int(dateTag))[0:4])
-            doy = int(str(int(dateTag))[4:7])
+            dateTagNew = Utilities.dateTagToDate(dateTag)
+            year = int(str(int(dateTagNew))[0:4])
+            month = int(str(int(dateTagNew))[4:6])
+            day = int(str(int(dateTagNew))[6:8])
+            # doy = int(str(int(dateTag))[4:7])
             # Casting below can push hr to 24. Truncate the hr decimal using
             # int() so the script always calls from within the hour in question,
             # and no rounding occurs.
             hr = int(Utilities.timeTag2ToSec(latTime[index])/60/60)
 
-
-
-            file1 = f"N{year}{doy:03.0f}{hr:02.0f}_MERRA2_1h.nc"
+            file1 = f"GMAO_MERRA2.{year}{month:02.0f}{day:02.0f}T{hr:02.0f}0000.MET.nc"
             if oldFile != file1:
                 ancPath = os.path.join(cwd,"Data","Anc")
                 filePath1 = os.path.join(cwd,"Data","Anc",file1)
@@ -99,7 +101,7 @@ class GetAnc:
                     print(msg)
                     Utilities.writeLogFile(msg)
 
-                file2 = f"N{year}{doy:03.0f}{hr:02.0f}_AER_MERRA2_1h.nc"
+                file2 = f"GMAO_MERRA2.{year}{month:02.0f}{day:02.0f}T{hr:02.0f}0000.AER.nc"
                 filePath2 = os.path.join(cwd,"Data","Anc",file2)
                 if not os.path.exists(filePath2):
                     request = f"/cgi/getfile/{file2}"
@@ -122,7 +124,7 @@ class GetAnc:
                     alert = QtWidgets.QMessageBox()
                     alert.setText(f'Request error: {status}\n \
                                     Enter server credentials in the\n \
-                                    Configuration Window L2 Preliminary')
+                                    Configuration Window L1BQC')
                     alert.exec_()
                     return None
 
