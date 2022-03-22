@@ -14,12 +14,12 @@ class PDF(FPDF):
         # Arial bold 15
         self.set_font('Arial', 'B', 15)
         # Calculate width of title and position
-        w = self.get_string_width(self.title) + 6
-        self.set_x((210 - w) / 2)
+        w = self.get_string_width(self.title)
+        # self.set_x((50 - w) / 2)
         # Colors of frame, background and text
         self.set_draw_color(0, 80, 180)
-        self.set_fill_color(230, 230, 0)
-        self.set_text_color(220, 50, 50)
+        self.set_fill_color(230, 230, 230)
+        self.set_text_color(0, 0, 0)
         # Thickness of frame (1 mm)
         self.set_line_width(1)
         # Title
@@ -59,14 +59,16 @@ class PDF(FPDF):
                                     not 'water_depth' in key:
                         metaData += f'/{key}={value}\n'
 
+        if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
+                gpDict = {}
+                for gp in root.groups:
+                    gpDict[gp.id] = gp
+
         if level == "L1AQC":
             intro = 'Low level QC (pitch, roll, yaw, and azimuth) and deglitching.'
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
-            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
-                gpDict = {}
-            for gp in root.groups:
-                gpDict[gp.id] = gp
+
 
             if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
                 if 'HOME_ANGLE' in root.attributes:
@@ -82,7 +84,7 @@ class PDF(FPDF):
                     metaData += f'Rel Azimuth Min: {root.attributes["RELATIVE_AZIMUTH_MIN"]}\n'
                     metaData += f'Rel Azimuth Max: {root.attributes["RELATIVE_AZIMUTH_MAX"]}\n'
 
-                # These deglitching parameters might be in root.attributes if from files L1D or L1E,
+                # These deglitching parameters might be in root.attributes if from files L1AQC or L1B (or L1BQC?),
                 # or within their respective groups at L2
                 if root.attributes['L1AQC_DEGLITCH'] == 'ON':
                     if 'ES_WINDOW_DARK' in root.attributes:
@@ -208,13 +210,10 @@ class PDF(FPDF):
                     metaData += 'Cal. Type: Default/Factory'
                 else:
                     metaData += 'Cal. Type: Full Character'
-                metaData += f'Wavelength Interp Int: {ConfigFile.settings["fL1eInterpInterval"]}\n'
+                metaData += f'Wavelength Interp Int: {ConfigFile.settings["fL1bInterpInterval"]}\n'
 
-
-        if level == "L2":
-            intro = 'Apply more quality control filters, temporal binning, '\
-                'station selection, glint correction, NIR corrections, reflectance '\
-                    'calculation and OC product calculation.'
+        if level == "L1BQC":
+            intro = 'Apply more quality control filters.'
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
@@ -231,6 +230,27 @@ class PDF(FPDF):
                     metaData += f'Es Filter: {gpDict["IRRADIANCE"].attributes["ES_FILTER"]}\n'
                     metaData += f'Dawn/Dusk Filter: {root.attributes["DAWN_DUSK_FILTER"]}\n'
                     metaData += f'Rain/Humidity Filter: {root.attributes["RAIN_RH_FILTER"]}\n'
+            else:
+                metaData += f'Max Wind: {ConfigFile.settings["fL1bqcMaxWind"]}\n'
+                metaData += f'Min SZA: {ConfigFile.settings["fL1bqcSZAMin"]}\n'
+                metaData += f'Max SZA: {ConfigFile.settings["fL1bqcSZAMin"]}\n'
+                if ConfigFile.settings['bL1bqcEnableSpecQualityCheck']:
+                    metaData += f'Filter Sigma Es: {ConfigFile.settings["fL1bqcSpecFilterEs"]}\n'
+                    metaData += f'Filter Sigma Li: {ConfigFile.settings["fL1bqcSpecFilterLi"]}\n'
+                    metaData += f'Filter Sigma Lt: {ConfigFile.settings["fL1bqcSpecFilterLt"]}\n'
+                if ConfigFile.settings['bL1bqcEnableQualityFlags']:
+                    metaData += f'Cloud Filter: {ConfigFile.settings["fL1bqcCloudFlag"]}\n'
+                    metaData += f'Es Filter: {ConfigFile.settings["fL1bqcSignificantEsFlag"]}\n'
+                    metaData += f'Dawn/Dusk Filter: {ConfigFile.settings["fL1bqcDawnDuskFlag"]}\n'
+                    metaData += f'Rain/Humidity Filter: {ConfigFile.settings["fL1bqcRainfallHumidityFlag"]}\n'
+
+        if level == "L2":
+            intro = 'Apply temporal binning,station selection, glint correction,'\
+                'NIR corrections, reflectance calculation, and OC product calculation.'
+
+            metaData = ' \n'
+            metaData += 'Processing Parameters: \n'
+            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
                 metaData += f'Ensemble Duration: {root.attributes["ENSEMBLE_DURATION"]}\n'
                 if '%LT_FILTER' in gpDict['RADIANCE'].attributes:
                     metaData += f'Percent Lt Filter: {gpDict["RADIANCE"].attributes["%LT_FILTER"]}\n'
@@ -240,18 +260,6 @@ class PDF(FPDF):
                 if 'NEGATIVE_VALUE_FILTER' in gpDict['REFLECTANCE'].attributes:
                     metaData += f'Remove Negatives: {gpDict["REFLECTANCE"].attributes["NEGATIVE_VALUE_FILTER"]}\n'
             else:
-                metaData += f'Max Wind: {ConfigFile.settings["fL2MaxWind"]}\n'
-                metaData += f'Min SZA: {ConfigFile.settings["fL2SZAMin"]}\n'
-                metaData += f'Max SZA: {ConfigFile.settings["fL2SZAMin"]}\n'
-                if ConfigFile.settings['bL2EnableSpecQualityCheck']:
-                    metaData += f'Filter Sigma Es: {ConfigFile.settings["fL2SpecFilterEs"]}\n'
-                    metaData += f'Filter Sigma Li: {ConfigFile.settings["fL2SpecFilterLi"]}\n'
-                    metaData += f'Filter Sigma Lt: {ConfigFile.settings["fL2SpecFilterLt"]}\n'
-                if ConfigFile.settings['bL2EnableQualityFlags']:
-                    metaData += f'Cloud Filter: {ConfigFile.settings["fL2CloudFlag"]}\n'
-                    metaData += f'Es Filter: {ConfigFile.settings["fL2SignificantEsFlag"]}\n'
-                    metaData += f'Dawn/Dusk Filter: {ConfigFile.settings["fL2DawnDuskFlag"]}\n'
-                    metaData += f'Rain/Humidity Filter: {ConfigFile.settings["fL2RainfallHumidityFlag"]}\n'
                 metaData += f'Ensemble Duration: {ConfigFile.settings["fL2TimeInterval"]}\n'
                 if ConfigFile.settings['bL2EnablePercentLt']:
                     metaData += f'Percent Lt Filter: {ConfigFile.settings["fL2PercentLt"]}\n'
@@ -297,9 +305,9 @@ class PDF(FPDF):
 
         self.set_font('Times', '', 12)
 
-        ''' This is the old method of pulling parameters from the SeaBASS Header.
-            Shift to using root attributes from the file. Preserved here only to retain features not in
-            ConfigFile settings'''
+        #  This is the old method of pulling parameters from the SeaBASS Header.
+        #     Shift to using root attributes from the file. Preserved here only to retain features not in
+        #     ConfigFile settings
         comments1 = headerBlock['comments'].split('!')
         commentsDict = {}
         for comment in comments1:
@@ -324,65 +332,17 @@ class PDF(FPDF):
         self.ln()
 
         # Figures
-        if level == "L1D":
-            inPath = os.path.join(inPlotPath, 'L1C_Anoms')
+        if level == "L1AQC":
+            inPath = os.path.join(inPlotPath, 'L1AQC_Anoms')
 
             self.cell(0, 6, 'Example Deglitching', 0, 1, 'L', 1)
             self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
-                'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1C_Anoms.')
-
-            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
-                # These deglitching parameters might be in root.attributes if from files L1D or L1E,
-                # or within their respective groups at L2
-                gpDict = {}
-                for gp in root.groups:
-                    gpDict[gp.id] = gp
-                if 'L1D_DEGLITCH' in root.attributes:
-                    if 'ES_SIGMA_DARK' in root.attributes:
-                        ESWindowDark = root.attributes['ES_WINDOW_DARK']
-                        ESWindowLight = root.attributes['ES_WINDOW_LIGHT']
-                        ESSigmaDark = root.attributes['ES_SIGMA_DARK']
-                        ESSigmaLight = root.attributes['ES_SIGMA_DARK']
-                        LIWindowDark = root.attributes['LI_WINDOW_DARK']
-                        LIWindowLight = root.attributes['LI_WINDOW_LIGHT']
-                        LISigmaDark = root.attributes['LI_SIGMA_DARK']
-                        LISigmaLight = root.attributes['LI_SIGMA_DARK']
-                        LTWindowDark = root.attributes['LT_WINDOW_DARK']
-                        LTWindowLight = root.attributes['LT_WINDOW_LIGHT']
-                        LTSigmaDark = root.attributes['LT_SIGMA_DARK']
-                        LTSigmaLight = root.attributes['LT_SIGMA_DARK']
-                    else:
-                        ESWindowDark = gpDict["IRRADIANCE"].attributes['ES_WINDOW_DARK']
-                        ESWindowLight = gpDict["IRRADIANCE"].attributes['ES_WINDOW_LIGHT']
-                        ESSigmaDark = gpDict["IRRADIANCE"].attributes['ES_SIGMA_DARK']
-                        ESSigmaLight = gpDict["IRRADIANCE"].attributes['ES_SIGMA_LIGHT']
-                        LIWindowDark = gpDict["RADIANCE"].attributes['LI_WINDOW_DARK']
-                        LIWindowLight = gpDict["RADIANCE"].attributes['LI_WINDOW_LIGHT']
-                        LISigmaDark = gpDict["RADIANCE"].attributes['LI_SIGMA_DARK']
-                        LISigmaLight = gpDict["RADIANCE"].attributes['LI_SIGMA_LIGHT']
-                        LTWindowDark = gpDict["RADIANCE"].attributes['LT_WINDOW_DARK']
-                        LTWindowLight = gpDict["RADIANCE"].attributes['LT_WINDOW_LIGHT']
-                        LTSigmaDark = gpDict["RADIANCE"].attributes['LT_SIGMA_DARK']
-                        LTSigmaLight = gpDict["RADIANCE"].attributes['LT_SIGMA_LIGHT']
-            else:
-                ESWindowDark = ConfigFile.settings['fL1aqcESWindowDark']
-                ESWindowLight = ConfigFile.settings['fL1aqcESWindowLight']
-                ESSigmaDark = ConfigFile.settings['fL1aqcESSigmaDark']
-                ESSigmaLight = ConfigFile.settings['fL1aqcESSigmaLight']
-                LIWindowDark = ConfigFile.settings['fL1aqcLIWindowDark']
-                LIWindowLight = ConfigFile.settings['fL1aqcLIWindowLight']
-                LISigmaDark = ConfigFile.settings['fL1aqcLISigmaDark']
-                LISigmaLight = ConfigFile.settings['fL1aqcLISigmaLight']
-                LTWindowDark = ConfigFile.settings['fL1aqcLTWindowDark']
-                LTWindowLight = ConfigFile.settings['fL1aqcLTWindowLight']
-                LTSigmaDark = ConfigFile.settings['fL1aqcLTSigmaDark']
-                LTSigmaLight = ConfigFile.settings['fL1aqcLTSigmaLight']
+                'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1AQC_Anoms.')
 
             print('Adding deglitching plots...')
             # ES
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_ESDark_*.png' ))
-                # f'{filebasename}_L1C_W{ESWindowDark}S{ESSigmaDark}_*ESDark_*.png' ))
+                f'{filebasename}_L1A_ESDark_*.png' ))
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -392,8 +352,7 @@ class PDF(FPDF):
                 self.multi_cell(0, 5, "None found.")
 
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_ESLight_*.png' ))
-                # f'{filebasename}_L1C_W{ESWindowLight}S{ESSigmaLight}_*ESLight_*.png' ))
+                f'{filebasename}_L1A_ESLight_*.png' ))
 
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
@@ -405,8 +364,7 @@ class PDF(FPDF):
 
             # LI
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_LIDark_*.png' ))
-                # f'{filebasename}_L1C_W{LIWindowDark}S{LISigmaDark}_*LIDark_*.png' ))
+                f'{filebasename}_L1A_LIDark_*.png' ))
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -416,8 +374,7 @@ class PDF(FPDF):
                 self.multi_cell(0, 5, "None found.")
 
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_LILight_*.png' ))
-                # f'{filebasename}_L1C_W{LIWindowLight}S{LISigmaLight}_*LILight_*.png' ))
+                f'{filebasename}_L1A_LILight_*.png' ))
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -428,8 +385,7 @@ class PDF(FPDF):
 
             # LT
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_LTDark_*.png' ))
-                # f'{filebasename}_L1C_W{LTWindowDark}S{LTSigmaDark}_*LTDark_*.png' ))
+                f'{filebasename}_L1A_LTDark_*.png' ))
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -439,8 +395,7 @@ class PDF(FPDF):
                 self.multi_cell(0, 5, "None found.")
 
             fileList = glob.glob(os.path.join(inPath, \
-                f'{filebasename}_L1C_LTLight_*.png' ))
-                # f'{filebasename}_L1C_W{LTWindowLight}S{LTSigmaLight}_*LTLight_*.png' ))
+                f'{filebasename}_L1A_LTLight_*.png' ))
             if len(fileList) > 0:
                 for i in range (0, 1): #range(0, len(fileList)):
                     randIndx = random.randint(0, len(fileList)-1)
@@ -449,11 +404,11 @@ class PDF(FPDF):
             else:
                 self.multi_cell(0, 5, "None found.")
 
-        if level == "L1E":
+        if level == "L1B":
             inPath = os.path.join(inPlotPath, f'{level}')
             self.cell(0, 6, 'Example Temporal Interpolations', 0, 1, 'L', 1)
             self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
-                'interpolations can be found in [output_directory]/Plots/L1E.')
+                'interpolations can be found in [output_directory]/Plots/L1B_Interp.')
 
             fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))
 
@@ -461,20 +416,20 @@ class PDF(FPDF):
             if len(fileList) > 0:
 
                 # for i in range(0, len(fileList)):
-                res = [i for i in fileList if 'L1E_LI' not in i and 'L1E_ES' not in i and 'L1E_LT' not in i]
+                res = [i for i in fileList if 'L1B_LI' not in i and 'L1B_ES' not in i and 'L1B_LT' not in i]
                 for i in range (0, len(res)): #range(0, len(fileList)):
                     self.image(res[i], w = 175)
-                res = [i for i in fileList if 'L1E_ES' in i]
+                res = [i for i in fileList if 'L1B_ES' in i]
                 if len(res) >= 3:
                     for i in range (0, 3): #range(0, len(fileList)):
                         randIndx = random.randint(0, len(res))
                         self.image(res[i], w = 175)
-                res = [i for i in fileList if 'L1E_LI' in i]
+                res = [i for i in fileList if 'L1B_LI' in i]
                 if len(res) >= 3:
                     for i in range (0, 3): #range(0, len(fileList)):
                         randIndx = random.randint(0, len(res))
                         self.image(res[i], w = 175)
-                res = [i for i in fileList if 'L1E_LT' in i]
+                res = [i for i in fileList if 'L1B_LT' in i]
                 if len(res) >= 3:
                     for i in range (0, 3): #range(0, len(fileList)):
                         randIndx = random.randint(0, len(res))
@@ -482,7 +437,7 @@ class PDF(FPDF):
             else:
                 self.multi_cell(0, 5, "None found.")
 
-            inPath = os.path.join(inPlotPath, 'L1D')
+            inPath = os.path.join(inPlotPath, 'L1B_Interp')
             self.cell(0, 6, 'Complete spectral plots', 0, 1, 'L', 1)
 
             fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))

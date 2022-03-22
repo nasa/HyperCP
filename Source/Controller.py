@@ -1,9 +1,7 @@
 
-# import csv
 import os
 import datetime
 import numpy as np
-# import time
 
 from HDFRoot import HDFRoot
 from SeaBASSWriter import SeaBASSWriter
@@ -115,12 +113,6 @@ class Controller:
             inLog = os.path.join(inLogPath,f'{fileName}_L1B_L1BQC.log')
             if os.path.isfile(inLog):
                 pdf.print_chapter('L1BQC', 'Process L1B to L1BQC', inLog, inPlotPath, fileName, outFilePath, root)
-
-        # if numLevel > 4:
-        #     print('Level 1E')
-        #     inLog = os.path.join(inLogPath,f'{fileName}_L1D_L1E.log')
-        #     if os.path.isfile(inLog):
-        #         pdf.print_chapter('L1E', 'Process L1D to L1E', inLog, inPlotPath, fileName, outFilePath, root)
 
         if numLevel > 4:
             print('Level 2')

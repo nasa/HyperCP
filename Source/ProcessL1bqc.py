@@ -504,7 +504,7 @@ class ProcessL1bqc:
 
         # This step is only necessary for the ancillary datasets that REQUIRE
         # either field or GMAO or GUI default values. The remaining ancillary data
-        # are culled from datasets in groups in L1E
+        # are culled from datasets in groups in L1B
         ProcessL1bqc.includeModelDefaults(ancGroup, modRoot)
 
         # Shift metadata into the ANCILLARY group as needed.
@@ -594,7 +594,7 @@ class ProcessL1bqc:
         # At this stage, all datasets in all groups of node have Timetag2
         #     and Datetag incorporated into data arrays. Calculate and add
         #     Datetime to each data array.
-        # Utilities.rootAddDateTimeL2(node)
+        Utilities.rootAddDateTimeL2(node)
 
 
         # ################################################################################

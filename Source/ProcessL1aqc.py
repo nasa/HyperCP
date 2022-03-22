@@ -458,7 +458,7 @@ class ProcessL1aqc:
                         if start != -1:
                             # print('Absolute rotator angle passed: ' + str(round(rotator[index] + home)))
                             startstop = [timeStamp[start],timeStamp[stop]]
-                            msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]) + '(HHMMSSMSS)')
+                            msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]))
                             # print(msg)
                             Utilities.writeLogFile(msg)
 
