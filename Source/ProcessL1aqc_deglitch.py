@@ -288,7 +288,7 @@ class ProcessL1aqc_deglitch:
         # Delete the glitchy rows of the datasets
         for gp in node.groups:
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
-               gp.datasetDeleteRow(np.where(badIndexDark))
+                gp.datasetDeleteRow(np.where(badIndexDark))
 
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
@@ -310,8 +310,8 @@ class ProcessL1aqc_deglitch:
         if ConfigFile.settings['bL1aqcDeglitch']:
             root.attributes['L1AQC_DEGLITCH'] = 'ON'
             for sensor in ["ES","LI","LT"]:
-                ''' If parameters were picked up from an anoms.csv file, ConfigFile.settings were updated in Controller to reflect
-                    these saved parameters. Now push them into root attributes for posterity.'''
+                # If parameters were picked up from an anoms.csv file, ConfigFile.settings were updated in Controller to reflect
+                #    these saved parameters. Now push them into root attributes for posterity.
                 root.attributes[f'{sensor}_WINDOW_DARK'] = str(ConfigFile.settings[f'fL1aqc{sensor}WindowDark'])
                 root.attributes[f'{sensor}_WINDOW_LIGHT'] = str(ConfigFile.settings[f'fL1aqc{sensor}WindowLight'])
                 root.attributes[f'{sensor}_SIGMA_DARK'] = str(ConfigFile.settings[f'fL1aqc{sensor}SigmaDark'])

@@ -202,88 +202,88 @@ class ProcessL1b_Interp:
         newDS.columnsToDataset()
 
 
-    @staticmethod
-    def getDataAverage(n, data, time, width):
-        ''' Determines points to average data
-            Note: Prosoft always includes 1 point left/right of n
-            even if it is outside of specified width.
+    # @staticmethod
+    # def getDataAverage(n, data, time, width):
+    #     ''' Determines points to average data
+    #         Note: Prosoft always includes 1 point left/right of n
+    #         even if it is outside of specified width.
 
-            Not implemented in v1.0.B'''
+    #         Not implemented in v1.0.B'''
 
-        lst = [data[n]]
-        i = n-1
-        while i >= 0:
-            lst.append(data[i])
-            if (time[n] - time[i]) > width:
-                break
-            i -= 1
-        i = n+1
-        while i < len(time):
-            lst.append(data[i])
-            if (time[i] - time[n]) > width:
-                break
-            i += 1
-        avg = 0
-        for v in lst:
-            avg += v
-        avg /= len(lst)
-        return avg
+    #     lst = [data[n]]
+    #     i = n-1
+    #     while i >= 0:
+    #         lst.append(data[i])
+    #         if (time[n] - time[i]) > width:
+    #             break
+    #         i -= 1
+    #     i = n+1
+    #     while i < len(time):
+    #         lst.append(data[i])
+    #         if (time[i] - time[n]) > width:
+    #             break
+    #         i += 1
+    #     avg = 0
+    #     for v in lst:
+    #         avg += v
+    #     avg /= len(lst)
+    #     return avg
 
-    @staticmethod
-    def matchColumns(esData, liData, ltData):
-        ''' Makes each dataset have matching wavelength values
+    # @staticmethod
+    # def matchColumns(esData, liData, ltData):
+    #     ''' Makes each dataset have matching wavelength values
 
-            Not required; only for testing '''
+    #         Not required; only for testing '''
 
-        msg = "Match Columns"
-        print(msg)
-        Utilities.writeLogFile(msg)
+    #     msg = "Match Columns"
+    #     print(msg)
+    #     Utilities.writeLogFile(msg)
 
-        esData.datasetToColumns()
-        liData.datasetToColumns()
-        ltData.datasetToColumns()
+    #     esData.datasetToColumns()
+    #     liData.datasetToColumns()
+    #     ltData.datasetToColumns()
 
-        matchMin = -1
-        matchMax = -1
+    #     matchMin = -1
+    #     matchMax = -1
 
-        # Determine the minimum and maximum values for k
-        for ds in [esData, liData, ltData]:
-            nMin = -1
-            nMax = -1
-            for k in ds.columns.keys():
-                if Utilities.isFloat(k):
-                    num = float(k)
-                    if nMin == -1:
-                        nMin = num
-                        nMax = num
-                    elif num < nMin:
-                        nMin = num
-                    elif num > nMax:
-                        nMax = num
-            if matchMin == -1:
-                matchMin = nMin
-                matchMax = nMax
-            if matchMin < nMin:
-                matchMin = nMin
-            if matchMax > nMax:
-                matchMax = nMax
+    #     # Determine the minimum and maximum values for k
+    #     for ds in [esData, liData, ltData]:
+    #         nMin = -1
+    #         nMax = -1
+    #         for k in ds.columns.keys():
+    #             if Utilities.isFloat(k):
+    #                 num = float(k)
+    #                 if nMin == -1:
+    #                     nMin = num
+    #                     nMax = num
+    #                 elif num < nMin:
+    #                     nMin = num
+    #                 elif num > nMax:
+    #                     nMax = num
+    #         if matchMin == -1:
+    #             matchMin = nMin
+    #             matchMax = nMax
+    #         if matchMin < nMin:
+    #             matchMin = nMin
+    #         if matchMax > nMax:
+    #             matchMax = nMax
 
-        # Remove values to match minimum and maximum
-        for ds in [esData, liData, ltData]:
-            l = []
-            for k in ds.columns.keys():
-                if Utilities.isFloat(k):
-                    num = float(k)
-                    if num < matchMin:
-                        l.append(k)
-                    elif num > matchMax:
-                        l.append(k)
-            for k in l:
-                del ds.columns[k]
+    #     # Remove values to match minimum and maximum
+    #     for ds in [esData, liData, ltData]:
+    #         l = []
+    #         for k in ds.columns.keys():
+    #             if Utilities.isFloat(k):
+    #                 num = float(k)
+    #                 if num < matchMin:
+    #                     l.append(k)
+    #                 elif num > matchMax:
+    #                     l.append(k)
+    #         for k in l:
+    #             del ds.columns[k]
 
-        esData.columnsToDataset()
-        liData.columnsToDataset()
-        ltData.columnsToDataset()
+    #     esData.columnsToDataset()
+    #     liData.columnsToDataset()
+    #     ltData.columnsToDataset()
 
     @staticmethod
     def matchWavelengths(node):
@@ -298,8 +298,6 @@ class ProcessL1b_Interp:
         root.copyAttributes(node)
 
         interval = float(ConfigFile.settings["fL1bInterpInterval"])
-
-        # root.attributes["WAVEL_INTERP"] = (str(interval) + " nm")
 
         newReferenceGroup = root.addGroup("IRRADIANCE")
         newSASGroup = root.addGroup("RADIANCE")
@@ -387,7 +385,7 @@ class ProcessL1b_Interp:
         Process time and wavelength interpolation across instruments and ancillary data
         '''
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
-        node  = Utilities.rootAddDateTime(node)
+        # node  = Utilities.rootAddDateTime(node)
 
         root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class
         root.copyAttributes(node) # Now copy the attributes in from the L1d object
@@ -396,6 +394,10 @@ class ProcessL1b_Interp:
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         root.attributes["FILE_CREATION_TIME"] = timestr
+        if  ConfigFile.settings["bL1bDefaultCal"]:
+            root.attributes['CAL_TYPE'] = 'Default/Factory'
+        else:
+            root.attributes['CAL_TYPE'] = 'Full Character'
         root.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
         msg = f"ProcessL1b_Interp.processL1b_Interp: {timestr}"
@@ -677,12 +679,12 @@ class ProcessL1b_Interp:
         #ProcessL1b_Interp.dataAveraging(newLIData)
         #ProcessL1b_Interp.dataAveraging(newLTData)
 
-        # # DATETIME is not supported in HDF5; remove from groups that still have it
-        # for gp in root.groups:
-        #     for dsName in gp.datasets:
-        #         ds = gp.datasets[dsName]
-        #         if "Datetime" in ds.columns:
-        #             ds.columns.pop("Datetime")
-        #         ds.columnsToDataset() # redundant for radiometry, but harmless
+        # DATETIME is not supported in HDF5; remove from groups that still have it
+        for gp in root.groups:
+            for dsName in gp.datasets:
+                ds = gp.datasets[dsName]
+                if "Datetime" in ds.columns:
+                    ds.columns.pop("Datetime")
+                ds.columnsToDataset() # redundant for radiometry, but harmless
 
         return root

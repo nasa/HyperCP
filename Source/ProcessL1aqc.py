@@ -489,8 +489,8 @@ class ProcessL1aqc:
         if ConfigFile.settings["bL1aqcSolarTracker"]:
             gp = None
             for group in node.groups:
-                    if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
-                        gp = group
+                if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
+                    gp = group
 
             if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):
                 timeStamp = gp.getDataset("DATETIME").data

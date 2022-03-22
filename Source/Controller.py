@@ -338,16 +338,6 @@ class Controller:
         if root is not None:
             try:
                 root.writeHDF5(outFilePath)
-
-                # Create Plots
-                # Radiometry
-                _, filename = os.path.split(outFilePath)
-                if ConfigFile.settings['bL2PlotEs']==1:
-                    Utilities.plotRadiometryL1D(root, filename, rType='ES')
-                if ConfigFile.settings['bL2PlotLi']==1:
-                    Utilities.plotRadiometryL1D(root, filename, rType='LI')
-                if ConfigFile.settings['bL2PlotLt']==1:
-                    Utilities.plotRadiometryL1D(root, filename, rType='LT')
             except:
                 msg = "Controller.ProcessL1b: Unable to write file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)

@@ -591,6 +591,86 @@ class Utilities:
 
         return new_y
 
+
+    @staticmethod
+    def filterData(group, badTimes, sensor = None):
+        ''' Delete flagged records. Sensor is only specified to get the timestamp.
+            All data in the group (including satellite sensors) will be deleted.
+            Called by both ProcessL1bqc and ProcessL2.'''
+
+        msg = f'Remove {group.id} Data'
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        if sensor == None:
+            if group.id == "ANCILLARY":
+                timeStamp = group.getDataset("LATITUDE").data["Datetime"]
+            if group.id == "IRRADIANCE":
+                timeStamp = group.getDataset("ES").data["Datetime"]
+            if group.id == "RADIANCE":
+                timeStamp = group.getDataset("LI").data["Datetime"]
+        else:
+            if group.id == "IRRADIANCE":
+                timeStamp = group.getDataset(f"ES_{sensor}").data["Datetime"]
+            if group.id == "RADIANCE":
+                timeStamp = group.getDataset(f"LI_{sensor}").data["Datetime"]
+            if group.id == "REFLECTANCE":
+                timeStamp = group.getDataset(f"Rrs_{sensor}").data["Datetime"]
+
+        startLength = len(timeStamp)
+        msg = f'   Length of dataset prior to removal {startLength} long'
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        # Delete the records in badTime ranges from each dataset in the group
+        finalCount = 0
+        originalLength = len(timeStamp)
+        for dateTime in badTimes:
+            # Need to reinitialize for each loop
+            startLength = len(timeStamp)
+            newTimeStamp = []
+
+            # msg = f'Eliminate data between: {dateTime}'
+            # print(msg)
+            # Utilities.writeLogFile(msg)
+
+            start = dateTime[0]
+            stop = dateTime[1]
+
+            if startLength > 0:
+                counter = 0
+                for i in range(startLength):
+                    if start <= timeStamp[i] and stop >= timeStamp[i]:
+                        try:
+                            group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
+                            counter += 1
+                            finalCount += 1
+                        except:
+                            print('error')
+                    else:
+                        newTimeStamp.append(timeStamp[i])
+            else:
+                msg = 'Data group is empty. Continuing.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+            timeStamp = newTimeStamp.copy()
+
+        if badTimes == []:
+            startLength = 1 # avoids div by zero below when finalCount is 0
+
+        for ds in group.datasets:
+            # if ds != "STATION":
+            try:
+                group.datasets[ds].datasetToColumns()
+            except:
+                print('sheeeeit')
+
+        msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
+        print(msg)
+        Utilities.writeLogFile(msg)
+        return finalCount/originalLength
+
+
     @staticmethod
     def plotRadiometry(root, filename, rType, plotDelta = False):
 

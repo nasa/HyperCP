@@ -9,10 +9,56 @@ from HDFRoot import HDFRoot
 from ProcessL1b_DefaultCal import ProcessL1b_DefaultCal
 from ConfigFile import ConfigFile
 from CalibrationFileReader import CalibrationFileReader
-from Source.ProcessL1b_Interp import ProcessL1b_Interp
+from ProcessL1b_Interp import ProcessL1b_Interp
 from Utilities import Utilities
 
 class ProcessL1b:
+
+    @staticmethod
+    def convertDataset(group, datasetName, newGroup, newDatasetName):
+        ''' Converts a sensor group into the L1B format; option to change dataset name.
+            Moves dataset to new group.
+            The separate DATETAG, TIMETAG2, and DATETIME datasets are combined into
+            the sensor dataset. This also adds a temporary column in the sensor data
+            array for datetime to be used in interpolation. This is later removed, as
+            HDF5 does not support datetime. '''
+
+        dataset = group.getDataset(datasetName)
+        dateData = group.getDataset("DATETAG")
+        timeData = group.getDataset("TIMETAG2")
+        dateTimeData = group.getDataset("DATETIME")
+
+        # Convert degrees minutes to decimal degrees format; only for GPS, not ANCILLARY_METADATA
+        if group.id.startswith("GP"):
+            if newDatasetName == "LATITUDE":
+                latPosData = group.getDataset("LATPOS")
+                latHemiData = group.getDataset("LATHEMI")
+                for i in range(dataset.data.shape[0]):
+                    latDM = latPosData.data["NONE"][i]
+                    latDirection = latHemiData.data["NONE"][i]
+                    latDD = Utilities.dmToDd(latDM, latDirection)
+                    latPosData.data["NONE"][i] = latDD
+            if newDatasetName == "LONGITUDE":
+                lonPosData = group.getDataset("LONPOS")
+                lonHemiData = group.getDataset("LONHEMI")
+                for i in range(dataset.data.shape[0]):
+                    lonDM = lonPosData.data["NONE"][i]
+                    lonDirection = lonHemiData.data["NONE"][i]
+                    lonDD = Utilities.dmToDd(lonDM, lonDirection)
+                    lonPosData.data["NONE"][i] = lonDD
+
+        newSensorData = newGroup.addDataset(newDatasetName)
+
+        # Datetag, Timetag2, and Datetime columns added to sensor data array
+        newSensorData.columns["Datetag"] = dateData.data["NONE"].tolist()
+        newSensorData.columns["Timetag2"] = timeData.data["NONE"].tolist()
+        newSensorData.columns["Datetime"] = dateTimeData.data
+
+        # Copies over the sensor dataset from original group to newGroup
+        for k in dataset.data.dtype.names: # For each waveband (or vector data for other groups)
+            #print("type",type(esData.data[k]))
+            newSensorData.columns[k] = dataset.data[k].tolist()
+        newSensorData.columnsToDataset()
 
     @staticmethod
     def darkCorrection(darkData, darkTimer, lightData, lightTimer):
@@ -26,7 +72,6 @@ class ProcessL1b:
             Utilities.writeLogFile(msg)
             return False
 
-
         if Utilities.hasNan(lightData):
             frameinfo = getframeinfo(currentframe())
             msg = f'found NaN {frameinfo.lineno}'
@@ -38,10 +83,8 @@ class ProcessL1b:
         # Interpolate Dark Dataset to match number of elements as Light Dataset
         newDarkData = np.copy(lightData.data)
         for k in darkData.data.dtype.fields.keys(): # For each wavelength
-            # x = np.copy(darkTimer.data["NONE"]).tolist() # darktimer
             x = np.copy(darkTimer.data).tolist() # darktimer
             y = np.copy(darkData.data[k]).tolist()  # data at that band over time
-            # new_x = lightTimer.data["NONE"].tolist()  # lighttimer
             new_x = lightTimer.data  # lighttimer
 
             if len(x) < 3 or len(y) < 3 or len(new_x) < 3:
@@ -82,10 +125,11 @@ class ProcessL1b:
         darkData.data = newDarkData
 
         if Utilities.hasNan(darkData):
-            msg = "**************Found NAN 2"
+            frameinfo = getframeinfo(currentframe())
+            msg = f'found NaN {frameinfo.lineno}'
             print(msg)
             Utilities.writeLogFile(msg)
-            exit
+            exit()
 
         # Correct light data by subtracting interpolated dark data from light data
         for k in lightData.data.dtype.fields.keys():
@@ -93,10 +137,11 @@ class ProcessL1b:
                 lightData.data[k][x] -= newDarkData[k][x]
 
         if Utilities.hasNan(lightData):
-            msg = "**************Found NAN 3"
+            frameinfo = getframeinfo(currentframe())
+            msg = f'found NaN {frameinfo.lineno}'
             print(msg)
             Utilities.writeLogFile(msg)
-            exit
+            exit()
 
         return True
 
@@ -165,8 +210,9 @@ class ProcessL1b:
     @staticmethod
     def processL1b(node, outFilePath):
         '''
-        Apply dark shutter correction to light data. Then apply either default factory cals or full instrument characterization.
-        Then match timestamps and interpolate wavebands.
+        Apply dark shutter correction to light data. Then apply either default factory cals
+        or full instrument characterization. Introduce uncertainty group.
+        Match timestamps and interpolate wavebands.
         '''
         root = HDFRoot()
         root.copy(node)
@@ -182,6 +228,14 @@ class ProcessL1b:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         root  = Utilities.rootAddDateTime(root)
 
+        ''' It is unclear whether we need to introduce new datasets within radiometry groups for
+            uncertainties prior to dark correction (e.g. what about variability/stability in dark counts?)
+            Otherwise, uncertainty datasets could be added during calibration below to the ES, LI, LT
+            groups. A third option is to add a new group for uncertainties, but this would have to
+            happen after interpolation below so all datasets within the group shared timestamps, as
+            in all other groups. '''
+
+        # Dark Correction
         if not ProcessL1b.processDarkCorrection(root, "ES"):
             msg = 'Error dark correcting ES'
             print(msg)
@@ -198,6 +252,7 @@ class ProcessL1b:
             Utilities.writeLogFile(msg)
             return None
 
+        # Calibration
         # Depending on the Configuration, process either the factory
         # calibration or the complete instrument characterizations
         if ConfigFile.settings['bL1bDefaultCal']:
@@ -205,22 +260,20 @@ class ProcessL1b:
             calPath = os.path.join("Config", calFolder)
             print("Read CalibrationFile ", calPath)
             calibrationMap = CalibrationFileReader.read(calPath)
-            ProcessL1b_DefaultCal.processL1b(node, calibrationMap)
+            ProcessL1b_DefaultCal.processL1b(root, calibrationMap)
 
         elif ConfigFile.settings['bL1bFullFiles']:
-            # This is a placeholder
+            # THIS IS A PLACEHOLDER
             print('Processing full instrument characterizations')
-            # ProcessL1b_FullFiles.processL1b(node, calibrationMap)
+            exit()
+            # ProcessL1b_FullFiles.processL1b(root, calibrationMap)
 
-        # Match instruments to a common timestamp and interpolate to the chosen
-        #   spectral resolution. HyperSAS instruments operate on different timestamps
-        #   and wavebands, so interpolation is required.
-        ProcessL1b_Interp.processL1b_Interp(node, outFilePath)
+        # Interpolation
+        # Match instruments to a common timestamp (slowest shutter, should be Lt) and
+        # interpolate to the chosen spectral resolution. HyperSAS instruments operate on
+        # different timestamps and wavebands, so interpolation is required.
+        root = ProcessL1b_Interp.processL1b_Interp(root, outFilePath)
 
-        # Datetime format is not supported in HDF5; remove
-        # DATETIME is not supported in HDF5; remove
-        for gp in root.groups:
-            if (gp.id == "SOLARTRACKER_STATUS") is False:
-                del gp.datasets["DATETIME"]
+        # Datetime format is not supported in HDF5; already removed in ProcessL1b_Interp.py
 
         return root

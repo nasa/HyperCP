@@ -4,7 +4,6 @@ import glob
 from fpdf import FPDF
 import random
 
-from SeaBASSWriter import SeaBASSWriter
 from SeaBASSHeader import SeaBASSHeader
 from ConfigFile import ConfigFile
 
@@ -59,15 +58,16 @@ class PDF(FPDF):
                                 not 'cloud' in key and not 'wave' in key and not 'secchi' in key and \
                                     not 'water_depth' in key:
                         metaData += f'/{key}={value}\n'
-        if level == "L1B":
-            intro = 'Apply factory calibrations.'
-            metaData = ' \n'
-            metaData += 'Processing Parameters: None\n'
-        if level == "L1C":
-            intro = 'Filter data on pitch, roll, yaw, and azimuth angles.'
 
+        if level == "L1AQC":
+            intro = 'Low level QC (pitch, roll, yaw, and azimuth) and deglitching.'
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
+            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
+                gpDict = {}
+            for gp in root.groups:
+                gpDict[gp.id] = gp
+
             if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
                 if 'HOME_ANGLE' in root.attributes:
                     metaData += f'Rotator Home Angle: {root.attributes["HOME_ANGLE"]}\n'
@@ -81,36 +81,12 @@ class PDF(FPDF):
                 if 'RELATIVE_AZIMUTH_MIN' in root.attributes:
                     metaData += f'Rel Azimuth Min: {root.attributes["RELATIVE_AZIMUTH_MIN"]}\n'
                     metaData += f'Rel Azimuth Max: {root.attributes["RELATIVE_AZIMUTH_MAX"]}\n'
-            else:
 
-                metaData += f'Rotator Home Angle: {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'
-                if ConfigFile.settings['bL1cSolarTracker']:
-                    if ConfigFile.settings['bL1cRotatorDelay']:
-                        metaData += f'Rotator Delay: {ConfigFile.settings["fL1cRotatorDelay"]}\n'
-                    if ConfigFile.settings['bL1cCleanPitchRoll']:
-                        metaData += f'Pitch/Roll Filter: {ConfigFile.settings["fL1cPitchRollPitch"]}\n'
-                    if ConfigFile.settings['bL1cRotatorAngle']:
-                        metaData += f'Rotator Min: {ConfigFile.settings["fL1cRotatorAngleMin"]}\n'
-                        metaData += f'Rotator Max: {ConfigFile.settings["fL1cRotatorAngleMax"]}\n'
-                if ConfigFile.settings['bL1cCleanSunAngle']:
-                    metaData += f'Rel Azimuth Min: {ConfigFile.settings["fL1cSunAngleMin"]}\n'
-                    metaData += f'Rel Azimuth Max: {ConfigFile.settings["fL1cSunAngleMax"]}\n'
-
-        if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
-            gpDict = {}
-            for gp in root.groups:
-                gpDict[gp.id] = gp
-
-        if level == "L1D":
-            intro = 'Deglitch data and apply shutter dark corrections.'
-
-            metaData = ' \n'
-            metaData += 'Processing Parameters: \n'
-            if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
-                if root.attributes['L1D_DEGLITCH'] == 'ON':
-                    # These deglitching parameters might be in root.attributes if from files L1D or L1E,
-                    # or within their respective groups at L2
+                # These deglitching parameters might be in root.attributes if from files L1D or L1E,
+                # or within their respective groups at L2
+                if root.attributes['L1AQC_DEGLITCH'] == 'ON':
                     if 'ES_WINDOW_DARK' in root.attributes:
+                        # Low level has these in root, but L2 has them in groups
                         metaData += f'ES Dark Window: {root.attributes["ES_WINDOW_DARK"]}\n'
                         metaData += f'ES Light Window: {root.attributes["ES_WINDOW_LIGHT"]}\n'
                         metaData += f'ES Dark Sigma: {root.attributes["ES_SIGMA_DARK"]}\n'
@@ -123,7 +99,7 @@ class PDF(FPDF):
                         metaData += f'LI Light Window: {root.attributes["LI_WINDOW_LIGHT"]}\n'
                         metaData += f'LI Dark Sigma: {root.attributes["LI_SIGMA_DARK"]}\n'
                         metaData += f'LI Light Sigma: {root.attributes["LI_SIGMA_LIGHT"]}\n'
-                        if ConfigFile.settings['bL1dThreshold']:
+                        if ConfigFile.settings['bL1aqcThreshold']:
                             metaData += f'ES Light Thresh. Band: {root.attributes["ES_MINMAX_BAND_LIGHT"]}\n'
                             metaData += f'ES Light Min.: {root.attributes["ES_MIN_LIGHT"]}\n'
                             metaData += f'ES Light Max.: {root.attributes["ES_MAX_LIGHT"]}\n'
@@ -144,7 +120,6 @@ class PDF(FPDF):
                             metaData += f'LT Dark Thresh. Band: {root.attributes["LT_MINMAX_BAND_DARK"]}\n'
                             metaData += f'LT Dark Min.: {root.attributes["LT_MIN_DARK"]}\n'
                             metaData += f'LT LDark Max.: {root.attributes["LT_MAX_DARK"]}\n'
-
                     else: # Level 2 files have these in Group attributes
                         metaData += f'ES Dark Window: {gpDict["IRRADIANCE"].attributes["ES_WINDOW_DARK"]}\n'
                         metaData += f'ES Light Window: {gpDict["IRRADIANCE"].attributes["ES_WINDOW_LIGHT"]}\n'
@@ -159,7 +134,7 @@ class PDF(FPDF):
                         metaData += f'LI Dark Sigma: {gpDict["RADIANCE"].attributes["LI_SIGMA_DARK"]}\n'
                         metaData += f'LI Light Sigma: {gpDict["RADIANCE"].attributes["LI_SIGMA_LIGHT"]}\n'
 
-                        if ConfigFile.settings['bL1dThreshold']:
+                        if ConfigFile.settings['bL1aqcThreshold']:
                             metaData += f'ES Light Thresh. Band: {gpDict["IRRADIANCE"].attributes["ES_MINMAX_BAND_LIGHT"]}\n'
                             metaData += f'ES Light Min.: {gpDict["IRRADIANCE"].attributes["ES_MIN_LIGHT"]}\n'
                             metaData += f'ES Light Max.: {gpDict["IRRADIANCE"].attributes["ES_MAX_LIGHT"]}\n'
@@ -180,42 +155,62 @@ class PDF(FPDF):
                             metaData += f'LT Dark Thresh. Band: {gpDict["RADIANCE"].attributes["LT_MINMAX_BAND_DARK"]}\n'
                             metaData += f'LT Dark Min.: {gpDict["RADIANCE"].attributes["LT_MIN_DARK"]}\n'
                             metaData += f'LT Dark Max.: {gpDict["RADIANCE"].attributes["LT_MAX_DARK"]}\n'
+            else:
+                # Failed run, use values from Config
+                metaData += f'Rotator Home Angle: {ConfigFile.settings["fL1aqcRotatorHomeAngle"]}\n'
+                if ConfigFile.settings['bL1aqcSolarTracker']:
+                    if ConfigFile.settings['bL1aqcRotatorDelay']:
+                        metaData += f'Rotator Delay: {ConfigFile.settings["fL1aqcRotatorDelay"]}\n'
+                    if ConfigFile.settings['bL1aqcCleanPitchRoll']:
+                        metaData += f'Pitch/Roll Filter: {ConfigFile.settings["fL1aqcPitchRollPitch"]}\n'
+                    if ConfigFile.settings['bL1aqcRotatorAngle']:
+                        metaData += f'Rotator Min: {ConfigFile.settings["fL1aqcRotatorAngleMin"]}\n'
+                        metaData += f'Rotator Max: {ConfigFile.settings["fL1aqcRotatorAngleMax"]}\n'
+                if ConfigFile.settings['bL1aqcCleanSunAngle']:
+                    metaData += f'Rel Azimuth Min: {ConfigFile.settings["fL1aqcSunAngleMin"]}\n'
+                    metaData += f'Rel Azimuth Max: {ConfigFile.settings["fL1aqcSunAngleMax"]}\n'
 
-            else: # Root is none; this  is a failure report
-                if ConfigFile.settings['bL1dDeglitch']:
-                    metaData += f'ES Dark Window: {ConfigFile.settings["fL1dESWindowDark"]}\n'
-                    metaData += f'ES Light Window: {ConfigFile.settings["fL1dESWindowLight"]}\n'
-                    metaData += f'ES Dark Sigma: {ConfigFile.settings["fL1dESSigmaDark"]}\n'
-                    metaData += f'ES Light Sigma: {ConfigFile.settings["fL1dESSigmaLight"]}\n'
-                    metaData += f'LT Dark Window: {ConfigFile.settings["fL1dLTWindowDark"]}\n'
-                    metaData += f'LT Light Window: {ConfigFile.settings["fL1dLTWindowLight"]}\n'
-                    metaData += f'LT Dark Sigma: {ConfigFile.settings["fL1dLTSigmaDark"]}\n'
-                    metaData += f'LT Light Sigma: {ConfigFile.settings["fL1dLTSigmaLight"]}\n'
-                    metaData += f'LI Dark Window: {ConfigFile.settings["fL1dLIWindowDark"]}\n'
-                    metaData += f'LI Light Window: {ConfigFile.settings["fL1dLIWindowLight"]}\n'
-                    metaData += f'LI Dark Sigma: {ConfigFile.settings["fL1dLISigmaDark"]}\n'
-                    metaData += f'LI Light Sigma: {ConfigFile.settings["fL1dLISigmaLight"]}\n'
+                if ConfigFile.settings['bL1aqcDeglitch']:
+                    metaData += f'ES Dark Window: {ConfigFile.settings["fL1aqcESWindowDark"]}\n'
+                    metaData += f'ES Light Window: {ConfigFile.settings["fL1aqcESWindowLight"]}\n'
+                    metaData += f'ES Dark Sigma: {ConfigFile.settings["fL1aqcESSigmaDark"]}\n'
+                    metaData += f'ES Light Sigma: {ConfigFile.settings["fL1aqcESSigmaLight"]}\n'
+                    metaData += f'LT Dark Window: {ConfigFile.settings["fL1aqcLTWindowDark"]}\n'
+                    metaData += f'LT Light Window: {ConfigFile.settings["fL1aqcLTWindowLight"]}\n'
+                    metaData += f'LT Dark Sigma: {ConfigFile.settings["fL1aqcLTSigmaDark"]}\n'
+                    metaData += f'LT Light Sigma: {ConfigFile.settings["fL1aqcLTSigmaLight"]}\n'
+                    metaData += f'LI Dark Window: {ConfigFile.settings["fL1aqcLIWindowDark"]}\n'
+                    metaData += f'LI Light Window: {ConfigFile.settings["fL1aqcLIWindowLight"]}\n'
+                    metaData += f'LI Dark Sigma: {ConfigFile.settings["fL1aqcLISigmaDark"]}\n'
+                    metaData += f'LI Light Sigma: {ConfigFile.settings["fL1aqcLISigmaLight"]}\n'
 
-                    if ConfigFile.settings['bL1dThreshold']:
-                        metaData += f'ES Light Thresh. Band: {ConfigFile.settings["fL1dESMinMaxBandLight"]}\n'
-                        metaData += f'ES Dark Thresh. Band: {ConfigFile.settings["fL1dESMinMaxBandDark"]}\n'
-                        metaData += f'ES Min.: {ConfigFile.settings["fL1dESMinLight"]}\n'
-                        metaData += f'ES Max.: {ConfigFile.settings["fL1dESMaxLight"]}\n'
-                        metaData += f'LI Dark Thresh. Band: {ConfigFile.settings["fL1dLIMinMaxBandDark"]}\n'
-                        metaData += f'LI Min.: {ConfigFile.settings["fL1dLIMinLight"]}\n'
-                        metaData += f'LI Max.: {ConfigFile.settings["fL1dLIMaxLight"]}\n'
-                        metaData += f'LT Dark Thresh. Band: {ConfigFile.settings["fL1dLTMinMaxBandDark"]}\n'
-                        metaData += f'LT Min.: {ConfigFile.settings["fL1dLTMinLight"]}\n'
-                        metaData += f'LT Max.: {ConfigFile.settings["fL1dLTMaxLight"]}\n'
+                    if ConfigFile.settings['bL1aqcThreshold']:
+                        metaData += f'ES Light Thresh. Band: {ConfigFile.settings["fL1aqcESMinMaxBandLight"]}\n'
+                        metaData += f'ES Dark Thresh. Band: {ConfigFile.settings["fL1aqcESMinMaxBandDark"]}\n'
+                        metaData += f'ES Min.: {ConfigFile.settings["fL1aqcESMinLight"]}\n'
+                        metaData += f'ES Max.: {ConfigFile.settings["fL1aqcESMaxLight"]}\n'
+                        metaData += f'LI Dark Thresh. Band: {ConfigFile.settings["fL1aqcLIMinMaxBandDark"]}\n'
+                        metaData += f'LI Min.: {ConfigFile.settings["fL1aqcLIMinLight"]}\n'
+                        metaData += f'LI Max.: {ConfigFile.settings["fL1aqcLIMaxLight"]}\n'
+                        metaData += f'LT Dark Thresh. Band: {ConfigFile.settings["fL1aqcLTMinMaxBandDark"]}\n'
+                        metaData += f'LT Min.: {ConfigFile.settings["fL1aqcLTMinLight"]}\n'
+                        metaData += f'LT Max.: {ConfigFile.settings["fL1aqcLTMaxLight"]}\n'
 
-        if level == "L1E":
-            intro = 'Interpolate data to common timestamps and wavebands.'
-
-            metaData = 'Processing Parameters: \n'
+        if level == "L1B":
+            intro = 'Dark correction. Calibration and/or full characterization. Match timestamps & wavebands.'
+            metaData = ' \n'
+            metaData += 'Processing Parameters: None\n'
             if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
+                metaData += f'Cal. Type: {root.attributes["CAL_TYPE"]}\n'
                 metaData += f'Wavelength Interp Int: {root.attributes["WAVE_INTERP"]}\n'
             else:
+                if  ConfigFile.settings["bL1bDefaultCal"]:
+                    metaData += 'Cal. Type: Default/Factory'
+                else:
+                    metaData += 'Cal. Type: Full Character'
                 metaData += f'Wavelength Interp Int: {ConfigFile.settings["fL1eInterpInterval"]}\n'
+
+
         if level == "L2":
             intro = 'Apply more quality control filters, temporal binning, '\
                 'station selection, glint correction, NIR corrections, reflectance '\
@@ -270,9 +265,9 @@ class PDF(FPDF):
                     if ConfigFile.settings['bL2SimSpecNIRCorrection']:
                         metaData += 'NIR Correction: Ruddick et al. 2005/2006'
                 else:
-                    metaData += f'NIR Correction: None'
+                    metaData += 'NIR Correction: None'
                 if ConfigFile.settings['bL2NegativeSpec']:
-                    metaData += f'Remove Negatives: ON'
+                    metaData += 'Remove Negatives: ON'
 
         metaData += ' \n'
         return intro, metaData
@@ -370,18 +365,18 @@ class PDF(FPDF):
                         LTSigmaDark = gpDict["RADIANCE"].attributes['LT_SIGMA_DARK']
                         LTSigmaLight = gpDict["RADIANCE"].attributes['LT_SIGMA_LIGHT']
             else:
-                ESWindowDark = ConfigFile.settings['fL1dESWindowDark']
-                ESWindowLight = ConfigFile.settings['fL1dESWindowLight']
-                ESSigmaDark = ConfigFile.settings['fL1dESSigmaDark']
-                ESSigmaLight = ConfigFile.settings['fL1dESSigmaLight']
-                LIWindowDark = ConfigFile.settings['fL1dLIWindowDark']
-                LIWindowLight = ConfigFile.settings['fL1dLIWindowLight']
-                LISigmaDark = ConfigFile.settings['fL1dLISigmaDark']
-                LISigmaLight = ConfigFile.settings['fL1dLISigmaLight']
-                LTWindowDark = ConfigFile.settings['fL1dLTWindowDark']
-                LTWindowLight = ConfigFile.settings['fL1dLTWindowLight']
-                LTSigmaDark = ConfigFile.settings['fL1dLTSigmaDark']
-                LTSigmaLight = ConfigFile.settings['fL1dLTSigmaLight']
+                ESWindowDark = ConfigFile.settings['fL1aqcESWindowDark']
+                ESWindowLight = ConfigFile.settings['fL1aqcESWindowLight']
+                ESSigmaDark = ConfigFile.settings['fL1aqcESSigmaDark']
+                ESSigmaLight = ConfigFile.settings['fL1aqcESSigmaLight']
+                LIWindowDark = ConfigFile.settings['fL1aqcLIWindowDark']
+                LIWindowLight = ConfigFile.settings['fL1aqcLIWindowLight']
+                LISigmaDark = ConfigFile.settings['fL1aqcLISigmaDark']
+                LISigmaLight = ConfigFile.settings['fL1aqcLISigmaLight']
+                LTWindowDark = ConfigFile.settings['fL1aqcLTWindowDark']
+                LTWindowLight = ConfigFile.settings['fL1aqcLTWindowLight']
+                LTSigmaDark = ConfigFile.settings['fL1aqcLTSigmaDark']
+                LTSigmaLight = ConfigFile.settings['fL1aqcLTSigmaLight']
 
             print('Adding deglitching plots...')
             # ES

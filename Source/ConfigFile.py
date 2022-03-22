@@ -80,24 +80,24 @@ class ConfigFile:
         print("bL1bPlotTimeInterp", ConfigFile.settings["bL1bPlotTimeInterp"])
         print("fL1bPlotInterval", ConfigFile.settings["fL1bPlotInterval"])
 
-        print("bL2pGetAnc", ConfigFile.settings["bL2pGetAnc"])
-        print("bL2pObpgCreds", ConfigFile.settings["bL2pObpgCreds"])
+        print("bL1bqcGetAnc", ConfigFile.settings["bL1bqcGetAnc"])
+        print("bL1bqcObpgCreds", ConfigFile.settings["bL1bqcObpgCreds"])
 
-        print("bL2LtUVNIR", ConfigFile.settings["bL2LtUVNIR"])
-        print("fL2MaxWind", ConfigFile.settings["fL2MaxWind"])
-        print("fL2SZAMin", ConfigFile.settings["fL2SZAMin"])
-        print("fL2SZAMax", ConfigFile.settings["fL2SZAMax"])
+        print("bL1bqcLtUVNIR", ConfigFile.settings["bL1bqcLtUVNIR"])
+        print("fL1bqcMaxWind", ConfigFile.settings["fL1bqcMaxWind"])
+        print("fL1bqcSZAMin", ConfigFile.settings["fL1bqcSZAMin"])
+        print("fL1bqcSZAMax", ConfigFile.settings["fL1bqcSZAMax"])
 
-        print("bL2EnableSpecQualityCheck", ConfigFile.settings["bL2EnableSpecQualityCheck"])
-        print("fL2SpecFilterEs", ConfigFile.settings["fL2SpecFilterEs"])
-        print("fL2SpecFilterLi", ConfigFile.settings["fL2SpecFilterLi"])
-        print("fL2SpecFilterLt", ConfigFile.settings["fL2SpecFilterLt"])
+        print("bL1bqcEnableSpecQualityCheck", ConfigFile.settings["bL1bqcEnableSpecQualityCheck"])
+        print("fL1bqcSpecFilterEs", ConfigFile.settings["fL1bqcSpecFilterEs"])
+        print("fL1bqcSpecFilterLi", ConfigFile.settings["fL1bqcSpecFilterLi"])
+        print("fL1bqcSpecFilterLt", ConfigFile.settings["fL1bqcSpecFilterLt"])
 
-        print("bL2EnableQualityFlags", ConfigFile.settings["bL2EnableQualityFlags"])
-        print("fL2CloudFlag", ConfigFile.settings["fL2CloudFlag"])
-        print("fL2SignificantEsFlag", ConfigFile.settings["fL2SignificantEsFlag"])
-        print("fL2DawnDuskFlag", ConfigFile.settings["fL2DawnDuskFlag"])
-        print("fL2RainfallHumidityFlag", ConfigFile.settings["fL2RainfallHumidityFlag"])
+        print("bL1bqcEnableQualityFlags", ConfigFile.settings["bL1bqcEnableQualityFlags"])
+        print("fL1bqcCloudFlag", ConfigFile.settings["fL1bqcCloudFlag"])
+        print("fL1bqcSignificantEsFlag", ConfigFile.settings["fL1bqcSignificantEsFlag"])
+        print("fL1bqcDawnDuskFlag", ConfigFile.settings["fL1bqcDawnDuskFlag"])
+        print("fL1bqcRainfallHumidityFlag", ConfigFile.settings["fL1bqcRainfallHumidityFlag"])
 
         print("fL2TimeInterval", ConfigFile.settings["fL2TimeInterval"])
         print("bL2EnablePercentLt", ConfigFile.settings["bL2EnablePercentLt"])
@@ -279,8 +279,12 @@ class ConfigFile:
         ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain
 
 
-        ConfigFile.settings["bL2pGetAnc"] = 0
-        ConfigFile.settings["bL2pObpgCreds"] = 0
+        ConfigFile.settings["bL1bqcGetAnc"] = 0
+        ConfigFile.settings["bL1bqcObpgCreds"] = 0
+        ConfigFile.settings["fL1bqcDefaultWindSpeed"] = 5.0
+        ConfigFile.settings["fL1bqcDefaultAOD"] = 0.5
+        ConfigFile.settings["fL1bqcDefaultSalt"] = 35.0
+        ConfigFile.settings["fL1bqcDefaultSST"] = 26.0
 
         ConfigFile.settings["bL2Stations"] = 0
         ConfigFile.settings["fL2TimeInterval"] = 300
@@ -288,10 +292,6 @@ class ConfigFile:
         ConfigFile.settings["fL2PercentLt"] = 5 # 5% Hooker et al. 2002, Hooker and Morel 2003; <10% IOCCG Protocols
 
         ConfigFile.settings["fL2RhoSky"] = 0.0256 # Mobley 1999
-        ConfigFile.settings["fL2DefaultWindSpeed"] = 5.0
-        ConfigFile.settings["fL2DefaultAOD"] = 0.5
-        ConfigFile.settings["fL2DefaultSalt"] = 35.0
-        ConfigFile.settings["fL2DefaultSST"] = 26.0
         ConfigFile.settings["bL23CRho"] = 1
         ConfigFile.settings["bL2ZhangRho"] = 0
         ConfigFile.settings["bL2DefaultRho"] = 0

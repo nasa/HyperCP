@@ -500,6 +500,10 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! LT Dark Sigma = {ConfigFile.settings["fL1aqcLTSigmaDark"]}\n'+\
             f'! LT Light Sigma = {ConfigFile.settings["fL1aqcLTSigmaLight"]}\n'+\
             f'! Wavelength Interp Int = {ConfigFile.settings["fL1bInterpInterval"]}\n'+\
+            f'! Default Wind = {ConfigFile.settings["fL1bqcDefaultWindSpeed"]}\n'+\
+            f'! Default AOD = {ConfigFile.settings["fL1bqcDefaultAOD"]}\n'+\
+            f'! Default Salt = {ConfigFile.settings["fL1bqcDefaultSalt"]}\n'+\
+            f'! Default SST = {ConfigFile.settings["fL1bqcDefaultSST"]}\n'+\
             f'! Max Wind = {ConfigFile.settings["fL1bqcMaxWind"]}\n'+\
             f'! Min SZA = {ConfigFile.settings["fL1bqcSZAMin"]}\n'+\
             f'! Max SZA = {ConfigFile.settings["fL1bqcSZAMax"]}\n'+\
@@ -516,10 +520,6 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! Percent Lt Filter = {ltFilt}\n'+\
             f'! Percent Light = {ConfigFile.settings["fL2PercentLt"]}\n'+\
             f'! Glint_Correction = {rhoCorr}\n'+\
-            f'! Default Wind = {ConfigFile.settings["fL2DefaultWindSpeed"]}\n'+\
-            f'! Default AOD = {ConfigFile.settings["fL2DefaultAOD"]}\n'+\
-            f'! Default Salt = {ConfigFile.settings["fL2DefaultSalt"]}\n'+\
-            f'! Default SST = {ConfigFile.settings["fL2DefaultSST"]}\n'+\
             f'! NIR Correction = {NIRFilt}\n'+\
             f'! Remove Negatives = {NegativeFilt}'
             # f'! Processing DateTime = {time.asctime()}'

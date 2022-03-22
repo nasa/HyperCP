@@ -70,7 +70,8 @@ class ProcessL1a:
             gp.getTableHeader(cf.sensorType)
             gp.attributes["DISTANCE_1"] = "Pressure " + cf.sensorType + " 1 1 0"
             gp.attributes["DISTANCE_2"] = "Surface " + cf.sensorType + " 1 1 0"
-            gp.attributes["SensorDataList"] = ", ".join([x for x in gp.datasets.keys()])
+            # gp.attributes["SensorDataList"] = ", ".join([x for x in gp.datasets.keys()])
+            gp.attributes["SensorDataList"] = ", ".join(list(gp.datasets.keys()))
             if gp.id != 'SAS' and gp.id != 'Reference':
                 root.groups.append(gp)
 
@@ -155,7 +156,7 @@ class ProcessL1a:
                     if (gpsSecPrior - gpsSec) > 86000:
                         # Once triggered the first time, this will remain true for remainder of file
                         newDay = True
-                    if newDay == True:
+                    if newDay is True:
                         gpsDateTag.append(esDateTag[-1])
                         dtDate = Utilities.dateTagToDateTime(esDateTag[-1])
                         gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
@@ -209,10 +210,5 @@ class ProcessL1a:
                             Utilities.writeLogFile(msg)
                 else:
                     print(f'No FrameTag in {gp.id} group')
-                    # except:
-                    #     msg = f'FrameTag does not exist in the group {gp.id}.'
-                    #     print(msg)
-                    #     Utilities.writeLogFile(msg)
-                    #     return None
 
         return root
