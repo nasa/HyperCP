@@ -24,7 +24,6 @@ class Controller:
     @staticmethod
     def writeReport(fileName, pathOut, outFilePath, level, inFilePath):
         print('Writing PDF Report...')
-        # numLevelDict = {'L1A':1,'L1B':2,'L1C':3,'L1D':4,'L1E':5,'L2':6}
         numLevelDict = {'L1A':1,'L1AQC':2,'L1B':3,'L1BQC':4,'L2':5}
         numLevel = numLevelDict[level]
         fp = os.path.join(pathOut, level, f'{fileName}_{level}.hdf')
@@ -525,7 +524,7 @@ class Controller:
                 anomAnalFileName = anomAnalFileName + '_anoms.csv'
                 fp = os.path.join('Config',anomAnalFileName)
                 if os.path.exists(fp):
-                    msg = 'Deglitching anomaly file found for this L1C. Using these parameters.'
+                    msg = 'Deglitching anomaly file found for this L1AQC. Using these parameters.'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     params = Utilities.readAnomAnalFile(fp)
