@@ -59,7 +59,7 @@ class ProcessL1b_DefaultCal:
 
     @staticmethod
     def processOPTIC3(ds, cd, immersed, inttime):
-        a0 = float(cd.coefficients[0])
+        # a0 = float(cd.coefficients[0])
         a1 = float(cd.coefficients[1])
         im = float(cd.coefficients[2]) if immersed else 1.0
         cint = float(cd.coefficients[3])
@@ -69,8 +69,13 @@ class ProcessL1b_DefaultCal:
         #print(cd.id)
         for x in range(ds.data.shape[0]):
             aint = inttime.data[cd.type][x]
-            #v = self.data[k][x]
-            ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
+            # ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
+            ##############################################################
+            #   When applying calibration to the dark current corrected
+            #   radiometry, a0 cancels (see ProSoftUserManual7.7 11.1.1.5 Eqns 5-6)
+            #   presuming light and dark factory cals are equivalent (which they are).
+            ##############################################################
+            ds.data[k][x] = im * a1 * (ds.data[k][x]) * (cint/aint)
 
     @staticmethod
     def processOPTIC4(ds, cd, immersed):
@@ -86,6 +91,10 @@ class ProcessL1b_DefaultCal:
     # Process THERM1 - not implemented
     @staticmethod
     def processTHERM1(ds, cd):
+        ''' This should be implemented. '''
+        msg = 'Thermal response ignored!'
+        print(msg)
+        Utilities.writeLogFile(msg)
         return
 
     @staticmethod
@@ -167,7 +176,7 @@ class ProcessL1b_DefaultCal:
     @staticmethod
     def processL1b(node, calibrationMap):
         '''
-        Calibrates raw data from L1a using information from calibration file
+        Calibrates L1a using information from calibration file
         '''
 
         esUnits = None
@@ -194,7 +203,6 @@ class ProcessL1b_DefaultCal:
             print(msg)
             Utilities.writeLogFile(msg)
             if "CalFileName" in gp.attributes:
-                #cf = calibrationMap[gp.attributes["FrameTag"]]
                 cf = calibrationMap[gp.attributes["CalFileName"]]
                 #print(gp.id, gp.attributes)
                 msg = f'    File: {cf.id}'

@@ -275,7 +275,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bqcSZAMaxLineEdit.setValidator(doubleValidator)
 
         # L1BQC Spectral Outlier Filter
-        l1bqcSpecQualityCheckLabel = QtWidgets.QLabel("     Enable Spectral Outlier Filter", self)
+        l1bqcSpecQualityCheckLabel = QtWidgets.QLabel("     Enable Spectral Outlier Filter & Plots", self)
         self.l1bqcSpecQualityCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bqcEnableSpecQualityCheck"]) == 1:
             self.l1bqcSpecQualityCheckBox.setChecked(True)

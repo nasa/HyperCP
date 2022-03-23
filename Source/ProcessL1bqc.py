@@ -98,8 +98,8 @@ class ProcessL1bqc:
     @staticmethod
     def specQualityCheck(group, inFilePath, station=None):
         ''' Perform spectral filtering
-        Calculate the STD of the normalized (at some max value) average ensemble.
-        Then test each normalized spectrum against the ensemble average and STD and negatives (within the spectral range).
+        Calculate the STD of the normalized (at some max value) spectra in the file.
+        Then test each normalized spectrum against the file average and STD and negatives (within the spectral range).
         Plot results'''
 
         # This is the range upon which the spectral filter is applied (and plotted)
@@ -270,19 +270,19 @@ class ProcessL1bqc:
         return badTimes
 
 
-    @staticmethod
-    def columnToSlice(columns, start, end):
-        ''' Take a slice of a dataset stored in columns '''
+    # @staticmethod
+    # def columnToSlice(columns, start, end):
+    #     ''' Take a slice of a dataset stored in columns '''
 
-        # Each column is a time series either at a waveband for radiometer columns, or various grouped datasets for ancillary
-        # Start and end are defined by the interval established in the Config (they are indexes)
-        newSlice = collections.OrderedDict()
-        for k in columns:
-            if start == end:
-                newSlice[k] = columns[k][start:end+1] # otherwise you get nada []
-            else:
-                newSlice[k] = columns[k][start:end] # up to not including end...next slice will pick it up
-        return newSlice
+    #     # Each column is a time series either at a waveband for radiometer columns, or various grouped datasets for ancillary
+    #     # Start and end are defined by the interval established in the Config (they are indexes)
+    #     newSlice = collections.OrderedDict()
+    #     for k in columns:
+    #         if start == end:
+    #             newSlice[k] = columns[k][start:end+1] # otherwise you get nada []
+    #         else:
+    #             newSlice[k] = columns[k][start:end] # up to not including end...next slice will pick it up
+    #     return newSlice
 
 
     @staticmethod
@@ -450,33 +450,29 @@ class ProcessL1bqc:
 
             ancGroup.datasets[ds].columnsToDataset()
 
-    @staticmethod
-    def sliceAveHyper(y, hyperSlice):
-        ''' Take the slice mean of the lowest X% of hyperspectral slices '''
-        xSlice = collections.OrderedDict()
-        xStd = collections.OrderedDict()
-        hasNan = False
-        # Ignore runtime warnings when array is all NaNs
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-            for k in hyperSlice: # each k is a time series at a waveband.
-                v = [hyperSlice[k][i] for i in y] # selects the lowest 5% within the interval window...
-                mean = np.nanmean(v) # ... and averages them
-                std = np.nanstd(v) # ... and the stdev for uncertainty estimates
-                xSlice[k] = [mean]
-                xStd[k] = [std]
-                if np.isnan(mean):
-                    hasNan = True
-        return hasNan, xSlice, xStd
+    # @staticmethod
+    # def sliceAveHyper(y, hyperSlice):
+    #     ''' Take the slice mean of the lowest X% of hyperspectral slices '''
+    #     xSlice = collections.OrderedDict()
+    #     xStd = collections.OrderedDict()
+    #     hasNan = False
+    #     # Ignore runtime warnings when array is all NaNs
+    #     with warnings.catch_warnings():
+    #         warnings.simplefilter("ignore", category=RuntimeWarning)
+    #         for k in hyperSlice: # each k is a time series at a waveband.
+    #             v = [hyperSlice[k][i] for i in y] # selects the lowest 5% within the interval window...
+    #             mean = np.nanmean(v) # ... and averages them
+    #             std = np.nanstd(v) # ... and the stdev for uncertainty estimates
+    #             xSlice[k] = [mean]
+    #             xStd[k] = [std]
+    #             if np.isnan(mean):
+    #                 hasNan = True
+    #     return hasNan, xSlice, xStd
 
     @staticmethod
     def QC(root, node, modRoot):
-        ''' Filter out high wind and high/low SZA.
-            Interpolate ancillary/model data, average intervals.
-            Run meteorology quality checks.
-            Pass to calculateREFLECTANCE2 for rho calcs, Rrs, NIR correction.'''
-
-        print("calculateREFLECTANCE")
+        ''' Add model data. QC for wind, Lt, SZA, spectral outliers, and met filters'''
+        print("Add model data. QC for wind, Lt, SZA, spectral outliers, and met filters")
 
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
@@ -599,7 +595,7 @@ class ProcessL1bqc:
 
         #################################################################################
 
-        #   Filter the spectra from the entire collection before slicing the intervals (now in L2)
+        #   Filter the spectra from the entire collection before slicing the intervals at L2
 
         ##################################################################################
 
@@ -615,6 +611,7 @@ class ProcessL1bqc:
                 print('Removing records... Can be slow for large files')
                 check = Utilities.filterData(referenceGroup, badTimes)
                 # check is now fraction removed
+                #   I.e., if >99% of the Es spectra from this entire file were remove, abort this file
                 if check > 0.99:
                     msg = "Too few spectra remaining. Abort."
                     print(msg)
@@ -627,19 +624,17 @@ class ProcessL1bqc:
         maxWind = float(ConfigFile.settings["fL1bqcMaxWind"])
 
         wind = ancGroup.getDataset("WINDSPEED").data["WINDSPEED"]
-        timeStamp = ancGroup.datasets["WINDSPEEDD"].columns["Datetime"]
+        timeStamp = ancGroup.datasets["WINDSPEED"].columns["Datetime"]
 
         badTimes = None
         i=0
         start = -1
         stop = []
-        for index, _ in enumerate(SZA):
+        for index, _ in enumerate(wind):
             if wind[index] > maxWind:
                 i += 1
                 if start == -1:
-
                     msg =f'High Wind: {round(wind[index])}'
-
                     Utilities.writeLogFile(msg)
                     start = index
                 stop = index
@@ -772,8 +767,18 @@ class ProcessL1bqc:
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False
-                Utilities.filterData(sasGroup, badTimes)
-                Utilities.filterData(ancGroup, badTimes)
+                check = Utilities.filterData(sasGroup, badTimes)
+                if check > 0.99:
+                    msg = "Too few spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
+                check = Utilities.filterData(ancGroup, badTimes)
+                if check > 0.99:
+                    msg = "Too few spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
 
         # Next apply the Meteorological Filter prior to slicing
         esData = referenceGroup.getDataset("ES")

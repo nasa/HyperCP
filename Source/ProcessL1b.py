@@ -263,7 +263,7 @@ class ProcessL1b:
             ProcessL1b_DefaultCal.processL1b(root, calibrationMap)
 
         elif ConfigFile.settings['bL1bFullFiles']:
-            # THIS IS A PLACEHOLDER
+            ''' THIS IS A PLACEHOLDER '''
             print('Processing full instrument characterizations')
             exit()
             # ProcessL1b_FullFiles.processL1b(root, calibrationMap)

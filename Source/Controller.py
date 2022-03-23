@@ -350,6 +350,8 @@ class Controller:
         root = None
         _,fileName = os.path.split(outFilePath)
 
+
+
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
             return None
@@ -365,7 +367,7 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None
 
-        # root = ProcessL1bqc.processL1bqc(root, fileName)
+        root.attributes['In_Filepath'] = inFilePath
         root = ProcessL1bqc.processL1bqc(root)
 
         # Write output file
@@ -409,7 +411,6 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None, outFilePath
 
-        root.attributes['In_Filepath'] = inFilePath
         root = ProcessL2.processL2(root)
 
         outPath, filename = os.path.split(outFilePath)
