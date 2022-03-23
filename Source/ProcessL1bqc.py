@@ -1,14 +1,9 @@
 
-import collections
-import warnings
-
 import numpy as np
 import scipy as sp
 import datetime as datetime
 
-import HDFRoot
 from MainConfig import MainConfig
-from AncillaryReader import AncillaryReader
 from GetAnc import GetAnc
 from Utilities import Utilities
 from ConfigFile import ConfigFile
@@ -16,49 +11,6 @@ from ConfigFile import ConfigFile
 
 class ProcessL1bqc:
     '''Process L1BQC'''
-
-    @staticmethod
-    # def Thuillier(dateTag, wavelength):
-    def TSIS_1(dateTag, wavelength):
-        def dop(year):
-            # day of perihelion
-            years = list(range(2001,2031))
-            key = [str(x) for x in years]
-            day = [4, 2, 4, 4, 2, 4, 3, 2, 4, 3, 3, 5, 2, 4, 4, 2, 4, 3, 3, 5, 2, 4, 4, 3, 4, 3, 3, 5, 2, 3]
-            dop = {key[i]: day[i] for i in range(0, len(key))}
-            result = dop[str(year)]
-            return result
-
-        fp = 'Data/hybrid_reference_spectrum_p1nm_resolution_c2020-09-21_with_unc.nc'
-        # fp = 'Data/Thuillier_F0.sb'
-        # print("SB_support.readSB: " + fp)
-        print("Reading : " + fp)
-        if not HDFRoot.HDFRoot.readHDF5(fp):
-            msg = "Unable to read TSIS-1 netcdf file."
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return None
-        else:
-            F0_hybrid = HDFRoot.HDFRoot.readHDF5(fp)
-            # F0_raw = np.array(Thuillier.data['esun']) # uW cm^-2 nm^-1
-            # wv_raw = np.array(Thuillier.data['wavelength'])
-            F0_raw = np.array(F0_hybrid['SSI']) # W m^-2 nm^-1
-            wv_raw = np.array(F0_hybrid['Vacuum Wavelength'])
-            # Earth-Sun distance
-            day = int(str(dateTag)[4:7])
-            year = int(str(dateTag)[0:4])
-            eccentricity = 0.01672
-            dayFactor = 360/365.256363
-            dayOfPerihelion = dop(year)
-            dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
-            F0_fs = F0_raw*dES
-
-            F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
-            # Use the strings for the F0 dict
-            wavelengthStr = [str(wave) for wave in wavelength]
-            F0 = collections.OrderedDict(zip(wavelengthStr, F0))
-
-        return F0
 
     @staticmethod
     def interpolateColumn(columns, wl):
@@ -484,7 +436,7 @@ class ProcessL1bqc:
         # are culled from datasets in groups in L1B
         ProcessL1bqc.includeModelDefaults(ancGroup, modRoot)
 
-        # Shift metadata into the ANCILLARY group as needed.
+        # Shift metadata into the ANCILLARY group as needed (i.e. from GPS).
         #
         # GPS Group
         # These have TT2/Datetag incorporated in arrays

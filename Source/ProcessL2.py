@@ -1,6 +1,5 @@
 
 import collections
-import sys
 import warnings
 
 import numpy as np
@@ -12,58 +11,15 @@ from PyQt5 import QtWidgets
 from tqdm import tqdm
 
 import HDFRoot
-from MainConfig import MainConfig
-from AncillaryReader import AncillaryReader
 from Utilities import Utilities
 from ConfigFile import ConfigFile
 from RhoCorrections import RhoCorrections
-from GetAnc import GetAnc
-from SB_support import readSB
 from Weight_RSR import Weight_RSR
 from ProcessL2OCproducts import ProcessL2OCproducts
 
 
 class ProcessL2:
-    '''Process L2'''
-
-    @staticmethod
-    def Thuillier(dateTag, wavelength):
-        def dop(year):
-            # day of perihelion
-            years = list(range(2001,2031))
-            key = [str(x) for x in years]
-            day = [4, 2, 4, 4, 2, 4, 3, 2, 4, 3, 3, 5, 2, 4, 4, 2, 4, 3, 3, 5, 2, 4, 4, 3, 4, 3, 3, 5, 2, 3]
-            dop = {key[i]: day[i] for i in range(0, len(key))}
-            result = dop[str(year)]
-            return result
-
-        fp = 'Data/Thuillier_F0.sb'
-        print("SB_support.readSB: " + fp)
-        if not readSB(fp, no_warn=True):
-            msg = "Unable to read Thuillier file. Make sure it is in SeaBASS format."
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return None
-        else:
-            Thuillier = readSB(fp, no_warn=True)
-            F0_raw = np.array(Thuillier.data['esun']) # uW cm^-2 nm^-1
-            wv_raw = np.array(Thuillier.data['wavelength'])
-            # Earth-Sun distance
-            day = int(str(dateTag)[4:7])
-            year = int(str(dateTag)[0:4])
-            eccentricity = 0.01672
-            dayFactor = 360/365.256363
-            dayOfPerihelion = dop(year)
-            dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
-            F0_fs = F0_raw*dES
-
-            F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
-            # Use the strings for the F0 dict
-            wavelengthStr = [str(wave) for wave in wavelength]
-            F0 = collections.OrderedDict(zip(wavelengthStr, F0))
-
-        return F0
-
+    ''' Process L2 '''
 
     @staticmethod
     def nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr):
@@ -174,7 +130,7 @@ class ProcessL2:
             α2 = 1.91 # 780/870 try to avoid, data is noisy here
             threshold = 0.03
 
-            # Retrieve Thuilliers
+            # Retrieve TSIS-1s
             wavelength = [float(key) for key in F0.keys()]
             F0 = [value for value in F0.values()]
 
@@ -1109,7 +1065,7 @@ class ProcessL2:
 
 
     @staticmethod
-    def calculateREFLECTANCE2(root, sasGroup, refGroup, ancGroup, start, end):
+    def ensemblesReflectance(root, sasGroup, refGroup, ancGroup, start, end):
         '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for
         meteorological quality flags. Perform glint corrections. Calculate the Rrs. Correct for NIR
         residuals.'''
@@ -1284,7 +1240,7 @@ class ProcessL2:
 
         # Make sure the XSlice averaging didn't bomb
         if np.isnan(sliceAveFlag).any():
-            msg = 'ProcessL2.calculateREFLECTANCE2: Slice X"%" average error: Dataset all NaNs.'
+            msg = 'ProcessL2.ensemblesReflectance: Slice X"%" average error: Dataset all NaNs.'
             print(msg)
             Utilities.writeLogFile(msg)
             return False
@@ -1348,6 +1304,7 @@ class ProcessL2:
         else:
             StationSlice = None
 
+        ########################################################################
         # Calculate Rho_sky
         wavebands = [*esColumns] # just grabs the keys
         wavelength = []
@@ -1409,15 +1366,16 @@ class ProcessL2:
             # Full Mobley 1999 model from LUT
             rhoScalar, rhoDelta = RhoCorrections.M99Corr(WINDSPEEDXSlice,SZAXSlice, RelAzXSlice)
 
-        # Calculate hyperspectral Thuillier F0 function
-        F0_hyper = ProcessL2.Thuillier(dateTag, wavelength)
+        # Calculate hyperspectral Coddingtion TSIS_1 hybrid F0 function
+        # F0_hyper = ProcessL2.Thuillier(dateTag, wavelength)
+        F0_hyper = Utilities.TSIS_1(dateTag, wavelength)
         if F0_hyper is None:
-            msg = "No hyperspectral ThuillierF0. Aborting."
+            msg = "No hyperspectral TSIS-1 F0. Aborting."
             print(msg)
             Utilities.writeLogFile(msg)
             return False
 
-        # Calculate Thuillier for each of the satellite bandsets
+        # Calculate TSIS-1 for each of the satellite bandsets
         if ConfigFile.settings['bL2WeightMODISA'] or ConfigFile.settings['bL2WeightMODIST']:
             MODISwavelength = Weight_RSR.MODISBands()
             wave_old = MODISwavelength.copy()
@@ -1425,7 +1383,7 @@ class ProcessL2:
             wave_array = np.array(wave_list)
             # wavelength is now truncated to only valid wavebands for use in Zhang models
             waveSubsetMODIS = wave_array[:,1].tolist()
-            F0_MODIS = ProcessL2.Thuillier(dateTag, MODISwavelength)
+            F0_MODIS = Utilities.TSIS_1(dateTag, MODISwavelength)
         if ConfigFile.settings['bL2WeightVIIRSN'] or ConfigFile.settings['bL2WeightVIIRSJ']:
             VIIRSwavelength = Weight_RSR.VIIRSBands()
             wave_old = VIIRSwavelength.copy()
@@ -1433,7 +1391,7 @@ class ProcessL2:
             wave_array = np.array(wave_list)
             # wavelength is now truncated to only valid wavebands for use in Zhang models
             waveSubsetVIIRS = wave_array[:,1].tolist()
-            F0_VIIRS = ProcessL2.Thuillier(dateTag, VIIRSwavelength)
+            F0_VIIRS = Utilities.TSIS_1(dateTag, VIIRSwavelength)
         if ConfigFile.settings['bL2WeightSentinel3A'] or ConfigFile.settings['bL2WeightSentinel3B']:
             Sentinel3wavelength = Weight_RSR.Sentinel3Bands()
             wave_old = Sentinel3wavelength.copy()
@@ -1441,7 +1399,7 @@ class ProcessL2:
             wave_array = np.array(wave_list)
             # wavelength is now truncated to only valid wavebands for use in Zhang models
             waveSubsetSentinel3 = wave_array[:,1].tolist()
-            F0_Sentinel3 = ProcessL2.Thuillier(dateTag, Sentinel3wavelength)
+            F0_Sentinel3 = Utilities.TSIS_1(dateTag, Sentinel3wavelength)
 
 
         # Build a slice object for (ir)radiances to be passed to spectralReflectance method
@@ -1456,6 +1414,7 @@ class ProcessL2:
         xSlice['liSTD'] = liXstd
         xSlice['ltSTD'] = ltXstd
         F0 = F0_hyper
+
         # Populate the relevant fields in root
         ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset)
 
@@ -1603,142 +1562,24 @@ class ProcessL2:
 
 
     @staticmethod
-    # def calculateREFLECTANCE(root, node, gpsGroup, satnavGroup, pyrGroup, ancData, modRoot):
-    def calculateREFLECTANCE(root, node, modRoot):
-        ''' Filter out high wind and high/low SZA.
-            Interpolate ancillary/model data, average intervals.
-            Run meteorology quality checks.
-            Pass to calculateREFLECTANCE2 for rho calcs, Rrs, NIR correction.'''
+    # def stationsEnsemblesReflectance(root, node, gpsGroup, satnavGroup, pyrGroup, ancData, modRoot):
+    def stationsEnsemblesReflectance(root, node):
+        ''' Extract stations if requested, then pass to ensemblesReflectance for ensemble
+            averages, rho calcs, Rrs, Lwn, NIR correction, satellite convolution, OC Products.'''
 
-        print("calculateREFLECTANCE")
+        print("stationsEnsemblesReflectance")
 
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
-        gpsGroup = node.getGroup('GPS')
-        satnavGroup = None
-        ancGroup = None
-        pyrGroup = None
-        for gp in node.groups:
-            if gp.id.startswith("SOLARTRACKER"):
-                if gp.id != "SOLARTRACKER_STATUS":
-                    satnavGroup = gp
-            if gp.id.startswith("ANCILLARY"):
-                ancGroup = gp
-                ancGroup.id = "ANCILLARY" # shift back from ANCILLARY_METADATA
-            if gp.id.startswith("PYROMETER"):
-                pyrGroup = gp
+        ancGroup = node.getGroup("ANCILLARY")
+        Utilities.rootAddDateTimeCol(node)
 
-        # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
-        # interpolated in L1E as long as the ancillary file was read in at L1C. Regardless, these need
-        # to have model data and/or default values incorporated.
-
-        # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
-        # is provided in Main Window, then use the model data to fill in gaps in the field
-        # record. Otherwise, use the selected default values from ConfigWindow
-
-        # This step is only necessary for the ancillary datasets that REQUIRE
-        # either field or GMAO or GUI default values. The remaining ancillary data
-        # are culled from datasets in groups in L1E
-        ProcessL2.includeModelDefaults(ancGroup, modRoot)
-
-        # Shift metadata into the ANCILLARY group as needed.
+        ###############################################################################
         #
-        # GPS Group
-        # These have TT2/Datetag incorporated in arrays
-        # Change their column names from NONE to something appropriate to be consistent in
-        # ancillary group going forward.
-        # Replace metadata lat/long with GPS lat/long, in case the former is from the ancillary file
-        ancGroup.datasets['LATITUDE'] = gpsGroup.getDataset('LATITUDE')
-        ancGroup.datasets['LATITUDE'].changeColName('NONE','LATITUDE')
-        ancGroup.datasets['LONGITUDE'] = gpsGroup.getDataset('LONGITUDE')
-        ancGroup.datasets['LONGITUDE'].changeColName('NONE','LONGITUDE')
-
-        # Take Heading and Speed preferentially from GPS
-        if 'HEADING' in gpsGroup.datasets:
-            # These have TT2/Datetag incorporated in arrays
-            ancGroup.addDataset('HEADING')
-            ancGroup.datasets['HEADING'] = gpsGroup.getDataset('COURSE')
-            ancGroup.datasets['HEADING'].changeColName('TRUE','HEADING')
-        if 'SOG' in gpsGroup.datasets:
-            ancGroup.addDataset('SOG')
-            ancGroup.datasets['SOG'] = gpsGroup.getDataset('SOG')
-            ancGroup.datasets['SOG'].changeColName('NONE','SOG')
-        if 'HEADING' not in gpsGroup.datasets and 'HEADING' in ancGroup.datasets:
-            ancGroup.addDataset('HEADING')
-            # ancGroup.datasets['HEADING'] = ancTemp.getDataset('HEADING')
-            ancGroup.datasets['HEADING'] = ancGroup.getDataset('HEADING')
-            ancGroup.datasets['HEADING'].changeColName('NONE','HEADING')
-        if 'SOG' not in gpsGroup.datasets and 'SOG' in ancGroup.datasets:
-            ancGroup.datasets['SOG'] = ancGroup.getDataset('SOG')
-            ancGroup.datasets['SOG'].changeColName('NONE','SOG')
-        if 'SPEED_F_W' in ancGroup.datasets:
-            ancGroup.addDataset('SPEED_F_W')
-            ancGroup.datasets['SPEED_F_W'] = ancGroup.getDataset('SPEED_F_W')
-            ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')
-        # Take SZA and SOLAR_AZ preferentially from ancGroup (calculated with pysolar in L1C)
-        ancGroup.datasets['SZA'].changeColName('NONE','SZA')
-        ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
-        if 'CLOUD' in ancGroup.datasets:
-            ancGroup.datasets['CLOUD'].changeColName('NONE','CLOUD')
-        if 'PITCH' in ancGroup.datasets:
-            ancGroup.datasets['PITCH'].changeColName('NONE','PITCH')
-        if 'ROLL' in ancGroup.datasets:
-            ancGroup.datasets['ROLL'].changeColName('NONE','ROLL')
-        if 'STATION' in ancGroup.datasets:
-            ancGroup.datasets['STATION'].changeColName('NONE','STATION')
-        if 'WAVE_HT' in ancGroup.datasets:
-            ancGroup.datasets['WAVE_HT'].changeColName('NONE','WAVE_HT')
-        if 'SALINITY'in ancGroup.datasets:
-            ancGroup.datasets['SALINITY'].changeColName('NONE','SALINITY')
-        if 'WINDSPEED'in ancGroup.datasets:
-            ancGroup.datasets['WINDSPEED'].changeColName('NONE','WINDSPEED')
-        if 'SST'in ancGroup.datasets:
-            ancGroup.datasets['SST'].changeColName('NONE','SST')
-
-        if satnavGroup:
-            ancGroup.datasets['REL_AZ'] = satnavGroup.getDataset('REL_AZ')
-            if 'HUMIDITY' in ancGroup.datasets:
-                ancGroup.datasets['HUMIDITY'] = satnavGroup.getDataset('HUMIDITY')
-                ancGroup.datasets['HUMIDITY'].changeColName('NONE','HUMIDITY')
-            # ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING') # Use GPS heading instead
-            ancGroup.addDataset('POINTING')
-            ancGroup.datasets['POINTING'] = satnavGroup.getDataset('POINTING')
-            ancGroup.datasets['POINTING'].changeColName('ROTATOR','POINTING')
-            ancGroup.datasets['REL_AZ'] = satnavGroup.getDataset('REL_AZ')
-            ancGroup.datasets['REL_AZ'].datasetToColumns()
-            # Use PITCH and ROLL preferentially from SolarTracker
-            if 'PITCH' in satnavGroup.datasets:
-                ancGroup.addDataset('PITCH')
-                ancGroup.datasets['PITCH'] = satnavGroup.getDataset('PITCH')
-                ancGroup.datasets['PITCH'].changeColName('SAS','PITCH')
-            if 'ROLL' in satnavGroup.datasets:
-                ancGroup.addDataset('ROLL')
-                ancGroup.datasets['ROLL'] = satnavGroup.getDataset('ROLL')
-                ancGroup.datasets['ROLL'].changeColName('SAS','ROLL')
-
-        if 'NONE' in ancGroup.datasets['REL_AZ'].columns:
-            ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
-
-        if pyrGroup is not None:
-            #PYROMETER
-            ancGroup.datasets['SST_IR'] = pyrGroup.getDataset("T")
-            ancGroup.datasets['SST_IR'].datasetToColumns()
-            ancGroup.datasets['SST_IR'].changeColName('IR','SST_IR')
-
-        # At this stage, all datasets in all groups of node have Timetag2
-        #     and Datetag incorporated into data arrays. Calculate and add
-        #     Datetime to each data array.
-        Utilities.rootAddDateTimeL2(node)
-
-
-        ################################################################################
-
-        # Filter the spectra from the entire collection before slicing the intervals
-
         # Stations
-        #   The simplest approach is to run station extraction seperately from underway data.
-        #   This means if station extraction is selected in the GUI, all non-station data will be
-        #   discarded here prior to any further filtering or processing.
+        #   Simplest approach is to run station extraction seperately from (i.e. in addition to)
+        #   underway data. This means if station extraction is selected in the GUI, all non-station
+        #   data will be discarded here prior to any further filtering or processing.
         station = None
         if ConfigFile.settings["bL2Stations"]:
             msg = "Extracting station data only. All other records will be discarded."
@@ -1782,14 +1623,14 @@ class ProcessL2:
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
 
-            # What to do if there are multiple, non-unique station numbers??
+            # What to do if there are multiple, non-unique station numbers (i.e. one file spans two
+            # stations)?? Would need to break each file into multiple files....
             ''' TO DO: This needs to be addressed for non-SolarTracker files, which can
                 be much longer than one hour long and capture more than one station '''
-
             stations = ancGroup.getDataset("STATION").columns["STATION"]
             station = np.unique(stations)
             if len(station) > 1:
-                msg = "Multiple non-unique station names found in this file. Abort."
+                msg = "Multiple non-unique station names found in this file. Abort!"
                 alert = QtWidgets.QMessageBox()
                 alert.setText(msg)
                 alert.exec_()
@@ -1799,151 +1640,13 @@ class ProcessL2:
 
             station = str(round(station[0]*100)/100)
 
-        # Lt Quality Filtering; anomalous elevation in the NIR
-        if ConfigFile.settings["bL2LtUVNIR"]:
-            msg = "Applying Lt(NIR)>Lt(UV) quality filtering to eliminate spectra."
-            print(msg)
-            Utilities.writeLogFile(msg)
-            # This is not well optimized for large files...
-            badTimes = ProcessL2.ltQuality(sasGroup)
-
-            if badTimes is not None:
-                print('Removing records... Can be slow for large files')
-                check = ProcessL2.filterData(referenceGroup, badTimes)
-                # check is now fraction removed
-                if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
-                ProcessL2.filterData(sasGroup, badTimes)
-                ProcessL2.filterData(ancGroup, badTimes)
-
-        # Filter low SZAs and high winds after interpolating model/ancillary data
-        maxWind = float(ConfigFile.settings["fL2MaxWind"])
-        SZAMin = float(ConfigFile.settings["fL2SZAMin"])
-        SZAMax = float(ConfigFile.settings["fL2SZAMax"])
-
-        wind = ancGroup.getDataset("WINDSPEED").data["WINDSPEED"]
-        SZA = ancGroup.datasets["SZA"].columns["SZA"]
-        timeStamp = ancGroup.datasets["SZA"].columns["Datetime"]
-
-        badTimes = None
-        i=0
-        start = -1
-        stop = []
-        for index in range(len(SZA)):
-            if SZA[index] < SZAMin or SZA[index] > SZAMax or wind[index] > maxWind:
-                i += 1
-                if start == -1:
-                    if wind[index] > maxWind:
-                        msg =f'High Wind: {round(wind[index])}'
-                    else:
-                        msg =f'Low SZA. SZA: {round(SZA[index])}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    start = index
-                stop = index
-                if badTimes is None:
-                    badTimes = []
-            else:
-                if start != -1:
-                    msg = f'Passed. SZA: {round(SZA[index])}, Wind: {round(wind[index])}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    startstop = [timeStamp[start],timeStamp[stop]]
-                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
-                    # print(msg)
-                    Utilities.writeLogFile(msg)
-                    badTimes.append(startstop)
-                    start = -1
-        msg = f'Percentage of data out of SZA and Wind limits: {round(100*i/len(timeStamp))} %'
-        print(msg)
-        Utilities.writeLogFile(msg)
-
-        if start != -1 and stop == index: # Records from a mid-point to the end are bad
-            startstop = [timeStamp[start],timeStamp[stop]]
-            msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
-            # print(msg)
-            Utilities.writeLogFile(msg)
-            if badTimes is None: # only one set of records
-                badTimes = [startstop]
-            else:
-                badTimes.append(startstop)
-
-        if start==0 and stop==index: # All records are bad
-            return False
-
-        if badTimes is not None and len(badTimes) != 0:
-            print('Removing records...')
-            check = ProcessL2.filterData(referenceGroup, badTimes)
-            if check > 0.99:
-                msg = "Too few spectra remaining. Abort."
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return False
-            ProcessL2.filterData(sasGroup, badTimes)
-            ProcessL2.filterData(ancGroup, badTimes)
-
-       # Spectral Outlier Filter
-        enableSpecQualityCheck = ConfigFile.settings['bL2EnableSpecQualityCheck']
-        if enableSpecQualityCheck:
-            badTimes = None
-            msg = "Applying spectral filtering to eliminate noisy spectra."
-            print(msg)
-            Utilities.writeLogFile(msg)
-            inFilePath = root.attributes['In_Filepath']
-            badTimes1 = ProcessL2.specQualityCheck(referenceGroup, inFilePath, station)
-            badTimes2 = ProcessL2.specQualityCheck(sasGroup, inFilePath, station)
-            if badTimes1 is not None and badTimes2 is not None:
-                badTimes = np.append(badTimes1,badTimes2, axis=0)
-            elif badTimes1 is not None:
-                badTimes = badTimes1
-            elif badTimes2 is not None:
-                badTimes = badTimes2
-
-            if badTimes is not None:
-                print('Removing records...')
-                check = ProcessL2.filterData(referenceGroup, badTimes)
-                if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
-                ProcessL2.filterData(sasGroup, badTimes)
-                ProcessL2.filterData(ancGroup, badTimes)
-
-        # Next apply the Meteorological Filter prior to slicing
+        #####################################################################
+        #
+        # Ensembles. Break up data into time intervals, and calculate averages and reflectances
+        #
         esData = referenceGroup.getDataset("ES")
-        enableMetQualityCheck = int(ConfigFile.settings["bL2EnableQualityFlags"])
-        if enableMetQualityCheck:
-            msg = "Applying meteorological filtering to eliminate spectra."
-            print(msg)
-            Utilities.writeLogFile(msg)
-            badTimes = ProcessL2.metQualityCheck(referenceGroup, sasGroup)
-
-            if badTimes is not None:
-                if len(badTimes) == esData.data.size:
-                    msg = "All data flagged for deletion. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
-                print('Removing records...')
-                check = ProcessL2.filterData(referenceGroup, badTimes)
-                if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
-                ProcessL2.filterData(sasGroup, badTimes)
-                ProcessL2.filterData(ancGroup, badTimes)
-
-        #
-        # Break up data into time intervals, and calculate reflectance
-        #
         esColumns = esData.columns
         timeStamp = esColumns["Datetime"]
-        # tt2 = esColumns["Timetag2"]
         esLength = len(list(esColumns.values())[0])
         interval = float(ConfigFile.settings["fL2TimeInterval"])
 
@@ -1956,8 +1659,8 @@ class ProcessL2:
                 start = i
                 end = i+1
 
-                if not ProcessL2.calculateREFLECTANCE2(root, sasGroup, referenceGroup, ancGroup, start, end):
-                    msg = 'ProcessL2.calculateREFLECTANCE2 unsliced failed. Abort.'
+                if not ProcessL2.ensemblesReflectance(root, sasGroup, referenceGroup, ancGroup, start, end):
+                    msg = 'ProcessL2.ensemblesReflectance unsliced failed. Abort.'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     continue
@@ -1989,8 +1692,8 @@ class ProcessL2:
                     if endTime > endFileTime:
                         endTime = endFileTime
 
-                    if not ProcessL2.calculateREFLECTANCE2(root, sasGroup, referenceGroup, ancGroup, start, end):
-                        msg = 'ProcessL2.calculateREFLECTANCE2 with slices failed. Continue.'
+                    if not ProcessL2.ensemblesReflectance(root, sasGroup, referenceGroup, ancGroup, start, end):
+                        msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                         print(msg)
                         Utilities.writeLogFile(msg)
 
@@ -2005,10 +1708,11 @@ class ProcessL2:
             time = timeStamp[start]
             if time < (endTime - datetime.timedelta(0,interval)):
 
-                if not ProcessL2.calculateREFLECTANCE2(root,sasGroup, referenceGroup, ancGroup, start, end):
-                    msg = 'ProcessL2.calculateREFLECTANCE2 ender failed.'
+                if not ProcessL2.ensemblesReflectance(root,sasGroup, referenceGroup, ancGroup, start, end):
+                    msg = 'ProcessL2.ensemblesReflectance ender failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
+
         #
         # Reflectance calculations complete
         #
@@ -2059,121 +1763,25 @@ class ProcessL2:
             subtraction. Weights for satellite bands, and outputs plots and SeaBASS datasets'''
 
         root = HDFRoot.HDFRoot()
+        root.addGroup("ANCILLARY")
+        root.addGroup("REFLECTANCE")
+        root.addGroup("IRRADIANCE")
+        root.addGroup("RADIANCE")
         root.copyAttributes(node)
         root.attributes["PROCESSING_LEVEL"] = "2"
         # Remaining attributes managed below...
 
         # For completeness, flip datasets into colums in all groups
         for grp in node.groups:
+            for gp in root.groups:
+                if gp.id == grp.id:
+                    gp.copyAttributes(grp)
             for ds in grp.datasets:
                 grp.datasets[ds].datasetToColumns()
 
-        root.addGroup("REFLECTANCE")
-        root.addGroup("IRRADIANCE")
-        root.addGroup("RADIANCE")
-
-        gpsGroup = None
-        for gp in node.groups:
-            if gp.id.startswith("GPS"):
-                gpsGroup = gp
-
-        # Retrieve MERRA2 model ancillary data
-        if ConfigFile.settings["bL2pGetAnc"] ==1:
-            msg = 'Model data for Wind and AOD may be used to replace blank values. Reading in model data...'
-            print(msg)
-            Utilities.writeLogFile(msg)
-            modRoot = GetAnc.getAnc(gpsGroup)
-            if modRoot == None:
-                return None
-        else:
-            modRoot = None
-
-        # Need to either create a new ancData object, or populate the nans in the current one with the model data
-        # if not ProcessL2.calculateREFLECTANCE(root, node, gpsGroup, satnavGroup, pyrGroup, ancillaryData, modRoot):
-        if not ProcessL2.calculateREFLECTANCE(root, node, modRoot):
+        # Process stations, ensembles to reflectances, OC prods, etc.
+        if not ProcessL2.stationsEnsemblesReflectance(root, node):
             return None
-
-        # Clean up units and push into relevant groups attributes
-        # Ancillary
-        gp = root.getGroup("ANCILLARY")
-        gp.attributes["AOD_UNITS"] = "unitless"
-        gp.attributes["HEADING_UNITS"] = "degrees"
-        gp.attributes["HUMIDITY_UNITS"] = "percent"
-        gp.attributes["LATITUDE_UNITS"] = "dec. deg. N"
-        gp.attributes["LONGITUDE_UNITS"] = "dec. deg. E"
-        gp.attributes["PITCH_UNITS"] = "degrees"
-        gp.attributes["POINTING_UNITS"] = "degrees"
-        gp.attributes["REL_AZ_UNITS"] = "degrees"
-        gp.attributes["ROLL_UNITS"] = "degrees"
-        gp.attributes["SAL_UNITS"] = "psu"
-        gp.attributes["SOLAR_AZ_UNITS"] = "degrees"
-        gp.attributes["SPEED_UNITS"] = "m/s"
-        gp.attributes["SST_UNITS"] = "degrees C"
-        gp.attributes["SST_IR_UNITS"] = root.attributes["SATPYR_UNITS"]
-        del(root.attributes["SATPYR_UNITS"])
-        gp.attributes["STATION_UNITS"] = "unitless"
-        gp.attributes["SZA_UNITS"] = "degrees"
-        gp.attributes["WIND_UNITS"] = "m/s"
-
-        # Irradiance
-        gp = root.getGroup("IRRADIANCE")
-        gp.attributes["ES_UNITS"] = root.attributes["ES_UNITS"]
-        del(root.attributes["ES_UNITS"])
-        if ConfigFile.settings['bL2EnableSpecQualityCheck']:
-            gp.attributes['ES_SPEC_FILTER'] = str(ConfigFile.settings['fL2SpecFilterEs'])
-        if root.attributes['L1D_DEGLITCH'] == 'ON':
-            gp.attributes['L1D_DEGLITCH'] = 'ON'
-            gp.attributes['ES_WINDOW_DARK'] = root.attributes['ES_WINDOW_DARK']
-            gp.attributes['ES_WINDOW_LIGHT'] = root.attributes['ES_WINDOW_LIGHT']
-            gp.attributes['ES_SIGMA_DARK'] = root.attributes['ES_SIGMA_DARK']
-            gp.attributes['ES_SIGMA_LIGHT'] = root.attributes['ES_SIGMA_LIGHT']
-
-            gp.attributes['ES_MINMAX_BAND_DARK'] = root.attributes['ES_MINMAX_BAND_DARK']
-            gp.attributes['ES_MINMAX_BAND_LIGHT'] = root.attributes['ES_MINMAX_BAND_LIGHT']
-            gp.attributes['ES_MIN_DARK'] = root.attributes['ES_MIN_DARK']
-            gp.attributes['ES_MAX_DARK'] = root.attributes['ES_MAX_DARK']
-            gp.attributes['ES_MIN_LIGHT'] = root.attributes['ES_MIN_LIGHT']
-            gp.attributes['ES_MAX_LIGHT'] = root.attributes['ES_MAX_LIGHT']
-
-        if ConfigFile.settings['bL2EnableQualityFlags']:
-            gp.attributes['ES_FILTER'] = str(ConfigFile.settings['fL2SignificantEsFlag'])
-
-        # Radiance
-        gp = root.getGroup("RADIANCE")
-        gp.attributes["LI_UNITS"] = root.attributes["LI_UNITS"]
-        del(root.attributes["LI_UNITS"])
-        gp.attributes["LT_UNITS"] = root.attributes["LT_UNITS"]
-        del(root.attributes["LT_UNITS"])
-        if ConfigFile.settings['bL2EnableSpecQualityCheck']:
-            gp.attributes['LI_SPEC_FILTER'] = str(ConfigFile.settings['fL2SpecFilterLi'])
-            gp.attributes['LT_SPEC_FILTER'] = str(ConfigFile.settings['fL2SpecFilterLt'])
-        if ConfigFile.settings['bL2EnablePercentLt']:
-            gp.attributes['%LT_FILTER'] = str(ConfigFile.settings['fL2PercentLt'])
-        if root.attributes['L1D_DEGLITCH'] == 'ON':
-            gp.attributes['L1D_DEGLITCH'] = 'ON'
-            gp.attributes['LT_WINDOW_DARK'] = root.attributes['LT_WINDOW_DARK']
-            gp.attributes['LT_WINDOW_LIGHT'] = root.attributes['LT_WINDOW_LIGHT']
-            gp.attributes['LT_SIGMA_DARK'] = root.attributes['LT_SIGMA_DARK']
-            gp.attributes['LT_SIGMA_LIGHT'] = root.attributes['LT_SIGMA_LIGHT']
-
-            gp.attributes['LT_MINMAX_BAND_DARK'] = root.attributes['LT_MINMAX_BAND_DARK']
-            gp.attributes['LT_MINMAX_BAND_LIGHT'] = root.attributes['LT_MINMAX_BAND_LIGHT']
-            gp.attributes['LT_MAX_DARK'] = root.attributes['LT_MAX_DARK']
-            gp.attributes['LT_MAX_LIGHT'] = root.attributes['LT_MAX_LIGHT']
-            gp.attributes['LT_MIN_DARK'] = root.attributes['LT_MIN_DARK']
-            gp.attributes['LT_MIN_LIGHT'] = root.attributes['LT_MIN_LIGHT']
-
-            gp.attributes['LI_WINDOW_DARK'] = root.attributes['LI_WINDOW_DARK']
-            gp.attributes['LI_WINDOW_LIGHT'] = root.attributes['LI_WINDOW_LIGHT']
-            gp.attributes['LI_SIGMA_DARK'] = root.attributes['LI_SIGMA_DARK']
-            gp.attributes['LI_SIGMA_LIGHT'] = root.attributes['LI_SIGMA_LIGHT']
-
-            gp.attributes['LI_MINMAX_BAND_DARK'] = root.attributes['LI_MINMAX_BAND_DARK']
-            gp.attributes['LI_MINMAX_BAND_LIGHT'] = root.attributes['LI_MINMAX_BAND_LIGHT']
-            gp.attributes['LI_MAX_DARK'] = root.attributes['LI_MAX_DARK']
-            gp.attributes['LI_MAX_LIGHT'] = root.attributes['LI_MAX_LIGHT']
-            gp.attributes['LI_MIN_DARK'] = root.attributes['LI_MIN_DARK']
-            gp.attributes['LI_MIN_LIGHT'] = root.attributes['LI_MIN_LIGHT']
 
         # Reflectance
         gp = root.getGroup("REFLECTANCE")
@@ -2194,69 +1802,9 @@ class ProcessL2:
             gp.attributes['NEGATIVE_VALUE_FILTER'] = 'ON'
 
         # Root
-        root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
-        root.attributes["DATETAG_UNITS"] = "YYYYDOY"
-        root.attributes["TIMETAG2_UNITS"] = "HHMMSSmmm"
-        del(root.attributes["DATETAG"])
-        del(root.attributes["TIMETAG2"])
-        if "COMMENT" in root.attributes.keys():
-            del(root.attributes["COMMENT"])
-        if "CLOUD_PERCENT" in root.attributes.keys():
-            del(root.attributes["CLOUD_PERCENT"])
-        if "DEPTH_RESOLUTION" in root.attributes.keys():
-            del(root.attributes["DEPTH_RESOLUTION"])
-        if ConfigFile.settings["bL1cSolarTracker"]:
-            if "SAS SERIAL NUMBER" in root.attributes.keys():
-                root.attributes["SOLARTRACKER_SERIAL_NUMBER"] = root.attributes["SAS SERIAL NUMBER"]
-                del(root.attributes["SAS SERIAL NUMBER"])
-        if ConfigFile.settings['bL2LtUVNIR']:
-            root.attributes['LT_UV_NIR_FILTER'] = 'ON'
-        root.attributes['WIND_MAX'] = str(ConfigFile.settings['fL2MaxWind'])
-        root.attributes['SZA_MAX'] = str(ConfigFile.settings['fL2SZAMax'])
-        root.attributes['SZA_MIN'] = str(ConfigFile.settings['fL2SZAMin'])
-        if ConfigFile.settings['bL2EnableQualityFlags']:
-            root.attributes['CLOUD_FILTER'] = str(ConfigFile.settings['fL2CloudFlag'])
-            # root.attributes['ES_FILTER'] = str(ConfigFile.settings['fL2SignificantEsFlag'])
-            root.attributes['DAWN_DUSK_FILTER'] = str(ConfigFile.settings['fL2DawnDuskFlag'])
-            root.attributes['RAIN_RH_FILTER'] = str(ConfigFile.settings['fL2RainfallHumidityFlag'])
         if ConfigFile.settings['bL2Stations']:
             root.attributes['STATION_EXTRACTION'] = 'ON'
         root.attributes['ENSEMBLE_DURATION'] = str(ConfigFile.settings['fL2TimeInterval']) + ' sec'
-        if root.attributes['L1D_DEGLITCH'] == 'ON':
-            # Moved into group attributes above
-            del(root.attributes['ES_WINDOW_DARK'])
-            del(root.attributes['ES_WINDOW_LIGHT'])
-            del(root.attributes['ES_SIGMA_DARK'])
-            del(root.attributes['ES_SIGMA_LIGHT'])
-            del(root.attributes['LT_WINDOW_DARK'])
-            del(root.attributes['LT_WINDOW_LIGHT'])
-            del(root.attributes['LT_SIGMA_DARK'])
-            del(root.attributes['LT_SIGMA_LIGHT'])
-            del(root.attributes['LI_WINDOW_DARK'])
-            del(root.attributes['LI_WINDOW_LIGHT'])
-            del(root.attributes['LI_SIGMA_DARK'])
-            del(root.attributes['LI_SIGMA_LIGHT'])
-
-            del(root.attributes['ES_MAX_DARK'])
-            del(root.attributes['ES_MAX_LIGHT'])
-            del(root.attributes['ES_MINMAX_BAND_DARK'])
-            del(root.attributes['ES_MINMAX_BAND_LIGHT'])
-            del(root.attributes['ES_MIN_DARK'])
-            del(root.attributes['ES_MIN_LIGHT'])
-
-            del(root.attributes['LT_MAX_DARK'])
-            del(root.attributes['LT_MAX_LIGHT'])
-            del(root.attributes['LT_MINMAX_BAND_DARK'])
-            del(root.attributes['LT_MINMAX_BAND_LIGHT'])
-            del(root.attributes['LT_MIN_DARK'])
-            del(root.attributes['LT_MIN_LIGHT'])
-
-            del(root.attributes['LI_MAX_DARK'])
-            del(root.attributes['LI_MAX_LIGHT'])
-            del(root.attributes['LI_MINMAX_BAND_DARK'])
-            del(root.attributes['LI_MINMAX_BAND_LIGHT'])
-            del(root.attributes['LI_MIN_DARK'])
-            del(root.attributes['LI_MIN_LIGHT'])
 
         # Check to insure at least some data survived quality checks
         if root.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None:

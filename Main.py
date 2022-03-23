@@ -389,7 +389,7 @@ class Window(QtWidgets.QWidget):
             inLevel = 'L1AQC'
         if level == 'L1BQC':
             inLevel = 'L1B'
-        if level == 'L12':
+        if level == 'L2':
             inLevel = 'L1BQC'
 
         # Check for subdirectory associated with level chosen
