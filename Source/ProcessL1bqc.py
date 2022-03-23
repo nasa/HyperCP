@@ -597,9 +597,11 @@ class ProcessL1bqc:
         Utilities.rootAddDateTimeL2(node)
 
 
-        # ################################################################################
+        #################################################################################
 
-        # # Filter the spectra from the entire collection before slicing the intervals
+        #   Filter the spectra from the entire collection before slicing the intervals (now in L2)
+
+        ##################################################################################
 
         # Lt Quality Filtering; anomalous elevation in the NIR
         if ConfigFile.settings["bL1bqcLtUVNIR"]:
@@ -623,10 +625,70 @@ class ProcessL1bqc:
 
         # Filter low SZAs and high winds after interpolating model/ancillary data
         maxWind = float(ConfigFile.settings["fL1bqcMaxWind"])
+
+        wind = ancGroup.getDataset("WINDSPEED").data["WINDSPEED"]
+        timeStamp = ancGroup.datasets["WINDSPEEDD"].columns["Datetime"]
+
+        badTimes = None
+        i=0
+        start = -1
+        stop = []
+        for index, _ in enumerate(SZA):
+            if wind[index] > maxWind:
+                i += 1
+                if start == -1:
+
+                    msg =f'High Wind: {round(wind[index])}'
+
+                    Utilities.writeLogFile(msg)
+                    start = index
+                stop = index
+                if badTimes is None:
+                    badTimes = []
+            else:
+                if start != -1:
+                    msg = f'Passed. Wind: {round(wind[index])}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    startstop = [timeStamp[start],timeStamp[stop]]
+                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+                    # print(msg)
+                    Utilities.writeLogFile(msg)
+                    badTimes.append(startstop)
+                    start = -1
+            end_index = index
+        msg = f'Percentage of data out of Wind limits: {round(100*i/len(timeStamp))} %'
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        if start != -1 and stop == end_index: # Records from a mid-point to the end are bad
+            startstop = [timeStamp[start],timeStamp[stop]]
+            msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+            # print(msg)
+            Utilities.writeLogFile(msg)
+            if badTimes is None: # only one set of records
+                badTimes = [startstop]
+            else:
+                badTimes.append(startstop)
+
+        if start==0 and stop==end_index: # All records are bad
+            return False
+
+        if badTimes is not None and len(badTimes) != 0:
+            print('Removing records...')
+            check = Utilities.filterData(referenceGroup, badTimes)
+            if check > 0.99:
+                msg = "Too few spectra remaining. Abort."
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
+            Utilities.filterData(sasGroup, badTimes)
+            Utilities.filterData(ancGroup, badTimes)
+
+        # Filter SZAs
         SZAMin = float(ConfigFile.settings["fL1bqcSZAMin"])
         SZAMax = float(ConfigFile.settings["fL1bqcSZAMax"])
 
-        wind = ancGroup.getDataset("WINDSPEED").data["WINDSPEED"]
         SZA = ancGroup.datasets["SZA"].columns["SZA"]
         timeStamp = ancGroup.datasets["SZA"].columns["Datetime"]
 
@@ -638,10 +700,7 @@ class ProcessL1bqc:
             if SZA[index] < SZAMin or SZA[index] > SZAMax or wind[index] > maxWind:
                 i += 1
                 if start == -1:
-                    if wind[index] > maxWind:
-                        msg =f'High Wind: {round(wind[index])}'
-                    else:
-                        msg =f'Low SZA. SZA: {round(SZA[index])}'
+                    msg =f'Low SZA. SZA: {round(SZA[index])}'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     start = index
@@ -650,7 +709,7 @@ class ProcessL1bqc:
                     badTimes = []
             else:
                 if start != -1:
-                    msg = f'Passed. SZA: {round(SZA[index])}, Wind: {round(wind[index])}'
+                    msg = f'Passed. SZA: {round(SZA[index])}'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     startstop = [timeStamp[start],timeStamp[stop]]
@@ -660,7 +719,7 @@ class ProcessL1bqc:
                     badTimes.append(startstop)
                     start = -1
             end_index = index
-        msg = f'Percentage of data out of SZA and Wind limits: {round(100*i/len(timeStamp))} %'
+        msg = f'Percentage of data out of SZA limits: {round(100*i/len(timeStamp))} %'
         print(msg)
         Utilities.writeLogFile(msg)
 
