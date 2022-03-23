@@ -348,9 +348,6 @@ class Controller:
     @staticmethod
     def processL1bqc(inFilePath, outFilePath):
         root = None
-        _,fileName = os.path.split(outFilePath)
-
-
 
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)

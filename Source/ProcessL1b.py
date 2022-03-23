@@ -214,19 +214,24 @@ class ProcessL1b:
         or full instrument characterization. Introduce uncertainty group.
         Match timestamps and interpolate wavebands.
         '''
-        root = HDFRoot()
-        root.copy(node)
-        root.attributes["PROCESSING_LEVEL"] = "1b"
+        node.attributes["PROCESSING_LEVEL"] = "1B"
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
-        root.attributes["FILE_CREATION_TIME"] = timestr
+        node.attributes["FILE_CREATION_TIME"] = timestr
+        if  ConfigFile.settings["bL1bDefaultCal"]:
+            node.attributes['CAL_TYPE'] = 'Default/Factory'
+        else:
+            node.attributes['CAL_TYPE'] = 'Full Character'
+        node.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
+
+
 
         msg = f"ProcessL1b.processL1b: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
-        root  = Utilities.rootAddDateTime(root)
+        node  = Utilities.rootAddDateTime(node)
 
         ''' It is unclear whether we need to introduce new datasets within radiometry groups for
             uncertainties prior to dark correction (e.g. what about variability/stability in dark counts?)
@@ -236,17 +241,17 @@ class ProcessL1b:
             in all other groups. '''
 
         # Dark Correction
-        if not ProcessL1b.processDarkCorrection(root, "ES"):
+        if not ProcessL1b.processDarkCorrection(node, "ES"):
             msg = 'Error dark correcting ES'
             print(msg)
             Utilities.writeLogFile(msg)
             return None
-        if not ProcessL1b.processDarkCorrection(root, "LI"):
+        if not ProcessL1b.processDarkCorrection(node, "LI"):
             msg = 'Error dark correcting LI'
             print(msg)
             Utilities.writeLogFile(msg)
             return None
-        if not ProcessL1b.processDarkCorrection(root, "LT"):
+        if not ProcessL1b.processDarkCorrection(node, "LT"):
             msg = 'Error dark correcting LT'
             print(msg)
             Utilities.writeLogFile(msg)
@@ -260,20 +265,20 @@ class ProcessL1b:
             calPath = os.path.join("Config", calFolder)
             print("Read CalibrationFile ", calPath)
             calibrationMap = CalibrationFileReader.read(calPath)
-            ProcessL1b_DefaultCal.processL1b(root, calibrationMap)
+            ProcessL1b_DefaultCal.processL1b(node, calibrationMap)
 
         elif ConfigFile.settings['bL1bFullFiles']:
             ''' THIS IS A PLACEHOLDER '''
             print('Processing full instrument characterizations')
             exit()
-            # ProcessL1b_FullFiles.processL1b(root, calibrationMap)
+            # ProcessL1b_FullFiles.processL1b(node, calibrationMap)
 
         # Interpolation
         # Match instruments to a common timestamp (slowest shutter, should be Lt) and
         # interpolate to the chosen spectral resolution. HyperSAS instruments operate on
         # different timestamps and wavebands, so interpolation is required.
-        root = ProcessL1b_Interp.processL1b_Interp(root, outFilePath)
+        node = ProcessL1b_Interp.processL1b_Interp(node, outFilePath)
 
         # Datetime format is not supported in HDF5; already removed in ProcessL1b_Interp.py
 
-        return root
+        return node

@@ -450,27 +450,8 @@ class ProcessL1bqc:
 
             ancGroup.datasets[ds].columnsToDataset()
 
-    # @staticmethod
-    # def sliceAveHyper(y, hyperSlice):
-    #     ''' Take the slice mean of the lowest X% of hyperspectral slices '''
-    #     xSlice = collections.OrderedDict()
-    #     xStd = collections.OrderedDict()
-    #     hasNan = False
-    #     # Ignore runtime warnings when array is all NaNs
-    #     with warnings.catch_warnings():
-    #         warnings.simplefilter("ignore", category=RuntimeWarning)
-    #         for k in hyperSlice: # each k is a time series at a waveband.
-    #             v = [hyperSlice[k][i] for i in y] # selects the lowest 5% within the interval window...
-    #             mean = np.nanmean(v) # ... and averages them
-    #             std = np.nanstd(v) # ... and the stdev for uncertainty estimates
-    #             xSlice[k] = [mean]
-    #             xStd[k] = [std]
-    #             if np.isnan(mean):
-    #                 hasNan = True
-    #     return hasNan, xSlice, xStd
-
     @staticmethod
-    def QC(root, node, modRoot):
+    def QC(node, modRoot):
         ''' Add model data. QC for wind, Lt, SZA, spectral outliers, and met filters'''
         print("Add model data. QC for wind, Lt, SZA, spectral outliers, and met filters")
 
@@ -590,7 +571,7 @@ class ProcessL1bqc:
         # At this stage, all datasets in all groups of node have Timetag2
         #     and Datetag incorporated into data arrays. Calculate and add
         #     Datetime to each data array.
-        Utilities.rootAddDateTimeL2(node)
+        Utilities.rootAddDateTimeCol(node)
 
 
         #################################################################################
@@ -749,7 +730,7 @@ class ProcessL1bqc:
             msg = "Applying spectral filtering to eliminate noisy spectra."
             print(msg)
             Utilities.writeLogFile(msg)
-            inFilePath = root.attributes['In_Filepath']
+            inFilePath = node.attributes['In_Filepath']
             badTimes1 = ProcessL1bqc.specQualityCheck(referenceGroup, inFilePath)
             badTimes2 = ProcessL1bqc.specQualityCheck(sasGroup, inFilePath)
             if badTimes1 is not None and badTimes2 is not None:
@@ -812,18 +793,10 @@ class ProcessL1bqc:
         ''' Fill in ancillary data with models as needed. Run QC on L1B for wind, SZA,
             spectral outliers, and meteorological filters (experimental).'''
 
-        root = HDFRoot.HDFRoot()
-        root.copyAttributes(node)
-        root.attributes["PROCESSING_LEVEL"] = "1BQC"
-        # Remaining attributes managed below...
-
         # For completeness, flip datasets into colums in all groups
         for grp in node.groups:
             for ds in grp.datasets:
                 grp.datasets[ds].datasetToColumns()
-
-        root.addGroup("IRRADIANCE")
-        root.addGroup("RADIANCE")
 
         gpsGroup = None
         for gp in node.groups:
@@ -842,12 +815,13 @@ class ProcessL1bqc:
             modRoot = None
 
         # Need to either create a new ancData object, or populate the nans in the current one with the model data
-        if not ProcessL1bqc.QC(root, node, modRoot):
+        if not ProcessL1bqc.QC(node, modRoot):
             return None
 
+        node.attributes["PROCESSING_LEVEL"] = "1BQC"
         # Clean up units and push into relevant groups attributes
         # Ancillary
-        gp = root.getGroup("ANCILLARY")
+        gp = node.getGroup("ANCILLARY")
         gp.attributes["AOD_UNITS"] = "unitless"
         gp.attributes["HEADING_UNITS"] = "degrees"
         gp.attributes["HUMIDITY_UNITS"] = "percent"
@@ -861,152 +835,147 @@ class ProcessL1bqc:
         gp.attributes["SOLAR_AZ_UNITS"] = "degrees"
         gp.attributes["SPEED_UNITS"] = "m/s"
         gp.attributes["SST_UNITS"] = "degrees C"
-        gp.attributes["SST_IR_UNITS"] = root.attributes["SATPYR_UNITS"]
-        del root.attributes["SATPYR_UNITS"]
+        gp.attributes["SST_IR_UNITS"] = node.attributes["SATPYR_UNITS"]
+        del node.attributes["SATPYR_UNITS"]
         gp.attributes["STATION_UNITS"] = "unitless"
         gp.attributes["SZA_UNITS"] = "degrees"
         gp.attributes["WIND_UNITS"] = "m/s"
 
         # Irradiance
-        gp = root.getGroup("IRRADIANCE")
-        gp.attributes["ES_UNITS"] = root.attributes["ES_UNITS"]
-        del root.attributes["ES_UNITS"]
-        if ConfigFile.settings['bL2EnableSpecQualityCheck']:
-            gp.attributes['ES_SPEC_FILTER'] = str(ConfigFile.settings['fL2SpecFilterEs'])
-        if root.attributes['L1D_DEGLITCH'] == 'ON':
-            gp.attributes['L1D_DEGLITCH'] = 'ON'
-            gp.attributes['ES_WINDOW_DARK'] = root.attributes['ES_WINDOW_DARK']
-            gp.attributes['ES_WINDOW_LIGHT'] = root.attributes['ES_WINDOW_LIGHT']
-            gp.attributes['ES_SIGMA_DARK'] = root.attributes['ES_SIGMA_DARK']
-            gp.attributes['ES_SIGMA_LIGHT'] = root.attributes['ES_SIGMA_LIGHT']
+        gp = node.getGroup("IRRADIANCE")
+        gp.attributes["ES_UNITS"] = node.attributes["ES_UNITS"]
+        del node.attributes["ES_UNITS"]
+        if ConfigFile.settings['bL1bqcEnableSpecQualityCheck']:
+            gp.attributes['ES_SPEC_FILTER'] = str(ConfigFile.settings['fL1bqcSpecFilterEs'])
+        if node.attributes['L1AQC_DEGLITCH'] == 'ON':
+            gp.attributes['L1AQC_DEGLITCH'] = 'ON'
+            gp.attributes['ES_WINDOW_DARK'] = node.attributes['ES_WINDOW_DARK']
+            gp.attributes['ES_WINDOW_LIGHT'] = node.attributes['ES_WINDOW_LIGHT']
+            gp.attributes['ES_SIGMA_DARK'] = node.attributes['ES_SIGMA_DARK']
+            gp.attributes['ES_SIGMA_LIGHT'] = node.attributes['ES_SIGMA_LIGHT']
 
-            gp.attributes['ES_MINMAX_BAND_DARK'] = root.attributes['ES_MINMAX_BAND_DARK']
-            gp.attributes['ES_MINMAX_BAND_LIGHT'] = root.attributes['ES_MINMAX_BAND_LIGHT']
-            gp.attributes['ES_MIN_DARK'] = root.attributes['ES_MIN_DARK']
-            gp.attributes['ES_MAX_DARK'] = root.attributes['ES_MAX_DARK']
-            gp.attributes['ES_MIN_LIGHT'] = root.attributes['ES_MIN_LIGHT']
-            gp.attributes['ES_MAX_LIGHT'] = root.attributes['ES_MAX_LIGHT']
+            gp.attributes['ES_MINMAX_BAND_DARK'] = node.attributes['ES_MINMAX_BAND_DARK']
+            gp.attributes['ES_MINMAX_BAND_LIGHT'] = node.attributes['ES_MINMAX_BAND_LIGHT']
+            gp.attributes['ES_MIN_DARK'] = node.attributes['ES_MIN_DARK']
+            gp.attributes['ES_MAX_DARK'] = node.attributes['ES_MAX_DARK']
+            gp.attributes['ES_MIN_LIGHT'] = node.attributes['ES_MIN_LIGHT']
+            gp.attributes['ES_MAX_LIGHT'] = node.attributes['ES_MAX_LIGHT']
 
-        if ConfigFile.settings['bL2EnableQualityFlags']:
-            gp.attributes['ES_FILTER'] = str(ConfigFile.settings['fL2SignificantEsFlag'])
+        if ConfigFile.settings['bL1bqcEnableQualityFlags']:
+            gp.attributes['ES_FILTER'] = str(ConfigFile.settings['fL1bqcSignificantEsFlag'])
 
         # Radiance
-        gp = root.getGroup("RADIANCE")
-        gp.attributes["LI_UNITS"] = root.attributes["LI_UNITS"]
-        del(root.attributes["LI_UNITS"])
-        gp.attributes["LT_UNITS"] = root.attributes["LT_UNITS"]
-        del(root.attributes["LT_UNITS"])
-        if ConfigFile.settings['bL2EnableSpecQualityCheck']:
+        gp = node.getGroup("RADIANCE")
+        gp.attributes["LI_UNITS"] = node.attributes["LI_UNITS"]
+        del(node.attributes["LI_UNITS"])
+        gp.attributes["LT_UNITS"] = node.attributes["LT_UNITS"]
+        del(node.attributes["LT_UNITS"])
+        if ConfigFile.settings['bL1bqcEnableSpecQualityCheck']:
             gp.attributes['LI_SPEC_FILTER'] = str(ConfigFile.settings['fL1bqcSpecFilterLi'])
             gp.attributes['LT_SPEC_FILTER'] = str(ConfigFile.settings['fL1bqcSpecFilterLt'])
-        if ConfigFile.settings['bL2EnablePercentLt']:
-            gp.attributes['%LT_FILTER'] = str(ConfigFile.settings['fL2PercentLt'])
-        if root.attributes['L1AQC_DEGLITCH'] == 'ON':
+        if node.attributes['L1AQC_DEGLITCH'] == 'ON':
             gp.attributes['L1AQC_DEGLITCH'] = 'ON'
-            gp.attributes['LT_WINDOW_DARK'] = root.attributes['LT_WINDOW_DARK']
-            gp.attributes['LT_WINDOW_LIGHT'] = root.attributes['LT_WINDOW_LIGHT']
-            gp.attributes['LT_SIGMA_DARK'] = root.attributes['LT_SIGMA_DARK']
-            gp.attributes['LT_SIGMA_LIGHT'] = root.attributes['LT_SIGMA_LIGHT']
+            gp.attributes['LT_WINDOW_DARK'] = node.attributes['LT_WINDOW_DARK']
+            gp.attributes['LT_WINDOW_LIGHT'] = node.attributes['LT_WINDOW_LIGHT']
+            gp.attributes['LT_SIGMA_DARK'] = node.attributes['LT_SIGMA_DARK']
+            gp.attributes['LT_SIGMA_LIGHT'] = node.attributes['LT_SIGMA_LIGHT']
 
-            gp.attributes['LT_MINMAX_BAND_DARK'] = root.attributes['LT_MINMAX_BAND_DARK']
-            gp.attributes['LT_MINMAX_BAND_LIGHT'] = root.attributes['LT_MINMAX_BAND_LIGHT']
-            gp.attributes['LT_MAX_DARK'] = root.attributes['LT_MAX_DARK']
-            gp.attributes['LT_MAX_LIGHT'] = root.attributes['LT_MAX_LIGHT']
-            gp.attributes['LT_MIN_DARK'] = root.attributes['LT_MIN_DARK']
-            gp.attributes['LT_MIN_LIGHT'] = root.attributes['LT_MIN_LIGHT']
+            gp.attributes['LT_MINMAX_BAND_DARK'] = node.attributes['LT_MINMAX_BAND_DARK']
+            gp.attributes['LT_MINMAX_BAND_LIGHT'] = node.attributes['LT_MINMAX_BAND_LIGHT']
+            gp.attributes['LT_MAX_DARK'] = node.attributes['LT_MAX_DARK']
+            gp.attributes['LT_MAX_LIGHT'] = node.attributes['LT_MAX_LIGHT']
+            gp.attributes['LT_MIN_DARK'] = node.attributes['LT_MIN_DARK']
+            gp.attributes['LT_MIN_LIGHT'] = node.attributes['LT_MIN_LIGHT']
 
-            gp.attributes['LI_WINDOW_DARK'] = root.attributes['LI_WINDOW_DARK']
-            gp.attributes['LI_WINDOW_LIGHT'] = root.attributes['LI_WINDOW_LIGHT']
-            gp.attributes['LI_SIGMA_DARK'] = root.attributes['LI_SIGMA_DARK']
-            gp.attributes['LI_SIGMA_LIGHT'] = root.attributes['LI_SIGMA_LIGHT']
+            gp.attributes['LI_WINDOW_DARK'] = node.attributes['LI_WINDOW_DARK']
+            gp.attributes['LI_WINDOW_LIGHT'] = node.attributes['LI_WINDOW_LIGHT']
+            gp.attributes['LI_SIGMA_DARK'] = node.attributes['LI_SIGMA_DARK']
+            gp.attributes['LI_SIGMA_LIGHT'] = node.attributes['LI_SIGMA_LIGHT']
 
-            gp.attributes['LI_MINMAX_BAND_DARK'] = root.attributes['LI_MINMAX_BAND_DARK']
-            gp.attributes['LI_MINMAX_BAND_LIGHT'] = root.attributes['LI_MINMAX_BAND_LIGHT']
-            gp.attributes['LI_MAX_DARK'] = root.attributes['LI_MAX_DARK']
-            gp.attributes['LI_MAX_LIGHT'] = root.attributes['LI_MAX_LIGHT']
-            gp.attributes['LI_MIN_DARK'] = root.attributes['LI_MIN_DARK']
-            gp.attributes['LI_MIN_LIGHT'] = root.attributes['LI_MIN_LIGHT']
+            gp.attributes['LI_MINMAX_BAND_DARK'] = node.attributes['LI_MINMAX_BAND_DARK']
+            gp.attributes['LI_MINMAX_BAND_LIGHT'] = node.attributes['LI_MINMAX_BAND_LIGHT']
+            gp.attributes['LI_MAX_DARK'] = node.attributes['LI_MAX_DARK']
+            gp.attributes['LI_MAX_LIGHT'] = node.attributes['LI_MAX_LIGHT']
+            gp.attributes['LI_MIN_DARK'] = node.attributes['LI_MIN_DARK']
+            gp.attributes['LI_MIN_LIGHT'] = node.attributes['LI_MIN_LIGHT']
 
         # Root
-        root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
-        root.attributes["DATETAG_UNITS"] = "YYYYDOY"
-        root.attributes["TIMETAG2_UNITS"] = "HHMMSSmmm"
-        del(root.attributes["DATETAG"])
-        del(root.attributes["TIMETAG2"])
-        if "COMMENT" in root.attributes.keys():
-            del(root.attributes["COMMENT"])
-        if "CLOUD_PERCENT" in root.attributes.keys():
-            del(root.attributes["CLOUD_PERCENT"])
-        if "DEPTH_RESOLUTION" in root.attributes.keys():
-            del(root.attributes["DEPTH_RESOLUTION"])
+        node.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
+        node.attributes["DATETAG_UNITS"] = "YYYYDOY"
+        node.attributes["TIMETAG2_UNITS"] = "HHMMSSmmm"
+        del(node.attributes["DATETAG"])
+        del(node.attributes["TIMETAG2"])
+        if "COMMENT" in node.attributes.keys():
+            del(node.attributes["COMMENT"])
+        if "CLOUD_PERCENT" in node.attributes.keys():
+            del(node.attributes["CLOUD_PERCENT"])
+        if "DEPTH_RESOLUTION" in node.attributes.keys():
+            del(node.attributes["DEPTH_RESOLUTION"])
         if ConfigFile.settings["bL1aqcSolarTracker"]:
-            if "SAS SERIAL NUMBER" in root.attributes.keys():
-                root.attributes["SOLARTRACKER_SERIAL_NUMBER"] = root.attributes["SAS SERIAL NUMBER"]
-                del(root.attributes["SAS SERIAL NUMBER"])
-        if ConfigFile.settings['bLbqcLtUVNIR']:
-            root.attributes['LT_UV_NIR_FILTER'] = 'ON'
-        root.attributes['WIND_MAX'] = str(ConfigFile.settings['fL1bqcMaxWind'])
-        root.attributes['SZA_MAX'] = str(ConfigFile.settings['fL1bqcSZAMax'])
-        root.attributes['SZA_MIN'] = str(ConfigFile.settings['fL1bqcSZAMin'])
+            if "SAS SERIAL NUMBER" in node.attributes.keys():
+                node.attributes["SOLARTRACKER_SERIAL_NUMBER"] = node.attributes["SAS SERIAL NUMBER"]
+                del(node.attributes["SAS SERIAL NUMBER"])
+        if ConfigFile.settings['bL1bqcLtUVNIR']:
+            node.attributes['LT_UV_NIR_FILTER'] = 'ON'
+        node.attributes['WIND_MAX'] = str(ConfigFile.settings['fL1bqcMaxWind'])
+        node.attributes['SZA_MAX'] = str(ConfigFile.settings['fL1bqcSZAMax'])
+        node.attributes['SZA_MIN'] = str(ConfigFile.settings['fL1bqcSZAMin'])
         if ConfigFile.settings['bL1bqcEnableQualityFlags']:
-            root.attributes['CLOUD_FILTER'] = str(ConfigFile.settings['fL1bqcCloudFlag'])
-            # root.attributes['ES_FILTER'] = str(ConfigFile.settings['fL1bqcSignificantEsFlag'])
-            root.attributes['DAWN_DUSK_FILTER'] = str(ConfigFile.settings['fL1bqcDawnDuskFlag'])
-            root.attributes['RAIN_RH_FILTER'] = str(ConfigFile.settings['fL1bqcRainfallHumidityFlag'])
-        # if ConfigFile.settings['bL2Stations']:
-        #     root.attributes['STATION_EXTRACTION'] = 'ON'
-        # root.attributes['ENSEMBLE_DURATION'] = str(ConfigFile.settings['fL2TimeInterval']) + ' sec'
+            node.attributes['CLOUD_FILTER'] = str(ConfigFile.settings['fL1bqcCloudFlag'])
+            node.attributes['ES_FILTER'] = str(ConfigFile.settings['fL1bqcSignificantEsFlag'])
+            node.attributes['DAWN_DUSK_FILTER'] = str(ConfigFile.settings['fL1bqcDawnDuskFlag'])
+            node.attributes['RAIN_RH_FILTER'] = str(ConfigFile.settings['fL1bqcRainfallHumidityFlag'])
 
         # Clean up
-        if root.attributes['L1AQC_DEGLITCH'] == 'ON':
+        if node.attributes['L1AQC_DEGLITCH'] == 'ON':
             # Moved into group attributes above
-            del(root.attributes['ES_WINDOW_DARK'])
-            del(root.attributes['ES_WINDOW_LIGHT'])
-            del(root.attributes['ES_SIGMA_DARK'])
-            del(root.attributes['ES_SIGMA_LIGHT'])
-            del(root.attributes['LT_WINDOW_DARK'])
-            del(root.attributes['LT_WINDOW_LIGHT'])
-            del(root.attributes['LT_SIGMA_DARK'])
-            del(root.attributes['LT_SIGMA_LIGHT'])
-            del(root.attributes['LI_WINDOW_DARK'])
-            del(root.attributes['LI_WINDOW_LIGHT'])
-            del(root.attributes['LI_SIGMA_DARK'])
-            del(root.attributes['LI_SIGMA_LIGHT'])
+            del(node.attributes['ES_WINDOW_DARK'])
+            del(node.attributes['ES_WINDOW_LIGHT'])
+            del(node.attributes['ES_SIGMA_DARK'])
+            del(node.attributes['ES_SIGMA_LIGHT'])
+            del(node.attributes['LT_WINDOW_DARK'])
+            del(node.attributes['LT_WINDOW_LIGHT'])
+            del(node.attributes['LT_SIGMA_DARK'])
+            del(node.attributes['LT_SIGMA_LIGHT'])
+            del(node.attributes['LI_WINDOW_DARK'])
+            del(node.attributes['LI_WINDOW_LIGHT'])
+            del(node.attributes['LI_SIGMA_DARK'])
+            del(node.attributes['LI_SIGMA_LIGHT'])
 
-            del(root.attributes['ES_MAX_DARK'])
-            del(root.attributes['ES_MAX_LIGHT'])
-            del(root.attributes['ES_MINMAX_BAND_DARK'])
-            del(root.attributes['ES_MINMAX_BAND_LIGHT'])
-            del(root.attributes['ES_MIN_DARK'])
-            del(root.attributes['ES_MIN_LIGHT'])
+            del(node.attributes['ES_MAX_DARK'])
+            del(node.attributes['ES_MAX_LIGHT'])
+            del(node.attributes['ES_MINMAX_BAND_DARK'])
+            del(node.attributes['ES_MINMAX_BAND_LIGHT'])
+            del(node.attributes['ES_MIN_DARK'])
+            del(node.attributes['ES_MIN_LIGHT'])
 
-            del(root.attributes['LT_MAX_DARK'])
-            del(root.attributes['LT_MAX_LIGHT'])
-            del(root.attributes['LT_MINMAX_BAND_DARK'])
-            del(root.attributes['LT_MINMAX_BAND_LIGHT'])
-            del(root.attributes['LT_MIN_DARK'])
-            del(root.attributes['LT_MIN_LIGHT'])
+            del(node.attributes['LT_MAX_DARK'])
+            del(node.attributes['LT_MAX_LIGHT'])
+            del(node.attributes['LT_MINMAX_BAND_DARK'])
+            del(node.attributes['LT_MINMAX_BAND_LIGHT'])
+            del(node.attributes['LT_MIN_DARK'])
+            del(node.attributes['LT_MIN_LIGHT'])
 
-            del(root.attributes['LI_MAX_DARK'])
-            del(root.attributes['LI_MAX_LIGHT'])
-            del(root.attributes['LI_MINMAX_BAND_DARK'])
-            del(root.attributes['LI_MINMAX_BAND_LIGHT'])
-            del(root.attributes['LI_MIN_DARK'])
-            del(root.attributes['LI_MIN_LIGHT'])
+            del(node.attributes['LI_MAX_DARK'])
+            del(node.attributes['LI_MAX_LIGHT'])
+            del(node.attributes['LI_MINMAX_BAND_DARK'])
+            del(node.attributes['LI_MINMAX_BAND_LIGHT'])
+            del(node.attributes['LI_MIN_DARK'])
+            del(node.attributes['LI_MIN_LIGHT'])
 
         # Check to insure at least some data survived quality checks
-        if root.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None:
+        if node.getGroup("RADIANCE").getDataset("LT").data is None:
             msg = "All data appear to have been eliminated from the file. Aborting."
             print(msg)
             Utilities.writeLogFile(msg)
             return None
 
         # Now strip datetimes from all datasets
-        for gp in root.groups:
+        for gp in node.groups:
             for dsName in gp.datasets:
                 ds = gp.datasets[dsName]
                 if "Datetime" in ds.columns:
                     ds.columns.pop("Datetime")
                 ds.columnsToDataset()
 
-        return root
+        return node

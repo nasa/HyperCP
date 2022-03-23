@@ -89,12 +89,10 @@ class ProcessL1b_DefaultCal:
             ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
 
     # Process THERM1 - not implemented
+    #   This is for optical thermal sensors like pyrometers, I believe.
+    #   This is not for thermal responsivity of OPTICS3 sensors
     @staticmethod
     def processTHERM1(ds, cd):
-        ''' This should be implemented. '''
-        msg = 'Thermal response ignored!'
-        print(msg)
-        Utilities.writeLogFile(msg)
         return
 
     @staticmethod
@@ -183,8 +181,6 @@ class ProcessL1b_DefaultCal:
         liUnits = None
         ltUnits = None
         pyrUnits = None
-
-        node.attributes["PROCESSING_LEVEL"] = "1b"
 
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")

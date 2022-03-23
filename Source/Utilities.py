@@ -257,7 +257,7 @@ class Utilities:
     # Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
     # in the 20th or 21st centuries
     @staticmethod
-    def rootAddDateTimeL2(node):
+    def rootAddDateTimeCol(node):
         for gp in node.groups:
             if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
                 for ds in gp.datasets:

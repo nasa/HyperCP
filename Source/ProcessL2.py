@@ -1,5 +1,4 @@
 
-from Source.HDFGroup import HDFGroup
 import collections
 import sys
 import warnings
