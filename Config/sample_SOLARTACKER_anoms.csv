@@ -1,0 +1,2 @@
+filename,ESWindowDark,ESWindowLight,ESSigmaDark,ESSigmaLight,ESMinDark,ESMaxDark,ESMinMaxBandDark,ESMinLight,ESMaxLight,ESMinMaxBandLight,LIWindowDark,LIWindowLight,LISigmaDark,LISigmaLight,LIMinDark,LIMaxDark,LIMinMaxBandDark,LIMinLight,LIMaxLight,LIMinMaxBandLight,LTWindowDark,LTWindowLight,LTSigmaDark,LTSigmaLight,LTMinDark,LTMaxDark,LTMinMaxBandDark,LTMinLight,LTMaxLight,LTMinMaxBandLight,Threshold
+SAMPLE_HYPERSAS_SOLARTRACKER_L1C,11,9,3.2,2.4,-999,-999,-999,-999,-999,-999,11,9,3.5,2.4,-999,-999,-999,-999,-999,421.63,9,9,3.2,2.3,-999,-999,-999,-999,-999,-999,1

@@ -29,6 +29,10 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-03-24:
+* Overhaul L2, SeaBASS Headers
+* Update README
+
 2022-03-23:
 * Change from Thuillier F0 to Coddington hybrid (TSIS-1)
 
@@ -36,7 +40,6 @@ ___________________________________________________________
 * Overhaul L1A-L1BQC, Utilities, PDFReport, etc. for new v1.1.0 processing structure
 * Update GetAnc (v1.1.0 and master) to reflect changes to MERRA2 ancillary model file naming changes
 * Separate SZA filter from high wind filter at L1BQC
-
 
 2022-03-16:
 * Build new GUI interface for v1.1.0 process flow

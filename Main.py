@@ -554,7 +554,7 @@ class Command():
                                     and place in HyperInSPACE/Data directory.')
         # Main configuration restore
         MainConfig.loadConfig(MainConfig.fileName)
-        MainConfig.settings['version'] = '1.0.9'
+        MainConfig.settings['version'] = '1.1.0'
 
         # For our need, we only use a single processing
         self.processSingle(self.level)
@@ -661,8 +661,8 @@ args = parser.parse_args()
 if args.cmd and (args.configFilePath is None or args.inputFile is None or args.outputDirectory is None or args.level is None):
     parser.error("-cmd requires -c config -i inputFile -o outputDirectory -l processingLevel")
 # If the commandline option is given, check if all needed information are given
-if args.cmd and args.level=='L2' and (args.username is None or args.password is None):
-    parser.error("L2 processing requires username and password for https://oceancolor.gsfc.nasa.gov/")
+if args.cmd and args.level=='L1BQC' and (args.username is None or args.password is None):
+    parser.error("L1BQC processing requires username and password for https://oceancolor.gsfc.nasa.gov/")
 
 # We store all arguments in variables
 cmd = args.cmd

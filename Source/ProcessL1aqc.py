@@ -737,8 +737,9 @@ class ProcessL1aqc:
         node = ProcessL1aqc_deglitch.processL1aqc_deglitch(node)
 
         # DATETIME is not supported in HDF5; remove
-        for gp in node.groups:
-            if (gp.id == "SOLARTRACKER_STATUS") is False:
-                del gp.datasets["DATETIME"]
+        if node is not None:
+            for gp in node.groups:
+                if (gp.id == "SOLARTRACKER_STATUS") is False:
+                    del gp.datasets["DATETIME"]
 
         return node
