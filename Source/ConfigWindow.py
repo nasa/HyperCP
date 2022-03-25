@@ -180,7 +180,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l1bLabel = QtWidgets.QLabel("Level 1B Processing", self)
         l1bLabel.setFont(l1aLabel_font)
         l1bSublabel = QtWidgets.QLabel(" Dark offsets, calibrations and corrections. Interpolate", self)
-        l1bSublabel2 = QtWidgets.QLabel("  to common time coordinates.", self)
+        l1bSublabel2 = QtWidgets.QLabel("  to common timestamps and wavebands.", self)
 
         l1bCalLabel = QtWidgets.QLabel("    Select calibration/correction regime:", self)
         self.DefaultCalRadioButton = QtWidgets.QRadioButton("     Default/Factory")
