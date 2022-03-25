@@ -1,6 +1,5 @@
 
 import numpy as np
-import scipy.interpolate
 
 from ConfigFile import ConfigFile
 from Utilities import Utilities

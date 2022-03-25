@@ -1,0 +1,58 @@
+######################################################################################
+# Telemetry Definition File:
+#
+# Type: UMTWR sentences
+# Descritption: University of Maine instrument tracker tower, frames definining the orientation
+# Version: 0
+#
+# Format:
+#   UMTWR,heading_sas,heading_ship,heading_accuracy_ship,heading_motion,heading_accuracy_motion,position_tower,status_tower,azimuth_sun,elevation_sun<CR><LF>
+#
+# Creation Date: Feb 4, 2021
+# Author: Nils Haentjens
+#
+# History:
+#   2021-02-04: Creation of file
+#######################################################################################
+
+# HEADER
+VLF_INSTRUMENT UMTWR '' 5 AS 0 NONE
+
+# INSTRUMENT PACKAGE TRUE HEADING
+FIELD NONE ',' 1 AS 0 DELIMITER
+HEADING SAS 'deg' V AF 0 COUNT
+
+# SHIP HEADING
+FIELD NONE ',' 1 AS 0 DELIMITER
+HEADING SHIP 'deg' V AF 0 COUNT
+
+# SHIP HEADING ACCURACY
+FIELD NONE ',' 1 AS 0 DELIMITER
+HDGACC SHIP 'deg' V AF 0 COUNT
+
+# MOTION HEADING
+FIELD NONE ',' 1 AS 0 DELIMITER
+HEADING MOTION 'deg' V AF 0 COUNT
+
+# MOTION HEADING ACCURACY
+FIELD NONE ',' 1 AS 0 DELIMITER
+HDGACC MOTION 'deg' V AF 0 COUNT
+
+# INDEXING TABLE POSITION (RELATIVE TO NEUTRAL POSITION)
+FIELD NONE ',' 1 AS 0 DELIMITER
+POSITION SAS 'deg' V AF 0 COUNT
+
+# INDEXING TABLE STATUS (S: STALLED, O: OPERATING)
+FIELD NONE ',' 1 AS 0 DELIMITER
+STATUS NONE '' V AS 0 COUNT
+
+# SUN AZIMUTH
+FIELD NONE ',' 1 AS 0 DELIMITER
+AZIMUTH SUN 'deg' V AF 0 COUNT
+
+# SUN ELEVATION 
+FIELD NONE ',' 1 AS 0 DELIMITER
+ELEVATION SUN 'deg' V AF 0 COUNT
+
+# TERMINATOR
+TERMINATOR NONE '\x0D\x0A' 2 AS 0 DELIMITER

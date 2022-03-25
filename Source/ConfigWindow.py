@@ -1504,7 +1504,7 @@ class ConfigWindow(QtWidgets.QDialog):
                 shutil.copy(srcPath, destPath)
 
             # Confirm that SeaBASS Headers need to be/are updated
-            if ConfigFile.settings["bL1bSaveSeaBASS"] or ConfigFile.settings["bL2SaveSeaBASS"]:
+            if ConfigFile.settings["bL2SaveSeaBASS"]:
                 SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
             else:
                 self.close()
