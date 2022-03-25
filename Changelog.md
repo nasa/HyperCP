@@ -1,4 +1,4 @@
-v1.1.0 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
+v1.1.1 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
 ---
 
 Next priorities:
@@ -29,6 +29,9 @@ Ideas and To-Dos:
 * Produce kml files for GoogleEarth on entire cruise/directory
 
 ___________________________________________________________
+
+--
+v1.1.0 2022-03-25: DAA
 
 2022-03-24:
 * Overhaul L2, SeaBASS Headers
