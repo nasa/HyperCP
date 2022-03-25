@@ -1,0 +1,68 @@
+#########################################################################################
+# Telemetry Definition File:
+#
+# Type: $GPGGA sentences (NMEA 0183 standard version 3.01)
+# Description: Recommended Minimum Specific GPS/Transit Data
+# Version: NMEA 0183 standard, version 3.01
+#
+# Notes:
+#   Version 3.01 differs from version 2.30 in that the Mode field is absent
+#
+# Creation Date: February 26, 2020
+# Author: Dirk Aurin
+#
+# Template History:
+#   2020-02-26, DA: Template editting
+#
+##########################################################################################
+
+
+VLF_INSTRUMENT $GPGGA '' 6 AS 0 NONE
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+UTCPOS NONE '' V AF 0 HHMMSS
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+LATPOS NONE 'degrees' V AF 0 DDMM
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+LATHEMI NONE '' V AS 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+LONPOS NONE 'degrees' V AF 0 DDMM
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+LONHEMI NONE '' V AS 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+FIXQUAL NONE '' V AS 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+NUMSAT NONE '' V AF 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+HORIZ NONE '' V AF 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+ALT NONE 'meters' V AF 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+ALTUNITS NONE '' V AS 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+GEOID NONE 'meters' V AF 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+GEOIDUNITS NONE '' V AS 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+TIMELAG NONE 'seconds' V AF 0 COUNT
+
+FIELD NONE ',' 1 AS 0 DELIMITER
+REFSTAT NONE '' V AF 0 COUNT
+
+FIELD NONE '*' 1 AS 0 DELIMITER
+NMEA_CHECKSUM NONE '' V AI 0 COUNT
+
+TERMINATOR NONE '\x0D\x0A' 2 AS 0 DELIMITER
+

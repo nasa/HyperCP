@@ -19,7 +19,7 @@ class SeaBASSHeader:
         print("investigators", SeaBASSHeader.settings["investigators"])
         print("affiliations", SeaBASSHeader.settings["affiliations"])
         print("contact", SeaBASSHeader.settings["contact"])
-        print("experiment", SeaBASSHeader.settings["experiment"]) 
+        print("experiment", SeaBASSHeader.settings["experiment"])
         print("cruise", SeaBASSHeader.settings["cruise"])
         print("station", SeaBASSHeader.settings["station"])
         print("data_file_name", SeaBASSHeader.settings["data_file_name"])
@@ -37,15 +37,15 @@ class SeaBASSHeader:
         print("start_date", SeaBASSHeader.settings["start_date"])
         print("end_date", SeaBASSHeader.settings["end_date"])
         print("start_time", SeaBASSHeader.settings["start_time"])
-        print("end_time", SeaBASSHeader.settings["end_time"])   
+        print("end_time", SeaBASSHeader.settings["end_time"])
         print("north_latitude", SeaBASSHeader.settings["north_latitude"])
         print("south_latitude", SeaBASSHeader.settings["south_latitude"])
         print("east_longitude", SeaBASSHeader.settings["east_longitude"])
         print("west_longitude", SeaBASSHeader.settings["west_longitude"])
 
         print("water_depth", SeaBASSHeader.settings["water_depth"])
-        print("measurement_depth", SeaBASSHeader.settings["measurement_depth"])                
-        print("cloud_percent", SeaBASSHeader.settings["cloud_percent"])        
+        print("measurement_depth", SeaBASSHeader.settings["measurement_depth"])
+        print("cloud_percent", SeaBASSHeader.settings["cloud_percent"])
         print("wind_speed", SeaBASSHeader.settings["wind_speed"])
         print("wave_height", SeaBASSHeader.settings["wave_height"])
         print("secchi_depth", SeaBASSHeader.settings["secchi_depth"])
@@ -65,90 +65,88 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["affiliations"] = ''
         SeaBASSHeader.settings["contact"] = ''
         SeaBASSHeader.settings["experiment"] = name.split('.')[0]
-        SeaBASSHeader.settings["cruise"] = ''        
-        
-        SeaBASSHeader.settings["documents"] = ''        
-        
+        SeaBASSHeader.settings["cruise"] = ''
+
+        SeaBASSHeader.settings["documents"] = ''
+
         SeaBASSHeader.settings["instrument_manufacturer"] = 'Satlantic'
         SeaBASSHeader.settings["instrument_model"] = 'HyperSAS'
         SeaBASSHeader.settings["calibration_date"] = ''
-        SeaBASSHeader.refreshCalibrationFiles()    
-        
-        SeaBASSHeader.settings["data_type"] = 'above_water'            
+        SeaBASSHeader.refreshCalibrationFiles()
+
+        SeaBASSHeader.settings["data_type"] = 'above_water'
         SeaBASSHeader.settings["data_status"] = ''
 
         SeaBASSHeader.settings["water_depth"] = 'NA'
         SeaBASSHeader.settings["measurement_depth"] = '0'
-        SeaBASSHeader.settings["cloud_percent"] = 'NA'        
+        SeaBASSHeader.settings["cloud_percent"] = 'NA'
         SeaBASSHeader.settings["wave_height"] = 'NA'
         SeaBASSHeader.settings["secchi_depth"] = 'NA'
 
         SeaBASSHeader.settings["station"] = ''
         SeaBASSHeader.settings["data_file_name"] = ''
         SeaBASSHeader.settings["original_file_name"] = ''
-        SeaBASSHeader.settings["start_date"] = ''    
-        SeaBASSHeader.settings["end_date"] = ''     
+        SeaBASSHeader.settings["start_date"] = ''
+        SeaBASSHeader.settings["end_date"] = ''
         SeaBASSHeader.settings["start_time"] = ''
         SeaBASSHeader.settings["end_time"] = ''
 
         SeaBASSHeader.settings["north_latitude"] = ''
         SeaBASSHeader.settings["south_latitude"] = ''
-        SeaBASSHeader.settings["east_longitude"] = ''                        
+        SeaBASSHeader.settings["east_longitude"] = ''
         SeaBASSHeader.settings["west_longitude"] = ''
         SeaBASSHeader.settings["wind_speed"] = ''
 
-        # This will update subsequently from the ConfigFile on demand        
+        # This will update subsequently from the ConfigFile on demand
         if ConfigFile.settings["bL1aCleanSZA"]:
             szaFilt = "On"
-        else: 
+        else:
             szaFilt = "Off"
-        if ConfigFile.settings["bL1cCleanPitchRoll"]:
+        if ConfigFile.settings["bL1aqcCleanPitchRoll"]:
             pitchRollFilt = "On"
-        else: 
+        else:
             pitchRollFilt = "Off"
-        if ConfigFile.settings["bL1cRotatorAngle"]:
+        if ConfigFile.settings["bL1aqcRotatorAngle"]:
             cleanRotFilt = "On"
-        else: 
+        else:
             cleanRotFilt = "Off"
-        if ConfigFile.settings["bL1cCleanSunAngle"]:
+        if ConfigFile.settings["bL1aqcCleanSunAngle"]:
             cleanRelAzFilt = "On"
-        else: 
+        else:
             cleanRelAzFilt = "Off"
-        if ConfigFile.settings["bL1dDeglitch"]:
+
+        if ConfigFile.settings["bL1aqcDeglitch"]:
             deglitchFilt = "On"
-        else: 
+        else:
             deglitchFilt = "Off"
-        if ConfigFile.settings["bL2EnableSpecQualityCheck"]:
+
+        if ConfigFile.settings["bL1bqcEnableSpecQualityCheck"]:
             specFilt = "On"
-        else: 
+        else:
             specFilt = "Off"
-        if ConfigFile.settings["bL2EnableQualityFlags"]:
+        if ConfigFile.settings["bL1bqcEnableQualityFlags"]:
             metFilt = "On"
-        else: 
+        else:
             metFilt = "Off"
+
         if ConfigFile.settings["bL2EnablePercentLt"]:
             ltFilt = "On"
-        else: 
+        else:
             ltFilt = "Off"
-        if ConfigFile.settings["bL2RuddickRho"]:
-            rhoCorr = "Ruddick2006"
-        elif ConfigFile.settings["bL2ZhangRho"]:
+
+        if ConfigFile.settings["bL2ZhangRho"]:
             rhoCorr = "Zhang2017"
         else:
             rhoCorr = f"Mobley1999"
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
             NIRFilt = "On"
-        else: 
+        else:
             NIRFilt = "Off"
         if ConfigFile.settings["bL2NegativeSpec"]:
             NegativeFilt = "On"
-        else: 
+        else:
             NegativeFilt = "Off"
 
-            # f'! Dark Window = {ConfigFile.settings["fL1dDeglitch0"]}\n'+\
-            # f'! Light Window = {ConfigFile.settings["fL1dDeglitch1"]}\n'+\
-            # f'! Dark Sigma = {ConfigFile.settings["fL1dDeglitch2"]}\n'+\
-            # f'! Light Sigma = {ConfigFile.settings["fL1dDeglitch3"]}\n'+\
 
 
         SeaBASSHeader.settings["comments"] =\
@@ -156,42 +154,42 @@ class SeaBASSHeader:
             f'! HyperInSPACE Config = {ConfigFile.filename}\n'+\
             f'! SZA Filter = {szaFilt}\n'+\
             f'! SZA Max = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
-            f'! Rotator Home Angle = {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'+\
-            f'! Rotator Delay = {ConfigFile.settings["fL1cRotatorDelay"]}\n'+\
+            f'! Rotator Home Angle = {ConfigFile.settings["fL1aqcRotatorHomeAngle"]}\n'+\
+            f'! Rotator Delay = {ConfigFile.settings["fL1aqcRotatorDelay"]}\n'+\
             f'! Pitch/Roll Filter = {pitchRollFilt}\n'+\
-            f'! Max Pitch/Roll = {ConfigFile.settings["fL1cPitchRollPitch"]}\n'+\
+            f'! Max Pitch/Roll = {ConfigFile.settings["fL1aqcPitchRollPitch"]}\n'+\
             f'! Rotator Min/Max Filter = {cleanRotFilt}\n'+\
-            f'! Rotator Min = {ConfigFile.settings["fL1cRotatorAngleMin"]}\n'+\
-            f'! Rotator Max = {ConfigFile.settings["fL1cRotatorAngleMax"]}\n'+\
+            f'! Rotator Min = {ConfigFile.settings["fL1aqcRotatorAngleMin"]}\n'+\
+            f'! Rotator Max = {ConfigFile.settings["fL1aqcRotatorAngleMax"]}\n'+\
             f'! Rel Azimuth Filter = {cleanRelAzFilt}\n'+\
-            f'! Rel Azimuth Min = {ConfigFile.settings["fL1cSunAngleMin"]}\n'+\
-            f'! Rel Azimuth Max = {ConfigFile.settings["fL1cSunAngleMax"]}\n'+\
+            f'! Rel Azimuth Min = {ConfigFile.settings["fL1aqcSunAngleMin"]}\n'+\
+            f'! Rel Azimuth Max = {ConfigFile.settings["fL1aqcSunAngleMax"]}\n'+\
             f'! Deglitch Filter = {deglitchFilt}\n'+\
-            f'! ES Dark Window = {ConfigFile.settings["fL1dESWindowDark"]}\n'+\
-            f'! ES Light Window = {ConfigFile.settings["fL1dESWindowLight"]}\n'+\
-            f'! ES Dark Sigma = {ConfigFile.settings["fL1dESSigmaDark"]}\n'+\
-            f'! ES Light Sigma = {ConfigFile.settings["fL1dESSigmaLight"]}\n'+\
-            f'! LI Dark Window = {ConfigFile.settings["fL1dLIWindowDark"]}\n'+\
-            f'! LI Light Window = {ConfigFile.settings["fL1dLIWindowLight"]}\n'+\
-            f'! LI Dark Sigma = {ConfigFile.settings["fL1dLISigmaDark"]}\n'+\
-            f'! LI Light Sigma = {ConfigFile.settings["fL1dLISigmaLight"]}\n'+\
-            f'! LT Dark Window = {ConfigFile.settings["fL1dLTWindowDark"]}\n'+\
-            f'! LT Light Window = {ConfigFile.settings["fL1dLTWindowLight"]}\n'+\
-            f'! LT Dark Sigma = {ConfigFile.settings["fL1dLTSigmaDark"]}\n'+\
-            f'! LT Light Sigma = {ConfigFile.settings["fL1dLTSigmaLight"]}\n'+\
-            f'! Wavelength Interp Int = {ConfigFile.settings["fL1eInterpInterval"]}\n'+\
-            f'! Max Wind = {ConfigFile.settings["fL2MaxWind"]}\n'+\
-            f'! Min SZA = {ConfigFile.settings["fL2SZAMin"]}\n'+\
-            f'! Max SZA = {ConfigFile.settings["fL2SZAMax"]}\n'+\
+            f'! ES Dark Window = {ConfigFile.settings["fL1aqcESWindowDark"]}\n'+\
+            f'! ES Light Window = {ConfigFile.settings["fL1aqcESWindowLight"]}\n'+\
+            f'! ES Dark Sigma = {ConfigFile.settings["fL1aqcESSigmaDark"]}\n'+\
+            f'! ES Light Sigma = {ConfigFile.settings["fL1aqcESSigmaLight"]}\n'+\
+            f'! LI Dark Window = {ConfigFile.settings["fL1aqcLIWindowDark"]}\n'+\
+            f'! LI Light Window = {ConfigFile.settings["fL1aqcLIWindowLight"]}\n'+\
+            f'! LI Dark Sigma = {ConfigFile.settings["fL1aqcLISigmaDark"]}\n'+\
+            f'! LI Light Sigma = {ConfigFile.settings["fL1aqcLISigmaLight"]}\n'+\
+            f'! LT Dark Window = {ConfigFile.settings["fL1aqcLTWindowDark"]}\n'+\
+            f'! LT Light Window = {ConfigFile.settings["fL1aqcLTWindowLight"]}\n'+\
+            f'! LT Dark Sigma = {ConfigFile.settings["fL1aqcLTSigmaDark"]}\n'+\
+            f'! LT Light Sigma = {ConfigFile.settings["fL1aqcLTSigmaLight"]}\n'+\
+            f'! Wavelength Interp Int = {ConfigFile.settings["fL1bInterpInterval"]}\n'+\
+            f'! Max Wind = {ConfigFile.settings["fL1bqcMaxWind"]}\n'+\
+            f'! Min SZA = {ConfigFile.settings["fL1bqcSZAMin"]}\n'+\
+            f'! Max SZA = {ConfigFile.settings["fL1bqcSZAMax"]}\n'+\
             f'! Spectral Filter = {specFilt}\n'+\
-            f'! Filter Sigma Es = {ConfigFile.settings["fL2SpecFilterEs"]}\n'+\
-            f'! Filter Sigma Li = {ConfigFile.settings["fL2SpecFilterLi"]}\n'+\
-            f'! Filter Sigma Lt = {ConfigFile.settings["fL2SpecFilterLt"]}\n'+\
+            f'! Filter Sigma Es = {ConfigFile.settings["fL1bqcSpecFilterEs"]}\n'+\
+            f'! Filter Sigma Li = {ConfigFile.settings["fL1bqcSpecFilterLi"]}\n'+\
+            f'! Filter Sigma Lt = {ConfigFile.settings["fL1bqcSpecFilterLt"]}\n'+\
             f'! Meteorological Filter = {metFilt}\n'+\
-            f'! Cloud Flag = {ConfigFile.settings["fL2CloudFlag"]}\n'+\
-            f'! Es Flag = {ConfigFile.settings["fL2SignificantEsFlag"]}\n'+\
-            f'! Dawn/Dusk Flag = {ConfigFile.settings["fL2DawnDuskFlag"]}\n'+\
-            f'! Rain/Humidity Flag = {ConfigFile.settings["fL2RainfallHumidityFlag"]}\n'+\
+            f'! Cloud Flag = {ConfigFile.settings["fL1bqcCloudFlag"]}\n'+\
+            f'! Es Flag = {ConfigFile.settings["fL1bqcSignificantEsFlag"]}\n'+\
+            f'! Dawn/Dusk Flag = {ConfigFile.settings["fL1bqcDawnDuskFlag"]}\n'+\
+            f'! Rain/Humidity Flag = {ConfigFile.settings["fL1bqcRainfallHumidityFlag"]}\n'+\
             f'! Ensemble Interval = {ConfigFile.settings["fL2TimeInterval"]}\n'+\
             f'! Percent Lt Filter = {ltFilt}\n'+\
             f'! Percent Light = {ConfigFile.settings["fL2PercentLt"]}\n'+\
@@ -251,7 +249,7 @@ class SeaBASSHeader:
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.filename = filename
             os.remove(seaBASSHeaderPath)
-            # shutil.rmtree(calibrationPath)        
+            # shutil.rmtree(calibrationPath)
 
     @staticmethod
     def refreshCalibrationFiles():
@@ -259,5 +257,5 @@ class SeaBASSHeader:
         calibrationPath = ConfigFile.getCalibrationDirectory()
         files = os.listdir(calibrationPath)
         SeaBASSHeader.settings["calibration_files"] = (','.join(files))
-    
+
 

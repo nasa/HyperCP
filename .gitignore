@@ -10,6 +10,7 @@ Config/*
 !Config/sample*
 .vscode/
 .DS_Store
+.pylintrc
 Source/.DS_Store
 *.pyc
 *.log

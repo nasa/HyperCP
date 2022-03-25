@@ -5,7 +5,7 @@ import os
 import shutil
 
 class ConfigFile:
-    filename = ""
+    filename = ''
     settings = collections.OrderedDict()
     products = collections.OrderedDict()
     minDeglitchBand = 350
@@ -19,82 +19,85 @@ class ConfigFile:
     @staticmethod
     def printd():
         print("ConfigFile - Printd")
+        print("AncFile", ConfigFile.settings["AncFile"])
+
         print("bL1aCleanSZA", ConfigFile.settings["bL1aCleanSZA"])
         print("fL1aCleanSZAMax", ConfigFile.settings["fL1aCleanSZAMax"])
 
-        print("bL1cSolarTracker", ConfigFile.settings["bL1cSolarTracker"])
-        print("fL1cRotatorHomeAngle", ConfigFile.settings["fL1cRotatorHomeAngle"])
-        print("bL1cRotatorDelay", ConfigFile.settings["bL1cRotatorDelay"])
-        print("fL1cRotatorDelay", ConfigFile.settings["fL1cRotatorDelay"])
-        print("bL1cCleanPitchRoll", ConfigFile.settings["bL1cCleanPitchRoll"])
-        print("fL1cPitchRollPitch", ConfigFile.settings["fL1cPitchRollPitch"])
-        print("fL1cPitchRollRoll", ConfigFile.settings["fL1cPitchRollRoll"])
-        print("bL1cRotatorAngle", ConfigFile.settings["bL1cRotatorAngle"])
-        print("fL1cRotatorAngleMin", ConfigFile.settings["fL1cRotatorAngleMin"])
-        print("fL1cRotatorAngleMax", ConfigFile.settings["fL1cRotatorAngleMax"])
-        print("bL1cCleanSunAngle", ConfigFile.settings["bL1cCleanSunAngle"])
-        print("fL1cSunAngleMin", ConfigFile.settings["fL1cSunAngleMin"])
-        print("fL1cSunAngleMax", ConfigFile.settings["fL1cSunAngleMax"])
+        print("bL1aqcSolarTracker", ConfigFile.settings["bL1aqcSolarTracker"])
+        print("fL1aqcRotatorHomeAngle", ConfigFile.settings["fL1aqcRotatorHomeAngle"])
+        print("bL1aqcRotatorDelay", ConfigFile.settings["bL1aqcRotatorDelay"])
+        print("fL1aqcRotatorDelay", ConfigFile.settings["fL1aqcRotatorDelay"])
+        print("bL1aqcCleanPitchRoll", ConfigFile.settings["bL1aqcCleanPitchRoll"])
+        print("fL1aqcPitchRollPitch", ConfigFile.settings["fL1aqcPitchRollPitch"])
+        print("fL1aqcPitchRollRoll", ConfigFile.settings["fL1aqcPitchRollRoll"])
+        print("bL1aqcRotatorAngle", ConfigFile.settings["bL1aqcRotatorAngle"])
+        print("fL1aqcRotatorAngleMin", ConfigFile.settings["fL1aqcRotatorAngleMin"])
+        print("fL1aqcRotatorAngleMax", ConfigFile.settings["fL1aqcRotatorAngleMax"])
+        print("bL1aqcCleanSunAngle", ConfigFile.settings["bL1aqcCleanSunAngle"])
+        print("fL1aqcSunAngleMin", ConfigFile.settings["fL1aqcSunAngleMin"])
+        print("fL1aqcSunAngleMax", ConfigFile.settings["fL1aqcSunAngleMax"])
 
-        print("bL1dDeglitch", ConfigFile.settings["bL1dDeglitch"])
-        print("fL1dESWindowDark", ConfigFile.settings["fL1dESWindowDark"])
-        print("fL1dESWindowLight", ConfigFile.settings["fL1dESWindowLight"])
-        print("fL1dESSigmaDark", ConfigFile.settings["fL1dESSigmaDark"])
-        print("fL1dESSigmaLight", ConfigFile.settings["fL1dESSigmaLight"])
-        print("fL1dLIWindowDark", ConfigFile.settings["fL1dLIWindowDark"])
-        print("fL1dLIWindowLight", ConfigFile.settings["fL1dLIWindowLight"])
-        print("fL1dLISigmaDark", ConfigFile.settings["fL1dLISigmaDark"])
-        print("fL1dLISigmaLight", ConfigFile.settings["fL1dLISigmaLight"])
-        print("fL1dLTWindowDark", ConfigFile.settings["fL1dLTWindowDark"])
-        print("fL1dLTWindowLight", ConfigFile.settings["fL1dLTWindowLight"])
-        print("fL1dLTSigmaDark", ConfigFile.settings["fL1dLTSigmaDark"])
-        print("fL1dLTSigmaLight", ConfigFile.settings["fL1dLTSigmaLight"])
+        print("bL1aqcDeglitch", ConfigFile.settings["bL1aqcDeglitch"])
+        print("fL1aqcESWindowDark", ConfigFile.settings["fL1aqcESWindowDark"])
+        print("fL1aqcESWindowLight", ConfigFile.settings["fL1aqcESWindowLight"])
+        print("fL1aqcESSigmaDark", ConfigFile.settings["fL1aqcESSigmaDark"])
+        print("fL1aqcESSigmaLight", ConfigFile.settings["fL1aqcESSigmaLight"])
+        print("fL1aqcLIWindowDark", ConfigFile.settings["fL1aqcLIWindowDark"])
+        print("fL1aqcLIWindowLight", ConfigFile.settings["fL1aqcLIWindowLight"])
+        print("fL1aqcLISigmaDark", ConfigFile.settings["fL1aqcLISigmaDark"])
+        print("fL1aqcLISigmaLight", ConfigFile.settings["fL1aqcLISigmaLight"])
+        print("fL1aqcLTWindowDark", ConfigFile.settings["fL1aqcLTWindowDark"])
+        print("fL1aqcLTWindowLight", ConfigFile.settings["fL1aqcLTWindowLight"])
+        print("fL1aqcLTSigmaDark", ConfigFile.settings["fL1aqcLTSigmaDark"])
+        print("fL1aqcLTSigmaLight", ConfigFile.settings["fL1aqcLTSigmaLight"])
 
-        print("bL1dThreshold", ConfigFile.settings["bL1dThreshold"])
-        print("fL1dESMinDark", ConfigFile.settings["fL1dESMinDark"])
-        print("fL1dESMinLight", ConfigFile.settings["fL1dESMinLight"])
-        print("fL1dESMaxDark", ConfigFile.settings["fL1dESMaxDark"])
-        print("fL1dESMaxLight", ConfigFile.settings["fL1dESMaxLight"])
-        print("fL1dESMinMaxBand", ConfigFile.settings["fL1dESMinMaxBand"])
-        print("fL1dESMinMaxBand", ConfigFile.settings["fL1dESMinMaxBand"])
-        print("fL1dLIMinDark", ConfigFile.settings["fL1dLIMinDark"])
-        print("fL1dLIMinLight", ConfigFile.settings["fL1dLIMinLight"])
-        print("fL1dLIMaxDark", ConfigFile.settings["fL1dLIMaxDark"])
-        print("fL1dLIMaxLight", ConfigFile.settings["fL1dLIMaxLight"])
-        print("fL1dLIMinMaxBand", ConfigFile.settings["fL1dLIMinMaxBand"])
-        print("fL1dLIMinMaxBand", ConfigFile.settings["fL1dLIMinMaxBand"])
-        print("fL1dLTMinDark", ConfigFile.settings["fL1dLTMinDark"])
-        print("fL1dLTMinLight", ConfigFile.settings["fL1dLTMinLight"])
-        print("fL1dLTMaxDark", ConfigFile.settings["fL1dLTMaxDark"])
-        print("fL1dLTMaxLight", ConfigFile.settings["fL1dLTMaxLight"])
-        print("fL1dLTMinMaxBand", ConfigFile.settings["fL1dLTMinMaxBand"])
-        print("fL1dLTMinMaxBand", ConfigFile.settings["fL1dLTMinMaxBand"])
+        print("bL1aqcThreshold", ConfigFile.settings["bL1aqcThreshold"])
+        print("fL1aqcESMinDark", ConfigFile.settings["fL1aqcESMinDark"])
+        print("fL1aqcESMinLight", ConfigFile.settings["fL1aqcESMinLight"])
+        print("fL1aqcESMaxDark", ConfigFile.settings["fL1aqcESMaxDark"])
+        print("fL1aqcESMaxLight", ConfigFile.settings["fL1aqcESMaxLight"])
+        print("fL1aqcESMinMaxBand", ConfigFile.settings["fL1aqcESMinMaxBand"])
+        print("fL1aqcESMinMaxBand", ConfigFile.settings["fL1aqcESMinMaxBand"])
+        print("fL1aqcLIMinDark", ConfigFile.settings["fL1aqcLIMinDark"])
+        print("fL1aqcLIMinLight", ConfigFile.settings["fL1aqcLIMinLight"])
+        print("fL1aqcLIMaxDark", ConfigFile.settings["fL1aqcLIMaxDark"])
+        print("fL1aqcLIMaxLight", ConfigFile.settings["fL1aqcLIMaxLight"])
+        print("fL1aqcLIMinMaxBand", ConfigFile.settings["fL1aqcLIMinMaxBand"])
+        print("fL1aqcLIMinMaxBand", ConfigFile.settings["fL1aqcLIMinMaxBand"])
+        print("fL1aqcLTMinDark", ConfigFile.settings["fL1aqcLTMinDark"])
+        print("fL1aqcLTMinLight", ConfigFile.settings["fL1aqcLTMinLight"])
+        print("fL1aqcLTMaxDark", ConfigFile.settings["fL1aqcLTMaxDark"])
+        print("fL1aqcLTMaxLight", ConfigFile.settings["fL1aqcLTMaxLight"])
+        print("fL1aqcLTMinMaxBand", ConfigFile.settings["fL1aqcLTMinMaxBand"])
+        print("fL1aqcLTMinMaxBand", ConfigFile.settings["fL1aqcLTMinMaxBand"])
 
-        print("fL1dAnomalyStep", ConfigFile.settings["fL1dAnomalyStep"])
+        print("fL1aqcAnomalyStep", ConfigFile.settings["fL1aqcAnomalyStep"])
 
-        print("fL1eInterpInterval", ConfigFile.settings["fL1eInterpInterval"])
-        print("bL1ePlotTimeInterp", ConfigFile.settings["bL1ePlotTimeInterp"])
-        print("bL1eSaveSeaBASS", ConfigFile.settings["bL1eSaveSeaBASS"])
-        print("seaBASSHeaderFileName", ConfigFile.settings["seaBASSHeaderFileName"])
+        print("bL1bDefaultCal", ConfigFile.settings["bL1bDefaultCal"])
+        print("bL1bFullCal", ConfigFile.settings["bL1bFullCal"])
+        print("fL1bInterpInterval", ConfigFile.settings["fL1bInterpInterval"])
+        print("bL1bPlotTimeInterp", ConfigFile.settings["bL1bPlotTimeInterp"])
+        print("fL1bPlotInterval", ConfigFile.settings["fL1bPlotInterval"])
 
-        print("bL2pGetAnc", ConfigFile.settings["bL2pGetAnc"])
-        print("bL2pObpgCreds", ConfigFile.settings["bL2pObpgCreds"])
+        print("bL1bqcGetAnc", ConfigFile.settings["bL1bqcGetAnc"])
+        print("bL1bqcObpgCreds", ConfigFile.settings["bL1bqcObpgCreds"])
 
-        print("bL2LtUVNIR", ConfigFile.settings["bL2LtUVNIR"])
-        print("fL2MaxWind", ConfigFile.settings["fL2MaxWind"])
-        print("fL2SZAMin", ConfigFile.settings["fL2SZAMin"])
-        print("fL2SZAMax", ConfigFile.settings["fL2SZAMax"])
+        print("bL1bqcLtUVNIR", ConfigFile.settings["bL1bqcLtUVNIR"])
+        print("fL1bqcMaxWind", ConfigFile.settings["fL1bqcMaxWind"])
+        print("fL1bqcSZAMin", ConfigFile.settings["fL1bqcSZAMin"])
+        print("fL1bqcSZAMax", ConfigFile.settings["fL1bqcSZAMax"])
 
-        print("bL2EnableSpecQualityCheck", ConfigFile.settings["bL2EnableSpecQualityCheck"])
-        print("fL2SpecFilterEs", ConfigFile.settings["fL2SpecFilterEs"])
-        print("fL2SpecFilterLi", ConfigFile.settings["fL2SpecFilterLi"])
-        print("fL2SpecFilterLt", ConfigFile.settings["fL2SpecFilterLt"])
+        print("bL1bqcEnableSpecQualityCheck", ConfigFile.settings["bL1bqcEnableSpecQualityCheck"])
+        print("fL1bqcSpecFilterEs", ConfigFile.settings["fL1bqcSpecFilterEs"])
+        print("fL1bqcSpecFilterLi", ConfigFile.settings["fL1bqcSpecFilterLi"])
+        print("fL1bqcSpecFilterLt", ConfigFile.settings["fL1bqcSpecFilterLt"])
 
-        print("bL2EnableQualityFlags", ConfigFile.settings["bL2EnableQualityFlags"])
-        print("fL2CloudFlag", ConfigFile.settings["fL2CloudFlag"])
-        print("fL2SignificantEsFlag", ConfigFile.settings["fL2SignificantEsFlag"])
-        print("fL2DawnDuskFlag", ConfigFile.settings["fL2DawnDuskFlag"])
-        print("fL2RainfallHumidityFlag", ConfigFile.settings["fL2RainfallHumidityFlag"])
+        print("bL1bqcEnableQualityFlags", ConfigFile.settings["bL1bqcEnableQualityFlags"])
+        print("fL1bqcCloudFlag", ConfigFile.settings["fL1bqcCloudFlag"])
+        print("fL1bqcSignificantEsFlag", ConfigFile.settings["fL1bqcSignificantEsFlag"])
+        print("fL1bqcDawnDuskFlag", ConfigFile.settings["fL1bqcDawnDuskFlag"])
+        print("fL1bqcRainfallHumidityFlag", ConfigFile.settings["fL1bqcRainfallHumidityFlag"])
 
         print("fL2TimeInterval", ConfigFile.settings["fL2TimeInterval"])
         print("bL2EnablePercentLt", ConfigFile.settings["bL2EnablePercentLt"])
@@ -171,6 +174,7 @@ class ConfigFile:
         print("bL2ProdcQaa", ConfigFile.products["bL2ProdcQaa"])
 
         print("bL2SaveSeaBASS", ConfigFile.settings["bL2SaveSeaBASS"])
+        print("seaBASSHeaderFileName", ConfigFile.settings["seaBASSHeaderFileName"])
         print("bL2WriteReport", ConfigFile.settings["bL2WriteReport"])
 
 
@@ -195,84 +199,92 @@ class ConfigFile:
 
         ConfigFile.settings["CalibrationFiles"] = {}
 
+        ConfigFile.settings["AncFile"] = ''
+
         ConfigFile.settings["bL1aCleanSZA"] = 0
         ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,
 
-        ConfigFile.settings["bL1cSolarTracker"] = 1
-        ConfigFile.settings["bL1cCleanPitchRoll"] = 0
-        ConfigFile.settings["fL1cPitchRollPitch"] = 5 # 2-5 deg. IOCCG Draft Protocols
-        ConfigFile.settings["fL1cPitchRollRoll"] = 5 # 2-5 deg. IOCCG Draft Protocols
-        ConfigFile.settings["fL1cRotatorHomeAngle"] = 0.0 # Require knowledge of deployment set-up
-        ConfigFile.settings["bL1cRotatorDelay"] = 0
-        ConfigFile.settings["fL1cRotatorDelay"] = 60.0 # Vandenberg 2016
-        ConfigFile.settings["bL1cRotatorAngle"] = 0
-        ConfigFile.settings["fL1cRotatorAngleMin"] = -40.0 # Require knowledge of deployment set-up
-        ConfigFile.settings["fL1cRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
-        ConfigFile.settings["bL1cCleanSunAngle"] = 0
-        ConfigFile.settings["fL1cSunAngleMin"] = 90.0 # Zhang 2017: 45*, Mobley 1999: 90, Zibordi 2009 (and IOCCG Protocols): 90
-        ConfigFile.settings["fL1cSunAngleMax"] = 135.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90
+        ConfigFile.settings["bL1aqcSolarTracker"] = 1
+        ConfigFile.settings["bL1aqcCleanPitchRoll"] = 0
+        ConfigFile.settings["fL1aqcPitchRollPitch"] = 5 # 2-5 deg. IOCCG Draft Protocols
+        ConfigFile.settings["fL1aqcPitchRollRoll"] = 5 # 2-5 deg. IOCCG Draft Protocols
+        ConfigFile.settings["fL1aqcRotatorHomeAngle"] = 0.0 # Require knowledge of deployment set-up
+        ConfigFile.settings["bL1aqcRotatorDelay"] = 0
+        ConfigFile.settings["fL1aqcRotatorDelay"] = 60.0 # Vandenberg 2016
+        ConfigFile.settings["bL1aqcRotatorAngle"] = 0
+        ConfigFile.settings["fL1aqcRotatorAngleMin"] = -40.0 # Require knowledge of deployment set-up
+        ConfigFile.settings["fL1aqcRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
+        ConfigFile.settings["bL1aqcCleanSunAngle"] = 0
+        ConfigFile.settings["fL1aqcSunAngleMin"] = 90.0 # Zhang 2017: 45*, Mobley 1999: 90, Zibordi 2009 (and IOCCG Protocols): 90
+        ConfigFile.settings["fL1aqcSunAngleMax"] = 135.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90
 
-        ConfigFile.settings["bL1dDeglitch"] = 1
+        ConfigFile.settings["bL1aqcDeglitch"] = 1
         # These can be experimentally derived with the AnomalyDetection tool
-        ConfigFile.settings["fL1dESWindowDark"] = 11
-        ConfigFile.settings["fL1dESWindowLight"] = 5
-        ConfigFile.settings["fL1dESSigmaDark"] = 3.2
-        ConfigFile.settings["fL1dESSigmaLight"] = 3.5
-        ConfigFile.settings["fL1dLIWindowDark"] = 11
-        ConfigFile.settings["fL1dLIWindowLight"] = 5
-        ConfigFile.settings["fL1dLISigmaDark"] = 3.4
-        ConfigFile.settings["fL1dLISigmaLight"] = 3.4
-        ConfigFile.settings["fL1dLTWindowDark"] = 11
-        ConfigFile.settings["fL1dLTWindowLight"] = 5
-        ConfigFile.settings["fL1dLTSigmaDark"] = 3.5
-        ConfigFile.settings["fL1dLTSigmaLight"] = 3.2
+        ConfigFile.settings["fL1aqcESWindowDark"] = 11
+        ConfigFile.settings["fL1aqcESWindowLight"] = 5
+        ConfigFile.settings["fL1aqcESSigmaDark"] = 3.2
+        ConfigFile.settings["fL1aqcESSigmaLight"] = 3.5
+        ConfigFile.settings["fL1aqcLIWindowDark"] = 11
+        ConfigFile.settings["fL1aqcLIWindowLight"] = 5
+        ConfigFile.settings["fL1aqcLISigmaDark"] = 3.4
+        ConfigFile.settings["fL1aqcLISigmaLight"] = 3.4
+        ConfigFile.settings["fL1aqcLTWindowDark"] = 11
+        ConfigFile.settings["fL1aqcLTWindowLight"] = 5
+        ConfigFile.settings["fL1aqcLTSigmaDark"] = 3.5
+        ConfigFile.settings["fL1aqcLTSigmaLight"] = 3.2
 
-        # Optional threshold values for L1C-L1D processing of light & dark data (see AnomalyDetection tool)
-        ConfigFile.settings["bL1dThreshold"] = 0
-        ConfigFile.settings["fL1dESMinDark"] = None
-        ConfigFile.settings["fL1dESMinLight"] = None
-        ConfigFile.settings["fL1dESMaxDark"] = None
-        ConfigFile.settings["fL1dESMaxLight"] = None
-        ConfigFile.settings["fL1dESMinMaxBandDark"] = None
-        ConfigFile.settings["fL1dESMinMaxBandLight"] = None
-        ConfigFile.settings["fL1dLIMinDark"] = None
-        ConfigFile.settings["fL1dLIMinLight"] = None
-        ConfigFile.settings["fL1dLIMaxDark"] = None
-        ConfigFile.settings["fL1dLIMaxLight"] = None
-        ConfigFile.settings["fL1dLIMinMaxBandDark"] = None
-        ConfigFile.settings["fL1dLIMinMaxBandLight"] = None
-        ConfigFile.settings["fL1dLTMinDark"] = None
-        ConfigFile.settings["fL1dLTMinLight"] = None
-        ConfigFile.settings["fL1dLTMaxDark"] = None
-        ConfigFile.settings["fL1dLTMaxLight"] = None
-        ConfigFile.settings["fL1dLTMinMaxBandDark"] = None
-        ConfigFile.settings["fL1dLTMinMaxBandLight"] = None
+        # Optional threshold values for L1AQC processing of light & dark data (see AnomalyDetection tool)
+        ConfigFile.settings["bL1aqcThreshold"] = 0
+        ConfigFile.settings["fL1aqcESMinDark"] = None
+        ConfigFile.settings["fL1aqcESMinLight"] = None
+        ConfigFile.settings["fL1aqcESMaxDark"] = None
+        ConfigFile.settings["fL1aqcESMaxLight"] = None
+        ConfigFile.settings["fL1aqcESMinMaxBandDark"] = None
+        ConfigFile.settings["fL1aqcESMinMaxBandLight"] = None
+        ConfigFile.settings["fL1aqcLIMinDark"] = None
+        ConfigFile.settings["fL1aqcLIMinLight"] = None
+        ConfigFile.settings["fL1aqcLIMaxDark"] = None
+        ConfigFile.settings["fL1aqcLIMaxLight"] = None
+        ConfigFile.settings["fL1aqcLIMinMaxBandDark"] = None
+        ConfigFile.settings["fL1aqcLIMinMaxBandLight"] = None
+        ConfigFile.settings["fL1aqcLTMinDark"] = None
+        ConfigFile.settings["fL1aqcLTMinLight"] = None
+        ConfigFile.settings["fL1aqcLTMaxDark"] = None
+        ConfigFile.settings["fL1aqcLTMaxLight"] = None
+        ConfigFile.settings["fL1aqcLTMinMaxBandDark"] = None
+        ConfigFile.settings["fL1aqcLTMinMaxBandLight"] = None
 
-        ConfigFile.settings["fL1dAnomalyStep"] = 20
+        ConfigFile.settings["fL1aqcAnomalyStep"] = 20
 
-        ConfigFile.settings["fL1eInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
-        ConfigFile.settings["bL1ePlotTimeInterp"] = 0
-        ConfigFile.settings["bL1eSaveSeaBASS"] = 0
-        ConfigFile.settings["seaBASSHeaderFileName"] = os.path.splitext(name)[0] + ".hdr" #
+        ConfigFile.settings["bL1bDefaultCal"] = 1
+        ConfigFile.settings["bL1bFullCal"] = 0
+        ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
+        ConfigFile.settings["bL1bPlotTimeInterp"] = 0
+        ConfigFile.settings["fL1bPlotInterval"] = 20 # nm
 
-        ConfigFile.settings["bL2pGetAnc"] = 0
-        ConfigFile.settings["bL2pObpgCreds"] = 0
+        ConfigFile.settings["bL1bqcLtUVNIR"] = 1
+        ConfigFile.settings["fL1bqcMaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
+        ConfigFile.settings["fL1bqcSZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
+        ConfigFile.settings["fL1bqcSZAMax"] = 60 # e.g. 60:Brewin 2016,
 
-        ConfigFile.settings["bL2LtUVNIR"] = 1
-        ConfigFile.settings["fL2MaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
-        ConfigFile.settings["fL2SZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
-        ConfigFile.settings["fL2SZAMax"] = 60 # e.g. 60:Brewin 2016,
+        ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 1
+        ConfigFile.settings["fL1bqcSpecFilterEs"] = 5
+        ConfigFile.settings["fL1bqcSpecFilterLi"] = 8
+        ConfigFile.settings["fL1bqcSpecFilterLt"] = 3
 
-        ConfigFile.settings["bL2EnableSpecQualityCheck"] = 1
-        ConfigFile.settings["fL2SpecFilterEs"] = 5
-        ConfigFile.settings["fL2SpecFilterLi"] = 8
-        ConfigFile.settings["fL2SpecFilterLt"] = 3
+        ConfigFile.settings["bL1bqcEnableQualityFlags"] = 1
+        ConfigFile.settings["fL1bqcCloudFlag"] = 1.0 # 1.0 basically disregards this, though cloud cover can still be used in glint correction; 0.05 Ruddick 2006, IOCCG Protocols
+        ConfigFile.settings["fL1bqcSignificantEsFlag"] = 2.0 # Wernand 2002
+        ConfigFile.settings["fL1bqcDawnDuskFlag"] = 1.0 # Wernand 2002
+        ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain
 
-        ConfigFile.settings["bL2EnableQualityFlags"] = 1
-        ConfigFile.settings["fL2CloudFlag"] = 1.0 # 1.0 basically disregards this, though cloud cover can still be used in glint correction; 0.05 Ruddick 2006, IOCCG Protocols
-        ConfigFile.settings["fL2SignificantEsFlag"] = 2.0 # Wernand 2002
-        ConfigFile.settings["fL2DawnDuskFlag"] = 1.0 # Wernand 2002
-        ConfigFile.settings["fL2RainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain
+
+        ConfigFile.settings["bL1bqcGetAnc"] = 0
+        ConfigFile.settings["bL1bqcObpgCreds"] = 0
+        ConfigFile.settings["fL1bqcDefaultWindSpeed"] = 5.0
+        ConfigFile.settings["fL1bqcDefaultAOD"] = 0.5
+        ConfigFile.settings["fL1bqcDefaultSalt"] = 35.0
+        ConfigFile.settings["fL1bqcDefaultSST"] = 26.0
 
         ConfigFile.settings["bL2Stations"] = 0
         ConfigFile.settings["fL2TimeInterval"] = 300
@@ -280,10 +292,6 @@ class ConfigFile:
         ConfigFile.settings["fL2PercentLt"] = 5 # 5% Hooker et al. 2002, Hooker and Morel 2003; <10% IOCCG Protocols
 
         ConfigFile.settings["fL2RhoSky"] = 0.0256 # Mobley 1999
-        ConfigFile.settings["fL2DefaultWindSpeed"] = 5.0
-        ConfigFile.settings["fL2DefaultAOD"] = 0.5
-        ConfigFile.settings["fL2DefaultSalt"] = 35.0
-        ConfigFile.settings["fL2DefaultSST"] = 26.0
         ConfigFile.settings["bL23CRho"] = 1
         ConfigFile.settings["bL2ZhangRho"] = 0
         ConfigFile.settings["bL2DefaultRho"] = 0
@@ -307,7 +315,6 @@ class ConfigFile:
         ConfigFile.settings["bL2PlotLt"] = 0
 
         ConfigFile.products["bL2Prodoc3m"] = 0
-        # ConfigFile.products["bL2Prodaot"] = 0
         ConfigFile.products["bL2Prodkd490"] = 0
         ConfigFile.products["bL2Prodpic"] = 0
         ConfigFile.products["bL2Prodpoc"] = 0
@@ -347,6 +354,7 @@ class ConfigFile:
         ConfigFile.products["bL2ProdbbpQaa"] = 0
         ConfigFile.products["bL2ProdcQaa"] = 0
 
+        ConfigFile.settings["seaBASSHeaderFileName"] = os.path.splitext(name)[0] + ".hdr" #
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
         ConfigFile.settings["bL2WriteReport"] = 1
 
@@ -392,8 +400,6 @@ class ConfigFile:
                         ConfigFile.settings[key] = value
 
                 ConfigFile.createCalibrationFolder()
-
-
 
     # Deletes a config
     @staticmethod

@@ -1,26 +1,27 @@
-v1.0.10 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
+v1.1.1 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
 ---
 
 Next priorities:
+* Implement TriOS platform support
+* Implement full instrument characterization and uncertainty budgets
+* Improve uncertainty estimates of glint corrections
+* Propagate uncertainties from radiometry to OC products
 * Implement Groetch et al. 2017 3C glint correction
 * Implement Vandermuelen, Dierssen (in prep) QWIP QC
-* Implement TriOS platform support
-* Implement satellite matchup with fd_mathcup.py
+* Add BRDF correction options
+* Implement satellite matchup with fd_mathcup.py (TBD)
 * Integration time issue with HyperOCRs; develop/add correction (in cal file? another level?)
     * Do other users of SeaBird HOCRs see int. time response issues?
     * Contact me for further info regarding integration time uncertainty
 * Improve/augment to NIR residual corrections
     * Iterative approaches; process time concern.
-* Add BRDF correction options
-* Propagate uncertainties from radiometry to OC products
-* Improve uncertainty estimates of glint corrections
-* Memory issue with FPDF causes major slowdown in PDF report building with figures
+* FPDF slow in PDF report building with figures; seek alternatives
 * Fix non-unique station/file bug
+* Use ancillary SeaBASS metadata to populate remaining L1E/L2 SeaBASS header fields
 
 Ideas and To-Dos:
 * Explore ML approaches to automate filter selection and glint/NIR correction selection
 * Incorporate additional platforms with collaborators (write to dirk.a.aurin@nasa.gov)
-* Use ancillary SeaBASS metadata to populate remaining L1E/L2 SeaBASS header fields
 * Add failure flags in HDF object attributes:
     * Capture details when errors thrown (inspect, currentframe, getframeinfo)
     * Split Wind and SZA bombs in L2
@@ -28,6 +29,25 @@ Ideas and To-Dos:
 * Produce kml files for GoogleEarth on entire cruise/directory
 
 ___________________________________________________________
+
+--
+v1.1.0 2022-03-25: DAA
+
+2022-03-24:
+* Overhaul L2, SeaBASS Headers
+* Update README
+
+2022-03-23:
+* Change from Thuillier F0 to Coddington hybrid (TSIS-1)
+
+2022-03-22:
+* Overhaul L1A-L1BQC, Utilities, PDFReport, etc. for new v1.1.0 processing structure
+* Update GetAnc (v1.1.0 and master) to reflect changes to MERRA2 ancillary model file naming changes
+* Separate SZA filter from high wind filter at L1BQC
+
+2022-03-16:
+* Build new GUI interface for v1.1.0 process flow
+* Allow for "sip" files in calibration file input
 
 2021-12-14:
 * Fix bug in Rrs_MODISA_Uncorr columns2dataset (PL2 L486)

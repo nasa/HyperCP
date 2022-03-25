@@ -2,13 +2,7 @@
 import collections
 import sys
 
-# For testing HDF4 support with pyhdf
-#from pyhdf.HDF import *
-#from pyhdf.V import *
-#from pyhdf.VS import *
-
 import numpy as np
-
 
 class HDFDataset:
     def __init__(self):
@@ -61,7 +55,6 @@ class HDFDataset:
 
         # Read dataset
         self.data = f[:] # Gets converted to numpy.ndarray
-
         #print("Dataset:", name)
         #print("Data:", self.data.dtype)
 
@@ -70,51 +63,10 @@ class HDFDataset:
         #print("columns:", self.columns)
         #print("data:", self.data)
 
-        # h4toh5 converter saves datatypes separately, but this doesn't seem required
-        #typeId = self.id + "_t"
-        #f[typeId] = self.data.dtype
-        #dset = f.create_dataset(self.id, data=self.data, dtype=f[typeId])
         if self.data is not None:
             dset = f.create_dataset(self.id, data=self.data, dtype=self.data.dtype)
         else:
             print("Dataset.write(): Data is None")
-
-
-    # # Writing to HDF4 file using PyHdf
-    # def writeHDF4(self, vg, vs):
-    #     if self.data is not None:
-    #         try:
-    #             name = self.id.encode('utf-8')
-    #             dt = []
-    #             #print(self.data.dtype)
-    #             for (k,v) in [(x,y[0]) for x,y in sorted(self.data.dtype.fields.items(),key=lambda k: k[1])]:
-    #                 #print("type",k,v)
-    #                 if v == np.float64:
-    #                     dt.append((k, HC.FLOAT32, 1))
-    #                     #print("float")
-    #                 if v == np.dtype('S1'):
-    #                     # ToDo: set to correct length
-    #                     # Note: strings of length 1 are not supported
-    #                     dt.append((k, HC.CHAR8, 2))
-    #                     #print("char8")
-    #             #print(dt)
-    #             vd = vs.create(name, dt)
-    #             records = []
-    #             for x in range(self.data.shape[0]):
-    #                 rec = []
-    #                 for t in dt:
-    #                     item = self.data[t[0]][x]
-    #                     rec.append(item)
-    #                 records.append(rec)
-    #             #print(records)
-    #             vd.write(records)
-    #             vg.insert(vd)
-    #         except:
-    #             print("HDFDataset Error:", sys.exc_info()[0])
-    #         finally:
-    #             vd.detach()
-    #     else:
-    #         print("Dataset.write(): Data is None")
 
     def getColumn(self, name):
         if name in self.columns:

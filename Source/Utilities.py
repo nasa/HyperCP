@@ -1,28 +1,29 @@
 
 import os
-import sys
-import math
 import datetime
-import time
+import collections
+
 import pytz
 from collections import Counter
 import csv
 
 # from PyQt5.QtWidgets import QApplication, QDesktopWidget, QWidget, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSlot
 
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 import numpy as np
 import scipy.interpolate
 from scipy.interpolate import splev, splrep
+import scipy as sp
 import pandas as pd
 from pandas.plotting import register_matplotlib_converters
 register_matplotlib_converters()
 from tqdm import tqdm
 
+from SB_support import readSB
+
+import HDFRoot
 from ConfigFile import ConfigFile
 from MainConfig import MainConfig
 
@@ -32,6 +33,91 @@ if "LOGFILE" not in os.environ:
 
 class Utilities:
 
+    @staticmethod
+    # def Thuillier(dateTag, wavelength):
+    def TSIS_1(dateTag, wavelength):
+        def dop(year):
+            # day of perihelion
+            years = list(range(2001,2031))
+            key = [str(x) for x in years]
+            day = [4, 2, 4, 4, 2, 4, 3, 2, 4, 3, 3, 5, 2, 4, 4, 2, 4, 3, 3, 5, 2, 4, 4, 3, 4, 3, 3, 5, 2, 3]
+            dop = {key[i]: day[i] for i in range(0, len(key))}
+            result = dop[str(year)]
+            return result
+
+        fp = 'Data/hybrid_reference_spectrum_p1nm_resolution_c2020-09-21_with_unc.nc'
+        # fp = 'Data/Thuillier_F0.sb'
+        # print("SB_support.readSB: " + fp)
+        print("Reading : " + fp)
+        if not HDFRoot.HDFRoot.readHDF5(fp):
+            msg = "Unable to read TSIS-1 netcdf file."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+        else:
+            F0_hybrid = HDFRoot.HDFRoot.readHDF5(fp)
+            # F0_raw = np.array(Thuillier.data['esun']) # uW cm^-2 nm^-1
+            # wv_raw = np.array(Thuillier.data['wavelength'])
+            for ds in F0_hybrid.datasets:
+                if ds.id == 'SSI':
+                    F0_raw = ds.data        #  W  m^-2 nm^-1
+                    F0_raw = F0_raw * 100 # uW cm^-2 nm^-1
+                if ds.id == 'Vacuum Wavelength':
+                    wv_raw =ds.data
+
+            # Earth-Sun distance
+            day = int(str(dateTag)[4:7])
+            year = int(str(dateTag)[0:4])
+            eccentricity = 0.01672
+            dayFactor = 360/365.256363
+            dayOfPerihelion = dop(year)
+            dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
+            F0_fs = F0_raw*dES
+
+            F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
+            # Use the strings for the F0 dict
+            wavelengthStr = [str(wave) for wave in wavelength]
+            F0 = collections.OrderedDict(zip(wavelengthStr, F0))
+
+        return F0
+
+    @staticmethod
+    def Thuillier(dateTag, wavelength):
+        def dop(year):
+            # day of perihelion
+            years = list(range(2001,2031))
+            key = [str(x) for x in years]
+            day = [4, 2, 4, 4, 2, 4, 3, 2, 4, 3, 3, 5, 2, 4, 4, 2, 4, 3, 3, 5, 2, 4, 4, 3, 4, 3, 3, 5, 2, 3]
+            dop = {key[i]: day[i] for i in range(0, len(key))}
+            result = dop[str(year)]
+            return result
+
+        fp = 'Data/Thuillier_F0.sb'
+        print("SB_support.readSB: " + fp)
+        if not readSB(fp, no_warn=True):
+            msg = "Unable to read Thuillier file. Make sure it is in SeaBASS format."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+        else:
+            Thuillier = readSB(fp, no_warn=True)
+            F0_raw = np.array(Thuillier.data['esun']) # uW cm^-2 nm^-1
+            wv_raw = np.array(Thuillier.data['wavelength'])
+            # Earth-Sun distance
+            day = int(str(dateTag)[4:7])
+            year = int(str(dateTag)[0:4])
+            eccentricity = 0.01672
+            dayFactor = 360/365.256363
+            dayOfPerihelion = dop(year)
+            dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
+            F0_fs = F0_raw*dES
+
+            F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
+            # Use the strings for the F0 dict
+            wavelengthStr = [str(wave) for wave in wavelength]
+            F0 = collections.OrderedDict(zip(wavelengthStr, F0))
+
+        return F0
 
     @staticmethod
     def mostFrequent(List):
@@ -261,7 +347,7 @@ class Utilities:
     # Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
     # in the 20th or 21st centuries
     @staticmethod
-    def rootAddDateTimeL2(node):
+    def rootAddDateTimeCol(node):
         for gp in node.groups:
             if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
                 for ds in gp.datasets:
@@ -306,30 +392,33 @@ class Utilities:
             # Check the first element prior to looping over rest
             i = 0
             if dateTime[i+1] <= dateTime[i]:
-                    gp.datasetDeleteRow(i)
-                    del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
-                    total = total - 1
-                    msg = f'Out of order timestamp deleted at {i}'
+                gp.datasetDeleteRow(i)
+                # del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
+                dateTime = gp.getDataset("DATETIME").data
+                total = total - 1
+                msg = f'Out of order timestamp deleted at {i}'
+                print(msg)
+                Utilities.writeLogFile(msg)
+
+                #In case we went from 2 to 1 element on the first element,
+                if total == 1:
+                    msg = f'************Too few records ({total}) to test for ascending timestamps. Exiting.'
                     print(msg)
                     Utilities.writeLogFile(msg)
-
-                    #In case we went from 2 to 1 element on the first element,
-                    if total == 1:
-                        msg = f'************Too few records ({total}) to test for ascending timestamps. Exiting.'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
-                        return False
+                    return False
 
             i = 1
             while i < total:
 
                 if dateTime[i] <= dateTime[i-1]:
 
-                    ''' BUG?:Same values of consecutive TT2s are shockingly common. Confirmed
-                    that 1) they exist from L1A, and 2) sensor data changes while TT2 stays the same '''
+                    # BUG?:Same values of consecutive TT2s are shockingly common. Confirmed
+                    #   that 1) they exist from L1A, and 2) sensor data changes while TT2 stays the same
+                    #
 
                     gp.datasetDeleteRow(i)
-                    del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
+                    # del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
+                    dateTime = gp.getDataset("DATETIME").data
                     total = total - 1
                     msg = f'Out of order TIMETAG2 row deleted at {i}'
                     print(msg)
@@ -469,7 +558,7 @@ class Utilities:
             badIndex.append(False)
             # ConfigFile setting updated directly from the checkbox in AnomDetection.
             # This insures values of badIndex are false if unthresholded or Min or Max are None
-            if ConfigFile.settings["bL1dThreshold"]:
+            if ConfigFile.settings["bL1aqcThreshold"]:
                 # Only run on the pre-selected waveband
                 if band == minMaxBand:
                     if minRad or minRad==0: # beware falsy zeros...
@@ -589,6 +678,87 @@ class Utilities:
                 print("NaN")
 
         return new_y
+
+
+    @staticmethod
+    def filterData(group, badTimes, sensor = None):
+        ''' Delete flagged records. Sensor is only specified to get the timestamp.
+            All data in the group (including satellite sensors) will be deleted.
+            Called by both ProcessL1bqc.'''
+
+        msg = f'Remove {group.id} Data'
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        if sensor == None:
+            if group.id == "ANCILLARY":
+                timeStamp = group.getDataset("LATITUDE").data["Datetime"]
+            if group.id == "IRRADIANCE":
+                timeStamp = group.getDataset("ES").data["Datetime"]
+            if group.id == "RADIANCE":
+                timeStamp = group.getDataset("LI").data["Datetime"]
+        else:
+            if group.id == "IRRADIANCE":
+                timeStamp = group.getDataset(f"ES_{sensor}").data["Datetime"]
+            if group.id == "RADIANCE":
+                timeStamp = group.getDataset(f"LI_{sensor}").data["Datetime"]
+            if group.id == "REFLECTANCE":
+                timeStamp = group.getDataset(f"Rrs_{sensor}").data["Datetime"]
+
+        startLength = len(timeStamp)
+        msg = f'   Length of dataset prior to removal {startLength} long'
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        # Delete the records in badTime ranges from each dataset in the group
+        finalCount = 0
+        originalLength = len(timeStamp)
+        for dateTime in badTimes:
+            # Need to reinitialize for each loop
+            startLength = len(timeStamp)
+            newTimeStamp = []
+
+            # msg = f'Eliminate data between: {dateTime}'
+            # print(msg)
+            # Utilities.writeLogFile(msg)
+
+            start = dateTime[0]
+            stop = dateTime[1]
+
+            if startLength > 0:
+                counter = 0
+                for i in range(startLength):
+                    if start <= timeStamp[i] and stop >= timeStamp[i]:
+                        try:
+                            group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
+                            counter += 1
+                            finalCount += 1
+                        except:
+                            print('error')
+                    else:
+                        newTimeStamp.append(timeStamp[i])
+            else:
+                msg = 'Data group is empty. Continuing.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                break
+            timeStamp = newTimeStamp.copy()
+
+        # if badTimes == []:
+        #     startLength = 1 # avoids div by zero below when finalCount is 0
+
+        for ds in group.datasets:
+            # if ds != "STATION":
+            # try:
+            group.datasets[ds].datasetToColumns()
+            # except:
+            #     print('sheeeeit')
+
+        msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
+        print(msg)
+        Utilities.writeLogFile(msg)
+        return finalCount/originalLength
+
 
     @staticmethod
     def plotRadiometry(root, filename, rType, plotDelta = False):
@@ -1072,8 +1242,8 @@ class Utilities:
 
 
     @staticmethod
-    def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fileName):
-        ''' Plot results of L1E time interpolation '''
+    def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fp):
+        ''' Plot results of L1B time interpolation '''
 
         dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
@@ -1083,7 +1253,7 @@ class Utilities:
             outDir = dirPath
 
         # Otherwise, put Plots in the chosen output directory from Main
-        plotDir = os.path.join(outDir,'Plots','L1E')
+        plotDir = os.path.join(outDir,'Plots','L1B_Interp')
 
         if not os.path.exists(plotDir):
             os.makedirs(plotDir)
@@ -1095,6 +1265,7 @@ class Utilities:
         dfy = pd.DataFrame(data=yTimer, index=list(range(0,len(yTimer))), columns=['x'])
         dfy['x'] = pd.to_datetime(dfy['x'].astype(str))
 
+        [_,fileName] = os.path.split(fp)
         fileBaseName,_ = fileName.split('.')
         register_matplotlib_converters()
 
@@ -1105,10 +1276,8 @@ class Utilities:
             }
 
         # Steps in wavebands used for plots
-        # step = float(ConfigFile.settings["fL3InterpInterval"]) # this is in nm
         # This happens prior to waveband interpolation, so each interval is ~3.3 nm
-        ''' To Do: THIS COULD BE SET IN THE CONFIG WINDOW '''
-        step = 20 # this is in band intervals
+        step = ConfigFile.settings['fL1bPlotInterval']
 
         if instr == 'ES' or instr == 'LI' or instr == 'LT':
             l = round((len(xData.data.dtype.names)-3)/step) # skip date and time and datetime
@@ -1170,7 +1339,10 @@ class Utilities:
                 plt.subplots_adjust(left=0.15)
                 plt.subplots_adjust(bottom=0.15)
 
-                plt.savefig(os.path.join(plotDir,f'{fileBaseName}_{instr}_{k}.png'))
+                if k == 'NONE':
+                    plt.savefig(os.path.join(plotDir,f'{fileBaseName}_{instr}.png'))
+                else:
+                    plt.savefig(os.path.join(plotDir,f'{fileBaseName}_{instr}_{k}.png'))
                 plt.close()
 
         print('\n')
@@ -1644,7 +1816,7 @@ class Utilities:
             outDir = dirPath
 
         # Otherwise, put Plots in the chosen output directory from Main
-        plotDir = os.path.join(outDir,'Plots','L1C_Anoms')
+        plotDir = os.path.join(outDir,'Plots','L1AQC_Anoms')
 
         if not os.path.exists(plotDir):
             os.makedirs(plotDir)

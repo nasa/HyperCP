@@ -9,18 +9,18 @@ from MainConfig import MainConfig
 class OCproductsWindow(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setModal(True)        
+        self.setModal(True)
         self.initUI()
 
     def initUI(self):
-        
+
         linkOCWebLabel = QtWidgets.QLabel(
             "Descriptions of the algorithms used to derive these products can be found at  \
             <a href=\"https://oceancolor.gsfc.nasa.gov/atbd/\"> NASA's Ocean Color Web</a>")
         linkOCWebLabel.setOpenExternalLinks(True)
         satNoteLabel = QtWidgets.QLabel(
             "Algorithms requiring satellite bands will activate MODIS Aqua waveband convolution" \
-                " processing in L2")       
+                " processing in L2")
 
         biochemLabel = QtWidgets.QLabel("Biogeochemical Products")
         biochemLabel_font = biochemLabel.font()
@@ -33,86 +33,86 @@ class OCproductsWindow(QtWidgets.QDialog):
         biochemLabel_font.setBold(True)
         biochemLabel1.setFont(biochemLabel_font)
 
-        oc3mLabel = QtWidgets.QLabel("chlor_a", self)     
-        self.oc3mCheckBox = QtWidgets.QCheckBox("", self)              
+        oc3mLabel = QtWidgets.QLabel("chlor_a", self)
+        self.oc3mCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2Prodoc3m"]) == 1:
-            self.oc3mCheckBox.setChecked(True) 
+            self.oc3mCheckBox.setChecked(True)
 
-        picLabel = QtWidgets.QLabel("pic", self)     
-        self.picCheckBox = QtWidgets.QCheckBox("", self)              
+        picLabel = QtWidgets.QLabel("pic", self)
+        self.picCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2Prodpic"]) == 1:
             self.picCheckBox.setChecked(True)
 
-        pocLabel = QtWidgets.QLabel("poc", self)     
-        self.pocCheckBox = QtWidgets.QCheckBox("", self)              
+        pocLabel = QtWidgets.QLabel("poc", self)
+        self.pocCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2Prodpoc"]) == 1:
             self.pocCheckBox.setChecked(True)
-        
-        gocadLabel = QtWidgets.QLabel("GOCAD (Aurin et al. 2018)", self)     
-        self.gocadCheckBox = QtWidgets.QCheckBox("", self)              
+
+        gocadLabel = QtWidgets.QLabel("GOCAD (Aurin et al. 2018)", self)
+        self.gocadCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2Prodgocad"]) == 1:
             self.gocadCheckBox.setChecked(True)
 
-        self.agLabel = QtWidgets.QLabel("   ag(275, 355, 380, 412, 443, 488)", self)     
-        self.agCheckBox = QtWidgets.QCheckBox("", self)              
+        self.agLabel = QtWidgets.QLabel("   ag(275, 355, 380, 412, 443, 488)", self)
+        self.agCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2Prodag"]) == 1:
             self.agCheckBox.setChecked(True)
 
-        self.SgLabel = QtWidgets.QLabel("   Sg(275, 300, 350, 380, 412)", self)     
-        self.SgCheckBox = QtWidgets.QCheckBox("", self)              
+        self.SgLabel = QtWidgets.QLabel("   Sg(275, 300, 350, 380, 412)", self)
+        self.SgCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdSg"]) == 1:
             self.SgCheckBox.setChecked(True)
 
-        # self.Sg275Label = QtWidgets.QLabel("     Sg275", self)     
-        # self.Sg275CheckBox = QtWidgets.QCheckBox("", self)              
+        # self.Sg275Label = QtWidgets.QLabel("     Sg275", self)
+        # self.Sg275CheckBox = QtWidgets.QCheckBox("", self)
         # if int(ConfigFile.products["bL2ProdSg275"]) == 1:
         #     self.Sg275CheckBox.setChecked(True)
-        # self.Sg300Label = QtWidgets.QLabel("     Sg300", self)     
-        # self.Sg300CheckBox = QtWidgets.QCheckBox("", self)              
+        # self.Sg300Label = QtWidgets.QLabel("     Sg300", self)
+        # self.Sg300CheckBox = QtWidgets.QCheckBox("", self)
         # if int(ConfigFile.products["bL2ProdSg300"]) == 1:
         #     self.Sg300CheckBox.setChecked(True)
-        # self.Sg412Label = QtWidgets.QLabel("     Sg412", self)     
-        # self.Sg412CheckBox = QtWidgets.QCheckBox("", self)              
+        # self.Sg412Label = QtWidgets.QLabel("     Sg412", self)
+        # self.Sg412CheckBox = QtWidgets.QCheckBox("", self)
         # if int(ConfigFile.products["bL2ProdSg412"]) == 1:
         #     self.Sg412CheckBox.setChecked(True)
-        self.DOCLabel = QtWidgets.QLabel("   doc", self)     
-        self.DOCCheckBox = QtWidgets.QCheckBox("", self)              
+        self.DOCLabel = QtWidgets.QLabel("   doc", self)
+        self.DOCCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdDOC"]) == 1:
             self.DOCCheckBox.setChecked(True)
 
-        # self.gocadCheckBoxUpdate()
+        self.gocadCheckBoxUpdate()
         self.gocadCheckBox.clicked.connect(self.gocadCheckBoxUpdate)
-        
+
         geoPhysLabel = QtWidgets.QLabel("Geophysical Products")
         geoPhysLabel_font = geoPhysLabel.font()
         geoPhysLabel_font.setPointSize(12)
         geoPhysLabel_font.setBold(True)
-        geoPhysLabel.setFont(geoPhysLabel_font)                  
+        geoPhysLabel.setFont(geoPhysLabel_font)
 
-        kd490Label = QtWidgets.QLabel("kd490", self)     
-        self.kd490CheckBox = QtWidgets.QCheckBox("", self)              
+        kd490Label = QtWidgets.QLabel("kd490", self)
+        self.kd490CheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2Prodkd490"]) == 1:
-            self.kd490CheckBox.setChecked(True)        
+            self.kd490CheckBox.setChecked(True)
 
-        iparLabel = QtWidgets.QLabel("ipar", self)     
-        self.iparCheckBox = QtWidgets.QCheckBox("", self)              
+        iparLabel = QtWidgets.QLabel("ipar", self)
+        self.iparCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2Prodipar"]) == 1:
             self.iparCheckBox.setChecked(True)
 
-        avwLabel = QtWidgets.QLabel("avw (Vandermuellen et al. 2020)", self)     
-        self.avwCheckBox = QtWidgets.QCheckBox("", self)              
+        avwLabel = QtWidgets.QLabel("avw (Vandermuellen et al. 2020)", self)
+        self.avwCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2Prodavw"]) == 1:
             self.avwCheckBox.setChecked(True)
 
-        aotLabel = QtWidgets.QLabel("aot (see Ancillary Data)", self)     
-        # self.aotCheckBox = QtWidgets.QCheckBox("", self)              
+        aotLabel = QtWidgets.QLabel("aot (see Ancillary Data)", self)
+        # self.aotCheckBox = QtWidgets.QCheckBox("", self)
         # if int(ConfigFile.products["bL2Prodaot"]) == 1:
         #     self.aotCheckBox.setChecked(True)
 
-        weiLabel = QtWidgets.QLabel("weiQA (Wei et al. 2016)", self)     
-        self.weiCheckBox = QtWidgets.QCheckBox("", self)              
+        weiLabel = QtWidgets.QLabel("weiQA (Wei et al. 2016)", self)
+        self.weiCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdweiQA"]) == 1:
-            self.weiCheckBox.setChecked(True) 
+            self.weiCheckBox.setChecked(True)
 
         iopLabel = QtWidgets.QLabel("Semi-analytical Algorithms")
         iopLabel_font = iopLabel.font()
@@ -120,90 +120,91 @@ class OCproductsWindow(QtWidgets.QDialog):
         iopLabel_font.setBold(True)
         iopLabel.setFont(iopLabel_font)
 
-        giopLabel = QtWidgets.QLabel("GIOP", self)     
-        self.giopCheckBox = QtWidgets.QCheckBox("", self)              
+        giopLabel = QtWidgets.QLabel("GIOP", self)
+        self.giopCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2Prodgiop"]) == 1:
             self.giopCheckBox.setChecked(True)
-        self.aGiopLabel = QtWidgets.QLabel("     a", self)     
-        self.aGiopCheckBox = QtWidgets.QCheckBox("", self)              
+        self.aGiopLabel = QtWidgets.QLabel("     a", self)
+        self.aGiopCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdaGiop"]) == 1:
             self.aGiopCheckBox.setChecked(True)
-        self.adgGiopLabel = QtWidgets.QLabel("     adg", self)     
-        self.adgGiopCheckBox = QtWidgets.QCheckBox("", self)              
+        self.adgGiopLabel = QtWidgets.QLabel("     adg", self)
+        self.adgGiopCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdadgGiop"]) == 1:
             self.adgGiopCheckBox.setChecked(True)
-        self.adgSGiopLabel = QtWidgets.QLabel("     adg_S", self)     
-        self.adgSGiopCheckBox = QtWidgets.QCheckBox("", self)              
+        self.adgSGiopLabel = QtWidgets.QLabel("     adg_S", self)
+        self.adgSGiopCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdadgSGiop"]) == 1:
             self.adgSGiopCheckBox.setChecked(True)
-        self.aphGiopLabel = QtWidgets.QLabel("     aph", self)     
-        self.aphGiopCheckBox = QtWidgets.QCheckBox("", self)              
+        self.aphGiopLabel = QtWidgets.QLabel("     aph", self)
+        self.aphGiopCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdaphGiop"]) == 1:
             self.aphGiopCheckBox.setChecked(True)
-        self.aphSGiopLabel = QtWidgets.QLabel("     aph_S", self)     
-        self.aphSGiopCheckBox = QtWidgets.QCheckBox("", self)              
+        self.aphSGiopLabel = QtWidgets.QLabel("     aph_S", self)
+        self.aphSGiopCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdaphSGiop"]) == 1:
             self.aphSGiopCheckBox.setChecked(True)
-        self.bbGiopLabel = QtWidgets.QLabel("     bb", self)     
-        self.bbGiopCheckBox = QtWidgets.QCheckBox("", self)              
+        self.bbGiopLabel = QtWidgets.QLabel("     bb", self)
+        self.bbGiopCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdbbGiop"]) == 1:
             self.bbGiopCheckBox.setChecked(True)
-        self.bbpGiopLabel = QtWidgets.QLabel("     bbp", self)     
-        self.bbpGiopCheckBox = QtWidgets.QCheckBox("", self)              
+        self.bbpGiopLabel = QtWidgets.QLabel("     bbp", self)
+        self.bbpGiopCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdbbpGiop"]) == 1:
             self.bbpGiopCheckBox.setChecked(True)
-        self.bbpSGiopLabel = QtWidgets.QLabel("     bbp_S", self)     
-        self.bbpSGiopCheckBox = QtWidgets.QCheckBox("", self)              
+        self.bbpSGiopLabel = QtWidgets.QLabel("     bbp_S", self)
+        self.bbpSGiopCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdbbpSGiop"]) == 1:
-            self.bbpSGiopCheckBox.setChecked(True)
-        
-        # self.giopCheckBoxUpdate()
+            # self.bbpSGiopCheckBox.setChecked(True)
+            self.bbpSGiopCheckBox.setChecked(False)
+
+        self.giopCheckBoxUpdate()
         self.giopCheckBox.clicked.connect(self.giopCheckBoxUpdate)
-        
-        
-        qaaLabel = QtWidgets.QLabel("QAA", self)     
-        self.qaaCheckBox = QtWidgets.QCheckBox("", self)              
+
+
+        qaaLabel = QtWidgets.QLabel("QAA", self)
+        self.qaaCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2Prodqaa"]) == 1:
             self.qaaCheckBox.setChecked(True)
-        self.aQaaLabel = QtWidgets.QLabel("     a", self)     
-        self.aQaaCheckBox = QtWidgets.QCheckBox("", self)              
+        self.aQaaLabel = QtWidgets.QLabel("     a", self)
+        self.aQaaCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdaQaa"]) == 1:
             self.aQaaCheckBox.setChecked(True)
-        self.adgQaaLabel = QtWidgets.QLabel("     adg", self)     
-        self.adgQaaCheckBox = QtWidgets.QCheckBox("", self)              
+        self.adgQaaLabel = QtWidgets.QLabel("     adg", self)
+        self.adgQaaCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdadgQaa"]) == 1:
             self.adgQaaCheckBox.setChecked(True)
-        self.aphQaaLabel = QtWidgets.QLabel("     aph", self)     
-        self.aphQaaCheckBox = QtWidgets.QCheckBox("", self)              
+        self.aphQaaLabel = QtWidgets.QLabel("     aph", self)
+        self.aphQaaCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdaphQaa"]) == 1:
             self.aphQaaCheckBox.setChecked(True)
-        self.bQaaLabel = QtWidgets.QLabel("     b", self)     
-        self.bQaaCheckBox = QtWidgets.QCheckBox("", self)              
+        self.bQaaLabel = QtWidgets.QLabel("     b", self)
+        self.bQaaCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdbQaa"]) == 1:
             self.bQaaCheckBox.setChecked(True)
-        self.bbQaaLabel = QtWidgets.QLabel("     bb", self)     
-        self.bbQaaCheckBox = QtWidgets.QCheckBox("", self)              
+        self.bbQaaLabel = QtWidgets.QLabel("     bb", self)
+        self.bbQaaCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdbbQaa"]) == 1:
             self.bbQaaCheckBox.setChecked(True)
-        self.bbpQaaLabel = QtWidgets.QLabel("     bbp", self)     
-        self.bbpQaaCheckBox = QtWidgets.QCheckBox("", self)              
+        self.bbpQaaLabel = QtWidgets.QLabel("     bbp", self)
+        self.bbpQaaCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdbbpQaa"]) == 1:
             self.bbpQaaCheckBox.setChecked(True)
-        self.cQaaLabel = QtWidgets.QLabel("     c", self)     
-        self.cQaaCheckBox = QtWidgets.QCheckBox("", self)              
+        self.cQaaLabel = QtWidgets.QLabel("     c", self)
+        self.cQaaCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdcQaa"]) == 1:
             self.cQaaCheckBox.setChecked(True)
 
         self.qaaCheckBoxUpdate()
         self.qaaCheckBox.clicked.connect(self.qaaCheckBoxUpdate)
 
-        self.saveButton = QtWidgets.QPushButton("Save/Close")        
-        self.cancelButton = QtWidgets.QPushButton("Cancel")    
+        self.saveButton = QtWidgets.QPushButton("Save/Close")
+        self.cancelButton = QtWidgets.QPushButton("Cancel")
         self.saveButton.clicked.connect(self.saveButtonPressed)
         self.cancelButton.clicked.connect(self.cancelButtonPressed)
-  
 
-        # ####################################################################################    
+
+        # ####################################################################################
         # Whole Window Box
         VBox = QtWidgets.QVBoxLayout()
         VBox.addWidget(linkOCWebLabel)
@@ -212,12 +213,12 @@ class OCproductsWindow(QtWidgets.QDialog):
         # Left Box
         # Geophysical
         VBox1 = QtWidgets.QVBoxLayout()
-       
+
 
         # Biogeochem
         VBox1.addWidget(biochemLabel)
         VBox1.addWidget(biochemLabel1)
-        # VBox1.addSpacing(10)           
+        # VBox1.addSpacing(10)
 
         # oc3m
         oc3mHBox = QtWidgets.QHBoxLayout()
@@ -242,7 +243,7 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         # CDOM, Sg, DOC
         gocadVBox = QtWidgets.QVBoxLayout()
-        
+
         gocadHBox = QtWidgets.QHBoxLayout()
         gocadHBox.addWidget(gocadLabel)
         gocadHBox.addWidget(self.gocadCheckBox)
@@ -315,7 +316,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         # Right Box
         VBox2 = QtWidgets.QVBoxLayout()
         VBox2.addWidget(geoPhysLabel)
-        # VBox2.addSpacing(10)       
+        # VBox2.addSpacing(10)
 
         # AOT
         aotHBox = QtWidgets.QHBoxLayout()
@@ -339,7 +340,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         iparHBox = QtWidgets.QHBoxLayout()
         iparHBox.addWidget(iparLabel)
         iparHBox.addWidget(self.iparCheckBox)
-        VBox2.addLayout(iparHBox)                
+        VBox2.addLayout(iparHBox)
 
          # WeiQA
         weiHBox = QtWidgets.QHBoxLayout()
@@ -356,7 +357,7 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         # GIOP
         giopVBox = QtWidgets.QVBoxLayout()
-        
+
         giopHBox = QtWidgets.QHBoxLayout()
         giopHBox.addWidget(giopLabel)
         giopHBox.addWidget(self.giopCheckBox)
@@ -452,11 +453,11 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         VBox2.addLayout(qaaVBox)
         VBox2.addStretch()
-       
+
         # Add 2 Vertical Boxes to Horizontal Box hBox
         hBox = QtWidgets.QHBoxLayout()
         hBox.addLayout(VBox1)
-        hBox.addLayout(VBox2)                
+        hBox.addLayout(VBox2)
 
         # Save/Cancel
         saveHBox = QtWidgets.QHBoxLayout()
@@ -464,7 +465,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         saveHBox.addWidget(self.saveButton)
         saveHBox.addWidget(self.cancelButton)
 
-        # Adds hBox and saveHBox to primary VBox 
+        # Adds hBox and saveHBox to primary VBox
         VBox.addLayout(hBox)
         VBox.addLayout(saveHBox)
 
@@ -475,11 +476,12 @@ class OCproductsWindow(QtWidgets.QDialog):
 
     def gocadCheckBoxUpdate(self):
         print("OCproductsWindow - gocadCheckBoxUpdate")
-        
-        disabled = self.gocadCheckBox.isChecked()
-        self.agLabel.setDisabled(not disabled)
-        self.agCheckBox.setDisabled(not disabled)
-        self.agCheckBox.setChecked(disabled)
+
+        disabled = not self.gocadCheckBox.isChecked()
+        self.agLabel.setDisabled(disabled)
+        self.agCheckBox.setDisabled(disabled)
+        if disabled:
+            self.agCheckBox.setChecked(False)
         # self.ag275Label.setDisabled(not disabled)
         # self.ag275CheckBox.setDisabled(not disabled)
         # self.ag275CheckBox.setChecked(disabled)
@@ -498,9 +500,10 @@ class OCproductsWindow(QtWidgets.QDialog):
         # self.ag488Label.setDisabled(not disabled)
         # self.ag488CheckBox.setDisabled(not disabled)
         # self.ag488CheckBox.setChecked(disabled)
-        self.SgLabel.setDisabled(not disabled)
-        self.SgCheckBox.setDisabled(not disabled)
-        self.SgCheckBox.setChecked(disabled)
+        self.SgLabel.setDisabled(disabled)
+        self.SgCheckBox.setDisabled(disabled)
+        if disabled:
+            self.SgCheckBox.setChecked(False)
         # self.Sg275Label.setDisabled(not disabled)
         # self.Sg275CheckBox.setDisabled(not disabled)
         # self.Sg275CheckBox.setChecked(disabled)
@@ -510,9 +513,10 @@ class OCproductsWindow(QtWidgets.QDialog):
         # self.Sg412Label.setDisabled(not disabled)
         # self.Sg412CheckBox.setDisabled(not disabled)
         # self.Sg412CheckBox.setChecked(disabled)
-        self.DOCLabel.setDisabled(not disabled)
-        self.DOCCheckBox.setDisabled(not disabled)
-        self.DOCCheckBox.setChecked(disabled)
+        self.DOCLabel.setDisabled(disabled)
+        self.DOCCheckBox.setDisabled(disabled)
+        if disabled:
+            self.DOCCheckBox.setChecked(False)
 
         if disabled:
             ConfigFile.products["bL2Prodgocad"] = 0
@@ -521,7 +525,7 @@ class OCproductsWindow(QtWidgets.QDialog):
 
     def giopCheckBoxUpdate(self):
         print("OCproductsWindow - giopCheckBoxUpdate")
-        
+
         disabled = (not self.giopCheckBox.isChecked())
         self.aGiopLabel.setDisabled(disabled)
         self.aGiopCheckBox.setDisabled(disabled)
@@ -547,7 +551,7 @@ class OCproductsWindow(QtWidgets.QDialog):
 
     def qaaCheckBoxUpdate(self):
         print("OCproductsWindow - qaaCheckBoxUpdate")
-        
+
         disabled = (not self.qaaCheckBox.isChecked())
         self.aQaaLabel.setDisabled(disabled)
         self.aQaaCheckBox.setDisabled(disabled)
@@ -568,10 +572,10 @@ class OCproductsWindow(QtWidgets.QDialog):
             ConfigFile.products["bL2Prodqaa"] = 0
         else:
             ConfigFile.products["bL2Prodqaa"] = 1
-       
+
     def saveButtonPressed(self):
-        print("L2 Products - Save/Close Pressed")        
-        
+        print("L2 Products - Save/Close Pressed")
+
         ConfigFile.products["bL2Prodoc3m"] = int(self.oc3mCheckBox.isChecked())
         # ConfigFile.products["bL2Prodaot"] = int(self.aotCheckBox.isChecked())
         ConfigFile.products["bL2Prodkd490"] = int(self.kd490CheckBox.isChecked())
@@ -618,12 +622,12 @@ class OCproductsWindow(QtWidgets.QDialog):
             ConfigFile.products["bL2Prodqaa"] or ConfigFile.products["bL2ProdweiQA"]:
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
-        
+
         self.close()
 
     def cancelButtonPressed(self):
         print("L2 Products - Cancel Pressed")
-        self.close()  
-        
-    
+        self.close()
+
+
 

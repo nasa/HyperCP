@@ -1,19 +1,20 @@
-"""
+'''
 HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing
 above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 See README.md or README.pdf for installation instructions and guide.
-Version 1.0.9: Under development September 2021 (See Changelog.md)
+Version 1.1.0: Under development March 2022 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
-"""
+'''
 # from Source.Utilities import Utilities
 import argparse
 import os
-import shutil
+# import shutil
 import sys
-import collections
-import json
-from PyQt5 import QtCore, QtGui, QtWidgets
 import time
+# import collections
+# import json
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 import requests
 from tqdm import tqdm
 
@@ -27,8 +28,9 @@ from GetAnc import GetAnc
 from SeaBASSHeader import SeaBASSHeader
 from Utilities import Utilities
 
-""" Window is the main GUI container """
+
 class Window(QtWidgets.QWidget):
+    ''' Window is the main GUI container '''
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -50,20 +52,20 @@ class Window(QtWidgets.QWidget):
                 download_session=requests.Session()
                 local_filename = os.path.join('Data','Zhang_rho_db.mat')
                 try:
-                        file_size=int(download_session.head(url).headers["Content-length"])
-                        file_size_read=round(int(file_size)/(1024**3),2)
-                        print(f"##### Downloading {file_size_read}GB data file. This could take several minutes. ##### ")
-                        download_file=download_session.get(url, stream=True)
-                        download_file.raise_for_status()
+                    file_size=int(download_session.head(url).headers["Content-length"])
+                    file_size_read=round(int(file_size)/(1024**3),2)
+                    print(f"##### Downloading {file_size_read}GB data file. This could take several minutes. ##### ")
+                    download_file=download_session.get(url, stream=True)
+                    download_file.raise_for_status()
                 except requests.exceptions.HTTPError as err:
-                                    print('Error in download_file:',err)
+                    print('Error in download_file:',err)
                 if download_file.ok:
-                        progress_bar = tqdm(total=file_size, unit='iB', unit_scale=True, unit_divisor=1024)
-                        with open(local_filename, 'wb') as f:
-                            for chunk in download_file.iter_content(chunk_size=1024):
-                                progress_bar.update(len(chunk))
-                                f.write(chunk)
-                        progress_bar.close()
+                    progress_bar = tqdm(total=file_size, unit='iB', unit_scale=True, unit_divisor=1024)
+                    with open(local_filename, 'wb') as f:
+                        for chunk in download_file.iter_content(chunk_size=1024):
+                            progress_bar.update(len(chunk))
+                            f.write(chunk)
+                    progress_bar.close()
                 else:
                     print('Failed to download core databases.')
                     print('Download from: \
@@ -73,11 +75,11 @@ class Window(QtWidgets.QWidget):
         self.initUI()
 
     def initUI(self):
-        """Initialize the user interface"""
+        '''Initialize the user interface'''
 
         # Main window configuration restore
         MainConfig.loadConfig(MainConfig.fileName)
-        MainConfig.settings['version'] = '1.0.9'
+        MainConfig.settings['version'] = '1.1.0'
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
@@ -125,7 +127,7 @@ class Window(QtWidgets.QWidget):
         self.outInDirButton = QtWidgets.QPushButton('^^^ Mimic Input Dir. vvv',self)
         self.outInDirButton.clicked.connect(self.outInDirButtonPressed)
 
-        self.ancFileLabel = QtWidgets.QLabel('Ancillary Data File for L2 (SeaBASS format)')
+        self.ancFileLabel = QtWidgets.QLabel('Ancillary Data File (SeaBASS format)')
         self.ancFileLineEdit = QtWidgets.QLineEdit()
         self.ancFileLineEdit.setText(str(MainConfig.settings['metFile']))
         self.ancAddButton = QtWidgets.QPushButton('Add', self)
@@ -140,26 +142,18 @@ class Window(QtWidgets.QWidget):
         singleLevelLabel_font.setPointSize(10)
         singleLevelLabel_font.setBold(True)
         singleLevelLabel.setFont(singleLevelLabel_font)
-        #self.singleLevelLabel.move(30, 270)
 
-        self.singleL1aButton = QtWidgets.QPushButton('Raw (BIN) --> Level 1A (HDF5)', self)
-        #self.singleL0Button.move(30, 300)
-        self.singleL1bButton = QtWidgets.QPushButton('L1A --> L1B', self)
-        #self.singleL1aButton.move(30, 350)
-        self.singleL1cButton = QtWidgets.QPushButton('L1B --> L1C', self)
-        #self.singleL1cButton.move(30, 450)
-        self.singleL1dButton = QtWidgets.QPushButton('L1C --> L1D', self)
-        #self.singleL1bButton.move(30, 400)
-        self.singleL1eButton = QtWidgets.QPushButton('L1D --> L1E', self)
-        #self.singleL1bButton.move(30, 400)
-        self.singleL2Button = QtWidgets.QPushButton('L1E --> L2', self)
-        #self.singleL1bButton.move(30, 400)
+        self.singleL1aButton = QtWidgets.QPushButton('Level 0 (Raw) --> Level 1A (HDF5)', self)
+        self.singleL1aqcButton = QtWidgets.QPushButton('L1A --> L1AQC', self)
+        self.singleL1bButton = QtWidgets.QPushButton('L1AQC --> L1B', self)
+        self.singleL1bqcButton = QtWidgets.QPushButton('L1B --> L1BQC', self)
+        self.singleL2Button = QtWidgets.QPushButton('L1BQC --> L2', self)
+
 
         self.singleL1aButton.clicked.connect(self.singleL1aClicked)
+        self.singleL1aqcButton.clicked.connect(self.singleL1aqcClicked)
         self.singleL1bButton.clicked.connect(self.singleL1bClicked)
-        self.singleL1cButton.clicked.connect(self.singleL1cClicked)
-        self.singleL1dButton.clicked.connect(self.singleL1dClicked)
-        self.singleL1eButton.clicked.connect(self.singleL1eClicked)
+        self.singleL1bqcButton.clicked.connect(self.singleL1bqcClicked)
         self.singleL2Button.clicked.connect(self.singleL2Clicked)
 
         multiLevelLabel = QtWidgets.QLabel('Multi-Level Processing', self)
@@ -227,10 +221,9 @@ class Window(QtWidgets.QWidget):
 
         vBox.addWidget(singleLevelLabel)
         vBox.addWidget(self.singleL1aButton)
+        vBox.addWidget(self.singleL1aqcButton)
         vBox.addWidget(self.singleL1bButton)
-        vBox.addWidget(self.singleL1cButton)
-        vBox.addWidget(self.singleL1dButton)
-        vBox.addWidget(self.singleL1eButton)
+        vBox.addWidget(self.singleL1bqcButton)
         vBox.addWidget(self.singleL2Button)
 
         vBox.addStretch(1)
@@ -259,7 +252,8 @@ class Window(QtWidgets.QWidget):
 
     ########################################################################################
     # Build functionality modules
-    def on_directoryLoaded(self, path):
+    # def on_directoryLoaded(self, path):
+    def on_directoryLoaded(self):
         index = self.configComboBox.findText(MainConfig.settings['cfgFile'])
         self.configComboBox.setCurrentIndex(index)
 
@@ -284,6 +278,11 @@ class Window(QtWidgets.QWidget):
     def configEditButtonPressed(self):
         print('Edit Config Dialogue')
         configFileName = self.configComboBox.currentText()
+
+        # ConfigFile.settings['AncFile'] = self.ancFileLineEdit.text()
+        # if ConfigFile.settings['AncFile'] == '':
+        #     ConfigFile.settings['AncFile'] = None
+
         inputDir = self.inputDirectory
         configPath = os.path.join('Config', configFileName)
         if os.path.isfile(configPath):
@@ -383,17 +382,16 @@ class Window(QtWidgets.QWidget):
             return
 
         if level == 'L1A':
-            inLevel = 'unknown'
-        if level == 'L1B':
+            inLevel = 'raw'
+        if level == 'L1AQC':
             inLevel = 'L1A'
-        if level == 'L1C':
+        if level == 'L1B':
+            inLevel = 'L1AQC'
+        if level == 'L1BQC':
             inLevel = 'L1B'
-        if level == 'L1D':
-            inLevel = 'L1C'
-        if level == 'L1E':
-            inLevel = 'L1D'
         if level == 'L2':
-            inLevel = 'L1E'
+            inLevel = 'L1BQC'
+
         # Check for subdirectory associated with level chosen
         subInputDir = os.path.join(self.inputDirectory + '/' + inLevel + '/')
         if os.path.exists(subInputDir):
@@ -408,14 +406,10 @@ class Window(QtWidgets.QWidget):
         if not fileNames:
             return
 
-        ancFile = self.ancFileLineEdit.text()
-        if ancFile == '':
-            ancFile = None
-
         print('Process Calibration Files')
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings['CalibrationFiles']
-        print('JMR', filename, calFiles) # JMR?
+        # print('JMR', filename, calFiles) # JMR?
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
         if not calibrationMap.keys():
             print('No calibration files found. '
@@ -444,17 +438,15 @@ class Window(QtWidgets.QWidget):
     def singleL1aClicked(self):
         self.processSingle('L1A')
 
+    def singleL1aqcClicked(self):
+        self.processSingle('L1AQC')
+
     def singleL1bClicked(self):
         self.processSingle('L1B')
 
-    def singleL1cClicked(self):
-        self.processSingle('L1C')
+    def singleL1bqcClicked(self):
+        self.processSingle('L1BQC')
 
-    def singleL1dClicked(self):
-        self.processSingle('L1D')
-
-    def singleL1eClicked(self):
-        self.processSingle('L1E')
 
     def singleL2Clicked(self):
         self.processSingle('L2')
@@ -512,9 +504,10 @@ class Window(QtWidgets.QWidget):
         print('Main - saveButtonClicked')
         MainConfig.saveConfig(MainConfig.fileName)
 
+###################################################################################
 
-""" Class without using the GUI """
 class Command():
+    ''' Class without using the GUI '''
 
     def __init__(self, configFilePath, inputFile, outputDirectory, level, ancFile):
 
@@ -561,7 +554,7 @@ class Command():
                                     and place in HyperInSPACE/Data directory.')
         # Main configuration restore
         MainConfig.loadConfig(MainConfig.fileName)
-        MainConfig.settings['version'] = '1.0.9'
+        MainConfig.settings['version'] = '1.1.0'
 
         # For our need, we only use a single processing
         self.processSingle(self.level)
@@ -582,21 +575,8 @@ class Command():
         seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 
-        if level == 'L1A':
-            inLevel = 'unknown'
-        if level == 'L1B':
-            inLevel = 'L1A'
-        if level == 'L1C':
-            inLevel = 'L1B'
-        if level == 'L1D':
-            inLevel = 'L1C'
-        if level == 'L1E':
-            inLevel = 'L1D'
-        if level == 'L2':
-            inLevel = 'L1E'
-
         # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
-        # we keep variable fileNames which is an array
+        # we keep variable fileNames which is a list
         fileNames = [inputFile]
         print('Files:', fileNames)
         if not fileNames:
@@ -653,7 +633,7 @@ required.add_argument('-l',
                     action="store",
                     dest="level",
                     help='Level of the generated file. e.g.: Computing RAW to L1A means -l L1A',
-                    choices=['L1A', 'L1B', 'L1C', 'L1D', 'L1E', 'L2'],
+                    choices=['L1A', 'L1AQC', 'L1B', 'L1BQC', 'L2'],
                     default=None,
                     type=str)
 required.add_argument('-a',
@@ -681,8 +661,8 @@ args = parser.parse_args()
 if args.cmd and (args.configFilePath is None or args.inputFile is None or args.outputDirectory is None or args.level is None):
     parser.error("-cmd requires -c config -i inputFile -o outputDirectory -l processingLevel")
 # If the commandline option is given, check if all needed information are given
-if args.cmd and args.level=='L2' and (args.username is None or args.password is None):
-    parser.error("L2 processing requires username and password for https://oceancolor.gsfc.nasa.gov/")
+if args.cmd and args.level=='L1BQC' and (args.username is None or args.password is None):
+    parser.error("L1BQC processing requires username and password for https://oceancolor.gsfc.nasa.gov/")
 
 # We store all arguments in variables
 cmd = args.cmd

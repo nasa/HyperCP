@@ -1,8 +1,5 @@
 import os
-import shutil
-from PyQt5 import QtCore, QtGui, QtWidgets
-# import time
-
+from PyQt5 import QtWidgets
 
 from SeaBASSHeader import SeaBASSHeader
 from ConfigFile import ConfigFile
@@ -428,27 +425,27 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             szaFilt = "On"
         else:
             szaFilt = "Off"
-        if ConfigFile.settings["bL1cCleanPitchRoll"]:
+        if ConfigFile.settings["bL1aqcCleanPitchRoll"]:
             pitchRollFilt = "On"
         else:
             pitchRollFilt = "Off"
-        if ConfigFile.settings["bL1cRotatorAngle"]:
+        if ConfigFile.settings["bL1aqcRotatorAngle"]:
             cleanRotFilt = "On"
         else:
             cleanRotFilt = "Off"
-        if ConfigFile.settings["bL1cCleanSunAngle"]:
+        if ConfigFile.settings["bL1aqcCleanSunAngle"]:
             cleanRelAzFilt = "On"
         else:
             cleanRelAzFilt = "Off"
-        if ConfigFile.settings["bL1dDeglitch"]:
+        if ConfigFile.settings["bL1aqcDeglitch"]:
             deglitchFilt = "On"
         else:
             deglitchFilt = "Off"
-        if ConfigFile.settings["bL2EnableSpecQualityCheck"]:
+        if ConfigFile.settings["bL1bqcEnableSpecQualityCheck"]:
             specFilt = "On"
         else:
             specFilt = "Off"
-        if ConfigFile.settings["bL2EnableQualityFlags"]:
+        if ConfigFile.settings["bL1bqcEnableQualityFlags"]:
             metFilt = "On"
         else:
             metFilt = "Off"
@@ -479,50 +476,50 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! HyperInSPACE Config = {ConfigFile.filename}\n'+\
             f'! SZA Filter = {szaFilt}\n'+\
             f'! SZA Max = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
-            f'! Rotator Home Angle = {ConfigFile.settings["fL1cRotatorHomeAngle"]}\n'+\
-            f'! Rotator Delay = {ConfigFile.settings["fL1cRotatorDelay"]}\n'+\
+            f'! Rotator Home Angle = {ConfigFile.settings["fL1aqcRotatorHomeAngle"]}\n'+\
+            f'! Rotator Delay = {ConfigFile.settings["fL1aqcRotatorDelay"]}\n'+\
             f'! Pitch/Roll Filter = {pitchRollFilt}\n'+\
-            f'! Max Pitch/Roll = {ConfigFile.settings["fL1cPitchRollPitch"]}\n'+\
+            f'! Max Pitch/Roll = {ConfigFile.settings["fL1aqcPitchRollPitch"]}\n'+\
             f'! Rotator Min/Max Filter = {cleanRotFilt}\n'+\
-            f'! Rotator Min = {ConfigFile.settings["fL1cRotatorAngleMin"]}\n'+\
-            f'! Rotator Max = {ConfigFile.settings["fL1cRotatorAngleMax"]}\n'+\
+            f'! Rotator Min = {ConfigFile.settings["fL1aqcRotatorAngleMin"]}\n'+\
+            f'! Rotator Max = {ConfigFile.settings["fL1aqcRotatorAngleMax"]}\n'+\
             f'! Rel Azimuth Filter = {cleanRelAzFilt}\n'+\
-            f'! Rel Azimuth Min = {ConfigFile.settings["fL1cSunAngleMin"]}\n'+\
-            f'! Rel Azimuth Max = {ConfigFile.settings["fL1cSunAngleMax"]}\n'+\
+            f'! Rel Azimuth Min = {ConfigFile.settings["fL1aqcSunAngleMin"]}\n'+\
+            f'! Rel Azimuth Max = {ConfigFile.settings["fL1aqcSunAngleMax"]}\n'+\
             f'! Deglitch Filter = {deglitchFilt}\n'+\
-            f'! ES Dark Window = {ConfigFile.settings["fL1dESWindowDark"]}\n'+\
-            f'! ES Light Window = {ConfigFile.settings["fL1dESWindowLight"]}\n'+\
-            f'! ES Dark Sigma = {ConfigFile.settings["fL1dESSigmaDark"]}\n'+\
-            f'! ES Light Sigma = {ConfigFile.settings["fL1dESSigmaLight"]}\n'+\
-            f'! LI Dark Window = {ConfigFile.settings["fL1dLIWindowDark"]}\n'+\
-            f'! LI Light Window = {ConfigFile.settings["fL1dLIWindowLight"]}\n'+\
-            f'! LI Dark Sigma = {ConfigFile.settings["fL1dLISigmaDark"]}\n'+\
-            f'! LI Light Sigma = {ConfigFile.settings["fL1dLISigmaLight"]}\n'+\
-            f'! LT Dark Window = {ConfigFile.settings["fL1dLTWindowDark"]}\n'+\
-            f'! LT Light Window = {ConfigFile.settings["fL1dLTWindowLight"]}\n'+\
-            f'! LT Dark Sigma = {ConfigFile.settings["fL1dLTSigmaDark"]}\n'+\
-            f'! LT Light Sigma = {ConfigFile.settings["fL1dLTSigmaLight"]}\n'+\
-            f'! Wavelength Interp Int = {ConfigFile.settings["fL1eInterpInterval"]}\n'+\
-            f'! Max Wind = {ConfigFile.settings["fL2MaxWind"]}\n'+\
-            f'! Min SZA = {ConfigFile.settings["fL2SZAMin"]}\n'+\
-            f'! Max SZA = {ConfigFile.settings["fL2SZAMax"]}\n'+\
+            f'! ES Dark Window = {ConfigFile.settings["fL1aqcESWindowDark"]}\n'+\
+            f'! ES Light Window = {ConfigFile.settings["fL1aqcESWindowLight"]}\n'+\
+            f'! ES Dark Sigma = {ConfigFile.settings["fL1aqcESSigmaDark"]}\n'+\
+            f'! ES Light Sigma = {ConfigFile.settings["fL1aqcESSigmaLight"]}\n'+\
+            f'! LI Dark Window = {ConfigFile.settings["fL1aqcLIWindowDark"]}\n'+\
+            f'! LI Light Window = {ConfigFile.settings["fL1aqcLIWindowLight"]}\n'+\
+            f'! LI Dark Sigma = {ConfigFile.settings["fL1aqcLISigmaDark"]}\n'+\
+            f'! LI Light Sigma = {ConfigFile.settings["fL1aqcLISigmaLight"]}\n'+\
+            f'! LT Dark Window = {ConfigFile.settings["fL1aqcLTWindowDark"]}\n'+\
+            f'! LT Light Window = {ConfigFile.settings["fL1aqcLTWindowLight"]}\n'+\
+            f'! LT Dark Sigma = {ConfigFile.settings["fL1aqcLTSigmaDark"]}\n'+\
+            f'! LT Light Sigma = {ConfigFile.settings["fL1aqcLTSigmaLight"]}\n'+\
+            f'! Wavelength Interp Int = {ConfigFile.settings["fL1bInterpInterval"]}\n'+\
+            f'! Default Wind = {ConfigFile.settings["fL1bqcDefaultWindSpeed"]}\n'+\
+            f'! Default AOD = {ConfigFile.settings["fL1bqcDefaultAOD"]}\n'+\
+            f'! Default Salt = {ConfigFile.settings["fL1bqcDefaultSalt"]}\n'+\
+            f'! Default SST = {ConfigFile.settings["fL1bqcDefaultSST"]}\n'+\
+            f'! Max Wind = {ConfigFile.settings["fL1bqcMaxWind"]}\n'+\
+            f'! Min SZA = {ConfigFile.settings["fL1bqcSZAMin"]}\n'+\
+            f'! Max SZA = {ConfigFile.settings["fL1bqcSZAMax"]}\n'+\
             f'! Spectral Filter = {specFilt}\n'+\
-            f'! Filter Sigma Es = {ConfigFile.settings["fL2SpecFilterEs"]}\n'+\
-            f'! Filter Sigma Li = {ConfigFile.settings["fL2SpecFilterLi"]}\n'+\
-            f'! Filter Sigma Lt = {ConfigFile.settings["fL2SpecFilterLt"]}\n'+\
+            f'! Filter Sigma Es = {ConfigFile.settings["fL1bqcSpecFilterEs"]}\n'+\
+            f'! Filter Sigma Li = {ConfigFile.settings["fL1bqcSpecFilterLi"]}\n'+\
+            f'! Filter Sigma Lt = {ConfigFile.settings["fL1bqcSpecFilterLt"]}\n'+\
             f'! Meteorological Filter = {metFilt}\n'+\
-            f'! Cloud Flag = {ConfigFile.settings["fL2CloudFlag"]}\n'+\
-            f'! Es Flag = {ConfigFile.settings["fL2SignificantEsFlag"]}\n'+\
-            f'! Dawn/Dusk Flag = {ConfigFile.settings["fL2DawnDuskFlag"]}\n'+\
-            f'! Rain/Humidity Flag = {ConfigFile.settings["fL2RainfallHumidityFlag"]}\n'+\
+            f'! Cloud Flag = {ConfigFile.settings["fL1bqcCloudFlag"]}\n'+\
+            f'! Es Flag = {ConfigFile.settings["fL1bqcSignificantEsFlag"]}\n'+\
+            f'! Dawn/Dusk Flag = {ConfigFile.settings["fL1bqcDawnDuskFlag"]}\n'+\
+            f'! Rain/Humidity Flag = {ConfigFile.settings["fL1bqcRainfallHumidityFlag"]}\n'+\
             f'! Ensemble Interval = {ConfigFile.settings["fL2TimeInterval"]}\n'+\
             f'! Percent Lt Filter = {ltFilt}\n'+\
             f'! Percent Light = {ConfigFile.settings["fL2PercentLt"]}\n'+\
             f'! Glint_Correction = {rhoCorr}\n'+\
-            f'! Default Wind = {ConfigFile.settings["fL2DefaultWindSpeed"]}\n'+\
-            f'! Default AOD = {ConfigFile.settings["fL2DefaultAOD"]}\n'+\
-            f'! Default Salt = {ConfigFile.settings["fL2DefaultSalt"]}\n'+\
-            f'! Default SST = {ConfigFile.settings["fL2DefaultSST"]}\n'+\
             f'! NIR Correction = {NIRFilt}\n'+\
             f'! Remove Negatives = {NegativeFilt}'
             # f'! Processing DateTime = {time.asctime()}'
