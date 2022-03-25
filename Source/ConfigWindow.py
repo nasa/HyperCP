@@ -173,8 +173,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcDeglitchCheckBox.clicked.connect(self.l1aqcDeglitchCheckBoxUpdate)
 
         #   Launch Deglitcher Analysis
-        # l1aqcAnomalySublabel1 = QtWidgets.QLabel("  Anomaly Analysis to test parameters",self)
-        # l1aqcAnomalySublabel2 = QtWidgets.QLabel("  on L1AQC files:",self)
         self.l1aqcAnomalyButton = QtWidgets.QPushButton("Launch Anomaly Analysis")
         self.l1aqcAnomalyButton.clicked.connect(self.l1aqcAnomalyButtonPressed)
 
@@ -182,33 +180,34 @@ class ConfigWindow(QtWidgets.QDialog):
         l1bLabel = QtWidgets.QLabel("Level 1B Processing", self)
         l1bLabel.setFont(l1aLabel_font)
         l1bSublabel = QtWidgets.QLabel(" Dark offsets, calibrations and corrections. Interpolate", self)
-        l1bSublabel2 = QtWidgets.QLabel(" to common time coordinates.", self)
+        l1bSublabel2 = QtWidgets.QLabel("  to common time coordinates.", self)
 
-        l1bCalLabel = QtWidgets.QLabel("     Select calibration/correction regime:", self)
-        self.DefaultCalRadioButton = QtWidgets.QRadioButton("Default/Factory")
+        l1bCalLabel = QtWidgets.QLabel("    Select calibration/correction regime:", self)
+        self.DefaultCalRadioButton = QtWidgets.QRadioButton("     Default/Factory")
         self.DefaultCalRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL1bDefaultCal"]==1:
             self.DefaultCalRadioButton.setChecked(True)
         self.DefaultCalRadioButton.clicked.connect(self.l1bDefaultCalRadioButtonClicked)
         self.FullCalRadioButton = QtWidgets.QRadioButton("Full Characterization")
         self.FullCalRadioButton.setAutoExclusive(False)
+        self.FullCalRadioButton.setDisabled(1) # <---- Needs to have a test for full cal file availability
         if ConfigFile.settings["bL1bFullCal"]==1:
-            self.FullCalRadioButton.setChecked(True)
-            self.FullCalRadioButton.setDisabled(1) # <---- Needs to have a test for full cal files
+            # self.FullCalRadioButton.setChecked(True)
+            pass
         self.FullCalRadioButton.clicked.connect(self.l1bFullCalRadioButtonClicked)
 
-        l1bInterpIntervalLabel = QtWidgets.QLabel("     Interpolation Interval (nm)", self)
+        l1bInterpIntervalLabel = QtWidgets.QLabel("    Interpolation Interval (nm)", self)
         self.l1bInterpIntervalLineEdit = QtWidgets.QLineEdit(self)
         self.l1bInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1bInterpInterval"]))
         self.l1bInterpIntervalLineEdit.setValidator(doubleValidator)
 
-        l1bPlotTimeInterpLabel = QtWidgets.QLabel("     Generate Plots ({OUTPATH}/Plots/L1B_Interp/)", self)
+        l1bPlotTimeInterpLabel = QtWidgets.QLabel("    Generate Plots ({OUTPATH}/Plots/L1B_Interp/)", self)
         self.l1bPlotTimeInterpCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bPlotTimeInterp"]) == 1:
             self.l1bPlotTimeInterpCheckBox.setChecked(True)
         self.l1bPlotTimeInterpCheckBox.clicked.connect(self.l1bPlotTimeInterpCheckBoxUpdate)
 
-        l1bPlotIntervalLabel = QtWidgets.QLabel("     Plot Interval (nm)", self)
+        l1bPlotIntervalLabel = QtWidgets.QLabel("      Plot Interval (nm)", self)
         self.l1bPlotIntervalLineEdit = QtWidgets.QLineEdit(self)
         self.l1bPlotIntervalLineEdit.setText(str(ConfigFile.settings["fL1bPlotInterval"]))
         self.l1bPlotIntervalLineEdit.setValidator(doubleValidator)
@@ -222,73 +221,74 @@ class ConfigWindow(QtWidgets.QDialog):
         l1bqcSublabel = QtWidgets.QLabel(" Data quality control filters.", self)
         # l1bqcSublabel1bqc = QtWidgets.QLabel(" binning, reflectance calculation.", self)
 
-        l1bqcSublabel1 = QtWidgets.QLabel(" GMAO MERRA2 ancillary data are required for Zhang glint", self)
-        l1bqcSublabel2 = QtWidgets.QLabel(" correction and can fill in wind for M99 and QC.", self)
-        l1bqcSublabel3 = QtWidgets.QLabel(" WILL PROMPT FOR EARTHDATA USERNAME/PASSWORD", self)
+        l1bqcSublabel1 = QtWidgets.QLabel(" GMAO MERRA2 ancillary data are required for Zhang", self)
+        l1bqcSublabel2 = QtWidgets.QLabel(" glint correction and can fill in wind for M99 and QC.", self)
+        l1bqcSublabel3 = QtWidgets.QLabel(" WILL PROMPT FOR EARTHDATA CREDENTIALS", self)
         l1bqcSublabel4 = QtWidgets.QLabel(
-            "<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">         Register here</a>", self)
+            "<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">Register here</a>", self)
+        l1bqcSublabel5 = QtWidgets.QLabel("  Fallback values when no model available:", self)
         l1bqcSublabel4.setOpenExternalLinks(True)
-        l1bqcGetAncLabel = QtWidgets.QLabel("       Download Ancillary Models", self)
+        l1bqcGetAncLabel = QtWidgets.QLabel("  Download Ancillary Models", self)
         self.l1bqcGetAncCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bqcGetAnc"]) == 1:
             self.l1bqcGetAncCheckBox.setChecked(True)
         self.l1bqcGetAncCheckBox.clicked.connect(self.l1bqcGetAncCheckBoxUpdate)
 
-        self.l1bqcDefaultWindSpeedLabel = QtWidgets.QLabel("     Default Wind Speed (m/s)", self)
+        self.l1bqcDefaultWindSpeedLabel = QtWidgets.QLabel("          Default Wind Speed (m/s)", self)
         self.l1bqcDefaultWindSpeedLineEdit = QtWidgets.QLineEdit(self)
         self.l1bqcDefaultWindSpeedLineEdit.setText(str(ConfigFile.settings["fL1bqcDefaultWindSpeed"]))
         self.l1bqcDefaultWindSpeedLineEdit.setValidator(doubleValidator)
-        self.l1bqcDefaultAODLabel = QtWidgets.QLabel("     Default AOD(550)", self)
+        self.l1bqcDefaultAODLabel = QtWidgets.QLabel("          Default AOD(550)", self)
         self.l1bqcDefaultAODLineEdit = QtWidgets.QLineEdit(self)
         self.l1bqcDefaultAODLineEdit.setText(str(ConfigFile.settings["fL1bqcDefaultAOD"]))
         self.l1bqcDefaultAODLineEdit.setValidator(doubleValidator)
-        self.l1bqcDefaultSaltLabel = QtWidgets.QLabel("     Default Salinity (psu)", self)
+        self.l1bqcDefaultSaltLabel = QtWidgets.QLabel("          Default Salinity (psu)", self)
         self.l1bqcDefaultSaltLineEdit = QtWidgets.QLineEdit(self)
         self.l1bqcDefaultSaltLineEdit.setText(str(ConfigFile.settings["fL1bqcDefaultSalt"]))
         self.l1bqcDefaultSaltLineEdit.setValidator(doubleValidator)
-        self.l1bqcDefaultSSTLabel = QtWidgets.QLabel("     Default SST (C)", self)
+        self.l1bqcDefaultSSTLabel = QtWidgets.QLabel("          Default SST (C)", self)
         self.l1bqcDefaultSSTLineEdit = QtWidgets.QLineEdit(self)
         self.l1bqcDefaultSSTLineEdit.setText(str(ConfigFile.settings["fL1bqcDefaultSST"]))
         self.l1bqcDefaultSSTLineEdit.setValidator(doubleValidator)
 
         #   Lt UV<NIR
-        l1bqcLtUVNIRLabel= QtWidgets.QLabel("     Eliminate where Lt(NIR)>Lt(UV)", self)
+        l1bqcLtUVNIRLabel= QtWidgets.QLabel("   Eliminate where Lt(NIR)>Lt(UV)", self)
         self.l1bqcLtUVNIRCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bqcLtUVNIR"]) == 1:
             self.l1bqcLtUVNIRCheckBox.setChecked(True)
         self.l1bqcLtUVNIRCheckBox.clicked.connect(self.l1bqcLtUVNIRCheckBoxUpdate)
 
         #   L1BQC Max Wind
-        l1bqcMaxWindLabel = QtWidgets.QLabel("     Max. Wind Speed (m/s)", self)
+        l1bqcMaxWindLabel = QtWidgets.QLabel("   Max. Wind Speed (m/s)", self)
         self.l1bqcMaxWindLineEdit = QtWidgets.QLineEdit(self)
         self.l1bqcMaxWindLineEdit.setText(str(ConfigFile.settings["fL1bqcMaxWind"]))
         self.l1bqcMaxWindLineEdit.setValidator(doubleValidator)
 
         #   L1BQC Min/Max SZA
-        l1bqcSZAMinLabel = QtWidgets.QLabel("     SZA Minimum (deg)", self)
+        l1bqcSZAMinLabel = QtWidgets.QLabel("   SZA Minimum (deg)", self)
         self.l1bqcSZAMinLineEdit = QtWidgets.QLineEdit(self)
         self.l1bqcSZAMinLineEdit.setText(str(ConfigFile.settings["fL1bqcSZAMin"]))
         self.l1bqcSZAMinLineEdit.setValidator(doubleValidator)
-        l1bqcSZAMaxLabel = QtWidgets.QLabel("     SZA Maximum (deg)", self)
+        l1bqcSZAMaxLabel = QtWidgets.QLabel("   SZA Maximum (deg)", self)
         self.l1bqcSZAMaxLineEdit = QtWidgets.QLineEdit(self)
         self.l1bqcSZAMaxLineEdit.setText(str(ConfigFile.settings["fL1bqcSZAMax"]))
         self.l1bqcSZAMaxLineEdit.setValidator(doubleValidator)
 
         # L1BQC Spectral Outlier Filter
-        l1bqcSpecQualityCheckLabel = QtWidgets.QLabel("     Enable Spectral Outlier Filter & Plots", self)
+        l1bqcSpecQualityCheckLabel = QtWidgets.QLabel("  Enable Spectral Outlier Filter & Plots", self)
         self.l1bqcSpecQualityCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bqcEnableSpecQualityCheck"]) == 1:
             self.l1bqcSpecQualityCheckBox.setChecked(True)
 
-        self.l1bqcSpecFilterEsLabel = QtWidgets.QLabel("      Filter Sigma Es", self)
+        self.l1bqcSpecFilterEsLabel = QtWidgets.QLabel("       Filter Sigma Es", self)
         self.l1bqcSpecFilterEsLineEdit = QtWidgets.QLineEdit(self)
         self.l1bqcSpecFilterEsLineEdit.setText(str(ConfigFile.settings["fL1bqcSpecFilterEs"]))
         self.l1bqcSpecFilterEsLineEdit.setValidator(doubleValidator)
-        self.l1bqcSpecFilterLiLabel = QtWidgets.QLabel("      Filter Sigma Li", self)
+        self.l1bqcSpecFilterLiLabel = QtWidgets.QLabel("       Filter Sigma Li", self)
         self.l1bqcSpecFilterLiLineEdit = QtWidgets.QLineEdit(self)
         self.l1bqcSpecFilterLiLineEdit.setText(str(ConfigFile.settings["fL1bqcSpecFilterLi"]))
         self.l1bqcSpecFilterLiLineEdit.setValidator(doubleValidator)
-        self.l1bqcSpecFilterLtLabel = QtWidgets.QLabel("      Filter Sigma Lt", self)
+        self.l1bqcSpecFilterLtLabel = QtWidgets.QLabel("       Filter Sigma Lt", self)
         self.l1bqcSpecFilterLtLineEdit = QtWidgets.QLineEdit(self)
         self.l1bqcSpecFilterLtLineEdit.setText(str(ConfigFile.settings["fL1bqcSpecFilterLt"]))
         self.l1bqcSpecFilterLtLineEdit.setValidator(doubleValidator)
@@ -296,27 +296,27 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bqcSpecQualityCheckBoxUpdate()
 
         # L1BQC Meteorology Flags
-        l1bqcQualityFlagLabel = QtWidgets.QLabel("     Enable Meteorological Filters", self)
+        l1bqcQualityFlagLabel = QtWidgets.QLabel("   Enable Meteorological Filters", self)
         self.l1bqcQualityFlagCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bqcEnableQualityFlags"]) == 1:
             self.l1bqcQualityFlagCheckBox.setChecked(True)
 
-        self.l1bqcCloudFlagLabel = QtWidgets.QLabel("      Cloud Li(750)/Es(750)>", self)
+        self.l1bqcCloudFlagLabel = QtWidgets.QLabel("       Cloud Li(750)/Es(750)>", self)
         self.l1bqcCloudFlagLineEdit = QtWidgets.QLineEdit("", self)
         self.l1bqcCloudFlagLineEdit.setText(str(ConfigFile.settings["fL1bqcCloudFlag"]))
         self.l1bqcCloudFlagLineEdit.setValidator(doubleValidator)
 
-        self.l1bqcEsFlagLabel = QtWidgets.QLabel("      Significant Es(480) (uW cm^-2 nm^-1)", self)
+        self.l1bqcEsFlagLabel = QtWidgets.QLabel("       Significant Es(480) (uW cm^-2 nm^-1)", self)
         self.l1bqcEsFlagLineEdit = QtWidgets.QLineEdit(self)
         self.l1bqcEsFlagLineEdit.setText(str(ConfigFile.settings["fL1bqcSignificantEsFlag"]))
         self.l1bqcEsFlagLineEdit.setValidator(doubleValidator)
 
-        self.l1bqcDawnDuskFlagLabel = QtWidgets.QLabel("      Dawn/Dusk Es(470/680)<", self)
+        self.l1bqcDawnDuskFlagLabel = QtWidgets.QLabel("       Dawn/Dusk Es(470/680)<", self)
         self.l1bqcDawnDuskFlagLineEdit = QtWidgets.QLineEdit("", self)
         self.l1bqcDawnDuskFlagLineEdit.setText(str(ConfigFile.settings["fL1bqcDawnDuskFlag"]))
         self.l1bqcDawnDuskFlagLineEdit.setValidator(doubleValidator)
 
-        self.l1bqcRainfallHumidityFlagLabel = QtWidgets.QLabel("      Rain/Humid. Es(720/370)<", self)
+        self.l1bqcRainfallHumidityFlagLabel = QtWidgets.QLabel("       Rain/Humid. Es(720/370)<", self)
         self.l1bqcRainfallHumidityFlagLineEdit = QtWidgets.QLineEdit("", self)
         self.l1bqcRainfallHumidityFlagLineEdit.setText(str(ConfigFile.settings["fL1bqcRainfallHumidityFlag"]))
         self.l1bqcRainfallHumidityFlagLineEdit.setValidator(doubleValidator)
@@ -328,8 +328,10 @@ class ConfigWindow(QtWidgets.QDialog):
         # L2
         l2Label = QtWidgets.QLabel("Level 2 Processing", self)
         l2Label.setFont(l1aLabel_font)
-        l2Sublabel = QtWidgets.QLabel(" Quality control filters, glint correction, temporal", self)
-        l2Sublabel2 = QtWidgets.QLabel(" binning, reflectance calculation.", self)
+        l2Sublabel = QtWidgets.QLabel(" Temporal binning, glitter reduction, glint", self)
+        l2Sublabel2 = QtWidgets.QLabel("  correction, residual correction, QC,", self)
+        l2Sublabel3 = QtWidgets.QLabel("  satellite convolution, OC product generation,", self)
+        l2Sublabel4 = QtWidgets.QLabel("  SeaBASS file output.", self)
 
         #   L2 Ensembles
         l2ensLabel = QtWidgets.QLabel("L2 Ensembles", self)
@@ -362,8 +364,6 @@ class ConfigWindow(QtWidgets.QDialog):
         #   L2 Rho Sky Correction
         l2RhoSkyLabel = QtWidgets.QLabel("L2 Sky/Sunglint Correction (ρ)", self)
         l2RhoSkyLabel.setFont(l1aLabel_font)
-
-
 
         self.RhoRadioButtonDefault = QtWidgets.QRadioButton("Mobley (1999) ρ")
         self.RhoRadioButtonDefault.setAutoExclusive(False)
@@ -663,7 +663,7 @@ class ConfigWindow(QtWidgets.QDialog):
         plotInterpHBox.addWidget(self.l1bPlotIntervalLineEdit)
         VBox2.addLayout(plotInterpHBox)
 
-        VBox2.addSpacing(20)
+        VBox2.addSpacing(10)
         VBox2.addStretch()
 
         # L1BQC
@@ -676,10 +676,12 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addWidget(l1bqcSublabel2)
         VBox2.addWidget(l1bqcSublabel3)
         l1bqcGetAncHBox = QtWidgets.QHBoxLayout()
-        l1bqcGetAncHBox.addWidget(l1bqcSublabel4)
         l1bqcGetAncHBox.addWidget(l1bqcGetAncLabel)
         l1bqcGetAncHBox.addWidget(self.l1bqcGetAncCheckBox)
+        l1bqcGetAncHBox.addWidget(l1bqcSublabel4)
         VBox2.addLayout(l1bqcGetAncHBox)
+
+        VBox2.addWidget(l1bqcSublabel5)
 
         #   Default Wind
         WindSpeedHBox2 = QtWidgets.QHBoxLayout()
@@ -773,13 +775,15 @@ class ConfigWindow(QtWidgets.QDialog):
         RainFlagHBox.addWidget(self.l1bqcRainfallHumidityFlagLineEdit)
         VBox3.addLayout(RainFlagHBox)
 
-        VBox3.addSpacing(100)
+        VBox3.addSpacing(30)
         VBox3.addStretch()
 
         # L2
         VBox3.addWidget(l2Label)
         VBox3.addWidget(l2Sublabel)
         VBox3.addWidget(l2Sublabel2)
+        VBox3.addWidget(l2Sublabel3)
+        VBox3.addWidget(l2Sublabel4)
 
         #   L2 Ensembles
         VBox3.addWidget(l2ensLabel)
@@ -806,25 +810,23 @@ class ConfigWindow(QtWidgets.QDialog):
         PercentLtHBox2.addWidget(self.l2PercentLtLineEdit)
         VBox3.addLayout(PercentLtHBox2)
 
-        VBox3.addStretch()
-
-        # Right Vertical box
-        VBox4 = QtWidgets.QVBoxLayout()
-        # VBox4.setAlignment(QtCore.Qt.AlignBottom)
         #   L2 Rho Skyglint/Sunglint Correction
-        VBox4.addWidget(l2RhoSkyLabel)
+        VBox3.addWidget(l2RhoSkyLabel)
 
         #   Rho model
         RhoHBox2 = QtWidgets.QHBoxLayout()
         RhoHBox2.addWidget(self.RhoRadioButtonDefault)
         RhoHBox2.addWidget(self.RhoRadioButtonZhang)
-        VBox4.addLayout(RhoHBox2)
+        VBox3.addLayout(RhoHBox2)
         RhoHBox3 = QtWidgets.QHBoxLayout()
         RhoHBox3.addWidget(self.RhoRadoButton3C)
         RhoHBox3.addWidget(self.RhoRadioButtonYour)
-        VBox4.addLayout(RhoHBox3)
+        VBox3.addLayout(RhoHBox3)
 
-        VBox4.addSpacing(5)
+        VBox3.addStretch()
+
+        # Right Vertical box
+        VBox4 = QtWidgets.QVBoxLayout()
 
         #   L2 NIR AtmoCorr
         NIRCorrectionHBox = QtWidgets.QHBoxLayout()

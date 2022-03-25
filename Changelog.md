@@ -2,25 +2,26 @@ v1.1.0 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
 ---
 
 Next priorities:
+* Implement TriOS platform support
+* Implement full instrument characterization and uncertainty budgets
+* Improve uncertainty estimates of glint corrections
+* Propagate uncertainties from radiometry to OC products
 * Implement Groetch et al. 2017 3C glint correction
 * Implement Vandermuelen, Dierssen (in prep) QWIP QC
-* Implement TriOS platform support
-* Implement satellite matchup with fd_mathcup.py
+* Add BRDF correction options
+* Implement satellite matchup with fd_mathcup.py (TBD)
 * Integration time issue with HyperOCRs; develop/add correction (in cal file? another level?)
     * Do other users of SeaBird HOCRs see int. time response issues?
     * Contact me for further info regarding integration time uncertainty
 * Improve/augment to NIR residual corrections
     * Iterative approaches; process time concern.
-* Add BRDF correction options
-* Propagate uncertainties from radiometry to OC products
-* Improve uncertainty estimates of glint corrections
-* Memory issue with FPDF causes major slowdown in PDF report building with figures
+* FPDF slow in PDF report building with figures; seek alternatives
 * Fix non-unique station/file bug
+* Use ancillary SeaBASS metadata to populate remaining L1E/L2 SeaBASS header fields
 
 Ideas and To-Dos:
 * Explore ML approaches to automate filter selection and glint/NIR correction selection
 * Incorporate additional platforms with collaborators (write to dirk.a.aurin@nasa.gov)
-* Use ancillary SeaBASS metadata to populate remaining L1E/L2 SeaBASS header fields
 * Add failure flags in HDF object attributes:
     * Capture details when errors thrown (inspect, currentframe, getframeinfo)
     * Split Wind and SZA bombs in L2
