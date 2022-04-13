@@ -1359,7 +1359,7 @@ class Utilities:
             outDir = dirPath
 
         # Otherwise, put Plots in the chosen output directory from Main
-        plotDir = os.path.join(outDir,'Plots','L2_Spectral_Filter')
+        plotDir = os.path.join(outDir,'Plots','L1BQC_Spectral_Filter')
 
         if not os.path.exists(plotDir):
             os.makedirs(plotDir)
