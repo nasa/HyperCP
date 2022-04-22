@@ -77,7 +77,7 @@ The following sub-directories will be created automatically (if not present) whe
 - Source - This directory (which comes unpacked with the distribution) holds the majority of the Python source code.
 
 ### Database download
-When you first launch the software, it will need to download a large (2.3 GB) database (Zhang_rho_db.mat) for use in glint correction. If this database is not found in Data, a dialog window will appear before the Main.py GUI with guidance on how to proceed. If this download should fail for any reason, further instructions will be given at the command line terminal where Main.py was launched.
+When you first launch the software, it will need to download a large (2.3 GB) database (Zhang_rho_db.mat;Zhang et al., 2017, OE, 25(4)) for use in glint correction. If this database is not found in Data, a dialog window will appear before the Main.py GUI with guidance on how to proceed. If this download should fail for any reason, further instructions will be given at the command line terminal where Main.py was launched.
 
 ---
 ## Guide

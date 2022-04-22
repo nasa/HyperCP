@@ -267,13 +267,26 @@ class Window(QtWidgets.QWidget):
         print('New Config Dialogue')
         text, ok = QtWidgets.QInputDialog.getText(self, 'New Config File', 'Enter File Name')
         if ok:
-            print('Create Config File: ', text)
-            ConfigFile.createDefaultConfig(text, 1)
-            MainConfig.settings['cfgFile'] = ConfigFile.filename
-            seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
-            print('Creating New SeaBASSHeader File: ', seaBASSHeaderFileName)
-            SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
-            # SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+            if not text.endswith(".cfg"):
+                text = text + ".cfg"
+            fp = os.path.join("Config", text)
+            if os.path.exists(fp):
+                ret = QtWidgets.QMessageBox.question(self, 'File Exists', "Overwrite Config File?", QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+
+                if ret == QtWidgets.QMessageBox.Yes:
+                    print('Overwriting Config File:', text)
+                    ConfigFile.createDefaultConfig(text, 1)
+                    MainConfig.settings['cfgFile'] = ConfigFile.filename
+                    seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
+                    print('Overwriting SeaBASSHeader File: ', seaBASSHeaderFileName)
+                    SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
+            else:
+                print('Create New Config File: ', text)
+                ConfigFile.createDefaultConfig(text, 1)
+                MainConfig.settings['cfgFile'] = ConfigFile.filename
+                seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
+                print('Creating New SeaBASSHeader File: ', seaBASSHeaderFileName)
+                SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
 
     def configEditButtonPressed(self):
         print('Edit Config Dialogue')

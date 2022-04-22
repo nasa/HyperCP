@@ -2,12 +2,13 @@ v1.1.1 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
 ---
 
 Next priorities:
+* Implement F0 convolution to gaussian RSR for HyperOCR for Lwn calculation
+* Implement QWIP QC
 * Implement TriOS platform support
 * Implement full instrument characterization and uncertainty budgets
 * Improve uncertainty estimates of glint corrections
 * Propagate uncertainties from radiometry to OC products
 * Implement Groetch et al. 2017 3C glint correction
-* Implement Vandermuelen, Dierssen (in prep) QWIP QC
 * Add BRDF correction options
 * Implement satellite matchup with fd_mathcup.py (TBD)
 * Integration time issue with HyperOCRs; develop/add correction (in cal file? another level?)
@@ -29,6 +30,9 @@ Ideas and To-Dos:
 * Produce kml files for GoogleEarth on entire cruise/directory
 
 ___________________________________________________________
+
+2022-04-20: DAA
+* SeaBASS Default Header bug fixed. Test before overwrite of Config File
 
 --
 v1.1.0 2022-03-25: DAA
