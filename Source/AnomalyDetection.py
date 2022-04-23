@@ -507,8 +507,12 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         # Match data to photo, if possible
         pFormat = self.photoFormat.text()
-        tz = pFormat[-5:] # clumsy hardcoding of TZ pFormat: Must be the last 5 characters
-        pFormat = pFormat[0:-5]
+        if '-' in pFormat[-5] or '+' in pFormat[-5]:
+            tz = pFormat[-5:] # clumsy hardcoding of TZ pFormat: Must be the last 5 characters
+            pFormat = pFormat[0:-5]
+        else:
+            tz = '-0000'
+
         self.photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, pFormat, tz)
         if self.photoList is not None:
             print('Matching photo found')

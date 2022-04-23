@@ -31,6 +31,9 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-04-22: DAA
+* Catch photo format mismatch with exception
+
 2022-04-20: DAA
 * SeaBASS Default Header bug fixed. Test before overwrite of Config File
 

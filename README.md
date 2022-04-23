@@ -35,7 +35,7 @@ Acknowledgements: N.Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/d
 
 Clone this repository (branch: "master") to a convenient directory on your computer. When HyperInSPACE/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved into them as described below. No system files will be changed.
 
-HyperInSPACE requires Python 3.X installed on a Linux, MacOS, or Windows computer. The <a href='https://www.anaconda.com/'>Anaconda</a> distribution is encouraged. (If you are unfamiliar with Anaconda, a nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk.
+HyperInSPACE requires Python 3.X installed on a Linux, MacOS, or Windows computer. The <a href='https://www.anaconda.com/'>Anaconda</a> distribution is encouraged. (If you are unfamiliar with Anaconda, a nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk.)
 
 All of the package dependencies are listed in the environment.yaml file included with the package. To make sure you have all of the necessary dependencies, navigate to the HyperInSPACE directory and type
 
@@ -236,9 +236,9 @@ To save the current values from the Anomaly Analysis tool as the defaults for th
 **(API Reference: https://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html)**
 
 * A problem with instrument linear response sensitivity to integration time was recently discoveres and is under investigation.
-* ATTENTION: Do your SeaBird HyperOCR dark-shutter data often look like a stepped response, like this?
-<center><img src="Data/DarkStepResponse.png" alt="LT Dark"></center>
-If so, please contact me to learn more about this issue if you are willing/able to share your data.
+# * ATTENTION: Do your SeaBird HyperOCR dark-shutter data often look like a stepped response, like this?
+# <center><img src="Data/DarkStepResponse.png" alt="LT Dark"></center>
+# If so, please contact me to learn more about this issue if you are willing/able to share your data.
 
 
 #### Level 1B
