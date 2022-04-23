@@ -235,11 +235,11 @@ To save the current values from the Anomaly Analysis tool as the defaults for th
 **(Abe et al. 2006, Chandola et al. 2009)**
 **(API Reference: https://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html)**
 
-* A problem with instrument linear response sensitivity to integration time was recently discoveres and is under investigation.
+<!--- * A problem with instrument linear response sensitivity to integration time was recently discoveres and is under investigation.
 # * ATTENTION: Do your SeaBird HyperOCR dark-shutter data often look like a stepped response, like this?
 # <center><img src="Data/DarkStepResponse.png" alt="LT Dark"></center>
 # If so, please contact me to learn more about this issue if you are willing/able to share your data.
-
+-->
 
 #### Level 1B
 Dark current corrections are applied followed by instrument calibrations and then matching of timestamps and wavebands for all radiometers in the suite.

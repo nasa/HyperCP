@@ -1336,12 +1336,13 @@ class ProcessL2:
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
             if AODXSlice >0.2:
-                msg = f'AOD = {AODXSlice}. Maximum Aerosol Optical Depth Reached. Setting to 0.2'
+                msg = f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.2'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 AODXSlice = 0.2
             if SZAXSlice > 60:
-                msg = f'SZA = {SZAXSlice}. Maximum Solar Zenith Exceeded. Aborting slice.'
+                # Zhang is stricter and limited to SZA <= 60
+                msg = f'SZA = {SZAXSlice:.2f}. Maximum Solar Zenith Exceeded. Aborting slice.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
@@ -1729,6 +1730,12 @@ class ProcessL2:
             Utilities.writeLogFile(msg)
             # newReflectanceGroup = root.groups[0]
             newReflectanceGroup = root.getGroup("REFLECTANCE")
+            if not newReflectanceGroup.datasets:
+                msg = "Ensemble is empty. Aborting."
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
+
             badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs_HYPER', VIS = fRange)
             badTimes2 = ProcessL2.negReflectance(newReflectanceGroup, 'nLw_HYPER', VIS = fRange)
 
