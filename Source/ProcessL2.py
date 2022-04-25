@@ -1345,6 +1345,16 @@ class ProcessL2:
                 msg = f'SZA = {SZAXSlice:.2f}. Maximum Solar Zenith Exceeded. Aborting slice.'
                 print(msg)
                 Utilities.writeLogFile(msg)
+                # Need to eliminate this slice from newAncGroup
+                badTimes = []
+                start = dateTime
+                stop = dateTime
+                badTimes.append([start, stop])
+                for dsName in newAncGroup.datasets:
+                    ds = newAncGroup.datasets[dsName]
+                    ds.columnsToDataset()
+
+                check = Utilities.filterData(newAncGroup,badTimes)
                 return False
             if min(wavelength) < 350 or max(wavelength) > 1000:
                 msg = f'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'

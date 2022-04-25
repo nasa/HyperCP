@@ -31,7 +31,10 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
-2022-04-22: DAA
+2022-04-25:
+* Fix bug when truncating Zhang rho for SZA
+
+2022-04-22:
 * Catch photo format mismatch with exception
 
 2022-04-20: DAA
