@@ -1394,7 +1394,7 @@ class ProcessL2:
             wave_array = np.array(wave_list)
             # wavelength is now truncated to only valid wavebands for use in Zhang models
             waveSubsetMODIS = wave_array[:,1].tolist()
-            F0_MODIS = Utilities.TSIS_1(dateTag, MODISwavelength, F0_raw, wv_raw)
+            F0_MODIS, F0_raw, wv_raw = Utilities.TSIS_1(dateTag, MODISwavelength, F0_raw, wv_raw)
         if ConfigFile.settings['bL2WeightVIIRSN'] or ConfigFile.settings['bL2WeightVIIRSJ']:
             VIIRSwavelength = Weight_RSR.VIIRSBands()
             wave_old = VIIRSwavelength.copy()
@@ -1402,7 +1402,7 @@ class ProcessL2:
             wave_array = np.array(wave_list)
             # wavelength is now truncated to only valid wavebands for use in Zhang models
             waveSubsetVIIRS = wave_array[:,1].tolist()
-            F0_VIIRS = Utilities.TSIS_1(dateTag, VIIRSwavelength, F0_raw, wv_raw)
+            F0_VIIRS, F0_raw, wv_raw = Utilities.TSIS_1(dateTag, VIIRSwavelength, F0_raw, wv_raw)
         if ConfigFile.settings['bL2WeightSentinel3A'] or ConfigFile.settings['bL2WeightSentinel3B']:
             Sentinel3wavelength = Weight_RSR.Sentinel3Bands()
             wave_old = Sentinel3wavelength.copy()
@@ -1410,7 +1410,7 @@ class ProcessL2:
             wave_array = np.array(wave_list)
             # wavelength is now truncated to only valid wavebands for use in Zhang models
             waveSubsetSentinel3 = wave_array[:,1].tolist()
-            F0_Sentinel3 = Utilities.TSIS_1(dateTag, Sentinel3wavelength, F0_raw, wv_raw)
+            F0_Sentinel3, F0_raw, wv_raw = Utilities.TSIS_1(dateTag, Sentinel3wavelength, F0_raw, wv_raw)
 
 
         # Build a slice object for (ir)radiances to be passed to spectralReflectance method
