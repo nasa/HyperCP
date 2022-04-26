@@ -2,17 +2,13 @@
 HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing
 above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
 See README.md or README.pdf for installation instructions and guide.
-Version 1.1.0: Under development March 2022 (See Changelog.md)
+Version 1.1.1: Under development March 2022 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 '''
-# from Source.Utilities import Utilities
 import argparse
 import os
-# import shutil
 import sys
 import time
-# import collections
-# import json
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 import requests
@@ -79,7 +75,7 @@ class Window(QtWidgets.QWidget):
 
         # Main window configuration restore
         MainConfig.loadConfig(MainConfig.fileName)
-        MainConfig.settings['version'] = '1.1.0'
+        MainConfig.settings['version'] = '1.1.1'
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')

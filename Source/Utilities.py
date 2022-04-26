@@ -34,8 +34,7 @@ if "LOGFILE" not in os.environ:
 class Utilities:
 
     @staticmethod
-    # def Thuillier(dateTag, wavelength):
-    def TSIS_1(dateTag, wavelength):
+    def TSIS_1(dateTag, wavelength, F0_raw=None, wv_raw=None):
         def dop(year):
             # day of perihelion
             years = list(range(2001,2031))
@@ -45,41 +44,42 @@ class Utilities:
             result = dop[str(year)]
             return result
 
-        fp = 'Data/hybrid_reference_spectrum_p1nm_resolution_c2020-09-21_with_unc.nc'
-        # fp = 'Data/Thuillier_F0.sb'
-        # print("SB_support.readSB: " + fp)
-        print("Reading : " + fp)
-        if not HDFRoot.HDFRoot.readHDF5(fp):
-            msg = "Unable to read TSIS-1 netcdf file."
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return None
-        else:
-            F0_hybrid = HDFRoot.HDFRoot.readHDF5(fp)
-            # F0_raw = np.array(Thuillier.data['esun']) # uW cm^-2 nm^-1
-            # wv_raw = np.array(Thuillier.data['wavelength'])
-            for ds in F0_hybrid.datasets:
-                if ds.id == 'SSI':
-                    F0_raw = ds.data        #  W  m^-2 nm^-1
-                    F0_raw = F0_raw * 100 # uW cm^-2 nm^-1
-                if ds.id == 'Vacuum Wavelength':
-                    wv_raw =ds.data
+        if F0_raw is None:
+            fp = 'Data/hybrid_reference_spectrum_p1nm_resolution_c2020-09-21_with_unc.nc'
+            # fp = 'Data/Thuillier_F0.sb'
+            # print("SB_support.readSB: " + fp)
+            print("Reading : " + fp)
+            if not HDFRoot.HDFRoot.readHDF5(fp):
+                msg = "Unable to read TSIS-1 netcdf file."
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
+            else:
+                F0_hybrid = HDFRoot.HDFRoot.readHDF5(fp)
+                # F0_raw = np.array(Thuillier.data['esun']) # uW cm^-2 nm^-1
+                # wv_raw = np.array(Thuillier.data['wavelength'])
+                for ds in F0_hybrid.datasets:
+                    if ds.id == 'SSI':
+                        F0_raw = ds.data        #  W  m^-2 nm^-1
+                        F0_raw = F0_raw * 100 # uW cm^-2 nm^-1
+                    if ds.id == 'Vacuum Wavelength':
+                        wv_raw =ds.data
 
-            # Earth-Sun distance
-            day = int(str(dateTag)[4:7])
-            year = int(str(dateTag)[0:4])
-            eccentricity = 0.01672
-            dayFactor = 360/365.256363
-            dayOfPerihelion = dop(year)
-            dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
-            F0_fs = F0_raw*dES
+        # Earth-Sun distance
+        day = int(str(dateTag)[4:7])
+        year = int(str(dateTag)[0:4])
+        eccentricity = 0.01672
+        dayFactor = 360/365.256363
+        dayOfPerihelion = dop(year)
+        dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
+        F0_fs = F0_raw*dES
 
-            F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
-            # Use the strings for the F0 dict
-            wavelengthStr = [str(wave) for wave in wavelength]
-            F0 = collections.OrderedDict(zip(wavelengthStr, F0))
+        F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
+        # Use the strings for the F0 dict
+        wavelengthStr = [str(wave) for wave in wavelength]
+        F0 = collections.OrderedDict(zip(wavelengthStr, F0))
 
-        return F0
+        return F0, F0_raw, wv_raw
 
     @staticmethod
     def Thuillier(dateTag, wavelength):
