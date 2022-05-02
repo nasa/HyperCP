@@ -88,7 +88,7 @@ class RhoCorrections:
         Recommended installation using Anaconda:
         $ conda install xarray dask netCDF4 bottleneck'''
 
-        msg = 'Calculating Zhang glint correction. This can take several minutes.'
+        msg = 'Calculating Zhang glint correction.'
         print(msg)
         Utilities.writeLogFile(msg)
 

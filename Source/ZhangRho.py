@@ -504,7 +504,7 @@ def Main(env, sensor):
     # total reflectance (R), and ignores R12 and R33; confirmed w/ Zhang
     ref = ref[0]
 
-    print('Interpolating skyrad, takes a moment')
+    print('Interpolating skyrad')
     wave = db.wv.data.flatten()
     index = np.arange(1,skyrad0.data.shape[1]+1)
     aod = db.od.data.flatten() # limit 0 - 0.20
