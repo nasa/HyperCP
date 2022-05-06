@@ -223,15 +223,15 @@ class ConfigFile:
         ConfigFile.settings["fL1aqcESWindowDark"] = 11
         ConfigFile.settings["fL1aqcESWindowLight"] = 5
         ConfigFile.settings["fL1aqcESSigmaDark"] = 3.2
-        ConfigFile.settings["fL1aqcESSigmaLight"] = 3.5
+        ConfigFile.settings["fL1aqcESSigmaLight"] = 2.3
         ConfigFile.settings["fL1aqcLIWindowDark"] = 11
         ConfigFile.settings["fL1aqcLIWindowLight"] = 5
-        ConfigFile.settings["fL1aqcLISigmaDark"] = 3.4
-        ConfigFile.settings["fL1aqcLISigmaLight"] = 3.4
+        ConfigFile.settings["fL1aqcLISigmaDark"] = 3.3
+        ConfigFile.settings["fL1aqcLISigmaLight"] = 3.0
         ConfigFile.settings["fL1aqcLTWindowDark"] = 11
-        ConfigFile.settings["fL1aqcLTWindowLight"] = 5
-        ConfigFile.settings["fL1aqcLTSigmaDark"] = 3.5
-        ConfigFile.settings["fL1aqcLTSigmaLight"] = 3.2
+        ConfigFile.settings["fL1aqcLTWindowLight"] = 13
+        ConfigFile.settings["fL1aqcLTSigmaDark"] = 3.2
+        ConfigFile.settings["fL1aqcLTSigmaLight"] = 2.7
 
         # Optional threshold values for L1AQC processing of light & dark data (see AnomalyDetection tool)
         ConfigFile.settings["bL1aqcThreshold"] = 0

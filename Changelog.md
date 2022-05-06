@@ -31,6 +31,11 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-05-06:
+* Fix NIR Correction labels in SeaBASS headers
+* Update SeaBASS file names to put Es or Rrs at the end instead
+* Update AnomAnal defaults based on EXPORTSNA
+
 2022-04-25:
 * Fix bug when truncating Zhang rho for SZA
 

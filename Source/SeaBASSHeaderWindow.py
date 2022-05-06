@@ -456,14 +456,14 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL23CRho"]:
             rhoCorr = "3C"
         elif ConfigFile.settings["bL2ZhangRho"]:
-            rhoCorr = "Zhang2017"
+            rhoCorr = 'Zhang et al. 2017'
         else:
-            rhoCorr = f"Mobley1999"
+            rhoCorr = 'Mobley 1999'
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
             if ConfigFile.settings["bL2SimpleNIRCorrection"]:
-                NIRFilt = "Hooker2003"
+                NIRFilt = 'Mueller and Austin 1995'
             else:
-                NIRFilt = "Ruddick2006"
+                NIRFilt = 'Ruddick et al. 2005/2006'
         else:
             NIRFilt = "Off"
         if ConfigFile.settings["bL2NegativeSpec"]:

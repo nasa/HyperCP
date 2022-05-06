@@ -114,7 +114,7 @@ class ProcessL2:
         elif simSpecNIRCorrection:
             # From Ruddick 2005, Ruddick 2006 use NIR normalized similarity spectrum
             # (spectrally flat)
-            msg = "Perform simulated spectrum residual NIR subtraction."
+            msg = "Perform similarity spectrum residual NIR subtraction."
             print(msg)
             Utilities.writeLogFile(msg)
 

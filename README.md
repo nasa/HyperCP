@@ -201,7 +201,7 @@ Light and dark data are screened for electronic noise ("deglitched" - see Anomal
 
 *Currently, spectra with anomalies in any band are deleted in their entirety, which is very conservative. It may be sufficient to set the anomalous values to NaNs, and only delete the entire spectrum if more than, say, 25% of wavebands are anomalous.*
 
-##### Anomaly Analysis (optional)
+##### Anomaly Analysis & Thresholding (optional)
 
 Running the Anomaly Analysis to parameterize the deglitching algorithm requires L1AQC files, so they must first be processed with no deglitching and then loaded into the Anomaly Analysis tool.
 
@@ -215,9 +215,9 @@ For each waveband of each sensor, and for both light and dark shutter measuremen
 
 Adjust the window size and sigma parameters for each instrument and hit Update (or keyboard Enter) to see which data (black circles) are retained or discarded (red 'x' or '+' for first and second pass, respectively). Move the slider and hit update to see how these factors impact data in various portions of the spectrum. The field '% Loss (all bands)' shows how application of the current parameterization decimates the *entire spectral/temporal dataset for the given sensor, not just the band shown*.
 
-In addition to the low-pass filters, light and dark data from each sensor can be filtered with a high and low value threshold. These are chosen by selecting the desired band (and hit Set Band) independently for light and dark data, and choosing a minimum and/or maximum threshold value in the appropriate boxes. Leave value as "None" if a particularly threshold should be ignored. For example, to filter Li data on thresholds only for a high threshold for dark data based on 555 nm, select the Threshold checkbox, select the Li Radio button, move the slider to 555 nm, and hit Update. Now, you can enter a value (e.g. 1.0) into the lefthand "Max" textbox and hit "Update" (or keyboard Enter). The filtered data should show in blue. Keep in mind, they will only show in the waveband for which they were set, but like the low-pass filter, if they fall outside the thresholds in that band, that timestamp will be deleted for all bands.
+In addition to the low-pass filters, light and dark data from each sensor can be filtered with a high and low value threshold. This is off by default, but can be very powerful for custom processing (e.g., cloud elimination), and tends to be more useful in the light data rather than the dark (shutter closed). Thresholds are chosen by selecting the desired band (and hit Set Band) independently for light and dark data, and choosing a minimum and/or maximum threshold value in the appropriate boxes. Leave value as "None" if a particularly threshold should be ignored. For example, to filter Li data on thresholds only for a high threshold for dark data based on 555 nm, select the Threshold checkbox, select the Li Radio button, move the slider to 555 nm, and hit Update. Now, you can enter a value (e.g. 1.0) into the lefthand "Max" textbox and hit "Update" (or keyboard Enter). The filtered data should show in blue. Keep in mind, they will only show in the waveband for which they were set, but like the low-pass filter, if they fall outside the thresholds in that band, that timestamp will be deleted for all bands.
 
-Currently, to threshold data from any of the three instruments, Threshold must be left checked, but leaving the min/max values as None in the other sensors will still work to ignore thresholding those sensors.
+Currently, to threshold data from any of the three instruments, Threshold must be checked, but leaving the min/max values as None in the other sensors will still work to ignore thresholding those sensors.
 
 To see the results when reviewing the threshold parameters on a file, make sure the waveband slider is on the appropriate waveband (and hit Update).
 
@@ -231,7 +231,7 @@ To save the current values from the Anomaly Analysis tool as the defaults for th
 
 * KNOWN BUG: the pyqtgraph GUI interface does not always update as expected on macOS Catalina. Hitting Update again or switching the sensor radio button generally resolves the issue.
 
-**Defaults: TBD; experimental**
+**Defaults: Currently based on EXPORTSNA DY121; experimental**
 **(Abe et al. 2006, Chandola et al. 2009)**
 **(API Reference: https://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html)**
 

@@ -255,7 +255,7 @@ class SeaBASSWriter:
 
         version = SeaBASSHeader.settings["version"]
 
-        outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{dtype}_{os.path.split(fp)[1].replace(".hdf",f"_{version}.sb")}'
+        outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{os.path.split(fp)[1].replace(".hdf",f"_{dtype}_{version}.sb")}'
 
         outFile = open(outFileName,'w',newline='\n')
         outFile.write('/begin_header\n')
