@@ -1,6 +1,6 @@
 
 import numpy as np
-import numpy.matlib
+# import numpy.matlib
 
 def L2avw(wavelength, Rrs):
     ''' Use hyperspectral Rrs to calculate average visible wavelength. Vectorwise.'''

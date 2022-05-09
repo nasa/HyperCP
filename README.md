@@ -43,16 +43,10 @@ All of the package dependencies are listed in the environment.yaml file included
 prompt$ conda env create -f environment.yaml
 ```
 
-and follow the prompts to install the additional package dependencies on your machine within the new virtual environment. When completed you should be in the virtual environment (HyperInSPACE_env) and ready to run the package. To return to the environment later before launching the program, type
+and follow the prompts to install the additional package dependencies on your machine within the new virtual environment. When completed you should be in the virtual environment (hyperinspace) and ready to run the package. To return to the environment later before launching the program, type
 
 ```
-prompt$ conda activate HyperInSPACE_env
-```
-
-and the prompt should reflect the shift:
-
-```
-(HyperInSPACE_env) prompt$
+prompt$ conda activate hyperinspace
 ```
 
 ---
