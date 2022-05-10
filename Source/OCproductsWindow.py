@@ -72,7 +72,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         self.SgCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdSg"]) == 1:
             self.SgCheckBox.setChecked(True)
-        
+
         self.DOCLabel = QtWidgets.QLabel("   doc", self)
         self.DOCCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdDOC"]) == 1:
@@ -85,13 +85,13 @@ class OCproductsWindow(QtWidgets.QDialog):
         radQualLabel_font = radQualLabel.font()
         radQualLabel_font.setPointSize(12)
         radQualLabel_font.setBold(True)
-        radQualLabel.setFont(radQualLabel_font)        
+        radQualLabel.setFont(radQualLabel_font)
 
         avwLabel = QtWidgets.QLabel("AVW (Vandermuellen et al. 2020)", self)
         self.avwCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2Prodavw"]) == 1:
             self.avwCheckBox.setChecked(True)
-            
+
         qwipLabel = QtWidgets.QLabel("QWIP (Dierssen et al. 2022)", self)
         self.qwipCheckBox = QtWidgets.QCheckBox("", self)
         try:
@@ -100,7 +100,10 @@ class OCproductsWindow(QtWidgets.QDialog):
         except:
             ConfigFile.products["bL2Prodqwip"] = 0
             self.qwipCheckBox.setChecked(False)
-                
+
+        self.avwCheckBoxUpdate()
+        self.avwCheckBox.clicked.connect(self.avwCheckBoxUpdate)
+
         weiLabel = QtWidgets.QLabel("WeiQA (Wei et al. 2016)", self)
         self.weiCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2ProdweiQA"]) == 1:
@@ -203,9 +206,28 @@ class OCproductsWindow(QtWidgets.QDialog):
         VBox.addWidget(satNoteLabel)
 
         # Left Box
-        # Geophysical
         VBox1 = QtWidgets.QVBoxLayout()
 
+        # Radometric Quality
+        VBox1.addWidget(radQualLabel)
+
+        # WeiQA
+        weiHBox = QtWidgets.QHBoxLayout()
+        weiHBox.addWidget(weiLabel)
+        weiHBox.addWidget(self.weiCheckBox)
+        VBox1.addLayout(weiHBox)
+
+        # AVW
+        avwHBox = QtWidgets.QHBoxLayout()
+        avwHBox.addWidget(avwLabel)
+        avwHBox.addWidget(self.avwCheckBox)
+        VBox1.addLayout(avwHBox)
+
+        # QWIP
+        qwipHBox = QtWidgets.QHBoxLayout()
+        qwipHBox.addWidget(qwipLabel)
+        qwipHBox.addWidget(self.qwipCheckBox)
+        VBox1.addLayout(qwipHBox)
 
         # Biogeochem
         VBox1.addWidget(biochemLabel)
@@ -255,7 +277,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         agHBox.addWidget(self.agLabel)
         agHBox.addWidget(self.agCheckBox)
         gocadVBox.addLayout(agHBox)
-        
+
 
         SgHBox = QtWidgets.QHBoxLayout()
         SgHBox.addWidget(self.SgLabel)
@@ -268,32 +290,12 @@ class OCproductsWindow(QtWidgets.QDialog):
         gocadVBox.addLayout(DOCHBox)
 
         VBox1.addLayout(gocadVBox)
-    
-        VBox1.addWidget(radQualLabel)
-
-        # AVW
-        avwHBox = QtWidgets.QHBoxLayout()
-        avwHBox.addWidget(avwLabel)
-        avwHBox.addWidget(self.avwCheckBox)
-        VBox1.addLayout(avwHBox)        
-
-        # QWIP
-        qwipHBox = QtWidgets.QHBoxLayout()
-        qwipHBox.addWidget(qwipLabel)
-        qwipHBox.addWidget(self.qwipCheckBox)
-        VBox1.addLayout(qwipHBox)   
-
-         # WeiQA
-        weiHBox = QtWidgets.QHBoxLayout()
-        weiHBox.addWidget(weiLabel)
-        weiHBox.addWidget(self.weiCheckBox)
-        VBox1.addLayout(weiHBox)
 
         VBox1.addStretch()
 
         # Right Box
         VBox2 = QtWidgets.QVBoxLayout()
-     
+
 
         # Semianalyticals
         VBox2.addWidget(iopLabel)
@@ -419,6 +421,23 @@ class OCproductsWindow(QtWidgets.QDialog):
         self.setGeometry(100, 100, 0, 0)
         self.setWindowTitle('Derived L2 Geophysical and Inherent Optical Properties')
 
+    ######
+    def avwCheckBoxUpdate(self):
+        print("OCproductsWindow - avwCheckBoxUpdate")
+
+        disabled = not self.avwCheckBox.isChecked()
+
+        # QWIP requires the AVW
+        self.qwipCheckBox.setDisabled(disabled)
+        if disabled:
+            self.qwipCheckBox.setChecked(False)
+
+        if disabled:
+            ConfigFile.products["bL2Prodavw"] = 0
+            ConfigFile.products["bL2Prodqwip"] = 0
+        else:
+            ConfigFile.products["bL2Prodavw"] = 1
+
     def gocadCheckBoxUpdate(self):
         print("OCproductsWindow - gocadCheckBoxUpdate")
 
@@ -427,37 +446,12 @@ class OCproductsWindow(QtWidgets.QDialog):
         self.agCheckBox.setDisabled(disabled)
         if disabled:
             self.agCheckBox.setChecked(False)
-        # self.ag275Label.setDisabled(not disabled)
-        # self.ag275CheckBox.setDisabled(not disabled)
-        # self.ag275CheckBox.setChecked(disabled)
-        # self.ag355Label.setDisabled(not disabled)
-        # self.ag355CheckBox.setDisabled(not disabled)
-        # self.ag355CheckBox.setChecked(disabled)
-        # self.ag380Label.setDisabled(not disabled)
-        # self.ag380CheckBox.setDisabled(not disabled)
-        # self.ag380CheckBox.setChecked(disabled)
-        # self.ag412Label.setDisabled(not disabled)
-        # self.ag412CheckBox.setDisabled(not disabled)
-        # self.ag412CheckBox.setChecked(disabled)
-        # self.ag443Label.setDisabled(not disabled)
-        # self.ag443CheckBox.setDisabled(not disabled)
-        # self.ag443CheckBox.setChecked(disabled)
-        # self.ag488Label.setDisabled(not disabled)
-        # self.ag488CheckBox.setDisabled(not disabled)
-        # self.ag488CheckBox.setChecked(disabled)
+
         self.SgLabel.setDisabled(disabled)
         self.SgCheckBox.setDisabled(disabled)
         if disabled:
             self.SgCheckBox.setChecked(False)
-        # self.Sg275Label.setDisabled(not disabled)
-        # self.Sg275CheckBox.setDisabled(not disabled)
-        # self.Sg275CheckBox.setChecked(disabled)
-        # self.Sg300Label.setDisabled(not disabled)
-        # self.Sg300CheckBox.setDisabled(not disabled)
-        # self.Sg300CheckBox.setChecked(disabled)
-        # self.Sg412Label.setDisabled(not disabled)
-        # self.Sg412CheckBox.setDisabled(not disabled)
-        # self.Sg412CheckBox.setChecked(disabled)
+
         self.DOCLabel.setDisabled(disabled)
         self.DOCCheckBox.setDisabled(disabled)
         if disabled:

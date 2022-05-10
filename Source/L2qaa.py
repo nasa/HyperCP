@@ -8,16 +8,18 @@ def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, SST, SAL
     ''' Use weighted MODIS Aqua bands to calculate IOPs using
         QAA_v6
 
-    Inputs: 
+    Inputs:
       RrsXXX: (float) above water remote sensing reflectance at XXX nm
       RrsHyper: (1D numpy array) hyperspectral above water remote sensing reflectance
       wavelength: (1D array) length of RrsHyper; will be truncated to Pope&Fry/Smith&Baker pure water
       T: (float) sea surface temperature
       S: (float) sea surface salinity
-        
+
     Outputs:
     a, adg, aph, b, bb, bbp, c: (1D lists) hyperspectral inherent optical properties
-    '''
+
+    # eta: powerlaw slope of bbp
+    # S: CDOM base slope'''
 
     # Adjustable empirical coefficient set-up. Many coefficients remain hard
     #   coded as in SeaDAS qaa.c
@@ -45,8 +47,8 @@ def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, SST, SAL
     h1 = -1.366
     h2 = -0.469
     # Step 8
-    S = 0.015  # baseline slope 
-    
+    S = 0.015  # baseline slope
+
     # Pure seawater. Pope & Fry adjusted for S&T using Sullivan et al. 2006.
     #   (Now considering using inverted values from Lee et al. 2015...)
     fp = os.path.join(os.path.abspath('.'), 'Data', 'Water_Absorption.sb') # <--- Set path to P&F water
@@ -55,7 +57,7 @@ def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, SST, SAL
     a_sw555, bb_sw555 = water_iops(fp, [555], SST, SAL)
     a_sw667, bb_sw667 = water_iops(fp, [667], SST, SAL)
     a_sw, bb_sw = water_iops(fp, wavelength, SST, SAL)
-    
+
 
     msg = []
     # Pretest on Rrs(670) from QAAv5
@@ -69,7 +71,7 @@ def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, SST, SAL
         Rrs667 = 1.27 * np.power(Rrs555, 1.47) + 0.00018 * np.power(Rrs488/Rrs555, -3.19)
 
 
-    # Step 0        
+    # Step 0
     rrs =   RrsHyper / (0.52 + 1.7 * RrsHyper)
     rrs412 = Rrs412 / (0.52 + 1.7 * Rrs412)
     rrs443 = Rrs443 / (0.52 + 1.7 * Rrs443)
@@ -127,10 +129,10 @@ def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, SST, SAL
     # Step 10
     adg = ag443 * np.exp( -S1 * (wavelength - 443))
     aph = a - adg - a_sw
-    
+
     b = 2.0 * bb
     c = a + b
-        
+
     return a, adg, aph, b, bb, bbp, c, msg
 
 

@@ -14,11 +14,11 @@ from L2ipar import L2ipar
 from L2qaa import L2qaa
 from L2avw import L2avw
 from L2wei_QA import QAscores_5Bands
-# from L2qwip import L2qwip
+from L2qwip import L2qwip
 
 
 class ProcessL2OCproducts():
-    ''' Most product algorithms can be found at https://oceancolor.gsfc.nasa.gov/atbd/ '''
+    # Most product algorithms can be found at https://oceancolor.gsfc.nasa.gov/atbd/
     # To Do: Uncertainty propagation
 
     @staticmethod
@@ -67,7 +67,7 @@ class ProcessL2OCproducts():
 
 
         # pic
-        ''' Not yet implemented '''
+        # Not yet implemented
         if ConfigFile.products["bL2Prodpic"]:
             msg = "Processing pic"
             print(msg)
@@ -146,8 +146,45 @@ class ProcessL2OCproducts():
             iparDS.columns['ipar'] = ipar
             iparDS.columnsToDataset()
 
+        # Spectral QA
+        ''' Wei, Lee, and Shang (2016).
+             A system to measure the data quality of spectral remote sensing
+             reflectance of aquatic environments. Journal of Geophysical Research,
+             121, doi:10.1002/2016JC012126'''
+
+        if ConfigFile.products["bL2ProdweiQA"]:
+            msg = "Processing Wei QA"
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+            DerProd.attributes['wei_QA_UNITS'] = 'score'
+            weiQADS = DerProd.addDataset('wei_QA')
+            weiQADS.columns['Datetime'] = dateTime
+            weiQADS.columns['Datetag'] = dateTag
+            weiQADS.columns['Timetag2'] = timeTag2
+
+            # Reorganize datasets into multidimensional numpy arrays
+            Rrs_mArray = np.transpose(np.array([ Rrs412, Rrs443, Rrs488, Rrs547, Rrs667 ]))
+            Rrs_wave =    np.array([412, 443, 488, 547, 667])
+
+            # Interpolation to QA bands, which are representative of several missions (see L2wei_QA.py)
+            test_lambda = np.array([412, 443, 488, 551, 670])
+            test_Rrs = np.empty((Rrs_mArray.shape[0],len(test_lambda))) * np.nan
+            for i, Rrsi in enumerate(Rrs_mArray):
+                test_Rrs[i,:] = Utilities.interp(Rrs_wave.tolist(), Rrsi.tolist(), test_lambda.tolist(), \
+                    kind='linear', fill_value=0.0)
+
+
+            # maxCos, cos, clusterID, totScore = QAscores_5Bands(test_Rrs, test_lambda)
+            _, _, _, totScore = QAscores_5Bands(test_Rrs, test_lambda)
+
+            weiQADS.columns['QA_score'] = totScore.tolist()
+            weiQADS.columnsToDataset()
+
         # avw
-        # Vandermuelen et al. 2020
+        ''' Average Visible Wavelength
+            Vandermuelen et al. 2020'''
+
         if ConfigFile.products["bL2Prodavw"]:
             msg = "Processing avw"
             print(msg)
@@ -175,8 +212,30 @@ class ProcessL2OCproducts():
             avwDS.columns['brightness'] = brightness
             avwDS.columnsToDataset()
 
+        # qwip
+        ''' Quantitative Water Index Polynomial
+            Dierssen et al. 2022'''
+
+        if ConfigFile.products["bL2Prodqwip"]:
+            msg = "Processing QWIP"
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+            qwipDS = DerProd.addDataset('qwip')
+            DerProd.attributes['qwip_UNITS'] = 'sr^-1'
+
+            qwipDS.columns['Datetime'] = dateTime
+            qwipDS.columns['Datetag'] = dateTag
+            qwipDS.columns['Timetag2'] = timeTag2
+
+            qwip = L2qwip(wavelength, Rrs, avw)
+
+            qwipDS.columns['qwip'] = qwip
+            qwipDS.columnsToDataset()
+
         # CDOM (GOCAD)
-        ''' Base on Aurin et al. 2018 MLRs for global dataset (GOCAD)'''
+        ''' Global Ocean Carbon Algorithm Database
+            Aurin et al. 2018 MLRs for global dataset (GOCAD) '''
 
         if ConfigFile.products["bL2Prodgocad"]:
             msg = "Processing CDOM, Sg, DOC"
@@ -184,13 +243,6 @@ class ProcessL2OCproducts():
             Utilities.writeLogFile(msg)
 
             SAL = Ancillary.datasets["SALINITY"].columns["SALINITY"]
-
-            # ag = np.empty()
-            # b = np.empty(np.shape(Rrs))
-            # bb = np.empty(np.shape(Rrs))
-            # bbp = np.empty(np.shape(Rrs))
-            # c = np.empty(np.shape(Rrs))
-            # for i in range(0, len(dateTime)):
 
             waveStr = ['275', '355', '380', '412', '443', '488']
             waveStrS = ['275', '300', '350', '380', '412']
@@ -229,16 +281,14 @@ class ProcessL2OCproducts():
 
 
         # GIOP
-
+        ''' Generalized ocean color inversion model for Inherent Optical Properties
+            Werdell et al. 2013
+            Not yet implemented'''
 
 
         # QAA
-        '''
-            eta: powerlaw slope of bbp
-            S: CDOM base slope
-
-            Also, empirical parameters could be set.
-            For now, structure this as QAAv6 for MODIS bands'''
+        ''' Quasi-Analytcal Algorithm
+            Lee et al. 2002, updated to QAAv6 for MODIS bands'''
 
         if ConfigFile.products["bL2Prodqaa"]:
             msg = "Processing qaa"
@@ -252,18 +302,8 @@ class ProcessL2OCproducts():
             wavelength = np.array([float(i) for i in waveStr])
             Rrs = np.array(values[3:])
 
-            # if 'SST' in Ancillary.datasets:
             T = Ancillary.datasets["SST"].columns["SST"]
-            # else:
-                # msg = "No SST found in ancillary data. Setting to 15C"
-                # print(msg)
-                # Utilities.writeLogFile(msg)
-            # if 'SAL' in Ancillary.datasets:
             S = Ancillary.datasets["SALINITY"].columns["SALINITY"]
-            # else:
-            #     msg = "No SAL found in ancillary data. Setting to 32psu"
-            #     print(msg)
-            #     Utilities.writeLogFile(msg)
 
             # Maximum range based on P&F/S&B
             minMax = [380, 800]
@@ -292,8 +332,6 @@ class ProcessL2OCproducts():
                             T[i], S[i])
                 for msgs in msg:
                     Utilities.writeLogFile(msgs)
-
-            ''' There must be a more elegant way to work on the dataset/data, then convert to column '''
 
             if ConfigFile.products["bL2ProdaQaa"]:
                 DerProd.attributes['a_UNITS'] = '1/m'
@@ -359,41 +397,7 @@ class ProcessL2OCproducts():
                 for key, value in c.items(): cDS.columns[key] = value
                 cDS.columnsToDataset()
 
-        # Spectral QA
-        '''
-             Wei, Lee, and Shang (2016).
-             A system to measure the data quality of spectral remote sensing
-             reflectance of aquatic environments. Journal of Geophysical Research,
-             121, doi:10.1002/2016JC012126'''
 
-        if ConfigFile.products["bL2ProdweiQA"]:
-            msg = "Processing Wei QA"
-            print(msg)
-            Utilities.writeLogFile(msg)
-
-            DerProd.attributes['wei_QA_UNITS'] = 'score'
-            weiQADS = DerProd.addDataset('wei_QA')
-            weiQADS.columns['Datetime'] = dateTime
-            weiQADS.columns['Datetag'] = dateTag
-            weiQADS.columns['Timetag2'] = timeTag2
-
-            # Reorganize datasets into multidimensional numpy arrays
-            Rrs_mArray = np.transpose(np.array([ Rrs412, Rrs443, Rrs488, Rrs547, Rrs667 ]))
-            Rrs_wave =    np.array([412, 443, 488, 547, 667])
-
-            # Interpolation to QA bands, which are representative of several missions (see L2wei_QA.py)
-            test_lambda = np.array([412, 443, 488, 551, 670])
-            test_Rrs = np.empty((Rrs_mArray.shape[0],len(test_lambda))) * np.nan
-            for i, Rrsi in enumerate(Rrs_mArray):
-                test_Rrs[i,:] = Utilities.interp(Rrs_wave.tolist(), Rrsi.tolist(), test_lambda.tolist(), \
-                    kind='linear', fill_value=0.0)
-
-
-            # maxCos, cos, clusterID, totScore = QAscores_5Bands(test_Rrs, test_lambda)
-            _, _, _, totScore = QAscores_5Bands(test_Rrs, test_lambda)
-
-            weiQADS.columns['QA_score'] = totScore.tolist()
-            weiQADS.columnsToDataset()
 
 
 
