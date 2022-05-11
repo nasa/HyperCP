@@ -31,6 +31,11 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-05-10:
+* Add QWIP to OC products
+* Clean up conda environment.yml file
+* Add platform/ship to SeaBASS Metadata headers
+
 2022-05-06:
 * Fix NIR Correction labels in SeaBASS headers
 * Update SeaBASS file names to put Es or Rrs at the end instead

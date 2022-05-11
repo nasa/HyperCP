@@ -19,6 +19,7 @@ class SeaBASSHeader:
         print("contact", SeaBASSHeader.settings["contact"])
         print("experiment", SeaBASSHeader.settings["experiment"])
         print("cruise", SeaBASSHeader.settings["cruise"])
+        print("platform", SeaBASSHeader.settings["platform"])
         print("station", SeaBASSHeader.settings["station"])
         print("data_file_name", SeaBASSHeader.settings["data_file_name"])
         print("original_file_name", SeaBASSHeader.settings["original_file_name"])
@@ -64,6 +65,7 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["contact"] = ''
         SeaBASSHeader.settings["experiment"] = name.split('.')[0]
         SeaBASSHeader.settings["cruise"] = ''
+        SeaBASSHeader.settings["platform"] = ''
 
         SeaBASSHeader.settings["documents"] = ''
 

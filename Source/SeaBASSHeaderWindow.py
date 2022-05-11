@@ -69,6 +69,15 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.stationLineEdit = QtWidgets.QLineEdit(self)
         self.stationLineEdit.setText(str(SeaBASSHeader.settings["station"]))
 
+        platformLabel = QtWidgets.QLabel("platform/ship", self)
+        self.platformLineEdit = QtWidgets.QLineEdit(self)
+        try:
+            self.platformLineEdit.setText(str(SeaBASSHeader.settings["platform"]))
+        except:
+            SeaBASSHeader.settings["platform"] = ''
+            self.platformLineEdit.setText(str(SeaBASSHeader.settings["platform"]))
+
+
         documentsLabel = QtWidgets.QLabel("documents", self)
         self.documentsLineEdit = QtWidgets.QLineEdit(self)
         self.documentsLineEdit.setText(str(SeaBASSHeader.settings["documents"]))
@@ -247,6 +256,11 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         HBox5.addWidget(cruiseLabel)
         HBox5.addWidget(self.cruiseLineEdit)
         VBox1.addLayout(HBox5)
+
+        platformHBox = QtWidgets.QHBoxLayout()
+        platformHBox.addWidget(platformLabel)
+        platformHBox.addWidget(self.platformLineEdit)
+        VBox1.addLayout(platformHBox)
 
         HBox9 = QtWidgets.QHBoxLayout()
         HBox9.addWidget(documentsLabel)
@@ -556,7 +570,9 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.settings["contact"] = self.contactLineEdit.text()
         SeaBASSHeader.settings["experiment"] = self.experimentLineEdit.text()
         SeaBASSHeader.settings["cruise"] = self.cruiseLineEdit.text()
-        SeaBASSHeader.settings["station"] = self.stationLineEdit.text()
+        SeaBASSHeader.settings["station"] = self.stationLineEdit.text()        
+        SeaBASSHeader.settings["platform"] = self.platformLineEdit.text()
+
         SeaBASSHeader.settings["documents"] = self.documentsLineEdit.text()
         SeaBASSHeader.settings["calibration_files"] = self.calibration_filesLineEdit.text()
         SeaBASSHeader.settings["data_type"] = self.data_typeLineEdit.text()
@@ -604,6 +620,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.experimentLineEdit.setText(str(SeaBASSHeader.settings["experiment"]))
         self.cruiseLineEdit.setText(str(SeaBASSHeader.settings["cruise"]))
         self.stationLineEdit.setText(str(SeaBASSHeader.settings["station"]))
+        self.platformLineEdit.setText(str(SeaBASSHeader.settings["platform"]))
         self.documentsLineEdit.setText(str(SeaBASSHeader.settings["documents"]))
         self.instrument_manufacturerLineEdit.setText(str(SeaBASSHeader.settings["instrument_manufacturer"]))
         self.instrument_modelLineEdit.setText(str(SeaBASSHeader.settings["instrument_model"]))
