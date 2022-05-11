@@ -87,73 +87,7 @@ class SeaBASSWriter:
         return headerBlock
 
         # headerBlock = print(json.dumps(SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)))
-
-
-    @staticmethod
-    def formatData1e(dataset,dtype, units):
-
-        # Convert Dates and Times and remove from dataset
-        newData = dataset.data
-        dateDay = dataset.data['Datetag'].tolist()
-        newData = SeaBASSWriter.removeColumns(newData,'Datetag')
-        dateDT = [Utilities.dateTagToDateTime(x) for x in dateDay]
-        timeTag2 = dataset.data['Timetag2'].tolist()
-        newData = SeaBASSWriter.removeColumns(newData,'Timetag2')
-        timeDT = []
-        for i in range(len(dateDT)):
-            timeDT.append(Utilities.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
-
-        # Retrieve ancillaries and remove from dataset
-        lat = dataset.data['LATITUDE'].tolist()
-        newData = SeaBASSWriter.removeColumns(newData,'LATITUDE')
-        lon = dataset.data['LONGITUDE'].tolist()
-        newData = SeaBASSWriter.removeColumns(newData,'LONGITUDE')
-        sza = dataset.data['SZA'].tolist()
-        newData = SeaBASSWriter.removeColumns(newData,'SZA')
-        relAz = dataset.data['REL_AZ'].tolist()
-        newData = SeaBASSWriter.removeColumns(newData,'REL_AZ')
-        # The rest remain unused
-        newData = SeaBASSWriter.removeColumns(newData,'HEADING')
-        if ConfigFile.settings["bL1cSolarTracker"]:
-            newData = SeaBASSWriter.removeColumns(newData,'ROTATOR')
-            newData = SeaBASSWriter.removeColumns(newData,'AZIMUTH')
-
-        dataset.data = newData
-
-        # Change field names for SeaBASS compliance
-        bands = list(dataset.data.dtype.names)
-        ls = ['date','time','lat','lon','RelAz','SZA']
-
-        if dtype == 'es':
-            fieldName = 'Es'
-        elif dtype == 'li':
-            fieldName = 'Lsky'
-        elif dtype == 'lt':
-            fieldName = 'Lt'
-
-        fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands])
-
-        lenRad = (len(dataset.data.dtype.names))
-        unitsLine = ['yyyymmdd']
-        unitsLine.append('hh:mm:ss')
-        unitsLine.extend(['degrees']*4) # lat, lon, RelAz, SZA
-        unitsLine.extend([units]*lenRad)
-        unitsLineStr = ','.join(unitsLine)
-
-        # Add data for each row
-        dataOut = []
-        formatStr = str('{:04d}{:02d}{:02d},{:02d}:{:02d}:{:02d},{:.4f},{:.4f},{:.1f},{:.1f}' + ',{:.6f}'*lenRad)
-        for i in range(dataset.data.shape[0]):
-            subList = [lat[i],lon[i],relAz[i],sza[i]]
-            lineList = [timeDT[i].year,timeDT[i].month,timeDT[i].day,timeDT[i].hour,timeDT[i].minute,timeDT[i].second] +\
-                subList + list(dataset.data[i].tolist())
-
-            # Replace NaNs with -9999.0
-            lineList = [-9999.0 if np.isnan(element) else element for element in lineList]
-
-            lineStr = formatStr.format(*lineList)
-            dataOut.append(lineStr)
-        return dataOut, fieldsLineStr, unitsLineStr
+    
 
     @staticmethod
     def formatData2(dataset,dsDelta,dtype, units):
@@ -255,7 +189,12 @@ class SeaBASSWriter:
 
         version = SeaBASSHeader.settings["version"]
 
-        outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{os.path.split(fp)[1].replace(".hdf",f"_{dtype}_{version}.sb")}'
+        # outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{os.path.split(fp)[1].replace(".hdf",f"_{dtype}_{version}.sb")}'
+        # Conforms to SeaBASS file names: Experiment_Cruise_Platform_Instrument_YYMMDD_HHmmSS_Level_DataType_Revision
+        outFileName = \
+            (   f"{os.path.split(fp)[0]}/SeaBASS/{headerBlock['experiment']}_{headerBlock['cruise']}_" 
+                f"{headerBlock['platform']}_{headerBlock['instrument_model']}_{formattedData[0].split(',')[0]}_" 
+                f"{formattedData[0].split(',')[1].replace(':','')}_L2_{dtype}_{version}.sb")
 
         outFile = open(outFileName,'w',newline='\n')
         outFile.write('/begin_header\n')

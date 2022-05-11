@@ -61,7 +61,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.experimentLineEdit = QtWidgets.QLineEdit(self)
         self.experimentLineEdit.setText(str(SeaBASSHeader.settings["experiment"]))
 
-        cruiseLabel = QtWidgets.QLabel("cruise (different from experiment)", self)
+        cruiseLabel = QtWidgets.QLabel("cruise", self)
         self.cruiseLineEdit = QtWidgets.QLineEdit(self)
         self.cruiseLineEdit.setText(str(SeaBASSHeader.settings["cruise"]))
 

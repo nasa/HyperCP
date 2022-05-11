@@ -63,8 +63,8 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["investigators"] = ''
         SeaBASSHeader.settings["affiliations"] = ''
         SeaBASSHeader.settings["contact"] = ''
-        SeaBASSHeader.settings["experiment"] = name.split('.')[0]
-        SeaBASSHeader.settings["cruise"] = ''
+        SeaBASSHeader.settings["experiment"] = ''
+        SeaBASSHeader.settings["cruise"] = name.split('.')[0] # I generally name configuration files after cruise.
         SeaBASSHeader.settings["platform"] = ''
 
         SeaBASSHeader.settings["documents"] = ''
