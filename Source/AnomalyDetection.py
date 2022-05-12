@@ -261,6 +261,28 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Add datetime object to x axis
         self.plotWidgetLight.setAxisItems({'bottom': date_axis_Light})
 
+        # Show defaults
+        if self.sensor == "ES":
+            WD = 11
+            WL = 5
+            SD = 3.2
+            SL = 2.3
+        elif self.sensor == 'LI':
+            WD = 11
+            WL = 5
+            SD = 3.3
+            SL = 3.0
+        elif self.sensor == 'LT':
+            WD = 11
+            WL = 13
+            SD = 3.2
+            SL = 2.7
+
+        self.WindowDarkLabel.setText(f'Window (odd;{WD})')
+        self.WindowLightLabel.setText(f'Window (odd;{WL})')
+        self.SigmaDarkLabel.setText(f'Sigma ({SD})')
+        self.SigmaLightLabel.setText(f'Sigma ({SL})')
+
 
         # Layout ######################################################
         self.VBox = QtWidgets.QVBoxLayout()
@@ -562,6 +584,29 @@ class AnomAnalWindow(QtWidgets.QDialog):
             self.MinLightLineEdit.setText(str(getattr(self,f'{self.sensor}MinLight')))
             self.MaxDarkLineEdit.setText(str(getattr(self,f'{self.sensor}MaxDark')))
             self.MaxLightLineEdit.setText(str(getattr(self,f'{self.sensor}MaxLight')))
+
+
+            # Show defaults
+            if self.sensor == "ES":
+                WD = 11
+                WL = 5
+                SD = 3.2
+                SL = 2.3
+            elif self.sensor == 'LI':
+                WD = 11
+                WL = 5
+                SD = 3.3
+                SL = 3.0
+            elif self.sensor == 'LT':
+                WD = 11
+                WL = 13
+                SD = 3.2
+                SL = 2.7
+
+            self.WindowDarkLabel.setText(f'Window (odd;{WD})')
+            self.WindowLightLabel.setText(f'Window (odd;{WL})')
+            self.SigmaDarkLabel.setText(f'Sigma ({SD})')
+            self.SigmaLightLabel.setText(f'Sigma ({SL})')
 
         self.updateButtonPressed()
 

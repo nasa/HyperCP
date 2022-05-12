@@ -216,10 +216,12 @@ class ConfigFile:
         ConfigFile.settings["fL1aqcESWindowLight"] = 5
         ConfigFile.settings["fL1aqcESSigmaDark"] = 3.2
         ConfigFile.settings["fL1aqcESSigmaLight"] = 2.3
+
         ConfigFile.settings["fL1aqcLIWindowDark"] = 11
         ConfigFile.settings["fL1aqcLIWindowLight"] = 5
         ConfigFile.settings["fL1aqcLISigmaDark"] = 3.3
         ConfigFile.settings["fL1aqcLISigmaLight"] = 3.0
+
         ConfigFile.settings["fL1aqcLTWindowDark"] = 11
         ConfigFile.settings["fL1aqcLTWindowLight"] = 13
         ConfigFile.settings["fL1aqcLTSigmaDark"] = 3.2
@@ -316,7 +318,7 @@ class ConfigFile:
         ConfigFile.products["bL2ProdweiQA"] = 0
 
         ConfigFile.products["bL2Prodgocad"] = 0
-        ConfigFile.products["bL2Prodag"] = 0        
+        ConfigFile.products["bL2Prodag"] = 0
         ConfigFile.products["bL2ProdSg"] = 0
         ConfigFile.products["bL2ProdDOC"] = 0
 
