@@ -137,7 +137,7 @@ class ProcessL1a:
                 require the year and day. Instead, I use either the first or last Datetag from Es, depending
                 on whether UTC 00:00 was crossed.'''
             # If the date does not change in Es, then no problem, use the Datetag of Es first element.
-            # Otherwise, change the datetag at noon by one day
+            # Otherwise, change the datetag at midnight by one day
             gpsDateTag = []
             gpsTimeTag2 = []
 
