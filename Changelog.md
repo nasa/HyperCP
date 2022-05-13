@@ -1,16 +1,14 @@
-v1.1.1 Unreleased; DAA = (dirk.a.aurin@nasa.gov)
+v1.1.1 In progress; DAA = (dirk.a.aurin@nasa.gov)
 ---
 
 Next priorities:
 * Implement F0 convolution to gaussian RSR for HyperOCR for Lwn calculation
-* Implement QWIP QC
 * Implement TriOS platform support
 * Implement full instrument characterization and uncertainty budgets
 * Improve uncertainty estimates of glint corrections
 * Propagate uncertainties from radiometry to OC products
 * Implement Groetch et al. 2017 3C glint correction
 * Add BRDF correction options
-* Implement satellite matchup with fd_mathcup.py (TBD)
 * Integration time issue with HyperOCRs; develop/add correction (in cal file? another level?)
     * Do other users of SeaBird HOCRs see int. time response issues?
     * Contact me for further info regarding integration time uncertainty
@@ -21,6 +19,7 @@ Next priorities:
 * Use ancillary SeaBASS metadata to populate remaining L1E/L2 SeaBASS header fields
 
 Ideas and To-Dos:
+* Implement satellite matchup with fd_mathcup.py (TBD)
 * Explore ML approaches to automate filter selection and glint/NIR correction selection
 * Incorporate additional platforms with collaborators (write to dirk.a.aurin@nasa.gov)
 * Add failure flags in HDF object attributes:
