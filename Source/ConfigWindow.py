@@ -1286,10 +1286,10 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL23CRho"] = 0
         ConfigFile.settings["bL2ZhangRho"] = 1
         ConfigFile.settings["bL2DefaultRho"] = 0
-        if float(self.l2SZAMaxLineEdit.text()) > 60:
+        if ConfigFile.settings["fL1bqcSZAMax"] > 60:
             print("SZA outside model limits; adjusting to 60")
-            ConfigFile.settings["fL2SZAMax"] = 60
-            self.l2SZAMaxLineEdit.setText(str(ConfigFile.settings["fL2SZAMax"]))
+            ConfigFile.settings["fL1bqcSZAMax"] = 60      
+            self.l1bqcSZAMaxLineEdit.setText(str(60.0))
     def l2RhoRadioButtonDefaultClicked(self):
         print("ConfigWindow - l2RhoCorrection set to Default")
         self.RhoRadoButton3C.setChecked(False)
