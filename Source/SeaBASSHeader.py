@@ -209,7 +209,7 @@ class SeaBASSHeader:
             '! Other comments...\n'\
             '!'
 
-        SeaBASSHeader.settings["missing"] = -999
+        SeaBASSHeader.settings["missing"] = -9999
         SeaBASSHeader.settings["delimiter"] = 'comma'
 
         if not name.endswith(".hdr"):
