@@ -193,7 +193,7 @@ class ProcessL1a:
             for gp in root.groups:
                 # try:
                 if 'FrameTag' in gp.attributes:
-                    if gp.attributes["FrameTag"].startswith("SATNAV"):
+                    if gp.attributes["FrameTag"].startswith("SATNAV") or gp.attributes["FrameTag"].startswith("UMTWR"):
                         elevData = gp.getDataset("ELEVATION")
                         elevation = elevData.data.tolist()
                         szaLimit = float(ConfigFile.settings["fL1aCleanSZAMax"])

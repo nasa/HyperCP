@@ -30,6 +30,10 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-06-22:
+* Rewrite solar/sensor geometry calculation logic to preferentially obtain from pySAS when available
+* Add L1AQC filter for GPS status code
+
 2022-05-10:
 * Add QWIP to OC products
 * Clean up conda environment.yml file

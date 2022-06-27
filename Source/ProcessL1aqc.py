@@ -132,6 +132,7 @@ class ProcessL1aqc:
         node  = Utilities.rootAddDateTime(node)
 
         # 2021-04-09: Include ANCILLARY_METADATA in all datasets, regardless of whether they are SOLARTRACKER or not
+        # or if they have an ancillary file or not
         for gp in node.groups:
             if gp.id.startswith("GP"):
                 gpsDateTime = gp.getDataset("DATETIME").data
@@ -139,6 +140,18 @@ class ProcessL1aqc:
                 latHemiData = gp.getDataset("LATHEMI")
                 gpsLon = gp.getDataset('LONPOS')
                 lonHemiData = gp.getDataset("LONHEMI")
+
+                if gp.attributes['CalFileName'].startswith("GPRMC"):
+                    gpsStatus = gp.getDataset('STATUS')
+                else:
+                    gpsStatus = gp.getDataset('FIXQUAL')
+
+        # For solar sensor geometries, need either Tracker or Ancillary
+        if ConfigFile.settings['bL1aqcSolarTracker'] == 0 and ancillaryData is None:
+            msg = 'Required ancillary metadata for sensor offset missing. Abort.'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
 
         # If ancillary file is provided, use it. Otherwise fill in what you can using the datetime, lat, lon from GPS
         if ancillaryData is not None:
@@ -167,8 +180,8 @@ class ProcessL1aqc:
             timeStamp = ancillaryData.columns["DATETIME"][0]
             ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
             ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]
-            lat = ancillaryData.columns["LATITUDE"][0]
-            lon = ancillaryData.columns["LONGITUDE"][0]
+            latAnc = ancillaryData.columns["LATITUDE"][0]
+            lonAnc = ancillaryData.columns["LONGITUDE"][0]
 
             # if "SHIPAZIMUTH" in ancillaryData.columns:
             if "HEADING" in ancillaryData.columns:
@@ -225,8 +238,8 @@ class ProcessL1aqc:
             ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
             ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]
 
-            lat = []
-            lon = []
+            latAnc = []
+            lonAnc = []
             for i in range(gpsLat.data.shape[0]):
                 latDM = gpsLat.data["NONE"][i]
                 latDirection = latHemiData.data["NONE"][i]
@@ -234,26 +247,77 @@ class ProcessL1aqc:
                 lonDM = gpsLon.data["NONE"][i]
                 lonDirection = lonHemiData.data["NONE"][i]
                 lonDD = Utilities.dmToDd(lonDM, lonDirection)
-                lat.append(latDD)
-                lon.append(lonDD)
+                latAnc.append(latDD)
+                lonAnc.append(lonDD)
 
-            ancillaryData.appendColumn("LATITUDE", lat)
+            ancillaryData.appendColumn("LATITUDE", latAnc)
             ancillaryData.attributes["LATITUDE_Units"]='degrees'
-            ancillaryData.appendColumn("LONGITUDE", lon)
+            ancillaryData.appendColumn("LONGITUDE", lonAnc)
             ancillaryData.attributes["LONGITUDE_Units"]='degrees'
 
-        # Run Pysolar to obtain solar geometry. These may be redundant with SolarTracker values
-        sunAzimuthAnc = []
-        sunZenith = []
-        for i, dt_utc in enumerate(timeStamp):
-            sunAzimuthAnc.append(get_azimuth(lat[i],lon[i],dt_utc,0))
-            sunZenith.append(90 - get_altitude(lat[i],lon[i],dt_utc,0))
+        if not ConfigFile.settings["bL1aqcSolarTracker"]:
+            # Solar geometry is preferentially acquired from SolarTracker or pySAS
+            # Otherwise resorts to ancillary data. Otherwise processing fails.
+            # Run Pysolar to obtain solar geometry.
+            sunAzimuthAnc = []
+            sunZenithAnc = []
+            for i, dt_utc in enumerate(timeStamp):
+                sunAzimuthAnc.append(get_azimuth(latAnc[i],lonAnc[i],dt_utc,0))
+                sunZenithAnc.append(90 - get_altitude(latAnc[i],lonAnc[i],dt_utc,0))
 
         #############################################################################################
         # Begin Filtering
         #############################################################################################
 
-        badTimes = None
+        badTimes = []
+
+        # Apply GPS Status Filter
+        msg = "Filtering file for GPS status"
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        for gp in node.groups:
+            if gp.id == "GPS":
+                timeStamp = gp.getDataset("DATETIME").data
+
+        # if badTimes is None:
+        #     badTimes = []
+        i = 0
+        start = -1
+        stop =[]
+        for index, status in enumerate(gpsStatus.data["NONE"]):
+            # "V" for GPRMC, "0" for GPGGA
+            if status == b'V' or status == 0:
+                i += 1
+                if start == -1:
+                    start = index
+                stop = index
+            else:
+                if start != -1:
+                    startstop = [timeStamp[start],timeStamp[stop]]
+                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+                    # print(msg)
+                    Utilities.writeLogFile(msg)
+                    badTimes.append(startstop)
+                    start = -1
+        msg = f'Percentage of data failed on GPS Status: {round(100*i/len(timeStamp))} %'
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        if start != -1 and stop == index: # Records from a mid-point to the end are bad
+            startstop = [timeStamp[start],timeStamp[stop]]
+            msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
+            # print(msg)
+            Utilities.writeLogFile(msg)
+            if badTimes is None: # only one set of records
+                badTimes = [startstop]
+            else:
+                badTimes.append(startstop)
+
+        if start==0 and stop==index: # All records are bad
+            return None
+
+
         # Apply Pitch & Roll Filter
         # This has to record the time interval (in datetime) for the bad angles in order to remove these time intervals
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
@@ -305,9 +369,8 @@ class ProcessL1aqc:
             pitchMax = float(ConfigFile.settings["fL1aqcPitchRollPitch"])
             rollMax = float(ConfigFile.settings["fL1aqcPitchRollRoll"])
 
-            if badTimes is None:
-                badTimes = []
-
+            # if badTimes is None:
+            #     badTimes = []
             # timeStamp may now align with ancillary file or radiometry platform, but this should not matter
             # since it will align with pitch/roll, and will be applied by value not index to all data (i.e. startstop are
             # python datetimes).
@@ -373,8 +436,8 @@ class ProcessL1aqc:
                     print(msg)
                     Utilities.writeLogFile(msg)
 
-                    if badTimes is None:
-                        badTimes = []
+                    # if badTimes is None:
+                    #     badTimes = []
 
                     kickout = 0
                     i = 0
@@ -442,8 +505,8 @@ class ProcessL1aqc:
                 absRotatorMin = float(ConfigFile.settings["fL1aqcRotatorAngleMin"])
                 absRotatorMax = float(ConfigFile.settings["fL1aqcRotatorAngleMax"])
 
-                if badTimes is None:
-                    badTimes = []
+                # if badTimes is None:
+                #     badTimes = []
 
                 start = -1
                 stop = []
@@ -487,6 +550,8 @@ class ProcessL1aqc:
 
         # General setup for ancillary or SolarTracker data prior to Relative Solar Azimuth option
         if ConfigFile.settings["bL1aqcSolarTracker"]:
+            # Solar geometry is preferentially acquired from SolarTracker or pySAS
+            # Otherwise resorts to ancillary data. Otherwise processing fails.
             gp = None
             for group in node.groups:
                 if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
@@ -498,7 +563,19 @@ class ProcessL1aqc:
                 # It may also be set here for when no SolarTracker is present and it's not included in the
                 # ancillary data. See below.
                 home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
-                sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]
+                sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]# strips off dtype name
+                gp.addDataset("SOLAR_AZ")
+                gp.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
+                # gp.datasets["SOLAR_AZ"].data = sunAzimuth
+                # sunAzimuth = sunAzimuth["SUN"]
+                del(gp.datasets["AZIMUTH"])
+                sunZenith = 90 - gp.getDataset("ELEVATION").data["SUN"]
+                # sunZenith["None"] = 90 - sunZenith["SUN"]
+                gp.addDataset("SZA")
+                gp.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
+                # gp.datasets["SZA"].data = sunZenith
+                # sunZenith = sunZenith["SUN"] # strips off dtype name
+                del(gp.datasets["ELEVATION"])
                 if gp.id == "SOLARTRACKER":
                     sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
                 elif gp.id == "SOLARTRACKER_pySAS":
@@ -511,12 +588,15 @@ class ProcessL1aqc:
         else:
             if ancillaryData is not None:
                 sunAzimuth = sunAzimuthAnc
+                sunZenith = sunZenithAnc
             else:
                 print('ERROR: No ancillary file provided. Ancillary data is required if SolarTracker or pySAS is not in use. Abort.')
                 return None
 
         relAz=[]
         for index in range(len(sunAzimuth)):
+            # Whether or not SolarTracker or Ancillary file are provided,
+            #  sun and sensor geometries are indexed 1:1
             if ConfigFile.settings["bL1aqcSolarTracker"]:
                 # Changes in the angle between the bow and the sensor changes are tracked by SolarTracker
                 # This home offset is generally set in .sat file in the field, but can be updated here with
@@ -541,10 +621,12 @@ class ProcessL1aqc:
 
             relAz.append(relAzimuthAngle)
 
-        # In case there is no SolarTracker to provide sun/sensor geometries, Pysolar will be used
+        # In case there is no SolarTracker to provide sun/sensor geometries, Pysolar was used
         # to estimate sun zenith and azimuth using GPS position and time, and sensor azimuth will
         # come from ancillary data input. For SolarTracker and pySAS, SZA and solar azimuth go in the
         # SOLARTRACKER or SOLARTRACKER_pySAS group, otherwise in the ANCILLARY group.
+        # REL_AZ will be pulled from SOLARTRACKER(_pySAS) if available, otherwise from ANCILLARY
+        # in ProcessL1bqc.
 
         # Initialize a new group to host the unconventional ancillary data
         ancGroup = node.addGroup("ANCILLARY_METADATA")
@@ -560,19 +642,21 @@ class ProcessL1aqc:
 
         # Now including the remaining ancillary data in ancGroup with or w/out SolarTracker
         ancGroup.addDataset("LATITUDE")
-        ancGroup.datasets["LATITUDE"].data = np.array(lat, dtype=[('NONE', '<f8')])
+        ancGroup.datasets["LATITUDE"].data = np.array(latAnc, dtype=[('NONE', '<f8')])
         ancGroup.addDataset("LONGITUDE")
-        ancGroup.datasets["LONGITUDE"].data = np.array(lon, dtype=[('NONE', '<f8')])
+        ancGroup.datasets["LONGITUDE"].data = np.array(lonAnc, dtype=[('NONE', '<f8')])
         ancGroup.addDataset("TIMETAG2")
         ancGroup.datasets["TIMETAG2"].data = np.array(ancTimeTag2, dtype=[('NONE', '<f8')])
         ancGroup.addDataset("DATETAG")
         ancGroup.datasets["DATETAG"].data = np.array(ancDateTag, dtype=[('NONE', '<f8')])
-        ancGroup.addDataset("SOLAR_AZ")
-        ancGroup.attributes["SOLAR_AZ_Units"]='degrees'
-        ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuthAnc, dtype=[('NONE', '<f8')])
-        ancGroup.addDataset("SZA")
-        ancGroup.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
-        ancGroup.attributes["SZA_Units"]='degrees'
+        # Only need these here if no tracker data available
+        if not ConfigFile.settings["bL1aqcSolarTracker"]:
+            ancGroup.addDataset("SOLAR_AZ")
+            ancGroup.attributes["SOLAR_AZ_Units"]='degrees'
+            ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuthAnc, dtype=[('NONE', '<f8')])
+            ancGroup.addDataset("SZA")
+            ancGroup.datasets["SZA"].data = np.array(sunZenithAnc, dtype=[('NONE', '<f8')])
+            ancGroup.attributes["SZA_Units"]='degrees'
 
         dateTime = ancGroup.addDataset("DATETIME")
         timeData = ancGroup.getDataset("TIMETAG2").data["NONE"].tolist()
@@ -650,13 +734,14 @@ class ProcessL1aqc:
             relAzimuthMin = float(ConfigFile.settings["fL1aqcSunAngleMin"])
             relAzimuthMax = float(ConfigFile.settings["fL1aqcSunAngleMax"])
 
-            if badTimes is None:
-                badTimes = []
+            # if badTimes is None:
+            #     badTimes = []
 
             start = -1
             stop = []
             # The length of relAz (and therefore the value of i) depends on whether ancillary
             #  data are used or SolarTracker data
+            # relAz and timeStamp are 1:1
             for index in range(len(relAz)):
                 relAzimuthAngle = relAz[index]
 
@@ -702,7 +787,7 @@ class ProcessL1aqc:
                 return None
 
         # For each dataset in each group, find the badTimes to remove and delete those rows
-        if badTimes is not None:
+        if len(badTimes) > 0:
             msg = "Eliminate combined filtered data from datasets.*****************************"
             print(msg)
             Utilities.writeLogFile(msg)
@@ -720,11 +805,6 @@ class ProcessL1aqc:
                         Utilities.writeLogFile(msg)
                         return None
 
-                    # Confirm that data were removed from Root
-                    # group = node.getGroup(gp.id)
-                    # if gp.id.startswith("GP"):
-                    #     gpTimeset  = group.getDataset("UTCPOS")
-                    # else:
                     gpTimeset  = gp.getDataset("TIMETAG2")
 
                     gpTime = gpTimeset.data["NONE"]
@@ -733,6 +813,8 @@ class ProcessL1aqc:
                     print(msg)
                     Utilities.writeLogFile(msg)
 
+
+        ###########################################################################
         # Now deglitch
         node = ProcessL1aqc_deglitch.processL1aqc_deglitch(node)
 

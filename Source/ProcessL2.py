@@ -1264,9 +1264,6 @@ class ProcessL2:
         AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
         if isinstance(AODXSlice, list):
             AODXSlice = AODXSlice[0]
-        # SOL_ELXSlice = newAncGroup.getDataset('ELEVATION').data['SUN'][-1].copy()
-        # if isinstance(SOL_ELXSlice, list):
-        #     SOL_ELXSlice = SOL_ELXSlice[0]
         SZAXSlice = newAncGroup.getDataset('SZA').data['SZA'][-1].copy()
         if isinstance(SZAXSlice, list):
             SZAXSlice = SZAXSlice[0]
@@ -1573,7 +1570,6 @@ class ProcessL2:
 
 
     @staticmethod
-    # def stationsEnsemblesReflectance(root, node, gpsGroup, satnavGroup, pyrGroup, ancData, modRoot):
     def stationsEnsemblesReflectance(root, node):
         ''' Extract stations if requested, then pass to ensemblesReflectance for ensemble
             averages, rho calcs, Rrs, Lwn, NIR correction, satellite convolution, OC Products.'''

@@ -45,9 +45,10 @@ class SeaBASSHeader:
         print("water_depth", SeaBASSHeader.settings["water_depth"])
         print("measurement_depth", SeaBASSHeader.settings["measurement_depth"])
         print("cloud_percent", SeaBASSHeader.settings["cloud_percent"])
-        print("wind_speed", SeaBASSHeader.settings["wind_speed"])
         print("wave_height", SeaBASSHeader.settings["wave_height"])
         print("secchi_depth", SeaBASSHeader.settings["secchi_depth"])
+        print("wind_speed", SeaBASSHeader.settings["wind_speed"])
+
 
         print("comments", SeaBASSHeader.settings["comments"])
         print("other_comments", SeaBASSHeader.settings["other_comments"])
@@ -82,6 +83,7 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["cloud_percent"] = 'NA'
         SeaBASSHeader.settings["wave_height"] = 'NA'
         SeaBASSHeader.settings["secchi_depth"] = 'NA'
+        SeaBASSHeader.settings["wind_speed"] = 'NA'
 
         SeaBASSHeader.settings["station"] = ''
         SeaBASSHeader.settings["data_file_name"] = ''
@@ -95,7 +97,6 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["south_latitude"] = ''
         SeaBASSHeader.settings["east_longitude"] = ''
         SeaBASSHeader.settings["west_longitude"] = ''
-        SeaBASSHeader.settings["wind_speed"] = ''
 
         # This will update subsequently from the ConfigFile on demand
         if ConfigFile.settings["bL1aCleanSZA"]:

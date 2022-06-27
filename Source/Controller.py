@@ -217,7 +217,7 @@ class Controller:
     def processAncData(fp):
         ''' Read in the ancillary field data file '''
 
-        if fp is None:
+        if fp is None or fp=='':
             return None
         elif not os.path.isfile(fp):
             print("Specified ancillary file not found: " + fp)
@@ -522,7 +522,7 @@ class Controller:
                 anomAnalFileName = anomAnalFileName + '_anoms.csv'
                 fp = os.path.join('Config',anomAnalFileName)
                 if os.path.exists(fp):
-                    msg = 'Deglitching anomaly file found for this L1AQC. Using these parameters.'
+                    msg = f"Deglitching file {fp} found for {ConfigFile.filename.split('.')[0]}. Using these parameters."
                     print(msg)
                     Utilities.writeLogFile(msg)
                     params = Utilities.readAnomAnalFile(fp)

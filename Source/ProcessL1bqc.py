@@ -221,22 +221,6 @@ class ProcessL1bqc:
             badTimes = None
         return badTimes
 
-
-    # @staticmethod
-    # def columnToSlice(columns, start, end):
-    #     ''' Take a slice of a dataset stored in columns '''
-
-    #     # Each column is a time series either at a waveband for radiometer columns, or various grouped datasets for ancillary
-    #     # Start and end are defined by the interval established in the Config (they are indexes)
-    #     newSlice = collections.OrderedDict()
-    #     for k in columns:
-    #         if start == end:
-    #             newSlice[k] = columns[k][start:end+1] # otherwise you get nada []
-    #         else:
-    #             newSlice[k] = columns[k][start:end] # up to not including end...next slice will pick it up
-    #     return newSlice
-
-
     @staticmethod
     def includeModelDefaults(ancGroup, modRoot):
         ''' Include model data or defaults for blank ancillary fields '''
@@ -436,7 +420,7 @@ class ProcessL1bqc:
         # are culled from datasets in groups in L1B
         ProcessL1bqc.includeModelDefaults(ancGroup, modRoot)
 
-        # Shift metadata into the ANCILLARY group as needed (i.e. from GPS).
+        # Shift metadata into the ANCILLARY group as needed (i.e. from GPS and tracker)
         #
         # GPS Group
         # These have TT2/Datetag incorporated in arrays
@@ -448,31 +432,75 @@ class ProcessL1bqc:
         ancGroup.datasets['LONGITUDE'] = gpsGroup.getDataset('LONGITUDE')
         ancGroup.datasets['LONGITUDE'].changeColName('NONE','LONGITUDE')
 
-        # Take Heading and Speed preferentially from GPS
-        if 'HEADING' in gpsGroup.datasets:
+        # Take Course (presumably COG) and SOG preferentially from GPS
+        if 'COURSE' in gpsGroup.datasets:
             # These have TT2/Datetag incorporated in arrays
-            ancGroup.addDataset('HEADING')
-            ancGroup.datasets['HEADING'] = gpsGroup.getDataset('COURSE')
-            ancGroup.datasets['HEADING'].changeColName('TRUE','HEADING')
+            ancGroup.addDataset('COURSE')
+            ancGroup.datasets['COURSE'] = gpsGroup.getDataset('COURSE')
+            ancGroup.datasets['COURSE'].changeColName('TRUE','COURSE')
         if 'SOG' in gpsGroup.datasets:
             ancGroup.addDataset('SOG')
             ancGroup.datasets['SOG'] = gpsGroup.getDataset('SOG')
             ancGroup.datasets['SOG'].changeColName('NONE','SOG')
-        if 'HEADING' not in gpsGroup.datasets and 'HEADING' in ancGroup.datasets:
-            ancGroup.addDataset('HEADING')
-            # ancGroup.datasets['HEADING'] = ancTemp.getDataset('HEADING')
-            ancGroup.datasets['HEADING'] = ancGroup.getDataset('HEADING')
-            ancGroup.datasets['HEADING'].changeColName('NONE','HEADING')
-        if 'SOG' not in gpsGroup.datasets and 'SOG' in ancGroup.datasets:
-            ancGroup.datasets['SOG'] = ancGroup.getDataset('SOG')
-            ancGroup.datasets['SOG'].changeColName('NONE','SOG')
+
+        # Finished with GPS group. Delete
+        for gp in node.groups:
+            if gp.id == gpsGroup.id:
+                node.removeGroup(gp)
+
         if 'SPEED_F_W' in ancGroup.datasets:
-            ancGroup.addDataset('SPEED_F_W')
-            ancGroup.datasets['SPEED_F_W'] = ancGroup.getDataset('SPEED_F_W')
             ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')
-        # Take SZA and SOLAR_AZ preferentially from ancGroup (calculated with pysolar in L1C)
-        ancGroup.datasets['SZA'].changeColName('NONE','SZA')
-        ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
+
+        if satnavGroup is not None:
+            # Take REL_AZ, SZA, SOLAR_AZ, HEADING, POINTING, HUMIDITY, PITCH and ROLL
+            #  preferentially from tracker data. Some of these might change as
+            #  new instruments are added that don't fit the SolarTracker/pySAS
+            #  robot model.
+            #
+            # Keep in mind these may overwrite ancillary data from outside sources.
+            ancGroup.addDataset('SZA')
+            ancGroup.datasets['SZA'] = satnavGroup.getDataset('SZA')
+            ancGroup.datasets['SZA'].changeColName('NONE','SZA')
+            ancGroup.addDataset('SOLAR_AZ')
+            ancGroup.datasets['SOLAR_AZ'] = satnavGroup.getDataset('SOLAR_AZ')
+            ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
+            ancGroup.addDataset('REL_AZ')
+            ancGroup.datasets['REL_AZ'] = satnavGroup.getDataset('REL_AZ')
+            ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
+            # ancGroup.datasets['REL_AZ'].datasetToColumns()
+            if 'HEADING' in satnavGroup.datasets:
+                ancGroup.addDataset('HEADING')
+                ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING')
+            if 'POINTING' in satnavGroup.datasets:
+                ancGroup.addDataset('POINTING')
+                ancGroup.datasets['POINTING'] = satnavGroup.getDataset('POINTING')
+                ancGroup.datasets['POINTING'].changeColName('ROTATOR','POINTING')
+            if 'HUMIDITY' in satnavGroup.datasets:
+                ancGroup.addDataset('HUMIDITY')
+                ancGroup.datasets['HUMIDITY'] = satnavGroup.getDataset('HUMIDITY')
+            if 'PITCH' in satnavGroup.datasets:
+                ancGroup.addDataset('PITCH')
+                ancGroup.datasets['PITCH'] = satnavGroup.getDataset('PITCH')
+                ancGroup.datasets['PITCH'].changeColName('SAS','PITCH')
+            if 'ROLL' in satnavGroup.datasets:
+                ancGroup.addDataset('ROLL')
+                ancGroup.datasets['ROLL'] = satnavGroup.getDataset('ROLL')
+                ancGroup.datasets['ROLL'].changeColName('SAS','ROLL')
+
+            # Finished with SOLARTRACKER/pySAS group. Delete
+            for gp in node.groups:
+                if gp.id == satnavGroup.id:
+                    node.removeGroup(gp)
+
+        # ancGroup.datasets['SZA'].changeColName('NONE','SZA') # In case SZA was ancillary
+        if 'SZA'in ancGroup.datasets:
+            ancGroup.datasets['SZA'].changeColName('NONE','SZA')
+        if 'SOLAR_AZ'in ancGroup.datasets:
+            ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
+        if 'REL_AZ'in ancGroup.datasets:
+            ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
+        if 'HUMIDITY' in ancGroup.datasets:
+            ancGroup.datasets['HUMIDITY'].changeColName('NONE','HUMIDITY')
         if 'CLOUD' in ancGroup.datasets:
             ancGroup.datasets['CLOUD'].changeColName('NONE','CLOUD')
         if 'PITCH' in ancGroup.datasets:
@@ -490,35 +518,16 @@ class ProcessL1bqc:
         if 'SST'in ancGroup.datasets:
             ancGroup.datasets['SST'].changeColName('NONE','SST')
 
-        if satnavGroup:
-            ancGroup.datasets['REL_AZ'] = satnavGroup.getDataset('REL_AZ')
-            if 'HUMIDITY' in ancGroup.datasets:
-                ancGroup.datasets['HUMIDITY'] = satnavGroup.getDataset('HUMIDITY')
-                ancGroup.datasets['HUMIDITY'].changeColName('NONE','HUMIDITY')
-            # ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING') # Use GPS heading instead
-            ancGroup.addDataset('POINTING')
-            ancGroup.datasets['POINTING'] = satnavGroup.getDataset('POINTING')
-            ancGroup.datasets['POINTING'].changeColName('ROTATOR','POINTING')
-            ancGroup.datasets['REL_AZ'] = satnavGroup.getDataset('REL_AZ')
-            ancGroup.datasets['REL_AZ'].datasetToColumns()
-            # Use PITCH and ROLL preferentially from SolarTracker
-            if 'PITCH' in satnavGroup.datasets:
-                ancGroup.addDataset('PITCH')
-                ancGroup.datasets['PITCH'] = satnavGroup.getDataset('PITCH')
-                ancGroup.datasets['PITCH'].changeColName('SAS','PITCH')
-            if 'ROLL' in satnavGroup.datasets:
-                ancGroup.addDataset('ROLL')
-                ancGroup.datasets['ROLL'] = satnavGroup.getDataset('ROLL')
-                ancGroup.datasets['ROLL'].changeColName('SAS','ROLL')
-
-        if 'NONE' in ancGroup.datasets['REL_AZ'].columns:
-            ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
-
         if pyrGroup is not None:
             #PYROMETER
             ancGroup.datasets['SST_IR'] = pyrGroup.getDataset("T")
             ancGroup.datasets['SST_IR'].datasetToColumns()
             ancGroup.datasets['SST_IR'].changeColName('IR','SST_IR')
+
+            # Finished with PYROMETER group. Delete
+            for gp in node.groups:
+                if gp.id == pyrGroup.id:
+                    node.removeGroup(gp)
 
         # At this stage, all datasets in all groups of node have Timetag2
         #     and Datetag incorporated into data arrays. Calculate and add
@@ -617,7 +626,9 @@ class ProcessL1bqc:
         SZAMin = float(ConfigFile.settings["fL1bqcSZAMin"])
         SZAMax = float(ConfigFile.settings["fL1bqcSZAMax"])
 
+        # SZA will be in ancGroup at this point regardless of whether it is from Ancillary or Tracker
         SZA = ancGroup.datasets["SZA"].columns["SZA"]
+        # SZA = ancGroup.datasets["SZA"].columns["NONE"]
         timeStamp = ancGroup.datasets["SZA"].columns["Datetime"]
 
         badTimes = None
@@ -929,5 +940,9 @@ class ProcessL1bqc:
                 if "Datetime" in ds.columns:
                     ds.columns.pop("Datetime")
                 ds.columnsToDataset()
+
+            # Finished with SolarTracker Status strings
+            if gp.id == 'SOLARTRACKER_STATUS':
+                node.removeGroup(gp)
 
         return node

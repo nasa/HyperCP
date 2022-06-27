@@ -461,10 +461,11 @@ class ProcessL1b_Interp:
                 if ds != "DATETAG" and ds != "TIMETAG2" and ds != "DATETIME":
                     ProcessL1b_Interp.convertDataset(ancGroup, ds, newAncGroup, ds)
 
-            # Required:
-            relAzData = newAncGroup.getDataset("REL_AZ")
-            # Required and assured with Pysolar
-            szaData = newAncGroup.getDataset("SZA")
+            if satnavGroup is None:
+                # Required:
+                relAzData = newAncGroup.getDataset("REL_AZ")
+                szaData = newAncGroup.getDataset("SZA")
+                solAzData = newAncGroup.getDataset("SOLAR_AZ")
             # Optional:
             stationData = None
             headingDataAnc = None
@@ -490,8 +491,6 @@ class ProcessL1b_Interp:
                 latDataAnc = newAncGroup.getDataset("LATITUDE")
             if "LONGITUDE" in newAncGroup.datasets:
                 lonDataAnc = newAncGroup.getDataset("LONGITUDE")
-            if "SOLAR_AZ" in newAncGroup.datasets:
-                solAzData = newAncGroup.getDataset("SOLAR_AZ")
             if "SALINITY" in newAncGroup.datasets:
                 saltData = newAncGroup.getDataset("SALINITY")
             if "SST" in newAncGroup.datasets:
@@ -514,14 +513,23 @@ class ProcessL1b_Interp:
 
         if satnavGroup is not None:
             newSTGroup = root.addGroup("SOLARTRACKER")
-            ProcessL1b_Interp.convertDataset(satnavGroup, "AZIMUTH", newSTGroup, "AZIMUTH")
-            ProcessL1b_Interp.convertDataset(satnavGroup, "ELEVATION", newSTGroup, "ELEVATION")
+            # Required
+            # ProcessL1b_Interp.convertDataset(satnavGroup, "AZIMUTH", newSTGroup, "AZIMUTH")
+            # ProcessL1b_Interp.convertDataset(satnavGroup, "ELEVATION", newSTGroup, "ELEVATION")
+            ProcessL1b_Interp.convertDataset(satnavGroup, "SOLAR_AZ", newSTGroup, "SOLAR_AZ")
+            solAzData = newSTGroup.getDataset("SOLAR_AZ")
+            ProcessL1b_Interp.convertDataset(satnavGroup, "SZA", newSTGroup, "SZA")
+            szaData = newSTGroup.getDataset("SZA")
+            ProcessL1b_Interp.convertDataset(satnavGroup, "REL_AZ", newSTGroup, "REL_AZ")
+            relAzData = newSTGroup.getDataset("REL_AZ")
+            ProcessL1b_Interp.convertDataset(satnavGroup, "POINTING", newSTGroup, "POINTING")
+            pointingData = newSTGroup.getDataset("POINTING")
+
+            # Optional
             # ProcessL1b_Interp.convertDataset(satnavGroup, "HEADING", newSTGroup, "HEADING") # Use SATNAV Heading if available (not GPS COURSE)
             if "HUMIDITY" in satnavGroup.datasets:
                 ProcessL1b_Interp.convertDataset(satnavGroup, "HUMIDITY", newSTGroup, "HUMIDITY")
                 humidityData = newSTGroup.getDataset("HUMIDITY")
-            ProcessL1b_Interp.convertDataset(satnavGroup, "POINTING", newSTGroup, "POINTING")
-            ProcessL1b_Interp.convertDataset(satnavGroup, "REL_AZ", newSTGroup, "REL_AZ")
             if "PITCH" in satnavGroup.datasets:
                 ProcessL1b_Interp.convertDataset(satnavGroup, "PITCH", newSTGroup, "PITCH")
                 pitchData = newSTGroup.getDataset("PITCH")
@@ -532,11 +540,6 @@ class ProcessL1b_Interp:
             if "HEADING" in satnavGroup.datasets:
                 ProcessL1b_Interp.convertDataset(satnavGroup, "HEADING", newSTGroup, "HEADING")
                 headingData = newSTGroup.getDataset("HEADING")
-
-            azimuthData = newSTGroup.getDataset("AZIMUTH")
-            elevationData = newSTGroup.getDataset("ELEVATION")
-            pointingData = newSTGroup.getDataset("POINTING")
-            relAzData = newSTGroup.getDataset("REL_AZ")
 
         if satmsgGroup is not None:
             newSatMSGGroup = root.addGroup("SOLARTRACKER_STATUS")
@@ -610,11 +613,13 @@ class ProcessL1b_Interp:
             # Required:
             if not ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName):
                 return None
-            if not ProcessL1b_Interp.interpolateData(elevationData, interpData, "ELEVATION", fileName):
+            if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName):
                 return None
-            # Optional, but should all be there with the SOLAR TRACKER
-            ProcessL1b_Interp.interpolateData(azimuthData, interpData, "AZIMUTH", fileName)
+            # Optional, but should all be there with the SOLAR TRACKER or pySAS
+            ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName)
             ProcessL1b_Interp.interpolateData(pointingData, interpData, "POINTING", fileName)
+
+            # Optional
             if "HUMIDITY" in satnavGroup.datasets:
                 ProcessL1b_Interp.interpolateData(humidityData, interpData, "HUMIDITY", fileName)
             if "PITCH" in satnavGroup.datasets:
@@ -625,11 +630,22 @@ class ProcessL1b_Interp:
                 ProcessL1b_Interp.interpolateData(headingData, interpData, "HEADING", fileName)
 
         if ancGroup is not None:
-            # Required:
-            if not ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName):
-                return None
-            if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName):
-                return None
+            if satnavGroup is None:
+                # Required:
+                if not ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName):
+                    return None
+                if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName):
+                    return None
+                if not ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName):
+                    return None
+            else:
+                if relAzData:
+                    ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName)
+                if szaData:
+                    ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName)
+                if solAzData:
+                    ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName)
+
             # Optional:
             if stationData:
                 ProcessL1b_Interp.interpolateData(stationData, interpData, "STATION", fileName)
@@ -647,8 +663,6 @@ class ProcessL1b_Interp:
                 ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
             if saltData:
                 ProcessL1b_Interp.interpolateData(saltData, interpData, "SALINITY", fileName)
-            if solAzData:
-                ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName)
             if sstData:
                 ProcessL1b_Interp.interpolateData(sstData, interpData, "SST", fileName)
             if windData:

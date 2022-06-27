@@ -23,8 +23,7 @@ class SeaBASSWriter:
 
         # Dataset leading columns can be taken from any sensor
         referenceGroup = node.getGroup("IRRADIANCE")
-        if level == '1e':
-            esData = referenceGroup.getDataset("ES")
+
         if level == '2':
             # referenceGroup = node.getGroup("IRRADIANCE")
             esData = referenceGroup.getDataset("ES_HYPER")
@@ -82,12 +81,9 @@ class SeaBASSWriter:
         if headerBlock['west_longitude'] == '':
             headerBlock['west_longitude'] = westLon
         if level == '2':
-            headerBlock['wind_speed'] = aveWind # wind_speed will not be written to l1e
-
+            headerBlock['wind_speed'] = aveWind
         return headerBlock
 
-        # headerBlock = print(json.dumps(SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)))
-    
 
     @staticmethod
     def formatData2(dataset,dsDelta,dtype, units):
@@ -192,16 +188,18 @@ class SeaBASSWriter:
         # outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{os.path.split(fp)[1].replace(".hdf",f"_{dtype}_{version}.sb")}'
         # Conforms to SeaBASS file names: Experiment_Cruise_Platform_Instrument_YYMMDD_HHmmSS_Level_DataType_Revision
         outFileName = \
-            (   f"{os.path.split(fp)[0]}/SeaBASS/{headerBlock['experiment']}_{headerBlock['cruise']}_" 
-                f"{headerBlock['platform']}_{headerBlock['instrument_model']}_{formattedData[0].split(',')[0]}_" 
+            (   f"{os.path.split(fp)[0]}/SeaBASS/{headerBlock['experiment']}_{headerBlock['cruise']}_"
+                f"{headerBlock['platform']}_{headerBlock['instrument_model']}_{formattedData[0].split(',')[0]}_"
                 f"{formattedData[0].split(',')[1].replace(':','')}_L2_{dtype}_{version}.sb")
 
         outFile = open(outFileName,'w',newline='\n')
         outFile.write('/begin_header\n')
         for key,value in headerBlock.items():
-            if key != 'comments' and key != 'other_comments' and key != 'wind_speed':
-                # Python 3 f-string
+            if key != 'comments' and key != 'other_comments' and key != 'version' and key != 'platform':
                 line = f'/{key}={value}\n'
+                outFile.write(line)
+            if key == 'platform':
+                line = f'!/{key}={value}\n'
                 outFile.write(line)
         outFile.write(headerBlock['comments']+'\n')
         outFile.write(headerBlock['other_comments']+'\n')
@@ -213,180 +211,6 @@ class SeaBASSWriter:
             outFile.write(f'{line}\n')
 
         outFile.close()
-
-    # Convert Level 3 data to SeaBASS file
-    @staticmethod
-    def outputTXT_Type1e(fp):
-
-        if not os.path.isfile(fp):
-            print("SeaBASSWriter: no file to convert")
-            return
-
-        # Make sure hdf can be read
-        try:
-            root = HDFRoot.readHDF5(fp)
-        except:
-            print('SeaBassWriter: cannot open HDF. May be open in another app.')
-            return
-
-        if root is None:
-            print("SeaBASSWriter: root is None")
-            return
-
-        # Get datasets to output
-        referenceGroup = root.getGroup("IRRADIANCE")
-        sasGroup = root.getGroup("RADIANCE")
-
-        esData = referenceGroup.getDataset("ES")
-        liData = sasGroup.getDataset("LI")
-        ltData = sasGroup.getDataset("LT")
-
-        if esData is None or liData is None or ltData is None:
-            print("SeaBASSWriter: Radiometric data is missing")
-            return
-
-        # Append latpos/lonpos to datasets
-        gpsGroup = root.getGroup("GPS")
-        latposData = gpsGroup.getDataset("LATITUDE")
-        lonposData = gpsGroup.getDataset("LONGITUDE")
-
-        latposData.datasetToColumns()
-        lonposData.datasetToColumns()
-
-        latpos = latposData.columns["NONE"]
-        lonpos = lonposData.columns["NONE"]
-
-        esData.datasetToColumns()
-        liData.datasetToColumns()
-        ltData.datasetToColumns()
-
-        #print(esData.columns)
-
-        esData.columns["LATITUDE"] = latpos
-        liData.columns["LATITUDE"] = latpos
-        ltData.columns["LATITUDE"] = latpos
-
-        esData.columns["LONGITUDE"] = lonpos
-        liData.columns["LONGITUDE"] = lonpos
-        ltData.columns["LONGITUDE"] = lonpos
-
-        esData.columnsToDataset()
-        liData.columnsToDataset()
-        ltData.columnsToDataset()
-
-        # Append azimuth, heading, rotator, relAz, and SZA to the dataset
-        # in order to pass it to formatData1e (bloody awkward...)
-        if ConfigFile.settings["bL1cSolarTracker"]:
-            satnavGroup = root.getGroup("SOLARTRACKER")
-
-            azimuthData = satnavGroup.getDataset("AZIMUTH")
-            # HEADING is formatted differently in different SolarTrackers
-            headingData = satnavGroup.getDataset("HEADING")
-            pointingData = satnavGroup.getDataset("POINTING")
-            relAzData = satnavGroup.getDataset("REL_AZ")
-            elevationData = satnavGroup.getDataset("ELEVATION")
-
-            azimuthData.datasetToColumns()
-            headingData.datasetToColumns()
-            pointingData.datasetToColumns()
-            relAzData.datasetToColumns()
-            elevationData.datasetToColumns()
-
-            azimuth = azimuthData.columns["SUN"]
-            if headingData is not None and 'SHIP_TRUE' in headingData.columns:
-                headingData.datasetToColumns()
-                heading = headingData.columns["SHIP_TRUE"]
-            else:
-                heading = np.empty((1,len(azimuth)))
-                heading = heading[0]*np.nan
-                heading = heading.tolist()
-            rotator = pointingData.columns["ROTATOR"]
-            relAz = relAzData.columns["REL_AZ"]
-            elevation = elevationData.columns["SUN"]
-            sza = []
-            for elev in elevation:
-                sza.append(90-elev)
-
-            esData.datasetToColumns()
-            liData.datasetToColumns()
-            ltData.datasetToColumns()
-
-            esData.columns["AZIMUTH"] = azimuth
-            liData.columns["AZIMUTH"] = azimuth
-            ltData.columns["AZIMUTH"] = azimuth
-
-            esData.columns["HEADING"] = heading # From SAS, not GPS...not present in newer SolarTrackers?
-            liData.columns["HEADING"] = heading
-            ltData.columns["HEADING"] = heading
-
-            esData.columns["ROTATOR"] = rotator
-            liData.columns["ROTATOR"] = rotator
-            ltData.columns["ROTATOR"] = rotator
-
-            esData.columns["REL_AZ"] = relAz
-            liData.columns["REL_AZ"] = relAz
-            ltData.columns["REL_AZ"] = relAz
-
-            esData.columns["SZA"] = sza
-            liData.columns["SZA"] = sza
-            ltData.columns["SZA"] = sza
-
-            esData.columnsToDataset()
-            liData.columnsToDataset()
-            ltData.columnsToDataset()
-
-        else:
-            ancGroup = root.getGroup("ANCILLARY_METADATA")
-
-            headingData = ancGroup.getDataset("HEADING")
-            relAzData = ancGroup.getDataset("REL_AZ")
-            szaData = ancGroup.getDataset("SZA")
-
-            headingData.datasetToColumns()
-            relAzData.datasetToColumns()
-            szaData.datasetToColumns()
-
-            relAz = relAzData.columns["NONE"]
-            sza = szaData.columns["NONE"]
-            if headingData is not None:
-                heading = headingData.columns["NONE"]
-            else:
-                heading = np.empty((1,len(sza)))
-                heading = heading[0]*np.nan
-                heading = heading.tolist()
-
-            esData.datasetToColumns()
-            liData.datasetToColumns()
-            ltData.datasetToColumns()
-
-            esData.columns["HEADING"] = heading
-            liData.columns["HEADING"] = heading
-            ltData.columns["HEADING"] = heading
-
-            esData.columns["REL_AZ"] = relAz
-            liData.columns["REL_AZ"] = relAz
-            ltData.columns["REL_AZ"] = relAz
-
-            esData.columns["SZA"] = sza
-            liData.columns["SZA"] = sza
-            ltData.columns["SZA"] = sza
-
-            esData.columnsToDataset()
-            liData.columnsToDataset()
-            ltData.columnsToDataset()
-
-        # Format the non-specific header block
-        headerBlock = SeaBASSWriter.formatHeader(fp,root, level='1e')
-
-        # Format each data block for individual output
-        formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData1e(esData,'es',root.attributes["ES_UNITS"])
-        formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData1e(liData,'li',root.attributes["LI_UNITS"])
-        formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData1e(ltData,'lt',root.attributes["LT_UNITS"])
-
-        # # Write SeaBASS files
-        SeaBASSWriter.writeSeaBASS('ES',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
-        SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
-        SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)
 
     # Convert Level 2 data to SeaBASS file
     @staticmethod
@@ -512,7 +336,18 @@ class SeaBASSWriter:
             cloud = cloud.tolist()
         if headingData is not None:
             headingData.datasetToColumns()
-            heading = headingData.columns["HEADING"]
+            if 'SHIP_TRUE' in headingData.columns:
+                # From Satlantic SolarTracker
+                heading = headingData.columns["SHIP_TRUE"]
+            elif 'HEADING' in headingData.columns:
+                # From pySAS
+                heading = headingData.columns["HEADING"]
+            elif 'SHIP' in headingData.columns:
+                # Also from pySAS??
+                heading = headingData.columns["SHIP"]
+            elif 'NONE' in headingData.columns:
+                # Most likely from Ancillary
+                heading = headingData.columns["NONE"]
         else:
             heading = np.empty((1,len(wind)))
             heading = heading[0]*np.nan

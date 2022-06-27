@@ -41,8 +41,8 @@ class HDFRoot:
 
     def getGroup(self, name):
         for gp in self.groups:
-            # if gp.id == name:
-            if gp.id.startswith(name):
+            if gp.id == name:
+            # if gp.id.startswith(name): <- not sure what this was for, but it breaks on SOLARTRACKER_STATUS
                 return gp
         return None
 
@@ -50,8 +50,8 @@ class HDFRoot:
         gp = name
         if gp:
             self.groups.remove(gp)
-        # return 
-    
+        # return
+
     def getDataset(self, name):
         if name in self.datasets:
             return self.datasets[name]
@@ -84,7 +84,7 @@ class HDFRoot:
                 if value.__class__ is np.ndarray:
                     root.attributes[k] = value
                 else:
-                    root.attributes[k] = f.attrs[k].decode("utf-8")                    
+                    root.attributes[k] = f.attrs[k].decode("utf-8")
                 # Use the following when using h5toh4 converter:
                 #root.attributes[k.replace("__GLOSDS", "")] = f.attrs[k].decode("utf-8")
             # Read groups
@@ -97,7 +97,7 @@ class HDFRoot:
                     gp.read(item)
                 elif isinstance(item, h5py.Dataset):
                     # print("HDFRoot should not contain datasets")
-                    ds = HDFDataset()                    
+                    ds = HDFDataset()
                     root.datasets.append(ds)
                     ds.read(item)
 

@@ -335,7 +335,7 @@ class Utilities:
                         dt = Utilities.dateTagToDateTime(dateTag[i])
                         timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
                     else:
-                        msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} : {dateTag[i]} : {timei}"
+                        msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
                         print(msg)
                         Utilities.writeLogFile(msg)
                         gp.datasetDeleteRow(i)
@@ -369,7 +369,7 @@ class Utilities:
                                 timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
                             else:
                                 gp.datasetDeleteRow(i)
-                                msg = f"Bad Datetag or Timetag2 found. Eliminating record. {dateTag[i]} : {timei}"
+                                msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
                                 print(msg)
                                 Utilities.writeLogFile(msg)
                         gp.datasets[ds].columns["Datetime"] = timeStamp

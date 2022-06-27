@@ -375,9 +375,11 @@ class ConfigWindow(QtWidgets.QDialog):
         self.RhoRadioButtonZhang.setAutoExclusive(False)
         if ConfigFile.settings["bL2ZhangRho"]==1:
             self.RhoRadioButtonZhang.setChecked(True)
-        if ConfigFile.settings["bL1bqcGetAnc"]==0:
-            self.RhoRadioButtonZhang.setChecked(False)
-            self.RhoRadioButtonZhang.setDisabled(1)
+        # This blocks use of Zhang when no ancillary is provided, but now that models and defaul fallbacks
+        # are available, this should not be necessary.
+        # if ConfigFile.settings["bL1bqcGetAnc"]==0:
+        #     self.RhoRadioButtonZhang.setChecked(False)
+        #     self.RhoRadioButtonZhang.setDisabled(1)
         self.RhoRadioButtonZhang.clicked.connect(self.l2RhoRadioButtonZhangClicked)
 
         self.RhoRadoButton3C = QtWidgets.QRadioButton("Groetsch et al. (2017)")
@@ -1288,7 +1290,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2DefaultRho"] = 0
         if ConfigFile.settings["fL1bqcSZAMax"] > 60:
             print("SZA outside model limits; adjusting to 60")
-            ConfigFile.settings["fL1bqcSZAMax"] = 60      
+            ConfigFile.settings["fL1bqcSZAMax"] = 60
             self.l1bqcSZAMaxLineEdit.setText(str(60.0))
     def l2RhoRadioButtonDefaultClicked(self):
         print("ConfigWindow - l2RhoCorrection set to Default")
