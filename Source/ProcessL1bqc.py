@@ -636,7 +636,7 @@ class ProcessL1bqc:
         start = -1
         stop = []
         for index, _ in enumerate(SZA):
-            if SZA[index] < SZAMin or SZA[index] > SZAMax or wind[index] > maxWind:
+            if SZA[index] < SZAMin or SZA[index] > SZAMax:
                 i += 1
                 if start == -1:
                     msg =f'Low SZA. SZA: {round(SZA[index])}'
