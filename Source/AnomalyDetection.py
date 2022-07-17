@@ -507,7 +507,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 relAz = np.nanmedian(ancGroup.datasets['REL_AZ'].data.tolist())
             else:
                 relAz = np.nanmedian(trackerGroup.datasets['REL_AZ'].data.tolist())
-            sza = np.nanmedian(ancGroup.datasets['SZA'].data.tolist())
+            if 'SZA' in ancGroup.datasets:
+                sza = np.nanmedian(ancGroup.datasets['SZA'].data.tolist())
+            else:
+                sza = np.nanmedian(trackerGroup.datasets['SZA'].data.tolist())
             if 'WAVE_HT' in ancGroup.datasets:
                 waves = np.nanmedian(ancGroup.datasets['WAVE_HT'].data.tolist())
             else:

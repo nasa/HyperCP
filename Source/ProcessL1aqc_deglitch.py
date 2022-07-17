@@ -288,11 +288,17 @@ class ProcessL1aqc_deglitch:
         # Delete the glitchy rows of the datasets
         for gp in node.groups:
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
-                gp.datasetDeleteRow(np.where(badIndexDark))
+                try:
+                    gp.datasetDeleteRow(np.where(badIndexDark))
+                except:
+                    print('Error deleting group datasets. Check that Light/Dark cals are correctly identified in Configuration Window.')
 
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
-                gp.datasetDeleteRow(np.where(badIndexLight))
+                try:
+                    gp.datasetDeleteRow(np.where(badIndexLight))
+                except:
+                    print('Error deleting group datasets. Check that Light/Dark cals are correctly identified in Configuration Window.')
 
         return False
 
