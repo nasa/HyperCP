@@ -30,6 +30,9 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-07-19:
+* Fix solar geometry acquisition in AnomAnal to search both aux and UMTWR groups
+
 2022-06-22:
 * Rewrite solar/sensor geometry calculation logic to preferentially obtain from pySAS when available
 * Add L1AQC filter for GPS status code

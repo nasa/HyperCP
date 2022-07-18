@@ -88,7 +88,8 @@ class GetAnc:
                 ancPath = os.path.join(cwd,"Data","Anc")
                 filePath1 = os.path.join(cwd,"Data","Anc",file1)
                 if not os.path.exists(filePath1):
-                    request = f"/cgi/getfile/{file1}"
+                    # request = f"/cgi/getfile/{file1}"
+                    request = f"/ob/getfile/{file1}"
                     msg = f'Retrieving anchillary file from server: {file1}'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -104,7 +105,8 @@ class GetAnc:
                 file2 = f"GMAO_MERRA2.{year}{month:02.0f}{day:02.0f}T{hr:02.0f}0000.AER.nc"
                 filePath2 = os.path.join(cwd,"Data","Anc",file2)
                 if not os.path.exists(filePath2):
-                    request = f"/cgi/getfile/{file2}"
+                    # request = f"/cgi/getfile/{file2}"
+                    request = f"/ob/getfile/{file2}"
                     msg = f'Retrieving anchillary file from server: {file2}'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -124,7 +126,8 @@ class GetAnc:
                     alert = QtWidgets.QMessageBox()
                     alert.setText(f'Request error: {status}\n \
                                     Enter server credentials in the\n \
-                                    Configuration Window L1BQC')
+                                    Configuration Window L1BQC and\n  \
+                                    check network path.')
                     alert.exec_()
                     return None
 
