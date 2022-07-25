@@ -30,6 +30,9 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-07-20:
+* Add QWIP to Rrs plots; Needs work...
+
 2022-07-19:
 * Fix solar geometry acquisition in AnomAnal to search both aux and UMTWR groups
 

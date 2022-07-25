@@ -1040,10 +1040,22 @@ class Utilities:
                 if ConfigFile.products['bL2ProdweiQA']:
                     groupProd = root.getGroup("DERIVED_PRODUCTS")
                     score = groupProd.getDataset('wei_QA')
-                    QA_note = f"Score: {score.columns['QA_score'][i]}"
+                    QA_note = f"Wei: {score.columns['QA_score'][i]}"
                     axes = plt.gca()
-                    axes.text(1.0,1.1 - (i+1)/len(score.columns['QA_score']), QA_note,
+                    axes.text(0.7,1.1 - (i+1)/len(score.columns['QA_score']), QA_note,
                         verticalalignment='top', horizontalalignment='right',
+                        transform=axes.transAxes,
+                        color=c, fontdict=font)
+
+            # Add the QWIP score to the Rrs plot, if calculated
+            if rType == 'Rrs':
+                if ConfigFile.products['bL2Prodqwip']:
+                    groupProd = root.getGroup("DERIVED_PRODUCTS")
+                    score = groupProd.getDataset('qwip')
+                    QA_note = f"QWIP: {score.columns['qwip'][i]:5.3f}"
+                    axes = plt.gca()
+                    axes.text(0.75,1.1 - (i+1)/len(score.columns['qwip']), QA_note,
+                        verticalalignment='top', horizontalalignment='left',
                         transform=axes.transAxes,
                         color=c, fontdict=font)
 
@@ -1122,7 +1134,7 @@ class Utilities:
         plt.subplots_adjust(bottom=0.15)
 
         note = f'Interval: {ConfigFile.settings["fL2TimeInterval"]} s'
-        axes.text(0.95, 0.95, note,
+        axes.text(0.2, -0.1, note,
         verticalalignment='top', horizontalalignment='right',
         transform=axes.transAxes,
         color='black', fontdict=font)
