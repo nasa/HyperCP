@@ -199,7 +199,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.west_longitudeLineEdit.setText(str(SeaBASSHeader.settings["west_longitude"]))
         # self.west_longitudeLineEdit.setValidator(doubleValidator)
 
-        wind_speedLabel = QtWidgets.QLabel("wind_speed (only autopopulated at L4)", self)
+        wind_speedLabel = QtWidgets.QLabel("wind_speed (only autopopulated at L2)", self)
         self.wind_speedLineEdit = QtWidgets.QLineEdit(self)
         self.wind_speedLineEdit.setText(str(SeaBASSHeader.settings["wind_speed"]))
         # self.wind_speedLineEdit.setValidator(doubleValidator)
@@ -570,7 +570,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.settings["contact"] = self.contactLineEdit.text()
         SeaBASSHeader.settings["experiment"] = self.experimentLineEdit.text()
         SeaBASSHeader.settings["cruise"] = self.cruiseLineEdit.text()
-        SeaBASSHeader.settings["station"] = self.stationLineEdit.text()        
+        SeaBASSHeader.settings["station"] = self.stationLineEdit.text()
         SeaBASSHeader.settings["platform"] = self.platformLineEdit.text()
 
         SeaBASSHeader.settings["documents"] = self.documentsLineEdit.text()
