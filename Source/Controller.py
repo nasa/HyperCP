@@ -389,80 +389,58 @@ class Controller:
 
 
     @staticmethod
-    def processL2(inFilePath, outFilePath):
-        root = None
-        if not os.path.isfile(inFilePath):
-            print('No such input file: ' + inFilePath)
-            return None, outFilePath
+    def processL2(root,outFilePath,station=None):
 
-        # Process the data
-        msg = ("ProcessL2: " + inFilePath)
-        print(msg)
-        Utilities.writeLogFile(msg)
-        try:
-            root = HDFRoot.readHDF5(inFilePath)
-        except:
-            msg = "Unable to open file. May be open in another application."
-            Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return None, outFilePath
+        node = ProcessL2.processL2(root,station)
 
-        root = ProcessL2.processL2(root)
-
-        outPath, filename = os.path.split(outFilePath)
-        if root is not None:
-            if ConfigFile.settings["bL2Stations"]:
-                station = np.unique(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"]).tolist()
-                station = str( round(station[0]*100)/100 )
-                filename = f'STATION_{station}_{filename}'
-                outFilePath = os.path.join(outPath,filename)
+        _, filename = os.path.split(outFilePath)
+        if node is not None:
 
             # Create Plots
             # Radiometry
             if ConfigFile.settings['bL2PlotRrs']==1:
-                Utilities.plotRadiometry(root, filename, rType='Rrs', plotDelta = True)
+                Utilities.plotRadiometry(node, filename, rType='Rrs', plotDelta = True)
             if ConfigFile.settings['bL2PlotnLw']==1:
-                Utilities.plotRadiometry(root, filename, rType='nLw', plotDelta = True)
+                Utilities.plotRadiometry(node, filename, rType='nLw', plotDelta = True)
             if ConfigFile.settings['bL2PlotEs']==1:
-                Utilities.plotRadiometry(root, filename, rType='ES', plotDelta = True)
+                Utilities.plotRadiometry(node, filename, rType='ES', plotDelta = True)
             if ConfigFile.settings['bL2PlotLi']==1:
-                Utilities.plotRadiometry(root, filename, rType='LI', plotDelta = True)
+                Utilities.plotRadiometry(node, filename, rType='LI', plotDelta = True)
             if ConfigFile.settings['bL2PlotLt']==1:
-                Utilities.plotRadiometry(root, filename, rType='LT', plotDelta = True)
+                Utilities.plotRadiometry(node, filename, rType='LT', plotDelta = True)
 
             # IOPs
             # These three should plot GIOP and QAA together (eventually, once GIOP is complete)
             if ConfigFile.products["bL2ProdadgQaa"]:
-                Utilities.plotIOPs(root, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
+                Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
             if ConfigFile.products["bL2ProdaphQaa"]:
-                Utilities.plotIOPs(root, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
+                Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
             if ConfigFile.products["bL2ProdbbpQaa"]:
-                Utilities.plotIOPs(root, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
+                Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
 
             # This puts ag, Sg, and DOC on the same plot
             if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products["bL2ProdSg"] \
                  and ConfigFile.products["bL2Prodag"] and ConfigFile.products["bL2ProdDOC"]:
-                Utilities.plotIOPs(root, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
+                Utilities.plotIOPs(node, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
 
         # Write output file
-        if root is not None:
+        if node is not None:
             try:
-                root.writeHDF5(outFilePath)
-                return root, outFilePath
+                node.writeHDF5(outFilePath)
+                return node
             except:
                 msg = "Unable to write file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return None, outFilePath
+                return None
         else:
             msg = "L2 processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
-            return None, outFilePath
+            return None
 
     # Process every file in a list of files 1 level
     @staticmethod
@@ -572,39 +550,94 @@ class Controller:
         elif level == "L2":
             # Ancillary data from metadata have been read in at L1C,
             # and will be extracted from the ANCILLARY_METADATA group later
-            root, outFilePath = Controller.processL2(inFilePath, outFilePath)
 
-            if os.path.isfile(outFilePath):
-                # Ensure that the L2 on file is recent before continuing with
-                # SeaBASS files or reports
-                modTime = os.path.getmtime(outFilePath)
-                nowTime = datetime.datetime.now()
-                if nowTime.timestamp() - modTime < 60:
-                    msg = f'{level} file produced: \n{outFilePath}'
+            root = None
+            if not os.path.isfile(inFilePath):
+                print('No such input file: ' + inFilePath)
+                return None, outFilePath
+
+            msg = ("ProcessL2: " + inFilePath)
+            print(msg)
+            Utilities.writeLogFile(msg)
+            try:
+                # root variable is replaced by L2 node unless station extraction, in which case
+                #   it is retained and node is returned from ProcessL2
+                root = HDFRoot.readHDF5(inFilePath)
+            except:
+                msg = "Unable to open file. May be open in another application."
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None, outFilePath
+
+            ##### Loop over this whole section for each station in the file where appropriate ####
+            if ConfigFile.settings["bL2Stations"]:
+                ancGroup = root.getGroup("ANCILLARY")
+                for ds in ancGroup.datasets:
+                    try:
+                        ancGroup.datasets[ds].datasetToColumns()
+                    except:
+                        print('Error: Something wrong with root ANCILLARY')
+                stations = np.array(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+                stations = np.unique(stations[~np.isnan(stations)]).tolist()
+
+                if len(stations) > 0:
+
+                    for station in stations:
+                        stationStr = str( round(station*100)/100 )
+                        stationStr = stationStr.replace('.','_')
+                        # Current SeaBASS convention experiment_cruise_measurement_datetime_Revision#.sb
+                        # For HDF, leave off measurement; add at SeaBASS writer
+                        outPath, filename = os.path.split(outFilePath)
+                        filename,ext = filename.split('.')
+                        filename = f'{filename}_STATION_{stationStr}.hdf'
+                        outFilePathStation = os.path.join(outPath,filename)
+
+                        msg = f'Processing station: {stationStr}: \n'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+
+                        node = Controller.processL2(root, outFilePathStation,station)
+
+                        if os.path.isfile(outFilePathStation):
+                            # Ensure that the L2 on file is recent before continuing with
+                            # SeaBASS files or reports
+                            modTime = os.path.getmtime(outFilePathStation)
+                            nowTime = datetime.datetime.now()
+                            if nowTime.timestamp() - modTime < 60:
+                                msg = f'{level} file produced: \n{outFilePathStation}'
+                                print(msg)
+                                Utilities.writeLogFile(msg)
+
+                                # Write SeaBASS
+                                if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
+                                    msg = f'Output SeaBASS for HDF: \n{outFilePathStation}'
+                                    print(msg)
+                                    Utilities.writeLogFile(msg)
+                                    SeaBASSWriter.outputTXT_Type2(outFilePathStation)
+                                # return True
+
+                        # Write L2 report for each station, regardless of pass/fail
+                        if ConfigFile.settings["bL2WriteReport"] == 1:
+                            Controller.writeReport(fileName, pathOut, outFilePathStation, level, inFilePath)
+                else:
+                    msg = f'No stations found in: {fileName}'
                     print(msg)
                     Utilities.writeLogFile(msg)
 
-                    # Write SeaBASS
-                    if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
-                        msg = f'Output SeaBASS for HDF: \n{outFilePath}'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
-                        SeaBASSWriter.outputTXT_Type2(outFilePath)
-                    # return True
-
-        # Exempt station writing from reports (So as not to overwrite normal file reports...?)
-        if root is None and ConfigFile.settings["bL2Stations"] == 1:
-            print('No report written due to Station search, but root is None. Processing failed.')
-            return False
+            else:
+                # Even where not extracting stations, processL2 returns node, not root, but to comply with expectations
+                # below based on the other levels and PDF reporting, overwrite root with node
+                root = Controller.processL2(root,outFilePath)
 
         # If the process failed at any level, write a report and return
-        if root is None and ConfigFile.settings["bL2Stations"] == 0:
+        if root is None: #and ConfigFile.settings["bL2Stations"] == 0:
             if ConfigFile.settings["bL2WriteReport"] == 1:
                 Controller.writeReport(fileName, pathOut, outFilePath, level, inFilePath)
             return False
 
         # If L2 successful, write a report
-        if level == "L2":
+        if level == "L2" and ConfigFile.settings["bL2Stations"] == 0:
             if ConfigFile.settings["bL2WriteReport"] == 1:
                 Controller.writeReport(fileName, pathOut, outFilePath, level, inFilePath)
 

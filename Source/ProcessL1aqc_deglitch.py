@@ -270,7 +270,9 @@ class ProcessL1aqc_deglitch:
             # Convert to an array and test along the columns (i.e. each timestamp)
             gIndex = np.any(np.array(globalBadIndex), 0)
             percentLoss = 100*(sum(gIndex)/len(gIndex))
-            # badIndexLight = ProcessL1aqc.lightDataDeglitching(lightData, sensorType, windowLight, sigmaLight)
+            # NOTE: if you similarly collapse globBads 1-3, you should get the same result as gIndex
+            # NOTE: Confirmed that plotted AnomAnal deletions correspond to gIndex
+
             msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
             print(msg)
             Utilities.writeLogFile(msg)

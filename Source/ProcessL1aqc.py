@@ -160,7 +160,7 @@ class ProcessL1aqc:
             # Remove all ancillary data that does not intersect GPS data
             print('Removing non-pertinent ancillary data.')
             lower = bisect.bisect_left(ancDateTime, min(gpsDateTime))
-            lower = list(range(0,lower))
+            lower = list(range(0,lower-1))
             upper = bisect.bisect_right(ancDateTime, max(gpsDateTime))
             upper = list(range(upper,len(ancDateTime)))
             ancillaryData.colDeleteRow(upper)
@@ -280,8 +280,6 @@ class ProcessL1aqc:
             if gp.id == "GPS":
                 timeStamp = gp.getDataset("DATETIME").data
 
-        # if badTimes is None:
-        #     badTimes = []
         i = 0
         start = -1
         stop =[]
@@ -787,6 +785,7 @@ class ProcessL1aqc:
                 return None
 
         # For each dataset in each group, find the badTimes to remove and delete those rows
+        # Test: Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data
         if len(badTimes) > 0:
             msg = "Eliminate combined filtered data from datasets.*****************************"
             print(msg)
@@ -795,7 +794,8 @@ class ProcessL1aqc:
             for gp in node.groups:
 
                 # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
-                if (gp.id == "SOLARTRACKER_STATUS") is False:
+                # Test: Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data
+                if (gp.id == "SOLARTRACKER_STATUS") is False and (gp.id == "ANCILLARY_METADATA") is False:
                     fractionRemoved = ProcessL1aqc.filterData(gp, badTimes)
 
                     # Now test whether the overlap has eliminated all radiometric data

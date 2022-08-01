@@ -30,6 +30,10 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-08-01:
+* Retain Ancillary data in L1AQC filtering to better capture stations, etc. in L1B onward
+* Code for station extraction in L2 where multiple stations are contained in one input file
+
 2022-07-20:
 * Add QWIP to Rrs plots; Needs work...
 

@@ -44,13 +44,13 @@ class ProcessL2:
 
 
     @staticmethod
-    def nirCorrection(root, sensor, F0):
+    def nirCorrection(node, sensor, F0):
         # F0 is sensor specific, but ultimately, SimSpec can only be applied to hyperspectral data anyway,
         # so output the correction and apply it to satellite bands later.
         simpleNIRCorrection = int(ConfigFile.settings["bL2SimpleNIRCorrection"])
         simSpecNIRCorrection = int(ConfigFile.settings["bL2SimSpecNIRCorrection"])
 
-        newReflectanceGroup = root.getGroup("REFLECTANCE")
+        newReflectanceGroup = node.getGroup("REFLECTANCE")
         newRrsData = newReflectanceGroup.getDataset(f'Rrs_{sensor}')
         newnLwData = newReflectanceGroup.getDataset(f'nLw_{sensor}')
         newRrsDeltaData = newReflectanceGroup.getDataset(f'Rrs_{sensor}_unc')
@@ -58,7 +58,7 @@ class ProcessL2:
 
         newNIRData = newReflectanceGroup.getDataset(f'nir_{sensor}')
 
-        # These will include all slices in root so far
+        # These will include all slices in node so far
         # Below the most recent/current slice [-1] will be selected for processing
         rrsSlice = newRrsData.columns
         nLwSlice = newnLwData.columns
@@ -218,7 +218,7 @@ class ProcessL2:
 
 
     @staticmethod
-    def spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset):
+    def spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset):
         ''' The slices, stds, F0, rhoVec here are sensor-waveband specific '''
         esXSlice = xSlice['es']
         esXstd = xSlice['esSTD']
@@ -234,9 +234,9 @@ class ProcessL2:
         ZhangRho = int(ConfigFile.settings["bL2ZhangRho"])
 
        # Root (new/output) groups:
-        newReflectanceGroup = root.getGroup("REFLECTANCE")
-        newRadianceGroup = root.getGroup("RADIANCE")
-        newIrradianceGroup = root.getGroup("IRRADIANCE")
+        newReflectanceGroup = node.getGroup("REFLECTANCE")
+        newRadianceGroup = node.getGroup("RADIANCE")
+        newIrradianceGroup = node.getGroup("IRRADIANCE")
 
         # If this is the first ensemble spectrum, set up the new datasets
         if not (f'Rrs_{sensor}' in newReflectanceGroup.datasets):
@@ -283,7 +283,7 @@ class ProcessL2:
         # Groups REFLECTANCE, IRRADIANCE, and RADIANCE are intiallized with empty datasets, but
         # ANCILLARY is not.
         if ("Datetag" not in newRrsData.columns):
-            for gp in root.groups:
+            for gp in node.groups:
                 if (gp.id == "ANCILLARY"): # Ancillary is already populated. The other groups only have empty (named) datasets
                     continue
                 else:
@@ -293,7 +293,7 @@ class ProcessL2:
                             gp.datasets[ds].columns["Datetag"] = [dateTag]
                             gp.datasets[ds].columns["Timetag2"] = [timeTag]
         else:
-            for gp in root.groups:
+            for gp in node.groups:
                 if (gp.id == "ANCILLARY"):
                     continue
                 else:
@@ -329,7 +329,7 @@ class ProcessL2:
                             newNIRData.columns['NIR_offset'] = [] # not used until later; highly unpythonic
 
                 # At this waveband (k); still using complete wavelength set
-                es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and root
+                es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and node
                 li = liXSlice[k][0]
                 lt = ltXSlice[k][0]
                 f0  = F0[k]
@@ -808,11 +808,11 @@ class ProcessL2:
         # Each column is a time series either at a waveband for radiometer columns, or various grouped datasets for ancillary
         # Start and end are defined by the interval established in the Config (they are indexes)
         newSlice = collections.OrderedDict()
-        for k in columns:
+        for col in columns:
             if start == end:
-                newSlice[k] = columns[k][start:end+1] # otherwise you get nada []
+                newSlice[col] = columns[col][start:end+1] # otherwise you get nada []
             else:
-                newSlice[k] = columns[k][start:end] # up to not including end...next slice will pick it up
+                newSlice[col] = columns[col][start:end] # up to not including end...next slice will pick it up
         return newSlice
 
 
@@ -1003,12 +1003,12 @@ class ProcessL2:
 
 
     @staticmethod
-    def sliceAveAnc(root, start, end, y, ancGroup):
+    def sliceAveAnc(node, start, end, y, ancGroup):
         ''' Take the slice AND the mean averages of ancillary data with X% '''
-        if root.getGroup('ANCILLARY'):
-            newAncGroup = root.getGroup('ANCILLARY')
+        if node.getGroup('ANCILLARY'):
+            newAncGroup = node.getGroup('ANCILLARY')
         else:
-            newAncGroup = root.addGroup('ANCILLARY')
+            newAncGroup = node.addGroup('ANCILLARY')
 
         for ds in ancGroup.datasets:
             if newAncGroup.getDataset(ds):
@@ -1020,7 +1020,7 @@ class ProcessL2:
             dsSlice = ProcessL2.columnToSlice(DS.columns,start, end)
             dsXSlice = None
 
-            for subset in dsSlice: # several ancillary datasets are groups which will become columns (including date, time, and flags)
+            for subset in dsSlice: # ancillary datasets contain columns (including date, time, and flags)
                 if subset == 'Datetime':
                     timeStamp = dsSlice[subset]
                     # Stores the mean datetime by converting to (and back from) epoch second
@@ -1065,7 +1065,7 @@ class ProcessL2:
 
 
     @staticmethod
-    def ensemblesReflectance(root, sasGroup, refGroup, ancGroup, start, end):
+    def ensemblesReflectance(node, sasGroup, refGroup, ancGroup, start, end):
         '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for
         meteorological quality flags. Perform glint corrections. Calculate the Rrs. Correct for NIR
         residuals.'''
@@ -1247,10 +1247,10 @@ class ProcessL2:
 
         # Take the mean of the lowest X% for the ancillary group in the slice
         # (Combines Slice and XSlice -- as above -- into one method)
-        # root.groups.append(ancGroup)
+        # node.groups.append(ancGroup)
 
-        ProcessL2.sliceAveAnc(root, start, end, y, ancGroup)
-        newAncGroup = root.getGroup("ANCILLARY") # Just populated above
+        ProcessL2.sliceAveAnc(node, start, end, y, ancGroup)
+        newAncGroup = node.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
 
         # Extract the last/current element/slice for each dataset and hold for use in calculating reflectances
@@ -1411,7 +1411,7 @@ class ProcessL2:
 
 
         # Build a slice object for (ir)radiances to be passed to spectralReflectance method
-        # These slices are unique and independant of root data or earlier slices in the same root object
+        # These slices are unique and independant of node data or earlier slices in the same node object
         xSlice = {}
         # Full hyperspectral
         sensor = 'HYPER'
@@ -1423,13 +1423,13 @@ class ProcessL2:
         xSlice['ltSTD'] = ltXstd
         F0 = F0_hyper
 
-        # Populate the relevant fields in root
-        ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset)
+        # Populate the relevant fields in node
+        ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset)
 
         # Apply residual NIR corrections
         # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
-            rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(root, sensor, F0)
+            rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(node, sensor, F0)
 
 
         # Satellites
@@ -1453,10 +1453,10 @@ class ProcessL2:
             xSlice['ltSTD'] = ltXstdMODISA
 
             sensor = 'MODISA'
-            ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS)
+            ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS)
             if ConfigFile.settings["bL2PerformNIRCorrection"]:
                 # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
-                ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
+                ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
 
         if ConfigFile.settings['bL2WeightMODIST']:
             print('Processing MODIST')
@@ -1473,10 +1473,10 @@ class ProcessL2:
             xSlice['ltSTD'] = ltXstdMODIST
 
             sensor = 'MODIST'
-            ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS)
+            ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS)
             if ConfigFile.settings["bL2PerformNIRCorrection"]:
                 # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
-                ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
+                ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
 
         if ConfigFile.settings['bL2WeightVIIRSN'] or ConfigFile.settings['bL2WeightVIIRSJ']:
             F0 = F0_VIIRS
@@ -1497,10 +1497,10 @@ class ProcessL2:
             xSlice['ltSTD'] = ltXstdVIIRSN
 
             sensor = 'VIIRSN'
-            ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS,  waveSubsetVIIRS)
+            ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS,  waveSubsetVIIRS)
             if ConfigFile.settings["bL2PerformNIRCorrection"]:
                 # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
-                ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
+                ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
 
         if ConfigFile.settings['bL2WeightVIIRSJ']:
             print('Processing VIIRSJ')
@@ -1517,10 +1517,10 @@ class ProcessL2:
             xSlice['ltSTD'] = ltXstdVIIRSJ
 
             sensor = 'VIIRSJ'
-            ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS, waveSubsetVIIRS)
+            ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS, waveSubsetVIIRS)
             if ConfigFile.settings["bL2PerformNIRCorrection"]:
                 # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
-                ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
+                ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
 
         if ConfigFile.settings['bL2WeightSentinel3A'] or ConfigFile.settings['bL2WeightSentinel3B']:
             F0 = F0_Sentinel3
@@ -1541,10 +1541,10 @@ class ProcessL2:
             xSlice['ltSTD'] = ltXstdSentinel3A
 
             sensor = 'Sentinel3A'
-            ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3)
+            ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3)
             if ConfigFile.settings["bL2PerformNIRCorrection"]:
                 # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
-                ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
+                ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
 
         if ConfigFile.settings['bL2WeightSentinel3B']:
             print('Processing Sentinel3B')
@@ -1561,25 +1561,37 @@ class ProcessL2:
             xSlice['ltSTD'] = ltXstdSentinel3B
 
             sensor = 'Sentinel3B'
-            ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3)
+            ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3)
             if ConfigFile.settings["bL2PerformNIRCorrection"]:
                 # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
-                ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
+                ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
 
         return True
 
 
     @staticmethod
-    def stationsEnsemblesReflectance(root, node):
+    def stationsEnsemblesReflectance(node, root,station=None):
+    # def stationsEnsemblesReflectance(node,station=None):
         ''' Extract stations if requested, then pass to ensemblesReflectance for ensemble
             averages, rho calcs, Rrs, Lwn, NIR correction, satellite convolution, OC Products.'''
 
         print("stationsEnsemblesReflectance")
 
-        referenceGroup = node.getGroup("IRRADIANCE")
-        sasGroup = node.getGroup("RADIANCE")
-        ancGroup = node.getGroup("ANCILLARY")
-        Utilities.rootAddDateTimeCol(node)
+        # Create a third HDF for copying root without altering it
+        rootCopy = HDFRoot.HDFRoot()
+        rootCopy.addGroup("ANCILLARY")
+        rootCopy.addGroup("IRRADIANCE")
+        rootCopy.addGroup("RADIANCE")
+
+        rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
+        rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
+        rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
+
+        # rootCopy will be manipulated in the making of node, but root will not
+        referenceGroup = rootCopy.getGroup("IRRADIANCE")
+        sasGroup = rootCopy.getGroup("RADIANCE")
+        ancGroup = rootCopy.getGroup("ANCILLARY")
+        Utilities.rootAddDateTimeCol(rootCopy)
 
         ###############################################################################
         #
@@ -1587,12 +1599,13 @@ class ProcessL2:
         #   Simplest approach is to run station extraction seperately from (i.e. in addition to)
         #   underway data. This means if station extraction is selected in the GUI, all non-station
         #   data will be discarded here prior to any further filtering or processing.
-        station = None
+
         if ConfigFile.settings["bL2Stations"]:
             msg = "Extracting station data only. All other records will be discarded."
             print(msg)
             Utilities.writeLogFile(msg)
 
+            # If we are here, the station was already chosen in Controller
             try:
                 stations = ancGroup.getDataset("STATION").columns["STATION"]
                 dateTime = ancGroup.getDataset("STATION").columns["Datetime"]
@@ -1605,47 +1618,33 @@ class ProcessL2:
             badTimes = []
             start = False
             stop = False
-            for index, station in enumerate(stations):
+            for index, stn in enumerate(stations):
                 # print(f'index: {index}, station: {station}, datetime: {dateTime[index]}')
-                if np.isnan(station) and start == False:
+                # if np.isnan(station) and start == False:
+                if (stn != station) and (start == False):
                     start = dateTime[index]
-                if not np.isnan(station) and not (start == False) and (stop == False):
+                # if not np.isnan(station) and not (start == False) and (stop == False):
+                if not (stn!=station) and not (start == False) and (stop == False):
                     stop = dateTime[index-1]
                     badTimes.append([start, stop])
                     start = False
                     stop = False
                 # End of file, no active station
-                if np.isnan(station) and not (start == False) and (index == len(stations)-1):
+                # if np.isnan(station) and not (start == False) and (index == len(stations)-1):
+                if (stn != station) and not (start == False) and (index == len(stations)-1):
                     stop = dateTime[index]
                     badTimes.append([start, stop])
 
             if badTimes is not None and len(badTimes) != 0:
                 print('Removing records...')
                 check = ProcessL2.filterData(referenceGroup, badTimes)
-                if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
+                if check == 1.0:
+                    msg = "100% of irradiance data removed. Abort."
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
-
-            # What to do if there are multiple, non-unique station numbers (i.e. one file spans two
-            # stations)?? Would need to break each file into multiple files....
-            ''' TO DO: This needs to be addressed for non-SolarTracker files, which can
-                be much longer than one hour long and capture more than one station '''
-            stations = ancGroup.getDataset("STATION").columns["STATION"]
-            station = np.unique(stations)
-            if len(station) > 1:
-                msg = "Multiple non-unique station names found in this file. Abort!"
-                alert = QtWidgets.QMessageBox()
-                alert.setText(msg)
-                alert.exec_()
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return False
-
-            station = str(round(station[0]*100)/100)
 
         #####################################################################
         #
@@ -1666,7 +1665,7 @@ class ProcessL2:
                 start = i
                 end = i+1
 
-                if not ProcessL2.ensemblesReflectance(root, sasGroup, referenceGroup, ancGroup, start, end):
+                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance unsliced failed. Abort.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -1677,8 +1676,6 @@ class ProcessL2:
             Utilities.writeLogFile(msg)
             # Iterate over the time ensembles
             start = 0
-            # endTime = Utilities.timeTag2ToSec(tt2[0]) + interval
-            # endFileTime = Utilities.timeTag2ToSec(tt2[-1])
             endTime = timeStamp[0] + datetime.timedelta(0,interval)
             endFileTime = timeStamp[-1]
             timeFlag = False
@@ -1699,7 +1696,7 @@ class ProcessL2:
                     if endTime > endFileTime:
                         endTime = endFileTime
 
-                    if not ProcessL2.ensemblesReflectance(root, sasGroup, referenceGroup, ancGroup, start, end):
+                    if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, start, end):
                         msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                         print(msg)
                         Utilities.writeLogFile(msg)
@@ -1715,7 +1712,7 @@ class ProcessL2:
             time = timeStamp[start]
             if time < (endTime - datetime.timedelta(0,interval)):
 
-                if not ProcessL2.ensemblesReflectance(root,sasGroup, referenceGroup, ancGroup, start, end):
+                if not ProcessL2.ensemblesReflectance(node,sasGroup, referenceGroup, ancGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance ender failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -1734,8 +1731,8 @@ class ProcessL2:
             msg = "Filtering reflectance spectra for negative values."
             print(msg)
             Utilities.writeLogFile(msg)
-            # newReflectanceGroup = root.groups[0]
-            newReflectanceGroup = root.getGroup("REFLECTANCE")
+            # newReflectanceGroup = node.groups[0]
+            newReflectanceGroup = node.getGroup("REFLECTANCE")
             if not newReflectanceGroup.datasets:
                 msg = "Ensemble is empty. Aborting."
                 print(msg)
@@ -1764,40 +1761,42 @@ class ProcessL2:
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False
-                ProcessL2.filterData(root.getGroup("IRRADIANCE"), badTimes, sensor = "HYPER")
-                ProcessL2.filterData(root.getGroup("RADIANCE"), badTimes, sensor = "HYPER")
-                ProcessL2.filterData(root.getGroup("ANCILLARY"), badTimes)
+                ProcessL2.filterData(node.getGroup("IRRADIANCE"), badTimes, sensor = "HYPER")
+                ProcessL2.filterData(node.getGroup("RADIANCE"), badTimes, sensor = "HYPER")
+                ProcessL2.filterData(node.getGroup("ANCILLARY"), badTimes)
 
         return True
 
     @staticmethod
-    def processL2(node):
+    def processL2(root,station=None):
         '''Calculates Rrs and nLw after quality checks and filtering, glint removal, residual
             subtraction. Weights for satellite bands, and outputs plots and SeaBASS datasets'''
 
-        root = HDFRoot.HDFRoot()
-        root.addGroup("ANCILLARY")
-        root.addGroup("REFLECTANCE")
-        root.addGroup("IRRADIANCE")
-        root.addGroup("RADIANCE")
-        root.copyAttributes(node)
-        root.attributes["PROCESSING_LEVEL"] = "2"
+        # Root is the input from L1BQC, node is the output
+        # Root should not be impacted by data reduction in node...
+        node = HDFRoot.HDFRoot()
+        node.addGroup("ANCILLARY")
+        node.addGroup("REFLECTANCE")
+        node.addGroup("IRRADIANCE")
+        node.addGroup("RADIANCE")
+        node.copyAttributes(root)
+        node.attributes["PROCESSING_LEVEL"] = "2"
         # Remaining attributes managed below...
 
         # For completeness, flip datasets into colums in all groups
-        for grp in node.groups:
-            for gp in root.groups:
+        for grp in root.groups:
+            for gp in node.groups:
                 if gp.id == grp.id:
                     gp.copyAttributes(grp)
             for ds in grp.datasets:
                 grp.datasets[ds].datasetToColumns()
 
         # Process stations, ensembles to reflectances, OC prods, etc.
-        if not ProcessL2.stationsEnsemblesReflectance(root, node):
+        if not ProcessL2.stationsEnsemblesReflectance(node, root,station):
             return None
 
         # Reflectance
-        gp = root.getGroup("REFLECTANCE")
+        gp = node.getGroup("REFLECTANCE")
         gp.attributes["Rrs_UNITS"] = "1/sr"
         gp.attributes["nLw_UNITS"] = "uW/cm^2/nm/sr"
         if ConfigFile.settings['bL23CRho']:
@@ -1816,11 +1815,11 @@ class ProcessL2:
 
         # Root
         if ConfigFile.settings['bL2Stations']:
-            root.attributes['STATION_EXTRACTION'] = 'ON'
-        root.attributes['ENSEMBLE_DURATION'] = str(ConfigFile.settings['fL2TimeInterval']) + ' sec'
+            node.attributes['STATION_EXTRACTION'] = 'ON'
+        node.attributes['ENSEMBLE_DURATION'] = str(ConfigFile.settings['fL2TimeInterval']) + ' sec'
 
         # Check to insure at least some data survived quality checks
-        if root.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None:
+        if node.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None:
             msg = "All data appear to have been eliminated from the file. Aborting."
             print(msg)
             Utilities.writeLogFile(msg)
@@ -1830,15 +1829,15 @@ class ProcessL2:
         # inherent optical properties
         totalProds = sum(list(ConfigFile.products.values()))
         if totalProds > 0:
-            ProcessL2OCproducts.procProds(root)
+            ProcessL2OCproducts.procProds(node)
 
 
         # Now strip datetimes from all datasets
-        for gp in root.groups:
+        for gp in node.groups:
             for dsName in gp.datasets:
                 ds = gp.datasets[dsName]
                 if "Datetime" in ds.columns:
                     ds.columns.pop("Datetime")
                 ds.columnsToDataset()
 
-        return root
+        return node

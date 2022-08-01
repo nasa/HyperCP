@@ -62,8 +62,10 @@ class SeaBASSWriter:
         eastLon = "{:.4f}[DEG]".format(max(esData.data['LONGITUDE'].tolist()))
         westLon = "{:.4f}[DEG]".format(min(esData.data['LONGITUDE'].tolist()))
 
-        if headerBlock['station'] == '':
-            headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
+        if headerBlock['station'] == '' and ConfigFile.settings['bL2Stations'] == 1:
+            station = node.getGroup('ANCILLARY').getDataset('STATION').data[0][2]
+            # headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
+            headerBlock['station'] = station
         if headerBlock['start_time'] == '':
             headerBlock['start_time'] = startTime
         if headerBlock['end_time'] == '':
@@ -187,7 +189,14 @@ class SeaBASSWriter:
 
         # outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{os.path.split(fp)[1].replace(".hdf",f"_{dtype}_{version}.sb")}'
         # Conforms to SeaBASS file names: Experiment_Cruise_Platform_Instrument_YYMMDD_HHmmSS_Level_DataType_Revision
-        outFileName = \
+        if ConfigFile.settings['bL2Stations']:
+            station = str(headerBlock['station']).replace('.','_')
+            outFileName = \
+                (   f"{os.path.split(fp)[0]}/SeaBASS/{headerBlock['experiment']}_{headerBlock['cruise']}_"
+                    f"{headerBlock['platform']}_{headerBlock['instrument_model']}_{formattedData[0].split(',')[0]}_"
+                    f"{formattedData[0].split(',')[1].replace(':','')}_L2_{dtype}_STATION_{station}_{version}.sb")
+        else:
+            outFileName = \
             (   f"{os.path.split(fp)[0]}/SeaBASS/{headerBlock['experiment']}_{headerBlock['cruise']}_"
                 f"{headerBlock['platform']}_{headerBlock['instrument_model']}_{formattedData[0].split(',')[0]}_"
                 f"{formattedData[0].split(',')[1].replace(':','')}_L2_{dtype}_{version}.sb")

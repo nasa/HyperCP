@@ -915,6 +915,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 maxLight = getattr(self,f'{sensorType}MaxLight')
                 minMaxLightBand = getattr(self,f'{sensorType}MinMaxBandLight')
 
+                globalBadIndex = []
+
                 index = 0
                 for timeSeries in columns.items():
                     if index==0:
@@ -924,15 +926,25 @@ class AnomAnalWindow(QtWidgets.QDialog):
                         globBad3 = [False]*len(timeSeries[1])
                     band = float(timeSeries[0])
                     if band > self.minBand and band < self.maxBand:
-                        # if index % step == 0:
                         radiometry1D = timeSeries[1]
                         badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minLight, maxLight,minMaxLightBand)
+
+                        # For plotting:
                         globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
                         globBad2[:] = (True if val2 else val1 for (val1,val2) in zip(globBad2,badIndex2))
                         globBad3[:] = (True if val2 else val1 for (val1,val2) in zip(globBad3,badIndex3))
 
-                            # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,badIndex,badIndex2,badIndex3)
+                        # For deletion:
+                        globalBadIndex.append(badIndex)
+                        globalBadIndex.append(badIndex2)
+                        globalBadIndex.append(badIndex3)
                     index += 1
+
+                # Collapse the badIndexes from all wavebands into one timeseries
+                # Convert to an array and test along the columns (i.e. each timestamp)
+                gIndex = np.any(np.array(globalBadIndex), 0)
+                # NOTE: if you similarly collapse globBads 1-3, you should get the same result as gIndex
+
                 # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
                 index =0
                 for timeSeries in columns.items():
