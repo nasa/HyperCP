@@ -496,38 +496,43 @@ class Controller:
                 #   particular file. If no parameter file exists, or this SAS file is not in it,
                 #   then fall back on the default ConfigFile.settings.
 
-                anomAnalFileName = os.path.splitext(ConfigFile.filename)[0]
-                anomAnalFileName = anomAnalFileName + '_anoms.csv'
-                fp = os.path.join('Config',anomAnalFileName)
-                if os.path.exists(fp):
-                    msg = f"Deglitching file {fp} found for {ConfigFile.filename.split('.')[0]}. Using these parameters."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    params = Utilities.readAnomAnalFile(fp)
-                    # If a parameterization has been saved in the AnomAnalFile, set the properties in the local object
-                    # for all sensors
-                    l1aqcfileName = fileName + '_L1AQC'
-                    if l1aqcfileName in params.keys():
-                        ref = 0
-                        for sensor in ['ES','LI','LT']:
-                            print(f'{sensor}: Setting ConfigFile.settings to match saved parameterization. ')
-                            ConfigFile.settings[f'fL1aqc{sensor}WindowDark'] = params[l1aqcfileName][ref+0]
-                            ConfigFile.settings[f'fL1aqc{sensor}WindowLight'] = params[l1aqcfileName][ref+1]
-                            ConfigFile.settings[f'fL1aqc{sensor}SigmaDark'] = params[l1aqcfileName][ref+2]
-                            ConfigFile.settings[f'fL1aqc{sensor}SigmaLight'] = params[l1aqcfileName][ref+3]
-                            ConfigFile.settings[f'fL1aqc{sensor}MinDark'] = params[l1aqcfileName][ref+4]
-                            ConfigFile.settings[f'fL1aqc{sensor}MaxDark'] = params[l1aqcfileName][ref+5]
-                            ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandDark'] = params[l1aqcfileName][ref+6]
-                            ConfigFile.settings[f'fL1aqc{sensor}MinLight'] = params[l1aqcfileName][ref+7]
-                            ConfigFile.settings[f'fL1aqc{sensor}MaxLight'] = params[l1aqcfileName][ref+8]
-                            ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandLight'] = params[l1aqcfileName][ref+9]
-                            ref += 10
+                if ConfigFile.settings["bL1aqcDeglitch"]:
+                    anomAnalFileName = os.path.splitext(ConfigFile.filename)[0]
+                    anomAnalFileName = anomAnalFileName + '_anoms.csv'
+                    fp = os.path.join('Config',anomAnalFileName)
+                    if os.path.exists(fp):
+                        msg = f"Deglitching file {fp} found for {ConfigFile.filename.split('.')[0]}. Using these parameters."
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        params = Utilities.readAnomAnalFile(fp)
+                        # If a parameterization has been saved in the AnomAnalFile, set the properties in the local object
+                        # for all sensors
+                        l1aqcfileName = fileName + '_L1AQC'
+                        if l1aqcfileName in params.keys():
+                            ref = 0
+                            for sensor in ['ES','LI','LT']:
+                                print(f'{sensor}: Setting ConfigFile.settings to match saved parameterization. ')
+                                ConfigFile.settings[f'fL1aqc{sensor}WindowDark'] = params[l1aqcfileName][ref+0]
+                                ConfigFile.settings[f'fL1aqc{sensor}WindowLight'] = params[l1aqcfileName][ref+1]
+                                ConfigFile.settings[f'fL1aqc{sensor}SigmaDark'] = params[l1aqcfileName][ref+2]
+                                ConfigFile.settings[f'fL1aqc{sensor}SigmaLight'] = params[l1aqcfileName][ref+3]
+                                ConfigFile.settings[f'fL1aqc{sensor}MinDark'] = params[l1aqcfileName][ref+4]
+                                ConfigFile.settings[f'fL1aqc{sensor}MaxDark'] = params[l1aqcfileName][ref+5]
+                                ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandDark'] = params[l1aqcfileName][ref+6]
+                                ConfigFile.settings[f'fL1aqc{sensor}MinLight'] = params[l1aqcfileName][ref+7]
+                                ConfigFile.settings[f'fL1aqc{sensor}MaxLight'] = params[l1aqcfileName][ref+8]
+                                ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandLight'] = params[l1aqcfileName][ref+9]
+                                ref += 10
+                        else:
+                            msg = 'This file not found in parameter file. Resorting to values in ConfigFile.settings.'
+                            print(msg)
+                            Utilities.writeLogFile(msg)
                     else:
-                        msg = 'This file not found in parameter file. Resorting to values in ConfigFile.settings.'
+                        msg = 'No deglitching parameter file found. Resorting to default values. NOT RECOMMENDED. RUN ANOMALY ANALYSIS.'
                         print(msg)
                         Utilities.writeLogFile(msg)
                 else:
-                    msg = 'No deglitching parameter file found. Resorting to default values. NOT RECOMMENDED. RUN ANOMALY ANALYSIS.'
+                    msg = 'No deglitching will be performed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
                 root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)

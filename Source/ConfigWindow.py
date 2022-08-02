@@ -167,7 +167,7 @@ class ConfigWindow(QtWidgets.QDialog):
         #   Deglitcher
         self.l1aqcDeglitchLabel = QtWidgets.QLabel("  Deglitch Data", self)
         self.l1aqcDeglitchCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL1aqcDeglitch"]) == 1:
+        if ConfigFile.settings["bL1aqcDeglitch"]:
             self.l1aqcDeglitchCheckBox.setChecked(True)
         self.l1aqcDeglitchCheckBoxUpdate()
         self.l1aqcDeglitchCheckBox.clicked.connect(self.l1aqcDeglitchCheckBoxUpdate)

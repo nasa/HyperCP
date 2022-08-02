@@ -30,6 +30,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.waveBand = []
         self.waveBands = []
         self.setModal(True)
+        self.sensor='ES'
 
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
@@ -158,7 +159,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.SigmaDarkLineEdit.setValidator(doubleValidator)
         self.SigmaDarkLineEdit.returnPressed.connect(self.updateButton.click)
 
-        self.MinDarkLabel = QtWidgets.QLabel("Min", self)
+        self.MinDarkLabel = QtWidgets.QLabel("Dark Min", self)
         self.MinDarkLineEdit = QtWidgets.QLineEdit(self)
         self.MinDarkLineEdit.setText(str(ConfigFile.settings[f'fL1aqc{self.sensor}MinDark']))
         self.MinDarkLineEdit.returnPressed.connect(self.updateButton.click)
@@ -189,14 +190,16 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.SigmaLightLineEdit.setValidator(doubleValidator)
         self.SigmaLightLineEdit.returnPressed.connect(self.updateButton.click)
 
-        self.MinLightLabel = QtWidgets.QLabel("Min", self)
+        self.MinLightLabel = QtWidgets.QLabel("Light Min", self)
         self.MinLightLineEdit = QtWidgets.QLineEdit(self)
         self.MinLightLineEdit.setText(str(ConfigFile.settings[f'fL1aqc{self.sensor}MinLight']))
         self.MinLightLineEdit.returnPressed.connect(self.updateButton.click)
 
-        self.MinMaxLightButton = QtWidgets.QPushButton('Set Band:', self, clicked=self.MinMaxLightButtonPressed)
-        self.MinMaxLightButton.setToolTip('Select this band for Min/Max thresholding')
-        self.MinMaxLightLabel = QtWidgets.QLabel("", self)
+        # self.MinMaxLightButton = QtWidgets.QPushButton('Set Band:', self, clicked=self.MinMaxLightButtonPressed)
+        # self.MinMaxLightButton.setToolTip('Select this band for Min/Max thresholding')
+        # self.MinMaxLightLabel = QtWidgets.QLabel("", self)
+        self.GoToButton = QtWidgets.QPushButton('Go To Set Band', self, clicked=self.GoToButtonPressed)
+        self.GoToButton.setToolTip('Go to threshold waveband')
 
         self.MaxLightLabel = QtWidgets.QLabel("Max", self)
         self.MaxLightLineEdit = QtWidgets.QLineEdit(self)
@@ -352,22 +355,25 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.VBox.addLayout(HBox3)
 
         HBox4 = QtWidgets.QHBoxLayout()
-        # HBox4.addWidget(self.ThresholdLabel)
         HBox4.addWidget(self.ThresholdCheckBox)
+        HBox4.addWidget(self.MinMaxDarkButton)
+        HBox4.addWidget(self.MinMaxDarkLabel)
+        HBox4.addWidget(self.GoToButton)
+
+        HBox4.addSpacing(15)
         HBox4.addWidget(self.MinDarkLabel)
         HBox4.addWidget(self.MinDarkLineEdit)
         HBox4.addWidget(self.MaxDarkLabel)
         HBox4.addWidget(self.MaxDarkLineEdit)
-        HBox4.addWidget(self.MinMaxDarkButton)
-        HBox4.addWidget(self.MinMaxDarkLabel)
-        HBox4.addSpacing(35)
+
+        # HBox4.addSpacing(35)
         HBox4.addStretch()
         HBox4.addWidget(self.MinLightLabel)
         HBox4.addWidget(self.MinLightLineEdit)
         HBox4.addWidget(self.MaxLightLabel)
         HBox4.addWidget(self.MaxLightLineEdit)
-        HBox4.addWidget(self.MinMaxLightButton)
-        HBox4.addWidget(self.MinMaxLightLabel)
+        # HBox4.addWidget(self.MinMaxLightButton)
+        # HBox4.addWidget(self.MinMaxLightLabel)
         self.VBox.addLayout(HBox4)
 
         HBox5 = QtWidgets.QHBoxLayout()
@@ -404,13 +410,14 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
     def sliderMove(self):
         self.sliderWave = float(self.slider.value())
-        ''' This fails to update the label '''
         self.sLabel.setText(f'Deglitching only performed from 350-850 nm: {self.sliderWave}')
-        # print(self.sliderWave)
+
+        # This creates problem prior to window opening. Use the update button after sliding.
+        # self.updateButtonPressed()
 
     def loadL1AQCfile(self):
         inputDirectory = self.inputDirectory
-        # Open L1A HDF5 file for Deglitching
+        # Open L1AQC HDF5 file for Deglitching
         inLevel = "L1AQC"
         subInputDir = os.path.join(inputDirectory + '/' + inLevel + '/')
         if os.path.exists(subInputDir):
@@ -627,7 +634,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Test for root
         if not hasattr(self, 'root'):
             note = QtWidgets.QMessageBox()
-            note.setText('You must load L1A file before plotting')
+            note.setText('You must load L1AQC file before plotting')
             note.exec_()
             return
 
@@ -679,6 +686,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 waveBands.append(float(key))
                 waveBandStrings.append(key)
             self.waveBands = waveBands
+            if not self.sliderWave:
+                self.sliderWave = float(self.slider.value())
             whr = Utilities.find_nearest(self.waveBands, self.sliderWave)
             self.waveBand = self.waveBands[whr]
             # print(self.waveBand)
@@ -695,8 +704,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.slider.setValue(self.sliderWave)
 
         # Update minmax text
-        self.MinMaxDarkLabel.setText(str(getattr(self,f'{self.sensor}MinMaxBandDark')) +'nm' )
-        self.MinMaxLightLabel.setText(str(getattr(self,f'{self.sensor}MinMaxBandLight')) +'nm')
+        self.MinMaxDarkLabel.setText(str(getattr(self,f'{self.sensor}MinMaxBandDark')) +' nm' )
+        # self.MinMaxLightLabel.setText(str(getattr(self,f'{self.sensor}MinMaxBandLight')) +'nm')
 
         # # Try to use the Threshold bands to reset the slider and display
         # self.ThresholdCheckBoxUpdate()
@@ -831,16 +840,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
         print("Save plots pressed")
         # Steps in wavebands used for plots
         step = float(ConfigFile.settings["fL1aqcAnomalyStep"])
-
-        # outDir = MainConfig.settings["outDir"]
-        # # If default output path is used, choose the root HyperInSPACE path, and build on that
-        # if os.path.abspath(outDir) == os.path.join('./','Data'):
-        #     outDir = './'
-
-        # if not os.path.exists(os.path.join(outDir,'Plots','L1A_Anoms')):
-        #     os.makedirs(os.path.join(outDir,'Plots','L1A_Anoms'))
-        # plotdir = os.path.join(outDir,'Plots','L1A_Anoms')
-        # fp = os.path.join(plotdir,self.fileName)
 
         sensorTypes = ["ES","LT","LI"]
 
@@ -999,7 +998,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.MinLightLineEdit.setDisabled(disabled)
         self.MaxLightLineEdit.setDisabled(disabled)
         self.MinMaxDarkButton.setDisabled(disabled)
-        self.MinMaxLightButton.setDisabled(disabled)
+        # self.MinMaxLightButton.setDisabled(disabled)
 
         if disabled:
             ConfigFile.settings["bL1aqcThreshold"] = 0
@@ -1021,30 +1020,49 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Test for root
         if not hasattr(self, 'root'):
             note = QtWidgets.QMessageBox()
-            note.setText('You must load L1A file before continuing')
+            note.setText('You must load L1AQC file before continuing')
             note.exec_()
             return
         sensorType = self.sensor
         print(sensorType)
 
          # Set parameters in the local object from the GUI
+        whr = Utilities.find_nearest(self.waveBands, float(self.slider.value()))
+        self.waveBand = self.waveBands[whr]
         setattr(self,f'{self.sensor}MinMaxBandDark', self.waveBand)
-        self.MinMaxDarkLabel.setText(str(self.waveBand) +'nm' )
-
-    def MinMaxLightButtonPressed(self):
-        print('Updating waveband for Light thresholds')
-        # Test for root
-        if not hasattr(self, 'root'):
-            note = QtWidgets.QMessageBox()
-            note.setText('You must load L1A file before continuing')
-            note.exec_()
-            return
-        sensorType = self.sensor
-        print(sensorType)
-
+        self.MinMaxDarkLabel.setText(str(self.waveBand) +' nm' )
          # Set parameters in the local object from the GUI
         setattr(self,f'{self.sensor}MinMaxBandLight', self.waveBand)
-        self.MinMaxLightLabel.setText(str(self.waveBand) +'nm' )
+        # self.MinMaxLightLabel.setText(str(self.waveBand) +'nm' )
+
+    # def MinMaxLightButtonPressed(self):
+    #     print('Updating waveband for Light thresholds')
+    #     # Test for root
+    #     if not hasattr(self, 'root'):
+    #         note = QtWidgets.QMessageBox()
+    #         note.setText('You must load L1AQC file before continuing')
+    #         note.exec_()
+    #         return
+    #     sensorType = self.sensor
+    #     print(sensorType)
+
+    #      # Set parameters in the local object from the GUI
+    #     setattr(self,f'{self.sensor}MinMaxBandLight', self.waveBand)
+    #     self.MinMaxLightLabel.setText(str(self.waveBand) +'nm' )
+
+    def GoToButtonPressed(self):
+        print('Updating wavebands')
+
+        # self.sliderWave = float(self.slider.value())
+        self.sliderWave = getattr(self,f'{self.sensor}MinMaxBandLight')
+        self.slider.setValue(self.sliderWave)
+        self.sLabel.setText(f'Deglitching only performed from 350-850 nm: {self.sliderWave}')
+
+        self.updateButtonPressed()
+
+        #  # Set parameters in the local object from the GUI
+        # setattr(self,f'{self.sensor}MinMaxBandLight', self.waveBand)
+        # self.MinMaxLightLabel.setText(str(self.waveBand) +'nm' )
 
 
     @staticmethod

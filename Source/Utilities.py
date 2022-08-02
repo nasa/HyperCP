@@ -551,7 +551,7 @@ class Utilities:
         return badIndex
 
     @staticmethod
-    def l1dThresholds(band,data,minRad,maxRad,minMaxBand):
+    def deglitchThresholds(band,data,minRad,maxRad,minMaxBand):
 
         badIndex = []
         for i in range(len(data)):
@@ -1759,7 +1759,7 @@ class Utilities:
 
             # Threshold pass
             # Tolerates "None" for min or max Rad. ConfigFile.setting updated directly from checkbox
-            badIndex3 = Utilities.l1dThresholds(band,radiometry1D,minRad,maxRad, minMaxBand)
+            badIndex3 = Utilities.deglitchThresholds(band,radiometry1D,minRad,maxRad, minMaxBand)
 
         else:
             # For Lights, calculate the moving average and residual vectors
@@ -1802,7 +1802,7 @@ class Utilities:
 
             # Threshold pass
             # Tolerates "None" for min or max Rad
-            badIndex3 = Utilities.l1dThresholds(band, radiometry1D,minRad,maxRad, minMaxBand)
+            badIndex3 = Utilities.deglitchThresholds(band, radiometry1D,minRad,maxRad, minMaxBand)
 
         return badIndex, badIndex2, badIndex3
 
