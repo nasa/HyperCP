@@ -22,6 +22,9 @@ class ProcessL1b_Interp:
         # List of datasets requiring angular interpolation (i.e. through 0 degrees)
         angList = ['AZIMUTH', 'POINTING', 'REL_AZ', 'HEADING', 'SOLAR_AZ', 'SZA']
 
+        # List of datasets requiring fill instead of interpolation
+        fillList = ['STATION']
+
         for k in xData.data.dtype.names:
             if k == "Datetag" or k == "Timetag2" or k == "Datetime":
                 continue
@@ -49,6 +52,10 @@ class ProcessL1b_Interp:
                     for i, angle in enumerate(pointingData):
                         if angle > 180:
                             pointingData[i] = angle - 360
+
+            elif dataName in fillList:
+                newXData.columns[k] = Utilities.interpFill(xTS,y,newXTS, fillValue=np.nan)
+
             else:
                 if kind == 'cubic':
                     newXData.columns[k] = Utilities.interpSpline(xTS, y, newXTS)

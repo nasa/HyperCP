@@ -30,7 +30,11 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
-2022-08-01:
+2022-08-03
+* Fix station interpolation in ProcessL1B and Utilities
+* Fix nan removal in Utilities.interpAngular
+
+2022-08-02:
 * Update AnomalyDetection to share threshold bands across light and dark
 
 2022-08-01:

@@ -170,7 +170,7 @@ Process data from raw binary (Satlantic HyperSAS '.RAW' collections) to L1A (Hie
 
 #### Level 1AQC
 
-Process data from L1A to L1AQC. Data are filtered for vessel attitude (pitch, roll, and yaw when available), viewing and solar geometry. *It should be noted that viewing geometry should conform to total radiance (Lt) measured at about 40 degrees from nadir, and sky radiance (Li) at about 40 degrees from zenith* **(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**. Unlike other approaches, HyperInSPACE eliminates data flagged for problematic pitch/roll, yaw, and solar/sensor geometries *prior* to deglitching the time series (L1D), thus increasing the relative sensitivity of deglitching for the removal of non-environmental anomalies.
+Process data from L1A to L1AQC. Data are filtered for vessel attitude (pitch, roll, and yaw when available), viewing and solar geometry. *It should be noted that viewing geometry should conform to total radiance (Lt) measured at about 40 degrees from nadir, and sky radiance (Li) at about 40 degrees from zenith* **(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**. Unlike other approaches, HyperInSPACE eliminates data flagged for problematic pitch/roll, yaw, and solar/sensor geometries *prior* to deglitching the time series, thus increasing the relative sensitivity of deglitching for the removal of non-environmental anomalies.
 
 **SolarTracker**: Select when using the Satlantic SolarTracker package. In this case sensor and solor geometry data will come from the SolarTracker (i.e. SATNAV**.tdf). If deselected, solar geometries will be calculated from GPS time and position with Pysolar, while sensor azimuth (i.e. ship heading and sensor offset) must either be provided in the ancillary data or (eventually) from other data inputs. Currently, if SolarTracker is unchecked, the Ancillary file chosen in the Main Window will be read in, subset for the relevant dates/times, held in the ANCILLARY_NOTRACKER group object, and carried forward to subsequent levels (i.e. the file will not need to be read in again at L2). If the ancillary data file is very large (e.g. for a whole cruise at high temporal resolution), this process of reading in the text file and subsetting it to the radiometry file can be slow.
 
@@ -223,7 +223,6 @@ For convenience a shortcut to processing the currently active L1AQC file to L1B 
 
 To save the current values from the Anomaly Analysis tool as the defaults for the given cruise, Save Sensor Params > Close > Save/Close the Configuration Window.
 
-* KNOWN BUG: the pyqtgraph GUI interface does not always update as expected on macOS Catalina. Hitting Update again or switching the sensor radio button generally resolves the issue.
 
 **Defaults: Currently based on EXPORTSNA DY131; shown in GUI; experimental**
 **(Abe et al. 2006, Chandola et al. 2009)**
@@ -251,7 +250,7 @@ Each HyperOCR radiometer collects data in a unique set of wavebands nominally at
 
 *Note: only the datasets specified in ProcessL1B.py in each group will be interpolated and carried forward. For radiometers, this means that ancillary instrument data such as SPEC_TEMP and THERMAL_RESP will be dropped at L1B and beyond. See ProcessL1b_Interp.py at Perform Time Intepolation comment.*
 
-Optional plots of Es, Li, and Lt of L1E data can be generated which show the temporal interpolation for each parameter and each waveband to the slowest sampling radiometer timestamp. They are saved in [output_directory]/Plots/L1E. Plotting is time and memory intensive, and can also add significant time to PDF report production.
+Optional plots of Es, Li, and Lt of L1B data can be generated which show the temporal interpolation for each parameter and each waveband to the slowest sampling radiometer timestamp. They are saved in [output_directory]/Plots/L1B_Interp. Plotting is time and memory intensive, and can also add significant time to PDF report production.
 
 *{To Do: Allow provision for above water radiometers that operate simultaneously, sequentially and/or in the same wavebands.}*
 
@@ -324,11 +323,11 @@ Plots of processed L2 data from each radiometer and calculated reflectances can 
 
 Select the "Derived L2 Ocean Color Products" button to choose, calculate, and plot derived biochemical and inherent optical properties using a variety of ocean color algorithms. Algorithms largely mirror those available in SeaDAS with a few additions. They include OC3M, PIC, POC, Kd490, iPAR, GIOP, QAA, and the Average Visible Wavelength (Vandermuellen et al. 2020) and GOCAD-based CDOM/Sg/DOC algorithms (Aurin et al. 2018), as well as the Rrs spectral QA score (Wei et al 2016).
 
-To output SeaBASS formatted text files, check the box. A subfolder within the L2 directory will be created, and separate text files will be made for Li, Lt, Es, and Rrs hyperspectral data and satellite bands, if selected. Set-up for the SeaBASS header is managed with the 'Edit/Update SeaBASS Header' in the L1E configuration.
+To output SeaBASS formatted text files, check the box. A subfolder within the L2 directory will be created, and separate text files will be made for Li, Lt, Es, and Rrs hyperspectral data and satellite bands, if selected. Set-up for the SeaBASS header is managed with 'Edit/Update SeaBASS Header'.
 
 ##### SeaBASS File and Header
 
-To output SeaBASS formatted text files, check the box. A SeaBASS subfolder within the L1E directory will be created, and separate files generated for Li, Lt, and Es hyperspectral data.
+To output SeaBASS formatted text files, check the box. A SeaBASS subfolder within the L2 directory will be created, and separate files generated for Li, Lt, and Es hyperspectral data.
 
 An eponymous, linked module allows the user to collect information from the data and the processing configuration (as defined in the Configuration window) into the SeaBASS files and their headers. The module is launched by selecting the 'Edit SeaBASS Header' button in the Configuration window. A SeaBASS header configuration file is automatically stored in the /Config directory with the name of the Configuration and a .hdr extension. Instructions are given at the top of the SeaBASS Header window. Within the SeaBASS Header window, the left column allows the user to input the fields required by SeaBASS. Calibration files (if they have been added at the time of creation) are auto-populated. In the right hand column, the HyperInSPACE parameterizations defined in the Configurations window is shown in the 'Config Comments' box, and can be editted (though this should rarely ever be necessary). Additional comments can be added in the second comments field, and the lower fields are autopopulated from each data file as it is processed. To override auto-population of the lower fields in the right column, enter the desired value here in the SeaBASS Header window.
 

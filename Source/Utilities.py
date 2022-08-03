@@ -570,15 +570,6 @@ class Utilities:
                             badIndex[-1] = True
         return badIndex
 
-    # @staticmethod
-    # def rejectOutliers(data, m):
-    #     d = np.abs(data - np.nanmedian(data))
-    #     mdev = np.nanmedian(d)
-    #     s = d/mdev if mdev else 0.
-    #     badIndex = np.zeros((len(s),1),dtype=bool)
-    #     badIndex = [s>=m]
-    #     return badIndex
-
 
     @staticmethod
     def interp(x, y, new_x, kind='linear', fill_value=0.0):
@@ -627,12 +618,12 @@ class Utilities:
         if fill_value != "extrapolate": # Only extrapolate SOLAR_AZ and SZA, otherwise keep fill values constant
             # Some angular measurements (like SAS pointing) are + and -. Convert to all +
             # eliminate NaNs
+            whrNan = np.where(np.isnan(y))[0]
+            y = np.delete(y,whrNan).tolist()
+            x = np.delete(x,whrNan).tolist()
             for i, value in enumerate(y):
                 if value < 0:
                     y[i] = 360 + value
-                if np.isnan(value):
-                    x.pop(i)
-                    y.pop(i)
 
             # If the last value to interp to is larger than the last value interp'ed from,
             # then append that higher value onto the values to interp from
@@ -678,6 +669,30 @@ class Utilities:
                 print("NaN")
 
         return new_y
+
+    @staticmethod
+    def interpFill(x, y, newXList, fillValue=np.nan):
+        ''' Used where fill is needed instead of interpolation, e.g., STATIONS in L1B.'''
+
+        y = np.array(y)
+        x = np.array(x)
+        whrNan = np.where(np.isnan(y))[0]
+        y = np.delete(y,whrNan)
+        x = np.delete(x,whrNan)
+
+        yUnique = np.unique(y) #.tolist()
+
+        newYList = []
+        for value in yUnique:
+            minX = min(x[y==value])
+            maxX = max(x[y==value])
+
+            for newX in newXList:
+                if (newX >= minX) and (newX <= maxX):
+                    newYList.append(value)
+                else:
+                    newYList.append(fillValue)
+        return newYList
 
 
     @staticmethod
