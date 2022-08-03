@@ -684,23 +684,18 @@ class Utilities:
         yUnique = np.unique(y) #.tolist()
 
         newYList = []
+        # Populate with nans first, then replace to guarantee value regardless of any or multiple matches
+        for newX in newXList:
+            newYList.append(fillValue)
+
         for value in yUnique:
             minX = min(x[y==value])
             maxX = max(x[y==value])
 
             for i, newX in enumerate(newXList):
                 if (newX >= minX) and (newX <= maxX):
-                    if len(newYList) == len(newXList):
-                        newYList[i] = value
-                    else:
-                        # First time through
-                        newYList.append(value)
-                else:
-                    if len(newYList) == len(newXList):
-                        newYList[i] = fillValue
-                    else:
-                        # First time through
-                        newYList.append(fillValue)
+                    newYList[i] = value
+
         return newYList
 
 
