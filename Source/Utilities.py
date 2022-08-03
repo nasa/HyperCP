@@ -1,4 +1,5 @@
 
+from multiprocessing.sharedctypes import Value
 import os
 import datetime
 import collections
@@ -687,11 +688,19 @@ class Utilities:
             minX = min(x[y==value])
             maxX = max(x[y==value])
 
-            for newX in newXList:
+            for i, newX in enumerate(newXList):
                 if (newX >= minX) and (newX <= maxX):
-                    newYList.append(value)
+                    if len(newYList) == len(newXList):
+                        newYList[i] = value
+                    else:
+                        # First time through
+                        newYList.append(value)
                 else:
-                    newYList.append(fillValue)
+                    if len(newYList) == len(newXList):
+                        newYList[i] = fillValue
+                    else:
+                        # First time through
+                        newYList.append(fillValue)
         return newYList
 
 
