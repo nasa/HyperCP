@@ -635,13 +635,30 @@ class Controller:
                 # below based on the other levels and PDF reporting, overwrite root with node
                 root = Controller.processL2(root,outFilePath)
 
+                if os.path.isfile(outFilePath):
+                    # Ensure that the L2 on file is recent before continuing with
+                    # SeaBASS files or reports
+                    modTime = os.path.getmtime(outFilePath)
+                    nowTime = datetime.datetime.now()
+                    if nowTime.timestamp() - modTime < 60:
+                        msg = f'{level} file produced: \n{outFilePath}'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+
+                        # Write SeaBASS
+                        if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
+                            msg = f'Output SeaBASS for HDF: \n{outFilePath}'
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+                            SeaBASSWriter.outputTXT_Type2(outFilePath)
+
         # If the process failed at any level, write a report and return
         if root is None: #and ConfigFile.settings["bL2Stations"] == 0:
             if ConfigFile.settings["bL2WriteReport"] == 1:
                 Controller.writeReport(fileName, pathOut, outFilePath, level, inFilePath)
             return False
 
-        # If L2 successful, write a report
+        # If L2 successful and not station extraction, write a report
         if level == "L2" and ConfigFile.settings["bL2Stations"] == 0:
             if ConfigFile.settings["bL2WriteReport"] == 1:
                 Controller.writeReport(fileName, pathOut, outFilePath, level, inFilePath)
