@@ -26,7 +26,7 @@ class Controller:
         print('Writing PDF Report...')
         numLevelDict = {'L1A':1,'L1AQC':2,'L1B':3,'L1BQC':4,'L2':5}
         numLevel = numLevelDict[level]
-        fp = os.path.join(pathOut, level, f'{fileName}_{level}.hdf')
+        # fp = os.path.join(pathOut, level, f'{fileName}_{level}.hdf')
 
         # Reports are written during failure at any level or success at L2.
         # The highest level succesfully processed will have the correct configurations in the HDF attributes.
@@ -35,7 +35,7 @@ class Controller:
         #   from the attributes up to that level, then use the ConfigFile.settings for the current level parameters.
         try:
             # Processing successful at this level
-            root = HDFRoot.readHDF5(fp)
+            root = HDFRoot.readHDF5(outFilePath)
             fail = 0
             root.attributes['Fail'] = 0
         except:
@@ -79,8 +79,8 @@ class Controller:
         # In that case, move up one directory
         if os.path.isdir(os.path.join(inPlotPath, 'L1AQC_Anoms')) is False:
             inPlotPath = os.path.join(pathOut,'..','Plots')
-        outHDF = os.path.split(outFilePath)[1]
 
+        outHDF = os.path.split(outFilePath)[1]
         if fail:
             outPDF = os.path.join(reportPath, f'{os.path.splitext(outHDF)[0]}_fail.pdf')
         else:
@@ -117,7 +117,10 @@ class Controller:
             print('Level 2')
             # For L2, reset Plot directory
             inPlotPath = os.path.join(pathOut,'Plots')
-            inLog = os.path.join(inLogPath,f'{fileName}_L1BQC_L2.log')
+            if 'STATION' in outFilePath:
+                inLog = os.path.join(inLogPath,f'Stations_{fileName}_L1BQC_L2.log')
+            else:
+                inLog = os.path.join(inLogPath,f'{fileName}_L1BQC_L2.log')
             if os.path.isfile(inLog):
                 pdf.print_chapter('L2', 'Process L1BQC to L2', inLog, inPlotPath, fileName, outFilePath, root)
 
@@ -653,7 +656,7 @@ class Controller:
                             SeaBASSWriter.outputTXT_Type2(outFilePath)
 
         # If the process failed at any level, write a report and return
-        if root is None: #and ConfigFile.settings["bL2Stations"] == 0:
+        if root is None and ConfigFile.settings["bL2Stations"] == 0:
             if ConfigFile.settings["bL2WriteReport"] == 1:
                 Controller.writeReport(fileName, pathOut, outFilePath, level, inFilePath)
             return False

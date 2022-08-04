@@ -437,16 +437,17 @@ class PDF(FPDF):
             else:
                 self.multi_cell(0, 5, "None found.")
 
-            inPath = os.path.join(inPlotPath, 'L1B_Interp')
-            self.cell(0, 6, 'Complete spectral plots', 0, 1, 'L', 1)
+            # Not sure what happened to the spectral interpolation plotting...
+            # inPath = os.path.join(inPlotPath, 'L1B_Interp')
+            # self.cell(0, 6, 'Complete spectral plots', 0, 1, 'L', 1)
 
-            fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))
+            # fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))
 
-            if len(fileList) > 0:
-                for i in range(0, len(fileList)):
-                    self.image(fileList[i], w = 175)
-            else:
-                self.multi_cell(0, 5, "None found.")
+            # if len(fileList) > 0:
+            #     for i in range(0, len(fileList)):
+            #         self.image(fileList[i], w = 175)
+            # else:
+            #     self.multi_cell(0, 5, "None found.")
 
         if level == "L2":
             print('Adding spectral filter plots')
