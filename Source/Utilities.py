@@ -616,44 +616,55 @@ class Utilities:
             beginning and end of data record with the nearest actual record. This is fine for integrated
             datasets, but may be dramatic for some gappy ancillary records of lower temporal resolution.'''
 
-        if fill_value != "extrapolate": # Only extrapolate SOLAR_AZ and SZA, otherwise keep fill values constant
-            # Some angular measurements (like SAS pointing) are + and -. Convert to all +
-            # eliminate NaNs
-            whrNan = np.where(np.isnan(y))[0]
-            y = np.delete(y,whrNan).tolist()
-            x = np.delete(x,whrNan).tolist()
-            for i, value in enumerate(y):
-                if value < 0:
-                    y[i] = 360 + value
+        # Eliminate NaNs
+        whrNan = np.where(np.isnan(y))[0]
+        y = np.delete(y,whrNan).tolist()
+        x = np.delete(x,whrNan).tolist()
 
-            # If the last value to interp to is larger than the last value interp'ed from,
-            # then append that higher value onto the values to interp from
-            n0 = len(x)-1
-            n1 = len(new_x)-1
-            if new_x[n1] > x[n0]:
-                #print(new_x[n], x[n])
-                # msg = '********** Warning: extrapolating to beyond end of data record ********'
-                # print(msg)
-                # Utilities.writeLogFile(msg)
+        # Test for all NaNs
+        if y:
+            if fill_value != "extrapolate": # Only extrapolate SOLAR_AZ and SZA, otherwise keep fill values constant
+                # Some angular measurements (like SAS pointing) are + and -. Convert to all +
 
-                x.append(new_x[n1])
-                y.append(y[n0])
-            # If the first value to interp to is less than the first value interp'd from,
-            # then add that lesser value to the beginning of values to interp from
-            if new_x[0] < x[0]:
-                #print(new_x[0], x[0])
-                # msg = '********** Warning: extrapolating to before beginning of data record ******'
-                # print(msg)
-                # Utilities.writeLogFile(msg)
+                for i, value in enumerate(y):
+                    if value < 0:
+                        y[i] = 360 + value
 
-                x.insert(0, new_x[0])
-                y.insert(0, y[0])
+                # If the last value to interp to is larger than the last value interp'ed from,
+                # then append that higher value onto the values to interp from
+                n0 = len(x)-1
+                n1 = len(new_x)-1
+                if new_x[n1] > x[n0]:
+                    #print(new_x[n], x[n])
+                    # msg = '********** Warning: extrapolating to beyond end of data record ********'
+                    # print(msg)
+                    # Utilities.writeLogFile(msg)
 
-        y_rad = np.deg2rad(y)
-        # f = scipy.interpolate.interp1d(x,y_rad,kind='linear', bounds_error=False, fill_value=None)
-        f = scipy.interpolate.interp1d(x,y_rad,kind='linear', bounds_error=False, fill_value=fill_value)
-        new_y_rad = f(new_x)%(2*np.pi)
-        new_y = np.rad2deg(new_y_rad)
+                    x.append(new_x[n1])
+                    y.append(y[n0])
+
+                # If the first value to interp to is less than the first value interp'd from,
+                # then add that lesser value to the beginning of values to interp from
+                if new_x[0] < x[0]:
+                    #print(new_x[0], x[0])
+                    # msg = '********** Warning: extrapolating to before beginning of data record ******'
+                    # print(msg)
+                    # Utilities.writeLogFile(msg)
+
+                    x.insert(0, new_x[0])
+                    y.insert(0, y[0])
+
+            y_rad = np.deg2rad(y)
+            # f = scipy.interpolate.interp1d(x,y_rad,kind='linear', bounds_error=False, fill_value=None)
+            f = scipy.interpolate.interp1d(x,y_rad,kind='linear', bounds_error=False, fill_value=fill_value)
+            new_y_rad = f(new_x)%(2*np.pi)
+            new_y = np.rad2deg(new_y_rad)
+
+        else:
+            # All y values were NaNs. Fill in NaNs in new_y
+            new_y = np.empty((len(new_x)))
+            new_y.fill(np.nan)
+            new_y = new_y.tolist()
 
         return new_y
 

@@ -15,16 +15,13 @@ Next priorities:
 * Improve/augment to NIR residual corrections
     * Iterative approaches; process time concern.
 * FPDF slow in PDF report building with figures; seek alternatives
-* Fix non-unique station/file bug
-* Use ancillary SeaBASS metadata to populate remaining L1E/L2 SeaBASS header fields
+* Use ancillary SeaBASS metadata to populate remaining L2 SeaBASS header fields
 
 Ideas and To-Dos:
 * Implement satellite matchup with fd_mathcup.py (TBD)
 * Explore ML approaches to automate filter selection and glint/NIR correction selection
-* Incorporate additional platforms with collaborators (write to dirk.a.aurin@nasa.gov)
 * Add failure flags in HDF object attributes:
     * Capture details when errors thrown (inspect, currentframe, getframeinfo)
-    * Split Wind and SZA bombs in L2
 * Add PIC and GIOP to L2 OC products
 * Produce kml files for GoogleEarth on entire cruise/directory
 
