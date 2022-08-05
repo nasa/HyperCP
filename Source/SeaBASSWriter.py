@@ -357,6 +357,9 @@ class SeaBASSWriter:
             elif 'NONE' in headingData.columns:
                 # Most likely from Ancillary
                 heading = headingData.columns["NONE"]
+            else:
+                # Fallback for Archimedes Solartracker
+                heading = headingData.columns["SAS_TRUE"]
         else:
             heading = np.empty((1,len(wind)))
             heading = heading[0]*np.nan
