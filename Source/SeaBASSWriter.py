@@ -64,8 +64,9 @@ class SeaBASSWriter:
 
         if headerBlock['station'] == '' and ConfigFile.settings['bL2Stations'] == 1:
             station = node.getGroup('ANCILLARY').getDataset('STATION').data[0][2]
-            # headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
             headerBlock['station'] = station
+        else:
+            headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
         if headerBlock['start_time'] == '':
             headerBlock['start_time'] = startTime
         if headerBlock['end_time'] == '':
