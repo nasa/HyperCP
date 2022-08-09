@@ -1042,15 +1042,16 @@ class ProcessL2:
                         dsXSlice['Timetag2'] = [time]
                         dsXSlice['Datetime'] = [dateTime]
 
-                    if (subset.endswith('FLAG')) or (subset.endswith('STATION')):
-                        if not subset in dsXSlice:
-                            # Find the most frequest element
+                    if subset not in dsXSlice:
                             dsXSlice[subset] = []
+                    if (subset.endswith('FLAG')) or (subset.endswith('STATION')):
+                        # Find the most frequest element
                         dsXSlice[subset].append(Utilities.mostFrequent(v))
                     else:
-                        if subset not in dsXSlice:
-                            dsXSlice[subset] = []
-                        dsXSlice[subset].append(np.mean(v))
+                        # Otherwise take a nanmean of the slice
+                        with warnings.catch_warnings():
+                            warnings.simplefilter("ignore", category=RuntimeWarning)
+                            dsXSlice[subset].append(np.nanmean(v)) # Warns of empty when empty...
 
             if subset not in newDS.columns:
                 newDS.columns = dsXSlice
