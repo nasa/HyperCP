@@ -1711,7 +1711,10 @@ class ProcessL2:
             # Try converting any remaining
             end = esLength-1
             time = timeStamp[start]
-            if time < (endTime - datetime.timedelta(0,interval)):
+            # Had been to insure there was still a full interval of time remaining...
+            # if time < (endTime - datetime.timedelta(0,interval)):
+            # Now capture all remaining spectra in the final slice
+            if time < endTime:
 
                 if not ProcessL2.ensemblesReflectance(node,sasGroup, referenceGroup, ancGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance ender failed.'

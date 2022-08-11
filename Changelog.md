@@ -27,6 +27,9 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-08-11
+* Change final ensemble pickup in L2 to not require full ensemble interval
+
 2022-08-09
 * For Ancillary L2, nanmeans (instead of means) of ensemble for most columns, most frequent value for station and flag
 

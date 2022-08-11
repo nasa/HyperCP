@@ -1,7 +1,7 @@
 # Hyperspectral In situ Support for PACE
 <html lang="en">
 
-<center><img src="Data/banner2.png" alt="Banner"></center>
+<center><img src="Data/Img/banner2.png" alt="Banner"></center>
 
 HyperInSPACE is designed to provide hyperspectral in situ support for the <a href='https://pace.gsfc.nasa.gov/'>PACE mission</a> by processing automated, above-water, hyperspectral ocean color radiometry data using state-of-the-art methods and protocols for quality assurance, uncertainty estimation/propagation, sky/sunglint correction, convolution to satellite wavebands, and ocean color product retrieval. Data output are formatted to text files for submission to the SeaBASS database and saved as comprehensive HDF5 records with automated processing reports. The package is designed to facilitate rigorous, flexible, and transparent data processing for the ocean color remote sensing community, particularly PIs funded by NASA to submit such radiometric data to SeaBASS. Radiometry processed in HyperInSPACE are used for water optical characterization, ocean color product retrieval algorithm development, and orbital platform validation.
 
@@ -52,7 +52,7 @@ prompt$ conda activate hyperinspace
 ---
 ## Launching
 
-<center><img src="Data/banner.jpg" alt="banner"></center>
+<center><img src="Data/Img/banner.jpg" alt="banner"></center>
 
 HyperInSPACE is a Main-View-Controller Python package with a GUI that can be launched in several ways, such as by navigating to the project folder on the command line and typing
 ```
@@ -86,6 +86,7 @@ When you first launch the software, it will need to download a large (2.3 GB) da
 
 
 ### Main Window
+<!---*<center><img src="Data/Img/Main.jpg" alt="banner"></center>*--->
 
 The Main window appears once Main.py is launched. It has options to specify a configuration file, input/output directories, ancillary input files (i.e. environmental conditions and relevant geometries in a SeaBASS file format), single-level processing, and multi-level processing. For batch processing, pop-up windows from "failed" (no output due to either corrupt raw binary data or stringent quality control filtering) files can be suppressed. Producing no output file at a given processing level is often a normal result of quality control filtering, so this option allows batches to continue uninterrupted.
 
