@@ -1680,6 +1680,7 @@ class ProcessL2:
             endTime = timeStamp[0] + datetime.timedelta(0,interval)
             endFileTime = timeStamp[-1]
             timeFlag = False
+            # endTime is theoretical based on interval
             if endTime > endFileTime:
                 endTime = endFileTime
                 timeFlag = True # In case the whole file is shorter than the selected interval
@@ -1707,15 +1708,17 @@ class ProcessL2:
                     start = i
 
                     if timeFlag:
+                        # No need to continue incrementing; all records captured in one ensemble
                         break
-            # Try converting any remaining
-            end = esLength-1
-            time = timeStamp[start]
-            # Had been to insure there was still a full interval of time remaining...
-            # if time < (endTime - datetime.timedelta(0,interval)):
-            # Now capture all remaining spectra in the final slice
-            if time < endTime:
 
+            # For the rare case where end of record is reached at, but not exceeding endTime...
+            if not timeFlag:
+                end = i+1 # i is the index of end of record; plus one to include i due to -1 list slicing
+                # time = timeStamp[start]
+                # Had been to insure there was still a full interval of time remaining...
+                # if time < (endTime - datetime.timedelta(0,interval)):
+                # Now capture all remaining spectra in the final slice
+                # if time < endTime:
                 if not ProcessL2.ensemblesReflectance(node,sasGroup, referenceGroup, ancGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance ender failed.'
                     print(msg)
