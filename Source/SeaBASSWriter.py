@@ -14,6 +14,24 @@ from Utilities import Utilities
 class SeaBASSWriter:
 
     @staticmethod
+    def sbFileName(fp,headerBlock,formattedData,dtype):
+        version = SeaBASSHeader.settings["version"]
+         # Conforms to SeaBASS file names: Experiment_Cruise_Platform_Instrument_YYMMDD_HHmmSS_Level_DataType_Revision
+        if ConfigFile.settings['bL2Stations']:
+            station = str(headerBlock['station']).replace('.','_')
+            outFileName = \
+                (   f"{os.path.split(fp)[0]}/SeaBASS/{headerBlock['experiment']}_{headerBlock['cruise']}_"
+                    f"{headerBlock['platform']}_{headerBlock['instrument_model']}_{formattedData[0].split(',')[0]}_"
+                    f"{formattedData[0].split(',')[1].replace(':','')}_L2_{dtype}_STATION_{station}_{version}.sb")
+        else:
+            outFileName = \
+            (   f"{os.path.split(fp)[0]}/SeaBASS/{headerBlock['experiment']}_{headerBlock['cruise']}_"
+                f"{headerBlock['platform']}_{headerBlock['instrument_model']}_{formattedData[0].split(',')[0]}_"
+                f"{formattedData[0].split(',')[1].replace(':','')}_L2_{dtype}_{version}.sb")
+        headerBlock['data_file_name'] = outFileName.split('/')[-1]
+        return outFileName
+
+    @staticmethod
     def formatHeader(fp,node, level):
 
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
@@ -37,7 +55,8 @@ class SeaBASSWriter:
             aveWind = np.nanmean(winCol)
 
         headerBlock['original_file_name'] = node.attributes['RAW_FILE_NAME']
-        headerBlock['data_file_name'] = os.path.split(fp)[1]
+        # headerBlock['data_file_name'] = os.path.split(fp)[1].replace('.hdf','.sb')
+        # headerBlock['data_file_name'] = SeaBASSWriter.sbFileName()
         headerBlock['comments'] = headerBlock['comments'] + f'\n! DateTime Processed = {time.asctime()}'
 
         # Convert Dates and Times
@@ -186,21 +205,20 @@ class SeaBASSWriter:
             print('Creating a SeaBASS directory')
             os.makedirs(os.path.split(fp)[0] + '/SeaBASS')
 
-        version = SeaBASSHeader.settings["version"]
-
-        # outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{os.path.split(fp)[1].replace(".hdf",f"_{dtype}_{version}.sb")}'
-        # Conforms to SeaBASS file names: Experiment_Cruise_Platform_Instrument_YYMMDD_HHmmSS_Level_DataType_Revision
-        if ConfigFile.settings['bL2Stations']:
-            station = str(headerBlock['station']).replace('.','_')
-            outFileName = \
-                (   f"{os.path.split(fp)[0]}/SeaBASS/{headerBlock['experiment']}_{headerBlock['cruise']}_"
-                    f"{headerBlock['platform']}_{headerBlock['instrument_model']}_{formattedData[0].split(',')[0]}_"
-                    f"{formattedData[0].split(',')[1].replace(':','')}_L2_{dtype}_STATION_{station}_{version}.sb")
-        else:
-            outFileName = \
-            (   f"{os.path.split(fp)[0]}/SeaBASS/{headerBlock['experiment']}_{headerBlock['cruise']}_"
-                f"{headerBlock['platform']}_{headerBlock['instrument_model']}_{formattedData[0].split(',')[0]}_"
-                f"{formattedData[0].split(',')[1].replace(':','')}_L2_{dtype}_{version}.sb")
+        # # outFileName = f'{os.path.split(fp)[0]}/SeaBASS/{os.path.split(fp)[1].replace(".hdf",f"_{dtype}_{version}.sb")}'
+        # # Conforms to SeaBASS file names: Experiment_Cruise_Platform_Instrument_YYMMDD_HHmmSS_Level_DataType_Revision
+        # if ConfigFile.settings['bL2Stations']:
+        #     station = str(headerBlock['station']).replace('.','_')
+        #     outFileName = \
+        #         (   f"{os.path.split(fp)[0]}/SeaBASS/{headerBlock['experiment']}_{headerBlock['cruise']}_"
+        #             f"{headerBlock['platform']}_{headerBlock['instrument_model']}_{formattedData[0].split(',')[0]}_"
+        #             f"{formattedData[0].split(',')[1].replace(':','')}_L2_{dtype}_STATION_{station}_{version}.sb")
+        # else:
+        #     outFileName = \
+        #     (   f"{os.path.split(fp)[0]}/SeaBASS/{headerBlock['experiment']}_{headerBlock['cruise']}_"
+        #         f"{headerBlock['platform']}_{headerBlock['instrument_model']}_{formattedData[0].split(',')[0]}_"
+        #         f"{formattedData[0].split(',')[1].replace(':','')}_L2_{dtype}_{version}.sb")
+        outFileName = SeaBASSWriter.sbFileName(fp,headerBlock,formattedData,dtype)
 
         outFile = open(outFileName,'w',newline='\n')
         outFile.write('/begin_header\n')

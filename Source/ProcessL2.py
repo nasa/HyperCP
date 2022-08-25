@@ -86,6 +86,8 @@ class ProcessL2:
             # avg = np.median(NIRRRs)
             rrsNIRCorr = min(NIRRRs)
             # Subtract average from each waveband
+            ### Note: this is susceptible to negative NIR values, which have not yet
+            ###     been screened, thereby ADDING to Rrs across the spectrum...
             for k in rrsSlice:
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue
@@ -200,6 +202,8 @@ class ProcessL2:
             nLwNIRCorr = εnLw/np.pi
 
             # Now apply to rrs and nLw
+            ### NOTE: This correction is also susceptible to a correction that ADDS to Rrs
+            ###         spectrally, depending on spectral shape (see test_SimSpec.m)
             for k in rrsSlice:
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue
