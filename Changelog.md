@@ -27,6 +27,9 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-08-25
+* Change data_file_name in SeaBASS metadata header to match SeaBASS file name
+
 2022-08-11
 * Change final ensemble pickup in L2 to not require full ensemble interval
 
