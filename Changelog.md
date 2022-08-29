@@ -1,4 +1,4 @@
-v1.1.1 In progress; DAA = (dirk.a.aurin@nasa.gov)
+v1.1.2 In progress; DAA = (dirk.a.aurin@nasa.gov)
 ---
 
 Next priorities:
