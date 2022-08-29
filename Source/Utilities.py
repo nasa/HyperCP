@@ -189,7 +189,7 @@ class Utilities:
     @staticmethod
     def ddToDm(dd):
         d = int(dd)
-        m = abs(dd - d)*60
+        m = (dd - d)*60
         dm = (d*100) + m
         return dm
 
