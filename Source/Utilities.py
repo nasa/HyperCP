@@ -176,12 +176,13 @@ class Utilities:
 
     # Converts degrees minutes to decimal degrees format
     @staticmethod # for some reason, these were not set to static method, but didn't refer to self
-    def dmToDd(dm, direction):
+    def dmToDd(dm, direction, *, precision=6):
         d = int(dm/100)
         m = dm-d*100
         dd = d + m/60
         if direction == b'W' or direction == b'S':
             dd *= -1
+        dd = round(dd, precision)
         return dd
 
     # Converts decimal degrees to degrees minutes format
