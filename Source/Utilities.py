@@ -175,7 +175,7 @@ class Utilities:
             logFile.write(logText + "\n")
 
     # Converts degrees minutes to decimal degrees format
-    @staticmethod # for some reason, these were not set to static method, but didn't refer to self
+    @staticmethod
     def dmToDd(dm, direction, *, precision=6):
         d = int(dm/100)
         m = dm-d*100
