@@ -1394,6 +1394,10 @@ class Utilities:
     def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 700],\
                 filterFactor=3, rType='None'):
 
+        import logging
+
+        logging.getLogger('matplotlib.font_manager').disabled = True
+
         dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
         # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
