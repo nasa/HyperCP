@@ -405,7 +405,7 @@ class ProcessL2:
 
                         # Lw uncertainty
                         lwDelta = lw * (
-                            (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2
+                            (liSTD/li)**2 + (rhoDelta/rhoVec[k])**2 + (liSTD/li)**2
                             )**0.5
 
                         #Calculate the normalized water leaving radiance
