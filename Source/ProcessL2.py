@@ -1256,6 +1256,9 @@ class ProcessL2:
         node.getGroup('REFLECTANCE').datasets['Ensemble_N'].columns['N'].append(EnsembleN)
         node.getGroup('IRRADIANCE').datasets['Ensemble_N'].columns['N'].append(EnsembleN)
         node.getGroup('RADIANCE').datasets['Ensemble_N'].columns['N'].append(EnsembleN)
+        node.getGroup('REFLECTANCE').datasets['Ensemble_N'].columnsToDataset()
+        node.getGroup('IRRADIANCE').datasets['Ensemble_N'].columnsToDataset()
+        node.getGroup('RADIANCE').datasets['Ensemble_N'].columnsToDataset()
 
 
         # Take the mean of the lowest X% in the slice
