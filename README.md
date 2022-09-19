@@ -28,7 +28,7 @@ Currently, HyperInSPACE supports <a href='https://www.seabird.com/'>Sea-Bird Sci
  of the National Aeronautics and Space Administration. All Rights Reserved.
 ```
 ---
-Primary Author: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>\
+Primary Author: Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>\
 Acknowledgements: N.Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
 
 ## Requirements and Installation

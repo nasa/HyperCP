@@ -202,7 +202,7 @@ class ConfigFile:
         ConfigFile.settings["fL1aqcPitchRollRoll"] = 5 # 2-5 deg. IOCCG Draft Protocols
         ConfigFile.settings["fL1aqcRotatorHomeAngle"] = 0.0 # Require knowledge of deployment set-up
         ConfigFile.settings["bL1aqcRotatorDelay"] = 0
-        ConfigFile.settings["fL1aqcRotatorDelay"] = 60.0 # Vandenberg 2016
+        ConfigFile.settings["fL1aqcRotatorDelay"] = 5.0 # 60.0s Vandenberg 2016, but for SolarTracker, not pySAS
         ConfigFile.settings["bL1aqcRotatorAngle"] = 0
         ConfigFile.settings["fL1aqcRotatorAngleMin"] = -40.0 # Require knowledge of deployment set-up
         ConfigFile.settings["fL1aqcRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
