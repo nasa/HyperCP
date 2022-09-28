@@ -37,10 +37,10 @@ Clone this repository (branch: "master") to a convenient directory on your compu
 
 HyperInSPACE requires Python 3.X installed on a Linux, MacOS, or Windows computer. The <a href='https://www.anaconda.com/'>Anaconda</a> distribution is encouraged. (If you are unfamiliar with Anaconda, a nice walkthrough can be found here: https://youtu.be/YJC6ldI3hWk.)
 
-All of the package dependencies are listed in the environment.yaml file included with the package. To make sure you have all of the necessary dependencies, navigate to the HyperInSPACE directory and type
+All of the package dependencies are listed in the environment.yml file included with the package. To make sure you have all of the necessary dependencies, navigate to the HyperInSPACE directory and type
 
 ```
-prompt$ conda env create -f environment.yaml
+prompt$ conda env create -f environment.yml
 ```
 
 and follow the prompts to install the additional package dependencies on your machine within the new virtual environment. When completed you should be in the virtual environment (hyperinspace) and ready to run the package. To return to the environment later before launching the program, type
@@ -178,7 +178,7 @@ Process data from L1A to L1AQC. Data are filtered for vessel attitude (pitch, ro
 **Rotator Home Angle Offset**: Generally 0. This is the offset between the neutral position of the radiometer suite and the bow of the ship. This *should* be zero if the SAS Home Direction was set at the time of data collection in the SolarTracker as per Satlantic SAT-DN-635. If no SolarTracker was used, the offset can be set here if stable (e.g. pointing angle on a fixed tower), or in the ancillary data file if changeable in time. Without SolarTracker, L1C processing will require at a minimum ship heading data in the ancillary file. Then the offset can be given in the ancillary file (dynamic) or set here in the GUI (static). *Note: as SeaBASS does not have a field for this angle between the instrument and the bow of the ship, the field "relaz" (normally reserved for the relative azimuth between the instrument and the sun) is utilized for the angle between the ship heading (NOT COG) and the sensor.*
 
 **Rotator Delay**: Seconds of data discarded after a SolarTracker rotation is detected. Set to 0 to ignore. Not an option without SolarTracker.
-**Default: 60 seconds (Vandenberg 2017)**
+**Default: 5 seconds (e.g. 60 seconds (Vandenberg 2017) for Satlantic SolarTracker on ferry)**
 
 **Pitch & Roll Filter** (optional): Data outside these thresholds are discarded if this is enabled in the checkbox. These data may be supplied by a tilt-heading sensor incorporated in the raw data stream accompanied by a telmetry definition file (.tdf) as per above, or can be ingested from the Ancillary file (see SAMPLE_Ancillary_pySAS.sb provided in /Data).
 **Default: 5 degrees (IOCCG Draft Protocols; Zibordi et al. 2019; 2 deg "ideal" to 5 deg "upper limit")**
