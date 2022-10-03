@@ -87,7 +87,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         radQualLabel_font.setBold(True)
         radQualLabel.setFont(radQualLabel_font)
 
-        avwLabel = QtWidgets.QLabel("AVW (Vandermuellen et al. 2020)", self)
+        avwLabel = QtWidgets.QLabel("AVW (Vandermuelen et al. 2020)", self)
         self.avwCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.products["bL2Prodavw"]) == 1:
             self.avwCheckBox.setChecked(True)

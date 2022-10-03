@@ -49,6 +49,12 @@ and follow the prompts to install the additional package dependencies on your ma
 prompt$ conda activate hyperinspace
 ```
 
+Depending on your system, four additional packages (pysolar, fpdf, tqdm, and pyqtgraph) may need to be installed:
+
+```
+prompt$ pip install package
+```
+
 ---
 ## Launching
 
