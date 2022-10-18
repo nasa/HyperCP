@@ -447,18 +447,25 @@ class ProcessL1b_Interp:
         ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
 
         newGPSGroup = root.addGroup("GPS")
-        # These are from the raw data, not to be confused with those in the ancillary file
-        ProcessL1b_Interp.convertDataset(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
-        ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
-        latData = newGPSGroup.getDataset("LATITUDE")
-        lonData = newGPSGroup.getDataset("LONGITUDE")
-        # Only if the right NMEA data are provided (e.g. with SolarTracker)
-        if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
-            ProcessL1b_Interp.convertDataset(gpsGroup, "COURSE", newGPSGroup, "COURSE")
-            ProcessL1b_Interp.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")
-            courseData = newGPSGroup.getDataset("COURSE")
-            sogData = newGPSGroup.getDataset("SPEED")
-            newGPSGroup.datasets['SPEED'].id="SOG"
+        if gpsGroup is not None:
+            # These are from the raw data, not to be confused with those in the ancillary file
+            ProcessL1b_Interp.convertDataset(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
+            ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
+            latData = newGPSGroup.getDataset("LATITUDE")
+            lonData = newGPSGroup.getDataset("LONGITUDE")
+            # Only if the right NMEA data are provided (e.g. with SolarTracker)
+            if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
+                ProcessL1b_Interp.convertDataset(gpsGroup, "COURSE", newGPSGroup, "COURSE")
+                ProcessL1b_Interp.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")
+                courseData = newGPSGroup.getDataset("COURSE")
+                sogData = newGPSGroup.getDataset("SPEED")
+                newGPSGroup.datasets['SPEED'].id="SOG"
+        else:
+            # These are from the ancillary file
+            ProcessL1b_Interp.convertDataset(ancGroup, "LATITUDE", newGPSGroup, "LATITUDE")
+            ProcessL1b_Interp.convertDataset(ancGroup, "LONGITUDE", newGPSGroup, "LONGITUDE")
+            latData = newGPSGroup.getDataset("LATITUDE")
+            lonData = newGPSGroup.getDataset("LONGITUDE")
 
         # Metadata ancillary field and Pysolar data
         if ancGroup is not None:
@@ -611,10 +618,11 @@ class ProcessL1b_Interp:
             return None
         if not ProcessL1b_Interp.interpolateData(lonData, interpData, "LONGITUDE", fileName):
             return None
-        if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
-            # Optional:
-            ProcessL1b_Interp.interpolateData(courseData, interpData, "COURSE", fileName) # COG (not heading), presumably?
-            ProcessL1b_Interp.interpolateData(sogData, interpData, "SOG", fileName)
+        if gpsGroup is not None:
+            if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
+                # Optional:
+                ProcessL1b_Interp.interpolateData(courseData, interpData, "COURSE", fileName) # COG (not heading), presumably?
+                ProcessL1b_Interp.interpolateData(sogData, interpData, "SOG", fileName)
 
         if satnavGroup is not None:
             # Required:
