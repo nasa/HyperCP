@@ -767,7 +767,7 @@ class ProcessL1bqc:
                 gpsGroup = gp
 
         # Retrieve MERRA2 model ancillary data
-        if ConfigFile.settings["bL1bqcpGetAnc"] ==1:
+        if ConfigFile.settings["bL1bqcGetAnc"] ==1:
             msg = 'Model data for Wind and AOD may be used to replace blank values. Reading in model data...'
             print(msg)
             Utilities.writeLogFile(msg)
