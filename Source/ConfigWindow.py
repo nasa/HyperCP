@@ -79,11 +79,16 @@ class ConfigWindow(QtWidgets.QDialog):
         l1aLabel.setFont(l1aLabel_font)
         l1aSublabel = QtWidgets.QLabel(" Raw binary to HDF5", self)
 
+        self.l1aUTCOffsetLabel = QtWidgets.QLabel("     Raw UTC Offset [+/-]", self)
+        self.l1aUTCOffsetLineEdit = QtWidgets.QLineEdit(self)
+        self.l1aUTCOffsetLineEdit.setText(str(ConfigFile.settings["fL1aUTCOffset"]))
+        self.l1aUTCOffsetLineEdit.setValidator(doubleValidator)
+
         l1aCleanSZALabel = QtWidgets.QLabel("     Solar Zenith Angle Filter", self)
         self.l1aCleanSZACheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1aCleanSZA"]) == 1:
             self.l1aCleanSZACheckBox.setChecked(True)
-        l1aCleanSZAMaxLabel = QtWidgets.QLabel("     SZA Max", self)
+        self.l1aCleanSZAMaxLabel = QtWidgets.QLabel("     SZA Max", self)
         self.l1aCleanSZAMaxLineEdit = QtWidgets.QLineEdit(self)
         self.l1aCleanSZAMaxLineEdit.setText(str(ConfigFile.settings["fL1aCleanSZAMax"]))
         self.l1aCleanSZAMaxLineEdit.setValidator(doubleValidator)
@@ -118,7 +123,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcRotatorDelayCheckBoxUpdate()
 
         #   Pitch and Roll
-        self.l1aqcCleanPitchRollLabel = QtWidgets.QLabel(" Pitch & Roll Filter", self)
+        self.l1aqcCleanPitchRollLabel = QtWidgets.QLabel(" Pitch/Roll Filter (where present)", self)
         self.l1aqcCleanPitchRollCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1aqcCleanPitchRoll"]) == 1:
             self.l1aqcCleanPitchRollCheckBox.setChecked(True)
@@ -553,10 +558,16 @@ class ConfigWindow(QtWidgets.QDialog):
         # L1A
         VBox1.addWidget(l1aLabel)
         VBox1.addWidget(l1aSublabel)
+
+        UTCOffsetHBox = QtWidgets.QHBoxLayout()
+        UTCOffsetHBox.addWidget(self.l1aUTCOffsetLabel)
+        UTCOffsetHBox.addWidget(self.l1aUTCOffsetLineEdit)
+        VBox1.addLayout(UTCOffsetHBox)
+
         VBox1.addWidget(l1aCleanSZALabel)
         # Horizontal Box; SZA Filter
         szaHBox = QtWidgets.QHBoxLayout()
-        szaHBox.addWidget(l1aCleanSZAMaxLabel)
+        szaHBox.addWidget(self.l1aCleanSZAMaxLabel)
         szaHBox.addWidget(self.l1aCleanSZACheckBox)
         szaHBox.addWidget(self.l1aCleanSZAMaxLineEdit)
         VBox1.addLayout(szaHBox)
@@ -564,6 +575,16 @@ class ConfigWindow(QtWidgets.QDialog):
         # L1AQC
         VBox1.addWidget(l1aqcLabel)
         VBox1.addWidget(l1aqcSublabel)
+
+        #   L1AQC Pitch & Roll
+        PitchRollHBox = QtWidgets.QHBoxLayout()
+        PitchRollHBox.addWidget(self.l1aqcCleanPitchRollLabel)
+        PitchRollHBox.addWidget(self.l1aqcCleanPitchRollCheckBox)
+        VBox1.addLayout(PitchRollHBox)
+        PitchRollHBox2 = QtWidgets.QHBoxLayout()
+        PitchRollHBox2.addWidget(self.l1aqcPitchRollPitchLabel)
+        PitchRollHBox2.addWidget(self.l1aqcPitchRollPitchLineEdit)
+        VBox1.addLayout(PitchRollHBox2)
 
         #   SolarTracker
         SolarTrackerHBox = QtWidgets.QHBoxLayout()
@@ -581,16 +602,6 @@ class ConfigWindow(QtWidgets.QDialog):
         RotatorDelayHBox.addWidget(self.l1aqcRotatorDelayCheckBox)
         RotatorDelayHBox.addWidget(self.l1aqcRotatorDelayLineEdit)
         VBox1.addLayout(RotatorDelayHBox)
-
-        #   L1AQC Pitch & Roll
-        PitchRollHBox = QtWidgets.QHBoxLayout()
-        PitchRollHBox.addWidget(self.l1aqcCleanPitchRollLabel)
-        PitchRollHBox.addWidget(self.l1aqcCleanPitchRollCheckBox)
-        VBox1.addLayout(PitchRollHBox)
-        PitchRollHBox2 = QtWidgets.QHBoxLayout()
-        PitchRollHBox2.addWidget(self.l1aqcPitchRollPitchLabel)
-        PitchRollHBox2.addWidget(self.l1aqcPitchRollPitchLineEdit)
-        VBox1.addLayout(PitchRollHBox2)
 
         #   L1AQC Rotator Absolute
         rotateHBox = QtWidgets.QHBoxLayout()
@@ -1043,13 +1054,15 @@ class ConfigWindow(QtWidgets.QDialog):
         print("ConfigWindow - l1aqcSolarTrackerCheckBoxUpdate")
 
         disabled = (not self.l1aqcSolarTrackerCheckBox.isChecked())
+        self.l1aCleanSZAMaxLabel.setDisabled(disabled)
+        self.l1aCleanSZAMaxLineEdit.setDisabled(disabled)
         self.l1aqcRotatorDelayLabel.setDisabled(disabled)
         self.l1aqcRotatorDelayLineEdit.setDisabled(disabled)
         self.l1aqcRotatorDelayCheckBox.setDisabled(disabled)
-        self.l1aqcCleanPitchRollCheckBox.setDisabled(disabled)
-        self.l1aqcCleanPitchRollLabel.setDisabled(disabled)
-        self.l1aqcPitchRollPitchLabel.setDisabled(disabled)
-        self.l1aqcPitchRollPitchLineEdit.setDisabled(disabled)
+        # self.l1aqcCleanPitchRollCheckBox.setDisabled(disabled)
+        # self.l1aqcCleanPitchRollLabel.setDisabled(disabled)
+        # self.l1aqcPitchRollPitchLabel.setDisabled(disabled)
+        # self.l1aqcPitchRollPitchLineEdit.setDisabled(disabled)
         self.l1aqcRotatorAngleLabel.setDisabled(disabled)
         self.l1aqcRotatorAngleCheckBox.setDisabled(disabled)
         self.l1aqcRotatorAngleMinLabel.setDisabled(disabled)
@@ -1057,11 +1070,12 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcRotatorAngleMaxLabel.setDisabled(disabled)
         self.l1aqcRotatorAngleMaxLineEdit.setDisabled(disabled)
         if disabled:
+            ConfigFile.settings["fL1aCleanSZAMax"] = 90
             ConfigFile.settings["bL1aqcSolarTracker"] = 0
-            ConfigFile.settings["bL1aqcCleanPitchRoll"] = 0
+            # ConfigFile.settings["bL1aqcCleanPitchRoll"] = 0
             ConfigFile.settings["bL1aqcRotatorDelay"] = 0
             self.l1aqcRotatorDelayCheckBox.setChecked(False)
-            self.l1aqcCleanPitchRollCheckBox.setChecked(False)
+            # self.l1aqcCleanPitchRollCheckBox.setChecked(False)
             self.l1aqcRotatorAngleCheckBox.setChecked(False)
         else:
             ConfigFile.settings["bL1aqcSolarTracker"] = 1
@@ -1390,6 +1404,7 @@ class ConfigWindow(QtWidgets.QDialog):
     def refreshConfig(self):
         print("ConfigWindow - refreshConfig")
 
+        ConfigFile.settings["fL1aUTCOffset"] = float(self.l1aUTCOffsetLineEdit.text())
         ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
         ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())
 

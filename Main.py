@@ -123,7 +123,7 @@ class Window(QtWidgets.QWidget):
         self.outInDirButton = QtWidgets.QPushButton('^^^ Mimic Input Dir. vvv',self)
         self.outInDirButton.clicked.connect(self.outInDirButtonPressed)
 
-        self.ancFileLabel = QtWidgets.QLabel('Ancillary Data File (SeaBASS format)')
+        self.ancFileLabel = QtWidgets.QLabel('Ancillary Data File (SeaBASS format; MUST USE UTC)')
         self.ancFileLineEdit = QtWidgets.QLineEdit()
         self.ancFileLineEdit.setText(str(MainConfig.settings['metFile']))
         self.ancAddButton = QtWidgets.QPushButton('Add', self)

@@ -21,6 +21,7 @@ class ConfigFile:
         print("ConfigFile - Printd")
         print("AncFile", ConfigFile.settings["AncFile"])
 
+        print("fL1aUTCOffset", ConfigFile.settings["fL1aUTCOffset"])
         print("bL1aCleanSZA", ConfigFile.settings["bL1aCleanSZA"])
         print("fL1aCleanSZAMax", ConfigFile.settings["fL1aCleanSZAMax"])
 
@@ -193,6 +194,7 @@ class ConfigFile:
 
         ConfigFile.settings["AncFile"] = ''
 
+        ConfigFile.settings["fL1aUTCOffset"] = 0
         ConfigFile.settings["bL1aCleanSZA"] = 0
         ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,
 
