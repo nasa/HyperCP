@@ -133,21 +133,27 @@ class ProcessL1aqc:
 
         # 2021-04-09: Include ANCILLARY_METADATA in all datasets, regardless of whether they are SOLARTRACKER or not
         # or if they have an ancillary file or not
+        compass = None
         for gp in node.groups:
-            if gp.id.startswith("GP"):
-                gpsDateTime = gp.getDataset("DATETIME").data
+            if gp.id.startswith('GP'):
+                gpsDateTime = gp.getDataset('DATETIME').data
                 gpsLat = gp.getDataset('LATPOS')
-                latHemiData = gp.getDataset("LATHEMI")
+                latHemiData = gp.getDataset('LATHEMI')
                 gpsLon = gp.getDataset('LONPOS')
-                lonHemiData = gp.getDataset("LONHEMI")
+                lonHemiData = gp.getDataset('LONHEMI')
 
-                if gp.attributes['CalFileName'].startswith("GPRMC"):
+                if gp.attributes['CalFileName'].startswith('GPRMC'):
                     gpsStatus = gp.getDataset('STATUS')
                 else:
                     gpsStatus = gp.getDataset('FIXQUAL')
+            elif gp.id.startswith('ES_LIGHT'):
+                esDateTime = gp.getDataset('DATETIME').data
+            elif gp.id.startswith('SATTHS'):
+                # Fluxgate on the THS:
+                compass = gp.getDataset('COMP')
 
-        # For solar sensor geometries, need either Tracker or Ancillary
-        if ConfigFile.settings['bL1aqcSolarTracker'] == 0 and ancillaryData is None:
+        # For solar sensor geometries, need either Tracker or Ancillary or Fluxgate compass
+        if ConfigFile.settings['bL1aqcSolarTracker'] == 0 and ancillaryData is None and compass is None:
             msg = 'Required ancillary metadata for sensor offset missing. Abort.'
             print(msg)
             Utilities.writeLogFile(msg)
@@ -158,10 +164,13 @@ class ProcessL1aqc:
             ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
 
             # Remove all ancillary data that does not intersect GPS data
+            # Change this to ES to work around set-ups with no GPS
             print('Removing non-pertinent ancillary data.')
-            lower = bisect.bisect_left(ancDateTime, min(gpsDateTime))
+            # lower = bisect.bisect_left(ancDateTime, min(gpsDateTime))
+            lower = bisect.bisect_left(ancDateTime, min(esDateTime))
             lower = list(range(0,lower-1))
-            upper = bisect.bisect_right(ancDateTime, max(gpsDateTime))
+            # upper = bisect.bisect_right(ancDateTime, max(gpsDateTime))
+            upper = bisect.bisect_right(ancDateTime, max(esDateTime))
             upper = list(range(upper,len(ancDateTime)))
             ancillaryData.colDeleteRow(upper)
             ancillaryData.colDeleteRow(lower)
@@ -176,17 +185,22 @@ class ProcessL1aqc:
             # Reinitialize with new, smaller dataset
             ''' Essential ancillary data for non-SolarTracker file includes
                 lat, lon, datetime, ship heading and offset between bow and
-                SAS instrument from which SAS azimuth is calculated '''
+                SAS instrument from which SAS azimuth is calculated.
+                Alternatively, can use the azimuth of the SAS from fluxgate
+                compass (e.g., SATTHS) as a last resort'''
+
             timeStamp = ancillaryData.columns["DATETIME"][0]
             ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
             ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]
             latAnc = ancillaryData.columns["LATITUDE"][0]
             lonAnc = ancillaryData.columns["LONGITUDE"][0]
 
-            # if "SHIPAZIMUTH" in ancillaryData.columns:
+            homeAngle = None
             if "HEADING" in ancillaryData.columns:
                 # HEADING/shipAzimuth comes from ancillary data file here (not GPS or SATNAV)
+                # Or sasAzimuth comes from fluxgate SATTHS
                 shipAzimuth = ancillaryData.columns["HEADING"][0]
+
                 if "HOMEANGLE" in ancillaryData.columns:
                     homeAngle = ancillaryData.columns["HOMEANGLE"][0]
                     for i, offset in enumerate(homeAngle):
@@ -195,16 +209,31 @@ class ProcessL1aqc:
                     sasAzimuth = list(map(add, shipAzimuth, homeAngle))
                 else:
                     if ConfigFile.settings['bL1aqcSolarTracker'] == 0:
-                        msg = 'Required ancillary metadata for sensor offset missing. Abort.'
+
+                        if "COMP" in ancillaryData.columns:
+                            msg = 'Reverting to fluxgate compass as a last resort.'
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+                            sasAzimuth = compass.data['NONE'].tolist()
+                        else:
+                            msg = 'Required ancillary sensor azimuth is missing. Abort.'
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+                            return None
+            else:
+                if ConfigFile.settings['bL1aqcSolarTracker'] == 0:
+                    if compass is not None:
+                        msg = 'Reverting to fluxgate compass as a last resort.'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        sasAzimuth = compass.data['NONE'].tolist()
+                    else:
+                        msg = 'Required ancillary sensor azimuth is missing. Abort.'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
-            else:
-                if ConfigFile.settings['bL1aqcSolarTracker'] == 0:
-                    msg = 'Required ancillary metadata for ship heading missing. Abort.'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return None
+
+
             if "STATION" in ancillaryData.columns:
                 station = ancillaryData.columns["STATION"][0]
             if "SALINITY" in ancillaryData.columns:
@@ -272,48 +301,52 @@ class ProcessL1aqc:
         badTimes = []
 
         # Apply GPS Status Filter
-        msg = "Filtering file for GPS status"
-        print(msg)
-        Utilities.writeLogFile(msg)
-
+        gps = False
         for gp in node.groups:
             if gp.id == "GPS":
+                gps = True
                 timeStamp = gp.getDataset("DATETIME").data
 
-        i = 0
-        start = -1
-        stop =[]
-        for index, status in enumerate(gpsStatus.data["NONE"]):
-            # "V" for GPRMC, "0" for GPGGA
-            if status == b'V' or status == 0:
-                i += 1
-                if start == -1:
-                    start = index
-                stop = index
-            else:
-                if start != -1:
-                    startstop = [timeStamp[start],timeStamp[stop]]
-                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
-                    # print(msg)
-                    Utilities.writeLogFile(msg)
-                    badTimes.append(startstop)
-                    start = -1
-        msg = f'Percentage of data failed on GPS Status: {round(100*i/len(timeStamp))} %'
-        print(msg)
-        Utilities.writeLogFile(msg)
-
-        if start != -1 and stop == index: # Records from a mid-point to the end are bad
-            startstop = [timeStamp[start],timeStamp[stop]]
-            msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
-            # print(msg)
+        if gps:
+            msg = "Filtering file for GPS status"
+            print(msg)
             Utilities.writeLogFile(msg)
-            if badTimes is None: # only one set of records
-                badTimes = [startstop]
-            else:
-                badTimes.append(startstop)
 
-        if start==0 and stop==index: # All records are bad
-            return None
+
+            i = 0
+            start = -1
+            stop =[]
+            for index, status in enumerate(gpsStatus.data["NONE"]):
+                # "V" for GPRMC, "0" for GPGGA
+                if status == b'V' or status == 0:
+                    i += 1
+                    if start == -1:
+                        start = index
+                    stop = index
+                else:
+                    if start != -1:
+                        startstop = [timeStamp[start],timeStamp[stop]]
+                        msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+                        # print(msg)
+                        Utilities.writeLogFile(msg)
+                        badTimes.append(startstop)
+                        start = -1
+            msg = f'Percentage of data failed on GPS Status: {round(100*i/len(timeStamp))} %'
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+            if start != -1 and stop == index: # Records from a mid-point to the end are bad
+                startstop = [timeStamp[start],timeStamp[stop]]
+                msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
+                # print(msg)
+                Utilities.writeLogFile(msg)
+                if badTimes is None: # only one set of records
+                    badTimes = [startstop]
+                else:
+                    badTimes.append(startstop)
+
+            if start==0 and stop==index: # All records are bad
+                return None
 
 
         # Apply Pitch & Roll Filter
@@ -413,6 +446,7 @@ class ProcessL1aqc:
         # This has to record the time interval (TT2) for the bad angles in order to remove these time intervals
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
+        home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
         if node is not None and ConfigFile.settings["bL1aqcRotatorDelay"] and ConfigFile.settings["bL1aqcSolarTracker"]:
             gp = None
             for group in node.groups:
@@ -426,7 +460,6 @@ class ProcessL1aqc:
                     # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
                     # It may also be set for when no SolarTracker is present and it's not included in the
                     # ancillary data, but that's not relevant here...
-                    home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
                     delay = float(ConfigFile.settings["fL1aqcRotatorDelay"])
 
                     # if node is not None and int(ConfigFile.settings["bL1aqcRotatorDelay"]) == 1:
@@ -584,11 +617,11 @@ class ProcessL1aqc:
                 print(msg)
                 Utilities.writeLogFile(msg)
         else:
-            if ancillaryData is not None:
+            if sasAzimuth is not None:
                 sunAzimuth = sunAzimuthAnc
                 sunZenith = sunZenithAnc
             else:
-                print('ERROR: No ancillary file provided. Ancillary data is required if SolarTracker or pySAS is not in use. Abort.')
+                print('ERROR: No sensor geometries found. Abort.')
                 return None
 
         relAz=[]
@@ -601,8 +634,12 @@ class ProcessL1aqc:
                 # the value from the Configuration Window (L1C)
                 offset = home
             else:
-                # Changes in the angle between the bow and the sensor changes are tracked in ancillary data
-                offset = homeAngle[index]
+                if homeAngle is not None:
+                    # Changes in the angle between the bow and the sensor changes are tracked in ancillary data
+                    offset = homeAngle[index]
+                else:
+                    # For use with, e.g., fluxgate compass with no SolarTracker
+                    offset = home
 
             # Check for angles spanning north
             if sunAzimuth[index] > sasAzimuth[index]: # sasAzimuth is now accurate regardless of SolarTracker or NoTracker
