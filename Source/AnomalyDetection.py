@@ -490,15 +490,22 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.MaxLightLineEdit.setText(str(getattr(self,f'{self.sensor}MaxLight')))
 
         # Add an information bar based on metadata
+        self.start = None
+        self.end = None
         for group in root.groups:
             if group.id == 'ANCILLARY_METADATA':
                 ancGroup = group
-            if group.id.startswith('GP'):
+            if group.id == 'GPS':
                 gpsGroup = group
                 self.start = gpsGroup.datasets['DATETIME'].data[0]
                 self.end = gpsGroup.datasets['DATETIME'].data[-1]
             if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
                     trackerGroup = group
+
+        # For case of no GPS
+        if self.start is None:
+            self.start = ancGroup.datasets['DATETIME'].data[0]
+            self.end = ancGroup.datasets['DATETIME'].data[-1]
 
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
