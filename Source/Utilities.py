@@ -35,6 +35,24 @@ if "LOGFILE" not in os.environ:
 class Utilities:
 
     @staticmethod
+    def SASUTCOffset(node):
+        for gp in node.groups:
+            if not gp.id.startswith("SATMSG"): # Don't convert these strings to datasets.
+
+                    timeStamp = gp.datasets["DATETIME"].data
+                    timeStampNew = [time + datetime.timedelta(hours=ConfigFile.settings["fL1aUTCOffset"]) for time in timeStamp]
+                    TimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStampNew]
+                    DateTag = [Utilities.datetime2DateTag(dt) for dt in timeStampNew]
+                    gp.datasets["DATETIME"].data = timeStampNew
+                    gp.datasets["DATETAG"].data["NONE"] = DateTag
+                    gp.datasets["DATETAG"].datasetToColumns()
+                    gp.datasets["TIMETAG2"].data["NONE"] = TimeTag2
+                    gp.datasets["TIMETAG2"].datasetToColumns()
+
+        return node
+
+
+    @staticmethod
     def TSIS_1(dateTag, wavelength, F0_raw=None, wv_raw=None):
         def dop(year):
             # day of perihelion

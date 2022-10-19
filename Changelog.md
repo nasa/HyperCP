@@ -27,6 +27,11 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-10-18
+* Update to allow for no GPS; lat/long must be provided in ancillary data file
+* Allow for use of fluxgate compass as a last resort for sensor geometry
+* Add option in Configuration to apply an offset to date/time stamp to shift to UTC
+
 2022-08-25
 * Change data_file_name in SeaBASS metadata header to match SeaBASS file name
 

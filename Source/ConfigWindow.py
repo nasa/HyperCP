@@ -1055,6 +1055,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         disabled = (not self.l1aqcSolarTrackerCheckBox.isChecked())
         self.l1aCleanSZAMaxLabel.setDisabled(disabled)
+        self.l1aCleanSZACheckBox.setDisabled(disabled)
         self.l1aCleanSZAMaxLineEdit.setDisabled(disabled)
         self.l1aqcRotatorDelayLabel.setDisabled(disabled)
         self.l1aqcRotatorDelayLineEdit.setDisabled(disabled)

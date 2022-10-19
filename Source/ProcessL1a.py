@@ -181,18 +181,23 @@ class ProcessL1a:
                 gpsGroup.datasets["DATETAG"].columns["NONE"] = gpsDateTag
                 gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2
 
+
         # Converts gp.columns to numpy array
         for gp in root.groups:
-            if gp.id.startswith("SATMSG"): # Don't convert these strings to datasets.
-                for ds in gp.datasets.values():
-                    ds.columnsToDataset()
-            else:
+            if not gp.id.startswith("SATMSG"): # Don't convert these strings to datasets.
                 for ds in gp.datasets.values():
                     if not ds.columnsToDataset():
                         msg = "ProcessL1a.processL1a: Essential column cannot be converted to Dataset. Aborting."
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
+
+        # Adjust to UTC if necessary
+        if ConfigFile.settings["fL1aUTCOffset"] != 0:
+            # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
+            root  = Utilities.rootAddDateTime(root)
+
+            root = Utilities.SASUTCOffset(root)
 
         # Apply SZA filter; Currently only works with SolarTracker data at L1A (again possible in L2)
         if ConfigFile.settings["bL1aCleanSZA"]:
@@ -217,5 +222,11 @@ class ProcessL1a:
                             Utilities.writeLogFile(msg)
                 else:
                     print(f'No FrameTag in {gp.id} group')
+
+        # DATETIME is not supported in HDF5; remove
+        if root is not None:
+            for gp in root.groups:
+                if (gp.id == "SOLARTRACKER_STATUS") is False:
+                    del gp.datasets["DATETIME"]
 
         return root
