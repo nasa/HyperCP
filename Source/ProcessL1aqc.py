@@ -201,6 +201,7 @@ class ProcessL1aqc:
                 # Or sasAzimuth comes from fluxgate SATTHS
                 shipAzimuth = ancillaryData.columns["HEADING"][0]
 
+                # HOMEANGLE in ANCILLARY is "RelAz", the angle between SAS and ship's bow
                 if "HOMEANGLE" in ancillaryData.columns:
                     homeAngle = ancillaryData.columns["HOMEANGLE"][0]
                     for i, offset in enumerate(homeAngle):
@@ -232,6 +233,7 @@ class ProcessL1aqc:
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
+            # sasAzimuth is now corrected for all but HyperInSPACE home offset, if any
 
 
             if "STATION" in ancillaryData.columns:
@@ -626,20 +628,22 @@ class ProcessL1aqc:
 
         relAz=[]
         for index in range(len(sunAzimuth)):
-            # Whether or not SolarTracker or Ancillary file are provided,
-            #  sun and sensor geometries are indexed 1:1
-            if ConfigFile.settings["bL1aqcSolarTracker"]:
-                # Changes in the angle between the bow and the sensor changes are tracked by SolarTracker
-                # This home offset is generally set in .sat file in the field, but can be updated here with
-                # the value from the Configuration Window (L1C)
-                offset = home
-            else:
-                if homeAngle is not None:
-                    # Changes in the angle between the bow and the sensor changes are tracked in ancillary data
-                    offset = homeAngle[index]
-                else:
-                    # For use with, e.g., fluxgate compass with no SolarTracker
-                    offset = home
+            ######### This was double-correcting nonSolarTracker data!
+            # # Whether or not SolarTracker or Ancillary file are provided,
+            # #  sun and sensor geometries are indexed 1:1
+            # if ConfigFile.settings["bL1aqcSolarTracker"]:
+            #     # Changes in the angle between the bow and the sensor changes are tracked by SolarTracker
+            #     # This home offset is generally set in .sat file in the field, but can be updated here with
+            #     # the value from the Configuration Window (L1C)
+            #     offset = home
+            # else:
+            #     if homeAngle is not None:
+            #         # Changes in the angle between the bow and the sensor changes are tracked in ancillary data
+            #         offset = homeAngle[index]
+            #     else:
+            #         # For use with, e.g., fluxgate compass with no SolarTracker
+            #         offset = home
+            offset = home
 
             # Check for angles spanning north
             if sunAzimuth[index] > sasAzimuth[index]: # sasAzimuth is now accurate regardless of SolarTracker or NoTracker

@@ -2,6 +2,9 @@ v1.1.2 In progress; DAA = (dirk.a.aurin@nasa.gov)
 ---
 
 Next priorities:
+* Implement BRDF
+* Change spectral convolution to interpolate data to RSR, not RSR to data
+* Fix the SATMSG group at L1A for old SolarTracker data
 * Implement F0 convolution to gaussian RSR for HyperOCR for Lwn calculation
 * Implement TriOS platform support
 * Implement full instrument characterization and uncertainty budgets
@@ -26,6 +29,9 @@ Ideas and To-Dos:
 * Produce kml files for GoogleEarth on entire cruise/directory
 
 ___________________________________________________________
+
+2022-11-07
+* Fix redundant offset when relative azimuth comes from Ancillary file
 
 2022-10-18
 * Update to allow for no GPS; lat/long must be provided in ancillary data file

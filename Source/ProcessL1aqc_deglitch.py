@@ -330,6 +330,8 @@ class ProcessL1aqc_deglitch:
                 root.attributes[f'{sensor}_MIN_LIGHT'] = ConfigFile.settings[f'fL1aqc{sensor}MinLight']
                 root.attributes[f'{sensor}_MAX_LIGHT'] = ConfigFile.settings[f'fL1aqc{sensor}MaxLight']
                 root.attributes[f'{sensor}_MINMAX_BAND_LIGHT'] = ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandLight']
+        else:
+            root.attributes['L1AQC_DEGLITCH'] = 'OFF'
 
         msg = f"ProcessL1aqc.processL1aqc: {timestr}"
         print(msg)

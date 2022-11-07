@@ -70,7 +70,6 @@ class ProcessL1a:
             gp.getTableHeader(cf.sensorType)
             gp.attributes["DISTANCE_1"] = "Pressure " + cf.sensorType + " 1 1 0"
             gp.attributes["DISTANCE_2"] = "Surface " + cf.sensorType + " 1 1 0"
-            # gp.attributes["SensorDataList"] = ", ".join([x for x in gp.datasets.keys()])
             gp.attributes["SensorDataList"] = ", ".join(list(gp.datasets.keys()))
             if gp.id != 'SAS' and gp.id != 'Reference':
                 root.groups.append(gp)
@@ -192,11 +191,10 @@ class ProcessL1a:
                         Utilities.writeLogFile(msg)
                         return None
 
+        root  = Utilities.rootAddDateTime(root)
         # Adjust to UTC if necessary
         if ConfigFile.settings["fL1aUTCOffset"] != 0:
             # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
-            root  = Utilities.rootAddDateTime(root)
-
             root = Utilities.SASUTCOffset(root)
 
         # Apply SZA filter; Currently only works with SolarTracker data at L1A (again possible in L2)
@@ -217,16 +215,20 @@ class ProcessL1a:
                             Utilities.writeLogFile(msg)
                             return None
                         else:
-                            msg = f'SZA passed filter: {round(90-np.nanmax(elevation))}'
+                            if np.isnan(elevation).all():
+                                msg = f'SZA: elevation all NaNs.'
+                            else:
+                                msg = f'SZA passed filter: {round(90-np.nanmax(elevation))}'
                             print(msg)
                             Utilities.writeLogFile(msg)
+
                 else:
                     print(f'No FrameTag in {gp.id} group')
 
         # DATETIME is not supported in HDF5; remove
         if root is not None:
             for gp in root.groups:
-                if (gp.id == "SOLARTRACKER_STATUS") is False:
+                if gp.id != "SOLARTRACKER_STATUS" and gp.id != "SATMSG.tdf":
                     del gp.datasets["DATETIME"]
 
         return root

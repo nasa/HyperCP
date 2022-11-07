@@ -337,7 +337,7 @@ class Utilities:
     def rootAddDateTime(node):
         for gp in node.groups:
             # print(gp.id)
-            if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
+            if gp.id != "SOLARTRACKER_STATUS" and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
                 timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
                 dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
                 timeStamp = []
@@ -369,7 +369,7 @@ class Utilities:
     @staticmethod
     def rootAddDateTimeCol(node):
         for gp in node.groups:
-            if gp.id != "SOLARTRACKER_STATUS": # No valid timestamps in STATUS
+            if gp.id != "SOLARTRACKER_STATUS" and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
                 for ds in gp.datasets:
                     # Make sure all datasets have been transcribed to columns
                     gp.datasets[ds].datasetToColumns()
