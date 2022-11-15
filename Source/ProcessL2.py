@@ -16,7 +16,7 @@ from ConfigFile import ConfigFile
 from RhoCorrections import RhoCorrections
 from Weight_RSR import Weight_RSR
 from ProcessL2OCproducts import ProcessL2OCproducts
-# from ProcessL2BRDF import ProcessL2BRDF
+from ProcessL2BRDF import ProcessL2BRDF
 
 
 class ProcessL2:

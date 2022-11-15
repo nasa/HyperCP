@@ -1425,6 +1425,8 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2BRDF_fQ"] = 0
         else:
             ConfigFile.settings["bL2BRDF_fQ"] = 1
+            # This will require chlor_a in derived products to be turned on
+            # which in turn requires MODIS bands...
 
     def l2BRDF_IOPCheckBoxUpdate(self):
         print("ConfigWindow - l2BRDF_IOPCheckBoxUpdate")

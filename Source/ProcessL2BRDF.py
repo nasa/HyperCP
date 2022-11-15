@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 import sys
+from typing import OrderedDict
+import wave
 import numpy as np
 from netCDF4 import Dataset
 from scipy.interpolate import RegularGridInterpolator as rgi
@@ -22,29 +24,71 @@ class ProcessL2BRDF():
     # 6) f/Q table array fltarr [foq_data]
     # output: f/Q correction term float [fq]
     # 8.20.2003 - translated from get_foq.c by PJW, SSAI
-    # 2022.11.14: adapted by DAA
+    #
+    # 2022.11.14: adapted for HyperInSPACE by DAA
+    #   Currently not (yet) iterating more than once
 
     @staticmethod
     def procBRDF(root):
 
-    wl = np.linspace(300, 700., 401)
-    interp_func = None
+        # chl = np.array([0.01,0.01,0.01])
+        # solz = np.array([30,35,40])
+        viewz = np.array([40])
+        # relaz = np.array([95,110,115])
+        # wvl = [300.,350.,412.5, 442.5, 490., 510., 560., 620., 660.,700.]
+        for gp in root.groups:
+            if (gp.id == "DERIVED_PRODUCTS"):
+                chl = gp.datasets["chlor_a"].columns["chlor_a"]
+                # Could bring in IOPS for IOP BRDF here...
+            if (gp.id == "ANCILLARY"):
+                solz = gp.datasets["SZA"].columns["SZA"]
+                relaz = gp.datasets["REL_AZ"].columns["REL_AZ"]
 
-    # chl = np.array([0.01,0.01,0.01])
-    # solz = np.array([30,35,40])
-    # viewz = np.array([25,27,30])
-    # relaz = np.array([95,110,115])
+        for gp in root.groups:
+            if (gp.id == "REFLECTANCE"):
+                
+                nLw_list = []
+                for ds in gp.datasets:
+                    if ds.startswith("nLw"):
+                        # Can't change datasets in this loop, so make a list
+                        if not ds.endswith("_unc"):
+                            nLw_list.append(ds)
 
-    # Extract chl and geometries from root
+                for ds in nLw_list:
+                    nLw_ds = gp.getDataset(ds)
+                    nLw = nLw_ds.columns                                        
 
-    # Calculate BRDF correction (fQ0/fQ)
-    brdf = morel_brdf(chl,solz,viewz,relaz,wvl=wvl,corr=True)
+                    wavelength=[]
+                    wv_str=[]
+                    for k in nLw:
+                        if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
+                            if '.' in k:
+                                wavelength.append(float(k))
+                            else:
+                                wavelength.append(int(k))
+                            wv_str.append(k)
 
-    # outarray = np.column_stack((np.asarray(wl),np.asarray(brdf)))
+                    wavelength = np.array(wavelength)
+                    
+                    # nLw_ds.columnsToDataset()                        
+                    # nLw = nLw_ds.data.copy() # ensembles X wavelength
+                    # nLw = nLw.astype(np.float64)
 
-    # Apply to nLw
+                    # Calculate BRDF correction (fQ0/fQ)
+                    brdf = ProcessL2BRDF.morel_brdf(chl,solz,viewz,relaz,wvl=wavelength,corr=True) # wavelength X brdf
+                    # outarray = np.column_stack((np.asarray(wavelength),np.asarray(brdf)))
+                    brdf_dict = dict(zip(wv_str,brdf))
 
+                    nLw_fQ = nLw.copy()
+                    for k in nLw:
+                        if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
+                            nLw_fQ[k] = nLw[k] * brdf_dict[k]
 
+                    nLw_fQ_ds = gp.addDataset(f"{ds}_fQ")
+                    nLw_fQ_ds.columns  = nLw_fQ
+                    nLw_fQ_ds.columnsToDataset()
+
+    @staticmethod
     def fq_table_interp():
         ncfile = Dataset(os.environ['OCDATAROOT']+'/common/morel_fq.nc', 'r')
         data = ncfile['foq'][:,:,:,:,:]
@@ -61,29 +105,14 @@ class ProcessL2BRDF():
         return interp_func
 
 
-
+    @staticmethod
     def get_fq(solz, viewz, relaz, chl, wvl=None):
-        global wl
-
-        global interp_func
-
-        if interp_func is None:
-            interp_func = fq_table_interp()
-            print("Initializing f/Q interpolation function")
+        
+        interp_func = ProcessL2BRDF.fq_table_interp()
+        print("Initializing f/Q interpolation function")
 
         runspline=True
-        if wvl is None:
-            wvl = wl
-            runspline = False
-
-        #interp_arr = np.empty((len(wvl),5))
-        #interp_arr[:,0] = wvl
-        #interp_arr[:,1] = solz
-        #interp_arr[:,2] = np.log10(chl)
-        #interp_arr[:,3] = viewz
-        #interp_arr[:,4] = relaz
-
-        #result = interp_func(interp_arr)
+        
 
         interp_arr = np.meshgrid(wvl, solz, np.log10(chl), viewz, relaz,indexing='ij')
         flat = np.array([m.flatten() for m in interp_arr])
@@ -95,18 +124,18 @@ class ProcessL2BRDF():
 
         if runspline:
             cs = spline(wvl, result)
-            result = cs(wl)
+            result = cs(wvl)
 
         return result
 
-
+    @staticmethod
     def morel_brdf(chl, solz, viewz, relaz, wvl=None, corr=False):
 
         h2o = 1.34
         thetap = np.degrees(np.arcsin(np.sin(np.radians(viewz)) / h2o))
 
-        fqA = np.array(get_fq(solz, thetap, relaz, chl, wvl=wvl))
-        fq0 = np.array(get_fq(0.0,  0.0,   0.0, chl, wvl=wvl))
+        fqA = np.array(ProcessL2BRDF.get_fq(solz, thetap, relaz, chl, wvl=wvl))
+        fq0 = np.array(ProcessL2BRDF.get_fq(0.0,  0.0,   0.0, chl, wvl=wvl))
 
         if corr:
             fq = fq0 / fqA
