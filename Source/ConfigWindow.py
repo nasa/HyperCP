@@ -433,6 +433,23 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l2NegativeSpecCheckBoxUpdate()
 
+        #   BRDF Correction
+        self.l2BRDFLabel = QtWidgets.QLabel("BRDF Correction", self)
+        self.l2BRDFCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2BRDF"]) == 1:
+            self.l2BRDFCheckBox.setChecked(True)
+        self.l2BRDF_fQLabel = QtWidgets.QLabel("Morel fQ", self)
+        self.l2BRDF_fQCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2BRDF_fQ"]) == 1:
+            self.l2BRDF_fQCheckBox.setChecked(True)
+        self.l2BRDF_IOPLabel = QtWidgets.QLabel("Lee IOP", self)
+        self.l2BRDF_IOPCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2BRDF_IOP"]) == 1:
+            self.l2BRDF_IOPCheckBox.setChecked(True)
+        self.l2BRDFCheckBoxUpdate()
+
+
+
         l2ProductLabel = QtWidgets.QLabel("L2 Products", self)
         l2ProductLabel.setFont(l1aLabel_font)
 
@@ -501,6 +518,9 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2EnablePercentLtCheckBox.clicked.connect(self.l2EnablePercentLtCheckBoxUpdate)
         self.l2NIRCorrectionCheckBox.clicked.connect(self.l2NIRCorrectionCheckBoxUpdate)
         self.l2NegativeSpecCheckBox.clicked.connect(self.l2NegativeSpecCheckBoxUpdate)
+        self.l2BRDFCheckBox.clicked.connect(self.l2BRDFCheckBoxUpdate)
+        self.l2BRDF_fQCheckBox.clicked.connect(self.l2BRDF_fQCheckBoxUpdate)
+        self.l2BRDF_IOPCheckBox.clicked.connect(self.l2BRDF_IOPCheckBoxUpdate)
 
         self.l2OCproducts = QtWidgets.QPushButton("Derived L2 Ocean Color Products", self)
         self.l2OCproducts.clicked.connect(self.l2OCproductsButtonPressed)
@@ -858,7 +878,19 @@ class ConfigWindow(QtWidgets.QDialog):
         NegativeSpecHBox.addWidget(self.l2NegativeSpecCheckBox)
         VBox4.addLayout(NegativeSpecHBox)
 
-
+        #   L2 BRDF
+        BRDFVBox = QtWidgets.QVBoxLayout()
+        BRDFHBox1 = QtWidgets.QHBoxLayout()
+        BRDFHBox1.addWidget(self.l2BRDFLabel)
+        BRDFHBox1.addWidget(self.l2BRDFCheckBox)
+        BRDFVBox.addLayout(BRDFHBox1)
+        BRDFHBox2 = QtWidgets.QHBoxLayout()
+        BRDFHBox2.addWidget(self.l2BRDF_fQLabel)
+        BRDFHBox2.addWidget(self.l2BRDF_fQCheckBox)
+        BRDFHBox2.addWidget(self.l2BRDF_IOPLabel)
+        BRDFHBox2.addWidget(self.l2BRDF_IOPCheckBox)
+        BRDFVBox.addLayout(BRDFHBox2)
+        VBox4.addLayout(BRDFVBox)
 
         #   L2 Products
         VBox4.addWidget(l2ProductLabel)
@@ -1365,6 +1397,44 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL2NegativeSpec"] = 1
 
+    def l2BRDFCheckBoxUpdate(self):
+        print("ConfigWindow - l2BRDFCheckBoxUpdate")
+
+        disabled = (not self.l2BRDFCheckBox.isChecked())
+        self.l2BRDF_fQCheckBox.setDisabled(disabled)
+        self.l2BRDF_fQLabel.setDisabled(disabled)
+        # self.l2BRDF_IOPCheckBox.setDisabled(disabled)
+        self.l2BRDF_IOPCheckBox.setDisabled(True)
+        # self.l2BRDF_IOPLabel.setDisabled(disabled)
+        self.l2BRDF_IOPLabel.setDisabled(True)
+
+        if disabled:
+            ConfigFile.settings["bL2BRDF"] = 0
+            ConfigFile.settings["bL2BRDF_fQ"] = 0
+            ConfigFile.settings["bL2BRDF_IOP"] = 0
+            self.l2BRDF_fQCheckBox.setChecked(False)
+            self.l2BRDF_IOPCheckBox.setChecked(False)
+        else:
+            ConfigFile.settings["bL2BRDF"] = 1
+
+    def l2BRDF_fQCheckBoxUpdate(self):
+        print("ConfigWindow - l2BRDF_fQCheckBoxUpdate")
+
+        disabled = (not self.l2BRDF_fQCheckBox.isChecked())
+        if disabled:
+            ConfigFile.settings["bL2BRDF_fQ"] = 0
+        else:
+            ConfigFile.settings["bL2BRDF_fQ"] = 1
+
+    def l2BRDF_IOPCheckBoxUpdate(self):
+        print("ConfigWindow - l2BRDF_IOPCheckBoxUpdate")
+
+        disabled = (not self.l2BRDF_IOPCheckBox.isChecked())
+        if disabled:
+            ConfigFile.settings["bL2BRDF_IOP"] = 0
+        else:
+            ConfigFile.settings["bL2BRDF_IOP"] = 1
+
 
     def l2OCproductsButtonPressed(self):
         print("OC Products Dialogue")
@@ -1468,6 +1538,10 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = int(self.SimSpecNIRRadioButton.isChecked())
 
         ConfigFile.settings["bL2NegativeSpec"] = int(self.l2NegativeSpecCheckBox.isChecked())
+
+        ConfigFile.settings["bL2BRDF"] = int(self.l2BRDFCheckBox.isChecked())
+        ConfigFile.settings["bL2BRDF_fQ"] = int(self.l2BRDF_fQCheckBox.isChecked())
+        ConfigFile.settings["bL2BRDF_IOP"] = int(self.l2BRDF_IOPCheckBox.isChecked())
 
         ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
         ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())

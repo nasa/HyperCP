@@ -93,10 +93,18 @@ class Utilities:
         dES = 1-eccentricity*np.cos(dayFactor*(day-dayOfPerihelion)) # in AU
         F0_fs = F0_raw*dES
 
-        F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
+        # Smooth F0 to 10 nm windows centered on data wavelengths
+        avg_f0 = np.empty(len(wavelength))
+        avg_f0[:] = np.nan
+        for i in range(len(wavelength)):
+            idx = np.where((wv_raw >= wavelength[i]-5.) & ( wv_raw <= wavelength[i]+5.))
+            if idx:
+                avg_f0[i] = np.mean(F0_fs[idx])
+        # F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
+
         # Use the strings for the F0 dict
         wavelengthStr = [str(wave) for wave in wavelength]
-        F0 = collections.OrderedDict(zip(wavelengthStr, F0))
+        F0 = collections.OrderedDict(zip(wavelengthStr, avg_f0))
 
         return F0, F0_raw, wv_raw
 

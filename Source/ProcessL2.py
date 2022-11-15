@@ -16,6 +16,7 @@ from ConfigFile import ConfigFile
 from RhoCorrections import RhoCorrections
 from Weight_RSR import Weight_RSR
 from ProcessL2OCproducts import ProcessL2OCproducts
+# from ProcessL2BRDF import ProcessL2BRDF
 
 
 class ProcessL2:
@@ -1901,7 +1902,7 @@ class ProcessL2:
         node.attributes["PROCESSING_LEVEL"] = "2"
         # Remaining attributes managed below...
 
-        # For completeness, flip datasets into colums in all groups
+        # For completeness, flip datasets into columns in all groups
         for grp in root.groups:
             for gp in node.groups:
                 if gp.id == grp.id:
@@ -1948,6 +1949,11 @@ class ProcessL2:
         totalProds = sum(list(ConfigFile.products.values()))
         if totalProds > 0:
             ProcessL2OCproducts.procProds(node)
+
+        # If requested, process BRDF corrections to Rrs and nLw
+        if ConfigFile.settings["bL2BRDF"]:
+            ProcessL2BRDF.procBRDF(node)
+
 
 
         # Now strip datetimes from all datasets

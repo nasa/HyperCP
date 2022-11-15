@@ -119,6 +119,10 @@ class ConfigFile:
 
         print("bL2NegativeSpec", ConfigFile.settings["bL2NegativeSpec"])
 
+        print("bL2BRDF", ConfigFile.settings["bL2BRDF"])
+        print("bL2BRDF_fQ", ConfigFile.settings["bL2BRDF_fQ"])
+        print("bL2BRDF_IOP", ConfigFile.settings["bL2BRDF_IOP"])
+
         print("bL2WeightMODISA", ConfigFile.settings["bL2WeightMODISA"])
         print("bL2WeightSentinel3A", ConfigFile.settings["bL2WeightSentinel3A"])
         print("bL2WeightVIIRSN", ConfigFile.settings["bL2WeightVIIRSN"])
@@ -297,6 +301,10 @@ class ConfigFile:
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1 # Ruddick 2005, Ruddick 2006 similarity spectrum
 
         ConfigFile.settings["bL2NegativeSpec"] = 1
+
+        ConfigFile.settings["bL2BRDF"] = 1
+        ConfigFile.settings["bL2BRDF_fQ"] = 1
+        ConfigFile.settings["bL2BRDF_IOP"] = 0
 
         ConfigFile.settings["bL2WeightMODISA"] = 0
         ConfigFile.settings["bL2WeightSentinel3A"] = 0
