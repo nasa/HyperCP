@@ -68,21 +68,21 @@ class ProcessL2BRDF():
                                 wavelength.append(int(k))
                             wv_str.append(k)
 
-                    wavelength = np.array(wavelength)
-                    
-                    # nLw_ds.columnsToDataset()                        
-                    # nLw = nLw_ds.data.copy() # ensembles X wavelength
-                    # nLw = nLw.astype(np.float64)
+                    wavelength = np.array(wavelength)                                        
 
                     # Calculate BRDF correction (fQ0/fQ)
                     brdf = ProcessL2BRDF.morel_brdf(chl,solz,viewz,relaz,wvl=wavelength,corr=True) # wavelength X brdf
-                    # outarray = np.column_stack((np.asarray(wavelength),np.asarray(brdf)))
+                    
+                    # Insure brdf is a list of lists, even if there is only one ensemble
+                    if len(chl)==1:
+                        brdf = [[x] for x in brdf]
                     brdf_dict = dict(zip(wv_str,brdf))
+
 
                     nLw_fQ = nLw.copy()
                     for k in nLw:
                         if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
-                            nLw_fQ[k] = nLw[k] * brdf_dict[k]
+                            nLw_fQ[k] = ( np.array(nLw[k]) * np.array(brdf_dict[k]) ).tolist()
 
                     nLw_fQ_ds = gp.addDataset(f"{ds}_fQ")
                     nLw_fQ_ds.columns  = nLw_fQ
@@ -134,77 +134,12 @@ class ProcessL2BRDF():
         h2o = 1.34
         thetap = np.degrees(np.arcsin(np.sin(np.radians(viewz)) / h2o))
 
-        fqA = np.array(ProcessL2BRDF.get_fq(solz, thetap, relaz, chl, wvl=wvl))
-        fq0 = np.array(ProcessL2BRDF.get_fq(0.0,  0.0,   0.0, chl, wvl=wvl))
+        fqA = ProcessL2BRDF.get_fq(solz, thetap, relaz, chl, wvl=wvl)
+        fq0 = ProcessL2BRDF.get_fq(0.0,  0.0,   0.0, chl, wvl=wvl)
 
         if corr:
             fq = fq0 / fqA
         else:
             fq = fqA
 
-        return fq
-
-
-
-
-
-    # def main():
-    #     """
-    #     Primary driver for stand-alone version
-    #     """
-    #     __version__ = '1.0.0'
-
-    #     parser = argparse.ArgumentParser(description=\
-    #         'calculate Morel brdf correction')
-
-    #     parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
-
-    #     parser.add_argument('chl', nargs='+', type=float, default=None,help='input chlorophyll')
-    #     parser.add_argument('--solz', type=float, default=None,help='input solar zenith angle')
-    #     parser.add_argument('--viewz', type=float, default=None,help='input view zenith angle')
-    #     parser.add_argument('--relaz', type=float, default=None,help='input relative azimuth angle')
-    #     parser.add_argument('--output_file',type=str, default=None, help="optional output filename; default: STDOUT")
-
-    #     args = parser.parse_args()
-
-    #     global wl
-    #     wvl = [300.,350.,412.5, 442.5, 490., 510., 560., 620., 660.,700.]
-
-    #     chl = np.atleast_1d(args.chl)
-    #     solz = np.atleast_1d(args.solz)
-    #     viewz = np.atleast_1d(args.viewz)
-    #     relaz = np.atleast_1d(args.relaz)
-
-    #     #chl = np.array([0.01])
-    #     # solz = np.array([30])
-    #     # viewz = np.array([25])
-    #     # relaz = np.array([110])
-    #     chl = np.array([0.01,0.01,0.01])
-    #     solz = np.array([30,35,40])
-    #     viewz = np.array([25,27,30])
-    #     relaz = np.array([95,110,115])
-    #     brdf = morel_brdf(chl,solz,viewz,relaz,wvl=wvl,corr=True)
-
-    #     outarray = np.column_stack((np.asarray(wl),np.asarray(brdf)))
-
-    #     if args.output_file:
-    #         ofile = open(args.output_file,'w')
-    #         ofile.write("/begin_header\n")
-    #         ofile.write("! Output of Model BRDF function\n")
-    #         ofile.write("! chlorophyll: %f\n" % args.chl)
-    #         ofile.write("! solar zenith angle: %f\n" % args.solz)
-    #         ofile.write("! view zenith angle: %f\n" % args.viewz)
-    #         ofile.write("! relative azinuth angle: %f\n" % args.relaz)
-    #         ofile.write("/missing=-999\n")
-    #         ofile.write("/delimiter=space\n")
-    #         ofile.write("/fields=wavelength,brdf\n")
-    #         ofile.write("/units=nm,dimensionless\n")
-    #         ofile.write('\n'.join([' '.join(['{:.6f}'.format(value) for value in row]) for row in outarray]))
-    #         # for i in range(len(brdf)):
-    #         #     ofile.write('%7.2f %12.9f\n' % (wl[i],brdf[i]))
-    #         ofile.close()
-    #     else:
-    #         # for i in range(len(brdf)):
-    #         #     print('%7.2f %12.9f' % (wl[i],brdf[i]))
-    #         print('\n'.join([' '.join(['{:.6f}'.format(value) for value in row]) for row in outarray]))
-
+        return fq.tolist()
