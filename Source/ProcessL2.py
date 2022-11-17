@@ -58,12 +58,14 @@ class ProcessL2:
         newnLwDeltaData = newReflectanceGroup.getDataset(f'nLw_{sensor}_unc')
 
         newNIRData = newReflectanceGroup.getDataset(f'nir_{sensor}')
+        newNIRnLwData = newReflectanceGroup.getDataset(f'nir_nLw_{sensor}')
 
         # These will include all slices in node so far
         # Below the most recent/current slice [-1] will be selected for processing
         rrsSlice = newRrsData.columns
         nLwSlice = newnLwData.columns
         nirSlice = newNIRData.columns
+        nirnLwSlice = newNIRnLwData.columns
 
         # # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
         # if ConfigFile.settings["bL2PerformNIRCorrection"]:
@@ -113,6 +115,8 @@ class ProcessL2:
                     continue
                 nLwSlice[k][-1] -= nLwNIRCorr
                 # newnLwData.columns[k].append(nLwSlice[k])
+
+            nirnLwSlice['NIR_offset'].append(nLwNIRCorr)
 
         elif simSpecNIRCorrection:
             # From Ruddick 2005, Ruddick 2006 use NIR normalized similarity spectrum
@@ -212,12 +216,14 @@ class ProcessL2:
                 nLwSlice[k][-1] -= float(nLwNIRCorr)
 
             nirSlice['NIR_offset'].append(rrsNIRCorr)
+            nirnLwSlice['NIR_offset'].append(nLwNIRCorr)
 
         newRrsData.columnsToDataset()
         newnLwData.columnsToDataset()
         newRrsDeltaData.columnsToDataset()
         newnLwDeltaData.columnsToDataset()
         newNIRData.columnsToDataset()
+        newNIRnLwData.columnsToDataset()
 
         return rrsNIRCorr, nLwNIRCorr
 
@@ -274,6 +280,7 @@ class ProcessL2:
                 newRhoHyper = newReflectanceGroup.addDataset(f"rho_{sensor}")
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     newNIRData = newReflectanceGroup.addDataset(f'nir_{sensor}')
+                    newNIRnLwData = newReflectanceGroup.addDataset(f'nir_nLw_{sensor}')
         else:
             newESData = newIrradianceGroup.getDataset(f"ES_{sensor}")
             newLIData = newRadianceGroup.getDataset(f"LI_{sensor}")
@@ -299,6 +306,7 @@ class ProcessL2:
                 newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     newNIRData = newReflectanceGroup.getDataset(f'nir_{sensor}')
+                    newNIRnLwData = newReflectanceGroup.addDataset(f'nir_nLw_{sensor}')
 
         # Add datetime stamps back onto ALL datasets associated with the current sensor
         # If this is the first spectrum, add date/time, otherwise append
@@ -356,6 +364,7 @@ class ProcessL2:
                         newRhoHyper.columns[k] = []
                         if ConfigFile.settings["bL2PerformNIRCorrection"]:
                             newNIRData.columns['NIR_offset'] = [] # not used until later; highly unpythonic
+                            newNIRnLwData.columns['NIR_offset'] = []
 
                 # At this waveband (k); still using complete wavelength set
                 es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and node
