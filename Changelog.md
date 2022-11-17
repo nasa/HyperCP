@@ -30,6 +30,10 @@ Ideas and To-Dos:
 
 ___________________________________________________________
 
+2022-11-16
+* Smooth the Coddington TSIS-1 F0 on a 10 nm boxcar to reduce noise in nLw at L2
+* Incorporate Morel f/Q BRDF correction in L2 processing (not yet iterative)
+
 2022-11-07
 * Fix redundant offset when relative azimuth comes from Ancillary file
 
