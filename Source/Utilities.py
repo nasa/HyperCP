@@ -801,15 +801,8 @@ class Utilities:
                 break
             timeStamp = newTimeStamp.copy()
 
-        # if badTimes == []:
-        #     startLength = 1 # avoids div by zero below when finalCount is 0
-
         for ds in group.datasets:
-            # if ds != "STATION":
-            # try:
             group.datasets[ds].datasetToColumns()
-            # except:
-            #     print('sheeeeit')
 
         msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
         print(msg)

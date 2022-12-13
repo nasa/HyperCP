@@ -1439,7 +1439,11 @@ class ProcessL2:
                     ds.columnsToDataset()
 
                 check = Utilities.filterData(newAncGroup,badTimes)
-                return False
+                if check == 1.0:
+                    msg = "100% of Ancillary data removed. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
             if min(wavelength) < 350 or max(wavelength) > 1000:
                 msg = f'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'
                 print(msg)
@@ -1832,18 +1836,14 @@ class ProcessL2:
                         # No need to continue incrementing; all records captured in one ensemble
                         break
 
-            # For the rare case where end of record is reached at, but not exceeding endTime...
+            # For the rare case where end of record is reached at, but not exceeding, endTime...
             if not timeFlag:
                 end = i+1 # i is the index of end of record; plus one to include i due to -1 list slicing
-                # time = timeStamp[start]
-                # Had been to insure there was still a full interval of time remaining...
-                # if time < (endTime - datetime.timedelta(0,interval)):
-                # Now capture all remaining spectra in the final slice
-                # if time < endTime:
                 if not ProcessL2.ensemblesReflectance(node,sasGroup, referenceGroup, ancGroup, start, end):
-                    msg = 'ProcessL2.ensemblesReflectance ender failed.'
+                    msg = 'ProcessL2.ensemblesReflectance ender clause failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
+
 
         #
         # Reflectance calculations complete

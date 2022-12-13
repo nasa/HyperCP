@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-import argparse
-import sys
-from typing import OrderedDict
-import wave
 import numpy as np
 from netCDF4 import Dataset
 from scipy.interpolate import RegularGridInterpolator as rgi
@@ -46,7 +42,7 @@ class ProcessL2BRDF():
 
         for gp in root.groups:
             if (gp.id == "REFLECTANCE"):
-                
+
                 nLw_list = []
                 for ds in gp.datasets:
                     if ds.startswith("nLw"):
@@ -56,7 +52,7 @@ class ProcessL2BRDF():
 
                 for ds in nLw_list:
                     nLw_ds = gp.getDataset(ds)
-                    nLw = nLw_ds.columns                                        
+                    nLw = nLw_ds.columns
 
                     wavelength=[]
                     wv_str=[]
@@ -68,11 +64,11 @@ class ProcessL2BRDF():
                                 wavelength.append(int(k))
                             wv_str.append(k)
 
-                    wavelength = np.array(wavelength)                                        
+                    wavelength = np.array(wavelength)
 
                     # Calculate BRDF correction (fQ0/fQ)
                     brdf = ProcessL2BRDF.morel_brdf(chl,solz,viewz,relaz,wvl=wavelength,corr=True) # wavelength X brdf
-                    
+
                     # Insure brdf is a list of lists, even if there is only one ensemble
                     if len(chl)==1:
                         brdf = [[x] for x in brdf]
@@ -107,12 +103,12 @@ class ProcessL2BRDF():
 
     @staticmethod
     def get_fq(solz, viewz, relaz, chl, wvl=None):
-        
+
         interp_func = ProcessL2BRDF.fq_table_interp()
         print("Initializing f/Q interpolation function")
 
         runspline=True
-        
+
 
         interp_arr = np.meshgrid(wvl, solz, np.log10(chl), viewz, relaz,indexing='ij')
         flat = np.array([m.flatten() for m in interp_arr])
