@@ -7,7 +7,7 @@ HyperInSPACE is designed to provide hyperspectral in situ support for the <a hre
 
 Currently, HyperInSPACE supports <a href='https://www.seabird.com/'>Sea-Bird Scientific</a> HyperSAS packages with and without SolarTracker or pySAS platforms. If you are interested in integrating support for your platform, contact us at the email address below the copyright.
 
-## Version 1.1.1 (see Changelog.md)
+## Version 1.1.2 (see Changelog.md)
 
 ---
 ```
@@ -284,7 +284,7 @@ Spectra with Lt higher in the UV (average from 780-850) than the UV (350-400) ar
 
 **Spectral Outlier Filter** may be applied to remove noisy data prior to binning. This simple filter examines only the spectra of Es, Li, and Lt from 400 - 700 nm, above which the data are noisy in the HyperOCRs. Using the standard deviation of the normalized spectra for the entire sample ensemble, together with a multiplier to establish an "envelope" of acceptable values, spectra with data outside the envelop in any band are rejected. Currently, the arbitrary filter factors are 5.0 for Es, 8.0 for Li, and 3.0 for Lt. Results of spectral filtering are saved as spectral plots in [output_directory]/Plots/L1BQC_Spectral_Filter. The filter can be optimized by studying these plots for various parameterizations of the filter.
 
-**Meteorological flags** based on **(Ruddick et al. 2006, Mobley, 1999, Wernand et al. 2002, Garaba et al. 2012, Vandenberg 2017, Simis et al., 2013)** can be optionally applied to screen for undesirable data. Specifically, data are filtered for cloud cover, unusually low downwelling irradiance at **480 nm < default 2.0 uW cm^-2 nm^-1** for data likely to have been collected near dawn or dusk, or **(Es(470)/Es(680) < 1.0**), and for data likely to have high relative humidity or rain (**Es(720)/Es(370) < 1.095**). Cloud screening (**Li(750)/Es(750) >= 0.05 is cloudy**) is optional and not well parameterized. Clear skies are approximately 0.02 (Mobley 1999) and fully overcast are of order 0.3 (Ruddick et al. 2006). Alternatively, the cloudiness index from Simis and Olsson (2013) can be applied **pi(Lsky(400)/Es(400) > 0.25 is cloudy**), but again, further study is warranted to parameterize this relationship.
+**Meteorological flags** based on **(Ruddick et al. 2006, Mobley, 1999, Wernand et al. 2002, Garaba et al. 2012, Vandenberg 2017, Simis et al., 2013)** can be optionally applied to screen for undesirable data. Specifically, data are filtered for cloud cover, unusually low downwelling irradiance (Wernand et al. 2002) at **480 nm < default 2.0 uW cm^-2 nm^-1** for data likely to have been collected near dawn or dusk, or **(Es(470)/Es(680) < 1.0**), and for data likely to have high relative humidity or rain (**Es(720)/Es(370) < 1.095**). Cloud screening (**Li(750)/Es(750) >= 0.05 is cloudy**) is optional and not well parameterized. Clear skies are approximately 0.02 (Mobley 1999) and fully overcast are of order 0.3 (Ruddick et al. 2006). Alternatively, the cloudiness index from Simis and Olsson (2013) can be applied **pi(Lsky(400)/Es(400) > 0.25 is cloudy**), but again, further study is warranted to parameterize this relationship.
 
 #### Level 2
 

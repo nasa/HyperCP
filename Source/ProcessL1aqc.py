@@ -628,31 +628,16 @@ class ProcessL1aqc:
 
         relAz=[]
         for index in range(len(sunAzimuth)):
-            ######### This was double-correcting nonSolarTracker data!
-            # # Whether or not SolarTracker or Ancillary file are provided,
-            # #  sun and sensor geometries are indexed 1:1
-            # if ConfigFile.settings["bL1aqcSolarTracker"]:
-            #     # Changes in the angle between the bow and the sensor changes are tracked by SolarTracker
-            #     # This home offset is generally set in .sat file in the field, but can be updated here with
-            #     # the value from the Configuration Window (L1C)
-            #     offset = home
-            # else:
-            #     if homeAngle is not None:
-            #         # Changes in the angle between the bow and the sensor changes are tracked in ancillary data
-            #         offset = homeAngle[index]
-            #     else:
-            #         # For use with, e.g., fluxgate compass with no SolarTracker
-            #         offset = home
             offset = home
 
             # Check for angles spanning north
-            if sunAzimuth[index] > sasAzimuth[index]: # sasAzimuth is now accurate regardless of SolarTracker or NoTracker
+            if sunAzimuth[index] > sasAzimuth[index]:
                 hiAng = sunAzimuth[index]
                 loAng = sasAzimuth[index] + offset
             else:
                 hiAng = sasAzimuth[index] + offset
                 loAng = sunAzimuth[index]
-            # Choose the smallest angle between them
+            # Choose the smallest angle between them. This will always be positive.
             if hiAng-loAng > 180:
                 relAzimuthAngle = 360 - (hiAng-loAng)
             else:
