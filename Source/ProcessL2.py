@@ -1454,11 +1454,10 @@ class ProcessL2:
                 # wavelength is now truncated to only valid wavebands for use in Zhang models
                 waveSubset = wave_array[:,1].tolist()
 
-            rhoStructure, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
+            rhoVector, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
                 CloudXSlice,SZAXSlice,SSTXSlice,SalXSlice,RelAzXSlice,waveSubset)
-            rhoVector = rhoStructure['ρ']
             for i, k in enumerate(waveSubset):
-                rhoVec[str(k)] = rhoVector[0,i]
+                rhoVec[str(k)] = rhoVector[i]
             rhoScalar = None
 
         else:
