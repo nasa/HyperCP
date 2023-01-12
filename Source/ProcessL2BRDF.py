@@ -86,14 +86,13 @@ class ProcessL2BRDF():
 
     @staticmethod
     def fq_table_interp():
-        ncfile = Dataset(os.environ['OCDATAROOT']+'/common/morel_fq.nc', 'r')
-        data = ncfile['foq'][:,:,:,:,:]
-
-        grdwvl = ncfile['wave'][:]
-        grdchl = np.log10(ncfile['chl'][:])
-        grdsolz = ncfile['solz'][:]
-        grdviewz = ncfile['senz'][:]
-        grdrelaz = ncfile['phi'][:]
+        with Dataset(os.environ['OCDATAROOT']+'/common/morel_fq.nc', 'r') as ncfile:
+            data = ncfile['foq'][:,:,:,:,:]
+            grdwvl = ncfile['wave'][:]
+            grdchl = np.log10(ncfile['chl'][:])
+            grdsolz = ncfile['solz'][:]
+            grdviewz = ncfile['senz'][:]
+            grdrelaz = ncfile['phi'][:]
 
         interp_func = rgi((grdwvl, grdsolz, grdchl, grdviewz, grdrelaz), data,\
                         fill_value=None,bounds_error=False)

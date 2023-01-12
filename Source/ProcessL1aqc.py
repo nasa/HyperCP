@@ -44,14 +44,14 @@ class ProcessL1aqc:
             # Utilities.writeLogFile(msg)
 
             if startLength > 0:
-                counter = 0
+                rowsToDelete = []
                 for i in range(startLength):
                     if start <= timeStamp[i] and stop >= timeStamp[i]:
-                        group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
-                        counter += 1
+                        rowsToDelete.append(i)
                         finalCount += 1
                     else:
                         newTimeStamp.append(timeStamp[i])
+                group.datasetDeleteRow(rowsToDelete)
             else:
                 msg = 'Data group is empty. Continuing.'
                 print(msg)

@@ -255,7 +255,7 @@ class Controller:
                 return None
         else:
             msg = "L1a processing failed. Nothing to output."
-            if MainConfig.settings["popQuery"] == 0:
+            if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
@@ -297,7 +297,7 @@ class Controller:
                 return None
         else:
             msg = "L1aqc processing failed. Nothing to output."
-            if MainConfig.settings["popQuery"] == 0:
+            if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
@@ -382,7 +382,7 @@ class Controller:
                 return None,
         else:
             msg = "L1bqc processing failed. Nothing to output."
-            if MainConfig.settings["popQuery"] == 0:
+            if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)

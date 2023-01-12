@@ -15,6 +15,7 @@ import requests
 from tqdm import tqdm
 
 # Why does pylint have a problem with this path formulation?
+#   => All dependencies should be prepended Source.
 sys.path.append(os.path.join(os.path.dirname(__file__),'Source'))
 from MainConfig import MainConfig
 from Controller import Controller
@@ -518,7 +519,7 @@ class Window(QtWidgets.QWidget):
 class Command():
     ''' Class without using the GUI '''
 
-    def __init__(self, configFilePath, inputFile, outputDirectory, level, ancFile):
+    def __init__(self, configFilePath, inputFile, outputDirectory, level, ancFile=None):
 
         # Configuration File
         self.configFilename = configFilePath
@@ -586,7 +587,7 @@ class Command():
 
         # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
         # we keep variable fileNames which is a list
-        fileNames = [inputFile]
+        fileNames = [self.inputFile]
         print('Files:', fileNames)
         if not fileNames:
             return
@@ -687,6 +688,7 @@ if __name__ == '__main__':
 
     # If the cmd argument is given, run the Command class without the GUI
     if cmd:
+        os.environ['HYPERINSPACE_CMD'] = 'TRUE'
         if not (args.username is None or args.password is None):
             # Only for L2 processing set credentials
             GetAnc.userCreds(username, password)
