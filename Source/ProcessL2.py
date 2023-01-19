@@ -1,9 +1,7 @@
-
 import collections
 import warnings
 
 import numpy as np
-from numpy import matlib as mb
 import scipy as sp
 import datetime as datetime
 import copy
@@ -565,17 +563,17 @@ class ProcessL2:
             stop = dateTime[1]
 
             if startLength > 0:
-                counter = 0
+                rowsToDelete = []
                 for i in range(startLength):
                     if start <= timeStamp[i] and stop >= timeStamp[i]:
                         try:
-                            group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
-                            counter += 1
+                            rowsToDelete.append(i)
                             finalCount += 1
                         except:
                             print('error')
                     else:
                         newTimeStamp.append(timeStamp[i])
+                group.datasetDeleteRow(rowsToDelete)
             else:
                 msg = 'Data group is empty. Continuing.'
                 print(msg)
@@ -1454,11 +1452,10 @@ class ProcessL2:
                 # wavelength is now truncated to only valid wavebands for use in Zhang models
                 waveSubset = wave_array[:,1].tolist()
 
-            rhoStructure, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
+            rhoVector, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
                 CloudXSlice,SZAXSlice,SSTXSlice,SalXSlice,RelAzXSlice,waveSubset)
-            rhoVector = rhoStructure['ρ']
             for i, k in enumerate(waveSubset):
-                rhoVec[str(k)] = rhoVector[0,i]
+                rhoVec[str(k)] = rhoVector[i]
             rhoScalar = None
 
         else:

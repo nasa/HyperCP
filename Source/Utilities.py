@@ -1,5 +1,3 @@
-
-from multiprocessing.sharedctypes import Value
 import os
 import datetime
 import collections
@@ -8,7 +6,6 @@ import pytz
 from collections import Counter
 import csv
 
-# from PyQt5.QtWidgets import QApplication, QDesktopWidget, QWidget, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QMessageBox
 
 import matplotlib.pyplot as plt
@@ -783,17 +780,17 @@ class Utilities:
             stop = dateTime[1]
 
             if startLength > 0:
-                counter = 0
+                rowsToDelete = []
                 for i in range(startLength):
                     if start <= timeStamp[i] and stop >= timeStamp[i]:
                         try:
-                            group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
-                            counter += 1
+                            rowsToDelete.append(i)
                             finalCount += 1
                         except:
                             print('error')
                     else:
                         newTimeStamp.append(timeStamp[i])
+                group.datasetDeleteRow(rowsToDelete)
             else:
                 msg = 'Data group is empty. Continuing.'
                 print(msg)

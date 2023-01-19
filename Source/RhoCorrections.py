@@ -1,6 +1,6 @@
-
-import collections
 import os
+import time
+
 import numpy as np
 
 from ConfigFile import ConfigFile
@@ -93,24 +93,18 @@ class RhoCorrections:
         Utilities.writeLogFile(msg)
 
         # === environmental conditions during experiment ===
-        env = collections.OrderedDict()
-        env['wind'] = windSpeedMean
-        env['od'] = AOD
-        env['C'] = cloud # Not used
-        env['zen_sun'] = sza
-        env['wtem'] = wTemp
-        env['sal'] = sal
+        env = {'wind': windSpeedMean, 'od': AOD, 'C': cloud, 'zen_sun': sza, 'wtem': wTemp, 'sal': sal}
 
         # === The sensor ===
         # the zenith and azimuth angles of light that the sensor will see
         # 0 azimuth angle is where the sun located
         # positive z is upward
-        sensor = collections.OrderedDict()
-        sensor['ang'] = [40,180-relAz] # relAz should vary from about 90-135
-        sensor['wv'] = waveBands
+        sensor = {'ang': np.array([40, 180 - relAz]), 'wv': np.array(waveBands)}
 
-        rhoStructure = ZhangRho.Main(env,sensor)
+        tic = time.process_time()
+        rhoVector = ZhangRho.get_sky_sun_rho(env, sensor, round4cache=True)['rho']
+        print(f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s')
 
-        rhoDelta = 0.003 # Unknown; estimated from Ruddick 2006
+        rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
 
-        return rhoStructure, rhoDelta
+        return rhoVector, rhoDelta
