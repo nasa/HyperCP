@@ -28,8 +28,9 @@ Currently, HyperInSPACE supports <a href='https://www.seabird.com/'>Sea-Bird Sci
  of the National Aeronautics and Space Administration. All Rights Reserved.
 ```
 ---
-Primary Author: Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>\
-Acknowledgements: N.Vandenberg (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926)
+Main Author: Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>\
+Co-authors: Nathan Vandenberg & Maycira Costa, University of Victoria (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926, https://github.com/nathanvnbg/PySciDON)\
+Nils Haentjens, University of Maine
 
 ## Requirements and Installation
 
@@ -55,14 +56,22 @@ Depending on your system, four additional packages (pysolar, fpdf, tqdm, and pyq
 prompt$ pip install package
 ```
 
+To stay up to date with the latest commits to the master branch, always pull commits prior to useing the software. From the HyperInSPACE directory, type:
+
+```
+prompt$ git pull
+```
+
+To report an issue, please submit here: https://github.com/nasa/HyperInSPACE/issues 
+
 ---
 ## Launching
 
 <center><img src="Data/Img/banner.jpg" alt="banner"></center>
 
-HyperInSPACE is a Main-View-Controller Python package with a GUI that can be launched in several ways, such as by navigating to the project folder on the command line and typing
+HyperInSPACE is a Main-View-Controller Python package with a GUI that can be launched in several ways, such as by navigating to the HyperInSPACE folder on the command line and typing
 ```
-(HyperInSPACE) prompt$ python Main.py
+prompt$ python Main.py
 ```
 However you launch the GUI, *watch for important feedback at the command line terminal* in addition to informational GUI windows.
 

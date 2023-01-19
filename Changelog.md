@@ -1,34 +1,44 @@
-v1.1.2 In progress; DAA = (dirk.a.aurin@nasa.gov)
+v1.1.2 In progress 
+
+DAA = dirk.a.aurin@nasa.gov
+NH = nils.haentjens@maine.edu
+
 ---
 
 Next priorities:
-* Implement BRDF
+* Implement full instrument characterization and uncertainty budgets
+* Implement TriOS platform support
+* Add IOP-based BRDF correction option
+* Propagate uncertainties from radiometry to OC products (beyond Rrs and nLw)
+* FPDF slow in PDF report building with figures; seek alternatives
+
+Minor issues:
+* Implement F0 convolution to gaussian RSR for HyperOCR for Lwn calculation
 * Change spectral convolution to interpolate data to RSR, not RSR to data
 * Fix the SATMSG group at L1A for old SolarTracker data
-* Implement F0 convolution to gaussian RSR for HyperOCR for Lwn calculation
-* Implement TriOS platform support
-* Implement full instrument characterization and uncertainty budgets
-* Improve uncertainty estimates of glint corrections
-* Propagate uncertainties from radiometry to OC products
-* Implement Groetch et al. 2017 3C glint correction
-* Add BRDF correction options
+* Use ancillary SeaBASS metadata to populate remaining L2 SeaBASS header fields
+
 * Integration time issue with HyperOCRs; develop/add correction (in cal file? another level?)
     * Do other users of SeaBird HOCRs see int. time response issues?
     * Contact me for further info regarding integration time uncertainty
+
+Ideas:
+* Explore ML approaches to automate filter selection and glint/NIR correction selection
+* Implement Groetch et al. 2017 3C glint correction (TBD)
 * Improve/augment to NIR residual corrections
     * Iterative approaches; process time concern.
-* FPDF slow in PDF report building with figures; seek alternatives
-* Use ancillary SeaBASS metadata to populate remaining L2 SeaBASS header fields
-
-Ideas and To-Dos:
 * Implement satellite matchup with fd_mathcup.py (TBD)
-* Explore ML approaches to automate filter selection and glint/NIR correction selection
 * Add failure flags in HDF object attributes:
     * Capture details when errors thrown (inspect, currentframe, getframeinfo)
 * Add PIC and GIOP to L2 OC products
 * Produce kml files for GoogleEarth on entire cruise/directory
 
 ___________________________________________________________
+
+2023-01-19; NH
+* Speed up computation of rho with Zhang et al. 2017 (Issue #15 closed)
+* Minor improvements (Issue #14 closed)
+
 
 2022-11-16
 * Smooth the Coddington TSIS-1 F0 on a 10 nm boxcar to reduce noise in nLw at L2
