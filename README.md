@@ -29,7 +29,7 @@ Currently, HyperInSPACE supports <a href='https://www.seabird.com/'>Sea-Bird Sci
 ```
 ---
 Main Author: Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>\
-Co-authors: Nathan Vandenberg & Maycira Costa, University of Victoria (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926, https://github.com/nathanvnbg/PySciDON)\
+Co-authors: Nathan Vandenberg & Maycira Costa, University of Victoria (PySciDON; https://ieeexplore.ieee.org/abstract/document/8121926, https://github.com/nathanvnbg/PySciDON) \
 Nils Haentjens, University of Maine
 
 ## Requirements and Installation
