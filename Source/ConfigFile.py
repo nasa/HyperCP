@@ -185,14 +185,14 @@ class ConfigFile:
 
     # Generates the default configuration
     @staticmethod
-    def createDefaultConfig(name, new=1):
-        # name: the filename of the configuration file without path
+    def createDefaultConfig(fileName, new=1):
+        # fileName: the filename of the configuration file without path
         # new: 1=yes, 0=no
         print("ConfigFile - Create Default Config")
 
-        if not name.endswith(".cfg"):
-            name = name + ".cfg"
-        ConfigFile.filename = name
+        if not fileName.endswith(".cfg"):
+            fileName = fileName + ".cfg"
+        ConfigFile.filename = fileName
 
         ConfigFile.settings["CalibrationFiles"] = {}
 
@@ -350,13 +350,13 @@ class ConfigFile:
         ConfigFile.products["bL2ProdbbpQaa"] = 0
         ConfigFile.products["bL2ProdcQaa"] = 0
 
-        ConfigFile.settings["seaBASSHeaderFileName"] = os.path.splitext(name)[0] + ".hdr" #
+        ConfigFile.settings["seaBASSHeaderFileName"] = os.path.splitext(fileName)[0] + ".hdr" #
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
         ConfigFile.settings["bL2WriteReport"] = 1
 
         # If this is a new config file, save it
         if new==1:
-            ConfigFile.saveConfig(name)
+            ConfigFile.saveConfig(fileName)
 
 
     # Saves the cfg file

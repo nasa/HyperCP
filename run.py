@@ -6,9 +6,10 @@ import sys
 
 from Main import Command, cmd
 
-PATH_HCP = 'HyperInSPACE'   # Adjust with full path on local computer
+PATH_HCP = '/Users/daurin/GitRepos/HyperInSPACE'   # Adjust with full path on local computer
 PATH_CFG = os.path.join(PATH_HCP, 'Config', 'sample_pySAS.cfg')
-PATH_WK = 'data'  # Adjust with full path on local computer
+PATH_WK = '/Users/daurin/temp'  # Adjust with full path on local computer
+PATH_ANC = '/Users/daurin/temp/SAMPLE_Ancillary_pySAS.sb'
 
 TO_LEVELS = ['L1A', 'L1AQC', 'L1B', 'L1BQC', 'L2']
 FROM_LEVELS = ['L0B', 'L1A', 'L1AQC', 'L1B', 'L1BQC']
@@ -40,7 +41,8 @@ def process_raw_to_l2(filename):
         print('************************************************')
         print(f'*** [{ref}] PROCESSING TO {to_level} ***')
         print('************************************************')
-        Command(PATH_CFG, os.path.join(PATH_WK, from_level, ref + ext), PATH_WK, to_level, None)
+        # Command(PATH_CFG, os.path.join(PATH_WK, from_level, ref + ext), PATH_WK, to_level, None)
+        Command(PATH_CFG, os.path.join(PATH_WK, from_level, ref + ext), PATH_WK, to_level, PATH_ANC)
 
 
 # %% One thread

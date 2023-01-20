@@ -25,6 +25,7 @@ from GetAnc import GetAnc
 from SeaBASSHeader import SeaBASSHeader
 from Utilities import Utilities
 
+version = '1.1.2'
 
 class Window(QtWidgets.QWidget):
     ''' Window is the main GUI container '''
@@ -75,8 +76,8 @@ class Window(QtWidgets.QWidget):
         '''Initialize the user interface'''
 
         # Main window configuration restore
-        MainConfig.loadConfig(MainConfig.fileName)
-        MainConfig.settings['version'] = '1.1.2'
+        MainConfig.loadConfig(MainConfig.fileName, version) # version in case it has to make new
+        MainConfig.settings['version'] = version # version to update if necessary
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
@@ -262,24 +263,24 @@ class Window(QtWidgets.QWidget):
 
     def configNewButtonPressed(self):
         print('New Config Dialogue')
-        text, ok = QtWidgets.QInputDialog.getText(self, 'New Config File', 'Enter File Name')
+        fileName, ok = QtWidgets.QInputDialog.getText(self, 'New Config File', 'Enter File Name')
         if ok:
-            if not text.endswith(".cfg"):
-                text = text + ".cfg"
-            fp = os.path.join("Config", text)
+            if not fileName.endswith(".cfg"):
+                fileName = fileName + ".cfg"
+            fp = os.path.join("Config", fileName)
             if os.path.exists(fp):
                 ret = QtWidgets.QMessageBox.question(self, 'File Exists', "Overwrite Config File?", QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
 
                 if ret == QtWidgets.QMessageBox.Yes:
-                    print('Overwriting Config File:', text)
-                    ConfigFile.createDefaultConfig(text, 1)
+                    print('Overwriting Config File:', fileName)
+                    ConfigFile.createDefaultConfig(fileName, 1)
                     MainConfig.settings['cfgFile'] = ConfigFile.filename
                     seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
                     print('Overwriting SeaBASSHeader File: ', seaBASSHeaderFileName)
                     SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
             else:
-                print('Create New Config File: ', text)
-                ConfigFile.createDefaultConfig(text, 1)
+                print('Create New Config File: ', fileName)
+                ConfigFile.createDefaultConfig(fileName, 1)
                 MainConfig.settings['cfgFile'] = ConfigFile.filename
                 seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
                 print('Creating New SeaBASSHeader File: ', seaBASSHeaderFileName)
@@ -562,12 +563,28 @@ class Command():
                 print('Download from: \
                                 https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat \
                                     and place in HyperInSPACE/Data directory.')
-        # Main configuration restore
-        MainConfig.loadConfig(MainConfig.fileName)
-        MainConfig.settings['version'] = '1.1.0'
 
-        # For our need, we only use a single processing
+        # Create a default main.config to be filled with cmd argument
+        # to avoid reading the one generated with the GUI
+        MainConfig.createDefaultConfig("cmdline_main.config", version)
+
+        # Update main configuration path with cmd line input
+        MainConfig.settings['cfgFile'] = configFilePath
+        MainConfig.settings['version'] = version
+        MainConfig.settings["metFile"] = self.ancFile
+        MainConfig.settings["outDir"] = outputDirectory
+        if os.path.isfile(inputFile):
+            MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
+        else:
+            MainConfig.settings["inDir"] = inputFile
+        print("MainConfig - Config updated with cmd line arguments")
+
+        # No GUI used: error message are display in prompt and not in graphical window
+        MainConfig.settings["popQuery"] = -1
+
+        # For our needs, we only use a single processing
         self.processSingle(self.level)
+
 
 
     ########################################################################################
