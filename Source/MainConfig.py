@@ -36,7 +36,8 @@ class MainConfig:
         print("MainConfig - File not found..")
         print("MainConfig - Create Default Config")
 
-        MainConfig.settings["cfgFile"] = ""
+        # MainConfig.settings["cfgFile"] = ""
+        MainConfig.settings["cfgFile"] = fileName
         MainConfig.settings["version"] = version
         MainConfig.settings["inDir"] = './Data'
         MainConfig.settings["outDir"] = './Data'

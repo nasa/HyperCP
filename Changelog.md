@@ -35,12 +35,17 @@ Ideas:
 
 ___________________________________________________________
 
+2023-01-24; DAA
+* Change run.py example to run_sample.py to orient around running an example batch on the sample datasets provided in the repo
+* Update sample datasets and associated files
+* Remove check for close dialog on exit
+
 2023-01-19; NH
 * Speed up computation of rho with Zhang et al. 2017 (Issue #15 closed)
 * Minor improvements (Issue #14 closed)
 
 
-2022-11-16
+2022-11-16; DAA
 * Smooth the Coddington TSIS-1 F0 on a 10 nm boxcar to reduce noise in nLw at L2
 * Incorporate Morel f/Q BRDF correction in L2 processing (not yet iterative)
 
