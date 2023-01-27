@@ -16,3 +16,4 @@ Source/.DS_Store
 *.log
 
 runtest.py
+.gitignore
