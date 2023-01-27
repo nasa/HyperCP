@@ -75,7 +75,7 @@ prompt$ python Main.py
 ```
 However you launch the GUI, *watch for important feedback at the command line terminal* in addition to informational GUI windows.
 
-There is a commandline option for batching a single level which can be triggered by adding the -cmd argument to the above command followed by: -c config -i inputFile -o outputDirectory -l processingLevel, where config is the configuration file, and the other arguments are self-explanatory (processingLevel should be in all caps, e.g., L1AQC)
+There is a commandline option for batching a single level which can be triggered by adding the -cmd argument to the above command followed by: -c config -i inputFile -o outputDirectory -l processingLevel, where config is the configuration file, and the other arguments are self-explanatory (processingLevel should be in all caps, e.g., L1AQC). In addition, the script run_sample.py has been provided for batch processing entire directories of RAW files to Level 2. Further instructions are provided in the script comments.
 
 The following sub-directories will be created automatically (if not present) when you first run the program:
 
