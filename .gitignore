@@ -15,4 +15,4 @@ Source/.DS_Store
 *.pyc
 *.log
 
-.runtest.py
+runtest.py
