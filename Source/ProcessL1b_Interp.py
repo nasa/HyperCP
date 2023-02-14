@@ -556,16 +556,19 @@ class ProcessL1b_Interp:
                 headingData = newSTGroup.getDataset("HEADING")
 
         if satmsgGroup is not None:
-            newSatMSGGroup = root.addGroup("SOLARTRACKER_STATUS")
-            # SATMSG (SOLARTRACKER_STATUS) has no date or time, just propogate it as is
+            # First make sure it's not empty
             satMSG = satmsgGroup.getDataset("MESSAGE")
-            newSatMSG = newSatMSGGroup.addDataset("MESSAGE")
-            # newSatMSGGroup["MESSAGE"] = satMSG
-            # Copies over the dataset
-            for k in satMSG.data.dtype.names:
-                #print("type",type(esData.data[k]))
-                newSatMSG.columns[k] = satMSG.data[k].tolist()
-            newSatMSG.columnsToDataset()
+            if satMSG is not None:
+                newSatMSGGroup = root.addGroup("SOLARTRACKER_STATUS")
+                # SATMSG (SOLARTRACKER_STATUS) has no date or time, just propogate it as is
+                newSatMSG = newSatMSGGroup.addDataset("MESSAGE")
+                # newSatMSGGroup["MESSAGE"] = satMSG
+                # Copies over the dataset
+                for k in satMSG.data.dtype.names:
+                    #print("type",type(esData.data[k]))
+                    newSatMSG.columns[k] = satMSG.data[k].tolist()
+                newSatMSG.columnsToDataset()
+
 
         if pyrGroup is not None:
             newPyrGroup = root.addGroup("PYROMETER")
