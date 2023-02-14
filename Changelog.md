@@ -35,6 +35,9 @@ Ideas:
 
 ___________________________________________________________
 
+2023-02-14; DAA
+* Address Issue #21 by demonstrating the Issue-Fork-Branch-PR process
+
 2023-01-24; DAA
 * Change run.py example to run_sample.py to orient around running an example batch on the sample datasets provided in the repo
 * Update sample datasets and associated files
