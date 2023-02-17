@@ -17,7 +17,7 @@ from tqdm import tqdm
 # Why does pylint have a problem with this path formulation?
 #   => All dependencies should be prepended Source.
 sys.path.append(os.path.join(os.path.dirname(__file__),'Source'))
-from MainConfig import MainConfig
+from Source.MainConfig import MainConfig
 from Controller import Controller
 from ConfigFile import ConfigFile
 from ConfigWindow import ConfigWindow
