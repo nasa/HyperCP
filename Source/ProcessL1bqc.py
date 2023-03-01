@@ -5,6 +5,7 @@ import datetime as datetime
 
 from MainConfig import MainConfig
 from GetAnc import GetAnc
+from GetAnc_ecmwf import GetAnc_ecmwf
 from Utilities import Utilities
 from ConfigFile import ConfigFile
 
@@ -176,35 +177,35 @@ class ProcessL1bqc:
             # The alternative to masking is to process them differently (e.g. See Ruddick_Rho)
             # Therefore, set this very high if you don't want it triggered (e.g. 1.0, see Readme)
             if li750[indx]/es750[indx] >= cloudFLAG:
-                # msg = f"Quality Check: Li(750)/Es(750) >= cloudFLAG:{cloudFLAG}"
-                # print(msg)
-                # Utilities.writeLogFile(msg)
+                msg = f"Quality Check: Li(750)/Es(750) >= cloudFLAG:{cloudFLAG}"
+                print(msg)
+                Utilities.writeLogFile(msg)
                 badTimes.append(dateTime)
 
             # Threshold for significant es
             # Wernand 2002
             if es480[indx] < esFlag:
-                # msg = f"Quality Check: es(480) < esFlag:{esFlag}"
-                # print(msg)
-                # Utilities.writeLogFile(msg)
+                msg = f"Quality Check: es(480) < esFlag:{esFlag}"
+                print(msg)
+                Utilities.writeLogFile(msg)
                 badTimes.append(dateTime)
 
             # Masking spectra affected by dawn/dusk radiation
             # Wernand 2002
             #v = esXSlice["470.0"][0] / esXSlice["610.0"][0] # Fix 610 -> 680
             if es470[indx]/es680[indx] < dawnDuskFlag:
-                # msg = f'Quality Check: ES(470.0)/ES(680.0) < dawnDuskFlag:{dawnDuskFlag}'
-                # print(msg)
-                # Utilities.writeLogFile(msg)
+                msg = f'Quality Check: ES(470.0)/ES(680.0) < dawnDuskFlag:{dawnDuskFlag}'
+                print(msg)
+                Utilities.writeLogFile(msg)
                 badTimes.append(dateTime)
 
             # Masking spectra affected by rainfall and high humidity
             # Wernand 2002 (940/370), Garaba et al. 2012 also uses Es(940/370), presumably 720 was developed by Wang...???
             ''' Follow up on the source of this flag'''
             if es720[indx]/es370[indx] < humidityFlag:
-                # msg = f'Quality Check: ES(720.0)/ES(370.0) < humidityFlag:{humidityFlag}'
-                # print(msg)
-                # Utilities.writeLogFile(msg)
+                msg = f'Quality Check: ES(720.0)/ES(370.0) < humidityFlag:{humidityFlag}'
+                print(msg)
+                Utilities.writeLogFile(msg)
                 badTimes.append(dateTime)
 
         badTimes = np.unique(badTimes)
@@ -220,6 +221,22 @@ class ProcessL1bqc:
             ltData.datasetToColumns()
             badTimes = None
         return badTimes
+
+
+    # @staticmethod
+    # def columnToSlice(columns, start, end):
+    #     ''' Take a slice of a dataset stored in columns '''
+
+    #     # Each column is a time series either at a waveband for radiometer columns, or various grouped datasets for ancillary
+    #     # Start and end are defined by the interval established in the Config (they are indexes)
+    #     newSlice = collections.OrderedDict()
+    #     for k in columns:
+    #         if start == end:
+    #             newSlice[k] = columns[k][start:end+1] # otherwise you get nada []
+    #         else:
+    #             newSlice[k] = columns[k][start:end] # up to not including end...next slice will pick it up
+    #     return newSlice
+
 
     @staticmethod
     def includeModelDefaults(ancGroup, modRoot):
@@ -420,7 +437,7 @@ class ProcessL1bqc:
         # are culled from datasets in groups in L1B
         ProcessL1bqc.includeModelDefaults(ancGroup, modRoot)
 
-        # Shift metadata into the ANCILLARY group as needed (i.e. from GPS and tracker)
+        # Shift metadata into the ANCILLARY group as needed (i.e. from GPS).
         #
         # GPS Group
         # These have TT2/Datetag incorporated in arrays
@@ -449,6 +466,8 @@ class ProcessL1bqc:
                 node.removeGroup(gp)
 
         if 'SPEED_F_W' in ancGroup.datasets:
+            ancGroup.addDataset('SPEED_F_W')
+            ancGroup.datasets['SPEED_F_W'] = ancGroup.getDataset('SPEED_F_W')
             ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')
 
         if satnavGroup is not None:
@@ -636,7 +655,7 @@ class ProcessL1bqc:
         start = -1
         stop = []
         for index, _ in enumerate(SZA):
-            if SZA[index] < SZAMin or SZA[index] > SZAMax:
+            if SZA[index] < SZAMin or SZA[index] > SZAMax or wind[index] > maxWind:
                 i += 1
                 if start == -1:
                     msg =f'Low SZA. SZA: {round(SZA[index])}'
@@ -658,6 +677,7 @@ class ProcessL1bqc:
                     badTimes.append(startstop)
                     start = -1
             end_index = index
+
         msg = f'Percentage of data out of SZA limits: {round(100*i/len(timeStamp))} %'
         print(msg)
         Utilities.writeLogFile(msg)
@@ -767,15 +787,22 @@ class ProcessL1bqc:
                 gpsGroup = gp
 
         # Retrieve MERRA2 model ancillary data
-        if ConfigFile.settings["bL1bqcGetAnc"] ==1:
-            msg = 'Model data for Wind and AOD may be used to replace blank values. Reading in model data...'
+        if ConfigFile.settings["bL1bqcpGetAnc"] == 1:
+            msg = 'MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...'
             print(msg)
             Utilities.writeLogFile(msg)
             modRoot = GetAnc.getAnc(gpsGroup)
-            if modRoot is None:
-                return None
+        # Retrieve ECMWF model ancillary data
+        elif ConfigFile.settings["bL1bqcpGetAnc"] == 2:
+            msg = 'ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            modRoot = GetAnc_ecmwf.getAnc_ecmwf(gpsGroup)
         else:
-            modRoot = None
+            modRoot = None          
+            
+        if modRoot is None:
+            return None
 
         # Need to either create a new ancData object, or populate the nans in the current one with the model data
         if not ProcessL1bqc.QC(node, modRoot):
@@ -866,8 +893,11 @@ class ProcessL1bqc:
         node.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
         node.attributes["DATETAG_UNITS"] = "YYYYDOY"
         node.attributes["TIMETAG2_UNITS"] = "HHMMSSmmm"
-        del(node.attributes["DATETAG"])
-        del(node.attributes["TIMETAG2"])
+
+        if "DATETAG" in node.attributes.keys():
+            del(node.attributes["DATETAG"])
+        if "TIMETAG2" in node.attributes.keys():
+            del(node.attributes["TIMETAG2"])
         if "COMMENT" in node.attributes.keys():
             del(node.attributes["COMMENT"])
         if "CLOUD_PERCENT" in node.attributes.keys():
@@ -939,7 +969,7 @@ class ProcessL1bqc:
                 ds = gp.datasets[dsName]
                 if "Datetime" in ds.columns:
                     ds.columns.pop("Datetime")
-                ds.columnsToDataset()
+                    ds.columnsToDataset()
 
             # Finished with SolarTracker Status strings
             if gp.id == 'SOLARTRACKER_STATUS':
