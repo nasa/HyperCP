@@ -1,9 +1,11 @@
-
 import os
 import collections
 import json
 
+
 class MainConfig:
+    def __init__(self):
+        self.popQuery=None
     fileName = "main.config"
     settings = collections.OrderedDict()
 
@@ -19,7 +21,7 @@ class MainConfig:
 
     # Loads the cfg file
     @staticmethod
-    def loadConfig(fileName, version):
+    def loadConfig(fileName):
         print("MainConfig - Load Config")
         configPath = os.path.join("Config", fileName)
         if os.path.isfile(configPath):
@@ -28,18 +30,16 @@ class MainConfig:
                 text = f.read()
                 MainConfig.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
         else:
-            MainConfig.createDefaultConfig(fileName, version)
+            MainConfig.createDefaultConfig(fileName)
 
     # Generates the default configuration
     @staticmethod
-    def createDefaultConfig(fileName, version):
-        print("MainConfig - File not found..")
+    def createDefaultConfig(fileName):
         print("MainConfig - Create Default Config")
-
-        # MainConfig.settings["cfgFile"] = ""
-        MainConfig.settings["cfgFile"] = fileName
-        MainConfig.settings["version"] = version
+        MainConfig.settings["cfgFile"] = ""
+        MainConfig.settings["version"] = "1.0.0"
         MainConfig.settings["inDir"] = './Data'
         MainConfig.settings["outDir"] = './Data'
         MainConfig.settings["metFile"] = ""
         MainConfig.settings["popQuery"] = 0
+        MainConfig.settings["MainDir"] = './Data'

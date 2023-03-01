@@ -1,11 +1,13 @@
+
+from multiprocessing.sharedctypes import Value
 import os
 import datetime
 import collections
-
 import pytz
 from collections import Counter
 import csv
 
+# from PyQt5.QtWidgets import QApplication, QDesktopWidget, QWidget, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QMessageBox
 
 import matplotlib.pyplot as plt
@@ -194,6 +196,7 @@ class Utilities:
 
     @staticmethod
     def writeLogFile(logText, mode='a'):
+        if not os.path.exists('Logs/'): os.makedirs('Logs/')
         with open('Logs/' + os.environ["LOGFILE"], mode) as logFile:
             logFile.write(logText + "\n")
 
@@ -342,7 +345,7 @@ class Utilities:
     def rootAddDateTime(node):
         for gp in node.groups:
             # print(gp.id)
-            if gp.id != "SOLARTRACKER_STATUS" and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
+            if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id:  # No valid timestamps in STATUS
                 timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
                 dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
                 timeStamp = []
@@ -353,6 +356,7 @@ class Utilities:
                     h = int(t[:2])
                     m = int(t[2:4])
                     s = int(t[4:6])
+
                     if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
                         and timei != 0.0 and not np.isnan(timei) \
                             and h < 60 and m < 60 and s < 60:
@@ -364,6 +368,7 @@ class Utilities:
                         print(msg)
                         Utilities.writeLogFile(msg)
                         gp.datasetDeleteRow(i)
+                        
                 dateTime = gp.addDataset("DATETIME")
                 dateTime.data = timeStamp
         return node
@@ -374,32 +379,33 @@ class Utilities:
     @staticmethod
     def rootAddDateTimeCol(node):
         for gp in node.groups:
-            if gp.id != "SOLARTRACKER_STATUS" and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
+            if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id:  # No valid timestamps in STATUS
                 for ds in gp.datasets:
                     # Make sure all datasets have been transcribed to columns
                     gp.datasets[ds].datasetToColumns()
 
                     if not 'Datetime' in gp.datasets[ds].columns:
-                        timeData = gp.datasets[ds].columns["Timetag2"]
-                        dateTag = gp.datasets[ds].columns["Datetag"]
+                        if 'Timetag2' in gp.datasets[ds].columns:  # changed to ensure the new (irr)radiance groups don't throw errors
+                            timeData = gp.datasets[ds].columns["Timetag2"]
+                            dateTag = gp.datasets[ds].columns["Datetag"]
 
-                        timeStamp = []
-                        for i, timei in enumerate(timeData):
-                            # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
-                            # Filter for aberrant Datetags
-                            if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
-                                and timei != 0.0 and not np.isnan(timei):
+                            timeStamp = []
+                            for i, timei in enumerate(timeData):
+                                # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
+                                # Filter for aberrant Datetags
+                                if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
+                                    and timei != 0.0 and not np.isnan(timei):
 
-                                dt = Utilities.dateTagToDateTime(dateTag[i])
-                                timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
-                            else:
-                                gp.datasetDeleteRow(i)
-                                msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
-                                print(msg)
-                                Utilities.writeLogFile(msg)
-                        gp.datasets[ds].columns["Datetime"] = timeStamp
-                        gp.datasets[ds].columns.move_to_end('Datetime', last=False)
-                        gp.datasets[ds].columnsToDataset()
+                                    dt = Utilities.dateTagToDateTime(dateTag[i])
+                                    timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
+                                else:
+                                    gp.datasetDeleteRow(i)
+                                    msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
+                                    print(msg)
+                                    Utilities.writeLogFile(msg)
+                            gp.datasets[ds].columns["Datetime"] = timeStamp
+                            gp.datasets[ds].columns.move_to_end('Datetime', last=False)
+                            gp.datasets[ds].columnsToDataset()
 
         return node
 
@@ -780,17 +786,19 @@ class Utilities:
             stop = dateTime[1]
 
             if startLength > 0:
-                rowsToDelete = []
+                counter = 0
                 for i in range(startLength):
                     if start <= timeStamp[i] and stop >= timeStamp[i]:
                         try:
-                            rowsToDelete.append(i)
+                            group.datasetDeleteRow(i - counter)  # Adjusts the index for the shrinking arrays
+                            counter += 1
                             finalCount += 1
                         except:
                             print('error')
+                            # ADERU : check if other dataset need to be filter, they have a single row
+
                     else:
                         newTimeStamp.append(timeStamp[i])
-                group.datasetDeleteRow(rowsToDelete)
             else:
                 msg = 'Data group is empty. Continuing.'
                 print(msg)
@@ -1411,7 +1419,6 @@ class Utilities:
                 filterFactor=3, rType='None'):
 
         import logging
-
         logging.getLogger('matplotlib.font_manager').disabled = True
 
         dirPath = os.getcwd()
@@ -1952,3 +1959,532 @@ class Utilities:
             dateTime.append(Utilities.timeTag2ToDateTime(dt,timeTags[i]))
 
         return dateTime
+
+    @staticmethod
+    def generateTempCoeffs(InternalTemp, uncDS, sensor):
+        
+        # Get the reference temperature
+        if 'DEVICE_TEMP' in uncDS.attributes:
+            refTemp = float(uncDS.attributes["DEVICE_TEMP"])
+        elif 'REFERENCE_TEMP' in uncDS.attributes:
+            refTemp = float(uncDS.attributes["REFERENCE_TEMP"])
+        else:
+            print("reference temperature not found")
+            
+        if 'AMBIENT_TEMP' in uncDS.attributes:
+            ambTemp = float(uncDS.attributes["AMBIENT_TEMP"])
+        else:
+            print("ambiant temperature not found")
+                
+        # Get thermal coefficient from full charaterization
+        uncDS.datasetToColumns()
+        if ConfigFile.settings['bL1bDefaultCal'] == 2:
+            therm_coeff = uncDS.data[list(uncDS.columns.keys())[1]]
+            therm_coeff_unc = uncDS.data[list(uncDS.columns.keys())[2]]
+        elif ConfigFile.settings['bL1bDefaultCal'] == 3:
+            therm_coeff = uncDS.data[list(uncDS.columns.keys())[2]]
+            therm_coeff_unc = uncDS.data[list(uncDS.columns.keys())[3]]
+        ThermCorr = []
+        ThermUnc = [] 
+            
+        # Seabird case
+        if ConfigFile.settings['SensorType'] == "Seabird":
+            for i in range(len(therm_coeff)):
+                try:
+                    ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp - refTemp)))
+                    ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp - refTemp)))
+                except IndexError:
+                    ThermCorr.append(1.0)  
+                    ThermUnc.append(0)
+        
+        # TRIOS case: no temperature available
+        elif ConfigFile.settings['SensorType'] == "Trios":
+            # For Trios the radiometer Temp is a place holder filled with 0.
+            # we use ambiant_temp+5° instead. 
+            for i in range(len(therm_coeff)):
+                try:
+                    ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))
+                    ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))
+                except IndexError:
+                    ThermCorr.append(1.0)  
+                    ThermUnc.append(0)            
+            
+        # Change thermal general coefficients into ones specific for processed data
+        uncDS.columns[f"{sensor}_TEMPERATURE_COEFFICIENTS"] = ThermCorr
+        uncDS.columns[f"{sensor}_TEMPERATURE_UNCERTAINTIES"] = ThermUnc
+        uncDS.columnsToDataset()
+        
+        return True
+
+    def UncTempCorrection(node):     
+        unc_grp = node.getGroup("RAW_UNCERTAINTIES")            
+        sensorID = Utilities.get_sensor_dict(node)
+        inv_ID = {v: k for k, v in sensorID.items()}
+        for sensor in ["LI", "LT", "ES"]:
+            TempCoeffDS = unc_grp.getDataset(sensor+"_TEMPDATA_CAL") 
+            
+            ### Seabird
+            if ConfigFile.settings['SensorType'] == "Seabird":
+                if "TEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
+                    TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("TEMP")
+                elif "SPECTEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
+                    TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("SPECTEMP")
+                else:
+                    msg = "Thermal dataset not found"
+                    print(msg)
+                # internal temperature is the mean of all replicate    
+                internalTemp = np.mean(np.array(TempDS.data.tolist()))                    
+                if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, sensor):
+                    msg = "Failed to generate Thermal Coefficients"
+                    print(msg)
+ 
+            ### Trios
+            elif ConfigFile.settings['SensorType'] == "Trios":
+                # grp_name = "SAM_"+inv_ID[sensor]+".dat"
+                # grp = node.getGroup(grp_name)
+                # No internal temperature for Trios, set to 0.
+                internalTemp = 0
+                if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, sensor):
+                    msg = "Failed to generate Thermal Coefficients"
+                    print(msg) 
+                        
+        return True
+
+    
+    @staticmethod
+    def get_sensor_dict(node):
+        sensorID = {}
+        for grp in node.groups:
+            if "CalFileName" in grp.attributes:                
+                if "ES_" in grp.id:
+                    sensorID[grp.attributes["CalFileName"][3:7]] = "ES"
+                if "LI_" in grp.id:
+                    sensorID[grp.attributes["CalFileName"][3:7]] = "LI"
+                if "LT_" in grp.id:
+                    sensorID[grp.attributes["CalFileName"][3:7]] = "LT"
+                    
+            elif "IDDevice" in grp.attributes:  
+                if "ES" in grp.datasets:
+                    sensorID[grp.attributes["IDDevice"][4:8]] = "ES"
+                if "LI" in grp.datasets:
+                    sensorID[grp.attributes["IDDevice"][4:8]] = "LI"
+                if "LT" in grp.datasets:
+                    sensorID[grp.attributes["IDDevice"][4:8]] = "LT"
+                    
+        return sensorID
+
+
+
+    @staticmethod
+    def RenameUncertainties(node):
+        """
+        Rename unc dataset from sensor id to sensor type
+        """
+        unc_group = node.getGroup("RAW_UNCERTAINTIES")
+        sensorID = Utilities.get_sensor_dict(node)
+        print("sensors type", sensorID)
+        names = [i for i in unc_group.datasets]  # get names in advance, mutation of iteration object breaks for loop
+        for name in names:
+            ds = unc_group.getDataset(name)
+            for sensor in sensorID:
+                if sensor in ds.id:
+                    # new_ds_name = '_'.join([sensorID[sensor], ds.id.split('_')[-1]])
+                    new_ds_name = ''.join([sensorID[sensor], ds.id.split(sensor)[-1]])
+                    new_ds = unc_group.addDataset(new_ds_name)
+                    new_ds.copy(ds)
+                    unc_group.removeDataset(ds.id)  # remove  dataset
+        return True
+
+
+    @staticmethod
+    def interpUncertainties_DefaultChar(node):
+
+        def moveAve(arr, window_size):
+            """Simple Moving Average Method, returns smoothed array with same length as the original"""
+            i = 0
+            moving_averages = []
+            while i < len(arr) - window_size + 1:
+                window = arr[i: i + window_size]
+                window_average = sum(window)/window_size
+                moving_averages.append(window_average)
+                i += 1
+            quickfix = [0]*(window_size - 1)  # adds empty values to end to ensure array length does not change
+            return moving_averages + quickfix
+
+        grp = node.getGroup("RAW_UNCERTAINTIES")
+        sensorId = Utilities.get_sensor_dict(node)
+        sensorList = ['ES', 'LI', 'LT']
+        for sensor in sensorList:
+            
+            ds = grp.getDataset(sensor+"_RADCAL_CAL")
+            ds.datasetToColumns()
+            # indx = ds.attributes["INDEX"]
+            # pixel = np.array(ds.columns['0'][1:])
+            bands = np.array(ds.columns['1'][1:])
+            coeff = np.array(ds.columns['2'][1:])
+            valid = bands>0
+            # x_new2 = bands[valid]
+
+            ## retrieve hyper-spectral wavelengths from corresponding instrument
+            if ConfigFile.settings['SensorType'] == "Seabird":
+                data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)  
+            elif ConfigFile.settings['SensorType'] == "Trios":
+                inv_dict = {v: k for k, v in sensorId.items()}
+                data = node.getGroup('SAM_'+inv_dict[sensor]+'.dat').getDataset(sensor)  
+            
+            x_new = np.array(pd.DataFrame(data.data).columns, dtype=float) 
+            
+            # intersect, ind1, valid = np.intersect1d(x_new, bands, return_indices=True)
+            if len(bands[valid]) != len(x_new):
+                print("ERROR: band wavelentgh not found in calibration file")
+                print(len(bands[valid]))
+                print(len(x_new))
+                exit()
+            
+            ## POLARISATION/STABILITY/LINEARITY: Interpolate data to hyper-spectral pixels
+            for data_type in ["_POLDATA_CAL","_NLDATA_CAL","_STABDATA_CAL"]:
+                ds = grp.getDataset(sensor+data_type)
+                ds.datasetToColumns()
+                x = ds.columns['0']
+                y = ds.columns['1']
+                y_new = np.interp(x_new, x, y)
+                ds.columns['0'] = x_new
+                ds.columns['1'] = y_new
+                ds.columnsToDataset()
+            
+            ## STRAYLIGHT: Smooth data with 5 point moving average
+            stray = grp.getDataset(sensor+'_STRAYDATA_CAL')
+            stray.datasetToColumns()
+            data_smooth = np.array(moveAve(stray.columns['1'], 5))
+            stray.columns['0'] = x_new
+            stray.columns['1'] = data_smooth[valid]
+            stray.columnsToDataset()
+        
+            ## THERMAL/STRAYLIGHT
+            for data_type in ["_TEMPDATA_CAL", "_STRAYDATA_CAL"]:
+                ds = grp.getDataset(sensor+data_type)
+                ds.datasetToColumns()
+                for indx in range(1,len(ds.columns)):
+                    indx_name = str(indx)
+                    if indx_name != '':
+                        y = np.array(ds.columns[indx_name])
+                        if len(y)==255:
+                            ds.columns[indx_name] = y[valid]
+                        elif len(y)==256:
+                            # drop 1st line from TARTU file
+                            ds.columns[indx_name] = y[1:][valid]
+                            
+                ds.columns['0'] = x_new
+                ds.columnsToDataset() 
+
+            for data_type in ["_RADCAL_CAL"]:
+                ds = grp.getDataset(sensor+data_type)
+                ds.datasetToColumns()
+                for indx in range(len(ds.columns)):
+                    indx_name = str(indx)
+                    if indx_name != '':
+                        y = np.array(ds.columns[indx_name])
+                        if len(y)==255:
+                            ds.columns[indx_name] = y[valid]
+                        elif len(y)==256:
+                            # drop 1st line from TARTU file
+                            ds.columns[indx_name] = y[1:][valid]
+                            
+                # ds.columns['0'] = x_new
+                ds.columnsToDataset() 
+
+            ## RADCAL_LAMP/: Interpolate data to hyper-spectral pixels
+            for data_type in ["_RADCAL_LAMP"]:
+                ds = grp.getDataset(sensor+data_type)
+                ds.datasetToColumns()
+                x = ds.columns['0']
+                for indx in range(1,len(ds.columns)):
+                    y = ds.columns[str(indx)]
+                    y_new = np.interp(x_new, x, y)
+                    ds.columns[str(indx)] = y_new
+                ds.columns['0'] = x_new
+                ds.columnsToDataset()
+                
+            ## RADCAL_PANEL: only for Li & Lt
+            if sensor != "ES":
+                for data_type in ["_RADCAL_PANEL"]:
+                    ds = grp.getDataset(sensor+data_type)
+                    ds.datasetToColumns()
+                    x = ds.columns['0']
+                    for indx in range(1,len(ds.columns)):
+                        y = ds.columns[str(indx)]
+                        y_new = np.interp(x_new, x, y)
+                        ds.columns[str(indx)] = y_new
+                    ds.columns['0'] = x_new
+                    ds.columnsToDataset()      
+
+        return True
+
+
+    @staticmethod
+    def interpUncertainties_FullChar(node):
+        """
+        Temporary function, might be unnecessary at the end, if all full char input comes already with a wavelength columns
+        For the moment just needed to interpolate Linearity and Stab coefficient, because they are still "default" ones
+        """
+
+        grp = node.getGroup("RAW_UNCERTAINTIES")
+        sensorId = Utilities.get_sensor_dict(node)
+        sensorList = ['ES', 'LI', 'LT']
+        for sensor in sensorList:
+            
+            ds = grp.getDataset(sensor+"_RADCAL_CAL")
+            ds.datasetToColumns()
+            # indx = ds.attributes["INDEX"]
+            # pixel = np.array(ds.columns['0'[1:])
+            bands = np.array(ds.columns['1'][1:])
+            coeff = np.array(ds.columns['2'][1:])
+            valid = bands>0
+            # x_new2 = bands[valid]
+
+            ## retrieve hyper-spectral wavelengths from corresponding instrument
+            if ConfigFile.settings['SensorType'] == "Seabird":
+                data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)  
+            elif ConfigFile.settings['SensorType'] == "Trios":
+                inv_dict = {v: k for k, v in sensorId.items()}
+                data = node.getGroup('SAM_'+inv_dict[sensor]+'.dat').getDataset(sensor)  
+            
+            x_new = np.array(pd.DataFrame(data.data).columns, dtype=float) 
+            
+            # intersect, ind1, valid = np.intersect1d(x_new, bands, return_indices=True)
+            if len(bands[valid]) != len(x_new):
+                print("ERROR: band wavelentgh not found in calibration file")
+                print(len(bands[valid]))
+                print(len(x_new))
+                exit()
+            
+            ## POLARISATION/STABILITY/LINEARITY: Interpolate data to hyper-spectral pixels
+            for data_type in ["_NLDATA_CAL","_STABDATA_CAL"]:
+                ds = grp.getDataset(sensor+data_type)
+                ds.datasetToColumns()
+                # indx = ds.attributes["INDEX"]
+                x = ds.columns['0']
+                y = ds.columns['1']
+                y_new = np.interp(x_new, x, y)
+                ds.columns['0'] = x_new
+                ds.columns['1'] = y_new
+                ds.columnsToDataset()
+                
+            ## RADCAL_LAMP/: Interpolate data to hyper-spectral pixels
+            for data_type in ["_RADCAL_LAMP"]:
+                ds = grp.getDataset(sensor+data_type)
+                ds.datasetToColumns()
+                x = ds.columns['0']
+                for indx in range(1,len(ds.columns)):
+                    y = ds.columns[str(indx)]
+                    y_new = np.interp(x_new, x, y)
+                    ds.columns[str(indx)] = y_new
+                ds.columns['0'] = x_new
+                ds.columnsToDataset()
+                
+            ## RADCAL_PANEL: only for Li & Lt
+            if sensor != "ES":
+                for data_type in ["_RADCAL_PANEL"]:
+                    ds = grp.getDataset(sensor+data_type)
+                    ds.datasetToColumns()
+                    x = ds.columns['0']
+                    for indx in range(1,len(ds.columns)):
+                        y = ds.columns[str(indx)]
+                        y_new = np.interp(x_new, x, y)
+                        ds.columns[str(indx)] = y_new
+                    ds.columns['0'] = x_new
+                    ds.columnsToDataset()     
+                    
+        return True
+
+
+
+                     
+    @staticmethod
+    def getline(sstream, delimiter: str = '\n') -> str:
+        """replicates C++ getline functionality - reads a string until delimiter character is found
+        :sstream: string stream, reference to an open file in 'read' mode [with open(file_path, 'r') as sstream:]
+        :delimiter: the newline delimiter used in the file being read - default = '\n' Newline
+        :return type: string"""
+        def _gen():
+            while True:
+                line = sstream.readline()
+                if delimiter in line:
+                    yield line[0:line.index(delimiter)]
+                    break
+                elif line:
+                    yield line
+                else:
+                    break
+
+        return "".join(_gen())
+
+
+    @staticmethod
+    def parseLine(line: str, ds) -> None:
+        """parses a line of data to a HDFDataset depending on the index attribute. This attribute must be called 'INDEX'
+        and have length equal to the split line of data
+        :line: string - line of data to be read
+        :ds: HDFDataset
+        """
+        index = ds.attributes['INDEX']
+        # [x for x in ds.attributes['INDEX'] if x != ' ']
+        # TODO: fix way of finding the index
+        for i, x in enumerate(line.split('\t')):
+            if x:
+                if index[i] not in ds.columns.keys():
+                    ds.columns[index[i]] = []
+                try:
+                    ds.columns[index[i]].append(float(x))
+                except ValueError:
+                    ds.columns[index[i]].append(x)
+
+
+    @staticmethod
+    def read_unc(filepath: str, gp) -> None:
+        """
+        Reads in L1/L2 data using the header to organise the data storage object
+        :filepath: - the full path to the file to be opened, requires a file to have begin_data and end_data before
+        and after the main data body
+        :gp: HDFGroup object - Input data is stored as HDFDatasets and appended to this group.
+        return type: None - may be changed to bool for better error handling
+        """
+        begin_data = False  # set up data flag
+        attrs = {}
+        end_flag = 0
+
+        with open(filepath, 'r') as f:  # open file
+            key = None; index = None
+            while True:  # start loop
+                line = Utilities.getline(f, '\n')  # reads the file until a '\n' character is reached
+                if end_flag == 0:  # end condition not met
+                
+                    if '[END_OF_CALDATA]' in line:  # end conditions met
+                        begin_data = False  # set to not collect data
+                        ds.columnsToDataset()  # convert read data to dataset
+                        end_flag = 1
+
+                    elif line.startswith('!'):  # first lines start with '!' so can be used to determine which file is being read
+                        if 'FRM' in line:
+                            gp.attributes['INSTRUMENT_CAL_TYPE'] = line[1:]
+                        else:
+                            caltype = line[1:]
+                            if 'CAL_FILE' not in gp.attributes.keys():
+                                gp.attributes['CAL_FILE'] = []
+                            gp.attributes['CAL_FILE'].append(line[1:])                       
+                    
+                    # elif line.startswith('SAT'):
+                    #     device = line.rstrip()
+                    #     name = device+'_'+caltype
+                    
+                    # elif line.startswith('SAM_'):
+                    #     device = line.rstrip()
+                    #     name = device+'_'+caltype
+                        
+                    elif begin_data:
+                        Utilities.parseLine(line, ds)  # add the data
+
+                    else:  # part of header
+                        if '[CALDATA]' in line:  # begin reading data
+                            begin_data = True
+                            ds = gp.addDataset(name)
+                            if ds is None:
+                                ds = gp.getDataset(name)
+                            ds.attributes['INDEX'] = [x for x in index if x != ' ']  # populate ds attributes with column names
+                            index = None
+                            # populate ds attributes with header data
+                            for k, v in attrs.items():
+                                ds.attributes[k] = v  # set the attributes
+                            attrs.clear()
+
+                        else:  # part of header, check if attribute or column names
+                            if line.startswith('['):  # if line has '[ ]' then take the next line as the attribute
+                                key = line[1:-1]
+                            elif key is not None:
+                                attrs[key] = line
+                                if key == "DEVICE":
+                                    device = line.rstrip()
+                                    name = device+'_'+caltype
+                                key = None
+                            else:  # only blank lines and comments get here
+                                if index is None and len(line.split(',')) > 2:  # if comma separated then must be column names!
+                                    index = list(line[1:].split(','))
+
+                else:  # check for end condition
+                    # this will skip the first real line after 'END_OF_XXXXDATA', however this is always a comment so ignored.
+                    if end_flag >= 3:
+                        break  # end if empty lines found after [END_DATA], else more data to be read
+                    elif not line:
+                        end_flag += 1
+                    else:
+                        end_flag = 0
+
+    @staticmethod
+    def parseLine_no_index(line: str, ds) -> None:
+        for i, x in enumerate(line.split('\t')):
+            if x:
+                if str(i) not in ds.columns.keys():
+                    ds.columns[str(i)] = []
+                try:
+                    ds.columns[str(i)].append(float(x))
+                except ValueError:
+                    ds.columns[str(i)].append(x)
+
+    @staticmethod
+    def read_char(filepath: str, gp) -> None:
+        begin_data = False  # set up data flag
+        attrs = {}
+        end_count = 0
+        Azimuth_angle = None
+
+        with open(filepath, 'r') as f:  # open file
+            key = None
+            while True:  # start loop
+                line = Utilities.getline(f, '\n')  # reads the file until a '\n' character is reached
+                if not line:  # breaks out of loop if three empty lines in a row
+                    if end_count < 3:
+                        end_count += 1
+                    else:
+                        return "end condition reached"
+                elif not line.startswith('#'):  # not a comment
+                    end_count = 0
+                    if begin_data:
+                        if 'end' in line.lower():  # end conditions met
+                            begin_data = False  # set to read header data
+                            ds.columnsToDataset()  # convert read data to dataset
+                        else:
+                            Utilities.parseLine_no_index(line, ds)  # add the data
+                    else:  # part of header
+                        if line.startswith('!'):  # get filetype from ! comment
+                            if line != '!FRM4SOC_CP':
+                                gp.attributes['CHARACTERISATION_FILE_TYPE'] = line[1:]
+                        elif any([k in line.lower() for k in ['data', 'lsf', 'uncertainty', 'coserror']]) is True:
+                        # elif ['data', 'lsf', 'uncertainty'] in line.lower():  # begin reading data
+                            begin_data = True
+                            attrs['DATA_TYPE'] = line[1:line.lower().find('data')]
+                            ds = gp.addDataset(f"{name}_{attrs['DATA_TYPE']}")
+                            if ds is None:
+                                if 'AZIMUTH_ANGLE' in attrs:  # reading angular file and has identical identifiers for different az angles
+                                    ds = gp.addDataset(f"{name}_{attrs['DATA_TYPE']}_AZ{attrs['AZIMUTH_ANGLE']}")
+                                    Azimuth_angle = attrs['AZIMUTH_ANGLE']
+                                elif Azimuth_angle is not None:  # uncertainty also repeated so save the az angle from earlier to use here
+                                    ds = gp.addDataset(f"{name}_{attrs['DATA_TYPE']}_AZ{Azimuth_angle}")
+                                    Azimuth_angle = None
+                                else:
+                                    msg = f"dataset could not be contructed, Utilties.read_char(file-path, HDFGroup) in {gp.attributes['CHARACTERISATION_FILE_TYPE']}"
+                                    print(msg)
+                                    raise KeyError
+                            # populate ds attributes with header data
+                            for k, v in attrs.items():
+                                ds.attributes[k] = v  # set the attributes
+                            attrs.clear()
+
+                        else:  # part of header, check if attribute or column names
+                            if line.startswith('['):  # if line has '[ ]' then take the next line as the attribute
+                                key = line[1:-1]
+                            elif key is not None:
+                                attrs[key] = line
+                                if key.lower() == "device":
+                                    device = line.rstrip()
+                                    name = device + '_' + gp.attributes['CHARACTERISATION_FILE_TYPE']
+                                key = None

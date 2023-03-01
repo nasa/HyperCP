@@ -1,6 +1,9 @@
-from PyQt5 import QtWidgets
+import os
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 from ConfigFile import ConfigFile
+import ConfigWindow
+from MainConfig import MainConfig
 
 
 class OCproductsWindow(QtWidgets.QDialog):
