@@ -1,0 +1,24 @@
+name: hyperinspace
+channels:
+  - defaults
+dependencies:
+  - conda
+  - python
+  - conda-env
+  - conda-build
+  - conda-verify
+  - _ipyw_jlab_nb_ext_conf
+  - anaconda
+  - anaconda-navigator
+  - navigator-updater
+  - xarray
+  - bottleneck
+  - netcdf4
+  - dask
+  - pyqtgraph
+  - pip
+  - pip:
+    - pysolar
+    - fpdf==1.7.2
+    - tqdm==4.62.3
+prefix: /accounts/daurin/anaconda3

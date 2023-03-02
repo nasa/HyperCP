@@ -102,17 +102,15 @@ class ProcessL1b_Interp:
                     lonPosData.data["NONE"][i] = lonDD
 
         newSensorData = newGroup.addDataset(newDatasetName)
-        
-        # Datetag, Timetag2, and Datetime columns added to sensor data array, only if the dataset is the correct shape
-        if len(dateData.data["NONE"].tolist()) == len(dataset.data.tolist()):
-            newSensorData.columns["Datetag"] = dateData.data["NONE"].tolist()
-            newSensorData.columns["Timetag2"] = timeData.data["NONE"].tolist()
-            newSensorData.columns["Datetime"] = dateTimeData.data
+
+        # Datetag, Timetag2, and Datetime columns added to sensor data array
+        newSensorData.columns["Datetag"] = dateData.data["NONE"].tolist()
+        newSensorData.columns["Timetag2"] = timeData.data["NONE"].tolist()
+        newSensorData.columns["Datetime"] = dateTimeData.data
 
         # Copies over the sensor dataset from original group to newGroup
-        for k in dataset.data.dtype.names:  # For each waveband (or vector data for other groups)
+        for k in dataset.data.dtype.names: # For each waveband (or vector data for other groups)
             #print("type",type(esData.data[k]))
-            # loop over x here, y is done via lists
             newSensorData.columns[k] = dataset.data[k].tolist()
         newSensorData.columnsToDataset()
 
@@ -161,7 +159,6 @@ class ProcessL1b_Interp:
             msg = f'found NaN {frameinfo.lineno}'
             print(msg)
             Utilities.writeLogFile(msg)
-            
         return True
 
     @staticmethod
@@ -174,14 +171,9 @@ class ProcessL1b_Interp:
         # Copy dataset to dictionary
         ds.datasetToColumns()
         columns = ds.columns
-        if "Datetag" in columns:
-            saveDatetag = columns.pop("Datetag")
-            saveTimetag2 = columns.pop("Timetag2")
-            columns.pop("Datetime")
-        else:
-            # TODO: test for robustness
-            saveDatetag = list(ds.data)  # this array should match the number of indexes in each column
-            saveTimetag2 = None  # otherwise these values are ignored
+        saveDatetag = columns.pop("Datetag")
+        saveTimetag2 = columns.pop("Timetag2")
+        columns.pop("Datetime")
 
         # Get wavelength values
         wavelength = []
@@ -191,9 +183,8 @@ class ProcessL1b_Interp:
         x = np.asarray(wavelength)
 
         newColumns = collections.OrderedDict()
-        if saveTimetag2 is not None:
-            newColumns["Datetag"] = saveDatetag
-            newColumns["Timetag2"] = saveTimetag2
+        newColumns["Datetag"] = saveDatetag
+        newColumns["Timetag2"] = saveTimetag2
         # Can leave Datetime off at this point
 
         for i in range(newWavebands.shape[0]):
@@ -300,43 +291,6 @@ class ProcessL1b_Interp:
     #     esData.columnsToDataset()
     #     liData.columnsToDataset()
     #     ltData.columnsToDataset()
-           
-    @staticmethod
-    def interpUncertaintyWavelength(gp, newGroup, newWavebands):
-
-        # TODO make the columns dictionaries instead of lists so the sensor names may be preserved
-
-        for name in gp.datasets:
-            ds = gp.getDataset(name)
-            newDS = newGroup.addDataset(name)
-            ds.datasetToColumns()
-            columns = ds.columns
-            k = list(ds.columns.keys())[0]
-            if len(ds.columns[k]) < 8:
-                continue
-
-            # Get wavelength values
-            # wavelength = columns['WAVELENGTHS']
-            # x = np.asarray(wavelength)
-
-            newColumns = collections.OrderedDict()
-            # Can leave Datetime off at this point
-
-            for i in range(newWavebands.shape[0]):
-                # limit to one decimal place
-                newColumns[str(round(10*newWavebands[i])/10)] = []
-
-            # Perform interpolation for each timestamp
-            for k in columns:
-                new_y = np.asarray(columns[k])
-
-                for waveIndex in range(newWavebands.shape[0]):
-                    newColumns[str(round(10*newWavebands[waveIndex])/10)].append(new_y[waveIndex])
-
-            newDS.columns = newColumns
-            newDS.columnsToDataset()
-
-
 
     @staticmethod
     def matchWavelengths(node):
@@ -349,10 +303,10 @@ class ProcessL1b_Interp:
         print('Interpolating to common wavelengths')
         root = HDFRoot.HDFRoot()
         root.copyAttributes(node)
+
         interval = float(ConfigFile.settings["fL1bInterpInterval"])
-        referenceGroup = node.getGroup("IRRADIANCE")
+
         newReferenceGroup = root.addGroup("IRRADIANCE")
-        sasGroup = node.getGroup("RADIANCE")
         newSASGroup = root.addGroup("RADIANCE")
         root.groups.append(node.getGroup("GPS"))
         if node.getGroup("ANCILLARY_METADATA"):
@@ -364,17 +318,23 @@ class ProcessL1b_Interp:
         if node.getGroup("PYROMETER"):
             root.groups.append(node.getGroup("PYROMETER"))
 
-        # ES
+        referenceGroup = node.getGroup("IRRADIANCE")
+        sasGroup = node.getGroup("RADIANCE")
+
         esData = referenceGroup.getDataset("ES")
-        esStdData = referenceGroup.getDataset("ES_std")
+        liData = sasGroup.getDataset("LI")
+        ltData = sasGroup.getDataset("LT")
+
         newESData = newReferenceGroup.addDataset("ES")
-        newESStd = newReferenceGroup.addDataset("ES_std")
+        newLIData = newSASGroup.addDataset("LI")
+        newLTData = newSASGroup.addDataset("LT")
+
+        # Es dataset to dictionary
         esData.datasetToColumns()
-        esStdData.datasetToColumns()        
         columns = esData.columns
         columns.pop("Datetag")
         columns.pop("Timetag2")
-        columns.pop("Datetime") 
+        columns.pop("Datetime")
         # Get wavelength values
         esWavelength = []
         for k in columns:
@@ -383,13 +343,8 @@ class ProcessL1b_Interp:
         esStart = np.ceil(esWavelength[0])
         esEnd = np.floor(esWavelength[len(esWavelength)-1])
 
-        # LI
-        liData = sasGroup.getDataset("LI")
-        liStdData = sasGroup.getDataset("LI_std")
-        newLIData = newSASGroup.addDataset("LI")
-        newLIStd = newSASGroup.addDataset("LI_std")  
+        # Li dataset to dictionary
         liData.datasetToColumns()
-        liStdData.datasetToColumns()        
         columns = liData.columns
         columns.pop("Datetag")
         columns.pop("Timetag2")
@@ -402,13 +357,8 @@ class ProcessL1b_Interp:
         liStart = np.ceil(liWavelength[0])
         liEnd = np.floor(liWavelength[len(liWavelength)-1])
 
-        # LT
-        ltData = sasGroup.getDataset("LT")
-        ltStdData = sasGroup.getDataset("LT_std")        
-        newLTData = newSASGroup.addDataset("LT")
-        newLTStd = newSASGroup.addDataset("LT_std")   
+        # Lt dataset to dictionary
         ltData.datasetToColumns()
-        ltStdData.datasetToColumns()        
         columns = ltData.columns
         columns.pop("Datetag")
         columns.pop("Timetag2")
@@ -417,81 +367,24 @@ class ProcessL1b_Interp:
         ltWavelength = []
         for k in columns:
             ltWavelength.append(float(k))
+
         # Determine interpolated wavelength values
         ltStart = np.ceil(ltWavelength[0])
-        ltEnd = np.floor(ltWavelength[len(ltWavelength)-1]) 
-        
+        ltEnd = np.floor(ltWavelength[len(liWavelength)-1])
+
         # No extrapolation
         start = max(esStart,liStart,ltStart)
         end = min(esEnd,liEnd,ltEnd)
         newWavebands = np.arange(start, end, interval)
-        
+
         print('Interpolating Es')
         ProcessL1b_Interp.interpolateWavelength(esData, newESData, newWavebands)
-        ProcessL1b_Interp.interpolateWavelength(esStdData, newESStd, newWavebands)
         print('Interpolating Li')
         ProcessL1b_Interp.interpolateWavelength(liData, newLIData, newWavebands)
-        ProcessL1b_Interp.interpolateWavelength(liStdData, newLIStd, newWavebands)
         print('Interpolating Lt')
         ProcessL1b_Interp.interpolateWavelength(ltData, newLTData, newWavebands)
-        ProcessL1b_Interp.interpolateWavelength(ltStdData, newLTStd, newWavebands)
-    
-    
-        if ConfigFile.settings['bL1bDefaultCal'] >= 2:
 
-            esUncData = referenceGroup.getDataset("ES_unc")
-            esRelData = referenceGroup.getDataset("ES_unc_relative")
-            newESUnc = newReferenceGroup.addDataset("ES_unc")
-            newESRel = newReferenceGroup.addDataset("ES_unc_relative")   
-            esUncData.datasetToColumns()
-            esRelData.datasetToColumns()
-            
-            liUncData = sasGroup.getDataset("LI_unc")
-            liRelData = sasGroup.getDataset("LI_unc_relative")
-            newLIUnc = newSASGroup.addDataset("LI_unc")
-            newLIRel = newSASGroup.addDataset("LI_unc_relative")
-            liUncData.datasetToColumns()
-            liRelData.datasetToColumns()
-            
-            ltUncData = sasGroup.getDataset("LT_unc")
-            ltRelData = sasGroup.getDataset("LT_unc_relative")
-            newLTUnc = newSASGroup.addDataset("LT_unc")
-            newLTRel = newSASGroup.addDataset("LT_unc_relative")
-            ltUncData.datasetToColumns()
-            ltRelData.datasetToColumns()
-    
-            print('Interpolating Es unc')
-            ProcessL1b_Interp.interpolateWavelength(esUncData, newESUnc, newWavebands)
-            ProcessL1b_Interp.interpolateWavelength(esRelData, newESRel, newWavebands)
-            print('Interpolating Li unc')
-            ProcessL1b_Interp.interpolateWavelength(liUncData, newLIUnc, newWavebands)
-            ProcessL1b_Interp.interpolateWavelength(liRelData, newLIRel, newWavebands)
-            print('Interpolating Lt unc')
-            ProcessL1b_Interp.interpolateWavelength(ltUncData, newLTUnc, newWavebands)
-            ProcessL1b_Interp.interpolateWavelength(ltRelData, newLTRel, newWavebands)
-            print('Interpolating Uncertainty to common wavebands')
-            uncGroup = node.getGroup("UNCERTAINTY_BUDGET")
-            newUncGroup = root.addGroup("UNCERTAINTY_BUDGET")
-            ProcessL1b_Interp.interpUncertaintyWavelength(uncGroup, newUncGroup, newWavebands)
-        
         return root
-
-    @staticmethod
-    def copyUncertaintyBudget(group, newGroup):
-        """ TODO: redo docstring for this method"""
-
-        for name in group.datasets:
-            dataset = group.getDataset(name)
-            newSensorData = newGroup.addDataset(name)
-
-            # Copies over the sensor dataset from original group to newGroup
-            for k in dataset.data.dtype.names:  # For each waveband (or vector data for other groups)
-                newSensorData.columns[k] = dataset.data[k].tolist()
-            newSensorData.columnsToDataset()
-            newSensorData.copyAttributes(dataset)
-
-            # ProcessL1b_Interp.interpolateWavelength(dataset, newSensorData, newbands)
-
 
     @staticmethod
     def processL1b_Interp(node, fileName):
@@ -501,10 +394,15 @@ class ProcessL1b_Interp:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         # node  = Utilities.rootAddDateTime(node)
 
-        root = HDFRoot.HDFRoot()  # creates a new instance of HDFRoot Class
-        root.copyAttributes(node)  # Now copy the attributes in from the L1a object
+        root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class
+        root.copyAttributes(node) # Now copy the attributes in from the L1a object
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
+        # root.attributes["FILE_CREATION_TIME"] = timestr
+        # if  ConfigFile.settings["bL1bDefaultCal"]:
+        #     root.attributes['CAL_TYPE'] = 'Default/Factory'
+        # else:
+        #     root.attributes['CAL_TYPE'] = 'Full Character'
         root.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
         msg = f"ProcessL1b_Interp.processL1b_Interp: {timestr}"
@@ -519,7 +417,6 @@ class ProcessL1b_Interp:
         satnavGroup = None
         ancGroup = None # For non-SolarTracker deployments
         satmsgGroup = None
-        uncertaintyGroup = None
         for gp in node.groups:
             if gp.id.startswith("GP"):
                 gpsGroup = gp
@@ -537,8 +434,6 @@ class ProcessL1b_Interp:
                 ancGroup = gp
             if gp.id == "SOLARTRACKER_STATUS":
                 satmsgGroup = gp
-            if gp.id == "RAW_UNCERTAINTIES":
-                uncertaintyGroup = gp
 
         # New group scheme combines both radiance sensors in one group
         refGroup = root.addGroup("IRRADIANCE")
@@ -546,40 +441,31 @@ class ProcessL1b_Interp:
 
         # Conversion of datasets within groups to move date/timestamps into
         # the data arrays and add datetime column. Also can change dataset name.
-        # Places the dataset into the new group.        
+        # Places the dataset into the new group.
         ProcessL1b_Interp.convertDataset(esGroup, "ES", refGroup, "ES")
-        ProcessL1b_Interp.convertDataset(esGroup, "ES_std", refGroup, "ES_std")
         ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
-        ProcessL1b_Interp.convertDataset(liGroup, "LI_std", sasGroup, "LI_std")
         ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
-        ProcessL1b_Interp.convertDataset(ltGroup, "LT_std", sasGroup, "LT_std")
 
-        # if unc from class-based or FRM, convert them too
-        if ConfigFile.settings['bL1bDefaultCal'] >=2:
-            ProcessL1b_Interp.convertDataset(esGroup, "ES_unc", refGroup, "ES_unc")
-            ProcessL1b_Interp.convertDataset(esGroup, "ES_unc_relative", refGroup, "ES_unc_relative")
-            ProcessL1b_Interp.convertDataset(liGroup, "LI_unc", sasGroup, "LI_unc")
-            ProcessL1b_Interp.convertDataset(liGroup, "LI_unc_relative", sasGroup, "LI_unc_relative")
-            ProcessL1b_Interp.convertDataset(ltGroup, "LT_unc", sasGroup, "LT_unc")
-            ProcessL1b_Interp.convertDataset(ltGroup, "LT_unc_relative", sasGroup, "LT_unc_relative")
-            uncGroup = root.addGroup("UNCERTAINTY_BUDGET")
-            ProcessL1b_Interp.copyUncertaintyBudget(uncertaintyGroup, uncGroup)
-
-        # These are from the raw data, not to be confused with those in the ancillary file
         newGPSGroup = root.addGroup("GPS")
-        ProcessL1b_Interp.convertDataset(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
-        ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
-        latData = newGPSGroup.getDataset("LATITUDE")
-        lonData = newGPSGroup.getDataset("LONGITUDE")
-
-        # Only if the right NMEA data are provided (e.g. with SolarTracker)
-        if "CalFileName" in gpsGroup.attributes:
+        if gpsGroup is not None:
+            # These are from the raw data, not to be confused with those in the ancillary file
+            ProcessL1b_Interp.convertDataset(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
+            ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
+            latData = newGPSGroup.getDataset("LATITUDE")
+            lonData = newGPSGroup.getDataset("LONGITUDE")
+            # Only if the right NMEA data are provided (e.g. with SolarTracker)
             if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
                 ProcessL1b_Interp.convertDataset(gpsGroup, "COURSE", newGPSGroup, "COURSE")
                 ProcessL1b_Interp.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")
                 courseData = newGPSGroup.getDataset("COURSE")
                 sogData = newGPSGroup.getDataset("SPEED")
                 newGPSGroup.datasets['SPEED'].id="SOG"
+        else:
+            # These are from the ancillary file
+            ProcessL1b_Interp.convertDataset(ancGroup, "LATITUDE", newGPSGroup, "LATITUDE")
+            ProcessL1b_Interp.convertDataset(ancGroup, "LONGITUDE", newGPSGroup, "LONGITUDE")
+            latData = newGPSGroup.getDataset("LATITUDE")
+            lonData = newGPSGroup.getDataset("LONGITUDE")
 
         # Metadata ancillary field and Pysolar data
         if ancGroup is not None:
@@ -619,8 +505,6 @@ class ProcessL1b_Interp:
                 latDataAnc = newAncGroup.getDataset("LATITUDE")
             if "LONGITUDE" in newAncGroup.datasets:
                 lonDataAnc = newAncGroup.getDataset("LONGITUDE")
-            if "SOLAR_AZ" in newAncGroup.datasets:
-                solAzData = newAncGroup.getDataset("SOLAR_AZ")
             if "SALINITY" in newAncGroup.datasets:
                 saltData = newAncGroup.getDataset("SALINITY")
             if "SST" in newAncGroup.datasets:
@@ -672,16 +556,19 @@ class ProcessL1b_Interp:
                 headingData = newSTGroup.getDataset("HEADING")
 
         if satmsgGroup is not None:
-            newSatMSGGroup = root.addGroup("SOLARTRACKER_STATUS")
-            # SATMSG (SOLARTRACKER_STATUS) has no date or time, just propogate it as is
+            # First make sure it's not empty
             satMSG = satmsgGroup.getDataset("MESSAGE")
-            newSatMSG = newSatMSGGroup.addDataset("MESSAGE")
-            # newSatMSGGroup["MESSAGE"] = satMSG
-            # Copies over the dataset
-            for k in satMSG.data.dtype.names:
-                #print("type",type(esData.data[k]))
-                newSatMSG.columns[k] = satMSG.data[k].tolist()
-            newSatMSG.columnsToDataset()
+            if satMSG is not None:
+                newSatMSGGroup = root.addGroup("SOLARTRACKER_STATUS")
+                # SATMSG (SOLARTRACKER_STATUS) has no date or time, just propogate it as is
+                newSatMSG = newSatMSGGroup.addDataset("MESSAGE")
+                # newSatMSGGroup["MESSAGE"] = satMSG
+                # Copies over the dataset
+                for k in satMSG.data.dtype.names:
+                    #print("type",type(esData.data[k]))
+                    newSatMSG.columns[k] = satMSG.data[k].tolist()
+                newSatMSG.columnsToDataset()
+
 
         if pyrGroup is not None:
             newPyrGroup = root.addGroup("PYROMETER")
@@ -692,7 +579,7 @@ class ProcessL1b_Interp:
         # interpolates to the FASTEST. Not much in the literature on this, although
         # Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises,
         # which makes the most sense for minimizing error.
-        esData = refGroup.getDataset("ES")  # array with columns date, time, esdata*wavebands...
+        esData = refGroup.getDataset("ES") # array with columns date, time, esdata*wavebands...
         liData = sasGroup.getDataset("LI")
         ltData = sasGroup.getDataset("LT")
 
@@ -734,9 +621,9 @@ class ProcessL1b_Interp:
             return None
         if not ProcessL1b_Interp.interpolateData(lonData, interpData, "LONGITUDE", fileName):
             return None
-
-        if "CalFileName" in gpsGroup.attributes:
+        if gpsGroup is not None:
             if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
+                # Optional:
                 ProcessL1b_Interp.interpolateData(courseData, interpData, "COURSE", fileName) # COG (not heading), presumably?
                 ProcessL1b_Interp.interpolateData(sogData, interpData, "SOG", fileName)
 
@@ -828,6 +715,6 @@ class ProcessL1b_Interp:
                 ds = gp.datasets[dsName]
                 if "Datetime" in ds.columns:
                     ds.columns.pop("Datetime")
-                ds.columnsToDataset()  # redundant for radiometry, but harmless
+                ds.columnsToDataset() # redundant for radiometry, but harmless
 
         return root
