@@ -206,11 +206,9 @@ class PDF(FPDF):
                 metaData += f'Cal. Type: {root.attributes["CAL_TYPE"]}\n'
                 metaData += f'Wavelength Interp Int: {root.attributes["WAVE_INTERP"]}\n'
             else:
-                if ConfigFile.settings["bL1bDefaultCal"] == 1:
+                if  ConfigFile.settings["bL1bDefaultCal"]:
                     metaData += 'Cal. Type: Default/Factory'
-                elif ConfigFile.settings["bL1bDefaultCal"] == 2:
-                    metaData += 'Cal. Type: Class-based'
-                elif ConfigFile.settings["bL1bDefaultCal"] == 3:
+                else:
                     metaData += 'Cal. Type: Full Character'
                 metaData += f'Wavelength Interp Int: {ConfigFile.settings["fL1bInterpInterval"]}\n'
 

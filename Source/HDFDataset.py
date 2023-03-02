@@ -50,20 +50,21 @@ class HDFDataset:
                     self.attributes[k] = f.attrs[k].decode("utf-8")
                 else:
                     self.attributes[k] = f.attrs[k]
+        #print(f)
+        #print(type(f[:]))
 
         # Read dataset
         self.data = f[:] # Gets converted to numpy.ndarray
-
+        #print("Dataset:", name)
+        #print("Data:", self.data.dtype)
 
     def write(self, f):
-        # print("  dataset:", self.id)
-        # print("  columns:", self.columns)
-        # print("  data:", self.data)
-        # print("  attr:", self.attributes)
+        #print("id:", self.id)
+        #print("columns:", self.columns)
+        #print("data:", self.data)
+
         if self.data is not None:
             dset = f.create_dataset(self.id, data=self.data, dtype=self.data.dtype)
-            for k in self.attributes:
-                dset.attrs[k] = self.attributes[k]
         else:
             print("Dataset.write(): Data is None")
 

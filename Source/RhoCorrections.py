@@ -1,6 +1,6 @@
-
-import collections
 import os
+import time
+
 import numpy as np
 
 from ConfigFile import ConfigFile
@@ -11,7 +11,7 @@ import ZhangRho
 class RhoCorrections:
 
     @staticmethod
-    def M99Corr(windSpeedMean,SZAMean,relAzMean, Propagate = None):
+    def M99Corr(windSpeedMean,SZAMean,relAzMean):
         ''' Mobley 1999 AO'''
 
         msg = 'Calculating M99 glint correction with complete LUT'
@@ -54,7 +54,7 @@ class RhoCorrections:
         return rhoScalar, rhoDelta
 
     @staticmethod
-    def threeCCorr(sky750,rhoDefault,windSpeedMean, Propagate = None):
+    def threeCCorr(sky750,rhoDefault,windSpeedMean):
         ''' Groetsch et al. 2017 PLACEHOLDER'''
         msg = 'Calculating 3C glint correction'
         print(msg)
@@ -83,7 +83,7 @@ class RhoCorrections:
         return rhoScalar, rhoDelta
 
     @staticmethod
-    def ZhangCorr(windSpeedMean,AOD,cloud,sza,wTemp,sal,relAz,waveBands, Propagate = None):
+    def ZhangCorr(windSpeedMean,AOD,cloud,sza,wTemp,sal,relAz,waveBands):
         ''' Requires xarray: http://xarray.pydata.org/en/stable/installing.html
         Recommended installation using Anaconda:
         $ conda install xarray dask netCDF4 bottleneck'''
@@ -93,28 +93,18 @@ class RhoCorrections:
         Utilities.writeLogFile(msg)
 
         # === environmental conditions during experiment ===
-        env = collections.OrderedDict()
-        env['wind'] = windSpeedMean
-        env['od'] = AOD
-        env['C'] = cloud # Not used
-        env['zen_sun'] = sza
-        env['wtem'] = wTemp
-        env['sal'] = sal
+        env = {'wind': windSpeedMean, 'od': AOD, 'C': cloud, 'zen_sun': sza, 'wtem': wTemp, 'sal': sal}
 
         # === The sensor ===
         # the zenith and azimuth angles of light that the sensor will see
         # 0 azimuth angle is where the sun located
         # positive z is upward
-        sensor = collections.OrderedDict()
-        sensor['ang'] = [40,180-relAz] # relAz should vary from about 90-135
-        sensor['wv'] = waveBands
+        sensor = {'ang': np.array([40, 180 - relAz]), 'wv': np.array(waveBands)}
 
-        # define uncertainties and create variable list for punpy. Inputs cannot be ordered dictionaries
-        varlist = [windSpeedMean,AOD,0.0,sza,wTemp,sal,relAz,np.array(waveBands)]
-        ulist = [0.5, 0.03, 0.0, 0.3, 0.3, 0.5, 0.3, np.zeros(len(waveBands))]
+        tic = time.process_time()
+        rhoVector = ZhangRho.get_sky_sun_rho(env, sensor, round4cache=True)['rho']
+        print(f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s')
 
-        rhoStructure = ZhangRho.Main(env,sensor)
+        rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
 
-        rhoDelta = 0.003 # Unknown; estimated from Ruddick 2006
-
-        return rhoStructure, rhoDelta
+        return rhoVector, rhoDelta

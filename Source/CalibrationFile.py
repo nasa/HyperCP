@@ -49,6 +49,7 @@ class CalibrationFile:
 
             cd = CalibrationData()
             cd.read(line)
+
             cdtype = cd.type.upper()
 
             # Determines the frame synchronization string by appending

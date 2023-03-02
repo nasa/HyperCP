@@ -50,7 +50,6 @@ class AncillaryReader:
         heading = False
         speed_f_w = False
         homeAngle = False # sensor azimuth relative to heading
-        TrueRelAz = False # sensor azimuth relative to sun
         cloud = False
         waveht = False
         pitch = False
@@ -120,8 +119,7 @@ class AncillaryReader:
                 Utilities.writeLogFile(msg)
                 heading = ancData.data[ds]
                 headingUnits = ancData.variables[ds][1]
-            if ds == "relaz": 
-                # Note: this misnomer is to trick readSB into accepting a non-conventional data field (home angle)
+            if ds == "relaz": # Note: this misnomer is to trick readSB into accepting a non-conventional data field (home angle)
                 # SeaBASS thinks RelAz is between sensor and sun, but this is sensor to ship heading. We will call this dataset
                 # HOMEANGLE.
                 msg = f'Found data: {ds}'
@@ -129,22 +127,6 @@ class AncillaryReader:
                 Utilities.writeLogFile(msg)
                 homeAngle = ancData.data[ds]
                 homeAngleUnits = ancData.variables[ds][1]
-
-            ### True Relative Azimuth ###
-            if ds == "truerelaz":
-                # Note: this filed was created to handle the True relative azimuth when working without solar tracker
-                # if specified in the ancilliary data, it override the homeAngle computation.
-                # relaz field is already used by home angle, so we need a field to store the actual angle between instrument and sun
-                msg = f'Found data: {ds}'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                TrueRelAz = ancData.data[ds]
-                TrueRelAzUnits = ancData.variables[ds][1]
-                msg = 'TrueRalAz override HomeAngle, no further computation to the ship heading is necessary.'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                homeAngle = False # if TrueRelAz specified, no use of homeAngle
-
             if ds == "cloud":
                 # cloud = True
                 msg = f'Found data: {ds}'
@@ -214,12 +196,6 @@ class AncillaryReader:
         if homeAngle:
             ancillaryData.appendColumn("HOMEANGLE", homeAngle)
             ancillaryData.attributes["HOMEANGLE_Units"]=homeAngleUnits
-
-        ### True relative azimuth ###
-        if TrueRelAz:
-            ancillaryData.appendColumn("TRUERELAZ", TrueRelAz)
-            ancillaryData.attributes["TRUERELAZ_Units"]=TrueRelAzUnits
-
         if cloud:
             ancillaryData.appendColumn("CLOUD", cloud)
             ancillaryData.attributes["CLOUD_Units"]=cloudUnits
