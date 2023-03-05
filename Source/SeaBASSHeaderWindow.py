@@ -485,6 +485,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         else:
             NegativeFilt = "Off"
 
+        MainConfig.loadConfig('main.config','version')
         SeaBASSHeader.settings["comments"] =\
             f'! HyperInSPACE vers = {MainConfig.settings["version"]}\n'+\
             f'! HyperInSPACE Config = {ConfigFile.filename}\n'+\
