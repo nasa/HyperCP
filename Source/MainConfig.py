@@ -1,9 +1,11 @@
-
 import os
 import collections
 import json
 
+
 class MainConfig:
+    def __init__(self):
+        self.popQuery=None
     fileName = "main.config"
     settings = collections.OrderedDict()
 
@@ -43,3 +45,4 @@ class MainConfig:
         MainConfig.settings["outDir"] = './Data'
         MainConfig.settings["metFile"] = ""
         MainConfig.settings["popQuery"] = 0
+        MainConfig.settings["MainDir"] = './Data'

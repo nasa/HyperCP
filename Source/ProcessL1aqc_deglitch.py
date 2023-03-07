@@ -2,7 +2,8 @@
 import datetime as dt
 import numpy as np
 import pandas as pd
-
+import os
+import ast
 from HDFRoot import HDFRoot
 from ConfigFile import ConfigFile
 from Utilities import Utilities
@@ -126,28 +127,35 @@ class ProcessL1aqc_deglitch:
         step = float(ConfigFile.settings["fL1aqcAnomalyStep"])
 
         rawFileName = node.attributes['RAW_FILE_NAME']
-        L1AfileName = f"{rawFileName.split('.')[0]}_L1A"
+        if rawFileName[0] == '[':
+            rawFileName = ast.literal_eval(node.attributes['RAW_FILE_NAME'])
+            rawFileName = [n.strip() for n in rawFileName]
+            rawFileName = os.path.splitext(os.path.basename(rawFileName[0]))[0]
+        else:
+            rawFileName = os.path.splitext(os.path.basename(rawFileName))[0]
+        L1AfileName = f"{rawFileName}_L1A"
 
         darkData = None
         lightData = None
 
         for gp in node.groups:
-            if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
-                darkData = gp.getDataset(sensorType)
-                darkDateTime = Utilities.getDateTime(gp)
-                windowDark = int(ConfigFile.settings[f'fL1aqc{sensorType}WindowDark'])
-                sigmaDark = float(ConfigFile.settings[f'fL1aqc{sensorType}SigmaDark'])
-                minDark = None if ConfigFile.settings[f'fL1aqc{sensorType}MinDark']=='None' else ConfigFile.settings[f'fL1aqc{sensorType}MinDark']
-                maxDark = None if ConfigFile.settings[f'fL1aqc{sensorType}MaxDark']=='None' else ConfigFile.settings[f'fL1aqc{sensorType}MaxDark']
-                minMaxBandDark = ConfigFile.settings[f'fL1aqc{sensorType}MinMaxBandDark']
-            if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
-                lightData = gp.getDataset(sensorType)
-                lightDateTime = Utilities.getDateTime(gp)
-                windowLight = int(ConfigFile.settings[f'fL1aqc{sensorType}WindowLight'])
-                sigmaLight = float(ConfigFile.settings[f'fL1aqc{sensorType}SigmaLight'])
-                minLight = None if ConfigFile.settings[f'fL1aqc{sensorType}MinLight']=='None' else ConfigFile.settings[f'fL1aqc{sensorType}MinLight']
-                maxLight = None if ConfigFile.settings[f'fL1aqc{sensorType}MaxLight']=='None' else ConfigFile.settings[f'fL1aqc{sensorType}MaxLight']
-                minMaxBandLight = ConfigFile.settings[f'fL1aqc{sensorType}MinMaxBandLight']
+            if ("FrameType" in gp.attributes):
+                if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
+                    darkData = gp.getDataset(sensorType)
+                    darkDateTime = Utilities.getDateTime(gp)
+                    windowDark = int(ConfigFile.settings[f'fL1aqc{sensorType}WindowDark'])
+                    sigmaDark = float(ConfigFile.settings[f'fL1aqc{sensorType}SigmaDark'])
+                    minDark = None if ConfigFile.settings[f'fL1aqc{sensorType}MinDark']=='None' else ConfigFile.settings[f'fL1aqc{sensorType}MinDark']
+                    maxDark = None if ConfigFile.settings[f'fL1aqc{sensorType}MaxDark']=='None' else ConfigFile.settings[f'fL1aqc{sensorType}MaxDark']
+                    minMaxBandDark = ConfigFile.settings[f'fL1aqc{sensorType}MinMaxBandDark']
+                if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
+                    lightData = gp.getDataset(sensorType)
+                    lightDateTime = Utilities.getDateTime(gp)
+                    windowLight = int(ConfigFile.settings[f'fL1aqc{sensorType}WindowLight'])
+                    sigmaLight = float(ConfigFile.settings[f'fL1aqc{sensorType}SigmaLight'])
+                    minLight = None if ConfigFile.settings[f'fL1aqc{sensorType}MinLight']=='None' else ConfigFile.settings[f'fL1aqc{sensorType}MinLight']
+                    maxLight = None if ConfigFile.settings[f'fL1aqc{sensorType}MaxLight']=='None' else ConfigFile.settings[f'fL1aqc{sensorType}MaxLight']
+                    minMaxBandLight = ConfigFile.settings[f'fL1aqc{sensorType}MinMaxBandLight']
 
             # Rolling averages required for deglitching of data are intolerant to 2 or fewer data points
             # Furthermore, 5 or fewer datapoints is a suspiciously short sampling time. Finally,
@@ -166,7 +174,7 @@ class ProcessL1aqc_deglitch:
                     return True # Sets the flag to true
 
         if darkData is None:
-            msg = "Error: No dark data to deglitch"
+            msg = "Warning: No dark data to deglitch"
             print(msg)
             Utilities.writeLogFile(msg)
         else:
@@ -227,7 +235,7 @@ class ProcessL1aqc_deglitch:
                 index +=1
 
         if lightData is None:
-            msg = "Error: No light data to deglitch"
+            msg = "Warning: No light data to deglitch"
             print(msg)
             Utilities.writeLogFile(msg)
         else:

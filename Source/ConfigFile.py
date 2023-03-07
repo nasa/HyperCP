@@ -76,7 +76,7 @@ class ConfigFile:
         print("fL1aqcAnomalyStep", ConfigFile.settings["fL1aqcAnomalyStep"])
 
         print("bL1bDefaultCal", ConfigFile.settings["bL1bDefaultCal"])
-        print("bL1bFullCal", ConfigFile.settings["bL1bFullCal"])
+        # print("bL1bFullCal", ConfigFile.settings["bL1bFullCal"])
         print("fL1bInterpInterval", ConfigFile.settings["fL1bInterpInterval"])
         print("bL1bPlotTimeInterp", ConfigFile.settings["bL1bPlotTimeInterp"])
         print("fL1bPlotInterval", ConfigFile.settings["fL1bPlotInterval"])
@@ -188,14 +188,14 @@ class ConfigFile:
     def createDefaultConfig(fileName, new=1):
         # fileName: the filename of the configuration file without path
         # new: 1=yes, 0=no
-        print("ConfigFile - Create Default Config")
+        if new==1:
+            print("ConfigFile - Create Default Config")
 
         if not fileName.endswith(".cfg"):
             fileName = fileName + ".cfg"
         ConfigFile.filename = fileName
-
+        ConfigFile.settings["SensorType"] = "Seabird"
         ConfigFile.settings["CalibrationFiles"] = {}
-
         ConfigFile.settings["AncFile"] = ''
 
         ConfigFile.settings["fL1aUTCOffset"] = 0
@@ -258,6 +258,7 @@ class ConfigFile:
 
         ConfigFile.settings["bL1bDefaultCal"] = 1
         ConfigFile.settings["bL1bFullCal"] = 0
+        ConfigFile.settings["FullCalDir"] = ' '
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1bPlotTimeInterp"] = 0
         ConfigFile.settings["fL1bPlotInterval"] = 20 # nm
@@ -277,7 +278,6 @@ class ConfigFile:
         ConfigFile.settings["fL1bqcSignificantEsFlag"] = 2.0 # Wernand 2002
         ConfigFile.settings["fL1bqcDawnDuskFlag"] = 1.0 # Wernand 2002
         ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain
-
 
         ConfigFile.settings["bL1bqcGetAnc"] = 0
         ConfigFile.settings["bL1bqcObpgCreds"] = 0
@@ -354,6 +354,8 @@ class ConfigFile:
         ConfigFile.settings["bL2SaveSeaBASS"] = 0
         ConfigFile.settings["bL2WriteReport"] = 1
 
+        ConfigFile.settings["SensorType"] = "Trios"
+
         # If this is a new config file, save it
         if new==1:
             ConfigFile.saveConfig(fileName)
@@ -376,7 +378,8 @@ class ConfigFile:
     # Loads the cfg file
     @staticmethod
     def loadConfig(filename):
-        # print("ConfigFile - Load Config")
+        print("ConfigFile - Load Config")
+
         # Load the default values first to insure all settings are present, then populate with saved values where possible
         ConfigFile.createDefaultConfig(filename, 0)
 

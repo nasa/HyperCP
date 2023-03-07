@@ -18,6 +18,8 @@ class CalibrationFileReader:
             for name in filenames:
                 #print("infile:", name)
                 if os.path.splitext(name)[1].lower() == ".cal" or \
+                   os.path.splitext(name)[1].lower() == ".dat" or \
+                   os.path.splitext(name)[1].lower() == ".ini" or \
                    os.path.splitext(name)[1].lower() == ".tdf":
                     with open(os.path.join(dirpath, name), 'rb') as f:
                         cf = CalibrationFile()
@@ -38,6 +40,8 @@ class CalibrationFileReader:
                 if not str(finfo.filename).startswith('__MACOSX/'):
                     print("infile:", finfo.filename)
                     if os.path.splitext(finfo.filename)[1].lower() == ".cal" or \
+                        os.path.splitext(finfo.filename)[1].lower() == ".dat" or \
+                            os.path.splitext(finfo.filename)[1].lower() == ".ini" or \
                     os.path.splitext(finfo.filename)[1].lower() == ".tdf":
                         with zf.open(finfo) as f:
                             cf = CalibrationFile()

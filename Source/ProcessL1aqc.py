@@ -5,13 +5,52 @@ import numpy as np
 from pysolar.solar import get_azimuth, get_altitude
 from operator import add
 import bisect
-
+import glob, os
 from HDFDataset import HDFDataset
 from Source.ProcessL1aqc_deglitch import ProcessL1aqc_deglitch
 from Utilities import Utilities
 from ConfigFile import ConfigFile
 
 class ProcessL1aqc:
+
+    @staticmethod
+    def read_unc_coefficient(root, inpath): 
+        
+        # Read Uncertainties_new_char from provided files
+        gp = root.addGroup("RAW_UNCERTAINTIES")
+        gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
+  
+        ### Read uncertainty parameters from full calibration from TARTU
+        for f in glob.glob(os.path.join(inpath, r'pol/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'radcal/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'thermal/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'straylight/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'stability/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'linearity/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'angular/*')):
+            Utilities.read_char(f, gp)
+        
+        ### unc dataset renaming
+        Utilities.RenameUncertainties(root)
+        
+        ### interpolate unc to full wavelength range, depending on class based or full char
+        if ConfigFile.settings['bL1bDefaultCal'] == 2:
+            Utilities.interpUncertainties_DefaultChar(root)
+            
+        elif ConfigFile.settings['bL1bDefaultCal'] == 3:
+            Utilities.interpUncertainties_FullChar(root)
+        
+        ### generate temperature coefficient
+        Utilities.UncTempCorrection(root)
+        
+        return root
+    
 
     @staticmethod
     def filterData(group, badTimes):
@@ -67,8 +106,7 @@ class ProcessL1aqc:
     @staticmethod
     def renameGroup(gp, cf):
         ''' Rename the groups to more generic ids rather than the names of the cal files '''
-
-        if gp.id.startswith("GPRMC") or gp.id.startswith("GPGAA"):
+        if gp.id.startswith("GPRMC") or gp.id.startswith("GPGAA") or gp.id.startswith("GPS"):
             gp.id = "GPS"
         if gp.id.startswith("UMTWR"):
             gp.id = "SOLARTRACKER_pySAS"
@@ -125,8 +163,11 @@ class ProcessL1aqc:
 
         # Reorganize groups in with new names
         for gp in node.groups:
-            cf = calibrationMap[gp.attributes["CalFileName"]]
-            ProcessL1aqc.renameGroup(gp,cf)
+            try:
+                cf = calibrationMap[gp.attributes["CalFileName"]]
+                ProcessL1aqc.renameGroup(gp,cf)
+            except KeyError:
+                print("GPS info store in the GPS group")
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
@@ -135,15 +176,18 @@ class ProcessL1aqc:
         # or if they have an ancillary file or not
         compass = None
         for gp in node.groups:
-            if gp.id.startswith('GP'):
-                gpsDateTime = gp.getDataset('DATETIME').data
+            if gp.id.startswith("GP"):
+                gpsDateTime = gp.getDataset("DATETIME").data
                 gpsLat = gp.getDataset('LATPOS')
-                latHemiData = gp.getDataset('LATHEMI')
+                latHemiData = gp.getDataset("LATHEMI")
                 gpsLon = gp.getDataset('LONPOS')
-                lonHemiData = gp.getDataset('LONHEMI')
+                lonHemiData = gp.getDataset("LONHEMI")
 
-                if gp.attributes['CalFileName'].startswith('GPRMC'):
-                    gpsStatus = gp.getDataset('STATUS')
+                if 'CalFileName' in gp.attributes:
+                    if gp.attributes['CalFileName'].startswith("GPRMC"):
+                        gpsStatus = gp.getDataset('STATUS')
+                    else:
+                        gpsStatus = gp.getDataset('FIXQUAL')
                 else:
                     gpsStatus = gp.getDataset('FIXQUAL')
             elif gp.id.startswith('ES_LIGHT'):
@@ -166,11 +210,11 @@ class ProcessL1aqc:
             # Remove all ancillary data that does not intersect GPS data
             # Change this to ES to work around set-ups with no GPS
             print('Removing non-pertinent ancillary data.')
-            # lower = bisect.bisect_left(ancDateTime, min(gpsDateTime))
-            lower = bisect.bisect_left(ancDateTime, min(esDateTime))
+            lower = bisect.bisect_left(ancDateTime, min(gpsDateTime))
+            # lower = bisect.bisect_left(ancDateTime, min(esDateTime))
             lower = list(range(0,lower-1))
-            # upper = bisect.bisect_right(ancDateTime, max(gpsDateTime))
-            upper = bisect.bisect_right(ancDateTime, max(esDateTime))
+            upper = bisect.bisect_right(ancDateTime, max(gpsDateTime))
+            # upper = bisect.bisect_right(ancDateTime, max(esDateTime))
             upper = list(range(upper,len(ancDateTime)))
             ancillaryData.colDeleteRow(upper)
             ancillaryData.colDeleteRow(lower)
@@ -195,22 +239,18 @@ class ProcessL1aqc:
             latAnc = ancillaryData.columns["LATITUDE"][0]
             lonAnc = ancillaryData.columns["LONGITUDE"][0]
 
-            homeAngle = None
-            if "HEADING" in ancillaryData.columns:
+            # Read azimuth information
+            if "HOMEANGLE" in ancillaryData.columns:
+                homeAngle = ancillaryData.columns["HOMEANGLE"][0]
                 # HEADING/shipAzimuth comes from ancillary data file here (not GPS or SATNAV)
-                # Or sasAzimuth comes from fluxgate SATTHS
-                shipAzimuth = ancillaryData.columns["HEADING"][0]
-
-                # HOMEANGLE in ANCILLARY is "RelAz", the angle between SAS and ship's bow
-                if "HOMEANGLE" in ancillaryData.columns:
-                    homeAngle = ancillaryData.columns["HOMEANGLE"][0]
+                if "HEADING" in ancillaryData.columns:
+                    shipAzimuth = ancillaryData.columns["HEADING"][0]
                     for i, offset in enumerate(homeAngle):
                         if offset > 180:
                             homeAngle[i] = offset-360
                     sasAzimuth = list(map(add, shipAzimuth, homeAngle))
                 else:
                     if ConfigFile.settings['bL1aqcSolarTracker'] == 0:
-
                         if "COMP" in ancillaryData.columns:
                             msg = 'Reverting to fluxgate compass as a last resort.'
                             print(msg)
@@ -221,6 +261,9 @@ class ProcessL1aqc:
                             print(msg)
                             Utilities.writeLogFile(msg)
                             return None
+            elif "TRUERELAZ" in ancillaryData.columns:
+                # Angle between sun and sensor is directly given in ancillary data
+                TrueRelAz = ancillaryData.columns["TRUERELAZ"][0]
             else:
                 if ConfigFile.settings['bL1aqcSolarTracker'] == 0:
                     if compass is not None:
@@ -233,8 +276,6 @@ class ProcessL1aqc:
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
-            # sasAzimuth is now corrected for all but HyperInSPACE home offset, if any
-
 
             if "STATION" in ancillaryData.columns:
                 station = ancillaryData.columns["STATION"][0]
@@ -303,18 +344,16 @@ class ProcessL1aqc:
         badTimes = []
 
         # Apply GPS Status Filter
-        gps = False
-        for gp in node.groups:
-            if gp.id == "GPS":
-                gps = True
-                timeStamp = gp.getDataset("DATETIME").data
-
-        if gps:
+        if gpsStatus is not None:
+            
             msg = "Filtering file for GPS status"
             print(msg)
             Utilities.writeLogFile(msg)
-
-
+    
+            for gp in node.groups:
+                if gp.id == "GPS":
+                    timeStamp = gp.getDataset("DATETIME").data
+    
             i = 0
             start = -1
             stop =[]
@@ -336,7 +375,7 @@ class ProcessL1aqc:
             msg = f'Percentage of data failed on GPS Status: {round(100*i/len(timeStamp))} %'
             print(msg)
             Utilities.writeLogFile(msg)
-
+    
             if start != -1 and stop == index: # Records from a mid-point to the end are bad
                 startstop = [timeStamp[start],timeStamp[stop]]
                 msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
@@ -346,10 +385,14 @@ class ProcessL1aqc:
                     badTimes = [startstop]
                 else:
                     badTimes.append(startstop)
-
+    
             if start==0 and stop==index: # All records are bad
                 return None
-
+        
+        else:
+            msg = "No GPS status available for filtering"
+            print(msg)
+            Utilities.writeLogFile(msg)
 
         # Apply Pitch & Roll Filter
         # This has to record the time interval (in datetime) for the bad angles in order to remove these time intervals
@@ -619,17 +662,32 @@ class ProcessL1aqc:
                 print(msg)
                 Utilities.writeLogFile(msg)
         else:
-            if sasAzimuth is not None:
+            if ancillaryData is not None:
                 sunAzimuth = sunAzimuthAnc
                 sunZenith = sunZenithAnc
             else:
                 print('ERROR: No sensor geometries found. Abort.')
                 return None
 
-        relAz=[]
-        for index in range(len(sunAzimuth)):
-            offset = home
+        # relAz=[]
+        # for index in range(len(sunAzimuth)):
+        #     ######## This was double-correcting nonSolarTracker data!
+        #     # Whether or not SolarTracker or Ancillary file are provided,
+        #     #  sun and sensor geometries are indexed 1:1
+        #     if ConfigFile.settings["bL1aqcSolarTracker"]:
+        #         # Changes in the angle between the bow and the sensor changes are tracked by SolarTracker
+        #         # This home offset is generally set in .sat file in the field, but can be updated here with
+        #         # the value from the Configuration Window (L1C)
+        #         offset = home
+        #     else:
+        #         if homeAngle is not None:
+        #             # Changes in the angle between the bow and the sensor changes are tracked in ancillary data
+        #             offset = homeAngle[index]
+        #         else:
+        #             # For use with, e.g., fluxgate compass with no SolarTracker
+        #             offset = home
 
+        def ComputeRelAz(sunAzimuth, sasAzimuth, offset, index):
             # Check for angles spanning north
             if sunAzimuth[index] > sasAzimuth[index]:
                 hiAng = sunAzimuth[index]
@@ -642,6 +700,27 @@ class ProcessL1aqc:
                 relAzimuthAngle = 360 - (hiAng-loAng)
             else:
                 relAzimuthAngle = hiAng-loAng
+
+            return relAzimuthAngle
+
+        relAz=[]
+        for index in range(len(sunAzimuth)):
+            if ConfigFile.settings["bL1aqcSolarTracker"]:
+                # Changes in the angle between the bow and the sensor changes are tracked by SolarTracker
+                # This home offset is generally set in .sat file in the field, but can be updated here with
+                # the value from the Configuration Window (L1C)
+                offset = home
+                relAzimuthAngle = ComputeRelAz(sunAzimuth, sasAzimuth, offset, index)
+
+            elif "HOMEANGLE" in ancillaryData.columns:
+                # Changes in the angle between the bow and the sensor are tracked in ancillary data
+                # sun-sensor angle is recomputed from sensor-heading angle
+                offset = homeAngle[index]
+                relAzimuthAngle = ComputeRelAz(sunAzimuth, sasAzimuth, offset, index)
+
+            elif "TRUERELAZ" in ancillaryData.columns:
+                # sun-sensor angle is directly given in ancilliary data
+                relAzimuthAngle = TrueRelAz[index]
 
             relAz.append(relAzimuthAngle)
 
@@ -711,7 +790,7 @@ class ProcessL1aqc:
             ancGroup.attributes["FrameType"] = "Not Required"
             if "HEADING" in ancillaryData.columns:
                 ancGroup.addDataset("HEADING")
-                ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
+                ancGroup.datasets["HEADING"].data = np.array(ancillaryData.columns["HEADING"][0], dtype=[('NONE', '<f8')])
             if "STATION" in ancillaryData.columns:
                 ancGroup.addDataset("STATION")
                 ancGroup.datasets["STATION"].data = np.array(station, dtype=[('NONE', '<f8')])
@@ -839,10 +918,11 @@ class ProcessL1aqc:
                     print(msg)
                     Utilities.writeLogFile(msg)
 
-
-        ###########################################################################
-        # Now deglitch
-        node = ProcessL1aqc_deglitch.processL1aqc_deglitch(node)
+        # Now deglitch (only for Seabird)
+        if ConfigFile.settings["SensorType"] == "Seabird":
+            node = ProcessL1aqc_deglitch.processL1aqc_deglitch(node)
+        else:
+            node.attributes['L1AQC_DEGLITCH'] = 'OFF'
 
         # DATETIME is not supported in HDF5; remove
         if node is not None:
