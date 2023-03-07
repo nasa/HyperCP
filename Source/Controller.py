@@ -1,7 +1,8 @@
 
-import os
+import os, sys
 import datetime
 import numpy as np
+import glob
 
 from HDFRoot import HDFRoot
 from SeaBASSWriter import SeaBASSWriter
@@ -12,6 +13,9 @@ from Utilities import Utilities
 from AncillaryReader import AncillaryReader
 
 from ProcessL1a import ProcessL1a
+from TriosL1A import TriosL1A
+from TriosL1B import TriosL1B
+from SeabirdasciiL1a import SeabirdasciiL1a
 from ProcessL1aqc import ProcessL1aqc
 from ProcessL1b import ProcessL1b
 from ProcessL1bqc import ProcessL1bqc
@@ -22,11 +26,32 @@ from PDFreport import PDF
 class Controller:
 
     @staticmethod
+    def check_output_file_creation(outFilePath, level):
+        if os.path.isfile(outFilePath):
+            modTime = os.path.getmtime(outFilePath)
+            nowTime = datetime.datetime.now()
+            if nowTime.timestamp() - modTime < 60: # If the file exists and was created in the last minute...
+                # msg = f'{level} file produced: \n {outFilePath}'
+                # print(msg)
+                # Utilities.writeLogFile(msg)
+                msg = f'Process Single Level: {outFilePath} - SUCCESSFUL'
+                print(msg)
+                Utilities.writeLogFile(msg)
+            else:
+                msg = f'Process Single Level: {outFilePath} - NOT SUCCESSFUL'
+                print(msg)
+                Utilities.writeLogFile(msg)
+        else:
+            msg = f'Process Single Level: {outFilePath} - NOT SUCCESSFUL'
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+    @staticmethod
     def writeReport(fileName, pathOut, outFilePath, level, inFilePath):
         print('Writing PDF Report...')
         numLevelDict = {'L1A':1,'L1AQC':2,'L1B':3,'L1BQC':4,'L2':5}
         numLevel = numLevelDict[level]
-        # fp = os.path.join(pathOut, level, f'{fileName}_{level}.hdf')
+        fp = os.path.join(pathOut, level, f'{fileName}_{level}.hdf')
 
         # Reports are written during failure at any level or success at L2.
         # The highest level succesfully processed will have the correct configurations in the HDF attributes.
@@ -35,7 +60,7 @@ class Controller:
         #   from the attributes up to that level, then use the ConfigFile.settings for the current level parameters.
         try:
             # Processing successful at this level
-            root = HDFRoot.readHDF5(outFilePath)
+            root = HDFRoot.readHDF5(fp)
             fail = 0
             root.attributes['Fail'] = 0
         except:
@@ -49,7 +74,8 @@ class Controller:
                     root = HDFRoot.readHDF5(inFilePath)
                 except:
                     msg = "Controller.writeReport: Unable to open HDF file. May be open in another application."
-                    Utilities.errorWindow("File Error", msg)
+                    if MainConfig.settings["popQuery"] != -1:
+                        Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return
@@ -79,13 +105,14 @@ class Controller:
         # In that case, move up one directory
         if os.path.isdir(os.path.join(inPlotPath, 'L1AQC_Anoms')) is False:
             inPlotPath = os.path.join(pathOut,'..','Plots')
-
+                
         outHDF = os.path.split(outFilePath)[1]
+        
         if fail:
             outPDF = os.path.join(reportPath, f'{os.path.splitext(outHDF)[0]}_fail.pdf')
         else:
             outPDF = os.path.join(reportPath, f'{os.path.splitext(outHDF)[0]}.pdf')
-
+            
         pdf = PDF()
         pdf.set_title(title)
         pdf.set_author(f'HyperInSPACE_{MainConfig.settings["version"]}')
@@ -128,7 +155,8 @@ class Controller:
             pdf.output(outPDF, 'F')
         except:
             msg = 'Unable to write the PDF file. It may be open in another program.'
-            Utilities.errorWindow("File Error", msg)
+            if MainConfig.settings["popQuery"] != -1:
+                Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
 
@@ -198,6 +226,7 @@ class Controller:
         calPath = os.path.join("Config", calFolder)
         print("Read CalibrationFile ", calPath)
         calibrationMap = CalibrationFileReader.read(calPath)
+
         Controller.generateContext(calibrationMap)
 
         # Settings from Config file
@@ -220,7 +249,7 @@ class Controller:
     def processAncData(fp):
         ''' Read in the ancillary field data file '''
 
-        if fp is None or fp=='':
+        if fp is None:
             return None
         elif not os.path.isfile(fp):
             print("Specified ancillary file not found: " + fp)
@@ -229,69 +258,95 @@ class Controller:
         return ancillaryData
 
     @staticmethod
-    def processL1a(inFilePath, outFilePath, calibrationMap):
+    def processL1a(inFilePath, outFilePath, calibrationMap, configPath, flag_Trios, ancillaryData=None):
         root = None
+        '''
         if not os.path.isfile(inFilePath):
             msg = 'No such file...'
             Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None, 'Never'
-
+        '''
         # Process the data
-        msg = "ProcessL1a"
-        print(msg)
-        root = ProcessL1a.processL1a(inFilePath, calibrationMap)
-
-        # Write output file
-        if root is not None:
-            try:
-                root.writeHDF5(outFilePath)
-            except:
-                msg = 'Unable to write L1A file. It may be open in another program.'
-                Utilities.errorWindow("File Error", msg)
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return None
+        if flag_Trios == 1:
+            TriosL1A.triosL1A(inFilePath, outFilePath, configPath, ancillaryData)
         else:
-            msg = "L1a processing failed. Nothing to output."
-            if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return None
+            extension = os.path.splitext(inFilePath[0])[1]
+            # SeaBird ASCII
+            if extension=='.dat':
+                SeabirdasciiL1a.seabirdasciiL1a(inFilePath, outFilePath, configPath, ancillaryData)
+            # SeaBird BINARY
+            else:
+                for fp in inFilePath:
+                    msg = ("Process L1A: " + fp)
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    outfilename = outFilePath + '/'+ os.path.splitext(os.path.basename(fp))[0] + "_L1A.hdf"
+                    root = ProcessL1a.processL1a(fp, calibrationMap, ancillaryData)
+                    # Write output file
+                    if root is not None and flag_Trios != 1:
+                        try:
+                            root.writeHDF5(outfilename)
+                        except:
+                            msg = 'Unable to write L1A file. It may be open in another program.'
+                            if MainConfig.settings["popQuery"] != -1:
+                                Utilities.errorWindow("File Error", msg)
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+                            return None
+                    else:
+                        if MainConfig.settings["popQuery"] != -1:
+                            Utilities.errorWindow("File Error", msg)
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        return None
 
         return root
 
     @staticmethod
     def processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData):
         root = None
+
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
             return None
 
         # Process the data
-        print("ProcessL1aqc")
+        msg = ("Process L1AQC: " + inFilePath)
+        print(msg)
+        Utilities.writeLogFile(msg)
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
             msg = "Unable to open file. May be open in another application."
-            Utilities.errorWindow("File Error", msg)
+            if MainConfig.settings["popQuery"] != -1:
+                Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
 
         # At this stage the Anomanal parameterizations are current in ConfigFile.settings,
-        #   regardless of who called this method.  This method will promote them to root.attributes.
+        # regardless of who called this method.  This method will promote them to root.attributes.
         root = ProcessL1aqc.processL1aqc(root, calibrationMap, ancillaryData)
 
-        # Write output file
         if root is not None:
+            if ConfigFile.settings['bL1bDefaultCal'] == 2:
+                inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
+                print('Class based dir:', inpath)
+                root = ProcessL1aqc.read_unc_coefficient(root, inpath)
+                
+            elif ConfigFile.settings['bL1bDefaultCal'] == 3:
+                inpath = ConfigFile.settings['FullCalDir']
+                print('Full Char dir:', inpath)
+                root = ProcessL1aqc.read_unc_coefficient(root, inpath)
+
             try:
                 root.writeHDF5(outFilePath)
             except:
-                msg = "Unable to write the file. May be open in another application."
-                Utilities.errorWindow("File Error", msg)
+                msg = "Controller.processL1aqc: Unable to write the file. May be open in another application."
+                if MainConfig.settings["popQuery"] != -1:
+                    Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
@@ -306,27 +361,33 @@ class Controller:
         return root
 
     @staticmethod
-    def processL1b(inFilePath, outFilePath):
+    def processL1b(inFilePath, outFilePath, flag_Trios):
         root = None
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
             return None
 
         # Process the data
-        msg = ("ProcessL1b: " + inFilePath)
+        msg = ("Process L1B: " + inFilePath)
         print(msg)
         Utilities.writeLogFile(msg)
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
             msg = "Controller.processL1b: Unable to open HDF file. May be open in another application."
-            Utilities.errorWindow("File Error", msg)
+            if MainConfig.settings["popQuery"] != -1:
+                Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
 
-
-        root = ProcessL1b.processL1b(root, outFilePath)
+        if flag_Trios == 0:
+            root = ProcessL1b.processL1b(root, outFilePath)
+        elif flag_Trios == 1:        
+            root = TriosL1B.processL1b(root, outFilePath)
+        else:
+            print("ERROR: flag_trios not recognized,", flag_Trios)
+            exit()
 
         # Write output file
         if root is not None:
@@ -334,13 +395,14 @@ class Controller:
                 root.writeHDF5(outFilePath)
             except:
                 msg = "Controller.ProcessL1b: Unable to write file. May be open in another application."
-                Utilities.errorWindow("File Error", msg)
+                if MainConfig.settings["popQuery"] != -1:
+                    Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
         else:
             msg = "L1b processing failed. Nothing to output."
-            if MainConfig.settings["popQuery"] == 0:
+            if MainConfig.settings["popQuery"] != -1:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
@@ -357,12 +419,15 @@ class Controller:
             return None
 
         # Process the data
-        print("ProcessL1bqc")
+        msg = ("process L1BQC: " + inFilePath)
+        print(msg)
+        Utilities.writeLogFile(msg)
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except:
             msg = "Unable to open file. May be open in another application."
-            Utilities.errorWindow("File Error", msg)
+            if MainConfig.settings["popQuery"] != -1:
+                Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
             return None
@@ -376,7 +441,8 @@ class Controller:
                 root.writeHDF5(outFilePath)
             except:
                 msg = "Unable to write file. May be open in another application."
-                Utilities.errorWindow("File Error", msg)
+                if MainConfig.settings["popQuery"] != -1:
+                    Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None,
@@ -392,10 +458,10 @@ class Controller:
 
 
     @staticmethod
-    def processL2(root,outFilePath,station=None):
+    def processL2(root, outFilePath, station=None):
 
-        node = ProcessL2.processL2(root,station)
-
+        node = ProcessL2.processL2(root, station)
+        
         _, filename = os.path.split(outFilePath)
         if node is not None:
 
@@ -439,7 +505,7 @@ class Controller:
                 return None
         else:
             msg = "L2 processing failed. Nothing to output."
-            if MainConfig.settings["popQuery"] == 0:
+            if MainConfig.settings["popQuery"] != -1:
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
@@ -447,16 +513,12 @@ class Controller:
 
     # Process every file in a list of files 1 level
     @staticmethod
-    # def processSingleLevel(pathOut, inFilePath, calibrationMap, level, ancFile=None):
-    def processSingleLevel(pathOut, inFilePath, calibrationMap, level):
-        # Find the absolute path to the output directory
-        pathOut = os.path.abspath(pathOut)
-        # inFilePath is a singleton file complete with path
-        inFilePath = os.path.abspath(inFilePath)
-        # (inpath, inFileName) = os.path.split(inFilePath)
-        inFileName = os.path.split(inFilePath)[1]
-        # Grab input name and extension
-        fileName,extension = os.path.splitext(inFileName)#[0]
+    def processSingleLevel(pathOut, inFilePath, calibrationMap, configPath, level, flag_Trios, ancFile=None):
+
+
+        # Grab input name and extension of first file
+        inFileName = os.path.split(inFilePath[0])[1]
+        fileName, extension = os.path.splitext(inFileName)
 
         # Initialize the Utility logger, overwriting it if necessary
         if ConfigFile.settings["bL2Stations"] == 1 and level == 'L2':
@@ -467,13 +529,11 @@ class Controller:
         print(msg)
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
 
-        # If this is an HDF, assume it is not RAW, drop the level from fileName
-        if extension=='.hdf':
-            fileName = fileName.rsplit('_',1)[0]
 
-        # Check for base output directory
+        # check output directory and create level
+        pathOut = os.path.abspath(pathOut)
         if os.path.isdir(pathOut):
-            pathOutLevel = os.path.join(pathOut,level)
+            pathOutLevel = os.path.join(pathOut, level)
         else:
             msg = "Bad output destination. Select new Output Data Directory."
             print(msg)
@@ -484,14 +544,23 @@ class Controller:
         if os.path.isdir(pathOutLevel) is False:
             os.mkdir(pathOutLevel)
 
-        outFilePath = os.path.join(pathOutLevel,fileName + "_" + level + ".hdf")
+        # out path is now the same for each source of data (output filename is managed later)
+        # L1A is feed pathOutLevel and not outFilePath
+        if extension=='.hdf':
+            outFilePath = [os.path.join(pathOutLevel, os.path.splitext(os.path.basename(fp.rsplit('_',1)[0]))[0]+"_"+level+".hdf") for fp in inFilePath]
+        else:
+            outFilePath = [os.path.join(pathOutLevel, os.path.splitext(os.path.basename(fp))[0]+"_"+level+".hdf") for fp in inFilePath]
 
-        if level == "L1A" or level == "L1AQC" or level == "L1B" or level == "L1BQC":
+        ## Launch the demended level processing
+        if level == "L1A":
+            root = Controller.processL1a(inFilePath, pathOutLevel, calibrationMap, configPath, flag_Trios, ancFile)
 
-            if level == "L1A":
-                root = Controller.processL1a(inFilePath, outFilePath, calibrationMap)
 
-            elif level == "L1AQC":
+        elif level == "L1AQC":
+
+            for inputfile,outputfile in zip(inFilePath,outFilePath):
+                fileName = os.path.basename(inputfile).rsplit('_',1)[0]
+
                 ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
                 # If called locally from Controller and not AnomalyDetection.py, then
                 #   try to load the parameter file for this cruise/configuration and update
@@ -538,145 +607,165 @@ class Controller:
                     msg = 'No deglitching will be performed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
-                root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
 
-            elif level == "L1B":
-                root = Controller.processL1b(inFilePath, outFilePath)
+                root = Controller.processL1aqc(inputfile, outputfile, calibrationMap, ancillaryData)
+                Controller.check_output_file_creation(outputfile, level)
 
-            elif level == "L1BQC":
-                root = Controller.processL1bqc(inFilePath, outFilePath)
 
-            # Confirm output file creation
-            if os.path.isfile(outFilePath):
-                modTime = os.path.getmtime(outFilePath)
-                nowTime = datetime.datetime.now()
-                if nowTime.timestamp() - modTime < 60: # If the file exists and was created in the last minute...
-                    msg = f'{level} file produced: \n {outFilePath}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+        elif level == "L1B":
+            for inputfile, outputfile in zip(inFilePath, outFilePath):
+                root = Controller.processL1b(inputfile, outputfile, flag_Trios)
+                Controller.check_output_file_creation(outputfile, level)
+
+
+        elif level == "L1BQC":
+            for inputfile, outputfile in zip(inFilePath, outFilePath):
+                root = Controller.processL1bqc(inputfile, outputfile)
+                Controller.check_output_file_creation(outputfile, level)
+
 
         elif level == "L2":
             # Ancillary data from metadata have been read in at L1C,
             # and will be extracted from the ANCILLARY_METADATA group later
+            
+            for inputfile, outputfile in zip(inFilePath, outFilePath):
 
-            root = None
-            if not os.path.isfile(inFilePath):
-                print('No such input file: ' + inFilePath)
-                return None, outFilePath
-
-            msg = ("ProcessL2: " + inFilePath)
-            print(msg)
-            Utilities.writeLogFile(msg)
-            try:
-                # root variable is replaced by L2 node unless station extraction, in which case
-                #   it is retained and node is returned from ProcessL2
-                root = HDFRoot.readHDF5(inFilePath)
-            except:
-                msg = "Unable to open file. May be open in another application."
-                Utilities.errorWindow("File Error", msg)
+                root = None
+                if not os.path.isfile(inputfile):
+                    print('No such input file: ' + inputfile)
+                    return None, outputfile
+    
+                msg = ("ProcessL2: " + inputfile)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return None, outFilePath
-
-            ##### Loop over this whole section for each station in the file where appropriate ####
-            if ConfigFile.settings["bL2Stations"]:
-                ancGroup = root.getGroup("ANCILLARY")
-                for ds in ancGroup.datasets:
-                    try:
-                        ancGroup.datasets[ds].datasetToColumns()
-                    except:
-                        print('Error: Something wrong with root ANCILLARY')
-                stations = np.array(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-                stations = np.unique(stations[~np.isnan(stations)]).tolist()
-
-                if len(stations) > 0:
-
-                    for station in stations:
-                        stationStr = str( round(station*100)/100 )
-                        stationStr = stationStr.replace('.','_')
-                        # Current SeaBASS convention experiment_cruise_measurement_datetime_Revision#.sb
-                        # For HDF, leave off measurement; add at SeaBASS writer
-                        outPath, filename = os.path.split(outFilePath)
-                        filename,ext = filename.split('.')
-                        filename = f'{filename}_STATION_{stationStr}.hdf'
-                        outFilePathStation = os.path.join(outPath,filename)
-
-                        msg = f'Processing station: {stationStr}: \n'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
-
-                        node = Controller.processL2(root, outFilePathStation,station)
-
-                        if os.path.isfile(outFilePathStation):
-                            # Ensure that the L2 on file is recent before continuing with
-                            # SeaBASS files or reports
-                            modTime = os.path.getmtime(outFilePathStation)
-                            nowTime = datetime.datetime.now()
-                            if nowTime.timestamp() - modTime < 60:
-                                msg = f'{level} file produced: \n{outFilePathStation}'
-                                print(msg)
-                                Utilities.writeLogFile(msg)
-
-                                # Write SeaBASS
-                                if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
-                                    msg = f'Output SeaBASS for HDF: \n{outFilePathStation}'
-                                    print(msg)
-                                    Utilities.writeLogFile(msg)
-                                    SeaBASSWriter.outputTXT_Type2(outFilePathStation)
-                                # return True
-
-                        # Write L2 report for each station, regardless of pass/fail
-                        if ConfigFile.settings["bL2WriteReport"] == 1:
-                            Controller.writeReport(fileName, pathOut, outFilePathStation, level, inFilePath)
-                else:
-                    msg = f'No stations found in: {fileName}'
+                try:
+                    # root variable is replaced by L2 node unless station extraction, in which case
+                    #   it is retained and node is returned from ProcessL2
+                    root = HDFRoot.readHDF5(inputfile)
+                except:
+                    msg = "Unable to open file. May be open in another application."
+                    Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
-
-            else:
-                # Even where not extracting stations, processL2 returns node, not root, but to comply with expectations
-                # below based on the other levels and PDF reporting, overwrite root with node
-                root = Controller.processL2(root,outFilePath)
-
-                if os.path.isfile(outFilePath):
-                    # Ensure that the L2 on file is recent before continuing with
-                    # SeaBASS files or reports
-                    modTime = os.path.getmtime(outFilePath)
-                    nowTime = datetime.datetime.now()
-                    if nowTime.timestamp() - modTime < 60:
-                        msg = f'{level} file produced: \n{outFilePath}'
+                    return None, outputfile
+                
+                ##### Loop over this whole section for each station in the file where appropriate ####
+                if ConfigFile.settings["bL2Stations"]:
+                    ancGroup = root.getGroup("ANCILLARY")
+                    for ds in ancGroup.datasets:
+                        try:
+                            ancGroup.datasets[ds].datasetToColumns()
+                        except:
+                            print('Error: Something wrong with root ANCILLARY')
+                    
+                    stations = np.array(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+                    stations = np.unique(stations[~np.isnan(stations)]).tolist()
+    
+                    if len(stations) > 0:
+    
+                        for station in stations:
+                            stationStr = str( round(station*100)/100 )
+                            stationStr = stationStr.replace('.','_')
+                            # Current SeaBASS convention experiment_cruise_measurement_datetime_Revision#.sb
+                            # For HDF, leave off measurement; add at SeaBASS writer
+                            outPath, filename = os.path.split(outputfile)
+                            filename, ext = filename.split('.')
+                            filename = f'{filename}_STATION_{stationStr}.hdf'
+                            outFilePathStation = os.path.join(outPath, filename)
+    
+                            msg = f'Processing station: {stationStr}: \n'
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+    
+                            node = Controller.processL2(root, outFilePathStation, station)
+    
+                            if os.path.isfile(outFilePathStation):
+                                # Ensure that the L2 on file is recent before continuing with
+                                # SeaBASS files or reports
+                                modTime = os.path.getmtime(outFilePathStation)
+                                nowTime = datetime.datetime.now()
+                                if nowTime.timestamp() - modTime < 60:
+                                    msg = f'{level} file produced: \n{outFilePathStation}'
+                                    print(msg)
+                                    Utilities.writeLogFile(msg)
+    
+                                    # Write SeaBASS
+                                    if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
+                                        msg = f'Output SeaBASS for HDF: \n{outFilePathStation}'
+                                        print(msg)
+                                        Utilities.writeLogFile(msg)
+                                        SeaBASSWriter.outputTXT_Type2(outFilePathStation)
+                                    # return True
+    
+                            # Write L2 report for each station, regardless of pass/fail
+                            if ConfigFile.settings["bL2WriteReport"] == 1:
+                                Controller.writeReport(fileName, pathOut, outFilePathStation, level, inputfile)
+                    else:
+                        msg = f'No stations found in: {fileName}'
                         print(msg)
                         Utilities.writeLogFile(msg)
 
-                        # Write SeaBASS
-                        if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
-                            msg = f'Output SeaBASS for HDF: \n{outFilePath}'
+                else:
+                    # Even where not extracting stations, processL2 returns node, not root, but to comply with expectations
+                    # below based on the other levels and PDF reporting, overwrite root with node
+                    root = Controller.processL2(root, outputfile)
+    
+                    if os.path.isfile(outputfile):
+                        # Ensure that the L2 on file is recent before continuing with
+                        # SeaBASS files or reports
+                        modTime = os.path.getmtime(outputfile)
+                        nowTime = datetime.datetime.now()
+                        if nowTime.timestamp() - modTime < 60:
+                            msg = f'{level} file produced: \n{outputfile}'
                             print(msg)
                             Utilities.writeLogFile(msg)
-                            SeaBASSWriter.outputTXT_Type2(outFilePath)
+    
+                            # Write SeaBASS
+                            if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
+                                msg = f'Output SeaBASS for HDF: \n{outputfile}'
+                                print(msg)
+                                Utilities.writeLogFile(msg)
+                                SeaBASSWriter.outputTXT_Type2(outputfile)
+
 
         # If the process failed at any level, write a report and return
-        if root is None and ConfigFile.settings["bL2Stations"] == 0:
+        if root is None and ConfigFile.settings["bL2Stations"] == 0 and flag_Trios == False:
             if ConfigFile.settings["bL2WriteReport"] == 1:
                 Controller.writeReport(fileName, pathOut, outFilePath, level, inFilePath)
             return False
 
-        # If L2 successful and not station extraction, write a report
+        # If L2 successful, write a report
         if level == "L2" and ConfigFile.settings["bL2Stations"] == 0:
             if ConfigFile.settings["bL2WriteReport"] == 1:
-                Controller.writeReport(fileName, pathOut, outFilePath, level, inFilePath)
+                for inputfile, outputfile in zip(inFilePath, outFilePath):
+                    fileName = os.path.basename(inputfile).rsplit('_',1)[0]
+                    Controller.writeReport(fileName, pathOut, outputfile, level, inFilePath)
 
-        msg = f'Process Single Level: {outFilePath} - SUCCESSFUL'
-        print(msg)
-        Utilities.writeLogFile(msg)
+
+        # msg = f'Process Single Level: {outFilePath} - SUCCESSFUL'
+        # print(msg)
+        # Utilities.writeLogFile(msg)
 
         return True
 
 
     # Process every file in a list of files from L0 to L2
     @staticmethod
-    def processFilesMultiLevel(pathOut,inFiles, calibrationMap, ancFile=None):
+    def processFilesMultiLevel(pathOut,inFiles, calibrationMap, configPath, flag_Trios, ancFile=None):
         print("processFilesMultiLevel")
+
+        if Controller.processSingleLevel(pathOut, inFiles, calibrationMap, configPath, 'L1A', flag_Trios, ancFile):
+            inFiles = glob.glob(pathOut+'/L1A/*.hdf')
+            if Controller.processSingleLevel(pathOut, inFiles, calibrationMap, configPath, 'L1AQC', flag_Trios, ancFile):
+                inFiles = glob.glob(pathOut+'/L1AQC/*.hdf')
+                if Controller.processSingleLevel(pathOut, inFiles, calibrationMap, configPath, 'L1B', flag_Trios, ancFile):
+                    inFiles = glob.glob(pathOut+'/L1B/*.hdf')
+                    if Controller.processSingleLevel(pathOut, inFiles, calibrationMap, configPath, 'L1BQC', flag_Trios, ancFile):
+                        inFiles = glob.glob(pathOut+'/L1BQC/*.hdf')
+                        Controller.processSingleLevel(pathOut, inFiles, calibrationMap, configPath, 'L2', flag_Trios, ancFile)
+
+
+        '''
         # t0 = time.time()
         for fp in inFiles:
             print("Processing: " + fp)
@@ -704,6 +793,7 @@ class Controller:
                             fp = os.path.join(os.path.abspath(pathOut),fileName)
                             # Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2', ancFile)
                             Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2')
+        '''
         print("processFilesMultiLevel - DONE")
         # t1 = time.time()
         # print(f'Elapsed time: {(t1-t0)/60} minutes')
@@ -711,32 +801,29 @@ class Controller:
 
     # Process every file in a list of files 1 level
     @staticmethod
-    def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level, ancFile=None):
-        # print("processFilesSingleLevel")
+    def processFilesSingleLevel(pathOut, inFiles, calibrationMap, configPath, level, flag_Trios, ancFile=None):
+        print("processFilesSingleLevel")
+
         for fp in inFiles:
             # Check that the input file matches what is expected for this processing level
             # Not case sensitive
             fileName = str.lower(os.path.split(fp)[1])
             if level == "L1A":
-                srchStr = 'RAW'
+                srchStr = ['raw', 'dat', 'mlb']
             elif level == 'L1AQC':
-                srchStr = 'L1A'
+                srchStr = ['L1A']
             elif level == 'L1B':
-                srchStr = 'L1AQC'
+                srchStr = ['L1AQC']
             elif level == 'L1BQC':
-                srchStr = 'L1B'
+                srchStr = ['L1B']
             elif level == 'L2':
-                srchStr = 'L1BQC'
-            if fileName.find(str.lower(srchStr)) == -1:
+                srchStr = ['L1BQC']
+            if np.sum([fileName.find(str.lower(s)) for s in srchStr] ) < 0 :
                 msg = f'{fileName} does not match expected input level for outputing {level}'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return -1
 
-            print("Processing: " + fp)
-            # try:
-            # Controller.processSingleLevel(pathOut, fp, calibrationMap, level, ancFile)
-            Controller.processSingleLevel(pathOut, fp, calibrationMap, level)
-            # except OSError:
-            #     print("Unable to process that file due to an operating system error. Try again.")
+        Controller.processSingleLevel(pathOut, inFiles, calibrationMap, configPath, level, flag_Trios, ancFile)
+
         print("processFilesSingleLevel - DONE")

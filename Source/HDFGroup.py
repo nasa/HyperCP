@@ -29,7 +29,20 @@ class HDFGroup:
     def datasetDeleteRow(self, i):
         for k in self.datasets:
             ds = self.datasets[k]
-            ds.data = np.delete(ds.data, (i), axis=0)
+            if len(ds.data)>1:
+                ds.data = np.delete(ds.data, (i), axis=0)
+
+    def removeDataset(self, name):
+        if len(name) == 0:
+            print("Name is 0")
+            return False
+        ds = self.getDataset(name)
+        if ds is not None:
+            del self.datasets[name]
+            return True
+        else:
+            print("dataset does not exist")
+            return False
 
     def addDataset(self, name):
         if len(name) == 0:
@@ -46,7 +59,7 @@ class HDFGroup:
         if name in self.datasets:
             return self.datasets[name]
         return None
-    
+
     def getTableHeader(self, name):
         ''' Generates Head attributes'''
         # ToDo: This should get generated from context file instead
@@ -82,12 +95,16 @@ class HDFGroup:
         self.id = name
 
         # Read attributes
-        #print("Attributes:", [k for k in f.attrs.keys()])
         for k in f.attrs.keys():
             if type(f.attrs[k]) == np.ndarray:
                 self.attributes[k] = f.attrs[k]
-            else: # string attribute
+            elif isinstance(f.attrs[k], bytes):
+                # string as bytes attribute
                 self.attributes[k] = f.attrs[k].decode("utf-8")
+            else:
+                # native string attribute
+                self.attributes[k] = f.attrs[k]
+
         # Read datasets
         for k in f.keys():
             item = f.get(k)
@@ -100,7 +117,7 @@ class HDFGroup:
                 ds.read(item)
 
     def write(self, f):
-        #print("Group:", self.id)
+        # print("Group:", self.id)
         try:
             f = f.create_group(self.id)
             # Write attributes

@@ -5,12 +5,16 @@ See README.md or README.pdf for installation instructions and guide.
 Version 1.1.2: Under development August 2022 (See Changelog.md)
 Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
 '''
+# from Source.Utilities import Utilities
 import argparse
 import os
+# import shutil
 import sys
 import time
+# import collections
+# import json
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import glob
 import requests
 from tqdm import tqdm
 
@@ -78,7 +82,8 @@ class Window(QtWidgets.QWidget):
         # Main window configuration restore
         MainConfig.loadConfig(MainConfig.fileName, version) # version in case it has to make new
         MainConfig.settings['version'] = version # version to update if necessary
-
+        MainConfig.settings['MainDir'] = os.getcwd()
+        
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
         pixmap = QtGui.QPixmap('./Data/Img/banner2.png')
@@ -386,6 +391,16 @@ class Window(QtWidgets.QWidget):
         ConfigFile.loadConfig(configFileName)
         seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+        InstrumentType = ConfigFile.settings['SensorType']
+
+        # To check insturment type
+        if InstrumentType == 'Trios':
+            flag_Trios = 1
+        elif InstrumentType == 'Seabird':
+            flag_Trios = 0
+        else:
+            print('Error in configuration file: Sensor type not specified')
+            sys.exit()
 
         # Select data files
         if not self.inputDirectory[0]:
@@ -393,7 +408,7 @@ class Window(QtWidgets.QWidget):
             return
 
         if level == 'L1A':
-            inLevel = 'raw'
+            inLevel = 'L0'
         if level == 'L1AQC':
             inLevel = 'L1A'
         if level == 'L1B':
@@ -408,31 +423,38 @@ class Window(QtWidgets.QWidget):
         if os.path.exists(subInputDir):
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',subInputDir)
             fileNames = openFileNames[0] # The first element is the whole list
-
         else:
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',self.inputDirectory)
             fileNames = openFileNames[0] # The first element is the whole list
 
-        print('Files:', openFileNames)
+        print('Input files:', fileNames)
         if not fileNames:
             return
+
+        ancFile = self.ancFileLineEdit.text()
+        if ancFile == '':
+            ancFile = None
+        print('Ancillary file:', ancFile)
 
         print('Process Calibration Files')
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings['CalibrationFiles']
-        # print('JMR', filename, calFiles) # JMR?
-        calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
-        if not calibrationMap.keys():
-            print('No calibration files found. '
-            'Check Config directory for your instrument files.')
-            return
+
+        if flag_Trios == 0:
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+            if not calibrationMap.keys():
+                print('No calibration files found. '
+                'Check Config directory for your instrument files.')
+                return
+        else:
+            calibrationMap = 0
 
         print('Output Directory:', os.path.abspath(self.outputDirectory))
         if not self.outputDirectory[0]:
             print('Bad output directory.')
             return
 
-        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, ancFile)
+        Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, configPath, level, flag_Trios, ancFile)
         t1Single = time.time()
         print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
 
@@ -493,12 +515,30 @@ class Window(QtWidgets.QWidget):
 
         ancFile = self.ancFileLineEdit.text()
 
+        '''
         print('Process Calibration Files')
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings['CalibrationFiles']
         calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        '''
 
-        Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, ancFile)
+        InstrumentType = ConfigFile.settings['SensorType']
+        # To check instrument type
+        if InstrumentType == 'Trios':
+            flag_Trios = 1
+            calibrationMap = 0
+        elif InstrumentType == 'Seabird':
+            flag_Trios = 0
+            print('Process Calibration Files')
+            filename = ConfigFile.filename
+            calFiles = ConfigFile.settings['CalibrationFiles']
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        else:
+            print('Error in configuration file: Sensor type not specified')
+            sys.exit()
+
+
+        Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, configPath, flag_Trios, ancFile)
         t1Multi = time.time()
         print(f'Time elapsed: {str(round((t1Multi-t0Multi)/60))} Minutes')
 
@@ -564,6 +604,7 @@ class Command():
                                 https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat \
                                     and place in HyperInSPACE/Data directory.')
 
+
         # Create a default main.config to be filled with cmd argument
         # to avoid reading the one generated with the GUI
         MainConfig.createDefaultConfig("cmdline_main.config", version)
@@ -581,6 +622,9 @@ class Command():
 
         # No GUI used: error message are display in prompt and not in graphical window
         MainConfig.settings["popQuery"] = -1
+        
+        # Current path
+        MainConfig.settings['MainDir'] = os.getcwd()
 
         # For our needs, we only use a single processing
         self.processSingle(self.level)
@@ -597,33 +641,52 @@ class Command():
         configPath = os.path.join('Config', configFileName)
         if not os.path.isfile(configPath):
             message = 'Not valid Config File: ' + configFileName
+            print(message)
             return
+
         ConfigFile.loadConfig(configFileName)
         seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+        InstrumentType = ConfigFile.settings['SensorType']
 
-        # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
-        # we keep variable fileNames which is a list
-        fileNames = [self.inputFile]
-        print('Files:', fileNames)
+        ## If a file is specified, then process a single file (Not suitable for L1A .dat file)
+        if os.path.isfile(inputFile):
+            fileNames = [inputFile]
+        ## if a folder is specified, the process is lauched on all files inside this folder
+        else:
+            fileNames = glob.glob(inputFile+'/*.*')
+
         if not fileNames:
+            print('Error in input data')
             return
+
+        # To check insturment type
+        if InstrumentType == 'Trios':
+            flag_Trios = 1
+        elif InstrumentType == 'Seabird':
+            flag_Trios = 0
+        else:
+            print('Error in configuration file: Sensor type not specified')
+            sys.exit()
 
         print('Process Calibration Files')
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings['CalibrationFiles']
-        calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
-        if not calibrationMap.keys():
-            print('No calibration files found. '
-            'Check Config directory for your instrument files.')
-            return
+        if flag_Trios == 0 :
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+            if not calibrationMap.keys():
+                print('No calibration files found. '
+                'Check Config directory for your instrument files.')
+                return
+        else:
+            calibrationMap = 0      #Cal files are not used for at the moment for Trios
 
         print('Output Directory:', os.path.abspath(self.outputDirectory))
         if not self.outputDirectory[0]:
             print('Bad output directory.')
             return
 
-        Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level, self.ancFile)
+        Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, configPath, level, flag_Trios, self.ancFile)
         t1Single = time.time()
         print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
 
@@ -704,13 +767,13 @@ password = args.password
 if __name__ == '__main__':
 
     # If the cmd argument is given, run the Command class without the GUI
-    if cmd:
-        os.environ['HYPERINSPACE_CMD'] = 'TRUE'
+     if cmd:
         if not (args.username is None or args.password is None):
             # Only for L2 processing set credentials
             GetAnc.userCreds(username, password)
         Command(configFilePath, inputFile, outputDirectory, level, ancFile)
-    else:
+     else:
+        print('Execute GUI')
         app = QtWidgets.QApplication(sys.argv)
         win = Window()
         sys.exit(app.exec_())

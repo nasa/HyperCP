@@ -1,7 +1,9 @@
 The MIT License (MIT)
 
-Copyright © 2020 United States Government as represented by the Administrator 
+Copyright © 2020 United States Government as represented by the Administrator
 of the National Aeronautics and Space Administration. All Rights Reserved.
+
+Copyright © 2023 EUMETSAT
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

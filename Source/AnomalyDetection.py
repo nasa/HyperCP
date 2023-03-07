@@ -495,7 +495,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         for group in root.groups:
             if group.id == 'ANCILLARY_METADATA':
                 ancGroup = group
-            if group.id == 'GPS':
+            if group.id.startswith('GP'):
                 gpsGroup = group
                 self.start = gpsGroup.datasets['DATETIME'].data[0]
                 self.end = gpsGroup.datasets['DATETIME'].data[-1]

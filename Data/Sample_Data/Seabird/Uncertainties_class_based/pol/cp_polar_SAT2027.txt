@@ -1,0 +1,31 @@
+!FRM4SOC_CP
+!POLDATA
+# polarization sensitivity characterization results
+
+# comments start with # (ignored by the processor)
+# no empty lines between the parameter signatures in [] and the parameter values
+# parameters are case insensitive
+# parameters can be inserted in any order, except the first two signatures
+# columns are tab- or space-delimited
+
+# file format version
+# type(s): string(255)
+[VERSION]
+0.1
+
+# serial number of the instrument
+# type(s): string(255)
+[DEVICE]
+SAT2027
+
+# band wavelength, pol uncertainty (rad k=1),
+# type(s): uint8, single,
+[CALDATA]
+400	0.02
+443	0.02
+490	0.02
+560	0.02
+665	0.02
+779	0.02
+865	0.02
+[END_OF_CALDATA]
