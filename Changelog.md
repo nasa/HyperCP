@@ -1,4 +1,4 @@
-v1.1.2 In progress 
+v1.1.2 In progress
 
 DAA = dirk.a.aurin@nasa.gov
 NH = nils.haentjens@maine.edu
@@ -34,6 +34,9 @@ Ideas:
 * Produce kml files for GoogleEarth on entire cruise/directory
 
 ___________________________________________________________
+
+2023-04-18; DAA
+* Update README with FRM4SOC2 additions
 
 2023-02-14; DAA
 * Address Issue #21 by demonstrating the Issue-Fork-Branch-PR process
