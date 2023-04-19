@@ -32,7 +32,6 @@ class Window(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("background-color: #e3e6e1;")
         if not os.path.exists('Plots'):
             os.makedirs('Plots')
         if not os.path.exists('Config'):

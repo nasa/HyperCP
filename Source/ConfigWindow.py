@@ -21,7 +21,6 @@ class ConfigWindow(QtWidgets.QDialog):
     ''' Configuration window object '''
     def __init__(self, name, inputDir, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("background-color: #e3e6e1;")
         self.setModal(True)
         self.name = name
         self.inputDirectory = inputDir
