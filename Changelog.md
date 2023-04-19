@@ -1,4 +1,4 @@
-v1.1.2 In progress
+v1.2.0 In progress
 
 DAA = dirk.a.aurin@nasa.gov
 NH = nils.haentjens@maine.edu

@@ -12,7 +12,7 @@ retrieval. Data output are formatted to text files for submission to the [SeaBAS
 Currently, HyperCP supports <a href='https://www.seabird.com/'>Sea-Bird Scientific</a> HyperSAS packages with and
 without SolarTracker or pySAS robotic platforms as well as [TriOS](https://www.trios.de/en/radiometers.html) used in manual configuration. If you are interested in integrating support for your platform, contact us at the email addresses below the copyright.
 
-## Version 1.1.2 (see Changelog.md)
+## Version 1.2.0 (see Changelog.md)
 
 ---
 ```
