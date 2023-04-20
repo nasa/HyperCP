@@ -14,16 +14,14 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import requests
 from tqdm import tqdm
 
-# Why does pylint have a problem with this path formulation?
-#   => All dependencies should be prepended Source.
 sys.path.append(os.path.join(os.path.dirname(__file__),'Source'))
 from Source.MainConfig import MainConfig
-from Controller import Controller
-from ConfigFile import ConfigFile
-from ConfigWindow import ConfigWindow
-from GetAnc import GetAnc
-from SeaBASSHeader import SeaBASSHeader
-from Utilities import Utilities
+from Source.Controller import Controller
+from Source.ConfigFile import ConfigFile
+from Source.ConfigWindow import ConfigWindow
+from Source.GetAnc import GetAnc
+from Source.SeaBASSHeader import SeaBASSHeader
+from Source.Utilities import Utilities
 
 version = '1.1.2'
 
