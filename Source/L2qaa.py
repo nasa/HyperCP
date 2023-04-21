@@ -2,7 +2,7 @@
 import os
 import numpy as np
 
-from Water_IOPs import water_iops
+from Source.Water_IOPs import water_iops
 
 def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, SST, SAL):
     ''' Use weighted MODIS Aqua bands to calculate IOPs using

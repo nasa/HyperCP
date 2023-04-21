@@ -4,11 +4,7 @@ import sys
 import h5py
 import numpy as np
 
-from HDFDataset import HDFDataset
-# For testing HDF4 support with pyhdf
-#from pyhdf.HDF import *
-#from pyhdf.V import *
-#from pyhdf.VS import *
+from Source.HDFDataset import HDFDataset
 
 class HDFGroup:
     def __init__(self):

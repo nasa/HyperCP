@@ -4,7 +4,7 @@ import os.path
 import shutil
 import zipfile
 
-from CalibrationFile import CalibrationFile
+from Source.CalibrationFile import CalibrationFile
 
 
 class CalibrationFileReader:

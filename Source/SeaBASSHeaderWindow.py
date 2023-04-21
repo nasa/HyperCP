@@ -1,9 +1,9 @@
 import os
 from PyQt5 import QtWidgets
 
-from SeaBASSHeader import SeaBASSHeader
-from ConfigFile import ConfigFile
-from MainConfig import MainConfig
+from Source.SeaBASSHeader import SeaBASSHeader
+from Source.ConfigFile import ConfigFile
+from Source.MainConfig import MainConfig
 
 
 class SeaBASSHeaderWindow(QtWidgets.QDialog):

@@ -8,13 +8,13 @@ import copy
 from PyQt5 import QtWidgets
 from tqdm import tqdm
 
-import HDFRoot
-from Utilities import Utilities
-from ConfigFile import ConfigFile
-from RhoCorrections import RhoCorrections
-from Weight_RSR import Weight_RSR
-from ProcessL2OCproducts import ProcessL2OCproducts
-from ProcessL2BRDF import ProcessL2BRDF
+from HDFRoot import HDFRoot
+from Source.Utilities import Utilities
+from Source.ConfigFile import ConfigFile
+from Source.RhoCorrections import RhoCorrections
+from Source.Weight_RSR import Weight_RSR
+from Source.ProcessL2OCproducts import ProcessL2OCproducts
+from Source.ProcessL2BRDF import ProcessL2BRDF
 
 
 class ProcessL2:
@@ -1701,7 +1701,7 @@ class ProcessL2:
         print("stationsEnsemblesReflectance")
 
         # Create a third HDF for copying root without altering it
-        rootCopy = HDFRoot.HDFRoot()
+        rootCopy = HDFRoot()
         rootCopy.addGroup("ANCILLARY")
         rootCopy.addGroup("IRRADIANCE")
         rootCopy.addGroup("RADIANCE")
@@ -1899,7 +1899,7 @@ class ProcessL2:
 
         # Root is the input from L1BQC, node is the output
         # Root should not be impacted by data reduction in node...
-        node = HDFRoot.HDFRoot()
+        node = HDFRoot()
         node.addGroup("ANCILLARY")
         node.addGroup("REFLECTANCE")
         node.addGroup("IRRADIANCE")

@@ -6,12 +6,11 @@ import requests
 import platform
 import numpy as np
 from PyQt5 import QtWidgets
-# from dataclasses import dataclass
 
-from HDFRoot import HDFRoot
-from HDFGroup import HDFGroup
-from Utilities import Utilities
-import OBPGSession
+from Source.HDFRoot import HDFRoot
+from Source.HDFGroup import HDFGroup
+from Source.Utilities import Utilities
+import Source.OBPGSession
 
 class GetAnc:
 

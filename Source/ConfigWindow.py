@@ -1,27 +1,22 @@
 
 import os
 import shutil
-# import threading
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-# from MainConfig import MainConfig
-# from Main import Window
-from ConfigFile import ConfigFile
-from CalibrationFileReader import CalibrationFileReader
-# from AnomalyDetection import AnomalyDetection
-from AnomalyDetection import AnomAnalWindow
-from SeaBASSHeader import SeaBASSHeader
-from SeaBASSHeaderWindow import SeaBASSHeaderWindow
-from GetAnc import GetAnc
-from OCproductsWindow import OCproductsWindow
-# import pyqtgraph as pg
+from Source.ConfigFile import ConfigFile
+from Source.CalibrationFileReader import CalibrationFileReader
+from Source.AnomalyDetection import AnomAnalWindow
+from Source.SeaBASSHeader import SeaBASSHeader
+from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
+from Source.GetAnc import GetAnc
+from Source.OCproductsWindow import OCproductsWindow
 
 
 class ConfigWindow(QtWidgets.QDialog):
     ''' Configuration window object '''
     def __init__(self, name, inputDir, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("background-color: #e3e6e1;")
+        # self.setStyleSheet("background-color: #e3e6e1;")
         self.setModal(True)
         self.name = name
         self.inputDirectory = inputDir

@@ -5,12 +5,12 @@ import calendar
 import numpy as np
 from inspect import currentframe, getframeinfo
 
-from HDFRoot import HDFRoot
-from ProcessL1b_DefaultCal import ProcessL1b_DefaultCal
-from ConfigFile import ConfigFile
-from CalibrationFileReader import CalibrationFileReader
-from ProcessL1b_Interp import ProcessL1b_Interp
-from Utilities import Utilities
+from Source.HDFRoot import HDFRoot
+from Source.ProcessL1b_DefaultCal import ProcessL1b_DefaultCal
+from Source.ConfigFile import ConfigFile
+from Source.CalibrationFileReader import CalibrationFileReader
+from Source.ProcessL1b_Interp import ProcessL1b_Interp
+from Source.Utilities import Utilities
 
 class ProcessL1b:
 

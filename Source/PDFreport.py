@@ -4,8 +4,8 @@ import glob
 from fpdf import FPDF
 import random
 
-from SeaBASSHeader import SeaBASSHeader
-from ConfigFile import ConfigFile
+from Source.SeaBASSHeader import SeaBASSHeader
+from Source.ConfigFile import ConfigFile
 
 
 class PDF(FPDF):

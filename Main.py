@@ -1,15 +1,22 @@
+
 '''
-HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing
-above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
-See README.md or README.pdf for installation instructions and guide.
-Version 1.1.2: Under development August 2022 (See Changelog.md)
-Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
+HyperInSPACE Community Processor (HyperCP) is the successor to the
+Hyperspectral In situ Support for PACE (HyperInSPACE) project. It is
+designed to process above-water, hyperspectral radiometry from
+Satlantic HyperSAS instruments and TriOS RAMSES instruments.
+See README.md for installation instructions and processor guide.
+See Changelog.md for software updates.
+See HyperCP_Project_guidelines.md and HyperCP_Project_guidelines_APPENDIX.md
+for collaboration guidelines and contact information.
+See the Discussions tab on GitHub for software support and development
+forum.
 '''
 import argparse
 import os
 import sys
 import time
 from PyQt5 import QtCore, QtGui, QtWidgets
+import glob
 
 import requests
 from tqdm import tqdm
@@ -23,14 +30,14 @@ from Source.GetAnc import GetAnc
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.Utilities import Utilities
 
-version = '1.1.2'
+version = '1.2.0'
 
 class Window(QtWidgets.QWidget):
     ''' Window is the main GUI container '''
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("background-color: #e3e6e1;")
+        # self.setStyleSheet("background-color: #e3e6e1;")
         if not os.path.exists('Plots'):
             os.makedirs('Plots')
         if not os.path.exists('Config'):
@@ -99,12 +106,9 @@ class Window(QtWidgets.QWidget):
         self.configComboBox.setRootModelIndex(self.fsm.setRootPath('Config'))
         self.fsm.directoryLoaded.connect(self.on_directoryLoaded)
         self.configComboBox.currentTextChanged.connect(self.comboBox1Changed)
-        #self.configComboBox.move(30, 50)
 
         self.configNewButton = QtWidgets.QPushButton('New', self)
-        #self.configNewButton.move(30, 80)
         self.configEditButton = QtWidgets.QPushButton('Edit', self)
-        #self.configEditButton.move(130, 80)
         self.configDeleteButton = QtWidgets.QPushButton('Delete', self)
 
         self.configNewButton.clicked.connect(self.configNewButtonPressed)
@@ -133,7 +137,6 @@ class Window(QtWidgets.QWidget):
         self.ancAddButton.clicked.connect(self.ancAddButtonPressed)
         self.ancRemoveButton.clicked.connect(self.ancRemoveButtonPressed)
 
-
         singleLevelLabel = QtWidgets.QLabel('Single-Level Processing', self)
         singleLevelLabel_font = singleLevelLabel.font()
         singleLevelLabel_font.setPointSize(10)
@@ -146,7 +149,6 @@ class Window(QtWidgets.QWidget):
         self.singleL1bqcButton = QtWidgets.QPushButton('L1B --> L1BQC', self)
         self.singleL2Button = QtWidgets.QPushButton('L1BQC --> L2', self)
 
-
         self.singleL1aButton.clicked.connect(self.singleL1aClicked)
         self.singleL1aqcButton.clicked.connect(self.singleL1aqcClicked)
         self.singleL1bButton.clicked.connect(self.singleL1bClicked)
@@ -158,10 +160,8 @@ class Window(QtWidgets.QWidget):
         multiLevelLabel_font.setPointSize(10)
         multiLevelLabel_font.setBold(True)
         multiLevelLabel.setFont(multiLevelLabel_font)
-        #self.multiLevelLabel.move(30, 140)
 
         self.multi2Button = QtWidgets.QPushButton('Raw (BIN) ----->> L2 (HDF5)', self)
-        #self.multi1Button.move(30, 170)
 
         self.multi2Button.clicked.connect(self.multi2Clicked)
 
@@ -179,7 +179,6 @@ class Window(QtWidgets.QWidget):
         ########################################################################################
         # Add QtWidgets to the Window
         vBox = QtWidgets.QVBoxLayout()
-        # vBox.addStretch(1)
 
         vBox.addWidget(banner)
         vBox.addWidget(configLabel)
@@ -213,7 +212,6 @@ class Window(QtWidgets.QWidget):
 
         vBox.addLayout(ancHBox)
         vBox.addStretch(1)
-
         vBox.addStretch(1)
 
         vBox.addWidget(singleLevelLabel)
@@ -243,7 +241,6 @@ class Window(QtWidgets.QWidget):
         self.setLayout(vBox)
 
         self.setGeometry(300, 300, 290, 600)
-        # self.setGeometry(300, 300, 250, 600) This does nothing.
         self.setWindowTitle(f"Main v{MainConfig.settings['version']}")
         self.show()
 
@@ -289,14 +286,13 @@ class Window(QtWidgets.QWidget):
         print('Edit Config Dialogue')
         configFileName = self.configComboBox.currentText()
 
-        # ConfigFile.settings['AncFile'] = self.ancFileLineEdit.text()
-        # if ConfigFile.settings['AncFile'] == '':
-        #     ConfigFile.settings['AncFile'] = None
-
         inputDir = self.inputDirectory
         configPath = os.path.join('Config', configFileName)
         if os.path.isfile(configPath):
             ConfigFile.loadConfig(configFileName)
+            # Precaution for the addition of new settings since this config file
+            #   written. Finds default values for mission ConfigFile.settings.            
+            # ConfigFile.saveConfig(configFileName)
             configDialog = ConfigWindow(configFileName, inputDir, self)
             configDialog.show()
         else:
@@ -359,8 +355,8 @@ class Window(QtWidgets.QWidget):
         return self.outputDirectory
 
     def ancAddButtonPressed(self):
-        print('Met File Add Dialogue')
-        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Meteorologic Data File',self.inputDirectory)
+        print('Ancillary File Add Dialogue')
+        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Ancillary Data File',self.inputDirectory)
         if any(fnames):
             print(fnames)
             if len(fnames[0]) == 1:
@@ -374,6 +370,7 @@ class Window(QtWidgets.QWidget):
 
     def processSingle(self, level):
         print('Process Single-Level')
+        MainConfig.saveConfig(MainConfig.fileName)
         t0Single=time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
@@ -431,7 +428,7 @@ class Window(QtWidgets.QWidget):
             print('Bad output directory.')
             return
 
-        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, ancFile)
+        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level)
         t1Single = time.time()
         print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
 
@@ -463,6 +460,7 @@ class Window(QtWidgets.QWidget):
 
     def processMulti(self, level):
         print('Process Multi-Level')
+        MainConfig.saveConfig(MainConfig.fileName)
         t0Multi = time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
@@ -492,10 +490,20 @@ class Window(QtWidgets.QWidget):
 
         ancFile = self.ancFileLineEdit.text()
 
-        print('Process Calibration Files')
-        filename = ConfigFile.filename
-        calFiles = ConfigFile.settings['CalibrationFiles']
-        calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        InstrumentType = ConfigFile.settings['SensorType']
+        # To check instrument type
+        if InstrumentType == 'Trios':
+            flag_Trios = 1
+            calibrationMap = 0
+        elif InstrumentType == 'Seabird':
+            flag_Trios = 0
+            print('Process Calibration Files')
+            filename = ConfigFile.filename
+            calFiles = ConfigFile.settings['CalibrationFiles']
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        else:
+            print('Error in configuration file: Sensor type not specified')
+            sys.exit()
 
         Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, ancFile)
         t1Multi = time.time()
@@ -596,10 +604,20 @@ class Command():
         configPath = os.path.join('Config', configFileName)
         if not os.path.isfile(configPath):
             message = 'Not valid Config File: ' + configFileName
+            print(message)
             return
+
         ConfigFile.loadConfig(configFileName)
         seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+        InstrumentType = ConfigFile.settings['SensorType']
+
+        ## If a file is specified, then process a single file (Not suitable for L1A .dat file)
+        if os.path.isfile(inputFile):
+            fileNames = [inputFile]
+        ## if a folder is specified, the process is lauched on all files inside this folder
+        else:
+            fileNames = glob.glob(inputFile+'/*.*')
 
         # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
         # we keep variable fileNames which is a list

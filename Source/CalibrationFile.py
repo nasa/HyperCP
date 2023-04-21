@@ -3,8 +3,8 @@ import binascii
 import os
 import sys
 
-from CalibrationData import CalibrationData
-from Utilities import Utilities
+from Source.CalibrationData import CalibrationData
+from Source.Utilities import Utilities
 
 
 # CalibrationFile class stores information about an instrument

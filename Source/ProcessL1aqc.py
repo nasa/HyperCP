@@ -6,10 +6,10 @@ from pysolar.solar import get_azimuth, get_altitude
 from operator import add
 import bisect
 
-from HDFDataset import HDFDataset
+from Source.HDFDataset import HDFDataset
 from Source.ProcessL1aqc_deglitch import ProcessL1aqc_deglitch
-from Utilities import Utilities
-from ConfigFile import ConfigFile
+from Source.Utilities import Utilities
+from Source.ConfigFile import ConfigFile
 
 class ProcessL1aqc:
 
@@ -501,7 +501,7 @@ class ProcessL1aqc:
                                 elif kickout ==1:
                                     i += 1
 
-                    msg = f'Percentage of SolarTracker data out of Rotator Delay bounds: {round(100*i/len(timeStamp))} %'
+                    msg = f'Percentage of Tracker data out of Rotator Delay bounds: {round(100*i/len(timeStamp))} %'
                     print(msg)
                     Utilities.writeLogFile(msg)
 
@@ -560,7 +560,7 @@ class ProcessL1aqc:
 
                             badTimes.append(startstop)
                             start = -1
-                msg = f'Percentage of SolarTracker data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %'
+                msg = f'Percentage of Tracker data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %'
                 print(msg)
                 Utilities.writeLogFile(msg)
 

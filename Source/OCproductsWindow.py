@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets
 
-from ConfigFile import ConfigFile
+from Source.ConfigFile import ConfigFile
 
 
 class OCproductsWindow(QtWidgets.QDialog):

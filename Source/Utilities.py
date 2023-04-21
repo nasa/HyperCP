@@ -1,3 +1,4 @@
+
 import os
 import datetime
 import collections
@@ -19,11 +20,11 @@ from pandas.plotting import register_matplotlib_converters
 register_matplotlib_converters()
 from tqdm import tqdm
 
-from SB_support import readSB
+from Source.SB_support import readSB
 
-import HDFRoot
-from ConfigFile import ConfigFile
-from MainConfig import MainConfig
+from Source.HDFRoot import HDFRoot
+from Source.ConfigFile import ConfigFile
+from Source.MainConfig import MainConfig
 
 # This gets reset later in Controller.processSingleLevel to reflect the file being processed.
 if "LOGFILE" not in os.environ:
@@ -65,13 +66,13 @@ class Utilities:
             # fp = 'Data/Thuillier_F0.sb'
             # print("SB_support.readSB: " + fp)
             print("Reading : " + fp)
-            if not HDFRoot.HDFRoot.readHDF5(fp):
+            if not HDFRoot.readHDF5(fp):
                 msg = "Unable to read TSIS-1 netcdf file."
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
             else:
-                F0_hybrid = HDFRoot.HDFRoot.readHDF5(fp)
+                F0_hybrid = HDFRoot.readHDF5(fp)
                 # F0_raw = np.array(Thuillier.data['esun']) # uW cm^-2 nm^-1
                 # wv_raw = np.array(Thuillier.data['wavelength'])
                 for ds in F0_hybrid.datasets:

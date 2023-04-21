@@ -20,6 +20,7 @@ class ConfigFile:
     def printd():
         print("ConfigFile - Printd")
         print("AncFile", ConfigFile.settings["AncFile"])
+        print("SensorType", ConfigFile.settings["SensorType"])
 
         print("fL1aUTCOffset", ConfigFile.settings["fL1aUTCOffset"])
         print("bL1aCleanSZA", ConfigFile.settings["bL1aCleanSZA"])
@@ -100,6 +101,7 @@ class ConfigFile:
         print("fL1bqcDawnDuskFlag", ConfigFile.settings["fL1bqcDawnDuskFlag"])
         print("fL1bqcRainfallHumidityFlag", ConfigFile.settings["fL1bqcRainfallHumidityFlag"])
 
+        print("bL2Stations", ConfigFile.settings["bL2Stations"])
         print("fL2TimeInterval", ConfigFile.settings["fL2TimeInterval"])
         print("bL2EnablePercentLt", ConfigFile.settings["bL2EnablePercentLt"])
         print("fL2PercentLt", ConfigFile.settings["fL2PercentLt"])
@@ -187,17 +189,15 @@ class ConfigFile:
     @staticmethod
     def createDefaultConfig(fileName, new=1):
         # fileName: the filename of the configuration file without path
-        # new: 1=yes, 0=no
-        print("ConfigFile - Create Default Config")
+        # if new==1:
+        print("ConfigFile - Create Default Config, or fill in newly added values with default values.")
 
         if not fileName.endswith(".cfg"):
             fileName = fileName + ".cfg"
         ConfigFile.filename = fileName
-
         ConfigFile.settings["CalibrationFiles"] = {}
-
         ConfigFile.settings["AncFile"] = ''
-
+        ConfigFile.settings["SensorType"] = "Seabird" # Seabird Trios
         ConfigFile.settings["fL1aUTCOffset"] = 0
         ConfigFile.settings["bL1aCleanSZA"] = 0
         ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,
@@ -258,6 +258,7 @@ class ConfigFile:
 
         ConfigFile.settings["bL1bDefaultCal"] = 1
         ConfigFile.settings["bL1bFullCal"] = 0
+        # ConfigFile.settings["FullCalDir"] = ' '
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1bPlotTimeInterp"] = 0
         ConfigFile.settings["fL1bPlotInterval"] = 20 # nm
@@ -277,7 +278,6 @@ class ConfigFile:
         ConfigFile.settings["fL1bqcSignificantEsFlag"] = 2.0 # Wernand 2002
         ConfigFile.settings["fL1bqcDawnDuskFlag"] = 1.0 # Wernand 2002
         ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain
-
 
         ConfigFile.settings["bL1bqcGetAnc"] = 0
         ConfigFile.settings["bL1bqcObpgCreds"] = 0
@@ -377,11 +377,13 @@ class ConfigFile:
     @staticmethod
     def loadConfig(filename):
         # print("ConfigFile - Load Config")
+
         # Load the default values first to insure all settings are present, then populate with saved values where possible
         ConfigFile.createDefaultConfig(filename, 0)
 
         configPath = os.path.join("Config", filename)
         if os.path.isfile(configPath):
+            # print(f'Populating ConfigFile with saved parameters: {filename}')
             ConfigFile.filename = filename
             text = ""
             with open(configPath, 'r') as f:
@@ -396,6 +398,11 @@ class ConfigFile:
                         ConfigFile.settings[key] = value
 
                 ConfigFile.createCalibrationFolder()
+        #     return 1
+        # else:
+        #     print(f'Bad ConfigFile path: {configPath}')
+        #     return 0
+
 
     # Deletes a config
     @staticmethod

@@ -1,9 +1,8 @@
 
-import os
 import numpy as np
 import scipy.interpolate
 
-from SB_support import readSB
+from Source.SB_support import readSB
 
 def water_iops(fp, wave,T,S):
 

@@ -3,10 +3,10 @@ import numpy as np
 import scipy as sp
 import datetime as datetime
 
-from MainConfig import MainConfig
-from GetAnc import GetAnc
-from Utilities import Utilities
-from ConfigFile import ConfigFile
+from Source.MainConfig import MainConfig
+from Source.GetAnc import GetAnc
+from Source.Utilities import Utilities
+from Source.ConfigFile import ConfigFile
 
 
 class ProcessL1bqc:

@@ -3,8 +3,8 @@ import collections
 import json
 import os
 
-from ConfigFile import ConfigFile
-from MainConfig import MainConfig
+from Source.ConfigFile import ConfigFile
+from Source.MainConfig import MainConfig
 
 class SeaBASSHeader:
     filename = ""

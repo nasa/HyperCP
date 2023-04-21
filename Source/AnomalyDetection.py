@@ -1,26 +1,22 @@
 
 import os
 import sys
-# import shutil
 import csv
 import numpy as np
-# import pandas as pd
 from datetime import datetime
 import pytz
 
 import warnings
-# import matplotlib.pyplot as plt
-# import matplotlib
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
 
-from Controller import Controller
-from MainConfig import MainConfig
-from ConfigFile import ConfigFile
-from HDFRoot import HDFRoot
-from Utilities import Utilities
-from FieldPhotos import FieldPhotos
-from CalibrationFileReader import CalibrationFileReader
+from Source.Controller import Controller
+from Source.MainConfig import MainConfig
+from Source.ConfigFile import ConfigFile
+from Source.HDFRoot import HDFRoot
+from Source.Utilities import Utilities
+from Source.FieldPhotos import FieldPhotos
+from Source.CalibrationFileReader import CalibrationFileReader
 
 class AnomAnalWindow(QtWidgets.QDialog):
 

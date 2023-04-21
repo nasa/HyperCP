@@ -3,9 +3,9 @@ import re
 import numpy as np
 import os
 
-from HDFRoot import HDFRoot
-from HDFGroup import HDFGroup
-from HDFDataset import HDFDataset
+from Source.HDFRoot import HDFRoot
+from Source.HDFGroup import HDFGroup
+from Source.HDFDataset import HDFDataset
 
 
 def readLUT(node,filename, headerlines):

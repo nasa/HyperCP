@@ -6,7 +6,6 @@ import subprocess
 import requests
 from requests.adapters import HTTPAdapter
 import logging
-import platform
 
 DEFAULT_CHUNK_SIZE = 131072
 

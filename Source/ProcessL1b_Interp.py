@@ -7,9 +7,9 @@ from inspect import currentframe, getframeinfo
 import numpy as np
 import scipy as sp
 
-import HDFRoot
-from Utilities import Utilities
-from ConfigFile import ConfigFile
+from Source.HDFRoot import HDFRoot
+from Source.Utilities import Utilities
+from Source.ConfigFile import ConfigFile
 
 
 class ProcessL1b_Interp:
@@ -301,7 +301,7 @@ class ProcessL1b_Interp:
             set in the Configuration Window. '''
 
         print('Interpolating to common wavelengths')
-        root = HDFRoot.HDFRoot()
+        root = HDFRoot()
         root.copyAttributes(node)
 
         interval = float(ConfigFile.settings["fL1bInterpInterval"])
@@ -394,7 +394,7 @@ class ProcessL1b_Interp:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         # node  = Utilities.rootAddDateTime(node)
 
-        root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class
+        root = HDFRoot() # creates a new instance of HDFRoot Class
         root.copyAttributes(node) # Now copy the attributes in from the L1a object
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
