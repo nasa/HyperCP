@@ -35,11 +35,11 @@ class ConfigWindow(QtWidgets.QDialog):
         self.sensorTypeComboBox = QtWidgets.QComboBox(self)
         self.sensorTypeComboBox.addItems(["Choose a sensor ...", "SeaBird", "TriOS"])
         CurrentSensor = ConfigFile.settings["SensorType"]
-        index = self.sensorTypeComboBox.findText(CurrentSensor)
+        index = self.sensorTypeComboBox.findText(CurrentSensor,QtCore.Qt.MatchFixedString)
         self.sensorTypeComboBox.setCurrentIndex(index)
         self.sensorTypeComboBox.setEnabled(True)
         self.sensorTypeComboBox.currentIndexChanged.connect(self.sensorTypeChanged)
-        self.setSensorSettings()
+        # self.setSensorSettings()
         # Calibration Config Settings
         self.addCalibrationFileButton = QtWidgets.QPushButton("Add Cals")
         self.addCalibrationFileButton.clicked.connect(self.addCalibrationFileButtonPressed)
@@ -68,7 +68,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationEnabledCheckBox.stateChanged.connect(self.calibrationEnabledStateChanged)
         self.calibrationEnabledCheckBox.setEnabled(False)
 
-        CurrentSensor = ConfigFile.settings["SensorType"]
+        # CurrentSensor = ConfigFile.settings["SensorType"]
         if CurrentSensor.lower() == "seabird":
             calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
             self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
@@ -256,10 +256,10 @@ class ConfigWindow(QtWidgets.QDialog):
         l1bqcSublabel = QtWidgets.QLabel(" Data quality control filters.", self)
         l1bqcSublabel1 = QtWidgets.QLabel(" Ancillary data are required for Zhang glint correction and", self)
         l1bqcSublabel2 = QtWidgets.QLabel(" can fill in wind for M99 and QC. Select database download:", self)
-        l1bqcSublabel3 = QtWidgets.QLabel("        (WILL PROMPT FOR EARTHDATA CREDENTIALS)", self)
-        l1bqcSublabel4 = QtWidgets.QLabel("<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">Register EarthData</a>", self)
+        l1bqcSublabel3 = QtWidgets.QLabel("  (GMAO PROMPTS FOR EARTHDATA LOGIN: <a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">register</a>)", self)
+        # l1bqcSublabel4 = QtWidgets.QLabel("<a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">(Register with EarthData)</a>", self)
         l1bqcSublabel5 = QtWidgets.QLabel("  Fallback values when no model available:", self)
-        l1bqcSublabel4.setOpenExternalLinks(True)
+        l1bqcSublabel3.setOpenExternalLinks(True)
         # l1bqcGetAncLabel1 = QtWidgets.QLabel("GMAO MERRA2", self)
         # l1bqcGetAncLabel2 = QtWidgets.QLabel("ECMWF", self)
         self.l1bqcGetAncCheckBox1 = QtWidgets.QCheckBox("GMAO MERRA2", self)
@@ -750,8 +750,8 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addWidget(l1bqcSublabel2)
         l1bqcGetAncHBox1 = QtWidgets.QHBoxLayout()
         l1bqcGetAncHBox1.addWidget(self.l1bqcGetAncCheckBox1)
+        # l1bqcGetAncHBox1.addWidget(l1bqcSublabel4)
         l1bqcGetAncHBox1.addWidget(self.l1bqcGetAncCheckBox2)
-        l1bqcGetAncHBox1.addWidget(l1bqcSublabel4)
         VBox2.addLayout(l1bqcGetAncHBox1)
         VBox2.addWidget(l1bqcSublabel3)
         VBox2.addWidget(l1bqcSublabel5)
@@ -1691,6 +1691,8 @@ class ConfigWindow(QtWidgets.QDialog):
                 SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
             else:
                 self.close()
+
+            self.setWindowTitle(ConfigFile.filename)
 
 
     def cancelButtonPressed(self):
