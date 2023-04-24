@@ -19,6 +19,7 @@ dependencies:
   - pip
   - pip:
     - pysolar
-    - fpdf==1.7.2
-    - tqdm==4.62.3
+    - fpdf==1.7
+    - tqdm==4.62
+    - punpy==0.33
 prefix: /accounts/daurin/anaconda3

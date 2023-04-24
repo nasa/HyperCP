@@ -76,8 +76,7 @@ class ConfigFile:
 
         print("fL1aqcAnomalyStep", ConfigFile.settings["fL1aqcAnomalyStep"])
 
-        print("bL1bDefaultCal", ConfigFile.settings["bL1bDefaultCal"])
-        print("bL1bFullCal", ConfigFile.settings["bL1bFullCal"])
+        print("bL1bCal", ConfigFile.settings["bL1bCal"])
         print("fL1bInterpInterval", ConfigFile.settings["fL1bInterpInterval"])
         print("bL1bPlotTimeInterp", ConfigFile.settings["bL1bPlotTimeInterp"])
         print("fL1bPlotInterval", ConfigFile.settings["fL1bPlotInterval"])
@@ -197,7 +196,7 @@ class ConfigFile:
         ConfigFile.filename = fileName
         ConfigFile.settings["CalibrationFiles"] = {}
         ConfigFile.settings["AncFile"] = ''
-        ConfigFile.settings["SensorType"] = "Seabird" # Seabird Trios
+        ConfigFile.settings["SensorType"] = "SeaBird" # SeaBird TriOS
         ConfigFile.settings["fL1aUTCOffset"] = 0
         ConfigFile.settings["bL1aCleanSZA"] = 0
         ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,
@@ -256,9 +255,8 @@ class ConfigFile:
 
         ConfigFile.settings["fL1aqcAnomalyStep"] = 20
 
-        ConfigFile.settings["bL1bDefaultCal"] = 1
-        ConfigFile.settings["bL1bFullCal"] = 0
-        # ConfigFile.settings["FullCalDir"] = ' '
+        ConfigFile.settings["bL1bCal"] = 1 # 1 for Factory, 2 for Class, 3 for Instrument Full
+        ConfigFile.settings["FullCalDir"] = ' '
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1bPlotTimeInterp"] = 0
         ConfigFile.settings["fL1bPlotInterval"] = 20 # nm
