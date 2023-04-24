@@ -7,10 +7,10 @@ import sys
 from Main import Command, cmd
 
 ## Set up ##
-# PATH_HCP = '/Users/daurin/GitRepos/HyperInSPACE'   # Adjust with full path on local computer
-PATH_HCP = '/ssdwork/GitRepos/HyperInSPACE'   # Adjust with full path on local computer
-PATH_WK = os.path.join(PATH_HCP,'Data')  # Adjust with full path on local computer
-PATH_TYPE = 'NOTRACKER' #pySAS SOLARTRACKER NOTRACKER Adjust to desired file type
+PATH_HCP = '/Users/daurin/GitRepos/HyperInSPACE'   # Adjust with full path on local computer
+# PATH_HCP = '/ssdwork/GitRepos/HyperInSPACE'   # Adjust with full path on local computer
+PATH_WK = os.path.join(PATH_HCP,'Data','Sample_Data')  # Adjust with full path on local computer
+PATH_TYPE = 'SOLARTRACKER' #pySAS SOLARTRACKER NOTRACKER Adjust to desired file type
 ## ##
 
 PATH_CFG = os.path.join(PATH_HCP, 'Config', f'sample_{PATH_TYPE}.cfg')
@@ -25,6 +25,8 @@ os.environ['HYPERINSPACE_CMD'] = 'TRUE'
 
 def process_raw_to_l2(filename):
     ref = os.path.splitext(os.path.basename(filename))[0]
+    # This will skip the file if either 1) the result exists, or 2) the Level failed and produced a report.
+    # Delete the file and/or report to override.
     to_skip = {level: [os.path.basename(f).split('_' + level)[0]
                        for f in glob.glob(os.path.join(PATH_WK, level, '*'))] +
                       [os.path.basename(f).split('_' + level)[0]
@@ -74,6 +76,10 @@ def worker(raw_filename):
 
 if __name__ == '__main__':
     raw_filenames = sorted(glob.glob(os.path.join(PATH_WK, 'RAW', f'*{PATH_TYPE}.raw')))
+
+    print(f'Processing {sorted(glob.glob(os.path.join(PATH_WK, "RAW", f"*{PATH_TYPE}.raw")))}')
+    print(f'Using configuration {PATH_CFG}')
+    print(f'with ancillary data {PATH_ANC}')
 
     # If Zhang et al. 2017 correction is enabled a significant amount of memory is used (~3Go) for each process
     # so you might not be able to use all cores of the system

@@ -394,7 +394,8 @@ class ProcessL1aqc:
                         roll = ancillaryData.columns["ROLL"][0]
                     timeStamp = ancillaryData.columns["DATETIME"][0]
                 else:
-                    msg = "Pitch and roll data not found for tilt filter. Try adding to Ancillary Data. Aborting."
+                    msg = "Pitch and roll data not found for tilt sensor or in Ancillary Data.\n"
+                    msg = msg + " Try adding to Ancillary Data or turning off tilt filter. Aborting."
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return None

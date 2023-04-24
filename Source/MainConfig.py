@@ -33,10 +33,8 @@ class MainConfig:
     # Generates the default configuration
     @staticmethod
     def createDefaultConfig(fileName, version):
-        print("MainConfig - File not found..")
-        print("MainConfig - Create Default Config")
+        print("MainConfig - Create Default Config (default for CLI)")
 
-        # MainConfig.settings["cfgFile"] = ""
         MainConfig.settings["cfgFile"] = fileName
         MainConfig.settings["version"] = version
         MainConfig.settings["inDir"] = './Data'

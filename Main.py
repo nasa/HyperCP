@@ -291,7 +291,7 @@ class Window(QtWidgets.QWidget):
         if os.path.isfile(configPath):
             ConfigFile.loadConfig(configFileName)
             # Precaution for the addition of new settings since this config file
-            #   written. Finds default values for mission ConfigFile.settings.            
+            #   written. Finds default values for mission ConfigFile.settings.
             # ConfigFile.saveConfig(configFileName)
             configDialog = ConfigWindow(configFileName, inputDir, self)
             configDialog.show()
@@ -640,7 +640,7 @@ class Command():
             print('Bad output directory.')
             return
 
-        Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level, self.ancFile)
+        Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level)
         t1Single = time.time()
         print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
 
