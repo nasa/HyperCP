@@ -1,6 +1,7 @@
-name: hyperinspace
+name: hypercp
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - conda
   - python
@@ -16,10 +17,11 @@ dependencies:
   - netcdf4
   - dask
   - pyqtgraph
+  - pyspectral
   - pip
   - pip:
     - pysolar
-    - fpdf==1.7
-    - tqdm==4.62
-    - punpy==0.33
-prefix: /accounts/daurin/anaconda3
+    - fpdf2
+    - tqdm
+    - punpy
+# prefix: /accounts/daurin/anaconda3

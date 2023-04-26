@@ -382,6 +382,16 @@ class Window(QtWidgets.QWidget):
         ConfigFile.loadConfig(configFileName)
         seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+        InstrumentType = ConfigFile.settings['SensorType']
+
+        # To check insturment type
+        if InstrumentType.lower() == 'trios':
+            flag_Trios = 1
+        elif InstrumentType.lower() == 'seabird':
+            flag_Trios = 0
+        else:
+            print('Error in configuration file: Sensor type not specified')
+            sys.exit()
 
         # Select data files
         if not self.inputDirectory[0]:
@@ -416,19 +426,22 @@ class Window(QtWidgets.QWidget):
         print('Process Calibration Files')
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings['CalibrationFiles']
-        # print('JMR', filename, calFiles) # JMR?
-        calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
-        if not calibrationMap.keys():
-            print('No calibration files found. '
-            'Check Config directory for your instrument files.')
-            return
+
+        if flag_Trios == 0:
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+            if not calibrationMap.keys():
+                print('No calibration files found. '
+                'Check Config directory for your instrument files.')
+                return
+        else:
+            calibrationMap = 0
 
         print('Output Directory:', os.path.abspath(self.outputDirectory))
         if not self.outputDirectory[0]:
             print('Bad output directory.')
             return
 
-        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level)
+        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, flag_Trios)
         t1Single = time.time()
         print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
 
@@ -505,7 +518,7 @@ class Window(QtWidgets.QWidget):
             print('Error in configuration file: Sensor type not specified')
             sys.exit()
 
-        Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, ancFile)
+        Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, flag_Trios)
         t1Multi = time.time()
         print(f'Time elapsed: {str(round((t1Multi-t0Multi)/60))} Minutes')
 
@@ -624,23 +637,36 @@ class Command():
         fileNames = [self.inputFile]
         print('Files:', fileNames)
         if not fileNames:
+            print('Error in input data')
             return
+
+        # To check insturment type
+        if InstrumentType == 'Trios':
+            flag_Trios = 1
+        elif InstrumentType == 'Seabird':
+            flag_Trios = 0
+        else:
+            print('Error in configuration file: Sensor type not specified')
+            sys.exit()
 
         print('Process Calibration Files')
         filename = ConfigFile.filename
         calFiles = ConfigFile.settings['CalibrationFiles']
-        calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
-        if not calibrationMap.keys():
-            print('No calibration files found. '
-            'Check Config directory for your instrument files.')
-            return
+        if flag_Trios == 0 :
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+            if not calibrationMap.keys():
+                print('No calibration files found. '
+                'Check Config directory for your instrument files.')
+                return
+        else:
+            calibrationMap = 0      #Cal files are not used for at the moment for Trios
 
         print('Output Directory:', os.path.abspath(self.outputDirectory))
         if not self.outputDirectory[0]:
             print('Bad output directory.')
             return
 
-        Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level)
+        Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level, flag_Trios)
         t1Single = time.time()
         print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
 
