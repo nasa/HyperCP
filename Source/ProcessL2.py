@@ -86,6 +86,8 @@ class ProcessL2:
             # avg /= num
             # avg = np.median(NIRRRs)
             rrsNIRCorr = min(NIRRRs)
+            if rrsNIRCorr < 0:
+                rrsNIRCorr = 0
             # Subtract average from each waveband
             ### Note: this is susceptible to negative NIR values, which have not yet
             ###     been screened, thereby ADDING to Rrs across the spectrum...
@@ -384,12 +386,12 @@ class ProcessL2:
                     rrs = lw / es
 
                     # Rrs uncertainty
-                    rrsDelta = rrs * (
+                    rrsDelta = abs(rrs) * (
                             (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2 + (esSTD/es)**2
                             )**0.5
 
                     # Lw uncertainty
-                    lwDelta = lw * (
+                    lwDelta = abs(lw) * (
                             (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2
                             )**0.5
 
