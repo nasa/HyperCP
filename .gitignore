@@ -15,5 +15,7 @@ Source/.DS_Store
 *.pyc
 *.log
 
+Data/Sample_Data/*
+
 runtest.py
 run_NASA*.py
