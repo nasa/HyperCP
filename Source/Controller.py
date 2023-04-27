@@ -24,7 +24,25 @@ from Source.PDFreport import PDF
 class Controller:
 
     @staticmethod
-    def check_output_file_creation(outFilePath, level):
+    def checkInputFiles(inFilePath, flag_Trios):
+        if flag_Trios:
+            for fp in inFilePath:
+                if not os.path.isfile(fp):
+                    msg = 'No such file...'
+                    Utilities.errorWindow("File Error", msg)
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return None
+        else:
+            if not os.path.isfile(inFilePath):
+                    msg = 'No such file...'
+                    Utilities.errorWindow("File Error", msg)
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return None
+
+    @staticmethod
+    def checkOutputFiles(outFilePath):
         if os.path.isfile(outFilePath):
             modTime = os.path.getmtime(outFilePath)
             nowTime = datetime.datetime.now()
@@ -255,16 +273,15 @@ class Controller:
     # def processL1a(inFilePath, outFilePath, calibrationMap):
     def processL1a(inFilePath, outFilePath, calibrationMap,flag_Trios):
         root = None
-        if not os.path.isfile(inFilePath):
-            msg = 'No such file...'
-            Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
+
+        test = Controller.checkInputFiles(inFilePath,flag_Trios)
+        if test is None:
             return None, 'Never'
 
         # Process the data
         if flag_Trios == 1:
-            TriosL1A.triosL1A(inFilePath, outFilePath)#, configPath, ancillaryData)
+            outFilePath = os.path.split(outFilePath[0])[0] # Just the path to first file; no files
+            TriosL1A.triosL1A(inFilePath, outFilePath)
         else:
 
             msg = "ProcessL1a"
@@ -292,11 +309,11 @@ class Controller:
         return root
 
     @staticmethod
-    def processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData):
+    def processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData,flag_Trios):
         root = None
-        if not os.path.isfile(inFilePath):
-            print('No such input file: ' + inFilePath)
-            return None
+        test = Controller.checkInputFiles(inFilePath,flag_Trios)
+        if test is None:
+            return None, 'Never'
 
         # Process the data
         print("ProcessL1aqc")
@@ -494,12 +511,16 @@ class Controller:
     def processSingleLevel(pathOut, inFilePath, calibrationMap, level, flag_Trios):
         # Find the absolute path to the output directory
         pathOut = os.path.abspath(pathOut)
-        # inFilePath is a singleton file complete with path
-        inFilePath = os.path.abspath(inFilePath)
-        # (inpath, inFileName) = os.path.split(inFilePath)
-        inFileName = os.path.split(inFilePath)[1]
+        if flag_Trios:
+            # inFilePath is a list of filepath strings
+            # Grab input name and extension of first file
+            inFileName = os.path.split(inFilePath[0])[1]
+        else:
+            # inFilePath is a singleton filepath string
+            inFilePath = os.path.abspath(inFilePath)
+            inFileName = os.path.split(inFilePath)[1]
         # Grab input name and extension
-        fileName,extension = os.path.splitext(inFileName)#[0]
+        fileName,extension = os.path.splitext(inFileName)
 
         # Initialize the Utility logger, overwriting it if necessary
         if ConfigFile.settings["bL2Stations"] == 1 and level == 'L2':
@@ -516,7 +537,7 @@ class Controller:
 
         # Check for base output directory
         if os.path.isdir(pathOut):
-            pathOutLevel = os.path.join(pathOut,level)
+            pathOutLevel = os.path.join(pathOut, level)
         else:
             msg = "Bad output destination. Select new Output Data Directory."
             print(msg)
@@ -527,7 +548,14 @@ class Controller:
         if os.path.isdir(pathOutLevel) is False:
             os.mkdir(pathOutLevel)
 
-        outFilePath = os.path.join(pathOutLevel,fileName + "_" + level + ".hdf")
+        if flag_Trios:
+            if extension=='.hdf':
+                outFilePath = [os.path.join(pathOutLevel, os.path.splitext(os.path.basename(fp.rsplit('_',1)[0]))[0]+"_"+level+".hdf") for fp in inFilePath]
+            else:
+                outFilePath = [os.path.join(pathOutLevel, os.path.splitext(os.path.basename(fp))[0]+"_"+level+".hdf") for fp in inFilePath]
+        else:
+            outFilePath = os.path.join(pathOutLevel,fileName + "_" + level + ".hdf")
+
 
         if level == "L1A" or level == "L1AQC" or level == "L1B" or level == "L1BQC":
 
@@ -581,16 +609,16 @@ class Controller:
                     msg = 'No deglitching will be performed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
-                root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
-                Controller.check_output_file_creation(outFilePath, level)
+                root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData,flag_Trios)
+                Controller.checkOutputFiles(outFilePath)
 
             elif level == "L1B":
                 root = Controller.processL1b(inFilePath, outFilePath, flag_Trios)
-                Controller.check_output_file_creation(outFilePath, level)
+                Controller.checkOutputFiles(outFilePath)
 
             elif level == "L1BQC":
                 root = Controller.processL1bqc(inFilePath, outFilePath)
-                Controller.check_output_file_creation(outFilePath, level)
+                Controller.checkOutputFiles(outFilePath)
 
         elif level == "L2":
             # Ancillary data from metadata have been read in at L1C,
@@ -746,26 +774,60 @@ class Controller:
     @staticmethod
     def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level, flag_Trios):
         # print("processFilesSingleLevel")
-        for fp in inFiles:
-            # Check that the input file matches what is expected for this processing level
-            # Not case sensitive
-            fileName = str.lower(os.path.split(fp)[1])
-            if level == "L1A":
-                srchStr = ['raw', 'mlb']
-            elif level == 'L1AQC':
-                srchStr = ['L1A']
-            elif level == 'L1B':
-                srchStr = ['L1AQC']
-            elif level == 'L1BQC':
-                srchStr = ['L1B']
-            elif level == 'L2':
-                srchStr = ['L1BQC']
-            if np.sum([fileName.find(str.lower(s)) for s in srchStr] ) < 0 :
-                msg = f'{fileName} does not match expected input level for outputing {level}'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return -1
 
+        # TriOS raw data have 1 file per instrument. Need to find common identifiers to send
+        #   the triplet for processing and end up with 1 L1A HDF file
+        #   The way TriosL1A.py is written, it needs the whole list of files, not a single file
+
+        if flag_Trios:
+            for fp in inFiles:
+                # Check that the input file matches what is expected for this processing level
+                # Not case sensitive
+                fileName = str.lower(os.path.split(fp)[1])
+                if level == "L1A":
+                    srchStr = ['raw', 'mlb']
+                elif level == 'L1AQC':
+                    srchStr = ['L1A']
+                elif level == 'L1B':
+                    srchStr = ['L1AQC']
+                elif level == 'L1BQC':
+                    srchStr = ['L1B']
+                elif level == 'L2':
+                    srchStr = ['L1BQC']
+                if np.sum([fileName.find(str.lower(s)) for s in srchStr] ) < 0 :
+                    msg = f'{fileName} does not match expected input level for outputing {level}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return -1
+
+            #Pass entire list L0 files
             print("Processing: " + fp)
-            Controller.processSingleLevel(pathOut, fp, calibrationMap, level, flag_Trios)
-        print("processFilesSingleLevel - DONE")
+            Controller.processSingleLevel(pathOut, inFiles, calibrationMap, level, flag_Trios)
+            print("processFilesSingleLevel, all files - DONE")
+
+        else:
+            for fp in inFiles:
+                # Check that the input file matches what is expected for this processing level
+                # Not case sensitive
+                fileName = str.lower(os.path.split(fp)[1])
+                if level == "L1A":
+                    srchStr = ['raw', 'mlb']
+                elif level == 'L1AQC':
+                    srchStr = ['L1A']
+                elif level == 'L1B':
+                    srchStr = ['L1AQC']
+                elif level == 'L1BQC':
+                    srchStr = ['L1B']
+                elif level == 'L2':
+                    srchStr = ['L1BQC']
+                if np.sum([fileName.find(str.lower(s)) for s in srchStr] ) < 0 :
+                    msg = f'{fileName} does not match expected input level for outputing {level}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return -1
+
+                print("Processing: " + fp)
+                # Pass singleton RAW file
+                Controller.processSingleLevel(pathOut, fp, calibrationMap, level, flag_Trios)
+
+                print("processFilesSingleLevel, single file - DONE")

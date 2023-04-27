@@ -370,15 +370,16 @@ class Window(QtWidgets.QWidget):
 
     def processSingle(self, level):
         print('Process Single-Level')
-        MainConfig.saveConfig(MainConfig.fileName)
+
         t0Single=time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
-        configPath = os.path.join('Config', configFileName)
-        if not os.path.isfile(configPath):
+        MainConfig.settings['cfgPath'] = os.path.join('Config', configFileName)
+        if not os.path.isfile(MainConfig.settings['cfgPath']):
             message = 'Not valid Config File: ' + configFileName
             QtWidgets.QMessageBox.critical(self, 'Error', message)
             return
+        MainConfig.saveConfig(MainConfig.fileName)
         ConfigFile.loadConfig(configFileName)
         seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)

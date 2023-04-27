@@ -38,6 +38,7 @@ ___________________________________________________________
 2023-04-26; DAA
 * Update to FPDF2
 * Update ConfigWindow and Controller for v1.2.0 and add TriOS modules (unstable)
+* Update environment.yml for new dependencies
 * Test all SeaBird samples L0-L2: stable (commit 687e6b9)
 
 2023-04-18; DAA
