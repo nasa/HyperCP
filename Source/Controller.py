@@ -111,30 +111,30 @@ class Controller:
 
         pdf = PDF()
         pdf.set_title(title)
-        pdf.set_author(f'HyperInSPACE_{MainConfig.settings["version"]}')
+        pdf.set_author(f'HyperCP_{MainConfig.settings["version"]}')
 
         inLog = os.path.join(inLogPath,f'{fileName}_L1A.log')
         if os.path.isfile(inLog):
             print('Level 1A')
-            pdf.print_chapter('L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName, outFilePath, root)
+            pdf.print_chapter('L1A', 'Process RAW to L1A', inLog, inPlotPath, fileName, root)
 
         if numLevel > 1:
             print('Level 1AQC')
             inLog = os.path.join(inLogPath,f'{fileName}_L1A_L1AQC.log')
             if os.path.isfile(inLog):
-                pdf.print_chapter('L1AQC', 'Process L1A to L1AQC', inLog, inPlotPath, fileName, outFilePath, root)
+                pdf.print_chapter('L1AQC', 'Process L1A to L1AQC', inLog, inPlotPath, fileName, root)
 
         if numLevel > 2:
             print('Level 1B')
             inLog = os.path.join(inLogPath,f'{fileName}_L1AQC_L1B.log')
             if os.path.isfile(inLog):
-                pdf.print_chapter('L1B', 'Process L1AQC to L1B', inLog, inPlotPath, fileName, outFilePath, root)
+                pdf.print_chapter('L1B', 'Process L1AQC to L1B', inLog, inPlotPath, fileName, root)
 
         if numLevel > 3:
             print('Level 1BQC')
             inLog = os.path.join(inLogPath,f'{fileName}_L1B_L1BQC.log')
             if os.path.isfile(inLog):
-                pdf.print_chapter('L1BQC', 'Process L1B to L1BQC', inLog, inPlotPath, fileName, outFilePath, root)
+                pdf.print_chapter('L1BQC', 'Process L1B to L1BQC', inLog, inPlotPath, fileName, root)
 
         if numLevel > 4:
             print('Level 2')
@@ -145,7 +145,7 @@ class Controller:
             else:
                 inLog = os.path.join(inLogPath,f'{fileName}_L1BQC_L2.log')
             if os.path.isfile(inLog):
-                pdf.print_chapter('L2', 'Process L1BQC to L2', inLog, inPlotPath, fileName, outFilePath, root)
+                pdf.print_chapter('L2', 'Process L1BQC to L2', inLog, inPlotPath, fileName, root)
 
         try:
             pdf.output(outPDF, 'F')

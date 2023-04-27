@@ -1315,12 +1315,12 @@ class ConfigWindow(QtWidgets.QDialog):
             seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
             seaBASSHeaderDialog.show()
         else:
-            # print("Creating New SeaBASSHeader File: ", seaBASSHeaderFileName)
-            # SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
-            # SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-            # seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
-            # seaBASSHeaderDialog.show()
-            print("SeaBass Header file lost. Please restore to Config directory or recreate.")
+            print("Creating New SeaBASSHeader File: ", seaBASSHeaderFileName)
+            SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
+            SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+            seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
+            seaBASSHeaderDialog.show()
+            # print("SeaBASS Header file lost. Please restore to Config directory or recreate.")
 
     def l1bqcGetAncCheckBoxUpdate1(self):
         print("ConfigWindow - l1bqcGetAncCheckBoxUpdate GMAO MERRA2")
