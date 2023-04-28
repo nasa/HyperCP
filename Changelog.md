@@ -35,6 +35,11 @@ Ideas:
 
 ___________________________________________________________
 
+2023-04-28; DAA
+* Rewrite TriosL1A.py to adopt common HDF/GROUP/DATASET conventions as with SeaBird
+* Eliminate reading of Anc in TriosL1A and deprecate single-frame pathway
+* TriosL1A.py tested for sample data provided
+
 2023-04-26; DAA
 * Update to FPDF2
 * Update ConfigWindow and Controller for v1.2.0 and add TriOS modules (unstable)
