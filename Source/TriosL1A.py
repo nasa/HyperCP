@@ -1,16 +1,16 @@
 
 import datetime as dt
-import os
 import numpy as np
 import pandas as pd
 import h5py
 import json
-from datetime import datetime, timedelta, date
+from datetime import timedelta, date
 import re
 import tables
 
 from Source.MainConfig import MainConfig
-from Source.ConfigFile import ConfigFile
+from Source.HDFRoot import HDFRoot
+from Source.HDFGroup import HDFGroup
 
 
 class TriosL1A:
@@ -111,41 +111,44 @@ class TriosL1A:
 
         return metadata,data
 
-    # Generic function for getting metadata
-    def get_attr(metadata, level):
+    # Generic function for adding metadata from the ini file
+    def get_attr(metadata, gp):
         for irow,_ in enumerate(metadata.iterrows()):
-            level.attrs[metadata[0][irow].strip()]=str(metadata[1][irow].strip()).encode('ascii')
+            gp.attributes[metadata[0][irow].strip()]=str(metadata[1][irow].strip())
         return None
 
     # Function for reading and getting metadata for config .ini files
-    def attr_ini(ini_file, level):
+    def attr_ini(ini_file, gp):
         ini = pd.read_csv(ini_file, skiprows=1, header=None, sep='=')
         ini = ini[~ini[0].str.contains(r'\[')]
         ini = ini.reset_index(drop=True)
-        TriosL1A.get_attr(ini,level)
+        TriosL1A.get_attr(ini,gp)
         return None
 
 
     # Function for data formatting
-    def formatting_instrument(name,cal_path,input_file,f,configPath):
+    def formatting_instrument(name,cal_path,input_file,root,configPath):
         print('Formatting ' +name+ ' Data')
         # Extract measurement type from config file
         with open(configPath, 'r') as fc:
             text = fc.read()
             conf_json = json.loads(text)
-        mesure = conf_json['CalibrationFiles']['SAM_'+name+'.ini']['frameType']
-        print(mesure)
+        sensor = conf_json['CalibrationFiles']['SAM_'+name+'.ini']['frameType']
+        print(sensor)
 
-        if 'LT' not in mesure and 'LI' not in mesure and 'ES' not in mesure:
+        if 'LT' not in sensor and 'LI' not in sensor and 'ES' not in sensor:
             print('Error in config file. Check frame type for calibration files')
             exit()
         else:
             None
 
-        A = f.create_group('SAM_'+name+'.dat')
+        # A = f.create_group('SAM_'+name+'.dat')
+        gp =  HDFGroup()
+        gp.id = 'SAM_'+name+'.dat'
+        root.groups.append(gp)
 
         # Configuration file
-        TriosL1A.attr_ini(cal_path + 'SAM_'+name+'.ini',A)
+        TriosL1A.attr_ini(cal_path + 'SAM_'+name+'.ini',gp)
 
         # Formatting data
         data = pd.DataFrame()
@@ -166,10 +169,10 @@ class TriosL1A:
         # Reshape data
         rec_datetag  = TriosL1A.reshape_data('NONE',len(meta[0]),data=meta[0])
         rec_datetag2  = TriosL1A.reshape_data('NONE',len(meta[0]),data=datetag)
-        rec_inttime  = TriosL1A.reshape_data(mesure,len(meta[3]),data=meta[3])
+        rec_inttime  = TriosL1A.reshape_data(sensor,len(meta[3]),data=meta[3])
         rec_check  = TriosL1A.reshape_data('SUM',len(meta[0]),data=np.zeros(len(meta)))
-        rec_darkave  = TriosL1A.reshape_data(mesure,len(meta[0]),data=np.zeros(len(meta)))
-        rec_darksamp  = TriosL1A.reshape_data(mesure,len(meta[0]),data=np.zeros(len(meta)))
+        rec_darkave  = TriosL1A.reshape_data(sensor,len(meta[0]),data=np.zeros(len(meta)))
+        rec_darksamp  = TriosL1A.reshape_data(sensor,len(meta[0]),data=np.zeros(len(meta)))
         rec_frame  = TriosL1A.reshape_data('COUNTER',len(meta[0]),data=np.zeros(len(meta)))
         rec_posframe  = TriosL1A.reshape_data('COUNT',len(meta[0]),data=np.zeros(len(meta)))
         rec_sample  = TriosL1A.reshape_data('DELAY',len(meta[0]),data=np.zeros(len(meta)))
@@ -180,24 +183,36 @@ class TriosL1A:
 
         # HDF5 Dataset creation
         dataset_name = 'SAM_'+name+'.dat'
-        f.create_dataset(dataset_name+'/DATETAG',data=rec_datetag2)
-        f.create_dataset(dataset_name+'/INTTIME',data=rec_inttime)
-        f.create_dataset(dataset_name+'/CHECK',data=rec_check)
-        f.create_dataset(dataset_name+'/DARK_AVE',data=rec_darkave)
-        f.create_dataset(dataset_name+'/DARK_SAMP',data=rec_darksamp)
-        f.create_dataset(dataset_name+'/FRAME',data=rec_frame)
-        f.create_dataset(dataset_name+'/POSFRAME',data=rec_posframe)
-        f.create_dataset(dataset_name+'/SAMPLE',data=rec_sample)
-        f.create_dataset(dataset_name+'/SPECTEMP',data=rec_spectemp)
-        f.create_dataset(dataset_name+'/THERMAL_RESP',data=rec_thermalresp)
-        f.create_dataset(dataset_name+'/TIMER',data=rec_time)
-        f.create_dataset(dataset_name+'/TIMETAG2',data=rec_timetag2)
+        gp.addDataset('DATETAG')
+        gp.datasets['DATETAG'].data=np.array(rec_datetag2, dtype=[('NONE', '<f8')])
+        gp.addDataset('INTTIME')
+        gp.datasets['INTTIME'].data=np.array(rec_inttime, dtype=[('NONE', '<f8')])
+        gp.addDataset('CHECK')
+        gp.datasets['CHECK'].data=np.array(rec_check, dtype=[('NONE', '<f8')])
+        gp.addDataset('DARK_AVE')
+        gp.datasets['DARK_AVE'].data=np.array(rec_darkave, dtype=[('NONE', '<f8')])
+        gp.addDataset('DARK_SAMP')
+        gp.datasets['DARK_SAMP'].data=np.array(rec_darksamp, dtype=[('NONE', '<f8')])
+        gp.addDataset('FRAME')
+        gp.datasets['FRAME'].data=np.array(rec_frame, dtype=[('NONE', '<f8')])
+        gp.addDataset('POSFRAME')
+        gp.datasets['POSFRAME'].data=np.array(rec_posframe, dtype=[('NONE', '<f8')])
+        gp.addDataset('SAMPLE')
+        gp.datasets['SAMPLE'].data=np.array(rec_sample, dtype=[('NONE', '<f8')])
+        gp.addDataset('SPECTEMP')
+        gp.datasets['SPECTEMP'].data=np.array(rec_spectemp, dtype=[('NONE', '<f8')])
+        gp.addDataset('THERMAL_RESP')
+        gp.datasets['THERMAL_RESP'].data=np.array(rec_thermalresp, dtype=[('NONE', '<f8')])
+        gp.addDataset('TIMER')
+        gp.datasets['TIMER'].data=np.array(rec_time, dtype=[('NONE', '<f8')])
+        gp.addDataset('TIMETAG2')
+        gp.datasets['TIMETAG2'].data=np.array(rec_timetag2, dtype=[('NONE', '<f8')])
 
         # Computing wavelengths
-        c0 = float(f[dataset_name].attrs['c0s'])
-        c1 = float(f[dataset_name].attrs['c1s'])
-        c2 = float(f[dataset_name].attrs['c2s'])
-        c3 = float(f[dataset_name].attrs['c3s'])
+        c0 = float(gp.attributes['c0s'])
+        c1 = float(gp.attributes['c1s'])
+        c2 = float(gp.attributes['c2s'])
+        c3 = float(gp.attributes['c3s'])
         wl = []
         for i in range(1,256):
             wl.append(str(round((c0 + c1*(i+1) + c2*(i+1)**2 + c3*(i+1)**3), 2)))
@@ -206,14 +221,22 @@ class TriosL1A:
         ds_dt = np.dtype({'names': wl,'formats': [np.float64]*len(wl)})
         my_arr = np.array(data).transpose()
         rec_arr = np.rec.fromarrays(my_arr, dtype=ds_dt)
-        f.create_dataset(dataset_name+'/'+mesure,data=rec_arr)
+        # gp.addDataset(''+sensor,data=rec_arr)
+        gp.addDataset(sensor)
+        gp.datasets[sensor].data=rec_arr
+
 
         # Calibrations files
         metacal,cal = TriosL1A.read_cal(cal_path + 'Cal_SAM_'+name+'.dat')
-        B1 = f.create_dataset(dataset_name+'/CAL_'+mesure,data=cal[1].astype(np.float64))
+        # B1 = gp.addDataset('CAL_'+sensor,data=cal[1].astype(np.float64))
+        B1 = gp.addDataset('CAL_'+sensor)
+        B1.data = cal[1].astype(np.float64)
+
         TriosL1A.get_attr(metacal,B1)
         metaback,back = TriosL1A.read_cal(cal_path + 'Back_SAM_'+name+'.dat')
-        C1 = f.create_dataset(dataset_name+'/BACK_'+mesure,data=back[[1,2]].astype(np.float64))
+        # C1 = gp.addDataset('BACK_'+sensor,data=back[[1,2]].astype(np.float64))
+        C1 = gp.addDataset('BACK_'+sensor)
+        C1.data = back[[1,2]].astype(np.float64)
         TriosL1A.get_attr(metaback,C1)
 
         start_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[0][0]-2), "%Y%m%dT%H%M%SZ")
@@ -255,33 +278,30 @@ class TriosL1A:
                 hdfout = a_time + '_.hdf'
 
                 tables.file._open_files.close_all()
-                f = h5py.File(outFilePath+hdfout, 'w')
-                f.attrs["WAVELENGTH_UNITS"] = "nm".encode('ascii')
-                f.attrs["LI_UNITS"] = "count".encode('ascii')
-                f.attrs["LT_UNITS"] = "count".encode('ascii')
-                f.attrs["ES_UNITS"] = "count".encode('ascii')
-                f.attrs["SATPYR_UNITS"] = "count".encode('ascii')
-                f.attrs["PROCESSING_LEVEL"] = "1a".encode('ascii')
+                # For each triplet, this creates an HDF
+                root = HDFRoot()
+                root.id = "/"
+                root.attributes["WAVELENGTH_UNITS"] = "nm"
+                root.attributes["LI_UNITS"] = "count"
+                root.attributes["LT_UNITS"] = "count"
+                root.attributes["ES_UNITS"] = "count"
+                root.attributes["SATPYR_UNITS"] = "count"
+                root.attributes["PROCESSING_LEVEL"] = "1a"
 
                 ffp = [s for s in fp if a_time in s]
-                f.attrs["RAW_FILE_NAME"] = str(ffp).encode('ascii')
+                root.attributes["RAW_FILE_NAME"] = str(ffp)
                 for file in ffp:
-                    # name = file.split('/')[-1].split('.')[-2].split('_')[2]
                     if "SAM_" in file:
                         name = file[file.index('SAM_')+4:file.index('SAM_')+8]
                     else:
                         print("ERROR : naming convention os not respected")
 
-                    start,stop = TriosL1A.formatting_instrument(name,cal_path,file,f,configPath)
-
-                f.close()
+                    start,stop = TriosL1A.formatting_instrument(name,cal_path,file,root,configPath)
 
                 new_name = outFilePath + '/' + 'Trios_' + str(start) + '_' + str(stop) + '_L1A.hdf'
-                if os.path.isfile(new_name):
-                    os.replace(outFilePath+hdfout, new_name)
-                else:
-                    os.rename(outFilePath+hdfout, new_name)
+
+                return root, new_name
         else:
             print('Single Frame deprecated')
 
-        return None
+        return None, None

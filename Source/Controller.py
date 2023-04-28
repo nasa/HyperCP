@@ -32,14 +32,18 @@ class Controller:
                     Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
-                    return None
+                    return False
+                else:
+                    return True
         else:
             if not os.path.isfile(inFilePath):
-                    msg = 'No such file...'
-                    Utilities.errorWindow("File Error", msg)
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return None
+                msg = 'No such file...'
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
+            else:
+                return True
 
     @staticmethod
     def checkOutputFiles(outFilePath):
@@ -275,36 +279,39 @@ class Controller:
         root = None
 
         test = Controller.checkInputFiles(inFilePath,flag_Trios)
-        if test is None:
-            return None, 'Never'
+        if test is False:
+            return None
+
+        msg = "ProcessL1a"
+        print(msg)
 
         # Process the data
         if flag_Trios == 1:
             outFilePath = os.path.split(outFilePath[0])[0] # Just the path to first file; no files
-            TriosL1A.triosL1A(inFilePath, outFilePath)
+            root, new_name = TriosL1A.triosL1A(inFilePath, outFilePath)
         else:
-
-            msg = "ProcessL1a"
-            print(msg)
             root = ProcessL1a.processL1a(inFilePath, calibrationMap)
 
-            # Write output file
-            if root is not None:
-                try:
+        # Write output file
+        if root is not None:
+            try:
+                if flag_Trios:
+                    root.writeHDF5(new_name)
+                else:
                     root.writeHDF5(outFilePath)
-                except:
-                    msg = 'Unable to write L1A file. It may be open in another program.'
-                    Utilities.errorWindow("File Error", msg)
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return None
-            else:
-                msg = "L1a processing failed. Nothing to output."
-                if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                    Utilities.errorWindow("File Error", msg)
+            except:
+                msg = 'Unable to write L1A file. It may be open in another program.'
+                Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
+        else:
+            msg = "L1a processing failed. Nothing to output."
+            if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                Utilities.errorWindow("File Error", msg)
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
 
         return root
 
@@ -312,8 +319,10 @@ class Controller:
     def processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData,flag_Trios):
         root = None
         test = Controller.checkInputFiles(inFilePath,flag_Trios)
-        if test is None:
-            return None, 'Never'
+        if test is False:
+            return None
+        if flag_Trios:
+            inFilePath = inFilePath[0]
 
         # Process the data
         print("ProcessL1aqc")
@@ -512,7 +521,7 @@ class Controller:
         # Find the absolute path to the output directory
         pathOut = os.path.abspath(pathOut)
         if flag_Trios:
-            # inFilePath is a list of filepath strings
+            # inFilePath is a list of filepath strings at L1A
             # Grab input name and extension of first file
             inFileName = os.path.split(inFilePath[0])[1]
         else:
@@ -553,6 +562,11 @@ class Controller:
                 outFilePath = [os.path.join(pathOutLevel, os.path.splitext(os.path.basename(fp.rsplit('_',1)[0]))[0]+"_"+level+".hdf") for fp in inFilePath]
             else:
                 outFilePath = [os.path.join(pathOutLevel, os.path.splitext(os.path.basename(fp))[0]+"_"+level+".hdf") for fp in inFilePath]
+
+            if level != 'L1A':
+                # List only required for L1A
+                outFilePath = outFilePath[0]
+                # inFilePath = inFilePath[0]
         else:
             outFilePath = os.path.join(pathOutLevel,fileName + "_" + level + ".hdf")
 
