@@ -2,10 +2,12 @@
 import os
 import datetime
 import numpy as np
+import collections
 
 from Source.HDFRoot import HDFRoot
 from Source.SeaBASSWriter import SeaBASSWriter
 from Source.CalibrationFileReader import CalibrationFileReader
+from Source.CalibrationFile import CalibrationFile
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
 from Source.Utilities import Utilities
@@ -227,16 +229,16 @@ class Controller:
                 cf.measMode = "Not Required"
                 cf.frameType = "Not Required"
                 cf.sensorType = cf.getSensorType()
-            else:
-                cf.instrumentType = "SAS"
-                cf.media = "Air"
-                cf.measMode = "VesselBorne"
-                cf.frameType = "LightAncCombined"
-                cf.sensorType = cf.getSensorType()
+            # else:
+            #     cf.instrumentType = "SAS"
+            #     cf.media = "Air"
+            #     cf.measMode = "VesselBorne"
+            #     cf.frameType = "LightAncCombined"
+            #     cf.sensorType = cf.getSensorType()
 
     @staticmethod
     def processCalibrationConfig(configName, calFiles):
-        ''' Read in calibration files/configuration '''
+        ''' Read in SeaBird calibration files/configuration '''
 
         # print("processCalibrationConfig")
         calFolder = os.path.splitext(configName)[0] + "_Calibration"
@@ -262,6 +264,32 @@ class Controller:
         return calibrationMap
 
     @staticmethod
+    def processCalibrationConfigTrios(calFiles):
+        ''' Write pseudo calibration/configuration map for TriOS'''
+
+        # print("processCalibrationConfig")
+        calibrationMap = collections.OrderedDict()
+
+        for key in list(calFiles.keys()):
+            cf = CalibrationFile()
+            print(key)
+            if '.ini' in key:
+                if calFiles[key]["enabled"]:
+                    cf.id = key
+                    cf.sensorType = calFiles[key]["frameType"]
+                    cf.name = key
+                    if calFiles[key]["frameType"] == 'ES':
+                        cf.instrumentType = "Reference"
+                    else:
+                        cf.instrumentType = "TriOS"
+                    cf.media = "Air"
+                    cf.measMode = "Surface"
+                    cf.frameType = "Combined"
+                    calibrationMap[key] = cf
+
+        return calibrationMap
+
+    @staticmethod
     def processAncData(fp):
         ''' Read in the ancillary field data file '''
 
@@ -271,6 +299,10 @@ class Controller:
             print("Specified ancillary file not found: " + fp)
             return None
         ancillaryData = AncillaryReader.readAncillary(fp)
+
+        if ConfigFile.settings['SensorType'].lower() == 'trios':
+            ancillaryData.columns['RELAZ'] = ancillaryData.columns['HOMEANGLE']
+            del ancillaryData.columns['HOMEANGLE']
         return ancillaryData
 
     @staticmethod
@@ -295,6 +327,7 @@ class Controller:
         # Write output file
         if root is not None:
             try:
+                # Throws AttributeError for each group...?
                 if flag_Trios:
                     root.writeHDF5(new_name)
                 else:

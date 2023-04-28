@@ -1,6 +1,4 @@
 
-import csv
-
 from datetime import datetime
 import pytz
 
@@ -122,6 +120,10 @@ class AncillaryReader:
             if ds == "relaz": # Note: this misnomer is to trick readSB into accepting a non-conventional data field (home angle)
                 # SeaBASS thinks RelAz is between sensor and sun, but this is sensor to ship heading. We will call this dataset
                 # HOMEANGLE.
+                '''
+                This will need attention in the future when others may wish to report actual relAz in the Ancillary file
+                Reached out to SeaBASS to add a field for Sensor Azimuth.
+                '''
                 msg = f'Found data: {ds}'
                 print(msg)
                 Utilities.writeLogFile(msg)

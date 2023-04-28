@@ -425,17 +425,17 @@ class Window(QtWidgets.QWidget):
             return
 
         print('Process Calibration Files')
-        filename = ConfigFile.filename
         calFiles = ConfigFile.settings['CalibrationFiles']
 
         if flag_Trios == 0:
-            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
-            if not calibrationMap.keys():
-                print('No calibration files found. '
-                'Check Config directory for your instrument files.')
-                return
+            calibrationMap = Controller.processCalibrationConfig(configFileName, calFiles)
         else:
-            calibrationMap = 0
+            calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
+            # calibrationMap = 0
+        if not calibrationMap.keys():
+            print('No calibration files found. '
+            'Check Config directory for your instrument files.')
+            return
 
         print('Output Directory:', os.path.abspath(self.outputDirectory))
         if not self.outputDirectory[0]:

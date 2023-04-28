@@ -12,7 +12,10 @@ from Source.MainConfig import MainConfig
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 
-
+'''
+All TriOS L0 (raw) and L1A data are in reverse chronological order.
+This will be correct in ... ?
+'''
 class TriosL1A:
 
     # use namesList to define dtype for recarray
@@ -144,7 +147,7 @@ class TriosL1A:
 
         # A = f.create_group('SAM_'+name+'.dat')
         gp =  HDFGroup()
-        gp.id = 'SAM_'+name+'.dat'
+        gp.id = 'SAM_'+name+'.ini'
         root.groups.append(gp)
 
         # Configuration file
@@ -182,7 +185,7 @@ class TriosL1A:
         rec_timetag2  = TriosL1A.reshape_data('NONE',len(meta[0]),data=timetag)
 
         # HDF5 Dataset creation
-        dataset_name = 'SAM_'+name+'.dat'
+        gp.attributes['CalFileName'] = 'SAM_'+name+'.ini'
         gp.addDataset('DATETAG')
         gp.datasets['DATETAG'].data=np.array(rec_datetag2, dtype=[('NONE', '<f8')])
         gp.addDataset('INTTIME')
