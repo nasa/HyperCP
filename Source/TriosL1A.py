@@ -11,6 +11,7 @@ import tables
 from Source.MainConfig import MainConfig
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
+from Source.Utilities import Utilities
 
 '''
 All TriOS L0 (raw) and L1A data are in reverse chronological order.
@@ -247,6 +248,23 @@ class TriosL1A:
 
         return start_time,stop_time
 
+    # TriOS L0 exports are in reverse chronological order. Reorder all data fields
+    def fixChronology(node):
+        for gp in node.groups:
+            dateTime = []
+            dateTagArray = gp.datasets['DATETAG'].data
+            timeTagArray = gp.datasets['TIMETAG2'].data
+            for i, dateTag in enumerate(dateTagArray):
+                dt = Utilities.dateTagToDateTime(dateTag[0])
+                dateTime.append(Utilities.timeTag2ToDateTime(dt,timeTagArray[i][0]))
+
+            for ds in gp.datasets:
+                gp.datasets[ds].data = [x for _, x in sorted(zip(dateTime,gp.datasets[ds].data))]
+
+        return node
+
+
+
 
     def triosL1A(fp, outFilePath): #, configPath, ancillaryData):
 
@@ -302,6 +320,8 @@ class TriosL1A:
                     start,stop = TriosL1A.formatting_instrument(name,cal_path,file,root,configPath)
 
                 new_name = outFilePath + '/' + 'Trios_' + str(start) + '_' + str(stop) + '_L1A.hdf'
+
+                root = TriosL1A.fixChronology(root)
 
                 return root, new_name
         else:
