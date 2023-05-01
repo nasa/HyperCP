@@ -250,6 +250,7 @@ class TriosL1A:
 
     # TriOS L0 exports are in reverse chronological order. Reorder all data fields
     def fixChronology(node):
+        print('Sorting all datasets chronologically')
         for gp in node.groups:
             dateTime = []
             dateTagArray = gp.datasets['DATETAG'].data
@@ -259,7 +260,7 @@ class TriosL1A:
                 dateTime.append(Utilities.timeTag2ToDateTime(dt,timeTagArray[i][0]))
 
             for ds in gp.datasets:
-                gp.datasets[ds].data = [x for _, x in sorted(zip(dateTime,gp.datasets[ds].data))]
+                gp.datasets[ds].data = np.array([x for _, x in sorted(zip(dateTime,gp.datasets[ds].data))])
 
         return node
 
@@ -296,7 +297,7 @@ class TriosL1A:
                 print("Generate the telemetric file...")
                 print('Processing: ' +a_time)
 
-                hdfout = a_time + '_.hdf'
+                # hdfout = a_time + '_.hdf'
 
                 tables.file._open_files.close_all()
                 # For each triplet, this creates an HDF
@@ -323,7 +324,19 @@ class TriosL1A:
 
                 root = TriosL1A.fixChronology(root)
 
-                return root, new_name
+                try:
+                    # Throws AttributeError for each group...?
+                    root.writeHDF5(new_name)
+
+                except:
+                    msg = 'Unable to write L1A file. It may be open in another program.'
+                    Utilities.errorWindow("File Error", msg)
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return None, None
+
+
+            return root, new_name # This will only return the last root collection
         else:
             print('Single Frame deprecated')
 

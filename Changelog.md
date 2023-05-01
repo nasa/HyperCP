@@ -35,6 +35,9 @@ Ideas:
 
 ___________________________________________________________
 
+2023-05-01; DAA
+* TriosL1A: sort all group dataset in increasing chronological order
+
 2023-04-28; DAA
 * Rewrite TriosL1A.py to adopt common HDF/GROUP/DATASET conventions as with SeaBird
 * Eliminate reading of Anc in TriosL1A and deprecate single-frame pathway
