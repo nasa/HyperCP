@@ -89,18 +89,6 @@ class HDFDataset:
             #print("type",type(ltData.data[k]))
             self.columns[k] = self.data[k].tolist()
 
-    def datasetToColumns2(self):
-        ''' Convert Prosoft format numpy array to columns '''
-        if self.data is None:
-            print("Warning - datasetToColumns2: data is empty")
-            return
-        self.columns = collections.OrderedDict()
-        ids = self.attributes["ID"]
-        for k in ids:
-            self.columns[k] = []
-        for k in ids:
-            self.columns[k].append(self.data[0][ids.index(k)])
-
     def columnsToDataset(self):
         ''' Converts columns into numpy array '''
         #dtype0 = np.dtype([(name, type(ds.columns[name][0])) for name in ds.columns.keys()])

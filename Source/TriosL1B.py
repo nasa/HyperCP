@@ -143,7 +143,8 @@ class TriosL1B:
         # return the wvl of dark pixel for which no calibration factor is defined
 
         # Read HDF file inputs
-        grp = node.getGroup(instrument_number+'.dat')
+        # grp = node.getGroup(instrument_number+'.dat')
+        grp = node.getGroup(sensortype)
         raw_cal  = grp.getDataset("CAL_"+sensortype).data
         raw_back = grp.getDataset("BACK_"+sensortype).data
         raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
@@ -151,7 +152,8 @@ class TriosL1B:
         int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
         DarkPixelStart = int(grp.attributes["DarkPixelStart"])
         DarkPixelStop  = int(grp.attributes["DarkPixelStop"])
-        int_time_t0 = int(grp.getDataset("BACK_"+sensortype).attributes["IntegrationTime"])
+        # int_time_t0 = int(grp.getDataset("BACK_"+sensortype).attributes["IntegrationTime"])
+        int_time_t0 = int(grp.attributes["IntegrationTime"])
 
         # check size of data
         nband = len(raw_back[:,0])
@@ -227,12 +229,12 @@ class TriosL1B:
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
         node.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
-        if ConfigFile.settings["bL1bDefaultCal"] == 1:
+        if ConfigFile.settings["bL1bCal"] == 1:
             node.attributes['CAL_TYPE'] = 'Factory'
-        elif ConfigFile.settings["bL1bDefaultCal"] == 2:
+        elif ConfigFile.settings["bL1bCal"] == 2:
             node.attributes['CAL_TYPE'] = 'Class-based'
-        elif ConfigFile.settings["bL1bDefaultCal"] == 3:
-            node.attributes['CAL_TYPE'] = 'Full Characterisation'
+        elif ConfigFile.settings["bL1bCal"] == 3:
+            node.attributes['CAL_TYPE'] = 'Instrument-based'
 
         msg = f"TriosL1B.processL1b: {timestr}"
         print(msg)
@@ -262,13 +264,13 @@ class TriosL1B:
                 print(msg)
                 Utilities.writeLogFile(msg)
 
-                if ConfigFile.settings["bL1bDefaultCal"] <= 2:
+                if ConfigFile.settings["bL1bCal"] <= 2:
                     if not TriosL1B.processDarkCorrection(node, instrument_number, sensortype, stats):
                         msg = f'Error in TriosL1B.processDarkCorrection: {instrument_number} - {sensortype}'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
-                elif ConfigFile.settings['bL1bDefaultCal'] == 3:
+                elif ConfigFile.settings['bL1bCal'] == 3:
                     if not TriosL1B.processDarkCorrection_FRM(node, instrument_number, sensortype, stats):
                         msg = f'Error in TriosL1B.processDarkCorrection_FRM: {instrument_number} - {sensortype}'
                         print(msg)
@@ -277,19 +279,19 @@ class TriosL1B:
 
 
         ## Uncertainty computation/initialisation
-        if ConfigFile.settings["bL1bDefaultCal"] == 1:
+        if ConfigFile.settings["bL1bCal"] == 1:
             if not ProcessL1b.process_Default_Uncertainties(node, stats):
                 msg = 'Error in process_Default_Uncertainties'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-        elif ConfigFile.settings["bL1bDefaultCal"] == 2:
+        elif ConfigFile.settings["bL1bCal"] == 2:
             if not ProcessL1b.process_Class_Uncertainties(node, stats):
                 msg = 'Error in process_Class_Uncertainties'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-        elif ConfigFile.settings['bL1bDefaultCal'] == 3:
+        elif ConfigFile.settings['bL1bCal'] == 3:
             if not ProcessL1b.process_FRM_Uncertainties(node, stats):
                 msg = 'Error in process_FRM_Uncertainties'
                 print(msg)

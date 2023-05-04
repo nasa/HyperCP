@@ -2,7 +2,7 @@
 import datetime as dt
 import numpy as np
 import pandas as pd
-import h5py
+# import h5py
 import json
 from datetime import timedelta, date
 import re
@@ -13,10 +13,7 @@ from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 from Source.Utilities import Utilities
 
-'''
-All TriOS L0 (raw) and L1A data are in reverse chronological order.
-This will be correct in ... ?
-'''
+
 class TriosL1A:
 
     # use namesList to define dtype for recarray
@@ -26,12 +23,12 @@ class TriosL1A:
         rec_arr2 = np.rec.fromarrays(tst, dtype=ds_dt)
         return rec_arr2
 
-    def reshape_data_str(NAME,N,data):
-        dt = h5py.special_dtype(vlen=str)
-        ds_dt = np.dtype({'names':[NAME],'formats':[dt] })
-        tst = np.array(data).reshape((1,N))
-        rec_arr2 = np.rec.fromarrays(tst, dtype=ds_dt)
-        return rec_arr2
+    # def reshape_data_str(NAME,N,data):
+    #     dt = h5py.special_dtype(vlen=str)
+    #     ds_dt = np.dtype({'names':[NAME],'formats':[dt] })
+    #     tst = np.array(data).reshape((1,N))
+    #     rec_arr2 = np.rec.fromarrays(tst, dtype=ds_dt)
+    #     return rec_arr2
 
     # Function for reading and formatting .dat data file
     def read_dat(inputfile):
@@ -227,7 +224,8 @@ class TriosL1A:
         rec_arr = np.rec.fromarrays(my_arr, dtype=ds_dt)
         # gp.addDataset(''+sensor,data=rec_arr)
         gp.addDataset(sensor)
-        gp.datasets[sensor].data=rec_arr
+        # gp.datasets[sensor].data=rec_arr
+        gp.datasets[sensor].data=np.array(rec_arr, dtype=ds_dt)
 
 
         # Calibrations files
@@ -240,7 +238,8 @@ class TriosL1A:
         metaback,back = TriosL1A.read_cal(cal_path + 'Back_SAM_'+name+'.dat')
         # C1 = gp.addDataset('BACK_'+sensor,data=back[[1,2]].astype(np.float64))
         C1 = gp.addDataset('BACK_'+sensor)
-        C1.data = back[[1,2]].astype(np.float64)
+        # C1.data = back[[1,2]].astype(np.float64)
+        C1.data = np.array(back[[1,2]].astype(np.float64))
         TriosL1A.get_attr(metaback,C1)
 
         start_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[0][0]-2), "%Y%m%dT%H%M%SZ")
@@ -260,7 +259,11 @@ class TriosL1A:
                 dateTime.append(Utilities.timeTag2ToDateTime(dt,timeTagArray[i][0]))
 
             for ds in gp.datasets:
-                gp.datasets[ds].data = np.array([x for _, x in sorted(zip(dateTime,gp.datasets[ds].data))])
+
+                # BACK_ and CAL_ are nLambda x 2 and nLambda x 1, respectively, not timestamped to DATETAG, TIMETAG2
+                if (not ds.startswith('BACK_')) and (not ds.startswith('CAL_')):
+                    gp.datasets[ds].datasetToColumns()
+                    gp.datasets[ds].data = np.array([x for _, x in sorted(zip(dateTime,gp.datasets[ds].data))])
 
         return node
 

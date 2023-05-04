@@ -229,12 +229,12 @@ class Controller:
                 cf.measMode = "Not Required"
                 cf.frameType = "Not Required"
                 cf.sensorType = cf.getSensorType()
-            # else:
-            #     cf.instrumentType = "SAS"
-            #     cf.media = "Air"
-            #     cf.measMode = "VesselBorne"
-            #     cf.frameType = "LightAncCombined"
-            #     cf.sensorType = cf.getSensorType()
+            else:
+                cf.instrumentType = "SAS"
+                cf.media = "Air"
+                cf.measMode = "VesselBorne"
+                cf.frameType = "LightAncCombined"
+                cf.sensorType = cf.getSensorType()
 
     @staticmethod
     def processCalibrationConfig(configName, calFiles):
