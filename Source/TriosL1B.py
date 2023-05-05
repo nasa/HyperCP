@@ -155,10 +155,6 @@ class TriosL1B:
         # int_time_t0 = int(grp.getDataset("BACK_"+sensortype).attributes["IntegrationTime"])
         int_time_t0 = int(grp.attributes["IntegrationTime"])
 
-        # Retain raw data for L2 instrument uncertainty analysis
-        grp.addDataset(sensortype+'_RAW')
-        grp.datasets[sensortype+'_RAW'].data = grp.getDataset(sensortype).data
-
         '''
         Temporary patch for bad int_time_t0 in .ini files
 
@@ -233,6 +229,7 @@ class TriosL1B:
     @staticmethod
     def processL1b(node, outFilePath):
         '''
+        TriOS pathway. Switch to common pathway at ProcessL1b_Interp.processL1b_Interp.
         Apply dark shutter correction to light data. Then apply either default factory cals
         or full instrument characterization. Introduce uncertainty group.
         Match timestamps and interpolate wavebands.
@@ -253,18 +250,18 @@ class TriosL1B:
         print(msg)
         Utilities.writeLogFile(msg)
 
+        # Retain L1BQC data for L2 instrument uncertainty analysis
+        for gp in node.groups:
+            if gp.id == 'ES':
+                newGroup = node.addGroup('_L1AQC')
+                newGroup.copy(gp)
+                for ds in newGroup:
+                    if ds != 'DATETIME':
+                        newGroup.datasets[ds].datasetToColumns()
+
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
         stats = {}
-
-        '''
-        It is unclear whether we need to introduce new datasets within radiometry groups for
-        uncertainties prior to dark correction (e.g. what about variability/stability in dark counts?)
-        Otherwise, uncertainty datasets could be added during calibration below to the ES, LI, LT
-        groups. A third option is to add a new group for uncertainties, but this would have to
-        happen after interpolation below so all datasets within the group shared timestamps, as
-        in all other groups.
-        '''
 
         ## Dark Correction & Absolute Calibration
         for instrument in ConfigFile.settings['CalibrationFiles'].keys():

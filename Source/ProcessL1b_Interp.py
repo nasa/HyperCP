@@ -72,7 +72,7 @@ class ProcessL1b_Interp:
 
     @staticmethod
     def convertDataset(group, datasetName, newGroup, newDatasetName):
-        ''' Converts a sensor group into the L1E format; option to change dataset name.
+        ''' Converts a sensor group into the L1B format; option to change dataset name.
             Moves dataset to new group.
             The separate DATETAG, TIMETAG2, and DATETIME datasets are combined into
             the sensor dataset. This also adds a temporary column in the sensor data
@@ -341,6 +341,16 @@ class ProcessL1b_Interp:
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
 
+        # Propagate L1AQC data
+        for gp in node.groups:
+            if gp.id.endswith("_L1AQC"):
+                newGroup = root.addGroup(gp.id)
+                newGroup.copy(gp)
+                for ds in newGroup.datasets:
+                    if ds != 'DATETIME':
+                        newGroup.datasets[ds].datasetToColumns()
+
+
         esData = referenceGroup.getDataset("ES")
         liData = sasGroup.getDataset("LI")
         ltData = sasGroup.getDataset("LT")
@@ -351,6 +361,7 @@ class ProcessL1b_Interp:
 
         # Es dataset to dictionary
         esData.datasetToColumns()
+        # esRaw.datasetToColumns()
         columns = esData.columns
         columns.pop("Datetag")
         columns.pop("Timetag2")
@@ -365,6 +376,7 @@ class ProcessL1b_Interp:
 
         # Li dataset to dictionary
         liData.datasetToColumns()
+        # liRaw.datasetToColumns()
         columns = liData.columns
         columns.pop("Datetag")
         columns.pop("Timetag2")
@@ -379,6 +391,7 @@ class ProcessL1b_Interp:
 
         # Lt dataset to dictionary
         ltData.datasetToColumns()
+        # ltRaw.datasetToColumns()
         columns = ltData.columns
         columns.pop("Datetag")
         columns.pop("Timetag2")
@@ -390,7 +403,7 @@ class ProcessL1b_Interp:
 
         # Determine interpolated wavelength values
         ltStart = np.ceil(ltWavelength[0])
-        ltEnd = np.floor(ltWavelength[len(liWavelength)-1])
+        ltEnd = np.floor(ltWavelength[len(ltWavelength)-1])
 
         # No extrapolation
         start = max(esStart,liStart,ltStart)
@@ -443,11 +456,32 @@ class ProcessL1b_Interp:
             if gp.id.startswith("PYROMETER"):
                 pyrGroup = gp
             if gp.id.startswith("ES"):
-                esGroup = gp
+                if gp.id.endswith("_DARK_L1AQC"):
+                    esL1AQCDark = gp
+                elif gp.id.endswith("_LIGHT_L1AQC"):
+                    esL1AQCLight = gp
+                elif gp.id.endswith("_L1AQC"):
+                    esL1AQC = gp
+                else:
+                    esGroup = gp
             if gp.id.startswith("LI"):
-                liGroup = gp
+                if gp.id.endswith("_DARK_L1AQC"):
+                    liL1AQCDark = gp
+                elif gp.id.endswith("_LIGHT_L1AQC"):
+                    liL1AQCLight = gp
+                elif gp.id.endswith("_L1AQC"):
+                    liL1AQC = gp
+                else:
+                    liGroup = gp
             if gp.id.startswith("LT"):
-                ltGroup = gp
+                if gp.id.endswith("_DARK_L1AQC"):
+                    ltL1AQCDark = gp
+                elif gp.id.endswith("_LIGHT_L1AQC"):
+                    ltL1AQCLight = gp
+                elif gp.id.endswith("_L1AQC"):
+                    ltL1AQC = gp
+                else:
+                    ltGroup = gp
             if gp.id == "SOLARTRACKER" or gp.id =="SOLARTRACKER_pySAS":
                 satnavGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
             if gp.id == ("ANCILLARY_METADATA"):
@@ -465,6 +499,28 @@ class ProcessL1b_Interp:
         ProcessL1b_Interp.convertDataset(esGroup, "ES", refGroup, "ES")
         ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
         ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
+        if ConfigFile.settings['SensorType'].lower() == 'trios':
+            esL1AQCGroup = root.addGroup('ES_L1AQC')
+            esL1AQCGroup.copy(esL1AQC)
+            liL1AQCGroup = root.addGroup('LI_L1AQC')
+            liL1AQCGroup.copy(liL1AQC)
+            ltL1AQCGroup = root.addGroup('LT_L1AQC')
+            ltL1AQCGroup.copy(ltL1AQC)
+        else:
+            esDarkGroup = root.addGroup('ES_DARK_L1AQC')
+            esDarkGroup.copy(esL1AQCDark)
+            esLightGroup = root.addGroup('ES_LIGHT_L1AQC')
+            esLightGroup.copy(esL1AQCLight)
+            liDarkGroup = root.addGroup('LI_DARK_L1AQC')
+            liDarkGroup.copy(liL1AQCDark)
+            liLightGroup = root.addGroup('LI_LIGHT_L1AQC')
+            liLightGroup.copy(liL1AQCLight)
+            ltDarkGroup = root.addGroup('LT_DARK_L1AQC')
+            ltDarkGroup.copy(ltL1AQCDark)
+            ltLightGroup = root.addGroup('LT_LIGHT_L1AQC')
+            ltLightGroup.copy(ltL1AQCLight)
+
+
 
         newGPSGroup = root.addGroup("GPS")
         if gpsGroup is not None:
@@ -732,9 +788,12 @@ class ProcessL1b_Interp:
         # DATETIME is not supported in HDF5; remove from groups that still have it
         for gp in root.groups:
             for dsName in gp.datasets:
-                ds = gp.datasets[dsName]
-                if "Datetime" in ds.columns:
-                    ds.columns.pop("Datetime")
-                ds.columnsToDataset() # redundant for radiometry, but harmless
+                if dsName == 'DATETIME':
+                    del(gp.datasets[dsName])
+                else:
+                    ds = gp.datasets[dsName]
+                    if "Datetime" in ds.columns:
+                        ds.columns.pop("Datetime")
+                    ds.columnsToDataset() # redundant for radiometry, but harmless
 
         return root

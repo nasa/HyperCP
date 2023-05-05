@@ -172,21 +172,30 @@ class ProcessL1b:
         lightDateTime = None
 
         for gp in node.groups:
-            if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensorType):
-                darkGroup = gp
-                darkData = gp.getDataset(sensorType)
-                darkDateTime = gp.getDataset("DATETIME")
+            if not gp.id.endswith('_L1AQC'):
+                if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensorType):
+                    darkGroup = gp
+                    darkData = gp.getDataset(sensorType)
+                    darkDateTime = gp.getDataset("DATETIME")
 
-            if gp.attributes["FrameType"] == "ShutterLight" and gp.getDataset(sensorType):
-                lightGroup = gp
-                lightData = gp.getDataset(sensorType)
-                lightDateTime = gp.getDataset("DATETIME")
+                if gp.attributes["FrameType"] == "ShutterLight" and gp.getDataset(sensorType):
+                    lightGroup = gp
+                    lightData = gp.getDataset(sensorType)
+                    lightDateTime = gp.getDataset("DATETIME")
 
         if darkGroup is None or lightGroup is None:
             msg = f'No radiometry found for {sensorType}'
             print(msg)
             Utilities.writeLogFile(msg)
             return False
+
+        # # Propagate unadulterated L1AQC ir/radiances
+        # rawDarkDs = lightGroup.addDataset(sensorType+'_DARK_L1AQC')
+        # rawDarkDs.copy(darkData)
+        # rawDarkDs.datasetToColumns()
+        # rawLightDs = lightGroup.addDataset(sensorType+'_LIGHT_L1AQC')
+        # rawLightDs.copy(lightData)
+        # rawLightDs.datasetToColumns()
 
         # Instead of using TT2 or seconds, use python datetimes to avoid problems crossing
         # UTC midnight.
@@ -199,17 +208,20 @@ class ProcessL1b:
         # Now that the dark correction is done, we can strip the dark shutter data from the
         # HDF object.
         for gp in node.groups:
-            if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensorType):
-                node.removeGroup(gp)
+            if not gp.id.endswith('_L1AQC'):
+                if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensorType):
+                    node.removeGroup(gp)
         # And rename the corrected light frame
         for gp in node.groups:
-            if gp.attributes["FrameType"] == "ShutterLight" and gp.getDataset(sensorType):
-                gp.id = gp.id[0:2] # Strip off "_LIGHT" from the name
+            if not gp.id.endswith('_L1AQC'):
+                if gp.attributes["FrameType"] == "ShutterLight" and gp.getDataset(sensorType):
+                    gp.id = gp.id[0:2] # Strip off "_LIGHT" from the name
         return True
 
     @staticmethod
     def processL1b(node, outFilePath):
         '''
+        Non-TriOS path. ProcessL1b_Interp.processL1b_Interp will be common to both platforms
         Apply dark shutter correction to light data. Then apply either default factory cals
         or full instrument characterization. Introduce uncertainty group.
         Match timestamps and interpolate wavebands.
@@ -233,12 +245,29 @@ class ProcessL1b:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
-        ''' It is unclear whether we need to introduce new datasets within radiometry groups for
-            uncertainties prior to dark correction (e.g. what about variability/stability in dark counts?)
-            Otherwise, uncertainty datasets could be added during calibration below to the ES, LI, LT
-            groups. A third option is to add a new group for uncertainties, but this would have to
-            happen after interpolation below so all datasets within the group shared timestamps, as
-            in all other groups. '''
+        ''' Introduce a new group for carrying L1AQC data forward. Groups keep consistent timestamps across all datasets,
+            so it has to be a new group to avoid conflict with interpolated timestamps. '''
+
+        # Due to the way light/dark sampling works with OCRs, each will need its own group
+        esDarkGroup = node.addGroup('ES_DARK_L1AQC')
+        esLightGroup = node.addGroup('ES_LIGHT_L1AQC')
+        liDarkGroup = node.addGroup('LI_DARK_L1AQC')
+        liLightGroup = node.addGroup('LI_LIGHT_L1AQC')
+        ltDarkGroup = node.addGroup('LT_DARK_L1AQC')
+        ltLightGroup = node.addGroup('LT_LIGHT_L1AQC')
+        for gp in node.groups:
+            if gp.id == 'ES_DARK':
+                esDarkGroup.copy(gp)
+            elif gp.id == 'ES_LIGHT':
+                esLightGroup.copy(gp)
+            elif gp.id == 'LI_DARK':
+                liDarkGroup.copy(gp)
+            elif gp.id == 'LI_LIGHT':
+                liLightGroup.copy(gp)
+            elif gp.id == 'LT_DARK':
+                ltDarkGroup.copy(gp)
+            elif gp.id == 'LT_LIGHT':
+                ltLightGroup.copy(gp)
 
         # Dark Correction
         if not ProcessL1b.processDarkCorrection(node, "ES"):
@@ -260,14 +289,14 @@ class ProcessL1b:
         # Calibration
         # Depending on the Configuration, process either the factory
         # calibration or the complete instrument characterizations
-        if ConfigFile.settings['bL1bDefaultCal']:
+        if ConfigFile.settings['bL1bCal'] == 1:
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join("Config", calFolder)
             print("Read CalibrationFile ", calPath)
             calibrationMap = CalibrationFileReader.read(calPath)
             ProcessL1b_DefaultCal.processL1b(node, calibrationMap)
 
-        elif ConfigFile.settings['bL1bFullFiles']:
+        elif ConfigFile.settings['bL1bCal'] == 2:
             ''' THIS IS A PLACEHOLDER '''
             print('Processing full instrument characterizations')
             exit()
