@@ -155,6 +155,19 @@ class TriosL1B:
         # int_time_t0 = int(grp.getDataset("BACK_"+sensortype).attributes["IntegrationTime"])
         int_time_t0 = int(grp.attributes["IntegrationTime"])
 
+        # Retain raw data for L2 instrument uncertainty analysis
+        grp.addDataset(sensortype+'_RAW')
+        grp.datasets[sensortype+'_RAW'].data = grp.getDataset(sensortype).data
+
+        '''
+        Temporary patch for bad int_time_t0 in .ini files
+
+        WARNING: THIS WILL NOT BE ACCURATE AND MUST BE REMOVED LATER
+        '''
+
+        if int_time_t0 == 0:
+            int_time_t0 = 1
+
         # check size of data
         nband = len(raw_back[:,0])
         nmes = len(raw_data)
@@ -199,7 +212,7 @@ class TriosL1B:
         rec_arr = np.rec.fromarrays(np.array(filtered_mesure).transpose(), dtype=ds_dt)
         grp.getDataset(sensortype).data = rec_arr
         # And rename the group from serial_numer to frame type
-        grp.id = sensortype
+        # grp.id = sensortype
 
         # get light and dark data before correction
         light_avg = np.mean(mesure, axis=0)
@@ -278,25 +291,25 @@ class TriosL1B:
                         return None
 
 
-        ## Uncertainty computation/initialisation
-        if ConfigFile.settings["bL1bCal"] == 1:
-            if not ProcessL1b.process_Default_Uncertainties(node, stats):
-                msg = 'Error in process_Default_Uncertainties'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return None
-        elif ConfigFile.settings["bL1bCal"] == 2:
-            if not ProcessL1b.process_Class_Uncertainties(node, stats):
-                msg = 'Error in process_Class_Uncertainties'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return None
-        elif ConfigFile.settings['bL1bCal'] == 3:
-            if not ProcessL1b.process_FRM_Uncertainties(node, stats):
-                msg = 'Error in process_FRM_Uncertainties'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return None
+        # ## Uncertainty computation/initialisation
+        # if ConfigFile.settings["bL1bCal"] == 1:
+        #     if not ProcessL1b.process_Default_Uncertainties(node, stats):
+        #         msg = 'Error in process_Default_Uncertainties'
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #         return None
+        # elif ConfigFile.settings["bL1bCal"] == 2:
+        #     if not ProcessL1b.process_Class_Uncertainties(node, stats):
+        #         msg = 'Error in process_Class_Uncertainties'
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #         return None
+        # elif ConfigFile.settings['bL1bCal'] == 3:
+        #     if not ProcessL1b.process_FRM_Uncertainties(node, stats):
+        #         msg = 'Error in process_FRM_Uncertainties'
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #         return None
 
 
         ## Interpolation

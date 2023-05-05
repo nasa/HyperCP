@@ -3,9 +3,10 @@ import collections
 import datetime as dt
 import calendar
 from inspect import currentframe, getframeinfo
-
+from pysolar.solar import get_azimuth, get_altitude
 import numpy as np
 import scipy as sp
+import warnings
 
 from Source.HDFRoot import HDFRoot
 from Source.Utilities import Utilities
@@ -39,12 +40,13 @@ class ProcessL1b_Interp:
             newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
 
             if dataName in angList:
-                ''' BUG: Unlike interp, interpAngular defaults to fill by extrapolation rather than
-                filling with the last actual value. This is probably only advisable for SOLAR_AZ.'''
-                if dataName == 'SOLAR_AZ' or dataName == 'SZA':
-                    newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value="extrapolate")
-                else:
-                    newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value=0)
+                ''' SOLAR_AZ and SZA are now recalculated for new timestamps rather than interpolated'''
+                # if dataName == 'SOLAR_AZ' or dataName == 'SZA':
+                #     # newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value="extrapolate")
+
+                # else:
+                newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value=0)
+
                 # Some angular measurements (like SAS pointing) are + and -, and get converted
                 # to all +. Convert them back to - for 180-359
                 if dataName == "POINTING":
@@ -115,7 +117,7 @@ class ProcessL1b_Interp:
         newSensorData.columnsToDataset()
 
     @staticmethod
-    def interpolateData(xData, yData, dataName, fileName):
+    def interpolateData(xData, yData, dataName, fileName, latData=None, lonData=None):
         ''' Preforms time interpolation to match xData to yData. xData is the dataset to be
         interpolated, yData is the reference dataset with the times to be interpolated to.'''
 
@@ -150,7 +152,25 @@ class ProcessL1b_Interp:
             Utilities.writeLogFile(msg)
 
         # Perform interpolation on full hyperspectral time series
-        ProcessL1b_Interp.interpolateL1b_Interp(xData, xDatetime, yDatetime, xData, dataName, 'linear', fileName)
+        #   In the case of solar geometries, calculate to new times, don't interpolate
+        if dataName == 'SOLAR_AZ':
+            sunAzimuthAnc = []
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=UserWarning)
+                for i, dt_utc in enumerate(yDatetime):
+                    sunAzimuthAnc.append(get_azimuth(latData.columns['NONE'][i],lonData.columns['NONE'][i],dt_utc,0))
+            xData.columns['NONE'] = sunAzimuthAnc
+        elif dataName == 'SZA':
+            sunZenithAnc = []
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=UserWarning)
+                for i, dt_utc in enumerate(yDatetime):
+                    sunZenithAnc.append(90 - get_altitude(latData.columns['NONE'][i],lonData.columns['NONE'][i],dt_utc,0))
+            xData.columns['NONE'] = sunZenithAnc
+        else:
+            ProcessL1b_Interp.interpolateL1b_Interp(xData, xDatetime, yDatetime, xData, dataName, 'linear', fileName)
 
         xData.columnsToDataset()
 
@@ -609,7 +629,7 @@ class ProcessL1b_Interp:
 
         # Note that only the specified datasets in each group will be interpolated and
         # carried forward. For radiometers, this means that ancillary metadata such as
-        # SPEC_TEMP and THERMAL_RESP will be dropped at L1E and beyond.
+        # SPEC_TEMP and THERMAL_RESP will be dropped at L1B and beyond.
         # Required:
         if not ProcessL1b_Interp.interpolateData(esData, interpData, "ES", fileName):
             return None
@@ -631,10 +651,10 @@ class ProcessL1b_Interp:
             # Required:
             if not ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName):
                 return None
-            if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName):
+            if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName, latData, lonData):
                 return None
             # Optional, but should all be there with the SOLAR TRACKER or pySAS
-            ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName)
+            ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData)
             ProcessL1b_Interp.interpolateData(pointingData, interpData, "POINTING", fileName)
 
             # Optional
@@ -652,17 +672,17 @@ class ProcessL1b_Interp:
                 # Required:
                 if not ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName):
                     return None
-                if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName):
+                if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName, latData, lonData):
                     return None
-                if not ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName):
+                if not ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData):
                     return None
             else:
                 if relAzData:
                     ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName)
                 if szaData:
-                    ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName)
+                    ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName, latData, lonData)
                 if solAzData:
-                    ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName)
+                    ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData)
 
             # Optional:
             if stationData:
