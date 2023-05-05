@@ -252,11 +252,15 @@ class TriosL1B:
 
         # Retain L1BQC data for L2 instrument uncertainty analysis
         for gp in node.groups:
-            if gp.id == 'ES':
-                newGroup = node.addGroup('_L1AQC')
+            if gp.id == 'ES' or gp.id == 'LI' or gp.id == 'LT':
+                newGroup = node.addGroup(gp.id+'_L1AQC')
                 newGroup.copy(gp)
-                for ds in newGroup:
-                    if ds != 'DATETIME':
+                for ds in newGroup.datasets:
+                    if ds == 'DATETIME':
+                        del(gp.datasets[ds])
+                    elif ds.startswith('BACK_') or ds.startswith('CAL_'):
+                        continue
+                    else:
                         newGroup.datasets[ds].datasetToColumns()
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG

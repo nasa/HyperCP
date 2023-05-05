@@ -347,7 +347,11 @@ class ProcessL1b_Interp:
                 newGroup = root.addGroup(gp.id)
                 newGroup.copy(gp)
                 for ds in newGroup.datasets:
-                    if ds != 'DATETIME':
+                    if ds == 'DATETIME':
+                        del(gp.datasets[ds])
+                    elif ds.startswith('BACK_') or ds.startswith('CAL_'):
+                        continue
+                    else:
                         newGroup.datasets[ds].datasetToColumns()
 
 
@@ -790,6 +794,8 @@ class ProcessL1b_Interp:
             for dsName in gp.datasets:
                 if dsName == 'DATETIME':
                     del(gp.datasets[dsName])
+                elif dsName.startswith('BACK_') or dsName.startswith('CAL_'):
+                    continue
                 else:
                     ds = gp.datasets[dsName]
                     if "Datetime" in ds.columns:
