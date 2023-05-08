@@ -110,7 +110,7 @@ class ProcessL1aqc:
 
         if gp.id.startswith("GPRMC") or gp.id.startswith("GPGAA"):
             gp.id = "GPS"
-        if ConfigFile.settings['SensorType'].lower == 'seabird':
+        if ConfigFile.settings['SensorType'].lower() == 'seabird':
             if gp.id.startswith("UMTWR"):
                 gp.id = "SOLARTRACKER_pySAS"
             if gp.id.startswith("SATNAV"):
