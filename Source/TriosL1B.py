@@ -152,17 +152,7 @@ class TriosL1B:
         int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
         DarkPixelStart = int(grp.attributes["DarkPixelStart"])
         DarkPixelStop  = int(grp.attributes["DarkPixelStop"])
-        # int_time_t0 = int(grp.getDataset("BACK_"+sensortype).attributes["IntegrationTime"])
-        int_time_t0 = int(grp.attributes["IntegrationTime"])
-
-        '''
-        Temporary patch for bad int_time_t0 in .ini files
-
-        WARNING: THIS WILL NOT BE ACCURATE AND MUST BE REMOVED LATER
-        '''
-
-        if int_time_t0 == 0:
-            int_time_t0 = 1
+        int_time_t0 = int(grp.getDataset("BACK_"+sensortype).attributes["IntegrationTime"])
 
         # check size of data
         nband = len(raw_back[:,0])
