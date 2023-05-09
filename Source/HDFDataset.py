@@ -65,6 +65,10 @@ class HDFDataset:
 
         if self.data is not None:
             dset = f.create_dataset(self.id, data=self.data, dtype=self.data.dtype)
+            # f = f.create_group(self.id)
+            # Write attributes
+            for k in self.attributes:
+                dset.attrs[k] = np.string_(self.attributes[k])
         else:
             print("Dataset.write(): Data is None")
 
