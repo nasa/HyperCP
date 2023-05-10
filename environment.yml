@@ -18,6 +18,7 @@ dependencies:
   - dask
   - pyqtgraph
   - pyspectral
+  - py6s
   - pip
   - pip:
     - pysolar

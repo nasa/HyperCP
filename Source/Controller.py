@@ -377,7 +377,8 @@ class Controller:
         # Write output file
         if root is not None:
             if ConfigFile.settings['bL1bCal'] == 2:
-                inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
+                # inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
+                inpath = os.path.join(MainConfig.settings['MainDir'], 'Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
                 print('Class based dir:', inpath)
                 root = ProcessL1aqc.read_unc_coefficient(root, inpath)
 

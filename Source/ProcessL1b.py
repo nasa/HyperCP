@@ -7,6 +7,7 @@ from inspect import currentframe, getframeinfo
 
 from Source.HDFRoot import HDFRoot
 from Source.ProcessL1b_DefaultCal import ProcessL1b_DefaultCal
+from Source.ProcessL1b_FRMBranch import ProcessL1b_FRMBranch
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
@@ -289,18 +290,19 @@ class ProcessL1b:
         # Calibration
         # Depending on the Configuration, process either the factory
         # calibration or the complete instrument characterizations
-        if ConfigFile.settings['bL1bCal'] == 1:
+        if ConfigFile.settings['bL1bCal'] <= 2:
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join("Config", calFolder)
             print("Read CalibrationFile ", calPath)
             calibrationMap = CalibrationFileReader.read(calPath)
             ProcessL1b_DefaultCal.processL1b(node, calibrationMap)
 
-        elif ConfigFile.settings['bL1bCal'] == 2:
-            ''' THIS IS A PLACEHOLDER '''
-            print('Processing full instrument characterizations')
-            exit()
-            # ProcessL1b_FullFiles.processL1b(node, calibrationMap)
+        elif ConfigFile.settings['bL1bCal'] == 3:
+            if not ProcessL1b.process_FRM_calibration(node):
+                msg = 'Error in ProcessL1b.process_FRM_calibration'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
 
         # Interpolation
         # Match instruments to a common timestamp (slowest shutter, should be Lt) and

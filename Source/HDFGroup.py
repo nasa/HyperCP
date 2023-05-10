@@ -27,6 +27,18 @@ class HDFGroup:
             ds = self.datasets[k]
             ds.data = np.delete(ds.data, (i), axis=0)
 
+    def removeDataset(self, name):
+        if len(name) == 0:
+            print("Name is 0")
+            return False
+        ds = self.getDataset(name)
+        if ds is not None:
+            del self.datasets[name]
+            return True
+        else:
+            print("dataset does not exist")
+            return False
+
     def addDataset(self, name):
         if len(name) == 0:
             print("Name is 0")
@@ -42,7 +54,7 @@ class HDFGroup:
         if name in self.datasets:
             return self.datasets[name]
         return None
-    
+
     def getTableHeader(self, name):
         ''' Generates Head attributes'''
         # ToDo: This should get generated from context file instead
