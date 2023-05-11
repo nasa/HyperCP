@@ -2,6 +2,7 @@
 import os
 import shutil
 from PyQt5 import QtCore, QtGui, QtWidgets
+from pathlib import Path
 
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
@@ -221,7 +222,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.FullCalRadioButton = QtWidgets.QRadioButton("Full Characterization:")
         self.FullCalRadioButton.setAutoExclusive(False)
-        self.FullCalRadioButton.setDisabled(1) # <---- Needs to have a test for full cal file availability
+        # self.FullCalRadioButton.setDisabled(1) # <---- Needs to have a test for full cal file availability
         if ConfigFile.settings["bL1bCal"]==3:
             self.FullCalRadioButton.setChecked(True)
             # pass
@@ -1248,11 +1249,27 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL1bCal"] = 3
 
     def FullCalDirButtonPressed(self):
-        self.FullCalDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory.', self.FullCalDir)
-        print('Full characterization directory changed: ', self.FullCalDir)
+        # dname = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose Directory")
+        srcDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory.', self.FullCalDir)
+        print('Full characterization folders selected for copy: ', srcDir)
+
+        configName = self.name
+        calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
+        configPath = os.path.join("Config", calibrationDir)
+
+        calDir = Path(srcDir)
+        subdirs = [d for d in calDir.iterdir() if (d.is_dir() and d.name !='.DS_Store')]
+
+        for src in subdirs:
+            print(f'Copying characterization folder {src.parts[-1]} to {os.path.join(configPath,src.parts[-1])}')
+            shutil.copytree(src, os.path.join(configPath,src.parts[-1]), dirs_exist_ok=True)  # 3.8+ only!
+
+        self.FullCalDir = calibrationDir
         self.FullCalDirButton.setText(os.path.basename(self.FullCalDir))
         ConfigFile.settings['FullCalDir'] = self.FullCalDir
+
         return self.FullCalDir
+
 
     def l1bPlotTimeInterpCheckBoxUpdate(self):
         print("ConfigWindow - l1bPlotTimeInterpCheckBoxUpdate")

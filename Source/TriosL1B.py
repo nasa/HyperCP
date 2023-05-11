@@ -19,7 +19,8 @@ class TriosL1B:
         # and with additional correction for (non-linearity, straylight, ...)
 
         ### Read HDF file inputs
-        grp = node.getGroup(instrument_number+'.dat')
+        # grp = node.getGroup(instrument_number+'.dat')
+        grp = node.getGroup(sensortype)
         raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
         DarkPixelStart = int(grp.attributes["DarkPixelStart"])
         DarkPixelStop  = int(grp.attributes["DarkPixelStop"])

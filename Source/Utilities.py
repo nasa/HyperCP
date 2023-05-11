@@ -2013,7 +2013,7 @@ class Utilities:
     def UncTempCorrection(node):
         unc_grp = node.getGroup("RAW_UNCERTAINTIES")
         sensorID = Utilities.get_sensor_dict(node)
-        inv_ID = {v: k for k, v in sensorID.items()}
+        # inv_ID = {v: k for k, v in sensorID.items()}
         for sensor in ["LI", "LT", "ES"]:
             TempCoeffDS = unc_grp.getDataset(sensor+"_TEMPDATA_CAL")
 
@@ -2051,17 +2051,11 @@ class Utilities:
         for grp in node.groups:
             # if "CalFileName" in grp.attributes:
             if ConfigFile.settings['SensorType'].lower() == 'seabird':
-                # if "ES_" in grp.id:
-                #     sensorID[grp.attributes["CalFileName"][3:7]] = "ES"
-                # if "LI_" in grp.id:
-                #     sensorID[grp.attributes["CalFileName"][3:7]] = "LI"
-                # if "LT_" in grp.id:
-                #     sensorID[grp.attributes["CalFileName"][3:7]] = "LT"
-                if "ES" in grp.id:
+                if "ES_" in grp.id:
                     sensorID[grp.attributes["CalFileName"][3:7]] = "ES"
-                if "LI" in grp.id:
+                if "LI_" in grp.id:
                     sensorID[grp.attributes["CalFileName"][3:7]] = "LI"
-                if "LT" in grp.id:
+                if "LT_" in grp.id:
                     sensorID[grp.attributes["CalFileName"][3:7]] = "LT"
 
             # elif "IDDevice" in grp.attributes:
@@ -2247,11 +2241,12 @@ class Utilities:
             # x_new2 = bands[valid]
 
             ## retrieve hyper-spectral wavelengths from corresponding instrument
-            if ConfigFile.settings['SensorType'] == "Seabird":
+            if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'] == "Trios":
-                inv_dict = {v: k for k, v in sensorId.items()}
-                data = node.getGroup('SAM_'+inv_dict[sensor]+'.dat').getDataset(sensor)
+            elif ConfigFile.settings['SensorType'].lower() == "trios":
+                # inv_dict = {v: k for k, v in sensorId.items()}
+                # data = node.getGroup('SAM_'+inv_dict[sensor]+'.dat').getDataset(sensor)
+                data = node.getGroup(sensor).getDataset(sensor)
 
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
 

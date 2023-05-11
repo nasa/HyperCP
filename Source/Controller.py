@@ -300,9 +300,9 @@ class Controller:
             return None
         ancillaryData = AncillaryReader.readAncillary(fp)
 
-        if ConfigFile.settings['SensorType'].lower() == 'trios':
-            ancillaryData.columns['RELAZ'] = ancillaryData.columns['HOMEANGLE']
-            del ancillaryData.columns['HOMEANGLE']
+        # if ConfigFile.settings['SensorType'].lower() == 'trios':
+        #     ancillaryData.columns['RELAZ'] = ancillaryData.columns['HOMEANGLE']
+        #     del ancillaryData.columns['HOMEANGLE']
         return ancillaryData
 
     @staticmethod
@@ -356,8 +356,6 @@ class Controller:
         test = Controller.checkInputFiles(inFilePath,flag_Trios)
         if test is False:
             return None
-        # if flag_Trios:
-        #     inFilePath = inFilePath[0]
 
         # Process the data
         print("ProcessL1aqc")
@@ -380,6 +378,12 @@ class Controller:
                 # inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
                 inpath = os.path.join(MainConfig.settings['MainDir'], 'Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
                 print('Class based dir:', inpath)
+
+                '''
+                BUG: This currently will not work for SeaBird, and even with TriOS, it uses only characterization files that correspond 1:1 with specific instrument,
+                meaning it does not appear to be class-based at all.
+                '''
+
                 root = ProcessL1aqc.read_unc_coefficient(root, inpath)
 
             elif ConfigFile.settings['bL1bCal'] == 3:
