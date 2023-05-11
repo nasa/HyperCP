@@ -37,26 +37,31 @@ class HDFDataset:
         # Read attributes
         for k in f.attrs.keys():
             if type(f.attrs[k]) == np.ndarray:
-                #print(f.attrs[k])
-                #print(type(f.attrs[k].tolist()[0]))
-                if type(f.attrs[k].tolist()[0]) == bytes:
-                    self.attributes[k] = [k.decode("utf-8") for k in f.attrs[k]]
-                    #print("Attr:", self.attributes[k])
-                else:
-                    self.attributes[k] = [k for k in f.attrs[k]]
+                self.attributes[k] = f.attrs[k]
+            else: # string attribute
+                self.attributes[k] = f.attrs[k].decode("utf-8")
+        # for k in f.attrs.keys():
+            # if type(f.attrs[k]) == np.ndarray:
+            #     #print(f.attrs[k])
+            #     #print(type(f.attrs[k].tolist()[0]))
+            #     if type(f.attrs[k].tolist()[0]) == bytes:
+            #         self.attributes[k] = [k.decode("utf-8") for k in f.attrs[k]]
+            #         #print("Attr:", self.attributes[k])
+            #     else:
+            #         self.attributes[k] = [k for k in f.attrs[k]]
 
-            else:
-                if type(f.attrs[k]) == bytes:
-                    self.attributes[k] = f.attrs[k].decode("utf-8")
-                else:
-                    self.attributes[k] = f.attrs[k]
+            # else:
+            #     if type(f.attrs[k]) == bytes:
+            #         self.attributes[k] = f.attrs[k].decode("utf-8")
+            #     else:
+            #         self.attributes[k] = f.attrs[k]
         #print(f)
         #print(type(f[:]))
 
         # Read dataset
         self.data = f[:] # Gets converted to numpy.ndarray
-        #print("Dataset:", name)
-        #print("Data:", self.data.dtype)
+        # print("Dataset:", name)
+        # print("Data:", self.data.dtype)
 
     def write(self, f):
         #print("id:", self.id)

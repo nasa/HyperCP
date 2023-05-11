@@ -228,9 +228,7 @@ class ConfigWindow(QtWidgets.QDialog):
             # pass
         self.FullCalRadioButton.clicked.connect(self.l1bFullCalRadioButtonClicked)
 
-        self.FullCalDir = ConfigFile.settings['FullCalDir']
-        # self.FullCalDirButton = QtWidgets.QPushButton(os.path.basename("Choose input charaterization directory"), self)
-        self.FullCalDirButton = QtWidgets.QPushButton(ConfigFile.settings['FullCalDir'], self)
+        self.FullCalDirButton = QtWidgets.QPushButton(os.path.basename(ConfigFile.settings['FullCalDir']), self)
         self.FullCalDirButton.clicked.connect(self.FullCalDirButtonPressed)
 
         l1bInterpIntervalLabel = QtWidgets.QLabel("    Interpolation Interval (nm)", self)
@@ -1265,14 +1263,15 @@ class ConfigWindow(QtWidgets.QDialog):
         subdirs = [d for d in calDir.iterdir() if (d.is_dir() and d.name !='.DS_Store')]
 
         for src in subdirs:
-            print(f'Copying characterization folder {src.parts[-1]} to {os.path.join(configPath,src.parts[-1])}')
-            shutil.copytree(src, os.path.join(configPath,src.parts[-1]), dirs_exist_ok=True)  # 3.8+ only!
+            dest = os.path.join(configPath,src.parts[-1])
+            if not shutil._samefile(src,dest):
+                print(f'Copying characterization folder {src.parts[-1]} to {os.path.join(configPath,src.parts[-1])}')
+                shutil.copytree(src, dest, dirs_exist_ok=True)  # 3.8+ only!
+            else:
+                print('Destination same as source files: skip')
 
-        self.FullCalDir = calibrationDir
-        self.FullCalDirButton.setText(os.path.basename(self.FullCalDir))
-        ConfigFile.settings['FullCalDir'] = self.FullCalDir
-
-        return self.FullCalDir
+        self.FullCalDirButton.setText(os.path.basename(calibrationDir))
+        ConfigFile.settings['FullCalDir'] = os.path.abspath(configPath)
 
 
     def l1bPlotTimeInterpCheckBoxUpdate(self):

@@ -2018,7 +2018,7 @@ class Utilities:
             TempCoeffDS = unc_grp.getDataset(sensor+"_TEMPDATA_CAL")
 
             ### Seabird
-            if ConfigFile.settings['SensorType'] == "Seabird":
+            if ConfigFile.settings['SensorType'].lower() == "seabird":
                 if "TEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
                     TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("TEMP")
                 elif "SPECTEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
@@ -2033,7 +2033,7 @@ class Utilities:
                     print(msg)
 
             ### Trios
-            elif ConfigFile.settings['SensorType'] == "Trios":
+            elif ConfigFile.settings['SensorType'].lower() == "trios":
                 # grp_name = "SAM_"+inv_ID[sensor]+".dat"
                 # grp = node.getGroup(grp_name)
                 # No internal temperature for Trios, set to 0.
@@ -2227,7 +2227,7 @@ class Utilities:
         """
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
-        sensorId = Utilities.get_sensor_dict(node)
+        # sensorId = Utilities.get_sensor_dict(node)
         sensorList = ['ES', 'LI', 'LT']
         for sensor in sensorList:
 
