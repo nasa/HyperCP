@@ -229,7 +229,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.FullCalRadioButton.clicked.connect(self.l1bFullCalRadioButtonClicked)
 
         self.FullCalDir = ConfigFile.settings['FullCalDir']
-        self.FullCalDirButton = QtWidgets.QPushButton(os.path.basename("Choose input charaterization directory"), self)
+        # self.FullCalDirButton = QtWidgets.QPushButton(os.path.basename("Choose input charaterization directory"), self)
+        self.FullCalDirButton = QtWidgets.QPushButton(ConfigFile.settings['FullCalDir'], self)
         self.FullCalDirButton.clicked.connect(self.FullCalDirButtonPressed)
 
         l1bInterpIntervalLabel = QtWidgets.QLabel("    Interpolation Interval (nm)", self)
@@ -1250,7 +1251,10 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def FullCalDirButtonPressed(self):
         # dname = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose Directory")
-        srcDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory.', self.FullCalDir)
+        if not ConfigFile.settings['FullCalDir'].startswith('Choose'):
+            srcDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory', ConfigFile.settings['FullCalDir'])
+        else:
+            srcDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory')
         print('Full characterization folders selected for copy: ', srcDir)
 
         configName = self.name

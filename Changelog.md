@@ -35,6 +35,15 @@ Ideas:
 
 ___________________________________________________________
 
+2023-05-11; DAA
+* Propagate L1AQC SeaBird and TriOS to new L1B groups for use at L2 in instr. uncertainty budgets
+* Deprecate interpolation of solar geometries; calculate instead
+* Update L1AQC for new SeaBASS SensorAz field in Ancillary file
+* Extend attribute support for HDFDatasets to accomodate TriOS (e.g., int_time_t0)
+* Extract ProcessL1B FRM-branch code into new module ProcessL1b_FRMBranch
+* Update environment for punpy, Py6S
+* ConfigWindow Full Characterization button copies folders/files into Config/_Calibration folder
+
 2023-05-01; DAA
 * TriosL1A: sort all group dataset in increasing chronological order
 
