@@ -19,6 +19,7 @@ dependencies:
   - pyqtgraph
   - pyspectral
   - py6s
+  - cdsapi
   - pip
   - pip:
     - pysolar

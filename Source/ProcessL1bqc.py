@@ -5,6 +5,7 @@ import datetime as datetime
 
 from Source.MainConfig import MainConfig
 from Source.GetAnc import GetAnc
+from Source.GetAnc_ecmwf import GetAnc_ecmwf
 from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
 
@@ -759,10 +760,7 @@ class ProcessL1bqc:
         # For completeness, flip datasets into colums in all groups
         for grp in node.groups:
             for ds in grp.datasets:
-                try:
-                    grp.datasets[ds].datasetToColumns()
-                except:
-                    print('error')
+                grp.datasets[ds].datasetToColumns()
 
         gpsGroup = None
         for gp in node.groups:
@@ -771,14 +769,21 @@ class ProcessL1bqc:
 
         # Retrieve MERRA2 model ancillary data
         if ConfigFile.settings["bL1bqcGetAnc"] ==1:
-            msg = 'Model data for Wind and AOD may be used to replace blank values. Reading in model data...'
+            msg = 'MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...'
             print(msg)
             Utilities.writeLogFile(msg)
             modRoot = GetAnc.getAnc(gpsGroup)
-            if modRoot is None:
-                return None
+        # Retrieve ECMWF model ancillary data
+        elif ConfigFile.settings["bL1bqcGetAnc"] == 2:
+            msg = 'ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            modRoot = GetAnc_ecmwf.getAnc_ecmwf(gpsGroup)
         else:
             modRoot = None
+
+        if modRoot is None:
+            return None
 
         # Need to either create a new ancData object, or populate the nans in the current one with the model data
         if not ProcessL1bqc.QC(node, modRoot):
@@ -869,8 +874,11 @@ class ProcessL1bqc:
         node.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
         node.attributes["DATETAG_UNITS"] = "YYYYDOY"
         node.attributes["TIMETAG2_UNITS"] = "HHMMSSmmm"
-        del(node.attributes["DATETAG"])
-        del(node.attributes["TIMETAG2"])
+
+        if "DATETAG" in node.attributes.keys():
+            del(node.attributes["DATETAG"])
+        if "TIMETAG2" in node.attributes.keys():
+            del(node.attributes["TIMETAG2"])
         if "COMMENT" in node.attributes.keys():
             del(node.attributes["COMMENT"])
         if "CLOUD_PERCENT" in node.attributes.keys():

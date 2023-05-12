@@ -2,7 +2,7 @@
 import datetime as dt
 import numpy as np
 import pandas as pd
-# import h5py
+import os
 import json
 from datetime import timedelta, date
 import re
@@ -11,7 +11,6 @@ import tables
 from Source.MainConfig import MainConfig
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
-from Source.HDFDataset import HDFDataset
 from Source.Utilities import Utilities
 
 
@@ -321,6 +320,7 @@ class TriosL1A:
 
                 ffp = [s for s in fp if a_time in s]
                 root.attributes["RAW_FILE_NAME"] = str(ffp)
+                root.attributes["TIME-STAMP"] = a_time
                 for file in ffp:
                     if "SAM_" in file:
                         name = file[file.index('SAM_')+4:file.index('SAM_')+8]
@@ -329,13 +329,20 @@ class TriosL1A:
 
                     start,stop = TriosL1A.formatting_instrument(name,cal_path,file,root,configPath)
 
-                new_name = outFilePath + '/' + 'Trios_' + str(start) + '_' + str(stop) + '_L1A.hdf'
+                '''
+                File naming convention on TriOS TBD depending on convention used in MSDA_XE
+                '''
+                new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
+                # new_name = outFilePath + '/' + 'Trios_' + str(start) + '_' + str(stop) + '_L1A.hdf'
+                outFFP = os.path.join(outFilePath,f'{new_name}_L1A.hdf')
+                root.attributes["L1A_FILENAME"] = outFFP
 
                 root = TriosL1A.fixChronology(root)
 
                 try:
-                    # Throws AttributeError for each group...?
-                    root.writeHDF5(new_name)
+                    # root.writeHDF5(new_name)
+                    root.writeHDF5(outFFP)
+
 
                 except:
                     msg = 'Unable to write L1A file. It may be open in another program.'
@@ -344,6 +351,7 @@ class TriosL1A:
                     Utilities.writeLogFile(msg)
                     return None, None
 
+                Utilities.checkOutputFiles(outFFP)
 
             return root, new_name # This will only return the last root collection
         else:

@@ -38,13 +38,15 @@ class HDFDataset:
         for k in f.attrs.keys():
             if type(f.attrs[k]) == np.ndarray:
                 self.attributes[k] = f.attrs[k]
+            elif type(f.attrs[k]) == np.int32:
+                self.attributes[k] = f.attrs[k]
             else: # string attribute
                 self.attributes[k] = f.attrs[k].decode("utf-8")
         # for k in f.attrs.keys():
             # if type(f.attrs[k]) == np.ndarray:
             #     #print(f.attrs[k])
             #     #print(type(f.attrs[k].tolist()[0]))
-            #     if type(f.attrs[k].tolist()[0]) == bytes:
+                # if type(f.attrs[k].tolist()[0]) == bytes:
             #         self.attributes[k] = [k.decode("utf-8") for k in f.attrs[k]]
             #         #print("Attr:", self.attributes[k])
             #     else:

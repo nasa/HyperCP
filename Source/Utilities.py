@@ -33,6 +33,49 @@ if "LOGFILE" not in os.environ:
 class Utilities:
 
     @staticmethod
+    def checkInputFiles(inFilePath, flag_Trios, level="L1A+"):
+        if flag_Trios and level == "L1A":
+            for fp in inFilePath:
+                if not os.path.isfile(fp):
+                    msg = 'No such file...'
+                    Utilities.errorWindow("File Error", msg)
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
+                else:
+                    return True
+        else:
+            if not os.path.isfile(inFilePath):
+                msg = 'No such file...'
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
+            else:
+                return True
+
+    @staticmethod
+    def checkOutputFiles(outFilePath):
+        if os.path.isfile(outFilePath):
+            modTime = os.path.getmtime(outFilePath)
+            nowTime = datetime.datetime.now()
+            if nowTime.timestamp() - modTime < 60: # If the file exists and was created in the last minute...
+                # msg = f'{level} file produced: \n {outFilePath}'
+                # print(msg)
+                # Utilities.writeLogFile(msg)
+                msg = f'Process Single Level: {outFilePath} - SUCCESSFUL'
+                print(msg)
+                Utilities.writeLogFile(msg)
+            else:
+                msg = f'Process Single Level: {outFilePath} - NOT SUCCESSFUL'
+                print(msg)
+                Utilities.writeLogFile(msg)
+        else:
+            msg = f'Process Single Level: {outFilePath} - NOT SUCCESSFUL'
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+    @staticmethod
     def SASUTCOffset(node):
         for gp in node.groups:
             if not gp.id.startswith("SATMSG"): # Don't convert these strings to datasets.
@@ -383,26 +426,27 @@ class Utilities:
                     gp.datasets[ds].datasetToColumns()
 
                     if not 'Datetime' in gp.datasets[ds].columns:
-                        timeData = gp.datasets[ds].columns["Timetag2"]
-                        dateTag = gp.datasets[ds].columns["Datetag"]
+                        if 'Timetag2' in gp.datasets[ds].columns:  # changed to ensure the new (irr)radiance groups don't throw errors
+                            timeData = gp.datasets[ds].columns["Timetag2"]
+                            dateTag = gp.datasets[ds].columns["Datetag"]
 
-                        timeStamp = []
-                        for i, timei in enumerate(timeData):
-                            # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
-                            # Filter for aberrant Datetags
-                            if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
-                                and timei != 0.0 and not np.isnan(timei):
+                            timeStamp = []
+                            for i, timei in enumerate(timeData):
+                                # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
+                                # Filter for aberrant Datetags
+                                if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
+                                    and timei != 0.0 and not np.isnan(timei):
 
-                                dt = Utilities.dateTagToDateTime(dateTag[i])
-                                timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
-                            else:
-                                gp.datasetDeleteRow(i)
-                                msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
-                                print(msg)
-                                Utilities.writeLogFile(msg)
-                        gp.datasets[ds].columns["Datetime"] = timeStamp
-                        gp.datasets[ds].columns.move_to_end('Datetime', last=False)
-                        gp.datasets[ds].columnsToDataset()
+                                    dt = Utilities.dateTagToDateTime(dateTag[i])
+                                    timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
+                                else:
+                                    gp.datasetDeleteRow(i)
+                                    msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
+                                    print(msg)
+                                    Utilities.writeLogFile(msg)
+                            gp.datasets[ds].columns["Datetime"] = timeStamp
+                            gp.datasets[ds].columns.move_to_end('Datetime', last=False)
+                            gp.datasets[ds].columnsToDataset()
 
         return node
 

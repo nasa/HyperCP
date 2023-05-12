@@ -26,49 +26,6 @@ from Source.PDFreport import PDF
 class Controller:
 
     @staticmethod
-    def checkInputFiles(inFilePath, flag_Trios, level="L1A+"):
-        if flag_Trios and level == "L1A":
-            for fp in inFilePath:
-                if not os.path.isfile(fp):
-                    msg = 'No such file...'
-                    Utilities.errorWindow("File Error", msg)
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
-                else:
-                    return True
-        else:
-            if not os.path.isfile(inFilePath):
-                msg = 'No such file...'
-                Utilities.errorWindow("File Error", msg)
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return False
-            else:
-                return True
-
-    @staticmethod
-    def checkOutputFiles(outFilePath):
-        if os.path.isfile(outFilePath):
-            modTime = os.path.getmtime(outFilePath)
-            nowTime = datetime.datetime.now()
-            if nowTime.timestamp() - modTime < 60: # If the file exists and was created in the last minute...
-                # msg = f'{level} file produced: \n {outFilePath}'
-                # print(msg)
-                # Utilities.writeLogFile(msg)
-                msg = f'Process Single Level: {outFilePath} - SUCCESSFUL'
-                print(msg)
-                Utilities.writeLogFile(msg)
-            else:
-                msg = f'Process Single Level: {outFilePath} - NOT SUCCESSFUL'
-                print(msg)
-                Utilities.writeLogFile(msg)
-        else:
-            msg = f'Process Single Level: {outFilePath} - NOT SUCCESSFUL'
-            print(msg)
-            Utilities.writeLogFile(msg)
-
-    @staticmethod
     def writeReport(fileName, pathOut, outFilePath, level, inFilePath):
         print('Writing PDF Report...')
         numLevelDict = {'L1A':1,'L1AQC':2,'L1B':3,'L1BQC':4,'L2':5}
@@ -310,7 +267,7 @@ class Controller:
     def processL1a(inFilePath, outFilePath, calibrationMap,flag_Trios):
         root = None
 
-        test = Controller.checkInputFiles(inFilePath,flag_Trios, level="L1A")
+        test = Utilities.checkInputFiles(inFilePath,flag_Trios, level="L1A")
         if test is False:
             return None
 
@@ -348,12 +305,12 @@ class Controller:
                 Utilities.writeLogFile(msg)
                 return None
 
-            return root
+        return root
 
     @staticmethod
     def processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData,flag_Trios):
         root = None
-        test = Controller.checkInputFiles(inFilePath,flag_Trios)
+        test = Utilities.checkInputFiles(inFilePath,flag_Trios)
         if test is False:
             return None
 
@@ -622,6 +579,10 @@ class Controller:
 
             if level == "L1A":
                 root = Controller.processL1a(inFilePath, outFilePath, calibrationMap, flag_Trios)
+                if not flag_Trios:
+                    # Checked in TriosL1A for TriOS
+
+                    Utilities.checkOutputFiles(outFilePath)
 
             elif level == "L1AQC":
                 ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
@@ -671,15 +632,15 @@ class Controller:
                     print(msg)
                     Utilities.writeLogFile(msg)
                 root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData,flag_Trios)
-                Controller.checkOutputFiles(outFilePath)
+                Utilities.checkOutputFiles(outFilePath)
 
             elif level == "L1B":
                 root = Controller.processL1b(inFilePath, outFilePath, flag_Trios)
-                Controller.checkOutputFiles(outFilePath)
+                Utilities.checkOutputFiles(outFilePath)
 
             elif level == "L1BQC":
                 root = Controller.processL1bqc(inFilePath, outFilePath)
-                Controller.checkOutputFiles(outFilePath)
+                Utilities.checkOutputFiles(outFilePath)
 
         elif level == "L2":
             # Ancillary data from metadata have been read in at L1C,
@@ -732,7 +693,7 @@ class Controller:
                         Utilities.writeLogFile(msg)
 
                         node = Controller.processL2(root, outFilePathStation,station)
-                        Controller.checkOutputFiles(outFilePathStation)
+                        Utilities.checkOutputFiles(outFilePathStation)
 
                         if os.path.isfile(outFilePathStation):
                             # Ensure that the L2 on file is recent before continuing with
@@ -764,7 +725,7 @@ class Controller:
                 # Even where not extracting stations, processL2 returns node, not root, but to comply with expectations
                 # below based on the other levels and PDF reporting, overwrite root with node
                 root = Controller.processL2(root,outFilePath)
-                Controller.checkOutputFiles(outFilePath)
+                Utilities.checkOutputFiles(outFilePath)
 
                 if os.path.isfile(outFilePath):
                     # Ensure that the L2 on file is recent before continuing with
