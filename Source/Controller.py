@@ -282,6 +282,7 @@ class Controller:
             root, outFFPs = TriosL1A.triosL1A(inFilePath, outFilePath)
         else:
             root = ProcessL1a.processL1a(inFilePath, calibrationMap)
+            outFFPs = None
 
         # Write output file
         # TriOS L1A are written out in TriosL1A.py
