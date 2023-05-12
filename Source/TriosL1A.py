@@ -11,6 +11,7 @@ import tables
 from Source.MainConfig import MainConfig
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
+from Source.HDFDataset import HDFDataset
 from Source.Utilities import Utilities
 
 
@@ -222,9 +223,7 @@ class TriosL1A:
         ds_dt = np.dtype({'names': wl,'formats': [np.float64]*len(wl)})
         my_arr = np.array(data).transpose()
         rec_arr = np.rec.fromarrays(my_arr, dtype=ds_dt)
-        # gp.addDataset(''+sensor,data=rec_arr)
         gp.addDataset(sensor)
-        # gp.datasets[sensor].data=rec_arr
         gp.datasets[sensor].data=np.array(rec_arr, dtype=ds_dt)
 
 
@@ -232,14 +231,21 @@ class TriosL1A:
         metacal,cal = TriosL1A.read_cal(cal_path + 'Cal_SAM_'+name+'.dat')
         # B1 = gp.addDataset('CAL_'+sensor,data=cal[1].astype(np.float64))
         B1 = gp.addDataset('CAL_'+sensor)
-        B1.data = cal[1].astype(np.float64)
+        # B1.data = cal[1].astype(np.float64)
+        B1.columns["0"] = cal.values[:,1]
+        B1.columnsToDataset()
 
         TriosL1A.get_attr(metacal,B1)
         metaback,back = TriosL1A.read_cal(cal_path + 'Back_SAM_'+name+'.dat')
         # C1 = gp.addDataset('BACK_'+sensor,data=back[[1,2]].astype(np.float64))
         C1 = gp.addDataset('BACK_'+sensor)
+        C1.columns["0"] = back.values[:,1]
+        C1.columns["1"] = back.values[:,2]
+        C1.columnsToDataset()
         # C1.data = back[[1,2]].astype(np.float64)
-        C1.data = np.array(back[[1,2]].astype(np.float64))
+        # C1.data = np.array(back[[1,2]].astype(np.float64))
+
+
         TriosL1A.get_attr(metaback,C1)
 
         start_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[0][0]-2), "%Y%m%dT%H%M%SZ")

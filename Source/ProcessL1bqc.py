@@ -759,7 +759,10 @@ class ProcessL1bqc:
         # For completeness, flip datasets into colums in all groups
         for grp in node.groups:
             for ds in grp.datasets:
-                grp.datasets[ds].datasetToColumns()
+                try:
+                    grp.datasets[ds].datasetToColumns()
+                except:
+                    print('error')
 
         gpsGroup = None
         for gp in node.groups:
