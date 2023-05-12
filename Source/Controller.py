@@ -25,6 +25,8 @@ from Source.PDFreport import PDF
 
 class Controller:
 
+    trios_L1A_files = []
+
     @staticmethod
     def writeReport(fileName, pathOut, outFilePath, level, inFilePath):
         print('Writing PDF Report...')
@@ -269,7 +271,7 @@ class Controller:
 
         test = Utilities.checkInputFiles(inFilePath,flag_Trios, level="L1A")
         if test is False:
-            return None
+            return None, None
 
         msg = "ProcessL1a"
         print(msg)
@@ -277,7 +279,7 @@ class Controller:
         # Process the data
         if flag_Trios == 1:
             # Multiple collections may be present, each with a file per sensor, root will only be the last collection
-            root, new_name = TriosL1A.triosL1A(inFilePath, outFilePath)
+            root, outFFPs = TriosL1A.triosL1A(inFilePath, outFilePath)
         else:
             root = ProcessL1a.processL1a(inFilePath, calibrationMap)
 
@@ -286,26 +288,22 @@ class Controller:
         if not flag_Trios:
             if root is not None:
                 try:
-                    # Throws AttributeError for each group...?
-                    if flag_Trios:
-                        root.writeHDF5(new_name)
-                    else:
-                        root.writeHDF5(outFilePath)
+                    root.writeHDF5(outFilePath)
                 except:
                     msg = 'Unable to write L1A file. It may be open in another program.'
                     Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
-                    return None
+                    return None, None
             else:
                 msg = "L1a processing failed. Nothing to output."
                 if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                     Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return None
+                return None, None
 
-        return root
+        return root, outFFPs
 
     @staticmethod
     def processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData,flag_Trios):
@@ -559,30 +557,18 @@ class Controller:
             fileName = fileName.rsplit('_',1)[0]
 
         if not flag_Trios or (flag_Trios and level != "L1A"):
+            # SeaBird contains filename here. TriOS does not.
             outFilePath = os.path.join(pathOutLevel,fileName + "_" + level + ".hdf")
-
-        # if flag_Trios:
-        #     if extension=='.hdf':
-        #         outFilePath = [os.path.join(pathOutLevel, os.path.splitext(os.path.basename(fp.rsplit('_',1)[0]))[0]+"_"+level+".hdf") for fp in inFilePath]
-        #     else:
-        #         outFilePath = [os.path.join(pathOutLevel, os.path.splitext(os.path.basename(fp))[0]+"_"+level+".hdf") for fp in inFilePath]
-
-        #     if level != 'L1A':
-        #         # List only required for L1A
-        #         outFilePath = outFilePath[0]
-        #         # inFilePath = inFilePath[0]
-        # else:
-        #     outFilePath = os.path.join(pathOutLevel,fileName + "_" + level + ".hdf")
-
 
         if level == "L1A" or level == "L1AQC" or level == "L1B" or level == "L1BQC":
 
             if level == "L1A":
-                root = Controller.processL1a(inFilePath, outFilePath, calibrationMap, flag_Trios)
+                root, outFFPs = Controller.processL1a(inFilePath, outFilePath, calibrationMap, flag_Trios)
                 if not flag_Trios:
                     # Checked in TriosL1A for TriOS
-
                     Utilities.checkOutputFiles(outFilePath)
+                else:
+                    Controller.trios_L1A_files = outFFPs
 
             elif level == "L1AQC":
                 ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
@@ -766,17 +752,31 @@ class Controller:
     @staticmethod
     def processFilesMultiLevel(pathOut,inFiles, calibrationMap, flag_Trios):
         print("processFilesMultiLevel")
-        # t0 = time.time()
+
+        flag_L1 = 0
+        if flag_Trios:
+            if Controller.processSingleLevel(pathOut, inFiles, calibrationMap, 'L1A', flag_Trios):
+                flag_L1 = 1
+                inFiles = Controller.trios_L1A_files
+
         for fp in inFiles:
             print("Processing: " + fp)
 
-            # if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A', ancFile):
-            if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A', flag_Trios):
-                # Going from L0 to L1A, need to account for the underscore
+            if not flag_Trios:
+                if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A', flag_Trios):
+                    flag_L1 = 1
+
+            if flag_L1:
                 inFileName = os.path.split(fp)[1]
-                fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'_L1A.hdf')
+                if flag_Trios:
+                    # For TriOS, need to parse the L1A names, not L0
+                    fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'.hdf')
+                else:
+                    # Going from L0 to L1A, need to account for the underscore
+                    fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'_L1A.hdf')
                 fp = os.path.join(os.path.abspath(pathOut),fileName)
                 if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1AQC', flag_Trios):
+
                     inFileName = os.path.split(fp)[1]
                     fileName = os.path.join('L1AQC',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1AQC.hdf')
                     fp = os.path.join(os.path.abspath(pathOut),fileName)
@@ -790,8 +790,6 @@ class Controller:
                             fp = os.path.join(os.path.abspath(pathOut),fileName)
                             Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2', flag_Trios)
         print("processFilesMultiLevel - DONE")
-        # t1 = time.time()
-        # print(f'Elapsed time: {(t1-t0)/60} minutes')
 
 
     # Process every file in a list of files 1 level

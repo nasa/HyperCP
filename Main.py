@@ -502,18 +502,16 @@ class Window(QtWidgets.QWidget):
         if not self.outputDirectory:
             return
 
-        ancFile = self.ancFileLineEdit.text()
-
         InstrumentType = ConfigFile.settings['SensorType']
+        calFiles = ConfigFile.settings['CalibrationFiles']
         # To check instrument type
-        if InstrumentType == 'Trios':
+        if InstrumentType.lower() == 'trios':
             flag_Trios = 1
-            calibrationMap = 0
-        elif InstrumentType == 'Seabird':
+            calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
+        elif InstrumentType.lower() == 'seabird':
             flag_Trios = 0
             print('Process Calibration Files')
             filename = ConfigFile.filename
-            calFiles = ConfigFile.settings['CalibrationFiles']
             calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
         else:
             print('Error in configuration file: Sensor type not specified')

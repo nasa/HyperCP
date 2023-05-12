@@ -300,6 +300,7 @@ class TriosL1A:
                 acq_time.append(a_time)
 
             acq_time = list(dict.fromkeys(acq_time)) # Returns unique timestamps
+            outFFP = []
             for a_time in acq_time:
                 print("")
                 print("Generate the telemetric file...")
@@ -334,14 +335,14 @@ class TriosL1A:
                 '''
                 new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
                 # new_name = outFilePath + '/' + 'Trios_' + str(start) + '_' + str(stop) + '_L1A.hdf'
-                outFFP = os.path.join(outFilePath,f'{new_name}_L1A.hdf')
-                root.attributes["L1A_FILENAME"] = outFFP
+                outFFP.append(os.path.join(outFilePath,f'{new_name}_L1A.hdf'))
+                root.attributes["L1A_FILENAME"] = outFFP[-1]
 
                 root = TriosL1A.fixChronology(root)
 
                 try:
                     # root.writeHDF5(new_name)
-                    root.writeHDF5(outFFP)
+                    root.writeHDF5(outFFP[-1])
 
 
                 except:
@@ -351,9 +352,9 @@ class TriosL1A:
                     Utilities.writeLogFile(msg)
                     return None, None
 
-                Utilities.checkOutputFiles(outFFP)
+                Utilities.checkOutputFiles(outFFP[-1])
 
-            return root, new_name # This will only return the last root collection
+            return root, outFFP
         else:
             print('Single Frame deprecated')
 
