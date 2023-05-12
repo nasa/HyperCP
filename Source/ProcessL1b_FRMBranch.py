@@ -7,7 +7,7 @@ import Py6S
 class ProcessL1b_FRMBranch:
 
     @staticmethod
-    def get_direct_irradiance_ratio(node, sensortype, trios=0):
+    def get_direct_irradiance_ratio(node, sensortype):
 
         ## Reading ancilliary data
         anc_grp = node.getGroup('ANCILLARY_METADATA')
@@ -21,10 +21,10 @@ class ProcessL1b_FRMBranch:
         anc_datetime = [dt.datetime.strptime(str(int(x[0]))+str(int(y[0])).rjust(9,'0'), "%Y%j%H%M%S%f") for x,y in zip(anc_datetag,anc_timetag)]
 
         ## Reading irradiance data
-        if trios == 0:
-            irr_grp = node.getGroup(sensortype)
-        else:
-            irr_grp = node.getGroup(trios+'.dat')
+        # if trios == 0:
+        irr_grp = node.getGroup(sensortype)
+        # else:
+        #     irr_grp = node.getGroup(trios+'.dat')
         str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
         wvl = np.asarray([float(x) for x in str_wvl])
         datetag = np.asarray(pd.DataFrame(irr_grp.getDataset("DATETAG").data))
@@ -232,7 +232,7 @@ class ProcessL1b_FRMBranch:
                 ## Compute avg cosine error
                 avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMBranch.cosine_error_correction(node, sensortype)
                 ## Irradiance direct and diffuse ratio
-                res_py6s = ProcessL1b_FRMBranch.get_direct_irradiance_ratio(node, sensortype, trios=0)
+                res_py6s = ProcessL1b_FRMBranch.get_direct_irradiance_ratio(node, sensortype)
             else:
                 PANEL = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_PANEL").data)['2'])
                 PANEL = np.pad(PANEL, (0, nband-len(PANEL)), mode='constant')

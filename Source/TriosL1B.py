@@ -38,11 +38,7 @@ class TriosL1B:
         S2 = pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_CAL").data)['8']
         mZ = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_STRAYDATA_LSF").data))
         mZ = mZ[1:,1:] # remove 1st line and column, we work on 255 pixel not 256.
-
-        ''' BUG: _TEMPERATURE_COEFFICIENTS throws a key error'''
-        # Ct = pd.DataFrame(unc_grp.getDataset(sensortype+"_TEMPDATA_CAL").data)[sensortype+"_TEMPERATURE_COEFFICIENTS"][1:].tolist()
-        Ct = pd.DataFrame(unc_grp.getDataset(sensortype+"_TEMPDATA_CAL").data)#[sensortype+"_TEMPERATURE_COEFFICIENTS"][1:].tolist()
-
+        Ct = pd.DataFrame(unc_grp.getDataset(sensortype+"_TEMPDATA_CAL").data)[sensortype+"_TEMPERATURE_COEFFICIENTS"][1:].tolist()
 
         LAMP = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_LAMP").data)['2'])
 
@@ -67,7 +63,7 @@ class TriosL1B:
             # Compute avg cosine error (not done for the moment)
             avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMBranch.cosine_error_correction(node, sensortype)
             # Irradiance direct and diffuse ratio
-            res_py6s = ProcessL1b_FRMBranch.get_direct_irradiance_ratio(node, sensortype, trios=instrument_number)
+            res_py6s = ProcessL1b_FRMBranch.get_direct_irradiance_ratio(node, sensortype)
         else:
             PANEL = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_PANEL").data)['2'])
             updated_radcal_gain = (np.pi*S12_sl_corr)/(LAMP*PANEL) * (int_time_t0/t1)

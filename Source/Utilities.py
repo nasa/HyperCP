@@ -1972,17 +1972,17 @@ class Utilities:
 
         # Get thermal coefficient from full charaterization
         uncDS.datasetToColumns()
-        if ConfigFile.settings['bL1bDefaultCal'] == 2:
+        if ConfigFile.settings['bL1bCal'] == 2:
             therm_coeff = uncDS.data[list(uncDS.columns.keys())[1]]
             therm_coeff_unc = uncDS.data[list(uncDS.columns.keys())[2]]
-        elif ConfigFile.settings['bL1bDefaultCal'] == 3:
+        elif ConfigFile.settings['bL1bCal'] == 3:
             therm_coeff = uncDS.data[list(uncDS.columns.keys())[2]]
             therm_coeff_unc = uncDS.data[list(uncDS.columns.keys())[3]]
         ThermCorr = []
         ThermUnc = []
 
         # Seabird case
-        if ConfigFile.settings['SensorType'] == "Seabird":
+        if ConfigFile.settings['SensorType'].lower() == "seabird":
             for i in range(len(therm_coeff)):
                 try:
                     ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp - refTemp)))
@@ -1992,7 +1992,7 @@ class Utilities:
                     ThermUnc.append(0)
 
         # TRIOS case: no temperature available
-        elif ConfigFile.settings['SensorType'] == "Trios":
+        elif ConfigFile.settings['SensorType'].lower() == "trios":
             # For Trios the radiometer Temp is a place holder filled with 0.
             # we use ambiant_temp+5° instead.
             for i in range(len(therm_coeff)):

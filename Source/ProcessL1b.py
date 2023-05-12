@@ -231,10 +231,12 @@ class ProcessL1b:
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
-        if  ConfigFile.settings["bL1bDefaultCal"]:
+        if ConfigFile.settings["bL1bDefaultCal"] == 1:
             node.attributes['CAL_TYPE'] = 'Default/Factory'
-        else:
-            node.attributes['CAL_TYPE'] = 'Full Character'
+        elif ConfigFile.settings["bL1bDefaultCal"] == 2:
+            node.attributes['CAL_TYPE'] = 'Class-based'
+        elif ConfigFile.settings["bL1bDefaultCal"] == 3:
+            node.attributes['CAL_TYPE'] = 'Full-FRM'
         node.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
 

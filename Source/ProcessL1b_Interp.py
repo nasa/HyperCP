@@ -435,11 +435,6 @@ class ProcessL1b_Interp:
         root.copyAttributes(node) # Now copy the attributes in from the L1a object
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
-        # root.attributes["FILE_CREATION_TIME"] = timestr
-        # if  ConfigFile.settings["bL1bDefaultCal"]:
-        #     root.attributes['CAL_TYPE'] = 'Default/Factory'
-        # else:
-        #     root.attributes['CAL_TYPE'] = 'Full Character'
         root.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
         msg = f"ProcessL1b_Interp.processL1b_Interp: {timestr}"
