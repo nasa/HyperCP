@@ -16,6 +16,204 @@ from Source.ConfigFile import ConfigFile
 class ProcessL1b_Interp:
 
     @staticmethod
+    def interp_Anc(node, fileName):
+        ''' Time interpolation of Ancillary group only to be run prior to model fill and FRM cal/corrections '''
+        for gp in node.groups:
+            if gp.id.startswith("GP"):
+                gpsGroup = gp
+            if gp.id == ("ANCILLARY_METADATA"):
+                ancGroup = gp
+            if gp.id.startswith("ES"):
+                esGroup = gp
+            if gp.id.startswith("LI"):
+                liGroup = gp
+            if gp.id.startswith("LT"):
+                ltGroup = gp
+
+        # Conversion of datasets within groups to move date/timestamps into
+        # the data arrays and add datetime column. Also can change dataset name.
+        # Places the dataset into the new group.
+        # New group scheme combines both radiance sensors in one group
+        refGroup = node.addGroup("IRRADIANCE_TEMP")
+        sasGroup = node.addGroup("RADIANCE_TEMP")
+        ProcessL1b_Interp.convertDataset(esGroup, "ES", refGroup, "ES")
+        ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
+        ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
+
+        if gpsGroup is not None:
+            newGPSGroup = node.addGroup("GPS_TEMP")
+            newGPSGroup.attributes = gpsGroup.attributes.copy()
+            # These are from the raw data, not to be confused with those in the ancillary file
+            ProcessL1b_Interp.convertDataset(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
+            ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
+            latData = newGPSGroup.getDataset("LATITUDE")
+            lonData = newGPSGroup.getDataset("LONGITUDE")
+        else:
+            # These are from the ancillary file; place in temp GPS
+            ProcessL1b_Interp.convertDataset(ancGroup, "LATITUDE", newGPSGroup, "LATITUDE")
+            ProcessL1b_Interp.convertDataset(ancGroup, "LONGITUDE", newGPSGroup, "LONGITUDE")
+            latData = newGPSGroup.getDataset("LATITUDE")
+            lonData = newGPSGroup.getDataset("LONGITUDE")
+
+        newAncGroup = node.addGroup("ANCILLARY_TEMP")
+        newAncGroup.attributes = ancGroup.attributes.copy()
+
+        for ds in ancGroup.datasets:
+            if ds != "DATETAG" and ds != "TIMETAG2" and ds != "DATETIME":
+                ProcessL1b_Interp.convertDataset(ancGroup, ds, newAncGroup, ds)
+
+        # Required for non-Tracker:
+        relAzData = None
+        szaData = None
+        solAzData = None
+
+        # Optional:
+        stationData = None
+        headingDataAnc = None
+        latDataAnc = None
+        lonDataAnc = None
+        cloudData = None
+        waveData = None
+        speedData = None
+        # Optional and may reside in SolarTracker or SATTHS group
+        pitchAncData = None
+        rollAncData = None
+        # Optional, assured with MERRA2 models when selected
+        saltData = None
+        sstData = None
+        windData = None
+        aodData = None
+        # Optional:
+        if "STATION" in newAncGroup.datasets:
+            stationData = newAncGroup.getDataset("STATION")
+        if "HEADING" in newAncGroup.datasets:
+            headingDataAnc = newAncGroup.getDataset("HEADING") # This HEADING derives from ancillary data file (NOT GPS or pySAS)
+        if "LATITUDE" in newAncGroup.datasets:
+            latDataAnc = newAncGroup.getDataset("LATITUDE")
+        if "LONGITUDE" in newAncGroup.datasets:
+            lonDataAnc = newAncGroup.getDataset("LONGITUDE")
+        if "SALINITY" in newAncGroup.datasets:
+            saltData = newAncGroup.getDataset("SALINITY")
+        if "SST" in newAncGroup.datasets:
+            sstData = newAncGroup.getDataset("SST")
+        if "WINDSPEED" in newAncGroup.datasets:
+            windData = newAncGroup.getDataset("WINDSPEED")
+        if "AOD" in newAncGroup.datasets:
+            aodData = newAncGroup.getDataset("AOD")
+        if "CLOUD" in newAncGroup.datasets:
+            cloudData = newAncGroup.getDataset("CLOUD")
+        if "WAVE_HT" in newAncGroup.datasets:
+            waveData = newAncGroup.getDataset("WAVE_HT")
+        if "SPEED_F_W" in newAncGroup.datasets:
+            speedData = newAncGroup.getDataset("SPEED_F_W")
+        # Allow for the unlikely option that pitch/roll data are included in both the SolarTracker/pySAS and Ancillary datasets
+        if "PITCH" in newAncGroup.datasets:
+            pitchAncData = newAncGroup.getDataset("PITCH")
+        if "ROLL" in newAncGroup.datasets:
+            rollAncData = newAncGroup.getDataset("ROLL")
+        if "RELAZ" in newAncGroup.datasets:
+            relAzData = newAncGroup.getDataset("RELAZ")
+        if "SZA" in newAncGroup.datasets:
+            szaData = newAncGroup.getDataset("SZA")
+        if "SOLAR_AZ" in newAncGroup.datasets:
+            solAzData = newAncGroup.getDataset("SOLAR_AZ")
+
+
+        # PysciDON interpolated to the SLOWEST sampling rate and ProSoft
+        # interpolates to the FASTEST. Not much in the literature on this, although
+        # Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises,
+        # which makes the most sense for minimizing error.
+        esData = refGroup.getDataset("ES") # array with columns date, time, esdata*wavebands...
+        liData = sasGroup.getDataset("LI")
+        ltData = sasGroup.getDataset("LT")
+
+        # Interpolate all datasets to the SLOWEST radiometric sampling rate
+        esLength = len(esData.data["Timetag2"].tolist())
+        liLength = len(liData.data["Timetag2"].tolist())
+        ltLength = len(ltData.data["Timetag2"].tolist())
+
+        interpData = None
+        if esLength < liLength and esLength < ltLength:
+            msg = f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            interpData = esData
+        elif liLength < ltLength:
+            msg = f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            interpData = liData
+        else:
+            msg = f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            interpData = ltData
+
+        # latData, lonData need to correspond to interData
+        if not ProcessL1b_Interp.interpolateData(latData, interpData, "LATITUDE", fileName):
+            return None
+        if not ProcessL1b_Interp.interpolateData(lonData, interpData, "LONGITUDE", fileName):
+            return None
+
+        if not ConfigFile.settings['bL1aqcSolarTracker']:
+            # Required:
+            if not ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName):
+                return None
+            if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName, latData, lonData):
+                return None
+            if not ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData):
+                return None
+        else:
+            if relAzData:
+                ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName)
+            if szaData:
+                ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName, latData, lonData)
+            if solAzData:
+                ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData)
+
+        # Optional:
+        if stationData:
+            ProcessL1b_Interp.interpolateData(stationData, interpData, "STATION", fileName)
+        if aodData:
+            ProcessL1b_Interp.interpolateData(aodData, interpData, "AOD", fileName)
+        if headingDataAnc:
+            ProcessL1b_Interp.interpolateData(headingDataAnc, interpData, "HEADING", fileName)
+        if latDataAnc:
+            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0 # Reserve lat/lon plots for actual GPS, not ancillary file
+            ProcessL1b_Interp.interpolateData(latDataAnc, interpData, "LATITUDE", fileName)
+            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
+        if lonDataAnc:
+            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0
+            ProcessL1b_Interp.interpolateData(lonDataAnc, interpData, "LONGITUDE", fileName)
+            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
+        if saltData:
+            ProcessL1b_Interp.interpolateData(saltData, interpData, "SALINITY", fileName)
+        if sstData:
+            ProcessL1b_Interp.interpolateData(sstData, interpData, "SST", fileName)
+        if windData:
+            ProcessL1b_Interp.interpolateData(windData, interpData, "WINDSPEED", fileName)
+        if cloudData:
+            ProcessL1b_Interp.interpolateData(cloudData, interpData, "CLOUD", fileName)
+        if waveData:
+            ProcessL1b_Interp.interpolateData(waveData, interpData, "WAVE_HT", fileName)
+        if speedData:
+            ProcessL1b_Interp.interpolateData(speedData, interpData, "SPEED_F_W", fileName)
+        if "PITCH" in ancGroup.datasets:
+            ProcessL1b_Interp.interpolateData(pitchAncData, interpData, "PITCH", fileName)
+        if "ROLL" in ancGroup.datasets:
+            ProcessL1b_Interp.interpolateData(rollAncData, interpData, "ROLL", fileName)
+
+        node.removeGroup(sasGroup)
+        node.removeGroup(refGroup)
+        node.removeGroup(newGPSGroup)
+        node.removeGroup(ancGroup)
+        newAncGroup.id = 'ANCILLARY_METADATA'
+
+        return True
+
+
+
+    @staticmethod
     def interpolateL1b_Interp(xData, xTimer, yTimer, newXData, dataName, kind='linear', fileName='default'):
         ''' Time interpolation
             xTimer, yTimer are already converted from TimeTag2 to Datetimes'''
@@ -228,90 +426,6 @@ class ProcessL1b_Interp:
         newDS.columns = newColumns
         newDS.columnsToDataset()
 
-
-    # @staticmethod
-    # def getDataAverage(n, data, time, width):
-    #     ''' Determines points to average data
-    #         Note: Prosoft always includes 1 point left/right of n
-    #         even if it is outside of specified width.
-
-    #         Not implemented in v1.0.B'''
-
-    #     lst = [data[n]]
-    #     i = n-1
-    #     while i >= 0:
-    #         lst.append(data[i])
-    #         if (time[n] - time[i]) > width:
-    #             break
-    #         i -= 1
-    #     i = n+1
-    #     while i < len(time):
-    #         lst.append(data[i])
-    #         if (time[i] - time[n]) > width:
-    #             break
-    #         i += 1
-    #     avg = 0
-    #     for v in lst:
-    #         avg += v
-    #     avg /= len(lst)
-    #     return avg
-
-    # @staticmethod
-    # def matchColumns(esData, liData, ltData):
-    #     ''' Makes each dataset have matching wavelength values
-
-    #         Not required; only for testing '''
-
-    #     msg = "Match Columns"
-    #     print(msg)
-    #     Utilities.writeLogFile(msg)
-
-    #     esData.datasetToColumns()
-    #     liData.datasetToColumns()
-    #     ltData.datasetToColumns()
-
-    #     matchMin = -1
-    #     matchMax = -1
-
-    #     # Determine the minimum and maximum values for k
-    #     for ds in [esData, liData, ltData]:
-    #         nMin = -1
-    #         nMax = -1
-    #         for k in ds.columns.keys():
-    #             if Utilities.isFloat(k):
-    #                 num = float(k)
-    #                 if nMin == -1:
-    #                     nMin = num
-    #                     nMax = num
-    #                 elif num < nMin:
-    #                     nMin = num
-    #                 elif num > nMax:
-    #                     nMax = num
-    #         if matchMin == -1:
-    #             matchMin = nMin
-    #             matchMax = nMax
-    #         if matchMin < nMin:
-    #             matchMin = nMin
-    #         if matchMax > nMax:
-    #             matchMax = nMax
-
-    #     # Remove values to match minimum and maximum
-    #     for ds in [esData, liData, ltData]:
-    #         l = []
-    #         for k in ds.columns.keys():
-    #             if Utilities.isFloat(k):
-    #                 num = float(k)
-    #                 if num < matchMin:
-    #                     l.append(k)
-    #                 elif num > matchMax:
-    #                     l.append(k)
-    #         for k in l:
-    #             del ds.columns[k]
-
-    #     esData.columnsToDataset()
-    #     liData.columnsToDataset()
-    #     ltData.columnsToDataset()
-
     @staticmethod
     def matchWavelengths(node):
         ''' Wavelength matching through interpolation.
@@ -427,6 +541,7 @@ class ProcessL1b_Interp:
     def processL1b_Interp(node, fileName):
         '''
         Process time and wavelength interpolation across instruments and ancillary data
+        Used for both SeaBird and TriOS L1b
         '''
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         # node  = Utilities.rootAddDateTime(node)
@@ -484,7 +599,12 @@ class ProcessL1b_Interp:
             if gp.id == "SOLARTRACKER" or gp.id =="SOLARTRACKER_pySAS":
                 satnavGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
             if gp.id == ("ANCILLARY_METADATA"):
-                ancGroup = gp
+                ancGroup = root.addGroup('ANCILLARY_METADATA')
+                ancGroup.copy(gp)
+                for ds in ancGroup.datasets:
+                    ancGroup.datasets[ds].datasetToColumns()
+
+
             if gp.id == "SOLARTRACKER_STATUS":
                 satmsgGroup = gp
 
@@ -542,63 +662,63 @@ class ProcessL1b_Interp:
             latData = newGPSGroup.getDataset("LATITUDE")
             lonData = newGPSGroup.getDataset("LONGITUDE")
 
-        # Metadata ancillary field and Pysolar data
-        if ancGroup is not None:
-            newAncGroup = root.addGroup("ANCILLARY_METADATA")
-            newAncGroup.attributes = ancGroup.attributes.copy()
-            for ds in ancGroup.datasets:
-                if ds != "DATETAG" and ds != "TIMETAG2" and ds != "DATETIME":
-                    ProcessL1b_Interp.convertDataset(ancGroup, ds, newAncGroup, ds)
+        # # Metadata ancillary field and Pysolar data
+        # if ancGroup is not None:
+        #     newAncGroup = root.addGroup("ANCILLARY_METADATA")
+        #     newAncGroup.attributes = ancGroup.attributes.copy()
+        #     for ds in ancGroup.datasets:
+        #         if ds != "DATETAG" and ds != "TIMETAG2" and ds != "DATETIME":
+        #             ProcessL1b_Interp.convertDataset(ancGroup, ds, newAncGroup, ds)
 
-            if satnavGroup is None:
-                # Required:
-                relAzData = newAncGroup.getDataset("REL_AZ")
-                szaData = newAncGroup.getDataset("SZA")
-                solAzData = newAncGroup.getDataset("SOLAR_AZ")
-            # Optional:
-            stationData = None
-            headingDataAnc = None
-            latDataAnc = None
-            lonDataAnc = None
-            cloudData = None
-            waveData = None
-            speedData = None
-            # Optional and may reside in SolarTracker or SATTHS group
-            pitchData = None
-            rollData = None
-            # Optional, assured with MERRA2 models when selected
-            saltData = None
-            sstData = None
-            windData = None
-            aodData = None
-            # Optional:
-            if "STATION" in newAncGroup.datasets:
-                stationData = newAncGroup.getDataset("STATION")
-            if "HEADING" in newAncGroup.datasets:
-                headingDataAnc = newAncGroup.getDataset("HEADING") # This HEADING derives from ancillary data file (NOT GPS or pySAS)
-            if "LATITUDE" in newAncGroup.datasets:
-                latDataAnc = newAncGroup.getDataset("LATITUDE")
-            if "LONGITUDE" in newAncGroup.datasets:
-                lonDataAnc = newAncGroup.getDataset("LONGITUDE")
-            if "SALINITY" in newAncGroup.datasets:
-                saltData = newAncGroup.getDataset("SALINITY")
-            if "SST" in newAncGroup.datasets:
-                sstData = newAncGroup.getDataset("SST")
-            if "WINDSPEED" in newAncGroup.datasets:
-                windData = newAncGroup.getDataset("WINDSPEED")
-            if "AOD" in newAncGroup.datasets:
-                aodData = newAncGroup.getDataset("AOD")
-            if "CLOUD" in newAncGroup.datasets:
-                cloudData = newAncGroup.getDataset("CLOUD")
-            if "WAVE_HT" in newAncGroup.datasets:
-                waveData = newAncGroup.getDataset("WAVE_HT")
-            if "SPEED_F_W" in newAncGroup.datasets:
-                speedData = newAncGroup.getDataset("SPEED_F_W")
-            # Allow for the unlikely option that pitch/roll data are included in both the SolarTracker/pySAS and Ancillary datasets
-            if "PITCH" in newAncGroup.datasets:
-                pitchAncData = newAncGroup.getDataset("PITCH")
-            if "ROLL" in newAncGroup.datasets:
-                rollAncData = newAncGroup.getDataset("ROLL")
+        #     if satnavGroup is None:
+        #         # Required:
+        #         relAzData = newAncGroup.getDataset("REL_AZ")
+        #         szaData = newAncGroup.getDataset("SZA")
+        #         solAzData = newAncGroup.getDataset("SOLAR_AZ")
+        #     # Optional:
+        #     stationData = None
+        #     headingDataAnc = None
+        #     latDataAnc = None
+        #     lonDataAnc = None
+        #     cloudData = None
+        #     waveData = None
+        #     speedData = None
+        #     # Optional and may reside in SolarTracker or SATTHS group
+        #     pitchData = None
+        #     rollData = None
+        #     # Optional, assured with MERRA2 models when selected
+        #     saltData = None
+        #     sstData = None
+        #     windData = None
+        #     aodData = None
+        #     # Optional:
+        #     if "STATION" in newAncGroup.datasets:
+        #         stationData = newAncGroup.getDataset("STATION")
+        #     if "HEADING" in newAncGroup.datasets:
+        #         headingDataAnc = newAncGroup.getDataset("HEADING") # This HEADING derives from ancillary data file (NOT GPS or pySAS)
+        #     if "LATITUDE" in newAncGroup.datasets:
+        #         latDataAnc = newAncGroup.getDataset("LATITUDE")
+        #     if "LONGITUDE" in newAncGroup.datasets:
+        #         lonDataAnc = newAncGroup.getDataset("LONGITUDE")
+        #     if "SALINITY" in newAncGroup.datasets:
+        #         saltData = newAncGroup.getDataset("SALINITY")
+        #     if "SST" in newAncGroup.datasets:
+        #         sstData = newAncGroup.getDataset("SST")
+        #     if "WINDSPEED" in newAncGroup.datasets:
+        #         windData = newAncGroup.getDataset("WINDSPEED")
+        #     if "AOD" in newAncGroup.datasets:
+        #         aodData = newAncGroup.getDataset("AOD")
+        #     if "CLOUD" in newAncGroup.datasets:
+        #         cloudData = newAncGroup.getDataset("CLOUD")
+        #     if "WAVE_HT" in newAncGroup.datasets:
+        #         waveData = newAncGroup.getDataset("WAVE_HT")
+        #     if "SPEED_F_W" in newAncGroup.datasets:
+        #         speedData = newAncGroup.getDataset("SPEED_F_W")
+        #     # Allow for the unlikely option that pitch/roll data are included in both the SolarTracker/pySAS and Ancillary datasets
+        #     if "PITCH" in newAncGroup.datasets:
+        #         pitchAncData = newAncGroup.getDataset("PITCH")
+        #     if "ROLL" in newAncGroup.datasets:
+        #         rollAncData = newAncGroup.getDataset("ROLL")
 
         if satnavGroup is not None:
             newSTGroup = root.addGroup("SOLARTRACKER")
@@ -722,54 +842,54 @@ class ProcessL1b_Interp:
             if "HEADING" in satnavGroup.datasets:
                 ProcessL1b_Interp.interpolateData(headingData, interpData, "HEADING", fileName)
 
-        if ancGroup is not None:
-            if satnavGroup is None:
-                # Required:
-                if not ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName):
-                    return None
-                if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName, latData, lonData):
-                    return None
-                if not ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData):
-                    return None
-            else:
-                if relAzData:
-                    ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName)
-                if szaData:
-                    ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName, latData, lonData)
-                if solAzData:
-                    ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData)
+        # if ancGroup is not None:
+        #     if satnavGroup is None:
+        #         # Required:
+        #         if not ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName):
+        #             return None
+        #         if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName, latData, lonData):
+        #             return None
+        #         if not ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData):
+        #             return None
+        #     else:
+        #         if relAzData:
+        #             ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName)
+        #         if szaData:
+        #             ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName, latData, lonData)
+        #         if solAzData:
+        #             ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData)
 
-            # Optional:
-            if stationData:
-                ProcessL1b_Interp.interpolateData(stationData, interpData, "STATION", fileName)
-            if aodData:
-                ProcessL1b_Interp.interpolateData(aodData, interpData, "AOD", fileName)
-            if headingDataAnc:
-                ProcessL1b_Interp.interpolateData(headingDataAnc, interpData, "HEADING", fileName)
-            if latDataAnc:
-                ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0 # Reserve lat/lon plots for actual GPS, not ancillary file
-                ProcessL1b_Interp.interpolateData(latDataAnc, interpData, "LATITUDE", fileName)
-                ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
-            if lonDataAnc:
-                ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0
-                ProcessL1b_Interp.interpolateData(lonDataAnc, interpData, "LONGITUDE", fileName)
-                ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
-            if saltData:
-                ProcessL1b_Interp.interpolateData(saltData, interpData, "SALINITY", fileName)
-            if sstData:
-                ProcessL1b_Interp.interpolateData(sstData, interpData, "SST", fileName)
-            if windData:
-                ProcessL1b_Interp.interpolateData(windData, interpData, "WINDSPEED", fileName)
-            if cloudData:
-                ProcessL1b_Interp.interpolateData(cloudData, interpData, "CLOUD", fileName)
-            if waveData:
-                ProcessL1b_Interp.interpolateData(waveData, interpData, "WAVE_HT", fileName)
-            if speedData:
-                ProcessL1b_Interp.interpolateData(speedData, interpData, "SPEED_F_W", fileName)
-            if "PITCH" in ancGroup.datasets:
-                ProcessL1b_Interp.interpolateData(pitchAncData, interpData, "PITCH", fileName)
-            if "ROLL" in ancGroup.datasets:
-                ProcessL1b_Interp.interpolateData(rollAncData, interpData, "ROLL", fileName)
+        #     # Optional:
+        #     if stationData:
+        #         ProcessL1b_Interp.interpolateData(stationData, interpData, "STATION", fileName)
+        #     if aodData:
+        #         ProcessL1b_Interp.interpolateData(aodData, interpData, "AOD", fileName)
+        #     if headingDataAnc:
+        #         ProcessL1b_Interp.interpolateData(headingDataAnc, interpData, "HEADING", fileName)
+        #     if latDataAnc:
+        #         ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0 # Reserve lat/lon plots for actual GPS, not ancillary file
+        #         ProcessL1b_Interp.interpolateData(latDataAnc, interpData, "LATITUDE", fileName)
+        #         ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
+        #     if lonDataAnc:
+        #         ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0
+        #         ProcessL1b_Interp.interpolateData(lonDataAnc, interpData, "LONGITUDE", fileName)
+        #         ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
+        #     if saltData:
+        #         ProcessL1b_Interp.interpolateData(saltData, interpData, "SALINITY", fileName)
+        #     if sstData:
+        #         ProcessL1b_Interp.interpolateData(sstData, interpData, "SST", fileName)
+        #     if windData:
+        #         ProcessL1b_Interp.interpolateData(windData, interpData, "WINDSPEED", fileName)
+        #     if cloudData:
+        #         ProcessL1b_Interp.interpolateData(cloudData, interpData, "CLOUD", fileName)
+        #     if waveData:
+        #         ProcessL1b_Interp.interpolateData(waveData, interpData, "WAVE_HT", fileName)
+        #     if speedData:
+        #         ProcessL1b_Interp.interpolateData(speedData, interpData, "SPEED_F_W", fileName)
+        #     if "PITCH" in ancGroup.datasets:
+        #         ProcessL1b_Interp.interpolateData(pitchAncData, interpData, "PITCH", fileName)
+        #     if "ROLL" in ancGroup.datasets:
+        #         ProcessL1b_Interp.interpolateData(rollAncData, interpData, "ROLL", fileName)
 
         if pyrGroup is not None:
             # Optional:

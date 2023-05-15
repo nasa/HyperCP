@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from Source.ConfigFile import ConfigFile
-from Source.ProcessL1b_FRMBranch import ProcessL1b_FRMBranch
+from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 from Source.Uncertainty_Analysis import Propagate
@@ -54,16 +54,16 @@ class TriosL1B:
         S2 = S2/65535.0
         k = t1/(t2-t1)
         S12 = (1+k)*S1 - k*S2
-        S12_sl_corr = ProcessL1b_FRMBranch.Slaper_SL_correction(S12, mZ, n_iter)
+        S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter)
         alpha = ((S1-S12)/(S12**2)).tolist()
 
         # Updated calibration gain
         if sensortype == "ES":
             updated_radcal_gain = (S12_sl_corr/LAMP) * (int_time_t0/t1)
             # Compute avg cosine error (not done for the moment)
-            avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMBranch.cosine_error_correction(node, sensortype)
+            avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMCal.cosine_error_correction(node, sensortype)
             # Irradiance direct and diffuse ratio
-            res_py6s = ProcessL1b_FRMBranch.get_direct_irradiance_ratio(node, sensortype)
+            res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
         else:
             PANEL = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_PANEL").data)['2'])
             updated_radcal_gain = (np.pi*S12_sl_corr)/(LAMP*PANEL) * (int_time_t0/t1)
@@ -89,7 +89,7 @@ class TriosL1B:
             # Non-linearity correction
             linear_corr_mesure = offset_corrected_mesure*(1-alpha*offset_corrected_mesure)
             # Straylight correction over measurement
-            straylight_corr_mesure = ProcessL1b_FRMBranch.Slaper_SL_correction(linear_corr_mesure, mZ, n_iter)
+            straylight_corr_mesure = ProcessL1b_FRMCal.Slaper_SL_correction(linear_corr_mesure, mZ, n_iter)
             # Normalization for integration time
             normalized_mesure = straylight_corr_mesure * int_time_t0/int_time[n]
             # Absolute calibration
@@ -270,6 +270,10 @@ class TriosL1B:
                 print(msg)
                 Utilities.writeLogFile(msg)
 
+                '''
+                Are Factory and Class-based approaches identical for TriOS?
+                Shouldn't Factory be based on factory cal file formats?
+                '''
                 if ConfigFile.settings["bL1bCal"] <= 2:
                     if not TriosL1B.processDarkCorrection(node, instrument_number, sensortype, stats):
                         msg = f'Error in TriosL1B.processDarkCorrection: {instrument_number} - {sensortype}'

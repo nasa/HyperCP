@@ -4,10 +4,11 @@ import pandas as pd
 import datetime as dt
 import Py6S
 
-class ProcessL1b_FRMBranch:
+class ProcessL1b_FRMCal:
 
     @staticmethod
     def get_direct_irradiance_ratio(node, sensortype):
+        ''' Used for both SeaBird and TriOS L1b'''
 
         ## Reading ancilliary data
         anc_grp = node.getGroup('ANCILLARY_METADATA')
@@ -51,7 +52,11 @@ class ProcessL1b_FRMBranch:
         s.altitudes = Py6S.Altitudes()
         s.altitudes.set_target_sea_level()
         s.altitudes.set_sensor_sea_level()
+        '''
+        Presumably this is where the model data are needed
+        '''
         s.aot550 = 0.153
+
         wavelengths, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl)
 
         # extract value from Py6s
@@ -118,6 +123,7 @@ class ProcessL1b_FRMBranch:
 
     @staticmethod
     def cosine_error_correction(node, sensortype):
+        ''' Used for both SeaBird and TriOS L1b'''
 
         ## Angular cosine correction (for Irradiance)
         unc_grp = node.getGroup('RAW_UNCERTAINTIES')
@@ -188,7 +194,7 @@ class ProcessL1b_FRMBranch:
 
         return mX[n_iter-1,:]
 
-    def process_FRM_calibration(node):
+    def processL1b_SeaBird(node):
         # calibration of HyperOCR following the FRM processing of FRM4SOC2
 
         unc_grp = node.getGroup('RAW_UNCERTAINTIES')
@@ -222,7 +228,7 @@ class ProcessL1b_FRMBranch:
             t2 = S2.pop(0)
             k = t1/(t2-t1)
             S12 = (1+k)*S1 - k*S2
-            S12_sl_corr = ProcessL1b_FRMBranch.Slaper_SL_correction(S12, mZ, n_iter)
+            S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter)
             alpha = ((S1-S12)/(S12**2)).tolist()
             LAMP = np.pad(LAMP, (0, nband-len(LAMP)), mode='constant') # PAD with zero if not 255 long
 
@@ -230,9 +236,9 @@ class ProcessL1b_FRMBranch:
             if sensortype == "ES":
                 updated_radcal_gain = (S12_sl_corr/LAMP) * (10*cal_int/t1)
                 ## Compute avg cosine error
-                avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMBranch.cosine_error_correction(node, sensortype)
+                avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMCal.cosine_error_correction(node, sensortype)
                 ## Irradiance direct and diffuse ratio
-                res_py6s = ProcessL1b_FRMBranch.get_direct_irradiance_ratio(node, sensortype)
+                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
             else:
                 PANEL = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_PANEL").data)['2'])
                 PANEL = np.pad(PANEL, (0, nband-len(PANEL)), mode='constant')
@@ -264,7 +270,7 @@ class ProcessL1b_FRMBranch:
                 # Non-linearity
                 data = data*(1-alpha*data)
                 # Straylight
-                data = ProcessL1b_FRMBranch.Slaper_SL_correction(data, mZ, n_iter)
+                data = ProcessL1b_FRMCal.Slaper_SL_correction(data, mZ, n_iter)
                 # Calibration
                 data = data * (cal_int/int_time[n]) / updated_radcal_gain
                 # thermal

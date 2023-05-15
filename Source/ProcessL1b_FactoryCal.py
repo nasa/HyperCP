@@ -3,7 +3,7 @@ import datetime as dt
 
 from Source.Utilities import Utilities
 
-class ProcessL1b_DefaultCal:
+class ProcessL1b_FactoryCal:
 
     # Used to calibrate raw data (convert from L1a to L1b)
     # Reference: "SAT-DN-00134_Instrument File Format.pdf"
@@ -11,35 +11,35 @@ class ProcessL1b_DefaultCal:
     def processDataset(ds, cd, inttime=None, immersed=False):
         #print("FitType:", cd.fitType)
         if cd.fitType == "OPTIC1":
-            ProcessL1b_DefaultCal.processOPTIC1(ds, cd, immersed)
+            ProcessL1b_FactoryCal.processOPTIC1(ds, cd, immersed)
         elif cd.fitType == "OPTIC2":
-            ProcessL1b_DefaultCal.processOPTIC2(ds, cd, immersed)
+            ProcessL1b_FactoryCal.processOPTIC2(ds, cd, immersed)
         elif cd.fitType == "OPTIC3":
-            ProcessL1b_DefaultCal.processOPTIC3(ds, cd, immersed, inttime)
+            ProcessL1b_FactoryCal.processOPTIC3(ds, cd, immersed, inttime)
         elif cd.fitType == "OPTIC4":
-            ProcessL1b_DefaultCal.processOPTIC4(ds, cd, immersed)
+            ProcessL1b_FactoryCal.processOPTIC4(ds, cd, immersed)
         elif cd.fitType == "THERM1":
-            ProcessL1b_DefaultCal.processTHERM1(ds, cd)
+            ProcessL1b_FactoryCal.processTHERM1(ds, cd)
         elif cd.fitType == "POW10":
-            ProcessL1b_DefaultCal.processPOW10(ds, cd, immersed)
+            ProcessL1b_FactoryCal.processPOW10(ds, cd, immersed)
         elif cd.fitType == "POLYU":
-            ProcessL1b_DefaultCal.processPOLYU(ds, cd)
+            ProcessL1b_FactoryCal.processPOLYU(ds, cd)
         elif cd.fitType == "POLYF":
-            ProcessL1b_DefaultCal.processPOLYF(ds, cd)
+            ProcessL1b_FactoryCal.processPOLYF(ds, cd)
         elif cd.fitType == "DDMM":
-            ProcessL1b_DefaultCal.processDDMM(ds, cd)
+            ProcessL1b_FactoryCal.processDDMM(ds, cd)
         elif cd.fitType == "HHMMSS":
-            ProcessL1b_DefaultCal.processHHMMSS(ds, cd)
+            ProcessL1b_FactoryCal.processHHMMSS(ds, cd)
         elif cd.fitType == "DDMMYY":
-            ProcessL1b_DefaultCal.processDDMMYY(ds, cd)
+            ProcessL1b_FactoryCal.processDDMMYY(ds, cd)
         elif cd.fitType == "TIME2":
-            ProcessL1b_DefaultCal.processTIME2(ds, cd)
+            ProcessL1b_FactoryCal.processTIME2(ds, cd)
         elif cd.fitType == "COUNT":
             pass
         elif cd.fitType == "NONE":
             pass
         else:
-            msg = f'ProcessL1b_DefaultCal.processDataset: Unknown Fit Type: {cd.fitType}'
+            msg = f'ProcessL1b_FactoryCal.processDataset: Unknown Fit Type: {cd.fitType}'
             print(msg)
             Utilities.writeLogFile(msg)
 
@@ -161,7 +161,7 @@ class ProcessL1b_DefaultCal:
             if cd.type == "INTTIME":
                 #print("Process INTTIME")
                 ds = gp.getDataset("INTTIME")
-                ProcessL1b_DefaultCal.processDataset(ds, cd)
+                ProcessL1b_FactoryCal.processDataset(ds, cd)
                 inttime = ds
 
         for cd in cf.data:
@@ -169,10 +169,10 @@ class ProcessL1b_DefaultCal:
             if gp.getDataset(cd.type) and cd.type != "INTTIME":
                 #print("Dataset:", cd.type)
                 ds = gp.getDataset(cd.type)
-                ProcessL1b_DefaultCal.processDataset(ds, cd, inttime)
+                ProcessL1b_FactoryCal.processDataset(ds, cd, inttime)
 
     @staticmethod
-    def processL1b(node, calibrationMap):
+    def processL1b_SeaBird(node, calibrationMap):
         '''
         Calibrates L1a using information from calibration file
         '''
@@ -185,7 +185,7 @@ class ProcessL1b_DefaultCal:
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
-        msg = f"ProcessL1b_DefaultCal.processL1b: {timestr}"
+        msg = f"ProcessL1b_FactoryCal.processL1b: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)
 
@@ -205,7 +205,7 @@ class ProcessL1b_DefaultCal:
                 print(msg)
                 Utilities.writeLogFile(msg)
 
-                ProcessL1b_DefaultCal.processGroup(gp, cf)
+                ProcessL1b_FactoryCal.processGroup(gp, cf)
 
                 if esUnits == None:
                     esUnits = cf.getUnits("ES")

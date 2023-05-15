@@ -5,15 +5,16 @@ import calendar
 import numpy as np
 from inspect import currentframe, getframeinfo
 
-from Source.HDFRoot import HDFRoot
-from Source.ProcessL1b_DefaultCal import ProcessL1b_DefaultCal
-from Source.ProcessL1b_FRMBranch import ProcessL1b_FRMBranch
+from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
+from Source.ProcessL1b_ClassCal import ProcessL1b_ClassCal
+from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 
 class ProcessL1b:
+    '''SeaBird L1b'''
 
     @staticmethod
     def convertDataset(group, datasetName, newGroup, newDatasetName):
@@ -146,19 +147,19 @@ class ProcessL1b:
 
         return True
 
-    # Copies TIMETAG2 values to Timer and converts to seconds
-    @staticmethod
-    def copyTimetag2(timerDS, tt2DS):
-        if (timerDS.data is None) or (tt2DS.data is None):
-            msg = "copyTimetag2: Timer/TT2 is None"
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return
+    # # Copies TIMETAG2 values to Timer and converts to seconds
+    # @staticmethod
+    # def copyTimetag2(timerDS, tt2DS):
+    #     if (timerDS.data is None) or (tt2DS.data is None):
+    #         msg = "copyTimetag2: Timer/TT2 is None"
+    #         print(msg)
+    #         Utilities.writeLogFile(msg)
+    #         return
 
-        for i in range(0, len(timerDS.data)):
-            tt2 = float(tt2DS.data["NONE"][i])
-            t = Utilities.timeTag2ToSec(tt2)
-            timerDS.data["NONE"][i] = t
+    #     for i in range(0, len(timerDS.data)):
+    #         tt2 = float(tt2DS.data["NONE"][i])
+    #         t = Utilities.timeTag2ToSec(tt2)
+    #         timerDS.data["NONE"][i] = t
 
     @staticmethod
     def processDarkCorrection(node, sensorType):
@@ -189,14 +190,6 @@ class ProcessL1b:
             print(msg)
             Utilities.writeLogFile(msg)
             return False
-
-        # # Propagate unadulterated L1AQC ir/radiances
-        # rawDarkDs = lightGroup.addDataset(sensorType+'_DARK_L1AQC')
-        # rawDarkDs.copy(darkData)
-        # rawDarkDs.datasetToColumns()
-        # rawLightDs = lightGroup.addDataset(sensorType+'_LIGHT_L1AQC')
-        # rawLightDs.copy(lightData)
-        # rawLightDs.datasetToColumns()
 
         # Instead of using TT2 or seconds, use python datetimes to avoid problems crossing
         # UTC midnight.
@@ -231,14 +224,13 @@ class ProcessL1b:
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
-        if ConfigFile.settings["bL1bDefaultCal"] == 1:
+        if ConfigFile.settings["bL1bCal"] == 1:
             node.attributes['CAL_TYPE'] = 'Default/Factory'
-        elif ConfigFile.settings["bL1bDefaultCal"] == 2:
+        elif ConfigFile.settings["bL1bCal"] == 2:
             node.attributes['CAL_TYPE'] = 'Class-based'
-        elif ConfigFile.settings["bL1bDefaultCal"] == 3:
+        elif ConfigFile.settings["bL1bCal"] == 3:
             node.attributes['CAL_TYPE'] = 'Full-FRM'
         node.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
-
 
 
         msg = f"ProcessL1b.processL1b: {timestr}"
@@ -289,24 +281,40 @@ class ProcessL1b:
             Utilities.writeLogFile(msg)
             return None
 
+        # Interpolate only the Ancillary group, and then fold in model data
+        if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
+            msg = 'Error interpolating ancillary data'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+
         # Calibration
         # Depending on the Configuration, process either the factory
         # calibration or the complete instrument characterizations
-        if ConfigFile.settings['bL1bCal'] <= 2:
+        if ConfigFile.settings['bL1bCal'] == 1:
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join("Config", calFolder)
             print("Read CalibrationFile ", calPath)
             calibrationMap = CalibrationFileReader.read(calPath)
-            ProcessL1b_DefaultCal.processL1b(node, calibrationMap)
+            ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
+
+        elif ConfigFile.settings['bL1bCal'] == 2:
+            print('Placeholder for Class-based')
+            if not ProcessL1b_ClassCal.processL1b_SeaBird(node):
+                msg = 'Error in ProcessL1b.process_FRM_calibration'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
 
         elif ConfigFile.settings['bL1bCal'] == 3:
-            if not ProcessL1b.process_FRM_calibration(node):
+            if not ProcessL1b_FRMCal.process_FRM_SeaBird(node):
                 msg = 'Error in ProcessL1b.process_FRM_calibration'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
 
         # Interpolation
+        ''' Used with both TriOS and SeaBird '''
         # Match instruments to a common timestamp (slowest shutter, should be Lt) and
         # interpolate to the chosen spectral resolution. HyperSAS instruments operate on
         # different timestamps and wavebands, so interpolation is required.
