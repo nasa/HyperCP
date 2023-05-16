@@ -147,8 +147,10 @@ class TriosL1B:
         # Read HDF file inputs
         # grp = node.getGroup(instrument_number+'.dat')
         grp = node.getGroup(sensortype)
-        raw_cal  = grp.getDataset("CAL_"+sensortype).data
-        raw_back = grp.getDataset("BACK_"+sensortype).data
+        grp.getDataset("CAL_"+sensortype).datasetToColumns()
+        raw_cal = np.array(grp.getDataset("CAL_"+sensortype).columns['0'])
+        # raw_cal  = np.array(grp.getDataset("CAL_"+sensortype).data.tolist())
+        raw_back = np.asarray(grp.getDataset("BACK_"+sensortype).data.tolist())
         raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
         raw_wvl = np.array(pd.DataFrame(grp.getDataset(sensortype).data).columns)
         int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())

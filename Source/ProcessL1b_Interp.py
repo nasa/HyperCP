@@ -602,7 +602,8 @@ class ProcessL1b_Interp:
                 ancGroup = root.addGroup('ANCILLARY_METADATA')
                 ancGroup.copy(gp)
                 for ds in ancGroup.datasets:
-                    ancGroup.datasets[ds].datasetToColumns()
+                    if ds != 'DATETIME':
+                        ancGroup.datasets[ds].datasetToColumns()
 
 
             if gp.id == "SOLARTRACKER_STATUS":
