@@ -5,10 +5,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from Source.ConfigFile import ConfigFile
+from Source.ProcessL1b import ProcessL1b
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 from Source.Uncertainty_Analysis import Propagate
+from Source.GetAnc import GetAnc
+from Source.GetAnc_ecmwf import GetAnc_ecmwf
 
 class TriosL1B:
 
@@ -260,6 +263,46 @@ class TriosL1B:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
         stats = {}
+
+        # Interpolate only the Ancillary group, and then fold in model data
+        if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
+            msg = 'Error interpolating ancillary data'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+
+        # Need to fill in with model data here. This had previously been run on the GPS group, but now shifted to Ancillary group
+        ancGroup = node.getGroup("ANCILLARY_METADATA")
+        # Retrieve MERRA2 model ancillary data
+        if ConfigFile.settings["bL1bGetAnc"] ==1:
+            msg = 'MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            modRoot = GetAnc.getAnc(ancGroup)
+        # Retrieve ECMWF model ancillary data
+        elif ConfigFile.settings["bL1bGetAnc"] == 2:
+            msg = 'ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            modRoot = GetAnc_ecmwf.getAnc_ecmwf(ancGroup)
+        else:
+            modRoot = None
+
+        if modRoot is not None:
+            # return None
+
+            # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
+            # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
+            # to have model data and/or default values incorporated.
+
+            # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
+            # is provided in Main Window, then use the model data to fill in gaps in the field
+            # record. Otherwise, use the selected default values from ConfigWindow
+
+            # This step is only necessary for the ancillary datasets that REQUIRE
+            # either field or GMAO or GUI default values. The remaining ancillary data
+            # are culled from datasets in groups in L1B
+            ProcessL1b.includeModelDefaults(ancGroup, modRoot)
 
         ## Dark Correction & Absolute Calibration
         for instrument in ConfigFile.settings['CalibrationFiles'].keys():

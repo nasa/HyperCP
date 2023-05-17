@@ -279,13 +279,13 @@ class ProcessL1aqc:
 
             # relAzAnc either from ancillary relZz, ancillary sensorAz, (or THS compass above ^^)
             relAzAnc = []
-            if "RELAZ" in ancillaryData.columns:
-                relAzAnc = ancillaryData.columns["RELAZ"][0]
+            if "REL_AZ" in ancillaryData.columns:
+                relAzAnc = ancillaryData.columns["REL_AZ"][0]
 
             sasAzAnc = []
             # This is a new SeaBASS field
-            if "SENSORAZ" in ancillaryData.columns:
-                sasAzAnc = ancillaryData.columns["SENSORAZ"][0]
+            if "SENSOR_AZ" in ancillaryData.columns:
+                sasAzAnc = ancillaryData.columns["SENSOR_AZ"][0]
 
             if not ConfigFile.settings["bL1aqcSolarTracker"] and not relAzAnc and not sasAzAnc:
                 msg = 'Required ancillary sensor geometries missing. Abort.'

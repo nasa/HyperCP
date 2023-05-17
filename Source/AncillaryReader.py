@@ -200,10 +200,10 @@ class AncillaryReader:
         #     ancillaryData.appendColumn("HOMEANGLE", homeAngle)
         #     ancillaryData.attributes["HOMEANGLE_Units"]=homeAngleUnits
         if relAzAngle:
-            ancillaryData.appendColumn("RELAZ", relAzAngle)
+            ancillaryData.appendColumn("REL_AZ", relAzAngle)
             ancillaryData.attributes["RELAZ_Units"]=relAzAngleUnits
         if sensorAzAngle:
-            ancillaryData.appendColumn("SENSORAZ", sensorAzAngle)
+            ancillaryData.appendColumn("SENSOR_AZ", sensorAzAngle)
             ancillaryData.attributes["SENSORAZ_Units"]=sensorAzAngleUnits
         if cloud:
             ancillaryData.appendColumn("CLOUD", cloud)

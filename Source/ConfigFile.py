@@ -81,8 +81,8 @@ class ConfigFile:
         print("bL1bPlotTimeInterp", ConfigFile.settings["bL1bPlotTimeInterp"])
         print("fL1bPlotInterval", ConfigFile.settings["fL1bPlotInterval"])
 
-        print("bL1bqcGetAnc", ConfigFile.settings["bL1bqcGetAnc"])
-        print("bL1bqcObpgCreds", ConfigFile.settings["bL1bqcObpgCreds"])
+        print("bL1bGetAnc", ConfigFile.settings["bL1bGetAnc"])
+        print("bL1bObpgCreds", ConfigFile.settings["bL1bObpgCreds"])
 
         print("bL1bqcLtUVNIR", ConfigFile.settings["bL1bqcLtUVNIR"])
         print("fL1bqcMaxWind", ConfigFile.settings["fL1bqcMaxWind"])
@@ -255,6 +255,12 @@ class ConfigFile:
 
         ConfigFile.settings["fL1aqcAnomalyStep"] = 20
 
+        ConfigFile.settings["bL1bGetAnc"] = 0
+        ConfigFile.settings["bL1bObpgCreds"] = 0
+        ConfigFile.settings["fL1bDefaultWindSpeed"] = 5.0
+        ConfigFile.settings["fL1bDefaultAOD"] = 0.5
+        ConfigFile.settings["fL1bDefaultSalt"] = 35.0
+        ConfigFile.settings["fL1bDefaultSST"] = 26.0
         ConfigFile.settings["bL1bCal"] = 1 # 1 for Factory, 2 for Class, 3 for Instrument Full
         ConfigFile.settings["FullCalDir"] = 'Choose input characterization directory'
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
@@ -262,9 +268,9 @@ class ConfigFile:
         ConfigFile.settings["fL1bPlotInterval"] = 20 # nm
 
         ConfigFile.settings["bL1bqcLtUVNIR"] = 1
-        ConfigFile.settings["fL1bqcMaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
-        ConfigFile.settings["fL1bqcSZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
-        ConfigFile.settings["fL1bqcSZAMax"] = 60 # e.g. 60:Brewin 2016,
+        ConfigFile.settings["fL1bMaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
+        ConfigFile.settings["fL1bSZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
+        ConfigFile.settings["fL1bSZAMax"] = 60 # e.g. 60:Brewin 2016,
 
         ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 1
         ConfigFile.settings["fL1bqcSpecFilterEs"] = 5
@@ -277,12 +283,7 @@ class ConfigFile:
         ConfigFile.settings["fL1bqcDawnDuskFlag"] = 1.0 # Wernand 2002
         ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain
 
-        ConfigFile.settings["bL1bqcGetAnc"] = 0
-        ConfigFile.settings["bL1bqcObpgCreds"] = 0
-        ConfigFile.settings["fL1bqcDefaultWindSpeed"] = 5.0
-        ConfigFile.settings["fL1bqcDefaultAOD"] = 0.5
-        ConfigFile.settings["fL1bqcDefaultSalt"] = 35.0
-        ConfigFile.settings["fL1bqcDefaultSST"] = 26.0
+
 
         ConfigFile.settings["bL2Stations"] = 0
         ConfigFile.settings["fL2TimeInterval"] = 300

@@ -290,9 +290,6 @@ class Window(QtWidgets.QWidget):
         configPath = os.path.join('Config', configFileName)
         if os.path.isfile(configPath):
             ConfigFile.loadConfig(configFileName)
-            # Precaution for the addition of new settings since this config file
-            #   written. Finds default values for mission ConfigFile.settings.
-            # ConfigFile.saveConfig(configFileName)
             configDialog = ConfigWindow(configFileName, inputDir, self)
             configDialog.show()
         else:

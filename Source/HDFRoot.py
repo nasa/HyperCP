@@ -36,7 +36,6 @@ class HDFRoot:
     def getGroup(self, name):
         for gp in self.groups:
             if gp.id == name:
-            # if gp.id.startswith(name): <- not sure what this was for, but it breaks on SOLARTRACKER_STATUS
                 return gp
         return None
 
