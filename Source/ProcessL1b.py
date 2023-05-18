@@ -449,7 +449,7 @@ class ProcessL1b:
             return None
 
         # Interpolate only the Ancillary group, and then fold in model data
-        '''Need to test without an anc file'''
+        '''Need to test without an anc file and with SolarTracker geometries'''
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
             msg = 'Error interpolating ancillary data'
             print(msg)

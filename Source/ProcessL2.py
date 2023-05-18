@@ -1916,6 +1916,15 @@ class ProcessL2:
             for ds in grp.datasets:
                 grp.datasets[ds].datasetToColumns()
 
+            # Carry over L1AQC data for use in uncertainty budgets
+            if grp.id.endswith('_L1AQC'):
+                newGrp = node.addGroup(grp.id)
+                newGrp.copy(grp)
+
+                for ds in newGrp.datasets:
+                    newGrp.datasets[ds].datasetToColumns()
+
+
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):
             return None

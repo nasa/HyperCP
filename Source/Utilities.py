@@ -2130,8 +2130,10 @@ class Utilities:
                 if sensor in ds.id:
                     # new_ds_name = '_'.join([sensorID[sensor], ds.id.split('_')[-1]])
                     new_ds_name = ''.join([sensorID[sensor], ds.id.split(sensor)[-1]])
+                    # ds.id = new_ds_name
                     new_ds = unc_group.addDataset(new_ds_name)
                     new_ds.copy(ds)
+                    new_ds.datasetToColumns()
                     unc_group.removeDataset(ds.id)  # remove  dataset
         return True
 

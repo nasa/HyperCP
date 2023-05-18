@@ -17,7 +17,7 @@ class TriosL1B:
 
 
     @staticmethod
-    def processDarkCorrection_FRM(node, instrument_number, sensortype, stats: dict):
+    def processDarkCorrection_FRM(node, sensortype, stats: dict):
         # Dark & Calibration process for FRM branch using Full Characterisation from TO,
         # and with additional correction for (non-linearity, straylight, ...)
 
@@ -142,7 +142,7 @@ class TriosL1B:
         return True
 
     @staticmethod
-    def processDarkCorrection(node, instrument_number, sensortype, stats: dict):
+    def processDarkCorrection(node, sensortype, stats: dict):
         # Dark correction performed for each trios radiometers
         # Instrument serial number and associated frame type are read in configuration
         # return the wvl of dark pixel for which no calibration factor is defined
@@ -289,8 +289,6 @@ class TriosL1B:
             modRoot = None
 
         if modRoot is not None:
-            # return None
-
             # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
             # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
             # to have model data and/or default values incorporated.
@@ -320,38 +318,17 @@ class TriosL1B:
                 Shouldn't Factory be based on factory cal file formats?
                 '''
                 if ConfigFile.settings["bL1bCal"] <= 2:
-                    if not TriosL1B.processDarkCorrection(node, instrument_number, sensortype, stats):
+                    if not TriosL1B.processDarkCorrection(node, sensortype, stats):
                         msg = f'Error in TriosL1B.processDarkCorrection: {instrument_number} - {sensortype}'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
                 elif ConfigFile.settings['bL1bCal'] == 3:
-                    if not TriosL1B.processDarkCorrection_FRM(node, instrument_number, sensortype, stats):
+                    if not TriosL1B.processDarkCorrection_FRM(node, sensortype, stats):
                         msg = f'Error in TriosL1B.processDarkCorrection_FRM: {instrument_number} - {sensortype}'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
-
-
-        # ## Uncertainty computation/initialisation
-        # if ConfigFile.settings["bL1bCal"] == 1:
-        #     if not ProcessL1b.process_Default_Uncertainties(node, stats):
-        #         msg = 'Error in process_Default_Uncertainties'
-        #         print(msg)
-        #         Utilities.writeLogFile(msg)
-        #         return None
-        # elif ConfigFile.settings["bL1bCal"] == 2:
-        #     if not ProcessL1b.process_Class_Uncertainties(node, stats):
-        #         msg = 'Error in process_Class_Uncertainties'
-        #         print(msg)
-        #         Utilities.writeLogFile(msg)
-        #         return None
-        # elif ConfigFile.settings['bL1bCal'] == 3:
-        #     if not ProcessL1b.process_FRM_Uncertainties(node, stats):
-        #         msg = 'Error in process_FRM_Uncertainties'
-        #         print(msg)
-        #         Utilities.writeLogFile(msg)
-        #         return None
 
 
         ## Interpolation

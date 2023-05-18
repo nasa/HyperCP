@@ -8,7 +8,11 @@ class ProcessL1b_FRMCal:
 
     @staticmethod
     def get_direct_irradiance_ratio(node, sensortype):
-        ''' Used for both SeaBird and TriOS L1b'''
+        ''' Used for both SeaBird and TriOS L1b
+
+        Need to flip relAz, sza, solarAz into Ancillary before the interpolation of Ancillary for SolarTracker data.
+
+        '''
 
         ## Reading ancilliary data
         anc_grp = node.getGroup('ANCILLARY_METADATA')
@@ -17,9 +21,10 @@ class ProcessL1b_FRMCal:
         rel_az = np.asarray(pd.DataFrame(anc_grp.getDataset("REL_AZ").data))
         sun_zenith = np.asarray(pd.DataFrame(anc_grp.getDataset("SZA").data))
         sun_azimuth = np.asarray(pd.DataFrame(anc_grp.getDataset("SOLAR_AZ").data))
-        anc_datetag = np.asarray(pd.DataFrame(anc_grp.getDataset("DATETAG").data))
-        anc_timetag = np.asarray(pd.DataFrame(anc_grp.getDataset("TIMETAG2").data))
-        anc_datetime = [dt.datetime.strptime(str(int(x[0]))+str(int(y[0])).rjust(9,'0'), "%Y%j%H%M%S%f") for x,y in zip(anc_datetag,anc_timetag)]
+        anc_datetime = anc_grp.datasets['LATITUDE'].columns['Datetime']
+        # anc_datetag = np.asarray(pd.DataFrame(anc_grp.getDataset("DATETAG").data))
+        # anc_timetag = np.asarray(pd.DataFrame(anc_grp.getDataset("TIMETAG2").data))
+        # anc_datetime = [dt.datetime.strptime(str(int(x[0]))+str(int(y[0])).rjust(9,'0'), "%Y%j%H%M%S%f") for x,y in zip(anc_datetag,anc_timetag)]
 
         ## Reading irradiance data
         # if trios == 0:
@@ -28,13 +33,14 @@ class ProcessL1b_FRMCal:
         #     irr_grp = node.getGroup(trios+'.dat')
         str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
         wvl = np.asarray([float(x) for x in str_wvl])
-        datetag = np.asarray(pd.DataFrame(irr_grp.getDataset("DATETAG").data))
-        timetag = np.asarray(pd.DataFrame(irr_grp.getDataset("TIMETAG2").data))
-        datetime = [dt.datetime.strptime(str(int(x[0]))+str(int(y[0])).rjust(9,'0'), "%Y%j%H%M%S%f") for x,y in zip(datetag,timetag)]
+        datetime = irr_grp.datasets['DATETIME'].data
+        # datetag = np.asarray(pd.DataFrame(irr_grp.getDataset("DATETAG").data))
+        # timetag = np.asarray(pd.DataFrame(irr_grp.getDataset("TIMETAG2").data))
+        # datetime = [dt.datetime.strptime(str(int(x[0]))+str(int(y[0])).rjust(9,'0'), "%Y%j%H%M%S%f") for x,y in zip(datetag,timetag)]
         # datetime_str = [x.strftime("%Y-%m-%d %H:%M:%S") for x in datetime]
 
         ## Py6S configuration
-        n_mesure = len(datetag)
+        n_mesure = len(datetime)
         nband = len(wvl)
         res_py6s = {}
 
@@ -57,6 +63,9 @@ class ProcessL1b_FRMCal:
         '''
         s.aot550 = 0.153
 
+        '''
+        This throws the error: TypeError: only size-1 arrays can be converted to Python scalars
+        '''
         wavelengths, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl)
 
         # extract value from Py6s

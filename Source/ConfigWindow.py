@@ -4,6 +4,7 @@ import shutil
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pathlib import Path
 
+from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.AnomalyDetection import AnomAnalWindow
@@ -193,12 +194,12 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcDeglitchCheckBox = QtWidgets.QCheckBox("", self)
         if ConfigFile.settings["bL1aqcDeglitch"]:
             self.l1aqcDeglitchCheckBox.setChecked(True)
-        self.l1aqcDeglitchCheckBoxUpdate()
-        self.l1aqcDeglitchCheckBox.clicked.connect(self.l1aqcDeglitchCheckBoxUpdate)
 
         #   Launch Deglitcher Analysis
         self.l1aqcAnomalyButton = QtWidgets.QPushButton("Launch Anomaly Analysis")
         self.l1aqcAnomalyButton.clicked.connect(self.l1aqcAnomalyButtonPressed)
+        self.l1aqcDeglitchCheckBoxUpdate()
+        self.l1aqcDeglitchCheckBox.clicked.connect(self.l1aqcDeglitchCheckBoxUpdate)
 
         # L1B
         l1bLabel = QtWidgets.QLabel("Level 1B Processing", self)
@@ -270,7 +271,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1bInterpInterval"]))
         self.l1bInterpIntervalLineEdit.setValidator(doubleValidator)
 
-        l1bPlotTimeInterpLabel = QtWidgets.QLabel("    Generate Plots ({OUTPATH}/Plots/L1B_Interp/)", self)
+        l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Plots ({os.path.split(MainConfig.settings['outDir'])[-1]}/Plots/L1B_Interp/)", self)
         self.l1bPlotTimeInterpCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bPlotTimeInterp"]) == 1:
             self.l1bPlotTimeInterpCheckBox.setChecked(True)
@@ -729,6 +730,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # VBox1.addWidget(l1aqcAnomalySublabel2)
         VBox1.addWidget(self.l1aqcAnomalyButton)
 
+
         VBox1.addStretch()
 
         # Second Vertical Box
@@ -807,38 +809,6 @@ class ConfigWindow(QtWidgets.QDialog):
         # L1BQC
         VBox2.addWidget(l1bqcLabel)
         VBox2.addWidget(l1bqcSublabel)
-
-        # #  Ancillary Models
-        # VBox2.addWidget(l1bqcSublabel1)
-        # VBox2.addWidget(l1bqcSublabel2)
-        # l1bqcGetAncHBox1 = QtWidgets.QHBoxLayout()
-        # l1bqcGetAncHBox1.addWidget(self.l1bqcGetAncCheckBox1)
-        # # l1bqcGetAncHBox1.addWidget(l1bqcSublabel4)
-        # l1bqcGetAncHBox1.addWidget(self.l1bqcGetAncCheckBox2)
-        # VBox2.addLayout(l1bqcGetAncHBox1)
-        # VBox2.addWidget(l1bqcSublabel3)
-        # VBox2.addWidget(l1bqcSublabel5)
-
-        # #   Default Wind
-        # WindSpeedHBox2 = QtWidgets.QHBoxLayout()
-        # WindSpeedHBox2.addWidget(self.l1bqcDefaultWindSpeedLabel)
-        # WindSpeedHBox2.addWidget(self.l1bqcDefaultWindSpeedLineEdit)
-        # VBox2.addLayout(WindSpeedHBox2)
-        # #   Default AOD
-        # AODHBox2 = QtWidgets.QHBoxLayout()
-        # AODHBox2.addWidget(self.l1bqcDefaultAODLabel)
-        # AODHBox2.addWidget(self.l1bqcDefaultAODLineEdit)
-        # VBox2.addLayout(AODHBox2)
-        # #   Default Salt
-        # SaltHBox2 = QtWidgets.QHBoxLayout()
-        # SaltHBox2.addWidget(self.l1bqcDefaultSaltLabel)
-        # SaltHBox2.addWidget(self.l1bqcDefaultSaltLineEdit)
-        # VBox2.addLayout(SaltHBox2)
-        # #   Default SST
-        # SSTHBox2 = QtWidgets.QHBoxLayout()
-        # SSTHBox2.addWidget(self.l1bqcDefaultSSTLabel)
-        # SSTHBox2.addWidget(self.l1bqcDefaultSSTLineEdit)
-        # VBox2.addLayout(SSTHBox2)
 
         # Lt UV<NIR
         LtUVNIRHBox = QtWidgets.QHBoxLayout()
@@ -1097,24 +1067,25 @@ class ConfigWindow(QtWidgets.QDialog):
         calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
         configPath = os.path.join("Config", calibrationDir)
 
-        if ".sip" in fnames[0][0]:
-            src = fnames[0][0]
-            (_, filename) = os.path.split(src)
-            dest = os.path.join(configPath, filename)
-            print(src)
-            print(dest)
-            shutil.copy(src, dest)
-            CalibrationFileReader.readSip(dest)
-            [folder,_] = filename.split('.')
-            os.rmdir(os.path.join(configPath,folder))
-
-        else:
-            for src in fnames[0]:
+        if fnames:
+            if ".sip" in fnames[0][0]:
+                src = fnames[0][0]
                 (_, filename) = os.path.split(src)
                 dest = os.path.join(configPath, filename)
                 print(src)
                 print(dest)
                 shutil.copy(src, dest)
+                CalibrationFileReader.readSip(dest)
+                [folder,_] = filename.split('.')
+                os.rmdir(os.path.join(configPath,folder))
+
+            else:
+                for src in fnames[0]:
+                    (_, filename) = os.path.split(src)
+                    dest = os.path.join(configPath, filename)
+                    print(src)
+                    print(dest)
+                    shutil.copy(src, dest)
 
     def deleteCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Remove Calibration File Pressed")
@@ -1140,14 +1111,26 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationEnabledCheckBox.blockSignals(False)
         self.calibrationFrameTypeComboBox.blockSignals(False)
 
-    def setSensorSettings(self):
-        print("CalibrationEditWindow - set Sensor Settings")
-        sensor = self.sensorTypeComboBox.currentText()
-        ConfigFile.settings["SensorType"] = sensor
+    # def setSensorSettings(self):
+    #     print("CalibrationEditWindow - set Sensor Settings")
+    #     sensor = self.sensorTypeComboBox.currentText()
+    #     ConfigFile.settings["SensorType"] = sensor
 
     def sensorTypeChanged(self):
         print("CalibrationEditWindow - Sensor Type Changed")
-        self.setSensorSettings()
+        # self.setSensorSettings()
+        sensor = self.sensorTypeComboBox.currentText()
+        ConfigFile.settings["SensorType"] = sensor
+
+        # if sensor.lower() == 'trios':
+        #     self.l1aqcDeglitchCheckBox.setChecked(False)
+        self.l1aqcDeglitchCheckBoxUpdate()
+        #     self.l1aqcDeglitchCheckBox.setEnabled(False)
+        #     self.l1aqcAnomalyButton.setEnabled(False)
+        # elif sensor.lower() == 'seabird':
+        #     self.l1aqcDeglitchCheckBox.setEnabled(True)
+        #     self.l1aqcAnomalyButton.setEnabled(True)
+
 
     def setCalibrationSettings(self):
         print("CalibrationEditWindow - setCalibrationSettings")
@@ -1276,11 +1259,25 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1aqcDeglitchCheckBoxUpdate(self):
         print("ConfigWindow - l1aqcDeglitchCheckBoxUpdate")
 
+        # Confirm SeaBird
+        sensor = self.sensorTypeComboBox.currentText()
+        ConfigFile.settings["SensorType"] = sensor
+
+        if sensor.lower() == 'trios':
+            self.l1aqcDeglitchCheckBox.setChecked(False)
+            self.l1aqcDeglitchCheckBox.setEnabled(False)
+            self.l1aqcDeglitchLabel.setEnabled(False)
+            self.l1aqcAnomalyButton.setEnabled(False)
+        elif sensor.lower() == 'seabird':
+            self.l1aqcDeglitchCheckBox.setEnabled(True)
+            self.l1aqcDeglitchLabel.setEnabled(True)
+            self.l1aqcAnomalyButton.setEnabled(True)
+
         disabled = (not self.l1aqcDeglitchCheckBox.isChecked())
         if disabled:
-            ConfigFile.settings["bL1dDeglitch"]   = 0
+            ConfigFile.settings["bL1dDeglitch"] = 0
         else:
-            ConfigFile.settings["bL1dDeglitch"]   = 1
+            ConfigFile.settings["bL1dDeglitch"] = 1
 
     def l1aqcAnomalyButtonPressed(self):
         print("CalibrationEditWindow - Launching anomaly analysis module")

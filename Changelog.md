@@ -35,6 +35,10 @@ Ideas:
 
 ___________________________________________________________
 
+2023-06-17; DAA
+* Interpolate Ancillary data group early in L1B
+* Obtain model data and fold into Ancillary
+
 2023-05-11; DAA
 * Propagate L1AQC SeaBird and TriOS to new L1B groups for use at L2 in instr. uncertainty budgets
 * Deprecate interpolation of solar geometries; calculate instead
