@@ -333,26 +333,33 @@ class SeaBASSWriter:
         ltData.columnsToDataset()
 
         # # Append ancillary datasets
-        aodData = ancGroup.getDataset("AOD")
-        cloudData = ancGroup.getDataset("CLOUD")
+        # Required
         azimuthData = ancGroup.getDataset("SOLAR_AZ")
-        headingData = ancGroup.getDataset("HEADING")
         relAzData = ancGroup.getDataset("REL_AZ")
         szaData = ancGroup.getDataset("SZA")
         windData = ancGroup.getDataset("WINDSPEED")
-
-        aodData.datasetToColumns()
         azimuthData.datasetToColumns()
         relAzData.datasetToColumns()
         szaData.datasetToColumns()
         windData.datasetToColumns()
 
-        aod = aodData.columns["AOD"]
         azimuth = azimuthData.columns["SOLAR_AZ"]
         relAz = relAzData.columns["REL_AZ"]
         sza = szaData.columns["SZA"]
         wind = windData.columns["WINDSPEED"]
 
+        # Optional
+        aodData = ancGroup.getDataset("AOD")
+        headingData = ancGroup.getDataset("HEADING")
+        cloudData = ancGroup.getDataset("CLOUD")
+
+        if aodData is not None:
+            aodData.datasetToColumns()
+            aod = aodData.columns["AOD"]
+        else:
+            aod = np.empty((1,len(wind)))
+            aod = aod[0]*np.nan
+            aod = aod.tolist()
         if cloudData is not None:
             cloudData.datasetToColumns()
             cloud = cloudData.columns["CLOUD"]

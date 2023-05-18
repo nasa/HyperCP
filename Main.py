@@ -476,6 +476,7 @@ class Window(QtWidgets.QWidget):
         # Load Config file
         configFileName = self.configComboBox.currentText()
         configPath = os.path.join('Config', configFileName)
+        MainConfig.settings['cfgPath'] = configPath
         if not os.path.isfile(configPath):
             message = 'Not valid Config File: ' + configFileName
             QtWidgets.QMessageBox.critical(self, 'Error', message)

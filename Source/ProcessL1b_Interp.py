@@ -46,7 +46,7 @@ class ProcessL1b_Interp:
         # Places the dataset into the new group.
         # New group scheme combines both radiance sensors in one group
 
-        # Several new groups need to be added, but will be deleted below. Only new ANCILLARY_METADATA will be retained.
+        # Several new groups need to be added, but will be deleted below. Only new ANCILLARY_METADATA and GPS will be retained.
         #
         refGroup = node.addGroup("IRRADIANCE_TEMP")
         sasGroup = node.addGroup("RADIANCE_TEMP")
@@ -89,6 +89,8 @@ class ProcessL1b_Interp:
             latData = newGPSGroup.getDataset("LATITUDE")
             lonData = newGPSGroup.getDataset("LONGITUDE")
             newGPSGroup.attributes["SOURCE"] = 'ANCILLARY'
+            newGPSGroup.attributes["CalFileName"] = 'ANCILLARY'
+
 
         if STGroup is not None:
             newSTGroup = node.addGroup('ST_TEMP')
@@ -274,7 +276,8 @@ class ProcessL1b_Interp:
         if "ROLL" in ancGroup.datasets:
             ProcessL1b_Interp.interpolateData(rollAncData, interpData, "ROLL", fileName)
 
-        node.removeGroup(newSTGroup)
+        if STGroup is not None:
+            node.removeGroup(newSTGroup)
         node.removeGroup(sasGroup)
         node.removeGroup(refGroup)
         node.removeGroup(gpsGroup)
@@ -745,10 +748,12 @@ class ProcessL1b_Interp:
                 lonData = newGPSGroup.getDataset("LONGITUDE")
                 latData.datasetToColumns()
                 lonData.datasetToColumns()
-                courseData = newGPSGroup.getDataset("COURSE")
-                courseData.datasetToColumns()
-                sogData = newGPSGroup.getDataset("SOG")
-                sogData.datasetToColumns()
+                # Only if the right NMEA data are provided (e.g. with SolarTracker)
+                if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
+                    courseData = newGPSGroup.getDataset("COURSE")
+                    courseData.datasetToColumns()
+                    sogData = newGPSGroup.getDataset("SOG")
+                    sogData.datasetToColumns()
         else:
             courseData = None
             sogData = None

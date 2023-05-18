@@ -397,7 +397,7 @@ class ProcessL2:
                     nLw = rrs*f0
 
                     # nLw uncertainty; no provision for F0 uncertainty here yet...
-                    nLwDelta = nLw * (
+                    nLwDelta = abs(nLw) * (
                             (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2 + (esSTD/es)**2
                             )**0.5
                 elif ZhangRho:
@@ -407,12 +407,12 @@ class ProcessL2:
                         rrs = lw / es
 
                         # Rrs uncertainty
-                        rrsDelta = rrs * (
+                        rrsDelta = abs(rrs) * (
                                 (liSTD/li)**2 + (rhoDelta/rhoVec[k])**2 + (liSTD/li)**2 + (esSTD/es)**2
                                 )**0.5
 
                         # Lw uncertainty
-                        lwDelta = lw * (
+                        lwDelta = abs(lw) * (
                             (liSTD/li)**2 + (rhoDelta/rhoVec[k])**2 + (liSTD/li)**2
                             )**0.5
 
@@ -420,7 +420,7 @@ class ProcessL2:
                         nLw = rrs*f0
 
                         # nLw uncertainty; no provision for F0 uncertainty here yet ...
-                        nLwDelta = nLw * (
+                        nLwDelta = abs(nLw) * (
                                 (liSTD/li)**2 + (rhoDelta/rhoVec[k])**2 + (liSTD/li)**2 + (esSTD/es)**2
                                 )**0.5
                 else:
@@ -428,12 +428,12 @@ class ProcessL2:
                     rrs = lw / es
 
                     # Rrs uncertainty
-                    rrsDelta = rrs * (
+                    rrsDelta = abs(rrs) * (
                             (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2 + (esSTD/es)**2
                             )**0.5
 
                     # Lw uncertainty
-                    lwDelta = lw * (
+                    lwDelta = abs(lw) * (
                         (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2
                         )**0.5
 
@@ -441,7 +441,7 @@ class ProcessL2:
                     nLw = rrs*f0
 
                     # nLw uncertainty; no provision for F0 uncertainty here yet...
-                    nLwDelta = nLw * (
+                    nLwDelta = abs(nLw) * (
                             (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2 + (esSTD/es)**2
                             )**0.5
 
@@ -1346,9 +1346,6 @@ class ProcessL2:
         WINDSPEEDXSlice = newAncGroup.getDataset('WINDSPEED').data['WINDSPEED'][-1].copy()
         if isinstance(WINDSPEEDXSlice, list):
             WINDSPEEDXSlice = WINDSPEEDXSlice[0]
-        AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
-        if isinstance(AODXSlice, list):
-            AODXSlice = AODXSlice[0]
         SZAXSlice = newAncGroup.getDataset('SZA').data['SZA'][-1].copy()
         if isinstance(SZAXSlice, list):
             SZAXSlice = SZAXSlice[0]
@@ -1364,6 +1361,17 @@ class ProcessL2:
         RelAzXSlice = newAncGroup.getDataset('REL_AZ').data['REL_AZ'][-1].copy()
         if isinstance(RelAzXSlice, list):
             RelAzXSlice = RelAzXSlice[0]
+        # Only required in Zhang17 currently
+        if ZhangRho:
+            try:
+                AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
+                if isinstance(AODXSlice, list):
+                    AODXSlice = AODXSlice[0]
+            except:
+                msg = 'ProcessL2.ensemblesReflectance: No AOD data present in Ancillary. Activate model acquisition in L1B.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
 
         # These are optional; in fact, there is no implementation of incorporating CLOUD or WAVEs into
         # any of the current Rho corrections yet (even though cloud IS passed to Zhang_Rho)
@@ -1969,6 +1977,10 @@ class ProcessL2:
         if ConfigFile.settings["bL2BRDF"]:
             ProcessL2BRDF.procBRDF(node)
 
+        # Strip out L1AQC data
+        for gp in reversed(node.groups):
+            if gp.id.endswith('_L1AQC'):
+                node.removeGroup(gp)
 
 
         # Now strip datetimes from all datasets

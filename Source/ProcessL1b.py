@@ -4,11 +4,13 @@ import datetime as dt
 import calendar
 import numpy as np
 from inspect import currentframe, getframeinfo
+import glob
 
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 from Source.ProcessL1b_ClassCal import ProcessL1b_ClassCal
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ConfigFile import ConfigFile
+from Source.MainConfig import MainConfig
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
@@ -16,7 +18,45 @@ from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
 
 class ProcessL1b:
-    '''SeaBird L1b'''
+    '''L1B mainly for SeaBird with some shared methods'''
+
+    @staticmethod
+    def read_unc_coefficient(root, inpath):
+        ''' SeaBird or TriOS'''
+        # Read Uncertainties_new_char from provided files
+        gp = root.addGroup("RAW_UNCERTAINTIES")
+        gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
+
+        ### Read uncertainty parameters from full calibration from TARTU
+        for f in glob.glob(os.path.join(inpath, r'pol/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'radcal/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'thermal/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'straylight/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'stability/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'linearity/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'angular/*')):
+            Utilities.read_char(f, gp)
+
+        ### unc dataset renaming
+        Utilities.RenameUncertainties(root)
+
+        ### interpolate unc to full wavelength range, depending on class based or full char
+        if ConfigFile.settings['bL1bCal'] == 2:
+            Utilities.interpUncertainties_DefaultChar(root)
+
+        elif ConfigFile.settings['bL1bCal'] == 3:
+            Utilities.interpUncertainties_FullChar(root)
+
+        ### generate temperature coefficient
+        Utilities.UncTempCorrection(root)
+
+        return root
 
     @staticmethod
     def includeModelDefaults(ancGroup, modRoot):
@@ -431,6 +471,26 @@ class ProcessL1b:
             elif gp.id == 'LT_LIGHT':
                 ltLightGroup.copy(gp)
 
+
+        # Add characterization files if needed (RAW_UNCERTAINTIES)
+        if ConfigFile.settings['bL1bCal'] == 2:
+            # inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
+            inpath = os.path.join(MainConfig.settings['MainDir'], 'Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
+            print('Class based dir:', inpath)
+
+            '''
+            BUG: This currently will not work for SeaBird, and even with TriOS, it uses only characterization files that correspond 1:1 with specific instrument,
+            meaning it does not appear to be class-based at all.
+            '''
+
+            node = ProcessL1b.read_unc_coefficient(node, inpath)
+
+        elif ConfigFile.settings['bL1bCal'] == 3:
+            inpath = ConfigFile.settings['FullCalDir']
+            print('Full Char dir:', inpath)
+            node = ProcessL1b.read_unc_coefficient(node, inpath)
+
+
         # Dark Correction
         if not ProcessL1b.processDarkCorrection(node, "ES"):
             msg = 'Error dark correcting ES'
@@ -501,6 +561,10 @@ class ProcessL1b:
 
         elif ConfigFile.settings['bL1bCal'] == 2:
             print('Placeholder for Class-based')
+            '''
+            BUG: Class-based not ready for SeaBird
+            '''
+
             if not ProcessL1b_ClassCal.processL1b_SeaBird(node):
                 msg = 'Error in ProcessL1b.process_FRM_calibration'
                 print(msg)
@@ -508,7 +572,7 @@ class ProcessL1b:
                 return None
 
         elif ConfigFile.settings['bL1bCal'] == 3:
-            if not ProcessL1b_FRMCal.process_FRM_SeaBird(node):
+            if not ProcessL1b_FRMCal.processL1b_SeaBird(node):
                 msg = 'Error in ProcessL1b.process_FRM_calibration'
                 print(msg)
                 Utilities.writeLogFile(msg)

@@ -330,38 +330,15 @@ class Controller:
 
         # Write output file
         if root is not None:
-            if ConfigFile.settings['bL1bCal'] == 2:
-                # inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
-                inpath = os.path.join(MainConfig.settings['MainDir'], 'Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
-                print('Class based dir:', inpath)
-
-                '''
-                BUG: This currently will not work for SeaBird, and even with TriOS, it uses only characterization files that correspond 1:1 with specific instrument,
-                meaning it does not appear to be class-based at all.
-                '''
-
-                root = ProcessL1aqc.read_unc_coefficient(root, inpath)
-
-            elif ConfigFile.settings['bL1bCal'] == 3:
-                inpath = ConfigFile.settings['FullCalDir']
-                print('Full Char dir:', inpath)
-                root = ProcessL1aqc.read_unc_coefficient(root, inpath)
-
             try:
                 root.writeHDF5(outFilePath)
             except:
-                msg = "Unable to write the file. May be open in another application."
-                Utilities.errorWindow("File Error", msg)
+                msg = "L1aqc processing failed. Nothing to output."
+                if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                    Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-        else:
-            msg = "L1aqc processing failed. Nothing to output."
-            if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return None
 
         return root
 

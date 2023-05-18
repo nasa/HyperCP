@@ -64,7 +64,7 @@ class ProcessL1b_FRMCal:
         s.aot550 = 0.153
 
         '''
-        This throws the error: TypeError: only size-1 arrays can be converted to Python scalars
+        BUG: This throws the error: TypeError: only size-1 arrays can be converted to Python scalars
         '''
         wavelengths, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl)
 

@@ -222,6 +222,12 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1bGetAncCheckBox1.setChecked(False)
             self.l1bGetAncCheckBox2.setChecked(True)
         self.l1bGetAncCheckBox2.clicked.connect(self.l1bGetAncCheckBoxUpdate2)
+        '''
+        BUG: While ECMWF is being debugged
+        '''
+        self.l1bGetAncCheckBox2.setChecked(False)
+        self.l1bGetAncCheckBox2.setEnabled(False)
+
 
         self.l1bDefaultWindSpeedLabel = QtWidgets.QLabel("          Default Wind Speed (m/s)", self)
         self.l1bDefaultWindSpeedLineEdit = QtWidgets.QLineEdit(self)
@@ -252,6 +258,11 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL1bCal"]==2:
             self.ClassCalRadioButton.setChecked(True)
         self.ClassCalRadioButton.clicked.connect(self.l1bClassCalRadioButtonClicked)
+        '''
+        BUG: While class-based is being debugged
+        '''
+        self.ClassCalRadioButton.setChecked(False)
+        self.ClassCalRadioButton.setEnabled(False)
 
         self.FullCalRadioButton = QtWidgets.QRadioButton("Full Characterization:")
         self.FullCalRadioButton.setAutoExclusive(False)
@@ -289,38 +300,6 @@ class ConfigWindow(QtWidgets.QDialog):
         l1bqcLabel_font.setBold(True)
         l1bqcLabel.setFont(l1bqcLabel_font)
         l1bqcSublabel = QtWidgets.QLabel(" Data quality control filters.", self)
-        # l1bqcSublabel1 = QtWidgets.QLabel(" Ancillary data are required for Zhang glint correction and", self)
-        # l1bqcSublabel2 = QtWidgets.QLabel(" can fill in wind for M99 and QC. Select database download:", self)
-        # l1bqcSublabel3 = QtWidgets.QLabel("  (GMAO PROMPTS FOR EARTHDATA LOGIN: <a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">register</a>)", self)
-        # l1bqcSublabel5 = QtWidgets.QLabel("  Fallback values when no model available:", self)
-        # l1bqcSublabel3.setOpenExternalLinks(True)
-        # self.l1bqcGetAncCheckBox1 = QtWidgets.QCheckBox("GMAO MERRA2", self)
-        # self.l1bqcGetAncCheckBox2 = QtWidgets.QCheckBox("ECMWF", self)
-        # if int(ConfigFile.settings["bL1bqcGetAnc"]) == 1:
-        #     self.l1bqcGetAncCheckBox1.setChecked(True)
-        #     self.l1bqcGetAncCheckBox2.setChecked(False)
-        # self.l1bqcGetAncCheckBox1.clicked.connect(self.l1bqcGetAncCheckBoxUpdate1)
-        # if int(ConfigFile.settings["bL1bqcGetAnc"]) == 2:
-        #     self.l1bqcGetAncCheckBox1.setChecked(False)
-        #     self.l1bqcGetAncCheckBox2.setChecked(True)
-        # self.l1bqcGetAncCheckBox2.clicked.connect(self.l1bqcGetAncCheckBoxUpdate2)
-
-        # self.l1bqcDefaultWindSpeedLabel = QtWidgets.QLabel("          Default Wind Speed (m/s)", self)
-        # self.l1bqcDefaultWindSpeedLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1bqcDefaultWindSpeedLineEdit.setText(str(ConfigFile.settings["fL1bqcDefaultWindSpeed"]))
-        # self.l1bqcDefaultWindSpeedLineEdit.setValidator(doubleValidator)
-        # self.l1bqcDefaultAODLabel = QtWidgets.QLabel("          Default AOD(550)", self)
-        # self.l1bqcDefaultAODLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1bqcDefaultAODLineEdit.setText(str(ConfigFile.settings["fL1bqcDefaultAOD"]))
-        # self.l1bqcDefaultAODLineEdit.setValidator(doubleValidator)
-        # self.l1bqcDefaultSaltLabel = QtWidgets.QLabel("          Default Salinity (psu)", self)
-        # self.l1bqcDefaultSaltLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1bqcDefaultSaltLineEdit.setText(str(ConfigFile.settings["fL1bqcDefaultSalt"]))
-        # self.l1bqcDefaultSaltLineEdit.setValidator(doubleValidator)
-        # self.l1bqcDefaultSSTLabel = QtWidgets.QLabel("          Default SST (C)", self)
-        # self.l1bqcDefaultSSTLineEdit = QtWidgets.QLineEdit(self)
-        # self.l1bqcDefaultSSTLineEdit.setText(str(ConfigFile.settings["fL1bqcDefaultSST"]))
-        # self.l1bqcDefaultSSTLineEdit.setValidator(doubleValidator)
 
         #   Lt UV<NIR
         l1bqcLtUVNIRLabel= QtWidgets.QLabel("   Eliminate where Lt(NIR)>Lt(UV)", self)
@@ -446,11 +425,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.RhoRadioButtonZhang.setAutoExclusive(False)
         if ConfigFile.settings["bL2ZhangRho"]==1:
             self.RhoRadioButtonZhang.setChecked(True)
-        # This blocks use of Zhang when no ancillary is provided, but now that models and defaul fallbacks
-        # are available, this should not be necessary.
-        # if ConfigFile.settings["bL1bqcGetAnc"]==0:
-        #     self.RhoRadioButtonZhang.setChecked(False)
-        #     self.RhoRadioButtonZhang.setDisabled(1)
         self.RhoRadioButtonZhang.clicked.connect(self.l2RhoRadioButtonZhangClicked)
 
         self.RhoRadoButton3C = QtWidgets.QRadioButton("Groetsch et al. (2017)")
@@ -513,7 +487,6 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2BRDF_IOP"]) == 1:
             self.l2BRDF_IOPCheckBox.setChecked(True)
         self.l2BRDFCheckBoxUpdate()
-
 
 
         l2ProductLabel = QtWidgets.QLabel("L2 Products", self)
@@ -601,6 +574,8 @@ class ConfigWindow(QtWidgets.QDialog):
         # self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)
         # self.l1bSaveSeaBASSCheckBoxUpdate()
         self.l2SaveSeaBASSCheckBoxUpdate()
+
+        self.l2SeaBASSHeaderLabel = QtWidgets.QLabel(f'  {ConfigFile.settings["seaBASSHeaderFileName"]}', self)
 
         l2WriteReportLabel = QtWidgets.QLabel("Write PDF Report", self)
         self.l2WriteReportCheckBox = QtWidgets.QCheckBox("", self)
@@ -1022,7 +997,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l2SeaBASSHeaderHBox2 = QtWidgets.QHBoxLayout()
         l2SeaBASSHeaderHBox2.addWidget(self.l2SeaBASSHeaderEditButton)
         VBox4.addLayout(l2SeaBASSHeaderHBox2)
-
+        VBox4.addWidget(self.l2SeaBASSHeaderLabel)
 
         #   Horizontal Box; Write Report
         l2ReportHBox = QtWidgets.QHBoxLayout()
@@ -1301,7 +1276,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL1bCal"] = 2
 
     def l1bFullCalRadioButtonClicked(self):
-        print("ConfigWindow - L1b Calibration set to Instrument Full")
+        print("ConfigWindow - L1b Calibration set to Instrument-specific FRM")
         self.DefaultCalRadioButton.setChecked(False)
         self.ClassCalRadioButton.setChecked(False)
         self.FullCalRadioButton.setChecked(True)
@@ -1380,27 +1355,6 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2EnableQualityFlags"] = 0
         else:
             ConfigFile.settings["bL2EnableQualityFlags"] = 1
-
-    def l2SeaBASSHeaderEditButtonPressed(self):
-        print("Edit seaBASSHeader Dialogue")
-
-        ConfigWindow.refreshConfig(self)
-        seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
-        inputDir = self.inputDirectory
-        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
-        if os.path.isfile(seaBASSHeaderPath):
-            SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-            # Update comments to reflect any changes in ConfigWindow
-            SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
-            seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
-            seaBASSHeaderDialog.show()
-        else:
-            print("Creating New SeaBASSHeader File: ", seaBASSHeaderFileName)
-            SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
-            SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-            seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
-            seaBASSHeaderDialog.show()
-            # print("SeaBASS Header file lost. Please restore to Config directory or recreate.")
 
     def l1bGetAncCheckBoxUpdate1(self):
         print("ConfigWindow - l1bGetAncCheckBoxUpdate GMAO MERRA2")
@@ -1619,6 +1573,28 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l2SeaBASSHeaderEditButton.setDisabled(disabled)
 
+    def l2SeaBASSHeaderEditButtonPressed(self):
+        print("Edit seaBASSHeader Dialogue")
+
+        ConfigWindow.refreshConfig(self)
+        seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
+        inputDir = self.inputDirectory
+        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
+        if os.path.isfile(seaBASSHeaderPath):
+            SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+            # Update comments to reflect any changes in ConfigWindow
+            SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
+            seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
+            seaBASSHeaderDialog.show()
+        else:
+            print("Creating New SeaBASSHeader File: ", seaBASSHeaderFileName)
+            SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
+            SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+            seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
+            seaBASSHeaderDialog.show()
+            # print("SeaBASS Header file lost. Please restore to Config directory or recreate.")
+        self.l2SeaBASSHeaderLabel.setText(f'  {ConfigFile.settings["seaBASSHeaderFileName"]}')
+
     def l2WriteReportCheckBoxUpdate(self):
         print("ConfigWindow - l2WriteReportCheckBoxUpdate")
         # disabled = not self.l2WriteReportCheckBox.isChecked()
@@ -1667,6 +1643,10 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL1bGetAnc"] = 2
         else:
             ConfigFile.settings["bL1bGetAnc"] = 0
+        ConfigFile.settings["fL1bDefaultWindSpeed"] = float(self.l1bDefaultWindSpeedLineEdit.text())
+        ConfigFile.settings["fL1bDefaultAOD"] = float(self.l1bDefaultAODLineEdit.text())
+        ConfigFile.settings["fL1bDefaultSalt"] = float(self.l1bDefaultSaltLineEdit.text())
+        ConfigFile.settings["fL1bDefaultSST"] = float(self.l1bDefaultSSTLineEdit.text())
         ConfigFile.settings["fL1bInterpInterval"] = float(self.l1bInterpIntervalLineEdit.text())
         ConfigFile.settings["bL1bPlotTimeInterp"] = int(self.l1bPlotTimeInterpCheckBox.isChecked())
         ConfigFile.settings["fL1bPlotInterval"] = float(self.l1bPlotIntervalLineEdit.text())
@@ -1688,13 +1668,6 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL1bqcSignificantEsFlag"] = float(self.l1bqcEsFlagLineEdit.text())
         ConfigFile.settings["fL1bqcDawnDuskFlag"] = float(self.l1bqcDawnDuskFlagLineEdit.text())
         ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = float(self.l1bqcRainfallHumidityFlagLineEdit.text())
-
-
-
-        ConfigFile.settings["fL1bDefaultWindSpeed"] = float(self.l1bDefaultWindSpeedLineEdit.text())
-        ConfigFile.settings["fL1bDefaultAOD"] = float(self.l1bDefaultAODLineEdit.text())
-        ConfigFile.settings["fL1bDefaultSalt"] = float(self.l1bDefaultSaltLineEdit.text())
-        ConfigFile.settings["fL1bDefaultSST"] = float(self.l1bDefaultSSTLineEdit.text())
 
         ConfigFile.settings["bL2Stations"] = int(self.l2StationsCheckBox.isChecked())
         ConfigFile.settings["fL2TimeInterval"] = int(self.l2TimeIntervalLineEdit.text())

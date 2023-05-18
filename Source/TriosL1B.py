@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from Source.ConfigFile import ConfigFile
+from Source.MainConfig import MainConfig
 from Source.ProcessL1b import ProcessL1b
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
@@ -262,7 +263,25 @@ class TriosL1B:
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
-        stats = {}
+
+        # Add characterization files if needed (RAW_UNCERTAINTIES)
+        if ConfigFile.settings['bL1bCal'] == 2:
+            # inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
+            inpath = os.path.join(MainConfig.settings['MainDir'], 'Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
+            print('Class based dir:', inpath)
+
+            '''
+            BUG: This currently will not work for SeaBird, and even with TriOS, it uses only characterization files that correspond 1:1 with specific instrument,
+            meaning it does not appear to be class-based at all.
+            '''
+
+            node = ProcessL1b.read_unc_coefficient(node, inpath)
+
+        elif ConfigFile.settings['bL1bCal'] == 3:
+            inpath = ConfigFile.settings['FullCalDir']
+            print('Full Char dir:', inpath)
+            node = ProcessL1b.read_unc_coefficient(node, inpath)
+
 
         # Interpolate only the Ancillary group, and then fold in model data
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
@@ -303,6 +322,7 @@ class TriosL1B:
             ProcessL1b.includeModelDefaults(ancGroup, modRoot)
 
         ## Dark Correction & Absolute Calibration
+        stats = {}
         for instrument in ConfigFile.settings['CalibrationFiles'].keys():
             # get instrument serial number and sensor type
             instrument_number = os.path.splitext(instrument)[0]

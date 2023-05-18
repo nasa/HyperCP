@@ -3,9 +3,9 @@ import math
 import datetime
 import numpy as np
 from pysolar.solar import get_azimuth, get_altitude
-from operator import add
+# from operator import add
 import bisect
-import glob, os
+# import glob, os
 
 from Source.HDFDataset import HDFDataset
 from Source.ProcessL1aqc_deglitch import ProcessL1aqc_deglitch
@@ -14,43 +14,43 @@ from Source.ConfigFile import ConfigFile
 
 class ProcessL1aqc:
 
-    @staticmethod
-    def read_unc_coefficient(root, inpath):
+    # @staticmethod
+    # def read_unc_coefficient(root, inpath):
 
-        # Read Uncertainties_new_char from provided files
-        gp = root.addGroup("RAW_UNCERTAINTIES")
-        gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
+    #     # Read Uncertainties_new_char from provided files
+    #     gp = root.addGroup("RAW_UNCERTAINTIES")
+    #     gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
-        ### Read uncertainty parameters from full calibration from TARTU
-        for f in glob.glob(os.path.join(inpath, r'pol/*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'radcal/*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'thermal/*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'straylight/*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'stability/*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'linearity/*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'angular/*')):
-            Utilities.read_char(f, gp)
+    #     ### Read uncertainty parameters from full calibration from TARTU
+    #     for f in glob.glob(os.path.join(inpath, r'pol/*')):
+    #         Utilities.read_char(f, gp)
+    #     for f in glob.glob(os.path.join(inpath, r'radcal/*')):
+    #         Utilities.read_char(f, gp)
+    #     for f in glob.glob(os.path.join(inpath, r'thermal/*')):
+    #         Utilities.read_char(f, gp)
+    #     for f in glob.glob(os.path.join(inpath, r'straylight/*')):
+    #         Utilities.read_char(f, gp)
+    #     for f in glob.glob(os.path.join(inpath, r'stability/*')):
+    #         Utilities.read_char(f, gp)
+    #     for f in glob.glob(os.path.join(inpath, r'linearity/*')):
+    #         Utilities.read_char(f, gp)
+    #     for f in glob.glob(os.path.join(inpath, r'angular/*')):
+    #         Utilities.read_char(f, gp)
 
-        ### unc dataset renaming
-        Utilities.RenameUncertainties(root)
+    #     ### unc dataset renaming
+    #     Utilities.RenameUncertainties(root)
 
-        ### interpolate unc to full wavelength range, depending on class based or full char
-        if ConfigFile.settings['bL1bCal'] == 2:
-            Utilities.interpUncertainties_DefaultChar(root)
+    #     ### interpolate unc to full wavelength range, depending on class based or full char
+    #     if ConfigFile.settings['bL1bCal'] == 2:
+    #         Utilities.interpUncertainties_DefaultChar(root)
 
-        elif ConfigFile.settings['bL1bCal'] == 3:
-            Utilities.interpUncertainties_FullChar(root)
+    #     elif ConfigFile.settings['bL1bCal'] == 3:
+    #         Utilities.interpUncertainties_FullChar(root)
 
-        ### generate temperature coefficient
-        Utilities.UncTempCorrection(root)
+    #     ### generate temperature coefficient
+    #     Utilities.UncTempCorrection(root)
 
-        return root
+    #     return root
 
 
     @staticmethod

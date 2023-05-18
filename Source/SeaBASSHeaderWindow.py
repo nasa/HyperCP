@@ -432,7 +432,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
 
     def configUpdateButtonPressed(self, caller):
-        print("Updating comments from values in ConfigWindow")
+        print("Updating SeaBASS Header comments from values in ConfigWindow")
 
         # This will update subsequently from the ConfigFile on demand
         if ConfigFile.settings["bL1aCleanSZA"]:

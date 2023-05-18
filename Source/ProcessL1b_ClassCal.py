@@ -5,4 +5,8 @@ Placeholder for SeaBird Class-based Cal
 
 class ProcessL1b_ClassCal:
 
-    print('placeholder')
+    def processL1b_SeaBird():
+
+
+        print('placeholder')
+        return None

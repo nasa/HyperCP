@@ -273,8 +273,6 @@ class TriosL1A:
         return node
 
 
-
-
     def triosL1A(fp, outFilePath): #, configPath, ancillaryData):
 
         configPath = MainConfig.settings['cfgPath']
