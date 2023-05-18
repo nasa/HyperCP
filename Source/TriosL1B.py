@@ -116,7 +116,7 @@ class TriosL1B:
 
         # Remove wvl without calibration from the dataset
         # unit conversion from mW/m2 to uW/cm2 : divide per 10
-        filtered_mesure = FRM_mesure[:,ind_nocal==False]
+        filtered_mesure = FRM_mesure[:,ind_nocal==False]/10
         filtered_wvl = str_wvl[ind_nocal==False]
 
         # Replace raw data with calibrated data in hdf root
@@ -198,7 +198,8 @@ class TriosL1B:
             # calibrated_mesure[n, ind_nocal==True] = 0.  # not used at the moment
 
         # Remove wvl without calibration from the dataset
-        filtered_mesure = calibrated_mesure[:,ind_nocal==False]
+        # unit conversion from mW/m2 to uW/cm2 : divide per 10
+        filtered_mesure = calibrated_mesure[:,ind_nocal==False]/10
         filtered_wvl = raw_wvl[ind_nocal==False]
 
         # replace raw data with calibrated data in hdf root
@@ -357,5 +358,8 @@ class TriosL1B:
         # different timestamps and wavebands, so interpolation is required.
         node = ProcessL1b_Interp.processL1b_Interp(node, outFilePath)
 
+        node.attributes["LI_UNITS"] = 'uW/cm^2/nm/sr'
+        node.attributes["LT_UNITS"] = 'uW/cm^2/nm/sr'
+        node.attributes["ES_UNITS"] = 'uW/cm^2/nm'
 
         return node
