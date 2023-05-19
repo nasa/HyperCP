@@ -584,7 +584,7 @@ class Controller:
                                 ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandLight'] = params[l1aqcfileName][ref+9]
                                 ref += 10
                         else:
-                            msg = 'This file not found in parameter file. Resorting to values in ConfigFile.settings.'
+                            msg = f'{l1aqcfileName} not found in parameter file {anomAnalFileName}. Resort to values in ConfigFile.settings.'
                             print(msg)
                             Utilities.writeLogFile(msg)
                     else:

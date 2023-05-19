@@ -189,7 +189,7 @@ class ConfigFile:
     def createDefaultConfig(fileName, new=1):
         # fileName: the filename of the configuration file without path
         # if new==1:
-        print("ConfigFile - Create Default Config, or fill in newly added values with default values.")
+        print("ConfigFile - Create Default Config, or fill in newly added parameters with default values.")
 
         if not fileName.endswith(".cfg"):
             fileName = fileName + ".cfg"

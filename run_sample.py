@@ -6,41 +6,85 @@ import sys
 
 from Main import Command, cmd
 
-## Set up ##
+## Custom set up ##
+
+clobber = True # True overwrites existing files
 PATH_HCP = '/Users/daurin/GitRepos/HyperInSPACE'   # Adjust with full path on local computer
-# PATH_HCP = '/ssdwork/GitRepos/HyperInSPACE'   # Adjust with full path on local computer
-PATH_WK = os.path.join(PATH_HCP,'Data','Sample_Data')  # Adjust with full path on local computer
-PATH_TYPE = 'SOLARTRACKER' #pySAS SOLARTRACKER NOTRACKER Adjust to desired file type
-## ##
+INST_TYPE = 'TRIOS' #SEABIRD or TRIOS
 
-PATH_CFG = os.path.join(PATH_HCP, 'Config', f'sample_{PATH_TYPE}.cfg')
-PATH_ANC = os.path.join(PATH_WK,f'SAMPLE_Ancillary_{PATH_TYPE}.sb')
+# For use with sample data provided:
+PATH_DATA = os.path.join('Data','Sample_Data')   # For use with provided samples
+PATH_WK = os.path.join(PATH_HCP,PATH_DATA)  # For use with provided samples
+PLATFORM_TYPE = 'NOTRACKER' #pySAS, SOLARTRACKER, or NOTRACKER. Adjust to desired acquisition platform type
+PATH_ANC = os.path.join(PATH_WK,f'SAMPLE_{INST_TYPE}_{PLATFORM_TYPE}_Ancillary.sb') # For use with provided samples
 
+# For batching collections, adjust to your local settings:
+# PATH_DATA = '/Users/daurin/Projects/HyperPACE/field_data/HyperSAS/EXPORTSNP'   # Adjust with full path on local computer
+# PATH_WK = os.path.join(PATH_DATA)  # Adjust with full path on local computer
+# PATH_ANC = os.path.join(PATH_DATA,f'*_Ancillary.sb') # Adjust with full path on local computer
+
+## End Custom set up ##
+
+## Setup Globals ##
+PATH_CFG = os.path.join(PATH_HCP, 'Config', f'sample_{INST_TYPE}_{PLATFORM_TYPE}.cfg')
 TO_LEVELS = ['L1A', 'L1AQC', 'L1B', 'L1BQC', 'L2']
 FROM_LEVELS = ['RAW', 'L1A', 'L1AQC', 'L1B', 'L1BQC']
-FILE_EXT = ['.raw', '_L1A.hdf', '_L1AQC.hdf', '_L1B.hdf', '_L1BQC.hdf']
+if INST_TYPE == 'SEABIRD':
+    FILE_EXT = ['.raw', '_L1A.hdf', '_L1AQC.hdf', '_L1B.hdf', '_L1BQC.hdf']
+else:
+    FILE_EXT = ['.mlb', '_L1A.hdf', '_L1AQC.hdf', '_L1B.hdf', '_L1BQC.hdf']
 
 os.environ['HYPERINSPACE_CMD'] = 'TRUE'
 
 
 def process_raw_to_l2(filename):
-    ref = os.path.splitext(os.path.basename(filename))[0]
-    # This will skip the file if either 1) the result exists, or 2) the Level failed and produced a report.
-    # Delete the file and/or report to override.
+    ''' Run either directly or using multiprocessor pool below. '''
+    if INST_TYPE == 'SEABIRD':
+        # Path to SeaBird raw:
+        ref = os.path.splitext(os.path.basename(filename))[0]
+    elif INST_TYPE == 'TRIOS':
+        # if to_level == 'L1A':
+        ref = filename # os.path.splitext(os.path.basename(filename))[0]
+        # else:
+        # ref = os.path.splitext(os.path.basename(filename))[0]
+    # This will skip the file if either 1) the result exists and no clobber, or 2) the Level failed and produced a report.
+    # Override with clobber, above.
     to_skip = {level: [os.path.basename(f).split('_' + level)[0]
                        for f in glob.glob(os.path.join(PATH_WK, level, '*'))] +
                       [os.path.basename(f).split('_' + level)[0]
                        for f in glob.glob(os.path.join(PATH_WK, 'Reports', f'*_{level}_fail.pdf'))]
                for level in TO_LEVELS}
-    failed = {}
+    # failed = {}
     for from_level, to_level, ext in zip(FROM_LEVELS, TO_LEVELS, FILE_EXT):
-        f = os.path.join(PATH_WK, from_level, ref + ext)
-        if not os.path.exists(f):
+        if INST_TYPE == 'SEABIRD':
+            f = os.path.join(PATH_WK, from_level, ref + ext)
+        elif INST_TYPE == 'TRIOS':
+            if to_level =='L1A':
+                f = filename # a list
+                test = [os.path.exists(f[i]) for i, x in enumerate(f) if os.path.exists(x)]
+            else:
+                '''
+                Argh! Why doesn't this just use the multi-level processor above
+                instead of single-level??
+
+                TriOS L0 filenames do not map onto L1A, and are triplets, so are passed as a group
+                which won't work for multiple calls to single level as in Main.Command.
+
+                '''
+                # ref = os.path.splitext(os.path.basename(filename))[0]
+                l1aFileBase = os.path.splitext(os.path.basename(filename[0]))[0]
+                l1aPlusFB = l1aFileBase.split('SPECTRUM_')[1]
+                f = os.path.join(PATH_WK, from_level, l1aFileBase + ext) # a file
+                test = os.path.exists(f)
+
+
+        # if not os.path.exists(f):
+        if not test:
             print('***********************************')
             print(f'*** [{ref}] STOPPED PROCESSING ***')
             print('***********************************')
             break
-        if ref in to_skip[to_level]:
+        if ref in to_skip[to_level] and not clobber:
             print('************************************************')
             print(f'*** [{ref}] ALREADY PROCESSED TO {to_level} ***')
             print('************************************************')
@@ -48,8 +92,17 @@ def process_raw_to_l2(filename):
         print('************************************************')
         print(f'*** [{ref}] PROCESSING TO {to_level} ***')
         print('************************************************')
-        # Command(PATH_CFG, os.path.join(PATH_WK, from_level, ref + ext), PATH_WK, to_level, None)
-        Command(PATH_CFG, os.path.join(PATH_WK, from_level, ref + ext), PATH_WK, to_level, PATH_ANC)
+        if INST_TYPE == 'SEABIRD':
+            # Command(PATH_CFG, os.path.join(PATH_WK, from_level, ref + ext), PATH_WK, to_level, None)
+            # One file
+            Command(PATH_CFG, from_level, os.path.join(PATH_WK, from_level, ref + ext), PATH_WK, to_level, PATH_ANC)
+        elif INST_TYPE == 'TRIOS':
+            if to_level == 'L1A':
+                # ref: list to L0 .mlbs
+                Command(PATH_CFG, from_level, ref, PATH_WK, to_level, PATH_ANC)
+            else:
+                print('bye')
+                exit()
 
 
 # %% One thread
@@ -66,25 +119,41 @@ if len(sys.argv) > 1:
 
 
 def worker(raw_filename):
-    print(f'### Processing {os.path.basename(raw_filename)} ...')
-    proc = subprocess.run([sys.executable, 'run_sample.py', '-i', raw_filename])
+    if type(raw_filename) is list:
+        for file in raw_filename:
+            print(f'### Processing {os.path.basename(file)} ...')
+
+    else:
+        print(f'### Processing {os.path.basename(raw_filename)} ...')
+        proc = subprocess.run([sys.executable, 'run_sample.py', '-i', raw_filename])
+
     print(f'### Finished {os.path.basename(raw_filename)}')
     # print('### STDOUT ##################################')
     # print(proc.stdout[-200:])
     # print('#############################################')
 
-
+## Watch for raw suffix below
 if __name__ == '__main__':
-    raw_filenames = sorted(glob.glob(os.path.join(PATH_WK, 'RAW', f'*{PATH_TYPE}.raw')))
+    if INST_TYPE == 'SEABIRD':
+        # raw_filenames = sorted(glob.glob(os.path.join(PATH_WK, 'RAW', f'*{INST_TYPE}_{PLATFORM_TYPE}.raw'))) # For use with sample data
+        raw_filenames = sorted(glob.glob(os.path.join(PATH_WK, 'RAW', f'*.raw')))
+        if not raw_filenames:
+            raw_filenames = sorted(glob.glob(os.path.join(PATH_WK, 'RAW', f'*.RAW')))
+    elif INST_TYPE == 'TRIOS':
+        raw_filenames = sorted(glob.glob(os.path.join(PATH_WK, 'RAW', f'*.mlb')))
 
-    print(f'Processing {sorted(glob.glob(os.path.join(PATH_WK, "RAW", f"*{PATH_TYPE}.raw")))}')
+    # print(f'Processing {sorted(glob.glob(os.path.join(PATH_WK, "RAW", f"*{PLATFORM_TYPE}.raw")))}')
+    print(f'Processing {raw_filenames}')
     print(f'Using configuration {PATH_CFG}')
     print(f'with ancillary data {PATH_ANC}')
 
     # If Zhang et al. 2017 correction is enabled a significant amount of memory is used (~3Go) for each process
     # so you might not be able to use all cores of the system
-    with multiprocessing.Pool(4) as pool:
-        pool.map(worker, raw_filenames)
+    if INST_TYPE == 'SEABIRD':
+        with multiprocessing.Pool(4) as pool:
+            pool.map(worker, raw_filenames) # Sends one file at a time to processor
+    else:
+        process_raw_to_l2(raw_filenames) # Sends list of files to... for TriOS raw .mlb triplets. No subprocessors
 
 
 

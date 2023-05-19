@@ -382,7 +382,7 @@ class Window(QtWidgets.QWidget):
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
         InstrumentType = ConfigFile.settings['SensorType']
 
-        # To check insturment type
+        # To check instrument type
         if InstrumentType.lower() == 'trios':
             flag_Trios = 1
         elif InstrumentType.lower() == 'seabird':
@@ -537,12 +537,14 @@ class Window(QtWidgets.QWidget):
 class Command():
     ''' Class without using the GUI '''
 
-    def __init__(self, configFilePath, inputFile, outputDirectory, level, ancFile=None):
+    def __init__(self, configFilePath, from_level, inputFile, outputDirectory, level, ancFile=None):
 
         # Configuration File
         self.configFilename = configFilePath
         # Input File
         self.inputFile = inputFile
+        # Input Directory
+        self.inputDirectory = os.path.join(outputDirectory,from_level)
         # Output Directory
         self.outputDirectory = outputDirectory
         # Processing Level
@@ -587,85 +589,188 @@ class Command():
 
         # Update main configuration path with cmd line input
         MainConfig.settings['cfgFile'] = configFilePath
+        MainConfig.settings['cfgPath'] = configFilePath
         MainConfig.settings['version'] = version
         MainConfig.settings["metFile"] = self.ancFile
         MainConfig.settings["outDir"] = outputDirectory
-        if os.path.isfile(inputFile):
-            MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
+        if type(inputFile) is list:
+            # Process the entire directory of the first file in the list
+            # self.inputFile = os.path.dirname(inputFile[0])+'/'
+            MainConfig.settings["inDir"] = os.path.dirname(inputFile[0])+'/'
+        # if os.path.isfile(inputFile):
+        #     MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
         else:
+            # Single file
             MainConfig.settings["inDir"] = inputFile
         print("MainConfig - Config updated with cmd line arguments")
 
         # No GUI used: error message are display in prompt and not in graphical window
         MainConfig.settings["popQuery"] = -1
 
+        ''' Need INST, calfiles, and trios flag'''
+        ConfigFile.loadConfig(self.configFilename)
+
+        InstrumentType = ConfigFile.settings['SensorType']
+        calFiles = ConfigFile.settings['CalibrationFiles']
+        # To check instrument type
+        if InstrumentType.lower() == 'trios':
+            flag_Trios = 1
+            calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
+        elif InstrumentType.lower() == 'seabird':
+            flag_Trios = 0
+            print('Process Calibration Files')
+            filename = ConfigFile.filename
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        else:
+            print('Error in configuration file: Sensor type not specified')
+            sys.exit()
+
+        Controller.processFilesMultiLevel(self.outputDirectory,inputFile, calibrationMap, flag_Trios)
         # For our needs, we only use a single processing
-        self.processSingle(self.level)
+        # self.processSingle(self.level)
 
 
 
     ########################################################################################
 
-    def processSingle(self, level):
-        print('Process Single-Level')
-        t0Single=time.time()
-        # Load Config file
-        configFileName = self.configFilename
-        configPath = os.path.join('Config', configFileName)
-        if not os.path.isfile(configPath):
-            message = 'Not valid Config File: ' + configFileName
-            print(message)
-            return
+    # def processSingle(self, level):
+    #     t0Single=time.time()
+    #     # Load Config file
+    #     configFileName = MainConfig.settings['cfgFile']
+    #     MainConfig.settings["inDir"] = self.inputDirectory
+    #     # self.inputDirectory = MainConfig.settings["inDir"]
+    #     # configFileName = self.configComboBox.currentText()
+    #     MainConfig.settings['cfgPath'] = os.path.join('Config', configFileName)
+    #     if not os.path.isfile(MainConfig.settings['cfgPath']):
+    #         message = 'Not valid Config File: ' + configFileName
+    #         QtWidgets.QMessageBox.critical(self, 'Error', message)
+    #         return
+    #     MainConfig.saveConfig(MainConfig.fileName)
+    #     ConfigFile.loadConfig(configFileName)
+    #     seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
+    #     SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+    #     InstrumentType = ConfigFile.settings['SensorType']
 
-        ConfigFile.loadConfig(configFileName)
-        seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
-        SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-        InstrumentType = ConfigFile.settings['SensorType']
+    #     # To check instrument type
+    #     if InstrumentType.lower() == 'trios':
+    #         flag_Trios = 1
+    #     elif InstrumentType.lower() == 'seabird':
+    #         flag_Trios = 0
+    #     else:
+    #         print('Error in configuration file: Sensor type not specified')
+    #         sys.exit()
 
-        ## If a file is specified, then process a single file (Not suitable for L1A .dat file)
-        if os.path.isfile(inputFile):
-            fileNames = [inputFile]
-        ## if a folder is specified, the process is lauched on all files inside this folder
-        else:
-            fileNames = glob.glob(inputFile+'/*.*')
+    #     # # Select data files
+    #     # if not self.inputDirectory[0]:
+    #     #     print('Bad input parent directory.')
+    #     #     return
 
-        # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
-        # we keep variable fileNames which is a list
-        fileNames = [self.inputFile]
-        print('Files:', fileNames)
-        if not fileNames:
-            print('Error in input data')
-            return
+    #     if level == 'L1A':
+    #         inLevel = '' # RAW already added above
+    #     if level == 'L1AQC':
+    #         inLevel = 'L1A'
+    #     if level == 'L1B':
+    #         inLevel = 'L1AQC'
+    #     if level == 'L1BQC':
+    #         inLevel = 'L1B'
+    #     if level == 'L2':
+    #         inLevel = 'L1BQC'
 
-        # To check insturment type
-        if InstrumentType == 'Trios':
-            flag_Trios = 1
-        elif InstrumentType == 'Seabird':
-            flag_Trios = 0
-        else:
-            print('Error in configuration file: Sensor type not specified')
-            sys.exit()
+    #     # Check for subdirectory associated with level chosen
+    #     subInputDir = os.path.join(self.inputDirectory + '/' + inLevel + '/')
+    #     if os.path.exists(subInputDir):
+    #         # openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',subInputDir)
+        #     fileNames = self.inputFile #openFileNames[0] # The first element is the whole list
 
-        print('Process Calibration Files')
-        filename = ConfigFile.filename
-        calFiles = ConfigFile.settings['CalibrationFiles']
-        if flag_Trios == 0 :
-            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
-            if not calibrationMap.keys():
-                print('No calibration files found. '
-                'Check Config directory for your instrument files.')
-                return
-        else:
-            calibrationMap = 0      #Cal files are not used for at the moment for Trios
+        # # else:
+        # #     openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',self.inputDirectory)
+        # #     fileNames = openFileNames[0] # The first element is the whole list
 
-        print('Output Directory:', os.path.abspath(self.outputDirectory))
-        if not self.outputDirectory[0]:
-            print('Bad output directory.')
-            return
+        # # print('Files:', openFileNames)
+        # if not fileNames:
+        #     return
 
-        Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level, flag_Trios)
-        t1Single = time.time()
-        print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
+        # print('Process Calibration Files')
+        # calFiles = ConfigFile.settings['CalibrationFiles']
+
+        # if flag_Trios == 0:
+        #     calibrationMap = Controller.processCalibrationConfig(configFileName, calFiles)
+        # else:
+        #     calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
+        #     # calibrationMap = 0
+        # if not calibrationMap.keys():
+        #     print('No calibration files found. '
+        #     'Check Config directory for your instrument files.')
+        #     return
+
+        # print('Output Directory:', os.path.abspath(self.outputDirectory))
+        # if not self.outputDirectory[0]:
+        #     print('Bad output directory.')
+        #     return
+
+        # Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, flag_Trios)
+        # t1Single = time.time()
+        # print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
+        # # print('Process Single-Level')
+        # t0Single=time.time()
+        # # Load Config file
+        # configFileName = self.configFilename
+        # configPath = os.path.join('Config', configFileName)
+        # if not os.path.isfile(configPath):
+        #     message = 'Not valid Config File: ' + configFileName
+        #     print(message)
+        #     return
+
+        # ConfigFile.loadConfig(configFileName)
+        # seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
+        # SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+        # InstrumentType = ConfigFile.settings['SensorType']
+
+
+        # ## If a file is specified, then process a single file (Not suitable for L1A .dat file)
+        # if os.path.isfile(inputFile):
+        #     fileNames = [inputFile]
+        # ## if a folder is specified, the process is lauched on all files inside this folder
+        # else:
+        #     fileNames = glob.glob(inputFile+'/*.*')
+
+        # # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
+        # # we keep variable fileNames which is a list
+        # fileNames = [self.inputFile]
+        # print('Files:', fileNames)
+        # if not fileNames:
+        #     print('Error in input data')
+        #     return
+
+        # # To check insturment type
+        # if InstrumentType.lower() == 'trios':
+        #     flag_Trios = 1
+        # elif InstrumentType.lower() == 'seabird':
+        #     flag_Trios = 0
+        # else:
+        #     print('Error in configuration file: Sensor type not specified')
+        #     sys.exit()
+
+        # print('Process Calibration Files')
+        # filename = ConfigFile.filename
+        # calFiles = ConfigFile.settings['CalibrationFiles']
+        # if flag_Trios == 0 :
+        #     calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        #     if not calibrationMap.keys():
+        #         print('No calibration files found. '
+        #         'Check Config directory for your instrument files.')
+        #         return
+        # else:
+        #     calibrationMap = 0      #Cal files are not used for at the moment for Trios
+
+        # print('Output Directory:', os.path.abspath(self.outputDirectory))
+        # if not self.outputDirectory[0]:
+        #     print('Bad output directory.')
+        #     return
+
+        # Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level, flag_Trios)
+        # t1Single = time.time()
+        # print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
 
 
 # Arguments declaration
