@@ -8,14 +8,14 @@ from Main import Command, cmd
 
 ## Custom set up ##
 
-clobber = True # True overwrites existing files
+clobber = False # True overwrites existing files
 PATH_HCP = '/Users/daurin/GitRepos/HyperInSPACE'   # Adjust with full path on local computer
-INST_TYPE = 'TRIOS' #SEABIRD or TRIOS
+INST_TYPE = 'SEABIRD' #SEABIRD or TRIOS
 
 # For use with sample data provided:
+PLATFORM_TYPE = 'NOTRACKER' #pySAS, SOLARTRACKER, or NOTRACKER. Adjust to desired acquisition platform type
 PATH_DATA = os.path.join('Data','Sample_Data')   # For use with provided samples
 PATH_WK = os.path.join(PATH_HCP,PATH_DATA)  # For use with provided samples
-PLATFORM_TYPE = 'NOTRACKER' #pySAS, SOLARTRACKER, or NOTRACKER. Adjust to desired acquisition platform type
 PATH_ANC = os.path.join(PATH_WK,f'SAMPLE_{INST_TYPE}_{PLATFORM_TYPE}_Ancillary.sb') # For use with provided samples
 
 # For batching collections, adjust to your local settings:
@@ -40,13 +40,11 @@ os.environ['HYPERINSPACE_CMD'] = 'TRUE'
 def process_raw_to_l2(filename):
     ''' Run either directly or using multiprocessor pool below. '''
     if INST_TYPE == 'SEABIRD':
-        # Path to SeaBird raw:
-        ref = os.path.splitext(os.path.basename(filename))[0]
+        # Path to raw files:
+        rawFPs = os.path.splitext(os.path.basename(filename))[0]
     elif INST_TYPE == 'TRIOS':
-        # if to_level == 'L1A':
-        ref = filename # os.path.splitext(os.path.basename(filename))[0]
-        # else:
-        # ref = os.path.splitext(os.path.basename(filename))[0]
+        rawFPs = filename # os.path.splitext(os.path.basename(filename))[0]
+
     # This will skip the file if either 1) the result exists and no clobber, or 2) the Level failed and produced a report.
     # Override with clobber, above.
     to_skip = {level: [os.path.basename(f).split('_' + level)[0]
@@ -56,24 +54,23 @@ def process_raw_to_l2(filename):
                for level in TO_LEVELS}
     # failed = {}
     for from_level, to_level, ext in zip(FROM_LEVELS, TO_LEVELS, FILE_EXT):
+        '''Single level CLI deprecated. Multi-level used. Raw-L2 only'''
+        if to_level != 'L1A':
+            continue
         if INST_TYPE == 'SEABIRD':
-            f = os.path.join(PATH_WK, from_level, ref + ext)
+            # One file at a time
+            l1aFileBase = os.path.splitext(os.path.basename(filename))[0]
+            f = os.path.join(PATH_WK, from_level, rawFPs + ext)
+            test  = os.path.exists(f)
         elif INST_TYPE == 'TRIOS':
+            # All L0 files
+            l0FileBase = os.path.splitext(os.path.basename(filename[0]))[0]
+            l1aFileBase = l0FileBase.split('SPECTRUM_')[1]
             if to_level =='L1A':
                 f = filename # a list
                 test = [os.path.exists(f[i]) for i, x in enumerate(f) if os.path.exists(x)]
             else:
-                '''
-                Argh! Why doesn't this just use the multi-level processor above
-                instead of single-level??
-
-                TriOS L0 filenames do not map onto L1A, and are triplets, so are passed as a group
-                which won't work for multiple calls to single level as in Main.Command.
-
-                '''
-                # ref = os.path.splitext(os.path.basename(filename))[0]
-                l1aFileBase = os.path.splitext(os.path.basename(filename[0]))[0]
-                l1aPlusFB = l1aFileBase.split('SPECTRUM_')[1]
+                '''deprecated'''
                 f = os.path.join(PATH_WK, from_level, l1aFileBase + ext) # a file
                 test = os.path.exists(f)
 
@@ -81,28 +78,26 @@ def process_raw_to_l2(filename):
         # if not os.path.exists(f):
         if not test:
             print('***********************************')
-            print(f'*** [{ref}] STOPPED PROCESSING ***')
+            print(f'*** [{rawFPs}] STOPPED PROCESSING ***')
             print('***********************************')
             break
-        if ref in to_skip[to_level] and not clobber:
+        # if rawFPs in to_skip[to_level] and not clobber:
+        if l1aFileBase in to_skip[to_level] and not clobber:
             print('************************************************')
-            print(f'*** [{ref}] ALREADY PROCESSED TO {to_level} ***')
+            # print(f'*** [{rawFPs}] ALREADY PROCESSED TO {to_level} ***')
+            print(f'*** [{l1aFileBase}] ALREADY PROCESSED TO {to_level} ***')
             print('************************************************')
             continue
         print('************************************************')
-        print(f'*** [{ref}] PROCESSING TO {to_level} ***')
+        print(f'*** [{rawFPs}] PROCESSING TO {to_level} ***')
         print('************************************************')
         if INST_TYPE == 'SEABIRD':
-            # Command(PATH_CFG, os.path.join(PATH_WK, from_level, ref + ext), PATH_WK, to_level, None)
+            # Command(PATH_CFG, os.path.join(PATH_WK, from_level, rawFPs + ext), PATH_WK, to_level, None)
             # One file
-            Command(PATH_CFG, from_level, os.path.join(PATH_WK, from_level, ref + ext), PATH_WK, to_level, PATH_ANC)
+            Command(PATH_CFG, from_level, os.path.join(PATH_WK, from_level, rawFPs + ext), PATH_WK, to_level, PATH_ANC)
         elif INST_TYPE == 'TRIOS':
-            if to_level == 'L1A':
-                # ref: list to L0 .mlbs
-                Command(PATH_CFG, from_level, ref, PATH_WK, to_level, PATH_ANC)
-            else:
-                print('bye')
-                exit()
+            # rawFPs: list to L0 .mlbs
+            Command(PATH_CFG, from_level, rawFPs, PATH_WK, to_level, PATH_ANC)
 
 
 # %% One thread
@@ -135,8 +130,8 @@ def worker(raw_filename):
 ## Watch for raw suffix below
 if __name__ == '__main__':
     if INST_TYPE == 'SEABIRD':
-        # raw_filenames = sorted(glob.glob(os.path.join(PATH_WK, 'RAW', f'*{INST_TYPE}_{PLATFORM_TYPE}.raw'))) # For use with sample data
-        raw_filenames = sorted(glob.glob(os.path.join(PATH_WK, 'RAW', f'*.raw')))
+        raw_filenames = sorted(glob.glob(os.path.join(PATH_WK, 'RAW', f'*{INST_TYPE}_{PLATFORM_TYPE}.raw'))) # For use with sample data
+        # raw_filenames = sorted(glob.glob(os.path.join(PATH_WK, 'RAW', f'*.raw')))
         if not raw_filenames:
             raw_filenames = sorted(glob.glob(os.path.join(PATH_WK, 'RAW', f'*.RAW')))
     elif INST_TYPE == 'TRIOS':
