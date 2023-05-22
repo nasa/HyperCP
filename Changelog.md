@@ -35,9 +35,16 @@ Ideas:
 
 ___________________________________________________________
 
-2023-06-17; DAA
-* Interpolate Ancillary data group early in L1B
-* Obtain model data and fold into Ancillary
+2023-05-22; DAA
+* Interpolate Ancillary data group early in L1B in order to...
+* Obtain model data and fold into Ancillary, providing AOD for cosine correction
+* Restructure BACK_ CAL_ TriOS datasets and update Factory Cal pathway to accomodate
+* Change how TriOS file naming is handled (L0 group input to L1A)
+* Convert B1 C1 TriOS cals to numpy; deprecate use of panda dataframes
+* Debug COURSE/SOG propagation for various platform/GPS/Tracker configurations
+* Update TriOS units and attributes to mirror SeaBird more closely
+* Overhaul CLI scripting to use multilevel processing and accomodate TriOS (see run_sample.py and Main.Command)
+* Test end-to-end processing in GUI and CLI for TriOS and SeaBird samples (and SeaBird cruise data)
 
 2023-05-11; DAA
 * Propagate L1AQC SeaBird and TriOS to new L1B groups for use at L2 in instr. uncertainty budgets
