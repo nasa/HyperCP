@@ -214,14 +214,14 @@ class AnomAnalWindow(QtWidgets.QDialog):
             self.ThresholdCheckBox.setChecked(False)
         self.ThresholdCheckBoxUpdate()
 
-        # Set up datetime axis objects
-        #   https://stackoverflow.com/questions/49046931/how-can-i-use-dateaxisitem-of-pyqtgraph
-        class TimeAxisItem(pg.AxisItem):
-            def tickStrings(self, values, scale, spacing):
-                return [datetime.fromtimestamp(value, pytz.timezone("UTC")) for value in values]
+        # # Set up datetime axis objects
+        # #   https://stackoverflow.com/questions/49046931/how-can-i-use-dateaxisitem-of-pyqtgraph
+        # class TimeAxisItem(pg.AxisItem):
+        #     def tickStrings(self, values, scale, spacing):
+        #         return [datetime.fromtimestamp(value, pytz.timezone("UTC")) for value in values]
 
-        date_axis_Dark = TimeAxisItem(orientation='bottom')
-        date_axis_Light = TimeAxisItem(orientation='bottom')
+        # date_axis_Dark = TimeAxisItem(orientation='bottom')
+        # date_axis_Light = TimeAxisItem(orientation='bottom')
 
         # Set up realtime plot widgets
         self.plotWidgetDark = pg.PlotWidget(self)
@@ -246,7 +246,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.ph3rdDark = self.plotWidgetDark.plot(x,y, symbolPen='r',\
                  symbol='o', name='2nd pass', pen=None)
         # Add datetime object to x axis
-        self.plotWidgetDark.setAxisItems({'bottom': date_axis_Dark})
+        # self.plotWidgetDark.setAxisItems({'bottom': date_axis_Dark})
 
         self.phLight = self.plotWidgetLight.plot(x,y, symbolPen='b',\
                  symbol='o', name='time series', pen=None)
@@ -258,7 +258,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.ph3rdLight = self.plotWidgetLight.plot(x,y, symbolPen='r',\
                  symbol='o', name='2nd pass', pen=None)
         # Add datetime object to x axis
-        self.plotWidgetLight.setAxisItems({'bottom': date_axis_Light})
+        # self.plotWidgetLight.setAxisItems({'bottom': date_axis_Light})
 
         # Show defaults
         if self.sensor == "ES":
@@ -382,6 +382,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.setLayout(self.VBox)
         self.setGeometry(100, 70, 1400, 700)
 
+        # self.sliderWave = int(self.slider.value())
         self.sliderWave = float(self.slider.value())
 
         # Set up the photo path
@@ -405,6 +406,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         photoWidget.show()
 
     def sliderMove(self):
+        # self.sliderWave = int(self.slider.value())
         self.sliderWave = float(self.slider.value())
         self.sLabel.setText(f'Deglitching only performed from 350-850 nm: {self.sliderWave}')
 
@@ -704,7 +706,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # self.slider.setMinimum(min(waveBands))
         # self.slider.setMaximum(max(waveBands))
         # self.slider.setTickInterval(10)
-        self.slider.setValue(self.sliderWave)
+        self.slider.setValue(int(self.sliderWave))
 
         # Update minmax text
         self.MinMaxDarkLabel.setText(str(getattr(self,f'{self.sensor}MinMaxBandDark')) +' nm' )
@@ -1058,7 +1060,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         # self.sliderWave = float(self.slider.value())
         self.sliderWave = getattr(self,f'{self.sensor}MinMaxBandLight')
-        self.slider.setValue(self.sliderWave)
+        self.slider.setValue(int(self.sliderWave))
         self.sLabel.setText(f'Deglitching only performed from 350-850 nm: {self.sliderWave}')
 
         self.updateButtonPressed()
@@ -1134,8 +1136,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         avg = Utilities.movingAverage(radiometry1D, window).tolist()
 
         # ''' Use numeric series (x) for now in place of datetime '''
-        # x = np.arange(0,len(radiometry1D),1)
-        x=np.array([x.timestamp() for x in dateTime])
+        x = np.arange(0,len(radiometry1D),1)
+        # x=np.array([x.timestamp() for x in dateTime])
 
         # First Pass
         y_anomaly = np.array(radiometry1D)[badIndex]
