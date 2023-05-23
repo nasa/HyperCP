@@ -42,22 +42,22 @@ Clone this repository (branch: "master") to a convenient directory on your compu
 
 HyperCP requires Python 3.X installed on a Linux, MacOS, or Windows computer. The <a href='https://www.anaconda.com/'>Anaconda</a> distribution (or <a href='https://docs.conda.io/en/latest/miniconda.html'>Miniconda</a>) is encouraged. (If you are unfamiliar with Anaconda, a nice walkthrough can be found [here](https://youtu.be/YJC6ldI3hWk).)
 
-All of the package dependencies are listed in the hcp.yml file included with the package. To make sure you have all of the necessary dependencies, navigate to the HyperCP directory on command line and type
+All of the package dependencies are listed in the environment.yml file included with the package. To make sure you have all of the necessary dependencies, navigate to the HyperCP directory on command line and type
 
 ```
-prompt$ conda env create -f hcp.yml
+prompt$ conda env create -f environment.yml
 ```
 
-and follow the prompts to install the additional package dependencies on your machine within the new virtual environment. When completed you should be in the virtual environment (hcp) and ready to run the package. To return to the environment later before launching the program, type
+and follow the prompts to install the additional package dependencies on your machine within the new virtual environment. When completed you should be in the virtual environment (hypercp) and ready to run the package. To return to the environment later before launching the program, type
 
 ```
-prompt$ conda activate hcp
+prompt$ conda activate hypercp
 ```
 
 To stay up to date with the latest commits to the master branch, it is strongly recommended that you pull them prior to using the software. From the HyperCP directory, type:
 
 ```
-(hcp) prompt$ git pull
+(hypercp) prompt$ git pull
 ```
 
 To report an issue, please submit here: https://github.com/nasa/HyperInSPACE/issues
@@ -69,7 +69,7 @@ To report an issue, please submit here: https://github.com/nasa/HyperInSPACE/iss
 
 HyperCP is a Main-View-Controller Python package with a GUI that can be launched in several ways, such as by navigating to the project folder on the command line and typing
 ```
-(hcp) prompt$ python Main.py
+(hypercp) prompt$ python Main.py
 ```
 However you launch the GUI, *watch for important feedback at the command line terminal* in addition to informational GUI windows.
 
