@@ -297,7 +297,11 @@ class ProcessL1b_Interp:
         '''
 
         # List of datasets requiring angular interpolation (i.e. through 0 degrees)
-        angList = ['AZIMUTH', 'POINTING', 'REL_AZ', 'HEADING', 'SOLAR_AZ', 'SZA']
+        angList = ['AZIMUTH', 'POINTING', 'HEADING']
+        '''
+            NOTE: SOLAR_AZ and SZA are now recalculated for new timestamps rather than interpolated
+                REL_AZ is +/- 90-135 and should not be interpolated using interAngular
+        '''
 
         # List of datasets requiring fill instead of interpolation
         fillList = ['STATION']
@@ -316,11 +320,7 @@ class ProcessL1b_Interp:
             newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
 
             if dataName in angList:
-                ''' SOLAR_AZ and SZA are now recalculated for new timestamps rather than interpolated'''
-                # if dataName == 'SOLAR_AZ' or dataName == 'SZA':
-                #     # newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value="extrapolate")
 
-                # else:
                 newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value=0)
 
                 # Some angular measurements (like SAS pointing) are + and -, and get converted
@@ -852,13 +852,6 @@ class ProcessL1b_Interp:
         if not ProcessL1b_Interp.interpolateData(ltData, interpData, "LT", fileName):
             return None
 
-        # # Optional:
-        # '''
-        # The only way to enter is if we had a GPS course and speed, in which case it's already inter'd.'''
-        # if courseData:
-                # ProcessL1b_Interp.interpolateData(courseData, interpData, "COURSE", fileName) # COG (not heading), presumably?
-        # if sogData:
-        #         ProcessL1b_Interp.interpolateData(sogData, interpData, "SOG", fileName)
 
         if satnavGroup is not None:
             # Required:

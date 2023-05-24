@@ -1361,6 +1361,9 @@ class ProcessL2:
         RelAzXSlice = newAncGroup.getDataset('REL_AZ').data['REL_AZ'][-1].copy()
         if isinstance(RelAzXSlice, list):
             RelAzXSlice = RelAzXSlice[0]
+
+        RelAzXSlice = abs(RelAzXSlice)
+
         # Only required in Zhang17 currently
         if ZhangRho:
             try:

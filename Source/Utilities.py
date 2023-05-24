@@ -685,7 +685,12 @@ class Utilities:
 
         ''' NOTE: Except for SOLAR_AZ and SZA, which are extrapolated, this will fill missing values at the
             beginning and end of data record with the nearest actual record. This is fine for integrated
-            datasets, but may be dramatic for some gappy ancillary records of lower temporal resolution.'''
+            datasets, but may be dramatic for some gappy ancillary records of lower temporal resolution.
+            NOTE: SOLAR_AZ and SZA should no longer be int/extrapolated at all, but recalculated in L1B
+
+            NOTE: REL_AZ (sun to sensor) may be negative and should be 90 - 135, so does not require angular
+            interpolation.
+            '''
 
         # Eliminate NaNs
         whrNan = np.where(np.isnan(y))[0]
