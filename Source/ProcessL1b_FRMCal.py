@@ -18,7 +18,7 @@ class ProcessL1b_FRMCal:
         anc_grp = node.getGroup('ANCILLARY_METADATA')
         # lat = np.asarray(pd.DataFrame(anc_grp.getDataset("LATITUDE").data))
         # lon = np.asarray(pd.DataFrame(anc_grp.getDataset("LONGITUDE").data))
-        rel_az = np.asarray(pd.DataFrame(anc_grp.getDataset("REL_AZ").data))
+        rel_az = abs(np.asarray(pd.DataFrame(anc_grp.getDataset("REL_AZ").data)))
         sun_zenith = np.asarray(pd.DataFrame(anc_grp.getDataset("SZA").data))
         sun_azimuth = np.asarray(pd.DataFrame(anc_grp.getDataset("SOLAR_AZ").data))
         anc_datetime = anc_grp.datasets['LATITUDE'].columns['Datetime']

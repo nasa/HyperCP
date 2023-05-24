@@ -271,7 +271,9 @@ class Propagate:
         return rhoScalar
 
     def zhangWrapper(self, windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
-
+        '''
+        Be sure calls to zhangWrapper to send abs(relAz) if derived from data - DA
+        '''
         print(f"CALL TO WRAPPER: {self.i}")
 
         # === environmental conditions during experiment ===

@@ -38,7 +38,7 @@ class ProcessL2BRDF():
                 # Could bring in IOPS for IOP BRDF here...
             if (gp.id == "ANCILLARY"):
                 solz = gp.datasets["SZA"].columns["SZA"]
-                relaz = gp.datasets["REL_AZ"].columns["REL_AZ"]
+                relaz = abs(gp.datasets["REL_AZ"].columns["REL_AZ"])
 
         for gp in root.groups:
             if (gp.id == "REFLECTANCE"):
