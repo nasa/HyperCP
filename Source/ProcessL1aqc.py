@@ -751,7 +751,7 @@ class ProcessL1aqc:
             for index in range(len(relAz)):
                 relAzimuthAngle = relAz[index]
 
-                if relAzimuthAngle > relAzimuthMax or relAzimuthAngle < relAzimuthMin or math.isnan(relAzimuthAngle):
+                if abs(relAzimuthAngle) > relAzimuthMax or abs(relAzimuthAngle) < relAzimuthMin or math.isnan(relAzimuthAngle):
                     i += 1
                     if start == -1:
                         # print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle,2)))

@@ -26,7 +26,9 @@
 ! COMMENTS
 ! R/V Sally Ride Cruise Id = SR1812
 !
-! NOTE: SENSORAZ HERE IS A NEW SEABASS FIELD. CALCULATED FROM ANCILLARY HEADING AND FIELD NOTES OF SENSOR-SHIP ANGLE
+! NOTE: SENSORAZ HERE IS A NEW SEABASS FIELD. CALCULATED FROM ANCILLARY HEADING 
+!	AND FIELD NOTES OF SENSOR-SHIP ANGLE.
+!
 ! 	SolarTracker broke on third day. SensoAz will be used in HyperInSPACE to 
 !	calculate relative solar azimuth between sensor and sun
 !
