@@ -2273,8 +2273,8 @@ class Utilities:
     @staticmethod
     def interpUncertainties_FullChar(node):
         """
-        Temporary function, might be unnecessary at the end, if all full char input comes already with a wavelength columns
-        For the moment just needed to interpolate Linearity and Stab coefficient, because they are still "default" ones
+        For full char, all input comes already with a wavelength columns, 
+        except RADCAL LAMP ad PANEL, that need to be interpolated on wvl.        
         """
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
@@ -2308,19 +2308,7 @@ class Utilities:
                 print(len(x_new))
                 exit()
 
-            ## POLARISATION/STABILITY/LINEARITY: Interpolate data to hyper-spectral pixels
-            for data_type in ["_NLDATA_CAL","_STABDATA_CAL"]:
-                ds = grp.getDataset(sensor+data_type)
-                ds.datasetToColumns()
-                # indx = ds.attributes["INDEX"]
-                x = ds.columns['0']
-                y = ds.columns['1']
-                y_new = np.interp(x_new, x, y)
-                ds.columns['0'] = x_new
-                ds.columns['1'] = y_new
-                ds.columnsToDataset()
-
-            ## RADCAL_LAMP/: Interpolate data to hyper-spectral pixels
+            ## RADCAL_LAMP: Interpolate data to hyper-spectral pixels
             for data_type in ["_RADCAL_LAMP"]:
                 ds = grp.getDataset(sensor+data_type)
                 ds.datasetToColumns()
@@ -2332,7 +2320,7 @@ class Utilities:
                 ds.columns['0'] = x_new
                 ds.columnsToDataset()
 
-            ## RADCAL_PANEL: only for Li & Lt
+            ## RADCAL_PANEL: interplation only for Li & Lt
             if sensor != "ES":
                 for data_type in ["_RADCAL_PANEL"]:
                     ds = grp.getDataset(sensor+data_type)

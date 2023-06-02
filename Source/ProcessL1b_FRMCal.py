@@ -16,12 +16,17 @@ class ProcessL1b_FRMCal:
 
         ## Reading ancilliary data
         anc_grp = node.getGroup('ANCILLARY_METADATA')
-        # lat = np.asarray(pd.DataFrame(anc_grp.getDataset("LATITUDE").data))
-        # lon = np.asarray(pd.DataFrame(anc_grp.getDataset("LONGITUDE").data))
-        rel_az = abs(np.asarray(pd.DataFrame(anc_grp.getDataset("REL_AZ").data)))
-        sun_zenith = np.asarray(pd.DataFrame(anc_grp.getDataset("SZA").data))
-        sun_azimuth = np.asarray(pd.DataFrame(anc_grp.getDataset("SOLAR_AZ").data))
+        
+        rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns["NONE"])
+        sun_zenith = np.asarray(anc_grp.datasets['SZA'].columns["NONE"])
+        sun_azimuth = np.asarray(anc_grp.datasets['SOLAR_AZ'].columns["NONE"])
         anc_datetime = anc_grp.datasets['LATITUDE'].columns['Datetime']
+
+        # rel_az = np.asarray(pd.DataFrame(anc_grp.getDataset("REL_AZ").data))
+        # sun_zenith = np.asarray(pd.DataFrame(anc_grp.getDataset("SZA").data))
+        # sun_azimuth = np.asarray(pd.DataFrame(anc_grp.getDataset("SOLAR_AZ").data))
+        # anc_datetime = anc_grp.datasets['LATITUDE'].columns['Datetime']
+        
         # anc_datetag = np.asarray(pd.DataFrame(anc_grp.getDataset("DATETAG").data))
         # anc_timetag = np.asarray(pd.DataFrame(anc_grp.getDataset("TIMETAG2").data))
         # anc_datetime = [dt.datetime.strptime(str(int(x[0]))+str(int(y[0])).rjust(9,'0'), "%Y%j%H%M%S%f") for x,y in zip(anc_datetag,anc_timetag)]

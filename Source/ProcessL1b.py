@@ -20,14 +20,16 @@ from Source.GetAnc_ecmwf import GetAnc_ecmwf
 class ProcessL1b:
     '''L1B mainly for SeaBird with some shared methods'''
 
+
+
     @staticmethod
-    def read_unc_coefficient(root, inpath):
+    def read_unc_coefficient_class(root, inpath): 
         ''' SeaBird or TriOS'''
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
-
-        ### Read uncertainty parameters from full calibration from TARTU
+  
+        # Read uncertainty parameters from full calibration from TARTU
         for f in glob.glob(os.path.join(inpath, r'pol/*')):
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'radcal/*')):
@@ -42,21 +44,50 @@ class ProcessL1b:
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'angular/*')):
             Utilities.read_char(f, gp)
-
-        ### unc dataset renaming
+        
+        # unc dataset renaming
         Utilities.RenameUncertainties(root)
+        
+        # interpolate unc to full wavelength range, depending on class based or full char
+        Utilities.interpUncertainties_DefaultChar(root)
 
-        ### interpolate unc to full wavelength range, depending on class based or full char
-        if ConfigFile.settings['bL1bCal'] == 2:
-            Utilities.interpUncertainties_DefaultChar(root)
-
-        elif ConfigFile.settings['bL1bCal'] == 3:
-            Utilities.interpUncertainties_FullChar(root)
-
-        ### generate temperature coefficient
+        # generate temperature coefficient
         Utilities.UncTempCorrection(root)
-
+        
         return root
+
+
+    @staticmethod
+    def read_unc_coefficient_frm(root, inpath): 
+        ''' SeaBird or TriOS'''
+        # Read Uncertainties_new_char from provided files
+        gp = root.addGroup("RAW_UNCERTAINTIES")
+        gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
+  
+        # Read uncertainty parameters from full calibration from TARTU
+        for f in glob.glob(os.path.join(inpath, r'POLAR/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'RADCAL/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'STRAY/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'ANGULAR/*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'THERMAL/*')):
+            Utilities.read_char(f, gp)                
+        
+        # unc dataset renaming
+        Utilities.RenameUncertainties(root)
+        
+        # interpolate unc to full wavelength range            
+        Utilities.interpUncertainties_FullChar(root)
+        
+        # generate temperature coefficient
+        Utilities.UncTempCorrection(root)
+        
+        return root
+
+
 
     @staticmethod
     def includeModelDefaults(ancGroup, modRoot):
