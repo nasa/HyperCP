@@ -519,7 +519,7 @@ class ProcessL1b:
         elif ConfigFile.settings['bL1bCal'] == 3:
             inpath = ConfigFile.settings['FullCalDir']
             print('Full Char dir:', inpath)
-            node = ProcessL1b.read_unc_coefficient(node, inpath)
+            node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
 
 
         # Dark Correction
