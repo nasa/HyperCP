@@ -1,6 +1,6 @@
 
 import os
-import shutil
+import shutil, glob
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pathlib import Path
 
@@ -1295,9 +1295,11 @@ class ConfigWindow(QtWidgets.QDialog):
         configPath = os.path.join("Config", calibrationDir)
 
         calDir = Path(srcDir)
-        files = Path(calDir).glob("CP*.TXT")
+        # files = Path(calDir).glob("CP*.TXT")
+        files = glob.iglob(os.path.join(Path(calDir), '*.[tT][xX][tT]'))
         for file in files:
-            dest = Path(configPath) / file.name
+            # dest = Path(configPath) / file.name
+            dest = Path(configPath) / os.path.basename(file)
             if not dest.exists():
                 shutil.copy(file,dest)
 

@@ -265,19 +265,16 @@ class TriosL1B:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
-        # Add characterization files if needed (RAW_UNCERTAINTIES)
+        # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 2:
-            # inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
-            inpath = os.path.join(MainConfig.settings['MainDir'], 'Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
+            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
             print('Class based dir:', inpath)
-
             '''
-            BUG: This currently will not work for SeaBird, and even with TriOS, it uses only characterization files that correspond 1:1 with specific instrument,
-            meaning it does not appear to be class-based at all.
+            BUG: This currently will not work for both SeaBird & TriOS, it still need a sensor-specific RADCAL file
             '''
+            node = ProcessL1b.read_unc_coefficient_class(node, inpath)
 
-            node = ProcessL1b.read_unc_coefficient(node, inpath)
-
+        # Or add Full characterization files (RAW_UNCERTAINTIES)
         elif ConfigFile.settings['bL1bCal'] == 3:
             inpath = ConfigFile.settings['FullCalDir']
             print('Full Char dir:', inpath)
