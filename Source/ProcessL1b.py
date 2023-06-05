@@ -29,30 +29,28 @@ class ProcessL1b:
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
   
-        # Read uncertainty parameters from full calibration from TARTU
-        for f in glob.glob(os.path.join(inpath, r'pol/*')):
+        # Read uncertainty parameters from class-based calibration 
+        for f in glob.glob(os.path.join(inpath, r'*class_POLAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'radcal/*')):
+        for f in glob.glob(os.path.join(inpath, r'*class_STRAY*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'thermal/*')):
+        for f in glob.glob(os.path.join(inpath, r'*class_ANGULAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'straylight/*')):
+        for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'stability/*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'linearity/*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'angular/*')):
-            Utilities.read_char(f, gp)
-        
+            
+        # # RADCAL need to be sensor specific, even in Class-based processing
+        # for f in glob.glob(os.path.join(inpath, r'RADCAL/*')):
+        #     Utilities.read_char(f, gp)
+
         # unc dataset renaming
-        Utilities.RenameUncertainties(root)
+        Utilities.RenameUncertainties_Class(root)
         
         # interpolate unc to full wavelength range, depending on class based or full char
-        Utilities.interpUncertainties_DefaultChar(root)
+        Utilities.interpUncertainties_Class(root)
 
-        # generate temperature coefficient
-        Utilities.UncTempCorrection(root)
+        # # generate temperature coefficient
+        # Utilities.UncTempCorrection(root)
         
         return root
 
@@ -65,21 +63,21 @@ class ProcessL1b:
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
   
         # Read uncertainty parameters from full calibration from TARTU
-        for f in glob.glob(os.path.join(inpath, r'POLAR/*')):
+        for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'RADCAL/*')):
+        for f in glob.glob(os.path.join(inpath, r'*RADCAL*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'STRAY/*')):
+        for f in glob.glob(os.path.join(inpath, r'*STRAY*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'ANGULAR/*')):
+        for f in glob.glob(os.path.join(inpath, r'*ANGULAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'THERMAL/*')):
+        for f in glob.glob(os.path.join(inpath, r'*THERMAL*')):
             Utilities.read_char(f, gp)                
         
         # unc dataset renaming
-        Utilities.RenameUncertainties(root)
+        Utilities.RenameUncertainties_FullChar(root)
         
-        # interpolate unc to full wavelength range            
+        # interpolate LAMP and PANEL to full wavelength range            
         Utilities.interpUncertainties_FullChar(root)
         
         # generate temperature coefficient
@@ -506,15 +504,12 @@ class ProcessL1b:
         # Add characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 2:
             # inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
-            inpath = os.path.join(MainConfig.settings['MainDir'], 'Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
+            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
             print('Class based dir:', inpath)
-
             '''
-            BUG: This currently will not work for SeaBird, and even with TriOS, it uses only characterization files that correspond 1:1 with specific instrument,
-            meaning it does not appear to be class-based at all.
+            BUG: This currently will not work for both SeaBird & TriOS, it still need a sensor-specific RADCAL file
             '''
-
-            node = ProcessL1b.read_unc_coefficient(node, inpath)
+            node = ProcessL1b.read_unc_coefficient_class(node, inpath)
 
         elif ConfigFile.settings['bL1bCal'] == 3:
             inpath = ConfigFile.settings['FullCalDir']
@@ -595,7 +590,6 @@ class ProcessL1b:
             '''
             BUG: Class-based not ready for SeaBird
             '''
-
             if not ProcessL1b_ClassCal.processL1b_SeaBird(node):
                 msg = 'Error in ProcessL1b.process_FRM_calibration'
                 print(msg)
