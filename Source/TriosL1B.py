@@ -279,6 +279,11 @@ class TriosL1B:
             inpath = ConfigFile.settings['FullCalDir']
             print('Full Char dir:', inpath)
             node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
+            if node is None:
+                msg = 'Error loading FRM characterization files. Check directory.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
 
 
         # Interpolate only the Ancillary group, and then fold in model data

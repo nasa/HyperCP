@@ -23,13 +23,13 @@ class ProcessL1b:
 
 
     @staticmethod
-    def read_unc_coefficient_class(root, inpath): 
+    def read_unc_coefficient_class(root, inpath):
         ''' SeaBird or TriOS'''
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
-  
-        # Read uncertainty parameters from class-based calibration 
+
+        # Read uncertainty parameters from class-based calibration
         for f in glob.glob(os.path.join(inpath, r'*class_POLAR*')):
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_STRAY*')):
@@ -38,30 +38,30 @@ class ProcessL1b:
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
-            
+
         # # RADCAL need to be sensor specific, even in Class-based processing
         # for f in glob.glob(os.path.join(inpath, r'RADCAL/*')):
         #     Utilities.read_char(f, gp)
 
         # unc dataset renaming
         Utilities.RenameUncertainties_Class(root)
-        
+
         # interpolate unc to full wavelength range, depending on class based or full char
         Utilities.interpUncertainties_Class(root)
 
         # # generate temperature coefficient
         # Utilities.UncTempCorrection(root)
-        
+
         return root
 
 
     @staticmethod
-    def read_unc_coefficient_frm(root, inpath): 
+    def read_unc_coefficient_frm(root, inpath):
         ''' SeaBird or TriOS'''
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
-  
+
         # Read uncertainty parameters from full calibration from TARTU
         for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
             Utilities.read_char(f, gp)
@@ -72,17 +72,20 @@ class ProcessL1b:
         for f in glob.glob(os.path.join(inpath, r'*ANGULAR*')):
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*THERMAL*')):
-            Utilities.read_char(f, gp)                
-        
+            Utilities.read_char(f, gp)
+
+        if len(gp.datasets) < 23:
+            return None
+
         # unc dataset renaming
         Utilities.RenameUncertainties_FullChar(root)
-        
-        # interpolate LAMP and PANEL to full wavelength range            
+
+        # interpolate LAMP and PANEL to full wavelength range
         Utilities.interpUncertainties_FullChar(root)
-        
+
         # generate temperature coefficient
         Utilities.UncTempCorrection(root)
-        
+
         return root
 
 
@@ -515,6 +518,11 @@ class ProcessL1b:
             inpath = ConfigFile.settings['FullCalDir']
             print('Full Char dir:', inpath)
             node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
+            if node is None:
+                msg = 'Error loading FRM characterization files. Check directory.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
 
 
         # Dark Correction
