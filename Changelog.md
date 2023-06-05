@@ -2,7 +2,7 @@ v1.2.0 In progress
 
 DAA = dirk.a.aurin@nasa.gov
 NH = nils.haentjens@maine.edu
-
+AD = alexis.deru@acri-st.fr
 ---
 
 Next priorities:
@@ -10,7 +10,6 @@ Next priorities:
 * Implement TriOS platform support
 * Add IOP-based BRDF correction option
 * Propagate uncertainties from radiometry to OC products (beyond Rrs and nLw)
-* FPDF slow in PDF report building with figures; seek alternatives
 
 Minor issues:
 * Implement F0 convolution to gaussian RSR for HyperOCR for Lwn calculation
@@ -34,6 +33,15 @@ Ideas:
 * Produce kml files for GoogleEarth on entire cruise/directory
 
 ___________________________________________________________
+
+2023-06-05; DAA & AD
+* Add HyperCP Collaboration Guidelines to the repo
+* Add Field Log example to the repo
+* Update license to add EUMETSAT
+* Accomodate negative relative azimuth to indicate direction
+* Update Class-based characterization file input in GUI
+* Update Class- and Full-based char files for new names/directories
+* Update Full-based code for SeaBird & TriOS
 
 2023-05-22; DAA
 * Interpolate Ancillary data group early in L1B in order to...

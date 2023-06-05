@@ -16,7 +16,7 @@ class ProcessL1b_FRMCal:
 
         ## Reading ancilliary data
         anc_grp = node.getGroup('ANCILLARY_METADATA')
-        
+
         rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns["NONE"])
         sun_zenith = np.asarray(anc_grp.datasets['SZA'].columns["NONE"])
         sun_azimuth = np.asarray(anc_grp.datasets['SOLAR_AZ'].columns["NONE"])
@@ -26,7 +26,7 @@ class ProcessL1b_FRMCal:
         # sun_zenith = np.asarray(pd.DataFrame(anc_grp.getDataset("SZA").data))
         # sun_azimuth = np.asarray(pd.DataFrame(anc_grp.getDataset("SOLAR_AZ").data))
         # anc_datetime = anc_grp.datasets['LATITUDE'].columns['Datetime']
-        
+
         # anc_datetag = np.asarray(pd.DataFrame(anc_grp.getDataset("DATETAG").data))
         # anc_timetag = np.asarray(pd.DataFrame(anc_grp.getDataset("TIMETAG2").data))
         # anc_datetime = [dt.datetime.strptime(str(int(x[0]))+str(int(y[0])).rjust(9,'0'), "%Y%j%H%M%S%f") for x,y in zip(anc_datetag,anc_timetag)]
@@ -63,14 +63,13 @@ class ProcessL1b_FRMCal:
         s.altitudes = Py6S.Altitudes()
         s.altitudes.set_target_sea_level()
         s.altitudes.set_sensor_sea_level()
+
         '''
-        Presumably this is where the model data are needed
+        NOTE: Presumably this is where the model data are needed
         '''
         s.aot550 = 0.153
 
-        '''
-        BUG: This throws the error: TypeError: only size-1 arrays can be converted to Python scalars
-        '''
+
         wavelengths, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl)
 
         # extract value from Py6s
