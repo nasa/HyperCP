@@ -3,7 +3,7 @@
 HyperInSPACE Community Processor (HyperCP) is the successor to the
 Hyperspectral In situ Support for PACE (HyperInSPACE) project. It is
 designed to process above-water, hyperspectral radiometry from
-Satlantic HyperSAS instruments and TriOS RAMSES instruments.
+Satlantic/Sea-Bird HyperSAS instruments and TriOS RAMSES instruments.
 See README.md for installation instructions and processor guide.
 See Changelog.md for software updates.
 See HyperCP_Project_guidelines.md and HyperCP_Project_guidelines_APPENDIX.md
@@ -16,7 +16,6 @@ import os
 import sys
 import time
 from PyQt5 import QtCore, QtGui, QtWidgets
-import glob
 
 import requests
 from tqdm import tqdm
@@ -246,7 +245,6 @@ class Window(QtWidgets.QWidget):
 
     ########################################################################################
     # Build functionality modules
-    # def on_directoryLoaded(self, path):
     def on_directoryLoaded(self):
         index = self.configComboBox.findText(MainConfig.settings['cfgFile'])
         self.configComboBox.setCurrentIndex(index)

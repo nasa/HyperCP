@@ -258,11 +258,11 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL1bCal"]==2:
             self.ClassCalRadioButton.setChecked(True)
         self.ClassCalRadioButton.clicked.connect(self.l1bClassCalRadioButtonClicked)
-        '''
-        BUG: While class-based is being debugged
-        '''
-        self.ClassCalRadioButton.setChecked(False)
-        self.ClassCalRadioButton.setEnabled(False)
+        # '''
+        # BUG: While class-based is being debugged
+        # '''
+        # self.ClassCalRadioButton.setChecked(False)
+        # self.ClassCalRadioButton.setEnabled(False)
 
         self.FullCalRadioButton = QtWidgets.QRadioButton("Full Characterization:")
         self.FullCalRadioButton.setAutoExclusive(False)
@@ -1295,15 +1295,22 @@ class ConfigWindow(QtWidgets.QDialog):
         configPath = os.path.join("Config", calibrationDir)
 
         calDir = Path(srcDir)
-        subdirs = [d for d in calDir.iterdir() if (d.is_dir() and d.name !='.DS_Store')]
+        files = Path(calDir).glob("CP*.TXT")
+        for file in files:
+            dest = Path(configPath) / file.name
+            if not dest.exists():
+                shutil.copy(file,dest)
 
-        for src in subdirs:
-            dest = os.path.join(configPath,src.parts[-1])
-            if not shutil._samefile(src,dest):
-                print(f'Copying characterization folder {src.parts[-1]} to {os.path.join(configPath,src.parts[-1])}')
-                shutil.copytree(src, dest, dirs_exist_ok=True)  # 3.8+ only!
-            else:
-                print('Destination same as source files: skip')
+        ## Old CP file/folder format
+        # subdirs = [d for d in calDir.iterdir() if (d.is_dir() and d.name !='.DS_Store')]
+
+        # for src in subdirs:
+        #     dest = os.path.join(configPath,src.parts[-1])
+        #     if not shutil._samefile(src,dest):
+        #         print(f'Copying characterization folder {src.parts[-1]} to {os.path.join(configPath,src.parts[-1])}')
+        #         shutil.copytree(src, dest, dirs_exist_ok=True)  # 3.8+ only!
+        #     else:
+        #         print('Destination same as source files: skip')
 
         self.FullCalDirButton.setText(os.path.basename(calibrationDir))
         ConfigFile.settings['FullCalDir'] = os.path.abspath(configPath)

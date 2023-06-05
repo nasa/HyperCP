@@ -1,8 +1,8 @@
 /begin_header
 /data_file_name=KORUS_000.sb
 /affiliations=UNH,KIOST,GSFC
-/investigators=Joe_Salisbury,Wonkook_Kim,Antonio_Mannino
-/contact=joe.salisbury@unh.edu,antonio.mannino-1@nasa.gov,shawn.shellito@unh.edu
+/investigators=Antonio_Mannino,Joe_Salisbury,Wonkook_Kim
+/contact=antonio.mannino-1@nasa.gov,joe.salisbury@unh.edu,shawn.shellito@unh.edu
 /data_status=preliminary
 /experiment=KORUS
 /cruise=KR_2016
