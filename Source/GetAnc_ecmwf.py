@@ -1,5 +1,6 @@
 
 import os
+import shutil
 # import stat
 import numpy as np
 import xarray as xr
@@ -52,7 +53,6 @@ class GetAnc_ecmwf:
         Obtain the ADS_URL and YOUR_ADS_KEY at: https://ads.atmosphere.copernicus.eu/api-how-to
         '''
         # homeDir = os.path.expanduser('~')
-        # MainDir = MainConfig.settings['MainDir']
         MainDir = os.getcwd()
         ecmwf_api_config = os.path.join(MainDir, '.ecmwf_api_config')
         if not os.path.exists(ecmwf_api_config):
@@ -127,6 +127,10 @@ class GetAnc_ecmwf:
         if os.path.exists(pathOut):
             pass
         else:
+            # copy .cdsapirc into home directory, because needed by the cdapi
+            homedir = os.path.expanduser( '~' )
+            shutil.copy(os.path.join(os.getcwd(),'.cdsapirc'), homedir)
+            
             year, month, day, hour, _, _ = GetAnc_ecmwf.timeStamp2yrMnthDayHrMinSec(timeStamp)
 
             if int(year) < 2003:
@@ -224,7 +228,6 @@ class GetAnc_ecmwf:
 
     def getAnc_ecmwf(inputGroup):
         ''' Retrieve model data from ECMWF and save in Data/Anc and in ModData '''
-        # cwd = MainConfig.settings['MainDir']
         cwd = os.getcwd()
         ancPath = os.path.join(cwd,"Data","Anc")
 
