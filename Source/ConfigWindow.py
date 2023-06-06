@@ -222,11 +222,6 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1bGetAncCheckBox1.setChecked(False)
             self.l1bGetAncCheckBox2.setChecked(True)
         self.l1bGetAncCheckBox2.clicked.connect(self.l1bGetAncCheckBoxUpdate2)
-        '''
-        BUG: While ECMWF is being debugged
-        '''
-        self.l1bGetAncCheckBox2.setChecked(False)
-        self.l1bGetAncCheckBox2.setEnabled(False)
 
 
         self.l1bDefaultWindSpeedLabel = QtWidgets.QLabel("          Default Wind Speed (m/s)", self)
