@@ -79,7 +79,7 @@ class GetAnc_ecmwf:
         latLonTag: a string, a tag to indicate the effective lat/lon.
         dateTag: a string, a tag to indicate time stamp, to the hour
         '''
-        
+
         # Lat-Lon
         latEff = np.round(lat / latRes) * latRes
         lonEff = np.round(lon / lonRes) * lonRes
@@ -97,7 +97,7 @@ class GetAnc_ecmwf:
         # Time
         year, month, day, hour, minute, second = GetAnc_ecmwf.timeStamp2yrMnthDayHrMinSec(timeStamp)
 
-        timeSec = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second)).timestamp()
+        timeSec = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second),tzinfo=datetime.timezone.utc).timestamp()
 
         timeEffSec = np.round(timeSec / (3600 * timeResHours)) * (3600 * timeResHours) - 7200
 
@@ -272,6 +272,8 @@ class GetAnc_ecmwf:
         modGroup.datasets['Timetag2'] = latTime
         modGroup.datasets['AOD'] = modAOD
         modGroup.datasets['Wind'] = modWind
+        modGroup.attributes['Wind units'] = 'm s-1'
+        modGroup.attributes['AOD wavelength'] = '550 nm'
         print('GetAnc_ecmwf: Model data retrieved')
 
         return modData

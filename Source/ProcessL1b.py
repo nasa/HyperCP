@@ -185,7 +185,7 @@ class ProcessL1b:
                     wind[i] = modRoot.groups[0].datasets['Wind'][idx]
                     windFlag[i] = 'model'
                     if i==0:
-                        aodDataset.attributes['Model Wind units'] = modRoot.groups[0].attributes['Wind units']
+                        ancGroup.attributes['Model Wind units'] = modRoot.groups[0].attributes['Wind units']
                 if np.isnan(aod[i]):
                     # msg = 'Replacing AOD with model data'
                     # print(msg)
@@ -194,7 +194,8 @@ class ProcessL1b:
                     aod[i] = modRoot.groups[0].datasets['AOD'][idx]
                     aodFlag[i] = 'model'
                     if i==0:
-                        aodDataset.attributes['Model AOD wavelength'] = modRoot.groups[0].attributes['AOD wavelength']
+                        # aodDataset.attributes['Model AOD wavelength'] = modRoot.groups[0].attributes['AOD wavelength']
+                        ancGroup.attributes['Model AOD wavelength'] = modRoot.groups[0].attributes['AOD wavelength']
 
         # Replace Wind, AOD, SST, and Sal with defaults where still nan
         msg = 'Filling in ancillary data with default values where still needed.'
@@ -572,8 +573,6 @@ class ProcessL1b:
             modRoot = None
 
         if modRoot is not None:
-            # return None
-
             # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
             # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
             # to have model data and/or default values incorporated.
