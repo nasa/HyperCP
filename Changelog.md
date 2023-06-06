@@ -33,6 +33,8 @@ Ideas:
 * Produce kml files for GoogleEarth on entire cruise/directory
 
 ___________________________________________________________
+2023-06-05; AD & DAA
+* Fix ECMWF model retrievals
 
 2023-06-05; DAA & AD
 * Add HyperCP Collaboration Guidelines to the repo

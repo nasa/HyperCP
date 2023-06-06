@@ -1298,19 +1298,8 @@ class ConfigWindow(QtWidgets.QDialog):
             if not dest.exists():
                 shutil.copy(file,dest)
 
-        ## Old CP file/folder format
-        # subdirs = [d for d in calDir.iterdir() if (d.is_dir() and d.name !='.DS_Store')]
-
-        # for src in subdirs:
-        #     dest = os.path.join(configPath,src.parts[-1])
-        #     if not shutil._samefile(src,dest):
-        #         print(f'Copying characterization folder {src.parts[-1]} to {os.path.join(configPath,src.parts[-1])}')
-        #         shutil.copytree(src, dest, dirs_exist_ok=True)  # 3.8+ only!
-        #     else:
-        #         print('Destination same as source files: skip')
-
         self.FullCalDirButton.setText(os.path.basename(calibrationDir))
-        ConfigFile.settings['FullCalDir'] = os.path.abspath(configPath)
+        ConfigFile.settings['FullCalDir'] = configPath
 
 
     def l1bPlotTimeInterpCheckBoxUpdate(self):
