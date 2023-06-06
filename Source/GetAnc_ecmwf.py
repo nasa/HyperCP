@@ -135,6 +135,7 @@ class GetAnc_ecmwf:
         if os.path.exists(pathOut):
             pass
         else:
+            print(f'Nearest model found at {timeStamp}')
             # copy .cdsapirc into home directory, because needed by the cdapi
             homedir = os.path.expanduser( '~' )
             shutil.copy(os.path.join(os.getcwd(),'.cdsapirc'), homedir)
@@ -204,6 +205,7 @@ class GetAnc_ecmwf:
         timeResHours = 12
 
         latEff, lonEff, timeStampEff, latLonTag, dateTag = GetAnc_ecmwf.ECMWF_latLonTimeTags(lat, lon, timeStamp, latRes, lonRes, timeResHours)
+
         pathOut = os.path.join(pathEAC4, 'EAC4_%s_%s.nc' % (latLonTag, dateTag))
 
         # Put the correct url and key in the ~/.cdsapirc file
