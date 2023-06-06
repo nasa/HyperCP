@@ -184,6 +184,8 @@ class ProcessL1b:
                     idx = Utilities.find_nearest(modSeconds,ancSec)
                     wind[i] = modRoot.groups[0].datasets['Wind'][idx]
                     windFlag[i] = 'model'
+                    if i==0:
+                        aodDataset.attributes['Model Wind units'] = modRoot.groups[0].attributes['Wind units']
                 if np.isnan(aod[i]):
                     # msg = 'Replacing AOD with model data'
                     # print(msg)
@@ -191,6 +193,8 @@ class ProcessL1b:
                     idx = Utilities.find_nearest(modSeconds,ancSec)
                     aod[i] = modRoot.groups[0].datasets['AOD'][idx]
                     aodFlag[i] = 'model'
+                    if i==0:
+                        aodDataset.attributes['Model AOD wavelength'] = modRoot.groups[0].attributes['AOD wavelength']
 
         # Replace Wind, AOD, SST, and Sal with defaults where still nan
         msg = 'Filling in ancillary data with default values where still needed.'

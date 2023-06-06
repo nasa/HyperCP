@@ -202,10 +202,14 @@ class GetAnc:
         modGroup.addDataset('Timetag2')
         modGroup.addDataset('AOD')
         modGroup.addDataset('Wind')
+        '''NOTE: This is an unconventional use of Dataset, i.e., overides object with .data and .column.
+            Keeping for continuity of application'''
         modGroup.datasets['Datetag'] = latDate
         modGroup.datasets['Timetag2'] = latTime
         modGroup.datasets['AOD'] = modAOD
         modGroup.datasets['Wind'] = modWind
+        modGroup.attributes['Wind units'] = ancUwind.attributes['units']
+        modGroup.attributes['AOD wavelength'] = ancTExt.attributes['wavelength']
         print('GetAnc: Model data retrieved')
 
         return modData

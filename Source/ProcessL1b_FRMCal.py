@@ -20,29 +20,14 @@ class ProcessL1b_FRMCal:
         rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns["NONE"])
         sun_zenith = np.asarray(anc_grp.datasets['SZA'].columns["NONE"])
         sun_azimuth = np.asarray(anc_grp.datasets['SOLAR_AZ'].columns["NONE"])
+        sun_azimuth = np.asarray(anc_grp.datasets['SOLAR_AZ'].columns["NONE"])
+        aod = np.asarray(anc_grp.datasets['AOD'].columns["AOD"])
         anc_datetime = anc_grp.datasets['LATITUDE'].columns['Datetime']
 
-        # rel_az = np.asarray(pd.DataFrame(anc_grp.getDataset("REL_AZ").data))
-        # sun_zenith = np.asarray(pd.DataFrame(anc_grp.getDataset("SZA").data))
-        # sun_azimuth = np.asarray(pd.DataFrame(anc_grp.getDataset("SOLAR_AZ").data))
-        # anc_datetime = anc_grp.datasets['LATITUDE'].columns['Datetime']
-
-        # anc_datetag = np.asarray(pd.DataFrame(anc_grp.getDataset("DATETAG").data))
-        # anc_timetag = np.asarray(pd.DataFrame(anc_grp.getDataset("TIMETAG2").data))
-        # anc_datetime = [dt.datetime.strptime(str(int(x[0]))+str(int(y[0])).rjust(9,'0'), "%Y%j%H%M%S%f") for x,y in zip(anc_datetag,anc_timetag)]
-
-        ## Reading irradiance data
-        # if trios == 0:
         irr_grp = node.getGroup(sensortype)
-        # else:
-        #     irr_grp = node.getGroup(trios+'.dat')
         str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
         wvl = np.asarray([float(x) for x in str_wvl])
         datetime = irr_grp.datasets['DATETIME'].data
-        # datetag = np.asarray(pd.DataFrame(irr_grp.getDataset("DATETAG").data))
-        # timetag = np.asarray(pd.DataFrame(irr_grp.getDataset("TIMETAG2").data))
-        # datetime = [dt.datetime.strptime(str(int(x[0]))+str(int(y[0])).rjust(9,'0'), "%Y%j%H%M%S%f") for x,y in zip(datetag,timetag)]
-        # datetime_str = [x.strftime("%Y-%m-%d %H:%M:%S") for x in datetime]
 
         ## Py6S configuration
         n_mesure = len(datetime)
@@ -64,11 +49,9 @@ class ProcessL1b_FRMCal:
         s.altitudes.set_target_sea_level()
         s.altitudes.set_sensor_sea_level()
 
-        '''
-        NOTE: Presumably this is where the model data are needed
-        '''
-        s.aot550 = 0.153
-
+        # Updated to pick up model data
+        # s.aot550 = 0.153
+        s.aot550 = aod[ind_anc]
 
         wavelengths, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl)
 

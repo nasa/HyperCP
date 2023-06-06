@@ -135,7 +135,7 @@ class GetAnc_ecmwf:
             # copy .cdsapirc into home directory, because needed by the cdapi
             homedir = os.path.expanduser( '~' )
             shutil.copy(os.path.join(os.getcwd(),'.cdsapirc'), homedir)
-            
+
             year, month, day, hour, _, _ = GetAnc_ecmwf.timeStamp2yrMnthDayHrMinSec(timeStamp)
 
             if int(year) < 2003:
@@ -266,6 +266,8 @@ class GetAnc_ecmwf:
         modGroup.addDataset('Timetag2')
         modGroup.addDataset('AOD')
         modGroup.addDataset('Wind')
+        '''NOTE: This is an unconventional use of Dataset, i.e., overides object with .data and .column.
+            Keeping for continuity of application'''
         modGroup.datasets['Datetag'] = latDate
         modGroup.datasets['Timetag2'] = latTime
         modGroup.datasets['AOD'] = modAOD
