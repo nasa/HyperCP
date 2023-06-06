@@ -33,8 +33,8 @@ class GetAnc_ecmwf:
         day = date.split('-')[2]
 
         hour = time.split(':')[0]
-        minute = time.split(':')[0]
-        second = time.split(':')[0]
+        minute = time.split(':')[1]
+        second = time.split(':')[2]
 
         return year,month,day,hour,minute,second
 
@@ -79,7 +79,7 @@ class GetAnc_ecmwf:
         latLonTag: a string, a tag to indicate the effective lat/lon.
         dateTag: a string, a tag to indicate time stamp, to the hour
         '''
-
+        
         # Lat-Lon
         latEff = np.round(lat / latRes) * latRes
         lonEff = np.round(lon / lonRes) * lonRes
@@ -104,6 +104,11 @@ class GetAnc_ecmwf:
         timeStampEff = str(pd.Timestamp(datetime.datetime.fromtimestamp(timeEffSec))).replace(' ','T')
 
         dateTag = timeStampEff.replace(':','').replace('-','').replace('T','')
+        # print(timeStamp)
+        # print(year, month, day, hour, minute, second)
+        # print(timeSec)
+        # print(timeEffSec)
+        # print(timeStampEff)
 
         return latEff,lonEff,timeStampEff,latLonTag,dateTag
 
@@ -196,7 +201,6 @@ class GetAnc_ecmwf:
         timeResHours = 12
 
         latEff, lonEff, timeStampEff, latLonTag, dateTag = GetAnc_ecmwf.ECMWF_latLonTimeTags(lat, lon, timeStamp, latRes, lonRes, timeResHours)
-
         pathOut = os.path.join(pathEAC4, 'EAC4_%s_%s.nc' % (latLonTag, dateTag))
 
         # Put the correct url and key in the ~/.cdsapirc file
@@ -245,6 +249,8 @@ class GetAnc_ecmwf:
             dateTagNew = Utilities.dateTagToDateTime(dateTag)
             lat_datetime = str(Utilities.timeTag2ToDateTime(dateTagNew,latTime[index])).split('.')[0]
             lat_timeStamp = lat_datetime.replace(' ','T')
+            lat_timeStamp = lat_timeStamp.replace('+',':')
+
             ancillary = GetAnc_ecmwf.get_ancillary_main(lat[index], lon[index], lat_timeStamp, ancPath)
 
             # position retrieval index has been confirmed manually in SeaDAS
