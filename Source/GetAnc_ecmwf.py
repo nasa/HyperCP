@@ -94,14 +94,17 @@ class GetAnc_ecmwf:
                                     str(int(np.sign(latEff))).replace('-1', 'S').replace('1', 'N'),
                                     np.abs(latEff * (10 ** latSigFigures)))
 
-        # Time
+        # Time; choose 00:00 or 12:00 model
         year, month, day, hour, minute, second = GetAnc_ecmwf.timeStamp2yrMnthDayHrMinSec(timeStamp)
+        dTtimeStamp = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second),tzinfo=datetime.timezone.utc)
+        dTtimeVec = [datetime.datetime(int(year), int(month), int(day), int(0), int(0), int(0),tzinfo=datetime.timezone.utc),\
+                     datetime.datetime(int(year), int(month), int(day), int(12), int(0), int(0),tzinfo=datetime.timezone.utc)]
+        timeEff = min(dTtimeVec, key=lambda x: abs(x - dTtimeStamp))
 
-        timeSec = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second),tzinfo=datetime.timezone.utc).timestamp()
-
-        timeEffSec = np.round(timeSec / (3600 * timeResHours)) * (3600 * timeResHours) - 7200
-
-        timeStampEff = str(pd.Timestamp(datetime.datetime.fromtimestamp(timeEffSec))).replace(' ','T')
+        # timeSec = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second),tzinfo=datetime.timezone.utc).timestamp()
+        # timeEffSec = np.round(timeSec / (3600 * timeResHours)) * (3600 * timeResHours) - 7200
+        # timeStampEff = str(pd.Timestamp(datetime.datetime.fromtimestamp(timeEffSec))).replace(' ','T')
+        timeStampEff = str(pd.Timestamp(timeEff)).replace(' ','T')
 
         dateTag = timeStampEff.replace(':','').replace('-','').replace('T','')
         # print(timeStamp)
