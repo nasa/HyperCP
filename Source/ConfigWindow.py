@@ -596,7 +596,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # Vertical Box (left)
         VBox1 = QtWidgets.QVBoxLayout()
 
-     # sensor type box
+        # sensor type box
         VBox1.addWidget(sensorTypeLabel)
         VBox1.addWidget(self.sensorTypeComboBox)
         # Instrument Files Setup
@@ -749,6 +749,10 @@ class ConfigWindow(QtWidgets.QDialog):
         CalHBox2 = QtWidgets.QHBoxLayout()
         CalHBox2.addWidget(self.DefaultCalRadioButton)
         CalHBox2.addWidget(self.ClassCalRadioButton)
+
+        ''' NOTE: Disable in master while under development in dev '''
+        # self.ClassCalRadioButton.setDisabled(True)
+
         VBox2.addLayout(CalHBox2)
 
         CalHBox3 = QtWidgets.QHBoxLayout()
@@ -1011,8 +1015,6 @@ class ConfigWindow(QtWidgets.QDialog):
         saveHBox.addWidget(self.cancelButton)
         VBox4.addLayout(saveHBox)
 
-        # VBox4.addStretch()
-
         # Add 3 Vertical Boxes to Horizontal Box hBox
         hBox = QtWidgets.QHBoxLayout()
         hBox.addLayout(VBox1)
@@ -1020,7 +1022,6 @@ class ConfigWindow(QtWidgets.QDialog):
         hBox.addLayout(VBox3)
         hBox.addLayout(VBox4)
 
-        # Adds hBox and saveHBox to primary VBox
         VBox.addLayout(hBox)
 
         self.setLayout(VBox)
@@ -1063,7 +1064,6 @@ class ConfigWindow(QtWidgets.QDialog):
         calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
         configPath = os.path.join("Config", calibrationDir)
         os.remove(os.path.join(configPath,self.calibrationFileComboBox.currentText()))
-        # os.remove(configPath)
 
 
     def getCalibrationSettings(self):
@@ -1081,25 +1081,13 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationEnabledCheckBox.blockSignals(False)
         self.calibrationFrameTypeComboBox.blockSignals(False)
 
-    # def setSensorSettings(self):
-    #     print("CalibrationEditWindow - set Sensor Settings")
-    #     sensor = self.sensorTypeComboBox.currentText()
-    #     ConfigFile.settings["SensorType"] = sensor
 
     def sensorTypeChanged(self):
         print("CalibrationEditWindow - Sensor Type Changed")
-        # self.setSensorSettings()
         sensor = self.sensorTypeComboBox.currentText()
         ConfigFile.settings["SensorType"] = sensor
 
-        # if sensor.lower() == 'trios':
-        #     self.l1aqcDeglitchCheckBox.setChecked(False)
         self.l1aqcDeglitchCheckBoxUpdate()
-        #     self.l1aqcDeglitchCheckBox.setEnabled(False)
-        #     self.l1aqcAnomalyButton.setEnabled(False)
-        # elif sensor.lower() == 'seabird':
-        #     self.l1aqcDeglitchCheckBox.setEnabled(True)
-        #     self.l1aqcAnomalyButton.setEnabled(True)
 
 
     def setCalibrationSettings(self):
@@ -1156,10 +1144,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcRotatorDelayLabel.setDisabled(disabled)
         self.l1aqcRotatorDelayLineEdit.setDisabled(disabled)
         self.l1aqcRotatorDelayCheckBox.setDisabled(disabled)
-        # self.l1aqcCleanPitchRollCheckBox.setDisabled(disabled)
-        # self.l1aqcCleanPitchRollLabel.setDisabled(disabled)
-        # self.l1aqcPitchRollPitchLabel.setDisabled(disabled)
-        # self.l1aqcPitchRollPitchLineEdit.setDisabled(disabled)
         self.l1aqcRotatorAngleLabel.setDisabled(disabled)
         self.l1aqcRotatorAngleCheckBox.setDisabled(disabled)
         self.l1aqcRotatorAngleMinLabel.setDisabled(disabled)
@@ -1169,10 +1153,8 @@ class ConfigWindow(QtWidgets.QDialog):
         if disabled:
             ConfigFile.settings["fL1aCleanSZAMax"] = 90
             ConfigFile.settings["bL1aqcSolarTracker"] = 0
-            # ConfigFile.settings["bL1aqcCleanPitchRoll"] = 0
             ConfigFile.settings["bL1aqcRotatorDelay"] = 0
             self.l1aqcRotatorDelayCheckBox.setChecked(False)
-            # self.l1aqcCleanPitchRollCheckBox.setChecked(False)
             self.l1aqcRotatorAngleCheckBox.setChecked(False)
         else:
             ConfigFile.settings["bL1aqcSolarTracker"] = 1
@@ -1182,7 +1164,6 @@ class ConfigWindow(QtWidgets.QDialog):
         print("ConfigWindow - l1aqcRotatorDelayCheckBoxUpdate")
 
         disabled = (not self.l1aqcRotatorDelayCheckBox.isChecked())
-        # self.l1aqcRotatorDelayLabel.setDisabled(disabled)
         self.l1aqcRotatorDelayLineEdit.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL1aqcRotatorDelay"] = 0
@@ -1252,7 +1233,6 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1aqcAnomalyButtonPressed(self):
         print("CalibrationEditWindow - Launching anomaly analysis module")
         ConfigWindow.refreshConfig(self)
-        # AnomalyDetection(self,self.inputDirectory)
         anomAnalDialog = AnomAnalWindow(self.inputDirectory, self)
         anomAnalDialog.show()
 
@@ -1278,7 +1258,6 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL1bCal"] = 3
 
     def FullCalDirButtonPressed(self):
-        # dname = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose Directory")
         if not ConfigFile.settings['FullCalDir'].startswith('Choose'):
             srcDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory', ConfigFile.settings['FullCalDir'])
         else:
