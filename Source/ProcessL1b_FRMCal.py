@@ -1,8 +1,8 @@
 
 import numpy as np
 import pandas as pd
-import datetime as dt
 import Py6S
+from Source.ConfigFile import ConfigFile
 
 class ProcessL1b_FRMCal:
 
@@ -10,17 +10,20 @@ class ProcessL1b_FRMCal:
     def get_direct_irradiance_ratio(node, sensortype):
         ''' Used for both SeaBird and TriOS L1b
 
-        Need to flip relAz, sza, solarAz into Ancillary before the interpolation of Ancillary for SolarTracker data.
-
+            SolarTracker geometries, when available, have already been
+            flipped into Ancillary and interpolated.
         '''
 
-        ## Reading ancilliary data
+        ## Reading ancilliary data and SolarTracker, if necessary
         anc_grp = node.getGroup('ANCILLARY_METADATA')
 
-        rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns["NONE"])
+        if ConfigFile.settings['bL1aqcSolarTracker'] == 1:
+            rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns["REL_AZ"])
+        else:
+            rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns["NONE"])
         sun_zenith = np.asarray(anc_grp.datasets['SZA'].columns["NONE"])
         sun_azimuth = np.asarray(anc_grp.datasets['SOLAR_AZ'].columns["NONE"])
-        sun_azimuth = np.asarray(anc_grp.datasets['SOLAR_AZ'].columns["NONE"])
+
         aod = np.asarray(anc_grp.datasets['AOD'].columns["AOD"])
         anc_datetime = anc_grp.datasets['LATITUDE'].columns['Datetime']
 

@@ -75,6 +75,7 @@ class ProcessL1b:
             Utilities.read_char(f, gp)
 
         if len(gp.datasets) < 23:
+            print(f'Too few characterization files found: {len(gp.datasets)} of 23')
             return None
 
         # unc dataset renaming
@@ -548,7 +549,11 @@ class ProcessL1b:
             return None
 
         # Interpolate only the Ancillary group, and then fold in model data
-        '''Need to test without an anc file and with SolarTracker geometries'''
+        '''
+            This is run ahead of the other groups for all processing pathways. Anc group
+            exists regardless of Ancillary file being provided
+            NOTE: Need to test without an anc file and with SolarTracker geometries
+        '''
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
             msg = 'Error interpolating ancillary data'
             print(msg)
@@ -588,7 +593,8 @@ class ProcessL1b:
 
         # Calibration
         # Depending on the Configuration, process either the factory
-        # calibration or the complete instrument characterizations
+        # calibration, class-based characterization, or the complete
+        # instrument characterizations
         if ConfigFile.settings['bL1bCal'] == 1:
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join("Config", calFolder)
@@ -599,7 +605,7 @@ class ProcessL1b:
         elif ConfigFile.settings['bL1bCal'] == 2:
             print('Placeholder for Class-based')
             '''
-            BUG: Class-based not ready for SeaBird
+            BUG: Class-based not ready. Needs RadCal uncertainty files as with FRMCal
             '''
             if not ProcessL1b_ClassCal.processL1b_SeaBird(node):
                 msg = 'Error in ProcessL1b.process_FRM_calibration'
