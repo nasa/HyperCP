@@ -1,0 +1,260 @@
+# autoexec.mi for unit 475
+					
+# Date		e-mail address			comment
+# 11-Jun-2014	john.dingess@teledyne.com	initial
+# 27-Jun-2014	benjamin.shaw@teledyne.com	shipping configuration
+# 07-Jul-2014	bbowler@bigelow.org		set phone numbers for our setup
+# 08-Jul-2014	bbowler@bigelow.org		set name to grampus
+# 25-Seo-2104	bbowler@bigelow.org		turn off current correction
+
+name grampus
+
+# SERIAL NUMBER RECORD						
+
+# Forward section assy	#0234
+# Payload bay assy	#1128
+# Aft section assy	#0849
+# Aft electronic assy	#0842
+# Aft end cap assy	#0849
+# Digifin		#1444
+# Strobe assy		#N/A
+# Pressure transducer	#96668
+# Aft hull		#0825
+# Fwd hull		#0816
+# Freewave master	#863-3871
+# Iridium sim card	#8988169514001079768
+# Argos ID		#138812 -DEC / CF1D0C7
+# Altimeter		#2875396
+# Pitch motor		#1226
+# 200- Ballast drive	#N/A
+# 1000- Motor controller#0374
+# 1000- Front air pump	#0350
+# 350- Pump assy	#0329
+# 350- Valve assy	#0353
+# Science persistor	#0947
+# science motherboard	#JJ01670
+# Science flashcard	#0481
+# seabird CTD		#9176
+# Wetlabs BBFL2SLC	#1174
+# Satlantic 504I	#0320
+# Satlantic 504R	#0019
+# Aanderaa Optode 4831  #0336
+# Main board		#JJ01871
+# Communication board	#0768
+# Iridium phone		#0934
+# Main flashcard	#0474
+# Main persistor	#0951
+# Attitude sensor	#36063
+# Air pump		#1353
+# Communications Assy	#0768
+# Freewave Slave	#861-9661
+# GPS			#1060
+# Argos X-cat		#0831
+# Air bladder		#1305
+
+
+
+
+#INSTALLED DEVICES						
+
+#installed buoyancy_pump
+installed de_pump
+installed gps
+installed attitude_rev
+installed ocean_pressure
+installed vacuum
+installed battery
+installed argos
+installed air_pump
+installed pitch_motor
+installed science_super
+installed digifin
+installed altimeter
+installed iridium
+#installed recovery
+installed coulomb
+installed leakdetect
+installed veh_temp
+#installed thruster
+
+#VEHICLE SETTINGS
+
+sensor: u_iridium_idle_on_time(sec)		-1		# necessary workaround for software release 7.15 bug
+
+# Depth Ratings
+# Max working depth: 31 for 30m glider, 102 for 100m, 206 for 200m, 360 for 350m, 1050 for 1000m
+  sensor: F_MAX_WORKING_DEPTH(m)		360
+
+# Crush Depth: 225 for 30m, 100m, 200m, and 1200 for 1000m
+  sensor: F_CRUSH_DEPTH(m)			1200   
+							
+# UNCOMMENT THIS WHEN FLYING A DEEP GLIDER IN SHALLOW WATER
+# Reduce this so sensor_processing doesn't think that our dive is a hover!
+# sensor: u_hovering_frac_nom_dive_rate(nodim)	0.15
+
+# Required to be above this depth to be considered at surface 
+# 4 for G2 glider in shallow water, 7 for G2 glider in deep water
+  sensor: u_reqd_depth_at_surface(m)		4
+
+# Disable this in shallow water
+  sensor: u_alt_filter_enabled(bool)       	1 		# enable median filter depth for altitude
+
+# Altimeter model, 0 for Benthos and 1 for Airmmar, -1 for experimental
+  sensor: f_altimeter_model(enum)		1		# airmar(mod1)
+
+# Argos format 
+  sensor: f_argos_format(enum)			1		# 0  rev0 legacy/smartcat (32 byte)
+								# 1  rev1 Mar05/xcat  (31 byte)
+# current correction on
+  sensor: u_use_current_correction(nodim)	0
+
+# Coulomb Counter scale factor DO NOT CHANGE UNLESS DIRECTED TO BY GLIDER SUPPORT.
+  sensor: f_coulomb_calibration_factor(%)  	.050 		# calibration factor for the
+                                             			# onboard coulomb counter
+# Clock Source- 
+  sensor: f_clock_source(enum)                    0             #  1 - Use DS3234 RTC (new hardware only G2)
+                                                                #  defines the real time clock source.
+                                                                #  0 - Use the RTC provided by the persistor (G1)
+
+#IRIDIUM PHONE NUMBERS
+						
+
+# IRIDIUM PHONE
+# The alternate number is configurable to be available
+# In the event of shore side failure resulting in inability
+# to complete an iridium call.  Software will "toggle"
+# to the alternate number and remain there until told
+# otherwise.  Both numbers MUST be uncommented or the masterdata
+# default will be used.
+
+# For a commercial card:                                               
+#  sensor: c_iridium_phone_num(digits)              17818711051      # TWR datahost or enter users glider center number here
+#  sensor: c_iridium_phone_num_alt(digits)          17818711051      # TWR datahost https://datahost.webbresearch.com/
+  sensor: c_iridium_phone_num(digits)           881600005284		# RUDICS number
+  sensor: c_iridium_phone_num_alt(digits)       12073152013		# CSD number
+  sensor: c_iridium_lead_zeros(nodim)           2            # number of leading zeros in phone        
+  sensor: c_iridium_lead_zeros_alt(nodim)       2            # typically 2 for both commercial or military
+
+#VEHICLE CALIBRATIONS
+
+#800CC Shallow ##############IF GLIDER IS EQUIPPED WITH SHALLOW PUMP, REMOVE SHALLOW CAL NOT BEING USED################################################
+# Buoyancy pump (shallow pump only)
+  sensor: f_ballast_pumped_nominal_vel(cc/sec)	35		# in, nominal speed, 126 for 30m, 42 for 100m, 26 for 200m, 35 for High displacement 100M
+  sensor: f_ballast_pumped_safety_max(cc)	375		# in, damage to glider
+  sensor: f_ballast_pumped_deadz_width(cc)	10.0		# in, sets x_ limit
+  sensor: f_ballast_pumped_db_frac_dz(nodim)	1.0		# deadband as fraction of dead zone
+  sensor: f_ballast_pumped_cal_m(cc/Volt)	717.693		# in, slope
+  sensor: f_ballast_pumped_cal_b(cc)		-478.940	# in, y-intercept
+  sensor: u_ballast_pumped_stop_distance(cc)	4		# in, stopping distance after motor off
+								# change to 2 for 200m glider, 5 for 100m glider, 10 for 30m glider, 4 for high displacement 100M
+# Buoyancy pump (shallow pump only)
+  sensor: f_ballast_pumped_nominal_vel(cc/sec)	26		# in, nominal speed, 126 for 30m, 42 for 100m, 26 for 200m
+  sensor: f_ballast_pumped_safety_max(cc)	243.0		# in, damage to glider
+  sensor: f_ballast_pumped_deadz_width(cc)	10.0		# in, sets x_ limit
+  sensor: f_ballast_pumped_db_frac_dz(nodim)	1.0		# deadband as fraction of dead zone
+  sensor: f_ballast_pumped_cal_m(cc/Volt)	600.000		# in, slope
+  sensor: f_ballast_pumped_cal_b(cc)		-450.000	# in, y-intercept
+  sensor: u_ballast_pumped_stop_distance(cc)	2		# in, stopping distance after motor off
+								# change to 2 for 200m glider, 5 for 100m glider, 10 for 30m glider
+
+# Oil volume (deep pump only)
+  sensor: f_de_oil_vol_pot_voltage_min(volts)	0.154		# raw AD voltage of fully retracted pot
+  sensor: f_de_oil_vol_pot_voltage_max(volts) 	1.500 		# raw AD voltage of fully extended pot
+  sensor: f_de_oil_vol_safety_max(cc)           290.0           # shouldn't go beyond this
+                                                                # results in +/- 265 cc
+# Battery Position
+# max battpos = safety_max - deadzone
+# x_max_battpos = f_safety_max_battpos - f_deadzone_width_battpos
+  sensor: f_battpos_deadzone_width(inches)	0.2		# Sets x_ limit
+  sensor: f_battpos_db_frac_dz(nodim)		0.5		# deadband as fraction of dead zone; Recomended setting for improved servo with memory - from 7.7 release                                                                
+  sensor: f_battpos_nominal_vel(inches/sec)	0.15		# nominal speed for REV.A motor
+								# Specs linear relationship between sensor units (inches) and the		
+								# voltage we actually read out of the AD for position         
+								# battpos(inches) = _cal_m(inches/Volt) * volts + _cal_b(inches
+#UNCOMMENT THE CALIBRATION NUMBERS FOR THE GLIDER CONFIGURATION
+# sensor: f_battpos_safety_max(inches)		0.9		# in, damage to glider(1000m Lithium)
+# sensor: f_battpos_cal_m(inches/Volt)		2.274		# slope
+# sensor: f_battpos_cal_b(inches)		-1.807		# y-intercept(1000m Lithium)
+
+  sensor: f_battpos_safety_max(inches)		1.6		# in, damage to glider(1000m Alkaline)
+  sensor: f_battpos_cal_m(inches/Volt)		2.274		# slope
+  sensor: f_battpos_cal_b(inches)		-1.901		# y-intercept(1000m Alkaline)
+
+# sensor: f_battpos_safety_max(inches)		1.1		# in, damage to glider(200m Lithium)
+# sensor: f_battpos_cal_m(inches/Volt)		2.274		# slope
+# sensor: f_battpos_cal_b(inches)		-1.432 		# y-intercept(200m Lithium)
+
+# sensor: f_battpos_safety_max(inches)		1.6		# in, damage to glider(200m Alkaline)
+# sensor: f_battpos_cal_m(inches/Volt)		2.274		# slope
+# sensor: f_battpos_cal_b(inches)		-1.901		# y-intercept(200m Alkaline)
+
+
+# vacuum
+  sensor: u_vacuum_cal_m(inHg/Volt)		-13.495		# Factory Calibration data
+  sensor: u_vacuum_cal_b(inHg)			29.872		# inHg = m V + b
+
+# ocean_pressure
+  sensor: f_ocean_pressure_full_scale(bar)	140.000		# pressure @ FS volts (140 for 2000A, 24 for 300A)
+  sensor: f_ocean_pressure_min(volts)		0.125		# voltage for 0 pressure
+  sensor: f_ocean_pressure_max(volts)		1.655		# voltage for FS pressure
+
+# max fin = safety_max - deadzone
+  sensor: f_fin_safety_max(rad)			0.470		# in, damage to glider.
+  sensor: f_fin_deadzone_width(rad)		0.02		# in, Sets x_ limit
+
+# sensor: c_thruster_current_cal(nodim) 	0.0388 		# A / count cal for thruster current. 6/23/2014 KB
+
+#PAYLOAD BAY SETTINGS AND CALIBRATIONS				
+
+# Turns science computer on
+  sensor: c_science_on(bool)			1 
+# Satlantic 504R S/N 019
+sensor:	u_ocr504R_dark_counts_c1(nodim) 	2148397020.0	#Dark Offset For
+sensor:	u_ocr504R_cal_coeff_c1(Tnodim) 		16112.563037	#Calibration Factor
+sensor:	u_ocr504R_immersion_coeff_c1(nodim)	1.766		#Imersion Factor
+sensor:	u_ocr504R_dark_counts_c2(nodim) 	2147961279.0	#Dark Offset For
+sensor:	u_ocr504R_cal_coeff_c2(Tnodim)  	26766.1578596	#Calibration Factor
+sensor:	u_ocr504R_immersion_coeff_c2(nodim)	1.752		#Imersion Factor
+sensor:	u_ocr504R_dark_counts_c3(nodim) 	2147072605.8	#Dark Offset For
+sensor:	u_ocr504R_cal_coeff_c3(Tnodim)  	26138.7540646	#Calibration Factor
+sensor:	u_ocr504R_immersion_coeff_c3(nodim)	1.746		#Imersion Factor
+sensor:	u_ocr504R_dark_counts_c4(nodim)		2147202129.4	#Dark Offset For
+sensor:	u_ocr504R_cal_coeff_c4(Tnodim)		15796.8715701	#Calibration Factor
+sensor:	u_ocr504R_immersion_coeff_c4(nodim)	1.741		#Imersion Factor
+sensor: u_ocr504R_Vin_a0(nodim)			0.0		#polynomial
+sensor: u_ocr504R_Vin_a1(nodim)			0.03		#polynomial
+sensor: u_ocr504R_itemp_a0(nodim)		-50.0		#polynomial
+sensor: u_ocr504R_itemp_a1(nodim)		0.5		#polynomial
+sensor: u_ocr504R_is_calibrated(bool) 		1 		#is calibrated
+
+# Satlantic 504I S/N 320
+sensor:	u_ocr504I_dark_counts_c1(nodim) 	2147706483.6	#Dark Offset For
+sensor:	u_ocr504I_cal_coeff_c1(Tnodim) 		1632910.56324	#Calibration Factor
+sensor:	u_ocr504I_immersion_coeff_c1(nodim)	1.161		#Imersion Factor
+sensor:	u_ocr504I_dark_counts_c2(nodim) 	2147553831.8	#Dark Offset For
+sensor:	u_ocr504I_cal_coeff_c2(Tnodim)  	2039450.79749	#Calibration Factor
+sensor:	u_ocr504I_immersion_coeff_c2(nodim)	1.410		#Imersion Factor
+sensor:	u_ocr504I_dark_counts_c3(nodim) 	2147482727.7	#Dark Offset For
+sensor:	u_ocr504I_cal_coeff_c3(Tnodim)  	2154532.95135	#Calibration Factor
+sensor:	u_ocr504I_immersion_coeff_c3(nodim)	1.365		#Imersion Factor
+sensor:	u_ocr504I_dark_counts_c4(nodim)		2147850985.0	#Dark Offset For
+sensor:	u_ocr504I_cal_coeff_c4(Tnodim)  	2049947.04667	#Calibration Factor
+sensor:	u_ocr504I_immersion_coeff_c4(nodim)	1.378		#polynomial
+sensor: u_ocr504I_Vin_a0(nodim)			0.0		#polynomial
+sensor: u_ocr504I_Vin_a1(nodim)			0.03		#polynomial
+sensor: u_ocr504I_itemp_a0(nodim)		-50.0		#polynomial
+sensor: u_ocr504I_itemp_a1(nodim)		0.5		#polynomial
+sensor: u_ocr504I_is_calibrated(bool) 		1 		#is calibrated
+
+# wet labs bbfl2slC  custom 3-param fluorescence/scattering meter
+# BBFL2 S/N 1174
+sensor:         u_bbfl2s_bb_cwo(nodim)         36	# clean water offset, nodim == counts
+sensor:         u_bbfl2s_chlor_cwo(nodim)      45	# clean water offset, nodim == counts
+sensor:         u_bbfl2s_cdom_cwo(nodim)       44	# clean water offset, nodim == counts
+sensor:         u_bbfl2s_bb_sf(Mnodim)         7.113	# scale factor to get units
+sensor:         u_bbfl2s_chlor_sf(ug/l/nodim)  0.0121	# scale factor to get units
+sensor:         u_bbfl2s_cdom_sf(ppb/nodim)    0.0905	# scale factor to get units
+sensor:  	u_bbfl2s_is_calibrated(bool)   1	# calibrated
+
+sensor: u_oxy4_slow_surface_mode(bool)  	0 		 # default for 4330f, make false for 4831 model.
+ 

@@ -1,0 +1,55 @@
+# OCR-507-R03A s/n 0064 SatNet (Sea surface sensor) 
+# on MPR s/n 064
+#
+# BIGELOW / Project 2004-702
+#
+# Post Calibration file valid 2008 05 16
+# Optical data updated by jennifer
+#
+
+INSTRUMENT SATDR7 '' 6 AS 0 NONE
+SN 0064 '' 4 AS 0 NONE
+
+# Time since commencement of normal operation
+TIMER NONE 'sec' 10 AF 0 COUNT
+
+DELAY SAMPLE 'ms' 2 BS 0 COUNT
+
+
+# Lt sensor OCR-507 S/N 0064 calibrated for in Air use processed by jennifer 
+# on 2008.05.16 09:32:09 ADT using lamp F831.FIT at 130.0 cm and Target T26466I.FIT 
+# light data from file DR7064ff.raw dark data from file DR7064df.raw
+Lt 443.2 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147001992.5	1.89590807335e-008	1.000
+Lt 491.3 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147556968.1	1.92699462451e-008	1.000
+Lt 510.8 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2146710597.1	2.01912762841e-008	1.000
+Lt 556.6 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147977517.7	2.00683115611e-008	1.000
+Lt 670.5 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147074893.0	9.0137694138e-009		1.000
+Lt 411.5 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147753170.9	1.96529180068e-008	1.000
+Lt 533.0 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147737091.5	1.86098050594e-008	1.000
+
+# In-head ancillary measurements
+#
+VS NONE 'Volts' 2 BU 1 POLYU
+0 0.03
+
+VA NONE 'Volts' 2 BU 1 POLYU
+0 0.03
+
+TEMP PCB 'Celsius' 2 BU 1 POLYU
+-50.0 0.5
+
+# Frame Counter (Data Integrity)
+FRAME COUNTER '' 1 BU 0 COUNT
+
+# Check Sum (Data Integrity)
+CHECK SUM '' 1 BU 0 COUNT
+
+# Frame Terminator
+CRLF TERMINATOR '' 2 BU 0 NONE

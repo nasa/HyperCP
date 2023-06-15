@@ -1,0 +1,67 @@
+# Satlantic model # OCR-507 ICSA s/n 125 SATNET
+# BIGELOW / Project 2004-702
+#
+#############################################################################################################################################################
+# Calibration History
+# Date       |Operator |SW Version |Rev |Type |Light Data   |Dark Data   |Lamp         |Target       |Immersion Param  |Distance  | Comments
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------
+# 2011-05-03 |jennifer |1.7.0_9    |i   |ES   |DI70125FI-0125_2011-05-03_10-32-35_raw |DI70125DI-0125_2011-05-03_10-19-48_raw |F815         |             |                 |50.0      | Post Calibration
+# 2011-08-16 |jennifer |1.7.2_1    |j   |ES   |DI7125fj-0125_2011-08-16_11-41-50_raw |DI7125dj-0125_2011-08-16_11-34-01_raw |F796         |             |                 |50.0      | Post Calibration
+# 2012-06-04 |jennifer |1.7.2_1    |k   |ES   |DI7125fk-0125_2012-06-04_09-54-02_raw |DI7125dk-0125_2012-06-04_09-36-21_raw |F985         |             |                 |50.0      | Post Calibration
+# 2012-06-27 |jennifer |1.7.2_1    |l   |ES   |DI7125fl-0125_2012-06-27_15-17-02_raw |DI7125dl-0125_2012-06-27_15-13-36_raw |F985         |             |                 |50.0      | Final Calibration
+# 2013-06-27 |Jenn     |1.9.6_71   |m   |ES   |DI7125fm-0125_2013-06-27_13-27-46_raw |DI7125dm-0125_2013-06-27_13-13-53_raw |F1001        |             |                 |50.0      | Post Calibration
+
+# 2010-06-04 |jennifer |1.6.0_14   |h   |ES   |DI7125fh     |DI7125dh    |F876         |             |                 |50.0      | Post Calibration
+
+INSTRUMENT SATDI7 '' 6 AS 0 NONE
+SN 0125 '' 4 AS 0 NONE
+
+# Time since commencement of normal operation
+TIMER NONE 'sec' 10 AF 0 COUNT
+
+DELAY SAMPLE 'ms' 2 BS 0 COUNT
+
+
+# Es sensor OCR-507 S/N 0125 calibrated for in Air use processed by jennifer 
+
+ES 442.5 'uW/cm^2/nm' 4 BU 1 OPTIC2
+2147407281.1	2.97555812661e-007	1.000
+
+ES 490.3 'uW/cm^2/nm' 4 BU 1 OPTIC2
+2147370700.8	2.93901528943e-007	1.000
+
+ES 510.1 'uW/cm^2/nm' 4 BU 1 OPTIC2
+2147073159.9	2.86758907098e-007	1.000
+
+ES 554.9 'uW/cm^2/nm' 4 BU 1 OPTIC2
+2147610293.5	2.78787080476e-007	1.000
+
+ES 670.8 'uW/cm^2/nm' 4 BU 1 OPTIC2
+2147819537.9	2.77073034079e-007	1.000
+
+ES 411.4 'uW/cm^2/nm' 4 BU 1 OPTIC2
+2147617602.6	2.75430976777e-007	1.000
+
+ES 532.5 'uW/cm^2/nm' 4 BU 1 OPTIC2
+2147450994.8	2.87937901206e-007	1.000
+
+#
+# In-head ancillary measurements
+#
+VS NONE 'Volts' 2 BU 1 POLYU
+0 0.03
+
+VA NONE 'Volts' 2 BU 1 POLYU
+0 0.03
+
+TEMP PCB 'Celsius' 2 BU 1 POLYU
+-50.0 0.5
+
+# Frame Counter (Data Integrity)
+FRAME COUNTER '' 1 BU 0 COUNT
+
+# Check Sum (Data Integrity)
+CHECK SUM '' 1 BU 0 COUNT
+
+# Frame Terminator
+CRLF TERMINATOR '' 2 BU 0 NONE

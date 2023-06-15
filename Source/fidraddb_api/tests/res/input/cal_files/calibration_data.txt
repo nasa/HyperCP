@@ -1,0 +1,31 @@
+Wetlabs bb2fl (ser# 363) calibration data
+	beta scale factor = 8.61,   clean water offset = 50  (1/m, lambda = 532)
+	chl  scale factor = 0.0121, clean water offset = 46  (ug/l)
+	cdom scale factor = 0.0943, clean water offset = 59  (ppb)
+
+
+Satlantic OCR507R (ser# 0085) calibration data
+
+	Wavelength	Dark counts	calibration coefficient		immersion coefficient	
+	412nm		2147452402.1 	26805.3742336			1.758 
+	443		2147971792.7 	26938.2511467			1.752    		
+	490		2147715981.7 	26718.4518124			1.746    		
+	510		2147291742.9 	16182.6190036			1.743    		
+	532		2148031951.5 	16504.0615141			1.741    		
+	555		2147414055.5 	15397.2623426			1.739    		
+	670		2147733150.0 	11445.1093218 			1.731    		
+
+
+Satlantic OCR507I (ser# 0174) calibration data
+
+	Wavelength	Dark counts	calibration coefficient		immersion coefficient	
+	412		2148156475.8 	2072195.48672			1.368    		
+	443		2146930358.5 	1814820.88427			1.410    		
+	490		2148034731.9 	2065699.83213			1.365    		
+	510		2147837842.6 	1998903.72007			1.354    		
+	532		2147191068.0 	2061689.05104			1.378    		
+	555		2148163056.3 	2012732.78244			1.372    		
+	670		2147121733.9 	1995665.0178			1.372    		
+
+Seabird CTD (ser# 2465228) calibration data
+	Internally stored

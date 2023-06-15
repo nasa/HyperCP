@@ -1,0 +1,55 @@
+Summary of submitted cruises and expected documentation:
+
+CREATED 11 March 2009
+
+EXPERIMENTS
+-----------
+gulf_of_maine
+
+CRUISES
+-------
+s080105e
+s080105w
+s080106w
+s080421e
+s080421w
+s080422w
+s080515e
+s080516w
+s080530e
+s080530w
+s080613e
+s080613w
+s080711e
+s080711w
+s080810e
+s080810w
+s080815w
+s080817e
+s080817w
+s080912e
+s080912w
+
+DATES
+-----
+05 Jan 2008 through 13 Sep 2008
+
+LOCATION
+--------
+North: 43.87	South: 42.62
+West: -70.49	East: -66.22
+
+DOCUMENTS
+---------
+readme.txt
+
+CALIBRATION FILES
+-----------------
+ac90194.060328
+di7125f.080516
+dr7063f.080516
+dr7064f.080516
+fluorometer-calibration.txt
+hydroscat.070604
+sas3332k.060307
+xbts-dont-have-cal-files.txt

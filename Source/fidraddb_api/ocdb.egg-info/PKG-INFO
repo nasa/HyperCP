@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: ocdb
+Version: 0.2.11
+Summary: Copernicus Ocean Colour In-Situ Database Python Client
+Author: Brockmann Consult GmbH
+License: MIT
+License-File: LICENSE
+License-File: AUTHORS.txt

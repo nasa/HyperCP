@@ -1,0 +1,69 @@
+# Satlantic model # OCR-507 R03A s/n 064 SATNET  SkySensor
+# BIGELOW / Project 2004-702 / on MPR s/n 064 
+#
+#
+#############################################################################################################################################################
+# Calibration History
+# Date       |Operator |SW Version |Rev |Type |Light Data   |Dark Data   |Lamp         |Target       |Immersion Param  |Distance  | Comments
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------
+# 2010-06-14 |jennifer |1.6.0_14   |i   |LI   |DR7063fi     |DR7063di    |F876         |T05816J      |                 |130.0     | Final Calibration
+# 2011-05-03 |jennifer |1.7.0_9    |j   |LI   |DR70063FJ-0063_2011-05-03_10-49-27_raw |DR70063DJ-0063_2011-05-03_10-45-04_raw |F815         |T05753B      |                 |130.0     | Post Calibration
+# 2011-08-16 |jennifer |1.7.2_1    |k   |LI   |DR7063fk-0063_2011-08-16_11-53-56_raw |DR7063dk-0063_2011-08-16_11-50-30_raw |F796         |T05753B      |                 |130.0     | Post Calibration
+# 2012-06-04 |jennifer |1.7.2_1    |l   |LI   |DR7063fl-0063_2012-06-04_10-05-28_raw |DR7063dl-0063_2012-06-04_10-02-04_raw |F985         |T05816K      |                 |130.0     | Post Calibration
+# 2013-06-27 |jennifer |1.9.6_71   |m   |LI   |DR7063fm-0063_2013-06-27_11-43-08_raw |DR7063dm-0063_2013-06-27_11-39-44_raw |F1001        |T05753C      |                 |130.0     | Post Calibration
+
+# 2010-06-04 |jennifer |1.6.0_14   |h   |LI   |DR7063fh     |DR7063dh    |F876         |T05816J      |                 |130.0     | Regular Calibration
+
+
+INSTRUMENT SATDR7 '' 6 AS 0 NONE
+SN 0063 '' 4 AS 0 NONE
+
+# Time since commencement of normal operation
+TIMER NONE 'sec' 10 AF 0 COUNT
+
+DELAY SAMPLE 'ms' 2 BS 0 COUNT
+
+
+# Li sensor OCR-507 S/N 0063 calibrated for in Air use processed by jennifer 
+
+LI 443.1 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147577435.9	5.98824254717e-008	1.000
+
+LI 491.0 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147664041.4	6.04059556232e-008	1.000
+
+LI 510.3 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147314323.9	6.27192106784e-008	1.000
+
+LI 556.7 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147022473.7	5.71781589966e-008	1.000
+
+LI 670.7 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147686037.0	6.04628557244e-008	1.000
+
+LI 411.2 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147088144.4	6.59114086572e-008	1.000
+
+LI 531.8 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147623466.0	6.29262146322e-008	1.000
+
+#
+# In-head ancillary measurements
+#
+VS NONE 'Volts' 2 BU 1 POLYU
+0 0.03
+
+VA NONE 'Volts' 2 BU 1 POLYU
+0 0.03
+
+TEMP PCB 'Celsius' 2 BU 1 POLYU
+-50.0 0.5
+
+# Frame Counter (Data Integrity)
+FRAME COUNTER '' 1 BU 0 COUNT
+
+# Check Sum (Data Integrity)
+CHECK SUM '' 1 BU 0 COUNT
+
+# Frame Terminator
+CRLF TERMINATOR '' 2 BU 0 NONE

@@ -1,0 +1,257 @@
+# autoexec.mi for unit 112
+
+					
+# Date		e-mail address				comment
+#06-MAR-08	pcollins@webbresearch.com		initial setting
+#05-Mar-09	bbowler@bigelow.org			On recommendation of Ben Allsup, added m_tcm3_is_calibrated
+#							also, renamed unit_112 to henry (a while ago)
+#07-Apr-09	bbowler@bigelow.org		fixed typo in dark counts for Radiance sensor, channel 1.  It was
+#						214745402.1, it should have been 2147452402.1
+#						Need to be aware of this change for missions 1 thru 3
+#13-Aug-09	bbowler@bigelow.org		added initial stuff for alternate phone dialing.  Initially 
+#						set alternate number to the same as primary.  Will change primary
+#						when fairpoint tells us what the number is.
+#06-Apr-2010	bbowler@bigelow.org		New calibration values entered for Wetlabs puck and satlantic 
+#						radiometers
+#21-Apr-2010	bbowler@bigelow.org		Added shim per service bulletin #8.  Need to subtract 0.060 from 
+#						f_battpos_cal_b per that service bulletin.  It was -3.501, now -3.561
+#						added u_ballast_pumped_stop_distance(cc) set as 2 per 6.38 release notes
+#27-Jun-2012	bbowler@bigelow.org		Change phone number to east boothbay number.
+#						Add 4th field to CTD output (c_ctd41cp_num_fields_to_send 4) per webb.
+#12-Nov-2013	bbowler@bigelow.org		Updated calibration files after 2013 service
+#						remove c_ctd41cp_num_fields_to_send as 4 is now the default value.
+#10-Jun-2104 	bbowler@bigelow.org		Update phone number so primary is RUDICS, secondary still ours.
+#
+name Henry
+
+#Buoyancy Pump assy	#094
+#Payload Bay		#097
+#Aft Tray Assy		#097
+#Aft Cap Assy		#090
+#Altimeter		#08CB010403
+#DIGI Fin		#5563
+#Freewave, Master	#8973303
+#Iridium Sim card	#7961
+#Argos ID		#30093/D635H
+#Ballast Drive Motor	#104
+#Pitch Motor		#105
+#Science Persistor	#52263
+#SBMB			#076
+#Science Flashcard	#21295
+#Seabird CTD		#113
+#U4SOEM			#450
+#Main board		#128
+#Freewave Slave		#896-4371
+#Iridium3002240102097
+#Argos PTT		#96497
+#Pressure Transducer	#76962
+#GPS			#11J032637
+#Main Flashcard		#22221
+#Main Persistor		#51463
+#Persistor Pwr Supply	#121
+#Attitude Sensor	#1011398
+#Air Pump		#092
+#LNA brd		#103
+#Steering Motor		#NA
+#Air Bladder		#056
+
+installed gps
+installed attitude_tcm3
+installed ocean_pressure
+installed vacuum
+installed battery
+installed argos
+installed air_pump
+installed pitch_motor
+installed science_super
+#installed pinger
+#installed fin_motor
+installed digifin
+installed altimeter
+installed iridium
+installed buoyancy_pump
+
+# Max working depth: 31 for 30M glider, 102 for 100M or 206 for 200M
+  sensor: F_MAX_WORKING_DEPTH(m)				206
+
+# Altimeter model, 0 for Benthos and 1 for Airmmar, -1 for experimental
+  sensor: f_altimeter_model(enum)				1		# airmar(mod1)
+
+# Turns science computer on
+  sensor: c_science_on(bool)					1 
+
+# PUT THE DESIRED PHONE NUMBER FOR IRIDIUM TO CALL HERE
+
+# For a commercial card:					001508XXXXXXX (Example)
+#  sensor: c_iridium_phone_num(digits)			15085482446
+#  sensor: c_iridium_phone_num(digits)			12076330076
+#  sensor: c_iridium_phone_num_alt(digits)		12076339647
+#  sensor: c_iridium_phone_num(digits)			12073152013
+  sensor: c_iridium_phone_num(digits)                   881600005284
+  sensor: c_iridium_phone_num_alt(digits)		12073152013
+  
+  
+# For a military card:						00697508XXXXXXX
+# sensor: c_iridium_phone_num(digits)			6975085482446 		#WRC phone number !no spaces!
+
+  sensor: c_iridium_lead_zeros(nodim)			2			# number of leading zeros in phone 										# number typically 2 for both 										# commercial or military
+  sensor: c_iridium_lead_zeros_alt(nodim)		2
+
+# Argos format 
+  sensor: f_argos_format(enum)				1			# 0  rev0 legacy/smartcat (32 byte)
+										# 1  rev1 Mar05/xcat  (31 byte)
+
+# current correction off
+  sensor: u_use_current_correction(nodim)			0
+
+# These are your science sensor calibration coefficients if required:
+# wetlabs eco puck and SAM etc.
+
+sensor: u_bbfl2s_bb_cwo(nodim)       			56  			# clean water offset, nodim == counts
+sensor: u_bbfl2s_chlor_cwo(nodim)    			58  			# clean water offset, nodim == counts
+sensor: u_bbfl2s_cdom_cwo(nodim)     			54  			# clean water offset, nodim == counts
+sensor: u_bbfl2s_bb_sf(Mnodim)        			10.48			# scale factor
+sensor: u_bbfl2s_chlor_sf(ug/l/nodim) 			0.0122			# scale factor to get units
+sensor: u_bbfl2s_cdom_sf(ppb/nodim)   			0.1486			# scale factor to get units
+sensor: c_bbfl2s_num_fields_to_send(nodim)          	3			# in, number of columns to send on each
+                                                				#    measurement, fields to send chosen
+                                               				 	#    by order in the list below
+sensor: u_bbfl2s_is_calibrated(bool) 			1 			# 0 is false, assumes not calibrated
+
+#Calibration constants for 507R-085
+sensor: u_ocr507R_dark_counts_c1(nodim) 		2147498262.7	        # dark offset for channel 1
+sensor: u_ocr507R_cal_coeff_c1(Tnodim)  		26844.4703116	        # calibration factor for channel 1
+sensor: u_ocr507R_immersion_coeff_c1(nodim) 		1.758		        # immersion factor for channel 1
+
+sensor: u_ocr507R_dark_counts_c2(nodim) 		2147939521.4	        # dark offset for channel 2
+sensor: u_ocr507R_cal_coeff_c2(Tnodim)  		26958.5666392	        # calibration factor for channel 2
+sensor: u_ocr507R_immersion_coeff_c2(nodim) 		1.752		        # immersion factor for channel 2
+
+sensor: u_ocr507R_dark_counts_c3(nodim) 		2147699501.5	        # dark offset for channel 3
+sensor: u_ocr507R_cal_coeff_c3(Tnodim)  		26760.1761168	        # calibration factor for channel 3
+sensor: u_ocr507R_immersion_coeff_c3(nodim) 		1.746		        # immersion factor for channel 3
+
+sensor: u_ocr507R_dark_counts_c4(nodim) 		2147319734.1	        # dark offset for channel 4
+sensor: u_ocr507R_cal_coeff_c4(Tnodim)  		16251.5034388	        # calibration factor for channel 4
+sensor: u_ocr507R_immersion_coeff_c4(nodim) 		1.743		        # immersion factor for channel 4
+
+sensor: u_ocr507R_dark_counts_c5(nodim) 		2147998258.6	        # dark offset for channel 5
+sensor: u_ocr507R_cal_coeff_c5(Tnodim)  		16500.1653415	        # calibration factor for channel 5
+sensor: u_ocr507R_immersion_coeff_c5(nodim) 		1.741		        # immersion factor for channel 5
+
+sensor: u_ocr507R_dark_counts_c6(nodim) 		2147426273.1	        # dark offset for channel 6
+sensor: u_ocr507R_cal_coeff_c6(Tnodim)  		15470.9195647	        # calibration factor for channel 6
+sensor: u_ocr507R_immersion_coeff_c6(nodim) 		1.739		        # immersion factor for channel 6
+
+sensor: u_ocr507R_dark_counts_c7(nodim) 		2147745498.3	        # dark offset for channel 7
+sensor: u_ocr507R_cal_coeff_c7(Tnodim)  		10934.1761872	        # calibration factor for channel 7
+sensor: u_ocr507R_immersion_coeff_c7(nodim) 		1.731		        # immersion factor for channel 7
+
+sensor: u_ocr507R_Vin_a0(nodim) 			0.0  			# polynomial coefficient to scale Vin
+sensor: u_ocr507R_Vin_a1(nodim) 			0.03 			# polynomial coefficient to scale Vin
+
+sensor: u_ocr507R_Va_a0(nodim) 				0.0  			# polynomial coefficient to scale Vin
+sensor: u_ocr507R_Va_a1(nodim) 				0.03 			# polynomial coefficient to scale Vin
+
+sensor: u_ocr507R_itemp_a0(nodim) 			-50.0 			# polynomial coefficient to scale itemp
+sensor: u_ocr507R_itemp_a1(nodim)   			0.5 			# polynomial coefficient to scale itemp
+
+sensor: c_ocr507R_num_fields_to_send(nodim) 		7			# number of columns to send on each
+                        							# measurement, fields to send chosen
+                        							# by order in the list below
+sensor: u_ocr507R_is_calibrated(bool)  			1 			# needs to be set in autoexec.mi
+
+#Calibration constants for 507I 174
+
+sensor: u_ocr507I_dark_counts_c1(nodim) 		2148106915.2  	        # dark offset for channel 1
+sensor: u_ocr507I_cal_coeff_c1(Tnodim)  		2137972.63099	        # calibration factor for channel 1
+sensor: u_ocr507I_immersion_coeff_c1(nodim) 		1.368		        # immersion factor for channel 1
+
+sensor: u_ocr507I_dark_counts_c2(nodim) 		2146953802.7	        # dark offset for channel 2
+sensor: u_ocr507I_cal_coeff_c2(Tnodim)  		1836287.17332	        # calibration factor for channel 2
+sensor: u_ocr507I_immersion_coeff_c2(nodim) 		1.410		        # immersion factor for channel 2
+
+sensor: u_ocr507I_dark_counts_c3(nodim) 		2148008060.5	        # dark offset for channel 3
+sensor: u_ocr507I_cal_coeff_c3(Tnodim)  		2119290.99	        # calibration factor for channel 3
+sensor: u_ocr507I_immersion_coeff_c3(nodim) 		1.365		        # immersion factor for channel 3
+
+sensor: u_ocr507I_dark_counts_c4(nodim) 		2147806671.7	        # dark offset for channel 4
+sensor: u_ocr507I_cal_coeff_c4(Tnodim)  		2030257.27752	        # calibration factor for channel 4
+sensor: u_ocr507I_immersion_coeff_c4(nodim) 		1.354		        # immersion factor for channel 4
+
+sensor: u_ocr507I_dark_counts_c5(nodim) 		2147199821.2	        # dark offset for channel 5
+sensor: u_ocr507I_cal_coeff_c5(Tnodim)  		2101170.63569	        # calibration factor for channel 5
+sensor: u_ocr507I_immersion_coeff_c5(nodim) 		1.378		        # immersion factor for channel 5
+
+sensor: u_ocr507I_dark_counts_c6(nodim) 		2148174401.1	        # dark offset for channel 6
+sensor: u_ocr507I_cal_coeff_c6(Tnodim)  		2091869.56098	        # calibration factor for channel 6
+sensor: u_ocr507I_immersion_coeff_c6(nodim) 		1.372		        # immersion factor for channel 6
+
+sensor: u_ocr507I_dark_counts_c7(nodim) 		2147152422.1	        # dark offset for channel 7
+sensor: u_ocr507I_cal_coeff_c7(Tnodim)  		1981323.03439	        # calibration factor for channel 7
+sensor: u_ocr507I_immersion_coeff_c7(nodim) 		1.404		        # immersion factor for channel 7
+
+sensor: u_ocr507I_Vin_a0(nodim) 			0.0  			# polynomial coefficient to scale Vin
+sensor: u_ocr507I_Vin_a1(nodim) 			0.03 			# polynomial coefficient to scale Vin
+
+sensor: u_ocr507I_Va_a0(nodim) 				0.0  			# polynomial coefficient to scale Va
+sensor: u_ocr507I_Va_a1(nodim) 				0.03 			# polynomial coefficient to scale Va
+
+sensor: u_ocr507I_itemp_a0(nodim) 			-50.0 			# polynomial coefficient to scale itemp
+sensor: u_ocr507I_itemp_a1(nodim)   			0.5 			# polynomial coefficient to scale itemp
+
+sensor: c_ocr507I_num_fields_to_send(nodim) 		7			# number of columns to send on each
+                        							# measurement, fields to send chosen
+                        							# by order in the list below
+sensor: u_ocr507I_is_calibrated(bool)  			1 			# needs to be set in autoexec.mi
+
+# vacuum
+  sensor:    u_vacuum_cal_m(inHg/Volt)		       -13.490			# Factory Calibration data
+  sensor:    u_vacuum_cal_b(inHg)			30.347			# inHg = m V + b
+
+# ocean_pressure
+  sensor: f_ocean_pressure_full_scale(bar)		24.000			# pressure @ FS volts
+  sensor: f_ocean_pressure_min(volts)			0.202			# voltage for 0 pressure
+  sensor: f_ocean_pressure_max(volts)			1.991			# voltage for FS pressure
+
+# ballast_pumped
+# max = safety_max - deadzone
+  sensor: f_ballast_pumped_safety_max(cc)		243.0			# in, damage to glider
+  sensor: f_ballast_pumped_deadz_width(cc)		10.0			# in, sets x_ limit
+  sensor: f_ballast_pumped_db_frac_dz(nodim)		1.0			# deadband as fraction of dead zone
+  sensor: f_ballast_pumped_nominal_vel(cc/sec)		26			# in, nominal speed
+# change to 26 for 200m glider, 43 for 100m glider, 126 for 30m glider
+# Specs linear relationship between sensor units (cc) and the       
+# voltage we actually read out of the AD for position         
+# pumped(cc) = pumped_cal_m(cc/Volt) * volts + pumped_cal_b(cc)
+  sensor: f_ballast_pumped_cal_m(cc/Volt)		501.992			# in, slope
+  sensor: f_ballast_pumped_cal_b(cc)		       -429.203			# in, y-intercept
+  sensor: u_ballast_pumped_stop_distance(cc)		2.0			# added per 6.38 release notes
+
+# battpos
+# max = safety_max - deadzone
+# x_max_battpos = f_safety_max_battpos - f_deadzone_width_battpos
+  sensor: f_battpos_safety_max(inches)			1.2			# in, damage to glider
+  sensor: f_battpos_deadzone_width(inches)		0.2			# Sets x_ limit
+  sensor: f_battpos_db_frac_dz(nodim)			1.0			# deadband as fraction of dead zone
+  sensor: f_battpos_nominal_vel(inches/sec)		0.56			# nominal speed
+# Specs linear relationship between sensor units (inches) and the
+# voltage we actually read out of the AD for position         
+# battpos(inches) = _cal_m(inches/Volt) * volts + _cal_b(inches)
+  sensor: f_battpos_cal_m(inches/Volt)			2.469			# slope
+  sensor: f_battpos_cal_b(inches)		       -3.561			# y-intercept
+
+# fin, motor.c motor_drivers . fin calibrated at 35
+# max = safety_max - deadzone
+  sensor: f_fin_safety_max(rad)				0.480			# in, damage to glider. Change to .48 for digifin
+  sensor: f_fin_deadzone_width(rad)			0.035			# in, Sets x_ limit
+  sensor: f_fin_db_frac_dz(nodim)			1.0			# deadband as fraction of dead zone
+  sensor: f_fin_nominal_vel(rad/sec)			0.0981			# in, nominal speed
+# Specs linear relationship between sensor units (rads) and the
+# voltage we actually read out of the AD for position         
+# fin(rad) = _cal_m(rad/Volt) * volts + fin_cal_b(rad)
+  sensor: f_fin_cal_m(rad/Volt)				0.671			# slope
+  sensor: f_fin_cal_b(rad)			       -0.876			# y-intercept
+
+# The compass calibration status flag.
+  sensor: m_tcm3_is_calibrated(bool)  1  
