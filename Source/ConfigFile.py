@@ -263,6 +263,8 @@ class ConfigFile:
         ConfigFile.settings["fL1bDefaultSST"] = 26.0
         ConfigFile.settings["bL1bCal"] = 1 # 1 for Factory, 2 for Class, 3 for Instrument Full
         ConfigFile.settings["FullCalDir"] = 'Choose input characterization directory'
+        ConfigFile.settings['FidRadDB'] = False
+
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1bPlotTimeInterp"] = 0
         ConfigFile.settings["fL1bPlotInterval"] = 20 # nm
