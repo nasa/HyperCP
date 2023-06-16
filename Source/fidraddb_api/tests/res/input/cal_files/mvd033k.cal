@@ -1,0 +1,36 @@
+#
+# 97100 / Bigelow (Part of SAS-II s/n 006)
+# MVD s/n 033 with OCI-200 s/n 084
+
+# Final calibration file valid 29 Auguat, 2012
+#
+
+INSTRUMENT SATMVD '' 6 AS 0 NONE
+SN 0033 '' 4 AI 0 NONE
+RATE 10 'Hz' 0 BU 0 NONE
+
+# Optical data updated by Jennifer
+
+#ES sensor OCI-200 S/N 084 calibrated for LO GAIN in IN AIR
+# by Jenn on 08/29/12 at 12:54:50
+# LO GAIN calibration, LAMP: f1000 at DIST: 50.0 cm
+ES 412.4 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32778.8 9.71016e-003 1.00
+ES 441.6 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32781.8 9.18183e-003 1.00
+ES 490.6 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32780.6 1.00742e-002 1.00
+ES 508.9 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32781.9 9.58724e-003 1.00
+ES 553.6 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32783.6 9.08487e-003 1.00
+ES 671.0 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32781.6 9.18711e-003 1.00
+ES 683.5 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32779.9 9.85420e-003 1.00
+ES NONE '' 2 BU 0 NONE
+
+SAMPLES AVERAGED 'FRAMES' 1 BU 0 COUNT
+FRAME COUNTER '' 1 BU 0 COUNT
+CHECK SUM '' 1 BU 0 COUNT
+CRLF TERMINATOR '' 2 AS 0 NONE

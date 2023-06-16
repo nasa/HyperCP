@@ -1,0 +1,91 @@
+#
+# 97100 / Bigelow 
+# SAS s/n 006 with MVD s/n 033 with OCI-200 s/n 084 and MVD s/n 032 with 
+# OCR-200 s/n 060 and OCR-200 s/n 096 (Sky)
+#
+# Post Calibration file valid 07 March, 2006
+#
+
+INSTRUMENT SATSAS '' 6 AS 0 NONE
+RATE 10 'Hz' 0 BU 0 NONE
+
+# Optical data updated by Jennifer
+
+#
+#  MVDS s/n 033         Bigelow (Part of SAS-II s/n 006)
+#
+INSTRUMENT MVD '' 3 AS 0 NONE
+SN 0033 '' 4 AI 0 NONE
+
+#ES sensor OCI-200 S/N 084 calibrated for LO GAIN in IN AIR
+# by Jenn on 03/07/06 at 09:36:45
+# LO GAIN calibration, LAMP: F814 at DIST: 50.0 cm
+ES 412.4 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32767.8 9.97041e-003 1.00
+ES 441.6 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32770.8 1.00854e-002 1.00
+ES 490.6 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32769.8 8.66900e-003 1.00
+ES 508.9 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32770.9 9.71833e-003 1.00
+ES 553.6 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32772.2 9.19620e-003 1.00
+ES 671.0 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32770.3 9.75138e-003 1.00
+ES 683.5 'uW/cm^2/nm' 2 BU 1 OPTIC2
+   32770.0 9.87715e-003 1.00
+ES NONE '' 2 BU 0 NONE
+
+SAMPLES AVERAGED 'FRAMES' 1 BU 0 COUNT
+FRAME COUNTER '' 1 BU 0 COUNT
+CHECK SUM '' 1 BU 0 COUNT
+
+#
+#  MVDS s/n 032        Bigelow (Part of SAS-II s/n 006)
+#
+INSTRUMENT MVD '' 3 AS 0 NONE
+SN 0032 '' 4 AI 0 NONE
+
+#Lt sensor OCR-200 S/N 060 calibrated for LO GAIN in IN AIR
+# by Jenn on 03/07/06 at 10:09:33
+# LO GAIN calibration, LAMP: F814 at DIST: 130.0 cm, TARG: t05816g
+Lt 412.7 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32774.9 1.69613e-004 1.00
+Lt 441.5 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32776.0 1.67380e-004 1.00
+Lt 491.0 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32777.9 1.60718e-004 1.00
+Lt 510.8 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32774.7 1.63076e-004 1.00
+Lt 553.5 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32779.2 1.62664e-004 1.00
+Lt 671.5 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32777.2 1.57671e-004 1.00
+Lt 683.9 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32777.3 1.62197e-004 1.00
+Lt NONE '' 2 BU 0 NONE
+
+#Li sensor OCR-200 S/N 096 calibrated for LO GAIN in IN AIR
+# by Jenn on 03/07/06 at 10:16:46
+# LO GAIN calibration, LAMP: F814 at DIST: 130.0 cm, TARG: t05816g
+Li 412.7 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32772.3 2.09997e-003 1.00
+Li 444.2 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32776.9 1.97255e-003 1.00
+Li 488.9 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32780.5 2.01318e-003 1.00
+Li 510.7 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32777.1 2.02140e-003 1.00
+Li 554.7 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32780.5 2.04397e-003 1.00
+Li 671.1 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32781.0 2.09905e-003 1.00
+Li 683.5 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32775.3 2.12896e-003 1.00
+Li NONE '' 2 BU 0 NONE
+
+
+SAMPLES AVERAGED 'FRAMES' 1 BU 0 COUNT
+FRAME COUNTER '' 1 BU 0 COUNT
+CHECK SUM '' 1 BU 0 COUNT
+CRLF TERMINATOR '' 2 AS 0 NONE

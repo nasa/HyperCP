@@ -1,0 +1,56 @@
+#
+# 97100 / Bigelow (Part of SAS-II s/n 006)
+# MVD s/n 032 with OCR-200 s/n 060 and OCR-200 s/n 096 (Sky)
+#
+# Final/Post calibration file valid 28 August, 2012
+
+INSTRUMENT SATMVD '' 6 AS 0 NONE
+SN 0032 '' 4 AI 0 NONE
+RATE 10 'Hz' 0 BU 0 NONE
+
+# Optical data updated by Jennifer
+
+#Lt sensor OCR-200 S/N 060 calibrated for LO GAIN in IN AIR
+# by Jenn on 08/28/12 at 15:17:32
+# LO GAIN calibration, LAMP: f1000 at DIST: 130.0 cm, TARG: t05816k
+Lt 412.7 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32771.7 1.57683e-004 1.00
+Lt 441.5 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32773.2 1.58300e-004 1.00
+Lt 491.0 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32774.7 1.54710e-004 1.00
+Lt 510.8 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32771.5 1.55070e-004 1.00
+Lt 553.5 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32775.9 1.57482e-004 1.00
+Lt 671.5 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32773.9 1.50842e-004 1.00
+Lt 683.9 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32774.3 1.55691e-004 1.00
+Lt NONE '' 2 BU 0 NONE
+
+#Li sensor OCR-200 S/N 096 calibrated for LO GAIN in IN AIR
+# by Jenn on 08/28/12 at 15:23:31
+# LO GAIN calibration, LAMP: f1000 at DIST: 130.0 cm, TARG: t05816k
+Li 412.7 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32773.3 2.01950e-003 1.00
+Li 444.2 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32777.9 1.91044e-003 1.00
+Li 488.9 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32781.1 1.94417e-003 1.00
+Li 510.7 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32777.7 1.96173e-003 1.00
+Li 554.7 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32781.0 1.99445e-003 1.00
+Li 671.1 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32782.1 2.03174e-003 1.00
+Li 683.5 'uW/cm^2/nm/sr' 2 BU 1 OPTIC2
+   32776.2 2.05108e-003 1.00
+Li NONE '' 2 BU 0 NONE
+
+
+
+SAMPLES AVERAGED 'FRAMES' 1 BU 0 COUNT
+FRAME COUNTER '' 1 BU 0 COUNT
+CHECK SUM '' 1 BU 0 COUNT
+CRLF TERMINATOR '' 2 AS 0 NONE

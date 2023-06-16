@@ -1,0 +1,6 @@
+ECOvsf-061g.txt
+Created on: 7/12/2012
+Angle	Scaling Factor	Offset
+100	1.192e-5	180.0
+125	9.644e-6	181.0
+150	6.173e-6	176.0

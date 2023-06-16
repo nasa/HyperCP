@@ -1,0 +1,126 @@
+Flow-through bio-optical system
+
+This system operates semi-continuously with water from the ship's seachest.
+The water is first debubbled with a vortex debubbler.  Approximately
+every 2 minutes it measures temperature, salinity, chlorophyll fluorescence,
+CDOM fluoresence, total backscattering at 532nm (bbptot), acidified
+backscattering (bbpacid; backscattering of the seawater suspension after the
+pH has been lowered to dissolve calcium carbonate), acid-labile backscattering
+(bb'; the difference between the bbptot and bbpacid), absorption and
+attenuation at 9 visible wavelengths (made every 128 seconds), absorption and
+attenuation at 9 visible wavelengths after water was routed serially through a
+1.0um then a 0.2um cartridge filter (during intervening 128 second segments).
+
+Absorption and attenuation values are averaged over their respective 128
+second segments after the first ~30 seconds of each segment is discarded to
+eliminate noise induced by switching from unfiltered to filtered or back.
+
+Backscatter values (bbptot and bbpacid) are the average of 20 samples taken
+once the pH values have stabilized at either nominal seawater pH or at the
+dissolution point for calcium carbonate.
+
+Temperature, Salinity, chlorophyll fluoresence and CDOM fluoresence are single
+value measurements taken at the beginning of the bbptot measurement period.
+
+
+
+
+Above-Water Radiance Measurements
+
+In order to check ocean color algorithm performance, free of atmospheric
+error, water-leaving radiance, sky radiance and downwelling irradiance were
+measured from the bow of the ship using a Satlantic SeaWiFS Aircraft Simulator
+(SAS or MicroSAS).  The system consists of a down-looking radiance sensor and
+a sky-viewing radiance sensor, both mounted on the bow.  A downwelling
+irradiance sensor is mounted as far as practical from any potentially shading
+structures.  These data were then used to estimate normalized water-leaving
+radiance as a function of wavelength.  The radiance detector was set to view
+the water at 40o from nadir as recommended by Mueller et al. (2003b).  The
+water radiance sensor is able to view over an azimuth range of at least 120o
+and occasionally as much as 180o, depending on the vessel, across the ship's
+heading with no contamination from the ship's wake.  The direction of the
+sensor was adjusted regularly to view the water at as close to 120o from the
+sun's azimuth as possible, to minimize sun glint.  This is done either
+manually roughly every 30 minutes or, on more recent cruises, using a
+computer-based system that calculated the sun's azimuth angle relative to the
+ship's heading and elevation constantly.  The computer controlls a stepping
+motor that turns the sensors to the proper viewing angle depending on the
+ship's course.
+
+Protocols for operation and calibration are performed according to Mueller
+(Mueller et al. 2003a; Mueller et al. 2003b; Mueller et al. 2003c).   Before
+1000h and after 1400h local time, data quality is poorer as the solar
+elevation decreases.  The data are filtered to remove as much residual
+white cap and glint as possible (we accept the lowest 5% of the data).  When
+weather permits, a plaque calibration is performed, using a 2% spectralon
+plaque, to check for instrument drift.
+
+
+
+
+Description of measurements made
+
+During cruises, underway samples are typically collected about every 30km,
+except sampling points are modified as needed to optimize for satellite
+overpass matchups.   Samples are taken for particulate inorganic carbon and
+biogenic silica, particulate organic carbon/nitrogen and chlorophyll a.
+Coccolith counts were performed using the technique of Haidar and Thierstein
+(2000; 2001) except optical adhesive was substituted for Canada Balsam.
+
+Discrete samples were taken for measuring surface maximum primary production
+(Pm; units mg C m^-3 day^-1). Water samples were prefiltered through 200 mm
+Nitex mesh to remove large grazers, then maintained in surface light conditions
+in a temperature-controlled incubator until returning to the laboratory (~1/2
+day). Note, there was a single incubation temperature for all productivity
+samples during each cruise, the average temperature as determined from ship
+based measurements at the time each sample was taken.  The full temperature
+range across the GNATS transect was typically 4–6oC, thus at any one station,
+the in situ temperature varied by +2–3oC from the incubation temperature. After
+each trip, samples were inoculated with 14C-HCO3 near local apparent midnight,
+for 1/2 day incubations (Mantyla et al., 1995) then filtered onto 0.4 mm
+polycarbonate filters at local apparent noon of the following day. The 14C
+microdiffusion technique was used for sample preparation and analysis (Paasche
+and Brubak, 1994; Balch et al., 2000). Triplicate primary production values were
+processed for each station along with a formalin-killed blank.
+
+Conversion of the 12 day rates to full day rates was based on ratios of 12 and
+24 h incubations. The half-day 14C incubation insured that the total time that
+samples were in bottles was <1 day, thus minimizing bottle effects.
+
+
+References:
+Haidar A.T., Thierstein H.R., Deuser W.G. 2000. Calcareous phytoplankton
+standing stocks, fluxes and accumulation in Holocene sediments off Bermuda (N.
+Atlantic). Deep Sea Research 47(9-11), 1907-1938.
+
+Haidar A.T., Thierstein H.R. 2001. Coccolithophore dynamics off Bermuda (N.
+Atlantic). Deep Sea Research 48(8-9), 1925-1956.
+
+Mueller J.L., Austin R.W., Morel A., Fargion G.S., McClain C.R. 2003a. Ocean
+optics protocols for satellite ocean color sensor validation, Revision 4,
+Volume I: Introduction, background, and conventions. Greenbelt, MD: Goddard
+Space Flight Center. 50 p.
+
+Mueller J.L., Morel A., Frouin R., Davis C., Arnone R., Carder K., Lee Z.P.,
+Steward R.G., Hooker S.B., Mobley C.D., McLean S., Holben B., Miller M.,
+Pietras C., Knobelspiesse K.D., Fargion G.S., Porter J., Voss K. 2003b. Ocean
+optics protocols for satellite ocean color sensor validation, Revision 4,
+Volume III: Radiometric measurements and data analysis protocols. Greenbelt,
+MD: Goddard Space Flight Center. 78 p.
+
+Mueller J.L., Pietras C., Hooker S.B., Austin R.W., Miller M., Knobelspiesse
+K.D., Frouin R., Holben B., Voss K. 2003c. Ocean optics protocols for
+satellite ocean color sensor validation, Revision 4, Volume II: Instrument
+specifications, characterisation and calibration. Greenbelt, MD: Goddard Space
+Flight Center.
+
+Mantyla, A. W., Venrick, E. L. and Hayward, T. L. (1995) Primary
+production and chlorophyll relationships, derived from ten years of
+CalCOFI Measurements. CalCOFI Rep., 36, 159–166.
+
+Paasche, E. and Brubak, S. (1994) Enhanced calcification in the coccolithophorid
+Emiliania huxleyi (Haptophyceae) under phosphorus
+limitation. Phycologia, 33, 324–330.
+
+Balch, W. M., Drapeau, D. and Fritz, J. (2000) Monsoonal forcing of
+calcification in the Arabian Sea. Deep-Sea Res. II, 47, 1301–1337.

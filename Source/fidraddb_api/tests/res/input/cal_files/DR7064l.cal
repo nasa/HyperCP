@@ -1,0 +1,65 @@
+# Satlantic model # OCR-507 R03A s/n 064 SATNET SeaSurface Sensor
+# BIGELOW / Project 2004-702 / on MPR s/n 064
+#
+#############################################################################################################################################################
+# Calibration History
+# Date       |Operator |SW Version |Rev |Type |Light Data   |Dark Data   |Lamp         |Target       |Immersion Param  |Distance  | Comments
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------
+# 2011-05-03 |jennifer |1.7.0_9    |i   |LT   |DR70064FI-0064_2011-05-03_10-58-09_raw |DR70064DI-0064_2011-05-03_10-54-42_raw |F815         |T05753B      |                 |130.0     | Post Calibration
+# 2011-08-16 |jennifer |1.7.2_1    |j   |LT   |DR7064fj-0064_2011-08-16_12-01-58_raw |DR7064dj-0064_2011-08-16_11-58-36_raw |F796         |T05753B      |                 |130.0     | Post Calibration
+# 2012-06-04 |jennifer |1.7.2_1    |k   |LT   |DR7064lk-0064_2012-06-04_10-14-45_raw |DR7064dk-0064_2012-06-04_10-11-16_raw |F985         |T05816K      |                 |130.0     | Post Calibration
+# 2013-06-27 |jennifer |1.9.6_71   |l   |LT   |DR706fll-0064_2013-06-27_11-51-13_raw |DR7064dl-0064_2013-06-27_11-47-46_raw |F1001        |T05753C      |                 |130.0     | Post Calibration
+
+# 2010-06-04 |jennifer |1.6.0_14   |h   |LT   |DR7064fh     |DR7064dh    |F876         |T05816J      |                 |130.0     | Regular Calibration
+
+INSTRUMENT SATDR7 '' 6 AS 0 NONE
+SN 0064 '' 4 AS 0 NONE
+
+# Time since commencement of normal operation
+TIMER NONE 'sec' 10 AF 0 COUNT
+
+DELAY SAMPLE 'ms' 2 BS 0 COUNT
+
+
+# Lt sensor OCR-507 S/N 0064 calibrated for in Air use processed by jennifer 
+
+LT 443.2 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2146992077.1	1.79828394944e-008	1.000
+
+LT 491.3 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147309440.6	1.86484134839e-008	1.000
+
+LT 510.8 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2146719439.8	1.97033826346e-008	1.000
+
+LT 556.6 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147989394.2	1.94225072288e-008	1.000
+
+LT 670.5 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147088042.6	8.59514922256e-009	1.000
+
+LT 411.5 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147750674.8	2.0435185427e-008		1.000
+
+LT 533.0 'uW/cm^2/nm/sr' 4 BU 1 OPTIC2
+2147749760.3	1.89944694802e-008	1.000
+
+# In-head ancillary measurements
+#
+VS NONE 'Volts' 2 BU 1 POLYU
+0 0.03
+
+VA NONE 'Volts' 2 BU 1 POLYU
+0 0.03
+
+TEMP PCB 'Celsius' 2 BU 1 POLYU
+-50.0 0.5
+
+# Frame Counter (Data Integrity)
+FRAME COUNTER '' 1 BU 0 COUNT
+
+# Check Sum (Data Integrity)
+CHECK SUM '' 1 BU 0 COUNT
+
+# Frame Terminator
+CRLF TERMINATOR '' 2 BU 0 NONE
