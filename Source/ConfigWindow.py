@@ -265,9 +265,13 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL1bCal"]==3:
             self.FullCalRadioButton.setChecked(True)
         self.FullCalRadioButton.clicked.connect(self.l1bFullCalRadioButtonClicked)
-        
+
         self.l1bGetFRMCheck1 = QtWidgets.QCheckBox("local files", self)
+
+        ''' NOTE: disabled until fidraddb_api can be resolved.'''
         self.l1bGetFRMCheck2 = QtWidgets.QCheckBox("FidRadDB", self)
+        self.l1bGetFRMCheck2.setDisabled(1)
+
         if int(ConfigFile.settings["FidRadDB"]) == 0:
             self.l1bGetFRMCheck1.setChecked(True)
             self.l1bGetFRMCheck2.setChecked(False)
@@ -277,7 +281,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.FullCalDir = ConfigFile.settings['FullCalDir']
         self.l1bGetFRMCheck1.clicked.connect(self.l1bGetFRMCheckUpdate1)
         self.l1bGetFRMCheck2.clicked.connect(self.l1bGetFRMCheckUpdate2)
-        
+
         # if ConfigFile.settings['FullCalDir'] == ' ':
         #     self.FullCalDirButton = QtWidgets.QPushButton('Select Characterization Folder', self)
         # else:
@@ -772,15 +776,16 @@ class ConfigWindow(QtWidgets.QDialog):
         # CalHBox3.addWidget(self.FullCalDirButton)
         # CalHBox3.addStretch(1)
         # VBox2.addLayout(CalHBox3)
-        
+
         CalHBox3 = QtWidgets.QHBoxLayout()
         CalHBox3.addWidget(self.FullCalRadioButton)
         CalHBox3.addWidget(self.l1bGetFRMCheck1)
         CalHBox3.addWidget(self.l1bGetFRMCheck2)
+
         CalHBox3.addStretch(1)
-        VBox2.addLayout(CalHBox3) 
-        
-        
+        VBox2.addLayout(CalHBox3)
+
+
         #   Interpolation interval (wavelength)
         interpHBox = QtWidgets.QHBoxLayout()
         interpHBox.addWidget(l1bInterpIntervalLabel)
@@ -1277,7 +1282,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.ClassCalRadioButton.setChecked(False)
         self.FullCalRadioButton.setChecked(True)
         ConfigFile.settings["bL1bCal"] = 3
-        
+
     def l1bGetFRMCheckUpdate1(self):
         print("ConfigWindow - l1bGetFRMCheckUpdate local files")
         if self.l1bGetFRMCheck1.isChecked():
@@ -1287,14 +1292,14 @@ class ConfigWindow(QtWidgets.QDialog):
             self.FullCalDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory.', self.FullCalDir)
             print('Full characterization directory changed: ', self.FullCalDir)
             ConfigFile.settings['FullCalDir'] = self.FullCalDir
-            return self.FullCalDir 
-        
+            return self.FullCalDir
+
     def l1bGetFRMCheckUpdate2(self):
         print("ConfigWindow - l1bGetFRMCheckUpdate FidRadDB")
         if self.l1bGetFRMCheck2.isChecked():
             self.l1bGetFRMCheck1.setChecked(False)
-            ConfigFile.settings['FidRadDB'] = 1     
-        
+            ConfigFile.settings['FidRadDB'] = 1
+
 
     def FullCalDirButtonPressed(self):
         if not ConfigFile.settings['FullCalDir'].startswith('Choose'):
