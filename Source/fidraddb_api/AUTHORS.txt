@@ -1,5 +1,0 @@
-# Copyright owners/authors for the software on this folder
-
-European Commission - Copernicus
-
-EUMETSAT
