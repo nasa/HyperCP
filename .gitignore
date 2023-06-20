@@ -15,6 +15,7 @@ Config/*
 Source/.DS_Store
 *.pyc
 *.log
+.idea/
 
 runtest.py
 run_NASA*.py
