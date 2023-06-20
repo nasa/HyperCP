@@ -38,9 +38,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## Requirements and Installation
 
-Clone this repository (branch: "master") to a convenient directory on your computer. When HyperCP/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved into them as described below. No system files will be changed.
+Clone this repository (branch: "master") to a convenient directory on your computer:
 
-HyperCP requires Python 3.X installed on a Linux, MacOS, or Windows computer. The <a href='https://www.anaconda.com/'>Anaconda</a> distribution (or <a href='https://docs.conda.io/en/latest/miniconda.html'>Miniconda</a>) is encouraged. (If you are unfamiliar with Anaconda, a nice walkthrough can be found [here](https://youtu.be/YJC6ldI3hWk).)
+```
+promtp$ git clone --depth 1 https://github.com/nasa/HyperInSPACE.git /path/to/convenient/directory
+```
+
+or, if you are unfamiliar with git, simply download and unzip by clicking ```Code >> Download ZIP```  -
+we encourage you to use git though (see why below).
+
+When HyperCP/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved into them as described below. No system files will be changed.
+
+HyperCP requires Python 3.X installed on a Linux, MacOS, or Windows computer. The <a href='https://www.anaconda.com/'>Anaconda</a> distribution (or <a href='https://docs.conda.io/en/latest/miniconda.html'>Miniconda</a>) is encouraged.
+If you are unfamiliar with Anaconda, a nice walkthrough can be found [here](https://youtu.be/YJC6ldI3hWk).
 
 All of the package dependencies are listed in the environment.yml file included with the package. To make sure you have all of the necessary dependencies, navigate to the HyperCP directory on command line and type
 
@@ -48,7 +58,11 @@ All of the package dependencies are listed in the environment.yml file included 
 prompt$ conda env create -f environment.yml
 ```
 
-and follow the prompts to install the additional package dependencies on your machine within the new virtual environment. When completed you should be in the virtual environment (hypercp) and ready to run the package. To return to the environment later before launching the program, type
+and follow the prompts to install the additional package dependencies on your machine within the new virtual environment. 
+When completed you should be in the virtual environment: the prefix ```(hypercp)``` before your prompt should appear 
+indicating that the system is properly enabled and ready to run from the terminal.
+
+To return to the environment later before launching the program, type
 
 ```
 prompt$ conda activate hypercp
@@ -60,35 +74,65 @@ To stay up to date with the latest commits to the master branch, it is strongly 
 (hypercp) prompt$ git pull
 ```
 
-To report an issue, please submit here: https://github.com/nasa/HyperInSPACE/issues
+[If, instead, you are not using git you should regularly re-download and unzip the repository if you want to ensure you are using 
+the latest version of the software].
+
+To report an issue, please submit it [here](https://github.com/nasa/HyperInSPACE/issues), the HyperCP Team will take 
+care of it :).
 
 ---
 ## Launching
 
 <center><img src="Data/Img/banner.jpg" alt="banner"></center>
 
-HyperCP is a Main-View-Controller Python package with a GUI that can be launched in several ways, such as by navigating to the project folder on the command line and typing
+HyperCP is a Main-View-Controller Python package with a GUI that can be launched in several ways, such as by navigating 
+to the project folder on the command line and typing:
+
 ```
 (hypercp) prompt$ python Main.py
 ```
+
 However you launch the GUI, *watch for important feedback at the command line terminal* in addition to informational GUI windows.
 
-There is a command line option for batching a single level which can be triggered by adding the ```-cmd``` argument to the above command followed by: ```-c config -i inputFile -o outputDirectory -l processingLevel```, where config is the configuration file, and the other arguments are self-explanatory (processingLevel should be in all caps, e.g., ```L1AQC```). An example script has been provided (run_sample.py) for batching files using the command line option.
 
-Batching multiple files across single or multiple processing levels is also possible as described below under Processing Overview.
+Batching multiple files across single or multiple processing levels is also possible 
+as described in [Processing Overview](README.md/#processing-overview).
 
-<!-- To see an example of a complete workflow of the processing from raw data to the final HDF and SeaBASS/OCDB L2 outputs, both for TriOS and HyperSAS, please see [here](https://gitlab.eumetsat.int/OC/External/frm4soc-cp/-/blob/master/Command_line_example.cmd) <- firewalled -->
+<!-- To see an example of a complete workflow of the processing from raw data to the final HDF and SeaBASS/OCDB L2 outputs, 
+both for TriOS and HyperSAS, 
+please see [here](https://gitlab.eumetsat.int/OC/External/frm4soc-cp/-/blob/master/Command_line_example.cmd) <- firewalled -->
 
 The following sub-directories will be created automatically (if not present) when you first run the program:
 
-- Config - Configuration and instrument files (by subdirectory - auto-created), SeaBASS header configuration files, Main view configuration file
-- Logs - Most command line output messages generated during processing are captured for later reference in .log text files here
-- Plots - A variety of optional plotting routines are included which create sub-directories (i.e. 'L1AQC_Anoms', 'L1B_Interp', 'L2_Spectral_Filter', 'L2', 'L2_Products').
-- Data - This directory now comes unpacked in the distribution. By default, it contains only files for seawater absorption properties, top-of-atmosphere solar irradiance, satellite sensor spectral response functions, banner images for the GUI, and the Zhang glint correction database (see Database Download below). This is also the optional fallback location for input and/or output radiometry data, though using separate locations for field data is recommended.
-- Source - This directory (which comes unpacked with the distribution) holds the majority of the Python source code.
+- **Config**: Configuration and instrument files (by subdirectory - auto-created), SeaBASS header configuration files, 
+        main view configuration file.
+- **Logs**: Most command line output messages generated during processing are captured for later reference in .log text files here.
+- **Plots**: A variety of optional plotting routines are included which create sub-directories 
+        (i.e. 'L1AQC_Anoms', 'L1B_Interp', 'L2_Spectral_Filter', 'L2', 'L2_Products').
+- **Data**: This directory now comes unpacked in the distribution. By default, it contains only 
+        files for seawater absorption properties, top-of-atmosphere solar irradiance, 
+        satellite sensor spectral response functions, banner images for the GUI, 
+        and the Zhang glint correction database (see Database Download below). 
+        This is also the optional fallback location for input and/or output radiometry data, 
+        though using separate locations for field data is recommended.
+- **Source**: This directory (which comes unpacked with the distribution) holds the majority of the Python source code.
+
+#### Executing HyperCP from the command line
+
+There is a command line option for batching a single level which can be triggered by adding the ```-cmd``` argument:
+
+```
+(hypercp) prompt$ python Main.py -c config -i inputFile -o outputDirectory -l processingLevel
+```
+
+where ```config``` is the configuration file, and the other arguments are self-explanatory 
+(```processingLevel``` should be in all caps, e.g., ```L1AQC```).
+An example script has been provided (```run_sample.py```) for batching files using the command line option.
 
 ### Database Download
-When you first launch the software, it will need to download a large (2.3 GB) database (```Zhang_rho_db.mat```; Zhang et al., 2017, OE, 25(4)) for use in glint correction. If this database is not found in Data, a dialog window will appear before the Main.py GUI with guidance on how to proceed. If this download should fail for any reason, further instructions will be given at the command line terminal where Main.py was launched.
+When you first launch the software, it will need to download a large (2.3 GB) database 
+(```Zhang_rho_db.mat```; [Zhang et al., 2017, OE, 25(4)](https://opg.optica.org/oe/fulltext.cfm?uri=oe-25-4-A1&id=357012))
+ for use in glint correction. If this database is not found in Data, a dialog window will appear before the Main.py GUI with guidance on how to proceed. If this download should fail for any reason, further instructions will be given at the command line terminal where Main.py was launched.
 
 ---
 ## Guide
