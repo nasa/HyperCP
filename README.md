@@ -36,6 +36,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## Requirements and Installation
 
+### 1. Get the HyperCP repository
+
 Clone this repository (branch: "master") to a convenient directory on your computer:
 
 ```
@@ -44,6 +46,8 @@ promtp$ git clone --depth 1 https://github.com/nasa/HyperInSPACE.git /path/to/co
 
 or, if you are unfamiliar with git, simply download and unzip by clicking ```Code >> Download ZIP```  -
 we encourage you to use git though (see why below).
+
+### 2. Get the HyperCP environment
 
 HyperCP requires Python 3.X installed on a Linux, MacOS, or Windows computer. 
 The <a href='https://www.anaconda.com/'>Anaconda</a> distribution (or <a href='https://docs.conda.io/en/latest/miniconda.html'>Miniconda</a>) is encouraged.
@@ -77,32 +81,23 @@ the latest version of the software].
 To report an issue, please submit it [here](https://github.com/nasa/HyperInSPACE/issues), the HyperCP Team will take 
 care of it :).
 
-## Launching HyperCP for the first time
+### 3. Launch HyperCP for the first time!
 
-HyperCP is a Main-View-Controller Python package with a GUI that can be launched in several ways, such as by navigating 
-to the project folder on the command line and typing:
+To finalise and test the setting up, let's launch HyperCP for the first time: navigate to the project folder on 
+the command line and type:
 
 ```
 (hypercp) prompt$ python Main.py
 ```
 
-You GUI window should look approximately like this:
+A GUI window should pop up, looking approximately like this:
 
-<center><img src="Data/Img/banner.jpg" alt="banner"></center>
+<center><img src="Data/Img/Main.jpg" alt="banner"></center>
 
 When HyperCP/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved 
 into them as described below. No system files will be changed.
 
-However you launch the GUI, *watch for important feedback at the command line terminal* in addition to informational GUI windows.
-
-Batching multiple files across single or multiple processing levels is also possible 
-as described in [Processing Overview](README.md/#processing-overview).
-
-<!-- To see an example of a complete workflow of the processing from raw data to the final HDF and SeaBASS/OCDB L2 outputs, 
-both for TriOS and HyperSAS, 
-please see [here](https://gitlab.eumetsat.int/OC/External/frm4soc-cp/-/blob/master/Command_line_example.cmd) <- firewalled -->
-
-The following sub-directories will be created automatically (if not present) when you first run the program:
+#### 3.1 Directories (created after first launch)
 
 - **Config**: Configuration and instrument files (by subdirectory - auto-created), SeaBASS header configuration files, 
         main view configuration file.
@@ -117,31 +112,67 @@ The following sub-directories will be created automatically (if not present) whe
         though using separate locations for field data is recommended.
 - **Source**: This directory (which comes unpacked with the distribution) holds the majority of the Python source code.
 
-### Database Download
-When you first launch the software, it will need to download a large (2.3 GB) database 
-(```Zhang_rho_db.mat```; [Zhang et al., 2017, OE, 25(4)](https://opg.optica.org/oe/fulltext.cfm?uri=oe-25-4-A1&id=357012))
- for use in glint correction. If this database is not found in Data, a dialog window will appear before the Main.py GUI with guidance on how to proceed. If this download should fail for any reason, further instructions will be given at the command line terminal where Main.py was launched.
+#### 3.2 Database (downloaded after first launch)
+
+- **Zhang skyglint correction database**: This (~ 2.3 GB) database will be - optionally - used for the glint correction 
+based on the method of [Zhang et al., 2017, OE, 25(4)](https://opg.optica.org/oe/fulltext.cfm?uri=oe-25-4-A1&id=357012)).
+It will stored at ```/Data/Zhang_rho_db.mat```.
+If this download should fail for any reason, further instructions will be given 
+at the command line terminal where Main.py was launched.
+
+
 
 ## Usage
 
+If you followed [Requirements and Installation](README.md/#requirements-and-installation) successfully, you are ready 
+to start using HyperCP!
+
+<center><img src="Data/Img/banner.jpg" alt="banner"></center>
+
 ### Quick Start Overview
+
 1. Identify the research cruise, relevant calibration files, and ancillary data files to be used in processing
-2. Launch HyperCP and set up the Main window for data directories and the ancillary file
+2. Launch HyperCP and set up the [Main Window](README.md/#set-up-main-window) for data directories and the ancillary file
 3. Create a new Configuration (or edit an existing Configuration)
 4. Add and enable only *relevant* calibration and instrument files to the Configuration; there is no such thing as a standard instrument package
 5. Choose appropriate processing parameters for L1A-L2 (do not depend on software defaults; there is no such thing as a standard data collection)
 6. HDF files will be produced at each level of processing, plus optional SeaBASS text files for radiometry at L2. Plots can be produced at L1AQC, L1B, and L2. Processing logs and plots are aggregated into optional PDF Reports at L2 (covering all processing from RAW to L2) written to a dedicated Reports directory in the selected Output directory.
 
 
-### Main Window
-<center><img src="Data/Img/Main.jpg" alt="banner"></center>
+### Set up Main Window
 
-The Main window appears once Main.py is launched. It has options to specify a configuration file, 
-input/output directories, ancillary input files (i.e. environmental conditions and relevant geometries in a SeaBASS file format),
- single-level processing, and multi-level processing. For batch processing, pop-up windows from "failed" 
+HyperCP is a Main-View-Controller Python package with a GUI that can be launched in several ways.
+
+However you launch the GUI, *watch for important feedback at the command line terminal* in addition to informational GUI windows.
+
+Batching multiple files across single or multiple processing levels is also possible 
+as described in [Processing Overview](README.md/#processing-overview).
+
+<!-- To see an example of a complete workflow of the processing from raw data to the final HDF and SeaBASS/OCDB L2 outputs, 
+both for TriOS and HyperSAS, 
+please see [here](https://gitlab.eumetsat.int/OC/External/frm4soc-cp/-/blob/master/Command_line_example.cmd) <- firewalled -->
+
+
+
+The Main window appears once Main.py is launched, as described [above](README.md/#3-launch-hypercp-for-the-first-time):
+
+ ```
+(hypercp) prompt$ python Main.py
+```
+ 
+ The GUI has options to specify:
+ 
+ - a configuration file, as described [here](?)
+ - input/output directories, 
+ - ancillary input files, as described [here](?)
+ - single- and multi-level processing, as described [here](?)
+ 
+ <!--
+ This text seems to be misplaced here!
+ For batch processing, pop-up windows from "failed" 
  (no output due to either corrupt raw binary data or stringent quality control filtering) files can be suppressed. 
  Producing no output file at a given processing level is often a normal result of quality control filtering, 
- so this option allows batches to continue uninterrupted (or freeing the core in use if multi-core processing via command line).
+ so this option allows batches to continue uninterrupted (or freeing the core in use if multi-core processing via command line).-->
 
 The 'New' button allows creation of a new configuration file. 'Edit' allows editing the currently selected configuration file. 'Delete' is used to delete the currently selected configuration file *and* corresponding auto-created calibration directories (see Configuration). After creating a new configuration file, select it from the drop-down menu, and select 'Edit' to launch the Configuration module and GUI.
 
