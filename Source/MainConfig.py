@@ -39,5 +39,6 @@ class MainConfig:
         MainConfig.settings["version"] = version
         MainConfig.settings["inDir"] = './Data'
         MainConfig.settings["outDir"] = './Data'
+        MainConfig.settings["ancFileDir"] = './Data/Sample_Data'
         MainConfig.settings["metFile"] = ""
         MainConfig.settings["popQuery"] = 0
