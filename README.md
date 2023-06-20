@@ -14,7 +14,6 @@ without SolarTracker or pySAS robotic platforms as well as [TriOS](https://www.t
 
 ## Version 1.2.0 (see Changelog.md)
 
----
 ```
 The MIT license
 
@@ -28,7 +27,6 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  ```
----
 
 **Main author**: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>
 
@@ -47,9 +45,8 @@ promtp$ git clone --depth 1 https://github.com/nasa/HyperInSPACE.git /path/to/co
 or, if you are unfamiliar with git, simply download and unzip by clicking ```Code >> Download ZIP```  -
 we encourage you to use git though (see why below).
 
-When HyperCP/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved into them as described below. No system files will be changed.
-
-HyperCP requires Python 3.X installed on a Linux, MacOS, or Windows computer. The <a href='https://www.anaconda.com/'>Anaconda</a> distribution (or <a href='https://docs.conda.io/en/latest/miniconda.html'>Miniconda</a>) is encouraged.
+HyperCP requires Python 3.X installed on a Linux, MacOS, or Windows computer. 
+The <a href='https://www.anaconda.com/'>Anaconda</a> distribution (or <a href='https://docs.conda.io/en/latest/miniconda.html'>Miniconda</a>) is encouraged.
 If you are unfamiliar with Anaconda, a nice walkthrough can be found [here](https://youtu.be/YJC6ldI3hWk).
 
 All of the package dependencies are listed in the environment.yml file included with the package. To make sure you have all of the necessary dependencies, navigate to the HyperCP directory on command line and type
@@ -80,10 +77,7 @@ the latest version of the software].
 To report an issue, please submit it [here](https://github.com/nasa/HyperInSPACE/issues), the HyperCP Team will take 
 care of it :).
 
----
-## Launching
-
-<center><img src="Data/Img/banner.jpg" alt="banner"></center>
+## Launching HyperCP for the first time
 
 HyperCP is a Main-View-Controller Python package with a GUI that can be launched in several ways, such as by navigating 
 to the project folder on the command line and typing:
@@ -92,8 +86,14 @@ to the project folder on the command line and typing:
 (hypercp) prompt$ python Main.py
 ```
 
-However you launch the GUI, *watch for important feedback at the command line terminal* in addition to informational GUI windows.
+You GUI window should look approximately like this:
 
+<center><img src="Data/Img/banner.jpg" alt="banner"></center>
+
+When HyperCP/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved 
+into them as described below. No system files will be changed.
+
+However you launch the GUI, *watch for important feedback at the command line terminal* in addition to informational GUI windows.
 
 Batching multiple files across single or multiple processing levels is also possible 
 as described in [Processing Overview](README.md/#processing-overview).
@@ -117,25 +117,12 @@ The following sub-directories will be created automatically (if not present) whe
         though using separate locations for field data is recommended.
 - **Source**: This directory (which comes unpacked with the distribution) holds the majority of the Python source code.
 
-#### Executing HyperCP from the command line
-
-There is a command line option for batching a single level which can be triggered by adding the ```-cmd``` argument:
-
-```
-(hypercp) prompt$ python Main.py -c config -i inputFile -o outputDirectory -l processingLevel
-```
-
-where ```config``` is the configuration file, and the other arguments are self-explanatory 
-(```processingLevel``` should be in all caps, e.g., ```L1AQC```).
-An example script has been provided (```run_sample.py```) for batching files using the command line option.
-
 ### Database Download
 When you first launch the software, it will need to download a large (2.3 GB) database 
 (```Zhang_rho_db.mat```; [Zhang et al., 2017, OE, 25(4)](https://opg.optica.org/oe/fulltext.cfm?uri=oe-25-4-A1&id=357012))
  for use in glint correction. If this database is not found in Data, a dialog window will appear before the Main.py GUI with guidance on how to proceed. If this download should fail for any reason, further instructions will be given at the command line terminal where Main.py was launched.
 
----
-## Guide
+## Usage
 
 ### Quick Start Overview
 1. Identify the research cruise, relevant calibration files, and ancillary data files to be used in processing
@@ -147,9 +134,14 @@ When you first launch the software, it will need to download a large (2.3 GB) da
 
 
 ### Main Window
-<!---*<center><img src="Data/Img/Main.jpg" alt="banner"></center>*--->
+<center><img src="Data/Img/Main.jpg" alt="banner"></center>
 
-The Main window appears once Main.py is launched. It has options to specify a configuration file, input/output directories, ancillary input files (i.e. environmental conditions and relevant geometries in a SeaBASS file format), single-level processing, and multi-level processing. For batch processing, pop-up windows from "failed" (no output due to either corrupt raw binary data or stringent quality control filtering) files can be suppressed. Producing no output file at a given processing level is often a normal result of quality control filtering, so this option allows batches to continue uninterrupted (or freeing the core in use if multi-core processing via command line).
+The Main window appears once Main.py is launched. It has options to specify a configuration file, 
+input/output directories, ancillary input files (i.e. environmental conditions and relevant geometries in a SeaBASS file format),
+ single-level processing, and multi-level processing. For batch processing, pop-up windows from "failed" 
+ (no output due to either corrupt raw binary data or stringent quality control filtering) files can be suppressed. 
+ Producing no output file at a given processing level is often a normal result of quality control filtering, 
+ so this option allows batches to continue uninterrupted (or freeing the core in use if multi-core processing via command line).
 
 The 'New' button allows creation of a new configuration file. 'Edit' allows editing the currently selected configuration file. 'Delete' is used to delete the currently selected configuration file *and* corresponding auto-created calibration directories (see Configuration). After creating a new configuration file, select it from the drop-down menu, and select 'Edit' to launch the Configuration module and GUI.
 
@@ -158,6 +150,18 @@ The 'Input...' and 'Output Data/Plots Parent Directory' buttons are self explana
 Ancillary data files for environmental conditions and relevant geometries used in processing must be text files in SeaBASS format with columns for date, time, lat, and lon. See https://seabass.gsfc.nasa.gov/ for a description of SeaBASS format. Optional data fields include station number, ship heading, relative sensor azimuth, aerosol optical depth, cloud cover, salinity, water temperature, and wind speed. Example ancillary files are included for use as a template. It is recommended that ancillary files are checked with the 'FCHECK' utility as described on the SeaBASS website. They will be interpreted using the included SB_support.py module from NASA/OBPG.
 
 In case environmental conditions were not logged in the field, or for filling in gaps in logged data, they will be retrieved from GMAO models as described below. The ancillary data file is optional (though strongly advised for adding wind speed at a minimum) provided the sensor suite is equipped with a SolarTracker or equivalent to supply the relevant sensor/solar geometries combined with a GPS for position and time. If no SolarTracker-type instrument is present to report the relative sensor/solar geometries, the ancillary file must be provided with at least the ship heading and relative angle between the bow of the ship and the sensor azimuth as a function of time (see sample file provided). If no GPS is present, position and time are also required in an ancillary file. Application of the Zhang et al. (2017) glint correction will require the addition of GMAO model data for aerosol optical depth.
+
+#### Executing HyperCP from the command line
+
+There is a command line option for batching a single level which can be triggered by adding the ```-cmd``` argument:
+
+```
+(hypercp) prompt$ python Main.py -c config -i inputFile -o outputDirectory -l processingLevel
+```
+
+where ```config``` is the configuration file, and the other arguments are self-explanatory 
+(```processingLevel``` should be in all caps, e.g., ```L1AQC```).
+An example script has been provided (```run_sample.py```) for batching files using the command line option.
 
 ### Configuration
 
