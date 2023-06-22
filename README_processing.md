@@ -2,7 +2,9 @@
 
 This section contains a detailed description of each of the levels and processing steps involved in HyperCP.
 
-<!---*Bug: Very rarely, when running the program for the first time, the first RAW binary data file opened for processing is not read in properly. Processing will fail with the error message: [filename] does not match expected input level. The file will process properly if run a second time (assuming it is a healthy file). Cause unknown.*-->
+<!---*Bug: Very rarely, when running the program for the first time, the first RAW binary data file opened for processing
+ is not read in properly. Processing will fail with the error message: [filename] does not match expected input level. 
+ The file will process properly if run a second time (assuming it is a healthy file). Cause unknown.*-->
 
 ## Level 1A - Preprocessing
 
@@ -10,70 +12,152 @@ Process data from raw binary (Satlantic HyperSAS '.RAW' collections) to L1A (Hie
 Calibration files and the RawFileReader.py script allow for interpretation of raw data fields, which are read into HDF 
 objects.
 
-**Solar Zenith Angle Filter**: prescreens data for high SZA (low solar elevation) to exclude files which may have been collected post-dusk or pre-dawn from further processing. *Triggering the SZA threshold will skip the entire file, not just samples within the file, so do not be overly conservative with this selection, particularly for files collected over a long period.* Further screening for SZA min/max at a sample level is available in L1BQC processing.
+**Solar Zenith Angle Filter**: prescreens data for high SZA (low solar elevation) to exclude files which may have been 
+collected post-dusk or pre-dawn from further processing. 
+
+*Triggering the SZA threshold will skip the entire file, not 
+just samples within the file, so do not be overly conservative with this selection, particularly for files collected 
+over a long period.* Further screening for SZA min/max at a sample level is available in L1BQC processing.
 **Default: 60 degrees (e.g. Brewin et al., 2016)**
 
 ## Level 1AQC
 
 Process data from L1A to L1AQC. Data are filtered for vessel attitude (pitch, roll, and yaw when available), viewing 
 and solar geometry. *It should be noted that viewing geometry should conform to total radiance (Lt) measured at about 40 
-degrees from nadir, and sky radiance (Li) at about 40 degrees from zenith* 
-**(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**.
+degrees from nadir, and sky radiance (Li) at about 40 degrees from zenith* **(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**.
 Unlike other approaches, HyperCP eliminates data flagged for problematic pitch/roll, yaw, and solar/sensor geometries 
 *prior* to deglitching the time series, thus increasing the relative sensitivity of deglitching for the removal of 
 non-environmental anomalies.
 
 
-**SolarTracker**: Select when using the Satlantic SolarTracker package. In this case sensor and solor geometry data will come from the SolarTracker (i.e. SATNAV**.tdf). If deselected, solar geometries will be calculated from GPS time and position with Pysolar, while sensor azimuth (i.e. ship heading and sensor offset) must either be provided in the ancillary data or (eventually) from other data inputs. Currently, if SolarTracker is unchecked, the Ancillary file chosen in the Main Window will be read in, subset for the relevant dates/times, held in the ANCILLARY_NOTRACKER group object, and carried forward to subsequent levels (i.e. the file will not need to be read in again at L2). If the ancillary data file is very large (e.g. for a whole cruise at high temporal resolution), this process of reading in the text file and subsetting it to the radiometry file can be slow.
+**SolarTracker**: Select when using the Satlantic SolarTracker package. In this case sensor and solor geometry data will
+ come from the SolarTracker (i.e. SATNAV**.tdf). If deselected, solar geometries will be calculated from GPS time and 
+ position with Pysolar, while sensor azimuth (i.e. ship heading and sensor offset) must either be provided in the 
+ ancillary data or (eventually) from other data inputs. Currently, if SolarTracker is unchecked, the Ancillary file 
+ chosen in the Main Window will be read in, subset for the relevant dates/times, held in the ANCILLARY_NOTRACKER group 
+ object, and carried forward to subsequent levels (i.e. the file will not need to be read in again at L2). If the 
+ ancillary data file is very large (e.g. for a whole cruise at high temporal resolution), this process of reading in the 
+ text file and subsetting it to the radiometry file can be slow.
 
-**Rotator Home Angle Offset**: Generally 0. This is the offset between the neutral position of the radiometer suite and the bow of the ship. This *should* be zero if the SAS Home Direction was set at the time of data collection in the SolarTracker as per Satlantic SAT-DN-635. If no SolarTracker was used, the offset can be set here if stable (e.g. pointing angle on a fixed tower), or in the ancillary data file if changeable in time. Without SolarTracker, L1C processing will require at a minimum ship heading data in the ancillary file. Then the offset can be given in the ancillary file (dynamic) or set here in the GUI (static). *Note: as SeaBASS does not have a field for this angle between the instrument and the bow of the ship, the field "relaz" (normally reserved for the relative azimuth between the instrument and the sun) is utilized for the angle between the ship heading (NOT COG) and the sensor.*
+**Rotator Home Angle Offset**: Generally 0. This is the offset between the neutral position of the radiometer suite and 
+the bow of the ship. This *should* be zero if the SAS Home Direction was set at the time of data collection in the 
+SolarTracker as per Satlantic SAT-DN-635. If no SolarTracker was used, the offset can be set here if stable (e.g. 
+pointing angle on a fixed tower), or in the ancillary data file if changeable in time. Without SolarTracker, L1C 
+processing will require at a minimum ship heading data in the ancillary file. Then the offset can be given in the 
+ancillary file (dynamic) or set here in the GUI (static). *Note: as SeaBASS does not have a field for this angle between 
+the instrument and the bow of the ship, the field "relaz" (normally reserved for the relative azimuth between the 
+instrument and the sun) is utilized for the angle between the ship heading (NOT COG) and the sensor.*
 
-**Rotator Delay**: Seconds of data discarded after a SolarTracker rotation is detected. Set to 0 to ignore. Not an option without SolarTracker.
-**Default: 60 seconds (Vandenberg 2017)**
+**Rotator Delay**: Seconds of data discarded after a SolarTracker rotation is detected. Set to 0 to ignore. 
+Not an option without SolarTracker. **Default: 60 seconds (Vandenberg 2017)**
 
-**Pitch & Roll Filter** (optional): Data outside these thresholds are discarded if this is enabled in the checkbox. These data may be supplied by a tilt-heading sensor incorporated in the raw data stream accompanied by a telmetry definition file (.tdf) as per above, or can be ingested from the Ancillary file (see SAMPLE_Ancillary_pySAS.sb provided in /Data).
+**Pitch & Roll Filter** (optional): Data outside these thresholds are discarded if this is enabled in the checkbox. 
+These data may be supplied by a tilt-heading sensor incorporated in the raw data stream accompanied by a telmetry 
+definition file (.tdf) as per above, or can be ingested from the Ancillary file (see SAMPLE_Ancillary_pySAS.sb provided 
+in /Data).
 **Default: 5 degrees (IOCCG Draft Protocols; Zibordi et al. 2019; 2 deg "ideal" to 5 deg "upper limit")**
 
 **Absolute Rotator Angle Filter** (optional): Angles relative to the SolarTracker neutral angle beyond which data will be excluded due to obstructions blocking the field of view. These are generally set in the SolarTracker or pySAS software when initialized for a given platform. Not an option without SolarTracker or pySAS.
 **Default: -40 to +40 (arbitrary)**
 
 **Relative Solar Azimuth Filter** (optional): Relative azimuth angle in degrees between the viewing Li/Lt and the sun.
-**Default: 90-135 deg (Mobley 1999, Zhang et al. 2017); 135 deg (Mueller 2003 (NASA Protocols)); 90 deg unless certain of platform shadow (Zibordi et al. 2009, IOCCG Draft Protocols)**
+**Default: 90-135 deg (Mobley 1999, Zhang et al. 2017); 135 deg (Mueller 2003 (NASA Protocols)); 90 deg unless certain 
+of platform shadow (Zibordi et al. 2009, IOCCG Draft Protocols)**
 
 ### Deglitching (optional)
 
-Light and dark data are screened for electronic noise ("deglitched" - see Anomaly Analysis), which is then removed from the data (optional, but strongly advised).
-**(e.g. Brewin et al. 2016, Sea-Bird/Satlantic 2017)**
+Light and dark data are screened for electronic noise ("deglitched" - see Anomaly Analysis), which is then removed from 
+the data (optional, but strongly advised).**(e.g. Brewin et al. 2016, Sea-Bird/Satlantic 2017)**
 
-*Currently, spectra with anomalies in any band are deleted in their entirety, which is very conservative. It may be sufficient to set the anomalous values to NaNs, and only delete the entire spectrum if more than, say, 25% of wavebands are anomalous.*
+*Currently, spectra with anomalies in any band are deleted in their entirety, which is very conservative. It may be 
+sufficient to set the anomalous values to NaNs, and only delete the entire spectrum if more than, say, 25% of wavebands
+ are anomalous.*
 
 ### Anomaly Analysis & Thresholding (optional)
 
-Running the Anomaly Analysis to parameterize the deglitching algorithm requires L1AQC files, so they must first be processed to L1AQC with no deglitching and then loaded into the Anomaly Analysis tool to be reprocessed to L1AQC with deglitching.
+Running the Anomaly Analysis to parameterize the deglitching algorithm requires L1AQC files, so they must first be 
+processed to L1AQC with no deglitching and then loaded into the Anomaly Analysis tool to be reprocessed to L1AQC with 
+deglitching.
 
-Deglitching is highly sensitive to the parameters described below, as well as some environmental conditions not otherwise controlled for in L1AQC processing and the overall variability of the radiometric data itself. Therefore, a separate module was developed to tune these parameters for individual files, instruments, and/or field campaigns and conditions. A sharp temperature change of the instrument, shutter malfunction, or heavy vibration, for example, could impact "glitchy-ness" and change the optimal parameterization.
+Deglitching is highly sensitive to the parameters described below, as well as some environmental conditions not 
+otherwise controlled for in L1AQC processing and the overall variability of the radiometric data itself. Therefore, a 
+separate module was developed to tune these parameters for individual files, instruments, and/or field campaigns and 
+conditions. A sharp temperature change of the instrument, shutter malfunction, or heavy vibration, for example, could
+ impact "glitchy-ness" and change the optimal parameterization.
 
-Due to high HyperOCR noise in the NIR, deglitching is currently hard-coded to only perform deglichting between 350 - 850 nm. Deglitching is conservative: i.e. if a value in any waveband within a timeseries is flagged, all data for that timestamp are removed.
+Due to high HyperOCR noise in the NIR, deglitching is currently hard-coded to only perform deglichting between 
+350 - 850 nm. Deglitching is conservative: i.e. if a value in any waveband within a timeseries is flagged, all data for 
+that timestamp are removed.
 
-The tool is launched pressing the Anomaly Analysis button in the Configuration Window. A dialog will appear to select an L1AQC file for deglitching, after which a GUI will display timeseries plots of the light (shutter open) and dark (shutter closed) data for a given waveband. Metadata including date, time, wind, cloud, waves, solar and sensor geometry are shown in the top of the window. In addition, the software allows the user to define the file naming scheme of photographs collected in the field, presuming they are named with date and time. The software will look in a directory called /Photos in the designated input directory structure and match all photos within 90 minutes of the mean collection time for the file. Matched photos can by scanned using the button on the right to launch the viewer. The slider below the metadata allows for adjustment of the wavelength to be screened (the Update button will update the figures for any changes in sensor or parameterization), and radio buttons allow selection between Es, Li, or Lt sensors. Sensors are parameterized independently of each other, and seperately for the light and dark signals. Plots are interactive and can be explored in higher detail by panning with the left mouse button or zooming with the right mouse button (a small "A" box in the bottom left of the plot restores it to all data, or right-click for more options).
+The tool is launched pressing the Anomaly Analysis button in the Configuration Window. A dialog will appear to select an 
+L1AQC file for deglitching, after which a GUI will display timeseries plots of the light (shutter open) and dark 
+(shutter closed) data for a given waveband. Metadata including date, time, wind, cloud, waves, solar and sensor geometry
+ are shown in the top of the window. In addition, the software allows the user to define the file naming scheme of 
+ photographs collected in the field, presuming they are named with date and time. The software will look in a directory 
+ called /Photos in the designated input directory structure and match all photos within 90 minutes of the mean 
+ collection time for the file. Matched photos can by scanned using the button on the right to launch the viewer. The
+ slider below the metadata allows for adjustment of the wavelength to be screened (the Update button will update the 
+ figures for any changes in sensor or parameterization), and radio buttons allow selection between Es, Li, or Lt sensors.
+ Sensors are parameterized independently of each other, and seperately for the light and dark signals. Plots are 
+ interactive and can be explored in higher detail by panning with the left mouse button or zooming with the right mouse
+ button (a small "A" box in the bottom left of the plot restores it to all data, or right-click for more options).
 
-For each waveband of each sensor, and for both light and dark shutter measurements, the time series of radiometric data are low-pass filtered with a moving average over time using discrete linear convolution of two one dimensional sequences with adjustable window sizes (number of samples in the window). For darks, a *STATIONARY* standard deviation anomaly (from the moving average in time) is used to assess whether data are within an adjustable "sigma factor" multiplier within the window. For lights, a *MOVING* standard deviation anomaly (from the moving average of separately adjustable window size) is used to assess whether data are within a separately adjustable sigma. The low-band filter is passed over the data twice (forward and backward). First and last data points for light and dark data cannot be accurately filtered with this method, and are always discarded.
+For each waveband of each sensor, and for both light and dark shutter measurements, the time series of radiometric data 
+are low-pass filtered with a moving average over time using discrete linear convolution of two one-dimensional sequences
+with adjustable window sizes (number of samples in the window). For darks, a *STATIONARY* standard deviation anomaly
+(from the moving average in time) is used to assess whether data are within an adjustable "sigma factor" multiplier
+within the window. For lights, a *MOVING* standard deviation anomaly (from the moving average of separately adjustable 
+window size) is used to assess whether data are within a separately adjustable sigma. The low-band filter is passed over
+ the data twice (forward and backward). First and last data points for light and dark data cannot be accurately filtered
+  with this method, and are always discarded.
 
-Adjust the window size and sigma parameters for each instrument and hit Update (or keyboard Enter) to see which data (black circles) are retained or discarded (red 'x' or '+' for first and second pass, respectively). Default values optimized for NASA's HyperSAS are shown adjacent to each box, but these may not be appropriate for other packages. Move the slider and hit update to see how these factors impact data in various portions of the spectrum. The field '% Loss (all bands)' shows how application of the current parameterization decimates the *entire spectral/temporal dataset for the given sensor, not just the band shown*.
+Adjust the window size and sigma parameters for each instrument and hit Update (or keyboard Enter) to see which data 
+(black circles) are retained or discarded (red 'x' or '+' for first and second pass, respectively). Default values 
+optimized for NASA's HyperSAS are shown adjacent to each box, but these may not be appropriate for other packages. Move
+the slider and hit update to see how these factors impact data in various portions of the spectrum. The field '% Loss 
+(all bands)' shows how application of the current parameterization decimates the *entire spectral/temporal dataset for 
+the given sensor, not just the band shown*.
 
-In addition to the low-pass filters, light and dark data from each sensor can be filtered with a high and low value threshold. This is off by default, but can be very powerful for custom processing (e.g., patchy cloud elimination), and tends to be more useful in the light data rather than the dark (shutter closed). However, error associated with nonlinearity of response in HyperOCRs with dynamic integration time adjustment can also be minimized using dark thresholds. Thresholds are chosen by selecting the desired band (and hit Set Band) independently for light and dark data, and choosing a minimum and/or maximum threshold value in the appropriate boxes. Change value to "None" if a particularly threshold should be ignored. For example, to filter Li data on thresholds only for a high threshold for dark data based on 555 nm, select the Threshold checkbox, select the Li Radio button, move the slider to 555 nm, and hit Update. Now, you can enter a value (e.g. 1.0) into the lefthand "Max" textbox and hit "Update" (or keyboard Enter). The filtered data should show in blue. *Keep in mind, they will only show in the waveband for which they were set,* but like the low-pass filter, if they fall outside the thresholds in that band, that timestamp will be deleted for all bands.
+In addition to the low-pass filters, light and dark data from each sensor can be filtered with a high and low value 
+threshold. This is off by default, but can be very powerful for custom processing (e.g., patchy cloud elimination), and 
+tends to be more useful in the light data rather than the dark (shutter closed). However, error associated with 
+nonlinearity of response in HyperOCRs with dynamic integration time adjustment can also be minimized using dark 
+thresholds. Thresholds are chosen by selecting the desired band (and hit Set Band) independently for light and dark data,
+and choosing a minimum and/or maximum threshold value in the appropriate boxes. Change value to "None" if a 
+particularly threshold should be ignored. For example, to filter Li data on thresholds only for a high threshold for 
+dark data based on 555 nm, select the Threshold checkbox, select the Li Radio button, move the slider to 555 nm, and 
+hit Update. Now, you can enter a value (e.g. 1.0) into the lefthand "Max" textbox and hit "Update" (or keyboard Enter).
+The filtered data should show in blue. *Keep in mind, they will only show in the waveband for which they were set,* 
+but like the low-pass filter, if they fall outside the thresholds in that band, that timestamp will be deleted for all
+bands.
 
-Currently, to threshold data from any of the three instruments, Threshold must be checked, but leaving the min/max values as None in the other sensors will still work to ignore thresholding those sensors.
+Currently, to threshold data from any of the three instruments, ```Threshold``` must be checked, but leaving the min/max 
+values as None in the other sensors will still work to ignore thresholding those sensors.
 
-*To see the results when reviewing the threshold parameters on a file, make sure the waveband slider is on the appropriate waveband (and hit Update).*
+*To see the results when reviewing the threshold parameters on a file, make sure the waveband slider is on the 
+appropriate waveband (and hit Update).*
 
-Once the parameters have been adjusted for each sensor, they can be saved (Save Sensor Params button) to the current software configuration and to a backup configuration file for later use. This means that once you have 'tuned' these parameters for a given file, the software will be able to load the file (from the Config directory) to reference those parameters. This is useful for reprocessing; *you should only need to tune these once for each file.* If you find that a given set of deglitching parameterizations is working sufficiently well for all your L1AQC files for a given cruise, simply save them once, save the Configuration from the Configuration Window, and the software configuration will reuse them for all files (i.e. it only applies alternative values for files that were specifically saved). Saved file-specific parameterization can be viewed/editted in the CSV file named after the Configuration in the Config directory (e.g. "KORUS_anoms.csv" for the "KORUS.cfg").
+Once the parameters have been adjusted for each sensor, they can be saved (```Save Sensor Params```) to the current 
+software configuration and to a backup configuration file for later use. This means that once you have 'tuned' these 
+parameters for a given file, the software will be able to load the file (from the Config directory) to reference those 
+parameters. This is useful for reprocessing; *you should only need to tune these once for each file.* If you find that a
+given set of deglitching parameterizations is working sufficiently well for all your L1AQC files for a given cruise, 
+simply save them once, save the Configuration from the Configuration Window, and the software configuration will reuse 
+them for all files (i.e. it only applies alternative values for files that were specifically saved). Saved file-specific
+ parameterization can be viewed/editted in the CSV file named after the Configuration in the Config directory 
+ (e.g. "KORUS_anoms.csv" for the "KORUS.cfg").
 
-For record keeping and the PDF processing report, plots of the delitching (similar to those shown in realtime) can be saved to disk. Select the waveband interval at which to save plots (e.g. at 3.3 nm resolution and 20 interval, plots are produced every 66 nm, or 48 PNG files for a typical HyperSAS system), and click Save Anomaly Plots. Results of the anomaly detection are saved to [output_directory]/Plots/L1AQC_Anoms. Data flagged for removal given the parameterizations chosen in the Configuration window are shown for the filter first pass (red box) and second pass (blue star) and thresholds (red circles only shown in the band for which they were chosen).
+For record keeping and the PDF processing report, plots of the delitching (similar to those shown in realtime) can be 
+saved to disk. Select the waveband interval at which to save plots (e.g. at 3.3 nm resolution and 20 interval, plots are
+ produced every 66 nm, or 48 PNG files for a typical HyperSAS system), and click Save Anomaly Plots. Results of the 
+ anomaly detection are saved to [output_directory]/Plots/L1AQC_Anoms. Data flagged for removal given the 
+ parameterizations chosen in the Configuration window are shown for the filter first pass (red box) and second pass 
+ (blue star) and thresholds (red circles only shown in the band for which they were chosen).
 
 For convenience a shortcut to processing the currently active L1AQC file to L1B is provided (Process to L1B).
 
-To save the current values from the Anomaly Analysis tool as the defaults for the given cruise, Save Sensor Params > Close > Save/Close the Configuration Window.
+To save the current values from the Anomaly Analysis tool as the defaults for the given cruise, 
+```Save Sensor Params``` > ```Close``` > ```Save/Close``` the Configuration Window.
 
 
 **Defaults: Currently based on EXPORTSNA DY131; shown in GUI; experimental**

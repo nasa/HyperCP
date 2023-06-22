@@ -120,8 +120,6 @@ It will stored at ```/Data/Zhang_rho_db.mat```.
 If this download should fail for any reason, further instructions will be given 
 at the command line terminal where Main.py was launched.
 
-
-
 ## Usage
 
 If you followed [Requirements and Installation](README.md/#requirements-and-installation) successfully, you are ready 
