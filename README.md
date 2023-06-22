@@ -50,10 +50,12 @@ we encourage you to use git though (see why below).
 ### 2. Get the HyperCP environment
 
 HyperCP requires Python 3.X installed on a Linux, MacOS, or Windows computer. 
-The <a href='https://www.anaconda.com/'>Anaconda</a> distribution (or <a href='https://docs.conda.io/en/latest/miniconda.html'>Miniconda</a>) is encouraged.
+The <a href='https://www.anaconda.com/'>Anaconda</a> distribution 
+(or <a href='https://docs.conda.io/en/latest/miniconda.html'>Miniconda</a>) is encouraged.
 If you are unfamiliar with Anaconda, a nice walkthrough can be found [here](https://youtu.be/YJC6ldI3hWk).
 
-All of the package dependencies are listed in the environment.yml file included with the package. To make sure you have all of the necessary dependencies, navigate to the HyperCP directory on command line and type
+All of the package dependencies are listed in the environment.yml file included with the package. To make sure you have 
+all of the necessary dependencies, navigate to the HyperCP directory on command line, type:
 
 ```
 prompt$ conda env create -f environment.yml
@@ -69,19 +71,24 @@ To return to the environment later before launching the program, type
 prompt$ conda activate hypercp
 ```
 
-To stay up to date with the latest commits to the master branch, it is strongly recommended that you pull them prior to using the software. From the HyperCP directory, type:
+To stay up to date with the latest commits to the master branch, it is strongly recommended that you pull them prior to 
+using the software. From the HyperCP directory, type:
 
 ```
 (hypercp) prompt$ git pull
 ```
 
-[If, instead, you are not using git you should regularly re-download and unzip the repository if you want to ensure you are using 
-the latest version of the software].
+[If, instead, you are not using git you should regularly re-download and unzip the repository if you want to ensure you 
+are using the latest version of the software].
 
 To report an issue, please submit it [here](https://github.com/nasa/HyperInSPACE/issues), the HyperCP Team will take 
 care of it :).
 
 ### 3. Launch HyperCP for the first time!
+
+<!---*Bug: Very rarely, when running the program for the first time, the first RAW binary data file opened for processing
+ is not read in properly. Processing will fail with the error message: [filename] does not match expected input level. 
+ The file will process properly if run a second time (assuming it is a healthy file). Cause unknown.*-->
 
 To finalise and test the setting up, let's launch HyperCP for the first time: navigate to the project folder on 
 the command line and type:
@@ -101,7 +108,8 @@ into them as described below. No system files will be changed.
 
 - **Config**: Configuration and instrument files (by subdirectory - auto-created), SeaBASS header configuration files, 
         main view configuration file.
-- **Logs**: Most command line output messages generated during processing are captured for later reference in .log text files here.
+- **Logs**: Most command line output messages generated during processing are captured for later reference in .log text 
+        files here.
 - **Plots**: A variety of optional plotting routines are included which create sub-directories 
         (i.e. 'L1AQC_Anoms', 'L1B_Interp', 'L2_Spectral_Filter', 'L2', 'L2_Products').
 - **Data**: This directory now comes unpacked in the distribution. By default, it contains only 
@@ -142,7 +150,7 @@ to start using HyperCP!
 HyperCP is a Main-View-Controller Python package with a GUI that can be launched in several ways.
 However you launch the GUI, *watch for important feedback at the command line terminal* in addition to informational GUI windows.
 Batching multiple files across single or multiple processing levels is also possible 
-as described in [Processing Overview](README.md/#processing-overview).
+as described below.
 
 <!-- To see an example of a complete workflow of the processing from raw data to the final HDF and SeaBASS/OCDB L2 outputs, 
 both for TriOS and HyperSAS, 
@@ -253,21 +261,25 @@ for that file will be terminated for higher levels.
 
 For you to familiarise with the processing steps run by HyperCP, please read [this](README_processing.md).
 
-Expected Outputs
+### Processing workflow overview
 
-##### SeaBASS/OCDB File and Header
+Level 1A through Level 2 processing configurations are adjusted in the Configuration window. 
+If you are reading this for the first time, opening the Configuration Window is a good reference to accompany the 
+discussion [here](README_configuration.md) regarding processing. 
 
-To output SeaBASS/OCDB formatted text files, check the box. A SeaBASS subfolder within the L2 directory will be created, and separate files generated for Li, Lt, and Es hyperspectral data.
+- Level 1A Processing: Process data from raw binary (Satlantic HyperSAS '.RAW' collections) to L1A (Hierarchical Data Format 5 '.hdf'). 
+Calibration files and the RawFileReader.py script allow for interpretation of raw data fields, which are read into HDF 
+objects.
+- Level 1AQC Processing: Data are filtered for vessel attitude (pitch, roll, and yaw when available), viewing 
+and solar geometry. 
+- Level 1B Processing: Dark current corrections are applied followed by instrument calibrations and then matching of timestamps and wavebands 
+for all radiometers in the suite.
+- Level 1BQC Processing: Further quality control filters are applied to data prior to L2 ensemble binning and reflectance 
+calculation.
+- Level 2 Processing: Data are averaged within optional time interval ensembles prior to calculating the remote sensing 
+reflectance within each ensemble.
 
-An eponymous, linked module allows the user to collect information from the data and the processing configuration (as defined in the Configuration window) into the SeaBASS files and their headers. The module is launched by selecting the 'Edit SeaBASS Header' button in the Configuration window. A SeaBASS/OCDB header configuration file is automatically stored in the /Config directory with the name of the Configuration and a .hdr extension. Instructions are given at the top of the SeaBASS Header window. Within the SeaBASS/OCDB header window, the left column allows the user to input the fields required by SeaBASS/OCDB. Calibration files (if they have been added at the time of creation) are auto-populated. In the right hand column, the HyperCP parameterizations defined in the Configurations window is shown in the 'Config Comments' box, and can be editted (though this should rarely ever be necessary). Additional comments can be added in the second comments field, and the lower fields are autopopulated from each data file as it is processed. To override auto-population of the lower fields in the right column, enter the desired value here in the SeaBASS Header window.
-
-*{TODO: Populate the left column using values in the Ancillary file, if present.}*
-
-**PDF Reports**
-
-Upon completion of L2 processing for each file (or lower level if that is the terminal processing level), a PDF summary report will be produced and saved in [output_directory]/Reports. The report is produced either 1) when processing fails at any level, or 2) at L2. This contains metadata, processing parameters, processing logs, and plots of QA analysis, radiometry, and derived ocean color products. These reports should be used to evaluate the choices made in the configuration and adjust them if necessary.
-
-#### Executing HyperCP from the command line
+### Executing HyperCP from the command line
 
 There is a command line option for batching a single level which can be triggered by adding the ```-cmd``` argument:
 
