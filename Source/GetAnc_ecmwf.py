@@ -1,5 +1,6 @@
 
 import os
+import shutil
 # import stat
 import numpy as np
 import xarray as xr
@@ -10,7 +11,7 @@ import configparser
 import decimal
 import cdsapi
 
-from Source.MainConfig import MainConfig
+# from Source.MainConfig import MainConfig
 from Source.HDFRoot import HDFRoot
 # from HDFGroup import HDFGroup
 from Source.Utilities import Utilities
@@ -32,8 +33,8 @@ class GetAnc_ecmwf:
         day = date.split('-')[2]
 
         hour = time.split(':')[0]
-        minute = time.split(':')[0]
-        second = time.split(':')[0]
+        minute = time.split(':')[1]
+        second = time.split(':')[2]
 
         return year,month,day,hour,minute,second
 
@@ -52,7 +53,7 @@ class GetAnc_ecmwf:
         Obtain the ADS_URL and YOUR_ADS_KEY at: https://ads.atmosphere.copernicus.eu/api-how-to
         '''
         # homeDir = os.path.expanduser('~')
-        MainDir = MainConfig.settings['MainDir']
+        MainDir = os.getcwd()
         ecmwf_api_config = os.path.join(MainDir, '.ecmwf_api_config')
         if not os.path.exists(ecmwf_api_config):
             raise IOError('file not found: %s!' % ecmwf_api_config)
@@ -93,16 +94,24 @@ class GetAnc_ecmwf:
                                     str(int(np.sign(latEff))).replace('-1', 'S').replace('1', 'N'),
                                     np.abs(latEff * (10 ** latSigFigures)))
 
-        # Time
+        # Time; choose 00:00 or 12:00 model
         year, month, day, hour, minute, second = GetAnc_ecmwf.timeStamp2yrMnthDayHrMinSec(timeStamp)
+        dTtimeStamp = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second),tzinfo=datetime.timezone.utc)
+        dTtimeVec = [datetime.datetime(int(year), int(month), int(day), int(0), int(0), int(0),tzinfo=datetime.timezone.utc),\
+                     datetime.datetime(int(year), int(month), int(day), int(12), int(0), int(0),tzinfo=datetime.timezone.utc)]
+        timeEff = min(dTtimeVec, key=lambda x: abs(x - dTtimeStamp))
 
-        timeSec = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second)).timestamp()
-
-        timeEffSec = np.round(timeSec / (3600 * timeResHours)) * (3600 * timeResHours) - 7200
-
-        timeStampEff = str(pd.Timestamp(datetime.datetime.fromtimestamp(timeEffSec))).replace(' ','T')
+        # timeSec = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second),tzinfo=datetime.timezone.utc).timestamp()
+        # timeEffSec = np.round(timeSec / (3600 * timeResHours)) * (3600 * timeResHours) - 7200
+        # timeStampEff = str(pd.Timestamp(datetime.datetime.fromtimestamp(timeEffSec))).replace(' ','T')
+        timeStampEff = str(pd.Timestamp(timeEff)).replace(' ','T')
 
         dateTag = timeStampEff.replace(':','').replace('-','').replace('T','')
+        # print(timeStamp)
+        # print(year, month, day, hour, minute, second)
+        # print(timeSec)
+        # print(timeEffSec)
+        # print(timeStampEff)
 
         return latEff,lonEff,timeStampEff,latLonTag,dateTag
 
@@ -126,6 +135,11 @@ class GetAnc_ecmwf:
         if os.path.exists(pathOut):
             pass
         else:
+            print(f'Nearest model found at {timeStamp}')
+            # copy .cdsapirc into home directory, because needed by the cdapi
+            homedir = os.path.expanduser( '~' )
+            shutil.copy(os.path.join(os.getcwd(),'.cdsapirc'), homedir)
+
             year, month, day, hour, _, _ = GetAnc_ecmwf.timeStamp2yrMnthDayHrMinSec(timeStamp)
 
             if int(year) < 2003:
@@ -223,7 +237,7 @@ class GetAnc_ecmwf:
 
     def getAnc_ecmwf(inputGroup):
         ''' Retrieve model data from ECMWF and save in Data/Anc and in ModData '''
-        cwd = MainConfig.settings['MainDir']
+        cwd = os.getcwd()
         ancPath = os.path.join(cwd,"Data","Anc")
 
         # Get the dates, times, and locations from the input group
@@ -240,6 +254,8 @@ class GetAnc_ecmwf:
             dateTagNew = Utilities.dateTagToDateTime(dateTag)
             lat_datetime = str(Utilities.timeTag2ToDateTime(dateTagNew,latTime[index])).split('.')[0]
             lat_timeStamp = lat_datetime.replace(' ','T')
+            lat_timeStamp = lat_timeStamp.replace('+',':')
+
             ancillary = GetAnc_ecmwf.get_ancillary_main(lat[index], lon[index], lat_timeStamp, ancPath)
 
             # position retrieval index has been confirmed manually in SeaDAS
@@ -255,10 +271,14 @@ class GetAnc_ecmwf:
         modGroup.addDataset('Timetag2')
         modGroup.addDataset('AOD')
         modGroup.addDataset('Wind')
+        '''NOTE: This is an unconventional use of Dataset, i.e., overides object with .data and .column.
+            Keeping for continuity of application'''
         modGroup.datasets['Datetag'] = latDate
         modGroup.datasets['Timetag2'] = latTime
         modGroup.datasets['AOD'] = modAOD
         modGroup.datasets['Wind'] = modWind
+        modGroup.attributes['Wind units'] = 'm s-1'
+        modGroup.attributes['AOD wavelength'] = '550 nm'
         print('GetAnc_ecmwf: Model data retrieved')
 
         return modData

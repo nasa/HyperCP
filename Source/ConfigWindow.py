@@ -1,6 +1,6 @@
 
 import os
-import shutil
+import shutil, glob
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pathlib import Path
 
@@ -222,11 +222,6 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1bGetAncCheckBox1.setChecked(False)
             self.l1bGetAncCheckBox2.setChecked(True)
         self.l1bGetAncCheckBox2.clicked.connect(self.l1bGetAncCheckBoxUpdate2)
-        '''
-        BUG: While ECMWF is being debugged
-        '''
-        self.l1bGetAncCheckBox2.setChecked(False)
-        self.l1bGetAncCheckBox2.setEnabled(False)
 
 
         self.l1bDefaultWindSpeedLabel = QtWidgets.QLabel("          Default Wind Speed (m/s)", self)
@@ -258,11 +253,11 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL1bCal"]==2:
             self.ClassCalRadioButton.setChecked(True)
         self.ClassCalRadioButton.clicked.connect(self.l1bClassCalRadioButtonClicked)
-        '''
-        BUG: While class-based is being debugged
-        '''
-        self.ClassCalRadioButton.setChecked(False)
-        self.ClassCalRadioButton.setEnabled(False)
+        # '''
+        # BUG: While class-based is being debugged
+        # '''
+        # self.ClassCalRadioButton.setChecked(False)
+        # self.ClassCalRadioButton.setEnabled(False)
 
         self.FullCalRadioButton = QtWidgets.QRadioButton("Full Characterization:")
         self.FullCalRadioButton.setAutoExclusive(False)
@@ -271,11 +266,27 @@ class ConfigWindow(QtWidgets.QDialog):
             self.FullCalRadioButton.setChecked(True)
         self.FullCalRadioButton.clicked.connect(self.l1bFullCalRadioButtonClicked)
 
-        if ConfigFile.settings['FullCalDir'] == ' ':
-            self.FullCalDirButton = QtWidgets.QPushButton('Select Characterization Folder', self)
-        else:
-            self.FullCalDirButton = QtWidgets.QPushButton(os.path.basename(ConfigFile.settings['FullCalDir']), self)
-        self.FullCalDirButton.clicked.connect(self.FullCalDirButtonPressed)
+        self.l1bGetFRMCheck1 = QtWidgets.QCheckBox("local files", self)
+
+        ''' NOTE: disabled until fidraddb_api can be resolved.'''
+        self.l1bGetFRMCheck2 = QtWidgets.QCheckBox("FidRadDB", self)
+        self.l1bGetFRMCheck2.setDisabled(1)
+
+        if int(ConfigFile.settings["FidRadDB"]) == 0:
+            self.l1bGetFRMCheck1.setChecked(True)
+            self.l1bGetFRMCheck2.setChecked(False)
+        if int(ConfigFile.settings["FidRadDB"]) == 1:
+            self.l1bGetFRMCheck1.setChecked(False)
+            self.l1bGetFRMCheck2.setChecked(True)
+        self.FullCalDir = ConfigFile.settings['FullCalDir']
+        self.l1bGetFRMCheck1.clicked.connect(self.l1bGetFRMCheckUpdate1)
+        self.l1bGetFRMCheck2.clicked.connect(self.l1bGetFRMCheckUpdate2)
+
+        # if ConfigFile.settings['FullCalDir'] == ' ':
+        #     self.FullCalDirButton = QtWidgets.QPushButton('Select Characterization Folder', self)
+        # else:
+        #     self.FullCalDirButton = QtWidgets.QPushButton(os.path.basename(ConfigFile.settings['FullCalDir']), self)
+        # self.FullCalDirButton.clicked.connect(self.FullCalDirButtonPressed)
 
         l1bInterpIntervalLabel = QtWidgets.QLabel("    Interpolation Interval (nm)", self)
         self.l1bInterpIntervalLineEdit = QtWidgets.QLineEdit(self)
@@ -601,7 +612,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # Vertical Box (left)
         VBox1 = QtWidgets.QVBoxLayout()
 
-     # sensor type box
+        # sensor type box
         VBox1.addWidget(sensorTypeLabel)
         VBox1.addWidget(self.sensorTypeComboBox)
         # Instrument Files Setup
@@ -754,13 +765,27 @@ class ConfigWindow(QtWidgets.QDialog):
         CalHBox2 = QtWidgets.QHBoxLayout()
         CalHBox2.addWidget(self.DefaultCalRadioButton)
         CalHBox2.addWidget(self.ClassCalRadioButton)
+
+        ''' NOTE: Disable in master while under development in dev '''
+        # self.ClassCalRadioButton.setDisabled(True)
+
         VBox2.addLayout(CalHBox2)
+
+        # CalHBox3 = QtWidgets.QHBoxLayout()
+        # CalHBox3.addWidget(self.FullCalRadioButton)
+        # CalHBox3.addWidget(self.FullCalDirButton)
+        # CalHBox3.addStretch(1)
+        # VBox2.addLayout(CalHBox3)
 
         CalHBox3 = QtWidgets.QHBoxLayout()
         CalHBox3.addWidget(self.FullCalRadioButton)
-        CalHBox3.addWidget(self.FullCalDirButton)
+        CalHBox3.addWidget(self.l1bGetFRMCheck1)
+        CalHBox3.addWidget(self.l1bGetFRMCheck2)
+
         CalHBox3.addStretch(1)
         VBox2.addLayout(CalHBox3)
+
+
         #   Interpolation interval (wavelength)
         interpHBox = QtWidgets.QHBoxLayout()
         interpHBox.addWidget(l1bInterpIntervalLabel)
@@ -1016,8 +1041,6 @@ class ConfigWindow(QtWidgets.QDialog):
         saveHBox.addWidget(self.cancelButton)
         VBox4.addLayout(saveHBox)
 
-        # VBox4.addStretch()
-
         # Add 3 Vertical Boxes to Horizontal Box hBox
         hBox = QtWidgets.QHBoxLayout()
         hBox.addLayout(VBox1)
@@ -1025,7 +1048,6 @@ class ConfigWindow(QtWidgets.QDialog):
         hBox.addLayout(VBox3)
         hBox.addLayout(VBox4)
 
-        # Adds hBox and saveHBox to primary VBox
         VBox.addLayout(hBox)
 
         self.setLayout(VBox)
@@ -1068,7 +1090,6 @@ class ConfigWindow(QtWidgets.QDialog):
         calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
         configPath = os.path.join("Config", calibrationDir)
         os.remove(os.path.join(configPath,self.calibrationFileComboBox.currentText()))
-        # os.remove(configPath)
 
 
     def getCalibrationSettings(self):
@@ -1086,25 +1107,13 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationEnabledCheckBox.blockSignals(False)
         self.calibrationFrameTypeComboBox.blockSignals(False)
 
-    # def setSensorSettings(self):
-    #     print("CalibrationEditWindow - set Sensor Settings")
-    #     sensor = self.sensorTypeComboBox.currentText()
-    #     ConfigFile.settings["SensorType"] = sensor
 
     def sensorTypeChanged(self):
         print("CalibrationEditWindow - Sensor Type Changed")
-        # self.setSensorSettings()
         sensor = self.sensorTypeComboBox.currentText()
         ConfigFile.settings["SensorType"] = sensor
 
-        # if sensor.lower() == 'trios':
-        #     self.l1aqcDeglitchCheckBox.setChecked(False)
         self.l1aqcDeglitchCheckBoxUpdate()
-        #     self.l1aqcDeglitchCheckBox.setEnabled(False)
-        #     self.l1aqcAnomalyButton.setEnabled(False)
-        # elif sensor.lower() == 'seabird':
-        #     self.l1aqcDeglitchCheckBox.setEnabled(True)
-        #     self.l1aqcAnomalyButton.setEnabled(True)
 
 
     def setCalibrationSettings(self):
@@ -1161,10 +1170,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcRotatorDelayLabel.setDisabled(disabled)
         self.l1aqcRotatorDelayLineEdit.setDisabled(disabled)
         self.l1aqcRotatorDelayCheckBox.setDisabled(disabled)
-        # self.l1aqcCleanPitchRollCheckBox.setDisabled(disabled)
-        # self.l1aqcCleanPitchRollLabel.setDisabled(disabled)
-        # self.l1aqcPitchRollPitchLabel.setDisabled(disabled)
-        # self.l1aqcPitchRollPitchLineEdit.setDisabled(disabled)
         self.l1aqcRotatorAngleLabel.setDisabled(disabled)
         self.l1aqcRotatorAngleCheckBox.setDisabled(disabled)
         self.l1aqcRotatorAngleMinLabel.setDisabled(disabled)
@@ -1174,10 +1179,8 @@ class ConfigWindow(QtWidgets.QDialog):
         if disabled:
             ConfigFile.settings["fL1aCleanSZAMax"] = 90
             ConfigFile.settings["bL1aqcSolarTracker"] = 0
-            # ConfigFile.settings["bL1aqcCleanPitchRoll"] = 0
             ConfigFile.settings["bL1aqcRotatorDelay"] = 0
             self.l1aqcRotatorDelayCheckBox.setChecked(False)
-            # self.l1aqcCleanPitchRollCheckBox.setChecked(False)
             self.l1aqcRotatorAngleCheckBox.setChecked(False)
         else:
             ConfigFile.settings["bL1aqcSolarTracker"] = 1
@@ -1187,7 +1190,6 @@ class ConfigWindow(QtWidgets.QDialog):
         print("ConfigWindow - l1aqcRotatorDelayCheckBoxUpdate")
 
         disabled = (not self.l1aqcRotatorDelayCheckBox.isChecked())
-        # self.l1aqcRotatorDelayLabel.setDisabled(disabled)
         self.l1aqcRotatorDelayLineEdit.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL1aqcRotatorDelay"] = 0
@@ -1257,7 +1259,6 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1aqcAnomalyButtonPressed(self):
         print("CalibrationEditWindow - Launching anomaly analysis module")
         ConfigWindow.refreshConfig(self)
-        # AnomalyDetection(self,self.inputDirectory)
         anomAnalDialog = AnomAnalWindow(self.inputDirectory, self)
         anomAnalDialog.show()
 
@@ -1282,8 +1283,25 @@ class ConfigWindow(QtWidgets.QDialog):
         self.FullCalRadioButton.setChecked(True)
         ConfigFile.settings["bL1bCal"] = 3
 
+    def l1bGetFRMCheckUpdate1(self):
+        print("ConfigWindow - l1bGetFRMCheckUpdate local files")
+        if self.l1bGetFRMCheck1.isChecked():
+            self.l1bGetFRMCheck2.setChecked(False)
+            ConfigFile.settings['FidRadDB'] = 0
+            self.FullCalDir = ConfigFile.settings['FullCalDir']
+            self.FullCalDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory.', self.FullCalDir)
+            print('Full characterization directory changed: ', self.FullCalDir)
+            ConfigFile.settings['FullCalDir'] = self.FullCalDir
+            return self.FullCalDir
+
+    def l1bGetFRMCheckUpdate2(self):
+        print("ConfigWindow - l1bGetFRMCheckUpdate FidRadDB")
+        if self.l1bGetFRMCheck2.isChecked():
+            self.l1bGetFRMCheck1.setChecked(False)
+            ConfigFile.settings['FidRadDB'] = 1
+
+
     def FullCalDirButtonPressed(self):
-        # dname = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose Directory")
         if not ConfigFile.settings['FullCalDir'].startswith('Choose'):
             srcDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory', ConfigFile.settings['FullCalDir'])
         else:
@@ -1295,18 +1313,16 @@ class ConfigWindow(QtWidgets.QDialog):
         configPath = os.path.join("Config", calibrationDir)
 
         calDir = Path(srcDir)
-        subdirs = [d for d in calDir.iterdir() if (d.is_dir() and d.name !='.DS_Store')]
-
-        for src in subdirs:
-            dest = os.path.join(configPath,src.parts[-1])
-            if not shutil._samefile(src,dest):
-                print(f'Copying characterization folder {src.parts[-1]} to {os.path.join(configPath,src.parts[-1])}')
-                shutil.copytree(src, dest, dirs_exist_ok=True)  # 3.8+ only!
-            else:
-                print('Destination same as source files: skip')
+        # files = Path(calDir).glob("CP*.TXT")
+        files = glob.iglob(os.path.join(Path(calDir), '*.[tT][xX][tT]'))
+        for file in files:
+            # dest = Path(configPath) / file.name
+            dest = Path(configPath) / os.path.basename(file)
+            if not dest.exists():
+                shutil.copy(file,dest)
 
         self.FullCalDirButton.setText(os.path.basename(calibrationDir))
-        ConfigFile.settings['FullCalDir'] = os.path.abspath(configPath)
+        ConfigFile.settings['FullCalDir'] = configPath
 
 
     def l1bPlotTimeInterpCheckBoxUpdate(self):

@@ -2119,11 +2119,56 @@ class Utilities:
         return sensorID
 
 
-
     @staticmethod
-    def RenameUncertainties(node):
+    def RenameUncertainties_Class(node):
         """
-        Rename unc dataset from sensor id to sensor type
+        Rename unc dataset from generic class-based id to sensor type
+        """
+        unc_group = node.getGroup("RAW_UNCERTAINTIES")
+        sensorID = Utilities.get_sensor_dict(node) # should result in OD{[Instr#:ES, Instr#:LI, Instr#:LT]}
+        print("sensors type", sensorID)
+        names = [i for i in unc_group.datasets]  # get names in advance, mutation of iteration object breaks for loop
+        for name in names:
+            ds = unc_group.getDataset(name)
+            
+            if "_RADIANCE_" in name:
+                # Class-based radiance coefficient are the same for both Li and Lt
+                new_LI_name = ''.join(["LI", name.split("RADIANCE")[-1]])
+                new_LI_ds = unc_group.addDataset(new_LI_name)
+                new_LI_ds.copy(ds)
+                new_LI_ds.datasetToColumns()
+
+                new_LT_name = ''.join(["LT", name.split("RADIANCE")[-1]])
+                new_LT_ds = unc_group.addDataset(new_LT_name)
+                new_LT_ds.copy(ds)
+                new_LT_ds.datasetToColumns()
+                unc_group.removeDataset(ds.id) # remove dataset
+                
+            if "_IRRADIANCE_" in name:
+                # Class-based irradiance coefficient are unique for Es
+                new_ES_name = ''.join(["ES", name.split("IRRADIANCE")[-1]])
+                new_ES_ds = unc_group.addDataset(new_ES_name)
+                new_ES_ds.copy(ds)
+                new_ES_ds.datasetToColumns()
+                unc_group.removeDataset(ds.id) # remove dataset
+                
+            if "_RADCAL_" in name:
+                # RADCAL are always sensor specific
+                for sensor in sensorID:
+                    if sensor in ds.id:
+                        new_ds_name = ''.join([sensorID[sensor], ds.id.split(sensor)[-1]])
+                        new_ds = unc_group.addDataset(new_ds_name)
+                        new_ds.copy(ds)
+                        new_ds.datasetToColumns()
+                        unc_group.removeDataset(ds.id)  # remove dataset
+        
+        return True
+    
+    
+    @staticmethod
+    def RenameUncertainties_FullChar(node):
+        """
+        Rename unc dataset from specific sensor id to sensor type
         """
         unc_group = node.getGroup("RAW_UNCERTAINTIES")
         sensorID = Utilities.get_sensor_dict(node) # should result in OD{[Instr#:ES, Instr#:LI, Instr#:LT]}
@@ -2133,9 +2178,7 @@ class Utilities:
             ds = unc_group.getDataset(name)
             for sensor in sensorID:
                 if sensor in ds.id:
-                    # new_ds_name = '_'.join([sensorID[sensor], ds.id.split('_')[-1]])
                     new_ds_name = ''.join([sensorID[sensor], ds.id.split(sensor)[-1]])
-                    # ds.id = new_ds_name
                     new_ds = unc_group.addDataset(new_ds_name)
                     new_ds.copy(ds)
                     new_ds.datasetToColumns()
@@ -2144,88 +2187,32 @@ class Utilities:
 
 
     @staticmethod
-    def interpUncertainties_DefaultChar(node):
-
-        def moveAve(arr, window_size):
-            """Simple Moving Average Method, returns smoothed array with same length as the original"""
-            i = 0
-            moving_averages = []
-            while i < len(arr) - window_size + 1:
-                window = arr[i: i + window_size]
-                window_average = sum(window)/window_size
-                moving_averages.append(window_average)
-                i += 1
-            quickfix = [0]*(window_size - 1)  # adds empty values to end to ensure array length does not change
-            return moving_averages + quickfix
+    def interpUncertainties_Class(node):
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
-        sensorId = Utilities.get_sensor_dict(node)
         sensorList = ['ES', 'LI', 'LT']
         for sensor in sensorList:
 
             ds = grp.getDataset(sensor+"_RADCAL_CAL")
             ds.datasetToColumns()
-            # indx = ds.attributes["INDEX"]
-            # pixel = np.array(ds.columns['0'][1:])
             bands = np.array(ds.columns['1'][1:])
-            coeff = np.array(ds.columns['2'][1:])
             valid = bands>0
-            # x_new2 = bands[valid]
 
             ## retrieve dataset from corresponding instrument
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios":
-                # inv_dict = {v: k for k, v in sensorId.items()}
-                # data = node.getGroup('SAM_'+inv_dict[sensor]+'.dat').getDataset(sensor)
                 data = node.getGroup(sensor).getDataset(sensor)
 
             # Retrieve hyper-spectral wavelengths from dataset
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
 
-            # intersect, ind1, valid = np.intersect1d(x_new, bands, return_indices=True)
             if len(bands[valid]) != len(x_new):
                 print("ERROR: band wavelentgh not found in calibration file")
                 print(len(bands[valid]))
                 print(len(x_new))
                 exit()
-
-            ## POLARISATION/STABILITY/LINEARITY: Interpolate data to hyper-spectral pixels
-            for data_type in ["_POLDATA_CAL","_NLDATA_CAL","_STABDATA_CAL"]:
-                ds = grp.getDataset(sensor+data_type)
-                ds.datasetToColumns()
-                x = ds.columns['0']
-                y = ds.columns['1']
-                y_new = np.interp(x_new, x, y)
-                ds.columns['0'] = x_new
-                ds.columns['1'] = y_new
-                ds.columnsToDataset()
-
-            ## STRAYLIGHT: Smooth data with 5 point moving average
-            stray = grp.getDataset(sensor+'_STRAYDATA_CAL')
-            stray.datasetToColumns()
-            data_smooth = np.array(moveAve(stray.columns['1'], 5))
-            stray.columns['0'] = x_new
-            stray.columns['1'] = data_smooth[valid]
-            stray.columnsToDataset()
-
-            ## THERMAL/STRAYLIGHT
-            for data_type in ["_TEMPDATA_CAL", "_STRAYDATA_CAL"]:
-                ds = grp.getDataset(sensor+data_type)
-                ds.datasetToColumns()
-                for indx in range(1,len(ds.columns)):
-                    indx_name = str(indx)
-                    if indx_name != '':
-                        y = np.array(ds.columns[indx_name])
-                        if len(y)==255:
-                            ds.columns[indx_name] = y[valid]
-                        elif len(y)==256:
-                            # drop 1st line from TARTU file
-                            ds.columns[indx_name] = y[1:][valid]
-
-                ds.columns['0'] = x_new
-                ds.columnsToDataset()
-
+                
             for data_type in ["_RADCAL_CAL"]:
                 ds = grp.getDataset(sensor+data_type)
                 ds.datasetToColumns()
@@ -2238,9 +2225,33 @@ class Utilities:
                         elif len(y)==256:
                             # drop 1st line from TARTU file
                             ds.columns[indx_name] = y[1:][valid]
-
-                # ds.columns['0'] = x_new
-                ds.columnsToDataset()
+                ds.columnsToDataset()            
+            
+            ## Interpolate data to hyper-spectral pixels
+            if sensor != "ES":
+                for data_type in ["_POLDATA_CAL","_TEMPDATA_CAL"]:
+                    ds = grp.getDataset(sensor+data_type)
+                    ds.datasetToColumns()
+                    x = ds.columns['1']
+                    for indx in range(2,len(ds.columns)):
+                        y = ds.columns[str(indx)]
+                        y_new = np.interp(x_new, x, y)
+                        ds.columns[str(indx)] = y_new
+                    ds.columns['0'] = np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
+                    ds.columns['1'] = x_new                    
+                    ds.columnsToDataset()
+            else:
+                for data_type in ["_TEMPDATA_CAL","_ANGDATA_COSERROR", "_ANGDATA_COSERROR_AZ90", "_ANGDATA_UNCERTAINTY", "_ANGDATA_UNCERTAINTY_AZ90"]:
+                    ds = grp.getDataset(sensor+data_type)
+                    ds.datasetToColumns()
+                    x = ds.columns['1']
+                    for indx in range(2,len(ds.columns)):
+                        y = ds.columns[str(indx)]
+                        y_new = np.interp(x_new, x, y)
+                        ds.columns[str(indx)] = y_new
+                    ds.columns['0'] = np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
+                    ds.columns['1'] = x_new
+                    ds.columnsToDataset()
 
             ## RADCAL_LAMP/: Interpolate data to hyper-spectral pixels
             for data_type in ["_RADCAL_LAMP"]:
@@ -2273,8 +2284,8 @@ class Utilities:
     @staticmethod
     def interpUncertainties_FullChar(node):
         """
-        Temporary function, might be unnecessary at the end, if all full char input comes already with a wavelength columns
-        For the moment just needed to interpolate Linearity and Stab coefficient, because they are still "default" ones
+        For full char, all input comes already with a wavelength columns, 
+        except RADCAL LAMP ad PANEL, that need to be interpolated on wvl.        
         """
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
@@ -2308,19 +2319,7 @@ class Utilities:
                 print(len(x_new))
                 exit()
 
-            ## POLARISATION/STABILITY/LINEARITY: Interpolate data to hyper-spectral pixels
-            for data_type in ["_NLDATA_CAL","_STABDATA_CAL"]:
-                ds = grp.getDataset(sensor+data_type)
-                ds.datasetToColumns()
-                # indx = ds.attributes["INDEX"]
-                x = ds.columns['0']
-                y = ds.columns['1']
-                y_new = np.interp(x_new, x, y)
-                ds.columns['0'] = x_new
-                ds.columns['1'] = y_new
-                ds.columnsToDataset()
-
-            ## RADCAL_LAMP/: Interpolate data to hyper-spectral pixels
+            ## RADCAL_LAMP: Interpolate data to hyper-spectral pixels
             for data_type in ["_RADCAL_LAMP"]:
                 ds = grp.getDataset(sensor+data_type)
                 ds.datasetToColumns()
@@ -2332,7 +2331,7 @@ class Utilities:
                 ds.columns['0'] = x_new
                 ds.columnsToDataset()
 
-            ## RADCAL_PANEL: only for Li & Lt
+            ## RADCAL_PANEL: interplation only for Li & Lt
             if sensor != "ES":
                 for data_type in ["_RADCAL_PANEL"]:
                     ds = grp.getDataset(sensor+data_type)

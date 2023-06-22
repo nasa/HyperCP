@@ -5,7 +5,7 @@ import calendar
 import numpy as np
 from inspect import currentframe, getframeinfo
 import glob
-
+from datetime import datetime
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 from Source.ProcessL1b_ClassCal import ProcessL1b_ClassCal
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
@@ -16,47 +16,81 @@ from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
+# from FidradDB_api import FidradDB_api
 
 class ProcessL1b:
     '''L1B mainly for SeaBird with some shared methods'''
 
+
+
     @staticmethod
-    def read_unc_coefficient(root, inpath):
+    def read_unc_coefficient_class(root, inpath):
         ''' SeaBird or TriOS'''
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
-        ### Read uncertainty parameters from full calibration from TARTU
-        for f in glob.glob(os.path.join(inpath, r'pol/*')):
+        # Read uncertainty parameters from class-based calibration
+        for f in glob.glob(os.path.join(inpath, r'*class_POLAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'radcal/*')):
+        for f in glob.glob(os.path.join(inpath, r'*class_STRAY*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'thermal/*')):
+        for f in glob.glob(os.path.join(inpath, r'*class_ANGULAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'straylight/*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'stability/*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'linearity/*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'angular/*')):
+        for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
 
-        ### unc dataset renaming
-        Utilities.RenameUncertainties(root)
+        # # RADCAL need to be sensor specific, even in Class-based processing
+        # for f in glob.glob(os.path.join(inpath, r'RADCAL/*')):
+        #     Utilities.read_char(f, gp)
 
-        ### interpolate unc to full wavelength range, depending on class based or full char
-        if ConfigFile.settings['bL1bCal'] == 2:
-            Utilities.interpUncertainties_DefaultChar(root)
+        # unc dataset renaming
+        Utilities.RenameUncertainties_Class(root)
 
-        elif ConfigFile.settings['bL1bCal'] == 3:
-            Utilities.interpUncertainties_FullChar(root)
+        # interpolate unc to full wavelength range, depending on class based or full char
+        Utilities.interpUncertainties_Class(root)
 
-        ### generate temperature coefficient
+        # # generate temperature coefficient
+        # Utilities.UncTempCorrection(root)
+
+        return root
+
+
+    @staticmethod
+    def read_unc_coefficient_frm(root, inpath):
+        ''' SeaBird or TriOS'''
+        # Read Uncertainties_new_char from provided files
+        gp = root.addGroup("RAW_UNCERTAINTIES")
+        gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
+
+        # Read uncertainty parameters from full calibration from TARTU
+        for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*RADCAL*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*STRAY*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*ANGULAR*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*THERMAL*')):
+            Utilities.read_char(f, gp)
+
+        if len(gp.datasets) < 23:
+            print(f'Too few characterization files found: {len(gp.datasets)} of 23')
+            return None
+
+        # unc dataset renaming
+        Utilities.RenameUncertainties_FullChar(root)
+
+        # interpolate LAMP and PANEL to full wavelength range
+        Utilities.interpUncertainties_FullChar(root)
+
+        # generate temperature coefficient
         Utilities.UncTempCorrection(root)
 
         return root
+
+
 
     @staticmethod
     def includeModelDefaults(ancGroup, modRoot):
@@ -152,6 +186,8 @@ class ProcessL1b:
                     idx = Utilities.find_nearest(modSeconds,ancSec)
                     wind[i] = modRoot.groups[0].datasets['Wind'][idx]
                     windFlag[i] = 'model'
+                    if i==0:
+                        ancGroup.attributes['Model Wind units'] = modRoot.groups[0].attributes['Wind units']
                 if np.isnan(aod[i]):
                     # msg = 'Replacing AOD with model data'
                     # print(msg)
@@ -159,6 +195,9 @@ class ProcessL1b:
                     idx = Utilities.find_nearest(modSeconds,ancSec)
                     aod[i] = modRoot.groups[0].datasets['AOD'][idx]
                     aodFlag[i] = 'model'
+                    if i==0:
+                        # aodDataset.attributes['Model AOD wavelength'] = modRoot.groups[0].attributes['AOD wavelength']
+                        ancGroup.attributes['Model AOD wavelength'] = modRoot.groups[0].attributes['AOD wavelength']
 
         # Replace Wind, AOD, SST, and Sal with defaults where still nan
         msg = 'Filling in ancillary data with default values where still needed.'
@@ -475,20 +514,49 @@ class ProcessL1b:
         # Add characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 2:
             # inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
-            inpath = os.path.join(MainConfig.settings['MainDir'], 'Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
+            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
             print('Class based dir:', inpath)
-
             '''
-            BUG: This currently will not work for SeaBird, and even with TriOS, it uses only characterization files that correspond 1:1 with specific instrument,
-            meaning it does not appear to be class-based at all.
+            BUG: This currently will not work for both SeaBird & TriOS, it still need a sensor-specific RADCAL file
             '''
-
-            node = ProcessL1b.read_unc_coefficient(node, inpath)
+            node = ProcessL1b.read_unc_coefficient_class(node, inpath)
 
         elif ConfigFile.settings['bL1bCal'] == 3:
-            inpath = ConfigFile.settings['FullCalDir']
-            print('Full Char dir:', inpath)
-            node = ProcessL1b.read_unc_coefficient(node, inpath)
+
+            if ConfigFile.settings['FidRadDB'] == 0:
+                inpath = ConfigFile.settings['FullCalDir']
+                print('Full Char dir:', inpath)
+
+            # elif ConfigFile.settings['FidRadDB'] == 1:
+            #     sensorID = Utilities.get_sensor_dict(node)
+            #     acq_datetime = datetime.strptime(node.attributes["TIME-STAMP"], "%a %b %d %H:%M:%S %Y")
+            #     acq_time = acq_datetime.strftime('%Y%m%d%H%M%S')
+            #     inpath = os.path.join('Data', 'FidRadDB_characterization', "SeaBird", acq_time)
+            #     print('FidRadDB Char dir:', inpath)
+
+            #     # FidRad DB connection and download of calibration files by api
+            #     types = ['STRAY','RADCAL','POLAR','THERMAL','ANGULAR']
+            #     for sensor in sensorID:
+            #         for sens_type in types:
+            #             try:
+            #                 FidradDB_api(sensor+'_'+sens_type, acq_time, inpath)
+            #             except: None
+
+            #     # Check the number of cal files
+            #     cal_count = 0
+            #     for root_dir, cur_dir, files in os.walk(inpath):
+            #         cal_count += len(files)
+            #     if cal_count !=12:
+            #         print("The number of calibration files doesn't match with the required number (12).")
+            #         print("Aborting")
+            #         exit()
+
+            node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
+            if node is None:
+                msg = 'Error loading FRM characterization files. Check directory.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
 
 
         # Dark Correction
@@ -509,7 +577,11 @@ class ProcessL1b:
             return None
 
         # Interpolate only the Ancillary group, and then fold in model data
-        '''Need to test without an anc file and with SolarTracker geometries'''
+        '''
+            This is run ahead of the other groups for all processing pathways. Anc group
+            exists regardless of Ancillary file being provided
+            NOTE: Need to test without an anc file and with SolarTracker geometries
+        '''
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
             msg = 'Error interpolating ancillary data'
             print(msg)
@@ -534,8 +606,6 @@ class ProcessL1b:
             modRoot = None
 
         if modRoot is not None:
-            # return None
-
             # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
             # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
             # to have model data and/or default values incorporated.
@@ -551,7 +621,8 @@ class ProcessL1b:
 
         # Calibration
         # Depending on the Configuration, process either the factory
-        # calibration or the complete instrument characterizations
+        # calibration, class-based characterization, or the complete
+        # instrument characterizations
         if ConfigFile.settings['bL1bCal'] == 1:
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join("Config", calFolder)
@@ -562,9 +633,8 @@ class ProcessL1b:
         elif ConfigFile.settings['bL1bCal'] == 2:
             print('Placeholder for Class-based')
             '''
-            BUG: Class-based not ready for SeaBird
+            BUG: Class-based not ready. Needs RadCal uncertainty files as with FRMCal
             '''
-
             if not ProcessL1b_ClassCal.processL1b_SeaBird(node):
                 msg = 'Error in ProcessL1b.process_FRM_calibration'
                 print(msg)

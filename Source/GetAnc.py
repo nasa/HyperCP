@@ -1,8 +1,8 @@
 
 import os
 import stat
-import urllib.request as ur
-import requests
+# import urllib.request as ur
+# import requests
 import platform
 import numpy as np
 from PyQt5 import QtWidgets
@@ -142,6 +142,7 @@ class GetAnc:
                     newds = gmaoGroup.addDataset(name)
                     newds.columns["None"] = ds.data[:].tolist()
                     newds.columnsToDataset()
+                    newds.attributes['units'] = ds.attributes['units']
 
                 # extract and return ancillary data from netcdf4 files....
                 ancLat = np.array(gmaoGroup.getDataset("lat").data.tolist())
@@ -166,6 +167,8 @@ class GetAnc:
                     newds = aerGroup.addDataset(name)
                     newds.columns["None"] = ds.data[:].tolist()
                     newds.columnsToDataset()
+                    newds.attributes['units'] = ds.attributes['units']
+
 
                 # extract and return ancillary data from netcdf4 files....
                 ancLatAer = np.array(aerGroup.getDataset("lat").data.tolist())
@@ -173,6 +176,7 @@ class GetAnc:
 
                 # Total Aerosol Extinction AOT 550 nm, same as AOD(550)
                 ancTExt = aerGroup.getDataset("TOTEXTTAU")
+                ancTExt.attributes['wavelength'] = '550 nm'
 
             oldFile = file1
 
@@ -198,10 +202,14 @@ class GetAnc:
         modGroup.addDataset('Timetag2')
         modGroup.addDataset('AOD')
         modGroup.addDataset('Wind')
+        '''NOTE: This is an unconventional use of Dataset, i.e., overides object with .data and .column.
+            Keeping for continuity of application'''
         modGroup.datasets['Datetag'] = latDate
         modGroup.datasets['Timetag2'] = latTime
         modGroup.datasets['AOD'] = modAOD
         modGroup.datasets['Wind'] = modWind
+        modGroup.attributes['Wind units'] = ancUwind.attributes['units']
+        modGroup.attributes['AOD wavelength'] = ancTExt.attributes['wavelength']
         print('GetAnc: Model data retrieved')
 
         return modData

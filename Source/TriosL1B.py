@@ -13,6 +13,7 @@ from Source.Utilities import Utilities
 from Source.Uncertainty_Analysis import Propagate
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
+# from FidradDB_api import FidradDB_api
 
 class TriosL1B:
 
@@ -265,23 +266,55 @@ class TriosL1B:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
-        # Add characterization files if needed (RAW_UNCERTAINTIES)
+        # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 2:
-            # inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
-            inpath = os.path.join(MainConfig.settings['MainDir'], 'Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
+            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
             print('Class based dir:', inpath)
-
             '''
-            BUG: This currently will not work for SeaBird, and even with TriOS, it uses only characterization files that correspond 1:1 with specific instrument,
-            meaning it does not appear to be class-based at all.
+            BUG: This currently will not work for both SeaBird & TriOS, it still need a sensor-specific RADCAL file
             '''
+            node = ProcessL1b.read_unc_coefficient_class(node, inpath)
 
-            node = ProcessL1b.read_unc_coefficient(node, inpath)
-
+        # Or add Full characterization files (RAW_UNCERTAINTIES)
         elif ConfigFile.settings['bL1bCal'] == 3:
-            inpath = ConfigFile.settings['FullCalDir']
-            print('Full Char dir:', inpath)
-            node = ProcessL1b.read_unc_coefficient(node, inpath)
+
+            if ConfigFile.settings['FidRadDB'] == 0:
+                inpath = ConfigFile.settings['FullCalDir']
+                print('Full Char dir:', inpath)
+
+            # elif ConfigFile.settings['FidRadDB'] == 1:
+            #     sensorID = Utilities.get_sensor_dict(node)
+            #     acq_time = node.attributes["TIME-STAMP"].replace('_','')
+            #     inpath = os.path.join('Data', 'FidRadDB_characterization', "TriOS", acq_time)
+            #     print('FidRadDB Char dir:', inpath)
+
+            #     # FidRad DB connection and download of calibration files by api
+            #     types = ['STRAY','RADCAL','POLAR','THERMAL','ANGULAR']
+            #     for sensor in sensorID:
+            #         for sens_type in types:
+            #             try:
+            #                 FidradDB_api(sensor+'_'+sens_type, acq_time, inpath)
+            #             except: None
+
+            #     # Check the number of cal files
+            #     cal_count = 0
+            #     for root_dir, cur_dir, files in os.walk(inpath):
+            #         cal_count += len(files)
+            #     if cal_count !=12:
+            #         print("The number of calibration files doesn't match with the required number (12).")
+            #         print("Aborting")
+            #         exit()
+
+            node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
+            if node is None:
+                msg = 'Error loading FRM characterization files. Check directory.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
+
+
+
+
 
 
         # Interpolate only the Ancillary group, and then fold in model data

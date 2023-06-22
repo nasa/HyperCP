@@ -214,7 +214,8 @@ class ProcessL1b_Interp:
             Utilities.writeLogFile(msg)
             interpData = ltData
 
-        # latData, lonData need to correspond to interData
+        # latData, lonData need to correspond to interpData.
+        # Preferentially from GPS, else from Anc file (above)
         if not ProcessL1b_Interp.interpolateData(latData, interpData, "LATITUDE", fileName):
             return None
         if not ProcessL1b_Interp.interpolateData(lonData, interpData, "LONGITUDE", fileName):
@@ -232,6 +233,7 @@ class ProcessL1b_Interp:
             print(msg)
             Utilities.writeLogFile(msg)
             return None
+        # Solar geometries are not interpolated, but re-calculated, so need latData, lonData
         if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['SOLAR_AZ'], interpData, "SOLAR_AZ", fileName, latData, lonData):
             msg = "Error: SOLAR_AZ missing from Ancillary data, and no Tracker group"
             print(msg)
@@ -854,6 +856,8 @@ class ProcessL1b_Interp:
 
 
         if satnavGroup is not None:
+            # Because of the fact that geometries have already been flipped into Ancillary and
+            # interpolated prior to applying cal/corrections, some of this is redundant
             # Required:
             if not ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName):
                 return None
