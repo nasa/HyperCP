@@ -274,28 +274,18 @@ Individual spectra may be filtered out for:
 
 - **Meteorological flags**: based on **(Ruddick et al. 2006, Mobley, 1999, Wernand et al. 2002, Garaba et al. 2012, 
     Vandenberg 2017)** can be optionally applied to screen for undesirable data. Specifically, data are filtered for:
-    - **Cloud cover**:  Unusually high sky radiance to donwelling irradiance ratio. Default: 
-
-        ```math
-        \frac{L_{i}(750)}{E_{s}(750)} \geq 1.0$
-        ```
-
-    - **Too hazy atmosphere**: Unusually low Es at 480 nm**. Default:
-
-        ```math
-        E_{s}(480)[uW.cm^{-2}.nm^{-1}] < 2.0 
-        ```
-
-    - **Proximity to dawn/dusk**: Unusually low ratio of downwelling irradiance at 470 and 680. Default:
-        ```math
-        E_{s}(470)/E_{s}(680) < 1.0
-        ```
-    - Acquisition with high relative humidity or rain: unusually low ratio of downwelling irradiances at 720 and 370 nm.
-    Default: 
     
-        ```math
-        E_{s}(720)/E_{s}(370) < 1.095
-        ```
+    - **Cloud cover**:  Unusually high sky radiance to donwelling irradiance ratio.
+        Default: $\frac{L_{i}(750)}{E_{s}(750)} \geq 1.0$
+    
+    - **Too hazy atmosphere**: Unusually low Es at 480 nm.
+        Default: $E_{s}(480)[uW.cm^{-2}.nm^{-1}] < 2.0$
+    
+    - **Proximity to dawn/dusk**: Unusually low ratio of downwelling irradiance at 470 and 680 nm.
+        Default: $E_{s}(470)/E_{s}(680) < 1.0$
+    
+    - Acquisition with high relative humidity or rain: unusually low ratio of downwelling irradiances at 720 and 370 nm.
+        Default: $E_{s}(720)/E_{s}(370) < 1.095$
     
     - Note: Cloud screening ($L_{i}(750)/E_{s}(750) \geq 0.05$) is optional and not well parameterized. Clear skies are 
     approximately 0.02 (Mobley 1999) and fully overcast are of order 0.3 (Ruddick et al. 2006). However, the Ruddick 
@@ -306,7 +296,6 @@ Individual spectra may be filtered out for:
     - Note: Please also refer to 
     [this](https://frm4soc2.eumetsat.int/sites/default/files/inline-files/FRM4SOC-2_D-06_MeasurementProcedure_v3.1_24032023_RBINS_EUMETSAT_signed.pdf)
     document to see recommended QC screening in the frame of [FRM4SOC-2](https://frm4soc2.eumetsat.int/).
-
 
 
 ## L2 Processing
@@ -392,7 +381,7 @@ Uncertainty in Rrs (i.e. Rrs_unc) and nLw are estimated using sum of squares pro
 and Rho_sky_Delta assuming random, uncorrelated error. So, e.g.: 
 
 ```math
-Rrs_{unc} = Rrs *  \sqrt{(\frac{L_{i,sd}}{L_{i}})^2 + (\frac{\rho_{sky}}{\rho_{sky}})^2 + (\frac{L_{t,sd}}{L_{t}})^2 + (\frac{E_{s,sd}}{E_{s}})^2}
+Rrs_{unc} = Rrs *  \sqrt{\(\frac{L_{i,sd}}{L_{i}}\)^2 + \(\frac{\rho_{sky}}{\rho_{sky}}\)^2 + \(\frac{L_{t,sd}}{L_{t}}\)^2 + \(\frac{E_{s,sd}}{E_{s}}\)^2}
 ```
 
 To know more in detail how HyperCP deals with these uncertainties, please read 

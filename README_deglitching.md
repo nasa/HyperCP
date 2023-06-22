@@ -6,7 +6,7 @@ deglitching.
 
 The Anomaly Analysis (deglitching) window looks like this:
 
-<center><img src="Data/Img/Deglitching_window.png" alt="banner"></center>
+<center><img src="Data/Img/Deglitching_window.JPG" alt="banner"></center>
 
 Deglitching is highly sensitive to the parameters described below, as well as some environmental conditions not 
 otherwise controlled for in L1AQC processing and the overall variability of the radiometric data itself. Therefore, a 

@@ -138,7 +138,7 @@ to start using HyperCP!
 ### Quick Start Overview
 
 1. Identify the research cruise, relevant calibration files, and ancillary data files to be used in processing.
-2. Launch HyperCP and set up the [Main Window](README.md/#set-up-main-window) for data directories and the ancillary file
+2. Launch HyperCP and set up the Main Window for data directories and the ancillary file
 3. Create a new Configuration (or edit an existing Configuration)
 4. Add and enable only *relevant* calibration and instrument files to the Configuration; there is no such thing as a standard instrument package
 5. Choose appropriate processing parameters for L1A-L2 (do not depend on software defaults; there is no such thing as a standard data collection)
@@ -258,8 +258,6 @@ on to the next raw file. However, it  will only continue with a given file if th
 (within 1 minute) prior. *In other words, if -- due to changes in QA/QC parameterization -- a file is entirely discarded 
 at a given level, but an old file of the same name still exists in that directory, it will be ignored, and processing 
 for that file will be terminated for higher levels.
-
-For you to familiarise with the processing steps run by HyperCP, please read [this](README_processing.md).
 
 ### Processing workflow overview
 
