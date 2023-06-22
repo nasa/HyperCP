@@ -3,6 +3,7 @@ import os
 import sys
 import csv
 import numpy as np
+import types
 from datetime import datetime
 import pytz
 
@@ -61,6 +62,11 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         # Set up the User Interface
         self.initUI()
+
+    def paint(self, p, *args):
+        p.setPen(pg.mkPen(0, 0, 0, 100))
+        p.setBrush(pg.mkBrush(255, 255, 255, 50))
+        p.viewRect()
 
     def initUI(self):
 
@@ -225,6 +231,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         # Set up realtime plot widgets
         self.plotWidgetDark = pg.PlotWidget(self)
+        self.plotWidgetDark.addLegend()
         self.plotWidgetLight = pg.PlotWidget(self)
 
         guideLabel = QtWidgets.QLabel(\
@@ -236,27 +243,19 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Opening plot
         x=[0,0]
         y=[0,0]
-        self.phDark = self.plotWidgetDark.plot(x,y, symbolPen='b',\
-                 symbol='o', name='time series', pen=None)
-        self.phTimeAveDark = self.plotWidgetDark.plot(x,y, pen='g', name='running')
-        self.ph1stDark = self.plotWidgetDark.plot(x,y, symbolPen='r',\
-                 symbol='x', name='1st pass', pen=None)
-        self.ph2ndDark = self.plotWidgetDark.plot(x,y, symbolPen='r',\
-                 symbol='+', name='2nd pass', pen=None)
-        self.ph3rdDark = self.plotWidgetDark.plot(x,y, symbolPen='r',\
-                 symbol='o', name='2nd pass', pen=None)
+        self.phDark = self.plotWidgetDark.plot(x,y, name='Time series', pen='k')
+        self.phTimeAveDark = self.plotWidgetDark.plot(x,y, name='Moving-window mean', pen='g')
+        self.ph1stDark = self.plotWidgetDark.plot(x,y, symbolPen='r',symbol='x', name='Low-pass filter (1)', pen=None)
+        self.ph2ndDark = self.plotWidgetDark.plot(x,y, symbolPen='m',symbol='+', name='Low-pass filter (2)', pen=None)
+        self.ph3rdDark = self.plotWidgetDark.plot(x,y, symbolPen='c',symbol='o', symbolBrush=None, name='Threshold exceeded', pen=None)
         # Add datetime object to x axis
         # self.plotWidgetDark.setAxisItems({'bottom': date_axis_Dark})
 
-        self.phLight = self.plotWidgetLight.plot(x,y, symbolPen='b',\
-                 symbol='o', name='time series', pen=None)
-        self.phTimeAveLight = self.plotWidgetLight.plot(x,y, pen='g', name='running')
-        self.ph1stLight = self.plotWidgetLight.plot(x,y, symbolPen='r',\
-                 symbol='x', name='1st pass', pen=None)
-        self.ph2ndLight = self.plotWidgetLight.plot(x,y, symbolPen='r',\
-                 symbol='+', name='2nd pass', pen=None)
-        self.ph3rdLight = self.plotWidgetLight.plot(x,y, symbolPen='r',\
-                 symbol='o', name='2nd pass', pen=None)
+        self.phLight = self.plotWidgetLight.plot(x,y, name='Time series', pen='k')
+        self.phTimeAveLight = self.plotWidgetLight.plot(x,y, name='Moving-window mean', pen='g')
+        self.ph1stLight = self.plotWidgetLight.plot(x,y, symbolPen='r',symbol='x', name='Low-pass filter (1)', pen=None)
+        self.ph2ndLight = self.plotWidgetLight.plot(x,y, symbolPen='m',symbol='+', name='Low-pass filter (2)', pen=None)
+        self.ph3rdLight = self.plotWidgetLight.plot(x,y, symbolPen='c',symbol='o', symbolBrush=None, name='Threshold exceeded', pen=None)
         # Add datetime object to x axis
         # self.plotWidgetLight.setAxisItems({'bottom': date_axis_Light})
 
@@ -1097,11 +1096,13 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 radUnits = self.root.attributes['LI_UNITS']
 
             text_ylabel=f'[DARKS]  {sensorType}({self.waveBand:.0f}) [{radUnits}]'
+            text_xlabel='Timestamp'
             figTitle = f'Band: {self.waveBand} Window: {window} Sigma: {sigma}'
             # self.plotWidgetDark.setWindowTitle(figTitle)
             print(f'{figTitle} Dark')
             # self.plotWidgetDark.setWindowTitle(figTitle, **styles)
             self.plotWidgetDark.setLabel('left', text_ylabel,**styles)
+            self.plotWidgetDark.setLabel('bottom', text_xlabel,**styles)
             # self.plotWidgetDark.setLabel('bottom', text_xlabel,**styles)
             self.plotWidgetDark.showGrid(x=True, y=True)
             # ''' legend not working '''
@@ -1124,11 +1125,12 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 radUnits = self.root.attributes['LI_UNITS']
 
             text_ylabel=f'[LIGHTS]  {sensorType}({self.waveBand:.0f}) [{radUnits}]'
+            text_xlabel='Timestamp'
             figTitle = f'Band: {self.waveBand} Window: {window} Sigma: {sigma}'
             print(f'{figTitle} Dark')
             # self.plotWidgetLight.setWindowTitle(figTitle, **styles)
             self.plotWidgetLight.setLabel('left', text_ylabel, **styles)
-            # self.plotWidgetLight.setLabel('bottom', text_xlabel, **styles)
+            self.plotWidgetLight.setLabel('bottom', text_xlabel,**styles)
             self.plotWidgetLight.showGrid(x=True, y=True)
             # self.plotWidgetLight.addLegend()
 
@@ -1153,16 +1155,12 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         #Plot results
         try:
-            ph.setData(x, radiometry1D, symbolPen='k', symbolBrush='w', \
-                symbol='o', name=sensorType, pen=None)
-            phAve.setData(x[3:-3], avg[3:-3], name='rMean', \
-                pen=pg.mkPen('g', width=3))
-            ph1st.setData(x_anomaly, y_anomaly, symbolPen=pg.mkPen('r', width=3),\
-                symbol='x', name='1st pass')
-            ph2nd.setData(x_anomaly2, y_anomaly2, symbolPen='r',\
-                symbol='+', name='2nd pass')
-            ph3rd.setData(x_anomaly3, y_anomaly3, symbolPen='r',\
-                symbol='o', name='thresholds')
+            ph.setData(x, radiometry1D, name=sensorType, pen=pg.mkPen('k', width=1))
+            phAve.setData(x[3:-3], avg[3:-3], name='Moving-window mean', pen=pg.mkPen('g', width=3))
+            ph1st.setData(x_anomaly , y_anomaly , symbolPen='r',symbol='x', name='Low-pass filter (1)')
+            ph2nd.setData(x_anomaly2, y_anomaly2, symbolPen='m',symbol='+', name='Low-pass filter (2)')
+            ph3rd.setData(x_anomaly3, y_anomaly3, symbolPen='c',symbol='o', symbolBrush=None, name='Threshold exceeded')
+
 
         except:
             e = sys.exc_info()[0]
