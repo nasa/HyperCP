@@ -15,6 +15,7 @@ from Source.RhoCorrections import RhoCorrections
 from Source.Weight_RSR import Weight_RSR
 from Source.ProcessL2OCproducts import ProcessL2OCproducts
 from Source.ProcessL2BRDF import ProcessL2BRDF
+from Source.ProcessInstrumentUncertainties import Trios, HyperOCR
 
 
 class ProcessL2:
@@ -227,7 +228,8 @@ class ProcessL2:
 
 
     @staticmethod
-    def spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset):
+    def spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset, xDelta,
+                            isHyperSpec=True):
         ''' The slices, stds, F0, rhoVec here are sensor-waveband specific '''
         esXSlice = xSlice['es']
         esXmedian = xSlice['esMedian']
@@ -245,7 +247,7 @@ class ProcessL2:
         threeCRho = int(ConfigFile.settings["bL23CRho"])
         ZhangRho = int(ConfigFile.settings["bL2ZhangRho"])
 
-       # Root (new/output) groups:
+        # Root (new/output) groups:
         newReflectanceGroup = node.getGroup("REFLECTANCE")
         newRadianceGroup = node.getGroup("RADIANCE")
         newIrradianceGroup = node.getGroup("IRRADIANCE")
@@ -1051,7 +1053,6 @@ class ProcessL2:
     def sliceAveHyper(y, hyperSlice):
         ''' Take the slice mean of the lowest X% of hyperspectral slices '''
         xSlice = collections.OrderedDict()
-        xStd = collections.OrderedDict()
         xMedian = collections.OrderedDict()
         hasNan = False
         # Ignore runtime warnings when array is all NaNs
@@ -1061,13 +1062,11 @@ class ProcessL2:
                 v = [hyperSlice[k][i] for i in y] # selects the lowest 5% within the interval window...
                 mean = np.nanmean(v) # ... and averages them
                 median = np.nanmedian(v) # ... and the median spectrum
-                std = np.nanstd(v) # ... and the stdev for uncertainty estimates
                 xSlice[k] = [mean]
                 xMedian[k] = [median]
-                xStd[k] = [std]
                 if np.isnan(mean):
                     hasNan = True
-        return hasNan, xSlice, xMedian, xStd
+        return hasNan, xSlice, xMedian
 
 
     @staticmethod
@@ -1156,6 +1155,10 @@ class ProcessL2:
         ltSlice = ProcessL2.columnToSlice(ltColumns,start, end)
         n = len(list(ltSlice.values())[0])
 
+        esRawGroup = node.getGroup("ES_RAW")
+        liRawGroup = node.getGroup("LI_RAW")
+        ltRawGroup = node.getGroup("LT_RAW")
+
         rhoDefault = float(ConfigFile.settings["fL2RhoSky"])
         threeCRho = int(ConfigFile.settings["bL23CRho"])
         ZhangRho = int(ConfigFile.settings["bL2ZhangRho"])
@@ -1175,37 +1178,61 @@ class ProcessL2:
         ltSlice.pop("Timetag2")
         ltSlice.pop("Datetime")
 
+        # once datetag is popped then process StdSlices for Band Convolution
+        stats = Instrument_Unc.generateSensorStats(dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup))
+        esStdSlice = {k: [stats['ES']['std_Signal'][k][0]*esSlice[k][0]] for k in esSlice}
+        liStdSlice = {k: [stats['LI']['std_Signal'][k][0]*liSlice[k][0]] for k in liSlice}
+        ltStdSlice = {k: [stats['LT']['std_Signal'][k][0]*ltSlice[k][0]] for k in ltSlice}
+
         #Convolve es/li/lt slices to satellite bands using RSRs
         if ConfigFile.settings['bL2WeightMODISA']:
             print("Convolving MODIS Aqua (ir)radiances in the slice")
-            esSliceMODISA = Weight_RSR.processMODISBands(esSlice, sensor='A') # dictionary
+            esSliceMODISA = Weight_RSR.processMODISBands(esSlice, sensor='A')
             liSliceMODISA = Weight_RSR.processMODISBands(liSlice, sensor='A')
             ltSliceMODISA = Weight_RSR.processMODISBands(ltSlice, sensor='A')
+            esXstdMODISA = Weight_RSR.processMODISBands(esStdSlice, sensor='A')
+            liXstdMODISA = Weight_RSR.processMODISBands(liStdSlice, sensor='A')
+            ltXstdMODISA = Weight_RSR.processMODISBands(ltStdSlice, sensor='A')
         if ConfigFile.settings['bL2WeightMODIST']:
             print("Convolving MODIS Terra (ir)radiances in the slice")
             esSliceMODIST = Weight_RSR.processMODISBands(esSlice, sensor='T')
             liSliceMODIST = Weight_RSR.processMODISBands(liSlice, sensor='T')
             ltSliceMODIST = Weight_RSR.processMODISBands(ltSlice, sensor='T')
+            esXstdMODIST = Weight_RSR.processMODISBands(esStdSlice, sensor='T')
+            liXstdMODIST = Weight_RSR.processMODISBands(liStdSlice, sensor='T')
+            ltXstdMODIST = Weight_RSR.processMODISBands(ltStdSlice, sensor='T')
         if ConfigFile.settings['bL2WeightVIIRSN']:
             print("Convolving VIIRS NPP (ir)radiances in the slice")
             esSliceVIIRSN = Weight_RSR.processVIIRSBands(esSlice, sensor='N')
             liSliceVIIRSN = Weight_RSR.processVIIRSBands(liSlice, sensor='N')
             ltSliceVIIRSN = Weight_RSR.processVIIRSBands(ltSlice, sensor='N')
+            esXstdVIIRSN = Weight_RSR.processVIIRSBands(esStdSlice, sensor='N')
+            liXstdVIIRSN = Weight_RSR.processVIIRSBands(liStdSlice, sensor='N')
+            ltXstdVIIRSN = Weight_RSR.processVIIRSBands(ltStdSlice, sensor='N')
         if ConfigFile.settings['bL2WeightVIIRSJ']:
             print("Convolving VIIRS JPSS (ir)radiances in the slice")
             esSliceVIIRSJ = Weight_RSR.processVIIRSBands(esSlice, sensor='N')
             liSliceVIIRSJ = Weight_RSR.processVIIRSBands(liSlice, sensor='N')
             ltSliceVIIRSJ = Weight_RSR.processVIIRSBands(ltSlice, sensor='N')
+            esXstdVIIRSJ = Weight_RSR.processVIIRSBands(esStdSlice, sensor='N')
+            liXstdVIIRSJ = Weight_RSR.processVIIRSBands(liStdSlice, sensor='N')
+            ltXstdVIIRSJ = Weight_RSR.processVIIRSBands(ltStdSlice, sensor='N')
         if ConfigFile.settings['bL2WeightSentinel3A']:
             print("Convolving Sentinel 3A (ir)radiances in the slice")
             esSliceSentinel3A = Weight_RSR.processSentinel3Bands(esSlice, sensor='A')
             liSliceSentinel3A = Weight_RSR.processSentinel3Bands(liSlice, sensor='A')
             ltSliceSentinel3A = Weight_RSR.processSentinel3Bands(ltSlice, sensor='A')
+            esXstdSentinel3A = Weight_RSR.processSentinel3Bands(esStdSlice, sensor='A')
+            liXstdSentinel3A = Weight_RSR.processSentinel3Bands(liStdSlice, sensor='A')
+            ltXstdSentinel3A = Weight_RSR.processSentinel3Bands(ltStdSlice, sensor='A')
         if ConfigFile.settings['bL2WeightSentinel3B']:
             print("Convolving Sentinel 3B (ir)radiances in the slice")
             esSliceSentinel3B = Weight_RSR.processSentinel3Bands(esSlice, sensor='B')
             liSliceSentinel3B = Weight_RSR.processSentinel3Bands(liSlice, sensor='B')
             ltSliceSentinel3B = Weight_RSR.processSentinel3Bands(ltSlice, sensor='B')
+            esXstdSentinel3B = Weight_RSR.processSentinel3Bands(esStdSlice, sensor='B')
+            liXstdSentinel3B = Weight_RSR.processSentinel3Bands(liStdSlice, sensor='B')
+            ltXstdSentinel3B = Weight_RSR.processSentinel3Bands(ltStdSlice, sensor='B')
 
         # Store the mean datetime of the slice
         if len(timeStamp) > 0:
@@ -1271,56 +1298,57 @@ class ProcessL2:
 
         # Take the mean of the lowest X% in the slice
         sliceAveFlag = []
-        flag,esXSlice,esXmedian,esXstd = ProcessL2.sliceAveHyper(y, esSlice)
+        flag,esXSlice,esXmedian = ProcessL2.sliceAveHyper(y, esSlice)
         sliceAveFlag.append(flag)
-        flag, liXSlice, liXmedian,liXstd = ProcessL2.sliceAveHyper(y, liSlice)
+        flag, liXSlice, liXmedian = ProcessL2.sliceAveHyper(y, liSlice)
         sliceAveFlag.append(flag)
-        flag, ltXSlice, ltXmedian,ltXstd = ProcessL2.sliceAveHyper(y, ltSlice)
+        flag, ltXSlice, ltXmedian = ProcessL2.sliceAveHyper(y, ltSlice)
         sliceAveFlag.append(flag)
 
         # Take the mean of the lowest X% for satellite weighted (ir)radiances in the slice
         # y indexes are from the hyperspectral data
         if ConfigFile.settings['bL2WeightMODISA']:
-            flag, esXSliceMODISA, esXmedianMODISA, esXstdMODISA = ProcessL2.sliceAveHyper(y, esSliceMODISA)
+            flag, esXSliceMODISA, esXmedianMODISA, esXstdMODISA = ProcessL2.sliceAveHyper(y, esSliceMODISA, esStdevMODISA)
             sliceAveFlag.append(flag)
-            flag, liXSliceMODISA, liXmedianMODISA, liXstdMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
+            flag, liXSliceMODISA, liXmedianMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
+            _, liXSliceMODISA, liXmedianMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
             sliceAveFlag.append(flag)
-            flag, ltXSliceMODISA, ltXmedianMODISA, ltXstdMODISA = ProcessL2.sliceAveHyper(y, ltSliceMODISA)
+            flag, ltXSliceMODISA, ltXmedianMODISA = ProcessL2.sliceAveHyper(y, ltSliceMODISA)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightMODIST']:
-            flag, esXSliceMODIST, esXmedianMODIST, esXstdMODIST = ProcessL2.sliceAveHyper(y, esSliceMODIST)
+            flag, esXSliceMODIST, esXmedianMODIST = ProcessL2.sliceAveHyper(y, esSliceMODIST)
             sliceAveFlag.append(flag)
-            flag, liXSliceMODIST, liXmedianMODIST, liXstdMODIST = ProcessL2.sliceAveHyper(y, liSliceMODIST)
+            flag, liXSliceMODIST, liXmedianMODIST = ProcessL2.sliceAveHyper(y, liSliceMODIST)
             sliceAveFlag.append(flag)
-            flag, ltXSliceMODIST, ltXmedianMODIST, ltXstdMODIST = ProcessL2.sliceAveHyper(y, ltSliceMODIST)
+            flag, ltXSliceMODIST, ltXmedianMODIST = ProcessL2.sliceAveHyper(y, ltSliceMODIST)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightVIIRSN']:
-            flag, esXSliceVIIRSN, esXmedianVIIRSN, esXstdVIIRSN = ProcessL2.sliceAveHyper(y, esSliceVIIRSN)
+            flag, esXSliceVIIRSN, esXmedianVIIRSN = ProcessL2.sliceAveHyper(y, esSliceVIIRSN)
             sliceAveFlag.append(flag)
-            flag, liXSliceVIIRSN, liXmedianVIIRSN, liXstdVIIRSN = ProcessL2.sliceAveHyper(y, liSliceVIIRSN)
+            flag, liXSliceVIIRSN, liXmedianVIIRSN = ProcessL2.sliceAveHyper(y, liSliceVIIRSN)
             sliceAveFlag.append(flag)
-            flag, ltXSliceVIIRSN, ltXmedianVIIRSN, ltXstdVIIRSN = ProcessL2.sliceAveHyper(y, ltSliceVIIRSN)
+            flag, ltXSliceVIIRSN, ltXmedianVIIRSN = ProcessL2.sliceAveHyper(y, ltSliceVIIRSN)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightVIIRSJ']:
-            flag, esXSliceVIIRSJ, esXmedianVIIRSJ, esXstdVIIRSJ = ProcessL2.sliceAveHyper(y, esSliceVIIRSJ)
+            flag, esXSliceVIIRSJ, esXmedianVIIRSJ = ProcessL2.sliceAveHyper(y, esSliceVIIRSJ)
             sliceAveFlag.append(flag)
-            flag, liXSliceVIIRSJ, liXmedianVIIRSJ, liXstdVIIRSJ = ProcessL2.sliceAveHyper(y, liSliceVIIRSJ)
+            flag, liXSliceVIIRSJ, liXmedianVIIRSJ = ProcessL2.sliceAveHyper(y, liSliceVIIRSJ)
             sliceAveFlag.append(flag)
-            flag, ltXSliceVIIRSJ, ltXmedianVIIRSJ, ltXstdVIIRSJ = ProcessL2.sliceAveHyper(y, ltSliceVIIRSJ)
+            flag, ltXSliceVIIRSJ, ltXmedianVIIRSJ = ProcessL2.sliceAveHyper(y, ltSliceVIIRSJ)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightSentinel3A']:
-            flag, esXSliceSentinel3A, esXmedianSentinel3A, esXstdSentinel3A = ProcessL2.sliceAveHyper(y, esSliceSentinel3A)
+            flag, esXSliceSentinel3A, esXmedianSentinel3 = ProcessL2.sliceAveHyper(y, esSliceSentinel3A)
             sliceAveFlag.append(flag)
-            flag, liXSliceSentinel3A, liXmedianSentinel3A, liXstdSentinel3A = ProcessL2.sliceAveHyper(y, liSliceSentinel3A)
+            flag, liXSliceSentinel3A, liXmedianSentinel3 = ProcessL2.sliceAveHyper(y, liSliceSentinel3A)
             sliceAveFlag.append(flag)
-            flag, ltXSliceSentinel3A, ltXmedianSentinel3A, ltXstdSentinel3A = ProcessL2.sliceAveHyper(y, ltSliceSentinel3A)
+            flag, ltXSliceSentinel3A, ltXmedianSentinel3 = ProcessL2.sliceAveHyper(y, ltSliceSentinel3A)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightSentinel3B']:
-            flag, esXSliceSentinel3B, esXmedianSentinel3B, esXstdSentinel3B = ProcessL2.sliceAveHyper(y, esSliceSentinel3B)
+            flag, esXSliceSentinel3B, esXmedianSentinel3 = ProcessL2.sliceAveHyper(y, esSliceSentinel3B)
             sliceAveFlag.append(flag)
-            flag, liXSliceSentinel3B, liXmedianSentinel3B, liXstdSentinel3B = ProcessL2.sliceAveHyper(y, liSliceSentinel3B)
+            flag, liXSliceSentinel3B, liXmedianSentinel3 = ProcessL2.sliceAveHyper(y, liSliceSentinel3B)
             sliceAveFlag.append(flag)
-            flag, ltXSliceSentinel3B, ltXmedianSentinel3B, ltXstdSentinel3B = ProcessL2.sliceAveHyper(y, ltSliceSentinel3B)
+            flag, ltXSliceSentinel3B, ltXmedianSentinel3B= ProcessL2.sliceAveHyper(y, ltSliceSentinel3B)
             sliceAveFlag.append(flag)
 
         # Make sure the XSlice averaging didn't bomb
@@ -1508,7 +1536,6 @@ class ProcessL2:
             waveSubsetSentinel3 = wave_array[:,1].tolist()
             F0_Sentinel3, F0_raw, wv_raw = Utilities.TSIS_1(dateTag, Sentinel3wavelength, F0_raw, wv_raw)
 
-
         # Build a slice object for (ir)radiances to be passed to spectralReflectance method
         # These slices are unique and independant of node data or earlier slices in the same node object
         xSlice = {}
@@ -1522,19 +1549,30 @@ class ProcessL2:
         xSlice['liMedian'] = liXmedian
         xSlice['ltMedian'] = ltXmedian
 
-        xSlice['esSTD'] = esXstd
-        xSlice['liSTD'] = liXstd
-        xSlice['ltSTD'] = ltXstd
+        xSlice['esSTD'] = esStdSlice
+        xSlice['liSTD'] = liStdSlice
+        xSlice['ltSTD'] = ltStdSlice
         F0 = F0_hyper
 
+        # insert Uncertainties into analysis
+        instrument = Trios() if ConfigFile.settings['Trios'] else HyperOCR()  # check sensor-type
+
+        if ConfigFile.settings['bL1bDefaultCal'] == 2:
+            xSlice.update(instrument.Default(root, stats))  # update the xSlice dict with uncertianties and samples
+            xDelta = ProcessL2.rrsHyperDelta(root, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice)
+        elif ConfigFile.settings['bL1bDefaultCal'] == 3:
+            xSlice.update(instrument.FRM(root, dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup)))
+            xDelta = ProcessL2.rrsHyperDeltaFRM(rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice)
+        else:
+            xDelta = None
+
         # Populate the relevant fields in node
-        ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset)
+        ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset, xDelta, True)
 
         # Apply residual NIR corrections
         # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
             rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(node, sensor, F0)
-
 
         # Satellites
         if ConfigFile.settings['bL2WeightMODISA'] or ConfigFile.settings['bL2WeightMODIST']:
@@ -1720,6 +1758,7 @@ class ProcessL2:
         rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
+        rootCopy.getGroup()
 
         # rootCopy will be manipulated in the making of node, but root will not
         referenceGroup = rootCopy.getGroup("IRRADIANCE")
