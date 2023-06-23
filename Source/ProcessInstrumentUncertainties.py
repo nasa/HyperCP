@@ -15,7 +15,6 @@ import Utilities
 from ConfigFile import ConfigFile
 from ProcessL1b import ProcessL1b
 from ProcessL1b_Interp import ProcessL1b_Interp
-from L1B_Uncertainty_Analysis import L1B_Uncertainty
 from Uncertainty_Analysis import Propagate
 from MesurementFunctions import L1BMesurementFunctions as mf
 
@@ -798,7 +797,7 @@ class Trios(Instrument):
                     S12_sl_corr_unc.append(sl4[i] - S12_sl_corr[i])
 
             sample_S12_sl_syst = cm.generate_sample(mDraws, S12_sl_corr, np.array(S12_sl_corr_unc), "syst")
-            sample_S12_sl_rand = prop.run_samples(Slaper_SL_correction, [sample_S12, sample_mZ, sample_n_iter])
+            sample_S12_sl_rand = prop.run_samples(self.Slaper_SL_correction, [sample_S12, sample_mZ, sample_n_iter])
             sample_S12_sl_corr = prop.combine_samples([sample_S12_sl_syst, sample_S12_sl_rand])
 
             alpha = alphafunc(S1, S12)
@@ -822,22 +821,22 @@ class Trios(Instrument):
                 sample_azi_delta_err1 = cm.generate_sample(mDraws, avg_azi_coserror, azi_unc, "syst")
                 sample_azi_delta_err2 = cm.generate_sample(mDraws, avg_azi_coserror, azi_delta, "syst")
                 sample_azi_delta_err = prop.combine_samples([sample_azi_delta_err1, sample_azi_delta_err2])
-                sample_azi_err = prop.run_samples(AZAvg_Coserr, [sample_coserr, sample_coserr90])
+                sample_azi_err = prop.run_samples(mf.AZAvg_Coserr, [sample_coserr, sample_coserr90])
                 sample_azi_avg_coserror = prop.combine_samples([sample_azi_err, sample_azi_delta_err])
 
                 sample_zen_delta_err1 = cm.generate_sample(mDraws, avg_coserror, zen_unc, "syst")
                 sample_zen_delta_err2 = cm.generate_sample(mDraws, avg_coserror, zen_delta, "syst")
                 sample_zen_delta_err = prop.combine_samples([sample_zen_delta_err1, sample_zen_delta_err2])
-                sample_zen_err = prop.run_samples(ZENAvg_Coserr, [sample_radcal_wvl, sample_azi_avg_coserror])
+                sample_zen_err = prop.run_samples(mf.ZENAvg_Coserr, [sample_radcal_wvl, sample_azi_avg_coserror])
                 sample_zen_avg_coserror = prop.combine_samples([sample_zen_err, sample_zen_delta_err])
 
-                sample_fhemi_coserr = prop.run_samples(FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
+                sample_fhemi_coserr = prop.run_samples(mf.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
 
                 # Irradiance direct and diffuse ratio
                 res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
                                                                   L2_irr_grp=grp)  # , trios=instrument_number)
-                updated_radcal_gain = TriOS_update_cal_data_ES(S12_sl_corr, LAMP, int_time_t0, t1)
-                sample_updated_radcal_gain = prop.run_samples(TriOS_update_cal_data_ES,
+                updated_radcal_gain = mf.TriOS_update_cal_data_ES(S12_sl_corr, LAMP, int_time_t0, t1)
+                sample_updated_radcal_gain = prop.run_samples(mf.TriOS_update_cal_data_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_int_time_t0,
                                                                sample_t1])
             else:
@@ -845,8 +844,8 @@ class Trios(Instrument):
                 unc_PANEL = (np.asarray(
                     pd.DataFrame(unc_grp.getDataset(sensortype + "_RADCAL_PANEL").data).transpose()[3])/100)*PANEL
                 sample_PANEL = cm.generate_sample(mDraws, PANEL, unc_PANEL, "syst")
-                updated_radcal_gain = TriOS_update_cal_data_rad(PANEL, S12_sl_corr, LAMP, int_time_t0, t1)
-                sample_updated_radcal_gain = prop.run_samples(TriOS_update_cal_data_rad,
+                updated_radcal_gain = mf.TriOS_update_cal_data_rad(PANEL, S12_sl_corr, LAMP, int_time_t0, t1)
+                sample_updated_radcal_gain = prop.run_samples(mf.TriOS_update_cal_data_rad,
                                                               [sample_PANEL, sample_S12_sl_corr, sample_LAMP,
                                                                sample_int_time_t0, sample_t1])
 

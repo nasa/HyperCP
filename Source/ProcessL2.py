@@ -1133,7 +1133,7 @@ class ProcessL2:
 
 
     @staticmethod
-    def ensemblesReflectance(node, sasGroup, refGroup, ancGroup, start, end):
+    def ensemblesReflectance(root, sasGroup, refGroup, ancGroup, uncGroup, esRawGroup, liRawGroup, ltRawGroup, start, end):
         '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for
         meteorological quality flags. Perform glint corrections. Calculate the Rrs. Correct for NIR
         residuals.'''
@@ -1155,9 +1155,39 @@ class ProcessL2:
         ltSlice = ProcessL2.columnToSlice(ltColumns,start, end)
         n = len(list(ltSlice.values())[0])
 
-        esRawGroup = node.getGroup("ES_RAW")
-        liRawGroup = node.getGroup("LI_RAW")
-        ltRawGroup = node.getGroup("LT_RAW")
+        # Uncertainties
+        if ConfigFile.settings['bL1bDefaultCal'] >= 2:
+            newUncGroup = root.getGroup("UNCERTAINTY_BUDGET")
+            for name in uncGroup.datasets:
+                if name not in newUncGroup.datasets:  # create the dataset in root group
+                    ds = uncGroup.getDataset(name)
+                    newDS = newUncGroup.addDataset(name)
+                    ds.datasetToColumns()
+                    newDS.copyAttributes(ds)
+                    newDS.columns = ds.columns
+                    newDS.columnsToDataset()
+                else:
+                    newDS = newUncGroup.getDataset(name)
+                    newDS.datasetToColumns()
+
+        # process raw groups for generating standard deviations
+        def _popTime(_ds, cols):
+            _ds.columns = cols
+            _ds.columns.pop("Datetag")
+            _ds.columns.pop("Datetime")
+            _ds.columns.pop("Timetag2")
+            return _ds
+
+        for (ds, ds1, ds2) in zip(esRawGroup.datasets.values(), liRawGroup.datasets.values(), ltRawGroup.datasets.values()):
+            if ds.id == "ES":
+                _popTime(ds, ProcessL2.columnToSlice(ds.columns, start, end))
+                ds.columnsToDataset()
+            if ds1.id == "LI":
+                _popTime(ds1, ProcessL2.columnToSlice(ds1.columns, start, end))
+                ds1.columnsToDataset()
+            if ds2.id == "LT":
+                _popTime(ds2, ProcessL2.columnToSlice(ds2.columns, start, end))
+                ds2.columnsToDataset()
 
         rhoDefault = float(ConfigFile.settings["fL2RhoSky"])
         threeCRho = int(ConfigFile.settings["bL23CRho"])
@@ -1179,7 +1209,8 @@ class ProcessL2:
         ltSlice.pop("Datetime")
 
         # once datetag is popped then process StdSlices for Band Convolution
-        stats = Instrument_Unc.generateSensorStats(dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup))
+        instrument = Trios() if ConfigFile.settings['sensor_type'] else HyperOCR()  # check sensor-type
+        stats = instrument.generateSensorStats(dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup))
         esStdSlice = {k: [stats['ES']['std_Signal'][k][0]*esSlice[k][0]] for k in esSlice}
         liStdSlice = {k: [stats['LI']['std_Signal'][k][0]*liSlice[k][0]] for k in liSlice}
         ltStdSlice = {k: [stats['LT']['std_Signal'][k][0]*ltSlice[k][0]] for k in ltSlice}
@@ -1555,8 +1586,6 @@ class ProcessL2:
         F0 = F0_hyper
 
         # insert Uncertainties into analysis
-        instrument = Trios() if ConfigFile.settings['Trios'] else HyperOCR()  # check sensor-type
-
         if ConfigFile.settings['bL1bDefaultCal'] == 2:
             xSlice.update(instrument.Default(root, stats))  # update the xSlice dict with uncertianties and samples
             xDelta = ProcessL2.rrsHyperDelta(root, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice)
@@ -1743,7 +1772,6 @@ class ProcessL2:
 
     @staticmethod
     def stationsEnsemblesReflectance(node, root,station=None):
-    # def stationsEnsemblesReflectance(node,station=None):
         ''' Extract stations if requested, then pass to ensemblesReflectance for ensemble
             averages, rho calcs, Rrs, Lwn, NIR correction, satellite convolution, OC Products.'''
 
@@ -1758,12 +1786,33 @@ class ProcessL2:
         rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
-        rootCopy.getGroup()
 
         # rootCopy will be manipulated in the making of node, but root will not
         referenceGroup = rootCopy.getGroup("IRRADIANCE")
         sasGroup = rootCopy.getGroup("RADIANCE")
         ancGroup = rootCopy.getGroup("ANCILLARY")
+
+        if ConfigFile.settings['bL1bDefaultCal'] >= 2:
+            rootCopy.addGroup("UNCERTAINTY_BUDGET")
+            rootCopy.getGroup('UNCERTAINTY_BUDGET').copy(root.getGroup('UNCERTAINTY_BUDGET'))
+
+            rootCopy.addGroup("ES_RAW")
+            rootCopy.getGroup('ES_RAW').copy(root.getGroup('ES_RAW'))
+            rootCopy.addGroup("LI_RAW")
+            rootCopy.getGroup('LI_RAW').copy(root.getGroup('LI_RAW'))
+            rootCopy.addGroup("LT_RAW")
+            rootCopy.getGroup('LT_RAW').copy(root.getGroup('LT_RAW'))
+
+            esRawGroup = rootCopy.getGroup('ES_RAW')
+            liRawGroup = rootCopy.getGroup('LI_RAW')
+            ltRawGroup = rootCopy.getGroup('LT_RAW')
+            uncGroup = rootCopy.getGroup("UNCERTAINTY_BUDGET")
+        else:
+            uncGroup = None
+            esRawGroup = None
+            liRawGroup = None
+            ltRawGroup = None
+
         Utilities.rootAddDateTimeCol(rootCopy)
 
         ###############################################################################
@@ -1838,7 +1887,8 @@ class ProcessL2:
                 start = i
                 end = i+1
 
-                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, start, end):
+                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
+                                                      liRawGroup, ltRawGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance unsliced failed. Abort.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -1870,7 +1920,8 @@ class ProcessL2:
                     if endTime > endFileTime:
                         endTime = endFileTime
 
-                    if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, start, end):
+                    if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
+                                                          liRawGroup, ltRawGroup, start, end):
                         msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                         print(msg)
                         Utilities.writeLogFile(msg)
@@ -1886,7 +1937,8 @@ class ProcessL2:
             # For the rare case where end of record is reached at, but not exceeding, endTime...
             if not timeFlag:
                 end = i+1 # i is the index of end of record; plus one to include i due to -1 list slicing
-                if not ProcessL2.ensemblesReflectance(node,sasGroup, referenceGroup, ancGroup, start, end):
+                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
+                                                      liRawGroup, ltRawGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance ender clause failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
