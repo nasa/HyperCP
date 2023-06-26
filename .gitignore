@@ -37,3 +37,6 @@ run_NASA*.py
 # Should I leave these alone? cdsapirc appears to regenerate automatically.
 .cdsapirc
 #.ecmwf_api_config
+
+#ignore ".idea/" if working with pycharm:
+.idea/

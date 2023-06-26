@@ -135,7 +135,7 @@ class HDFDataset:
                 elif isinstance(item, int):
                     dtype.append((name, np.float64))
                 elif name.endswith('FLAG'):
-                    dtype.append((name, np.int))
+                    dtype.append((name, int))#np.int-->int: np.int is deprecated (https://stackoverflow.com/a/74946903/9670510)
                 else:
                     dtype.append((name, type(item)))
 

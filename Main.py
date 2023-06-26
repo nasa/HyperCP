@@ -130,6 +130,7 @@ class Window(QtWidgets.QWidget):
         self.ancFileLabel = QtWidgets.QLabel('Ancillary Data File (SeaBASS format; MUST USE UTC)')
         self.ancFileLineEdit = QtWidgets.QLineEdit()
         self.ancFileLineEdit.setText(str(MainConfig.settings['metFile']))
+        self.ancFileDirectory = MainConfig.settings['ancFileDir']
         self.ancAddButton = QtWidgets.QPushButton('Add', self)
         self.ancRemoveButton = QtWidgets.QPushButton('Remove', self)
 
@@ -351,7 +352,9 @@ class Window(QtWidgets.QWidget):
 
     def ancAddButtonPressed(self):
         print('Ancillary File Add Dialogue')
-        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Ancillary Data File',self.inputDirectory)
+        if self.ancFileDirectory == '':
+            self.ancFileDirectory = './Data/Sample_Data'
+        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Ancillary Data File',self.ancFileDirectory)
         if any(fnames):
             print(fnames)
             if len(fnames[0]) == 1:
