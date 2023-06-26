@@ -271,7 +271,7 @@ class TriosL1B:
             inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
             print('Class based dir:', inpath)
             '''
-            BUG: This currently will not work for both SeaBird & TriOS, it still need a sensor-specific RADCAL file
+            BUG: This currently will not work for TriOS, it still need a sensor-specific RADCAL file
             '''
             node = ProcessL1b.read_unc_coefficient_class(node, inpath)
 

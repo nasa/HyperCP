@@ -2014,19 +2014,11 @@ class Utilities:
         else:
             print("reference temperature not found")
 
-        if 'AMBIENT_TEMP' in uncDS.attributes:
-            ambTemp = float(uncDS.attributes["AMBIENT_TEMP"])
-        else:
-            print("ambiant temperature not found")
 
-        # Get thermal coefficient from full charaterization
+        # Get thermal coefficient from characterization
         uncDS.datasetToColumns()
-        if ConfigFile.settings['bL1bCal'] == 2:
-            therm_coeff = uncDS.data[list(uncDS.columns.keys())[1]]
-            therm_coeff_unc = uncDS.data[list(uncDS.columns.keys())[2]]
-        elif ConfigFile.settings['bL1bCal'] == 3:
-            therm_coeff = uncDS.data[list(uncDS.columns.keys())[2]]
-            therm_coeff_unc = uncDS.data[list(uncDS.columns.keys())[3]]
+        therm_coeff = uncDS.data[list(uncDS.columns.keys())[2]]
+        therm_coeff_unc = uncDS.data[list(uncDS.columns.keys())[3]]
         ThermCorr = []
         ThermUnc = []
 
@@ -2042,8 +2034,13 @@ class Utilities:
 
         # TRIOS case: no temperature available
         elif ConfigFile.settings['SensorType'].lower() == "trios":
-            # For Trios the radiometer Temp is a place holder filled with 0.
+            # For Trios the radiometer InternalTemp is a place holder filled with 0.
             # we use ambiant_temp+5° instead.
+            if 'AMBIENT_TEMP' in uncDS.attributes:
+                ambTemp = float(uncDS.attributes["AMBIENT_TEMP"])
+            else:
+                print("ambiant temperature not found")
+            
             for i in range(len(therm_coeff)):
                 try:
                     ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))
@@ -2193,11 +2190,6 @@ class Utilities:
         sensorList = ['ES', 'LI', 'LT']
         for sensor in sensorList:
 
-            ds = grp.getDataset(sensor+"_RADCAL_CAL")
-            ds.datasetToColumns()
-            bands = np.array(ds.columns['1'][1:])
-            valid = bands>0
-
             ## retrieve dataset from corresponding instrument
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
@@ -2206,26 +2198,16 @@ class Utilities:
 
             # Retrieve hyper-spectral wavelengths from dataset
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
-
-            if len(bands[valid]) != len(x_new):
-                print("ERROR: band wavelentgh not found in calibration file")
-                print(len(bands[valid]))
-                print(len(x_new))
-                exit()
-                
-            for data_type in ["_RADCAL_CAL"]:
+                                        
+            for data_type in ["_RADCAL_UNC"]:
                 ds = grp.getDataset(sensor+data_type)
                 ds.datasetToColumns()
-                for indx in range(len(ds.columns)):
-                    indx_name = str(indx)
-                    if indx_name != '':
-                        y = np.array(ds.columns[indx_name])
-                        if len(y)==255:
-                            ds.columns[indx_name] = y[valid]
-                        elif len(y)==256:
-                            # drop 1st line from TARTU file
-                            ds.columns[indx_name] = y[1:][valid]
-                ds.columnsToDataset()            
+                x = ds.columns['wvl']
+                y = ds.columns['unc']
+                y_new = np.interp(x_new, x, y)
+                ds.columns['unc'] = y_new
+                ds.columns['wvl'] = x_new                    
+                ds.columnsToDataset()
             
             ## Interpolate data to hyper-spectral pixels
             if sensor != "ES":
@@ -2251,31 +2233,6 @@ class Utilities:
                         ds.columns[str(indx)] = y_new
                     ds.columns['0'] = np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
                     ds.columns['1'] = x_new
-                    ds.columnsToDataset()
-
-            ## RADCAL_LAMP/: Interpolate data to hyper-spectral pixels
-            for data_type in ["_RADCAL_LAMP"]:
-                ds = grp.getDataset(sensor+data_type)
-                ds.datasetToColumns()
-                x = ds.columns['0']
-                for indx in range(1,len(ds.columns)):
-                    y = ds.columns[str(indx)]
-                    y_new = np.interp(x_new, x, y)
-                    ds.columns[str(indx)] = y_new
-                ds.columns['0'] = x_new
-                ds.columnsToDataset()
-
-            ## RADCAL_PANEL: only for Li & Lt
-            if sensor != "ES":
-                for data_type in ["_RADCAL_PANEL"]:
-                    ds = grp.getDataset(sensor+data_type)
-                    ds.datasetToColumns()
-                    x = ds.columns['0']
-                    for indx in range(1,len(ds.columns)):
-                        y = ds.columns[str(indx)]
-                        y_new = np.interp(x_new, x, y)
-                        ds.columns[str(indx)] = y_new
-                    ds.columns['0'] = x_new
                     ds.columnsToDataset()
 
         return True
