@@ -22,7 +22,6 @@ class ProcessL1b:
     '''L1B mainly for SeaBird with some shared methods'''
 
 
-
     @staticmethod
     def read_unc_coefficient_class(root, inpath):
         ''' SeaBird or TriOS'''
@@ -40,18 +39,41 @@ class ProcessL1b:
         for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
 
-        # # RADCAL need to be sensor specific, even in Class-based processing
-        # for f in glob.glob(os.path.join(inpath, r'RADCAL/*')):
-        #     Utilities.read_char(f, gp)
-
-        # unc dataset renaming
+        # Unc dataset renaming
         Utilities.RenameUncertainties_Class(root)
+        
+        # Creation of RADCAL class unc for Seabird, values are extracted from:
+        # The Seventh SeaWiFS Intercalibration Round-Robin Experiment (SIRREX-7), March 1999.
+        # NASA Technical Reports Server (NTRS)
+        # https://ntrs.nasa.gov/citations/20020045342
+        
+        if ConfigFile.settings['SensorType'].lower() == "seabird":
+            for sensor in ['LI','LT']:
+                dsname = sensor+'_RADCAL_UNC'
+                gp.addDataset(dsname)
+                ds = gp.getDataset(dsname)
+                ds.columns["wvl"] = [400]
+                ds.columns["unc"] = [2.7]
+                ds.columnsToDataset()
+                
+            for sensor in ['ES']:
+                dsname = sensor+'_RADCAL_UNC'
+                gp.addDataset(dsname)
+                ds = gp.getDataset(dsname)
+                ds.columns["wvl"] = [400]
+                ds.columns["unc"] = [2.3]
+                ds.columnsToDataset()  
+                
+        if ConfigFile.settings['SensorType'].lower() == "trios":
+            print("Class Based processing is not yet supported for Trios")
+            print("Aborting")
+            exit()
 
         # interpolate unc to full wavelength range, depending on class based or full char
         Utilities.interpUncertainties_Class(root)
 
         # # generate temperature coefficient
-        # Utilities.UncTempCorrection(root)
+        Utilities.UncTempCorrection(root)
 
         return root
 
@@ -516,9 +538,6 @@ class ProcessL1b:
             # inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
             inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
             print('Class based dir:', inpath)
-            '''
-            BUG: This currently will not work for both SeaBird & TriOS, it still need a sensor-specific RADCAL file
-            '''
             node = ProcessL1b.read_unc_coefficient_class(node, inpath)
 
         elif ConfigFile.settings['bL1bCal'] == 3:
@@ -631,15 +650,15 @@ class ProcessL1b:
             ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
 
         elif ConfigFile.settings['bL1bCal'] == 2:
-            print('Placeholder for Class-based')
-            '''
-            BUG: Class-based not ready. Needs RadCal uncertainty files as with FRMCal
-            '''
-            if not ProcessL1b_ClassCal.processL1b_SeaBird(node):
-                msg = 'Error in ProcessL1b.process_FRM_calibration'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return None
+            # Class-based radiometric processing is identical to factory processing
+            # Results may differs due to updated calibration files but the two
+            # process are the same. The class-based characterisation will be used 
+            # in the uncertainty computation.
+            calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
+            calPath = os.path.join("Config", calFolder)
+            print("Read CalibrationFile ", calPath)
+            calibrationMap = CalibrationFileReader.read(calPath)
+            ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
 
         elif ConfigFile.settings['bL1bCal'] == 3:
             if not ProcessL1b_FRMCal.processL1b_SeaBird(node):
