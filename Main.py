@@ -333,7 +333,7 @@ class Window(QtWidgets.QWidget):
         if self.outputDirectory == '':
             self.outputDirectory = temp
         if self.outputDirectory == '':
-            self.outputDirectory = './Data'
+            self.outputDirectory = './Data/Sample_Data'
         print('Data output directory changed: ', self.outputDirectory)
         print('NOTE: Subdirectories for data levels will be created here')
         print('      automatically, unless they already exist.')
@@ -353,7 +353,9 @@ class Window(QtWidgets.QWidget):
     def ancAddButtonPressed(self):
         print('Ancillary File Add Dialogue')
         if self.ancFileDirectory == '':
-            self.ancFileDirectory = './Data/Sample_Data'
+            self.ancFileDirectory = self.inputDirectory # Reverts to Input directory first
+            if self.ancFileDirectory == '':
+                self.ancFileDirectory = '.Data/Sample_Data' # Falls back to ./Data/Sample_Data
         fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Ancillary Data File',self.ancFileDirectory)
         if any(fnames):
             print(fnames)
@@ -365,6 +367,7 @@ class Window(QtWidgets.QWidget):
         print('Wind File Remove Dialogue')
         self.ancFileLineEdit.setText('')
         MainConfig.settings['metFile'] = ''
+        self.ancFileDirectory = ''
 
     def processSingle(self, level):
         print('Process Single-Level')
