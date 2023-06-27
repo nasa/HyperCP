@@ -530,7 +530,7 @@ class Controller:
         print(msg)
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
 
-        if extension.lower() != '.raw' and extension.lower() != '.mlb' and extension.lower() != '.nc':
+        if extension.lower() != '.raw' and extension.lower() != '.mlb' and extension.lower() != '.hdf':
             msg = "Unrecognized file type. Aborting."
             print(msg)
             Utilities.writeLogFile(msg)
