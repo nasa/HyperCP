@@ -6,6 +6,7 @@ import collections
 import pytz
 from collections import Counter
 import csv
+import re
 
 from PyQt5.QtWidgets import QMessageBox
 
@@ -2040,7 +2041,7 @@ class Utilities:
                 ambTemp = float(uncDS.attributes["AMBIENT_TEMP"])
             else:
                 print("ambiant temperature not found")
-            
+
             for i in range(len(therm_coeff)):
                 try:
                     ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))
@@ -2097,12 +2098,21 @@ class Utilities:
         for grp in node.groups:
             # if "CalFileName" in grp.attributes:
             if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                # Provision for sensor calibration names without leading zeros
+                if "ES_" in grp.id or "LI_" in grp.id or "LT_" in grp.id:
+                    sensorCode = grp.attributes["CalFileName"][3:7]
+                    if not sensorCode.isnumeric():
+                        sensorCode = re.findall(r'\d+', sensorCode)
+                    if len(sensorCode) < 4:
+                        sensorCode = '0' + sensorCode[0]
+
                 if "ES_" in grp.id:
-                    sensorID[grp.attributes["CalFileName"][3:7]] = "ES"
+                    sensorID[sensorCode] = "ES"
+                    # sensorID[grp.attributes["CalFileName"][3:7]] = "ES"
                 if "LI_" in grp.id:
-                    sensorID[grp.attributes["CalFileName"][3:7]] = "LI"
+                    sensorID[sensorCode] = "LI"
                 if "LT_" in grp.id:
-                    sensorID[grp.attributes["CalFileName"][3:7]] = "LT"
+                    sensorID[sensorCode] = "LT"
 
             # elif "IDDevice" in grp.attributes:
             elif ConfigFile.settings['SensorType'].lower() == 'trios':
@@ -2127,7 +2137,7 @@ class Utilities:
         names = [i for i in unc_group.datasets]  # get names in advance, mutation of iteration object breaks for loop
         for name in names:
             ds = unc_group.getDataset(name)
-            
+
             if "_RADIANCE_" in name:
                 # Class-based radiance coefficient are the same for both Li and Lt
                 new_LI_name = ''.join(["LI", name.split("RADIANCE")[-1]])
@@ -2140,7 +2150,7 @@ class Utilities:
                 new_LT_ds.copy(ds)
                 new_LT_ds.datasetToColumns()
                 unc_group.removeDataset(ds.id) # remove dataset
-                
+
             if "_IRRADIANCE_" in name:
                 # Class-based irradiance coefficient are unique for Es
                 new_ES_name = ''.join(["ES", name.split("IRRADIANCE")[-1]])
@@ -2148,7 +2158,7 @@ class Utilities:
                 new_ES_ds.copy(ds)
                 new_ES_ds.datasetToColumns()
                 unc_group.removeDataset(ds.id) # remove dataset
-                
+
             if "_RADCAL_" in name:
                 # RADCAL are always sensor specific
                 for sensor in sensorID:
@@ -2158,10 +2168,10 @@ class Utilities:
                         new_ds.copy(ds)
                         new_ds.datasetToColumns()
                         unc_group.removeDataset(ds.id)  # remove dataset
-        
+
         return True
-    
-    
+
+
     @staticmethod
     def RenameUncertainties_FullChar(node):
         """
@@ -2198,7 +2208,7 @@ class Utilities:
 
             # Retrieve hyper-spectral wavelengths from dataset
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
-                                        
+
             for data_type in ["_RADCAL_UNC"]:
                 ds = grp.getDataset(sensor+data_type)
                 ds.datasetToColumns()
@@ -2206,9 +2216,9 @@ class Utilities:
                 y = ds.columns['unc']
                 y_new = np.interp(x_new, x, y)
                 ds.columns['unc'] = y_new
-                ds.columns['wvl'] = x_new                    
+                ds.columns['wvl'] = x_new
                 ds.columnsToDataset()
-            
+
             ## Interpolate data to hyper-spectral pixels
             if sensor != "ES":
                 for data_type in ["_POLDATA_CAL","_TEMPDATA_CAL"]:
@@ -2220,7 +2230,7 @@ class Utilities:
                         y_new = np.interp(x_new, x, y)
                         ds.columns[str(indx)] = y_new
                     ds.columns['0'] = np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
-                    ds.columns['1'] = x_new                    
+                    ds.columns['1'] = x_new
                     ds.columnsToDataset()
             else:
                 for data_type in ["_TEMPDATA_CAL","_ANGDATA_COSERROR", "_ANGDATA_COSERROR_AZ90", "_ANGDATA_UNCERTAINTY", "_ANGDATA_UNCERTAINTY_AZ90"]:
@@ -2241,8 +2251,8 @@ class Utilities:
     @staticmethod
     def interpUncertainties_FullChar(node):
         """
-        For full char, all input comes already with a wavelength columns, 
-        except RADCAL LAMP ad PANEL, that need to be interpolated on wvl.        
+        For full char, all input comes already with a wavelength columns,
+        except RADCAL LAMP ad PANEL, that need to be interpolated on wvl.
         """
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
