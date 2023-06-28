@@ -86,7 +86,7 @@ class Window(QtWidgets.QWidget):
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
-        pixmap = QtGui.QPixmap('./Data/Img/banner2.png')
+        pixmap = QtGui.QPixmap('./Data/Img/HyperCP_banner1.png')
         banner.setPixmap(pixmap)
         banner.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -130,6 +130,7 @@ class Window(QtWidgets.QWidget):
         self.ancFileLabel = QtWidgets.QLabel('Ancillary Data File (SeaBASS format; MUST USE UTC)')
         self.ancFileLineEdit = QtWidgets.QLineEdit()
         self.ancFileLineEdit.setText(str(MainConfig.settings['metFile']))
+        self.ancFileDirectory = MainConfig.settings['ancFileDir']
         self.ancAddButton = QtWidgets.QPushButton('Add', self)
         self.ancRemoveButton = QtWidgets.QPushButton('Remove', self)
 
@@ -332,7 +333,7 @@ class Window(QtWidgets.QWidget):
         if self.outputDirectory == '':
             self.outputDirectory = temp
         if self.outputDirectory == '':
-            self.outputDirectory = './Data'
+            self.outputDirectory = './Data/Sample_Data'
         print('Data output directory changed: ', self.outputDirectory)
         print('NOTE: Subdirectories for data levels will be created here')
         print('      automatically, unless they already exist.')
@@ -351,7 +352,11 @@ class Window(QtWidgets.QWidget):
 
     def ancAddButtonPressed(self):
         print('Ancillary File Add Dialogue')
-        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Ancillary Data File',self.inputDirectory)
+        if self.ancFileDirectory == '':
+            self.ancFileDirectory = self.inputDirectory # Reverts to Input directory first
+            if self.ancFileDirectory == '':
+                self.ancFileDirectory = '.Data/Sample_Data' # Falls back to ./Data/Sample_Data
+        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Ancillary Data File',self.ancFileDirectory)
         if any(fnames):
             print(fnames)
             if len(fnames[0]) == 1:
@@ -362,6 +367,7 @@ class Window(QtWidgets.QWidget):
         print('Wind File Remove Dialogue')
         self.ancFileLineEdit.setText('')
         MainConfig.settings['metFile'] = ''
+        self.ancFileDirectory = ''
 
     def processSingle(self, level):
         print('Process Single-Level')

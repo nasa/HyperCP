@@ -530,6 +530,12 @@ class Controller:
         print(msg)
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
 
+        if extension.lower() != '.raw' and extension.lower() != '.mlb' and extension.lower() != '.hdf':
+            msg = "Unrecognized file type. Aborting."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None, None
+
         # If this is an HDF, assume it is not RAW, drop the level from fileName
         if extension=='.hdf':
             fileName = fileName.rsplit('_',1)[0]

@@ -254,19 +254,26 @@ class ConfigWindow(QtWidgets.QDialog):
             self.ClassCalRadioButton.setChecked(True)
         self.ClassCalRadioButton.clicked.connect(self.l1bClassCalRadioButtonClicked)
         # '''
-        # BUG: While class-based is being debugged
+        # NOTE: While L2 class-based is being debugged
         # '''
-        # self.ClassCalRadioButton.setChecked(False)
-        # self.ClassCalRadioButton.setEnabled(False)
+        self.ClassCalRadioButton.setChecked(False)
+        self.ClassCalRadioButton.setEnabled(False)
 
         self.FullCalRadioButton = QtWidgets.QRadioButton("Full Characterization:")
         self.FullCalRadioButton.setAutoExclusive(False)
-        # self.FullCalRadioButton.setDisabled(1) # <---- Needs to have a test for full cal file availability
+        # '''
+        # NOTE: While L2 full-based is being debugged
+        # '''
+        self.FullCalRadioButton.setChecked(False)
+        self.FullCalRadioButton.setEnabled(False)
+
         if ConfigFile.settings["bL1bCal"]==3:
             self.FullCalRadioButton.setChecked(True)
         self.FullCalRadioButton.clicked.connect(self.l1bFullCalRadioButtonClicked)
 
         self.l1bGetFRMCheck1 = QtWidgets.QCheckBox("local files", self)
+        ''' NOTE:  Disable while class/FRM L2 under developement '''
+        self.l1bGetFRMCheck1.setDisabled(1)
 
         ''' NOTE: disabled until fidraddb_api can be resolved.'''
         self.l1bGetFRMCheck2 = QtWidgets.QCheckBox("FidRadDB", self)
@@ -278,6 +285,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["FidRadDB"]) == 1:
             self.l1bGetFRMCheck1.setChecked(False)
             self.l1bGetFRMCheck2.setChecked(True)
+
         self.FullCalDir = ConfigFile.settings['FullCalDir']
         self.l1bGetFRMCheck1.clicked.connect(self.l1bGetFRMCheckUpdate1)
         self.l1bGetFRMCheck2.clicked.connect(self.l1bGetFRMCheckUpdate2)
@@ -766,16 +774,7 @@ class ConfigWindow(QtWidgets.QDialog):
         CalHBox2.addWidget(self.DefaultCalRadioButton)
         CalHBox2.addWidget(self.ClassCalRadioButton)
 
-        ''' NOTE: Disable in master while under development in dev '''
-        # self.ClassCalRadioButton.setDisabled(True)
-
         VBox2.addLayout(CalHBox2)
-
-        # CalHBox3 = QtWidgets.QHBoxLayout()
-        # CalHBox3.addWidget(self.FullCalRadioButton)
-        # CalHBox3.addWidget(self.FullCalDirButton)
-        # CalHBox3.addStretch(1)
-        # VBox2.addLayout(CalHBox3)
 
         CalHBox3 = QtWidgets.QHBoxLayout()
         CalHBox3.addWidget(self.FullCalRadioButton)

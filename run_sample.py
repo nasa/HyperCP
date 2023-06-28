@@ -6,13 +6,18 @@ import sys
 
 from Main import Command, cmd
 
-## Custom set up ##
+'''
+This script is an example of how to run HyperCP in batch mode without using the GUI.
+NB: You should lunch the GUI at least a first time to get the necessary ancillary data to perform the Zhang surface correction (see README.md)
+If you are just beginning to use HyperCP, please do not modify anything outside the CUSTOM SET UP section.
+'''
+################################################### CUSTOM SET UP ###################################################
 
-clobber = False # True overwrites existing files
-PATH_HCP = '/Users/daurin/GitRepos/HyperInSPACE'   # Adjust with full path on local computer
+clobber = False # if True overwrites existing files
+PATH_HCP = '/tcenas/s3optcal/workdata/ocean_colour/HyperCP/HyperCP'   # Adjust with /full/path/to/HyperCP directory on local computer
 INST_TYPE = 'SEABIRD' #SEABIRD or TRIOS
 
-# For use with sample data provided:
+# In case you wish to test the sample data provided within HyperCP
 PLATFORM_TYPE = 'NOTRACKER' #pySAS, SOLARTRACKER, or NOTRACKER. Adjust to desired acquisition platform type
 PATH_DATA = os.path.join('Data','Sample_Data')   # For use with provided samples
 PATH_WK = os.path.join(PATH_HCP,PATH_DATA)  # For use with provided samples
@@ -23,7 +28,7 @@ PATH_ANC = os.path.join(PATH_WK,f'SAMPLE_{INST_TYPE}_{PLATFORM_TYPE}_Ancillary.s
 # PATH_WK = os.path.join(PATH_DATA)  # Adjust with full path on local computer
 # PATH_ANC = os.path.join(PATH_DATA,f'*_Ancillary.sb') # Adjust with full path on local computer
 
-## End Custom set up ##
+################################################# END CUSTOM SET UP #################################################
 
 ## Setup Globals ##
 PATH_CFG = os.path.join(PATH_HCP, 'Config', f'sample_{INST_TYPE}_{PLATFORM_TYPE}.cfg')
