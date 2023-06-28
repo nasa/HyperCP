@@ -1,7 +1,7 @@
 # HyperInSPACE Community Processor (HyperCP)
 <html lang="en">
 
-<center><img src="Data/Img/banner2.png" alt="Banner"></center>
+<center><img src="Data/Img/HyperCP_banner1.png" alt="Banner"></center>
 
 Hyperspectral In situ Support for PACE (HyperInSPACE) Community Processor (HyperCP) is designed to provide hyperspectral in situ support for the <a href='https://pace.gsfc.nasa.gov/'>PACE mission</a> but also multispectral missions such as
 [Sentinel-3](https://sentinels.copernicus.eu/web/sentinel/missions/sentinel-3) by processing automated and manual, above-water,
@@ -49,20 +49,20 @@ we encourage you to use git though (see why below).
 
 ### 2. Get the HyperCP environment
 
-HyperCP requires Python 3.X installed on a Linux, MacOS, or Windows computer. 
-The <a href='https://www.anaconda.com/'>Anaconda</a> distribution 
+HyperCP requires Python 3.X installed on a Linux, MacOS, or Windows computer.
+The <a href='https://www.anaconda.com/'>Anaconda</a> distribution
 (or <a href='https://docs.conda.io/en/latest/miniconda.html'>Miniconda</a>) is encouraged.
 If you are unfamiliar with Anaconda, a nice walkthrough can be found [here](https://youtu.be/YJC6ldI3hWk).
 
-All of the package dependencies are listed in the environment.yml file included with the package. To make sure you have 
+All of the package dependencies are listed in the environment.yml file included with the package. To make sure you have
 all of the necessary dependencies, navigate to the HyperCP directory on command line, type:
 
 ```
 prompt$ conda env create -f environment.yml
 ```
 
-and follow the prompts to install the additional package dependencies on your machine within the new virtual environment. 
-When completed you should be in the virtual environment: the prefix ```(hypercp)``` before your prompt should appear 
+and follow the prompts to install the additional package dependencies on your machine within the new virtual environment.
+When completed you should be in the virtual environment: the prefix ```(hypercp)``` before your prompt should appear
 indicating that the system is properly enabled and ready to run from the terminal.
 
 To return to the environment later before launching the program, type
@@ -71,26 +71,26 @@ To return to the environment later before launching the program, type
 prompt$ conda activate hypercp
 ```
 
-To stay up to date with the latest commits to the master branch, it is strongly recommended that you pull them prior to 
+To stay up to date with the latest commits to the master branch, it is strongly recommended that you pull them prior to
 using the software. From the HyperCP directory, type:
 
 ```
 (hypercp) prompt$ git pull
 ```
 
-[If, instead, you are not using git you should regularly re-download and unzip the repository if you want to ensure you 
+[If, instead, you are not using git you should regularly re-download and unzip the repository if you want to ensure you
 are using the latest version of the software].
 
-To report an issue, please submit it [here](https://github.com/nasa/HyperInSPACE/issues), the HyperCP Team will take 
+To report an issue, please submit it [here](https://github.com/nasa/HyperInSPACE/issues), the HyperCP Team will take
 care of it :).
 
 ### 3. Launch HyperCP for the first time!
 
 <!---*Bug: Very rarely, when running the program for the first time, the first RAW binary data file opened for processing
- is not read in properly. Processing will fail with the error message: [filename] does not match expected input level. 
+ is not read in properly. Processing will fail with the error message: [filename] does not match expected input level.
  The file will process properly if run a second time (assuming it is a healthy file). Cause unknown.*-->
 
-To finalise and test the setting up, let's launch HyperCP for the first time: navigate to the project folder on 
+To finalise and test the setting up, let's launch HyperCP for the first time: navigate to the project folder on
 the command line and type:
 
 ```
@@ -101,36 +101,36 @@ A GUI window should pop up, looking approximately like this:
 
 <center><img src="Data/Img/Main.jpg" alt="banner"></center>
 
-When HyperCP/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved 
+When HyperCP/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved
 into them as described below. No system files will be changed.
 
 #### 3.1 Directories (created after first launch)
 
-- **Config**: Configuration and instrument files (by subdirectory - auto-created), SeaBASS header configuration files, 
+- **Config**: Configuration and instrument files (by subdirectory - auto-created), SeaBASS header configuration files,
         main view configuration file.
-- **Logs**: Most command line output messages generated during processing are captured for later reference in .log text 
+- **Logs**: Most command line output messages generated during processing are captured for later reference in .log text
         files here.
-- **Plots**: A variety of optional plotting routines are included which create sub-directories 
+- **Plots**: A variety of optional plotting routines are included which create sub-directories
         (i.e. 'L1AQC_Anoms', 'L1B_Interp', 'L2_Spectral_Filter', 'L2', 'L2_Products').
-- **Data**: This directory now comes unpacked in the distribution. By default, it contains only 
-        files for seawater absorption properties, top-of-atmosphere solar irradiance, 
-        satellite sensor spectral response functions, banner images for the GUI, 
-        and the Zhang glint correction database (see Database Download below). 
-        This is also the optional fallback location for input and/or output radiometry data, 
+- **Data**: This directory now comes unpacked in the distribution. By default, it contains only
+        files for seawater absorption properties, top-of-atmosphere solar irradiance,
+        satellite sensor spectral response functions, banner images for the GUI,
+        and the Zhang glint correction database (see Database Download below).
+        This is also the optional fallback location for input and/or output radiometry data,
         though using separate locations for field data is recommended.
 - **Source**: This directory (which comes unpacked with the distribution) holds the majority of the Python source code.
 
 #### 3.2 Database (downloaded after first launch)
 
-- **Zhang skyglint correction database**: This (~ 2.3 GB) database will be - optionally - used for the glint correction 
+- **Zhang skyglint correction database**: This (~ 2.3 GB) database will be - optionally - used for the glint correction
 based on the method of [Zhang et al., 2017, OE, 25(4)](https://opg.optica.org/oe/fulltext.cfm?uri=oe-25-4-A1&id=357012)).
 It will stored at ```/Data/Zhang_rho_db.mat```.
-If this download should fail for any reason, further instructions will be given 
+If this download should fail for any reason, further instructions will be given
 at the command line terminal where Main.py was launched.
 
 ## Usage
 
-If you followed [Requirements and Installation](README.md/#requirements-and-installation) successfully, you are ready 
+If you followed [Requirements and Installation](README.md/#requirements-and-installation) successfully, you are ready
 to start using HyperCP!
 
 <center><img src="Data/Img/banner.jpg" alt="banner"></center>
@@ -149,11 +149,11 @@ to start using HyperCP!
 
 HyperCP is a Main-View-Controller Python package with a GUI that can be launched in several ways.
 However you launch the GUI, *watch for important feedback at the command line terminal* in addition to informational GUI windows.
-Batching multiple files across single or multiple processing levels is also possible 
+Batching multiple files across single or multiple processing levels is also possible
 as described below.
 
-<!-- To see an example of a complete workflow of the processing from raw data to the final HDF and SeaBASS/OCDB L2 outputs, 
-both for TriOS and HyperSAS, 
+<!-- To see an example of a complete workflow of the processing from raw data to the final HDF and SeaBASS/OCDB L2 outputs,
+both for TriOS and HyperSAS,
 please see [here](https://gitlab.eumetsat.int/OC/External/frm4soc-cp/-/blob/master/Command_line_example.cmd) <- firewalled -->
 
 
@@ -162,23 +162,23 @@ The Main window appears once Main.py is launched, as described [above](README.md
  ```
 (hypercp) prompt$ python Main.py
 ```
- 
+
  The GUI's main window is divided into four main sections, each with options to specify:
- 
+
  1. A configuration file
  2. Input/output directories
  3. Ancillary input files
  4. Single-level processing
  5. Multi-level processing
- 
- NB: Your Main window set up (including configuration file, Input/Output directories, and Ancillary File) will be saved in 
+
+ NB: Your Main window set up (including configuration file, Input/Output directories, and Ancillary File) will be saved in
  Config/main.config using the Save button or upon closing the Main window, and reopened the next time you launch Main.py.
- 
+
  <!--
  This text seems to be misplaced here! to check
- For batch processing, pop-up windows from "failed" 
- (no output due to either corrupt raw binary data or stringent quality control filtering) files can be suppressed. 
- Producing no output file at a given processing level is often a normal result of quality control filtering, 
+ For batch processing, pop-up windows from "failed"
+ (no output due to either corrupt raw binary data or stringent quality control filtering) files can be suppressed.
+ Producing no output file at a given processing level is often a normal result of quality control filtering,
  so this option allows batches to continue uninterrupted (or freeing the core in use if multi-core processing via command line).-->
 
 #### 1. Configuration Section
@@ -188,57 +188,57 @@ The configuration section in the main window involves setting the correct config
 
 You will need to read [this](README_configuration.md) to learn how to set your configuration file appropriately.
 
-1. The 'New' button allows creation of a new configuration file. 
-2. 'Edit' allows editing the currently selected configuration file. 
-3. 'Delete' is used to delete the currently selected configuration file *and* corresponding auto-created 
+1. The 'New' button allows creation of a new configuration file.
+2. 'Edit' allows editing the currently selected configuration file.
+3. 'Delete' is used to delete the currently selected configuration file *and* corresponding auto-created
 calibration directories.
 
- After creating a new configuration file, select it from the drop-down menu, and select 'Edit' to launch the 
+ After creating a new configuration file, select it from the drop-down menu, and select 'Edit' to launch the
  **Configuration module** GUI.
 
 #### 2. Input/Output Directories
 
 It will be helpful to set your 'Input Data' and 'Output Data' directories from the Main window. As an example, one could
- use a cruise directory containing RAW HyperSAS data as the Input Parent Directory, and then create another directory to 
- use as the Output Parent Directory when processing from L0 (raw binary). Inside the Output Parent Directory, files will 
- be automatically sorted by processing level in the automatically created sub-directories (i.e. the software 
- automatically creates and looks for L1A, L1AQC, L1B, L1BQC, and L2 directories under the parent directory). If not 
+ use a cruise directory containing RAW HyperSAS data as the Input Parent Directory, and then create another directory to
+ use as the Output Parent Directory when processing from L0 (raw binary). Inside the Output Parent Directory, files will
+ be automatically sorted by processing level in the automatically created sub-directories (i.e. the software
+ automatically creates and looks for L1A, L1AQC, L1B, L1BQC, and L2 directories under the parent directory). If not
  selected, the Input/Output parent directories will default to the /Data directory within HyperCP.
 
-The 'Input...' and 'Output Data/Plots Parent Directory' buttons are self explanatory and allow optional selection of data 
-and directories from any mounted/mapped drive. Note that output data and plot sub-directories (e.g. for processing levels) 
-are also auto-created during processing as described below. The parent directory is the directory containing the 
-sub-directories for processing levels (e.g. "/L1A", "/L1B", etc.) If no input or output data directories are selected, 
+The 'Input...' and 'Output Data/Plots Parent Directory' buttons are self explanatory and allow optional selection of data
+and directories from any mounted/mapped drive. Note that output data and plot sub-directories (e.g. for processing levels)
+are also auto-created during processing as described below. The parent directory is the directory containing the
+sub-directories for processing levels (e.g. "/L1A", "/L1B", etc.) If no input or output data directories are selected,
 '/Data' and '/Plots' under the HyperCP directory structure will be used by default as the parent directories.
 
 #### 3. Ancillary Input Files
 
-Ancillary data files for environmental conditions and relevant geometries used in processing must be text files in 
-SeaBASS format with columns for date, time, lat, and lon. For a description of the SeaBASS format see 
+Ancillary data files for environmental conditions and relevant geometries used in processing must be text files in
+SeaBASS format with columns for date, time, lat, and lon. For a description of the SeaBASS format see
 [this](https://seabass.gsfc.nasa.gov/).
 
-Optional data fields in the SeaBASS format include 
+Optional data fields in the SeaBASS format include
 
-- station number, 
-- ship heading, 
-- relative sensor azimuth, 
-- aerosol optical depth, 
-- cloud cover, 
-- salinity, 
+- station number,
+- ship heading,
+- relative sensor azimuth,
+- aerosol optical depth,
+- cloud cover,
+- salinity,
 - water temperature,
 - wind speed.
 
-Example ancillary files are included for use as a template. It is recommended that ancillary files are checked with the 
-```FCHECK``` utility as described [here](https://seabass.gsfc.nasa.gov/wiki/FCHECK). They will be interpreted using the 
+Example ancillary files are included for use as a template. It is recommended that ancillary files are checked with the
+```FCHECK``` utility as described [here](https://seabass.gsfc.nasa.gov/wiki/FCHECK). They will be interpreted using the
 included ```SB_support.py``` module from NASA/OBPG.
 
-In case environmental conditions were not logged in the field, or for filling in gaps in logged data, they will be 
-retrieved from GMAO models as described below. The ancillary data file is optional (though strongly advised for adding 
-wind speed at a minimum) provided the sensor suite is equipped with a SolarTracker or equivalent to supply the relevant 
-sensor/solar geometries combined with a GPS for position and time. If no SolarTracker-type instrument is present to 
-report the relative sensor/solar geometries, the ancillary file must be provided with at least the ship heading and 
+In case environmental conditions were not logged in the field, or for filling in gaps in logged data, they will be
+retrieved from GMAO models as described below. The ancillary data file is optional (though strongly advised for adding
+wind speed at a minimum) provided the sensor suite is equipped with a SolarTracker or equivalent to supply the relevant
+sensor/solar geometries combined with a GPS for position and time. If no SolarTracker-type instrument is present to
+report the relative sensor/solar geometries, the ancillary file must be provided with at least the ship heading and
 relative angle between the bow of the ship and the sensor azimuth as a function of time (see sample file provided).
- If no GPS is present, position and time are also required in an ancillary file. Application of the Zhang et al. (2017) 
+ If no GPS is present, position and time are also required in an ancillary file. Application of the Zhang et al. (2017)
  glint correction will require the addition of GMAO model data for aerosol optical depth.
 
 
@@ -247,34 +247,34 @@ relative angle between the bow of the ship and the sensor azimuth as a function 
 HyperCP's workflow follows processing levels going from L0 to L2, resembling quite well the satellite processing levels.
 In this section, you can execute each of the processors that take you from a processing level to the next individually.
 
-A file selection dialogue will appear. Multiple data files can be processed together (successively) by simply selecting 
-them together in the GUI  (e.g. ```Shift-``` or ```Ctrl-``` click, or ```Ctrl-A``` for all, depending on your platform). 
+A file selection dialogue will appear. Multiple data files can be processed together (successively) by simply selecting
+them together in the GUI  (e.g. ```Shift-``` or ```Ctrl-``` click, or ```Ctrl-A``` for all, depending on your platform).
 Input files will be checked for match to  expected input level (e.g. L1AQC file input for for L1B processing).
 
 #### 5. Multi-level Processing
 
-Multi-level processing works the same as  single-level by processing each input raw file through all levels before moving 
-on to the next raw file. However, it  will only continue with a given file if the preceding level was created immediately 
-(within 1 minute) prior. *In other words, if -- due to changes in QA/QC parameterization -- a file is entirely discarded 
-at a given level, but an old file of the same name still exists in that directory, it will be ignored, and processing 
+Multi-level processing works the same as  single-level by processing each input raw file through all levels before moving
+on to the next raw file. However, it  will only continue with a given file if the preceding level was created immediately
+(within 1 minute) prior. *In other words, if -- due to changes in QA/QC parameterization -- a file is entirely discarded
+at a given level, but an old file of the same name still exists in that directory, it will be ignored, and processing
 for that file will be terminated for higher levels.
 
 ### Processing workflow overview
 
-Level 1A through Level 2 processing configurations are adjusted in the Configuration window. 
-If you are reading this for the first time, opening the Configuration Window is a good reference to accompany the 
-discussion [here](README_configuration.md) regarding processing. 
+Level 1A through Level 2 processing configurations are adjusted in the Configuration window.
+If you are reading this for the first time, opening the Configuration Window is a good reference to accompany the
+discussion [here](README_configuration.md) regarding processing.
 
-- Level 1A Processing: Process data from raw binary (Satlantic HyperSAS '.RAW' collections) to L1A (Hierarchical Data Format 5 '.hdf'). 
-Calibration files and the RawFileReader.py script allow for interpretation of raw data fields, which are read into HDF 
+- Level 1A Processing: Process data from raw binary (Satlantic HyperSAS '.RAW' collections) to L1A (Hierarchical Data Format 5 '.hdf').
+Calibration files and the RawFileReader.py script allow for interpretation of raw data fields, which are read into HDF
 objects.
-- Level 1AQC Processing: Data are filtered for vessel attitude (pitch, roll, and yaw when available), viewing 
-and solar geometry. 
-- Level 1B Processing: Dark current corrections are applied followed by instrument calibrations and then matching of timestamps and wavebands 
+- Level 1AQC Processing: Data are filtered for vessel attitude (pitch, roll, and yaw when available), viewing
+and solar geometry.
+- Level 1B Processing: Dark current corrections are applied followed by instrument calibrations and then matching of timestamps and wavebands
 for all radiometers in the suite.
-- Level 1BQC Processing: Further quality control filters are applied to data prior to L2 ensemble binning and reflectance 
+- Level 1BQC Processing: Further quality control filters are applied to data prior to L2 ensemble binning and reflectance
 calculation.
-- Level 2 Processing: Data are averaged within optional time interval ensembles prior to calculating the remote sensing 
+- Level 2 Processing: Data are averaged within optional time interval ensembles prior to calculating the remote sensing
 reflectance within each ensemble.
 
 ### Executing HyperCP from the command line
@@ -285,7 +285,7 @@ There is a command line option for batching a single level which can be triggere
 (hypercp) prompt$ python Main.py -c config -i inputFile -o outputDirectory -l processingLevel
 ```
 
-where ```config``` is the configuration file, and the other arguments are self-explanatory 
+where ```config``` is the configuration file, and the other arguments are self-explanatory
 (```processingLevel``` should be in all caps, e.g., ```L1AQC```).
 An example script has been provided (```run_sample.py```) for batching files using the command line option.
 
