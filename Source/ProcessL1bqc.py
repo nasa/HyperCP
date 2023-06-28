@@ -230,6 +230,18 @@ class ProcessL1bqc:
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
         gpsGroup = node.getGroup('GPS')
+        if ConfigFile.settings['SensorType'].lower() == 'seabird':
+            esDarkGroup = node.getGroup('ES_DARK_L1AQC')
+            esLightGroup = node.getGroup('ES_LIGHT_L1AQC')
+            ltDarkGroup = node.getGroup('LT_DARK_L1AQC')
+            ltLightGroup = node.getGroup('LT_LIGHT_L1AQC')
+            liDarkGroup = node.getGroup('LI_DARK_L1AQC')
+            liLightGroup = node.getGroup('LI_LIGHT_L1AQC')
+        elif ConfigFile.settings['SensorType'].lower() == 'trios':
+            esGroup = node.getGroup('ES_L1AQC')
+            liGroup = node.getGroup('LI_L1AQC')
+            ltGroup = node.getGroup('LT_L1AQC')
+
         satnavGroup = None
         ancGroup = None
         pyrGroup = None
@@ -398,6 +410,22 @@ class ProcessL1bqc:
                 Utilities.filterData(sasGroup, badTimes)
                 Utilities.filterData(ancGroup, badTimes)
 
+                # Filter L1AQC data for L1BQC criteria. badTimes start/stop
+                # are used to bracket the same spectral collections, though it
+                # will involve a difference number/percentage of the datasets.
+                if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                    Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(esLightGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liLightGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+                elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                    Utilities.filterData(esGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
+
+
         # Filter low SZAs and high winds after interpolating model/ancillary data
         maxWind = float(ConfigFile.settings["fL1bqcMaxWind"])
 
@@ -457,6 +485,18 @@ class ProcessL1bqc:
                 return False
             Utilities.filterData(sasGroup, badTimes)
             Utilities.filterData(ancGroup, badTimes)
+            # Filter L1AQC data for L1BQC criteria
+            if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
+                Utilities.filterData(esLightGroup,badTimes,'L1AQC')
+                Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
+                Utilities.filterData(liLightGroup,badTimes,'L1AQC')
+                Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
+                Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+            elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                Utilities.filterData(esGroup,badTimes,'L1AQC')
+                Utilities.filterData(liGroup,badTimes,'L1AQC')
+                Utilities.filterData(ltGroup,badTimes,'L1AQC')
 
         # Filter SZAs
         SZAMin = float(ConfigFile.settings["fL1bqcSZAMin"])
@@ -521,6 +561,18 @@ class ProcessL1bqc:
                 return False
             Utilities.filterData(sasGroup, badTimes)
             Utilities.filterData(ancGroup, badTimes)
+            # Filter L1AQC data for L1BQC criteria
+            if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
+                Utilities.filterData(esLightGroup,badTimes,'L1AQC')
+                Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
+                Utilities.filterData(liLightGroup,badTimes,'L1AQC')
+                Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
+                Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+            elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                Utilities.filterData(esGroup,badTimes,'L1AQC')
+                Utilities.filterData(liGroup,badTimes,'L1AQC')
+                Utilities.filterData(ltGroup,badTimes,'L1AQC')
 
        # Spectral Outlier Filter
         enableSpecQualityCheck = ConfigFile.settings['bL1bqcEnableSpecQualityCheck']
@@ -560,6 +612,19 @@ class ProcessL1bqc:
                     Utilities.writeLogFile(msg)
                     return False
 
+                # Filter L1AQC data for L1BQC criteria
+                if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                    Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(esLightGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liLightGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+                elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                    Utilities.filterData(esGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
+
         # Next apply the Meteorological Filter prior to slicing
         esData = referenceGroup.getDataset("ES")
         enableMetQualityCheck = int(ConfigFile.settings["bL1bqcEnableQualityFlags"])
@@ -584,6 +649,18 @@ class ProcessL1bqc:
                     return False
                 Utilities.filterData(sasGroup, badTimes)
                 Utilities.filterData(ancGroup, badTimes)
+                # Filter L1AQC data for L1BQC criteria
+                if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                    Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(esLightGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liLightGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+                elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                    Utilities.filterData(esGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
 
         return True
 

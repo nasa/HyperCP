@@ -422,32 +422,64 @@ class Utilities:
     def rootAddDateTimeCol(node):
         for gp in node.groups:
             if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
-                for ds in gp.datasets:
-                    # Make sure all datasets have been transcribed to columns
-                    gp.datasets[ds].datasetToColumns()
 
-                    if not 'Datetime' in gp.datasets[ds].columns:
-                        if 'Timetag2' in gp.datasets[ds].columns:  # changed to ensure the new (irr)radiance groups don't throw errors
-                            timeData = gp.datasets[ds].columns["Timetag2"]
-                            dateTag = gp.datasets[ds].columns["Datetag"]
+                # Provision for L1AQC carry-over groups. These do not have Datetag or Timetag2
+                #   dataset, but still have DATETAG and TIMETAG2 datasets
+                if not '_L1AQC' in gp.id:
+                    for ds in gp.datasets:
+                        # Make sure all datasets have been transcribed to columns
+                        gp.datasets[ds].datasetToColumns()
 
-                            timeStamp = []
-                            for i, timei in enumerate(timeData):
-                                # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
-                                # Filter for aberrant Datetags
-                                if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
-                                    and timei != 0.0 and not np.isnan(timei):
+                        if not 'Datetime' in gp.datasets[ds].columns:
+                            if 'Timetag2' in gp.datasets[ds].columns:  # changed to ensure the new (irr)radiance groups don't throw errors
+                                timeData = gp.datasets[ds].columns["Timetag2"]
+                                dateTag = gp.datasets[ds].columns["Datetag"]
 
-                                    dt = Utilities.dateTagToDateTime(dateTag[i])
-                                    timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
-                                else:
-                                    gp.datasetDeleteRow(i)
-                                    msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
-                                    print(msg)
-                                    Utilities.writeLogFile(msg)
-                            gp.datasets[ds].columns["Datetime"] = timeStamp
-                            gp.datasets[ds].columns.move_to_end('Datetime', last=False)
-                            gp.datasets[ds].columnsToDataset()
+                                timeStamp = []
+                                for i, timei in enumerate(timeData):
+                                    # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
+                                    # Filter for aberrant Datetags
+                                    if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
+                                        and timei != 0.0 and not np.isnan(timei):
+
+                                        dt = Utilities.dateTagToDateTime(dateTag[i])
+                                        timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
+                                    else:
+                                        gp.datasetDeleteRow(i)
+                                        msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
+                                        print(msg)
+                                        Utilities.writeLogFile(msg)
+                                gp.datasets[ds].columns["Datetime"] = timeStamp
+                                gp.datasets[ds].columns.move_to_end('Datetime', last=False)
+                                gp.datasets[ds].columnsToDataset()
+                else:
+                    # L1AQC
+                    # Add a special dataset
+                    gp.addDataset('Timestamp')
+                    dateTag = gp.datasets['DATETAG'].columns["NONE"]
+                    timeData = gp.datasets['TIMETAG2'].columns["NONE"]
+                    gp.datasets['Timestamp'].columns['Datetag'] = dateTag
+                    gp.datasets['Timestamp'].columns['Timetag2'] = timeData
+                    gp.datasets['Timestamp'].columnsToDataset()
+
+                    timeStamp = []
+                    for i, timei in enumerate(timeData):
+                        # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
+                        # Filter for aberrant Datetags
+                        if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
+                            and timei != 0.0 and not np.isnan(timei):
+
+                            dt = Utilities.dateTagToDateTime(dateTag[i])
+                            timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
+                        else:
+                            gp.datasetDeleteRow(i) # L1AQC datasets all have the same i
+                            msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+                    # This will be the only dataset structure like a higher level with time/date columns
+                    gp.datasets['Timestamp'].columns["Datetime"] = timeStamp
+                    gp.datasets['Timestamp'].columns.move_to_end('Datetime', last=False)
+                    gp.datasets['Timestamp'].columnsToDataset()
 
         return node
 
@@ -788,16 +820,16 @@ class Utilities:
 
 
     @staticmethod
-    def filterData(group, badTimes, sensor = None):
-        ''' Delete flagged records. Sensor is only specified to get the timestamp.
+    def filterData(group, badTimes, level = None):
+        ''' Delete flagged records. Level is only specified to point to the timestamp.
             All data in the group (including satellite sensors) will be deleted.
-            Called by both ProcessL1bqc.'''
+            Called by both ProcessL1bqc and ProcessL2.'''
 
         msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
 
-        if sensor == None:
+        if level != 'L1AQC':
             if group.id == "ANCILLARY":
                 timeStamp = group.getDataset("LATITUDE").data["Datetime"]
             if group.id == "IRRADIANCE":
@@ -805,12 +837,7 @@ class Utilities:
             if group.id == "RADIANCE":
                 timeStamp = group.getDataset("LI").data["Datetime"]
         else:
-            if group.id == "IRRADIANCE":
-                timeStamp = group.getDataset(f"ES_{sensor}").data["Datetime"]
-            if group.id == "RADIANCE":
-                timeStamp = group.getDataset(f"LI_{sensor}").data["Datetime"]
-            if group.id == "REFLECTANCE":
-                timeStamp = group.getDataset(f"Rrs_{sensor}").data["Datetime"]
+             timeStamp = group.getDataset("Timestamp").data["Datetime"]
 
         startLength = len(timeStamp)
         msg = f'   Length of dataset prior to removal {startLength} long'
