@@ -236,6 +236,48 @@ class Instrument:
 
         return mX[n_iter - 1, :]
 
+    @staticmethod
+    def cosine_error_correction(node, sensortype):
+
+        ## Angular cosine correction (for Irradiance)
+        unc_grp = node.getGroup('UNCERTAINTY_BUDGET')
+        radcal_wvl = np.asarray(
+            pd.DataFrame(unc_grp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[1][1:].tolist())
+        coserror = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype + "_ANGDATA_COSERROR").data)).transpose()[1:,
+                   2:]
+        coserror_90 = np.asarray(
+            pd.DataFrame(unc_grp.getDataset(sensortype + "_ANGDATA_COSERROR_AZ90").data)).transpose()[1:, 2:]
+        coserror_unc = (np.asarray(
+            pd.DataFrame(unc_grp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY").data)).transpose()[1:,
+                        2:]/100)*coserror
+        coserror_90_unc = (np.asarray(
+            pd.DataFrame(unc_grp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY_AZ90").data)).transpose()[
+                           1:, 2:]/100)*coserror_90
+        zenith_ang = unc_grp.getDataset(sensortype + "_ANGDATA_COSERROR").attributes["COLUMN_NAMES"].split('\t')[2:]
+        i1 = np.argmin(np.abs(radcal_wvl - 300))
+        i2 = np.argmin(np.abs(radcal_wvl - 1000))
+        zenith_ang = np.asarray([float(x) for x in zenith_ang])
+
+        # comparing cos_error for 2 azimuth
+        AZI_delta_err = np.abs(coserror - coserror_90)
+
+        # if delta < 2% : averaging the 2 azimuth plan
+        AZI_avg_coserror = (coserror + coserror_90)/2.
+        AZI_delta = np.power(np.power(coserror_unc, 2) + np.power(coserror_90_unc, 2), 0.5)
+
+        # comparing cos_error for symetric zenith
+        ZEN_delta_err = np.abs(AZI_avg_coserror - AZI_avg_coserror[:, ::-1])
+        ZEN_delta = np.power(np.power(AZI_delta, 2) + np.power(AZI_delta[:, ::-1], 2), 0.5)
+
+        # if delta < 2% : averaging symetric zenith
+        ZEN_avg_coserror = (AZI_avg_coserror + AZI_avg_coserror[:, ::-1])/2.
+
+        # set coserror to 1 outside range [450,700]
+        ZEN_avg_coserror[0:i1, :] = 0
+        ZEN_avg_coserror[i2:, :] = 0
+
+        return ZEN_avg_coserror, AZI_avg_coserror, zenith_ang, ZEN_delta_err, ZEN_delta, AZI_delta_err, AZI_delta
+
 
 class HyperOCR(Instrument):
     def __init__(self):
@@ -474,8 +516,8 @@ class HyperOCR(Instrument):
             # Updated calibration gain
             if sensortype == "ES":
                 ## Compute avg cosine error
-                avg_coserror, avg_azi_coserror, full_hemi_coserr, zenith_ang, zen_delta, azi_delta, zen_unc, azi_unc = \
-                    ProcessL1b.cosine_error_correction(node, sensortype)
+                avg_coserror, avg_azi_coserror, zenith_ang, zen_delta, azi_delta, zen_unc, azi_unc = \
+                    self.cosine_error_correction(node, sensortype)
 
                 # error due to lack of symmetry in cosine response
                 sample_azi_delta_err1 = cm.generate_sample(mDraws, avg_azi_coserror, azi_unc, "syst")
@@ -573,6 +615,34 @@ class HyperOCR(Instrument):
 
                 # Cosine correction
                 if sensortype == "ES":
+                    # solar_zenith = np.array([46.87415726])
+                    # direct_ratio = np.array([0.222, 0.245, 0.256, 0.268, 0.279, 0.302, 0.313, 0.335, 0.345, 0.356,
+                    #                          0.376, 0.386, 0.396, 0.415, 0.424, 0.433, 0.45, 0.459, 0.467, 0.482,
+                    #                          0.489, 0.496, 0.51, 0.516, 0.522, 0.534, 0.539, 0.545, 0.555, 0.56,
+                    #                          0.565, 0.576, 0.581, 0.586, 0.596, 0.6, 0.605, 0.613, 0.617, 0.621,
+                    #                          0.629, 0.632, 0.636, 0.644, 0.647, 0.651, 0.657, 0.66, 0.663, 0.669,
+                    #                          0.672, 0.675, 0.68, 0.683, 0.686, 0.691, 0.693, 0.696, 0.7, 0.702,
+                    #                          0.705, 0.709, 0.711, 0.714, 0.717, 0.719, 0.721, 0.725, 0.726, 0.728,
+                    #                          0.731, 0.733, 0.736, 0.738, 0.739, 0.742, 0.744, 0.745, 0.748, 0.749,
+                    #                          0.75, 0.753, 0.754, 0.755, 0.757, 0.758, 0.759, 0.761, 0.763, 0.764,
+                    #                          0.766, 0.767, 0.768, 0.769, 0.77, 0.771, 0.773, 0.774, 0.775, 0.776,
+                    #                          0.777, 0.778, 0.779, 0.78, 0.781, 0.782, 0.783, 0.784, 0.785, 0.7855,
+                    #                          0.786, 0.788, 0.788, 0.789, 0.79, 0.79, 0.791, 0.792, 0.793, 0.793,
+                    #                          0.795, 0.795, 0.796, 0.797, 0.797, 0.798, 0.799, 0.799, 0.8, 0.801,
+                    #                          0.801, 0.802, 0.802, 0.803, 0.803, 0.804, 0.805, 0.805, 0.806, 0.806,
+                    #                          0.807, 0.807, 0.808, 0.808, 0.809, 0.809, 0.81, 0.81, 0.811, 0.811,
+                    #                          0.811, 0.812, 0.812, 0.813, 0.813, 0.814, 0.814, 0.814, 0.815, 0.815,
+                    #                          0.816, 0.816, 0.816, 0.817, 0.817, 0.817, 0.818, 0.818, 0.818, 0.819,
+                    #                          0.819, 0.819, 0.819, 0.82, 0.82, 0.821, 0.821, 0.821, 0.822, 0.822,
+                    #                          0.822, 0.822, 0.823, 0.823, 0.823, 0.824, 0.824, 0.824, 0.824, 0.825,
+                    #                          0.825, 0.825, 0.826, 0.826, 0.826, 0.826, 0.827, 0.827, 0.827, 0.827,
+                    #                          0.828, 0.828, 0.828, 0.828, 0.828, 0.829, 0.829, 0.829, 0.829, 0.83,
+                    #                          0.83, 0.83, 0.83, 0.83, 0.83, 0.831, 0.831, 0.831, 0.831, 0.831,
+                    #                          0.832, 0.832, 0.832, 0.832, 0.832, 0.832, 0.833, 0.833, 0.833, 0.833,
+                    #                          0.833, 0.833, 0.834, 0.834, 0.834, 0.834, 0.834, 0.834, 0.834, 0.835,
+                    #                          0.835, 0.835, 0.835, 0.835, 0.835, 0.835, 0.836, 0.836, 0.836, 0.836,
+                    #                          0.836, 0.836, 0.836, 0.836, 0.837])
+                    # data5 = DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserror)
                     data5 = DATA5(data4, res_py6s['solar_zenith'], res_py6s['direct_ratio'][ind_raw_data], zenith_ang,
                                   avg_coserror, full_hemi_coserror)
                     sample_data5 = prop.run_samples(DATA5, [data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror,
@@ -814,7 +884,7 @@ class Trios(Instrument):
                     enumerate(cos_mean_vals)]
 
                 avg_coserror, avg_azi_coserror, full_hemi_coserr, zenith_ang, zen_delta, azi_delta, zen_unc, azi_unc = \
-                    Instrument_Unc.cosine_error_correction(node, sensortype)
+                    self.cosine_error_correction(node, sensortype)
                 # two components for cos unc, one from the file (rand), one is the difference between two symmetries
 
                 # error due to lack of symmetry in cosine response
