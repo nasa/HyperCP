@@ -274,6 +274,11 @@ class TriosL1B:
             BUG: This currently will not work for TriOS, it still need a sensor-specific RADCAL file
             '''
             node = ProcessL1b.read_unc_coefficient_class(node, inpath)
+            if node is None:
+                msg = 'Error running class based uncertainties.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
 
         # Or add Full characterization files (RAW_UNCERTAINTIES)
         elif ConfigFile.settings['bL1bCal'] == 3:
@@ -311,11 +316,6 @@ class TriosL1B:
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-
-
-
-
-
 
         # Interpolate only the Ancillary group, and then fold in model data
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):

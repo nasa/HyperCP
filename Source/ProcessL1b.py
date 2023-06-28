@@ -41,12 +41,12 @@ class ProcessL1b:
 
         # Unc dataset renaming
         Utilities.RenameUncertainties_Class(root)
-        
+
         # Creation of RADCAL class unc for Seabird, values are extracted from:
         # The Seventh SeaWiFS Intercalibration Round-Robin Experiment (SIRREX-7), March 1999.
         # NASA Technical Reports Server (NTRS)
         # https://ntrs.nasa.gov/citations/20020045342
-        
+
         if ConfigFile.settings['SensorType'].lower() == "seabird":
             for sensor in ['LI','LT']:
                 dsname = sensor+'_RADCAL_UNC'
@@ -55,19 +55,20 @@ class ProcessL1b:
                 ds.columns["wvl"] = [400]
                 ds.columns["unc"] = [2.7]
                 ds.columnsToDataset()
-                
+
             for sensor in ['ES']:
                 dsname = sensor+'_RADCAL_UNC'
                 gp.addDataset(dsname)
                 ds = gp.getDataset(dsname)
                 ds.columns["wvl"] = [400]
                 ds.columns["unc"] = [2.3]
-                ds.columnsToDataset()  
-                
+                ds.columnsToDataset()
+
         if ConfigFile.settings['SensorType'].lower() == "trios":
             print("Class Based processing is not yet supported for Trios")
             print("Aborting")
-            exit()
+            # exit()
+            return None
 
         # interpolate unc to full wavelength range, depending on class based or full char
         Utilities.interpUncertainties_Class(root)
@@ -539,6 +540,11 @@ class ProcessL1b:
             inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
             print('Class based dir:', inpath)
             node = ProcessL1b.read_unc_coefficient_class(node, inpath)
+            if node is None:
+                msg = 'Error running class based uncertainties.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
 
         elif ConfigFile.settings['bL1bCal'] == 3:
 
@@ -652,7 +658,7 @@ class ProcessL1b:
         elif ConfigFile.settings['bL1bCal'] == 2:
             # Class-based radiometric processing is identical to factory processing
             # Results may differs due to updated calibration files but the two
-            # process are the same. The class-based characterisation will be used 
+            # process are the same. The class-based characterisation will be used
             # in the uncertainty computation.
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join("Config", calFolder)
