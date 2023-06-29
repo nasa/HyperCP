@@ -232,7 +232,9 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Set up realtime plot widgets
         self.plotWidgetDark = pg.PlotWidget(self)
         self.plotWidgetDark.addLegend()
+        self.plotWidgetDark.setAxisItems({'bottom': pg.DateAxisItem()})
         self.plotWidgetLight = pg.PlotWidget(self)
+        self.plotWidgetLight.setAxisItems({'bottom': pg.DateAxisItem()})
 
         guideLabel = QtWidgets.QLabel(\
             'Left-click-hold to pan, right-click-hold to zoom, or right-click-release for more options.\
@@ -1138,8 +1140,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         avg = Utilities.movingAverage(radiometry1D, window).tolist()
 
         # ''' Use numeric series (x) for now in place of datetime '''
-        x = np.arange(0,len(radiometry1D),1)
-        # x=np.array([x.timestamp() for x in dateTime])
+        # x = np.arange(0,len(radiometry1D),1)
+        x = np.array([x.timestamp() for x in dateTime])
 
         # First Pass
         y_anomaly = np.array(radiometry1D)[badIndex]
