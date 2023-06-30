@@ -21,12 +21,19 @@ class MainConfig:
     @staticmethod
     def loadConfig(fileName, version):
         print("MainConfig - Load Config")
+
+        # Load the default values first to insure all settings are present, then populate with saved values where possible
+        MainConfig.createDefaultConfig(fileName,version)
+
         configPath = os.path.join("Config", fileName)
         if os.path.isfile(configPath):
             text = ""
             with open(configPath, 'r') as f:
                 text = f.read()
-                MainConfig.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
+                fullCollection = json.loads(text, object_pairs_hook=collections.OrderedDict)
+
+                for key, value in fullCollection.items():
+                    MainConfig.settings[key] = value
         else:
             MainConfig.createDefaultConfig(fileName, version)
 

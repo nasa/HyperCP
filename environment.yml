@@ -3,24 +3,18 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - conda
-  - python
-  - conda-env
-  - conda-build
-  - conda-verify
-  - _ipyw_jlab_nb_ext_conf
-  - anaconda
-  - anaconda-navigator
-  - navigator-updater
-  - xarray
-  - bottleneck
-  - netcdf4
-  - dask
-  - pyqtgraph
-  - pyspectral
-  - py6s
-  - cdsapi
-  - pip
+  - python=3.11
+  - _ipyw_jlab_nb_ext_conf=0.1
+  - bottleneck=1.3
+  - cdsapi=0.6
+  - dask=2022.7
+  - netcdf4=1.6
+  - pip=23.0
+  - py6s=1.9
+  - pyqt=5.15
+  - pyqtgraph=0.13
+  - pyspectral=0.12
+  - xarray=0.19
   - pip:
     - pysolar
     - fpdf2
