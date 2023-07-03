@@ -41,7 +41,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 Clone this repository (branch: "master") to a convenient directory on your computer:
 
 ```
-promtp$ git clone --depth 1 https://github.com/nasa/HyperInSPACE.git /path/to/convenient/directory
+prompt$ git clone --depth 1 https://github.com/nasa/HyperInSPACE.git /path/to/convenient/directory
 ```
 
 or, if you are unfamiliar with git, simply download and unzip by clicking ```Code >> Download ZIP```  -
