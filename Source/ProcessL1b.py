@@ -83,7 +83,9 @@ class ProcessL1b:
     def read_unc_coefficient_frm(root, _inpath):
         ''' SeaBird or TriOS'''
         # Read Uncertainties_new_char from provided files
+        print(_inpath)
         inpath = os.path.join(*_inpath.split(r"/"))
+        print(inpath)
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
