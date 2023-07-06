@@ -80,9 +80,10 @@ class ProcessL1b:
 
 
     @staticmethod
-    def read_unc_coefficient_frm(root, inpath):
+    def read_unc_coefficient_frm(root, _inpath):
         ''' SeaBird or TriOS'''
         # Read Uncertainties_new_char from provided files
+        inpath = os.path.join(_inpath.split(r"/"))
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
