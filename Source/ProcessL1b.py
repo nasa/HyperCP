@@ -80,23 +80,16 @@ class ProcessL1b:
 
 
     @staticmethod
-    def read_unc_coefficient_frm(root, _inpath):
+    def read_unc_coefficient_frm(root, inpath):
         ''' SeaBird or TriOS'''
         # Read Uncertainties_new_char from provided files
-        print(_inpath)
-        inpath = os.path.join(*_inpath.split(r"/"))
-        print(inpath)
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
         # Read uncertainty parameters from full calibration from TARTU
         print("pol path", os.path.join(inpath, 'pol', r'*POLAR*'))
         for f in glob.glob(os.path.join(inpath, 'pol', r'*POLAR*')):
-            print(f)
-            # Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
-            print(f)
-            # Utilities.read_char(f, gp)
+            Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, 'radcal', r'*RADCAL*')):
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, 'straylight', r'*STRAY*')):
