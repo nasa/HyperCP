@@ -1,29 +1,28 @@
-name: hypercp
+name: test
 channels:
   - defaults
   - conda-forge
 dependencies:
-  - conda
-  - python
-  - conda-env
-  - conda-build
-  - conda-verify
-  - _ipyw_jlab_nb_ext_conf
-  - anaconda
-  - anaconda-navigator
-  - navigator-updater
-  - xarray
-  - bottleneck
-  - netcdf4
-  - dask
-  - pyqtgraph
-  - pyspectral
-  - py6s
-  - cdsapi
+  - python=3.11
+  - pyqt=5.15
+  - pyqt5-sip=12.11
+  - requests=2.28
+  - tqdm=4.65
+  - pytz=2022.7
+  - pyqtgraph=0.13
+  - numpy=1.23
+  - pathlib=1.0
+  - urllib3=1.26
+  - platformdirs=2.5
+  - cdsapi=0.6
+  - py6s=1.9
+  - xarray=0.19
+  - netcdf4=1.6
+  - h5py=3.7
+  - pyspectral=0.12
   - pip
   - pip:
-    - pysolar
-    - fpdf2
-    - tqdm
-    - punpy
-# prefix: /accounts/daurin/anaconda3
+    - punpy==0.40.0
+    - pysolar==0.10
+    - fpdf2==2.7
+    - tables==3.8
