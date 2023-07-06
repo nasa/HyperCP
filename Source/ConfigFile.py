@@ -261,7 +261,7 @@ class ConfigFile:
         ConfigFile.settings["fL1bDefaultAOD"] = 0.5
         ConfigFile.settings["fL1bDefaultSalt"] = 35.0
         ConfigFile.settings["fL1bDefaultSST"] = 26.0
-        ConfigFile.settings["bL1bCal"] = 1 # 1 for Factory, 2 for Class, 3 for Instrument Full
+        ConfigFile.settings["bL1bCal"] = 1  # 1 for Factory, 2 for Class, 3 for Instrument Full
         ConfigFile.settings["FullCalDir"] = 'Choose input characterization directory'
         ConfigFile.settings['FidRadDB'] = False
 
