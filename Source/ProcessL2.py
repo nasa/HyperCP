@@ -1156,7 +1156,7 @@ class ProcessL2:
         n = len(list(ltSlice.values())[0])
 
         # Uncertainties
-        if ConfigFile.settings['bL1bDefaultCal'] >= 2:
+        if ConfigFile.settings["bL1bCal"] >= 2:
             newUncGroup = root.getGroup("UNCERTAINTY_BUDGET")
             for name in uncGroup.datasets:
                 if name not in newUncGroup.datasets:  # create the dataset in root group
@@ -1178,16 +1178,19 @@ class ProcessL2:
             _ds.columns.pop("Timetag2")
             return _ds
 
-        for (ds, ds1, ds2) in zip(esRawGroup.datasets.values(), liRawGroup.datasets.values(), ltRawGroup.datasets.values()):
-            if ds.id == "ES":
-                _popTime(ds, ProcessL2.columnToSlice(ds.columns, start, end))
-                ds.columnsToDataset()
-            if ds1.id == "LI":
-                _popTime(ds1, ProcessL2.columnToSlice(ds1.columns, start, end))
-                ds1.columnsToDataset()
-            if ds2.id == "LT":
-                _popTime(ds2, ProcessL2.columnToSlice(ds2.columns, start, end))
-                ds2.columnsToDataset()
+        if not any(esRawGroup, liRawGroup, ltRawGroup):
+            msg = "no raw groups found"
+        else:
+            for (ds, ds1, ds2) in zip(esRawGroup.datasets.values(), liRawGroup.datasets.values(), ltRawGroup.datasets.values()):
+                if ds.id == "ES":
+                    _popTime(ds, ProcessL2.columnToSlice(ds.columns, start, end))
+                    ds.columnsToDataset()
+                if ds1.id == "LI":
+                    _popTime(ds1, ProcessL2.columnToSlice(ds1.columns, start, end))
+                    ds1.columnsToDataset()
+                if ds2.id == "LT":
+                    _popTime(ds2, ProcessL2.columnToSlice(ds2.columns, start, end))
+                    ds2.columnsToDataset()
 
         rhoDefault = float(ConfigFile.settings["fL2RhoSky"])
         threeCRho = int(ConfigFile.settings["bL23CRho"])
@@ -1209,7 +1212,7 @@ class ProcessL2:
         ltSlice.pop("Datetime")
 
         # once datetag is popped then process StdSlices for Band Convolution
-        instrument = Trios() if ConfigFile.settings['sensor_type'] else HyperOCR()  # check sensor-type
+        instrument = Trios() if ConfigFile.settings['SensorType'] else HyperOCR()  # check sensor-type
         stats = instrument.generateSensorStats(dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup))
         esStdSlice = {k: [stats['ES']['std_Signal'][k][0]*esSlice[k][0]] for k in esSlice}
         liStdSlice = {k: [stats['LI']['std_Signal'][k][0]*liSlice[k][0]] for k in liSlice}
@@ -1294,11 +1297,11 @@ class ProcessL2:
         # There are sometimes only a small number of spectra in the slice,
         #  so the percent Lt estimation becomes highly questionable and is overridden here.
         if n <= 5 or x == 0:
-            x = n # if only 5 or fewer records retained, use them all...
+            x = n  # if only 5 or fewer records retained, use them all...
 
         # Find the indexes for the lowest X%
         lt780 = ProcessL2.interpolateColumn(ltSlice, 780.0)
-        index = np.argsort(lt780) # gives indexes if values were to be sorted
+        index = np.argsort(lt780)  # gives indexes if values were to be sorted
 
         if enablePercentLt and x > 1:
             # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest X% of unsorted lt780
@@ -1586,10 +1589,10 @@ class ProcessL2:
         F0 = F0_hyper
 
         # insert Uncertainties into analysis
-        if ConfigFile.settings['bL1bDefaultCal'] == 2:
+        if ConfigFile.settings["bL1bCal"] == 2:
             xSlice.update(instrument.Default(root, stats))  # update the xSlice dict with uncertianties and samples
             xDelta = ProcessL2.rrsHyperDelta(root, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice)
-        elif ConfigFile.settings['bL1bDefaultCal'] == 3:
+        elif ConfigFile.settings["bL1bCal"] == 3:
             xSlice.update(instrument.FRM(root, dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup)))
             xDelta = ProcessL2.rrsHyperDeltaFRM(rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice)
         else:
@@ -1782,36 +1785,31 @@ class ProcessL2:
         rootCopy.addGroup("ANCILLARY")
         rootCopy.addGroup("IRRADIANCE")
         rootCopy.addGroup("RADIANCE")
+        rootCopy.addGroup("ES_L1AQC")
+        rootCopy.addGroup("LI_L1AQC")
+        rootCopy.addGroup("LT_L1AQC")
 
         rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
+        rootCopy.getGroup('ES_L1AQC').copy(root.getGroup('ES_L1AQC'))
+        rootCopy.getGroup('LI_L1AQC').copy(root.getGroup('LI_L1AQC'))
+        rootCopy.getGroup('LT_L1AQC').copy(root.getGroup('LT_L1AQC'))
 
         # rootCopy will be manipulated in the making of node, but root will not
         referenceGroup = rootCopy.getGroup("IRRADIANCE")
         sasGroup = rootCopy.getGroup("RADIANCE")
         ancGroup = rootCopy.getGroup("ANCILLARY")
+        esRawGroup = rootCopy.getGroup('ES_L1AQC')
+        liRawGroup = rootCopy.getGroup('LI_L1AQC')
+        ltRawGroup = rootCopy.getGroup('LT_L1AQC')
 
-        if ConfigFile.settings['bL1bDefaultCal'] >= 2:
+        if ConfigFile.settings["bL1bCal"] >= 2:
             rootCopy.addGroup("UNCERTAINTY_BUDGET")
             rootCopy.getGroup('UNCERTAINTY_BUDGET').copy(root.getGroup('UNCERTAINTY_BUDGET'))
-
-            rootCopy.addGroup("ES_RAW")
-            rootCopy.getGroup('ES_RAW').copy(root.getGroup('ES_RAW'))
-            rootCopy.addGroup("LI_RAW")
-            rootCopy.getGroup('LI_RAW').copy(root.getGroup('LI_RAW'))
-            rootCopy.addGroup("LT_RAW")
-            rootCopy.getGroup('LT_RAW').copy(root.getGroup('LT_RAW'))
-
-            esRawGroup = rootCopy.getGroup('ES_RAW')
-            liRawGroup = rootCopy.getGroup('LI_RAW')
-            ltRawGroup = rootCopy.getGroup('LT_RAW')
             uncGroup = rootCopy.getGroup("UNCERTAINTY_BUDGET")
         else:
             uncGroup = None
-            esRawGroup = None
-            liRawGroup = None
-            ltRawGroup = None
 
         Utilities.rootAddDateTimeCol(rootCopy)
 
