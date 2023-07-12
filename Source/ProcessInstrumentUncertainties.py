@@ -98,7 +98,7 @@ class Instrument:
             Cal[sensor] = np.asarray(list(radcal.data[3]))
 
             if sensor == 'ES':
-                pol = uncertGrp.getDataset("ES_ANGDATA_UNCERTAINTY")
+                pol = uncGrp.getDataset("ES_ANGDATA_UNCERTAINTY")
             else:
                 pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
@@ -190,36 +190,44 @@ class Instrument:
         sample_Lw = Propagate_L2_FRM.run_samples(Propagate.Lw_FRM, [ltSample, rhoSample, liSample])
         sample_Rrs = Propagate_L2_FRM.run_samples(Propagate.Rrs_FRM, [ltSample, rhoSample, liSample, esSample])
 
-        rrsDeltaBand = None
-        lwDeltaBand = None
+        output = {}
 
-        if ConfigFile.settings["bL2WeightSentinel3A"] or ConfigFile.settings["bL2WeightSentinel3B"]:
-            lwBand = Propagate.band_Conv_Sensor(lw, np.array(waveSubset))
-            rrsBand = Propagate.band_Conv_Sensor(rrs, np.array(waveSubset))
+        if ConfigFile.settings["bL2WeightSentinel3A"]:
+            lwBand = Propagate.band_Conv_Sensor_S3A(lw, np.array(waveSubset))
+            rrsBand = Propagate.band_Conv_Sensor_S3A(rrs, np.array(waveSubset))
 
-            sample_lw_band = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor, [sample_Lw, sample_wavelengths])
-            sample_rrs_band = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor, [sample_Rrs, sample_wavelengths])
+            sample_lw_S3A = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3A, [sample_Lw, sample_wavelengths])
+            sample_rrs_S3A = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3A, [sample_Rrs, sample_wavelengths])
 
-            lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_band)
-            rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_band)
+            lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_S3A)
+            rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_S3A)
 
-            lwDeltaBand = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            rrsDeltaBand = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_Sentinel3A"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_Sentinel3A"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+
+        if ConfigFile.settings["bL2WeightSentinel3B"]:
+            lwBand = Propagate.band_Conv_Sensor_S3B(lw, np.array(waveSubset))
+            rrsBand = Propagate.band_Conv_Sensor_S3B(rrs, np.array(waveSubset))
+
+            sample_lw_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B, [sample_Lw, sample_wavelengths])
+            sample_rrs_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B, [sample_Rrs, sample_wavelengths])
+
+            lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_S3B)
+            rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_S3B)
+
+            output["lwDelta_Sentinel3B"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_Sentinel3B"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
 
         lwDelta = Propagate_L2_FRM.process_samples(None, sample_Lw)
         rrsDelta = Propagate_L2_FRM.process_samples(None, sample_Rrs)
 
-        lwDelta = np.abs((lwDelta*1e10)/(lw*1e10))  # multiply by large number to reduce round off error
-        rrsDelta = np.abs((rrsDelta*1e10)/(rrs*1e10))
+        output["lwDelta"] = np.abs((lwDelta*1e10)/(lw*1e10))  # multiply by large number to reduce round off error
+        output["rrsDelta"] = np.abs((rrsDelta*1e10)/(rrs*1e10))
 
-        return dict(
-            rrsDelta=rrsDelta,
-            rrsDeltaBand=rrsDeltaBand,
-            lwDelta=lwDelta,
-            lwDeltaBand=lwDeltaBand)
+        return output
 
     @staticmethod
-    def rrsHyperDelta(node, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice):
+    def rrsHyperDelta(uncGrp, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice):
         esXSlice = xSlice['es']
         esXstd = xSlice['esStd']
         liXSlice = xSlice['li']
@@ -233,48 +241,45 @@ class Instrument:
         else:
             rho = rhoVec
 
-        # get uncertainties from root
-        uncertGrp = node.getGroup("UNCERTAINTY_BUDGET")
-
         if ConfigFile.settings["bL1bDefaultCal"] == 2:
-            esPol = uncertGrp.getDataset("ES_POLDATA_CAL").columns
-            liPol = uncertGrp.getDataset("LI_POLDATA_CAL").columns
-            ltPol = uncertGrp.getDataset("LT_POLDATA_CAL").columns
-            esStray = uncertGrp.getDataset("ES_STRAYDATA_CAL").columns
-            liStray = uncertGrp.getDataset("LI_STRAYDATA_CAL").columns
-            ltStray = uncertGrp.getDataset("LT_STRAYDATA_CAL").columns
-            esNL = uncertGrp.getDataset("ES_NLDATA_CAL").columns
-            liNL = uncertGrp.getDataset("LI_NLDATA_CAL").columns
-            ltNL = uncertGrp.getDataset("LT_NLDATA_CAL").columns
-            esStab = uncertGrp.getDataset("ES_STABDATA_CAL").columns
-            liStab = uncertGrp.getDataset("LI_STABDATA_CAL").columns
-            ltStab = uncertGrp.getDataset("LT_STABDATA_CAL").columns
-            esCtemp = uncertGrp.getDataset("ES_TEMPDATA_CAL").columns
-            liCtemp = uncertGrp.getDataset("LI_TEMPDATA_CAL").columns
-            ltCtemp = uncertGrp.getDataset("LT_TEMPDATA_CAL").columns
-            esCal = uncertGrp.getDataset("ES_RADCAL_CAL").columns
-            liCal = uncertGrp.getDataset("LI_RADCAL_CAL").columns
-            ltCal = uncertGrp.getDataset("LT_RADCAL_CAL").columns
+            esPol = uncGrp.getDataset("ES_POLDATA_CAL").columns
+            liPol = uncGrp.getDataset("LI_POLDATA_CAL").columns
+            ltPol = uncGrp.getDataset("LT_POLDATA_CAL").columns
+            esStray = uncGrp.getDataset("ES_STRAYDATA_CAL").columns
+            liStray = uncGrp.getDataset("LI_STRAYDATA_CAL").columns
+            ltStray = uncGrp.getDataset("LT_STRAYDATA_CAL").columns
+            esNL = uncGrp.getDataset("ES_NLDATA_CAL").columns
+            liNL = uncGrp.getDataset("LI_NLDATA_CAL").columns
+            ltNL = uncGrp.getDataset("LT_NLDATA_CAL").columns
+            esStab = uncGrp.getDataset("ES_STABDATA_CAL").columns
+            liStab = uncGrp.getDataset("LI_STABDATA_CAL").columns
+            ltStab = uncGrp.getDataset("LT_STABDATA_CAL").columns
+            esCtemp = uncGrp.getDataset("ES_TEMPDATA_CAL").columns
+            liCtemp = uncGrp.getDataset("LI_TEMPDATA_CAL").columns
+            ltCtemp = uncGrp.getDataset("LT_TEMPDATA_CAL").columns
+            esCal = uncGrp.getDataset("ES_RADCAL_CAL").columns
+            liCal = uncGrp.getDataset("LI_RADCAL_CAL").columns
+            ltCal = uncGrp.getDataset("LT_RADCAL_CAL").columns
 
         elif ConfigFile.settings['bL1bDefaultCal'] == 3:
-            esPol = uncertGrp.getDataset("ES_ANGDATA_UNCERTAINTY").columns
-            liPol = uncertGrp.getDataset("LI_POLDATA_CAL").columns
-            ltPol = uncertGrp.getDataset("LT_POLDATA_CAL").columns
-            esStray = uncertGrp.getDataset("ES_STRAYDATA_UNCERTAINTY").columns
-            liStray = uncertGrp.getDataset("LI_STRAYDATA_UNCERTAINTY").columns
-            ltStray = uncertGrp.getDataset("LT_STRAYDATA_UNCERTAINTY").columns
-            esNL = uncertGrp.getDataset("ES_NLDATA_CAL").columns
-            liNL = uncertGrp.getDataset("LI_NLDATA_CAL").columns
-            ltNL = uncertGrp.getDataset("LT_NLDATA_CAL").columns
-            esStab = uncertGrp.getDataset("ES_STABDATA_CAL").columns
-            liStab = uncertGrp.getDataset("LI_STABDATA_CAL").columns
-            ltStab = uncertGrp.getDataset("LT_STABDATA_CAL").columns
-            esCtemp = uncertGrp.getDataset("ES_TEMPDATA_CAL").columns
-            liCtemp = uncertGrp.getDataset("LI_TEMPDATA_CAL").columns
-            ltCtemp = uncertGrp.getDataset("LT_TEMPDATA_CAL").columns
-            esCal = uncertGrp.getDataset("ES_RADCAL_CAL").columns
-            liCal = uncertGrp.getDataset("LI_RADCAL_CAL").columns
-            ltCal = uncertGrp.getDataset("LT_RADCAL_CAL").columns
+            esPol = uncGrp.getDataset("ES_ANGDATA_UNCERTAINTY").columns
+            liPol = uncGrp.getDataset("LI_POLDATA_CAL").columns
+            ltPol = uncGrp.getDataset("LT_POLDATA_CAL").columns
+            esStray = uncGrp.getDataset("ES_STRAYDATA_UNCERTAINTY").columns
+            liStray = uncGrp.getDataset("LI_STRAYDATA_UNCERTAINTY").columns
+            ltStray = uncGrp.getDataset("LT_STRAYDATA_UNCERTAINTY").columns
+            esNL = uncGrp.getDataset("ES_NLDATA_CAL").columns
+            liNL = uncGrp.getDataset("LI_NLDATA_CAL").columns
+            ltNL = uncGrp.getDataset("LT_NLDATA_CAL").columns
+            esStab = uncGrp.getDataset("ES_STABDATA_CAL").columns
+            liStab = uncGrp.getDataset("LI_STABDATA_CAL").columns
+            ltStab = uncGrp.getDataset("LT_STABDATA_CAL").columns
+            esCtemp = uncGrp.getDataset("ES_TEMPDATA_CAL").columns
+            liCtemp = uncGrp.getDataset("LI_TEMPDATA_CAL").columns
+            ltCtemp = uncGrp.getDataset("LT_TEMPDATA_CAL").columns
+            esCal = uncGrp.getDataset("ES_RADCAL_CAL").columns
+            liCal = uncGrp.getDataset("LI_RADCAL_CAL").columns
+            ltCal = uncGrp.getDataset("LT_RADCAL_CAL").columns
 
         Propagate_L2 = Propagate(M=1000, cores=0)
         slice_size = len(list(esXSlice.keys()))
@@ -358,16 +363,20 @@ class Instrument:
                          LiPol, LtPol, EsCos]
         rrsDelta, rrsAbsUnc, rrs_vals = Propagate_L2.Propagate_RRS(means, uncertainties)
 
+        ## BAND CONVOLUTION
+        # band convolution of uncertainties is done here to include uncertainty contribution of band convolution process
         Convolve = Propagate(M=100, cores=1)
         # these are absolute values! Dont get confused
-        lwDeltaBand = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)], [lwAbsUnc, None])
-        rrsDeltaBand = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)], [rrsAbsUnc, None])
+        if ConfigFile.settings["bL2WeightSentinel3A"]:
+            output["lwDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)], [lwAbsUnc, None], "S3A")
+            output["rrsDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)], [rrsAbsUnc, None], "S3A")
+        elif ConfigFile.settings["bL2WeightSentinel3B"]:
+            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)], [lwAbsUnc, None], "S3B")
+            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)], [rrsAbsUnc, None], "S3B")
 
-        return dict(
-            rrsDelta=rrsDelta,
-            rrsDeltaBand=rrsDeltaBand,
-            lwDelta=lwDelta,
-            lwDeltaBand=lwDeltaBand)
+        output.update({"lwDelta": lwDelta, "rrsDelta": rrsDelta})
+
+        return output
 
     ## Utilties
     @staticmethod

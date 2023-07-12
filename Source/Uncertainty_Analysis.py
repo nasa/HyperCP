@@ -153,12 +153,19 @@ class Propagate:
         unc = self.MCP.propagate_standard(self.RRS, mean_vals, uncertainties, corr_between=corr_matrix, corr_x=corr_list)
         return (unc * 1E9) / (rrs * 1E9), unc, rrs  # replace with just 'unc' for absolute uncertainty
 
-    def band_Conv_Uncertainty(self, mean_vals, uncertainties):
+    def band_Conv_Uncertainty(self, mean_vals, uncertainties, platform):
         """Hyper_Rrs, wvl, Band cetral wavelengths, Band width - only works for sentinel 3A - OLCI
             :return: relative Rrs uncertainty per spectral band"""
         rad_band = self.band_Conv_Sensor(*mean_vals)
-        return (self.MCP.propagate_standard(self.band_Conv_Sensor,
-                                            mean_vals, uncertainties, corr_x=['syst', None]) * 1e10) / (rad_band * 1e10)
+        if platform.upper() == "S3A" or platform.lower().rstrip().replace('-','') == "sentinel3a":
+            func = self.band_Conv_Sensor_S3A
+        elif platform.upper() == "S3B" or platform.lower().rstrip().replace('-','') == "sentinel3b":
+            func = self.band_Conv_Sensor_S3B
+        else:
+            msg = "sensor not supported"
+            return False
+        return (self.MCP.propagate_standard(func, mean_vals,
+                                            uncertainties, corr_x=['syst', None]) * 1e10) / (rad_band * 1e10)
 
     # Rho propagation methods
     def M99_Rho_Uncertainty(self, mean_vals, uncertainties):
@@ -174,11 +181,19 @@ class Propagate:
                np.array((LTLIGHT - LTDARK)*LTCal*LTStab*LTLin*LTStray*LTT*LTPol)
 
     @staticmethod
-    def band_Conv_Sensor(Hyperspec, Wavelengths):  #, platform_name: str = None, sensor_name: str = None):
-        """ band convolution of Rrs"""
+    def band_Conv_Sensor_S3A(Hyperspec, Wavelengths):
+        """ band convolution of Rrs for S3A"""
         rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
-                                                                            platform_name="Sentinel-3A",
-                                                                            sensor_name="olci", u_d=None)
+                                                                           platform_name="Sentinel-3A",
+                                                                           sensor_name="olci", u_d=None)
+        return rad_band
+
+    @staticmethod
+    def band_Conv_Sensor_S3B(Hyperspec, Wavelengths):
+        """ band convolution of Rrs for S3B"""
+        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
+                                                                           platform_name="Sentinel-3B",
+                                                                           sensor_name="olci", u_d=None)
         return rad_band
 
     @staticmethod

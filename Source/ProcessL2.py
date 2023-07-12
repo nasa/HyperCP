@@ -234,15 +234,12 @@ class ProcessL2:
         esXSlice = xSlice['es']
         esXmedian = xSlice['esMedian']
         esXstd = xSlice['esSTD']
-        esXunc = xDelta['esUnc']
         liXSlice = xSlice['li']
         liXmedian = xSlice['liMedian']
         liXstd = xSlice['liSTD']
-        liXunc = xDelta['liUnc']
         ltXSlice = xSlice['lt']
         ltXmedian = xSlice['ltMedian']
         ltXstd = xSlice['ltSTD']
-        ltXunc = xDelta['ltUnc']
         dateTime = timeObj['dateTime']
         dateTag = timeObj['dateTag']
         timeTag = timeObj['timeTag']
@@ -345,24 +342,33 @@ class ProcessL2:
         # Organise Uncertainty into wavebands
         lwDelta = {}
         rrsDelta = {}
-        if ConfigFile.settings['bL1bDefaultCal'] >= 2:
+        esDelta = {}
+        liDelta = {}
+        ltDelta = {}
+
+        if ConfigFile.settings['bL1bCal'] >= 2:
+            esDelta = xDelta['esUnc']  # should already be convolved to hyperspec
+            liDelta = xDelta['liUnc']
+            ltDelta = xDelta['ltUnc']
+
             for i, k in enumerate(esXSlice):
                 if (k in liXSlice) and (k in ltXSlice):
                     if isHyperSpec:
                         lwDelta[k] = xDelta['lwDelta'][i]
                         rrsDelta[k] = xDelta['rrsDelta'][i]
                     else:
-                        lwDelta[k] = xDelta['lwDeltaBand'][i]
-                        rrsDelta[k] = xDelta['rrsDeltaBand'][i]
+                        # TODO: match up band conv sensor keys with sensor names in ensemblesReflectance
+                        lwDelta[k] = xDelta[f'lwDeltaBand_{sensor}'][i]
+                        rrsDelta[k] = xDelta[f'rrsDeltaBand_{sensor}'][i]
         else:
+            # factory case
             for i, k in enumerate(esXSlice):
                 if (k in liXSlice) and (k in ltXSlice):
-                    if isHyperSpec:
-                        lwDelta[k] = 0
-                        rrsDelta[k] = 0
-                    else:
-                        lwDelta[k] = 0
-                        rrsDelta[k] = 0
+                    esDelta[k] = 0
+                    liDelta[k] = 0
+                    ltDelta[k] = 0
+                    lwDelta[k] = 0
+                    rrsDelta[k] = 0
 
         deleteKey = []
         for k in esXSlice:  # loop through wavebands
@@ -414,24 +420,10 @@ class ProcessL2:
                 liSTD = liXstd[k][0]
                 ltSTD = ltXstd[k][0]
 
-                esUNC = esXunc[k][0]
-                liUNC = liXunc[k][0]
-                ltUNC = ltXunc[k][0]
-
                 # Calculate the remote sensing reflectance
                 if threeCRho:
                     lw = (lt - (rhoScalar * li))
                     rrs = lw / es
-
-                    # Rrs uncertainty
-                    rrsDelta = abs(rrs) * (
-                            (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2 + (esSTD/es)**2
-                            )**0.5
-
-                    # Lw uncertainty
-                    lwDelta = abs(lw) * (
-                            (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2
-                            )**0.5
 
                     #Calculate the normalized water leaving radiance
                     nLw = rrs*f0
@@ -446,16 +438,6 @@ class ProcessL2:
                         lw = (lt - (rhoVec[k] * li))
                         rrs = lw / es
 
-                        # Rrs uncertainty
-                        rrsDelta = abs(rrs) * (
-                                (liSTD/li)**2 + (rhoDelta/rhoVec[k])**2 + (liSTD/li)**2 + (esSTD/es)**2
-                                )**0.5
-
-                        # Lw uncertainty
-                        lwDelta = abs(lw) * (
-                            (liSTD/li)**2 + (rhoDelta/rhoVec[k])**2 + (liSTD/li)**2
-                            )**0.5
-
                         #Calculate the normalized water leaving radiance
                         nLw = rrs*f0
 
@@ -466,16 +448,6 @@ class ProcessL2:
                 else:
                     lw = (lt - (rhoScalar * li))
                     rrs = lw / es
-
-                    # Rrs uncertainty
-                    rrsDelta = abs(rrs) * (
-                            (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2 + (esSTD/es)**2
-                            )**0.5
-
-                    # Lw uncertainty
-                    lwDelta = abs(lw) * (
-                        (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2
-                        )**0.5
 
                     #Calculate the normalized water leaving radiance
                     nLw = rrs*f0
@@ -495,10 +467,6 @@ class ProcessL2:
                 newLIDeltaData.columns[k].append(liSTD)
                 newLTDeltaData.columns[k].append(ltSTD)
 
-                newESUncData.columns[k].append(esUNC)
-                newLIUncData.columns[k].append(liUNC)
-                newLTUncData.columns[k].append(ltUNC)
-
                 newESDataMedian.columns[k].append(esMedian)
                 newLIDataMedian.columns[k].append(liMedian)
                 newLTDataMedian.columns[k].append(ltMedian)
@@ -510,9 +478,12 @@ class ProcessL2:
                     newRrsData.columns[k].append(rrs)
                     newnLwData.columns[k].append(nLw)
 
-                    newLWDeltaData.columns[k].append(lwDelta)
-                    newRrsDeltaData.columns[k].append(rrsDelta)
+                    newLWDeltaData.columns[k].append(lwDelta[k])
+                    newRrsDeltaData.columns[k].append(rrsDelta[k])
                     newnLwDeltaData.columns[k].append(nLwDelta)
+                    newESUncData.columns[k].append(esDelta[k])
+                    newLIUncData.columns[k].append(liDelta[k])
+                    newLTUncData.columns[k].append(ltDelta[k])
 
                     if sensor == 'HYPER':
                         if ZhangRho:
@@ -559,6 +530,15 @@ class ProcessL2:
         newLWDeltaData.columnsToDataset()
         newRrsDeltaData.columnsToDataset()
         newnLwDeltaData.columnsToDataset()
+
+        # # and ensure they are outputted in the correct groups
+        # if ConfigFile.settings["bL1bCal"] >= 2:
+        #     newESunc.columns = xDelta['esUnc']
+        #     newLIunc.columns = xDelta['liUnc']
+        #     newLTunc.columns = xDelta['ltUnc']
+        #     newESunc.columnsToDataset()
+        #     newLIunc.columnsToDataset()
+        #     newLTunc.columnsToDataset()
 
         if sensor == 'HYPER':
             newRhoHyper.columnsToDataset()
@@ -1644,9 +1624,10 @@ class ProcessL2:
         xDelta = {}
         if ConfigFile.settings["bL1bCal"] == 2:
             xSlice.update(instrument.Default(uncGroup, stats))  # update the xSlice dict with uncertianties and samples
-            xDelta.update(instrument.rrsHyperDelta(root, uncGroup, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice))
+            xDelta.update(instrument.rrsHyperDelta(uncGroup, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice))
         elif ConfigFile.settings["bL1bCal"] == 3:
-            xSlice.update(instrument.FRM(root, uncGroup, dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), instrument_WB))
+            xSlice.update(
+                instrument.FRM(root, uncGroup, dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), instrument_WB))
             xDelta.update(instrument.rrsHyperDeltaFRM(rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice))
         else:
             xDelta = None
@@ -1655,10 +1636,15 @@ class ProcessL2:
         if xDelta is not None:
             for slice in list(xSlice.keys()):
                 if "sample" in slice.lower():
-                    xSlice.pop(slice)
+                    xSlice.pop(slice)  # samples are no longer needed
                 elif "unc" in slice.lower():
-                    xDelta[slice] = xSlice.pop(slice)
+                    xDelta[slice] = xSlice.pop(slice)  # transfer instrument uncs to xDelta
         # TODO: compare uncertainty outputs to old results with t test
+
+        # for convolving to satellite bands
+        esUncSlice = xDelta["esUnc"]
+        liUncSlice = xDelta["liUnc"]
+        ltUncSlice = xDelta["ltUnc"]
 
         # Populate the relevant fields in node
         ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset, xDelta, True)
@@ -1693,8 +1679,12 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdMODISA
                 xSlice['ltSTD'] = ltXstdMODISA
 
+                xDelta['esUnc'] = Weight_RSR.processMODISBands(esUncSlice, sensor='A')
+                xDelta['liUnc'] = Weight_RSR.processMODISBands(liUncSlice, sensor='A')
+                xDelta['ltUnc'] = Weight_RSR.processMODISBands(ltUncSlice, sensor='A')
+
                 sensor = 'MODISA'
-                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS,  xDelta, True)
+                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS, xDelta, False)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
@@ -1718,8 +1708,12 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdMODIST
                 xSlice['ltSTD'] = ltXstdMODIST
 
+                xDelta['esUnc'] = Weight_RSR.processMODISBands(esUncSlice, sensor='T')
+                xDelta['liUnc'] = Weight_RSR.processMODISBands(liUncSlice, sensor='T')
+                xDelta['ltUnc'] = Weight_RSR.processMODISBands(ltUncSlice, sensor='T')
+
                 sensor = 'MODIST'
-                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS,  xDelta, True)
+                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS,  xDelta, False)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
@@ -1747,8 +1741,12 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdVIIRSN
                 xSlice['ltSTD'] = ltXstdVIIRSN
 
+                xDelta['esUnc'] = Weight_RSR.processVIIRSBands(esUncSlice, sensor='N')
+                xDelta['liUnc'] = Weight_RSR.processVIIRSBands(liUncSlice, sensor='N')
+                xDelta['ltUnc'] = Weight_RSR.processVIIRSBands(ltUncSlice, sensor='N')
+
                 sensor = 'VIIRSN'
-                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS,  waveSubsetVIIRS,  xDelta, True)
+                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS,  waveSubsetVIIRS,  xDelta, False)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
@@ -1772,8 +1770,12 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdVIIRSJ
                 xSlice['ltSTD'] = ltXstdVIIRSJ
 
+                xDelta['esUnc'] = Weight_RSR.processVIIRSBands(esUncSlice, sensor='N')
+                xDelta['liUnc'] = Weight_RSR.processVIIRSBands(liUncSlice, sensor='N')
+                xDelta['ltUnc'] = Weight_RSR.processVIIRSBands(ltUncSlice, sensor='N')
+
                 sensor = 'VIIRSJ'
-                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS, waveSubsetVIIRS,  xDelta, True)
+                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS, waveSubsetVIIRS,  xDelta, False)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
@@ -1801,8 +1803,12 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdSentinel3A
                 xSlice['ltSTD'] = ltXstdSentinel3A
 
+                xDelta['esUnc'] = Weight_RSR.processSentinel3Bands(esUncSlice, sensor='A')
+                xDelta['liUnc'] = Weight_RSR.processSentinel3Bands(liUncSlice, sensor='A')
+                xDelta['ltUnc'] = Weight_RSR.processSentinel3Bands(ltUncSlice, sensor='A')
+
                 sensor = 'Sentinel3A'
-                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3,  xDelta, True)
+                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3,  xDelta, False)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
@@ -1826,8 +1832,12 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdSentinel3B
                 xSlice['ltSTD'] = ltXstdSentinel3B
 
+                xDelta['esUnc'] = Weight_RSR.processSentinel3Bands(esuncSlice, sensor='B')
+                xDelta['liUnc'] = Weight_RSR.processSentinel3Bands(liuncSlice, sensor='B')
+                xDelta['ltUnc'] = Weight_RSR.processSentinel3Bands(ltuncSlice, sensor='B')
+
                 sensor = 'Sentinel3B'
-                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3,  xDelta, True)
+                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3,  xDelta, False)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
