@@ -455,6 +455,10 @@ class Utilities:
                 else:
                     # L1AQC
                     # Add a special dataset
+                    for ds in gp.datasets:
+                        # Make sure all datasets have been transcribed to columns
+                        gp.datasets[ds].datasetToColumns()
+
                     gp.addDataset('Timestamp')
                     dateTag = gp.datasets['DATETAG'].columns["NONE"]
                     timeData = gp.datasets['TIMETAG2'].columns["NONE"]
