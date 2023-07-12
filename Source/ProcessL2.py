@@ -234,12 +234,15 @@ class ProcessL2:
         esXSlice = xSlice['es']
         esXmedian = xSlice['esMedian']
         esXstd = xSlice['esSTD']
+        esXunc = xDelta['esUnc']
         liXSlice = xSlice['li']
         liXmedian = xSlice['liMedian']
         liXstd = xSlice['liSTD']
+        liXunc = xDelta['liUnc']
         ltXSlice = xSlice['lt']
         ltXmedian = xSlice['ltMedian']
         ltXstd = xSlice['ltSTD']
+        ltXunc = xDelta['ltUnc']
         dateTime = timeObj['dateTime']
         dateTag = timeObj['dateTag']
         timeTag = timeObj['timeTag']
@@ -270,6 +273,9 @@ class ProcessL2:
             newESDeltaData = newIrradianceGroup.addDataset(f"ES_{sensor}_sd")
             newLIDeltaData = newRadianceGroup.addDataset(f"LI_{sensor}_sd")
             newLTDeltaData = newRadianceGroup.addDataset(f"LT_{sensor}_sd")
+            newESUncData = newIrradianceGroup.addDataset(f"ES_{sensor}_unc")
+            newLIUncData = newRadianceGroup.addDataset(f"LI_{sensor}_unc")
+            newLTUncData = newRadianceGroup.addDataset(f"LT_{sensor}_unc")
             newLWDeltaData = newRadianceGroup.addDataset(f"LW_{sensor}_unc")
             newRrsDeltaData = newReflectanceGroup.addDataset(f"Rrs_{sensor}_unc")
             newnLwDeltaData = newReflectanceGroup.addDataset(f"nLw_{sensor}_unc")
@@ -298,6 +304,9 @@ class ProcessL2:
             newESDeltaData = newIrradianceGroup.getDataset(f"ES_{sensor}_sd")
             newLIDeltaData = newRadianceGroup.getDataset(f"LI_{sensor}_sd")
             newLTDeltaData = newRadianceGroup.getDataset(f"LT_{sensor}_sd")
+            newESUncData = newIrradianceGroup.addDataset(f"ES_{sensor}_unc")
+            newLIUncData = newRadianceGroup.addDataset(f"LI_{sensor}_unc")
+            newLTUncData = newRadianceGroup.addDataset(f"LT_{sensor}_unc")
             newLWDeltaData = newRadianceGroup.getDataset(f"LW_{sensor}_unc")
             newRrsDeltaData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_unc")
             newnLwDeltaData = newReflectanceGroup.getDataset(f"nLw_{sensor}_unc")
@@ -333,8 +342,30 @@ class ProcessL2:
                             gp.datasets[ds].columns["Datetag"].append(dateTag)
                             gp.datasets[ds].columns["Timetag2"].append(timeTag)
 
+        # Organise Uncertainty into wavebands
+        lwDelta = {}
+        rrsDelta = {}
+        if ConfigFile.settings['bL1bDefaultCal'] >= 2:
+            for i, k in enumerate(esXSlice):
+                if (k in liXSlice) and (k in ltXSlice):
+                    if isHyperSpec:
+                        lwDelta[k] = xDelta['lwDelta'][i]
+                        rrsDelta[k] = xDelta['rrsDelta'][i]
+                    else:
+                        lwDelta[k] = xDelta['lwDeltaBand'][i]
+                        rrsDelta[k] = xDelta['rrsDeltaBand'][i]
+        else:
+            for i, k in enumerate(esXSlice):
+                if (k in liXSlice) and (k in ltXSlice):
+                    if isHyperSpec:
+                        lwDelta[k] = 0
+                        rrsDelta[k] = 0
+                    else:
+                        lwDelta[k] = 0
+                        rrsDelta[k] = 0
+
         deleteKey = []
-        for k in esXSlice: # loop through wavebands
+        for k in esXSlice:  # loop through wavebands
             if (k in liXSlice) and (k in ltXSlice):
 
                 # Initialize the new dataset if this is the first slice
@@ -356,6 +387,9 @@ class ProcessL2:
                     newESDeltaData.columns[k] = []
                     newLIDeltaData.columns[k] = []
                     newLTDeltaData.columns[k] = []
+                    newESUncData.columns[k] = []
+                    newLIUncData.columns[k] = []
+                    newLTUncData.columns[k] = []
                     newLWDeltaData.columns[k] = []
                     newRrsDeltaData.columns[k] = []
                     newnLwDeltaData.columns[k] = []
@@ -379,6 +413,10 @@ class ProcessL2:
                 esSTD = esXstd[k][0]
                 liSTD = liXstd[k][0]
                 ltSTD = ltXstd[k][0]
+
+                esUNC = esXunc[k][0]
+                liUNC = liXunc[k][0]
+                ltUNC = ltXunc[k][0]
 
                 # Calculate the remote sensing reflectance
                 if threeCRho:
@@ -457,6 +495,10 @@ class ProcessL2:
                 newLIDeltaData.columns[k].append(liSTD)
                 newLTDeltaData.columns[k].append(ltSTD)
 
+                newESUncData.columns[k].append(esUNC)
+                newLIUncData.columns[k].append(liUNC)
+                newLTUncData.columns[k].append(ltUNC)
+
                 newESDataMedian.columns[k].append(esMedian)
                 newLIDataMedian.columns[k].append(liMedian)
                 newLTDataMedian.columns[k].append(ltMedian)
@@ -511,6 +553,9 @@ class ProcessL2:
         newESDeltaData.columnsToDataset()
         newLIDeltaData.columnsToDataset()
         newLTDeltaData.columnsToDataset()
+        newESUncData.columnsToDataset()
+        newLIUncData.columnsToDataset()
+        newLTUncData.columnsToDataset()
         newLWDeltaData.columnsToDataset()
         newRrsDeltaData.columnsToDataset()
         newnLwDeltaData.columnsToDataset()
@@ -1155,42 +1200,45 @@ class ProcessL2:
         ltSlice = ProcessL2.columnToSlice(ltColumns,start, end)
         n = len(list(ltSlice.values())[0])
 
+
+        ## removed because output uncertainties are put in the respective rad, irrad, refl grps
         # Uncertainties
-        if ConfigFile.settings["bL1bCal"] >= 2:
-            newUncGroup = root.getGroup("UNCERTAINTY_BUDGET")
-            for name in uncGroup.datasets:
-                if name not in newUncGroup.datasets:  # create the dataset in root group
-                    ds = uncGroup.getDataset(name)
-                    newDS = newUncGroup.addDataset(name)
-                    ds.datasetToColumns()
-                    newDS.copyAttributes(ds)
-                    newDS.columns = ds.columns
-                    newDS.columnsToDataset()
-                else:
-                    newDS = newUncGroup.getDataset(name)
-                    newDS.datasetToColumns()
+        # if ConfigFile.settings["bL1bCal"] >= 2:
+            # newUncGroup = root.getGroup("RAW_UNCERTAINTIES")  could add group here but output does not want Raw Uncertainties
+            # for name in uncGroup.datasets:
+            #     if name not in newUncGroup.datasets:  # create the dataset in root group
+            #         ds = uncGroup.getDataset(name)
+            #         newDS = newUncGroup.addDataset(name)
+            #         ds.datasetToColumns()
+            #         newDS.copyAttributes(ds)
+            #         newDS.columns = ds.columns
+            #         newDS.columnsToDataset()
+            #     else:
+            #         newDS = newUncGroup.getDataset(name)
+            #         newDS.datasetToColumns()
 
         # process raw groups for generating standard deviations
-        def _popTime(_ds, cols):
-            _ds.columns = cols
-            _ds.columns.pop("Datetag")
-            _ds.columns.pop("Datetime")
-            _ds.columns.pop("Timetag2")
-            return _ds
+        #
+        # def _popTime(_ds, cols):
+        #     _ds.columns = cols
+        #     _ds.columns.pop("Datetag")
+        #     _ds.columns.pop("Datetime")
+        #     _ds.columns.pop("Timetag2")
+        #     return _ds
 
-        if not any(esRawGroup, liRawGroup, ltRawGroup):
+        if not any([esRawGroup, liRawGroup, ltRawGroup]):
             msg = "no raw groups found"
-        else:
-            for (ds, ds1, ds2) in zip(esRawGroup.datasets.values(), liRawGroup.datasets.values(), ltRawGroup.datasets.values()):
-                if ds.id == "ES":
-                    _popTime(ds, ProcessL2.columnToSlice(ds.columns, start, end))
-                    ds.columnsToDataset()
-                if ds1.id == "LI":
-                    _popTime(ds1, ProcessL2.columnToSlice(ds1.columns, start, end))
-                    ds1.columnsToDataset()
-                if ds2.id == "LT":
-                    _popTime(ds2, ProcessL2.columnToSlice(ds2.columns, start, end))
-                    ds2.columnsToDataset()
+        # else:
+        #     for (ds, ds1, ds2) in zip(esRawGroup.datasets.values(), liRawGroup.datasets.values(), ltRawGroup.datasets.values()):
+        #         if ds.id == "ES":
+        #             _popTime(ds, ProcessL2.columnToSlice(ds.columns, start, end))
+        #             ds.columnsToDataset()
+        #         if ds1.id == "LI":
+        #             _popTime(ds1, ProcessL2.columnToSlice(ds1.columns, start, end))
+        #             ds1.columnsToDataset()
+        #         if ds2.id == "LT":
+        #             _popTime(ds2, ProcessL2.columnToSlice(ds2.columns, start, end))
+        #             ds2.columnsToDataset()
 
         rhoDefault = float(ConfigFile.settings["fL2RhoSky"])
         threeCRho = int(ConfigFile.settings["bL23CRho"])
@@ -1593,14 +1641,24 @@ class ProcessL2:
         F0 = F0_hyper
 
         # insert Uncertainties into analysis
+        xDelta = {}
         if ConfigFile.settings["bL1bCal"] == 2:
-            xSlice.update(instrument.Default(root, stats))  # update the xSlice dict with uncertianties and samples
-            xDelta = ProcessL2.rrsHyperDelta(root, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice)
+            xSlice.update(instrument.Default(uncGroup, stats))  # update the xSlice dict with uncertianties and samples
+            xDelta.update(instrument.rrsHyperDelta(root, uncGroup, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice))
         elif ConfigFile.settings["bL1bCal"] == 3:
-            xSlice.update(instrument.FRM(root, dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup)))
-            xDelta = ProcessL2.rrsHyperDeltaFRM(rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice)
+            xSlice.update(instrument.FRM(root, uncGroup, dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), instrument_WB))
+            xDelta.update(instrument.rrsHyperDeltaFRM(rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice))
         else:
             xDelta = None
+
+        # move uncertainties from xSlice to xDelta
+        if xDelta is not None:
+            for slice in list(xSlice.keys()):
+                if "sample" in slice.lower():
+                    xSlice.pop(slice)
+                elif "unc" in slice.lower():
+                    xDelta[slice] = xSlice.pop(slice)
+        # TODO: compare uncertainty outputs to old results with t test
 
         # Populate the relevant fields in node
         ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset, xDelta, True)
