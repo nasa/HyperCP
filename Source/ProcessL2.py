@@ -1213,7 +1213,10 @@ class ProcessL2:
 
         # once datetag is popped then process StdSlices for Band Convolution
         instrument = Trios() if ConfigFile.settings['SensorType'] else HyperOCR()  # check sensor-type
-        stats = instrument.generateSensorStats(dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup))
+        # get common wavebands from esSlice to interp stats
+        instrument_WB = np.asarray(list(esSlice.keys()), dtype=float)
+        stats = instrument.generateSensorStats(dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), instrument_WB)
+        # make std into ordered dictionaries
         esStdSlice = {k: [stats['ES']['std_Signal'][k][0]*esSlice[k][0]] for k in esSlice}
         liStdSlice = {k: [stats['LI']['std_Signal'][k][0]*liSlice[k][0]] for k in liSlice}
         ltStdSlice = {k: [stats['LT']['std_Signal'][k][0]*ltSlice[k][0]] for k in ltSlice}
@@ -1314,21 +1317,21 @@ class ProcessL2:
             # ensemble is off (set to 0), just the one spectrum will be used.
             y = index
 
+        # TODO: changed node to root - check if this is correct with Dirk!
         EnsembleN = len(y) # After taking lowest X%
-        if not 'Ensemble_N' in node.getGroup('REFLECTANCE').datasets:
-            node.getGroup('REFLECTANCE').addDataset('Ensemble_N')
-            node.getGroup('IRRADIANCE').addDataset('Ensemble_N')
-            node.getGroup('RADIANCE').addDataset('Ensemble_N')
-            node.getGroup('REFLECTANCE').datasets['Ensemble_N'].columns['N'] = []
-            node.getGroup('IRRADIANCE').datasets['Ensemble_N'].columns['N'] = []
-            node.getGroup('RADIANCE').datasets['Ensemble_N'].columns['N'] = []
-        node.getGroup('REFLECTANCE').datasets['Ensemble_N'].columns['N'].append(EnsembleN)
-        node.getGroup('IRRADIANCE').datasets['Ensemble_N'].columns['N'].append(EnsembleN)
-        node.getGroup('RADIANCE').datasets['Ensemble_N'].columns['N'].append(EnsembleN)
-        node.getGroup('REFLECTANCE').datasets['Ensemble_N'].columnsToDataset()
-        node.getGroup('IRRADIANCE').datasets['Ensemble_N'].columnsToDataset()
-        node.getGroup('RADIANCE').datasets['Ensemble_N'].columnsToDataset()
-
+        if not 'Ensemble_N' in root.getGroup('REFLECTANCE').datasets:
+            root.getGroup('REFLECTANCE').addDataset('Ensemble_N')
+            root.getGroup('IRRADIANCE').addDataset('Ensemble_N')
+            root.getGroup('RADIANCE').addDataset('Ensemble_N')
+            root.getGroup('REFLECTANCE').datasets['Ensemble_N'].columns['N'] = []
+            root.getGroup('IRRADIANCE').datasets['Ensemble_N'].columns['N'] = []
+            root.getGroup('RADIANCE').datasets['Ensemble_N'].columns['N'] = []
+        root.getGroup('REFLECTANCE').datasets['Ensemble_N'].columns['N'].append(EnsembleN)
+        root.getGroup('IRRADIANCE').datasets['Ensemble_N'].columns['N'].append(EnsembleN)
+        root.getGroup('RADIANCE').datasets['Ensemble_N'].columns['N'].append(EnsembleN)
+        root.getGroup('REFLECTANCE').datasets['Ensemble_N'].columnsToDataset()
+        root.getGroup('IRRADIANCE').datasets['Ensemble_N'].columnsToDataset()
+        root.getGroup('RADIANCE').datasets['Ensemble_N'].columnsToDataset()
 
         # Take the mean of the lowest X% in the slice
         sliceAveFlag = []
@@ -1342,10 +1345,11 @@ class ProcessL2:
         # Take the mean of the lowest X% for satellite weighted (ir)radiances in the slice
         # y indexes are from the hyperspectral data
         if ConfigFile.settings['bL2WeightMODISA']:
-            flag, esXSliceMODISA, esXmedianMODISA, esXstdMODISA = ProcessL2.sliceAveHyper(y, esSliceMODISA, esStdevMODISA)
+            flag, esXSliceMODISA, esXmedianMODISA = ProcessL2.sliceAveHyper(y, esSliceMODISA)
             sliceAveFlag.append(flag)
             flag, liXSliceMODISA, liXmedianMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
-            _, liXSliceMODISA, liXmedianMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
+            sliceAveFlag.append(flag)
+            flag, liXSliceMODISA, liXmedianMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
             sliceAveFlag.append(flag)
             flag, ltXSliceMODISA, ltXmedianMODISA = ProcessL2.sliceAveHyper(y, ltSliceMODISA)
             sliceAveFlag.append(flag)
@@ -1396,8 +1400,8 @@ class ProcessL2:
         # (Combines Slice and XSlice -- as above -- into one method)
         # node.groups.append(ancGroup)
 
-        ProcessL2.sliceAveAnc(node, start, end, y, ancGroup)
-        newAncGroup = node.getGroup("ANCILLARY") # Just populated above
+        ProcessL2.sliceAveAnc(root, start, end, y, ancGroup)
+        newAncGroup = root.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
 
         # Extract the last/current element/slice for each dataset and hold for use in calculating reflectances
@@ -1599,12 +1603,12 @@ class ProcessL2:
             xDelta = None
 
         # Populate the relevant fields in node
-        ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset, xDelta, True)
+        ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset, xDelta, True)
 
         # Apply residual NIR corrections
         # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
-            rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(node, sensor, F0)
+            rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(root, sensor, F0)
 
         # Satellites
         if ConfigFile.settings['bL2WeightMODISA'] or ConfigFile.settings['bL2WeightMODIST']:
@@ -1632,10 +1636,10 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdMODISA
 
                 sensor = 'MODISA'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS)
+                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS,  xDelta, True)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
-                    ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
+                    ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
 
             if ConfigFile.settings['bL2WeightMODIST']:
                 print('Processing MODIST')
@@ -1657,10 +1661,10 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdMODIST
 
                 sensor = 'MODIST'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS)
+                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS,  xDelta, True)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
-                    ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
+                    ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
 
         if ConfigFile.settings['bL2WeightVIIRSN'] or ConfigFile.settings['bL2WeightVIIRSJ']:
             F0 = F0_VIIRS
@@ -1686,10 +1690,10 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdVIIRSN
 
                 sensor = 'VIIRSN'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS,  waveSubsetVIIRS)
+                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS,  waveSubsetVIIRS,  xDelta, True)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
-                    ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
+                    ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
 
             if ConfigFile.settings['bL2WeightVIIRSJ']:
                 print('Processing VIIRSJ')
@@ -1711,10 +1715,10 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdVIIRSJ
 
                 sensor = 'VIIRSJ'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS, waveSubsetVIIRS)
+                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS, waveSubsetVIIRS,  xDelta, True)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
-                    ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
+                    ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
 
         if ConfigFile.settings['bL2WeightSentinel3A'] or ConfigFile.settings['bL2WeightSentinel3B']:
             F0 = F0_Sentinel3
@@ -1740,10 +1744,10 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdSentinel3A
 
                 sensor = 'Sentinel3A'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3)
+                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3,  xDelta, True)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
-                    ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
+                    ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
 
             if ConfigFile.settings['bL2WeightSentinel3B']:
                 print('Processing Sentinel3B')
@@ -1765,16 +1769,16 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdSentinel3B
 
                 sensor = 'Sentinel3B'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3)
+                ProcessL2.spectralReflectance(root, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3,  xDelta, True)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
-                    ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
+                    ProcessL2.nirCorrectionSatellite(root, sensor, rrsNIRCorr, nLwNIRCorr)
 
         return True
 
 
     @staticmethod
-    def stationsEnsemblesReflectance(node, root,station=None):
+    def stationsEnsemblesReflectance(node, root, station=None):
         ''' Extract stations if requested, then pass to ensemblesReflectance for ensemble
             averages, rho calcs, Rrs, Lwn, NIR correction, satellite convolution, OC Products.'''
 
@@ -1805,9 +1809,9 @@ class ProcessL2:
         ltRawGroup = rootCopy.getGroup('LT_L1AQC')
 
         if ConfigFile.settings["bL1bCal"] >= 2:
-            rootCopy.addGroup("UNCERTAINTY_BUDGET")
-            rootCopy.getGroup('UNCERTAINTY_BUDGET').copy(root.getGroup('UNCERTAINTY_BUDGET'))
-            uncGroup = rootCopy.getGroup("UNCERTAINTY_BUDGET")
+            rootCopy.addGroup("RAW_UNCERTAINTIES")
+            rootCopy.getGroup('RAW_UNCERTAINTIES').copy(root.getGroup('RAW_UNCERTAINTIES'))
+            uncGroup = rootCopy.getGroup("RAW_UNCERTAINTIES")
         else:
             uncGroup = None
 
