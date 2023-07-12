@@ -87,16 +87,15 @@ class ProcessL1b:
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
         # Read uncertainty parameters from full calibration from TARTU
-        print("pol path", os.path.join(inpath, 'pol', r'*POLAR*'))
-        for f in glob.glob(os.path.join(inpath, 'pol', r'*POLAR*')):
+        for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, 'radcal', r'*RADCAL*')):
+        for f in glob.glob(os.path.join(inpath, r'*RADCAL*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, 'straylight', r'*STRAY*')):
+        for f in glob.glob(os.path.join(inpath, r'*STRAY*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, 'angular', r'*ANGULAR*')):
+        for f in glob.glob(os.path.join(inpath, r'*ANGULAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, 'thermal', r'*THERMAL*')):
+        for f in glob.glob(os.path.join(inpath, r'*THERMAL*')):
             Utilities.read_char(f, gp)
 
         if len(gp.datasets) < 23:
