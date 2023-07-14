@@ -1856,16 +1856,32 @@ class ProcessL2:
         rootCopy.addGroup("ANCILLARY")
         rootCopy.addGroup("IRRADIANCE")
         rootCopy.addGroup("RADIANCE")
-        rootCopy.addGroup("ES_L1AQC")
-        rootCopy.addGroup("LI_L1AQC")
-        rootCopy.addGroup("LT_L1AQC")
+
 
         rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
-        rootCopy.getGroup('ES_L1AQC').copy(root.getGroup('ES_L1AQC'))
-        rootCopy.getGroup('LI_L1AQC').copy(root.getGroup('LI_L1AQC'))
-        rootCopy.getGroup('LT_L1AQC').copy(root.getGroup('LT_L1AQC'))
+
+        if ConfigFile.settings['SensorType'].lower() == 'seabird':
+            rootCopy.addGroup("ES_DARK_L1AQC")
+            rootCopy.addGroup("ES_LIGHT_L1AQC")
+            rootCopy.addGroup("LI_DARK_L1AQC")
+            rootCopy.addGroup("LI_LIGHT_L1AQC")
+            rootCopy.addGroup("LT_DARK_L1AQC")
+            rootCopy.addGroup("LT_LIGHT_L1AQC")
+            rootCopy.getGroup('ES_DARK_L1AQC').copy(root.getGroup('ES_DARK_L1AQC'))
+            rootCopy.getGroup('ES_LIGHT_L1AQC').copy(root.getGroup('ES_LIGHT_L1AQC'))
+            rootCopy.getGroup('LT_DARK_L1AQC').copy(root.getGroup('LT_DARK_L1AQC'))
+            rootCopy.getGroup('LT_LIGHT_L1AQC').copy(root.getGroup('LT_LIGHT_L1AQC'))
+            rootCopy.getGroup('LI_DARK_L1AQC').copy(root.getGroup('LI_DARK_L1AQC'))
+            rootCopy.getGroup('LI_LIGHT_L1AQC').copy(root.getGroup('LI_LIGHT_L1AQC'))
+        elif ConfigFile.settings['SensorType'].lower() == 'trios':
+            rootCopy.addGroup("ES_L1AQC")
+            rootCopy.addGroup("LI_L1AQC")
+            rootCopy.addGroup("LT_L1AQC")
+            rootCopy.getGroup('ES_L1AQC').copy(root.getGroup('ES_L1AQC'))
+            rootCopy.getGroup('LI_L1AQC').copy(root.getGroup('LI_L1AQC'))
+            rootCopy.getGroup('LT_L1AQC').copy(root.getGroup('LT_L1AQC'))
 
         # rootCopy will be manipulated in the making of node, but root will not
         referenceGroup = rootCopy.getGroup("IRRADIANCE")
