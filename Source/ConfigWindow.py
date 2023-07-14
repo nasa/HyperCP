@@ -257,7 +257,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # NOTE: While L2 class-based is being debugged
         # '''
         self.ClassCalRadioButton.setChecked(False)
-        self.ClassCalRadioButton.setEnabled(False)
+        # self.ClassCalRadioButton.setEnabled(False)
 
         self.FullCalRadioButton = QtWidgets.QRadioButton("Full Characterization:")
         self.FullCalRadioButton.setAutoExclusive(False)
@@ -265,7 +265,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # NOTE: While L2 full-based is being debugged
         # '''
         self.FullCalRadioButton.setChecked(False)
-        self.FullCalRadioButton.setEnabled(False)
+        # self.FullCalRadioButton.setEnabled(False)
 
         if ConfigFile.settings["bL1bCal"]==3:
             self.FullCalRadioButton.setChecked(True)

@@ -92,19 +92,6 @@ class Propagate:
             else:
                 Lt_rel.append((Lt_unc[i] * 1e10) / (lt[i] * 1e10))
 
-        # correlation matrix   1.0    es/li  es/lt
-        #                      es/li  1.0    li/lt
-        #                      es/lt  li/lt  1.0
-
-        self.corr_matrices['Es'] = corr[:, 0]
-        self.corr_matrices['Li'] = corr[:, 1]
-        self.corr_matrices['Lt'] = corr[:, 2]
-
-        if not self._write_correlation():
-            msg = 'could not write out instrument correlation from level 1b'
-            Utilities.writeLogFile(msg)
-            print(msg)
-
         return Es_unc, Li_unc, Lt_unc, Es_rel, Li_rel, Lt_rel
 
     def Propagate_Lw(self, varlist, ulist):
@@ -130,40 +117,6 @@ class Propagate:
         lw = self.Lw(*varlist)
         unc = self.MCP.propagate_random(self.Lw, varlist, ulist, corr_between=corr_matrix)
         return (unc * 1e10) / (lw * 1e10), unc, lw
-
-    # def Propagate_RRS_cal(self, varlist: list, ulist: list) -> dict:
-    #     """lt, rhoVec, li, es, c1, c2, c3, clin1, clin2, clin3, cstab1, cstab2, cstab3, cstray1, cstray2, cstray3,
-    #             cT1, cT2, cT3, cpol1, cpol2, ccos
-    #         will be replaced in the near future - for pixel by pixel method """
-    #     corr_matrix = np.array([
-    #         [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0],
-    #         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    #         ], dtype=np.float)
-    #
-    #     unc = self.MCP.propagate_random(self.RRS, varlist, ulist, corr_between=corr_matrix)
-    #     rrs = self.RRS(*varlist)
-    #
-    #     return (unc * 1E9) / (rrs * 1E9)  # replace with just 'unc' for absolute uncertainty
 
     def Propagate_RRS(self, mean_vals: list, uncertainties: list) -> dict:
         """lt, rhoVec, li, es, c1, c2, c3, clin1, clin2, clin3, cstab1, cstab2, cstab3, cstray1, cstray2, cstray3,
@@ -200,15 +153,23 @@ class Propagate:
         unc = self.MCP.propagate_standard(self.RRS, mean_vals, uncertainties, corr_between=corr_matrix, corr_x=corr_list)
         return (unc * 1E9) / (rrs * 1E9), unc, rrs  # replace with just 'unc' for absolute uncertainty
 
-    def band_Conv_Uncertainty(self, mean_vals, uncertainties):
+    def band_Conv_Uncertainty(self, mean_vals, uncertainties, platform):
         """Hyper_Rrs, wvl, Band cetral wavelengths, Band width - only works for sentinel 3A - OLCI
             :return: relative Rrs uncertainty per spectral band"""
         rad_band = self.band_Conv_Sensor(*mean_vals)
-        return (self.MCP.propagate_standard(self.band_Conv_Sensor, mean_vals, uncertainties, corr_x=['rand', None]) * 1e9) / (rad_band * 1e9)
+        if platform.upper() == "S3A" or platform.lower().rstrip().replace('-','') == "sentinel3a":
+            func = self.band_Conv_Sensor_S3A
+        elif platform.upper() == "S3B" or platform.lower().rstrip().replace('-','') == "sentinel3b":
+            func = self.band_Conv_Sensor_S3B
+        else:
+            msg = "sensor not supported"
+            return False
+        return (self.MCP.propagate_standard(func, mean_vals,
+                                            uncertainties, corr_x=['syst', None]) * 1e10) / (rad_band * 1e10)
 
     # Rho propagation methods
-    def M99_Rho_Uncertainty(self, varlist, ulist):
-        return self.MCP.propagate_random(self.rhoM99, varlist, ulist, corr_x=["rand", "rand", "rand"])
+    def M99_Rho_Uncertainty(self, mean_vals, uncertainties):
+        return self.MCP.propagate_random(self.rhoM99, mean_vals, uncertainties, corr_x=["rand", "rand", "rand"])
 
     # Measurement Functions
     @staticmethod
@@ -220,11 +181,19 @@ class Propagate:
                np.array((LTLIGHT - LTDARK)*LTCal*LTStab*LTLin*LTStray*LTT*LTPol)
 
     @staticmethod
-    def band_Conv_Sensor(Hyperspec, Wavelengths):  #, platform_name: str = None, sensor_name: str = None):
-        """ band convolution of Rrs"""
+    def band_Conv_Sensor_S3A(Hyperspec, Wavelengths):
+        """ band convolution of Rrs for S3A"""
         rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
-                                                                            platform_name="Sentinel-3A",
-                                                                            sensor_name="olci", u_d=None)
+                                                                           platform_name="Sentinel-3A",
+                                                                           sensor_name="olci", u_d=None)
+        return rad_band
+
+    @staticmethod
+    def band_Conv_Sensor_S3B(Hyperspec, Wavelengths):
+        """ band convolution of Rrs for S3B"""
+        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
+                                                                           platform_name="Sentinel-3B",
+                                                                           sensor_name="olci", u_d=None)
         return rad_band
 
     @staticmethod
@@ -232,6 +201,14 @@ class Propagate:
         Li = li * c2 * clin2 * cstab2 * cstray2 * cT2 * cpol1
         Lt = lt * c3 * clin3 * cstab3 * cstray3 * cT3 * cpol2
         return Lt - (Li * rhoVec)
+
+    @staticmethod
+    def Lw_FRM(lt, rho, li):
+        return lt - (rho * li)
+
+    @staticmethod
+    def Rrs_FRM(lt, rho, li, es):
+        return (lt - (rho * li)) / es
 
     @staticmethod
     def RRS(lt, rhoVec, li, es, c1, c2, c3, clin1, clin2, clin3, cstab1, cstab2, cstab3, cstray1, cstray2, cstray3,
@@ -271,9 +248,7 @@ class Propagate:
         return rhoScalar
 
     def zhangWrapper(self, windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
-        '''
-        NOTE: Be sure calls to zhangWrapper to send abs(relAz) if derived from data - DA
-        '''
+
         print(f"CALL TO WRAPPER: {self.i}")
 
         # === environmental conditions during experiment ===

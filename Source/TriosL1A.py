@@ -15,7 +15,6 @@ from Source.Utilities import Utilities
 
 
 class TriosL1A:
-
     # use namesList to define dtype for recarray
     def reshape_data(NAME,N,data):
         ds_dt = np.dtype({'names':[NAME],'formats':[(float)] })

@@ -455,6 +455,10 @@ class Utilities:
                 else:
                     # L1AQC
                     # Add a special dataset
+                    for ds in gp.datasets:
+                        # Make sure all datasets have been transcribed to columns
+                        gp.datasets[ds].datasetToColumns()
+
                     gp.addDataset('Timestamp')
                     dateTag = gp.datasets['DATETAG'].columns["NONE"]
                     timeData = gp.datasets['TIMETAG2'].columns["NONE"]
@@ -2256,7 +2260,8 @@ class Utilities:
                         y = ds.columns[str(indx)]
                         y_new = np.interp(x_new, x, y)
                         ds.columns[str(indx)] = y_new
-                    ds.columns['0'] = np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
+                    # column ['0'] longer than the rest due to interpolation - this is a quick work around
+                    ds.columns['0'] = np.array(range(len(x_new))) # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
                     ds.columns['1'] = x_new
                     ds.columnsToDataset()
             else:
@@ -2268,7 +2273,9 @@ class Utilities:
                         y = ds.columns[str(indx)]
                         y_new = np.interp(x_new, x, y)
                         ds.columns[str(indx)] = y_new
-                    ds.columns['0'] = np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
+                    # quick workaround for bug desovered in parsing uncertainties
+                    # one column of TEMPDATA_CAL is longer than the others!
+                    ds.columns['0'] = np.array(range(len(x_new))) # drop 1st line from TARTU file
                     ds.columns['1'] = x_new
                     ds.columnsToDataset()
 
