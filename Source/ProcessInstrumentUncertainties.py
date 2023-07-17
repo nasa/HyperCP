@@ -27,21 +27,15 @@ class Instrument:
     def lightDarkStats(self, grp, sensortype):
         pass
 
-    def generateSensorStats(self, rawGroups, newWaveBands):
+    def generateSensorStats(self, rawData, newWaveBands):
         output = {}
 
         types = ['ES', 'LI', 'LT']
         for sensortype in types:
-            output[sensortype] = self.lightDarkStats(rawGroups[sensortype], sensortype)
-
-        #     # generate common wavebands for interpolation
-        #     wvls = np.asarray(output[sensortype]['wvl'], dtype=float)
-        #     Start[sensortype] = np.ceil(wvls[0])
-        #     End[sensortype] = np.floor(wvls[-1])
-        #
-        # start = max([Start[stype] for stype in types])
-        # end = min([End[stype] for stype in types])
-        # newWavebands = np.arange(start, end, float(ConfigFile.settings["fL1bInterpInterval"]))
+            if isinstance(rawData, dict):  # if TriOS (raw data is dict of raw groups
+                output[sensortype] = self.lightDarkStats(rawData[sensortype], sensortype)
+            else:  # seabird passes node as rawGroups
+                output[sensortype] = self.lightDarkStats(rawData, sensortype)
 
         # interpolate to common wavebands
         for stype in types:
