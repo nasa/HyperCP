@@ -1180,7 +1180,6 @@ class ProcessL2:
         ltSlice = ProcessL2.columnToSlice(ltColumns,start, end)
         n = len(list(ltSlice.values())[0])
 
-
         ## removed because output uncertainties are put in the respective rad, irrad, refl grps
         # Uncertainties
         # if ConfigFile.settings["bL1bCal"] >= 2:
@@ -1198,27 +1197,45 @@ class ProcessL2:
             #         newDS.datasetToColumns()
 
         # process raw groups for generating standard deviations
-        #
-        # def _popTime(_ds, cols):
-        #     _ds.columns = cols
-        #     _ds.columns.pop("Datetag")
-        #     _ds.columns.pop("Datetime")
-        #     _ds.columns.pop("Timetag2")
-        #     return _ds
+
+        def _sliceRawData(ES_raw, LI_raw, LT_raw):
+            for (ds, ds1, ds2) in zip(ES_raw, LI_raw, LT_raw):
+                if ds.id == "ES":
+                    ds.columns = ProcessL2.columnToSlice(ds.columns, start, end)
+                    ds.columnsToDataset()
+                if ds1.id == "LI":
+                    ds1.columns = ProcessL2.columnToSlice(ds1.columns, start, end)
+                    ds1.columnsToDataset()
+                if ds2.id == "LT":
+                    ds2.columns = ProcessL2.columnToSlice(ds2.columns, start, end)
+                    ds2.columnsToDataset()
 
         if not any([esRawGroup, liRawGroup, ltRawGroup]):
             msg = "no raw groups found"
-        # else:
-        #     for (ds, ds1, ds2) in zip(esRawGroup.datasets.values(), liRawGroup.datasets.values(), ltRawGroup.datasets.values()):
-        #         if ds.id == "ES":
-        #             _popTime(ds, ProcessL2.columnToSlice(ds.columns, start, end))
-        #             ds.columnsToDataset()
-        #         if ds1.id == "LI":
-        #             _popTime(ds1, ProcessL2.columnToSlice(ds1.columns, start, end))
-        #             ds1.columnsToDataset()
-        #         if ds2.id == "LT":
-        #             _popTime(ds2, ProcessL2.columnToSlice(ds2.columns, start, end))
-        #             ds2.columnsToDataset()
+            print(msg)
+        else:
+            # slice Raw Data depending on SensorType
+            if ConfigFile.settings['SensorType'].lower() == "trios":
+                _sliceRawData(
+                              esRawGroup.datasets.values(),
+                              liRawGroup.datasets.values(),
+                              ltRawGroup.datasets.values()
+                              )
+            elif ConfigFile.settings['SensorType'].lower() == "seabird":
+                _sliceRawData(
+                              esRawGroup['LIGHT'].datasets.values(),
+                              liRawGroup['LIGHT'].datasets.values(),
+                              ltRawGroup['LIGHT'].datasets.values()
+                              )
+                _sliceRawData(
+                              esRawGroup['DARK'].datasets.values(),
+                              liRawGroup['DARK'].datasets.values(),
+                              ltRawGroup['DARK'].datasets.values()
+                              )
+            else:
+                msg = "unrecognisable sensor type"
+                print(msg)
+                return False
 
         rhoDefault = float(ConfigFile.settings["fL2RhoSky"])
         threeCRho = int(ConfigFile.settings["bL23CRho"])
@@ -1240,10 +1257,22 @@ class ProcessL2:
         ltSlice.pop("Datetime")
 
         # once datetag is popped then process StdSlices for Band Convolution
-        instrument = Trios() if ConfigFile.settings['SensorType'] else HyperOCR()  # check sensor-type
+        instrument = None
         # get common wavebands from esSlice to interp stats
         instrument_WB = np.asarray(list(esSlice.keys()), dtype=float)
-        stats = instrument.generateSensorStats(dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), instrument_WB)
+
+        if ConfigFile.settings['SensorType'].lower() == "trios":
+            instrument = Trios()
+            stats = instrument.generateSensorStats("TriOS",
+                                                   dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), instrument_WB)
+        elif ConfigFile.settings['SensorType'].lower() == "seabird":
+            instrument = HyperOCR()  # check sensor-type
+            stats = instrument.generateSensorStats("SeaBird",
+                                                   dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), instrument_WB)
+        else:
+            msg = "class type not recognised"
+            return False
+
         # make std into ordered dictionaries
         esStdSlice = {k: [stats['ES']['std_Signal'][k][0]*esSlice[k][0]] for k in esSlice}
         liStdSlice = {k: [stats['LI']['std_Signal'][k][0]*liSlice[k][0]] for k in liSlice}
@@ -1857,7 +1886,6 @@ class ProcessL2:
         rootCopy.addGroup("IRRADIANCE")
         rootCopy.addGroup("RADIANCE")
 
-
         rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
@@ -1869,12 +1897,17 @@ class ProcessL2:
             rootCopy.addGroup("LI_LIGHT_L1AQC")
             rootCopy.addGroup("LT_DARK_L1AQC")
             rootCopy.addGroup("LT_LIGHT_L1AQC")
-            rootCopy.getGroup('ES_DARK_L1AQC').copy(root.getGroup('ES_DARK_L1AQC'))
             rootCopy.getGroup('ES_LIGHT_L1AQC').copy(root.getGroup('ES_LIGHT_L1AQC'))
-            rootCopy.getGroup('LT_DARK_L1AQC').copy(root.getGroup('LT_DARK_L1AQC'))
-            rootCopy.getGroup('LT_LIGHT_L1AQC').copy(root.getGroup('LT_LIGHT_L1AQC'))
-            rootCopy.getGroup('LI_DARK_L1AQC').copy(root.getGroup('LI_DARK_L1AQC'))
+            rootCopy.getGroup('ES_DARK_L1AQC').copy(root.getGroup('ES_DARK_L1AQC'))
             rootCopy.getGroup('LI_LIGHT_L1AQC').copy(root.getGroup('LI_LIGHT_L1AQC'))
+            rootCopy.getGroup('LI_DARK_L1AQC').copy(root.getGroup('LI_DARK_L1AQC'))
+            rootCopy.getGroup('LT_LIGHT_L1AQC').copy(root.getGroup('LT_LIGHT_L1AQC'))
+            rootCopy.getGroup('LT_DARK_L1AQC').copy(root.getGroup('LT_DARK_L1AQC'))
+
+            esRawGroup = {"LIGHT": rootCopy.getGroup('ES_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('ES_DARK_L1AQC')}
+            liRawGroup = {"LIGHT": rootCopy.getGroup('LI_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('LI_DARK_L1AQC')}
+            ltRawGroup = {"LIGHT": rootCopy.getGroup('LT_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('LT_DARK_L1AQC')}
+
         elif ConfigFile.settings['SensorType'].lower() == 'trios':
             rootCopy.addGroup("ES_L1AQC")
             rootCopy.addGroup("LI_L1AQC")
@@ -1883,13 +1916,15 @@ class ProcessL2:
             rootCopy.getGroup('LI_L1AQC').copy(root.getGroup('LI_L1AQC'))
             rootCopy.getGroup('LT_L1AQC').copy(root.getGroup('LT_L1AQC'))
 
+            esRawGroup = rootCopy.getGroup('ES_L1AQC')
+            liRawGroup = rootCopy.getGroup('LI_L1AQC')
+            ltRawGroup = rootCopy.getGroup('LT_L1AQC')
+
+
         # rootCopy will be manipulated in the making of node, but root will not
         referenceGroup = rootCopy.getGroup("IRRADIANCE")
         sasGroup = rootCopy.getGroup("RADIANCE")
         ancGroup = rootCopy.getGroup("ANCILLARY")
-        esRawGroup = rootCopy.getGroup('ES_L1AQC')
-        liRawGroup = rootCopy.getGroup('LI_L1AQC')
-        ltRawGroup = rootCopy.getGroup('LT_L1AQC')
 
         if ConfigFile.settings["bL1bCal"] >= 2:
             rootCopy.addGroup("RAW_UNCERTAINTIES")
