@@ -20,6 +20,7 @@ dependencies:
   - pytables=3.7
   - pyspectral=0.12
   - pyqtgraph
+  - pip
   - pip:
     - py6s
     - punpy
