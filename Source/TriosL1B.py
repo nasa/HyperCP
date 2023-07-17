@@ -266,13 +266,16 @@ class TriosL1B:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
+
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
-        if ConfigFile.settings['bL1bCal'] == 2:
+        if ConfigFile.settings['bL1bCal'] == 1:
+            print("TRIOS - no uncertainty computation in Factory mode")
+
+
+        # Add Class-based characterization files + RADCAL files
+        elif ConfigFile.settings['bL1bCal'] == 2:
             inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
             print('Class based dir:', inpath)
-            '''
-            BUG: This currently will not work for TriOS, it still need a sensor-specific RADCAL file
-            '''
             node = ProcessL1b.read_unc_coefficient_class(node, inpath)
             if node is None:
                 msg = 'Error running class based uncertainties.'

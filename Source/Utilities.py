@@ -2036,16 +2036,15 @@ class Utilities:
 
         return dateTime
     @staticmethod
-    def generateTempCoeffs(InternalTemp, uncDS, sensor):
+    def generateTempCoeffs(InternalTemp, uncDS, ambTemp, sensor):
 
         # Get the reference temperature
-        if 'DEVICE_TEMP' in uncDS.attributes:
-            refTemp = float(uncDS.attributes["DEVICE_TEMP"])
-        elif 'REFERENCE_TEMP' in uncDS.attributes:
+        if 'REFERENCE_TEMP' in uncDS.attributes:
             refTemp = float(uncDS.attributes["REFERENCE_TEMP"])
         else:
             print("reference temperature not found")
-
+            print("aborting ...")
+            return None
 
         # Get thermal coefficient from characterization
         uncDS.datasetToColumns()
@@ -2067,16 +2066,11 @@ class Utilities:
         # TRIOS case: no temperature available
         elif ConfigFile.settings['SensorType'].lower() == "trios":
             # For Trios the radiometer InternalTemp is a place holder filled with 0.
-            # we use ambiant_temp+5° instead.
-            if 'AMBIENT_TEMP' in uncDS.attributes:
-                ambTemp = float(uncDS.attributes["AMBIENT_TEMP"])
-            else:
-                print("ambiant temperature not found")
-
+            # We use ambiant_temp+2.5° instead to estimate internal temp
             for i in range(len(therm_coeff)):
                 try:
-                    ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))
-                    ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))
+                    ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+2.5 - refTemp)))
+                    ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp+ambTemp+2.5 - refTemp)))
                 except IndexError:
                     ThermCorr.append(1.0)
                     ThermUnc.append(0)
@@ -2106,17 +2100,25 @@ class Utilities:
                     print(msg)
                 # internal temperature is the mean of all replicate
                 internalTemp = np.mean(np.array(TempDS.data.tolist()))
-                if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, sensor):
+                # ambiant temp is not needed for seabird as internal temp is measured, set to 0
+                ambTemp = 0
+                if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
                     msg = "Failed to generate Thermal Coefficients"
                     print(msg)
 
             ### Trios
             elif ConfigFile.settings['SensorType'].lower() == "trios":
-                # grp_name = "SAM_"+inv_ID[sensor]+".dat"
-                # grp = node.getGroup(grp_name)
-                # No internal temperature for Trios, set to 0.
+                # No internal temperature available for Trios, set to 0.
                 internalTemp = 0
-                if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, sensor):
+                # Ambiant temperature is needed to estimate internal temperature instead.
+                RadcalDS = unc_grp.getDataset(sensor+"_RADCAL_CAL")
+                if 'AMBIENT_TEMP' in RadcalDS.attributes:
+                    ambTemp = float(RadcalDS.attributes["AMBIENT_TEMP"])
+                else:
+                    print("Ambient temperature not found")
+                    print("Aborting ...")
+                    return None
+                if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
                     msg = "Failed to generate Thermal Coefficients"
                     print(msg)
 
@@ -2225,7 +2227,7 @@ class Utilities:
 
 
     @staticmethod
-    def interpUncertainties_Class(node):
+    def interpUncertainties_Factory(node):
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
         sensorList = ['ES', 'LI', 'LT']
@@ -2277,6 +2279,97 @@ class Utilities:
                     # one column of TEMPDATA_CAL is longer than the others!
                     ds.columns['0'] = np.array(range(len(x_new))) # drop 1st line from TARTU file
                     ds.columns['1'] = x_new
+                    ds.columnsToDataset()
+
+        return True
+
+
+    @staticmethod
+    def interpUncertainties_Class(node):
+
+        grp = node.getGroup("RAW_UNCERTAINTIES")
+        sensorList = ['ES', 'LI', 'LT']
+        for sensor in sensorList:
+
+            ## retrieve dataset from corresponding instrument
+            if ConfigFile.settings['SensorType'].lower() == "seabird":
+                data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
+            elif ConfigFile.settings['SensorType'].lower() == "trios":
+                data = node.getGroup(sensor).getDataset(sensor)
+
+            # Retrieve hyper-spectral wavelengths from dataset
+            x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
+
+
+            # RADCAL data do not need interpolation, just removing the first line
+            for data_type in ["_RADCAL_CAL"]:
+                ds = grp.getDataset(sensor+data_type)
+                ds.datasetToColumns()
+                for indx in range(len(ds.columns)):
+                    indx_name = str(indx)
+                    if indx_name != '':
+                        y = np.array(ds.columns[indx_name])
+                        if len(y)==255:
+                            ds.columns[indx_name] = y
+                        elif len(y)==256:
+                            # drop 1st line from TARTU file
+                            ds.columns[indx_name] = y[1:]
+                ds.columnsToDataset()  
+
+
+
+            ## Interpolate data to hyper-spectral pixels
+            if sensor != "ES":
+                for data_type in ["_POLDATA_CAL","_TEMPDATA_CAL"]:
+                    ds = grp.getDataset(sensor+data_type)
+                    ds.datasetToColumns()
+                    x = ds.columns['1']
+                    for indx in range(2,len(ds.columns)):
+                        y = ds.columns[str(indx)]
+                        y_new = np.interp(x_new, x, y)
+                        ds.columns[str(indx)] = y_new
+                    # column ['0'] longer than the rest due to interpolation - this is a quick work around
+                    ds.columns['0'] = np.array(range(len(x_new))) # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
+                    ds.columns['1'] = x_new
+                    ds.columnsToDataset()
+            else:
+                for data_type in ["_TEMPDATA_CAL","_ANGDATA_COSERROR", "_ANGDATA_COSERROR_AZ90", "_ANGDATA_UNCERTAINTY", "_ANGDATA_UNCERTAINTY_AZ90"]:
+                    ds = grp.getDataset(sensor+data_type)
+                    ds.datasetToColumns()
+                    x = ds.columns['1']
+                    for indx in range(2,len(ds.columns)):
+                        y = ds.columns[str(indx)]
+                        y_new = np.interp(x_new, x, y)
+                        ds.columns[str(indx)] = y_new
+                    # quick workaround for bug desovered in parsing uncertainties
+                    # one column of TEMPDATA_CAL is longer than the others!
+                    ds.columns['0'] = np.array(range(len(x_new))) # drop 1st line from TARTU file
+                    ds.columns['1'] = x_new
+                    ds.columnsToDataset()
+   
+            ## RADCAL_LAMP/: Interpolate data to hyper-spectral pixels
+            for data_type in ["_RADCAL_LAMP"]:
+                ds = grp.getDataset(sensor+data_type)
+                ds.datasetToColumns()
+                x = ds.columns['0']
+                for indx in range(1,len(ds.columns)):
+                    y = ds.columns[str(indx)]
+                    y_new = np.interp(x_new, x, y)
+                    ds.columns[str(indx)] = y_new
+                ds.columns['0'] = x_new
+                ds.columnsToDataset()
+
+            ## RADCAL_PANEL: only for Li & Lt
+            if sensor != "ES":
+                for data_type in ["_RADCAL_PANEL"]:
+                    ds = grp.getDataset(sensor+data_type)
+                    ds.datasetToColumns()
+                    x = ds.columns['0']
+                    for indx in range(1,len(ds.columns)):
+                        y = ds.columns[str(indx)]
+                        y_new = np.interp(x_new, x, y)
+                        ds.columns[str(indx)] = y_new
+                    ds.columns['0'] = x_new
                     ds.columnsToDataset()
 
         return True

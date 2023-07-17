@@ -273,11 +273,11 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l1bGetFRMCheck1 = QtWidgets.QCheckBox("local files", self)
         ''' NOTE:  Disable while class/FRM L2 under developement '''
-        self.l1bGetFRMCheck1.setDisabled(1)
+        # self.l1bGetFRMCheck1.setDisabled(1)
 
         ''' NOTE: disabled until fidraddb_api can be resolved.'''
         self.l1bGetFRMCheck2 = QtWidgets.QCheckBox("FidRadDB", self)
-        self.l1bGetFRMCheck2.setDisabled(1)
+        # self.l1bGetFRMCheck2.setDisabled(1)
 
         if int(ConfigFile.settings["FidRadDB"]) == 0:
             self.l1bGetFRMCheck1.setChecked(True)
