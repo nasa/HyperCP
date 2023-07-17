@@ -1240,10 +1240,20 @@ class ProcessL2:
         ltSlice.pop("Datetime")
 
         # once datetag is popped then process StdSlices for Band Convolution
-        instrument = Trios() if ConfigFile.settings['SensorType'] else HyperOCR()  # check sensor-type
+        instrument = None
         # get common wavebands from esSlice to interp stats
         instrument_WB = np.asarray(list(esSlice.keys()), dtype=float)
-        stats = instrument.generateSensorStats(dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), instrument_WB)
+
+        if ConfigFile.settings['SensorType'].lower() == "trios":
+            instrument = Trios()
+            stats = instrument.generateSensorStats(dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), instrument_WB)
+        elif ConfigFile.settings['SensorType'].lower() == "seabird":
+            instrument = HyperOCR()  # check sensor-type
+            stats = instrument.generateSensorStats(root, instrument_WB)
+        else:
+            msg = "class type not recognised"
+            return False
+
         # make std into ordered dictionaries
         esStdSlice = {k: [stats['ES']['std_Signal'][k][0]*esSlice[k][0]] for k in esSlice}
         liStdSlice = {k: [stats['LI']['std_Signal'][k][0]*liSlice[k][0]] for k in liSlice}

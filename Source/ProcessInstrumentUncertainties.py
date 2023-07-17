@@ -11,7 +11,7 @@ import punpy
 import comet_maths as cm
 
 # HCP files
-import Utilities
+from Utilities import Utilities
 from Source.ConfigFile import ConfigFile
 from ProcessL1b import ProcessL1b
 from ProcessL1b_Interp import ProcessL1b_Interp
@@ -24,14 +24,12 @@ class Instrument:
     def __init__(self):
         pass
 
-    @staticmethod
-    def lightDarkStats(grp, sensortype):
+    def lightDarkStats(self, grp, sensortype):
         pass
 
     def generateSensorStats(self, rawGroups, newWaveBands):
         output = {}
-        # Start = {}
-        # End = {}
+
         types = ['ES', 'LI', 'LT']
         for sensortype in types:
             output[sensortype] = self.lightDarkStats(rawGroups[sensortype], sensortype)
@@ -47,7 +45,8 @@ class Instrument:
 
         # interpolate to common wavebands
         for stype in types:
-            wvls = np.asarray(output[stype].pop('wvl'), dtype=float)  # get sensor specific wavebands and remove from output
+            # get sensor specific wavebands and pop from output
+            wvls = np.asarray(output[stype].pop('wvl'), dtype=float)
             output[stype]['ave_Light'], _ = self.interp_common_wvls(output[stype]['ave_Light'], wvls,
                                                                     newWaveBands)
             output[stype]['std_Light'], _ = self.interp_common_wvls(output[stype]['std_Light'], wvls,
@@ -696,18 +695,18 @@ class HyperOCR(Instrument):
 
         return darkData.data
 
-    @staticmethod
-    def lightDarkStats(node, sensortype):
+    def lightDarkStats(self, node, sensortype):
         for gp in node.groups:
-            if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensortype):
-                darkGroup = gp
-                darkData = gp.getDataset(sensortype)
-                darkDateTime = gp.getDataset("DATETIME")
+            if "FrameType" in gp.attributes:
+                if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensortype):
+                    darkGroup = gp
+                    darkData = gp.getDataset(sensortype)
+                    darkDateTime = gp.getDataset("DATETIME")
 
-            if gp.attributes["FrameType"] == "ShutterLight" and gp.getDataset(sensortype):
-                lightGroup = gp
-                lightData = gp.getDataset(sensortype)
-                lightDateTime = gp.getDataset("DATETIME")
+                if gp.attributes["FrameType"] == "ShutterLight" and gp.getDataset(sensortype):
+                    lightGroup = gp
+                    lightData = gp.getDataset(sensortype)
+                    lightDateTime = gp.getDataset("DATETIME")
 
         if darkGroup is None or lightGroup is None:
             msg = f'No radiometry found for {sensortype}'
@@ -873,7 +872,7 @@ class HyperOCR(Instrument):
                 sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
 
                 ## Irradiance direct and diffuse ratio
-                # res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0)
+                res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0)
 
                 updated_radcal_gain = Hyper_update_cal_data_ES(S12_sl_corr, LAMP, cal_int, t1)
                 sample_updated_radcal_gain = prop.run_samples(Hyper_update_cal_data_ES,
@@ -953,36 +952,8 @@ class HyperOCR(Instrument):
 
                 # Cosine correction
                 if sensortype == "ES":
-                    solar_zenith = np.array([46.87415726])
-                    direct_ratio = np.array([0.222, 0.245, 0.256, 0.268, 0.279, 0.302, 0.313, 0.335, 0.345, 0.356,
-                                             0.376, 0.386, 0.396, 0.415, 0.424, 0.433, 0.45, 0.459, 0.467, 0.482,
-                                             0.489, 0.496, 0.51, 0.516, 0.522, 0.534, 0.539, 0.545, 0.555, 0.56,
-                                             0.565, 0.576, 0.581, 0.586, 0.596, 0.6, 0.605, 0.613, 0.617, 0.621,
-                                             0.629, 0.632, 0.636, 0.644, 0.647, 0.651, 0.657, 0.66, 0.663, 0.669,
-                                             0.672, 0.675, 0.68, 0.683, 0.686, 0.691, 0.693, 0.696, 0.7, 0.702,
-                                             0.705, 0.709, 0.711, 0.714, 0.717, 0.719, 0.721, 0.725, 0.726, 0.728,
-                                             0.731, 0.733, 0.736, 0.738, 0.739, 0.742, 0.744, 0.745, 0.748, 0.749,
-                                             0.75, 0.753, 0.754, 0.755, 0.757, 0.758, 0.759, 0.761, 0.763, 0.764,
-                                             0.766, 0.767, 0.768, 0.769, 0.77, 0.771, 0.773, 0.774, 0.775, 0.776,
-                                             0.777, 0.778, 0.779, 0.78, 0.781, 0.782, 0.783, 0.784, 0.785, 0.7855,
-                                             0.786, 0.788, 0.788, 0.789, 0.79, 0.79, 0.791, 0.792, 0.793, 0.793,
-                                             0.795, 0.795, 0.796, 0.797, 0.797, 0.798, 0.799, 0.799, 0.8, 0.801,
-                                             0.801, 0.802, 0.802, 0.803, 0.803, 0.804, 0.805, 0.805, 0.806, 0.806,
-                                             0.807, 0.807, 0.808, 0.808, 0.809, 0.809, 0.81, 0.81, 0.811, 0.811,
-                                             0.811, 0.812, 0.812, 0.813, 0.813, 0.814, 0.814, 0.814, 0.815, 0.815,
-                                             0.816, 0.816, 0.816, 0.817, 0.817, 0.817, 0.818, 0.818, 0.818, 0.819,
-                                             0.819, 0.819, 0.819, 0.82, 0.82, 0.821, 0.821, 0.821, 0.822, 0.822,
-                                             0.822, 0.822, 0.823, 0.823, 0.823, 0.824, 0.824, 0.824, 0.824, 0.825,
-                                             0.825, 0.825, 0.826, 0.826, 0.826, 0.826, 0.827, 0.827, 0.827, 0.827,
-                                             0.828, 0.828, 0.828, 0.828, 0.828, 0.829, 0.829, 0.829, 0.829, 0.83,
-                                             0.83, 0.83, 0.83, 0.83, 0.83, 0.831, 0.831, 0.831, 0.831, 0.831,
-                                             0.832, 0.832, 0.832, 0.832, 0.832, 0.832, 0.833, 0.833, 0.833, 0.833,
-                                             0.833, 0.833, 0.834, 0.834, 0.834, 0.834, 0.834, 0.834, 0.834, 0.835,
-                                             0.835, 0.835, 0.835, 0.835, 0.835, 0.835, 0.836, 0.836, 0.836, 0.836,
-                                             0.836, 0.836, 0.836, 0.836, 0.837])
-                    data5 = DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserror)
-                    # data5 = DATA5(data4, res_py6s['solar_zenith'], res_py6s['direct_ratio'][ind_raw_data], zenith_ang,
-                    #               avg_coserror, full_hemi_coserror)
+                    data5 = DATA5(data4, res_py6s['solar_zenith'], res_py6s['direct_ratio'][ind_raw_data], zenith_ang,
+                                  avg_coserror, full_hemi_coserror)
                     sample_data5 = prop.run_samples(DATA5, [data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror,
                                                             full_hemi_coserror])
                     unc = prop.process_samples(None, sample_data5)
@@ -1063,8 +1034,7 @@ class Trios(Instrument):
     def __init__(self):
         super().__init__()
 
-    @staticmethod
-    def lightDarkStats(grp, sensortype):
+    def lightDarkStats(self, grp, sensortype):
         raw_cal = grp.getDataset(f"CAL_{sensortype}").data
         raw_back = grp.getDataset(f"BACK_{sensortype}").data
         raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
@@ -1264,8 +1234,8 @@ class Trios(Instrument):
                 sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
 
                 # Irradiance direct and diffuse ratio
-                # res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
-                #                                                   L2_irr_grp=grp)  # , trios=instrument_number)
+                res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
+                                                                  L2_irr_grp=grp)  # , trios=instrument_number)
                 updated_radcal_gain = self.update_cal_data_ES(S12_sl_corr, LAMP, int_time_t0, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_data_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_int_time_t0,
@@ -1347,35 +1317,8 @@ class Trios(Instrument):
 
             if sensortype.lower() == "es":
                 # get cosine correction attributes and samples from dictionary
-                # solar_zenith = res_py6s['solar_zenith']
-                # direct_ratio = res_py6s['direct_ratio']
-                solar_zenith = np.array([46.87415726])
-                direct_ratio = np.array([0.222, 0.245, 0.256, 0.268, 0.279, 0.302, 0.313, 0.335, 0.345, 0.356,
-                                         0.376, 0.386, 0.396, 0.415, 0.424, 0.433, 0.45, 0.459, 0.467, 0.482,
-                                         0.489, 0.496, 0.51, 0.516, 0.522, 0.534, 0.539, 0.545, 0.555, 0.56,
-                                         0.565, 0.576, 0.581, 0.586, 0.596, 0.6, 0.605, 0.613, 0.617, 0.621,
-                                         0.629, 0.632, 0.636, 0.644, 0.647, 0.651, 0.657, 0.66, 0.663, 0.669,
-                                         0.672, 0.675, 0.68, 0.683, 0.686, 0.691, 0.693, 0.696, 0.7, 0.702,
-                                         0.705, 0.709, 0.711, 0.714, 0.717, 0.719, 0.721, 0.725, 0.726, 0.728,
-                                         0.731, 0.733, 0.736, 0.738, 0.739, 0.742, 0.744, 0.745, 0.748, 0.749,
-                                         0.75, 0.753, 0.754, 0.755, 0.757, 0.758, 0.759, 0.761, 0.763, 0.764,
-                                         0.766, 0.767, 0.768, 0.769, 0.77, 0.771, 0.773, 0.774, 0.775, 0.776,
-                                         0.777, 0.778, 0.779, 0.78, 0.781, 0.782, 0.783, 0.784, 0.785, 0.7855,
-                                         0.786, 0.788, 0.788, 0.789, 0.79, 0.79, 0.791, 0.792, 0.793, 0.793,
-                                         0.795, 0.795, 0.796, 0.797, 0.797, 0.798, 0.799, 0.799, 0.8, 0.801,
-                                         0.801, 0.802, 0.802, 0.803, 0.803, 0.804, 0.805, 0.805, 0.806, 0.806,
-                                         0.807, 0.807, 0.808, 0.808, 0.809, 0.809, 0.81, 0.81, 0.811, 0.811,
-                                         0.811, 0.812, 0.812, 0.813, 0.813, 0.814, 0.814, 0.814, 0.815, 0.815,
-                                         0.816, 0.816, 0.816, 0.817, 0.817, 0.817, 0.818, 0.818, 0.818, 0.819,
-                                         0.819, 0.819, 0.819, 0.82, 0.82, 0.821, 0.821, 0.821, 0.822, 0.822,
-                                         0.822, 0.822, 0.823, 0.823, 0.823, 0.824, 0.824, 0.824, 0.824, 0.825,
-                                         0.825, 0.825, 0.826, 0.826, 0.826, 0.826, 0.827, 0.827, 0.827, 0.827,
-                                         0.828, 0.828, 0.828, 0.828, 0.828, 0.829, 0.829, 0.829, 0.829, 0.83,
-                                         0.83, 0.83, 0.83, 0.83, 0.83, 0.831, 0.831, 0.831, 0.831, 0.831,
-                                         0.832, 0.832, 0.832, 0.832, 0.832, 0.832, 0.833, 0.833, 0.833, 0.833,
-                                         0.833, 0.833, 0.834, 0.834, 0.834, 0.834, 0.834, 0.834, 0.834, 0.835,
-                                         0.835, 0.835, 0.835, 0.835, 0.835, 0.835, 0.836, 0.836, 0.836, 0.836,
-                                         0.836, 0.836, 0.836, 0.836, 0.837])
+                solar_zenith = res_py6s['solar_zenith']
+                direct_ratio = res_py6s['direct_ratio']
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
                                                     np.asarray([0.05 for i in range(len(solar_zenith))]),
