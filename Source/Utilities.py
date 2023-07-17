@@ -2159,10 +2159,13 @@ class Utilities:
         return sensorID
 
 
+
     @staticmethod
     def RenameUncertainties_Class(node):
         """
         Rename unc dataset from generic class-based id to sensor type
+        TODO: adapted to old version of ckass-based file, will be switch to next version 
+        when ready. Next version is commented below.
         """
         unc_group = node.getGroup("RAW_UNCERTAINTIES")
         sensorID = Utilities.get_sensor_dict(node) # should result in OD{[Instr#:ES, Instr#:LI, Instr#:LT]}
@@ -2170,7 +2173,7 @@ class Utilities:
         names = [i for i in unc_group.datasets]  # get names in advance, mutation of iteration object breaks for loop
         for name in names:
             ds = unc_group.getDataset(name)
-
+            
             if "_RADIANCE_" in name:
                 # Class-based radiance coefficient are the same for both Li and Lt
                 new_LI_name = ''.join(["LI", name.split("RADIANCE")[-1]])
@@ -2192,6 +2195,22 @@ class Utilities:
                 new_ES_ds.datasetToColumns()
                 unc_group.removeDataset(ds.id) # remove dataset
 
+            if "_LI_" in name:
+                # Class-based irradiance coefficient are unique for Es
+                new_name = ''.join(["LI", name.split("LI")[-1]])
+                new_ds = unc_group.addDataset(new_name)
+                new_ds.copy(ds)
+                new_ds.datasetToColumns()
+                unc_group.removeDataset(ds.id) # remove dataset
+                
+            if "_LT_" in name:
+                # Class-based irradiance coefficient are unique for Es
+                new_name = ''.join(["LT", name.split("LT")[-1]])
+                new_ds = unc_group.addDataset(new_name)
+                new_ds.copy(ds)
+                new_ds.datasetToColumns()
+                unc_group.removeDataset(ds.id) # remove dataset
+
             if "_RADCAL_" in name:
                 # RADCAL are always sensor specific
                 for sensor in sensorID:
@@ -2202,7 +2221,56 @@ class Utilities:
                         new_ds.datasetToColumns()
                         unc_group.removeDataset(ds.id)  # remove dataset
 
+        names = [i for i in unc_group.datasets]  # get names in advance, mutation of iteration object breaks for loop
+        print(names)
         return True
+
+
+
+    # @staticmethod
+    # def RenameUncertainties_Class(node):
+    #     """
+    #     Rename unc dataset from generic class-based id to sensor type
+    #     """
+    #     unc_group = node.getGroup("RAW_UNCERTAINTIES")
+    #     sensorID = Utilities.get_sensor_dict(node) # should result in OD{[Instr#:ES, Instr#:LI, Instr#:LT]}
+    #     print("sensors type", sensorID)
+    #     names = [i for i in unc_group.datasets]  # get names in advance, mutation of iteration object breaks for loop
+    #     for name in names:
+    #         ds = unc_group.getDataset(name)
+
+    #         if "_RADIANCE_" in name:
+    #             # Class-based radiance coefficient are the same for both Li and Lt
+    #             new_LI_name = ''.join(["LI", name.split("RADIANCE")[-1]])
+    #             new_LI_ds = unc_group.addDataset(new_LI_name)
+    #             new_LI_ds.copy(ds)
+    #             new_LI_ds.datasetToColumns()
+
+    #             new_LT_name = ''.join(["LT", name.split("RADIANCE")[-1]])
+    #             new_LT_ds = unc_group.addDataset(new_LT_name)
+    #             new_LT_ds.copy(ds)
+    #             new_LT_ds.datasetToColumns()
+    #             unc_group.removeDataset(ds.id) # remove dataset
+
+    #         if "_IRRADIANCE_" in name:
+    #             # Class-based irradiance coefficient are unique for Es
+    #             new_ES_name = ''.join(["ES", name.split("IRRADIANCE")[-1]])
+    #             new_ES_ds = unc_group.addDataset(new_ES_name)
+    #             new_ES_ds.copy(ds)
+    #             new_ES_ds.datasetToColumns()
+    #             unc_group.removeDataset(ds.id) # remove dataset
+
+    #         if "_RADCAL_" in name:
+    #             # RADCAL are always sensor specific
+    #             for sensor in sensorID:
+    #                 if sensor in ds.id:
+    #                     new_ds_name = ''.join([sensorID[sensor], ds.id.split(sensor)[-1]])
+    #                     new_ds = unc_group.addDataset(new_ds_name)
+    #                     new_ds.copy(ds)
+    #                     new_ds.datasetToColumns()
+    #                     unc_group.removeDataset(ds.id)  # remove dataset
+
+    #     return True
 
 
     @staticmethod
@@ -2252,34 +2320,48 @@ class Utilities:
                 ds.columns['wvl'] = x_new
                 ds.columnsToDataset()
 
-            ## Interpolate data to hyper-spectral pixels
-            if sensor != "ES":
-                for data_type in ["_POLDATA_CAL","_TEMPDATA_CAL"]:
-                    ds = grp.getDataset(sensor+data_type)
-                    ds.datasetToColumns()
-                    x = ds.columns['1']
-                    for indx in range(2,len(ds.columns)):
-                        y = ds.columns[str(indx)]
-                        y_new = np.interp(x_new, x, y)
-                        ds.columns[str(indx)] = y_new
-                    # column ['0'] longer than the rest due to interpolation - this is a quick work around
-                    ds.columns['0'] = np.array(range(len(x_new))) # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
-                    ds.columns['1'] = x_new
-                    ds.columnsToDataset()
-            else:
-                for data_type in ["_TEMPDATA_CAL","_ANGDATA_COSERROR", "_ANGDATA_COSERROR_AZ90", "_ANGDATA_UNCERTAINTY", "_ANGDATA_UNCERTAINTY_AZ90"]:
-                    ds = grp.getDataset(sensor+data_type)
-                    ds.datasetToColumns()
-                    x = ds.columns['1']
-                    for indx in range(2,len(ds.columns)):
-                        y = ds.columns[str(indx)]
-                        y_new = np.interp(x_new, x, y)
-                        ds.columns[str(indx)] = y_new
-                    # quick workaround for bug desovered in parsing uncertainties
-                    # one column of TEMPDATA_CAL is longer than the others!
-                    ds.columns['0'] = np.array(range(len(x_new))) # drop 1st line from TARTU file
-                    ds.columns['1'] = x_new
-                    ds.columnsToDataset()
+            ## Interpolate for initial class-based file, in use at the moment
+            for data_type in ["_POLDATA_CAL","_TEMPDATA_CAL","_STABDATA_CAL", "_NLDATA_CAL", "_STRAYDATA_CAL"]:
+                ds = grp.getDataset(sensor+data_type)
+                ds.datasetToColumns()
+                x = ds.columns['1']
+                for indx in range(2,len(ds.columns)):
+                    y = ds.columns[str(indx)]
+                    y_new = np.interp(x_new, x, y)
+                    ds.columns[str(indx)] = y_new
+                # column ['0'] longer than the rest due to interpolation - this is a quick work around
+                ds.columns['0'] = np.array(range(len(x_new))) # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
+                ds.columns['1'] = x_new
+                ds.columnsToDataset()
+
+            ### for updated version of class based file, not used at the moment
+            # if sensor != "ES":
+            #     for data_type in ["_POLDATA_CAL","_TEMPDATA_CAL"]:
+            #         ds = grp.getDataset(sensor+data_type)
+            #         ds.datasetToColumns()
+            #         x = ds.columns['1']
+            #         for indx in range(2,len(ds.columns)):
+            #             y = ds.columns[str(indx)]
+            #             y_new = np.interp(x_new, x, y)
+            #             ds.columns[str(indx)] = y_new
+            #         # column ['0'] longer than the rest due to interpolation - this is a quick work around
+            #         ds.columns['0'] = np.array(range(len(x_new))) # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
+            #         ds.columns['1'] = x_new
+            #         ds.columnsToDataset()
+            # else:
+            #     for data_type in ["_TEMPDATA_CAL","_ANGDATA_COSERROR", "_ANGDATA_COSERROR_AZ90", "_ANGDATA_UNCERTAINTY", "_ANGDATA_UNCERTAINTY_AZ90"]:
+            #         ds = grp.getDataset(sensor+data_type)
+            #         ds.datasetToColumns()
+            #         x = ds.columns['1']
+            #         for indx in range(2,len(ds.columns)):
+            #             y = ds.columns[str(indx)]
+            #             y_new = np.interp(x_new, x, y)
+            #             ds.columns[str(indx)] = y_new
+            #         # quick workaround for bug desovered in parsing uncertainties
+            #         # one column of TEMPDATA_CAL is longer than the others!
+            #         ds.columns['0'] = np.array(range(len(x_new))) # drop 1st line from TARTU file
+            #         ds.columns['1'] = x_new
+            #         ds.columnsToDataset()
 
         return True
 
@@ -2316,36 +2398,49 @@ class Utilities:
                             ds.columns[indx_name] = y[1:]
                 ds.columnsToDataset()  
 
-
-
-            ## Interpolate data to hyper-spectral pixels
-            if sensor != "ES":
-                for data_type in ["_POLDATA_CAL","_TEMPDATA_CAL"]:
-                    ds = grp.getDataset(sensor+data_type)
-                    ds.datasetToColumns()
-                    x = ds.columns['1']
-                    for indx in range(2,len(ds.columns)):
-                        y = ds.columns[str(indx)]
-                        y_new = np.interp(x_new, x, y)
-                        ds.columns[str(indx)] = y_new
-                    # column ['0'] longer than the rest due to interpolation - this is a quick work around
-                    ds.columns['0'] = np.array(range(len(x_new))) # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
-                    ds.columns['1'] = x_new
-                    ds.columnsToDataset()
-            else:
-                for data_type in ["_TEMPDATA_CAL","_ANGDATA_COSERROR", "_ANGDATA_COSERROR_AZ90", "_ANGDATA_UNCERTAINTY", "_ANGDATA_UNCERTAINTY_AZ90"]:
-                    ds = grp.getDataset(sensor+data_type)
-                    ds.datasetToColumns()
-                    x = ds.columns['1']
-                    for indx in range(2,len(ds.columns)):
-                        y = ds.columns[str(indx)]
-                        y_new = np.interp(x_new, x, y)
-                        ds.columns[str(indx)] = y_new
-                    # quick workaround for bug desovered in parsing uncertainties
-                    # one column of TEMPDATA_CAL is longer than the others!
-                    ds.columns['0'] = np.array(range(len(x_new))) # drop 1st line from TARTU file
-                    ds.columns['1'] = x_new
-                    ds.columnsToDataset()
+            ## Interpolate for initial class-based file, in use at the moment
+            for data_type in ["_POLDATA_CAL","_TEMPDATA_CAL","_STABDATA_CAL", "_NLDATA_CAL", "_STRAYDATA_CAL"]:
+                ds = grp.getDataset(sensor+data_type)
+                ds.datasetToColumns()
+                x = ds.columns['1']
+                for indx in range(2,len(ds.columns)):
+                    y = ds.columns[str(indx)]
+                    y_new = np.interp(x_new, x, y)
+                    ds.columns[str(indx)] = y_new
+                # column ['0'] longer than the rest due to interpolation - this is a quick work around
+                ds.columns['0'] = np.array(range(len(x_new))) # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
+                ds.columns['1'] = x_new
+                ds.columnsToDataset()
+            
+            ### for updated version of class based file, not used at the moment
+            # if sensor != "ES":
+            #     for data_type in ["_POLDATA_CAL","_TEMPDATA_CAL"]:
+            #         ds = grp.getDataset(sensor+data_type)
+            #         ds.datasetToColumns()
+            #         x = ds.columns['1']
+            #         for indx in range(2,len(ds.columns)):
+            #             y = ds.columns[str(indx)]
+            #             y_new = np.interp(x_new, x, y)
+            #             ds.columns[str(indx)] = y_new
+            #         # column ['0'] longer than the rest due to interpolation - this is a quick work around
+            #         ds.columns['0'] = np.array(range(len(x_new))) # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
+            #         ds.columns['1'] = x_new
+            #         ds.columnsToDataset()
+            # else:
+            #     for data_type in ["_TEMPDATA_CAL","_ANGDATA_COSERROR", "_ANGDATA_COSERROR_AZ90", "_ANGDATA_UNCERTAINTY", "_ANGDATA_UNCERTAINTY_AZ90"]:
+            #         print(data_type)
+            #         ds = grp.getDataset(sensor+data_type)
+            #         ds.datasetToColumns()
+            #         x = ds.columns['1']
+            #         for indx in range(2,len(ds.columns)):
+            #             y = ds.columns[str(indx)]
+            #             y_new = np.interp(x_new, x, y)
+            #             ds.columns[str(indx)] = y_new
+            #         # quick workaround for bug desovered in parsing uncertainties
+            #         # one column of TEMPDATA_CAL is longer than the others!
+            #         ds.columns['0'] = np.array(range(len(x_new))) # drop 1st line from TARTU file
+            #         ds.columns['1'] = x_new
+            #         ds.columnsToDataset()
    
             ## RADCAL_LAMP/: Interpolate data to hyper-spectral pixels
             for data_type in ["_RADCAL_LAMP"]:

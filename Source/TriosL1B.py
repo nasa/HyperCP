@@ -269,12 +269,12 @@ class TriosL1B:
 
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
-            print("TRIOS - no uncertainty computation in Factory mode")
+            print("Factory TRIOS - no uncertainty computation")
 
 
         # Add Class-based characterization files + RADCAL files
         elif ConfigFile.settings['bL1bCal'] == 2:
-            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
+            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             print('Class based dir:', inpath)
             node = ProcessL1b.read_unc_coefficient_class(node, inpath)
             if node is None:

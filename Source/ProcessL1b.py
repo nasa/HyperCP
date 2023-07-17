@@ -39,6 +39,11 @@ class ProcessL1b:
         for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
 
+        for f in glob.glob(os.path.join(inpath, r'*class_LINEAR*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
+            Utilities.read_char(f, gp)
+            
         # Unc dataset renaming
         Utilities.RenameUncertainties_Class(root)
 
@@ -100,6 +105,11 @@ class ProcessL1b:
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
+            
+        for f in glob.glob(os.path.join(inpath, r'*class_LINEAR*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
+            Utilities.read_char(f, gp) 
 
         # Read sensor-specific radiometric calibration
         for f in glob.glob(os.path.join(inpath, r'*RADCAL/*RADCAL*')):
@@ -574,8 +584,9 @@ class ProcessL1b:
 
         # Add class-based files (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
-            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
-            print('Class based dir:', inpath)
+            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            print("Factory SEABIRD - uncertainty computed from Sirrex-7")
+
             node = ProcessL1b.read_unc_coefficient_factory(node, inpath)
             if node is None:
                 msg = 'Error running factory uncertainties.'
@@ -585,7 +596,7 @@ class ProcessL1b:
             
         # Add class-based files + RADCAL file
         elif ConfigFile.settings['bL1bCal'] == 2:
-            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
+            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             print('Class based dir:', inpath)
             node = ProcessL1b.read_unc_coefficient_class(node, inpath)
             if node is None:

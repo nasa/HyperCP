@@ -97,10 +97,13 @@ class Instrument:
             Coeff[sensor] = np.asarray(list(radcal.data[2]))
             Cal[sensor] = np.asarray(list(radcal.data[3]))
 
-            if sensor == 'ES':
-                pol = uncGrp.getDataset("ES_ANGDATA_UNCERTAINTY")
-            else:
-                pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
+            # if sensor == 'ES':
+            #     pol = uncGrp.getDataset("ES_ANGDATA_UNCERTAINTY")
+            # else:
+            #     pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
+            
+            # TODO: temporary fix angular for ES is written as ES_POL
+            pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
             cPol[sensor] = np.asarray(list(pol.data[1]))
 
