@@ -23,7 +23,7 @@ class ProcessL1b:
 
 
     @staticmethod
-    def read_unc_coefficient_class(root, inpath):
+    def read_unc_coefficient_factory(root, inpath):
         ''' SeaBird or TriOS'''
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
@@ -39,6 +39,11 @@ class ProcessL1b:
         for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
 
+        for f in glob.glob(os.path.join(inpath, r'*class_LINEAR*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
+            Utilities.read_char(f, gp)
+            
         # Unc dataset renaming
         Utilities.RenameUncertainties_Class(root)
 
@@ -46,6 +51,7 @@ class ProcessL1b:
         # The Seventh SeaWiFS Intercalibration Round-Robin Experiment (SIRREX-7), March 1999.
         # NASA Technical Reports Server (NTRS)
         # https://ntrs.nasa.gov/citations/20020045342
+        # For Trios uncertainties are set 0
 
         if ConfigFile.settings['SensorType'].lower() == "seabird":
             for sensor in ['LI','LT']:
@@ -55,7 +61,6 @@ class ProcessL1b:
                 ds.columns["wvl"] = [400]
                 ds.columns["unc"] = [2.7]
                 ds.columnsToDataset()
-
             for sensor in ['ES']:
                 dsname = sensor+'_RADCAL_UNC'
                 gp.addDataset(dsname)
@@ -65,10 +70,53 @@ class ProcessL1b:
                 ds.columnsToDataset()
 
         if ConfigFile.settings['SensorType'].lower() == "trios":
-            print("Class Based processing is not yet supported for Trios")
-            print("Aborting")
-            # exit()
-            return None
+            for sensor in ['LI','LT','ES']:
+                dsname = sensor+'_RADCAL_UNC'
+                gp.addDataset(dsname)
+                ds = gp.getDataset(dsname)
+                ds.columns["wvl"] = [400]
+                ds.columns["unc"] = [0.0]
+                ds.columnsToDataset()
+
+        # interpolate unc to full wavelength range, depending on class based or full char
+        Utilities.interpUncertainties_Factory(root)
+
+        # # generate temperature coefficient
+        Utilities.UncTempCorrection(root)
+
+        return root
+
+
+
+    @staticmethod
+    def read_unc_coefficient_class(root, inpath):
+        ''' SeaBird or TriOS'''
+        
+        # Read Uncertainties_new_char from provided files
+        gp = root.addGroup("RAW_UNCERTAINTIES")
+        gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
+
+        # Read uncertainty parameters from class-based calibration
+        for f in glob.glob(os.path.join(inpath, r'*class_POLAR*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*class_STRAY*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*class_ANGULAR*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
+            Utilities.read_char(f, gp)
+            
+        for f in glob.glob(os.path.join(inpath, r'*class_LINEAR*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
+            Utilities.read_char(f, gp) 
+
+        # Read sensor-specific radiometric calibration
+        for f in glob.glob(os.path.join(inpath, r'*RADCAL/*RADCAL*')):
+            Utilities.read_char(f, gp)
+
+        # Unc dataset renaming
+        Utilities.RenameUncertainties_Class(root)
 
         # interpolate unc to full wavelength range, depending on class based or full char
         Utilities.interpUncertainties_Class(root)
@@ -534,10 +582,21 @@ class ProcessL1b:
                 ltLightGroup.copy(gp)
 
 
-        # Add characterization files if needed (RAW_UNCERTAINTIES)
-        if ConfigFile.settings['bL1bCal'] == 2:
-            # inpath = os.path.join(os.path.dirname(inFilePath), os.pardir, 'Uncertainties_class_based')
-            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType'])
+        # Add class-based files (RAW_UNCERTAINTIES)
+        if ConfigFile.settings['bL1bCal'] == 1:
+            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            print("Factory SEABIRD - uncertainty computed from Sirrex-7")
+
+            node = ProcessL1b.read_unc_coefficient_factory(node, inpath)
+            if node is None:
+                msg = 'Error running factory uncertainties.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None    
+            
+        # Add class-based files + RADCAL file
+        elif ConfigFile.settings['bL1bCal'] == 2:
+            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             print('Class based dir:', inpath)
             node = ProcessL1b.read_unc_coefficient_class(node, inpath)
             if node is None:
@@ -545,7 +604,8 @@ class ProcessL1b:
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-
+            
+        # Add full characterization files
         elif ConfigFile.settings['bL1bCal'] == 3:
 
             if ConfigFile.settings['FidRadDB'] == 0:
