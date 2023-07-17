@@ -27,15 +27,16 @@ class Instrument:
     def lightDarkStats(self, grp, sensortype):
         pass
 
-    def generateSensorStats(self, rawData, newWaveBands):
+    def generateSensorStats(self, InstrumentType, rawData, newWaveBands):
         output = {}
-
         types = ['ES', 'LI', 'LT']
         for sensortype in types:
-            if isinstance(rawData, dict):  # if TriOS (raw data is dict of raw groups
+            if InstrumentType.lower() == "trios":
                 output[sensortype] = self.lightDarkStats(rawData[sensortype], sensortype)
-            else:  # seabird passes node as rawGroups
-                output[sensortype] = self.lightDarkStats(rawData, sensortype)
+            elif InstrumentType.lower() == "seabird":
+                output[sensortype] = self.lightDarkStats([rawData[sensortype]['LIGHT'],
+                                                         rawData[sensortype]['DARK']],
+                                                         sensortype)
 
         # interpolate to common wavebands
         for stype in types:
@@ -689,18 +690,19 @@ class HyperOCR(Instrument):
 
         return darkData.data
 
-    def lightDarkStats(self, node, sensortype):
-        for gp in node.groups:
-            if "FrameType" in gp.attributes:
-                if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensortype):
-                    darkGroup = gp
-                    darkData = gp.getDataset(sensortype)
-                    darkDateTime = gp.getDataset("DATETIME")
+    def lightDarkStats(self, grp, sensortype):
+        lightGrp = grp[0]
+        darkGrp = grp[1]
 
-                if gp.attributes["FrameType"] == "ShutterLight" and gp.getDataset(sensortype):
-                    lightGroup = gp
-                    lightData = gp.getDataset(sensortype)
-                    lightDateTime = gp.getDataset("DATETIME")
+        if darkGrp.attributes["FrameType"] == "ShutterDark" and darkGrp.getDataset(sensortype):
+            darkGroup = darkGrp
+            darkData = darkGrp.getDataset(sensortype)
+            darkDateTime = darkGrp.getDataset("DATETIME")
+
+        if lightGrp.attributes["FrameType"] == "ShutterLight" and lightGrp.getDataset(sensortype):
+            lightGroup = lightGrp
+            lightData = lightGrp.getDataset(sensortype)
+            lightDateTime = lightGrp.getDataset("DATETIME")
 
         if darkGroup is None or lightGroup is None:
             msg = f'No radiometry found for {sensortype}'
