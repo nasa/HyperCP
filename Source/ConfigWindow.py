@@ -253,38 +253,21 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL1bCal"]==2:
             self.ClassCalRadioButton.setChecked(True)
         self.ClassCalRadioButton.clicked.connect(self.l1bClassCalRadioButtonClicked)
-        # '''
-        # NOTE: While L2 class-based is being debugged
-        # '''
-        self.ClassCalRadioButton.setChecked(False)
-        # self.ClassCalRadioButton.setEnabled(False)
 
         self.FullCalRadioButton = QtWidgets.QRadioButton("Full Characterization:")
         self.FullCalRadioButton.setAutoExclusive(False)
-        # '''
-        # NOTE: While L2 full-based is being debugged
-        # '''
-        self.FullCalRadioButton.setChecked(False)
-        # self.FullCalRadioButton.setEnabled(False)
-
+        self.l1bGetFRMCheck1 = QtWidgets.QCheckBox("local files", self)
+        self.l1bGetFRMCheck2 = QtWidgets.QCheckBox("FidRadDB", self)
+        
         if ConfigFile.settings["bL1bCal"]==3:
             self.FullCalRadioButton.setChecked(True)
+            if int(ConfigFile.settings["FidRadDB"]) == 0:
+                self.l1bGetFRMCheck1.setChecked(True)
+                self.l1bGetFRMCheck2.setChecked(False)
+            elif int(ConfigFile.settings["FidRadDB"]) == 1:
+                self.l1bGetFRMCheck1.setChecked(False)
+                self.l1bGetFRMCheck2.setChecked(True)
         self.FullCalRadioButton.clicked.connect(self.l1bFullCalRadioButtonClicked)
-
-        self.l1bGetFRMCheck1 = QtWidgets.QCheckBox("local files", self)
-        ''' NOTE:  Disable while class/FRM L2 under developement '''
-        # self.l1bGetFRMCheck1.setDisabled(1)
-
-        ''' NOTE: disabled until fidraddb_api can be resolved.'''
-        self.l1bGetFRMCheck2 = QtWidgets.QCheckBox("FidRadDB", self)
-        # self.l1bGetFRMCheck2.setDisabled(1)
-
-        if int(ConfigFile.settings["FidRadDB"]) == 0:
-            self.l1bGetFRMCheck1.setChecked(True)
-            self.l1bGetFRMCheck2.setChecked(False)
-        if int(ConfigFile.settings["FidRadDB"]) == 1:
-            self.l1bGetFRMCheck1.setChecked(False)
-            self.l1bGetFRMCheck2.setChecked(True)
 
         self.FullCalDir = ConfigFile.settings['FullCalDir']
         self.l1bGetFRMCheck1.clicked.connect(self.l1bGetFRMCheckUpdate1)
@@ -1267,13 +1250,29 @@ class ConfigWindow(QtWidgets.QDialog):
         self.ClassCalRadioButton.setChecked(False)
         self.FullCalRadioButton.setChecked(False)
         ConfigFile.settings["bL1bCal"] = 1
-
+        
     def l1bClassCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Class-based")
         self.DefaultCalRadioButton.setChecked(False)
         self.ClassCalRadioButton.setChecked(True)
         self.FullCalRadioButton.setChecked(False)
         ConfigFile.settings["bL1bCal"] = 2
+        self.RadCalDir = ConfigFile.settings['RadCalDir']
+        self.RadCalDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose RADCAL Directory.', self.RadCalDir)
+        print('Radiometric characterization directory changed: ', self.RadCalDir)
+        ConfigFile.settings['RadCalDir'] = self.RadCalDir
+        
+        # copy radcal file into configuration folder
+        configName = self.name
+        calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
+        configPath = os.path.join("Config", calibrationDir)
+        files = glob.iglob(os.path.join(Path(self.RadCalDir), '*.[tT][xX][tT]'))
+        for file in files:
+            dest = Path(configPath) / os.path.basename(file)
+            if not dest.exists():
+                shutil.copy(file,dest)
+                
+        return self.RadCalDir
 
     def l1bFullCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Instrument-specific FRM")
@@ -1291,6 +1290,17 @@ class ConfigWindow(QtWidgets.QDialog):
             self.FullCalDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory.', self.FullCalDir)
             print('Full characterization directory changed: ', self.FullCalDir)
             ConfigFile.settings['FullCalDir'] = self.FullCalDir
+            
+            # copy files in config
+            configName = self.name
+            calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
+            configPath = os.path.join("Config", calibrationDir)
+            files = glob.iglob(os.path.join(Path(self.FullCalDir), '*.[tT][xX][tT]'))
+            for file in files:
+                dest = Path(configPath) / os.path.basename(file)
+                if not dest.exists():
+                    shutil.copy(file,dest)
+                
             return self.FullCalDir
 
     def l1bGetFRMCheckUpdate2(self):
@@ -1312,10 +1322,8 @@ class ConfigWindow(QtWidgets.QDialog):
         configPath = os.path.join("Config", calibrationDir)
 
         calDir = Path(srcDir)
-        # files = Path(calDir).glob("CP*.TXT")
         files = glob.iglob(os.path.join(Path(calDir), '*.[tT][xX][tT]'))
         for file in files:
-            # dest = Path(configPath) / file.name
             dest = Path(configPath) / os.path.basename(file)
             if not dest.exists():
                 shutil.copy(file,dest)

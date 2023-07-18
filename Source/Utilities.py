@@ -2221,10 +2221,7 @@ class Utilities:
                         new_ds.datasetToColumns()
                         unc_group.removeDataset(ds.id)  # remove dataset
 
-        names = [i for i in unc_group.datasets]  # get names in advance, mutation of iteration object breaks for loop
-        print(names)
         return True
-
 
 
     # @staticmethod
