@@ -1257,7 +1257,6 @@ class ProcessL2:
         ltSlice.pop("Datetime")
 
         # once datetag is popped then process StdSlices for Band Convolution
-        instrument = None
         # get common wavebands from esSlice to interp stats
         instrument_WB = np.asarray(list(esSlice.keys()), dtype=float)
 
@@ -1269,6 +1268,10 @@ class ProcessL2:
             instrument = HyperOCR()  # check sensor-type
             stats = instrument.generateSensorStats("SeaBird",
                                                    dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), instrument_WB)
+            # after dark substitution is done, condense to only dark corrected data (LIGHT key)
+            esRawGroup = esRawGroup['LIGHT']
+            liRawGroup = liRawGroup['LIGHT']
+            ltRawGroup = ltRawGroup['LIGHT']  # TODO: check that dark correction is done
         else:
             msg = "class type not recognised"
             return False
@@ -2145,7 +2148,6 @@ class ProcessL2:
 
                 for ds in newGrp.datasets:
                     newGrp.datasets[ds].datasetToColumns()
-
 
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):
