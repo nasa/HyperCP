@@ -89,7 +89,7 @@ class ProcessL1b:
 
 
     @staticmethod
-    def read_unc_coefficient_class(root, inpath):
+    def read_unc_coefficient_class(root, inpath, radcal_dir):
         ''' SeaBird or TriOS'''
         
         # Read Uncertainties_new_char from provided files
@@ -106,13 +106,16 @@ class ProcessL1b:
         for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
             
+            
         for f in glob.glob(os.path.join(inpath, r'*class_LINEAR*')):
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
             Utilities.read_char(f, gp) 
 
+
         # Read sensor-specific radiometric calibration
-        for f in glob.glob(os.path.join(inpath, r'*RADCAL/*RADCAL*')):
+        for f in glob.glob(os.path.join(radcal_dir, r'*RADCAL*')):
+            print(f)
             Utilities.read_char(f, gp)
 
         # Unc dataset renaming
@@ -584,10 +587,9 @@ class ProcessL1b:
 
         # Add class-based files (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
-            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
-            print("Factory SEABIRD - uncertainty computed from Sirrex-7")
-
-            node = ProcessL1b.read_unc_coefficient_factory(node, inpath)
+            classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
+            node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
             if node is None:
                 msg = 'Error running factory uncertainties.'
                 print(msg)
@@ -596,9 +598,12 @@ class ProcessL1b:
             
         # Add class-based files + RADCAL file
         elif ConfigFile.settings['bL1bCal'] == 2:
-            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
-            print('Class based dir:', inpath)
-            node = ProcessL1b.read_unc_coefficient_class(node, inpath)
+            classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            radcal_dir = ConfigFile.settings['RadCalDir']
+            print("Class-Based - uncertainty computed from class-based and RADCAL")
+            print('Class-Based:', classbased_dir)
+            print('RADCAL:', radcal_dir)
+            node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir, radcal_dir)
             if node is None:
                 msg = 'Error running class based uncertainties.'
                 print(msg)
@@ -610,7 +615,8 @@ class ProcessL1b:
 
             if ConfigFile.settings['FidRadDB'] == 0:
                 inpath = ConfigFile.settings['FullCalDir']
-                print('Full Char dir:', inpath)
+                print("Full-Char - uncertainty computed from full characterization")
+                print('Full-Char dir:', inpath)
 
             # elif ConfigFile.settings['FidRadDB'] == 1:
             #     sensorID = Utilities.get_sensor_dict(node)
