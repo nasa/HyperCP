@@ -3,6 +3,7 @@ import os
 import numpy as np
 import scipy as sp
 import pandas as pd
+import calendar
 import collections
 from decimal import Decimal
 
@@ -35,7 +36,7 @@ class Instrument:
                 output[sensortype] = self.lightDarkStats(rawData[sensortype], sensortype)
             elif InstrumentType.lower() == "seabird":
                 output[sensortype] = self.lightDarkStats([rawData[sensortype]['LIGHT'],
-                                                         rawData[sensortype]['DARK']],
+                                                          rawData[sensortype]['DARK']],
                                                          sensortype)
 
         # interpolate to common wavebands
@@ -644,8 +645,8 @@ class HyperOCR(Instrument):
     def _interp(lightData, lightTimer, darkData, darkTimer):
         # Interpolate Dark Dataset to match number of elements as Light Dataset
         newDarkData = np.copy(lightData.data)
-        for k in darkData.data.dtype.fields.keys(): # For each wavelength
-            x = np.copy(darkTimer.data).tolist() # darktimer
+        for k in darkData.data.dtype.fields.keys():  # For each wavelength
+            x = np.copy(darkTimer.data).tolist()  # darktimer
             y = np.copy(darkData.data[k]).tolist()  # data at that band over time
             new_x = lightTimer.data  # lighttimer
 
@@ -654,7 +655,6 @@ class HyperOCR(Instrument):
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
-
             if not Utilities.isIncreasing(x):
                 msg = "**************darkTimer does not contain strictly increasing values"
                 print(msg)
@@ -715,7 +715,7 @@ class HyperOCR(Instrument):
 
         elif not self._check_data(darkData, lightData):
             return False
-        if not(newDarkData := self._interp(lightData, lightDateTime, darkData, darkDateTime)):
+        if not any(newDarkData := self._interp(lightData, lightDateTime, darkData, darkDateTime)):
             return False
 
         # Correct light data by subtracting interpolated dark data from light data
@@ -756,7 +756,7 @@ class HyperOCR(Instrument):
             std_Light=np.array(std_Light),
             std_Dark=np.array(std_Dark),
             std_Signal=stdevSignal,
-            wvl=wvl[ind_nocal==False]
+            wvl=wvl
             )
 
     def FRM(self, node, uncGrp, grps, newWaveBands):
@@ -767,7 +767,7 @@ class HyperOCR(Instrument):
         for sensortype in ['ES', 'LI', 'LT']:
             print('FRM Processing:', sensortype)
             # Read data
-            grp = node.getGroup(sensortype)
+            grp = grps[sensortype]
 
             # read in data for FRM processing
             raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
@@ -775,15 +775,15 @@ class HyperOCR(Instrument):
 
             # Read FRM characterisation
             radcal_wvl = np.asarray(
-                pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[1][1:].tolist())
-            radcal_cal = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[2]
+                pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['1'][1:].tolist())
+            radcal_cal = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['2']
             dark = np.asarray(
-                pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[4][
+                pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['4'][
                 1:].tolist())  # dark signal
-            S1 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[6]
-            S1_unc = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[7]/100
-            S2 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[8]
-            S2_unc = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[9]/100
+            S1 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['6']
+            S1_unc = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['7']/100
+            S2 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['8']
+            S2_unc = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['9']/100
             mZ = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_STRAYDATA_LSF").data))
             mZ_unc = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_STRAYDATA_UNCERTAINTY").data))
 
@@ -795,9 +795,9 @@ class HyperOCR(Instrument):
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data).transpose()[4][1:].tolist())
             Ct_unc = np.asarray(
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data).transpose()[5][1:].tolist())
-            LAMP = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data).transpose()[2])
+            LAMP = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['2'])
             LAMP_unc = np.asarray(
-                pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data).transpose()[3])/100*LAMP
+                pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['3'])/100*LAMP
 
             # Defined constants
             nband = len(radcal_wvl)
@@ -1112,8 +1112,6 @@ class Trios(Instrument):
 
     def FRM(self, node, uncGrp, grps, newWaveBands):
         output = {}
-        # Start = {}
-        # End = {}
         for sensortype in ['ES', 'LI', 'LT']:
 
             ### Read HDF file inputs

@@ -1200,6 +1200,12 @@ class ProcessL2:
 
         def _sliceRawData(ES_raw, LI_raw, LT_raw):
             for (ds, ds1, ds2) in zip(ES_raw, LI_raw, LT_raw):
+                mask = [ds.id == "DATETIME", ds1.id == "DATETIME", ds2.id == "DATETIME"]
+                if any(mask):
+                    # slice DATETIME
+                    DS = [d for i, d in enumerate([ds, ds1, ds2]) if mask[i]]
+                    for d in DS:
+                        d.data = d.data[start:end]
                 if ds.id == "ES":
                     ds.columns = ProcessL2.columnToSlice(ds.columns, start, end)
                     ds.columnsToDataset()
@@ -1271,9 +1277,13 @@ class ProcessL2:
             # after dark substitution is done, condense to only dark corrected data (LIGHT key)
             esRawGroup = esRawGroup['LIGHT']
             liRawGroup = liRawGroup['LIGHT']
-            ltRawGroup = ltRawGroup['LIGHT']  # TODO: check that dark correction is done
+            ltRawGroup = ltRawGroup['LIGHT']
+            esRawGroup.id = "ES_L1AQC"
+            liRawGroup.id = "LI_L1AQC"
+            ltRawGroup.id = "LT_L1AQC"
         else:
             msg = "class type not recognised"
+            print(msg)
             return False
 
         # make std into ordered dictionaries
@@ -1936,6 +1946,7 @@ class ProcessL2:
         else:
             uncGroup = None
 
+        Utilities.rawDataAddDateTime(rootCopy)
         Utilities.rootAddDateTimeCol(rootCopy)
 
         ###############################################################################
