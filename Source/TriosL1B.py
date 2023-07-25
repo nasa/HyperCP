@@ -269,14 +269,17 @@ class TriosL1B:
 
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
-            print("Factory TRIOS - no uncertainty computation")
+            print("Factory TriOS RAMSES - no uncertainty computation")
 
 
         # Add Class-based characterization files + RADCAL files
         elif ConfigFile.settings['bL1bCal'] == 2:
-            inpath = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
-            print('Class based dir:', inpath)
-            node = ProcessL1b.read_unc_coefficient_class(node, inpath)
+            classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            radcal_dir = ConfigFile.settings['RadCalDir']           
+            print("Class-Based - uncertainty computed from class-based and RADCAL")
+            print('Class-Based:', classbased_dir)
+            print('RADCAL:', radcal_dir)
+            node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir, radcal_dir)
             if node is None:
                 msg = 'Error running class based uncertainties.'
                 print(msg)
@@ -288,8 +291,9 @@ class TriosL1B:
 
             if ConfigFile.settings['FidRadDB'] == 0:
                 inpath = ConfigFile.settings['FullCalDir']
-                print('Full Char dir:', inpath)
-
+                print("Full-Char - uncertainty computed from full characterization")
+                print('Full-Char dir:', inpath)
+                
             # elif ConfigFile.settings['FidRadDB'] == 1:
             #     sensorID = Utilities.get_sensor_dict(node)
             #     acq_time = node.attributes["TIME-STAMP"].replace('_','')
