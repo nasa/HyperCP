@@ -216,6 +216,59 @@ class Instrument:
             output["lwDelta_Sentinel3B"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
             output["rrsDelta_Sentinel3B"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
 
+        if ConfigFile.settings['bL2WeightMODISA']:
+            lwBand = Propagate.band_Conv_Sensor_AQUA(lw, np.array(waveSubset))
+            rrsBand = Propagate.band_Conv_Sensor_AQUA(rrs, np.array(waveSubset))
+
+            sample_lw_AQUA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_AQUA, [sample_Lw, sample_wavelengths])
+            sample_rrs_AQUA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_AQUA, [sample_Rrs, sample_wavelengths])
+
+            lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_AQUA)
+            rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_AQUA)
+
+            output["lwDelta_MODISA"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_MODISA"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+
+        if ConfigFile.settings['bL2WeightMODIST']:
+            lwBand = Propagate.band_Conv_Sensor_TERRA(lw, np.array(waveSubset))
+            rrsBand = Propagate.band_Conv_Sensor_TERRA(rrs, np.array(waveSubset))
+
+            sample_lw_TERRA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_TERRA, [sample_Lw, sample_wavelengths])
+            sample_rrs_TERRA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_TERRA, [sample_Rrs, sample_wavelengths])
+
+            lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_TERRA)
+            rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_TERRA)
+
+            output["lwDelta_MODIST"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_MODIST"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+
+        if ConfigFile.settings['bL2WeightVIIRSN']:
+            lwBand = Propagate.band_Conv_Sensor_NOAA(lw, np.array(waveSubset))
+            rrsBand = Propagate.band_Conv_Sensor_NOAA(rrs, np.array(waveSubset))
+
+            sample_lw_NOAA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_NOAA, [sample_Lw, sample_wavelengths])
+            sample_rrs_NOAA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_NOAA, [sample_Rrs, sample_wavelengths])
+
+            lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_NOAA)
+            rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_NOAA)
+
+            output["lwDelta_VIIRSN"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_VIIRSN"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+
+        if ConfigFile.settings['bL2WeightVIIRSJ']:
+            # currently the same as VIIRSN due to the lack of NOAA-21 rsr in pyspectral
+            lwBand = Propagate.band_Conv_Sensor_NOAA(lw, np.array(waveSubset))
+            rrsBand = Propagate.band_Conv_Sensor_NOAA(rrs, np.array(waveSubset))
+
+            sample_lw_NOAAJ = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_SUOMI, [sample_Lw, sample_wavelengths])
+            sample_rrs_NOAAJ = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_SUOMI, [sample_Rrs, sample_wavelengths])
+
+            lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_NOAAJ)
+            rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_NOAAJ)
+
+            output["lwDelta_VIIRSJ"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_VIIRSJ"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+
         lwDelta = Propagate_L2_FRM.process_samples(None, sample_Lw)
         rrsDelta = Propagate_L2_FRM.process_samples(None, sample_Rrs)
 
@@ -744,11 +797,6 @@ class HyperOCR(Instrument):
             # Normalised signal standard deviation =
             signalAve = np.average(lightData.data[k])
             stdevSignal[k1] = pow((pow(std_Light[-1], 2) + pow(std_Dark[-1], 2))/pow(signalAve, 2), 0.5)
-
-            # sensitivity factor : if raw_cal==0 (or NaN), no calibration is performed and data is affected to 0
-            ind_zero = np.array([rc[0] == 0 for rc in raw_cal])  # changed due to raw_cal now being a np array
-            ind_nan = np.array([np.isnan(rc[0]) for rc in raw_cal])
-            ind_nocal = ind_nan | ind_zero
 
         return dict(
             ave_Light=np.array(ave_Light),
