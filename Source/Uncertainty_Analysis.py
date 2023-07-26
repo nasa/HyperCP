@@ -220,14 +220,6 @@ class Propagate:
                                                                            sensor_name="viirs", u_d=None)
         return rad_band
 
-    # @staticmethod
-    # def band_Conv_Sensor_NOAAJ(Hyperspec, Wavelengths):
-    #     """ band convolution of Rrs for Suomi-NPP Viirs"""
-    #     rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
-    #                                                                        platform_name="NOAA-20",
-    #                                                                        sensor_name="viirs", u_d=None)
-    #     return rad_band
-
     @staticmethod
     def Lw(lt, rhoVec, li, c2, c3, clin2, clin3, cstab2, cstab3, cstray2, cstray3, cT2, cT3, cpol1, cpol2):
         Li = li * c2 * clin2 * cstab2 * cstray2 * cT2 * cpol1
