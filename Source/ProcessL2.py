@@ -1273,12 +1273,12 @@ class ProcessL2:
             stats = instrument.generateSensorStats("SeaBird",
                                                    dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), instrument_WB)
             # after dark substitution is done, condense to only dark corrected data (LIGHT key)
-            esRawGroup = esRawGroup['LIGHT']
-            liRawGroup = liRawGroup['LIGHT']
-            ltRawGroup = ltRawGroup['LIGHT']
-            esRawGroup.id = "ES_L1AQC"
-            liRawGroup.id = "LI_L1AQC"
-            ltRawGroup.id = "LT_L1AQC"
+            # esRawGroup = esRawGroup['LIGHT']
+            # liRawGroup = liRawGroup['LIGHT']
+            # ltRawGroup = ltRawGroup['LIGHT']
+            esRawGroup["LIGHT"].id = "ES_L1AQC"
+            liRawGroup["LIGHT"].id = "LI_L1AQC"
+            ltRawGroup["LIGHT"].id = "LT_L1AQC"
         else:
             msg = "class type not recognised"
             print(msg)
@@ -1666,7 +1666,7 @@ class ProcessL2:
             xDelta.update(instrument.rrsHyperDelta(uncGroup, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice))
         elif ConfigFile.settings["bL1bCal"] == 3:
             xSlice.update(
-                instrument.FRM(node, uncGroup, dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), instrument_WB))
+                instrument.FRM(node, uncGroup, dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup), stats, instrument_WB))
             xDelta.update(instrument.rrsHyperDeltaFRM(rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice))
         else:
             xDelta = None
@@ -1930,7 +1930,6 @@ class ProcessL2:
             esRawGroup = rootCopy.getGroup('ES_L1AQC')
             liRawGroup = rootCopy.getGroup('LI_L1AQC')
             ltRawGroup = rootCopy.getGroup('LT_L1AQC')
-
 
         # rootCopy will be manipulated in the making of node, but root will not
         referenceGroup = rootCopy.getGroup("IRRADIANCE")
