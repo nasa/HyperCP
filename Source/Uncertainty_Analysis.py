@@ -161,6 +161,12 @@ class Propagate:
             func = self.band_Conv_Sensor_S3A
         elif platform.upper() == "S3B" or platform.lower().rstrip().replace('-','') == "sentinel3b":
             func = self.band_Conv_Sensor_S3B
+        elif platform.upper() == "MOD-A" or platform.lower().rstrip().replace('-','') == "eos-aqua":
+            func = self.band_Conv_Sensor_AQUA
+        elif platform.upper() == "MOD-T" or platform.lower().rstrip().replace('-', '') == "eos-terra":
+            func = self.band_Conv_Sensor_TERRA
+        elif platform.upper() == "VIIRS" or platform.lower().rstrip().replace('-', '') == "noaa-20":
+            func = self.band_Conv_Sensor_NOAA
         else:
             msg = "sensor not supported"
             return False
