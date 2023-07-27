@@ -424,12 +424,36 @@ class Instrument:
         Convolve = Propagate(M=100, cores=1)
         # these are absolute values! Dont get confused
         if ConfigFile.settings["bL2WeightSentinel3A"]:
-            output["lwDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)], [lwAbsUnc, None], "S3A")
-            output["rrsDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)], [rrsAbsUnc, None], "S3A")
+            output["lwDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+                                                                          [lwAbsUnc, None], "S3A")
+            output["rrsDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+                                                                           [rrsAbsUnc, None], "S3A")
         elif ConfigFile.settings["bL2WeightSentinel3B"]:
-            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)], [lwAbsUnc, None], "S3B")
-            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)], [rrsAbsUnc, None], "S3B")
-
+            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+                                                                          [lwAbsUnc, None], "S3B")
+            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+                                                                           [rrsAbsUnc, None], "S3B")
+        if ConfigFile.settings['bL2WeightMODISA']:
+            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+                                                                          [lwAbsUnc, None], "MOD-A")
+            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+                                                                           [rrsAbsUnc, None], "MOD-A")
+        if ConfigFile.settings['bL2WeightMODIST']:
+            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+                                                                          [lwAbsUnc, None], "MOD-T")
+            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+                                                                           [rrsAbsUnc, None], "MOD-T")
+        if ConfigFile.settings['bL2WeightVIIRSN']:
+            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+                                                                          [lwAbsUnc, None], "VIIRS")
+            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+                                                                           [rrsAbsUnc, None], "VIIRS")
+        if ConfigFile.settings['bL2WeightVIIRSJ']:
+            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+                                                                          [lwAbsUnc, None], "VIIRS")
+            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+                                                                           [rrsAbsUnc, None], "VIIRS")
+            pass
         output.update({"lwDelta": lwDelta, "rrsDelta": rrsDelta})
 
         return output
