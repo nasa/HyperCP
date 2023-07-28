@@ -11,7 +11,8 @@ from Source.HDFRoot import HDFRoot
 class RhoCorrections:
 
     @staticmethod
-    def M99Corr(windSpeedMean,SZAMean,relAzMean):
+    def M99Corr(windSpeedMean, SZAMean, relAzMean, Propagate = None,
+                AOD=None, cloud=None, wTemp=None, sal=None, waveBands=None):
         ''' Mobley 1999 AO'''
 
         msg = 'Calculating M99 glint correction with complete LUT'
@@ -49,7 +50,21 @@ class RhoCorrections:
             (lut[:,2] == theta) & (lut[:,4] == relAz)]
 
         rhoScalar = row[0][5]
-        rhoDelta = 0.003 # Unknown; estimated from Ruddick 2006
+        # rhoDelta = 0.003 # Unknown; estimated from Ruddick 2006
+
+        Delta = Propagate.M99_Rho_Uncertainty(mean_vals=[windSpeedMean, SZAMean, relAzMean],
+                                              uncertainties=[1, 0.5, 3])
+
+        # zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
+        #                                     relAzMean, waveBands)
+        #
+        # # get the relative difference between mobley and zhang and add in quadrature as uncertainty component
+        # # pct_diff = np.zeros(len(waveBands))
+        # pct_diff = np.abs((zhang['ρ'] / rhoScalar) - 1)
+        # rhoDelta = np.power(np.power(Delta, 2) + np.power(pct_diff, 2), 0.5)
+        # rhoDelta[np.isnan(rhoDelta)==True] = 0
+
+        rhoDelta = Delta + 0.003  # disabled Zhang rho for calculating M99 unc
 
         return rhoScalar, rhoDelta
 
@@ -83,7 +98,7 @@ class RhoCorrections:
         return rhoScalar, rhoDelta
 
     @staticmethod
-    def ZhangCorr(windSpeedMean,AOD,cloud,sza,wTemp,sal,relAz,waveBands):
+    def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands, Propagate = None):
         ''' Requires xarray: http://xarray.pydata.org/en/stable/installing.html
         Recommended installation using Anaconda:
         $ conda install xarray dask netCDF4 bottleneck'''
@@ -101,10 +116,18 @@ class RhoCorrections:
         # positive z is upward
         sensor = {'ang': np.array([40, 180 - relAz]), 'wv': np.array(waveBands)}
 
+        # define uncertainties and create variable list for punpy. Inputs cannot be ordered dictionaries
+        varlist = [windSpeedMean, AOD, 0.0, sza, wTemp, sal, relAz, np.array(waveBands)]
+        ulist = [1.0, 0.01, 0.0, 0.5, 2, 0.5, 3, None]
+
         tic = time.process_time()
         rhoVector = ZhangRho.get_sky_sun_rho(env, sensor, round4cache=True)['rho']
         print(f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s')
 
-        rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
+        if Propagate is None:
+            rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
+        else:
+            rhoDelta = Propagate.zhangWrapper(mean_vals=varlist, uncertainties=ulist,
+                                                       waveSubset=np.array(waveBands))
 
         return rhoVector, rhoDelta

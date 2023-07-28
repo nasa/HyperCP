@@ -12,6 +12,7 @@ from HDFRoot import HDFRoot
 from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
 from Source.RhoCorrections import RhoCorrections
+from Source.Uncertainty_Analysis import Propagate
 from Source.Weight_RSR import Weight_RSR
 from Source.ProcessL2OCproducts import ProcessL2OCproducts
 from Source.ProcessL2BRDF import ProcessL2BRDF
@@ -1548,6 +1549,8 @@ class ProcessL2:
         waveSubset = wavelength # Only used for Zhang; No subsetting for threeC or Mobley corrections
         rhoVec = {}
 
+        Rho_Uncertainty_Obj = Propagate(M=100, cores=1)
+
         if threeCRho:
             '''Placeholder for Groetsch et al. 2017'''
 
@@ -1564,6 +1567,9 @@ class ProcessL2:
             separated for sun and sky to include polarization factors.
 
             Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.'''
+
+            # reduce number of draws because of how computationally intensive the Zhang method is
+            Rho_Uncertainty_Obj = Propagate(M=10, cores=1)
 
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
@@ -1602,15 +1608,16 @@ class ProcessL2:
                 # wavelength is now truncated to only valid wavebands for use in Zhang models
                 waveSubset = wave_array[:,1].tolist()
 
-            rhoVector, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
-                CloudXSlice,SZAXSlice,SSTXSlice,SalXSlice,RelAzXSlice,waveSubset)
+            rhoVector, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
+                                                           SalXSlice, RelAzXSlice, waveSubset, Rho_Uncertainty_Obj)
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[i]
             rhoScalar = None
 
         else:
             # Full Mobley 1999 model from LUT
-            rhoScalar, rhoDelta = RhoCorrections.M99Corr(WINDSPEEDXSlice,SZAXSlice, RelAzXSlice)
+            rhoScalar, rhoDelta = RhoCorrections.M99Corr(WINDSPEEDXSlice, SZAXSlice, RelAzXSlice, Rho_Uncertainty_Obj,
+            AOD=AODXSlice, cloud=CloudXSlice, wTemp=SSTXSlice, sal=SalXSlice, waveBands=waveSubset)
 
         # Calculate hyperspectral Coddingtion TSIS_1 hybrid F0 function
         # F0_hyper = ProcessL2.Thuillier(dateTag, wavelength)
