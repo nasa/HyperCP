@@ -599,10 +599,19 @@ class Utilities:
     # Check if dataset contains NANs
     @staticmethod
     def hasNan(ds):
-        for k in ds.data.dtype.fields.keys():
-            for x in range(ds.data.shape[0]):
+        try:
+            keys = ds.data.dtype.fields.keys()
+            data = ds.data
+            length = ds.data.shape[0]
+        except AttributeError:
+            keys = ds.keys()  # for if columns passed directly
+            data = ds
+            length = np.asarray(list(ds.values())).shape[1]
+
+        for k in keys:
+            for x in range(length):
                 if k != 'Datetime':
-                    if np.isnan(ds.data[k][x]):
+                    if np.isnan(data[k][x]):
                         return True
                 # else:
                 #     if np.isnan(ds.data[k][x]):
