@@ -457,7 +457,8 @@ class Utilities:
                     # Add a special dataset
                     for ds in gp.datasets:
                         # Make sure all datasets have been transcribed to columns
-                        gp.datasets[ds].datasetToColumns()
+                        if ds != "DATETIME":
+                            gp.datasets[ds].datasetToColumns()
 
                     gp.addDataset('Timestamp')
                     dateTag = gp.datasets['DATETAG'].columns["NONE"]
@@ -485,6 +486,40 @@ class Utilities:
                     gp.datasets['Timestamp'].columns.move_to_end('Datetime', last=False)
                     gp.datasets['Timestamp'].columnsToDataset()
 
+        return node
+
+    # Add a data column to each group dataset for DATETIME, as defined by TIMETAG2 and DATETAG
+    # Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
+    # in the 20th or 21st centuries, specifically for raw data groups - used in L2 processing.
+    @staticmethod
+    def rawDataAddDateTime(node):
+        for gp in node.groups:
+            if "L1AQC" in gp.id:
+                timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
+                dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
+                timeStamp = []
+                for i, timei in enumerate(timeData):
+                    # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
+                    # Filter for aberrant Datetags
+                    t = str(int(timei)).zfill(9)
+                    h = int(t[:2])
+                    m = int(t[2:4])
+                    s = int(t[4:6])
+
+                    if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
+                        and timei != 0.0 and not np.isnan(timei) \
+                            and h < 60 and m < 60 and s < 60:
+
+                        dt = Utilities.dateTagToDateTime(dateTag[i])
+                        timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
+                    else:
+                        msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        gp.datasetDeleteRow(i)
+
+                dateTime = gp.addDataset("DATETIME")
+                dateTime.data = timeStamp
         return node
 
     # Remove records if values of DATETIME are not strictly increasing
@@ -564,10 +599,19 @@ class Utilities:
     # Check if dataset contains NANs
     @staticmethod
     def hasNan(ds):
-        for k in ds.data.dtype.fields.keys():
-            for x in range(ds.data.shape[0]):
+        try:
+            keys = ds.data.dtype.fields.keys()
+            data = ds.data
+            length = ds.data.shape[0]
+        except AttributeError:
+            keys = ds.keys()  # for if columns passed directly
+            data = ds
+            length = np.asarray(list(ds.values())).shape[1]
+
+        for k in keys:
+            for x in range(length):
                 if k != 'Datetime':
-                    if np.isnan(ds.data[k][x]):
+                    if np.isnan(data[k][x]):
                         return True
                 # else:
                 #     if np.isnan(ds.data[k][x]):

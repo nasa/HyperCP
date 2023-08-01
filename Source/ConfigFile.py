@@ -127,7 +127,7 @@ class ConfigFile:
         print("bL2WeightMODISA", ConfigFile.settings["bL2WeightMODISA"])
         print("bL2WeightSentinel3A", ConfigFile.settings["bL2WeightSentinel3A"])
         print("bL2WeightVIIRSN", ConfigFile.settings["bL2WeightVIIRSN"])
-        print("bL2WeightMODISA", ConfigFile.settings["bL2WeightMODIST"])
+        print("bL2WeightMODIST", ConfigFile.settings["bL2WeightMODIST"])
         print("bL2WeightSentinel3A", ConfigFile.settings["bL2WeightSentinel3B"])
         print("bL2WeightVIIRSN", ConfigFile.settings["bL2WeightVIIRSJ"])
 

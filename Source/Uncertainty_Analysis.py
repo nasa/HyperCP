@@ -161,6 +161,12 @@ class Propagate:
             func = self.band_Conv_Sensor_S3A
         elif platform.upper() == "S3B" or platform.lower().rstrip().replace('-','') == "sentinel3b":
             func = self.band_Conv_Sensor_S3B
+        elif platform.upper() == "MOD-A" or platform.lower().rstrip().replace('-','') == "eos-aqua":
+            func = self.band_Conv_Sensor_AQUA
+        elif platform.upper() == "MOD-T" or platform.lower().rstrip().replace('-', '') == "eos-terra":
+            func = self.band_Conv_Sensor_TERRA
+        elif platform.upper() == "VIIRS" or platform.lower().rstrip().replace('-', '') == "noaa-20":
+            func = self.band_Conv_Sensor_NOAA
         else:
             msg = "sensor not supported"
             return False
@@ -194,6 +200,30 @@ class Propagate:
         rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
                                                                            platform_name="Sentinel-3B",
                                                                            sensor_name="olci", u_d=None)
+        return rad_band
+
+    @staticmethod
+    def band_Conv_Sensor_AQUA(Hyperspec, Wavelengths):
+        """ band convolution of Rrs for EOS-AQUA Modis"""
+        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
+                                                                           platform_name="EOS-Aqua",
+                                                                           sensor_name="modis", u_d=None)
+        return rad_band
+
+    @staticmethod
+    def band_Conv_Sensor_TERRA(Hyperspec, Wavelengths):
+        """ band convolution of Rrs for EOS-Terra Modis"""
+        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
+                                                                           platform_name="EOS-Terra",
+                                                                           sensor_name="modis", u_d=None)
+        return rad_band
+
+    @staticmethod
+    def band_Conv_Sensor_NOAA(Hyperspec, Wavelengths):
+        """ band convolution of Rrs for NOAA Virrs"""
+        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
+                                                                           platform_name="NOAA-20",
+                                                                           sensor_name="viirs", u_d=None)
         return rad_band
 
     @staticmethod

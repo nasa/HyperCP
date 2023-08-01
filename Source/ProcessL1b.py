@@ -38,7 +38,6 @@ class ProcessL1b:
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
-
         for f in glob.glob(os.path.join(inpath, r'*class_LINEAR*')):
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
@@ -140,7 +139,7 @@ class ProcessL1b:
         # Read uncertainty parameters from full calibration from TARTU
         for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*RADCAL*')):
+        for f in glob.glob(os.path.join(inpath, r'*RADCAL*', '*')):
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*STRAY*')):
             Utilities.read_char(f, gp)

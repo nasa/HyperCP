@@ -3,6 +3,7 @@ import os
 import numpy as np
 import scipy as sp
 import pandas as pd
+import calendar
 import collections
 from decimal import Decimal
 
@@ -24,30 +25,31 @@ class Instrument:
     def __init__(self):
         pass
 
-    def lightDarkStats(self, grp, sensortype):
+    def lightDarkStats(self, grp, slices, sensortype):
         pass
 
-    def generateSensorStats(self, InstrumentType, rawData, newWaveBands):
+    def generateSensorStats(self, InstrumentType, rawData, rawSlice, newWaveBands):
         output = {}
         types = ['ES', 'LI', 'LT']
         for sensortype in types:
             if InstrumentType.lower() == "trios":
-                output[sensortype] = self.lightDarkStats(rawData[sensortype], sensortype)
+                output[sensortype] = self.lightDarkStats(rawData[sensortype], rawSlice[sensortype], sensortype)
             elif InstrumentType.lower() == "seabird":
                 output[sensortype] = self.lightDarkStats([rawData[sensortype]['LIGHT'],
-                                                         rawData[sensortype]['DARK']],
+                                                          rawData[sensortype]['DARK']],
+                                                         [rawSlice[sensortype]['LIGHT'],
+                                                          rawSlice[sensortype]['DARK']],
                                                          sensortype)
+        if not output[sensortype]:
+            msg = "Error in generating standard deviation and average of light and dark"
+            print(msg)
+            return False
 
         # interpolate to common wavebands
         for stype in types:
             # get sensor specific wavebands and pop from output
-            wvls = np.asarray(output[stype].pop('wvl'), dtype=float)
-            output[stype]['ave_Light'], _ = self.interp_common_wvls(output[stype]['ave_Light'], wvls,
-                                                                    newWaveBands)
-            output[stype]['std_Light'], _ = self.interp_common_wvls(output[stype]['std_Light'], wvls,
-                                                                    newWaveBands)
             _, output[stype]['std_Signal'] = self.interp_common_wvls(
-                                             np.asarray(list(output[stype]['std_Signal'].values())),
+                                             output[stype]['std_Signal'],
                                              np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
                                              newWaveBands)
         return output
@@ -143,7 +145,7 @@ class Instrument:
             ltUnc=dict(zip(data_wvl, [[k] for k in LT_rel]))
         )
 
-    def FRM(self, node, uncGrp, grps, newWaveBands):
+    def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
         pass
 
     ## L2 uncertainty Processing
@@ -214,6 +216,59 @@ class Instrument:
 
             output["lwDelta_Sentinel3B"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
             output["rrsDelta_Sentinel3B"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+
+        if ConfigFile.settings['bL2WeightMODISA']:
+            lwBand = Propagate.band_Conv_Sensor_AQUA(lw, np.array(waveSubset))
+            rrsBand = Propagate.band_Conv_Sensor_AQUA(rrs, np.array(waveSubset))
+
+            sample_lw_AQUA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_AQUA, [sample_Lw, sample_wavelengths])
+            sample_rrs_AQUA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_AQUA, [sample_Rrs, sample_wavelengths])
+
+            lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_AQUA)
+            rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_AQUA)
+
+            output["lwDelta_MODISA"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_MODISA"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+
+        if ConfigFile.settings['bL2WeightMODIST']:
+            lwBand = Propagate.band_Conv_Sensor_TERRA(lw, np.array(waveSubset))
+            rrsBand = Propagate.band_Conv_Sensor_TERRA(rrs, np.array(waveSubset))
+
+            sample_lw_TERRA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_TERRA, [sample_Lw, sample_wavelengths])
+            sample_rrs_TERRA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_TERRA, [sample_Rrs, sample_wavelengths])
+
+            lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_TERRA)
+            rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_TERRA)
+
+            output["lwDelta_MODIST"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_MODIST"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+
+        if ConfigFile.settings['bL2WeightVIIRSN']:
+            lwBand = Propagate.band_Conv_Sensor_NOAA(lw, np.array(waveSubset))
+            rrsBand = Propagate.band_Conv_Sensor_NOAA(rrs, np.array(waveSubset))
+
+            sample_lw_NOAA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_NOAA, [sample_Lw, sample_wavelengths])
+            sample_rrs_NOAA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_NOAA, [sample_Rrs, sample_wavelengths])
+
+            lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_NOAA)
+            rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_NOAA)
+
+            output["lwDelta_VIIRSN"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_VIIRSN"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+
+        if ConfigFile.settings['bL2WeightVIIRSJ']:
+            # currently the same as VIIRSN due to the lack of NOAA-21 rsr in pyspectral
+            lwBand = Propagate.band_Conv_Sensor_NOAA(lw, np.array(waveSubset))
+            rrsBand = Propagate.band_Conv_Sensor_NOAA(rrs, np.array(waveSubset))
+
+            sample_lw_NOAAJ = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_NOAA, [sample_Lw, sample_wavelengths])
+            sample_rrs_NOAAJ = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_NOAA, [sample_Rrs, sample_wavelengths])
+
+            lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_NOAAJ)
+            rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_NOAAJ)
+
+            output["lwDelta_VIIRSJ"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_VIIRSJ"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
 
         lwDelta = Propagate_L2_FRM.process_samples(None, sample_Lw)
         rrsDelta = Propagate_L2_FRM.process_samples(None, sample_Rrs)
@@ -365,12 +420,36 @@ class Instrument:
         Convolve = Propagate(M=100, cores=1)
         # these are absolute values! Dont get confused
         if ConfigFile.settings["bL2WeightSentinel3A"]:
-            output["lwDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)], [lwAbsUnc, None], "S3A")
-            output["rrsDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)], [rrsAbsUnc, None], "S3A")
+            output["lwDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+                                                                          [lwAbsUnc, None], "S3A")
+            output["rrsDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+                                                                           [rrsAbsUnc, None], "S3A")
         elif ConfigFile.settings["bL2WeightSentinel3B"]:
-            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)], [lwAbsUnc, None], "S3B")
-            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)], [rrsAbsUnc, None], "S3B")
-
+            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+                                                                          [lwAbsUnc, None], "S3B")
+            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+                                                                           [rrsAbsUnc, None], "S3B")
+        if ConfigFile.settings['bL2WeightMODISA']:
+            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+                                                                          [lwAbsUnc, None], "MOD-A")
+            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+                                                                           [rrsAbsUnc, None], "MOD-A")
+        if ConfigFile.settings['bL2WeightMODIST']:
+            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+                                                                          [lwAbsUnc, None], "MOD-T")
+            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+                                                                           [rrsAbsUnc, None], "MOD-T")
+        if ConfigFile.settings['bL2WeightVIIRSN']:
+            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+                                                                          [lwAbsUnc, None], "VIIRS")
+            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+                                                                           [rrsAbsUnc, None], "VIIRS")
+        if ConfigFile.settings['bL2WeightVIIRSJ']:
+            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+                                                                          [lwAbsUnc, None], "VIIRS")
+            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+                                                                           [rrsAbsUnc, None], "VIIRS")
+            pass
         output.update({"lwDelta": lwDelta, "rrsDelta": rrsDelta})
 
         return output
@@ -379,13 +458,18 @@ class Instrument:
     @staticmethod
     def interp_common_wvls(columns, waves, newWavebands):
         saveTimetag2 = None
-        if "Datetag" in columns:
-            saveDatetag = columns.pop("Datetag")
-            saveTimetag2 = columns.pop("Timetag2")
-            columns.pop("Datetime")
-
+        if isinstance(columns, dict):  # np.ndarray):
+            if "Datetag" in columns:
+                saveDatetag = columns.pop("Datetag")
+                saveTimetag2 = columns.pop("Timetag2")
+                columns.pop("Datetime")
+            y = np.asarray(list(columns.values()))
+        elif isinstance(columns, np.ndarray):  # is numpy array
+            y = columns
+        else:
+            msg = "columns are unexpected type: ProcessInstrumentUncertainties.py - interp_common_wvls"
+            print(msg)
         # Get wavelength values
-
         x = np.asarray(waves)
 
         newColumns = collections.OrderedDict()
@@ -397,7 +481,7 @@ class Instrument:
         for i in range(newWavebands.shape[0]):
             newColumns[str(round(10*newWavebands[i])/10)] = []  # limit to one decimal place
 
-        new_y = sp.interpolate.InterpolatedUnivariateSpline(x, columns, k=3)(newWavebands)
+        new_y = sp.interpolate.InterpolatedUnivariateSpline(x, y, k=3)(newWavebands)
 
         for waveIndex in range(newWavebands.shape[0]):
             newColumns[str(round(10*newWavebands[waveIndex])/10)].append(new_y[waveIndex])
@@ -426,8 +510,10 @@ class Instrument:
             # Perform interpolation for each timestamp
             y = np.asarray([columns[k][m] for k in columns])
 
+            new_y = sp.interpolate.InterpolatedUnivariateSpline(waves, y, k=3)(newWavebands)
+
             for waveIndex in range(newWavebands.shape[0]):
-                newColumns[str(round(10*newWavebands[waveIndex])/10)].append(y[waveIndex])
+                newColumns[str(round(10*newWavebands[waveIndex])/10)].append(new_y[waveIndex])
 
             cols.append(newColumns)
 
@@ -640,12 +726,39 @@ class HyperOCR(Instrument):
             Utilities.writeLogFile(msg)
         return True
 
+    def darkToLightTimer(self, rawGrp, sensortype):
+        darkGrp = rawGrp['DARK']
+        lightGrp = rawGrp['LIGHT']
+
+        if darkGrp.attributes["FrameType"] == "ShutterDark" and darkGrp.getDataset(sensortype):
+            darkData = darkGrp.getDataset(sensortype)
+            darkDateTime = darkGrp.getDataset("DATETIME")
+        if lightGrp.attributes["FrameType"] == "ShutterLight" and lightGrp.getDataset(sensortype):
+            lightData = lightGrp.getDataset(sensortype)
+            lightDateTime = lightGrp.getDataset("DATETIME")
+
+        if darkGrp is None or lightGrp is None:
+            msg = f'No radiometry found for {sensortype}'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return False
+        elif not self._check_data(darkData, lightData):
+            return False
+
+        newDarkData = self._interp(lightData, lightDateTime, darkData, darkDateTime)
+        if isinstance(newDarkData, bool):
+            return False
+        else:
+            rawGrp['DARK'].datasets[sensortype].data = newDarkData
+            rawGrp['DARK'].datasets[sensortype].datasetToColumns()
+            return True
+
     @staticmethod
     def _interp(lightData, lightTimer, darkData, darkTimer):
         # Interpolate Dark Dataset to match number of elements as Light Dataset
         newDarkData = np.copy(lightData.data)
-        for k in darkData.data.dtype.fields.keys(): # For each wavelength
-            x = np.copy(darkTimer.data).tolist() # darktimer
+        for k in darkData.data.dtype.fields.keys():  # darkData.data.dtype.fields.keys():  # For each wavelength
+            x = np.copy(darkTimer.data).tolist()  # darktimer
             y = np.copy(darkData.data[k]).tolist()  # data at that band over time
             new_x = lightTimer.data  # lighttimer
 
@@ -654,7 +767,6 @@ class HyperOCR(Instrument):
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
-
             if not Utilities.isIncreasing(x):
                 msg = "**************darkTimer does not contain strictly increasing values"
                 print(msg)
@@ -691,23 +803,23 @@ class HyperOCR(Instrument):
             Utilities.writeLogFile(msg)
             exit()
 
-        return darkData.data
+        return newDarkData
 
-    def lightDarkStats(self, grp, sensortype):
+    def lightDarkStats(self, grp, slice, sensortype):
         lightGrp = grp[0]
+        lightSlice = slice[0]
         darkGrp = grp[1]
+        darkSlice = slice[1]
 
         if darkGrp.attributes["FrameType"] == "ShutterDark" and darkGrp.getDataset(sensortype):
-            darkGroup = darkGrp
-            darkData = darkGrp.getDataset(sensortype)
-            darkDateTime = darkGrp.getDataset("DATETIME")
+            darkData = darkSlice['data']  # darkGrp.getDataset(sensortype)
+            # darkDateTime = darkSlice['datetime']  # darkGrp.getDataset("DATETIME")
 
         if lightGrp.attributes["FrameType"] == "ShutterLight" and lightGrp.getDataset(sensortype):
-            lightGroup = lightGrp
-            lightData = lightGrp.getDataset(sensortype)
-            lightDateTime = lightGrp.getDataset("DATETIME")
+            lightData = lightSlice['data']  # lightGrp.getDataset(sensortype)
+            # lightDateTime = lightSlice['datetime']  # lightGrp.getDataset("DATETIME")
 
-        if darkGroup is None or lightGroup is None:
+        if darkGrp is None or lightGrp is None:
             msg = f'No radiometry found for {sensortype}'
             print(msg)
             Utilities.writeLogFile(msg)
@@ -715,40 +827,35 @@ class HyperOCR(Instrument):
 
         elif not self._check_data(darkData, lightData):
             return False
-        if not(newDarkData := self._interp(lightData, lightDateTime, darkData, darkDateTime)):
-            return False
+        # Do interpolation at the start of the stations ensemble process, then slice like light data
+        # newDarkData = self._interp(lightData, lightDateTime, darkData, darkDateTime)
+        # if not newDarkData:
+        #     return False
 
         # Correct light data by subtracting interpolated dark data from light data
-        wvl = []
         std_Light = []
         std_Dark = []
         ave_Light = []
         ave_Dark = []
         stdevSignal = {}
-        for i, k in enumerate(lightData.data.dtype.fields.keys()):
-            k1 = str(float(k))
+        for i, k in enumerate(lightData.keys()):
+            wvl = str(float(k))
             # number of replicates for light and dark readings
-            N = lightData.data.shape[0]
-            Nd = newDarkData.data.shape[0]
-            wvl.append(k1)
+            N = np.asarray(list(lightData.values())).shape[1]
+            Nd = np.asarray(list(darkData.values())).shape[1]
 
             # apply normalisation to the standard deviations used in uncertainty calculations
-            std_Light.append(np.std(lightData.data[k])/pow(N, 0.5))  # = (sigma / sqrt(N))**2 or sigma**2
-            std_Dark.append(np.std(newDarkData[k])/pow(Nd, 0.5))  # sigma here is essentially sigma**2 so N must be rooted
-            ave_Light.append(np.average(lightData.data[k]))
-            ave_Dark.append(np.average(darkData.data[k]))
+            std_Light.append(np.std(lightData[k])/pow(N, 0.5))  # = (sigma / sqrt(N))**2 or sigma**2
+            std_Dark.append(np.std(darkData[k])/pow(Nd, 0.5))  # sigma here is essentially sigma**2 so N must be rooted
+            ave_Light.append(np.average(lightData[k]))
+            ave_Dark.append(np.average(darkData[k]))
 
-            for x in range(lightData.data.shape[0]):
-                lightData.data[k][x] -= newDarkData[k][x]
+            for x in range(N):
+                lightData[k][x] -= darkData[k][x]
 
             # Normalised signal standard deviation =
-            signalAve = np.average(lightData.data[k])
-            stdevSignal[k1] = pow((pow(std_Light[-1], 2) + pow(std_Dark[-1], 2))/pow(signalAve, 2), 0.5)
-
-            # sensitivity factor : if raw_cal==0 (or NaN), no calibration is performed and data is affected to 0
-            ind_zero = np.array([rc[0] == 0 for rc in raw_cal])  # changed due to raw_cal now being a np array
-            ind_nan = np.array([np.isnan(rc[0]) for rc in raw_cal])
-            ind_nocal = ind_nan | ind_zero
+            signalAve = np.average(lightData[k])
+            stdevSignal[wvl] = pow((pow(std_Light[0], 2) + pow(std_Dark[0], 2))/pow(signalAve, 2), 0.5)
 
         return dict(
             ave_Light=np.array(ave_Light),
@@ -756,34 +863,35 @@ class HyperOCR(Instrument):
             std_Light=np.array(std_Light),
             std_Dark=np.array(std_Dark),
             std_Signal=stdevSignal,
-            wvl=wvl[ind_nocal==False]
             )
 
-    def FRM(self, node, uncGrp, grps, newWaveBands):
+    def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
         # calibration of HyperOCR following the FRM processing of FRM4SOC2
         output = {}
-        # Start = {}
-        # End = {}
         for sensortype in ['ES', 'LI', 'LT']:
             print('FRM Processing:', sensortype)
             # Read data
-            grp = node.getGroup(sensortype)
+            grp = raw_grps[sensortype]
+            slice = raw_slices[sensortype]["LIGHT"]['data']
+            # dark_grp = raw_grps[sensortype]["DARK"]
+            dark_slice = raw_slices[sensortype]["DARK"]['data']
 
             # read in data for FRM processing
-            raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
+            raw_data = np.asarray(list(slice.values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
             int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
+            int_time = np.mean(int_time)
 
             # Read FRM characterisation
             radcal_wvl = np.asarray(
-                pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[1][1:].tolist())
-            radcal_cal = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[2]
-            dark = np.asarray(
-                pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[4][
-                1:].tolist())  # dark signal
-            S1 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[6]
-            S1_unc = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[7]/100
-            S2 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[8]
-            S2_unc = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data).transpose()[9]/100
+                pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['1'][1:].tolist())
+            radcal_cal = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['2']
+            # raw_dark = np.asarray(dark_grp.getDataset(sensortype).data.tolist())  # get raw_dark data
+            raw_dark = np.asarray(list(dark_slice.values())).transpose()
+            S1 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['6']
+            S2 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['8']
+            # TODO: Check if multiplying by np.abs(S1/S2) is correct
+            S1_unc = (pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['7']/100)[1:].to_list()*np.abs(S1[1:])
+            S2_unc = (pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['9']/100)[1:].to_list()*np.abs(S2[1:])
             mZ = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_STRAYDATA_LSF").data))
             mZ_unc = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_STRAYDATA_UNCERTAINTY").data))
 
@@ -791,17 +899,16 @@ class HyperOCR(Instrument):
             mZ = mZ[1:, 1:]
             mZ_unc = mZ_unc[1:, 1:]
 
-            Ct = np.asarray(
-                pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data).transpose()[4][1:].tolist())
-            Ct_unc = np.asarray(
-                pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data).transpose()[5][1:].tolist())
-            LAMP = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data).transpose()[2])
+            Ct = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data
+                                         )[f'{sensortype}_TEMPERATURE_COEFFICIENTS'][1:].tolist())
+            Ct_unc = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data
+                                             )[f'{sensortype}_TEMPERATURE_UNCERTAINTIES'][1:].tolist())
+            LAMP = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['2'])
             LAMP_unc = np.asarray(
-                pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data).transpose()[3])/100*LAMP
+                pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['3'])/100*LAMP
 
             # Defined constants
             nband = len(radcal_wvl)
-            nmes = len(raw_data)
             n_iter = 5
 
             # set up uncertainty propagation
@@ -809,10 +916,12 @@ class HyperOCR(Instrument):
             prop = punpy.MCPropagation(mDraws, parallel_cores=1)
 
             # uncertainties from data:
-            sample_mZ = cm.generate_sample(mDraws, mZ, mZ_unc, "rand")
+            sample_int_time = cm.generate_sample(mDraws, int_time, None, None)
             sample_n_iter = cm.generate_sample(mDraws, n_iter, None, None, dtype=int)
+            sample_mZ = cm.generate_sample(mDraws, mZ, mZ_unc, "rand")
             sample_Ct = cm.generate_sample(mDraws, Ct, Ct_unc, "syst")
 
+            # pad Lamp data and generate sample
             LAMP = np.pad(LAMP, (0, nband - len(LAMP)), mode='constant')  # PAD with zero if not 255 long
             LAMP_unc = np.pad(LAMP_unc, (0, nband - len(LAMP_unc)), mode='constant')
             sample_LAMP = cm.generate_sample(mDraws, LAMP, LAMP_unc, "syst")
@@ -820,12 +929,18 @@ class HyperOCR(Instrument):
             # Non-linearity alpha computation
             cal_int = radcal_cal.pop(0)
             sample_cal_int = cm.generate_sample(100, cal_int, None, None)
-            t1 = S1.pop(0)
-            t2 = S2.pop(0)
+
+            t1 = S1.iloc[0]
+            S1 = S1.drop(S1.index[0])
+            t2 = S2.iloc[0]
+            S2 = S2.drop(S2.index[0])
+
+            S1 = np.asarray(S1, dtype=float)
+            S2 = np.asarray(S2, dtype=float)
 
             sample_t1 = cm.generate_sample(mDraws, t1, None, None)
-            sample_S1 = cm.generate_sample(mDraws, np.asarray(S1), S1_unc[1:], "rand")
-            sample_S2 = cm.generate_sample(mDraws, np.asarray(S2), S2_unc[1:], "rand")
+            sample_S1 = cm.generate_sample(mDraws, np.asarray(S1), S1_unc, "rand")
+            sample_S2 = cm.generate_sample(mDraws, np.asarray(S2), S2_unc, "rand")
 
             k = t1/(t2 - t1)
             sample_k = cm.generate_sample(mDraws, k, None, None)
@@ -847,13 +962,20 @@ class HyperOCR(Instrument):
 
             # alpha = ((S1-S12)/(S12**2)).tolist()
             alpha = self.alphafunc(S1, S12)
-            sample_alpha = prop.run_samples(self.alphafunc, [sample_S1, sample_S12])
+            alpha_unc = np.power(np.power(S1_unc, 2) + np.power(S2_unc, 2) + np.power(S2_unc, 2), 0.5)
+            sample_alpha = cm.generate_sample(mDraws, alpha, alpha_unc, "syst")
 
             # Updated calibration gain
             if sensortype == "ES":
                 ## Compute avg cosine error
+                cos_mean_vals, cos_uncertainties = self.prepare_cos(uncGrp, sensortype, 'L2')
+                corr = [None, "syst", "syst", "rand"]
+                sample_radcal_wvl, sample_coserr, sample_coserr90, sample_zen_ang = [
+                    cm.generate_sample(mDraws, samp, cos_uncertainties[i], corr[i]) for i, samp in
+                    enumerate(cos_mean_vals)]
+
                 avg_coserror, avg_azi_coserror, zenith_ang, zen_delta, azi_delta, zen_unc, azi_unc = \
-                    self.cosine_error_correction(node, sensortype)
+                    self.cosine_error_correction(uncGrp, sensortype)
 
                 # error due to lack of symmetry in cosine response
                 sample_azi_delta_err1 = cm.generate_sample(mDraws, avg_azi_coserror, azi_unc, "syst")
@@ -868,24 +990,25 @@ class HyperOCR(Instrument):
                 sample_zen_err = prop.run_samples(self.ZENAvg_Coserr, [sample_radcal_wvl, sample_azi_avg_coserror])
                 sample_zen_avg_coserror = prop.combine_samples([sample_zen_err, sample_zen_delta_err])
 
+                full_hemi_coserr = self.FHemi_Coserr(avg_coserror, zenith_ang)
                 sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
 
                 ## Irradiance direct and diffuse ratio
-                res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0)
+                # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, trios=0)
 
-                updated_radcal_gain = Hyper_update_cal_data_ES(S12_sl_corr, LAMP, cal_int, t1)
-                sample_updated_radcal_gain = prop.run_samples(Hyper_update_cal_data_ES,
+                updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, cal_int, t1)
+                sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_cal_int,
                                                                sample_t1])
             else:
-                PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data).transpose()[2])
+                PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['2'])
                 PANEL_unc = (np.asarray(
-                    pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data).transpose()[3])/100)*PANEL
+                    pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['3'])/100)*PANEL
                 PANEL = np.pad(PANEL, (0, nband - len(PANEL)), mode='constant')
                 PANEL_unc = np.pad(PANEL_unc, (0, nband - len(PANEL_unc)), mode='constant')
                 sample_PANEL = cm.generate_sample(100, PANEL, PANEL_unc, "syst")
-                updated_radcal_gain = Hyper_update_cal_data_rad(S12_sl_corr, LAMP, PANEL, cal_int, t1)
-                sample_updated_radcal_gain = prop.run_samples(Hyper_update_cal_data_rad,
+                updated_radcal_gain = self.update_cal_rad(S12_sl_corr, LAMP, PANEL, cal_int, t1)
+                sample_updated_radcal_gain = prop.run_samples(self.update_cal_rad,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_PANEL,
                                                                sample_cal_int,
                                                                sample_t1])
@@ -897,104 +1020,123 @@ class HyperOCR(Instrument):
             # set 1 instead of 0 to perform calibration (otherwise division per 0)
             updated_radcal_gain[ind_nocal == True] = 1
 
-            # keep only defined wavelength
-            updated_radcal_gain = updated_radcal_gain[ind_nocal == False]
-            wvl = radcal_wvl[ind_nocal == False]
-            dark = dark[ind_nocal == False]
-            alpha = np.asarray(alpha)[ind_nocal == False]
-            mZ = mZ[:, ind_nocal == False]
-            mZ = mZ[ind_nocal == False, :]
-            Ct = np.asarray(Ct)[ind_nocal == False]
+            alpha = np.asarray(alpha)
+            Ct = np.asarray(Ct)
 
-            FRM_mesure = np.zeros((nmes, len(updated_radcal_gain)))
+            # Filter Raw Data
+            # ind_raw_data = (radcal_cal[radcal_wvl > 0]) > 0
+            # raw_filtered = np.asarray([raw_data[n][ind_raw_data] for n in range(nmes)])
+            # dark_filtered = np.asarray([raw_dark[n][ind_raw_data] for n in range(nmes)])
+            data = np.mean(raw_data, axis=0)  # raw data already dark subtracted, use mean for statistical analysis
 
-            ind_raw_data = (radcal_cal[radcal_wvl > 0]) > 0
-            for n in range(nmes):
-                # dark substraction
-                data = raw_data[n][ind_raw_data] - dark
+            # signal uncertainties
+            std_light = stats[sensortype]['std_Light']  # standard deviations are taken from generateSensorStats
+            std_dark = stats[sensortype]['std_Dark']
+            sample_light = cm.generate_sample(100, np.mean(raw_data, axis=0), std_light, "rand")
+            sample_dark = cm.generate_sample(100, np.mean(raw_dark, axis=0), std_dark, "rand")
+            sample_dark_corr_data = prop.run_samples(self.dark_Substitution, [sample_light, sample_dark])
 
-                # signal uncertainties
-                std_light = np.std(raw_data[n][ind_raw_data], axis=0)
-                std_dark = np.std(dark, axis=0)
-                sample_light = cm.generate_sample(100, raw_data[n][ind_raw_data], std_light, "rand")
-                sample_dark = cm.generate_sample(100, dark, std_dark, "rand")
-                sample_dark_corr_data = prop.run_samples(self.dark_Substitution, [sample_light, sample_dark])
+            # Non-linearity
+            data1 = self.DATA1(data, alpha)  # data*(1 - alpha*data)
+            sample_data1 = prop.run_samples(self.DATA1, [sample_dark_corr_data, sample_alpha])
 
-                # Non-linearity
-                data1 = data*(1 - alpha*data)
-                sample_data1 = prop.run_samples(DATA1, [sample_dark_corr_data, sample_alpha])
+            # Straylight
+            data2 = self.Slaper_SL_correction(data1, mZ, n_iter)
 
-                # Straylight
-                data2 = self.Slaper_SL_correction(data1, mZ, n_iter)
-
-                S12_sl_corr_unc = []
-                sl4 = self.Slaper_SL_correction(linear_corr_mesure, mZ, n_iter=4)
-                for i in range(len(straylight_corr_mesure)):  # get the difference between n=4 and n=5
-                    if linear_corr_mesure[i] > sl4[i]:
-                        S12_sl_corr_unc.append(straylight_corr_mesure[i] - sl4[i])
-                    else:
-                        S12_sl_corr_unc.append(sl4[i] - straylight_corr_mesure[i])
-
-                sample_straylight_1 = cm.generate_sample(mDraws, sample_data1, np.array(S12_sl_corr_unc), "syst")
-                sample_straylight_2 = prop.run_samples(self.Slaper_SL_correction,
-                                                       [sample_linear_corr_mesure, sample_mZ, sample_n_iter])
-                sample_data2 = prop.combine_samples([sample_straylight_1, sample_straylight_2])
-
-                # Calibration
-                data3 = data2*(cal_int/int_time[n])/updated_radcal_gain
-                sample_data3 = prop.combine_samples(DATA3, [sample_data2, sample_cal_int, sample_int_time,
-                                                            sample_updated_radcal_gain])
-
-                # thermal
-                data4 = DATA4(data3, Ct)
-                sample_data4 = prop.combine_samples(DATA4, [sample_data3, sample_Ct])
-
-                # Cosine correction
-                if sensortype == "ES":
-                    data5 = DATA5(data4, res_py6s['solar_zenith'], res_py6s['direct_ratio'][ind_raw_data], zenith_ang,
-                                  avg_coserror, full_hemi_coserror)
-                    sample_data5 = prop.run_samples(DATA5, [data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror,
-                                                            full_hemi_coserror])
-                    unc = prop.process_samples(None, sample_data5)
-                    sample = sample_data5
-                    FRM_mesure[n, :] = data5
+            S12_sl_corr_unc = []
+            sl4 = self.Slaper_SL_correction(data1, mZ, n_iter=4)
+            for i in range(len(data2)):  # get the difference between n=4 and n=5
+                if data1[i] > sl4[i]:
+                    S12_sl_corr_unc.append(data2[i] - sl4[i])
                 else:
-                    unc = prop.process_samples(None, sample_data4)
-                    sample = sample_data4
-                    FRM_mesure[n, :] = data4
+                    S12_sl_corr_unc.append(sl4[i] - data2[i])
 
-                # mask for arrays
-                ind_zero = np.array([rc[0] == 0 for rc in raw_cal])  # changed due to raw_cal now being a np array
-                ind_nan = np.array([np.isnan(rc[0]) for rc in raw_cal])
-                ind_nocal = ind_nan | ind_zero
+            sample_straylight_1 = cm.generate_sample(mDraws, data2, np.array(S12_sl_corr_unc), "syst")  # model error of method
+            sample_straylight_2 = prop.run_samples(self.Slaper_SL_correction,
+                                                   [sample_data1, sample_mZ, sample_n_iter])  # error from method
+            sample_data2 = prop.combine_samples([sample_straylight_1, sample_straylight_2])  # total straylight uncertainty
 
-                # Remove wvl without calibration from the dataset and make uncertainties relative
-                filtered_mesure = FRM_mesure[ind_nocal == False]
-                filtered_unc = np.power(np.power(unc[ind_nocal == False]*1e10, 2)/np.power(filtered_mesure*1e10, 2),
-                                        0.5)
+            # Calibration
+            data3 = self.DATA3(data2, cal_int, int_time, updated_radcal_gain)  # data2*(cal_int/int_time)/updated_radcal_gain
+            sample_data3 = prop.run_samples(self.DATA3, [sample_data2, sample_cal_int, sample_int_time, sample_updated_radcal_gain])
 
-                output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
-                output[f"{sensortype.lower()}Unc"] = filtered_unc  # relative uncertainty
-                output[f"{sensortype.lower()}Sample"] = sample[:, ind_nocal == False]  # samples keep raw
+            # thermal
+            data4 = self.DATA4(data3, Ct)
+            sample_data4 = prop.run_samples(self.DATA4, [sample_data3, sample_Ct])
 
-            #     # generate common wavebands for interpolation
-            #     wvls = radcal_wvl[ind_nocal == False]
-            #     Start[sensortype] = np.ceil(wvls[0])
-            #     End[sensortype] = np.floor(wvls[-1])
-            #
-            # types = ['ES', 'LI', 'LT']
-            # # interpolate to common wavebands
-            # start = max([Start[stype] for stype in types])
-            # end = min([End[stype] for stype in types])
-            # newWavebands = np.arange(start, end, float(ConfigFile.settings["fL1bInterpInterval"]))
+            # Cosine correction
+            if sensortype == "ES":
+                # solar_zenith = res_py6s['solar_zenith']
+                # direct_ratio = res_py6s['direct_ratio']
+                solar_zenith = np.array([46.87415726])
+                direct_ratio = np.array([0.222, 0.245, 0.256, 0.268, 0.279, 0.302, 0.313, 0.335, 0.345, 0.356,
+                                         0.376, 0.386, 0.396, 0.415, 0.424, 0.433, 0.45, 0.459, 0.467, 0.482,
+                                         0.489, 0.496, 0.51, 0.516, 0.522, 0.534, 0.539, 0.545, 0.555, 0.56,
+                                         0.565, 0.576, 0.581, 0.586, 0.596, 0.6, 0.605, 0.613, 0.617, 0.621,
+                                         0.629, 0.632, 0.636, 0.644, 0.647, 0.651, 0.657, 0.66, 0.663, 0.669,
+                                         0.672, 0.675, 0.68, 0.683, 0.686, 0.691, 0.693, 0.696, 0.7, 0.702,
+                                         0.705, 0.709, 0.711, 0.714, 0.717, 0.719, 0.721, 0.725, 0.726, 0.728,
+                                         0.731, 0.733, 0.736, 0.738, 0.739, 0.742, 0.744, 0.745, 0.748, 0.749,
+                                         0.75, 0.753, 0.754, 0.755, 0.757, 0.758, 0.759, 0.761, 0.763, 0.764,
+                                         0.766, 0.767, 0.768, 0.769, 0.77, 0.771, 0.773, 0.774, 0.775, 0.776,
+                                         0.777, 0.778, 0.779, 0.78, 0.781, 0.782, 0.783, 0.784, 0.785, 0.7855,
+                                         0.786, 0.788, 0.788, 0.789, 0.79, 0.79, 0.791, 0.792, 0.793, 0.793,
+                                         0.795, 0.795, 0.796, 0.797, 0.797, 0.798, 0.799, 0.799, 0.8, 0.801,
+                                         0.801, 0.802, 0.802, 0.803, 0.803, 0.804, 0.805, 0.805, 0.806, 0.806,
+                                         0.807, 0.807, 0.808, 0.808, 0.809, 0.809, 0.81, 0.81, 0.811, 0.811,
+                                         0.811, 0.812, 0.812, 0.813, 0.813, 0.814, 0.814, 0.814, 0.815, 0.815,
+                                         0.816, 0.816, 0.816, 0.817, 0.817, 0.817, 0.818, 0.818, 0.818, 0.819,
+                                         0.819, 0.819, 0.819, 0.82, 0.82, 0.821, 0.821, 0.821, 0.822, 0.822,
+                                         0.822, 0.822, 0.823, 0.823, 0.823, 0.824, 0.824, 0.824, 0.824, 0.825,
+                                         0.825, 0.825, 0.826, 0.826, 0.826, 0.826, 0.827, 0.827, 0.827, 0.827,
+                                         0.828, 0.828, 0.828, 0.828, 0.828, 0.829, 0.829, 0.829, 0.829, 0.83,
+                                         0.83, 0.83, 0.83, 0.83, 0.83, 0.831, 0.831, 0.831, 0.831, 0.831,
+                                         0.832, 0.832, 0.832, 0.832, 0.832, 0.832, 0.833, 0.833, 0.833, 0.833,
+                                         0.833, 0.833, 0.834, 0.834, 0.834, 0.834, 0.834, 0.834, 0.834, 0.835,
+                                         0.835, 0.835, 0.835, 0.835, 0.835, 0.835, 0.836, 0.836, 0.836, 0.836,
+                                         0.836, 0.836, 0.836, 0.836, 0.837])
+                sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
+                                                    np.asarray([0.05 for i in range(len(solar_zenith))]),
+                                                    "rand")  # TODO: get second opinion on zen unc in 6S
+                sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
 
-            for sensortype in types:
-                # get sensor specific wavebands - # output[f"{sensortype.lower()}Wvls"]
-                wvls = np.asarray(output[f"{sensortype.lower()}Wvls"].pop('Wvls'), dtype=float)
-                _, output[f"{sensortype.lower()}Unc"] = self.interp_common_wvls(
-                    output[f"{sensortype.lower()}Unc"], wvls, newWaveBands)
-                output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
-                    output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
+                data5 = self.DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserr)
+                sample_data5 = prop.run_samples(self.DATA5, [sample_data4,
+                                                             sample_sol_zen,
+                                                             sample_dir_rat,
+                                                             sample_zen_ang,
+                                                             sample_zen_avg_coserror, # check that zen_avg_coserror is correct
+                                                             sample_fhemi_coserr])
+                unc = prop.process_samples(None, sample_data5)
+                sample = sample_data5
+                FRM_mesure = data5
+            else:
+                unc = prop.process_samples(None, sample_data4)
+                sample = sample_data4
+                FRM_mesure = data4
+
+            # mask for arrays
+            # ind_zero = np.array([rc == 0 for rc in radcal_cal])  # changed due to raw_cal now being a np array
+            # ind_nan = np.array([np.isnan(rc) for rc in radcal_cal])
+            # ind_nocal = ind_nan | ind_zero
+
+            # Remove wvl without calibration from the dataset and make uncertainties relative
+            filtered_mesure = FRM_mesure[ind_nocal == False]
+            rel_unc = np.power(np.power(unc[ind_nocal == False]*1e10, 2)/np.power(filtered_mesure*1e10, 2), 0.5)
+
+            output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
+            output[f"{sensortype.lower()}Unc"] = rel_unc  # relative uncertainty
+            output[f"{sensortype.lower()}Sample"] = sample[:, ind_nocal == False]  # samples keep raw
+
+            # TODO: interp to common wavebands to the lowest sized array
+
+            # sort the outputs ready for following process
+            # get sensor specific wavebands to be keys for uncs, then remove from output
+            wvls = np.asarray(output.pop(f"{sensortype.lower()}Wvls"), dtype=float)
+            _, output[f"{sensortype.lower()}Unc"] = self.interp_common_wvls(
+                output[f"{sensortype.lower()}Unc"], wvls, newWaveBands)
+            output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
+                output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
 
         return output
 
@@ -1005,7 +1147,7 @@ class HyperOCR(Instrument):
 
     @staticmethod
     def DATA3(data2, cal_int, int_time, updated_radcal_gain):
-        return data2*(cal_int/int_time[n])/updated_radcal_gain
+        return data2*(cal_int/int_time)/updated_radcal_gain
 
     @staticmethod
     def DATA4(data3, Ct):
@@ -1016,16 +1158,16 @@ class HyperOCR(Instrument):
     @staticmethod
     def DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserror):
         ind_closest_zen = np.argmin(np.abs(zenith_ang - solar_zenith))
-        cos_corr = (1 - avg_coserror[:, ind_closest_zen]/100)[ind_nocal == False]
-        Fhcorr = (1 - full_hemi_coserror/100)[ind_nocal == False]
+        cos_corr = (1 - avg_coserror[:, ind_closest_zen]/100)
+        Fhcorr = (1 - full_hemi_coserror/100)
         return (direct_ratio*data4*cos_corr) + ((1 - direct_ratio)*data4*Fhcorr)
 
     @staticmethod
-    def update_cal_data_ES(S12_sl_corr, LAMP, cal_int, t1):
+    def update_cal_ES(S12_sl_corr, LAMP, cal_int, t1):
         return (S12_sl_corr/LAMP)*(10*cal_int/t1)
 
     @staticmethod
-    def update_cal_data_rad(S12_sl_corr, LAMP, PANEL, cal_int, t1):
+    def update_cal_rad(S12_sl_corr, LAMP, PANEL, cal_int, t1):
         return (np.pi*S12_sl_corr)/(LAMP*PANEL)*(10*cal_int/t1)
 
 
@@ -1033,10 +1175,10 @@ class Trios(Instrument):
     def __init__(self):
         super().__init__()
 
-    def lightDarkStats(self, grp, sensortype):
+    def lightDarkStats(self, grp, slices, sensortype):
         raw_cal = grp.getDataset(f"CAL_{sensortype}").data
         raw_back = grp.getDataset(f"BACK_{sensortype}").data
-        raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
+        raw_data = np.asarray(list(slices.values()))  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
 
         raw_wvl = np.array(pd.DataFrame(grp.getDataset(sensortype).data).columns)
         int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
@@ -1107,20 +1249,19 @@ class Trios(Instrument):
             std_Light=np.array(light_std),
             std_Dark=np.array(dark_std),
             std_Signal=stdevSignal,
-            wvl=raw_wvl[ind_nocal == False]
         )
 
-    def FRM(self, node, uncGrp, grps, newWaveBands):
+    def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
         output = {}
-        # Start = {}
-        # End = {}
+        stats = None  # stats is unused in this method, but required as an input because of Seabird
         for sensortype in ['ES', 'LI', 'LT']:
 
             ### Read HDF file inputs
-            grp = grps[sensortype]
+            grp = raw_grps[sensortype]
+            slice = rawSlices[sensortype]
 
             # read data for L1B FRM processing
-            raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
+            raw_data = np.asarry(list(slice.values()))  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
             DarkPixelStart = int(grp.attributes["DarkPixelStart"])
             DarkPixelStop = int(grp.attributes["DarkPixelStop"])
             int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
@@ -1235,8 +1376,8 @@ class Trios(Instrument):
                 # Irradiance direct and diffuse ratio
                 res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
                                                                   L2_irr_grp=grp)  # , trios=instrument_number)
-                updated_radcal_gain = self.update_cal_data_ES(S12_sl_corr, LAMP, int_time_t0, t1)
-                sample_updated_radcal_gain = prop.run_samples(self.update_cal_data_ES,
+                updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
+                sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_int_time_t0,
                                                                sample_t1])
             else:
@@ -1244,8 +1385,8 @@ class Trios(Instrument):
                 unc_PANEL = (np.asarray(
                     pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['3'])/100)*PANEL
                 sample_PANEL = cm.generate_sample(mDraws, PANEL, unc_PANEL, "syst")
-                updated_radcal_gain = self.update_cal_data_rad(PANEL, S12_sl_corr, LAMP, int_time_t0, t1)
-                sample_updated_radcal_gain = prop.run_samples(self.update_cal_data_rad,
+                updated_radcal_gain = self.update_cal_rad(PANEL, S12_sl_corr, LAMP, int_time_t0, t1)
+                sample_updated_radcal_gain = prop.run_samples(self.update_cal_rad,
                                                               [sample_PANEL, sample_S12_sl_corr, sample_LAMP,
                                                                sample_int_time_t0, sample_t1])
 
@@ -1354,7 +1495,7 @@ class Trios(Instrument):
 
             output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
             output[
-                f"{sensortype.lower()}Unc"] = filtered_unc  # dict(zip(str_wvl[ind_nocal==False], filtered_unc))  # unc in dict with wavelengths
+                f"{sensortype.lower()}Unc"] = filtered_unc  # dict(zip(str_wvl[self.ind_nocal==False], filtered_unc))  # unc in dict with wavelengths
             output[f"{sensortype.lower()}Sample"] = sample[:, ind_nocal == False]  # samples keep raw
 
         for sensortype in ['ES', 'LI', 'LT']:
@@ -1373,23 +1514,23 @@ class Trios(Instrument):
         return B0 + B1*(int_time/t0)
 
     @staticmethod
-    def update_cal_data_ES(S12_sl_corr, LAMP, int_time_t0, t1):
+    def update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1):
         updated_radcal_gain = (S12_sl_corr/LAMP)*(int_time_t0/t1)
         # sensitivity factor : if gain==0 (or NaN), no calibration is performed and data is affected to 0
         ind_zero = (updated_radcal_gain <= 1e-2)
         ind_nan = np.isnan(updated_radcal_gain)
-        ind_nocal = ind_nan | ind_zero
-        updated_radcal_gain[ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
+        self.ind_nocal = ind_nan | ind_zero
+        updated_radcal_gain[self.ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
         return updated_radcal_gain
 
     @staticmethod
-    def update_cal_data_rad(PANEL, S12_sl_corr, LAMP, int_time_t0, t1):
+    def update_cal_rad(PANEL, S12_sl_corr, LAMP, int_time_t0, t1):
         updated_radcal_gain = (np.pi*S12_sl_corr)/(LAMP*PANEL)*(int_time_t0/t1)
 
         # sensitivity factor : if gain==0 (or NaN), no calibration is performed and data is affected to 0
         ind_zero = (updated_radcal_gain <= 1e-2)
         ind_nan = np.isnan(updated_radcal_gain)
-        ind_nocal = ind_nan | ind_zero
+        self.ind_nocal = ind_nan | ind_zero
         updated_radcal_gain[
-            ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
+            self.ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
         return updated_radcal_gain
