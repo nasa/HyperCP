@@ -1616,8 +1616,8 @@ class ProcessL2:
 
         else:
             # Full Mobley 1999 model from LUT
-            rhoScalar, rhoDelta = RhoCorrections.M99Corr(WINDSPEEDXSlice, SZAXSlice, RelAzXSlice, Rho_Uncertainty_Obj,
-            AOD=AODXSlice, cloud=CloudXSlice, wTemp=SSTXSlice, sal=SalXSlice, waveBands=waveSubset)
+            rhoScalar, rhoDelta = RhoCorrections.M99Corr(WINDSPEEDXSlice, SZAXSlice, RelAzXSlice, Rho_Uncertainty_Obj)
+            # , AOD=AODXSlice, cloud=CloudXSlice, wTemp=SSTXSlice, sal=SalXSlice, waveBands=waveSubset)
 
         # Calculate hyperspectral Coddingtion TSIS_1 hybrid F0 function
         # F0_hyper = ProcessL2.Thuillier(dateTag, wavelength)

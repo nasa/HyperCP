@@ -813,11 +813,11 @@ class HyperOCR(Instrument):
 
         if darkGrp.attributes["FrameType"] == "ShutterDark" and darkGrp.getDataset(sensortype):
             darkData = darkSlice['data']  # darkGrp.getDataset(sensortype)
-            darkDateTime = darkSlice['datetime']  # darkGrp.getDataset("DATETIME")
+            # darkDateTime = darkSlice['datetime']  # darkGrp.getDataset("DATETIME")
 
         if lightGrp.attributes["FrameType"] == "ShutterLight" and lightGrp.getDataset(sensortype):
             lightData = lightSlice['data']  # lightGrp.getDataset(sensortype)
-            lightDateTime = lightSlice['datetime']  # lightGrp.getDataset("DATETIME")
+            # lightDateTime = lightSlice['datetime']  # lightGrp.getDataset("DATETIME")
 
         if darkGrp is None or lightGrp is None:
             msg = f'No radiometry found for {sensortype}'
