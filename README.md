@@ -1,6 +1,8 @@
 # Hyperspectral In situ Support for PACE
 <html lang="en">
 
+Repo name changed Frome HyperInSPACE (GSC-18527-1) to HyperCP 8/1/23 per request of Aurin, Dirk Alexander.  
+
 <center><img src="Data/Img/banner2.png" alt="Banner"></center>
 
 HyperInSPACE is designed to provide hyperspectral in situ support for the <a href='https://pace.gsfc.nasa.gov/'>PACE mission</a> by processing automated, above-water, hyperspectral ocean color radiometry data using state-of-the-art methods and protocols for quality assurance, uncertainty estimation/propagation, sky/sunglint correction, convolution to satellite wavebands, and ocean color product retrieval. Data output are formatted to text files for submission to the SeaBASS database and saved as comprehensive HDF5 records with automated processing reports. The package is designed to facilitate rigorous, flexible, and transparent data processing for the ocean color remote sensing community, particularly PIs funded by NASA to submit such radiometric data to SeaBASS. Radiometry processed in HyperInSPACE are used for water optical characterization, ocean color product retrieval algorithm development, and orbital platform validation.
