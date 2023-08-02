@@ -1694,12 +1694,12 @@ class ProcessL2:
                     xSlice.pop(slice)  # samples are no longer needed
                 elif "unc" in slice.lower():
                     xDelta[slice] = xSlice.pop(slice)  # transfer instrument uncs to xDelta
-        # TODO: compare uncertainty outputs to old results with t test
+            # TODO: compare uncertainty outputs to old results with t test
 
-        # for convolving to satellite bands
-        esUncSlice = xDelta["esUnc"]
-        liUncSlice = xDelta["liUnc"]
-        ltUncSlice = xDelta["ltUnc"]
+            # for convolving to satellite bands
+            esUncSlice = xDelta["esUnc"]
+            liUncSlice = xDelta["liUnc"]
+            ltUncSlice = xDelta["ltUnc"]
 
         # Populate the relevant fields in node
         ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset, xDelta)
@@ -1734,9 +1734,10 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdMODISA
                 xSlice['ltSTD'] = ltXstdMODISA
 
-                xDelta['esUnc'] = Weight_RSR.processMODISBands(esUncSlice, sensor='A')
-                xDelta['liUnc'] = Weight_RSR.processMODISBands(liUncSlice, sensor='A')
-                xDelta['ltUnc'] = Weight_RSR.processMODISBands(ltUncSlice, sensor='A')
+                if xDelta is not None:
+                    xDelta['esUnc'] = Weight_RSR.processMODISBands(esUncSlice, sensor='A')
+                    xDelta['liUnc'] = Weight_RSR.processMODISBands(liUncSlice, sensor='A')
+                    xDelta['ltUnc'] = Weight_RSR.processMODISBands(ltUncSlice, sensor='A')
 
                 sensor = 'MODISA'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS, xDelta)
@@ -1763,9 +1764,10 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdMODIST
                 xSlice['ltSTD'] = ltXstdMODIST
 
-                xDelta['esUnc'] = Weight_RSR.processMODISBands(esUncSlice, sensor='T')
-                xDelta['liUnc'] = Weight_RSR.processMODISBands(liUncSlice, sensor='T')
-                xDelta['ltUnc'] = Weight_RSR.processMODISBands(ltUncSlice, sensor='T')
+                if xDelta is not None:
+                    xDelta['esUnc'] = Weight_RSR.processMODISBands(esUncSlice, sensor='T')
+                    xDelta['liUnc'] = Weight_RSR.processMODISBands(liUncSlice, sensor='T')
+                    xDelta['ltUnc'] = Weight_RSR.processMODISBands(ltUncSlice, sensor='T')
 
                 sensor = 'MODIST'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS,  xDelta)
@@ -1796,9 +1798,10 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdVIIRSN
                 xSlice['ltSTD'] = ltXstdVIIRSN
 
-                xDelta['esUnc'] = Weight_RSR.processVIIRSBands(esUncSlice, sensor='N')
-                xDelta['liUnc'] = Weight_RSR.processVIIRSBands(liUncSlice, sensor='N')
-                xDelta['ltUnc'] = Weight_RSR.processVIIRSBands(ltUncSlice, sensor='N')
+                if xDelta is not None:
+                    xDelta['esUnc'] = Weight_RSR.processVIIRSBands(esUncSlice, sensor='N')
+                    xDelta['liUnc'] = Weight_RSR.processVIIRSBands(liUncSlice, sensor='N')
+                    xDelta['ltUnc'] = Weight_RSR.processVIIRSBands(ltUncSlice, sensor='N')
 
                 sensor = 'VIIRSN'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS,  waveSubsetVIIRS,  xDelta)
@@ -1825,9 +1828,10 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdVIIRSJ
                 xSlice['ltSTD'] = ltXstdVIIRSJ
 
-                xDelta['esUnc'] = Weight_RSR.processVIIRSBands(esUncSlice, sensor='N')
-                xDelta['liUnc'] = Weight_RSR.processVIIRSBands(liUncSlice, sensor='N')
-                xDelta['ltUnc'] = Weight_RSR.processVIIRSBands(ltUncSlice, sensor='N')
+                if xDelta is not None:
+                    xDelta['esUnc'] = Weight_RSR.processVIIRSBands(esUncSlice, sensor='N')
+                    xDelta['liUnc'] = Weight_RSR.processVIIRSBands(liUncSlice, sensor='N')
+                    xDelta['ltUnc'] = Weight_RSR.processVIIRSBands(ltUncSlice, sensor='N')
 
                 sensor = 'VIIRSJ'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS, waveSubsetVIIRS,  xDelta)
@@ -1858,9 +1862,10 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdSentinel3A
                 xSlice['ltSTD'] = ltXstdSentinel3A
 
-                xDelta['esUnc'] = Weight_RSR.processSentinel3Bands(esUncSlice, sensor='A')
-                xDelta['liUnc'] = Weight_RSR.processSentinel3Bands(liUncSlice, sensor='A')
-                xDelta['ltUnc'] = Weight_RSR.processSentinel3Bands(ltUncSlice, sensor='A')
+                if xDelta is not None:
+                    xDelta['esUnc'] = Weight_RSR.processSentinel3Bands(esUncSlice, sensor='A')
+                    xDelta['liUnc'] = Weight_RSR.processSentinel3Bands(liUncSlice, sensor='A')
+                    xDelta['ltUnc'] = Weight_RSR.processSentinel3Bands(ltUncSlice, sensor='A')
 
                 sensor = 'Sentinel3A'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3,  xDelta)
@@ -1887,9 +1892,10 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdSentinel3B
                 xSlice['ltSTD'] = ltXstdSentinel3B
 
-                xDelta['esUnc'] = Weight_RSR.processSentinel3Bands(esUncSlice, sensor='B')
-                xDelta['liUnc'] = Weight_RSR.processSentinel3Bands(liUncSlice, sensor='B')
-                xDelta['ltUnc'] = Weight_RSR.processSentinel3Bands(ltUncSlice, sensor='B')
+                if xDelta is not None:
+                    xDelta['esUnc'] = Weight_RSR.processSentinel3Bands(esUncSlice, sensor='B')
+                    xDelta['liUnc'] = Weight_RSR.processSentinel3Bands(liUncSlice, sensor='B')
+                    xDelta['ltUnc'] = Weight_RSR.processSentinel3Bands(ltUncSlice, sensor='B')
 
                 sensor = 'Sentinel3B'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3,  xDelta)
