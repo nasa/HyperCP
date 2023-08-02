@@ -50,21 +50,26 @@ class RhoCorrections:
             (lut[:,2] == theta) & (lut[:,4] == relAz)]
 
         rhoScalar = row[0][5]
-        # rhoDelta = 0.003 # Unknown; estimated from Ruddick 2006
 
         Delta = Propagate.M99_Rho_Uncertainty(mean_vals=[windSpeedMean, SZAMean, relAzMean],
                                               uncertainties=[1, 0.5, 3])
 
-        # zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
-        #                                     relAzMean, waveBands)
-        #
-        # # get the relative difference between mobley and zhang and add in quadrature as uncertainty component
-        # # pct_diff = np.zeros(len(waveBands))
-        # pct_diff = np.abs((zhang['ρ'] / rhoScalar) - 1)
-        # rhoDelta = np.power(np.power(Delta, 2) + np.power(pct_diff, 2), 0.5)
-        # rhoDelta[np.isnan(rhoDelta)==True] = 0
+        # TODO: Model error estimation, requires ancillary data to be switched on. This could create a conflict.
+        if not any([AOD is None, wTemp is None, sal is None, waveBands is None]):
+            zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
+                                                relAzMean, waveBands)
 
-        rhoDelta = Delta + 0.003  # disabled Zhang rho for calculating M99 unc
+            # get the relative difference between mobley and zhang and add in quadrature as uncertainty component
+            pct_diff = np.abs((zhang['ρ'] / rhoScalar) - 1)
+            rhoDelta = np.power(np.power(Delta, 2) + np.power(pct_diff, 2), 0.5)
+            rhoDelta[np.isnan(rhoDelta)==True] = 0
+        else:
+            # this is temporary. It is possible for users to not select any ancillary data in the config, meaning Zhang
+            # Rho will fail. It is far too easy for a user to do this, so I added the following line to make sure the
+            # processor doesn't break.
+            # 0.003 was chosen because it is the only number with any scientific justification
+            # (estimated from Ruddick 2006).
+            rhoDelta = np.power(np.power(Delta, 2) + np.power(0.003, 2), 0.5)
 
         return rhoScalar, rhoDelta
 
