@@ -265,8 +265,8 @@ class ConfigFile:
         ConfigFile.settings["fL1bDefaultSalt"] = 35.0
         ConfigFile.settings["fL1bDefaultSST"] = 26.0
         ConfigFile.settings["bL1bCal"] = 1  # 1 for Factory, 2 for Class, 3 for Instrument Full
-        ConfigFile.settings["FullCalDir"] = ' '
-        ConfigFile.settings['RadCalDir'] = ' '
+        ConfigFile.settings["FullCalDir"] = os.getcwd()
+        ConfigFile.settings['RadCalDir'] = os.getcwd()
         ConfigFile.settings['FidRadDB'] = False
 
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
