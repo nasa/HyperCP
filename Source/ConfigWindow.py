@@ -1727,7 +1727,8 @@ class ConfigWindow(QtWidgets.QDialog):
 
         ConfigWindow.refreshConfig(self)
         OCproductsDialog = OCproductsWindow(self)
-        OCproductsDialog.exec()
+        # OCproductsDialog.exec()
+        OCproductsDialog.show()
 
         if int(ConfigFile.settings["bL2WeightMODISA"]) == 1:
             self.l2WeightMODISACheckBox.setChecked(True)
