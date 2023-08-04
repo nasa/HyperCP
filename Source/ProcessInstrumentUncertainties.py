@@ -878,7 +878,7 @@ class HyperOCR(Instrument):
             dark_slice = raw_slices[sensortype]["DARK"]['data']
 
             # read in data for FRM processing
-            raw_data = np.asarray(list(slice.values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
+            raw_data = np.asarray(list(slice['data'].values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
             int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
             int_time = np.mean(int_time)
 
@@ -1153,7 +1153,8 @@ class Trios(Instrument):
     def lightDarkStats(self, grp, slices, sensortype):
         raw_cal = grp.getDataset(f"CAL_{sensortype}").data
         raw_back = grp.getDataset(f"BACK_{sensortype}").data
-        raw_data = np.asarray(list(slices.values()))  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
+        raw_data = np.asarray(list(slices['data'].values())).transpose()  # data is transpose of old version
+        # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
 
         raw_wvl = np.array(pd.DataFrame(grp.getDataset(sensortype).data).columns)
         int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())

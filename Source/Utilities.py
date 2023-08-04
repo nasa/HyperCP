@@ -2126,6 +2126,7 @@ class Utilities:
 
         return True
 
+    @staticmethod
     def UncTempCorrection(node):
         unc_grp = node.getGroup("RAW_UNCERTAINTIES")
         sensorID = Utilities.get_sensor_dict(node)
