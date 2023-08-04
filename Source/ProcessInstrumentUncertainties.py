@@ -6,6 +6,7 @@ import pandas as pd
 import calendar
 import collections
 from decimal import Decimal
+from inspect import currentframe, getframeinfo
 
 # NPL packages
 import punpy
@@ -16,6 +17,7 @@ from Utilities import Utilities
 from Source.ConfigFile import ConfigFile
 from ProcessL1b import ProcessL1b
 from ProcessL1b_Interp import ProcessL1b_Interp
+from ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Uncertainty_Analysis import Propagate
 
 
@@ -601,7 +603,6 @@ class Instrument:
             coserror = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR").data))[1:, 2:]
             cos_unc = (np.asarray(
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY").data))[1:, 2:]/100)*coserror
-
             coserror_90 = np.asarray(
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR_AZ90").data))[1:, 2:]
             cos90_unc = (np.asarray(
@@ -994,7 +995,7 @@ class HyperOCR(Instrument):
                 sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
 
                 ## Irradiance direct and diffuse ratio
-                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, trios=0)
+                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
 
                 updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, cal_int, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
@@ -1348,8 +1349,7 @@ class Trios(Instrument):
                 sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
 
                 # Irradiance direct and diffuse ratio
-                res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
-                                                                  L2_irr_grp=grp)  # , trios=instrument_number)
+                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
                 updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_int_time_t0,

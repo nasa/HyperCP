@@ -1,13 +1,17 @@
-
+# python packages
 import numpy as np
 import pandas as pd
 import Py6S
+from datetime import datetime as dt
+
+# internal files
 from Source.ConfigFile import ConfigFile
+
 
 class ProcessL1b_FRMCal:
 
     @staticmethod
-    def get_direct_irradiance_ratio(node, sensortype):
+    def get_direct_irradiance_ratio(node: object, sensortype: object, called_L2: bool = False) -> object:
         ''' Used for both SeaBird and TriOS L1b
 
             SolarTracker geometries, when available, have already been
@@ -15,22 +19,54 @@ class ProcessL1b_FRMCal:
         '''
 
         ## Reading ancilliary data and SolarTracker, if necessary
-        anc_grp = node.getGroup('ANCILLARY_METADATA')
+        if called_L2:
+            # keys change depending on if the process is called at L1B or L2, store correct keys in dictionary
+            if ConfigFile.settings['SensorType'].lower() == "seabird":
+                irad_key = f'{sensortype}_LIGHT_L1AQC'
+            elif ConfigFile.settings['Sensor_Type'].lower() == 'trios':
+                irad_key = f'{sensortype}_L1AQC'
+            else:
+                return False
+
+            keys = dict(
+                        anc = 'ANCILLARY',
+                        rel = 'REL_AZ',
+                        sza = 'SZA',
+                        saa = 'SOLAR_AZ',
+                        irad = irad_key
+                        )
+        else:
+            # keys as before
+            keys = dict(
+                        anc = 'ANCILLARY_METADATA',
+                        rel = 'NONE',
+                        sza = 'NONE',
+                        saa = 'NONE',
+                        irad = f'{sensortype}'
+                        )
+
+        anc_grp = node.getGroup(keys['anc'])
 
         if ConfigFile.settings['bL1aqcSolarTracker'] == 1:
             rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns["REL_AZ"])
         else:
-            rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns["NONE"])
-        sun_zenith = np.asarray(anc_grp.datasets['SZA'].columns["NONE"])
-        sun_azimuth = np.asarray(anc_grp.datasets['SOLAR_AZ'].columns["NONE"])
+            rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns[keys['rel']])
+        sun_zenith = np.asarray(anc_grp.datasets['SZA'].columns[keys['sza']])
+        sun_azimuth = np.asarray(anc_grp.datasets['SOLAR_AZ'].columns[keys['saa']])
 
         aod = np.asarray(anc_grp.datasets['AOD'].columns["AOD"])
         anc_datetime = anc_grp.datasets['LATITUDE'].columns['Datetime']
 
-        irr_grp = node.getGroup(sensortype)
+        irr_grp = node.getGroup(keys['irad'])
         str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
         wvl = np.asarray([float(x) for x in str_wvl])
-        datetime = irr_grp.datasets['DATETIME'].data
+        if not called_L2:
+            datetime = irr_grp.datasets['DATETIME'].data
+        else:  # TODO: more testing required
+            datetag = np.asarray(pd.DataFrame(irr_grp.getDataset("DATETAG").data))
+            timetag = np.asarray(pd.DataFrame(irr_grp.getDataset("TIMETAG2").data))
+            datetime = [dt.strptime(str(int(x[0])) + str(int(y[0])).rjust(9, '0'), "%Y%j%H%M%S%f") for x, y in
+                        zip(datetag, timetag)]
 
         ## Py6S configuration
         n_mesure = len(datetime)
