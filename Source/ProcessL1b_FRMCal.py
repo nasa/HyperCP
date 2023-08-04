@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 import Py6S
+import pytz
 from datetime import datetime as dt
 
 # internal files
@@ -62,11 +63,12 @@ class ProcessL1b_FRMCal:
         wvl = np.asarray([float(x) for x in str_wvl])
         if not called_L2:
             datetime = irr_grp.datasets['DATETIME'].data
-        else:  # TODO: more testing required
+        else:  # TODO: tested for Trios case answer is the same either method, test for seabird case
             datetag = np.asarray(pd.DataFrame(irr_grp.getDataset("DATETAG").data))
             timetag = np.asarray(pd.DataFrame(irr_grp.getDataset("TIMETAG2").data))
-            datetime = [dt.strptime(str(int(x[0])) + str(int(y[0])).rjust(9, '0'), "%Y%j%H%M%S%f") for x, y in
+            dtime = [dt.strptime(str(int(x[0])) + str(int(y[0])).rjust(9, '0'), "%Y%j%H%M%S%f") for x, y in
                         zip(datetag, timetag)]
+            datetime = [pytz.utc.localize(dt) for dt in dtime]  # set to utc localisation
 
         ## Py6S configuration
         n_mesure = len(datetime)
@@ -157,15 +159,15 @@ class ProcessL1b_FRMCal:
         return res_py6s
 
     @staticmethod
-    def cosine_error_correction(node, sensortype):
+    def cosine_error_correction(node, sensortype, sensorstring):
         ''' Used for both SeaBird and TriOS L1b'''
 
         ## Angular cosine correction (for Irradiance)
         unc_grp = node.getGroup('RAW_UNCERTAINTIES')
         radcal_wvl = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_CAL").data)['1'][1:].tolist())
-        coserror = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_ANGDATA_COSERROR").data))[1:,2:]
-        coserror_90 = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_ANGDATA_COSERROR_AZ90").data))[1:,2:]
-        zenith_ang = unc_grp.getDataset(sensortype+"_ANGDATA_COSERROR").attributes["COLUMN_NAMES"].split('\t')[2:]
+        coserror = np.asarray(pd.DataFrame(unc_grp.getDataset(sensorstring+"_ANGDATA_COSERROR").data))[1:,2:]
+        coserror_90 = np.asarray(pd.DataFrame(unc_grp.getDataset(sensorstring+"_ANGDATA_COSERROR_AZ90").data))[1:,2:]
+        zenith_ang = unc_grp.getDataset(sensorstring+"_ANGDATA_COSERROR").attributes["COLUMN_NAMES"].split('\t')[2:]
         # zenith_ang_90 = unc_grp.getDataset(sensortype+"_ANGDATA_COSERROR_AZ90").attributes["COLUMN_NAMES"].split('\t')[2:]
         i1 = np.argmin(np.abs(radcal_wvl-300))
         i2 = np.argmin(np.abs(radcal_wvl-1000))
