@@ -2126,6 +2126,7 @@ class Utilities:
 
         return True
 
+    @staticmethod
     def UncTempCorrection(node):
         unc_grp = node.getGroup("RAW_UNCERTAINTIES")
         sensorID = Utilities.get_sensor_dict(node)
@@ -2208,7 +2209,7 @@ class Utilities:
     def RenameUncertainties_Class(node):
         """
         Rename unc dataset from generic class-based id to sensor type
-        TODO: adapted to old version of ckass-based file, will be switch to next version 
+        TODO: adapted to old version of ckass-based file, will be switch to next version
         when ready. Next version is commented below.
         """
         unc_group = node.getGroup("RAW_UNCERTAINTIES")
@@ -2217,7 +2218,7 @@ class Utilities:
         names = [i for i in unc_group.datasets]  # get names in advance, mutation of iteration object breaks for loop
         for name in names:
             ds = unc_group.getDataset(name)
-            
+
             if "_RADIANCE_" in name:
                 # Class-based radiance coefficient are the same for both Li and Lt
                 new_LI_name = ''.join(["LI", name.split("RADIANCE")[-1]])
@@ -2246,7 +2247,7 @@ class Utilities:
                 new_ds.copy(ds)
                 new_ds.datasetToColumns()
                 unc_group.removeDataset(ds.id) # remove dataset
-                
+
             if "_LT_" in name:
                 # Class-based irradiance coefficient are unique for Es
                 new_name = ''.join(["LT", name.split("LT")[-1]])
@@ -2437,7 +2438,7 @@ class Utilities:
                         elif len(y)==256:
                             # drop 1st line from TARTU file
                             ds.columns[indx_name] = y[1:]
-                ds.columnsToDataset()  
+                ds.columnsToDataset()
 
             ## Interpolate for initial class-based file, in use at the moment
             for data_type in ["_POLDATA_CAL","_TEMPDATA_CAL","_STABDATA_CAL", "_NLDATA_CAL", "_STRAYDATA_CAL"]:
@@ -2452,7 +2453,7 @@ class Utilities:
                 ds.columns['0'] = np.array(range(len(x_new))) # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
                 ds.columns['1'] = x_new
                 ds.columnsToDataset()
-            
+
             ### for updated version of class based file, not used at the moment
             # if sensor != "ES":
             #     for data_type in ["_POLDATA_CAL","_TEMPDATA_CAL"]:
@@ -2482,7 +2483,7 @@ class Utilities:
             #         ds.columns['0'] = np.array(range(len(x_new))) # drop 1st line from TARTU file
             #         ds.columns['1'] = x_new
             #         ds.columnsToDataset()
-   
+
             ## RADCAL_LAMP/: Interpolate data to hyper-spectral pixels
             for data_type in ["_RADCAL_LAMP"]:
                 ds = grp.getDataset(sensor+data_type)

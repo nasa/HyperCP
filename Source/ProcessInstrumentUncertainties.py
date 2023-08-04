@@ -1,5 +1,5 @@
 # import python packages
-import os
+# import os
 import numpy as np
 import scipy as sp
 import pandas as pd
@@ -14,8 +14,9 @@ import comet_maths as cm
 # HCP files
 from Utilities import Utilities
 from Source.ConfigFile import ConfigFile
-from ProcessL1b import ProcessL1b
-from ProcessL1b_Interp import ProcessL1b_Interp
+# from ProcessL1b import ProcessL1b
+# from ProcessL1b_Interp import ProcessL1b_Interp
+from ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Uncertainty_Analysis import Propagate
 
 
@@ -97,7 +98,7 @@ class Instrument:
             #     pol = uncGrp.getDataset("ES_ANGDATA_UNCERTAINTY")
             # else:
             #     pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
-            
+
             # TODO: temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
@@ -419,6 +420,7 @@ class Instrument:
         # band convolution of uncertainties is done here to include uncertainty contribution of band convolution process
         Convolve = Propagate(M=100, cores=1)
         # these are absolute values! Dont get confused
+        output={}
         if ConfigFile.settings["bL2WeightSentinel3A"]:
             output["lwDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
                                                                           [lwAbsUnc, None], "S3A")
@@ -601,7 +603,6 @@ class Instrument:
             coserror = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR").data))[1:, 2:]
             cos_unc = (np.asarray(
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY").data))[1:, 2:]/100)*coserror
-
             coserror_90 = np.asarray(
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR_AZ90").data))[1:, 2:]
             cos90_unc = (np.asarray(
@@ -877,7 +878,8 @@ class HyperOCR(Instrument):
             dark_slice = raw_slices[sensortype]["DARK"]['data']
 
             # read in data for FRM processing
-            raw_data = np.asarray(list(slice.values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
+            # raw_data = np.asarray(list(slice.values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
+            raw_data = np.asarray(list(slice['data'].values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
             int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
             int_time = np.mean(int_time)
 
@@ -994,7 +996,8 @@ class HyperOCR(Instrument):
                 sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
 
                 ## Irradiance direct and diffuse ratio
-                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, trios=0)
+                # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, trios=0)
+                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
 
                 updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, cal_int, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
@@ -1152,7 +1155,8 @@ class Trios(Instrument):
     def lightDarkStats(self, grp, slices, sensortype):
         raw_cal = grp.getDataset(f"CAL_{sensortype}").data
         raw_back = grp.getDataset(f"BACK_{sensortype}").data
-        raw_data = np.asarray(list(slices.values()))  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
+        raw_data = np.asarray(list(slices['data'].values())).transpose()  # data is transpose of old version
+        # raw_data = np.asarray(list(slices.values()))  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
 
         raw_wvl = np.array(pd.DataFrame(grp.getDataset(sensortype).data).columns)
         int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
@@ -1179,7 +1183,9 @@ class Trios(Instrument):
         nmes = len(raw_data)
         if nband != len(raw_data[0]):
             print("ERROR: different number of pixels between dat and back")
-            exit()
+            # exit()
+            '''NOTE: Please try to avoid putting in exit()s. They make it slightly harder to debug.
+                If needed, try using the processing fail splash screen to get your attention.'''
 
         # Data conversion
         mesure = raw_data/65365.0
@@ -1232,7 +1238,8 @@ class Trios(Instrument):
 
             ### Read HDF file inputs
             grp = raw_grps[sensortype]
-            slice = rawSlices[sensortype]
+            # slice = rawSlices[sensortype]
+            slice = raw_slices[sensortype]
 
             # read data for L1B FRM processing
             raw_data = np.asarry(list(slice.values()))  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
@@ -1348,8 +1355,9 @@ class Trios(Instrument):
                 sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
 
                 # Irradiance direct and diffuse ratio
-                res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
-                                                                  L2_irr_grp=grp)  # , trios=instrument_number)
+                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
+                # res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
+                #                                                   L2_irr_grp=grp)  # , trios=instrument_number)
                 updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_int_time_t0,

@@ -1617,6 +1617,13 @@ class ProcessL2:
         else:
             # Full Mobley 1999 model from LUT
             try:
+                #   I'm still foggy on why AOD is needed for M99... DAA
+                # line 1508 is the same code, except if Zhang Rho is selected then a lack of AOD is a serious error
+                # code is repeated to retain the try/except component above but avoid printing the console and log
+                # messages if M99 is selected.
+                AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
+                if isinstance(AODXSlice, list):
+                    AODXSlice = AODXSlice[0]
                 rhoScalar, rhoDelta = RhoCorrections.M99Corr(WINDSPEEDXSlice, SZAXSlice, RelAzXSlice,
                                                              Rho_Uncertainty_Obj,
                                                              AOD=AODXSlice, cloud=CloudXSlice, wTemp=SSTXSlice,

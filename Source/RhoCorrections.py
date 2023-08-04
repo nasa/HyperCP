@@ -60,9 +60,18 @@ class RhoCorrections:
                                                 relAzMean, waveBands)
 
             # get the relative difference between mobley and zhang and add in quadrature as uncertainty component
-            pct_diff = np.abs((zhang['ρ'] / rhoScalar) - 1)
+            # pct_diff = np.abs((zhang['ρ'] / rhoScalar) - 1)
+            pct_diff = np.abs((zhang / rhoScalar) - 1)
             rhoDelta = np.power(np.power(Delta, 2) + np.power(pct_diff, 2), 0.5)
-            rhoDelta[np.isnan(rhoDelta)==True] = 0
+            rhoDelta[np.isnan(rhoDelta)==True] = 0  # ensure no NaNs are present in the uncertainties.
+            # if uncertainty is NaN then we cannot estimate what the uncertainty should be. We could argue that 0 could
+            # be replaced by np.power(np.power(Delta, 2) + np.power(0.003, 2), 0.5). I personally think it's best to
+            # say that we have no uncertainty for that pixel should Zhang be invalid.
+            #   Why would Zhang have NaNs?
+            #   Is this a case where we are outside the AOD range of the Zhang matrix?
+            #   If so, we could set it to the top limit as we do in ProcessL2 for Zhang rho.
+            #   If so, and this is a common problem, we may consider whether we can build rho bigger
+            #   to accomodate a wider range of AOD(?) DAA
         else:
             # this is temporary. It is possible for users to not select any ancillary data in the config, meaning Zhang
             # Rho will fail. It is far too easy for a user to do this, so I added the following line to make sure the

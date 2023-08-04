@@ -361,7 +361,7 @@ class Window(QtWidgets.QWidget):
             print(fnames)
             if len(fnames[0]) == 1:
                 self.ancFileLineEdit.setText(fnames[0][0])
-            MainConfig.settings['metFile'] = fnames[0][0]
+            MainConfig.settings['metFile'] = fnames[0][0] # unclear why this sometimes does not "take" the first time
 
     def ancRemoveButtonPressed(self):
         print('Wind File Remove Dialogue')
