@@ -530,7 +530,6 @@ class Window(QtWidgets.QWidget):
     def popQueryCheckBoxUpdate(self):
         print('Main - popQueryCheckBoxUpdate')
         MainConfig.settings['popQuery'] = int(self.popQueryCheckBox.isChecked())
-        pass
 
     def saveButtonClicked(self):
         print('Main - saveButtonClicked')

@@ -42,7 +42,7 @@ class ProcessL1b:
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
             Utilities.read_char(f, gp)
-            
+
         # Unc dataset renaming
         Utilities.RenameUncertainties_Class(root)
 
@@ -90,7 +90,7 @@ class ProcessL1b:
     @staticmethod
     def read_unc_coefficient_class(root, inpath, radcal_dir):
         ''' SeaBird or TriOS'''
-        
+
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
@@ -104,12 +104,12 @@ class ProcessL1b:
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
-            
-            
+
+
         for f in glob.glob(os.path.join(inpath, r'*class_LINEAR*')):
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
-            Utilities.read_char(f, gp) 
+            Utilities.read_char(f, gp)
 
 
         # Read sensor-specific radiometric calibration
@@ -139,7 +139,8 @@ class ProcessL1b:
         # Read uncertainty parameters from full calibration from TARTU
         for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*RADCAL*', '*')):
+        # for f in glob.glob(os.path.join(inpath, r'*RADCAL*', '*')):
+        for f in glob.glob(os.path.join(inpath, r'*RADCAL*')):
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*STRAY*')):
             Utilities.read_char(f, gp)
@@ -593,8 +594,8 @@ class ProcessL1b:
                 msg = 'Error running factory uncertainties.'
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return None    
-            
+                return None
+
         # Add class-based files + RADCAL file
         elif ConfigFile.settings['bL1bCal'] == 2:
             classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
@@ -608,7 +609,7 @@ class ProcessL1b:
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-            
+
         # Add full characterization files
         elif ConfigFile.settings['bL1bCal'] == 3:
 

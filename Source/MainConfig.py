@@ -40,7 +40,7 @@ class MainConfig:
     # Generates the default configuration
     @staticmethod
     def createDefaultConfig(fileName, version):
-        print("MainConfig - Create Default Config (default for CLI)")
+        print("MainConfig - Refresh or create from default Config")
 
         MainConfig.settings["cfgFile"] = fileName
         MainConfig.settings["version"] = version

@@ -59,8 +59,8 @@ class ConfigWindow(QtWidgets.QDialog):
         fsm.setNameFilterDisables(False)
         fsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
         calibrationDir = os.path.splitext(self.name)[0] + "_Calibration"
-        configPath = os.path.join("Config", calibrationDir)
-        index = fsm.setRootPath(configPath)
+        self.calibrationPath = os.path.join("Config", calibrationDir)
+        index = fsm.setRootPath(self.calibrationPath)
         self.calibrationFileComboBox.setModel(fsm)
         self.calibrationFileComboBox.setRootModelIndex(index)
         self.calibrationFileComboBox.currentIndexChanged.connect(self.calibrationFileChanged)
@@ -241,43 +241,67 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bDefaultSSTLineEdit.setText(str(ConfigFile.settings["fL1bDefaultSST"]))
         self.l1bDefaultSSTLineEdit.setValidator(doubleValidator)
 
-        l1bCalLabel = QtWidgets.QLabel(" Select calibration/correction regime:", self)
-        self.DefaultCalRadioButton = QtWidgets.QRadioButton("     Factory")
+        l1bCalLabel = QtWidgets.QLabel(" Select Calibration/Characterization/Correction Regime:", self)
+        self.DefaultCalRadioButton = QtWidgets.QRadioButton("Factory Calibration Only")
         self.DefaultCalRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL1bCal"]==1:
             self.DefaultCalRadioButton.setChecked(True)
         self.DefaultCalRadioButton.clicked.connect(self.l1bDefaultCalRadioButtonClicked)
+        DefaultCalRadioButtonTriOS = QtWidgets.QRadioButton("TriOS")
+        DefaultCalRadioButtonSeaBird = QtWidgets.QRadioButton("SeaBird (Non-FRM Class-based)")
+        if CurrentSensor.lower() == 'trios':
+            DefaultCalRadioButtonTriOS.setChecked(True)
+            DefaultCalRadioButtonSeaBird.setChecked(False)
+            DefaultCalRadioButtonSeaBird.setDisabled(True)
+        else:
+            DefaultCalRadioButtonSeaBird.setChecked(True)
+            DefaultCalRadioButtonTriOS.setChecked(False)
+            DefaultCalRadioButtonTriOS.setDisabled(True)
 
-        self.ClassCalRadioButton = QtWidgets.QRadioButton("Class-based")
+
+        self.ClassCalRadioButton = QtWidgets.QRadioButton("FRM Class-based (RadCal required)")
         self.ClassCalRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL1bCal"]==2:
             self.ClassCalRadioButton.setChecked(True)
         self.ClassCalRadioButton.clicked.connect(self.l1bClassCalRadioButtonClicked)
+        self.addClassFilesButton = QtWidgets.QPushButton("Add RadCals:")
+        self.addClassFilesButton.clicked.connect(self.addClassFilesButtonClicked)
+        self.classFilesLineEdit = QtWidgets.QLineEdit(self)
+        self.classFilesLineEdit.setDisabled(True)
 
-        self.FullCalRadioButton = QtWidgets.QRadioButton("Full Characterization:")
+        self.FullCalRadioButton = QtWidgets.QRadioButton("FRM Full Characterization:")
         self.FullCalRadioButton.setAutoExclusive(False)
-        self.l1bGetFRMCheck1 = QtWidgets.QCheckBox("local files", self)
-        self.l1bGetFRMCheck2 = QtWidgets.QCheckBox("FidRadDB", self)
-        
+        self.l1bFRMRadio1 = QtWidgets.QRadioButton("Local", self)
+        self.addFullFilesButton = QtWidgets.QPushButton("Add Files:")
+        self.addFullFilesButton.clicked.connect(self.addFullFilesButtonClicked)
+        self.fullFilesLineEdit = QtWidgets.QLineEdit(self)
+        self.fullFilesLineEdit.setDisabled(True)
+
+        self.l1bFRMRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
+        '''NOTE: Temporarily disabled while under development'''
+        self.l1bFRMRadio2.setDisabled(True)
+        if ConfigFile.settings['FidRadDB']:
+            self.l1bFRMRadio1.setChecked(False)
+            self.l1bFRMRadio2.setChecked(True)
+        else:
+            self.l1bFRMRadio1.setChecked(True)
+            self.l1bFRMRadio2.setChecked(False)
+
         if ConfigFile.settings["bL1bCal"]==3:
             self.FullCalRadioButton.setChecked(True)
             if int(ConfigFile.settings["FidRadDB"]) == 0:
-                self.l1bGetFRMCheck1.setChecked(True)
-                self.l1bGetFRMCheck2.setChecked(False)
+                self.l1bFRMRadio1.setChecked(True)
+                self.l1bFRMRadio2.setChecked(False)
             elif int(ConfigFile.settings["FidRadDB"]) == 1:
-                self.l1bGetFRMCheck1.setChecked(False)
-                self.l1bGetFRMCheck2.setChecked(True)
+                self.l1bFRMRadio1.setChecked(False)
+                self.l1bFRMRadio2.setChecked(True)
         self.FullCalRadioButton.clicked.connect(self.l1bFullCalRadioButtonClicked)
 
         self.FullCalDir = ConfigFile.settings['FullCalDir']
-        self.l1bGetFRMCheck1.clicked.connect(self.l1bGetFRMCheckUpdate1)
-        self.l1bGetFRMCheck2.clicked.connect(self.l1bGetFRMCheckUpdate2)
+        self.l1bFRMRadio1.clicked.connect(self.l1bFRMRadioUpdate1)
+        self.l1bFRMRadio2.clicked.connect(self.l1bFRMRadioUpdate2)
 
-        # if ConfigFile.settings['FullCalDir'] == ' ':
-        #     self.FullCalDirButton = QtWidgets.QPushButton('Select Characterization Folder', self)
-        # else:
-        #     self.FullCalDirButton = QtWidgets.QPushButton(os.path.basename(ConfigFile.settings['FullCalDir']), self)
-        # self.FullCalDirButton.clicked.connect(self.FullCalDirButtonPressed)
+        self.l1bCalStatusUpdate()
 
         l1bInterpIntervalLabel = QtWidgets.QLabel("    Interpolation Interval (nm)", self)
         self.l1bInterpIntervalLineEdit = QtWidgets.QLineEdit(self)
@@ -348,7 +372,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bqcSpecQualityCheckBoxUpdate()
 
         # L1BQC Meteorology Flags
-        l1bqcQualityFlagLabel = QtWidgets.QLabel("   Enable Meteorological Filters", self)
+        l1bqcQualityFlagLabel = QtWidgets.QLabel("   Enable Meteorological Filters (Experimental)", self)
         self.l1bqcQualityFlagCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bqcEnableQualityFlags"]) == 1:
             self.l1bqcQualityFlagCheckBox.setChecked(True)
@@ -753,19 +777,38 @@ class ConfigWindow(QtWidgets.QDialog):
 
         #   Instrument/Cal Files
         VBox2.addWidget(l1bCalLabel)
+        # CalHBox2 = QtWidgets.QHBoxLayout()
+        # CalHBox2.addWidget(self.DefaultCalRadioButton)
+        VBox2.addWidget(self.DefaultCalRadioButton)
         CalHBox2 = QtWidgets.QHBoxLayout()
-        CalHBox2.addWidget(self.DefaultCalRadioButton)
-        CalHBox2.addWidget(self.ClassCalRadioButton)
-
+        CalHBox2.addStretch()
+        CalHBox2.addWidget(DefaultCalRadioButtonTriOS)
+        CalHBox2.addWidget(DefaultCalRadioButtonSeaBird)
         VBox2.addLayout(CalHBox2)
 
+        VBox2.addWidget(self.ClassCalRadioButton)
         CalHBox3 = QtWidgets.QHBoxLayout()
-        CalHBox3.addWidget(self.FullCalRadioButton)
-        CalHBox3.addWidget(self.l1bGetFRMCheck1)
-        CalHBox3.addWidget(self.l1bGetFRMCheck2)
-
-        CalHBox3.addStretch(1)
+        CalHBox3.addStretch()
+        CalHBox3.addWidget(self.addClassFilesButton)
+        CalHBox3.addWidget(self.classFilesLineEdit)
+        CalHBox3.addStretch()
         VBox2.addLayout(CalHBox3)
+        # VBox2.addLayout(CalHBox2)
+
+        VBox2.addWidget(self.FullCalRadioButton)
+        CalHBox4 = QtWidgets.QHBoxLayout()
+        CalHBox4.addStretch()
+        CalHBox4.addWidget(self.l1bFRMRadio1)
+        CalHBox4.addWidget(self.addFullFilesButton)
+        CalHBox4.addWidget(self.fullFilesLineEdit)
+        CalHBox4.addStretch()
+        # CalHBox4.addStretch(1)
+        VBox2.addLayout(CalHBox4)
+        CalHBox5 = QtWidgets.QHBoxLayout()
+        CalHBox5.addStretch()
+        CalHBox5.addWidget(self.l1bFRMRadio2)
+        CalHBox5.addStretch()
+        VBox2.addLayout(CalHBox5)
 
 
         #   Interpolation interval (wavelength)
@@ -1042,37 +1085,29 @@ class ConfigWindow(QtWidgets.QDialog):
         fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files")
         print(fnames)
 
-        configName = self.name
-        calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
-        configPath = os.path.join("Config", calibrationDir)
-
         if fnames:
             if ".sip" in fnames[0][0]:
                 src = fnames[0][0]
                 (_, filename) = os.path.split(src)
-                dest = os.path.join(configPath, filename)
+                dest = os.path.join(self.calibrationPath, filename)
                 print(src)
                 print(dest)
                 shutil.copy(src, dest)
                 CalibrationFileReader.readSip(dest)
                 [folder,_] = filename.split('.')
-                os.rmdir(os.path.join(configPath,folder))
+                os.rmdir(os.path.join(self.calibrationPath,folder))
 
             else:
                 for src in fnames[0]:
                     (_, filename) = os.path.split(src)
-                    dest = os.path.join(configPath, filename)
+                    dest = os.path.join(self.calibrationPath, filename)
                     print(src)
                     print(dest)
                     shutil.copy(src, dest)
 
     def deleteCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Remove Calibration File Pressed")
-        configName = self.name
-        calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
-        configPath = os.path.join("Config", calibrationDir)
-        os.remove(os.path.join(configPath,self.calibrationFileComboBox.currentText()))
-
+        os.remove(os.path.join(self.calibrationPath,self.calibrationFileComboBox.currentText()))
 
     def getCalibrationSettings(self):
         print("CalibrationEditWindow - getCalibrationSettings")
@@ -1089,14 +1124,12 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationEnabledCheckBox.blockSignals(False)
         self.calibrationFrameTypeComboBox.blockSignals(False)
 
-
     def sensorTypeChanged(self):
         print("CalibrationEditWindow - Sensor Type Changed")
         sensor = self.sensorTypeComboBox.currentText()
         ConfigFile.settings["SensorType"] = sensor
 
         self.l1aqcDeglitchCheckBoxUpdate()
-
 
     def setCalibrationSettings(self):
         print("CalibrationEditWindow - setCalibrationSettings")
@@ -1105,14 +1138,12 @@ class ConfigWindow(QtWidgets.QDialog):
         frameType = self.calibrationFrameTypeComboBox.currentText()
         ConfigFile.setCalibrationConfig(calFileName, enabled, frameType)
 
-
     def calibrationFileChanged(self, i):
         print("CalibrationEditWindow - Calibration File Changed")
         print("Current index",i,"selection changed ", self.calibrationFileComboBox.currentText())
         calFileName = self.calibrationFileComboBox.currentText()
         calDir = ConfigFile.getCalibrationDirectory()
         calPath = os.path.join(calDir, calFileName)
-        #print("calPath: " + calPath)
         if os.path.isfile(calPath):
             self.getCalibrationSettings()
             self.calibrationEnabledCheckBox.setEnabled(True)
@@ -1120,7 +1151,6 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             self.calibrationEnabledCheckBox.setEnabled(False)
             self.calibrationFrameTypeComboBox.setEnabled(False)
-
 
     def calibrationEnabledStateChanged(self):
         print("CalibrationEditWindow - Calibration Enabled State Changed")
@@ -1166,7 +1196,6 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1aqcRotatorAngleCheckBox.setChecked(False)
         else:
             ConfigFile.settings["bL1aqcSolarTracker"] = 1
-
 
     def l1aqcRotatorDelayCheckBoxUpdate(self):
         print("ConfigWindow - l1aqcRotatorDelayCheckBoxUpdate")
@@ -1244,69 +1273,188 @@ class ConfigWindow(QtWidgets.QDialog):
         anomAnalDialog = AnomAnalWindow(self.inputDirectory, self)
         anomAnalDialog.show()
 
+    def l1bCalStatusUpdate(self):
+        # Enable/disable features based on regime selected
+        if ConfigFile.settings["bL1bCal"] == 1:
+            self.DefaultCalRadioButton.setChecked(True)
+            self.ClassCalRadioButton.setChecked(False)
+            self.FullCalRadioButton.setChecked(False)
+
+            self.addClassFilesButton.setDisabled(True)
+            self.l1bFRMRadio1.setDisabled(True)
+            self.l1bFRMRadio2.setDisabled(True)
+            self.addFullFilesButton.setDisabled(True)
+        elif ConfigFile.settings["bL1bCal"] == 2:
+            self.DefaultCalRadioButton.setChecked(False)
+            self.ClassCalRadioButton.setChecked(True)
+            self.FullCalRadioButton.setChecked(False)
+
+            self.addClassFilesButton.setDisabled(False)
+            self.l1bFRMRadio1.setDisabled(True)
+            self.l1bFRMRadio2.setDisabled(True)
+            self.addFullFilesButton.setDisabled(True)
+
+        elif ConfigFile.settings["bL1bCal"] == 3:
+            self.DefaultCalRadioButton.setChecked(False)
+            self.ClassCalRadioButton.setChecked(False)
+            self.FullCalRadioButton.setChecked(True)
+
+            self.addClassFilesButton.setDisabled(True)
+            self.l1bFRMRadio1.setDisabled(False)
+            '''NOTE: Temporarily disabled while under development'''
+            self.l1bFRMRadio2.setDisabled(True)
+            self.addFullFilesButton.setDisabled(False)
+
+        # Check for RadCal and Full-char files:
+        failCode = 0
+        # Confirm 3 RADCAL files found in destination
+        files = glob.glob(os.path.join(self.calibrationPath, '*RADCAL*.[tT][xX][tT]'))
+        if len(files) != 3:
+            failCode +=1
+            self.classFilesLineEdit.setText("Files not found")
+        else:
+            self.classFilesLineEdit.setText("Files found")
+        # Confirm 2 POLAR files found in destination
+        files = glob.glob(os.path.join(self.calibrationPath, '*POLAR*.[tT][xX][tT]'))
+        if len(files) != 2:
+            failCode +=1
+        # Confirm 3 STRAY files found in destination
+        files = glob.glob(os.path.join(self.calibrationPath, '*STRAY*.[tT][xX][tT]'))
+        if len(files) != 3:
+            failCode +=1
+        # Confirm 3 THERMAL files found in destination
+        files = glob.glob(os.path.join(self.calibrationPath, '*THERMAL*.[tT][xX][tT]'))
+        if len(files) != 3:
+            failCode +=1
+        if failCode >0:
+            self.fullFilesLineEdit.setText("Files not found")
+        else:
+            self.fullFilesLineEdit.setText("Files found")
+
     def l1bDefaultCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Factory")
-        self.DefaultCalRadioButton.setChecked(True)
-        self.ClassCalRadioButton.setChecked(False)
-        self.FullCalRadioButton.setChecked(False)
         ConfigFile.settings["bL1bCal"] = 1
-        
+        self.l1bCalStatusUpdate()
+
     def l1bClassCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Class-based")
-        self.DefaultCalRadioButton.setChecked(False)
-        self.ClassCalRadioButton.setChecked(True)
-        self.FullCalRadioButton.setChecked(False)
         ConfigFile.settings["bL1bCal"] = 2
-        self.RadCalDir = ConfigFile.settings['RadCalDir']
-        self.RadCalDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose RADCAL Directory.', self.RadCalDir)
+        self.l1bCalStatusUpdate()
+
+    def addClassFilesButtonClicked(self):
+        print("ConfigWindow - Add/update class-based files")
+        targetDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose RADCAL Directory.', ConfigFile.settings['RadCalDir'])
+
+        # copy radcal file into configuration folder
+        files = glob.iglob(os.path.join(Path(targetDir), '*RADCAL*.[tT][xX][tT]'))
+        for file in files:
+            dest = Path(self.calibrationPath) / os.path.basename(file)
+            if not dest.exists():
+                print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
+                shutil.copy(file,dest)
+
+        self.RadCalDir = self.calibrationPath
         print('Radiometric characterization directory changed: ', self.RadCalDir)
         ConfigFile.settings['RadCalDir'] = self.RadCalDir
-        
-        # copy radcal file into configuration folder
-        configName = self.name
-        calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
-        configPath = os.path.join("Config", calibrationDir)
-        files = glob.iglob(os.path.join(Path(self.RadCalDir), '*.[tT][xX][tT]'))
-        for file in files:
-            dest = Path(configPath) / os.path.basename(file)
-            if not dest.exists():
-                shutil.copy(file,dest)
-                
-        return self.RadCalDir
+
+        self.l1bCalStatusUpdate()
 
     def l1bFullCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Instrument-specific FRM")
-        self.DefaultCalRadioButton.setChecked(False)
-        self.ClassCalRadioButton.setChecked(False)
-        self.FullCalRadioButton.setChecked(True)
         ConfigFile.settings["bL1bCal"] = 3
+        self.l1bCalStatusUpdate()
 
-    def l1bGetFRMCheckUpdate1(self):
-        print("ConfigWindow - l1bGetFRMCheckUpdate local files")
-        if self.l1bGetFRMCheck1.isChecked():
-            self.l1bGetFRMCheck2.setChecked(False)
+    def l1bFRMRadioUpdate1(self):
+        print("ConfigWindow - l1bFRMRadioUpdate local files")
+        if self.l1bFRMRadio1.isChecked():
+            self.l1bFRMRadio2.setChecked(False)
             ConfigFile.settings['FidRadDB'] = 0
-            self.FullCalDir = ConfigFile.settings['FullCalDir']
-            self.FullCalDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory.', self.FullCalDir)
-            print('Full characterization directory changed: ', self.FullCalDir)
-            ConfigFile.settings['FullCalDir'] = self.FullCalDir
-            
-            # copy files in config
-            configName = self.name
-            calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
-            configPath = os.path.join("Config", calibrationDir)
-            files = glob.iglob(os.path.join(Path(self.FullCalDir), '*.[tT][xX][tT]'))
-            for file in files:
-                dest = Path(configPath) / os.path.basename(file)
-                if not dest.exists():
-                    shutil.copy(file,dest)
-                
-            return self.FullCalDir
 
-    def l1bGetFRMCheckUpdate2(self):
-        print("ConfigWindow - l1bGetFRMCheckUpdate FidRadDB")
-        if self.l1bGetFRMCheck2.isChecked():
-            self.l1bGetFRMCheck1.setChecked(False)
+    def addFullFilesButtonClicked(self):
+        print("ConfigWindow - Add/update full characterization files")
+        targetDir = QtWidgets.QFileDialog.getExistingDirectory(self, \
+                    'Choose Characterization File Directory.', ConfigFile.settings['FullCalDir'])
+
+        # Copy full characterization files into calibration folder and test it
+        failCode = 0
+        # POLAR
+        files = glob.iglob(os.path.join(Path(targetDir), '*POLAR*.[tT][xX][tT]'))
+        for file in files:
+            dest = Path(self.calibrationPath) / os.path.basename(file)
+            if not dest.exists():
+                print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
+                shutil.copy(file,dest)
+        # Confirm 2 POLAR files found in destination
+        files = glob.glob(os.path.join(self.calibrationPath, '*POLAR*.[tT][xX][tT]'))
+        if len(files) != 2:
+            failCode+=1
+            print(f'Copying of POLAR files failed. {len(files)}/2 POLAR files found in Config folder')
+
+        # RADCAL
+        files = glob.iglob(os.path.join(Path(targetDir), '*RADCAL*.[tT][xX][tT]'))
+        for file in files:
+            dest = Path(self.calibrationPath) / os.path.basename(file)
+            if not dest.exists():
+                print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
+                shutil.copy(file,dest)
+        # Confirm 3 RADCAL files found in destination
+        files = glob.glob(os.path.join(self.calibrationPath, '*RADCAL*.[tT][xX][tT]'))
+        if len(files) != 3:
+            failCode+=1
+            print(f'Copying of RADCAL files failed. {len(files)}/3 RADCAL files found in Config folder')
+
+        # STRAYLIGHT
+        files = glob.iglob(os.path.join(Path(targetDir), '*STRAY*.[tT][xX][tT]'))
+        for file in files:
+            dest = Path(self.calibrationPath) / os.path.basename(file)
+            if not dest.exists():
+                print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
+                shutil.copy(file,dest)
+        # Confirm 3 STRAY files found in destination
+        files = glob.glob(os.path.join(self.calibrationPath, '*STRAY*.[tT][xX][tT]'))
+        if len(files) != 3:
+            failCode+=1
+            print(f'Copying of STRAY files failed. {len(files)}/3 STRAY files found in Config folder')
+
+        # THERMAL
+        files = glob.iglob(os.path.join(Path(targetDir), '*THERMAL*.[tT][xX][tT]'))
+        for file in files:
+            dest = Path(self.calibrationPath) / os.path.basename(file)
+            if not dest.exists():
+                print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
+                shutil.copy(file,dest)
+        # Confirm 3 THERMAL files found in destination
+        files = glob.glob(os.path.join(self.calibrationPath, '*THERMAL*.[tT][xX][tT]'))
+        if len(files) != 3:
+            failCode+=1
+            print(f'Copying of THERMAL files failed. {len(files)}/3 THERMAL files found in Config folder')
+
+        # ANGULAR
+        files = glob.iglob(os.path.join(Path(targetDir), '*ANGULAR*.[tT][xX][tT]'))
+        for file in files:
+            dest = Path(self.calibrationPath) / os.path.basename(file)
+            if not dest.exists():
+                print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
+                shutil.copy(file,dest)
+        # Confirm 1 ANGULAR files found in destination
+        files = glob.glob(os.path.join(self.calibrationPath, '*ANGULAR*.[tT][xX][tT]'))
+        if len(files) != 1:
+            failCode+=1
+            print(f'Copying of ANGULAR files failed. {len(files)}/1 ANGULAR files found in Config folder')
+
+        if failCode >0:
+            self.fullFilesLineEdit.setText("Files not found")
+        else:
+            self.fullFilesLineEdit.setText("Files found")
+
+        self.FullCalDir = self.calibrationPath
+        print('Full characterization directory changed: ', self.FullCalDir)
+        ConfigFile.settings['FullCalDir'] = self.FullCalDir
+
+    def l1bFRMRadioUpdate2(self):
+        print("ConfigWindow - l1bFRMRadioUpdate FidRadDB")
+        if self.l1bFRMRadio2.isChecked():
+            self.l1bFRMRadio1.setChecked(False)
             ConfigFile.settings['FidRadDB'] = 1
 
 
@@ -1317,20 +1465,15 @@ class ConfigWindow(QtWidgets.QDialog):
             srcDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory')
         print('Full characterization folders selected for copy: ', srcDir)
 
-        configName = self.name
-        calibrationDir = os.path.splitext(configName)[0] + "_Calibration"
-        configPath = os.path.join("Config", calibrationDir)
-
         calDir = Path(srcDir)
         files = glob.iglob(os.path.join(Path(calDir), '*.[tT][xX][tT]'))
         for file in files:
-            dest = Path(configPath) / os.path.basename(file)
+            dest = Path(self.calibrationPath) / os.path.basename(file)
             if not dest.exists():
                 shutil.copy(file,dest)
 
-        self.FullCalDirButton.setText(os.path.basename(calibrationDir))
-        ConfigFile.settings['FullCalDir'] = configPath
-
+        ConfigFile.settings['FullCalDir'] = self.calibrationPath
+        self.l1bCalStatusUpdate()
 
     def l1bPlotTimeInterpCheckBoxUpdate(self):
         print("ConfigWindow - l1bPlotTimeInterpCheckBoxUpdate")
@@ -1584,7 +1727,8 @@ class ConfigWindow(QtWidgets.QDialog):
 
         ConfigWindow.refreshConfig(self)
         OCproductsDialog = OCproductsWindow(self)
-        OCproductsDialog.exec()
+        # OCproductsDialog.exec()
+        OCproductsDialog.show()
 
         if int(ConfigFile.settings["bL2WeightMODISA"]) == 1:
             self.l2WeightMODISACheckBox.setChecked(True)
