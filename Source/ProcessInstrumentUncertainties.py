@@ -879,7 +879,8 @@ class HyperOCR(Instrument):
 
             # read in data for FRM processing
             # raw_data = np.asarray(list(slice.values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
-            raw_data = np.asarray(list(slice['data'].values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
+            # raw_data = np.asarray(list(slice['data'].values())).transpose()  
+            raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
             int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
             int_time = np.mean(int_time)
 
@@ -1069,12 +1070,16 @@ class HyperOCR(Instrument):
 
             # Cosine correction
             if sensortype == "ES":
-                solar_zenith = res_py6s['solar_zenith']
+                solar_zenith = np.array(res_py6s['solar_zenith'])
                 direct_ratio = res_py6s['direct_ratio']
-
+                print("ADERU", solar_zenith)
+                
+                # ADERU: solar zenith is not an array, it is an unique valur for the whole cast
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
-                                                    np.asarray([0.05 for i in range(len(solar_zenith))]),
+                                                    np.asarray([0.05 for i in range(np.size(solar_zenith))]),
                                                     "rand")  # TODO: get second opinion on zen unc in 6S
+                
+                
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
 
                 data5 = self.DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserr)
@@ -1154,9 +1159,11 @@ class Trios(Instrument):
 
     def lightDarkStats(self, grp, slices, sensortype):
         raw_cal = grp.getDataset(f"CAL_{sensortype}").data
-        raw_back = grp.getDataset(f"BACK_{sensortype}").data
+        # raw_back = grp.getDataset(f"BACK_{sensortype}").data
+        raw_back = np.asarray(grp.getDataset("BACK_"+sensortype).data.tolist())
         raw_data = np.asarray(list(slices['data'].values())).transpose()  # data is transpose of old version
-        # raw_data = np.asarray(list(slices.values()))  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
+        # raw_data = np.asarray(list(slices.values()))  
+        # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
 
         raw_wvl = np.array(pd.DataFrame(grp.getDataset(sensortype).data).columns)
         int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
@@ -1176,14 +1183,14 @@ class Trios(Instrument):
         # else:
 
         # slice raw_back to remove indexes where raw_cal is 0 or "NaN"
-        raw_back = np.array([[rb[0] for rb in raw_back], [rb[1] for rb in raw_back]]).transpose()
+        # raw_back = np.array([[rb[0] for rb in raw_back], [rb[1] for rb in raw_back]]).transpose()
 
         # check size of data
         nband = len(raw_back)  # indexes changed for raw_back as is brought to L2
         nmes = len(raw_data)
         if nband != len(raw_data[0]):
             print("ERROR: different number of pixels between dat and back")
-            # exit()
+            return None
             '''NOTE: Please try to avoid putting in exit()s. They make it slightly harder to debug.
                 If needed, try using the processing fail splash screen to get your attention.'''
 
@@ -1191,7 +1198,7 @@ class Trios(Instrument):
         mesure = raw_data/65365.0
         calibrated_mesure = np.zeros((nmes, nband))
         back_mesure = np.zeros((nmes, nband))
-
+                
         for n in range(nmes):
             # Background correction : B0 and B1 read from "back data"
             back_mesure[n, :] = raw_back[:, 0] + raw_back[:, 1]*(int_time[n]/int_time_t0)

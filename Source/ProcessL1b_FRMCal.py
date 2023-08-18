@@ -159,12 +159,12 @@ class ProcessL1b_FRMCal:
         return res_py6s
 
     @staticmethod
-    def cosine_error_correction(node, sensortype, sensorstring):
+    def cosine_error_correction(node, sensorstring):
         ''' Used for both SeaBird and TriOS L1b'''
 
         ## Angular cosine correction (for Irradiance)
         unc_grp = node.getGroup('RAW_UNCERTAINTIES')
-        radcal_wvl = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_CAL").data)['1'][1:].tolist())
+        radcal_wvl = np.asarray(pd.DataFrame(unc_grp.getDataset(sensorstring+"_RADCAL_CAL").data)['1'][1:].tolist())
         coserror = np.asarray(pd.DataFrame(unc_grp.getDataset(sensorstring+"_ANGDATA_COSERROR").data))[1:,2:]
         coserror_90 = np.asarray(pd.DataFrame(unc_grp.getDataset(sensorstring+"_ANGDATA_COSERROR_AZ90").data))[1:,2:]
         zenith_ang = unc_grp.getDataset(sensorstring+"_ANGDATA_COSERROR").attributes["COLUMN_NAMES"].split('\t')[2:]

@@ -262,7 +262,7 @@ class TriosL1B:
                         continue
                     else:
                         newGroup.datasets[ds].datasetToColumns()
-
+        
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
@@ -390,13 +390,15 @@ class TriosL1B:
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
-
-
+            
+                    
+            
         ## Interpolation
         # Match instruments to a common timestamp (slowest shutter, should be Lt) and
         # interpolate to the chosen spectral resolution. HyperSAS instruments operate on
         # different timestamps and wavebands, so interpolation is required.
         node = ProcessL1b_Interp.processL1b_Interp(node, outFilePath)
+        
 
         node.attributes["LI_UNITS"] = 'uW/cm^2/nm/sr'
         node.attributes["LT_UNITS"] = 'uW/cm^2/nm/sr'
