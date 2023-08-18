@@ -387,6 +387,10 @@ def fresnel(m, ang):
 
 
 def interpn_chunked(x, y, xi, chunked_axis=2, cache_size=(16 * 10 ** 6) / 4):
+    # x: array(arrays(0:3)) ranges of zen_sun(7), od(4), index(92476), waveband(131); x[chunked_axis=2]=index, so array(0:92475)
+    # y: skyrad0 (7x4x92746x131)
+    # xi: array(arrays(0:3)) env['zen_sun'](1), env['od'](1), db_idx(92476), sensor['wv'](depends on sensor))
+
     ndim = len(x)
     chunk = (y.size * y.dtype.itemsize) / cache_size  # TODO Optimize chunk size automatically based on cache size
     if chunk > 1:
