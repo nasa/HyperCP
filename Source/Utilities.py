@@ -886,6 +886,10 @@ class Utilities:
                 timeStamp = group.getDataset("LI").data["Datetime"]
         else:
              timeStamp = group.getDataset("Timestamp").data["Datetime"]
+             # TRIOS: copy CAL & BACK before filetering
+             if ConfigFile.settings['SensorType'].lower() == 'trios':
+                 raw_cal  = group.getDataset("CAL_"+group.id[0:2]).data
+                 raw_back = group.getDataset("BACK_"+group.id[0:2]).data
 
         startLength = len(timeStamp)
         msg = f'   Length of dataset prior to removal {startLength} long'
@@ -926,8 +930,17 @@ class Utilities:
                 break
             timeStamp = newTimeStamp.copy()
 
-        for ds in group.datasets:
-            group.datasets[ds].datasetToColumns()
+        # TRIOS: reset CAL and BACK as before filtering
+        if ConfigFile.settings['SensorType'].lower() == 'trios':
+            for ds in group.datasets:
+                if "BACK" in ds:
+                    group.datasets[ds].data = raw_back
+                if "CAL" in ds:
+                    group.datasets[ds].data = raw_cal
+                group.datasets[ds].datasetToColumns()
+        else:
+            for ds in group.datasets:
+                group.datasets[ds].datasetToColumns()    
 
         msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
         print(msg)
