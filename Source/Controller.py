@@ -501,7 +501,7 @@ class Controller:
             msg = "Bad output destination. Select new Output Data Directory."
             print(msg)
             Utilities.writeLogFile(msg)
-            return #False
+            return False
 
         # Add output level directory if necessary
         if os.path.isdir(pathOutLevel) is False:
@@ -534,7 +534,7 @@ class Controller:
             msg = "Unrecognized file type. Aborting."
             print(msg)
             Utilities.writeLogFile(msg)
-            return #None, None
+            return False#, None
 
         # If this is an HDF, assume it is not RAW, drop the level from fileName
         if extension=='.hdf':
@@ -619,7 +619,7 @@ class Controller:
             root = None
             if not os.path.isfile(inFilePath):
                 print('No such input file: ' + inFilePath)
-                return None, outFilePath
+                return False#None, outFilePath
 
             msg = ("ProcessL2: " + inFilePath)
             print(msg)
@@ -633,7 +633,7 @@ class Controller:
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return #None, outFilePath
+                return False#None, outFilePath
 
             # Check L2 file for low-level uncertainty processing matching the uncertainty processing
             # called here (i.e., don't let Factory-Only files get processed for FRM-Class or FRM-Full)
@@ -643,21 +643,21 @@ class Controller:
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return
+                return False
             if ConfigFile.settings["bL1bCal"] == 2 and 'FRM-Class' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
                     f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return
+                return False
             if ConfigFile.settings["bL1bCal"] == 1 and 'Factory' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
                     f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
-                return
+                return False
 
 
             ##### Loop over this whole section for each station in the file where appropriate ####
@@ -743,7 +743,7 @@ class Controller:
         if root is None and ConfigFile.settings["bL2Stations"] == 0:
             if ConfigFile.settings["bL2WriteReport"] == 1:
                 Controller.writeReport(fileName, pathOut, outFilePath, level, inFilePath)
-            return #False
+            return False
 
         # If L2 successful and not station extraction, write a report
         if level == "L2" and ConfigFile.settings["bL2Stations"] == 0:
@@ -754,7 +754,7 @@ class Controller:
         # print(msg)
         # Utilities.writeLogFile(msg)
 
-        return #True
+        return True
 
 
     # Process every file in a list of files from L0 to L2

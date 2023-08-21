@@ -1314,6 +1314,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.classFilesLineEdit.setText("Files not found")
         else:
             self.classFilesLineEdit.setText("Files found")
+            ConfigFile.settings['RadCalDir'] = self.calibrationPath
         # Confirm 2 POLAR files found in destination
         files = glob.glob(os.path.join(self.calibrationPath, '*POLAR*.[tT][xX][tT]'))
         if len(files) != 2:
@@ -1330,6 +1331,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.fullFilesLineEdit.setText("Files not found")
         else:
             self.fullFilesLineEdit.setText("Files found")
+            ConfigFile.settings['FullCalDir'] = self.calibrationPath
 
     def l1bDefaultCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Factory")
