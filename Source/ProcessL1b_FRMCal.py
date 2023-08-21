@@ -24,7 +24,7 @@ class ProcessL1b_FRMCal:
             # keys change depending on if the process is called at L1B or L2, store correct keys in dictionary
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 irad_key = f'{sensortype}_LIGHT_L1AQC'
-            elif ConfigFile.settings['Sensor_Type'].lower() == 'trios':
+            elif ConfigFile.settings['SensorType'].lower() == 'trios':
                 irad_key = f'{sensortype}_L1AQC'
             else:
                 return False
