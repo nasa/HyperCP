@@ -2244,7 +2244,11 @@ class ProcessL2:
 
         # If requested, process BRDF corrections to Rrs and nLw
         if ConfigFile.settings["bL2BRDF"]:
-            ProcessL2BRDF.procBRDF(node)
+            if ConfigFile.settings['bL2BRDF_fQ']:
+                ProcessL2BRDF.procBRDF(node,BRDF_option='M02')
+            else:
+                raise ValueError('BRDF: Only Morel et al. 2002 supported for the moment. '
+                                 'If ticking on BRDF in the configuration window, please also tick on Morel R.f/Q')
 
         # Strip out L1AQC data
         for gp in reversed(node.groups):
