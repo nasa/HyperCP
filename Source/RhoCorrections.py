@@ -56,6 +56,18 @@ class RhoCorrections:
 
         # TODO: Model error estimation, requires ancillary data to be switched on. This could create a conflict.
         if not any([AOD is None, wTemp is None, sal is None, waveBands is None]):
+
+            # Fix: Truncate input parameters to stay within Zhang ranges:
+            # AOD
+            AOD = np.min([AOD,0.2])
+            # SZA
+            if 60<SZAMean<70:
+                SZAMean = SZAMean
+            elif SZAMean>=70:
+                raise ValueError('SZAMean is to high (%s), Zhang correction cannot be performed above SZA=70.')
+            # wavelengths in range [350-1000] nm
+            waveBands = [w for w in waveBands if w>=350 and w<=1000]
+
             zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
                                                 relAzMean, waveBands)
 
