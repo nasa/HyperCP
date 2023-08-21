@@ -504,7 +504,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2BRDFCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2BRDF"]) == 1:
             self.l2BRDFCheckBox.setChecked(True)
-        self.l2BRDF_fQLabel = QtWidgets.QLabel("Morel fQ", self)
+        self.l2BRDF_fQLabel = QtWidgets.QLabel("Morel R.f/Q", self)
         self.l2BRDF_fQCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2BRDF_fQ"]) == 1:
             self.l2BRDF_fQCheckBox.setChecked(True)
