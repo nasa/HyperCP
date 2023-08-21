@@ -242,9 +242,9 @@ class TriosL1B:
         if ConfigFile.settings["bL1bCal"] == 1:
             node.attributes['CAL_TYPE'] = 'Factory'
         elif ConfigFile.settings["bL1bCal"] == 2:
-            node.attributes['CAL_TYPE'] = 'Class-based'
+            node.attributes['CAL_TYPE'] = 'FRM-Class'
         elif ConfigFile.settings["bL1bCal"] == 3:
-            node.attributes['CAL_TYPE'] = 'Instrument-based'
+            node.attributes['CAL_TYPE'] = 'FRM-Full'
 
         msg = f"TriosL1B.processL1b: {timestr}"
         print(msg)
@@ -262,7 +262,7 @@ class TriosL1B:
                         continue
                     else:
                         newGroup.datasets[ds].datasetToColumns()
-        
+
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
@@ -275,7 +275,7 @@ class TriosL1B:
         # Add Class-based characterization files + RADCAL files
         elif ConfigFile.settings['bL1bCal'] == 2:
             classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
-            radcal_dir = ConfigFile.settings['RadCalDir']           
+            radcal_dir = ConfigFile.settings['RadCalDir']
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
             print('RADCAL:', radcal_dir)
@@ -293,7 +293,7 @@ class TriosL1B:
                 inpath = ConfigFile.settings['FullCalDir']
                 print("Full-Char - uncertainty computed from full characterization")
                 print('Full-Char dir:', inpath)
-                
+
             # elif ConfigFile.settings['FidRadDB'] == 1:
             #     sensorID = Utilities.get_sensor_dict(node)
             #     acq_time = node.attributes["TIME-STAMP"].replace('_','')
@@ -390,15 +390,15 @@ class TriosL1B:
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
-            
-                    
-            
+
+
+
         ## Interpolation
         # Match instruments to a common timestamp (slowest shutter, should be Lt) and
         # interpolate to the chosen spectral resolution. HyperSAS instruments operate on
         # different timestamps and wavebands, so interpolation is required.
         node = ProcessL1b_Interp.processL1b_Interp(node, outFilePath)
-        
+
 
         node.attributes["LI_UNITS"] = 'uW/cm^2/nm/sr'
         node.attributes["LT_UNITS"] = 'uW/cm^2/nm/sr'

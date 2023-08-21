@@ -545,11 +545,11 @@ class ProcessL1b:
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
         if ConfigFile.settings["bL1bCal"] == 1:
-            node.attributes['CAL_TYPE'] = 'Default/Factory'
+            node.attributes['CAL_TYPE'] = 'Factory'
         elif ConfigFile.settings["bL1bCal"] == 2:
-            node.attributes['CAL_TYPE'] = 'Class-based'
+            node.attributes['CAL_TYPE'] = 'FRM-Class'
         elif ConfigFile.settings["bL1bCal"] == 3:
-            node.attributes['CAL_TYPE'] = 'Full-FRM'
+            node.attributes['CAL_TYPE'] = 'FRM-Full'
         node.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
 
