@@ -76,7 +76,7 @@ def my_sph2cart(azm, zen, r=1):
     """
     elev = np.pi / 2 - zen
     cos_elev = np.cos(elev)
-    xyz = np.empty((*np.broadcast_shapes(azm.shape, zen.shape), 3), dtype=np.float)
+    xyz = np.empty((*np.broadcast_shapes(azm.shape, zen.shape), 3), dtype=float)
     xyz[..., 0] = r * cos_elev * np.cos(azm)
     xyz[..., 1] = r * cos_elev * np.sin(azm)
     xyz[..., 2] = r * np.sin(elev)
@@ -332,7 +332,7 @@ def index_w(wv, t, s):
 
     n0_4 = n0 + (n1 + n2 * t + n3 * t ** 2) * s + n4 * t ** 2
     n5_7 = n5 + n6 * s + n7 * t
-    wv = np.array(wv, dtype=np.float)
+    wv = np.array(wv, dtype=float)
     mw = n0_4 + n5_7 * (wv ** -1) + n8 * (wv ** -2) + n9 * (wv ** -3)
     return mw
 
