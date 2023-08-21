@@ -1508,8 +1508,8 @@ class Trios(Instrument):
         # sensitivity factor : if gain==0 (or NaN), no calibration is performed and data is affected to 0
         ind_zero = (updated_radcal_gain <= 1e-2)
         ind_nan = np.isnan(updated_radcal_gain)
-        self.ind_nocal = ind_nan | ind_zero
-        updated_radcal_gain[self.ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
+        ind_nocal = ind_nan | ind_zero
+        updated_radcal_gain[ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
         return updated_radcal_gain
 
     @staticmethod
@@ -1519,7 +1519,7 @@ class Trios(Instrument):
         # sensitivity factor : if gain==0 (or NaN), no calibration is performed and data is affected to 0
         ind_zero = (updated_radcal_gain <= 1e-2)
         ind_nan = np.isnan(updated_radcal_gain)
-        self.ind_nocal = ind_nan | ind_zero
+        ind_nocal = ind_nan | ind_zero
         updated_radcal_gain[
-            self.ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
+            ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
         return updated_radcal_gain
