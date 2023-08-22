@@ -6,6 +6,7 @@ import pandas as pd
 import calendar
 import collections
 from decimal import Decimal
+from inspect import currentframe, getframeinfo
 
 # NPL packages
 import punpy
@@ -28,7 +29,7 @@ class Instrument:
 
     def lightDarkStats(self, grp, slices, sensortype):
         '''
-        # Why is this here, and how do calls below to self.lightDarkStats know how
+        # NOTE: Why is this here, and how do calls below to self.lightDarkStats know how
         # to choose either HyperOCR (L704-1153) vs. Trios (L1156-1525) classes?
         #
         '''
