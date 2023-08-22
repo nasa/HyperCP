@@ -25,7 +25,7 @@ class ProcessL2BRDF():
     #   Currently not (yet) iterating more than once
 
     @staticmethod
-    def procBRDF(root):
+    def procBRDF(root,BRDF_option=None):
 
         # chl = np.array([0.01,0.01,0.01])
         # solz = np.array([30,35,40])

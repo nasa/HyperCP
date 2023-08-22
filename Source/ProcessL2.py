@@ -1209,16 +1209,16 @@ class ProcessL2:
                 return False
 
         if not any([esRawGroup, liRawGroup, ltRawGroup]):
-            msg = "no raw groups found"
+            msg = "No L1AQC groups found"
             print(msg)
         else:
-            # slice Raw Data depending on SensorType
+            # slice L1AQC (aka "Raw" here) Data depending on SensorType
             if ConfigFile.settings['SensorType'].lower() == "trios":
                 esRawSlice, liRawSlice, ltRawSlice = _sliceRawData(
-                                                                   esRawGroup.datasets.values(),
-                                                                   liRawGroup.datasets.values(),
-                                                                   ltRawGroup.datasets.values(),
-                                                                   )
+                                    esRawGroup.datasets.values(),
+                                    liRawGroup.datasets.values(),
+                                    ltRawGroup.datasets.values(),
+                                    )
             elif ConfigFile.settings['SensorType'].lower() == "seabird":
                 esRawSlice = dict()
                 liRawSlice = dict()
@@ -1260,22 +1260,22 @@ class ProcessL2:
         ltSlice.pop("Timetag2")
         ltSlice.pop("Datetime")
 
-        # once datetag is popped then process StdSlices for Band Convolution
-        # get common wavebands from esSlice to interp stats
+        # Process StdSlices for Band Convolution
+        # Get common wavebands from esSlice to interp stats
         instrument_WB = np.asarray(list(esSlice.keys()), dtype=float)
 
         if ConfigFile.settings['SensorType'].lower() == "trios":
             instrument = Trios()
             stats = instrument.generateSensorStats("TriOS",
-                                                   dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
-                                                   dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
-                                                   instrument_WB)
+                        dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                        dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
+                        instrument_WB)
         elif ConfigFile.settings['SensorType'].lower() == "seabird":
             instrument = HyperOCR()  # check sensor-type
             stats = instrument.generateSensorStats("SeaBird",
-                                                   dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
-                                                   dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
-                                                   instrument_WB)
+                        dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                        dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
+                        instrument_WB)
             # after dark substitution is done, condense to only dark corrected data (LIGHT key)
             esRawGroup = esRawGroup['LIGHT']
             liRawGroup = liRawGroup['LIGHT']
@@ -1977,7 +1977,7 @@ class ProcessL2:
         else:
             uncGroup = None
 
-        Utilities.rawDataAddDateTime(rootCopy)
+        Utilities.rawDataAddDateTime(rootCopy) # For L1AQC data carried forward
         Utilities.rootAddDateTimeCol(rootCopy)
 
         ###############################################################################
