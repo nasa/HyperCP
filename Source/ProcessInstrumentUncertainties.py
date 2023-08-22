@@ -879,7 +879,7 @@ class HyperOCR(Instrument):
 
             # read in data for FRM processing
             # raw_data = np.asarray(list(slice.values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
-            # raw_data = np.asarray(list(slice['data'].values())).transpose()  
+            # raw_data = np.asarray(list(slice['data'].values())).transpose()
             raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
             int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
             int_time = np.mean(int_time)
@@ -1073,13 +1073,13 @@ class HyperOCR(Instrument):
                 solar_zenith = np.array(res_py6s['solar_zenith'])
                 direct_ratio = res_py6s['direct_ratio']
                 print("ADERU", solar_zenith)
-                
+
                 # ADERU: solar zenith is not an array, it is an unique valur for the whole cast
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
                                                     np.asarray([0.05 for i in range(np.size(solar_zenith))]),
                                                     "rand")  # TODO: get second opinion on zen unc in 6S
-                
-                
+
+
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
 
                 data5 = self.DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserr)
@@ -1162,7 +1162,7 @@ class Trios(Instrument):
         # raw_back = grp.getDataset(f"BACK_{sensortype}").data
         raw_back = np.asarray(grp.getDataset("BACK_"+sensortype).data.tolist())
         raw_data = np.asarray(list(slices['data'].values())).transpose()  # data is transpose of old version
-        # raw_data = np.asarray(list(slices.values()))  
+        # raw_data = np.asarray(list(slices.values()))
         # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
 
         raw_wvl = np.array(pd.DataFrame(grp.getDataset(sensortype).data).columns)
@@ -1198,7 +1198,7 @@ class Trios(Instrument):
         mesure = raw_data/65365.0
         calibrated_mesure = np.zeros((nmes, nband))
         back_mesure = np.zeros((nmes, nband))
-                
+
         for n in range(nmes):
             # Background correction : B0 and B1 read from "back data"
             back_mesure[n, :] = raw_back[:, 0] + raw_back[:, 1]*(int_time[n]/int_time_t0)
@@ -1249,7 +1249,7 @@ class Trios(Instrument):
             slice = raw_slices[sensortype]
 
             # read data for L1B FRM processing
-            raw_data = np.asarry(list(slice.values()))  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
+            raw_data = np.asarray(list(slice.values()))  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
             DarkPixelStart = int(grp.attributes["DarkPixelStart"])
             DarkPixelStop = int(grp.attributes["DarkPixelStop"])
             int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
@@ -1508,8 +1508,8 @@ class Trios(Instrument):
         # sensitivity factor : if gain==0 (or NaN), no calibration is performed and data is affected to 0
         ind_zero = (updated_radcal_gain <= 1e-2)
         ind_nan = np.isnan(updated_radcal_gain)
-        self.ind_nocal = ind_nan | ind_zero
-        updated_radcal_gain[self.ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
+        ind_nocal = ind_nan | ind_zero
+        updated_radcal_gain[ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
         return updated_radcal_gain
 
     @staticmethod
@@ -1519,7 +1519,7 @@ class Trios(Instrument):
         # sensitivity factor : if gain==0 (or NaN), no calibration is performed and data is affected to 0
         ind_zero = (updated_radcal_gain <= 1e-2)
         ind_nan = np.isnan(updated_radcal_gain)
-        self.ind_nocal = ind_nan | ind_zero
+        ind_nocal = ind_nan | ind_zero
         updated_radcal_gain[
-            self.ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
+            ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
         return updated_radcal_gain
