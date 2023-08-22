@@ -2245,6 +2245,9 @@ class ProcessL2:
         # If requested, process BRDF corrections to Rrs and nLw
         if ConfigFile.settings["bL2BRDF"]:
             if ConfigFile.settings['bL2BRDF_fQ']:
+                msg = "Applying iterative Morel et al. 2002 BRDF correction to Rrs and nLw"
+                print(msg)
+                Utilities.writeLogFile(msg)
                 ProcessL2BRDF.procBRDF(node,BRDF_option='M02')
             else:
                 raise ValueError('BRDF: Only Morel et al. 2002 supported for the moment. '
