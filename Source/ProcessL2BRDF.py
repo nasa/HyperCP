@@ -18,6 +18,7 @@ class ProcessL2BRDF():
     #   https://gitlab.eumetsat.int/eumetlab/oceans/ocean-science-studies/ThoMaS
 
     @staticmethod
+
     def procBRDF(root,BRDF_option='M02'):
         '''
         Purpose: read all the necessary inputs to perform BRDF correction
@@ -29,7 +30,6 @@ class ProcessL2BRDF():
 
         # Assuming that measurement protocol is well followed, then sensor should be pointing towards 40 degrees from nadir
         viewz = 40
-
         # Iterate over root groups to extract ancillary and radiometric quantities to feed the BRDF function.
         for gp in root.groups:
             if (gp.id == "DERIVED_PRODUCTS"):

@@ -27,6 +27,11 @@ class Instrument:
         pass
 
     def lightDarkStats(self, grp, slices, sensortype):
+        '''
+        # Why is this here, and how do calls below to self.lightDarkStats know how
+        # to choose either HyperOCR (L704-1153) vs. Trios (L1156-1525) classes?
+        #
+        '''
         pass
 
     def generateSensorStats(self, InstrumentType, rawData, rawSlice, newWaveBands):
@@ -34,8 +39,21 @@ class Instrument:
         types = ['ES', 'LI', 'LT']
         for sensortype in types:
             if InstrumentType.lower() == "trios":
+                # rawData is the group and used to access _CAL, _BACK, and other information about the
+                # DarkPixels... not entirely clear.
+                ''' NOTE: This fails because it tries to divide raw_data by a number, and raw_data is
+                 an OrderedDict. '''
                 output[sensortype] = self.lightDarkStats(rawData[sensortype], rawSlice[sensortype], sensortype)
             elif InstrumentType.lower() == "seabird":
+                # rawData here is the group, passed along only for the purpose of
+                # confirming "FrameTypes", i.e., ShutterLight or ShutterDark. Calculations
+                # are performed on the Slice.
+                # output contains:
+                # ave_Light: (array 1 x number of wavebands)
+                # ave_Dark: (array 1 x number of wavebands)
+                # std_Light: (array 1 x number of wavebands)
+                # std_Dark: (array 1 x number of wavebands)
+                # std_Signal: OrdDict by wavebands: sqrt( (std(Light)^2 + std(Dark)^2)/ave(Light)^2 )
                 output[sensortype] = self.lightDarkStats([rawData[sensortype]['LIGHT'],
                                                           rawData[sensortype]['DARK']],
                                                          [rawSlice[sensortype]['LIGHT'],
