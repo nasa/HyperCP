@@ -1781,6 +1781,8 @@ class ConfigWindow(QtWidgets.QDialog):
         SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
         SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
 
+        self.checkForChlor()
+
         self.close()
 
     def refreshConfig(self):
@@ -1871,14 +1873,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2SaveSeaBASS"] = int(self.l2SaveSeaBASSCheckBox.isChecked())
         ConfigFile.settings["bL2WriteReport"] = int(self.l2WriteReportCheckBox.isChecked())
 
-        # Confirm necessary satellite bands are processed
-        if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
-            ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
-                ConfigFile.products["bL2Prodgocad"] or ConfigFile.products["bL2Prodgiop"] or \
-                ConfigFile.products["bL2Prodqaa"]:
-
-            ConfigFile.settings["bL2WeightMODISA"] = 1
-            self.l2WeightMODISACheckBox.setChecked(True)
+        self.checkForChlor()
 
 
     def saveAsButtonPressed(self):
@@ -1920,5 +1915,20 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def cancelButtonPressed(self):
         print("ConfigWindow - Cancel Pressed")
+        self.checkForChlor()
         self.close()
+
+    def checkForChlor(self):
+        # Confirm Chl is produced if BRDF R.f/Q if used
+        if self.l2BRDF_fQCheckBox.isChecked():
+            ConfigFile.products["bL2Prodoc3m"] = 1
+
+        # Confirm necessary satellite bands are processed
+        if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
+            ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
+                ConfigFile.products["bL2Prodgocad"] or ConfigFile.products["bL2Prodgiop"] or \
+                ConfigFile.products["bL2Prodqaa"]:
+
+            ConfigFile.settings["bL2WeightMODISA"] = 1
+            self.l2WeightMODISACheckBox.setChecked(True)
 
