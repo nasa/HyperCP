@@ -892,14 +892,13 @@ class HyperOCR(Instrument):
             print('FRM Processing:', sensortype)
             # Read data
             grp = raw_grps[sensortype]
-            slice = raw_slices[sensortype]["LIGHT"]['data']
-            # dark_grp = raw_grps[sensortype]["DARK"]
-            dark_slice = raw_slices[sensortype]["DARK"]['data']
+            raw_data = np.asarray(list(raw_slices[sensortype]["LIGHT"]['data'].values())).transpose()
+            raw_dark = np.asarray(list(raw_slices[sensortype]["DARK"]['data'].values())).transpose()
 
             # read in data for FRM processing
             # raw_data = np.asarray(list(slice.values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
             # raw_data = np.asarray(list(slice['data'].values())).transpose()
-            raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
+            # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
             int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
             int_time = np.mean(int_time)
 
@@ -907,8 +906,6 @@ class HyperOCR(Instrument):
             radcal_wvl = np.asarray(
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['1'][1:].tolist())
             radcal_cal = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['2']
-            # raw_dark = np.asarray(dark_grp.getDataset(sensortype).data.tolist())  # get raw_dark data
-            raw_dark = np.asarray(list(dark_slice.values())).transpose()
             S1 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['6']
             S2 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['8']
             # TODO: Check if multiplying by np.abs(S1/S2) is correct
