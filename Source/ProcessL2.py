@@ -427,10 +427,11 @@ class ProcessL2:
                     #Calculate the normalized water leaving radiance
                     nLw = rrs*f0
 
+                    f0Delta = 0.01  # placeholder
+
                     # nLw uncertainty; no provision for F0 uncertainty here yet...
-                    nLwDelta = abs(nLw) * (
-                            (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2 + (esSTD/es)**2
-                            )**0.5
+                    nLwDelta = np.power(np.asarray(list(rrsDelta.values()))**2 + f0Delta**2, 0.5)  # f0 delta assumed 0.01
+
                 elif ZhangRho:
                     # Only populate the valid wavelengths
                     if float(k) in waveSubset:
@@ -440,10 +441,11 @@ class ProcessL2:
                         #Calculate the normalized water leaving radiance
                         nLw = rrs*f0
 
+                        f0Delta = 0.01  # placeholder
+
                         # nLw uncertainty; no provision for F0 uncertainty here yet ...
-                        nLwDelta = abs(nLw) * (
-                                (liSTD/li)**2 + (rhoDelta/rhoVec[k])**2 + (liSTD/li)**2 + (esSTD/es)**2
-                                )**0.5
+                        nLwDelta = np.power(np.asarray(list(rrsDelta.values()))**2 + f0Delta**2, 0.5)
+
                 else:
                     lw = (lt - (rhoScalar * li))
                     rrs = lw / es
@@ -451,10 +453,10 @@ class ProcessL2:
                     #Calculate the normalized water leaving radiance
                     nLw = rrs*f0
 
+                    f0Delta = 0.01  # placeholder
+
                     # nLw uncertainty; no provision for F0 uncertainty here yet...
-                    nLwDelta = abs(nLw) * (
-                            (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2 + (esSTD/es)**2
-                            )**0.5
+                    nLwDelta = np.power(np.asarray(list(rrsDelta.values()))**2 + f0Delta**2, 0.5)
 
                 newESData.columns[k].append(es)
                 newLIData.columns[k].append(li)
