@@ -186,13 +186,40 @@ Dark current corrections are applied followed by instrument calibrations and the
 for all radiometers in the suite.
 
 Unlike legacy processing for Satlantic/Sea-Bird HyperSAS data in ProSoft, data here are dark current corrected prior to
-application of the calibration factors. This allows for the option of applying default/factory calibrations or full
+application of the calibration factors. This allows for the option of applying factory calibrations or full
 instrument characterization in conjunction with low-level radiometric uncertainty estimation. It should be noted that
 when applying calibration to the dark current corrected radiometry, the offsets (a0) cancel
 (see ProSoftUserManual7.7 11.1.1.5 Eqns 5-6) presuming light and dark factory cals are equivalent (which they
 historically have been from Satlantic/Sea-Bird).
 
-**More to come on full instrument characterization versus default/factory calibration...**
+Three calibration/characterization regimes are available:
+
+**Factory:** 
+This regime performes the radiometric calibration using the radiometric gains provided within the factory configuration 
+files. For both SeaBird and TriOS the calibration process follow their respective manufacturer recommendation. 
+Although no uncertainty values associated to the radiometric factors are avaible in the factory configuration files, 
+generic uncertainty values can be used for SeaBird, they are taken from "The Seventh SeaWiFS Intercalibration Round-Robin 
+Experiment (SIRREX-7), March 1999" (API: https://ntrs.nasa.gov/citations/20020045342). The uncertainties produced at 
+level 2 date will not be FRM compliant but remains an interresting first step to characterize the data. Unfortunately, 
+there is no equivalent for TriOS and no uncertainties values will be outputted with this regime for TriOS.
+
+**FRM Class-Based:**
+This regimes performes the radiometric calibration using the radiometric characterisation completed by external laboratories.
+The radiometric characterization includes both the radiometric gains and their uncertainties for each sensor. The results
+are saved in the so called "RADCAL" file, with one file per sensor. The calibration process is identical to the factory regime
+and follow the manufacturer guidelines. In addition the Class-Based regime also computes FRM uncertainties using the absolute 
+radiometric characterization and class-based values for all other contributors. The contributors included in the uncertainty 
+propagation are: the straylight impact, the temperature sensitivity, the polarisation sensitivity (for radiance only), the cosine 
+response (for irradiance only), the detector non-linearity and the calibration stability (see D10).
+
+**FRM Full-Characterization:**
+This regime performes the complete correction of the radiometry using the full characterization of each sensor by external 
+laboratories. For both SeaBird and TriOS the radiometric calibration process is performed with additional corrections. The 
+corrections are possible only thanks to the full characterization of the sensors provided in the matching files. The process 
+performes the non-linearity correction, the straylight correction, the polarisation correction (for radiance only), the cosine 
+response correction (for irradiance only) and the temperature correction (see D10). The process also provides FRM compliant 
+uncertainties accounting for the residuals effects of each contributors, meaning the correction residuals are used as uncertainty 
+contributor instead of global class-based contribution, leading to smaller uncertainty values.
 
 Once instrument calibration has been applied, data are interpolated to common timestamps and wavebands, optionally
 generating temporal plots of Li, Lt, and Es, and ancillary data to show how data were interpolated.
