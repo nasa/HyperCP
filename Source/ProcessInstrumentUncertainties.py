@@ -102,16 +102,16 @@ class Instrument:
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
-            cLin[sensor] = np.asarray(list(linear.data[1]))
+            cLin[sensor] = np.asarray(list(linear.columns['1']))
 
             stab = uncGrp.getDataset(sensor + "_STABDATA_CAL")
             stab.datasetToColumns()
-            cStab[sensor] = np.asarray(list(stab.data[1]))
+            cStab[sensor] = np.asarray(list(stab.columns['1']))
 
             radcal = uncGrp.getDataset(f"{sensor}_RADCAL_CAL")
             radcal.datasetToColumns()
-            Coeff[sensor] = np.asarray(list(radcal.data[2]))
-            Cal[sensor] = np.asarray(list(radcal.data[3]))
+            Coeff[sensor] = np.asarray(list(radcal.columns['2']))
+            Cal[sensor] = np.asarray(list(radcal.columns['3']))
 
             # if sensor == 'ES':
             #     pol = uncGrp.getDataset("ES_ANGDATA_UNCERTAINTY")
@@ -121,7 +121,7 @@ class Instrument:
             # TODO: temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
-            cPol[sensor] = np.asarray(list(pol.data[1]))
+            cPol[sensor] = np.asarray(list(pol.columns['1']))
 
             # temp uncertainties calculated at L1AQC
             Temp = uncGrp.getDataset(sensor + "_TEMPDATA_CAL")
