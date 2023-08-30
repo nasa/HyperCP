@@ -329,7 +329,7 @@ class ProcessL2BRDF():
         #  BRDF-scheme-specific LUT:
         pathSource = os.path.dirname(__file__)
         if BRDF_option == 'M02':
-            BRDF_LUT = Dataset(os.path.join(pathSource,'BRDF_LUT_MorelEtAl2002.nc'), 'r')
+            BRDF_LUT = Dataset(os.path.join(pathSource,'..','Data','BRDF_LUT_MorelEtAl2002.nc'), 'r')
         else:
             raise ValueError('BRDF option %s still not implemented' % BRDF_option)
 
