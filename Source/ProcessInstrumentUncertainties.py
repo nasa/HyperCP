@@ -1265,7 +1265,7 @@ class Trios(Instrument):
             slice = raw_slices[sensortype]
 
             # read data for L1B FRM processing
-            raw_data = np.asarray(list(slice.values()))  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
+            raw_data = np.asarray(list(slice['data'].values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
             DarkPixelStart = int(grp.attributes["DarkPixelStart"])
             DarkPixelStop = int(grp.attributes["DarkPixelStop"])
             int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
@@ -1465,9 +1465,9 @@ class Trios(Instrument):
                 solar_zenith = res_py6s['solar_zenith']
                 direct_ratio = res_py6s['direct_ratio']
 
-                sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
-                                                    np.asarray([0.05 for i in range(len(solar_zenith))]),
-                                                    "rand")  # TODO: get second opinion on zen unc in 6S
+                sample_sol_zen = cm.generate_sample(mDraws, solar_zenith, 0.05, "rand")
+                                                    # np.asarray([0.05 for i in range(len(solar_zenith))]),
+                                                    # TODO: get second opinion on zen unc in 6S
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
 
                 ind_closest_zen = np.argmin(np.abs(zenith_ang - solar_zenith))
