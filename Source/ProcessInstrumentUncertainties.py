@@ -102,16 +102,16 @@ class Instrument:
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
-            cLin[sensor] = np.asarray(list(linear.data[1]))
+            cLin[sensor] = np.asarray(list(linear.columns['1']))
 
             stab = uncGrp.getDataset(sensor + "_STABDATA_CAL")
             stab.datasetToColumns()
-            cStab[sensor] = np.asarray(list(stab.data[1]))
+            cStab[sensor] = np.asarray(list(stab.columns['1']))
 
             radcal = uncGrp.getDataset(f"{sensor}_RADCAL_CAL")
             radcal.datasetToColumns()
-            Coeff[sensor] = np.asarray(list(radcal.data[2]))
-            Cal[sensor] = np.asarray(list(radcal.data[3]))
+            Coeff[sensor] = np.asarray(list(radcal.columns['2']))
+            Cal[sensor] = np.asarray(list(radcal.columns['3']))
 
             # if sensor == 'ES':
             #     pol = uncGrp.getDataset("ES_ANGDATA_UNCERTAINTY")
@@ -121,7 +121,7 @@ class Instrument:
             # TODO: temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
-            cPol[sensor] = np.asarray(list(pol.data[1]))
+            cPol[sensor] = np.asarray(list(pol.columns['1']))
 
             # temp uncertainties calculated at L1AQC
             Temp = uncGrp.getDataset(sensor + "_TEMPDATA_CAL")
@@ -892,14 +892,13 @@ class HyperOCR(Instrument):
             print('FRM Processing:', sensortype)
             # Read data
             grp = raw_grps[sensortype]
-            slice = raw_slices[sensortype]["LIGHT"]['data']
-            # dark_grp = raw_grps[sensortype]["DARK"]
-            dark_slice = raw_slices[sensortype]["DARK"]['data']
+            raw_data = np.asarray(list(raw_slices[sensortype]["LIGHT"]['data'].values())).transpose()
+            raw_dark = np.asarray(list(raw_slices[sensortype]["DARK"]['data'].values())).transpose()
 
             # read in data for FRM processing
             # raw_data = np.asarray(list(slice.values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
             # raw_data = np.asarray(list(slice['data'].values())).transpose()
-            raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
+            # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())  # dark subtracted signal
             int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
             int_time = np.mean(int_time)
 
@@ -907,8 +906,6 @@ class HyperOCR(Instrument):
             radcal_wvl = np.asarray(
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['1'][1:].tolist())
             radcal_cal = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['2']
-            # raw_dark = np.asarray(dark_grp.getDataset(sensortype).data.tolist())  # get raw_dark data
-            raw_dark = np.asarray(list(dark_slice.values())).transpose()
             S1 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['6']
             S2 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['8']
             # TODO: Check if multiplying by np.abs(S1/S2) is correct
@@ -1268,7 +1265,7 @@ class Trios(Instrument):
             slice = raw_slices[sensortype]
 
             # read data for L1B FRM processing
-            raw_data = np.asarray(list(slice.values()))  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
+            raw_data = np.asarray(list(slice['data'].values())).transpose()  # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
             DarkPixelStart = int(grp.attributes["DarkPixelStart"])
             DarkPixelStop = int(grp.attributes["DarkPixelStop"])
             int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
@@ -1468,9 +1465,9 @@ class Trios(Instrument):
                 solar_zenith = res_py6s['solar_zenith']
                 direct_ratio = res_py6s['direct_ratio']
 
-                sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
-                                                    np.asarray([0.05 for i in range(len(solar_zenith))]),
-                                                    "rand")  # TODO: get second opinion on zen unc in 6S
+                sample_sol_zen = cm.generate_sample(mDraws, solar_zenith, 0.05, "rand")
+                                                    # np.asarray([0.05 for i in range(len(solar_zenith))]),
+                                                    # TODO: get second opinion on zen unc in 6S
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
 
                 ind_closest_zen = np.argmin(np.abs(zenith_ang - solar_zenith))
