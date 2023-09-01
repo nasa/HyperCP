@@ -229,7 +229,7 @@ class ProcessL2:
 
 
     @staticmethod
-    def spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset, xDelta):
+    def spectralReflectance(node, sensor, timeObj, xSlice, F0, F0_unc, rhoScalar, rhoVec, waveSubset, xDelta):
         ''' The slices, stds, F0, rhoVec here are sensor-waveband specific '''
         esXSlice = xSlice['es']
         esXmedian = xSlice['esMedian']
@@ -410,6 +410,7 @@ class ProcessL2:
                 li = liXSlice[k][0]
                 lt = ltXSlice[k][0]
                 f0  = F0[k]
+                f0Delta = F0_unc[k]
 
                 esMedian = esXmedian[k][0]
                 liMedian = liXmedian[k][0]
@@ -427,8 +428,6 @@ class ProcessL2:
                     #Calculate the normalized water leaving radiance
                     nLw = rrs*f0
 
-                    f0Delta = 0.01  # placeholder
-
                     # nLw uncertainty; no provision for F0 uncertainty here yet...
                     nLwDelta = np.power(np.asarray(list(rrsDelta.values()))**2 + f0Delta**2, 0.5)  # f0 delta assumed 0.01
 
@@ -441,8 +440,6 @@ class ProcessL2:
                         #Calculate the normalized water leaving radiance
                         nLw = rrs*f0
 
-                        f0Delta = 0.01  # placeholder
-
                         # nLw uncertainty; no provision for F0 uncertainty here yet ...
                         nLwDelta = np.power(np.asarray(list(rrsDelta.values()))**2 + f0Delta**2, 0.5)
 
@@ -452,8 +449,6 @@ class ProcessL2:
 
                     #Calculate the normalized water leaving radiance
                     nLw = rrs*f0
-
-                    f0Delta = 0.01  # placeholder
 
                     # nLw uncertainty; no provision for F0 uncertainty here yet...
                     nLwDelta = np.power(np.asarray(list(rrsDelta.values()))**2 + f0Delta**2, 0.5)
@@ -1635,7 +1630,9 @@ class ProcessL2:
                                                              Rho_Uncertainty_Obj)
         # Calculate hyperspectral Coddingtion TSIS_1 hybrid F0 function
         # F0_hyper = ProcessL2.Thuillier(dateTag, wavelength)
-        F0_hyper, F0_raw, wv_raw = Utilities.TSIS_1(dateTag, wavelength)
+        F0_hyper, F0_unc, F0_raw, F0_unc_raw, wv_raw = Utilities.TSIS_1(dateTag, wavelength)
+        # Recycling _raw in TSIS_1 calls below prevents the dataset having to be reread
+
         if F0_hyper is None:
             msg = "No hyperspectral TSIS-1 F0. Aborting."
             print(msg)
@@ -1650,7 +1647,7 @@ class ProcessL2:
             wave_array = np.array(wave_list)
             # wavelength is now truncated to only valid wavebands for use in Zhang models
             waveSubsetMODIS = wave_array[:,1].tolist()
-            F0_MODIS, F0_raw, wv_raw = Utilities.TSIS_1(dateTag, MODISwavelength, F0_raw, wv_raw)
+            F0_MODIS,F0_MODIS_unc = Utilities.TSIS_1(dateTag, MODISwavelength, F0_raw, F0_unc_raw, wv_raw)[0:2]
         if ConfigFile.settings['bL2WeightVIIRSN'] or ConfigFile.settings['bL2WeightVIIRSJ']:
             VIIRSwavelength = Weight_RSR.VIIRSBands()
             wave_old = VIIRSwavelength.copy()
@@ -1658,7 +1655,7 @@ class ProcessL2:
             wave_array = np.array(wave_list)
             # wavelength is now truncated to only valid wavebands for use in Zhang models
             waveSubsetVIIRS = wave_array[:,1].tolist()
-            F0_VIIRS, F0_raw, wv_raw = Utilities.TSIS_1(dateTag, VIIRSwavelength, F0_raw, wv_raw)
+            F0_VIIRS, F0_VIIRS_unc = Utilities.TSIS_1(dateTag, VIIRSwavelength, F0_raw, F0_unc_raw, wv_raw)[0:2]
         if ConfigFile.settings['bL2WeightSentinel3A'] or ConfigFile.settings['bL2WeightSentinel3B']:
             Sentinel3wavelength = Weight_RSR.Sentinel3Bands()
             wave_old = Sentinel3wavelength.copy()
@@ -1666,7 +1663,7 @@ class ProcessL2:
             wave_array = np.array(wave_list)
             # wavelength is now truncated to only valid wavebands for use in Zhang models
             waveSubsetSentinel3 = wave_array[:,1].tolist()
-            F0_Sentinel3, F0_raw, wv_raw = Utilities.TSIS_1(dateTag, Sentinel3wavelength, F0_raw, wv_raw)
+            F0_Sentinel3, F0_Sentinel3_unc = Utilities.TSIS_1(dateTag, Sentinel3wavelength, F0_raw, F0_unc_raw, wv_raw)[0:2]
 
         # Build a slice object for (ir)radiances to be passed to spectralReflectance method
         # These slices are unique and independant of node data or earlier slices in the same node object
@@ -1684,7 +1681,7 @@ class ProcessL2:
         xSlice['esSTD'] = esStdSlice
         xSlice['liSTD'] = liStdSlice
         xSlice['ltSTD'] = ltStdSlice
-        F0 = F0_hyper
+        # F0 = F0_hyper
 
         # insert Uncertainties into analysis
         xDelta = {}
@@ -1699,6 +1696,9 @@ class ProcessL2:
                                stats, instrument_WB))
             xDelta.update(instrument.rrsHyperDeltaFRM(rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice))
         else:
+            '''NOTE: This should still estimate uncertainties for Factory regime,
+                partcularly for SeaBird which becomes Non-FRM Class regime. Even for TriOS,
+                some uncertainties should be estimated.'''
             xDelta = None
 
         # move uncertainties from xSlice to xDelta
@@ -1716,16 +1716,17 @@ class ProcessL2:
             ltUncSlice = xDelta["ltUnc"]
 
         # Populate the relevant fields in node
-        ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset, xDelta)
+        # ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, rhoScalar, rhoDelta, rhoVec, waveSubset, xDelta)
+        ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, F0_unc, rhoScalar, rhoVec, waveSubset, xDelta)
 
         # Apply residual NIR corrections
         # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
-            rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(node, sensor, F0)
+            rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(node, sensor, F0_hyper)
 
         # Satellites
         if ConfigFile.settings['bL2WeightMODISA'] or ConfigFile.settings['bL2WeightMODIST']:
-            F0 = F0_MODIS
+            # F0 = F0_MODIS
             rhoVecMODIS = None
 
             if ConfigFile.settings['bL2WeightMODISA']:
@@ -1754,7 +1755,7 @@ class ProcessL2:
                     xDelta['ltUnc'] = Weight_RSR.processMODISBands(ltUncSlice, sensor='A')
 
                 sensor = 'MODISA'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS, xDelta)
+                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_MODIS, F0_MODIS_unc, rhoScalar, rhoVecMODIS, waveSubsetMODIS, xDelta)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
@@ -1784,13 +1785,13 @@ class ProcessL2:
                     xDelta['ltUnc'] = Weight_RSR.processMODISBands(ltUncSlice, sensor='T')
 
                 sensor = 'MODIST'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS,  xDelta)
+                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_MODIS, F0_MODIS_unc, rhoScalar, rhoVecMODIS, waveSubsetMODIS,  xDelta)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
 
         if ConfigFile.settings['bL2WeightVIIRSN'] or ConfigFile.settings['bL2WeightVIIRSJ']:
-            F0 = F0_VIIRS
+            # F0 = F0_VIIRS
             rhoVecVIIRS = None
 
             if ConfigFile.settings['bL2WeightVIIRSN']:
@@ -1818,7 +1819,7 @@ class ProcessL2:
                     xDelta['ltUnc'] = Weight_RSR.processVIIRSBands(ltUncSlice, sensor='N')
 
                 sensor = 'VIIRSN'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS,  waveSubsetVIIRS,  xDelta)
+                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_VIIRS, F0_VIIRS_unc, rhoScalar, rhoVecVIIRS,  waveSubsetVIIRS,  xDelta)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
@@ -1848,13 +1849,13 @@ class ProcessL2:
                     xDelta['ltUnc'] = Weight_RSR.processVIIRSBands(ltUncSlice, sensor='N')
 
                 sensor = 'VIIRSJ'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS, waveSubsetVIIRS,  xDelta)
+                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_VIIRS, F0_VIIRS_unc, rhoScalar, rhoVecVIIRS, waveSubsetVIIRS,  xDelta)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
 
         if ConfigFile.settings['bL2WeightSentinel3A']:
-            F0 = F0_Sentinel3
+            # F0 = F0_Sentinel3
             rhoVecSentinel3 = None
 
             if ConfigFile.settings['bL2WeightSentinel3A']:
@@ -1882,7 +1883,7 @@ class ProcessL2:
                     xDelta['ltUnc'] = Weight_RSR.processSentinel3Bands(ltUncSlice, sensor='A')
 
                 sensor = 'Sentinel3A'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3,  xDelta)
+                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_Sentinel3, F0_Sentinel3_unc, rhoScalar, rhoVecSentinel3, waveSubsetSentinel3,  xDelta)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
@@ -1912,7 +1913,7 @@ class ProcessL2:
                     xDelta['ltUnc'] = Weight_RSR.processSentinel3Bands(ltUncSlice, sensor='B')
 
                 sensor = 'Sentinel3B'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3,  xDelta)
+                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_Sentinel3, F0_Sentinel3_unc, rhoScalar, rhoVecSentinel3, waveSubsetSentinel3,  xDelta)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
