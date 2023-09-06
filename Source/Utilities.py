@@ -95,7 +95,7 @@ class Utilities:
 
 
     @staticmethod
-    def TSIS_1(dateTag, wavelength, F0_raw=None, wv_raw=None):
+    def TSIS_1(dateTag, wavelength, F0_raw=None, F0_unc_raw=None, wv_raw=None):
         def dop(year):
             # day of perihelion
             years = list(range(2001,2031))
@@ -106,6 +106,7 @@ class Utilities:
             return result
 
         if F0_raw is None:
+            # Only read this if we haven't already read it in
             fp = 'Data/hybrid_reference_spectrum_p1nm_resolution_c2020-09-21_with_unc.nc'
             # fp = 'Data/Thuillier_F0.sb'
             # print("SB_support.readSB: " + fp)
@@ -123,6 +124,9 @@ class Utilities:
                     if ds.id == 'SSI':
                         F0_raw = ds.data        #  W  m^-2 nm^-1
                         F0_raw = F0_raw * 100 # uW cm^-2 nm^-1
+                    if ds.id == 'SSI_UNC':
+                        F0_unc_raw = ds.data        #  W  m^-2 nm^-1
+                        F0_unc_raw = F0_unc_raw * 100 # uW cm^-2 nm^-1
                     if ds.id == 'Vacuum Wavelength':
                         wv_raw =ds.data
 
@@ -138,17 +142,20 @@ class Utilities:
         # Smooth F0 to 10 nm windows centered on data wavelengths
         avg_f0 = np.empty(len(wavelength))
         avg_f0[:] = np.nan
+        avg_f0_unc = avg_f0.copy()
         for i in range(len(wavelength)):
             idx = np.where((wv_raw >= wavelength[i]-5.) & ( wv_raw <= wavelength[i]+5.))
             if idx:
                 avg_f0[i] = np.mean(F0_fs[idx])
+                avg_f0_unc[i] = np.mean(F0_unc_raw[idx])
         # F0 = sp.interpolate.interp1d(wv_raw, F0_fs)(wavelength)
 
         # Use the strings for the F0 dict
         wavelengthStr = [str(wave) for wave in wavelength]
         F0 = collections.OrderedDict(zip(wavelengthStr, avg_f0))
+        F0_unc = collections.OrderedDict(zip(wavelengthStr, avg_f0_unc))
 
-        return F0, F0_raw, wv_raw
+        return F0, F0_unc, F0_raw, F0_unc_raw, wv_raw
 
     @staticmethod
     def Thuillier(dateTag, wavelength):
@@ -940,7 +947,7 @@ class Utilities:
                 group.datasets[ds].datasetToColumns()
         else:
             for ds in group.datasets:
-                group.datasets[ds].datasetToColumns()    
+                group.datasets[ds].datasetToColumns()
 
         msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
         print(msg)
