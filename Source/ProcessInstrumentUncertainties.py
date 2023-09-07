@@ -68,6 +68,14 @@ class Instrument:
         # interpolate to common wavebands
         for stype in types:
             # get sensor specific wavebands and pop from output
+            # _, output[stype]['ave_Light'] = self.interp_common_wvls(
+            #                                  output[stype]['std_Signal'],
+            #                                  np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+            #                                  newWaveBands)
+            # _, output[stype]['std_Light'] = self.interp_common_wvls(
+            #                                  output[stype]['std_Signal'],
+            #                                  np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+            #                                  newWaveBands)
             _, output[stype]['std_Signal'] = self.interp_common_wvls(
                                              output[stype]['std_Signal'],
                                              np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
@@ -171,11 +179,6 @@ class Instrument:
     @staticmethod
     def rrsHyperDeltaFRM(rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice):
         # organise data
-        es = np.asarray([val[0] for val in list(xSlice["es"].values())],
-                        dtype=np.float64)  # list comprehension needed as is list of lists
-        li = np.asarray([val[0] for val in list(xSlice["li"].values())], dtype=np.float64)
-        lt = np.asarray([val[0] for val in list(xSlice["lt"].values())], dtype=np.float64)
-
         esSampleXSlice = xSlice['esSample']
         liSampleXSlice = xSlice['liSample']
         ltSampleXSlice = xSlice['ltSample']
@@ -193,10 +196,6 @@ class Instrument:
         # get sample for rho
         rhoSample = cm.generate_sample(mdraws, rho, rhoDelta*rho, "syst")
 
-        # get AOPs for band convolution and relative uncertainties
-        lw = lt - (rho*li)
-        rrs = lw/es
-
         # initialise lists to store uncertainties per replicate
 
         esSample = np.asarray([[i[0] for i in k.values()] for k in esSampleXSlice])  # recover original shape of samples
@@ -211,89 +210,71 @@ class Instrument:
         output = {}
 
         if ConfigFile.settings["bL2WeightSentinel3A"]:
-            lwBand = Propagate.band_Conv_Sensor_S3A(lw, np.array(waveSubset))
-            rrsBand = Propagate.band_Conv_Sensor_S3A(rrs, np.array(waveSubset))
-
             sample_lw_S3A = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3A, [sample_Lw, sample_wavelengths])
             sample_rrs_S3A = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3A, [sample_Rrs, sample_wavelengths])
 
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_S3A)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_S3A)
 
-            output["lwDelta_Sentinel3A"] = lwDeltaBand  # np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            output["rrsDelta_Sentinel3A"] = rrsDeltaBand  # np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_Sentinel3A"] = lwDeltaBand
+            output["rrsDelta_Sentinel3A"] = rrsDeltaBand
 
         if ConfigFile.settings["bL2WeightSentinel3B"]:
-            lwBand = Propagate.band_Conv_Sensor_S3B(lw, np.array(waveSubset))
-            rrsBand = Propagate.band_Conv_Sensor_S3B(rrs, np.array(waveSubset))
-
             sample_lw_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B, [sample_Lw, sample_wavelengths])
             sample_rrs_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B, [sample_Rrs, sample_wavelengths])
 
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_S3B)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_S3B)
 
-            output["lwDelta_Sentinel3B"] = lwDeltaBand  # np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            output["rrsDelta_Sentinel3B"] = rrsDeltaBand  # np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_Sentinel3B"] = lwDeltaBand
+            output["rrsDelta_Sentinel3B"] = rrsDeltaBand
 
         if ConfigFile.settings['bL2WeightMODISA']:
-            lwBand = Propagate.band_Conv_Sensor_AQUA(lw, np.array(waveSubset))
-            rrsBand = Propagate.band_Conv_Sensor_AQUA(rrs, np.array(waveSubset))
-
             sample_lw_AQUA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_AQUA, [sample_Lw, sample_wavelengths])
             sample_rrs_AQUA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_AQUA, [sample_Rrs, sample_wavelengths])
 
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_AQUA)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_AQUA)
 
-            output["lwDelta_MODISA"] = lwDeltaBand  # np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            output["rrsDelta_MODISA"] = rrsDeltaBand  # np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_MODISA"] = lwDeltaBand
+            output["rrsDelta_MODISA"] = rrsDeltaBand
 
         if ConfigFile.settings['bL2WeightMODIST']:
-            lwBand = Propagate.band_Conv_Sensor_TERRA(lw, np.array(waveSubset))
-            rrsBand = Propagate.band_Conv_Sensor_TERRA(rrs, np.array(waveSubset))
-
             sample_lw_TERRA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_TERRA, [sample_Lw, sample_wavelengths])
             sample_rrs_TERRA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_TERRA, [sample_Rrs, sample_wavelengths])
 
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_TERRA)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_TERRA)
 
-            output["lwDelta_MODIST"] = lwDeltaBand  # np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            output["rrsDelta_MODIST"] = rrsDeltaBand  # np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_MODIST"] = lwDeltaBand
+            output["rrsDelta_MODIST"] = rrsDeltaBand
 
         if ConfigFile.settings['bL2WeightVIIRSN']:
-            lwBand = Propagate.band_Conv_Sensor_NOAA(lw, np.array(waveSubset))
-            rrsBand = Propagate.band_Conv_Sensor_NOAA(rrs, np.array(waveSubset))
-
             sample_lw_NOAA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_NOAA, [sample_Lw, sample_wavelengths])
             sample_rrs_NOAA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_NOAA, [sample_Rrs, sample_wavelengths])
 
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_NOAA)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_NOAA)
 
-            output["lwDelta_VIIRSN"] = lwDeltaBand  # np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            output["rrsDelta_VIIRSN"] = rrsDeltaBand  # np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_VIIRSN"] = lwDeltaBand
+            output["rrsDelta_VIIRSN"] = rrsDeltaBand
 
         if ConfigFile.settings['bL2WeightVIIRSJ']:
             # currently the same as VIIRSN due to the lack of NOAA-21 rsr in pyspectral
-            lwBand = Propagate.band_Conv_Sensor_NOAA(lw, np.array(waveSubset))
-            rrsBand = Propagate.band_Conv_Sensor_NOAA(rrs, np.array(waveSubset))
-
             sample_lw_NOAAJ = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_NOAA, [sample_Lw, sample_wavelengths])
             sample_rrs_NOAAJ = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_NOAA, [sample_Rrs, sample_wavelengths])
 
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_NOAAJ)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_NOAAJ)
 
-            output["lwDelta_VIIRSJ"] = lwDeltaBand  # np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            output["rrsDelta_VIIRSJ"] = rrsDeltaBand #  np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_VIIRSJ"] = lwDeltaBand
+            output["rrsDelta_VIIRSJ"] = rrsDeltaBand
 
         lwDelta = Propagate_L2_FRM.process_samples(None, sample_Lw)
         rrsDelta = Propagate_L2_FRM.process_samples(None, sample_Rrs)
 
-        output["lwDelta"] = lwDelta  # np.abs((lwDelta*1e10)/(lw*1e10))  # multiply by large number to reduce round off error
-        output["rrsDelta"] = rrsDelta  # np.abs((rrsDelta*1e10)/(rrs*1e10))
+        output["lwDelta"] = lwDelta  # Multiply by large number to reduce round off error
+        output["rrsDelta"] = rrsDelta
 
         return output
 
