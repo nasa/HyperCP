@@ -153,16 +153,15 @@ class Instrument:
                        np.array(cPol['LI']), np.array(cPol['LT']), np.array(cPol['ES'])]
 
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
-        ES_unc, LI_unc, LT_unc, ES_rel, LI_rel, LT_rel = PropagateL1B.propagate_Instrument_Uncertainty(mean_values,
-                                                                                                       uncertainty)
+        ES_unc, LI_unc, LT_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)  # , ES_rel, LI_rel, LT_rel
 
         # return uncertainties as dictionary to be appended to xSlice
         data_wvl = np.asarray(list(stats['ES']['std_Signal'].keys()))  # get wvls
         return dict(
-            esUnc=dict(zip(data_wvl, [[i] for i in ES_rel])),
+            esUnc=dict(zip(data_wvl, [[i] for i in ES_unc])),
             # Li_rel will be changed to unc but still be relative uncertainty
-            liUnc=dict(zip(data_wvl, [[j] for j in LI_rel])),
-            ltUnc=dict(zip(data_wvl, [[k] for k in LT_rel]))
+            liUnc=dict(zip(data_wvl, [[j] for j in LI_unc])),
+            ltUnc=dict(zip(data_wvl, [[k] for k in LT_unc]))
         )
 
     def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
@@ -221,8 +220,8 @@ class Instrument:
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_S3A)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_S3A)
 
-            output["lwDelta_Sentinel3A"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            output["rrsDelta_Sentinel3A"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_Sentinel3A"] = lwDeltaBand  # np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_Sentinel3A"] = rrsDeltaBand  # np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
 
         if ConfigFile.settings["bL2WeightSentinel3B"]:
             lwBand = Propagate.band_Conv_Sensor_S3B(lw, np.array(waveSubset))
@@ -234,8 +233,8 @@ class Instrument:
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_S3B)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_S3B)
 
-            output["lwDelta_Sentinel3B"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            output["rrsDelta_Sentinel3B"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_Sentinel3B"] = lwDeltaBand  # np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_Sentinel3B"] = rrsDeltaBand  # np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
 
         if ConfigFile.settings['bL2WeightMODISA']:
             lwBand = Propagate.band_Conv_Sensor_AQUA(lw, np.array(waveSubset))
@@ -247,8 +246,8 @@ class Instrument:
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_AQUA)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_AQUA)
 
-            output["lwDelta_MODISA"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            output["rrsDelta_MODISA"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_MODISA"] = lwDeltaBand  # np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_MODISA"] = rrsDeltaBand  # np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
 
         if ConfigFile.settings['bL2WeightMODIST']:
             lwBand = Propagate.band_Conv_Sensor_TERRA(lw, np.array(waveSubset))
@@ -260,8 +259,8 @@ class Instrument:
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_TERRA)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_TERRA)
 
-            output["lwDelta_MODIST"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            output["rrsDelta_MODIST"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_MODIST"] = lwDeltaBand  # np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_MODIST"] = rrsDeltaBand  # np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
 
         if ConfigFile.settings['bL2WeightVIIRSN']:
             lwBand = Propagate.band_Conv_Sensor_NOAA(lw, np.array(waveSubset))
@@ -273,8 +272,8 @@ class Instrument:
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_NOAA)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_NOAA)
 
-            output["lwDelta_VIIRSN"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            output["rrsDelta_VIIRSN"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_VIIRSN"] = lwDeltaBand  # np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_VIIRSN"] = rrsDeltaBand  # np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
 
         if ConfigFile.settings['bL2WeightVIIRSJ']:
             # currently the same as VIIRSN due to the lack of NOAA-21 rsr in pyspectral
@@ -287,14 +286,14 @@ class Instrument:
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_NOAAJ)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_NOAAJ)
 
-            output["lwDelta_VIIRSJ"] = np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
-            output["rrsDelta_VIIRSJ"] = np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
+            output["lwDelta_VIIRSJ"] = lwDeltaBand  # np.abs((lwDeltaBand*1e10)/(lwBand*1e10))
+            output["rrsDelta_VIIRSJ"] = rrsDeltaBand #  np.abs((rrsDeltaBand*1e10)/(rrsBand*1e10))
 
         lwDelta = Propagate_L2_FRM.process_samples(None, sample_Lw)
         rrsDelta = Propagate_L2_FRM.process_samples(None, sample_Rrs)
 
-        output["lwDelta"] = np.abs((lwDelta*1e10)/(lw*1e10))  # multiply by large number to reduce round off error
-        output["rrsDelta"] = np.abs((rrsDelta*1e10)/(rrs*1e10))
+        output["lwDelta"] = lwDelta  # np.abs((lwDelta*1e10)/(lw*1e10))  # multiply by large number to reduce round off error
+        output["rrsDelta"] = rrsDelta  # np.abs((rrsDelta*1e10)/(rrs*1e10))
 
         return output
 
@@ -413,7 +412,7 @@ class Instrument:
                             LiCal/100, LtCal/100, LiStab, LtStab, LiNL, LtNL,
                             LiStray/100, LtStray/100, LiTemp, LtTemp, LiPol, LtPol]
 
-        lwDelta, lwAbsUnc, lw_vals = Propagate_L2.Propagate_Lw(lw_means, lw_uncertainties)
+        lwAbsUnc, lw_vals = Propagate_L2.Propagate_Lw(lw_means, lw_uncertainties)
 
         means = [Lt, rho, Li, Es,
                  ones, ones, ones,
@@ -433,7 +432,7 @@ class Instrument:
                          EsStray/100, LiStray/100, LtStray/100,
                          EsTemp, LiTemp, LtTemp,
                          LiPol, LtPol, EsCos]
-        rrsDelta, rrsAbsUnc, rrs_vals = Propagate_L2.Propagate_RRS(means, uncertainties)
+        rrsAbsUnc, rrs_vals = Propagate_L2.Propagate_RRS(means, uncertainties)
 
         ## BAND CONVOLUTION
         # band convolution of uncertainties is done here to include uncertainty contribution of band convolution process
@@ -471,7 +470,7 @@ class Instrument:
             output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
                                                                            [rrsAbsUnc, None], "VIIRS")
             pass
-        output.update({"lwDelta": lwDelta, "rrsDelta": rrsDelta})
+        output.update({"lwDelta": lwAbsUnc, "rrsDelta": rrsAbsUnc})
 
         return output
 
@@ -1120,10 +1119,10 @@ class HyperOCR(Instrument):
 
             # Remove wvl without calibration from the dataset and make uncertainties relative
             filtered_mesure = FRM_mesure[ind_nocal == False]
-            rel_unc = np.power(np.power(unc[ind_nocal == False]*1e10, 2)/np.power(filtered_mesure*1e10, 2), 0.5)
+            # rel_unc = np.power(np.power(unc[ind_nocal == False]*1e10, 2)/np.power(filtered_mesure*1e10, 2), 0.5)
 
             output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
-            output[f"{sensortype.lower()}Unc"] = rel_unc  # relative uncertainty
+            output[f"{sensortype.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
             output[f"{sensortype.lower()}Sample"] = sample[:, ind_nocal == False]  # samples keep raw
 
             # TODO: interp to common wavebands to the lowest sized array
@@ -1496,11 +1495,11 @@ class Trios(Instrument):
 
             # Remove wvl without calibration from the dataset and make uncertainties relative
             filtered_mesure = FRM_mesure[ind_nocal == False]
-            filtered_unc = np.power(np.power(unc[ind_nocal == False]*1e10, 2)/np.power(filtered_mesure*1e10, 2), 0.5)
+            # filtered_unc = np.power(np.power(unc[ind_nocal == False]*1e10, 2)/np.power(filtered_mesure*1e10, 2), 0.5)
 
             output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
             output[
-                f"{sensortype.lower()}Unc"] = filtered_unc  # dict(zip(str_wvl[self.ind_nocal==False], filtered_unc))  # unc in dict with wavelengths
+                f"{sensortype.lower()}Unc"] = unc[ind_nocal == False]  # dict(zip(str_wvl[self.ind_nocal==False], filtered_unc))  # unc in dict with wavelengths
             output[f"{sensortype.lower()}Sample"] = sample[:, ind_nocal == False]  # samples keep raw
 
         for sensortype in ['ES', 'LI', 'LT']:

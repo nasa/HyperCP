@@ -60,7 +60,7 @@ class Propagate:
         ESLin, LILin, LTLin, ESStray, LIStray, LTStray, EST, LIT, LTT, LIPol, LTPol, ESCos
         :Return: absolute uncertainty [es, li, lt] relative uncertainty [es, li, lt]
         """
-        sensor = self.instruments(*mean_vals)
+        # sensor = self.instruments(*mean_vals)
 
         if 'RAD' not in self.corr_matrices:
             msg = "could not find correlation matrix for instrument uncertainties"
@@ -75,24 +75,24 @@ class Propagate:
 
         # separate uncertainties and sensor values from their lists - for clarity
         Es_unc, Li_unc, Lt_unc = [unc[i] for i in range(3)]
-        es, li, lt = [sensor[i] for i in range(3)]
+        # es, li, lt = [sensor[i] for i in range(3)]
 
-        Es_rel = []; Li_rel = []; Lt_rel = []
-        for i in range(len(lt)):
-            if es[i] == 0:
-                Es_rel.append(Es_unc[i])
-            else:
-                Es_rel.append((Es_unc[i] * 1e10) / (es[i] * 1e10))
-            if li[i] == 0:
-                Li_rel.append(Li_unc[i])
-            else:
-                Li_rel.append((Li_unc[i] * 1e10) / (li[i] * 1e10))
-            if lt[i] == 0:
-                Lt_rel.append(Lt_unc[i])
-            else:
-                Lt_rel.append((Lt_unc[i] * 1e10) / (lt[i] * 1e10))
+        # Es_rel = []; Li_rel = []; Lt_rel = []
+        # for i in range(len(lt)):
+        #     if es[i] == 0:
+        #         Es_rel.append(Es_unc[i])
+        #     else:
+        #         Es_rel.append((Es_unc[i] * 1e10) / (es[i] * 1e10))
+        #     if li[i] == 0:
+        #         Li_rel.append(Li_unc[i])
+        #     else:
+        #         Li_rel.append((Li_unc[i] * 1e10) / (li[i] * 1e10))
+        #     if lt[i] == 0:
+        #         Lt_rel.append(Lt_unc[i])
+        #     else:
+        #         Lt_rel.append((Lt_unc[i] * 1e10) / (lt[i] * 1e10))
 
-        return Es_unc, Li_unc, Lt_unc, Es_rel, Li_rel, Lt_rel
+        return Es_unc, Li_unc, Lt_unc  # , Es_rel, Li_rel, Lt_rel
 
     def Propagate_Lw(self, varlist, ulist):
         """ will be replaced in the near future """
@@ -116,9 +116,9 @@ class Propagate:
 
         lw = self.Lw(*varlist)
         unc = self.MCP.propagate_random(self.Lw, varlist, ulist, corr_between=corr_matrix)
-        return (unc * 1e10) / (lw * 1e10), unc, lw
+        return unc, lw  # (unc * 1e10) / (lw * 1e10),
 
-    def Propagate_RRS(self, mean_vals: list, uncertainties: list) -> dict:
+    def Propagate_RRS(self, mean_vals: list, uncertainties: list):
         """lt, rhoVec, li, es, c1, c2, c3, clin1, clin2, clin3, cstab1, cstab2, cstab3, cstray1, cstray2, cstray3,
                 cT1, cT2, cT3, cpol1, cpol2, ccos
             will be replaced in the near future - for pixel by pixel method """
@@ -151,12 +151,12 @@ class Propagate:
 
         rrs = np.array(self.RRS(*mean_vals))
         unc = self.MCP.propagate_standard(self.RRS, mean_vals, uncertainties, corr_between=corr_matrix, corr_x=corr_list)
-        return (unc * 1E9) / (rrs * 1E9), unc, rrs  # replace with just 'unc' for absolute uncertainty
+        return unc, rrs  #  (unc * 1E9) / (rrs * 1E9),  replace with just 'unc' for absolute uncertainty
 
     def band_Conv_Uncertainty(self, mean_vals, uncertainties, platform):
         """Hyper_Rrs, wvl, Band cetral wavelengths, Band width - only works for sentinel 3A - OLCI
             :return: relative Rrs uncertainty per spectral band"""
-        rad_band = self.band_Conv_Sensor(*mean_vals)
+        # rad_band = self.band_Conv_Sensor(*mean_vals)
         if platform.upper() == "S3A" or platform.lower().rstrip().replace('-','') == "sentinel3a":
             func = self.band_Conv_Sensor_S3A
         elif platform.upper() == "S3B" or platform.lower().rstrip().replace('-','') == "sentinel3b":
@@ -169,9 +169,10 @@ class Propagate:
             func = self.band_Conv_Sensor_NOAA
         else:
             msg = "sensor not supported"
+            print(msg)
             return False
-        return (self.MCP.propagate_standard(func, mean_vals,
-                                            uncertainties, corr_x=['syst', None]) * 1e10) / (rad_band * 1e10)
+        return self.MCP.propagate_standard(func, mean_vals, uncertainties, corr_x=['syst', None])
+        # / (rad_band * 1e10)
 
     # Rho propagation methods
     def M99_Rho_Uncertainty(self, mean_vals, uncertainties):
