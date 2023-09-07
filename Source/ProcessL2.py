@@ -350,6 +350,7 @@ class ProcessL2:
         liUNC = {}
         ltUNC = {}
 
+        # TODO: This needs to be updated for SeaBird Factory path (i.e. Non-FRM Class Based)
         if ConfigFile.settings['bL1bCal'] >= 2:
             esUNC = xUNC['esUnc']  # should already be convolved to hyperspec
             liUNC = xUNC['liUnc']
@@ -430,29 +431,23 @@ class ProcessL2:
                     lw = (lt - (rhoScalar * li))
                     rrs = lw / es
 
-                    #Calculate the normalized water leaving radiance
-                    nLw = rrs*f0
-
                 elif ZhangRho:
                     # Only populate the valid wavelengths
                     if float(k) in waveSubset:
                         lw = (lt - (rhoVec[k] * li))
                         rrs = lw / es
 
-                        #Calculate the normalized water leaving radiance
-                        nLw = rrs*f0
-
                 else:
                     lw = (lt - (rhoScalar * li))
                     rrs = lw / es
 
-                    #Calculate the normalized water leaving radiance
-                    nLw = rrs*f0
+                #Calculate the normalized water leaving radiance
+                nLw = rrs*f0
 
                 # nLw uncertainty;
                 ''' NOTE: Unclear whether this approach conforms to the uncertainty approach used elsewhere (DAA)'''
                 # nLwUNC = np.power(np.asarray(list(rrsUNC.values()))**2 + f0UNC**2, 0.5)
-                nLwUNC[k] = np.power(rrsUNC[k]**2 + f0UNC**2, 0.5)
+                nLwUNC[k] = np.power((rrsUNC[k]*f0)**2 + f0UNC**2, 0.5)
 
                 newESData.columns[k].append(es)
                 newLIData.columns[k].append(li)
@@ -1698,8 +1693,7 @@ class ProcessL2:
             xUNC.update(instrument.rrsHyperUNCFRM(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
         else:
             '''NOTE: This should still estimate uncertainties for Factory regime,
-                partcularly for SeaBird which becomes Non-FRM Class regime. Even for TriOS,
-                some uncertainties should be estimated.'''
+                partcularly for SeaBird which becomes Non-FRM Class regime..'''
             xUNC = None
 
         # move uncertainties from xSlice to xUNC
