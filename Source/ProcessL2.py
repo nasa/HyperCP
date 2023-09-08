@@ -480,9 +480,15 @@ class ProcessL2:
                     newRrsUNCData.columns[k].append(rrsUNC[k])
                     # newnLwUNCData.columns[k].append(nLwUNC)
                     newnLwUNCData.columns[k].append(nLwUNC[k])
-                    newESUNCData.columns[k].append(esUNC[k][0])
-                    newLIUNCData.columns[k].append(liUNC[k][0])
-                    newLTUNCData.columns[k].append(ltUNC[k][0])
+                    # if ConfigFile.settings['bL1bCal'] ==1 and ConfigFile.settings['SensorType'].lower == 'trios':
+                    if ConfigFile.settings['bL1bCal'] ==1: # NOTE: Revert to line above once SeaBird Factory is fixed
+                        newESUNCData.columns[k].append(esUNC[k])
+                        newLIUNCData.columns[k].append(liUNC[k])
+                        newLTUNCData.columns[k].append(ltUNC[k])
+                    else:
+                        newESUNCData.columns[k].append(esUNC[k][0])
+                        newLIUNCData.columns[k].append(liUNC[k][0])
+                        newLTUNCData.columns[k].append(ltUNC[k][0])
 
                     if sensor == 'HYPER':
                         if ZhangRho:
