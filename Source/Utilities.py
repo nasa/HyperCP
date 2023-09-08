@@ -960,8 +960,7 @@ class Utilities:
 
         dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
-        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
-        # and build on that (HyperInSPACE/Plots/etc...)
+
         if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
             outDir = dirPath
 
@@ -971,99 +970,127 @@ class Utilities:
         if not os.path.exists(plotDir):
             os.makedirs(plotDir)
 
+        # dataDelta in this case can be STD (for TriOS Factory) or UNC (otherwise)
         dataDelta = None
-        ''' Note: If only one spectrum is left in a given ensemble, deltas will
+        ''' Note: If only one spectrum is left in a given ensemble, STD will
         be zero for Es, Li, and Lt.'''
+        if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+            suffix = 'std'
+            triosFactory = 1
+        else:
+            suffix = 'unc'
+            triosFactory = 0
 
-        if rType=='Rrs':
+        # In the case of reflectances, only use _unc. There are no _std, because reflectances are calculated
+        # from the average Lw and Es values within the ensembles
+        if rType=='Rrs' or rType=='nLw':
             print('Plotting Rrs')
             group = root.getGroup("REFLECTANCE")
             Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_HYPER_unc')
+                if not triosFactory:
+                    dataDelta = group.getDataset(f'{rType}_HYPER_unc')
+                else:
+                    dataDelta = Data*0
             plotRange = [340, 800]
             if ConfigFile.settings['bL2WeightMODISA']:
                 Data_MODISA = group.getDataset(f'{rType}_MODISA')
                 if plotDelta:
-                    dataDelta_MODISA = group.getDataset(f'{rType}_MODISA_unc')
+                    if not triosFactory:
+                        dataDelta_MODISA = group.getDataset(f'{rType}_MODISA_unc')
+                    else:
+                        dataDelta_MODISA = Data*0
+
             if ConfigFile.settings['bL2WeightMODIST']:
                 Data_MODIST = group.getDataset(f'{rType}_MODIST')
                 if plotDelta:
-                    dataDelta_MODIST = group.getDataset(f'{rType}_MODIST_unc')
+                    if not triosFactory:
+                        dataDelta_MODIST = group.getDataset(f'{rType}_MODIST_unc')
+                    else:
+                        dataDelta_MODIST = Data*0
             if ConfigFile.settings['bL2WeightVIIRSN']:
                 Data_VIIRSN = group.getDataset(f'{rType}_VIIRSN')
                 if plotDelta:
-                    dataDelta_VIIRSN = group.getDataset(f'{rType}_VIIRSN_unc')
+                    if not triosFactory:
+                        dataDelta_VIIRSN = group.getDataset(f'{rType}_VIIRSN_unc')
+                    else:
+                        dataDelta_VIIRSN = Data*0
             if ConfigFile.settings['bL2WeightVIIRSJ']:
                 Data_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ')
                 if plotDelta:
-                    dataDelta_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ_unc')
+                    if not triosFactory:
+                        dataDelta_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ_unc')
+                    else:
+                        dataDelta_VIIRSJ = Data*0
             if ConfigFile.settings['bL2WeightSentinel3A']:
                 Data_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A')
                 if plotDelta:
-                    dataDelta_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A_unc')
+                    if not triosFactory:
+                        dataDelta_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A_unc')
+                    else:
+                        dataDelta_Sentinel3A = Data*0
             if ConfigFile.settings['bL2WeightSentinel3B']:
                 Data_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B')
                 if plotDelta:
-                    dataDelta_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B_unc')
+                    if not triosFactory:
+                        dataDelta_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B_unc')
+                    else:
+                        dataDelta_Sentinel3B = Data*0
 
-        if rType=='nLw':
-            print('Plotting nLw')
-            group = root.getGroup("REFLECTANCE")
-            Data = group.getDataset(f'{rType}_HYPER')
-            if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_HYPER_unc')
-            plotRange = [340, 800]
-            if ConfigFile.settings['bL2WeightMODISA']:
-                Data_MODISA = group.getDataset(f'{rType}_MODISA')
-                if plotDelta:
-                    dataDelta_MODISA = group.getDataset(f'{rType}_MODISA_unc')
-            if ConfigFile.settings['bL2WeightMODIST']:
-                Data_MODIST = group.getDataset(f'{rType}_MODIST')
-                if plotDelta:
-                    dataDelta_MODIST = group.getDataset(f'{rType}_MODIST_unc')
-            if ConfigFile.settings['bL2WeightVIIRSN']:
-                Data_VIIRSN = group.getDataset(f'{rType}_VIIRSN')
-                if plotDelta:
-                    dataDelta_VIIRSN = group.getDataset(f'{rType}_VIIRSN_unc')
-            if ConfigFile.settings['bL2WeightVIIRSJ']:
-                Data_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ')
-                if plotDelta:
-                    dataDelta_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ_unc')
-            if ConfigFile.settings['bL2WeightSentinel3A']:
-                Data_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A')
-                if plotDelta:
-                    dataDelta_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A_unc')
-            if ConfigFile.settings['bL2WeightSentinel3B']:
-                Data_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B')
-                if plotDelta:
-                    dataDelta_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B_unc')
+        # if rType=='nLw':
+        #     print('Plotting nLw')
+        #     group = root.getGroup("REFLECTANCE")
+        #     Data = group.getDataset(f'{rType}_HYPER')
+        #     if plotDelta:
+        #         dataDelta = group.getDataset(f'{rType}_HYPER_unc')
+        #     plotRange = [340, 800]
+        #     if ConfigFile.settings['bL2WeightMODISA']:
+        #         Data_MODISA = group.getDataset(f'{rType}_MODISA')
+        #         if plotDelta:
+        #             dataDelta_MODISA = group.getDataset(f'{rType}_MODISA_unc')
+        #     if ConfigFile.settings['bL2WeightMODIST']:
+        #         Data_MODIST = group.getDataset(f'{rType}_MODIST')
+        #         if plotDelta:
+        #             dataDelta_MODIST = group.getDataset(f'{rType}_MODIST_unc')
+        #     if ConfigFile.settings['bL2WeightVIIRSN']:
+        #         Data_VIIRSN = group.getDataset(f'{rType}_VIIRSN')
+        #         if plotDelta:
+        #             dataDelta_VIIRSN = group.getDataset(f'{rType}_VIIRSN_unc')
+        #     if ConfigFile.settings['bL2WeightVIIRSJ']:
+        #         Data_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ')
+        #         if plotDelta:
+        #             dataDelta_VIIRSJ = group.getDataset(f'{rType}_VIIRSJ_unc')
+        #     if ConfigFile.settings['bL2WeightSentinel3A']:
+        #         Data_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A')
+        #         if plotDelta:
+        #             dataDelta_Sentinel3A = group.getDataset(f'{rType}_Sentinel3A_unc')
+        #     if ConfigFile.settings['bL2WeightSentinel3B']:
+        #         Data_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B')
+        #         if plotDelta:
+        #             dataDelta_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B_unc')
 
-        ''' Could include satellite convolved (ir)radiances in the future '''
-        if rType=='ES':
-            print('Plotting Es')
-            group = root.getGroup("IRRADIANCE")
-            Data = group.getDataset(f'{rType}_HYPER')
-            if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_HYPER_sd')
-            plotRange = [305, 1140]
+        else:
+            ''' Could include satellite convolved (ir)radiances in the future '''
+            if rType=='ES':
+                print('Plotting Es')
+                group = root.getGroup("IRRADIANCE")
+                Data = group.getDataset(f'{rType}_HYPER')
 
-        if rType=='LI':
-            print('Plotting Li')
-            group = root.getGroup("RADIANCE")
-            Data = group.getDataset(f'{rType}_HYPER')
-            if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_HYPER_sd')
-            plotRange = [305, 1140]
+            if rType=='LI':
+                print('Plotting Li')
+                group = root.getGroup("RADIANCE")
+                Data = group.getDataset(f'{rType}_HYPER')
 
-        if rType=='LT':
-            print('Plotting Lt')
-            group = root.getGroup("RADIANCE")
-            Data = group.getDataset(f'{rType}_HYPER')
-            lwData = group.getDataset(f'LW_HYPER')
+            if rType=='LT':
+                print('Plotting Lt')
+                group = root.getGroup("RADIANCE")
+                Data = group.getDataset(f'{rType}_HYPER')
+                lwData = group.getDataset(f'LW_HYPER')
+                if plotDelta:
+                    lwDataDelta = group.getDataset(f'LW_HYPER_{suffix}')
+
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_HYPER_sd')
-                # lwDataDelta = group.getDataset(f'LW_HYPER_sd')
+                dataDelta = group.getDataset(f'{rType}_HYPER_{suffix}')
             plotRange = [305, 1140]
 
         font = {'family': 'serif',
@@ -1160,11 +1187,11 @@ class Utilities:
             # Add Lw to Lt plots
             if rType=='LT':
                 yLw = []
-                # dyLw = []
+                dyLw = []
                 for k in xLw:
                     yLw.append(lwData.data[k][i])
-                    # if plotDelta:
-                    #     dy.append(dataDelta.data[k][i])
+                    if plotDelta:
+                        dyLw.append(dataDelta.data[k][i])
 
 
             # Satellite Bands
@@ -1268,6 +1295,18 @@ class Utilities:
 
                 plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.2, c=c, zorder=-1)
                 plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.2, c=c, zorder=-1)
+
+                # deltaPolyy = dPolyyMinus + list(reversed(dPolyyPlus))
+                # plt.fill(deltaPolyx, deltaPolyy, alpha=0.2, c=c, zorder=-1)
+
+
+                if rType=='LT':
+                    dPolyyPlus = [(yLw[i]+dyLw[i]) for i in range(len(yLw))]
+                    dPolyyMinus = [(yLw[i]-dyLw[i]) for i in range(len(yLw))]
+                    deltaPolyyPlus = yLw + list(reversed(dPolyyPlus))
+                    deltaPolyyMinus = yLw + list(reversed(dPolyyMinus))
+                    plt.fill(deltaPolyx, deltaPolyyPlus, alpha=0.2, c=c, zorder=-1)
+                    plt.fill(deltaPolyx, deltaPolyyMinus, alpha=0.2, c=c, zorder=-1)
 
             # Satellite Bands
             if ConfigFile.settings['bL2WeightMODISA']:

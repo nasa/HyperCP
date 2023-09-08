@@ -273,9 +273,12 @@ class ProcessL2:
             newLISTDData = newRadianceGroup.addDataset(f"LI_{sensor}_sd")
             newLTSTDData = newRadianceGroup.addDataset(f"LT_{sensor}_sd")
 
-            newESUncData = newIrradianceGroup.addDataset(f"ES_{sensor}_unc")
-            newLIUncData = newRadianceGroup.addDataset(f"LI_{sensor}_unc")
-            newLTUncData = newRadianceGroup.addDataset(f"LT_{sensor}_unc")
+            # No average (mean or median) or standard deviation values associated with Lw or reflectances,
+            #   because these are calculated from the means of Lt, Li, Es
+
+            newESUNCData = newIrradianceGroup.addDataset(f"ES_{sensor}_unc")
+            newLIUNCData = newRadianceGroup.addDataset(f"LI_{sensor}_unc")
+            newLTUNCData = newRadianceGroup.addDataset(f"LT_{sensor}_unc")
             newLWUNCData = newRadianceGroup.addDataset(f"LW_{sensor}_unc")
             newRrsUNCData = newReflectanceGroup.addDataset(f"Rrs_{sensor}_unc")
             newnLwUNCData = newReflectanceGroup.addDataset(f"nLw_{sensor}_unc")
@@ -305,9 +308,12 @@ class ProcessL2:
             newLISTDData = newRadianceGroup.getDataset(f"LI_{sensor}_sd")
             newLTSTDData = newRadianceGroup.getDataset(f"LT_{sensor}_sd")
 
-            newESUncData = newIrradianceGroup.getDataset(f"ES_{sensor}_unc")
-            newLIUncData = newRadianceGroup.getDataset(f"LI_{sensor}_unc")
-            newLTUncData = newRadianceGroup.getDataset(f"LT_{sensor}_unc")
+            # No average (mean or median) or standard deviation values associated with Lw or reflectances,
+            #   because these are calculated from the means of Lt, Li, Es
+
+            newESUNCData = newIrradianceGroup.getDataset(f"ES_{sensor}_unc")
+            newLIUNCData = newRadianceGroup.getDataset(f"LI_{sensor}_unc")
+            newLTUNCData = newRadianceGroup.getDataset(f"LT_{sensor}_unc")
             newLWUNCData = newRadianceGroup.getDataset(f"LW_{sensor}_unc")
             newRrsUNCData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_unc")
             newnLwUNCData = newReflectanceGroup.getDataset(f"nLw_{sensor}_unc")
@@ -352,9 +358,9 @@ class ProcessL2:
 
         # TODO: This needs to be updated for SeaBird Factory path (i.e. Non-FRM Class Based)
         if ConfigFile.settings['bL1bCal'] >= 2:
-            esUNC = xUNC['esUnc']  # should already be convolved to hyperspec
-            liUNC = xUNC['liUnc']
-            ltUNC = xUNC['ltUnc']
+            esUNC = xUNC['esUNC']  # should already be convolved to hyperspec
+            liUNC = xUNC['liUNC']
+            ltUNC = xUNC['ltUNC']
 
             for i, k in enumerate(esXSlice):
                 if (k in liXSlice) and (k in ltXSlice):
@@ -388,7 +394,7 @@ class ProcessL2:
                     newRrsUncorrData.columns[k] = []
                     newnLwData.columns[k] = []
 
-                    # No average (mean or median) values associated with Lw or reflectances,
+                    # No average (mean or median) or standard deviation values associated with Lw or reflectances,
                     #   because these are calculated from the means of Lt, Li, Es
                     newESDataMedian.columns[k] = []
                     newLIDataMedian.columns[k] = []
@@ -397,9 +403,9 @@ class ProcessL2:
                     newESSTDData.columns[k] = []
                     newLISTDData.columns[k] = []
                     newLTSTDData.columns[k] = []
-                    newESUncData.columns[k] = []
-                    newLIUncData.columns[k] = []
-                    newLTUncData.columns[k] = []
+                    newESUNCData.columns[k] = []
+                    newLIUNCData.columns[k] = []
+                    newLTUNCData.columns[k] = []
                     newLWUNCData.columns[k] = []
                     newRrsUNCData.columns[k] = []
                     newnLwUNCData.columns[k] = []
@@ -474,9 +480,9 @@ class ProcessL2:
                     newRrsUNCData.columns[k].append(rrsUNC[k])
                     # newnLwUNCData.columns[k].append(nLwUNC)
                     newnLwUNCData.columns[k].append(nLwUNC[k])
-                    newESUncData.columns[k].append(esUNC[k])
-                    newLIUncData.columns[k].append(liUNC[k])
-                    newLTUncData.columns[k].append(ltUNC[k])
+                    newESUNCData.columns[k].append(esUNC[k][0])
+                    newLIUNCData.columns[k].append(liUNC[k][0])
+                    newLTUNCData.columns[k].append(ltUNC[k][0])
 
                     if sensor == 'HYPER':
                         if ZhangRho:
@@ -517,18 +523,18 @@ class ProcessL2:
         newESSTDData.columnsToDataset()
         newLISTDData.columnsToDataset()
         newLTSTDData.columnsToDataset()
-        newESUncData.columnsToDataset()
-        newLIUncData.columnsToDataset()
-        newLTUncData.columnsToDataset()
+        newESUNCData.columnsToDataset()
+        newLIUNCData.columnsToDataset()
+        newLTUNCData.columnsToDataset()
         newLWUNCData.columnsToDataset()
         newRrsUNCData.columnsToDataset()
         newnLwUNCData.columnsToDataset()
 
         # # and ensure they are outputted in the correct groups
         # if ConfigFile.settings["bL1bCal"] >= 2:
-        #     newESunc.columns = xUNC['esUnc']
-        #     newLIunc.columns = xUNC['liUnc']
-        #     newLTunc.columns = xUNC['ltUnc']
+        #     newESunc.columns = xUNC['esUNC']
+        #     newLIunc.columns = xUNC['liUNC']
+        #     newLTunc.columns = xUNC['ltUNC']
         #     newESunc.columnsToDataset()
         #     newLIunc.columnsToDataset()
         #     newLTunc.columnsToDataset()
@@ -1284,7 +1290,7 @@ class ProcessL2:
         if not stats:
             return False
 
-        # make std into ordered dictionaries
+        # make std into dictionaries (data are ODs, but should not matter)
         esStdSlice = {k: [stats['ES']['std_Signal'][k][0]*esSlice[k][0]] for k in esSlice}
         liStdSlice = {k: [stats['LI']['std_Signal'][k][0]*liSlice[k][0]] for k in liSlice}
         ltStdSlice = {k: [stats['LT']['std_Signal'][k][0]*ltSlice[k][0]] for k in ltSlice}
@@ -1706,9 +1712,9 @@ class ProcessL2:
             # TODO: compare uncertainty outputs to old results with t test
 
             # for convolving to satellite bands
-            esUncSlice = xUNC["esUnc"]
-            liUncSlice = xUNC["liUnc"]
-            ltUncSlice = xUNC["ltUnc"]
+            esUNCSlice = xUNC["esUNC"] # ODicts... whereas lwUNC and rrsUNC are simple arrays
+            liUNCSlice = xUNC["liUNC"]
+            ltUNCSlice = xUNC["ltUNC"]
 
         # Populate the relevant fields in node
         # ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, rhoScalar, rhoUNC, rhoVec, waveSubset, xUNC)
@@ -1745,9 +1751,9 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdMODISA
 
                 if xUNC is not None:
-                    xUNC['esUnc'] = Weight_RSR.processMODISBands(esUncSlice, sensor='A')
-                    xUNC['liUnc'] = Weight_RSR.processMODISBands(liUncSlice, sensor='A')
-                    xUNC['ltUnc'] = Weight_RSR.processMODISBands(ltUncSlice, sensor='A')
+                    xUNC['esUNC'] = Weight_RSR.processMODISBands(esUNCSlice, sensor='A')
+                    xUNC['liUNC'] = Weight_RSR.processMODISBands(liUNCSlice, sensor='A')
+                    xUNC['ltUNC'] = Weight_RSR.processMODISBands(ltUNCSlice, sensor='A')
 
                 sensor = 'MODISA'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_MODIS, F0_MODIS_unc, rhoScalar, rhoVecMODIS, waveSubsetMODIS, xUNC)
@@ -1775,9 +1781,9 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdMODIST
 
                 if xUNC is not None:
-                    xUNC['esUnc'] = Weight_RSR.processMODISBands(esUncSlice, sensor='T')
-                    xUNC['liUnc'] = Weight_RSR.processMODISBands(liUncSlice, sensor='T')
-                    xUNC['ltUnc'] = Weight_RSR.processMODISBands(ltUncSlice, sensor='T')
+                    xUNC['esUNC'] = Weight_RSR.processMODISBands(esUNCSlice, sensor='T')
+                    xUNC['liUNC'] = Weight_RSR.processMODISBands(liUNCSlice, sensor='T')
+                    xUNC['ltUNC'] = Weight_RSR.processMODISBands(ltUNCSlice, sensor='T')
 
                 sensor = 'MODIST'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_MODIS, F0_MODIS_unc, rhoScalar, rhoVecMODIS, waveSubsetMODIS,  xUNC)
@@ -1809,9 +1815,9 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdVIIRSN
 
                 if xUNC is not None:
-                    xUNC['esUnc'] = Weight_RSR.processVIIRSBands(esUncSlice, sensor='N')
-                    xUNC['liUnc'] = Weight_RSR.processVIIRSBands(liUncSlice, sensor='N')
-                    xUNC['ltUnc'] = Weight_RSR.processVIIRSBands(ltUncSlice, sensor='N')
+                    xUNC['esUNC'] = Weight_RSR.processVIIRSBands(esUNCSlice, sensor='N')
+                    xUNC['liUNC'] = Weight_RSR.processVIIRSBands(liUNCSlice, sensor='N')
+                    xUNC['ltUNC'] = Weight_RSR.processVIIRSBands(ltUNCSlice, sensor='N')
 
                 sensor = 'VIIRSN'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_VIIRS, F0_VIIRS_unc, rhoScalar, rhoVecVIIRS,  waveSubsetVIIRS,  xUNC)
@@ -1839,9 +1845,9 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdVIIRSJ
 
                 if xUNC is not None:
-                    xUNC['esUnc'] = Weight_RSR.processVIIRSBands(esUncSlice, sensor='N')
-                    xUNC['liUnc'] = Weight_RSR.processVIIRSBands(liUncSlice, sensor='N')
-                    xUNC['ltUnc'] = Weight_RSR.processVIIRSBands(ltUncSlice, sensor='N')
+                    xUNC['esUNC'] = Weight_RSR.processVIIRSBands(esUNCSlice, sensor='N')
+                    xUNC['liUNC'] = Weight_RSR.processVIIRSBands(liUNCSlice, sensor='N')
+                    xUNC['ltUNC'] = Weight_RSR.processVIIRSBands(ltUNCSlice, sensor='N')
 
                 sensor = 'VIIRSJ'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_VIIRS, F0_VIIRS_unc, rhoScalar, rhoVecVIIRS, waveSubsetVIIRS,  xUNC)
@@ -1873,9 +1879,9 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdSentinel3A
 
                 if xUNC is not None:
-                    xUNC['esUnc'] = Weight_RSR.processSentinel3Bands(esUncSlice, sensor='A')
-                    xUNC['liUnc'] = Weight_RSR.processSentinel3Bands(liUncSlice, sensor='A')
-                    xUNC['ltUnc'] = Weight_RSR.processSentinel3Bands(ltUncSlice, sensor='A')
+                    xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='A')
+                    xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='A')
+                    xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='A')
 
                 sensor = 'Sentinel3A'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_Sentinel3, F0_Sentinel3_unc, rhoScalar, rhoVecSentinel3, waveSubsetSentinel3,  xUNC)
@@ -1903,9 +1909,9 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdSentinel3B
 
                 if xUNC is not None:
-                    xUNC['esUnc'] = Weight_RSR.processSentinel3Bands(esUncSlice, sensor='B')
-                    xUNC['liUnc'] = Weight_RSR.processSentinel3Bands(liUncSlice, sensor='B')
-                    xUNC['ltUnc'] = Weight_RSR.processSentinel3Bands(ltUncSlice, sensor='B')
+                    xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='B')
+                    xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='B')
+                    xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='B')
 
                 sensor = 'Sentinel3B'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_Sentinel3, F0_Sentinel3_unc, rhoScalar, rhoVecSentinel3, waveSubsetSentinel3,  xUNC)

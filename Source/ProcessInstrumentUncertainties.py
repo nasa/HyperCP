@@ -300,11 +300,11 @@ class Instrument:
     @staticmethod
     def rrsHyperUNC(uncGrp, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice):
         esXSlice = xSlice['es']
-        esXstd = xSlice['esStd']
+        esXstd = xSlice['esSTD']
         liXSlice = xSlice['li']
-        liXstd = xSlice['liStd']
+        liXstd = xSlice['liSTD']
         ltXSlice = xSlice['lt']
-        ltXstd = xSlice['ltStd']
+        ltXstd = xSlice['ltSTD']
 
         if rhoScalar is not None:  # make rho a constant array if scalar
             rho = np.ones(len(waveSubset))*rhoScalar
@@ -1122,7 +1122,7 @@ class HyperOCR(Instrument):
             # rel_unc = np.power(np.power(unc[ind_nocal == False]*1e10, 2)/np.power(filtered_mesure*1e10, 2), 0.5)
 
             output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
-            output[f"{sensortype.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
+            output[f"{sensortype.lower()}UNC"] = unc[ind_nocal == False]  # relative uncertainty
             output[f"{sensortype.lower()}Sample"] = sample[:, ind_nocal == False]  # samples keep raw
 
             # TODO: interp to common wavebands to the lowest sized array
@@ -1130,8 +1130,8 @@ class HyperOCR(Instrument):
             # sort the outputs ready for following process
             # get sensor specific wavebands to be keys for uncs, then remove from output
             wvls = np.asarray(output.pop(f"{sensortype.lower()}Wvls"), dtype=float)
-            _, output[f"{sensortype.lower()}Unc"] = self.interp_common_wvls(
-                output[f"{sensortype.lower()}Unc"], wvls, newWaveBands)
+            _, output[f"{sensortype.lower()}UNC"] = self.interp_common_wvls(
+                output[f"{sensortype.lower()}UNC"], wvls, newWaveBands)
             output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
 
@@ -1499,14 +1499,14 @@ class Trios(Instrument):
 
             output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
             output[
-                f"{sensortype.lower()}Unc"] = unc[ind_nocal == False]  # dict(zip(str_wvl[self.ind_nocal==False], filtered_unc))  # unc in dict with wavelengths
+                f"{sensortype.lower()}UNC"] = unc[ind_nocal == False]  # dict(zip(str_wvl[self.ind_nocal==False], filtered_unc))  # unc in dict with wavelengths
             output[f"{sensortype.lower()}Sample"] = sample[:, ind_nocal == False]  # samples keep raw
 
         for sensortype in ['ES', 'LI', 'LT']:
             # get sensor specific wavebands - output[f"{sensortype.lower()}Wvls"].pop
             wvls = np.asarray(output.pop(f"{sensortype.lower()}Wvls"), dtype=float)
-            _, output[f"{sensortype.lower()}Unc"] = self.interp_common_wvls(
-                output[f"{sensortype.lower()}Unc"], wvls, newWaveBands)
+            _, output[f"{sensortype.lower()}UNC"] = self.interp_common_wvls(
+                output[f"{sensortype.lower()}UNC"], wvls, newWaveBands)
             output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
 
