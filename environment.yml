@@ -3,7 +3,7 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-   - python=3.11
+  - python=3.11
   - pyqt=5.15
   - requests=2.28
   - tqdm=4.65
