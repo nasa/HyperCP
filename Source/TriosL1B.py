@@ -80,7 +80,7 @@ class TriosL1B:
         updated_radcal_gain[ind_nocal==True] = 1 # set 1 instead of 0 to perform calibration (otherwise division per 0)
 
         # Data conversion
-        mesure = raw_data/65365.0
+        mesure = raw_data/65535.0
         FRM_mesure = np.zeros((nmes, nband))
         back_mesure = np.zeros((nmes, nband))
 
@@ -177,7 +177,7 @@ class TriosL1B:
         raw_cal[ind_nocal==True] = 1 # set 1 instead of 0 to perform calibration (otherwise division per 0)
 
         # Data conversion
-        mesure = raw_data/65365.0
+        mesure = raw_data/65535.0
         calibrated_mesure = np.zeros((nmes, nband))
         back_mesure = np.zeros((nmes, nband))
         for n in range(nmes):
