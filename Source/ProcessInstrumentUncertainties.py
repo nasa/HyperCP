@@ -36,7 +36,11 @@ class Instrument:
         pass
 
     def generateSensorStats(self, InstrumentType, rawData, rawSlice, newWaveBands):
-        output = {}
+        """
+        :return: dictionary of statistics used later in the processing pipeline
+        :rtype dict: keys are [ave_Light, ave_Dark, std_Light, std_Dark, std_Signal]
+        """
+        output = {}  # used tp store standard deviations and averages as a function return for generateSensorStats
         types = ['ES', 'LI', 'LT']
         for sensortype in types:
             if InstrumentType.lower() == "trios":
@@ -68,14 +72,14 @@ class Instrument:
         # interpolate to common wavebands
         for stype in types:
             # get sensor specific wavebands and pop from output
-            # _, output[stype]['ave_Light'] = self.interp_common_wvls(
-            #                                  output[stype]['std_Signal'],
-            #                                  np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-            #                                  newWaveBands)
-            # _, output[stype]['std_Light'] = self.interp_common_wvls(
-            #                                  output[stype]['std_Signal'],
-            #                                  np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-            #                                  newWaveBands)
+            output[stype]['ave_Light'], _ = self.interp_common_wvls(
+                                             output[stype]['ave_Light'],
+                                             np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+                                             newWaveBands)
+            output[stype]['std_Light'], _ = self.interp_common_wvls(
+                                             output[stype]['std_Light'],
+                                             np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+                                             newWaveBands)
             _, output[stype]['std_Signal'] = self.interp_common_wvls(
                                              output[stype]['std_Signal'],
                                              np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
