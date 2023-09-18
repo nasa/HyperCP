@@ -1087,8 +1087,6 @@ class HyperOCR(Instrument):
             if sensortype == "ES":
                 solar_zenith = np.array(res_py6s['solar_zenith'])
                 direct_ratio = res_py6s['direct_ratio']
-                print("ADERU", solar_zenith)
-
                 # ADERU: solar zenith is not an array, it is an unique valur for the whole cast
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
                                                     np.asarray([0.05 for i in range(np.size(solar_zenith))]),
@@ -1210,7 +1208,7 @@ class Trios(Instrument):
                 If needed, try using the processing fail splash screen to get your attention.'''
 
         # Data conversion
-        mesure = raw_data/65365.0
+        mesure = raw_data/65535.0
         calibrated_mesure = np.zeros((nmes, nband))
         back_mesure = np.zeros((nmes, nband))
 
@@ -1395,7 +1393,7 @@ class Trios(Instrument):
                                                                sample_int_time_t0, sample_t1])
 
             # Data conversion
-            mesure = raw_data/65365.0
+            mesure = raw_data/65535.0
 
             back_mesure = np.array([B0 + B1*(int_time[n]/int_time_t0) for n in range(nmes)])
             back_corrected_mesure = mesure - back_mesure
