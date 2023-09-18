@@ -198,10 +198,11 @@ Three calibration/characterization regimes are available:
 This regime performes the radiometric calibration using the radiometric gains provided within the factory configuration 
 files. For both SeaBird and TriOS the calibration process follow their respective manufacturer recommendation. 
 Although no uncertainty values associated to the radiometric factors are avaible in the factory configuration files, 
-generic uncertainty values can be used for SeaBird, they are taken from "The Seventh SeaWiFS Intercalibration Round-Robin 
-Experiment (SIRREX-7), March 1999" (API: https://ntrs.nasa.gov/citations/20020045342). The uncertainties produced at 
-level 2 date will not be FRM compliant but remains an interresting first step to characterize the data. Unfortunately, 
-there is no equivalent for TriOS and no uncertainties values will be outputted with this regime for TriOS.
+for SeaBird, uncertainty can be computed following the class-based processing with generic values for the radiometric
+factor uncertainty, taken from "The Seventh SeaWiFS Intercalibration Round-Robin Experiment (SIRREX-7), March 1999" 
+(API: https://ntrs.nasa.gov/citations/20020045342). The uncertainties produced at level 2 date will not be FRM compliant 
+but remains an interresting first step to characterize the data. Unfortunately, there is no equivalent for TriOS and no 
+uncertainties values will be outputted with this regime for TriOS.
 
 **FRM Class-Based:**
 This regimes performes the radiometric calibration using the radiometric characterisation completed by external laboratories.
