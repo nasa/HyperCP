@@ -91,8 +91,7 @@ class Instrument:
     def factory():
         pass
 
-    @staticmethod
-    def Default(uncGrp, stats):
+    def Default(self, uncGrp, stats):
         # read in uncertainties from HDFRoot and define propagate object
         PropagateL1B = Propagate(M=100, cores=0)
 
@@ -107,23 +106,40 @@ class Instrument:
 
         # loop through instruments
         for sensor in ["ES", "LI", "LT"]:
+            # get new wavebands from sensorstat keys
+            nWB = np.asarray(list(stats[sensor]['std_Signal'].keys()), dtype=float)
+
             # TODO: Implement Slaper and propagate as error
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            cStray[sensor] = np.asarray(list(straylight.data[1]))
+            # cStray[sensor] = np.asarray(list(straylight.data[1]))
+            waves = np.asarray(list(straylight.columns['0']))
+            cols = np.asarray(list(straylight.columns['1']))
+            cStray[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
-            cLin[sensor] = np.asarray(list(linear.columns['1']))
+            # cLin[sensor] = np.asarray(list(linear.columns['1']))
+            waves = np.asarray(list(linear.columns['0']))
+            cols = np.asarray(list(linear.columns['1']))
+            cLin[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
 
             stab = uncGrp.getDataset(sensor + "_STABDATA_CAL")
             stab.datasetToColumns()
-            cStab[sensor] = np.asarray(list(stab.columns['1']))
+            # cStab[sensor] = np.asarray(list(stab.columns['1']))
+            waves = np.asarray(list(stab.columns['0']))
+            cols = np.asarray(list(stab.columns['1']))
+            cStab[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
 
             radcal = uncGrp.getDataset(f"{sensor}_RADCAL_CAL")
             radcal.datasetToColumns()
-            Coeff[sensor] = np.asarray(list(radcal.columns['2']))
-            Cal[sensor] = np.asarray(list(radcal.columns['3']))
+
+            # Interpolate calibration coefficients to common wavebands per sensor
+            waves = np.asarray(list(radcal.columns['1']))
+            cols = np.asarray(list(radcal.columns['2']))
+            Coeff[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cal_cols = np.asarray(list(radcal.columns['3']))
+            Cal[sensor], _ = self.interp_common_wvls(cal_cols, waves, nWB)
 
             # if sensor == 'ES':
             #     pol = uncGrp.getDataset("ES_ANGDATA_UNCERTAINTY")
@@ -133,13 +149,17 @@ class Instrument:
             # TODO: temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
-            cPol[sensor] = np.asarray(list(pol.columns['1']))
+            waves = np.asarray(list(pol.columns['0']))
+            cols = np.asarray(list(pol.columns['1']))
+            cPol[sensor] = self.interp_common_wvls(cols, waves, nWB)
 
             # temp uncertainties calculated at L1AQC
             Temp = uncGrp.getDataset(sensor + "_TEMPDATA_CAL")
             Temp.datasetToColumns()
-            Ct[sensor] = np.array(
+            waves = np.asarray(list(Temp.columns['1']))
+            cols = np.array(
                 [Temp.columns[k][-1] for k in Temp.columns])  # last row of temp group has uncertainties
+            Ct[sensor] = self.interp_common_wvls(cols, waves, nWB)
 
         ones = np.ones(len(Cal['ES']))  # to provide array of 1s with the correct shape
 
