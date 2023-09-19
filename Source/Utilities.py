@@ -2461,17 +2461,29 @@ class Utilities:
                 ds.columnsToDataset()
 
             ## Interpolate for initial class-based file, in use at the moment
-            for data_type in ["_POLDATA_CAL","_TEMPDATA_CAL","_STABDATA_CAL", "_NLDATA_CAL", "_STRAYDATA_CAL"]:
-                ds = grp.getDataset(sensor+data_type)
+            for data_type in ["_TEMPDATA_CAL"]:
+                ds = grp.getDataset(sensor + data_type)
                 ds.datasetToColumns()
                 x = ds.columns['1']
-                for indx in range(2,len(ds.columns)):
+                for indx in range(2, len(ds.columns)):
                     y = ds.columns[str(indx)]
                     y_new = np.interp(x_new, x, y)
                     ds.columns[str(indx)] = y_new
                 # column ['0'] longer than the rest due to interpolation - this is a quick work around
-                ds.columns['0'] = np.array(range(len(x_new))) # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
+                ds.columns['0'] = np.array(
+                    range(len(x_new)))  # np.array(ds.columns['0'])[1:] # drop 1st line from TARTU file
                 ds.columns['1'] = x_new
+                ds.columnsToDataset()
+
+            ## Interpolate for initial class-based file, in use at the moment
+            for data_type in ["_POLDATA_CAL", "_STABDATA_CAL", "_NLDATA_CAL"]:
+                ds = grp.getDataset(sensor + data_type)
+                ds.datasetToColumns()
+                x = ds.columns['0']
+                y = ds.columns['1']
+                y_new = np.interp(x_new, x, y)
+                ds.columns['0'] = x_new
+                ds.columns['1'] = y_new
                 ds.columnsToDataset()
 
             ### for updated version of class based file, not used at the moment
