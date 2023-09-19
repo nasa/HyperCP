@@ -80,10 +80,22 @@ class Instrument:
                                              output[stype]['std_Light'],
                                              np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
                                              newWaveBands)
+
+            if InstrumentType.lower() == "seabird":
+                output[stype]['ave_Dark'], _ = self.interp_common_wvls(
+                    output[stype]['ave_Dark'],
+                    np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+                    newWaveBands)
+                output[stype]['std_Dark'], _ = self.interp_common_wvls(
+                    output[stype]['std_Dark'],
+                    np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+                    newWaveBands)
+
             _, output[stype]['std_Signal'] = self.interp_common_wvls(
-                                             output[stype]['std_Signal'],
-                                             np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-                                             newWaveBands)
+                output[stype]['std_Signal'],
+                np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+                newWaveBands)
+
         return output
 
     ## Branch Processing
@@ -200,7 +212,7 @@ class Instrument:
 
     ## L2 uncertainty Processing
     @staticmethod
-    def rrsHyperDeltaFRM(rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice):
+    def rrsHyperUNCFRM(rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice):
         # organise data
         esSampleXSlice = xSlice['esSample']
         liSampleXSlice = xSlice['liSample']
@@ -239,8 +251,8 @@ class Instrument:
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_S3A)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_S3A)
 
-            output["lwDelta_Sentinel3A"] = lwDeltaBand
-            output["rrsDelta_Sentinel3A"] = rrsDeltaBand
+            output["lwUNC_Sentinel3A"] = lwDeltaBand
+            output["rrsUNC_Sentinel3A"] = rrsDeltaBand
 
         if ConfigFile.settings["bL2WeightSentinel3B"]:
             sample_lw_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B, [sample_Lw, sample_wavelengths])
@@ -249,8 +261,8 @@ class Instrument:
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_S3B)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_S3B)
 
-            output["lwDelta_Sentinel3B"] = lwDeltaBand
-            output["rrsDelta_Sentinel3B"] = rrsDeltaBand
+            output["lwUNC_Sentinel3B"] = lwDeltaBand
+            output["rrsUNC_Sentinel3B"] = rrsDeltaBand
 
         if ConfigFile.settings['bL2WeightMODISA']:
             sample_lw_AQUA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_AQUA, [sample_Lw, sample_wavelengths])
@@ -259,8 +271,8 @@ class Instrument:
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_AQUA)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_AQUA)
 
-            output["lwDelta_MODISA"] = lwDeltaBand
-            output["rrsDelta_MODISA"] = rrsDeltaBand
+            output["lwUNC_MODISA"] = lwDeltaBand
+            output["rrsUNC_MODISA"] = rrsDeltaBand
 
         if ConfigFile.settings['bL2WeightMODIST']:
             sample_lw_TERRA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_TERRA, [sample_Lw, sample_wavelengths])
@@ -269,8 +281,8 @@ class Instrument:
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_TERRA)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_TERRA)
 
-            output["lwDelta_MODIST"] = lwDeltaBand
-            output["rrsDelta_MODIST"] = rrsDeltaBand
+            output["lwUNC_MODIST"] = lwDeltaBand
+            output["rrsUNC_MODIST"] = rrsDeltaBand
 
         if ConfigFile.settings['bL2WeightVIIRSN']:
             sample_lw_NOAA = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_NOAA, [sample_Lw, sample_wavelengths])
@@ -279,8 +291,8 @@ class Instrument:
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_NOAA)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_NOAA)
 
-            output["lwDelta_VIIRSN"] = lwDeltaBand
-            output["rrsDelta_VIIRSN"] = rrsDeltaBand
+            output["lwUNC_VIIRSN"] = lwDeltaBand
+            output["rrsUNC_VIIRSN"] = rrsDeltaBand
 
         if ConfigFile.settings['bL2WeightVIIRSJ']:
             # currently the same as VIIRSN due to the lack of NOAA-21 rsr in pyspectral
@@ -290,18 +302,18 @@ class Instrument:
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_NOAAJ)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_NOAAJ)
 
-            output["lwDelta_VIIRSJ"] = lwDeltaBand
-            output["rrsDelta_VIIRSJ"] = rrsDeltaBand
+            output["lwUNC_VIIRSJ"] = lwDeltaBand
+            output["rrsUNC_VIIRSJ"] = rrsDeltaBand
 
         lwDelta = Propagate_L2_FRM.process_samples(None, sample_Lw)
         rrsDelta = Propagate_L2_FRM.process_samples(None, sample_Rrs)
 
-        output["lwDelta"] = lwDelta  # Multiply by large number to reduce round off error
-        output["rrsDelta"] = rrsDelta
+        output["lwUNC"] = lwDelta  # Multiply by large number to reduce round off error
+        output["rrsUNC"] = rrsDelta
 
         return output
 
-    def rrsHyperDelta(self, uncGrp, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice):
+    def rrsHyperUNC(self, uncGrp, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice):
         es = np.asarray(list(xSlice['es'].values()), dtype=float).flatten()
         esXstd = xSlice['esSTD']
         li = np.asarray(list(xSlice['li'].values()), dtype=float).flatten()
@@ -422,37 +434,37 @@ class Instrument:
         # these are absolute values! Dont get confused
         output={}
         if ConfigFile.settings["bL2WeightSentinel3A"]:
-            output["lwDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
                                                                           [lwAbsUnc, None], "S3A")
-            output["rrsDelta_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
                                                                            [rrsAbsUnc, None], "S3A")
         elif ConfigFile.settings["bL2WeightSentinel3B"]:
-            output["lwDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
                                                                           [lwAbsUnc, None], "S3B")
-            output["rrsDelta_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
                                                                            [rrsAbsUnc, None], "S3B")
         if ConfigFile.settings['bL2WeightMODISA']:
-            output["lwDelta_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
                                                                           [lwAbsUnc, None], "MOD-A")
-            output["rrsDelta_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
                                                                            [rrsAbsUnc, None], "MOD-A")
         if ConfigFile.settings['bL2WeightMODIST']:
-            output["lwDelta_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
                                                                           [lwAbsUnc, None], "MOD-T")
-            output["rrsDelta_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
                                                                            [rrsAbsUnc, None], "MOD-T")
         if ConfigFile.settings['bL2WeightVIIRSN']:
-            output["lwDelta_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
                                                                           [lwAbsUnc, None], "VIIRS")
-            output["rrsDelta_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
                                                                            [rrsAbsUnc, None], "VIIRS")
         if ConfigFile.settings['bL2WeightVIIRSJ']:
-            output["lwDelta_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
                                                                           [lwAbsUnc, None], "VIIRS")
-            output["rrsDelta_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
                                                                            [rrsAbsUnc, None], "VIIRS")
             pass
-        output.update({"lwDelta": lwAbsUnc, "rrsDelta": rrsAbsUnc})
+        output.update({"lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})
 
         return output
 
