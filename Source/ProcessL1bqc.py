@@ -131,6 +131,8 @@ class ProcessL1bqc:
 
         if len(badTimes) == 0:
             badTimes = None
+            # In case filterData does not need to be run:
+            ltData.datasetToColumns()
         return badTimes
 
     @staticmethod

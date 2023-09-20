@@ -355,7 +355,7 @@ class Window(QtWidgets.QWidget):
         if self.ancFileDirectory == '':
             self.ancFileDirectory = self.inputDirectory # Reverts to Input directory first
             if self.ancFileDirectory == '':
-                self.ancFileDirectory = '.Data/Sample_Data' # Falls back to ./Data/Sample_Data
+                self.ancFileDirectory = './Data/Sample_Data' # Falls back to ./Data/Sample_Data
         fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Ancillary Data File',self.ancFileDirectory)
         if any(fnames):
             print(fnames)
