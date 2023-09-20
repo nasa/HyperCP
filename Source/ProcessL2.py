@@ -1714,11 +1714,11 @@ class ProcessL2:
                 if "sample" in slice.lower():
                     xSlice.pop(slice)  # samples are no longer needed
                 elif "unc" in slice.lower():
-                    xUNC[slice] = xSlice.pop(slice)  # transfer instrument uncs to xUNC
+                    xUNC[f"{slice[0:2]}UNC"] = xSlice.pop(slice)  # transfer instrument uncs to xUNC
             # TODO: compare uncertainty outputs to old results with t test
 
             # for convolving to satellite bands
-            esUNCSlice = xUNC["esUNC"] # ODicts... whereas lwUNC and rrsUNC are simple arrays
+            esUNCSlice = xUNC["esUNC"]  # ODicts... whereas lwUNC and rrsUNC are simple arrays
             liUNCSlice = xUNC["liUNC"]
             ltUNCSlice = xUNC["ltUNC"]
 
