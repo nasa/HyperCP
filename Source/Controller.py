@@ -441,18 +441,23 @@ class Controller:
         _, filename = os.path.split(outFilePath)
         if node is not None:
 
+            if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+                plotDeltaBool = False
+            else:
+                plotDeltaBool = True
+
             # Create Plots
             # Radiometry
             if ConfigFile.settings['bL2PlotRrs']==1:
-                Utilities.plotRadiometry(node, filename, rType='Rrs', plotDelta = True)
+                Utilities.plotRadiometry(node, filename, rType='Rrs', plotDelta = plotDeltaBool)
             if ConfigFile.settings['bL2PlotnLw']==1:
-                Utilities.plotRadiometry(node, filename, rType='nLw', plotDelta = True)
+                Utilities.plotRadiometry(node, filename, rType='nLw', plotDelta = plotDeltaBool)
             if ConfigFile.settings['bL2PlotEs']==1:
-                Utilities.plotRadiometry(node, filename, rType='ES', plotDelta = True)
+                Utilities.plotRadiometry(node, filename, rType='ES', plotDelta = plotDeltaBool)
             if ConfigFile.settings['bL2PlotLi']==1:
-                Utilities.plotRadiometry(node, filename, rType='LI', plotDelta = True)
+                Utilities.plotRadiometry(node, filename, rType='LI', plotDelta = plotDeltaBool)
             if ConfigFile.settings['bL2PlotLt']==1:
-                Utilities.plotRadiometry(node, filename, rType='LT', plotDelta = True)
+                Utilities.plotRadiometry(node, filename, rType='LT', plotDelta = plotDeltaBool)
 
             # IOPs
             # These three should plot GIOP and QAA together (eventually, once GIOP is complete)

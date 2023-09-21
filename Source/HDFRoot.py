@@ -43,7 +43,6 @@ class HDFRoot:
         gp = name
         if gp:
             self.groups.remove(gp)
-        # return
 
     def getDataset(self, name):
         if name in self.datasets:

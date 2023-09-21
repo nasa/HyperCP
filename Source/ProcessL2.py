@@ -2268,6 +2268,27 @@ class ProcessL2:
             if gp.id.endswith('_L1AQC'):
                 node.removeGroup(gp)
 
+        # In the case of TriOS Factory, strip out uncertainty datasets
+        if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+            for gp in node.groups:
+                if gp.id == 'IRRADIANCE' or gp.id == 'RADIANCE' or gp.id == 'REFLECTANCE':
+                    removeList = []
+                    for dsName in reversed(gp.datasets):
+                        if dsName.endswith('_unc'):
+                           removeList.append(dsName)
+                    for dsName in removeList:
+                            gp.removeDataset(dsName)
+
+        # Change _median nomiclature to _uncorr
+        for gp in node.groups:
+            if gp.id == 'IRRADIANCE' or gp.id == 'RADIANCE' or gp.id == 'REFLECTANCE':
+                changeList = []
+                for dsName in gp.datasets:
+                    if dsName.endswith('_median'):
+                        changeList.append(dsName)
+                for dsName in changeList:
+                        gp.datasets[dsName].changeDatasetName(gp,dsName,dsName.replace('_median','_uncorr'))
+
 
         # Now strip datetimes from all datasets
         for gp in node.groups:

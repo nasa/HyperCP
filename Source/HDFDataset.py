@@ -42,23 +42,6 @@ class HDFDataset:
                 self.attributes[k] = f.attrs[k]
             else: # string attribute
                 self.attributes[k] = f.attrs[k].decode("utf-8")
-        # for k in f.attrs.keys():
-            # if type(f.attrs[k]) == np.ndarray:
-            #     #print(f.attrs[k])
-            #     #print(type(f.attrs[k].tolist()[0]))
-                # if type(f.attrs[k].tolist()[0]) == bytes:
-            #         self.attributes[k] = [k.decode("utf-8") for k in f.attrs[k]]
-            #         #print("Attr:", self.attributes[k])
-            #     else:
-            #         self.attributes[k] = [k for k in f.attrs[k]]
-
-            # else:
-            #     if type(f.attrs[k]) == bytes:
-            #         self.attributes[k] = f.attrs[k].decode("utf-8")
-            #     else:
-            #         self.attributes[k] = f.attrs[k]
-        #print(f)
-        #print(type(f[:]))
 
         # Read dataset
         self.data = f[:] # Gets converted to numpy.ndarray
@@ -171,3 +154,10 @@ class HDFDataset:
                 self.columns[newName] = self.columns[oldName]
                 del self.columns[oldName]
         self.columnsToDataset()
+
+    def changeDatasetName(self,group, oldName,newName):
+        ''' Change the name of a dataset '''
+        group.datasets[newName]=group.datasets[oldName]
+        group.datasets[newName].id = newName
+        del group.datasets[oldName]
+
