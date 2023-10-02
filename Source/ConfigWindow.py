@@ -278,8 +278,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.fullFilesLineEdit.setDisabled(True)
 
         self.l1bFRMRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
-        '''NOTE: Temporarily disabled while under development'''
-        self.l1bFRMRadio2.setDisabled(True)
+        # '''NOTE: Temporarily disabled while under development'''
+        # self.l1bFRMRadio2.setDisabled(True)
         if ConfigFile.settings['FidRadDB']:
             self.l1bFRMRadio1.setChecked(False)
             self.l1bFRMRadio2.setChecked(True)
@@ -1301,8 +1301,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
             self.addClassFilesButton.setDisabled(True)
             self.l1bFRMRadio1.setDisabled(False)
-            '''NOTE: Temporarily disabled while under development'''
-            self.l1bFRMRadio2.setDisabled(True)
+            self.l1bFRMRadio2.setDisabled(False)
             self.addFullFilesButton.setDisabled(False)
 
         # Check for RadCal and Full-char files:

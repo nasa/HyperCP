@@ -2,6 +2,7 @@ name: hypercp
 channels:
   - defaults
   - conda-forge
+  - ocdb
 dependencies:
   - python=3.11
   - pyqt=5.15
@@ -21,6 +22,7 @@ dependencies:
   - pytables=3.7
   - pyspectral=0.12
   - pyqtgraph
+  - ocdb-client
   - pip
   - pip:
     - punpy
