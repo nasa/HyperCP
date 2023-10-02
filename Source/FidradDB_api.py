@@ -1,4 +1,5 @@
-from fidraddb_api.ocdb.api.OCDBApi import new_api, OCDBApi
+# from fidraddb_api.ocdb.api.OCDBApi import new_api, OCDBApi
+from ocdb.api.OCDBApi import new_api, OCDBApi
 
 def FidradDB_api(elem, date, cal_path):
     
