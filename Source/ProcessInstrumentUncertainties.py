@@ -188,7 +188,7 @@ class Instrument:
         uncertainty = [stats['ES']['std_Light'], ones*stats['ES']['std_Dark'],
                        stats['LI']['std_Light'], ones*stats['LI']['std_Dark'],
                        stats['LT']['std_Light'], ones*stats['LT']['std_Dark'],
-                       Cal['ES']*Coeff['ES']/100, Cal['LI']*Coeff['LI']/100, Cal['LT']*Coeff['LT']/100,
+                       Cal['ES']*Coeff['ES']/200, Cal['LI']*Coeff['LI']/200, Cal['LT']*Coeff['LT']/200,
                        cStab['ES'], cStab['LI'], cStab['LT'],
                        cLin['ES'], cLin['LI'], cLin['LT'],
                        np.array(cStray['ES'])/100, np.array(cStray['LI'])/100, np.array(cStray['LT'])/100,
@@ -399,7 +399,7 @@ class Instrument:
                     ones, ones]
 
         lw_uncertainties = [np.array(list(ltXstd.values())).flatten()*lt, rhoDelta, np.array(list(liXstd.values())).flatten()*li,
-                            Cal['LI']/100, Cal['LT']/100,
+                            Cal['LI']/200, Cal['LT']/200,
                             cStab['LI'], cStab['LT'],
                             cLin['LI'], cLin['LT'],
                             cStray['LI']/100, cStray['LI']/100,
@@ -416,17 +416,17 @@ class Instrument:
                  ones, ones, ones,
                  ones, ones, ones]
 
-        uncertainties = [np.array(list(ltXstd.values())).flatten()*lt, rhoDelta,
-                         np.array(list(liXstd.values())).flatten()*li,
-                         np.array(list(esXstd.values())).flatten()*es,
-                         Cal['ES']/100, Cal['LI']/100, Cal['LT']/100,
+        uncertainties = [np.array(list(ltXstd.values())).flatten(), rhoDelta,
+                         np.array(list(liXstd.values())).flatten(),
+                         np.array(list(esXstd.values())).flatten(),
+                         Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
                          cStab['ES'], cStab['LI'], cStab['LT'],
                          cLin['ES'], cLin['LI'], cLin['LT'],
                          cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
                          Ct['ES'], Ct['LI'], Ct['LT'],
                          cPol['LI'], cPol['LT'], cPol['ES']]
 
-        rrsAbsUnc, rrs_vals = Propagate_L2.Propagate_RRS(means, uncertainties)
+        rrsAbsUnc, rrs_vals, rel_unc = Propagate_L2.Propagate_RRS(means, uncertainties)
 
         ## BAND CONVOLUTION
         # band convolution of uncertainties is done here to include uncertainty contribution of band convolution process
@@ -867,8 +867,8 @@ class HyperOCR(Instrument):
                 lightData[k][x] -= darkData[k][x]
 
             # Normalised signal standard deviation =
-            signalAve = np.average(lightData[k])
-            stdevSignal[wvl] = pow((pow(std_Light[0], 2) + pow(std_Dark[0], 2))/pow(signalAve, 2), 0.5)
+            # signalAve = np.average(lightData[k])
+            stdevSignal[wvl] = pow((pow(std_Light[0], 2) + pow(std_Dark[0], 2)), 0.5)  # /pow(signalAve, 2)
 
         return dict(
             ave_Light=np.array(ave_Light),
@@ -1235,7 +1235,7 @@ class Trios(Instrument):
         stdevSignal = {}
         for i, wvl in enumerate(raw_wvl[ind_nocal == False]):
             stdevSignal[wvl] = pow(
-                (pow(light_std[i], 2) + pow(dark_std, 2))/pow(np.average(filtered_mesure, axis=0)[i], 2), 0.5)
+                pow(light_std[i], 2) + pow(dark_std, 2), 0.5)  # /pow(np.average(filtered_mesure, axis=0)[i], 2)
 
         return dict(
             ave_Light=np.array(light_avg),
