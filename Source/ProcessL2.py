@@ -1706,7 +1706,10 @@ class ProcessL2:
         else:
             '''NOTE: This should still estimate uncertainties for Factory regime,
                 partcularly for SeaBird which becomes Non-FRM Class regime..'''
-            xUNC = None
+            xUNC = instrument.factory(node, uncGroup,
+                                      dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                                      dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
+                                      stats, instrument_WB)
 
         # move uncertainties from xSlice to xUNC
         if xUNC is not None:
