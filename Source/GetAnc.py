@@ -10,7 +10,7 @@ from PyQt5 import QtWidgets
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 from Source.Utilities import Utilities
-import OBPGSession
+from Source import OBPGSession
 
 class GetAnc:
 

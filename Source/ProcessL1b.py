@@ -16,7 +16,7 @@ from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
-from FidradDB_api import FidradDB_api
+from Source.FidradDB_api import FidradDB_api
 
 class ProcessL1b:
     '''L1B mainly for SeaBird with some shared methods'''

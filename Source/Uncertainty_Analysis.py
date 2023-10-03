@@ -14,13 +14,13 @@ from typing import Optional, Union, Tuple, List, Iterable, Callable, Iterator
 
 # zhangWrapper
 import collections
-import ZhangRho
+from Source import ZhangRho
 
 # M99 Rho
-from HDFRoot import HDFRoot
-from Utilities import Utilities
-from ConfigFile import ConfigFile
-from RhoCorrections import RhoCorrections
+from Source.HDFRoot import HDFRoot
+from Source.Utilities import Utilities
+from Source.ConfigFile import ConfigFile
+from Source.RhoCorrections import RhoCorrections
 
 # TODO remove this part and properly address the warning
 import warnings

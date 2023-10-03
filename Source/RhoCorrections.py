@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-import ZhangRho
+from Source import ZhangRho
 from Source.ConfigFile import ConfigFile
 from Source.Utilities import Utilities
 from Source.HDFRoot import HDFRoot

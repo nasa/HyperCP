@@ -13,12 +13,12 @@ import punpy
 import comet_maths as cm
 
 # HCP files
-from Utilities import Utilities
+from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
 # from ProcessL1b import ProcessL1b
 # from ProcessL1b_Interp import ProcessL1b_Interp
-from ProcessL1b_FRMCal import ProcessL1b_FRMCal
-from Uncertainty_Analysis import Propagate
+from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
+from Source.Uncertainty_Analysis import Propagate
 
 
 class Instrument:
