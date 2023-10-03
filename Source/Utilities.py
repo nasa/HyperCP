@@ -2099,7 +2099,7 @@ class Utilities:
         # Get thermal coefficient from characterization
         uncDS.datasetToColumns()
         therm_coeff = uncDS.data[list(uncDS.columns.keys())[2]]
-        therm_coeff_unc = uncDS.data[list(uncDS.columns.keys())[3]]
+        therm_coeff_unc = uncDS.data[list(uncDS.columns.keys())[3]] / 2  # uncertainty is k=2 from char file
         ThermCorr = []
         ThermUnc = []
 
