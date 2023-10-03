@@ -1297,9 +1297,9 @@ class ProcessL2:
             return False
 
         # make std into dictionaries (data are ODs, but should not matter)
-        esStdSlice = {k: [stats['ES']['std_Signal'][k][0]*esSlice[k][0]] for k in esSlice}
-        liStdSlice = {k: [stats['LI']['std_Signal'][k][0]*liSlice[k][0]] for k in liSlice}
-        ltStdSlice = {k: [stats['LT']['std_Signal'][k][0]*ltSlice[k][0]] for k in ltSlice}
+        esStdSlice = {k: [stats['ES']['std_Signal'][k][0]] for k in esSlice}  # *esSlice[k][0]
+        liStdSlice = {k: [stats['LI']['std_Signal'][k][0]] for k in liSlice}  # *liSlice[k][0]
+        ltStdSlice = {k: [stats['LT']['std_Signal'][k][0]] for k in ltSlice}  # *ltSlice[k][0]
 
         # Convolve es/li/lt slices to satellite bands using RSRs
         if ConfigFile.settings['bL2WeightMODISA']:
