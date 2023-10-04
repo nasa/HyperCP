@@ -1,6 +1,6 @@
 
 import datetime as dt
-
+import numpy as np
 from Source.Utilities import Utilities
 
 class ProcessL1b_FactoryCal:
@@ -222,3 +222,33 @@ class ProcessL1b_FactoryCal:
         node.attributes["SATPYR_UNITS"] = pyrUnits
 
         return node
+
+    @staticmethod
+    def extract_calibration_coeff(node, calibrationMap, sensor):
+        '''
+        extract spectral calibration coeff (OPTIC3) as array
+        '''
+        coeff = []
+        wvl = []
+        for gp in node.groups:
+            # retrieve the LIGHT L1AQC dataset for a given sensor
+            if sensor+"_LIGHT" in gp.id :
+                cf = calibrationMap[gp.attributes["CalFileName"]]
+                for cd in cf.data: 
+                    # Process only OPTIC3
+                    if cd.fitType == "OPTIC3":
+                        coeff.append(float(cd.coefficients[1]))
+                        wvl.append(float(cd.id))
+        return np.array(wvl), np.array(coeff)
+            
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
