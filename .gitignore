@@ -26,7 +26,7 @@ Logs/
 Config/*
 !Config/sample_Calibration/
 !Config/sample*
-# Data/FidRadDB_characterization/
+Data/FidRadDB_characterization/
 .DS_Store
 .pylintrc
 Source/.DS_Store
