@@ -1296,9 +1296,9 @@ class ProcessL2:
             return False
 
         # make std into dictionaries (data are ODs, but should not matter)
-        esStdSlice = {k: [stats['ES']['std_Signal'][k][0]*esSlice[k][0]] for k in esSlice}
-        liStdSlice = {k: [stats['LI']['std_Signal'][k][0]*liSlice[k][0]] for k in liSlice}
-        ltStdSlice = {k: [stats['LT']['std_Signal'][k][0]*ltSlice[k][0]] for k in ltSlice}
+        esStdSlice = {k: [stats['ES']['std_Signal'][k][0]] for k in esSlice}  # *esSlice[k][0]
+        liStdSlice = {k: [stats['LI']['std_Signal'][k][0]] for k in liSlice}  # *liSlice[k][0]
+        ltStdSlice = {k: [stats['LT']['std_Signal'][k][0]] for k in ltSlice}  # *ltSlice[k][0]
 
         # Convolve es/li/lt slices to satellite bands using RSRs
         if ConfigFile.settings['bL2WeightMODISA']:
@@ -1715,7 +1715,10 @@ class ProcessL2:
         else:
             '''NOTE: This should still estimate uncertainties for Factory regime,
                 partcularly for SeaBird which becomes Non-FRM Class regime..'''
-            xUNC = None
+            xUNC = instrument.factory(node, uncGroup,
+                                      dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                                      dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
+                                      stats, instrument_WB)
 
         # move uncertainties from xSlice to xUNC
         if xUNC is not None:
