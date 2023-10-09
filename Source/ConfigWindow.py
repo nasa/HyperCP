@@ -278,8 +278,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.fullFilesLineEdit.setDisabled(True)
 
         self.l1bFRMRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
-        '''NOTE: Temporarily disabled while under development'''
-        self.l1bFRMRadio2.setDisabled(True)
+        # '''NOTE: Temporarily disabled while under development'''
+        # self.l1bFRMRadio2.setDisabled(True)
         if ConfigFile.settings['FidRadDB']:
             self.l1bFRMRadio1.setChecked(False)
             self.l1bFRMRadio2.setChecked(True)
@@ -308,7 +308,8 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1bInterpInterval"]))
         self.l1bInterpIntervalLineEdit.setValidator(doubleValidator)
 
-        l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Plots ({os.path.split(MainConfig.settings['outDir'])[-1]}/Plots/L1B_Interp/)", self)
+        # l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Plots ({os.path.split(MainConfig.settings['outDir'])[-1]}/Plots/L1B_Interp/)", self)
+        l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Interpolation Plots", self)
         self.l1bPlotTimeInterpCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bPlotTimeInterp"]) == 1:
             self.l1bPlotTimeInterpCheckBox.setChecked(True)
@@ -351,10 +352,14 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bqcSZAMaxLineEdit.setValidator(doubleValidator)
 
         # L1BQC Spectral Outlier Filter
-        l1bqcSpecQualityCheckLabel = QtWidgets.QLabel("  Enable Spectral Outlier Filter & Plots", self)
+        l1bqcSpecQualityCheckLabel = QtWidgets.QLabel("  Enable Spectral Outlier Filter", self)
         self.l1bqcSpecQualityCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bqcEnableSpecQualityCheck"]) == 1:
             self.l1bqcSpecQualityCheckBox.setChecked(True)
+        l1bqcSpecQualityCheckPlotLabel = QtWidgets.QLabel("     Generate Plots", self)
+        self.l1bqcSpecQualityCheckPlotBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"]) == 1:
+            self.l1bqcSpecQualityCheckPlotBox.setChecked(True)
 
         self.l1bqcSpecFilterEsLabel = QtWidgets.QLabel("       Filter Sigma Es", self)
         self.l1bqcSpecFilterEsLineEdit = QtWidgets.QLineEdit(self)
@@ -370,6 +375,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bqcSpecFilterLtLineEdit.setValidator(doubleValidator)
 
         self.l1bqcSpecQualityCheckBoxUpdate()
+        self.l1bqcSpecQualityCheckPlotBoxUpdate()
 
         # L1BQC Meteorology Flags
         l1bqcQualityFlagLabel = QtWidgets.QLabel("   Enable Meteorological Filters (Experimental)", self)
@@ -399,6 +405,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l1bqcQualityFlagCheckBoxUpdate()
         self.l1bqcSpecQualityCheckBox.clicked.connect(self.l1bqcSpecQualityCheckBoxUpdate)
+        self.l1bqcSpecQualityCheckPlotBox.clicked.connect(self.l1bqcSpecQualityCheckPlotBoxUpdate)
         self.l1bqcQualityFlagCheckBox.clicked.connect(self.l1bqcQualityFlagCheckBoxUpdate)
 
         # L2
@@ -869,12 +876,15 @@ class ConfigWindow(QtWidgets.QDialog):
         SpecFilterHBox.addWidget(l1bqcSpecQualityCheckLabel)
         SpecFilterHBox.addWidget(self.l1bqcSpecQualityCheckBox)
         VBox3.addLayout(SpecFilterHBox)
+        SpecFilterPlotHBox = QtWidgets.QHBoxLayout()
+        SpecFilterPlotHBox.addWidget(l1bqcSpecQualityCheckPlotLabel)
+        SpecFilterPlotHBox.addWidget(self.l1bqcSpecQualityCheckPlotBox)
+        VBox3.addLayout(SpecFilterPlotHBox)
+
         SpecFilterEsHBox = QtWidgets.QHBoxLayout()
         SpecFilterEsHBox.addWidget(self.l1bqcSpecFilterEsLabel)
         SpecFilterEsHBox.addWidget(self.l1bqcSpecFilterEsLineEdit)
         VBox3.addLayout(SpecFilterEsHBox)
-
-        #   Spectral Outlier Filter
         SpecFilterLiHBox = QtWidgets.QHBoxLayout()
         SpecFilterLiHBox.addWidget(self.l1bqcSpecFilterLiLabel)
         SpecFilterLiHBox.addWidget(self.l1bqcSpecFilterLiLineEdit)
@@ -1301,8 +1311,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
             self.addClassFilesButton.setDisabled(True)
             self.l1bFRMRadio1.setDisabled(False)
-            '''NOTE: Temporarily disabled while under development'''
-            self.l1bFRMRadio2.setDisabled(True)
+            self.l1bFRMRadio2.setDisabled(False)
             self.addFullFilesButton.setDisabled(False)
 
         # Check for RadCal and Full-char files:
@@ -1502,10 +1511,24 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bqcSpecFilterLtLineEdit.setDisabled(disabled)
         self.l1bqcSpecFilterEsLabel.setDisabled(disabled)
         self.l1bqcSpecFilterEsLineEdit.setDisabled(disabled)
+
+        self.l1bqcSpecQualityCheckPlotBox.setDisabled(disabled)
+
         if disabled:
-            ConfigFile.settings["bL2EnableSpecQualityCheck"] = 0
+            ConfigFile.settings["bL1qcEnableSpecQualityCheck"] = 0
+            ConfigFile.settings["bL1qcEnableSpecQualityCheckPlot"] = 0
+            self.l1bqcSpecQualityCheckPlotBox.setChecked(False)
         else:
-            ConfigFile.settings["bL2EnableSpecQualityCheck"] = 1
+            ConfigFile.settings["bL1qcEnableSpecQualityCheck"] = 1
+
+    def l1bqcSpecQualityCheckPlotBoxUpdate(self):
+        print("ConfigWindow - l1bqcSpecQualityCheckPlotBoxUpdate")
+
+        disabled = (not self.l1bqcSpecQualityCheckPlotBox.isChecked())
+        if disabled:
+            ConfigFile.settings["bL1qcEnableSpecQualityCheckPlot"] = 0
+        else:
+            ConfigFile.settings["bL1qcEnableSpecQualityCheckPlot"] = 1
 
     def l1bqcQualityFlagCheckBoxUpdate(self):
         print("ConfigWindow - l1bqcQualityFlagCheckBoxUpdate")

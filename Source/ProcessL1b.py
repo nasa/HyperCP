@@ -16,7 +16,7 @@ from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
-# from FidradDB_api import FidradDB_api
+from FidradDB_api import FidradDB_api
 
 class ProcessL1b:
     '''L1B mainly for SeaBird with some shared methods'''
@@ -618,29 +618,29 @@ class ProcessL1b:
                 print("Full-Char - uncertainty computed from full characterization")
                 print('Full-Char dir:', inpath)
 
-            # elif ConfigFile.settings['FidRadDB'] == 1:
-            #     sensorID = Utilities.get_sensor_dict(node)
-            #     acq_datetime = datetime.strptime(node.attributes["TIME-STAMP"], "%a %b %d %H:%M:%S %Y")
-            #     acq_time = acq_datetime.strftime('%Y%m%d%H%M%S')
-            #     inpath = os.path.join('Data', 'FidRadDB_characterization', "SeaBird", acq_time)
-            #     print('FidRadDB Char dir:', inpath)
+            elif ConfigFile.settings['FidRadDB'] == 1:
+                sensorID = Utilities.get_sensor_dict(node)
+                acq_datetime = datetime.strptime(node.attributes["TIME-STAMP"], "%a %b %d %H:%M:%S %Y")
+                acq_time = acq_datetime.strftime('%Y%m%d%H%M%S')
+                inpath = os.path.join('Data', 'FidRadDB_characterization', "SeaBird", acq_time)
+                print('FidRadDB Char dir:', inpath)
 
-            #     # FidRad DB connection and download of calibration files by api
-            #     types = ['STRAY','RADCAL','POLAR','THERMAL','ANGULAR']
-            #     for sensor in sensorID:
-            #         for sens_type in types:
-            #             try:
-            #                 FidradDB_api(sensor+'_'+sens_type, acq_time, inpath)
-            #             except: None
+                # FidRad DB connection and download of calibration files by api
+                types = ['STRAY','RADCAL','POLAR','THERMAL','ANGULAR']
+                for sensor in sensorID:
+                    for sens_type in types:
+                        try:
+                            FidradDB_api(sensor+'_'+sens_type, acq_time, inpath)
+                        except: None
 
-            #     # Check the number of cal files
-            #     cal_count = 0
-            #     for root_dir, cur_dir, files in os.walk(inpath):
-            #         cal_count += len(files)
-            #     if cal_count !=12:
-            #         print("The number of calibration files doesn't match with the required number (12).")
-            #         print("Aborting")
-            #         exit()
+                # Check the number of cal files
+                cal_count = 0
+                for root_dir, cur_dir, files in os.walk(inpath):
+                    cal_count += len(files)
+                if cal_count !=12:
+                    print("The number of calibration files doesn't match with the required number (12).")
+                    print("Aborting")
+                    exit()
 
             node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
             if node is None:
@@ -714,23 +714,18 @@ class ProcessL1b:
         # Depending on the Configuration, process either the factory
         # calibration, class-based characterization, or the complete
         # instrument characterizations
-        if ConfigFile.settings['bL1bCal'] == 1:
+        if ConfigFile.settings['bL1bCal'] == 1 or ConfigFile.settings['bL1bCal'] == 2:
+            # Class-based radiometric processing is identical to factory processing
+            # Results may differs due to updated calibration files but the two
+            # process are the same. The class-based characterisation will be used
+            # in the uncertainty computation.
+
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join("Config", calFolder)
             print("Read CalibrationFile ", calPath)
             calibrationMap = CalibrationFileReader.read(calPath)
             ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
 
-        elif ConfigFile.settings['bL1bCal'] == 2:
-            # Class-based radiometric processing is identical to factory processing
-            # Results may differs due to updated calibration files but the two
-            # process are the same. The class-based characterisation will be used
-            # in the uncertainty computation.
-            calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-            calPath = os.path.join("Config", calFolder)
-            print("Read CalibrationFile ", calPath)
-            calibrationMap = CalibrationFileReader.read(calPath)
-            ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
 
         elif ConfigFile.settings['bL1bCal'] == 3:
             if not ProcessL1b_FRMCal.processL1b_SeaBird(node):

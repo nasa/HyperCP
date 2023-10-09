@@ -356,12 +356,11 @@ class ProcessL2:
         liUNC = {}
         ltUNC = {}
 
-        # TODO: This needs to be updated for SeaBird Factory path (i.e. Non-FRM Class Based)
-        if ConfigFile.settings['bL1bCal'] >= 2:
+        # Only Factory - Trios has no uncertainty here
+        if ConfigFile.settings['bL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird' :
             esUNC = xUNC['esUNC']  # should already be convolved to hyperspec
             liUNC = xUNC['liUNC']
             ltUNC = xUNC['ltUNC']
-
             for i, k in enumerate(esXSlice):
                 if (k in liXSlice) and (k in ltXSlice):
                     if sensor == 'HYPER':
@@ -480,8 +479,8 @@ class ProcessL2:
                     newRrsUNCData.columns[k].append(rrsUNC[k])
                     # newnLwUNCData.columns[k].append(nLwUNC)
                     newnLwUNCData.columns[k].append(nLwUNC[k])
-                    # if ConfigFile.settings['bL1bCal'] ==1 and ConfigFile.settings['SensorType'].lower == 'trios':
-                    if ConfigFile.settings['bL1bCal'] ==1: # NOTE: Revert to line above once SeaBird Factory is fixed
+                    if ConfigFile.settings['bL1bCal']==1 and ConfigFile.settings['SensorType'].lower() == 'trios':
+                    # Specifique case for Factory-Trios
                         newESUNCData.columns[k].append(esUNC[k])
                         newLIUNCData.columns[k].append(liUNC[k])
                         newLTUNCData.columns[k].append(ltUNC[k])
@@ -1612,11 +1611,13 @@ class ProcessL2:
                 wave_array = np.array(wave_list)
                 # wavelength is now truncated to only valid wavebands for use in Zhang models
                 waveSubset = wave_array[:,1].tolist()
-
+                
             rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
-                                                           SalXSlice, RelAzXSlice, waveSubset, Rho_Uncertainty_Obj)
+                                                            SalXSlice, RelAzXSlice, waveSubset, Rho_Uncertainty_Obj)
+            
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[i]
+                
             rhoScalar = None
 
         else:
@@ -1693,9 +1694,16 @@ class ProcessL2:
 
         # insert Uncertainties into analysis
         xUNC = {}
-        if ConfigFile.settings["bL1bCal"] == 2:
+        
+        #### ADERU: add the case for factory
+        if ConfigFile.settings["bL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "seabird":
+            xSlice.update(instrument.Factory(node, uncGroup, stats))  # update the xSlice dict with uncertianties and samples
+            xUNC.update(instrument.rrsHyperUNCFACTORY(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+       
+        elif ConfigFile.settings["bL1bCal"] == 2:
             xSlice.update(instrument.Default(uncGroup, stats))  # update the xSlice dict with uncertianties and samples
             xUNC.update(instrument.rrsHyperUNC(uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+        
         elif ConfigFile.settings["bL1bCal"] == 3:
             xSlice.update(
                 instrument.FRM(node, uncGroup,
@@ -1703,6 +1711,7 @@ class ProcessL2:
                                dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
                                stats, instrument_WB))
             xUNC.update(instrument.rrsHyperUNCFRM(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+        
         else:
             '''NOTE: This should still estimate uncertainties for Factory regime,
                 partcularly for SeaBird which becomes Non-FRM Class regime..'''
@@ -1983,10 +1992,11 @@ class ProcessL2:
         sasGroup = rootCopy.getGroup("RADIANCE")
         ancGroup = rootCopy.getGroup("ANCILLARY")
 
-        if ConfigFile.settings["bL1bCal"] >= 2:
+        if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("RAW_UNCERTAINTIES")
             rootCopy.getGroup('RAW_UNCERTAINTIES').copy(root.getGroup('RAW_UNCERTAINTIES'))
             uncGroup = rootCopy.getGroup("RAW_UNCERTAINTIES")
+        # Only Factory-Trios has no unc
         else:
             uncGroup = None
 
