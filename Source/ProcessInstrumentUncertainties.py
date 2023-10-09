@@ -1132,7 +1132,7 @@ class HyperOCR(Instrument):
 
             # Normalised signal standard deviation =
             # signalAve = np.average(lightData[k])
-            stdevSignal[wvl] = pow((pow(std_Light[0], 2) + pow(std_Dark[0], 2)), 0.5)  # /pow(signalAve, 2)
+            stdevSignal[wvl] = pow((pow(std_Light[-1], 2) + pow(std_Dark[-1], 2)), 0.5)  # /pow(signalAve, 2)
 
         return dict(
             ave_Light=np.array(ave_Light),
