@@ -714,23 +714,18 @@ class ProcessL1b:
         # Depending on the Configuration, process either the factory
         # calibration, class-based characterization, or the complete
         # instrument characterizations
-        if ConfigFile.settings['bL1bCal'] == 1:
+        if ConfigFile.settings['bL1bCal'] == 1 or ConfigFile.settings['bL1bCal'] == 2:
+            # Class-based radiometric processing is identical to factory processing
+            # Results may differs due to updated calibration files but the two
+            # process are the same. The class-based characterisation will be used
+            # in the uncertainty computation.
+
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join("Config", calFolder)
             print("Read CalibrationFile ", calPath)
             calibrationMap = CalibrationFileReader.read(calPath)
             ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
 
-        elif ConfigFile.settings['bL1bCal'] == 2:
-            # Class-based radiometric processing is identical to factory processing
-            # Results may differs due to updated calibration files but the two
-            # process are the same. The class-based characterisation will be used
-            # in the uncertainty computation.
-            calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-            calPath = os.path.join("Config", calFolder)
-            print("Read CalibrationFile ", calPath)
-            calibrationMap = CalibrationFileReader.read(calPath)
-            ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
 
         elif ConfigFile.settings['bL1bCal'] == 3:
             if not ProcessL1b_FRMCal.processL1b_SeaBird(node):

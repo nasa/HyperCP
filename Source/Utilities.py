@@ -1544,27 +1544,28 @@ class Utilities:
     def specFilter(inFilePath, Dataset, timeStamp, station=None, filterRange=[400, 700],\
                 filterFactor=3, rType='None'):
 
-        import logging
-        logging.getLogger('matplotlib.font_manager').disabled = True
+        if ConfigFile.settings['bL1bqcEnableSpecQualityCheckPlot']:
+            import logging
+            logging.getLogger('matplotlib.font_manager').disabled = True
 
-        dirPath = os.getcwd()
-        outDir = MainConfig.settings["outDir"]
-        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
-        # and build on that (HyperInSPACE/Plots/etc...)
-        if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
-            outDir = dirPath
+            dirPath = os.getcwd()
+            outDir = MainConfig.settings["outDir"]
+            # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
+            # and build on that (HyperInSPACE/Plots/etc...)
+            if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
+                outDir = dirPath
 
-        # Otherwise, put Plots in the chosen output directory from Main
-        plotDir = os.path.join(outDir,'Plots','L1BQC_Spectral_Filter')
+            # Otherwise, put Plots in the chosen output directory from Main
+            plotDir = os.path.join(outDir,'Plots','L1BQC_Spectral_Filter')
 
-        if not os.path.exists(plotDir):
-            os.makedirs(plotDir)
+            if not os.path.exists(plotDir):
+                os.makedirs(plotDir)
 
-        font = {'family': 'serif',
-                'color':  'darkred',
-                'weight': 'normal',
-                'size': 16,
-                }
+            font = {'family': 'serif',
+                    'color':  'darkred',
+                    'weight': 'normal',
+                    'size': 16,
+                    }
 
         # Collect each column name ignoring Datetag and Timetag2 (i.e. each wavelength) in the desired range
         x = []
@@ -1579,10 +1580,13 @@ class Utilities:
         total = Dataset.data.shape[0]
         specArray = []
         normSpec = []
-        # cmap = cm.get_cmap("jet")
-        # color=iter(cmap(np.linspace(0,1,total)))
-        print('Creating plots...')
-        plt.figure(1, figsize=(10,8))
+
+        if ConfigFile.settings['bL1qcEnableSpecQualityCheckPlot']:
+            # cmap = cm.get_cmap("jet")
+            # color=iter(cmap(np.linspace(0,1,total)))
+            print('Creating plots...')
+            plt.figure(1, figsize=(10,8))
+
         for timei in range(total):
             y = []
             for waveband in x:
@@ -1616,39 +1620,40 @@ class Utilities:
         # Duplicates each element to a list of two elements in a list:
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
 
-        # t0 = time.time()
-        for timei in range(total):
-        # for i in badIndx:
-            if timei in badIndx:
-                # plt.plot( wave, normSpec[i,:], color='red', linewidth=0.5, linestyle=(0, (1, 10)) ) # long-dot
-                plt.plot( wave, normSpec[timei,:], color='red', linewidth=0.5, linestyle=(0, (5, 5)) ) # dashed
+        if ConfigFile.settings['bL1qcEnableSpecQualityCheckPlot']:
+            # t0 = time.time()
+            for timei in range(total):
+            # for i in badIndx:
+                if timei in badIndx:
+                    # plt.plot( wave, normSpec[i,:], color='red', linewidth=0.5, linestyle=(0, (1, 10)) ) # long-dot
+                    plt.plot( wave, normSpec[timei,:], color='red', linewidth=0.5, linestyle=(0, (5, 5)) ) # dashed
+                else:
+                    plt.plot(wave, normSpec[timei,:], color='grey')
+
+            # t1 = time.time()
+            # print(f'Time elapsed: {str(round((t1-t0)))} Seconds')
+
+            plt.plot(wave, aveSpec, color='black', linewidth=0.5)
+            plt.plot(wave, aveSpec + filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
+            plt.plot(wave, aveSpec - filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
+
+            plt.title(f'Sigma = {filterFactor}', fontdict=font)
+            plt.xlabel('Wavelength [nm]', fontdict=font)
+            plt.ylabel(f'{rType} [Normalized to peak value]', fontdict=font)
+            plt.subplots_adjust(left=0.15)
+            plt.subplots_adjust(bottom=0.15)
+            axes = plt.gca()
+            axes.grid()
+
+            # Save the plot
+            _,filename = os.path.split(inFilePath)
+            filebasename,_ = filename.rsplit('_',1)
+            if station:
+                fp = os.path.join(plotDir, f'STATION_{station}_{filebasename}_{rType}.png')
             else:
-                plt.plot(wave, normSpec[timei,:], color='grey')
-
-        # t1 = time.time()
-        # print(f'Time elapsed: {str(round((t1-t0)))} Seconds')
-
-        plt.plot(wave, aveSpec, color='black', linewidth=0.5)
-        plt.plot(wave, aveSpec + filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
-        plt.plot(wave, aveSpec - filterFactor*stdSpec, color='black', linewidth=2, linestyle='dashed')
-
-        plt.title(f'Sigma = {filterFactor}', fontdict=font)
-        plt.xlabel('Wavelength [nm]', fontdict=font)
-        plt.ylabel(f'{rType} [Normalized to peak value]', fontdict=font)
-        plt.subplots_adjust(left=0.15)
-        plt.subplots_adjust(bottom=0.15)
-        axes = plt.gca()
-        axes.grid()
-
-        # Save the plot
-        _,filename = os.path.split(inFilePath)
-        filebasename,_ = filename.rsplit('_',1)
-        if station:
-            fp = os.path.join(plotDir, f'STATION_{station}_{filebasename}_{rType}.png')
-        else:
-            fp = os.path.join(plotDir, f'{filebasename}_{rType}.png')
-        plt.savefig(fp)
-        plt.close()
+                fp = os.path.join(plotDir, f'{filebasename}_{rType}.png')
+            plt.savefig(fp)
+            plt.close()
 
         return badTimes
 
