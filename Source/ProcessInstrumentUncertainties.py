@@ -71,27 +71,27 @@ class Instrument:
 
         # interpolate to common wavebands
         for stype in types:
-            # get sensor specific wavebands and pop from output
-            output[stype]['ave_Light'], _ = self.interp_common_wvls(
-                                             output[stype]['ave_Light'],
-                                             np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-                                             newWaveBands)
-            output[stype]['std_Light'], _ = self.interp_common_wvls(
-                                             output[stype]['std_Light'],
-                                             np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-                                             newWaveBands)
-
-            if InstrumentType.lower() == "seabird":
-                output[stype]['ave_Dark'], _ = self.interp_common_wvls(
-                    output[stype]['ave_Dark'],
-                    np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-                    newWaveBands)
-                output[stype]['std_Dark'], _ = self.interp_common_wvls(
-                    output[stype]['std_Dark'],
-                    np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-                    newWaveBands)
-
-            _, output[stype]['std_Signal'] = self.interp_common_wvls(
+        #     # get sensor specific wavebands and pop from output
+        #     output[stype]['ave_Light'], _ = self.interp_common_wvls(
+        #                                      output[stype]['ave_Light'],
+        #                                      np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+        #                                      newWaveBands)
+        #     output[stype]['std_Light'], _ = self.interp_common_wvls(
+        #                                      output[stype]['std_Light'],
+        #                                      np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+        #                                      newWaveBands)
+        #
+        #     if InstrumentType.lower() == "seabird":
+        #         output[stype]['ave_Dark'], _ = self.interp_common_wvls(
+        #             output[stype]['ave_Dark'],
+        #             np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+        #             newWaveBands)
+        #         output[stype]['std_Dark'], _ = self.interp_common_wvls(
+        #             output[stype]['std_Dark'],
+        #             np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+        #             newWaveBands)
+        #
+            _, output[stype]['std_Signal_Interpolated'] = self.interp_common_wvls(
                 output[stype]['std_Signal'],
                 np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
                 newWaveBands)
@@ -370,7 +370,10 @@ class Instrument:
             cols = np.asarray(list(radcal.columns['2']))
             Coeff[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
             cal_cols = np.asarray(list(radcal.columns['3']))
-            Cal[sensor], _ = self.interp_common_wvls(cal_cols, waves, nWB)
+            msk = np.where(cal_cols!=0)
+            cal_cols = cal_cols[msk]  # mask 0s out of cal cols before interp
+            # cal_cols[np.where(cal_cols == 0)] = 200
+            Cal[sensor], _ = self.interp_common_wvls(cal_cols, waves[msk], nWB)
 
             # TODO: temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
@@ -389,6 +392,7 @@ class Instrument:
         Propagate_L2 = Propagate(M=100, cores=0)
         slice_size = len(es)
         ones = np.ones(slice_size)
+        zeros = np.zeros(slice_size)
 
         lw_means = [lt, rho, li,
                     Coeff['LI'], Coeff['LT'],
@@ -416,17 +420,46 @@ class Instrument:
                  ones, ones, ones,
                  ones, ones, ones]
 
-        uncertainties = [np.array(list(ltXstd.values())).flatten(), rhoDelta,
-                         np.array(list(liXstd.values())).flatten(),
-                         np.array(list(esXstd.values())).flatten(),
+        uncertainties = [zeros, zeros,  # np.array(list(ltXstd.values())).flatten(), zeros,  # rhoDelta,  # * lt
+                         zeros,  # np.array(list(liXstd.values())).flatten(),  # * li
+                         zeros,  # np.array(list(esXstd.values())).flatten(),  # * es
                          Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
+                         # zeros, zeros, zeros,
+                         # zeros, zeros, zeros,
+                         # zeros, zeros, zeros,
+                         # zeros, zeros, zeros,
+                         # zeros, zeros, zeros,
+                         # zeros, zeros, zeros]
                          cStab['ES'], cStab['LI'], cStab['LT'],
                          cLin['ES'], cLin['LI'], cLin['LT'],
                          cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
                          Ct['ES'], Ct['LI'], Ct['LT'],
                          cPol['LI'], cPol['LT'], cPol['ES']]
 
-        rrsAbsUnc, rrs_vals, rel_unc = Propagate_L2.Propagate_RRS(means, uncertainties)
+        rrsAbsUnc, rrs_vals = Propagate_L2.Propagate_RRS(means, uncertainties)
+
+        means = [es, li, lt, rho,
+                 ones, ones, ones,
+                 ones, ones, ones,
+                 ones, ones, ones,
+                 ones, ones, ones,
+                 ones, ones, ones,
+                 ones, ones, ones]
+        uncs = [
+            np.array(list(esXstd.values())).flatten(),
+            np.array(list(liXstd.values())).flatten(),
+            np.array(list(ltXstd.values())).flatten(),
+            rhoDelta,
+            Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
+            cStab['ES'], cStab['LI'], cStab['LT'],
+            cLin['ES'], cLin['LI'], cLin['LT'],
+            cStray['ES'] / 100, cStray['LI'] / 100, cStray['LT'] / 100,
+            Ct['ES'], Ct['LI'], Ct['LT'],
+            cPol['ES'], cPol['LI'], cPol['LT']
+        ]
+
+        tst_unc = Propagate_L2.propRrs2(means, uncs)
+        print(np.abs((tst_unc * 1e10)/(rrs_vals * 1e10)) * 100)
 
         ## BAND CONVOLUTION
         # band convolution of uncertainties is done here to include uncertainty contribution of band convolution process
@@ -1110,7 +1143,7 @@ class HyperOCR(Instrument):
             # ind_nocal = ind_nan | ind_zero
 
             # Remove wvl without calibration from the dataset and make uncertainties relative
-            filtered_mesure = FRM_mesure[ind_nocal == False]
+            # filtered_mesure = FRM_mesure[ind_nocal == False]
             # rel_unc = np.power(np.power(unc[ind_nocal == False]*1e10, 2)/np.power(filtered_mesure*1e10, 2), 0.5)
 
             output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
