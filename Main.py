@@ -230,10 +230,10 @@ class Window(QtWidgets.QWidget):
         popQueryBox.addWidget(self.popQueryCheckBox)
         vBox.addLayout(popQueryBox)
 
-        saveQueryBox = QtWidgets.QHBoxLayout()
-        saveQueryBox.addWidget(saveLabel)
-        saveQueryBox.addWidget(self.saveButton)
-        vBox.addLayout(saveQueryBox)
+        # saveQueryBox = QtWidgets.QHBoxLayout()
+        # saveQueryBox.addWidget(saveLabel)
+        # saveQueryBox.addWidget(self.saveButton)
+        # vBox.addLayout(saveQueryBox)
 
         vBox.addStretch(1)
 
@@ -254,6 +254,7 @@ class Window(QtWidgets.QWidget):
         index = self.configComboBox.findText(MainConfig.settings['cfgFile'])
         self.configComboBox.setCurrentIndex(index)
         print('MainConfig: Configuration file changed to: ', value)
+        MainConfig.saveConfig(MainConfig.fileName)
 
     def configNewButtonPressed(self):
         print('New Config Dialogue')
@@ -279,6 +280,7 @@ class Window(QtWidgets.QWidget):
                 seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
                 print('Creating New SeaBASSHeader File: ', seaBASSHeaderFileName)
                 SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
+            MainConfig.saveConfig(MainConfig.fileName)
 
     def configEditButtonPressed(self):
         print('Edit Config Dialogue')
@@ -322,6 +324,7 @@ class Window(QtWidgets.QWidget):
         print('Data input directory changed: ', self.inputDirectory)
         self.inDirButton.setText(self.inputDirectory)
         MainConfig.settings['inDir'] = self.inputDirectory
+        MainConfig.saveConfig(MainConfig.fileName)
         return self.inputDirectory
 
     def outDirButtonPressed(self):
@@ -338,6 +341,7 @@ class Window(QtWidgets.QWidget):
         print('      automatically, unless they already exist.')
         self.outDirButton.setText(self.outputDirectory)
         MainConfig.settings['outDir'] = self.outputDirectory
+        MainConfig.saveConfig(MainConfig.fileName)
         return self.outputDirectory
 
     def outInDirButtonPressed(self):
@@ -347,6 +351,7 @@ class Window(QtWidgets.QWidget):
         print('      automatically, unless they already exist.')
         self.outDirButton.setText(self.outputDirectory)
         MainConfig.settings['outDir'] = self.outputDirectory
+        MainConfig.saveConfig(MainConfig.fileName)
         return self.outputDirectory
 
     def ancAddButtonPressed(self):
@@ -361,12 +366,14 @@ class Window(QtWidgets.QWidget):
             if len(fnames[0]) == 1:
                 self.ancFileLineEdit.setText(fnames[0][0])
             MainConfig.settings['metFile'] = fnames[0][0] # unclear why this sometimes does not "take" the first time
+            MainConfig.saveConfig(MainConfig.fileName)
 
     def ancRemoveButtonPressed(self):
         print('Wind File Remove Dialogue')
         self.ancFileLineEdit.setText('')
         MainConfig.settings['metFile'] = ''
         self.ancFileDirectory = ''
+        MainConfig.saveConfig(MainConfig.fileName)
 
     def processSingle(self, level):
         print('Process Single-Level')

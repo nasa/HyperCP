@@ -587,7 +587,7 @@ class ProcessL1b:
 
         # Add class-based files (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
-            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
             node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
             if node is None:
@@ -598,7 +598,7 @@ class ProcessL1b:
 
         # Add class-based files + RADCAL file
         elif ConfigFile.settings['bL1bCal'] == 2:
-            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             radcal_dir = ConfigFile.settings['RadCalDir']
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
@@ -622,7 +622,7 @@ class ProcessL1b:
                 sensorID = Utilities.get_sensor_dict(node)
                 acq_datetime = datetime.strptime(node.attributes["TIME-STAMP"], "%a %b %d %H:%M:%S %Y")
                 acq_time = acq_datetime.strftime('%Y%m%d%H%M%S')
-                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB_characterization', "SeaBird", acq_time)
+                inpath = os.path.join('Data', 'FidRadDB_characterization', "SeaBird", acq_time)
                 print('FidRadDB Char dir:', inpath)
 
                 # FidRad DB connection and download of calibration files by api
@@ -714,14 +714,7 @@ class ProcessL1b:
         # Depending on the Configuration, process either the factory
         # calibration, class-based characterization, or the complete
         # instrument characterizations
-        if ConfigFile.settings['bL1bCal'] == 1:
-            calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-            calPath = os.path.join(PATH_TO_CONFIG, calFolder)
-            print("Read CalibrationFile ", calPath)
-            calibrationMap = CalibrationFileReader.read(calPath)
-            ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
-
-        elif ConfigFile.settings['bL1bCal'] == 2:
+        if ConfigFile.settings['bL1bCal'] == 1 or ConfigFile.settings['bL1bCal'] == 2:
             # Class-based radiometric processing is identical to factory processing
             # Results may differs due to updated calibration files but the two
             # process are the same. The class-based characterisation will be used

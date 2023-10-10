@@ -12,7 +12,7 @@ retrieval. Data output are formatted to text files for submission to the [SeaBAS
 Currently, HyperCP supports <a href='https://www.seabird.com/'>Sea-Bird Scientific</a> HyperSAS packages with and
 without SolarTracker or pySAS robotic platforms as well as [TriOS](https://www.trios.de/en/radiometers.html) used in manual configuration. If you are interested in integrating support for your platform, contact us at the email addresses below the copyright.
 
-## Version 1.2.0 (see Changelog.md)
+## Version 1.2.0
 
 ```
 The MIT license
@@ -28,11 +28,11 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  ```
 
-**Main author**: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>
+**Main author**: Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>
 
-**Co-authors**: Nathan Vandenberg @ UVictoria, Maycira Costa @ UVictoria (in the frame of [PySciDON](https://ieeexplore.ieee.org/abstract/document/8121926)), Alexis Deru @ ACRI-ST, Ashley Ramsay @ NPL, Agnieszka Bialek @ NPL, Marine Bretagnon @ ACRI-ST (in the frame of Copernicus' [FRM4SOC-2](https://frm4soc2.eumetsat.int/))
+**Co-authors**: Nathan Vandenberg @ UVictoria, Maycira Costa @ UVictoria (in the frame of [PySciDON](https://ieeexplore.ieee.org/abstract/document/8121926)), Alexis Deru @ ACRI-ST, Ashley Ramsay @ NPL, Agnieszka Bialek @ NPL, Marine Bretagnon @ ACRI-ST (in the frame of Copernicus' [FRM4SOC-2](https://frm4soc2.eumetsat.int/)), Gabriele Bai @ ACRI-ST, Juan Ignacio Gossn @ EUMETSAT, Nils Haentjens @ UMaine
 
-**Contact**: Dirk Aurin, USRA @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>, Juan Ignacio Gossn @ EUMETSAT <JuanIgnacio.Gossn@eumetsat.int>
+**Contact**: Discussions tab in GitHub, or Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>, Juan Ignacio Gossn @ EUMETSAT <JuanIgnacio.Gossn@eumetsat.int>
 
 ## Requirements and Installation
 

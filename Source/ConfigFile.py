@@ -90,6 +90,7 @@ class ConfigFile:
         print("fL1bqcSZAMax", ConfigFile.settings["fL1bqcSZAMax"])
 
         print("bL1bqcEnableSpecQualityCheck", ConfigFile.settings["bL1bqcEnableSpecQualityCheck"])
+        print("bL1bqcEnableSpecQualityCheckPlot", ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"])
         print("fL1bqcSpecFilterEs", ConfigFile.settings["fL1bqcSpecFilterEs"])
         print("fL1bqcSpecFilterLi", ConfigFile.settings["fL1bqcSpecFilterLi"])
         print("fL1bqcSpecFilterLt", ConfigFile.settings["fL1bqcSpecFilterLt"])
@@ -276,6 +277,7 @@ class ConfigFile:
         ConfigFile.settings["fL1bSZAMax"] = 60 # e.g. 60:Brewin 2016,
 
         ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 1
+        ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 1
         ConfigFile.settings["fL1bqcSpecFilterEs"] = 5
         ConfigFile.settings["fL1bqcSpecFilterLi"] = 8
         ConfigFile.settings["fL1bqcSpecFilterLt"] = 3
