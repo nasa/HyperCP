@@ -1,9 +1,9 @@
-
 import os
 import glob
 from fpdf import FPDF
 import random
 
+from Source import PATH_TO_CONFIG
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.ConfigFile import ConfigFile
 
@@ -489,7 +489,7 @@ class PDF(FPDF):
         self.chapter_title(level, title)
 
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
-        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
+        seaBASSHeaderPath = os.path.join(PATH_TO_CONFIG, seaBASSHeaderFileName)
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 

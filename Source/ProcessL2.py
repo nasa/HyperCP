@@ -8,7 +8,7 @@ import copy
 from PyQt5 import QtWidgets
 from tqdm import tqdm
 
-from HDFRoot import HDFRoot
+from Source.HDFRoot import HDFRoot
 from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
 from Source.RhoCorrections import RhoCorrections

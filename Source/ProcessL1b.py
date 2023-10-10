@@ -1,22 +1,22 @@
-
 import os
 import datetime as dt
 import calendar
-import numpy as np
 from inspect import currentframe, getframeinfo
 import glob
 from datetime import datetime
+
+import numpy as np
+
+from Source import PATH_TO_DATA, PATH_TO_CONFIG
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
-from Source.ProcessL1b_ClassCal import ProcessL1b_ClassCal
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ConfigFile import ConfigFile
-from Source.MainConfig import MainConfig
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
-from FidradDB_api import FidradDB_api
+from Source.FidradDB_api import FidradDB_api
 
 class ProcessL1b:
     '''L1B mainly for SeaBird with some shared methods'''
@@ -719,13 +719,11 @@ class ProcessL1b:
             # Results may differs due to updated calibration files but the two
             # process are the same. The class-based characterisation will be used
             # in the uncertainty computation.
-
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-            calPath = os.path.join("Config", calFolder)
+            calPath = os.path.join(PATH_TO_CONFIG, calFolder)
             print("Read CalibrationFile ", calPath)
             calibrationMap = CalibrationFileReader.read(calPath)
             ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
-
 
         elif ConfigFile.settings['bL1bCal'] == 3:
             if not ProcessL1b_FRMCal.processL1b_SeaBird(node):
