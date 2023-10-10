@@ -1,6 +1,7 @@
 on:
   push:
-#    branches:
+    branches:
+      - workflow
 #      - main
 #      - dev
 
@@ -13,12 +14,16 @@ jobs:
         os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: conda-incubator/setup-miniconda@v2
-      with:
-        environment-file: environment.yml
-        activate-environment: hypercp
-    - run: python make.py
-    - uses: actions/upload-artifact@v3
-      with:
-        path: Bundled/dist/*
+      - run: echo "${{ runner.name }} - ${{ runner.release }} - ${{ runner.cpu-model }}"
+      - uses: actions/checkout@v4
+        with:
+          ref: 'workflow'  # branch to checkout
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: environment.yml
+          activate-environment: hypercp
+      - run: pip install PyInstaller  # Not included in default environment
+      - run: python make.py
+      - uses: actions/upload-artifact@v3
+        with:
+          path: Bundled/dist/*
