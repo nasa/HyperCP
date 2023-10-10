@@ -1,16 +1,16 @@
-
 import os
 import datetime as dt
 import calendar
-import numpy as np
 from inspect import currentframe, getframeinfo
 import glob
 from datetime import datetime
+
+import numpy as np
+
+from Source import PATH_TO_DATA, PATH_TO_CONFIG
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
-from Source.ProcessL1b_ClassCal import ProcessL1b_ClassCal
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ConfigFile import ConfigFile
-from Source.MainConfig import MainConfig
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
@@ -587,7 +587,7 @@ class ProcessL1b:
 
         # Add class-based files (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
-            classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
             node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
             if node is None:
@@ -598,7 +598,7 @@ class ProcessL1b:
 
         # Add class-based files + RADCAL file
         elif ConfigFile.settings['bL1bCal'] == 2:
-            classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             radcal_dir = ConfigFile.settings['RadCalDir']
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
@@ -622,7 +622,7 @@ class ProcessL1b:
                 sensorID = Utilities.get_sensor_dict(node)
                 acq_datetime = datetime.strptime(node.attributes["TIME-STAMP"], "%a %b %d %H:%M:%S %Y")
                 acq_time = acq_datetime.strftime('%Y%m%d%H%M%S')
-                inpath = os.path.join('Data', 'FidRadDB_characterization', "SeaBird", acq_time)
+                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB_characterization', "SeaBird", acq_time)
                 print('FidRadDB Char dir:', inpath)
 
                 # FidRad DB connection and download of calibration files by api
@@ -716,7 +716,7 @@ class ProcessL1b:
         # instrument characterizations
         if ConfigFile.settings['bL1bCal'] == 1:
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-            calPath = os.path.join("Config", calFolder)
+            calPath = os.path.join(PATH_TO_CONFIG, calFolder)
             print("Read CalibrationFile ", calPath)
             calibrationMap = CalibrationFileReader.read(calPath)
             ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
@@ -727,7 +727,7 @@ class ProcessL1b:
             # process are the same. The class-based characterisation will be used
             # in the uncertainty computation.
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-            calPath = os.path.join("Config", calFolder)
+            calPath = os.path.join(PATH_TO_CONFIG, calFolder)
             print("Read CalibrationFile ", calPath)
             calibrationMap = CalibrationFileReader.read(calPath)
             ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)

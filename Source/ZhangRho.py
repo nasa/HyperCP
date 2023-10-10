@@ -1,4 +1,3 @@
-
 import os
 import logging
 from typing import Optional
@@ -7,6 +6,8 @@ from functools import lru_cache
 import numpy as np
 import xarray as xr  # Only needed to read original data
 from scipy.interpolate import interpn
+
+from Source import PATH_TO_DATA
 
 
 logger = logging.getLogger('zhang17')
@@ -28,7 +29,7 @@ def load():
     logger.debug('Load constants')
     global db, quads, skyrad0, sunrad0, sdb, vdb, rad_boa_sca, rad_boa_vec
 
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Data', 'Zhang_rho_db.mat')
+    db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_db.mat')
     with xr.open_dataset(db_path, engine='netcdf4') as ds:
         skyrad0 = ds['skyrad0'].to_numpy().T
         sunrad0 = ds['sunrad0'].to_numpy().T

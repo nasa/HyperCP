@@ -1,16 +1,13 @@
-
 import os
 import sys
 import csv
 import numpy as np
-import types
-from datetime import datetime
-import pytz
 
 import warnings
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
 
+from Source import PATH_TO_CONFIG
 from Source.Controller import Controller
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
@@ -39,7 +36,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # to file-specific parameters
         anomAnalFileName = os.path.splitext(ConfigFile.filename)[0]
         self.anomAnalFileName = anomAnalFileName + '_anoms.csv'
-        fp = os.path.join('Config',self.anomAnalFileName)
+        fp = os.path.join(PATH_TO_CONFIG, self.anomAnalFileName)
         if os.path.exists(fp):
             self.params = Utilities.readAnomAnalFile(fp)
         else:
@@ -390,7 +387,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # pFormat = self.photoFormat.text()
         # tz = pFormat[-5:] # clumsy hardcoding of TZ pFormat: Must be the last 5 characters
         # pFormat = pFormat[0:-5]
-        self.photoFP = os.path.join(self.inputDirectory,'Photos')
+        self.photoFP = os.path.join(self.inputDirectory, 'Photos')
         if os.path.isdir(self.photoFP) is False:
             os.mkdir(self.photoFP)
         # photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, pFormat, tz)
@@ -822,7 +819,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL1aqcAnomalyStep"] = int(self.AnomalyStepLineEdit.text())
 
         # Save file-specific parameters to CSV file
-        fp = os.path.join('Config',self.anomAnalFileName)
+        fp = os.path.join(PATH_TO_CONFIG,self.anomAnalFileName)
         self.writeAnomAnalFile(fp)
 
     def writeAnomAnalFile(self, filePath):
@@ -977,7 +974,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
 
         calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-        calPath = os.path.join("Config", calFolder)
+        calPath = os.path.join(PATH_TO_CONFIG, calFolder)
         print("Read CalibrationFile ", calPath)
         calibrationMap = CalibrationFileReader.read(calPath)
         ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])

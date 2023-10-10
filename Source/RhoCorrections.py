@@ -3,8 +3,7 @@ import time
 
 import numpy as np
 
-from Source import ZhangRho
-from Source.ConfigFile import ConfigFile
+from Source import ZhangRho, PATH_TO_DATA
 from Source.Utilities import Utilities
 from Source.HDFRoot import HDFRoot
 
@@ -33,7 +32,7 @@ class RhoCorrections:
         relAz = phiViews[relAz_idx]
 
         # load in the LUT HDF file
-        inFilePath = os.path.join(ConfigFile.fpHySP, 'Data','rhoTable_AO1999.hdf')
+        inFilePath = os.path.join(PATH_TO_DATA, 'rhoTable_AO1999.hdf')
         try:
             lut = HDFRoot.readHDF5(inFilePath)
         except:

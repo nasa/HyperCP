@@ -36,9 +36,12 @@ with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Main.py'), 
             break
 
 # Include all Data files (except Zhang table)
-linked_data = []
+linked_data = [
+    f'--add-data={os.path.relpath("Config", root)}{add_data_sep}Config',
+    f'--add-data={os.path.relpath(".ecmwf_api_config", root)}{add_data_sep}.',
+]
 for f in sorted(glob.glob(os.path.join('Data', '*'))):
-    if os.path.isdir(f):
+    if os.path.isdir(f) and os.path.basename(f) not in ['L1A', 'L1AQC', 'L1B', 'L1BQC', 'L2', 'Plots', 'Reports']:
         linked_data.append(f'--add-data={os.path.relpath(f, root)}{add_data_sep}{f}')
     elif re.match('^.*\.(txt|csv|sb|nc|hdf)$', os.path.splitext(f)[1]):
         linked_data.append(f'--add-data={os.path.relpath(f, root)}{add_data_sep}Data')

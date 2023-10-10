@@ -1,8 +1,10 @@
-
 import collections
 import json
 import os
 import shutil
+
+from Source import PATH_TO_CONFIG
+
 
 class ConfigFile:
     filename = ''
@@ -10,11 +12,6 @@ class ConfigFile:
     products = collections.OrderedDict()
     minDeglitchBand = 350
     maxDeglitchBand = 850
-
-    fpHySP = os.path.dirname(__file__).split(os.path.sep)
-    fpHySP[0] = os.path.sep
-    fpHySP[-1] = ''
-    fpHySP = os.path.join(*fpHySP)
 
     @staticmethod
     def printd():
@@ -371,7 +368,7 @@ class ConfigFile:
         ConfigFile.filename = filename
         params = dict(ConfigFile.settings, **ConfigFile.products)
         jsn = json.dumps(params)
-        fp = os.path.join("Config", filename)
+        fp = os.path.join(PATH_TO_CONFIG, filename)
 
         #print(os.path.abspath(os.curdir))
         with open(fp, 'w') as f:
@@ -386,7 +383,7 @@ class ConfigFile:
         # Load the default values first to insure all settings are present, then populate with saved values where possible
         ConfigFile.createDefaultConfig(filename, 0)
 
-        configPath = os.path.join("Config", filename)
+        configPath = os.path.join(PATH_TO_CONFIG, filename)
         if os.path.isfile(configPath):
             # print(f'Populating ConfigFile with saved parameters: {filename}')
             ConfigFile.filename = filename
@@ -413,10 +410,10 @@ class ConfigFile:
     @staticmethod
     def deleteConfig(filename):
         print("ConfigFile - Delete Config")
-        configPath = os.path.join("Config", filename)
-        seabassPath = os.path.join("Config", filename.split('.')[0], "hdr")
+        configPath = os.path.join(PATH_TO_CONFIG, filename)
+        seabassPath = os.path.join(PATH_TO_CONFIG, filename.split('.')[0], "hdr")
         if "seaBASSHeaderFileName" in ConfigFile.settings:
-            seabassPath = os.path.join("Config", ConfigFile.settings["seaBASSHeaderFileName"])
+            seabassPath = os.path.join(PATH_TO_CONFIG, ConfigFile.settings["seaBASSHeaderFileName"])
             if os.path.isfile(seabassPath):
                 os.remove(seabassPath)
         if os.path.isfile(configPath):
@@ -432,7 +429,7 @@ class ConfigFile:
     def getCalibrationDirectory():
         # print("ConfigFile - getCalibrationDirectory")
         calibrationDir = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-        calibrationPath = os.path.join("Config", calibrationDir)
+        calibrationPath = os.path.join(PATH_TO_CONFIG, calibrationDir)
         return calibrationPath
 
     @staticmethod

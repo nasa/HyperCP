@@ -1,9 +1,9 @@
-
 import os
 import shutil, glob
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pathlib import Path
 
+from Source import PATH_TO_CONFIG
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
@@ -59,7 +59,7 @@ class ConfigWindow(QtWidgets.QDialog):
         fsm.setNameFilterDisables(False)
         fsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
         calibrationDir = os.path.splitext(self.name)[0] + "_Calibration"
-        self.calibrationPath = os.path.join("Config", calibrationDir)
+        self.calibrationPath = os.path.join(PATH_TO_CONFIG, calibrationDir)
         index = fsm.setRootPath(self.calibrationPath)
         self.calibrationFileComboBox.setModel(fsm)
         self.calibrationFileComboBox.setRootModelIndex(index)
@@ -1747,7 +1747,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigWindow.refreshConfig(self)
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
         inputDir = self.inputDirectory
-        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
+        seaBASSHeaderPath = os.path.join(PATH_TO_CONFIG, seaBASSHeaderFileName)
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
             # Update comments to reflect any changes in ConfigWindow
@@ -1894,8 +1894,8 @@ class ConfigWindow(QtWidgets.QDialog):
             newConfigName = ConfigFile.filename
             oldCalibrationDir = os.path.splitext(oldConfigName)[0] + "_Calibration"
             newCalibrationDir = os.path.splitext(newConfigName)[0] + "_Calibration"
-            oldConfigPath = os.path.join("Config", oldCalibrationDir)
-            newConfigPath = os.path.join("Config", newCalibrationDir)
+            oldConfigPath = os.path.join(PATH_TO_CONFIG, oldCalibrationDir)
+            newConfigPath = os.path.join(PATH_TO_CONFIG, newCalibrationDir)
             for src in fnames:
                 srcPath = os.path.join(oldConfigPath, src)
                 destPath = os.path.join(newConfigPath, src)

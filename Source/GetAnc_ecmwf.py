@@ -1,4 +1,3 @@
-
 import os
 import shutil
 # import stat
@@ -11,11 +10,12 @@ import configparser
 import decimal
 import cdsapi
 
+from Source import PATH_TO_DATA, PACKAGE_DIR
 # from Source.MainConfig import MainConfig
 from Source.HDFRoot import HDFRoot
 # from HDFGroup import HDFGroup
 from Source.Utilities import Utilities
-# import OBPGSession
+# from Source import OBPGSession
 
 
 class GetAnc_ecmwf:
@@ -52,16 +52,16 @@ class GetAnc_ecmwf:
 
         Obtain the ADS_URL and YOUR_ADS_KEY at: https://ads.atmosphere.copernicus.eu/api-how-to
         '''
-        # homeDir = os.path.expanduser('~')
-        MainDir = os.getcwd()
-        ecmwf_api_config = os.path.join(MainDir, '.ecmwf_api_config')
+        ecmwf_api_config = os.path.join(PACKAGE_DIR, '.ecmwf_api_config')
         if not os.path.exists(ecmwf_api_config):
             raise IOError('file not found: %s!' % ecmwf_api_config)
 
+        if not os.path.exists(ecmwf_api_config):
+            raise FileNotFoundError(f'Unable to find: {ecmwf_api_config}')
         config = configparser.ConfigParser()
         config.read(ecmwf_api_config)
 
-        with open(os.path.join(MainDir, '.cdsapirc'), 'w') as f:
+        with open(os.path.join(PACKAGE_DIR, '.cdsapirc'), 'w') as f:
             f.write('url: ' + config[ecmwf_source][ecmwf_source + '_url'])
             f.write('\n')
             f.write('key: ' + config[ecmwf_source][ecmwf_source + '_key'])
@@ -238,7 +238,7 @@ class GetAnc_ecmwf:
     def getAnc_ecmwf(inputGroup):
         ''' Retrieve model data from ECMWF and save in Data/Anc and in ModData '''
         cwd = os.getcwd()
-        ancPath = os.path.join(cwd,"Data","Anc")
+        ancPath = os.path.join(PATH_TO_DATA, 'Anc')
 
         # Get the dates, times, and locations from the input group
         latDate = inputGroup.getDataset('LATITUDE').data["Datetag"]
