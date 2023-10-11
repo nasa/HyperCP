@@ -1,8 +1,8 @@
-
 import os
 import numpy as np
 import time
 
+from Source import PATH_TO_CONFIG
 from Source.HDFRoot import HDFRoot
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.ConfigFile import ConfigFile
@@ -33,7 +33,7 @@ class SeaBASSWriter:
     def formatHeader(fp,node, level):
 
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
-        seaBASSFP = os.path.join(os.getcwd(), 'Config',seaBASSHeaderFileName)
+        seaBASSFP = os.path.join(PATH_TO_CONFIG, seaBASSHeaderFileName)
         SeaBASSHeader.loadSeaBASSHeader(seaBASSFP)
         headerBlock = SeaBASSHeader.settings
 

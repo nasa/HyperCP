@@ -1,22 +1,20 @@
 import os
 import datetime as dt
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 
+from Source import PATH_TO_DATA
 from Source.ConfigFile import ConfigFile
-from Source.MainConfig import MainConfig
 from Source.ProcessL1b import ProcessL1b
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
-from Source.Uncertainty_Analysis import Propagate
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
-from FidradDB_api import FidradDB_api
+from Source.FidradDB_api import FidradDB_api
+
 
 class TriosL1B:
-
 
     @staticmethod
     def processDarkCorrection_FRM(node, sensortype, stats: dict):
@@ -274,7 +272,7 @@ class TriosL1B:
 
         # Add Class-based characterization files + RADCAL files
         elif ConfigFile.settings['bL1bCal'] == 2:
-            classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             radcal_dir = ConfigFile.settings['RadCalDir']
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
@@ -297,7 +295,7 @@ class TriosL1B:
             elif ConfigFile.settings['FidRadDB'] == 1:
                 sensorID = Utilities.get_sensor_dict(node)
                 acq_time = node.attributes["TIME-STAMP"].replace('_','')
-                inpath = os.path.join('Data', 'FidRadDB_characterization', "TriOS", acq_time)
+                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB_characterization', "TriOS", acq_time)
                 print('FidRadDB Char dir:', inpath)
 
                 # FidRad DB connection and download of calibration files by api

@@ -1,4 +1,3 @@
-
 import os
 import stat
 # import urllib.request as ur
@@ -8,9 +7,9 @@ import numpy as np
 from PyQt5 import QtWidgets
 
 from Source.HDFRoot import HDFRoot
-from Source.HDFGroup import HDFGroup
 from Source.Utilities import Utilities
-import OBPGSession
+from Source import OBPGSession, PATH_TO_DATA
+
 
 class GetAnc:
 
@@ -57,8 +56,8 @@ class GetAnc:
         server = 'oceandata.sci.gsfc.nasa.gov'
         cwd = os.getcwd()
 
-        if not os.path.exists(os.path.join(cwd,"Data","Anc")):
-            os.makedirs(os.path.join(cwd,"Data","Anc"))
+        if not os.path.exists(os.path.join(PATH_TO_DATA, 'Anc')):
+            os.makedirs(os.path.join(PATH_TO_DATA, 'Anc'))
 
         # Get the dates, times, and locations from the input group
         latDate = inputGroup.getDataset('LATITUDE').data["Datetag"]
@@ -84,8 +83,8 @@ class GetAnc:
 
             file1 = f"GMAO_MERRA2.{year}{month:02.0f}{day:02.0f}T{hr:02.0f}0000.MET.nc"
             if oldFile != file1:
-                ancPath = os.path.join(cwd,"Data","Anc")
-                filePath1 = os.path.join(cwd,"Data","Anc",file1)
+                ancPath = os.path.join(PATH_TO_DATA, 'Anc')
+                filePath1 = os.path.join(PATH_TO_DATA, 'Anc', file1)
                 if not os.path.exists(filePath1):
                     # request = f"/cgi/getfile/{file1}"
                     request = f"/ob/getfile/{file1}"
@@ -102,7 +101,7 @@ class GetAnc:
                     Utilities.writeLogFile(msg)
 
                 file2 = f"GMAO_MERRA2.{year}{month:02.0f}{day:02.0f}T{hr:02.0f}0000.AER.nc"
-                filePath2 = os.path.join(cwd,"Data","Anc",file2)
+                filePath2 = os.path.join(PATH_TO_DATA, 'Anc', file2)
                 if not os.path.exists(filePath2):
                     # request = f"/cgi/getfile/{file2}"
                     request = f"/ob/getfile/{file2}"
