@@ -14,16 +14,46 @@ jobs:
         os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
 
     steps:
-      - run: echo "${{ runner.name }} - ${{ runner.release }} - ${{ runner.cpu-model }}"
+      - name: Host Info
+        run: |
+          OUTPUTS=(
+            "CPU Core: ${{ steps.system-info.outputs.cpu-core }}"
+            "CPU Model: ${{ steps.system-info.outputs.cpu-model }}"
+            "Hostname: ${{ steps.system-info.outputs.hostname }}"
+            "Kernel release: ${{ steps.system-info.outputs.kernel-release }}"
+            "Kernel version: ${{ steps.system-info.outputs.kernel-version }}"
+            "Name: ${{ steps.system-info.outputs.name }}"
+            "Platform: ${{ steps.system-info.outputs.platform }}"
+            "Release: ${{ steps.system-info.outputs.release }}"
+            "Total memory bytes: ${{ steps.system-info.outputs.totalmem }}"
+          )
+          for OUTPUT in "${OUTPUTS[@]}";do
+            echo "${OUTPUT}"
+          done
+
       - uses: actions/checkout@v4
         with:
           ref: 'workflow'  # branch to checkout
+      - name: Cache conda
+        uses: actions/cache@v2
+        env:
+          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          environment-file: environment.yml
           activate-environment: hypercp
-      - run: pip install PyInstaller  # Not included in default environment
+          environment-file: environment.yml
+          use-only-tar-bz2: true
+      - run: |
+          conda install pyinstaller
+          conda info
+          conda list
       - run: python make.py
       - uses: actions/upload-artifact@v3
         with:
+          name: HyperCP-${{ runner.os }}
           path: Bundled/dist/*
