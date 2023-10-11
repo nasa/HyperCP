@@ -65,11 +65,11 @@ jobs:
         run: |
           python make.py
           bundle_name=$(ls Bundled/dist | xargs)
-          echo ${{ bundle_name }}
-          zip ${{ bundle_name }}.zip Bundled/dist/* -r
+          echo ${{ env.bundle_name }}
+          zip ${{ env.bundle_name }}.zip Bundled/dist/* -r
 
       - name: Upload Bundle
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ bundle_name }}
-          path: ${{ bundle_name }}.zip
+          name: ${{ env.bundle_name }}
+          path: ${{ env.bundle_name }}.zip
