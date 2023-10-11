@@ -63,6 +63,7 @@ jobs:
 
       - name: Run PyInstaller
         run: python make.py
+
       - name: Upload Bundle
         uses: actions/upload-artifact@v3
         with:
