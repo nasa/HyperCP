@@ -13,12 +13,13 @@ import punpy
 import comet_maths as cm
 
 # HCP files
-from Utilities import Utilities
+from Source import PATH_TO_CONFIG
+from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
 # from ProcessL1b import ProcessL1b
 # from ProcessL1b_Interp import ProcessL1b_Interp
-from ProcessL1b_FRMCal import ProcessL1b_FRMCal
-from Uncertainty_Analysis import Propagate
+from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
+from Source.Uncertainty_Analysis import Propagate
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 
@@ -148,7 +149,7 @@ class Instrument:
 
             ### ADERU : Read coeff value from configuration files
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-            calPath = os.path.join("Config", calFolder)
+            calPath = os.path.join(PATH_TO_CONFIG, calFolder)
             calibrationMap = CalibrationFileReader.read(calPath)
             waves, coeff_col = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, sensor)
             Coeff[sensor], _ = self.interp_common_wvls(coeff_col, waves, nWB)
@@ -628,7 +629,7 @@ class Instrument:
 
             ### ADERU : Read coeff value from configuration files
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-            calPath = os.path.join("Config", calFolder)
+            calPath = os.path.join(PATH_TO_CONFIG, calFolder)
             calibrationMap = CalibrationFileReader.read(calPath)
             waves, coeff_col = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, sensor)
             Coeff[sensor], _ = self.interp_common_wvls(coeff_col, waves, nWB)

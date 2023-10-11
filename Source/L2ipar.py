@@ -1,7 +1,7 @@
 
 import numpy as np
 
-from Utilities import Utilities
+from Source.Utilities import Utilities
 
 def L2ipar(wavelength, Es, fullSpec):
     ''' Use hyperspectral irradiance to calculate instantaneous photosynthetically 

@@ -1,9 +1,9 @@
-
 import os
 import datetime
 import numpy as np
 import collections
 
+from Source import PATH_TO_CONFIG
 from Source.HDFRoot import HDFRoot
 from Source.SeaBASSWriter import SeaBASSWriter
 from Source.CalibrationFileReader import CalibrationFileReader
@@ -201,7 +201,7 @@ class Controller:
 
         # print("processCalibrationConfig")
         calFolder = os.path.splitext(configName)[0] + "_Calibration"
-        calPath = os.path.join("Config", calFolder)
+        calPath = os.path.join(PATH_TO_CONFIG, calFolder)
         print("Read CalibrationFile ", calPath)
         calibrationMap = CalibrationFileReader.read(calPath)
         Controller.generateContext(calibrationMap)
@@ -570,7 +570,7 @@ class Controller:
                 if ConfigFile.settings["bL1aqcDeglitch"]:
                     anomAnalFileName = os.path.splitext(ConfigFile.filename)[0]
                     anomAnalFileName = anomAnalFileName + '_anoms.csv'
-                    fp = os.path.join('Config',anomAnalFileName)
+                    fp = os.path.join(PATH_TO_CONFIG, anomAnalFileName)
                     if os.path.exists(fp):
                         msg = f"Deglitching file {fp} found for {ConfigFile.filename.split('.')[0]}. Using these parameters."
                         print(msg)

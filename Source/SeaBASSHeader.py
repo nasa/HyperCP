@@ -1,8 +1,8 @@
-
 import collections
 import json
 import os
 
+from Source import PATH_TO_CONFIG
 from Source.ConfigFile import ConfigFile
 from Source.MainConfig import MainConfig
 
@@ -225,7 +225,7 @@ class SeaBASSHeader:
         print("SeaBASSHeader - Save SeaBASSHeader")
 
         jsn = json.dumps(SeaBASSHeader.settings)
-        fp = os.path.join("Config", filename)
+        fp = os.path.join(PATH_TO_CONFIG, filename)
 
         #print(os.path.abspath(os.curdir))
         with open(fp, 'w') as f:
@@ -236,7 +236,7 @@ class SeaBASSHeader:
     @staticmethod
     def loadSeaBASSHeader(filename):
         # print("SeaBASSHeader - Load seaBASSHeader")
-        seaBASSHeaderPath = os.path.join("Config", filename)
+        seaBASSHeaderPath = os.path.join(PATH_TO_CONFIG, filename)
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.filename = filename
             text = ""
@@ -249,7 +249,7 @@ class SeaBASSHeader:
     @staticmethod
     def deleteSeaBASSHeader(filename):
         print("SeaBASSHeader - Delete SeaBASSHeader")
-        seaBASSHeaderPath = os.path.join("Config", filename)
+        seaBASSHeaderPath = os.path.join(PATH_TO_CONFIG, filename)
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.filename = filename
             os.remove(seaBASSHeaderPath)
