@@ -79,6 +79,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.BUNDLE_NAME }}
-          path: ${{ env.BUNDLE_NAME }}.zip
+          path: Bundled/dist/${{ env.BUNDLE_NAME }}.zip
         # Known issue of double zip: https://github.com/actions/upload-artifact/issues/39
         # However, need to zip before upload as too many files to send otherwise (very slow)
