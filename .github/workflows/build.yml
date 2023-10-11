@@ -14,42 +14,42 @@ jobs:
         os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
 
     steps:
-      - name: Host Info
+      - name: Host Information
         run: |
-          OUTPUTS=(
-            "CPU Core: ${{ steps.system-info.outputs.cpu-core }}"
-            "CPU Model: ${{ steps.system-info.outputs.cpu-model }}"
-            "Hostname: ${{ steps.system-info.outputs.hostname }}"
-            "Kernel release: ${{ steps.system-info.outputs.kernel-release }}"
-            "Kernel version: ${{ steps.system-info.outputs.kernel-version }}"
-            "Name: ${{ steps.system-info.outputs.name }}"
-            "Platform: ${{ steps.system-info.outputs.platform }}"
-            "Release: ${{ steps.system-info.outputs.release }}"
-            "Total memory bytes: ${{ steps.system-info.outputs.totalmem }}"
-          )
-          for OUTPUT in "${OUTPUTS[@]}";do
-            echo "${OUTPUT}"
-          done
+          echo "OS: ${{ runner.os }}"
+          echo "CPU Core: ${{ steps.system-info.outputs.cpu-core }}"
+          echo "CPU Model: ${{ steps.system-info.outputs.cpu-model }}"
+          echo "Hostname: ${{ steps.system-info.outputs.hostname }}"
+          echo "Kernel release: ${{ steps.system-info.outputs.kernel-release }}"
+          echo "Kernel version: ${{ steps.system-info.outputs.kernel-version }}"
+          echo "Name: ${{ steps.system-info.outputs.name }}"
+          echo "Platform: ${{ steps.system-info.outputs.platform }}"
+          echo "Release: ${{ steps.system-info.outputs.release }}"
+          echo "Total memory bytes: ${{ steps.system-info.outputs.totalmem }}"
 
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
         with:
           ref: 'workflow'  # branch to checkout
-      - name: Cache conda
-        uses: actions/cache@v2
-        env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
-          CACHE_NUMBER: 0
-        with:
-          path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}
-      - uses: conda-incubator/setup-miniconda@v2
+#      - name: Cache conda
+#        uses: actions/cache@v2
+#        env:
+#          # Increase this value to reset cache if etc/example-environment.yml has not changed
+#          CACHE_NUMBER: 0
+#        with:
+#          path: ~/conda_pkgs_dir
+#          key:
+#            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}
+      - name: Setup conda environment
+        uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: hypercp
           environment-file: environment.yml
-          use-only-tar-bz2: true
-      - run: |
-          conda install pyinstaller
+#          use-only-tar-bz2: true
+      - name: Install PyInstaller
+        run: conda install pyinstaller
+      - name: Capture conda environment
+        run: |
           conda info
           conda list
       - run: python make.py
