@@ -55,17 +55,21 @@ jobs:
           environment-file: environment.yml
 #          use-only-tar-bz2: true
       - name: Install PyInstaller
-        run: conda install pyinstaller
+        run: conda install --channel=conda-forge pyinstaller==6.0
       - name: Capture conda environment
         run: |
           conda info
           conda list
 
       - name: Run PyInstaller
-        run: python make.py
+        run: |
+          python make.py
+          bundle_name=$(ls Bundled/dist | xargs)
+          echo ${{ bundle_name }}
+          zip ${{ bundle_name }}.zip Bundled/dist/* -r
 
       - name: Upload Bundle
         uses: actions/upload-artifact@v3
         with:
-          name: HyperCP-${{ runner.os }}
-          path: Bundled/dist/*
+          name: ${{ bundle_name }}
+          path: ${{ bundle_name }}.zip
