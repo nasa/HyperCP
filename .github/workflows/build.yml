@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
+        os: ['ubuntu-latest', 'macos-latest']  # 'windows-latest',
 
     steps:
       - name: Get System Information
@@ -61,15 +61,17 @@ jobs:
           conda info
           conda list
 
-      - name: Run PyInstaller
+      - name: Make Bundle
         run: |
           python make.py
-          bundle_name=$(ls Bundled/dist | xargs)
-          echo ${{ env.bundle_name }}
-          zip ${{ env.bundle_name }}.zip Bundled/dist/* -r
+          echo "BUNDLE_NAME=$(ls Bundled/dist | xargs)" >> $GITHUB_ENV
+
+      - name: Zip Bundle  # Required to speed up upload
+        run: |
+          zip ${{ env.BUNDLE_NAME }}.zip Bundled/dist/* -r
 
       - name: Upload Bundle
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.bundle_name }}
-          path: ${{ env.bundle_name }}.zip
+          name: ${{ env.BUNDLE_NAME }}
+          path: ${{ env.BUNDLE_NAME }}.zip
