@@ -449,9 +449,7 @@ class ProcessL2:
                 #Calculate the normalized water leaving radiance
                 nLw = rrs*f0
 
-                # nLw uncertainty;
-                ''' NOTE: Unclear whether this approach conforms to the uncertainty approach used elsewhere (DAA)'''
-                # nLwUNC = np.power(np.asarray(list(rrsUNC.values()))**2 + f0UNC**2, 0.5)
+                # nLw uncertainty;                
                 nLwUNC[k] = np.power((rrsUNC[k]*f0)**2 + f0UNC**2, 0.5)
 
                 newESData.columns[k].append(es)
