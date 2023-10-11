@@ -1,9 +1,9 @@
 on:
   push:
     branches:
+      - main
+      - dev
       - workflow
-#      - main
-#      - dev
 
 jobs:
   build:
@@ -33,10 +33,13 @@ jobs:
           echo "Release: ${{ steps.system-info.outputs.release }}"
           echo "Total memory bytes: ${{ steps.system-info.outputs.totalmem }}"
 
+      - name: Extract Branch Name
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: 'workflow'  # branch to checkout
+          ref: ${{ steps.extract_branch.outputs.branch }}
 
 #      - name: Cache conda
 #        uses: actions/cache@v2
@@ -66,12 +69,16 @@ jobs:
           python make.py
           echo "BUNDLE_NAME=$(ls Bundled/dist | xargs)" >> $GITHUB_ENV
 
-      - name: Zip Bundle  # Required to speed up upload
+      - name: Zip Bundle
         run: |
-          zip ${{ env.BUNDLE_NAME }}.zip Bundled/dist/* -r
+          cd Bundled/dist/
+          zip ${{ env.BUNDLE_NAME }}.zip ${{ env.BUNDLE_NAME }} -r
+          cd -
 
       - name: Upload Bundle
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.BUNDLE_NAME }}
           path: ${{ env.BUNDLE_NAME }}.zip
+        # Known issue of double zip: https://github.com/actions/upload-artifact/issues/39
+        # However, need to zip before upload as too many files to send otherwise (very slow)
