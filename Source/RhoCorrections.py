@@ -55,8 +55,8 @@ class RhoCorrections:
                                               uncertainties=[1, 0.5, 3])
 
         # TODO: Model error estimation, requires ancillary data to be switched on. This could create a conflict.
-        if not any([AOD is None, wTemp is None, sal is None, waveBands is None]):
-
+        if not any([AOD is None, wTemp is None, sal is None, waveBands is None]) and \
+                ((ConfigFile.settings["bL1bCal"] > 1) or (ConfigFile.settings['SensorType'].lower() == "seabird")):
             # Fix: Truncate input parameters to stay within Zhang ranges:
             # AOD
             AOD = np.min([AOD,0.2])
@@ -69,6 +69,7 @@ class RhoCorrections:
             newWaveBands = [w for w in waveBands if w>=350 and w<=1000]
             # Wavebands clips the ends off of the spectra reducing the amount of values from 200 to 189 for
             # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
+
             zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
                                                 relAzMean, newWaveBands)
 
@@ -89,7 +90,6 @@ class RhoCorrections:
                     # in cases where we are outside the range in which Zhang is calculated a placeholder is used
                     rhoDelta.append(np.power(np.power(Delta, 2) + np.power(0.003, 2), 0.5))
                     # TODO: define how uncertainties outside of zhang range should be addressed (next TC meeting?)
-
             # if uncertainty is NaN then we cannot estimate what the uncertainty should be. We could argue that 0 could
             # be replaced by np.power(np.power(Delta, 2) + np.power(0.003, 2), 0.5). I personally think it's best to
             # say that we have no uncertainty for that pixel should Zhang be invalid.
