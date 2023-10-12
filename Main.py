@@ -20,7 +20,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import requests
 from tqdm import tqdm
 
-sys.path.append(os.path.join(os.path.dirname(__file__),'Source'))
 from Source.MainConfig import MainConfig
 from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
@@ -172,9 +171,9 @@ class Window(QtWidgets.QWidget):
         self.popQueryCheckBoxUpdate()
         self.popQueryCheckBox.clicked.connect(self.popQueryCheckBoxUpdate)
 
-        saveLabel = QtWidgets.QLabel('(Automatic on Window Close -->)')
-        self.saveButton = QtWidgets.QPushButton('Save Settings', self)
-        self.saveButton.clicked.connect(self.saveButtonClicked)
+        # saveLabel = QtWidgets.QLabel('(Automatic on Window Close -->)')
+        # self.saveButton = QtWidgets.QPushButton('Save Settings', self)
+        # self.saveButton.clicked.connect(self.saveButtonClicked)
 
         ########################################################################################
         # Add QtWidgets to the Window
@@ -857,6 +856,16 @@ username = args.username
 password = args.password
 
 if __name__ == '__main__':
+    # Close splashscreen
+    try:
+        import platform
+
+        if platform.system() in ['Windows', 'Linux']:
+            import pyi_splash
+
+            pyi_splash.close()
+    except ImportError:
+        pass
 
     # If the cmd argument is given, run the Command class without the GUI
     if cmd:

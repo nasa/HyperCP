@@ -14,13 +14,13 @@ from typing import Optional, Union, Tuple, List, Iterable, Callable, Iterator
 
 # zhangWrapper
 import collections
-import ZhangRho
+from Source import ZhangRho, PATH_TO_DATA
 
 # M99 Rho
-from HDFRoot import HDFRoot
-from Utilities import Utilities
-from ConfigFile import ConfigFile
-from RhoCorrections import RhoCorrections
+from Source.HDFRoot import HDFRoot
+from Source.Utilities import Utilities
+from Source.ConfigFile import ConfigFile
+from Source.RhoCorrections import RhoCorrections
 
 # TODO remove this part and properly address the warning
 import warnings
@@ -39,7 +39,7 @@ class Propagate:
     cores: Int - punpy parallel_cores option (see documentation) Set None to ignore, 1 is default.
     """
     MCP: punpy.MCPropagation
-    corr_fp: str = os.path.join(os.path.dirname(__file__), os.path.pardir, 'Data', 'correlation_mats.csv')
+    corr_fp: str = os.path.join(PATH_TO_DATA, 'correlation_mats.csv')
     corr_matrices: dict = {}
 
     def __init__(self, M: int = 10000, cores: int = 1):
@@ -150,7 +150,7 @@ class Propagate:
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-            ], dtype=np.float)
+            ],dtype=np.float64)
         corr_list = ['rand', 'syst', 'rand', 'rand', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst',
                      'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
 
@@ -289,7 +289,7 @@ class Propagate:
         relAz = phiViews[relAz_idx]
 
         # load in the LUT HDF file
-        inFilePath = os.path.join(ConfigFile.fpHySP, 'Data', 'rhoTable_AO1999.hdf')
+        inFilePath = os.path.join(PATH_TO_DATA, 'rhoTable_AO1999.hdf')
         lut = HDFRoot.readHDF5(inFilePath)
         lutData = lut.groups[0].datasets['LUT'].data
 

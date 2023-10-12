@@ -1,7 +1,9 @@
-
 import os
 import collections
 import json
+
+from Source import PATH_TO_CONFIG
+
 
 class MainConfig:
     fileName = "main.config"
@@ -12,7 +14,7 @@ class MainConfig:
     def saveConfig(fileName):
         print("ConfigFile - Save Config")
         jsn = json.dumps(MainConfig.settings)
-        fp = os.path.join("Config", fileName)
+        fp = os.path.join(PATH_TO_CONFIG, fileName)
 
         with open(fp, 'w') as f:
             f.write(jsn)
@@ -25,7 +27,7 @@ class MainConfig:
         # Load the default values first to insure all settings are present, then populate with saved values where possible
         MainConfig.createDefaultConfig(fileName,version)
 
-        configPath = os.path.join("Config", fileName)
+        configPath = os.path.join(PATH_TO_CONFIG, fileName)
         if os.path.isfile(configPath):
             text = ""
             with open(configPath, 'r') as f:

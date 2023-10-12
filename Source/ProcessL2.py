@@ -8,7 +8,7 @@ import copy
 from PyQt5 import QtWidgets
 from tqdm import tqdm
 
-from HDFRoot import HDFRoot
+from Source.HDFRoot import HDFRoot
 from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
 from Source.RhoCorrections import RhoCorrections
@@ -449,9 +449,7 @@ class ProcessL2:
                 #Calculate the normalized water leaving radiance
                 nLw = rrs*f0
 
-                # nLw uncertainty;
-                ''' NOTE: Unclear whether this approach conforms to the uncertainty approach used elsewhere (DAA)'''
-                # nLwUNC = np.power(np.asarray(list(rrsUNC.values()))**2 + f0UNC**2, 0.5)
+                # nLw uncertainty;                
                 nLwUNC[k] = np.power((rrsUNC[k]*f0)**2 + f0UNC**2, 0.5)
 
                 newESData.columns[k].append(es)

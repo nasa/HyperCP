@@ -1,11 +1,9 @@
-
 import re
-import numpy as np
 import os
 
+from Source import PATH_TO_DATA
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
-from Source.HDFDataset import HDFDataset
 
 
 def readLUT(node,filename, headerlines):
@@ -89,12 +87,9 @@ def readLUT(node,filename, headerlines):
     return node
 
 
-fpHySP = os.path.dirname(__file__).split(os.path.sep)
-fpHySP[0] = os.path.sep
-fpHySP[-1] = 'Data'
-fpData = os.path.join(*fpHySP)
-fp = os.path.join(fpData, 'rhoTable_AO1999.txt')
-outfp = os.path.join(fpData, 'rhoTable_AO1999.hdf')
+
+fp = os.path.join(PATH_TO_DATA, 'rhoTable_AO1999.txt')
+outfp = os.path.join(PATH_TO_DATA, 'rhoTable_AO1999.hdf')
 headerlines = 9
 # dims = [13, 117, 6]
 root = HDFRoot()
