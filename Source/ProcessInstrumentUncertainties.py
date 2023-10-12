@@ -48,8 +48,6 @@ class Instrument:
             if InstrumentType.lower() == "trios":
                 # rawData is the group and used to access _CAL, _BACK, and other information about the
                 # DarkPixels... not entirely clear.
-                ''' NOTE: This fails because it tries to divide raw_data by a number, and raw_data is
-                 an OrderedDict. '''
                 output[sensortype] = self.lightDarkStats(rawData[sensortype], rawSlice[sensortype], sensortype)
             elif InstrumentType.lower() == "seabird":
                 # rawData here is the group, passed along only for the purpose of
@@ -505,7 +503,8 @@ class Instrument:
                             Ct['LI'], Ct['LI'],
                             cPol['LI'], cPol['LI']]
 
-        lwAbsUnc, lw_vals = Propagate_L2.Propagate_Lw(lw_means, lw_uncertainties)
+        lwAbsUnc = Propagate_L2.Propagate_Lw(lw_means, lw_uncertainties)
+        lw_vals = Propagate_L2.Lw(*lw_means)
 
         means = [lt, rho, li, es,
                  ones, ones, ones,
@@ -525,8 +524,8 @@ class Instrument:
                          Ct['ES'], Ct['LI'], Ct['LT'],
                          cPol['LI'], cPol['LT'], cPol['ES']]
 
-        # rrsAbsUnc, rrs_vals, rel_unc = Propagate_L2.Propagate_RRS(means, uncertainties)
-        rrsAbsUnc, rrs_vals = Propagate_L2.Propagate_RRS(means, uncertainties)
+        rrsAbsUnc = Propagate_L2.Propagate_RRS(rrs_means, rrs_uncertainties)
+        rrs_vals = Propagate_L2.RRS(*rrs_means)
 
         ## BAND CONVOLUTION
         # band convolution of uncertainties is done here to include uncertainty contribution of band convolution process
@@ -535,34 +534,34 @@ class Instrument:
         output={}
         if ConfigFile.settings["bL2WeightSentinel3A"]:
             output["lwUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "S3A")
+                                                                        [lwAbsUnc, None], "S3A")
             output["rrsUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "S3A")
+                                                                         [rrsAbsUnc, None], "S3A")
         elif ConfigFile.settings["bL2WeightSentinel3B"]:
             output["lwUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "S3B")
+                                                                        [lwAbsUnc, None], "S3B")
             output["rrsUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "S3B")
+                                                                         [rrsAbsUnc, None], "S3B")
         if ConfigFile.settings['bL2WeightMODISA']:
             output["lwUNC_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "MOD-A")
+                                                                    [lwAbsUnc, None], "MOD-A")
             output["rrsUNC_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "MOD-A")
+                                                                     [rrsAbsUnc, None], "MOD-A")
         if ConfigFile.settings['bL2WeightMODIST']:
             output["lwUNC_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "MOD-T")
+                                                                    [lwAbsUnc, None], "MOD-T")
             output["rrsUNC_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "MOD-T")
+                                                                     [rrsAbsUnc, None], "MOD-T")
         if ConfigFile.settings['bL2WeightVIIRSN']:
             output["lwUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "VIIRS")
+                                                                    [lwAbsUnc, None], "VIIRS")
             output["rrsUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "VIIRS")
+                                                                     [rrsAbsUnc, None], "VIIRS")
         if ConfigFile.settings['bL2WeightVIIRSJ']:
             output["lwUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "VIIRS")
+                                                                    [lwAbsUnc, None], "VIIRS")
             output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "VIIRS")
+                                                                     [rrsAbsUnc, None], "VIIRS")
             pass
         output.update({"lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})
 
