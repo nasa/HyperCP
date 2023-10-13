@@ -1294,9 +1294,9 @@ class ProcessL2:
             return False
 
         # make std into dictionaries (data are ODs, but should not matter)
-        esStdSlice = {k: [stats['ES']['std_Signal'][k][0]] for k in esSlice}  # *esSlice[k][0]
-        liStdSlice = {k: [stats['LI']['std_Signal'][k][0]] for k in liSlice}  # *liSlice[k][0]
-        ltStdSlice = {k: [stats['LT']['std_Signal'][k][0]] for k in ltSlice}  # *ltSlice[k][0]
+        esStdSlice = {k: [stats['ES']['std_Signal_Interpolated'][k][0]] for k in esSlice}  # *esSlice[k][0]
+        liStdSlice = {k: [stats['LI']['std_Signal_Interpolated'][k][0]] for k in liSlice}  # *liSlice[k][0]
+        ltStdSlice = {k: [stats['LT']['std_Signal_Interpolated'][k][0]] for k in ltSlice}  # *ltSlice[k][0]
 
         # Convolve es/li/lt slices to satellite bands using RSRs
         if ConfigFile.settings['bL2WeightMODISA']:
@@ -1688,6 +1688,11 @@ class ProcessL2:
         xSlice['esSTD'] = esStdSlice
         xSlice['liSTD'] = liStdSlice
         xSlice['ltSTD'] = ltStdSlice
+
+        xSlice['esSTD_RAW'] = stats['ES']['std_Signal']  # uninterpolated std for uncertainty calculation
+        xSlice['liSTD_RAW'] = stats['LI']['std_Signal']
+        xSlice['ltSTD_RAW'] = stats['LT']['std_Signal']
+
         # F0 = F0_hyper
 
         # insert Uncertainties into analysis
@@ -1713,10 +1718,12 @@ class ProcessL2:
         else:
             '''NOTE: This should still estimate uncertainties for Factory regime,
                 partcularly for SeaBird which becomes Non-FRM Class regime..'''
-            xUNC = instrument.factory(node, uncGroup,
-                                      dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
-                                      dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
-                                      stats, instrument_WB)
+            xUNC = instrument.Factory(node, uncGroup, stats)
+                                      # dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                                      # dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
+                                      # , instrument_WB)
+            # TODO: test if this correctly uses sirrex uncertaitnies in calculating L2 unc producs
+            xUNC.update(instrument.rrsHyperUNCFRM(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
         # move uncertainties from xSlice to xUNC
         if xUNC is not None:

@@ -48,11 +48,6 @@ class Propagate:
         else:
             self.MCP = punpy.MCPropagation(M)
 
-        if not self._read_correlation():
-            msg = "unable to read correlation matrices, please ensure the file is in the correct format"
-            Utilities.writeLogFile(msg)
-            print(msg)
-
     # Main functions
     def propagate_Instrument_Uncertainty(self, mean_vals, uncertainties):
         """
@@ -60,39 +55,48 @@ class Propagate:
         ESLin, LILin, LTLin, ESStray, LIStray, LTStray, EST, LIT, LTT, LIPol, LTPol, ESCos
         :Return: absolute uncertainty [es, li, lt] relative uncertainty [es, li, lt]
         """
-        # sensor = self.instruments(*mean_vals)
 
-        if 'RAD' not in self.corr_matrices:
-            msg = "could not find correlation matrix for instrument uncertainties"
-            return False
+        corr_matrix = np.array([
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+        ])
 
         corr_list = ['rand', 'rand', 'rand', 'rand', 'rand', 'rand', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst',
                      'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
 
-        unc, _, corr = self.MCP.propagate_random(self.instruments, mean_vals, uncertainties,
-                                                 corr_between=self.corr_matrices['RAD'], corr_x=corr_list,
-                                                 output_vars=3, return_corr=True)
+        unc = self.MCP.propagate_random(self.instruments,
+                                        mean_vals,
+                                        uncertainties,
+                                        corr_between=corr_matrix,
+                                        corr_x=corr_list,
+                                        output_vars=3)
 
         # separate uncertainties and sensor values from their lists - for clarity
-        Es_unc, Li_unc, Lt_unc = [unc[i] for i in range(3)]
-        # es, li, lt = [sensor[i] for i in range(3)]
+        Es_unc, Li_unc, Lt_unc = [unc[i] for i in range(len(unc))]
 
-        # Es_rel = []; Li_rel = []; Lt_rel = []
-        # for i in range(len(lt)):
-        #     if es[i] == 0:
-        #         Es_rel.append(Es_unc[i])
-        #     else:
-        #         Es_rel.append((Es_unc[i] * 1e10) / (es[i] * 1e10))
-        #     if li[i] == 0:
-        #         Li_rel.append(Li_unc[i])
-        #     else:
-        #         Li_rel.append((Li_unc[i] * 1e10) / (li[i] * 1e10))
-        #     if lt[i] == 0:
-        #         Lt_rel.append(Lt_unc[i])
-        #     else:
-        #         Lt_rel.append((Lt_unc[i] * 1e10) / (lt[i] * 1e10))
-
-        return Es_unc, Li_unc, Lt_unc  # , Es_rel, Li_rel, Lt_rel
+        return Es_unc, Li_unc, Lt_unc
 
     def Propagate_Lw(self, varlist, ulist):
         """ will be replaced in the near future """
@@ -114,9 +118,10 @@ class Propagate:
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0]
             ])
 
-        lw = self.Lw(*varlist)
-        unc = self.MCP.propagate_random(self.Lw, varlist, ulist, corr_between=corr_matrix)
-        return unc, lw  # (unc * 1e10) / (lw * 1e10),
+        return self.MCP.propagate_random(self.Lw,
+                                         varlist,
+                                         ulist,
+                                         corr_between=corr_matrix)
 
     def Propagate_RRS(self, mean_vals: list, uncertainties: list):
         """lt, rhoVec, li, es, c1, c2, c3, clin1, clin2, clin3, cstab1, cstab2, cstab3, cstray1, cstray2, cstray3,
@@ -149,9 +154,11 @@ class Propagate:
         corr_list = ['rand', 'syst', 'rand', 'rand', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst',
                      'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
 
-        rrs = np.array(self.RRS(*mean_vals))
-        unc = self.MCP.propagate_standard(self.RRS, mean_vals, uncertainties, corr_between=corr_matrix, corr_x=corr_list)
-        return unc, rrs  #  (unc * 1E9) / (rrs * 1E9),  replace with just 'unc' for absolute uncertainty
+        return self.MCP.propagate_standard(self.RRS,
+                                           mean_vals,
+                                           uncertainties,
+                                           corr_between=corr_matrix,
+                                           corr_x=corr_list)
 
     def band_Conv_Uncertainty(self, mean_vals, uncertainties, platform):
         """Hyper_Rrs, wvl, Band cetral wavelengths, Band width - only works for sentinel 3A - OLCI
@@ -171,12 +178,18 @@ class Propagate:
             msg = "sensor not supported"
             print(msg)
             return False
-        return self.MCP.propagate_standard(func, mean_vals, uncertainties, corr_x=['syst', None])
+        return self.MCP.propagate_standard(func,
+                                           mean_vals,
+                                           uncertainties,
+                                           corr_x=['syst', None])
         # / (rad_band * 1e10)
 
     # Rho propagation methods
     def M99_Rho_Uncertainty(self, mean_vals, uncertainties):
-        return self.MCP.propagate_random(self.rhoM99, mean_vals, uncertainties, corr_x=["rand", "rand", "rand"])
+        return self.MCP.propagate_random(self.rhoM99,
+                                         mean_vals,
+                                         uncertainties,
+                                         corr_x=["rand", "rand", "rand"])
 
     # Measurement Functions
     @staticmethod
@@ -190,7 +203,8 @@ class Propagate:
     @staticmethod
     def band_Conv_Sensor_S3A(Hyperspec, Wavelengths):
         """ band convolution of Rrs for S3A"""
-        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
+        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
+                                                                           wl=Wavelengths,
                                                                            platform_name="Sentinel-3A",
                                                                            sensor_name="olci", u_d=None)
         return rad_band
@@ -198,7 +212,8 @@ class Propagate:
     @staticmethod
     def band_Conv_Sensor_S3B(Hyperspec, Wavelengths):
         """ band convolution of Rrs for S3B"""
-        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
+        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
+                                                                           wl=Wavelengths,
                                                                            platform_name="Sentinel-3B",
                                                                            sensor_name="olci", u_d=None)
         return rad_band
@@ -206,7 +221,8 @@ class Propagate:
     @staticmethod
     def band_Conv_Sensor_AQUA(Hyperspec, Wavelengths):
         """ band convolution of Rrs for EOS-AQUA Modis"""
-        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
+        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
+                                                                           wl=Wavelengths,
                                                                            platform_name="EOS-Aqua",
                                                                            sensor_name="modis", u_d=None)
         return rad_band
@@ -214,7 +230,8 @@ class Propagate:
     @staticmethod
     def band_Conv_Sensor_TERRA(Hyperspec, Wavelengths):
         """ band convolution of Rrs for EOS-Terra Modis"""
-        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
+        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
+                                                                           wl=Wavelengths,
                                                                            platform_name="EOS-Terra",
                                                                            sensor_name="modis", u_d=None)
         return rad_band
@@ -222,16 +239,19 @@ class Propagate:
     @staticmethod
     def band_Conv_Sensor_NOAA(Hyperspec, Wavelengths):
         """ band convolution of Rrs for NOAA Virrs"""
-        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec, wl=Wavelengths,
+        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
+                                                                           wl=Wavelengths,
                                                                            platform_name="NOAA-20",
                                                                            sensor_name="viirs", u_d=None)
         return rad_band
 
     @staticmethod
     def Lw(lt, rhoVec, li, c2, c3, clin2, clin3, cstab2, cstab3, cstray2, cstray3, cT2, cT3, cpol1, cpol2):
-        Li = li * c2 * clin2 * cstab2 * cstray2 * cT2 * cpol1
-        Lt = lt * c3 * clin3 * cstab3 * cstray3 * cT3 * cpol2
-        return Lt - (Li * rhoVec)
+
+        li_signal = li * c2 * clin2 * cstab2 * cstray2 * cT2 * cpol1
+        lt_signal = lt * c3 * clin3 * cstab3 * cstray3 * cT3 * cpol2
+
+        return lt_signal - (li_signal * rhoVec)
 
     @staticmethod
     def Lw_FRM(lt, rho, li):
@@ -243,9 +263,15 @@ class Propagate:
 
     @staticmethod
     def RRS(lt, rhoVec, li, es, c1, c2, c3, clin1, clin2, clin3, cstab1, cstab2, cstab3, cstray1, cstray2, cstray3,
-                cT1, cT2, cT3, cpol1, cpol2, ccos):
-        lw = ((lt*c3*clin3*cstab3*cstray3*cT3*cpol2) - (rhoVec*(li*c2*cstab2*clin2*cstray2*cT2*cpol1)))
-        return lw/(es*c1*cstab1*clin1*cstray1*cT1*ccos)
+            cT1, cT2, cT3, cpol1, cpol2, ccos):
+
+        es_signal = es*c1*cstab1*clin1*cstray1*cT1*ccos
+        li_signal = li*c2*cstab2*clin2*cstray2*cT2*cpol1
+        lt_signal = lt*c3*clin3*cstab3*cstray3*cT3*cpol2
+
+        lw = lt_signal - (rhoVec*li_signal)
+        lw[np.where(lw < 0)] = 0
+        return lw/es_signal
 
     @staticmethod
     def rhoM99(windSpeedMean, SZAMean, relAzMean):
@@ -300,45 +326,4 @@ class Propagate:
 
         rhoStructure = ZhangRho.Main(env, sensor)
 
-        return rhoStructure['ρ']
-
-    # Utilities
-    def _read_correlation(self):
-        end_cond = False
-        with open(self.corr_fp, 'r') as f:
-            while True:
-                line = Utilities.getline(f, '\n')
-                if line:
-                    end_cond = False
-                    if line.startswith('['):
-                        if 'END' not in line:
-                            new_corr_matrix = []
-                            key = line[1:-1]
-                        else:
-                            self.corr_matrices[key] = np.array(new_corr_matrix)  # add matrix to the dictionary
-                            del new_corr_matrix
-                            key = None
-                    else:
-                        new_corr_matrix.append(np.array([float(i) for i in line.split(',') if i]))  # add the line to the list
-                else:
-                    if end_cond:
-                        break
-                    else:
-                        end_cond = True
-        return True
-
-    def _write_correlation(self):
-        with open(self.corr_fp, 'w') as f:
-            for key in self.corr_matrices:
-                f.write(f"[{key}]\n")
-                for item in self.corr_matrices[key]:
-                    if isinstance(item, np.ndarray):
-                        f.write(f"{','.join([str(i) for i in item])}\n")
-                        newline = False
-                    else:
-                        f.write(f"{item},")
-                        newline = True
-                if newline:
-                    f.write("\n")
-                f.write(f"[END {key}]\n")
-        return True
+        return rhoStructure['ρ']  # TODO: refactor this based on changes to Zhang
