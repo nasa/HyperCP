@@ -166,7 +166,8 @@ class RhoCorrections:
         if Propagate is None:
             rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
         else:
-            rhoDelta = Propagate.zhangWrapper(mean_vals=varlist, uncertainties=ulist,
-                                                       waveSubset=np.array(waveBands))
+            rhoDelta = Propagate.Zhang_Rho_Uncertainty(mean_vals=varlist,
+                                                       uncertainties=ulist,
+                                                       )
 
         return rhoVector, rhoDelta

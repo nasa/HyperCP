@@ -189,7 +189,14 @@ class Propagate:
         return self.MCP.propagate_random(self.rhoM99,
                                          mean_vals,
                                          uncertainties,
-                                         corr_x=["rand", "rand", "rand"])
+                                         corr_x=["rand", "rand", "rand"]
+                                         )
+
+    def Zhang_Rho_Uncertainty(self, mean_vals, uncertainties):
+        return self.MCP.propagate_random(self.zhangWrapper,
+                                         mean_vals,
+                                         uncertainties
+                                         )
 
     # Measurement Functions
     @staticmethod
@@ -304,9 +311,9 @@ class Propagate:
 
         return rhoScalar
 
-    def zhangWrapper(self, windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
 
-        print(f"CALL TO WRAPPER: {self.i}")
+
+    def zhangWrapper(self, windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
 
         # === environmental conditions during experiment ===
         env = collections.OrderedDict()
@@ -322,8 +329,4 @@ class Propagate:
         sensor['ang'] = [40, 180 - relAz]  # relAz should vary from about 90-135
         sensor['wv'] = waveBands
 
-        self.i += 1
-
-        rhoStructure = ZhangRho.Main(env, sensor)
-
-        return rhoStructure['ρ']  # TODO: refactor this based on changes to Zhang
+        return ZhangRho.get_sky_sun_rho(env, sensor)['rho']
