@@ -1716,14 +1716,9 @@ class ProcessL2:
             xUNC.update(instrument.rrsHyperUNCFRM(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
         
         else:
-            '''NOTE: This should still estimate uncertainties for Factory regime,
-                partcularly for SeaBird which becomes Non-FRM Class regime..'''
-            xUNC = instrument.Factory(node, uncGroup, stats)
-                                      # dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
-                                      # dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
-                                      # , instrument_WB)
-            # TODO: test if this correctly uses sirrex uncertaitnies in calculating L2 unc producs
-            xUNC.update(instrument.rrsHyperUNCFRM(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+            xUNC = None
+            # TODO: This should still estimate STD for TRIOS-Factory regime, instead of unc.
+
 
         # move uncertainties from xSlice to xUNC
         if xUNC is not None:
