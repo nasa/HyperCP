@@ -653,12 +653,12 @@ class Instrument(ABC):
                                        np.array(uncGrp.getDataset("LT_RADCAL_UNC").columns['wvl'], dtype=float))
 
         if rhoScalar is not None:  # make rho a constant array if scalar
-           rho = np.ones(len(list(esXstd.keys())))*rhoScalar
-           rhoDelta, _ = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
+            rho = np.ones(len(list(esXstd.keys())))*rhoScalar
+            rhoDelta, _ = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
                                                  waveSubset,
                                                  np.asarray(list(esXstd.keys()), dtype=float))
         else:
-           rho = rhoVec
+            rho = rhoVec
 
         # define dictionaries for uncertainty components
         Cal = {}
