@@ -49,11 +49,19 @@ class Propagate:
             self.MCP = punpy.MCPropagation(M)
 
     # Main functions
-    def propagate_Instrument_Uncertainty(self, mean_vals, uncertainties):
+    def propagate_Instrument_Uncertainty(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
         """
-        ESLIGHT, ESDARK, LILIGHT, LIDARK, LTLIGHT, LTDARK, ESCal, LICal, LTCal, ESStab, LIStab, LTStab,
-        ESLin, LILin, LTLin, ESStray, LIStray, LTStray, EST, LIT, LTT, LIPol, LTPol, ESCos
-        :Return: absolute uncertainty [es, li, lt] relative uncertainty [es, li, lt]
+        :param mean_vals:  list (normally numpy array) of input means matching the arguments of
+        Source.Uncertainty_Analysis.Propagate.instruments() - [ESLIGHT, ESDARK, LILIGHT, LIDARK, LTLIGHT, LTDARK,
+                                                               ESCal, LICal, LTCal,
+                                                               ESStab, LIStab, LTStab,
+                                                               ESLin, LILin, LTLin,
+                                                               ESStray, LIStray, LTStray,
+                                                               EST, LIT, LTT,
+                                                               LIPol, LTPol, ESCos]
+        :param uncertainties: list (normally numpy array) of input uncertainties matching the order of mean_vals
+
+        :Return: absolute uncertainty [es, li, lt]
         """
 
         corr_matrix = np.array([
@@ -98,8 +106,20 @@ class Propagate:
 
         return Es_unc, Li_unc, Lt_unc
 
-    def Propagate_Lw(self, varlist, ulist):
-        """ will be replaced in the near future """
+    def Propagate_Lw(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
+        """
+        :param mean_vals: list (normally numpy array) of input means matching the arguments of
+        Source.Uncertainty_Analysis.Propagate.Lw() - [lt, rhoVec, li,
+                                                      c2, c3,
+                                                      clin2, clin3,
+                                                      cstab2, cstab3,
+                                                      cstray2, cstray3,
+                                                      cT2, cT3,
+                                                      cpol1, cpol2]
+        :param uncertainties: list (normally numpy array) of input uncertainties matching the order of mean_vals
+
+        :return: Lw uncertainty
+        """
         corr_matrix = np.array([
             [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -119,13 +139,25 @@ class Propagate:
             ])
 
         return self.MCP.propagate_random(self.Lw,
-                                         varlist,
-                                         ulist,
+                                         mean_vals,
+                                         uncertainties,
                                          corr_between=corr_matrix)
 
-    def Propagate_RRS(self, mean_vals: list, uncertainties: list):
-        """lt, rhoVec, li, es, c1, c2, c3, clin1, clin2, clin3, cstab1, cstab2, cstab3, cstray1, cstray2, cstray3,
-                cT1, cT2, cT3, cpol1, cpol2, ccos
+    def Propagate_RRS(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
+        """
+        :param mean_vals: list (normally numpy array) of input means matching the arguments of
+        Source.Uncertainty_Analysis.Propagate.Rrs() - [lt, rhoVec, li, es,
+                                                       c1, c2, c3,
+                                                       clin1, clin2, clin3,
+                                                       cstab1, cstab2, cstab3,
+                                                       cstray1, cstray2, cstray3,
+                                                       cT1, cT2, cT3,
+                                                       cpol1, cpol2, ccos]
+        :param uncertainties: list (normally numpy array) of input uncertainties matching the order of mean_vals
+
+        :return: Rrs uncertainty
+
+
             will be replaced in the near future - for pixel by pixel method """
         corr_matrix = np.array([
             [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -160,10 +192,15 @@ class Propagate:
                                            corr_between=corr_matrix,
                                            corr_x=corr_list)
 
-    def band_Conv_Uncertainty(self, mean_vals, uncertainties, platform):
-        """Hyper_Rrs, wvl, Band cetral wavelengths, Band width - only works for sentinel 3A - OLCI
-            :return: relative Rrs uncertainty per spectral band"""
-        # rad_band = self.band_Conv_Sensor(*mean_vals)
+    def band_Conv_Uncertainty(self, mean_vals: list[np.array], uncertainties: list[np.array], platform: str) -> np.array:
+        """
+        :param mean_vals: list (normally numpy array) of input values matching matheo.band_Conv_Sensor_[SENSOR]
+        function - [Hyper_Rrs, wvl, Band cetral wavelengths, Band width]
+        :param uncertainties: list (normally numpy array) of input uncertainties matching mean_vals
+        :param platform: name of the sensor to be convolved
+
+        :return: relative Rrs uncertainty per spectral band
+        """
         if platform.upper() == "S3A" or platform.lower().rstrip().replace('-','') == "sentinel3a":
             func = self.band_Conv_Sensor_S3A
         elif platform.upper() == "S3B" or platform.lower().rstrip().replace('-','') == "sentinel3b":
@@ -182,20 +219,43 @@ class Propagate:
                                            mean_vals,
                                            uncertainties,
                                            corr_x=['syst', None])
-        # / (rad_band * 1e10)
 
     # Rho propagation methods
-    def M99_Rho_Uncertainty(self, mean_vals, uncertainties):
+    def M99_Rho_Uncertainty(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
+        """
+        :param mean_vals: list (normally numpy array) of input means matching the arguments of
+        Source.Uncertainty_Analysis.Propagate.rhoM99()
+        - [windSpeedMean, SZAMean, relAzMean]
+        :param uncertainties: list (normally numpy array) of input uncertainties matching the order of mean_vals
+
+        :return: Mobley99 method rho uncertainty
+        """
         return self.MCP.propagate_random(self.rhoM99,
                                          mean_vals,
                                          uncertainties,
-                                         corr_x=["rand", "rand", "rand"])
+                                         corr_x=["rand", "rand", "rand"]
+                                         )
+
+    def Zhang_Rho_Uncertainty(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
+        """
+        :param mean_vals: list (normally numpy array) of input means matching the arguments of
+        Source.Propagate.Uncertainty_Analysis.zhangWrapper() - [windSpeedMean, AOD, cloud,
+                                                                sza, wTemp, sal,
+                                                                relAz, waveBands]
+        :param uncertainties: list (normally numpy array) of input uncertainties matching the order of mean_vals
+
+        :return: Zhang17 method rho uncertainty
+        """
+        return self.MCP.propagate_random(self.zhangWrapper,
+                                         mean_vals,
+                                         uncertainties
+                                         )
 
     # Measurement Functions
     @staticmethod
     def instruments(ESLIGHT, ESDARK, LILIGHT, LIDARK, LTLIGHT, LTDARK, ESCal, LICal, LTCal, ESStab, LIStab, LTStab,
                     ESLin, LILin, LTLin, ESStray, LIStray, LTStray, EST, LIT, LTT, LIPol, LTPol, ESCos):
-        """Instrument specific uncertainties measurement function"""
+        """ Instrument specific uncertainties measurement function """
         return np.array((ESLIGHT - ESDARK)*ESCal*ESStab*ESLin*ESStray*EST*ESCos), \
                np.array((LILIGHT - LIDARK)*LICal*LIStab*LILin*LIStray*LIT*LIPol), \
                np.array((LTLIGHT - LTDARK)*LTCal*LTStab*LTLin*LTStray*LTT*LTPol)
@@ -247,24 +307,16 @@ class Propagate:
 
     @staticmethod
     def Lw(lt, rhoVec, li, c2, c3, clin2, clin3, cstab2, cstab3, cstray2, cstray3, cT2, cT3, cpol1, cpol2):
-
+        """ Lw Class based branch measurment function """
         li_signal = li * c2 * clin2 * cstab2 * cstray2 * cT2 * cpol1
         lt_signal = lt * c3 * clin3 * cstab3 * cstray3 * cT3 * cpol2
 
         return lt_signal - (li_signal * rhoVec)
 
     @staticmethod
-    def Lw_FRM(lt, rho, li):
-        return lt - (rho * li)
-
-    @staticmethod
-    def Rrs_FRM(lt, rho, li, es):
-        return (lt - (rho * li)) / es
-
-    @staticmethod
     def RRS(lt, rhoVec, li, es, c1, c2, c3, clin1, clin2, clin3, cstab1, cstab2, cstab3, cstray1, cstray2, cstray3,
             cT1, cT2, cT3, cpol1, cpol2, ccos):
-
+        """ Rrs Class based branch measurment function """
         es_signal = es*c1*cstab1*clin1*cstray1*cT1*ccos
         li_signal = li*c2*cstab2*clin2*cstray2*cT2*cpol1
         lt_signal = lt*c3*clin3*cstab3*cstray3*cT3*cpol2
@@ -274,7 +326,19 @@ class Propagate:
         return lw/es_signal
 
     @staticmethod
+    def Lw_FRM(lt, rho, li):
+        """ Lw FRM branch measurment function """
+        return lt - (rho * li)
+
+    @staticmethod
+    def Rrs_FRM(lt, rho, li, es):
+        """ Rrs FRM branch measurment function """
+        return (lt - (rho * li)) / es
+
+    @staticmethod
     def rhoM99(windSpeedMean, SZAMean, relAzMean):
+        """ Wrapper for Mobley 99 rho calculation to be called by punpy """
+
         theta = 40  # viewing zenith angle
         winds = np.arange(0, 14 + 1, 2)  # 0:2:14
         szas = np.arange(0, 80 + 1, 10)  # 0:10:80
@@ -304,10 +368,9 @@ class Propagate:
 
         return rhoScalar
 
-    def zhangWrapper(self, windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
-
-        print(f"CALL TO WRAPPER: {self.i}")
-
+    @staticmethod
+    def zhangWrapper(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
+        """ Wrapper for Zhang17 rho calculation to be called by punpy """
         # === environmental conditions during experiment ===
         env = collections.OrderedDict()
         env['wind'] = windSpeedMean
@@ -322,8 +385,4 @@ class Propagate:
         sensor['ang'] = [40, 180 - relAz]  # relAz should vary from about 90-135
         sensor['wv'] = waveBands
 
-        self.i += 1
-
-        rhoStructure = ZhangRho.Main(env, sensor)
-
-        return rhoStructure['ρ']  # TODO: refactor this based on changes to Zhang
+        return ZhangRho.get_sky_sun_rho(env, sensor)['rho']
