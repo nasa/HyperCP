@@ -183,14 +183,13 @@ class Instrument:
                                             np.array(uncGrp.getDataset("LT_RADCAL_UNC").columns['wvl'], dtype=float),
                                             data_wvl)
 
+
         # TODO: interp to common wavebands!
         return dict(
             esUnc=es_Unc,  # dict(zip(data_wvl, [[i] for i in ES_unc])),
             liUnc=li_Unc,  # dict(zip(data_wvl, [[j] for j in LI_unc])),
             ltUnc=lt_Unc,  # dict(zip(data_wvl, [[k] for k in LT_unc]))
         )
-
-
 
 
 
