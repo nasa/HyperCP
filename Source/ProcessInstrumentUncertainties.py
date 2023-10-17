@@ -357,8 +357,7 @@ class Instrument(ABC):
         ltSampleXSlice = xSlice['ltSample']
 
         if rhoScalar is not None:  # make rho a constant array if scalar
-            rho = np.ones(len(waveSubset))*rhoScalar
-            # rhoDelta = np.ones(len(waveSubset))*rhoDelta  # make rhoDelta the same shape as other values/Uncertainties
+            rho = np.ones(len(waveSubset))*rhoScalar  # convert rhoScalar to the same dims as other values/Uncertainties
         else:
             rho = rhoVec
 
@@ -367,7 +366,7 @@ class Instrument(ABC):
         Propagate_L2_FRM = punpy.MCPropagation(mdraws, parallel_cores=1)
 
         # get sample for rho
-        rhoSample = cm.generate_sample(mdraws, rho, rhoDelta*rho, "syst")
+        rhoSample = cm.generate_sample(mdraws, rho, rhoDelta, "syst")  # removed *rho because rhoDelta should be in abs units
 
         # initialise lists to store uncertainties per replicate
 
@@ -375,8 +374,7 @@ class Instrument(ABC):
         liSample = np.asarray([[i[0] for i in k.values()] for k in liSampleXSlice])
         ltSample = np.asarray([[i[0] for i in k.values()] for k in ltSampleXSlice])
 
-        sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None,
-                                                None)  # no uncertainty in wavelength
+        sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)  # no uncertainty in wvls
         sample_Lw = Propagate_L2_FRM.run_samples(Propagate.Lw_FRM, [ltSample, rhoSample, liSample])
         sample_Rrs = Propagate_L2_FRM.run_samples(Propagate.Rrs_FRM, [ltSample, rhoSample, liSample, esSample])
 
@@ -479,10 +477,7 @@ class Instrument(ABC):
 
         if rhoScalar is not None:  # make rho a constant array if scalar
             rho = np.ones(len(list(esXstd.keys())))*rhoScalar
-            # rhoDelta, _ = self.interp_common_wvls(np.asarray(rhoDelta, dtype=float),
-            #                                       waveSubset,
-            #                                       np.asarray(list(esXstd.keys()), dtype=float))
-            rhoDelta, _ = self.interp_common_wvls(np.ones(len(waveSubset))*rhoDelta, 
+            rhoDelta, _ = self.interp_common_wvls(rhoDelta,
                                                  waveSubset,
                                                  np.asarray(list(esXstd.keys()), dtype=float))
         else:
@@ -538,7 +533,7 @@ class Instrument(ABC):
                     ones, ones]
 
         lw_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
-                            np.ones(len(rhoDelta)) * 0.003,
+                            rhoDelta,
                             np.array(list(liXstd.values())).flatten() * li,
                             Cal['LI']/200, Cal['LT']/200,
                             cStab['LI'], cStab['LT'],
@@ -558,15 +553,17 @@ class Instrument(ABC):
                  ones, ones, ones,
                  ones, ones, ones]
 
-        rrs_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt, np.ones(len(rhoDelta)) * 0.003,
-                         np.array(list(liXstd.values())).flatten() * li,
-                         np.array(list(esXstd.values())).flatten() * es,
-                         Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
-                         cStab['ES'], cStab['LI'], cStab['LT'],
-                         cLin['ES'], cLin['LI'], cLin['LT'],
-                         cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
-                         Ct['ES'], Ct['LI'], Ct['LT'],
-                         cPol['LI'], cPol['LT'], cPol['ES']]
+        rrs_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+                             rhoDelta,
+                             np.array(list(liXstd.values())).flatten() * li,
+                             np.array(list(esXstd.values())).flatten() * es,
+                             Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
+                             cStab['ES'], cStab['LI'], cStab['LT'],
+                             cLin['ES'], cLin['LI'], cLin['LT'],
+                             cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
+                             Ct['ES'], Ct['LI'], Ct['LT'],
+                             cPol['LI'], cPol['LT'], cPol['ES']
+                             ]
 
         rrsAbsUnc = Propagate_L2.Propagate_RRS(rrs_means, rrs_uncertainties)
         rrs_vals = Propagate_L2.RRS(*rrs_means)
@@ -575,7 +572,7 @@ class Instrument(ABC):
         # band convolution of uncertainties is done here to include uncertainty contribution of band convolution process
         Convolve = Propagate(M=100, cores=1)
         # these are absolute values! Dont get confused
-        output={}
+        output = {}
 
         # interpolate output uncertainties to the waveSubset (common wavebands of interpolated es, li, & lt)
         lwAbsUnc, _ = self.interp_common_wvls(lwAbsUnc,
@@ -658,7 +655,7 @@ class Instrument(ABC):
 
         if rhoScalar is not None:  # make rho a constant array if scalar
            rho = np.ones(len(list(esXstd.keys())))*rhoScalar
-           rhoDelta, _ = self.interp_common_wvls(np.ones(len(waveSubset))*rhoDelta,
+           rhoDelta, _ = self.interp_common_wvls(rhoDelta,
                                                  waveSubset,
                                                  np.asarray(list(esXstd.keys()), dtype=float))
         else:
@@ -718,7 +715,7 @@ class Instrument(ABC):
                    ones, ones]
 
         lw_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
-                           np.ones(len(rhoDelta)) * 0.003,
+                           rhoDelta,
                            np.array(list(liXstd.values())).flatten() * li,
                            Cal['LI']/200, Cal['LT']/200,
                            cStab['LI'], cStab['LT'],
@@ -738,15 +735,17 @@ class Instrument(ABC):
                 ones, ones, ones,
                 ones, ones, ones]
 
-        rrs_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt, np.ones(len(rhoDelta)) * 0.003,
-                        np.array(list(liXstd.values())).flatten() * li,
-                        np.array(list(esXstd.values())).flatten() * es,
-                        Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
-                        cStab['ES'], cStab['LI'], cStab['LT'],
-                        cLin['ES'], cLin['LI'], cLin['LT'],
-                        cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
-                        Ct['ES'], Ct['LI'], Ct['LT'],
-                        cPol['LI'], cPol['LT'], cPol['ES']]
+        rrs_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+                             rhoDelta,
+                             np.array(list(liXstd.values())).flatten() * li,
+                             np.array(list(esXstd.values())).flatten() * es,
+                             Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
+                             cStab['ES'], cStab['LI'], cStab['LT'],
+                             cLin['ES'], cLin['LI'], cLin['LT'],
+                             cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
+                             Ct['ES'], Ct['LI'], Ct['LT'],
+                             cPol['LI'], cPol['LT'], cPol['ES']
+                             ]
 
         rrsAbsUnc = Propagate_L2.Propagate_RRS(rrs_means, rrs_uncertainties)
         rrs_vals = Propagate_L2.RRS(*rrs_means)
