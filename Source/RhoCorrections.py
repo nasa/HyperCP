@@ -4,8 +4,10 @@ import time
 import numpy as np
 
 from Source import ZhangRho, PATH_TO_DATA
+from Source.ConfigFile import ConfigFile
 from Source.Utilities import Utilities
 from Source.HDFRoot import HDFRoot
+
 
 class RhoCorrections:
 
@@ -60,12 +62,12 @@ class RhoCorrections:
             # AOD
             AOD = np.min([AOD,0.2])
             # SZA
-            if 60<SZAMean<70:
+            if 60 < SZAMean < 70:
                 SZAMean = SZAMean
-            elif SZAMean>=70:
+            elif SZAMean >= 70:
                 raise ValueError('SZAMean is to high (%s), Zhang correction cannot be performed above SZA=70.')
             # wavelengths in range [350-1000] nm
-            newWaveBands = [w for w in waveBands if w>=350 and w<=1000]
+            newWaveBands = [w for w in waveBands if w >= 350 and w <= 1000]
             # Wavebands clips the ends off of the spectra reducing the amount of values from 200 to 189 for
             # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
 
@@ -73,8 +75,7 @@ class RhoCorrections:
                                                 relAzMean, newWaveBands)
 
             # get the relative difference between mobley and zhang and add in quadrature as uncertainty component
-            # pct_diff = np.abs((zhang['ρ'] / rhoScalar) - 1)
-            pct_diff = np.abs((zhang / rhoScalar) - 1)
+            pct_diff = (np.abs(rhoScalar - zhang) / rhoScalar) * rhoScalar  # *rhoScalar to put into absolute units
             tot_diff = np.power(np.power(Delta, 2) + np.power(pct_diff, 2), 0.5)
             tot_diff[np.isnan(tot_diff)==True] = 0  # ensure no NaNs are present in the uncertainties.
 
@@ -82,13 +83,12 @@ class RhoCorrections:
             rhoDelta = []
             i = 0
             for w in waveBands:
-                if w>=350 and w<=1000:
+                if w >= 350 and w <= 1000:
                     rhoDelta.append(tot_diff[i])
                     i += 1
                 else:
                     # in cases where we are outside the range in which Zhang is calculated a placeholder is used
                     rhoDelta.append(np.power(np.power(Delta, 2) + np.power(0.003, 2), 0.5))
-                    # TODO: define how uncertainties outside of zhang range should be addressed (next TC meeting?)
             # if uncertainty is NaN then we cannot estimate what the uncertainty should be. We could argue that 0 could
             # be replaced by np.power(np.power(Delta, 2) + np.power(0.003, 2), 0.5). I personally think it's best to
             # say that we have no uncertainty for that pixel should Zhang be invalid.
