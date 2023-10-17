@@ -477,7 +477,7 @@ class Instrument(ABC):
 
         if rhoScalar is not None:  # make rho a constant array if scalar
             rho = np.ones(len(list(esXstd.keys())))*rhoScalar
-            rhoDelta, _ = self.interp_common_wvls(rhoDelta,
+            rhoDelta, _ = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
                                                  waveSubset,
                                                  np.asarray(list(esXstd.keys()), dtype=float))
         else:
@@ -654,7 +654,7 @@ class Instrument(ABC):
 
         if rhoScalar is not None:  # make rho a constant array if scalar
            rho = np.ones(len(list(esXstd.keys())))*rhoScalar
-           rhoDelta, _ = self.interp_common_wvls(rhoDelta,
+           rhoDelta, _ = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
                                                  waveSubset,
                                                  np.asarray(list(esXstd.keys()), dtype=float))
         else:
