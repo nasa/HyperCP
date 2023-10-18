@@ -449,9 +449,7 @@ class ProcessL2:
                 #Calculate the normalized water leaving radiance
                 nLw = rrs*f0
 
-                # nLw uncertainty;
-                ''' NOTE: Unclear whether this approach conforms to the uncertainty approach used elsewhere (DAA)'''
-                # nLwUNC = np.power(np.asarray(list(rrsUNC.values()))**2 + f0UNC**2, 0.5)
+                # nLw uncertainty;                
                 nLwUNC[k] = np.power((rrsUNC[k]*f0)**2 + f0UNC**2, 0.5)
 
                 newESData.columns[k].append(es)
@@ -1296,9 +1294,9 @@ class ProcessL2:
             return False
 
         # make std into dictionaries (data are ODs, but should not matter)
-        esStdSlice = {k: [stats['ES']['std_Signal'][k][0]] for k in esSlice}  # *esSlice[k][0]
-        liStdSlice = {k: [stats['LI']['std_Signal'][k][0]] for k in liSlice}  # *liSlice[k][0]
-        ltStdSlice = {k: [stats['LT']['std_Signal'][k][0]] for k in ltSlice}  # *ltSlice[k][0]
+        esStdSlice = {k: [stats['ES']['std_Signal_Interpolated'][k][0]] for k in esSlice}  # *esSlice[k][0]
+        liStdSlice = {k: [stats['LI']['std_Signal_Interpolated'][k][0]] for k in liSlice}  # *liSlice[k][0]
+        ltStdSlice = {k: [stats['LT']['std_Signal_Interpolated'][k][0]] for k in ltSlice}  # *ltSlice[k][0]
 
         # Convolve es/li/lt slices to satellite bands using RSRs
         if ConfigFile.settings['bL2WeightMODISA']:
@@ -1690,6 +1688,11 @@ class ProcessL2:
         xSlice['esSTD'] = esStdSlice
         xSlice['liSTD'] = liStdSlice
         xSlice['ltSTD'] = ltStdSlice
+
+        xSlice['esSTD_RAW'] = stats['ES']['std_Signal']  # uninterpolated std for uncertainty calculation
+        xSlice['liSTD_RAW'] = stats['LI']['std_Signal']
+        xSlice['ltSTD_RAW'] = stats['LT']['std_Signal']
+
         # F0 = F0_hyper
 
         # insert Uncertainties into analysis
@@ -1713,12 +1716,9 @@ class ProcessL2:
             xUNC.update(instrument.rrsHyperUNCFRM(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
         
         else:
-            '''NOTE: This should still estimate uncertainties for Factory regime,
-                partcularly for SeaBird which becomes Non-FRM Class regime..'''
-            xUNC = instrument.factory(node, uncGroup,
-                                      dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
-                                      dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
-                                      stats, instrument_WB)
+            xUNC = None
+            # TODO: This should still estimate STD for TRIOS-Factory regime, instead of unc.
+
 
         # move uncertainties from xSlice to xUNC
         if xUNC is not None:

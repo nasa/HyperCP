@@ -1,5 +1,6 @@
 # import python packages
 import os
+from abc import ABC, abstractmethod
 import numpy as np
 import scipy as sp
 import pandas as pd
@@ -16,32 +17,42 @@ import comet_maths as cm
 from Source import PATH_TO_CONFIG
 from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
-# from ProcessL1b import ProcessL1b
-# from ProcessL1b_Interp import ProcessL1b_Interp
+from Source.HDFRoot import HDFRoot  # for typing
+from Source.HDFGroup import HDFGroup  # for typing
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.Uncertainty_Analysis import Propagate
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 
 
-class Instrument:
+class Instrument(ABC):
     """Base class for instrument uncertainty analysis"""
 
     def __init__(self):
         pass
 
-    def lightDarkStats(self, grp, slices, sensortype):
-        '''
+    @abstractmethod
+    def lightDarkStats(self, grp: HDFGroup, slice: dict, sensortype: str) -> dict[np.array]:
+        """
+        :param grp: HDFGroup representing the sensor specific data
+        :param slice: Sliced sensor data
+        :param sensortype: sensor name
+
+        :return:
+        """
+
         # NOTE: Why is this here, and how do calls below to self.lightDarkStats know how
         # to choose either HyperOCR (L704-1153) vs. Trios (L1156-1525) classes?
-        #
-        '''
+        # Answer: they know because of ProcessL2.py L1270 or L1276. Instrument is never called, only inherited methods
+        # HyperOCR or Trios are. I have made the method abstract to better reflect this.
+
         pass
 
-    def generateSensorStats(self, InstrumentType, rawData, rawSlice, newWaveBands):
+    def generateSensorStats(self, InstrumentType: str, rawData: dict, rawSlice: dict, newWaveBands: np.array)\
+            -> dict[np.array]:
         """
-        :return: dictionary of statistics used later in the processing pipeline
-        :rtype dict: keys are [ave_Light, ave_Dark, std_Light, std_Dark, std_Signal]
+        :return: dictionary of statistics used later in the processing pipeline. Keys are:
+        [ave_Light, ave_Dark, std_Light, std_Dark, std_Signal]
         """
         output = {}  # used tp store standard deviations and averages as a function return for generateSensorStats
         types = ['ES', 'LI', 'LT']
@@ -49,8 +60,6 @@ class Instrument:
             if InstrumentType.lower() == "trios":
                 # rawData is the group and used to access _CAL, _BACK, and other information about the
                 # DarkPixels... not entirely clear.
-                ''' NOTE: This fails because it tries to divide raw_data by a number, and raw_data is
-                 an OrderedDict. '''
                 output[sensortype] = self.lightDarkStats(rawData[sensortype], rawSlice[sensortype], sensortype)
             elif InstrumentType.lower() == "seabird":
                 # rawData here is the group, passed along only for the purpose of
@@ -72,37 +81,26 @@ class Instrument:
             print(msg)
             return False
 
-        # interpolate to common wavebands
+        # interpolate std Signal to common wavebands for use in band convolution
         for stype in types:
-            # get sensor specific wavebands and pop from output
-            output[stype]['ave_Light'], _ = self.interp_common_wvls(
-                                             output[stype]['ave_Light'],
-                                             np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-                                             newWaveBands)
-            output[stype]['std_Light'], _ = self.interp_common_wvls(
-                                             output[stype]['std_Light'],
-                                             np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-                                             newWaveBands)
-
-            if InstrumentType.lower() == "seabird":
-                output[stype]['ave_Dark'], _ = self.interp_common_wvls(
-                    output[stype]['ave_Dark'],
-                    np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-                    newWaveBands)
-                output[stype]['std_Dark'], _ = self.interp_common_wvls(
-                    output[stype]['std_Dark'],
-                    np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-                    newWaveBands)
-
-            _, output[stype]['std_Signal'] = self.interp_common_wvls(
+            _, output[stype]['std_Signal_Interpolated'] = self.interp_common_wvls(
                 output[stype]['std_Signal'],
                 np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
                 newWaveBands)
 
         return output
 
-    ## Branch Processing
-    def Factory(self, node, uncGrp, stats):
+    
+    def Factory(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict) -> dict[np.array]:
+        """
+
+        :param node: HDFRoot which stores the L1BQC data for L2Processing
+        :param uncGrp: HDFGroup which contains the uncertainty budget, all imput uncertainties
+        :param stats: dictionary generated by Source.ProcessInstrumentUncertainties.generateSensorStats() contains
+        sensor specific standard deviations and averages for the light, dark and light-dark signals.
+
+        :return: dictionary of output instrument uncertainties [ES, LI, LT]
+        """
         # read in uncertainties from HDFRoot and define propagate object
         PropagateL1B = Propagate(M=100, cores=0)
 
@@ -118,62 +116,61 @@ class Instrument:
         # loop through instruments
         for sensor in ["ES", "LI", "LT"]:
             radcal = uncGrp.getDataset(f"{sensor}_RADCAL_UNC") # SIRREX data
-            radcal.datasetToColumns()
-
-            # get new wavebands from sensorstat keys
-            nWB = np.asarray(list(stats[sensor]['std_Signal'].keys()), dtype=float)
-
-            # TODO: Implement Slaper and propagate as error
+            radcal.datasetToColumns()          
+            
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            waves = np.asarray(list(radcal.columns['wvl']))  # for SIRREX the wavelengths are at index 0
-            cols = np.asarray(list(straylight.columns['1']))
-            cStray[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cStray[sensor] = np.asarray(list(straylight.columns['1']))
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
-            waves = np.asarray(list(linear.columns['0']))
-            cols = np.asarray(list(linear.columns['1']))
-            cLin[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cLin[sensor] = np.asarray(list(linear.columns['1']))
 
             stab = uncGrp.getDataset(sensor + "_STABDATA_CAL")
             stab.datasetToColumns()
-            waves = np.asarray(list(stab.columns['0']))
-            cols = np.asarray(list(stab.columns['1']))
-            cStab[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cStab[sensor] = np.asarray(list(stab.columns['1']))
 
-            # Interpolate calibration coefficients to common wavebands per sensor
-            waves = np.asarray(list(radcal.columns['wvl']))
-            cols = np.asarray(list(radcal.columns['unc']))
-            Cal[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
-
-            ### ADERU : Read coeff value from configuration files
+            ### ADERU : Read radiometric coeff value from configuration files
+            Cal[sensor] = np.asarray(list(radcal.columns['unc']))
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join(PATH_TO_CONFIG, calFolder)
             calibrationMap = CalibrationFileReader.read(calPath)
-            waves, coeff_col = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, sensor)
-            Coeff[sensor], _ = self.interp_common_wvls(coeff_col, waves, nWB)
-
+            waves, Coeff[sensor] = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, sensor)
+            
             # TODO: temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
-            waves = np.asarray(list(pol.columns['0']))
-            cols = np.asarray(list(pol.columns['1']))
-            cPol[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cPol[sensor] = np.asarray(list(pol.columns['1']))
 
             # temp uncertainties calculated at L1AQC
             Temp = uncGrp.getDataset(sensor + "_TEMPDATA_CAL")
             Temp.datasetToColumns()
-            waves = np.asarray(list(Temp.columns['1']))
-            cols = np.array(Temp.columns[f'{sensor}_TEMPERATURE_UNCERTAINTIES'])  # last row of temp group has uncertainties
-            Ct[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            Ct[sensor] = np.array(Temp.columns[f'{sensor}_TEMPERATURE_UNCERTAINTIES'])
 
         ones = np.ones(len(Cal['ES']))  # to provide array of 1s with the correct shape
 
         # create lists containing mean values and their associated uncertainties (list order matters)
-        mean_values = [stats['ES']['ave_Light'], ones*stats['ES']['ave_Dark'],
-                       stats['LI']['ave_Light'], ones*stats['LI']['ave_Dark'],
-                       stats['LT']['ave_Light'], ones*stats['LT']['ave_Dark'],
+        if not stats['ES']['ave_Dark'].shape:
+            # for trios the dark average and std is one value
+            esaveDark = ones*stats['ES']['ave_Dark']
+            liaveDark = ones*stats['LI']['ave_Dark']
+            ltaveDark = ones*stats['LT']['ave_Dark']
+            esstdDark = ones*stats['ES']['std_Dark']
+            listdDark = ones*stats['LI']['std_Dark']
+            ltstdDark = ones*stats['LT']['std_Dark']
+
+        else:
+            # for seabird it is an array of length 255
+            esaveDark = stats['ES']['ave_Dark']
+            liaveDark = stats['LI']['ave_Dark']
+            ltaveDark = stats['LT']['ave_Dark']
+            esstdDark = stats['ES']['std_Dark']
+            listdDark = stats['LI']['std_Dark']
+            ltstdDark = stats['LT']['std_Dark']
+
+        mean_values = [stats['ES']['ave_Light'], esaveDark,
+                       stats['LI']['ave_Light'], liaveDark,
+                       stats['LT']['ave_Light'], ltaveDark,
                        Coeff['ES'], Coeff['LI'], Coeff['LT'],
                        ones, ones, ones,
                        ones, ones, ones,
@@ -181,10 +178,10 @@ class Instrument:
                        ones, ones, ones,
                        ones, ones, ones]
 
-        uncertainty = [stats['ES']['std_Light'], ones*stats['ES']['std_Dark'],
-                       stats['LI']['std_Light'], ones*stats['LI']['std_Dark'],
-                       stats['LT']['std_Light'], ones*stats['LT']['std_Dark'],
-                       Cal['ES']*Coeff['ES']/100, Cal['LI']*Coeff['LI']/100, Cal['LT']*Coeff['LT']/100,
+        uncertainty = [stats['ES']['std_Light'], esstdDark,
+                       stats['LI']['std_Light'], listdDark,
+                       stats['LT']['std_Light'], ltstdDark,
+                       Cal['ES']*Coeff['ES']/200, Cal['LI']*Coeff['LI']/200, Cal['LT']*Coeff['LT']/200,
                        cStab['ES'], cStab['LI'], cStab['LT'],
                        cLin['ES'], cLin['LI'], cLin['LT'],
                        np.array(cStray['ES'])/100, np.array(cStray['LI'])/100, np.array(cStray['LT'])/100,
@@ -192,18 +189,35 @@ class Instrument:
                        np.array(cPol['LI']), np.array(cPol['LT']), np.array(cPol['ES'])]
 
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
-        ES_unc, LI_unc, LT_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)  # , ES_rel, LI_rel, LT_rel
+        ES_unc, LI_unc, LT_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
 
         # return uncertainties as dictionary to be appended to xSlice
-        data_wvl = np.asarray(list(stats['ES']['std_Signal'].keys()))  # get wvls
+        data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()), dtype=float)  # std_Signal_Interpolated has keys which represent common wavebands for ES, LI, & LT.
+        _, es_Unc = self.interp_common_wvls(ES_unc,
+                                            np.array(uncGrp.getDataset("ES_RADCAL_UNC").columns['wvl'], dtype=float),
+                                            data_wvl)
+        _, li_Unc = self.interp_common_wvls(LI_unc,
+                                            np.array(uncGrp.getDataset("LI_RADCAL_UNC").columns['wvl'], dtype=float),
+                                            data_wvl)
+        _, lt_Unc = self.interp_common_wvls(LT_unc,
+                                            np.array(uncGrp.getDataset("LT_RADCAL_UNC").columns['wvl'], dtype=float),
+                                            data_wvl)
+
         return dict(
-            esUnc=dict(zip(data_wvl, [[i] for i in ES_unc])),
-            # Li_rel will be changed to unc but still be relative uncertainty
-            liUnc=dict(zip(data_wvl, [[j] for j in LI_unc])),
-            ltUnc=dict(zip(data_wvl, [[k] for k in LT_unc]))
+            esUnc=es_Unc,
+            liUnc=li_Unc,
+            ltUnc=lt_Unc,
         )
 
-    def Default(self, uncGrp, stats):
+    def Default(self, uncGrp: HDFGroup, stats: dict) -> dict[str, np.array]:
+        """
+
+        :param uncGrp: HDFGroup which contains the uncertainty budget, all imput uncertainties
+        :param stats: dictionary generated by Source.ProcessInstrumentUncertainties.generateSensorStats() contains
+        sensor specific standard deviations and averages for the light, dark and light-dark signals.
+
+        :return: dictionary of output instrument uncertainties [Es_unc, Li_unc, Lt_unc]
+        """
         # read in uncertainties from HDFRoot and define propagate object
         PropagateL1B = Propagate(M=100, cores=0)
 
@@ -221,63 +235,55 @@ class Instrument:
             radcal = uncGrp.getDataset(f"{sensor}_RADCAL_CAL")
             radcal.datasetToColumns()
 
-            # get new wavebands from sensorstat keys
-            nWB = np.asarray(list(stats[sensor]['std_Signal'].keys()), dtype=float)
-
-            # TODO: Implement Slaper and propagate as error
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            # cStray[sensor] = np.asarray(list(straylight.data[1]))
-            waves = np.asarray(list(radcal.columns['1']))  # for RADCAL the wavelengths are at index 1
-            cols = np.asarray(list(straylight.columns['1']))
-            cStray[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cStray[sensor] = np.asarray(list(straylight.columns['1']))
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
-            # cLin[sensor] = np.asarray(list(linear.columns['1']))
-            waves = np.asarray(list(linear.columns['0']))
-            cols = np.asarray(list(linear.columns['1']))
-            cLin[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cLin[sensor] = np.asarray(list(linear.columns['1']))
 
             stab = uncGrp.getDataset(sensor + "_STABDATA_CAL")
             stab.datasetToColumns()
-            # cStab[sensor] = np.asarray(list(stab.columns['1']))
-            waves = np.asarray(list(stab.columns['0']))
-            cols = np.asarray(list(stab.columns['1']))
-            cStab[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cStab[sensor] = np.asarray(list(stab.columns['1']))
 
-            # Interpolate calibration coefficients to common wavebands per sensor
-            waves = np.asarray(list(radcal.columns['1']))
-            cols = np.asarray(list(radcal.columns['2']))
-            Coeff[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
-            cal_cols = np.asarray(list(radcal.columns['3']))
-            Cal[sensor], _ = self.interp_common_wvls(cal_cols, waves, nWB)
-
-            # if sensor == 'ES':
-            #     pol = uncGrp.getDataset("ES_ANGDATA_UNCERTAINTY")
-            # else:
-            #     pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
+            Coeff[sensor] = np.asarray(list(radcal.columns['2']))
+            Cal[sensor] = np.asarray(list(radcal.columns['3']))
 
             # TODO: temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
-            waves = np.asarray(list(pol.columns['0']))
-            cols = np.asarray(list(pol.columns['1']))
-            cPol[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cPol[sensor] = np.asarray(list(pol.columns['1']))
 
             # temp uncertainties calculated at L1AQC
             Temp = uncGrp.getDataset(sensor + "_TEMPDATA_CAL")
             Temp.datasetToColumns()
-            waves = np.asarray(list(Temp.columns['1']))
-            cols = np.array(Temp.columns[f'{sensor}_TEMPERATURE_UNCERTAINTIES'])  # last row of temp group has uncertainties
-            Ct[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            Ct[sensor] = np.array(Temp.columns[f'{sensor}_TEMPERATURE_UNCERTAINTIES'])
 
         ones = np.ones(len(Cal['ES']))  # to provide array of 1s with the correct shape
 
         # create lists containing mean values and their associated uncertainties (list order matters)
-        mean_values = [stats['ES']['ave_Light'], ones*stats['ES']['ave_Dark'],
-                       stats['LI']['ave_Light'], ones*stats['LI']['ave_Dark'],
-                       stats['LT']['ave_Light'], ones*stats['LT']['ave_Dark'],
+        if not stats['ES']['ave_Dark'].shape:
+            # for trios the dark average and std is one value
+            esaveDark = ones*stats['ES']['ave_Dark']
+            liaveDark = ones*stats['LI']['ave_Dark']
+            ltaveDark = ones*stats['LT']['ave_Dark']
+            esstdDark = ones*stats['ES']['std_Dark']
+            listdDark = ones*stats['LI']['std_Dark']
+            ltstdDark = ones*stats['LT']['std_Dark']
+
+        else:
+            # for seabird it is an array of length 255
+            esaveDark = stats['ES']['ave_Dark']
+            liaveDark = stats['LI']['ave_Dark']
+            ltaveDark = stats['LT']['ave_Dark']
+            esstdDark = stats['ES']['std_Dark']
+            listdDark = stats['LI']['std_Dark']
+            ltstdDark = stats['LT']['std_Dark']
+
+        mean_values = [stats['ES']['ave_Light'], esaveDark,
+                       stats['LI']['ave_Light'], liaveDark,
+                       stats['LT']['ave_Light'], ltaveDark,
                        Coeff['ES'], Coeff['LI'], Coeff['LT'],
                        ones, ones, ones,
                        ones, ones, ones,
@@ -285,9 +291,9 @@ class Instrument:
                        ones, ones, ones,
                        ones, ones, ones]
 
-        uncertainty = [stats['ES']['std_Light'], ones*stats['ES']['std_Dark'],
-                       stats['LI']['std_Light'], ones*stats['LI']['std_Dark'],
-                       stats['LT']['std_Light'], ones*stats['LT']['std_Dark'],
+        uncertainty = [stats['ES']['std_Light'], esstdDark,
+                       stats['LI']['std_Light'], listdDark,
+                       stats['LT']['std_Light'], ltstdDark,
                        Cal['ES']*Coeff['ES']/200, Cal['LI']*Coeff['LI']/200, Cal['LT']*Coeff['LT']/200,
                        cStab['ES'], cStab['LI'], cStab['LT'],
                        cLin['ES'], cLin['LI'], cLin['LT'],
@@ -296,31 +302,62 @@ class Instrument:
                        np.array(cPol['LI']), np.array(cPol['LT']), np.array(cPol['ES'])]
 
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
-        ES_unc, LI_unc, LT_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)  # , ES_rel, LI_rel, LT_rel
+        ES_unc, LI_unc, LT_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
 
         # return uncertainties as dictionary to be appended to xSlice
-        data_wvl = np.asarray(list(stats['ES']['std_Signal'].keys()))  # get wvls
+        data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()), dtype=float)  # std_Signal_Interpolated has keys which represent common wavebands for ES, LI, & LT.
+        _, es_Unc = self.interp_common_wvls(ES_unc,
+                                            np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                                            data_wvl)
+        _, li_Unc = self.interp_common_wvls(LI_unc,
+                                            np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1'], dtype=float),
+                                            data_wvl)
+        _, lt_Unc = self.interp_common_wvls(LT_unc,
+                                            np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'], dtype=float),
+                                            data_wvl)
+
         return dict(
-            esUnc=dict(zip(data_wvl, [[i] for i in ES_unc])),
-            # Li_rel will be changed to unc but still be relative uncertainty
-            liUnc=dict(zip(data_wvl, [[j] for j in LI_unc])),
-            ltUnc=dict(zip(data_wvl, [[k] for k in LT_unc]))
+            esUnc=es_Unc,
+            liUnc=li_Unc,
+            ltUnc=lt_Unc,
         )
 
-    def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
+    @abstractmethod
+    def FRM(self, node: HDFRoot, uncGrp: HDFGroup, raw_grps: dict[str, HDFGroup], raw_slices: dict[str, np.array],
+            stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
+        """
+        :param node: HDFRoot of L1BQC data for procressing
+        :param uncGrp: HDFGroup of uncertainty budget
+        :param raw_grps: dictionary of raw data groups
+        :param raw_slices: dictionary of sliced data for specific sensors
+        :param stats: standard deviation and averages for Light, Dark and Light-Dark signal
+        :param newWaveBands: wavelength subset for interpolation
+
+        :return: output FRM uncertainties
+        """
         pass
 
     ## L2 uncertainty Processing
     @staticmethod
-    def rrsHyperUNCFRM(rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice):
+    def rrsHyperUNCFRM(rhoScalar: float, rhoVec: np.array, rhoDelta: np.array, waveSubset: np.array,
+                       xSlice: dict[str, np.array]) -> dict[str, np.array]:
+        """
+        :param rhoScalar: rho input if Mobley99 or threeC rho is used
+        :param rhoVec: rho input if Zhang17 rho is used
+        :param rhoDelta: uncertainties associated with rho
+        :param waveSubset: wavelength subset for any band convolution (and sizing rhoScalar if used)
+        :param xSlice: Dictionary of input radiance, raw_counts, standard deviations etc.
+
+        :return: dictionary of output uncertainties that are generated
+
+        """
         # organise data
         esSampleXSlice = xSlice['esSample']
         liSampleXSlice = xSlice['liSample']
         ltSampleXSlice = xSlice['ltSample']
 
         if rhoScalar is not None:  # make rho a constant array if scalar
-            rho = np.ones(len(waveSubset))*rhoScalar
-            # rhoDelta = np.ones(len(waveSubset))*rhoDelta  # make rhoDelta the same shape as other values/Uncertainties
+            rho = np.ones(len(waveSubset))*rhoScalar  # convert rhoScalar to the same dims as other values/Uncertainties
         else:
             rho = rhoVec
 
@@ -329,7 +366,7 @@ class Instrument:
         Propagate_L2_FRM = punpy.MCPropagation(mdraws, parallel_cores=1)
 
         # get sample for rho
-        rhoSample = cm.generate_sample(mdraws, rho, rhoDelta*rho, "syst")
+        rhoSample = cm.generate_sample(mdraws, rho, rhoDelta, "syst")  # removed *rho because rhoDelta should be in abs units
 
         # initialise lists to store uncertainties per replicate
 
@@ -337,8 +374,7 @@ class Instrument:
         liSample = np.asarray([[i[0] for i in k.values()] for k in liSampleXSlice])
         ltSample = np.asarray([[i[0] for i in k.values()] for k in ltSampleXSlice])
 
-        sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None,
-                                                None)  # no uncertainty in wavelength
+        sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)  # no uncertainty in wvls
         sample_Lw = Propagate_L2_FRM.run_samples(Propagate.Lw_FRM, [ltSample, rhoSample, liSample])
         sample_Rrs = Propagate_L2_FRM.run_samples(Propagate.Rrs_FRM, [ltSample, rhoSample, liSample, esSample])
 
@@ -413,17 +449,37 @@ class Instrument:
 
         return output
 
-    def rrsHyperUNC(self, uncGrp, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice):
-        es = np.asarray(list(xSlice['es'].values()), dtype=float).flatten()
-        esXstd = xSlice['esSTD']
-        li = np.asarray(list(xSlice['li'].values()), dtype=float).flatten()
-        liXstd = xSlice['liSTD']
-        lt = np.asarray(list(xSlice['lt'].values()), dtype=float).flatten()
-        ltXstd = xSlice['ltSTD']
+    def rrsHyperUNC(self, uncGrp: HDFGroup, rhoScalar: float, rhoVec: np.array, rhoDelta: np.array,
+                    waveSubset: np.array, xSlice: dict[str, np.array]) -> dict[str, np.array]:
+        """
+        :param uncGrp: HDFGroup storing the uncertainty budget
+        :param rhoScalar: rho input if Mobley99 or threeC rho is used
+        :param rhoVec: rho input if Zhang17 rho is used
+        :param rhoDelta: uncertainties associated with rho
+        :param waveSubset: wavelength subset for any band convolution (and sizing rhoScalar if used)
+        :param xSlice: Dictionary of input radiance, raw_counts, standard deviations etc.
+
+        :return: dictionary of output uncertainties that are generated
+        """
+        esXstd = xSlice['esSTD_RAW']
+        liXstd = xSlice['liSTD_RAW']
+        ltXstd = xSlice['ltSTD_RAW']
+
+        es, _ = self.interp_common_wvls(np.asarray(list(xSlice['es'].values()), dtype=float).flatten(),
+                                        np.asarray(list(xSlice['es'].keys()), dtype=float).flatten(),
+                                        np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float))
+        li, _ = self.interp_common_wvls(np.asarray(list(xSlice['li'].values()), dtype=float).flatten(),
+                                        np.asarray(list(xSlice['li'].keys()), dtype=float).flatten(),
+                                        np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1'], dtype=float))
+        lt, _ = self.interp_common_wvls(np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(),
+                                        np.asarray(list(xSlice['lt'].keys()), dtype=float).flatten(),
+                                        np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'], dtype=float))
 
         if rhoScalar is not None:  # make rho a constant array if scalar
-            rho = np.ones(len(waveSubset))*rhoScalar
-            rhoDelta = np.ones(len(waveSubset))*rhoDelta
+            rho = np.ones(len(list(esXstd.keys())))*rhoScalar
+            rhoDelta, _ = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
+                                                 waveSubset,
+                                                 np.asarray(list(esXstd.keys()), dtype=float))
         else:
             rho = rhoVec
 
@@ -440,65 +496,45 @@ class Instrument:
             radcal = uncGrp.getDataset(f"{sensor}_RADCAL_CAL")
             radcal.datasetToColumns()
 
-            # get new wavebands from sensorstat keys
-            nWB = np.asarray(list(esXstd.keys()), dtype=float)
-
-            # TODO: Implement Slaper and propagate as error
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            # cStray[sensor] = np.asarray(list(straylight.data[1]))
-            waves = np.asarray(list(radcal.columns['1']))  # for RADCAL the wavelengths are at index 1
-            cols = np.asarray(list(straylight.columns['1']))
-            cStray[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cStray[sensor] = np.asarray(list(straylight.columns['1']))
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
-            # cLin[sensor] = np.asarray(list(linear.columns['1']))
-            waves = np.asarray(list(linear.columns['0']))
-            cols = np.asarray(list(linear.columns['1']))
-            cLin[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cLin[sensor] = np.asarray(list(linear.columns['1']))
 
             stab = uncGrp.getDataset(sensor + "_STABDATA_CAL")
             stab.datasetToColumns()
-            # cStab[sensor] = np.asarray(list(stab.columns['1']))
-            waves = np.asarray(list(stab.columns['0']))
-            cols = np.asarray(list(stab.columns['1']))
-            cStab[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cStab[sensor] = np.asarray(list(stab.columns['1']))
 
-            # Interpolate calibration coefficients to common wavebands per sensor
-            waves = np.asarray(list(radcal.columns['1']))
-            cols = np.asarray(list(radcal.columns['2']))
-            Coeff[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
-            cal_cols = np.asarray(list(radcal.columns['3']))
-            Cal[sensor], _ = self.interp_common_wvls(cal_cols, waves, nWB)
+            Coeff[sensor] = np.asarray(list(radcal.columns['2']))
+            Cal[sensor] = np.asarray(list(radcal.columns['3']))
 
-            # TODO: temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
-            waves = np.asarray(list(pol.columns['0']))
-            cols = np.asarray(list(pol.columns['1']))
-            cPol[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cPol[sensor] = np.asarray(list(pol.columns['1']))  # es cos stored in poldata file as temporary fix
 
             # temp uncertainties calculated at L1AQC
             Temp = uncGrp.getDataset(sensor + "_TEMPDATA_CAL")
             Temp.datasetToColumns()
-            waves = np.asarray(list(Temp.columns['1']))
-            cols = np.array(Temp.columns[f'{sensor}_TEMPERATURE_UNCERTAINTIES'])  # last row of temp group has uncertainties
-            Ct[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            Ct[sensor] = np.array(Temp.columns[f'{sensor}_TEMPERATURE_UNCERTAINTIES'])
 
         Propagate_L2 = Propagate(M=100, cores=0)
         slice_size = len(es)
         ones = np.ones(slice_size)
 
         lw_means = [lt, rho, li,
-                    Coeff['LI'], Coeff['LT'],
+                    ones, ones,
                     ones, ones,
                     ones, ones,
                     ones, ones,
                     ones, ones,
                     ones, ones]
 
-        lw_uncertainties = [np.array(list(ltXstd.values())).flatten()*lt, rhoDelta, np.array(list(liXstd.values())).flatten()*li,
+        lw_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+                            rhoDelta,
+                            np.array(list(liXstd.values())).flatten() * li,
                             Cal['LI']/200, Cal['LT']/200,
                             cStab['LI'], cStab['LT'],
                             cLin['LI'], cLin['LT'],
@@ -506,81 +542,121 @@ class Instrument:
                             Ct['LI'], Ct['LI'],
                             cPol['LI'], cPol['LI']]
 
-        lwAbsUnc, lw_vals = Propagate_L2.Propagate_Lw(lw_means, lw_uncertainties)
+        lwAbsUnc = Propagate_L2.Propagate_Lw(lw_means, lw_uncertainties)
+        lw_vals = Propagate_L2.Lw(*lw_means)
 
-        means = [lt, rho, li, es,
-                 ones, ones, ones,
-                 ones, ones, ones,
-                 ones, ones, ones,
-                 ones, ones, ones,
-                 ones, ones, ones,
-                 ones, ones, ones]
+        rrs_means = [lt, rho, li, es,
+                     ones, ones, ones,
+                     ones, ones, ones,
+                     ones, ones, ones,
+                     ones, ones, ones,
+                     ones, ones, ones,
+                     ones, ones, ones]
 
-        uncertainties = [np.array(list(ltXstd.values())).flatten(), rhoDelta,
-                         np.array(list(liXstd.values())).flatten(),
-                         np.array(list(esXstd.values())).flatten(),
-                         Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
-                         cStab['ES'], cStab['LI'], cStab['LT'],
-                         cLin['ES'], cLin['LI'], cLin['LT'],
-                         cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
-                         Ct['ES'], Ct['LI'], Ct['LT'],
-                         cPol['LI'], cPol['LT'], cPol['ES']]
+        rrs_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+                             rhoDelta,
+                             np.array(list(liXstd.values())).flatten() * li,
+                             np.array(list(esXstd.values())).flatten() * es,
+                             Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
+                             cStab['ES'], cStab['LI'], cStab['LT'],
+                             cLin['ES'], cLin['LI'], cLin['LT'],
+                             cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
+                             Ct['ES'], Ct['LI'], Ct['LT'],
+                             cPol['LI'], cPol['LT'], cPol['ES']
+                             ]
 
-        # rrsAbsUnc, rrs_vals, rel_unc = Propagate_L2.Propagate_RRS(means, uncertainties)
-        rrsAbsUnc, rrs_vals = Propagate_L2.Propagate_RRS(means, uncertainties)
+        rrsAbsUnc = Propagate_L2.Propagate_RRS(rrs_means, rrs_uncertainties)
+        rrs_vals = Propagate_L2.RRS(*rrs_means)
 
         ## BAND CONVOLUTION
         # band convolution of uncertainties is done here to include uncertainty contribution of band convolution process
         Convolve = Propagate(M=100, cores=1)
         # these are absolute values! Dont get confused
-        output={}
+        output = {}
+
+        # interpolate output uncertainties to the waveSubset (common wavebands of interpolated es, li, & lt)
+        lwAbsUnc, _ = self.interp_common_wvls(lwAbsUnc,
+                                              np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                                              np.array(waveSubset, dtype=float))
+        lw_vals, _ = self.interp_common_wvls(lw_vals,
+                                             np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                                             np.array(waveSubset, dtype=float))
+        rrsAbsUnc, _ = self.interp_common_wvls(rrsAbsUnc,
+                                               np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                                               np.array(waveSubset, dtype=float))
+        rrs_vals, _ = self.interp_common_wvls(rrs_vals,
+                                              np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                                              np.array(waveSubset, dtype=float))
+
+        ## Band Convolution of Uncertainties
         if ConfigFile.settings["bL2WeightSentinel3A"]:
             output["lwUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "S3A")
+                                                                        [lwAbsUnc, None], "S3A")
             output["rrsUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "S3A")
+                                                                         [rrsAbsUnc, None], "S3A")
         elif ConfigFile.settings["bL2WeightSentinel3B"]:
             output["lwUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "S3B")
+                                                                        [lwAbsUnc, None], "S3B")
             output["rrsUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "S3B")
+                                                                         [rrsAbsUnc, None], "S3B")
         if ConfigFile.settings['bL2WeightMODISA']:
             output["lwUNC_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "MOD-A")
+                                                                    [lwAbsUnc, None], "MOD-A")
             output["rrsUNC_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "MOD-A")
+                                                                     [rrsAbsUnc, None], "MOD-A")
         if ConfigFile.settings['bL2WeightMODIST']:
             output["lwUNC_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "MOD-T")
+                                                                    [lwAbsUnc, None], "MOD-T")
             output["rrsUNC_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "MOD-T")
+                                                                     [rrsAbsUnc, None], "MOD-T")
         if ConfigFile.settings['bL2WeightVIIRSN']:
             output["lwUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "VIIRS")
+                                                                    [lwAbsUnc, None], "VIIRS")
             output["rrsUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "VIIRS")
+                                                                     [rrsAbsUnc, None], "VIIRS")
         if ConfigFile.settings['bL2WeightVIIRSJ']:
             output["lwUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "VIIRS")
+                                                                    [lwAbsUnc, None], "VIIRS")
             output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "VIIRS")
+                                                                     [rrsAbsUnc, None], "VIIRS")
             pass
         output.update({"lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})
 
         return output
 
-
     def rrsHyperUNCFACTORY(self, node, uncGrp, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice):
-        es = np.asarray(list(xSlice['es'].values()), dtype=float).flatten()
-        esXstd = xSlice['esSTD']
-        li = np.asarray(list(xSlice['li'].values()), dtype=float).flatten()
-        liXstd = xSlice['liSTD']
-        lt = np.asarray(list(xSlice['lt'].values()), dtype=float).flatten()
-        ltXstd = xSlice['ltSTD']
+        """
+
+        :param node: HDFRoot which stores L1BQC data
+        :param uncGrp: HDFGroup storing the uncertainty budget
+        :param rhoScalar: rho input if Mobley99 or threeC rho is used
+        :param rhoVec: rho input if Zhang17 rho is used
+        :param rhoDelta: uncertainties associated with rho
+        :param waveSubset: wavelength subset for any band convolution (and sizing rhoScalar if used)
+        :param xSlice: Dictionary of input radiance, raw_counts, standard deviations etc.
+
+        :return: dictionary of output uncertainties that are generated
+        """
+
+        esXstd = xSlice['esSTD_RAW']
+        liXstd = xSlice['liSTD_RAW']
+        ltXstd = xSlice['ltSTD_RAW']
+
+        es, _ = self.interp_common_wvls(np.asarray(list(xSlice['es'].values()), dtype=float).flatten(),
+                                       np.asarray(list(xSlice['es'].keys()), dtype=float).flatten(),
+                                       np.array(uncGrp.getDataset("ES_RADCAL_UNC").columns['wvl'], dtype=float))
+        li, _ = self.interp_common_wvls(np.asarray(list(xSlice['li'].values()), dtype=float).flatten(),
+                                       np.asarray(list(xSlice['li'].keys()), dtype=float).flatten(),
+                                       np.array(uncGrp.getDataset("LI_RADCAL_UNC").columns['wvl'], dtype=float))
+        lt, _ = self.interp_common_wvls(np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(),
+                                       np.asarray(list(xSlice['lt'].keys()), dtype=float).flatten(),
+                                       np.array(uncGrp.getDataset("LT_RADCAL_UNC").columns['wvl'], dtype=float))
 
         if rhoScalar is not None:  # make rho a constant array if scalar
-            rho = np.ones(len(waveSubset))*rhoScalar
-            rhoDelta = np.ones(len(waveSubset))*rhoDelta
+            rho = np.ones(len(list(esXstd.keys())))*rhoScalar
+            rhoDelta, _ = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
+                                                 waveSubset,
+                                                 np.asarray(list(esXstd.keys()), dtype=float))
         else:
             rho = rhoVec
 
@@ -597,148 +673,143 @@ class Instrument:
             radcal = uncGrp.getDataset(f"{sensor}_RADCAL_UNC")
             radcal.datasetToColumns()
 
-            # get new wavebands from sensorstat keys
-            nWB = np.asarray(list(esXstd.keys()), dtype=float)
-
-            # TODO: Implement Slaper and propagate as error
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            # cStray[sensor] = np.asarray(list(straylight.data[1]))
-            waves = np.asarray(list(radcal.columns['wvl']))
-            cols = np.asarray(list(straylight.columns['1']))
-            cStray[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cStray[sensor] = np.asarray(list(straylight.columns['1']))
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
-            # cLin[sensor] = np.asarray(list(linear.columns['1']))
-            waves = np.asarray(list(linear.columns['0']))
-            cols = np.asarray(list(linear.columns['1']))
-            cLin[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cLin[sensor] = np.asarray(list(linear.columns['1']))
 
             stab = uncGrp.getDataset(sensor + "_STABDATA_CAL")
             stab.datasetToColumns()
-            # cStab[sensor] = np.asarray(list(stab.columns['1']))
-            waves = np.asarray(list(stab.columns['0']))
-            cols = np.asarray(list(stab.columns['1']))
-            cStab[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
-
-            # Interpolate calibration coefficients to common wavebands per sensor
-            waves = np.asarray(list(radcal.columns['wvl']))
-            cols = np.asarray(list(radcal.columns['unc']))
-            Cal[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cStab[sensor] = np.asarray(list(stab.columns['1']))
 
             ### ADERU : Read coeff value from configuration files
+            Cal[sensor] = np.asarray(list(radcal.columns['unc']))
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join(PATH_TO_CONFIG, calFolder)
             calibrationMap = CalibrationFileReader.read(calPath)
-            waves, coeff_col = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, sensor)
-            Coeff[sensor], _ = self.interp_common_wvls(coeff_col, waves, nWB)
+            waves, Coeff[sensor] = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, sensor)
 
-            # TODO: temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
-            waves = np.asarray(list(pol.columns['0']))
-            cols = np.asarray(list(pol.columns['1']))
-            cPol[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            cPol[sensor] = np.asarray(list(pol.columns['1']))  # es cos stored in poldata file as temporary fix
 
             # temp uncertainties calculated at L1AQC
             Temp = uncGrp.getDataset(sensor + "_TEMPDATA_CAL")
             Temp.datasetToColumns()
-            waves = np.asarray(list(Temp.columns['1']))
-            cols = np.array(Temp.columns[f'{sensor}_TEMPERATURE_UNCERTAINTIES'])  # last row of temp group has uncertainties
-            Ct[sensor], _ = self.interp_common_wvls(cols, waves, nWB)
+            Ct[sensor] = np.array(Temp.columns[f'{sensor}_TEMPERATURE_UNCERTAINTIES'])
 
         Propagate_L2 = Propagate(M=100, cores=0)
         slice_size = len(es)
         ones = np.ones(slice_size)
 
         lw_means = [lt, rho, li,
-                    Coeff['LI'], Coeff['LT'],
-                    ones, ones,
-                    ones, ones,
-                    ones, ones,
-                    ones, ones,
-                    ones, ones]
+                   ones, ones,  # Coeff['LI'], Coeff['LT'],
+                   ones, ones,
+                   ones, ones,
+                   ones, ones,
+                   ones, ones,
+                   ones, ones]
 
-        lw_uncertainties = [np.array(list(ltXstd.values())).flatten()*lt, rhoDelta, np.array(list(liXstd.values())).flatten()*li,
-                            Cal['LI']/100, Cal['LT']/100,
-                            cStab['LI'], cStab['LT'],
-                            cLin['LI'], cLin['LT'],
-                            cStray['LI']/100, cStray['LI']/100,
-                            Ct['LI'], Ct['LI'],
-                            cPol['LI'], cPol['LI']]
+        lw_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+                           rhoDelta,
+                           np.array(list(liXstd.values())).flatten() * li,
+                           Cal['LI']/200, Cal['LT']/200,
+                           cStab['LI'], cStab['LT'],
+                           cLin['LI'], cLin['LT'],
+                           cStray['LI']/100, cStray['LI']/100,
+                           Ct['LI'], Ct['LI'],
+                           cPol['LI'], cPol['LI']]
 
+        lwAbsUnc = Propagate_L2.Propagate_Lw(lw_means, lw_uncertainties)
+        lw_vals = Propagate_L2.Lw(*lw_means)
 
-        lwAbsUnc, lw_vals = Propagate_L2.Propagate_Lw(lw_means, lw_uncertainties)
+        rrs_means = [lt, rho, li, es,
+                ones, ones, ones,
+                ones, ones, ones,
+                ones, ones, ones,
+                ones, ones, ones,
+                ones, ones, ones,
+                ones, ones, ones]
 
-        means = [lt, rho, li, es,
-                 ones, ones, ones,
-                 ones, ones, ones,
-                 ones, ones, ones,
-                 ones, ones, ones,
-                 ones, ones, ones,
-                 ones, ones, ones]
+        rrs_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+                             rhoDelta,
+                             np.array(list(liXstd.values())).flatten() * li,
+                             np.array(list(esXstd.values())).flatten() * es,
+                             Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
+                             cStab['ES'], cStab['LI'], cStab['LT'],
+                             cLin['ES'], cLin['LI'], cLin['LT'],
+                             cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
+                             Ct['ES'], Ct['LI'], Ct['LT'],
+                             cPol['LI'], cPol['LT'], cPol['ES']
+                             ]
 
-        uncertainties = [np.array(list(ltXstd.values())).flatten()*lt, rhoDelta,
-                          np.array(list(liXstd.values())).flatten()*li,
-                          np.array(list(esXstd.values())).flatten()*es,
-                          Cal['ES']/100, Cal['LI']/100, Cal['LT']/100,
-                          cStab['ES'], cStab['LI'], cStab['LT'],
-                          cLin['ES'], cLin['LI'], cLin['LT'],
-                          cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
-                          Ct['ES'], Ct['LI'], Ct['LT'],
-                          cPol['LI'], cPol['LT'], cPol['ES']]
-
-
-        rrsAbsUnc, rrs_vals = Propagate_L2.Propagate_RRS(means, uncertainties)
+        rrsAbsUnc = Propagate_L2.Propagate_RRS(rrs_means, rrs_uncertainties)
+        rrs_vals = Propagate_L2.RRS(*rrs_means)
 
         ## BAND CONVOLUTION
         # band convolution of uncertainties is done here to include uncertainty contribution of band convolution process
         Convolve = Propagate(M=100, cores=1)
         # these are absolute values! Dont get confused
-        output={}
+
+        output = {}  # create dictionary to store uncertainty values which are returned from methods
+
+        # interpolate output uncertainties to the waveSubset (common wavebands of interpolated es, li, & lt)
+        lwAbsUnc, _ = self.interp_common_wvls(lwAbsUnc,
+                                             np.array(uncGrp.getDataset("ES_RADCAL_UNC").columns['wvl'], dtype=float),
+                                             np.array(waveSubset, dtype=float))
+        lw_vals, _ = self.interp_common_wvls(lw_vals,
+                                            np.array(uncGrp.getDataset("ES_RADCAL_UNC").columns['wvl'], dtype=float),
+                                            np.array(waveSubset, dtype=float))
+        rrsAbsUnc, _ = self.interp_common_wvls(rrsAbsUnc,
+                                              np.array(uncGrp.getDataset("ES_RADCAL_UNC").columns['wvl'], dtype=float),
+                                              np.array(waveSubset, dtype=float))
+        rrs_vals, _ = self.interp_common_wvls(rrs_vals,
+                                             np.array(uncGrp.getDataset("ES_RADCAL_UNC").columns['wvl'], dtype=float),
+                                             np.array(waveSubset, dtype=float))
+
         if ConfigFile.settings["bL2WeightSentinel3A"]:
             output["lwUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "S3A")
+                                                                        [lwAbsUnc, None], "S3A")
             output["rrsUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "S3A")
+                                                                         [rrsAbsUnc, None], "S3A")
         elif ConfigFile.settings["bL2WeightSentinel3B"]:
             output["lwUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "S3B")
+                                                                        [lwAbsUnc, None], "S3B")
             output["rrsUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "S3B")
+                                                                         [rrsAbsUnc, None], "S3B")
         if ConfigFile.settings['bL2WeightMODISA']:
             output["lwUNC_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "MOD-A")
+                                                                    [lwAbsUnc, None], "MOD-A")
             output["rrsUNC_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "MOD-A")
+                                                                     [rrsAbsUnc, None], "MOD-A")
         if ConfigFile.settings['bL2WeightMODIST']:
             output["lwUNC_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "MOD-T")
+                                                                    [lwAbsUnc, None], "MOD-T")
             output["rrsUNC_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "MOD-T")
+                                                                     [rrsAbsUnc, None], "MOD-T")
         if ConfigFile.settings['bL2WeightVIIRSN']:
             output["lwUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "VIIRS")
+                                                                    [lwAbsUnc, None], "VIIRS")
             output["rrsUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "VIIRS")
+                                                                     [rrsAbsUnc, None], "VIIRS")
         if ConfigFile.settings['bL2WeightVIIRSJ']:
             output["lwUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
-                                                                          [lwAbsUnc, None], "VIIRS")
+                                                                   [lwAbsUnc, None], "VIIRS")
             output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
-                                                                           [rrsAbsUnc, None], "VIIRS")
+                                                                    [rrsAbsUnc, None], "VIIRS")
             pass
         output.update({"lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})
 
         return output
 
-
-
     ## Utilties
     @staticmethod
     def interp_common_wvls(columns, waves, newWavebands):
         saveTimetag2 = None
-        if isinstance(columns, dict):  # np.ndarray):
+        if isinstance(columns, dict):
             if "Datetag" in columns:
                 saveDatetag = columns.pop("Datetag")
                 saveTimetag2 = columns.pop("Timetag2")
@@ -770,11 +841,12 @@ class Instrument:
 
     @staticmethod
     def interpolateSamples(Columns, waves, newWavebands):
-        ''' Wavelength Interpolation for differently sized arrays containing samples
-                    Use a common waveband set determined by the maximum lowest wavelength
-                    of all sensors, the minimum highest wavelength, and the interval
-                    set in the Configuration Window.
-                    '''
+        '''
+        Wavelength Interpolation for differently sized arrays containing samples
+        Use a common waveband set determined by the maximum lowest wavelength
+        of all sensors, the minimum highest wavelength, and the interval
+        set in the Configuration Window.
+        '''
 
         # Copy dataset to dictionary
         columns = {k: Columns[:, i] for i, k in enumerate(waves)}
@@ -1117,11 +1189,13 @@ class HyperOCR(Instrument):
         ave_Light = []
         ave_Dark = []
         stdevSignal = {}
+
+        # number of replicates for light and dark readings
+        N = np.asarray(list(lightData.values())).shape[1]
+        Nd = np.asarray(list(darkData.values())).shape[1]
+
         for i, k in enumerate(lightData.keys()):
             wvl = str(float(k))
-            # number of replicates for light and dark readings
-            N = np.asarray(list(lightData.values())).shape[1]
-            Nd = np.asarray(list(darkData.values())).shape[1]
 
             # apply normalisation to the standard deviations used in uncertainty calculations
             std_Light.append(np.std(lightData[k])/pow(N, 0.5))  # = (sigma / sqrt(N))**2 or sigma**2
@@ -1132,9 +1206,10 @@ class HyperOCR(Instrument):
             for x in range(N):
                 lightData[k][x] -= darkData[k][x]
 
+            signalAve = np.average(lightData[k])
+
             # Normalised signal standard deviation =
-            # signalAve = np.average(lightData[k])
-            stdevSignal[wvl] = pow((pow(std_Light[0], 2) + pow(std_Dark[0], 2)), 0.5)  # /pow(signalAve, 2)
+            stdevSignal[wvl] = pow((pow(std_Light[i], 2) + pow(std_Dark[i], 2))/pow(signalAve, 2), 0.5)
 
         return dict(
             ave_Light=np.array(ave_Light),
@@ -1430,13 +1505,10 @@ class Trios(Instrument):
     def __init__(self):
         super().__init__()
 
-    def lightDarkStats(self, grp, slices, sensortype):
+    def lightDarkStats(self, grp, slice, sensortype):
         raw_cal = grp.getDataset(f"CAL_{sensortype}").data
-        # raw_back = grp.getDataset(f"BACK_{sensortype}").data
         raw_back = np.asarray(grp.getDataset("BACK_"+sensortype).data.tolist())
-        raw_data = np.asarray(list(slices['data'].values())).transpose()  # data is transpose of old version
-        # raw_data = np.asarray(list(slices.values()))
-        # raw_data = np.asarray(grp.getDataset(sensortype).data.tolist())
+        raw_data = np.asarray(list(slice['data'].values())).transpose()  # data is transpose of old version
 
         raw_wvl = np.array(pd.DataFrame(grp.getDataset(sensortype).data).columns)
         int_time = np.asarray(grp.getDataset("INTTIME").data.tolist())
@@ -1451,13 +1523,6 @@ class Trios(Instrument):
         raw_cal = np.array([rc[0] for rc in raw_cal])
         raw_cal[ind_nocal==True] = 1
 
-        # if ConfigFile.settings["bL1bCal"] > 2:  # for some reason FRM branch keeps everything in a tuple
-        #     raw_back = np.array([[rb[0][0] for rb in raw_back], [rb[1][0] for rb in raw_back]]).transpose()
-        # else:
-
-        # slice raw_back to remove indexes where raw_cal is 0 or "NaN"
-        # raw_back = np.array([[rb[0] for rb in raw_back], [rb[1] for rb in raw_back]]).transpose()
-
         # check size of data
         nband = len(raw_back)  # indexes changed for raw_back as is brought to L2
         nmes = len(raw_data)
@@ -1470,6 +1535,7 @@ class Trios(Instrument):
         # Data conversion
         mesure = raw_data/65535.0
         calibrated_mesure = np.zeros((nmes, nband))
+        calibrated_light_measure = np.zeros((nmes, nband))
         back_mesure = np.zeros((nmes, nband))
 
         for n in range(nmes):
@@ -1483,25 +1549,22 @@ class Trios(Instrument):
 
             # Normalization for integration time
             normalized_mesure = offset_corrected_mesure*int_time_t0/int_time[n]
+            normalised_light_measure = back_corrected_mesure*int_time_t0/int_time[n]  # do not do the dark substitution as we need light data
 
             # Sensitivity calibration
             calibrated_mesure[n, :] = normalized_mesure/raw_cal
+            calibrated_light_measure[n, :] = normalised_light_measure/raw_cal
 
         # get light and dark data before correction
-        light_avg = np.mean(mesure, axis=0)[ind_nocal == False]
-        light_std = np.std(mesure, axis=0)[ind_nocal == False]
+        light_avg = np.mean(calibrated_light_measure, axis=0)  # [ind_nocal == False]
+        light_std = np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
         dark_avg = offset
-        dark_std = np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0)
-
-        filtered_mesure = calibrated_mesure[:, ind_nocal == False]
-
-        # back_avg = np.mean(back_mesure, axis=0)
-        # back_std = np.std(back_mesure, axis=0)
+        dark_std = np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0) / pow(nmes, 0.5)
 
         stdevSignal = {}
-        for i, wvl in enumerate(raw_wvl[ind_nocal == False]):
+        for i, wvl in enumerate(raw_wvl):
             stdevSignal[wvl] = pow(
-                pow(light_std[i], 2) + pow(dark_std, 2), 0.5)  # /pow(np.average(filtered_mesure, axis=0)[i], 2)
+                (pow(light_std[i], 2) + pow(dark_std, 2)), 0.5) / np.average(calibrated_mesure, axis=0)[i]
 
         return dict(
             ave_Light=np.array(light_avg),

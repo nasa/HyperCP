@@ -171,9 +171,9 @@ class Window(QtWidgets.QWidget):
         self.popQueryCheckBoxUpdate()
         self.popQueryCheckBox.clicked.connect(self.popQueryCheckBoxUpdate)
 
-        saveLabel = QtWidgets.QLabel('(Automatic on Window Close -->)')
-        self.saveButton = QtWidgets.QPushButton('Save Settings', self)
-        self.saveButton.clicked.connect(self.saveButtonClicked)
+        # saveLabel = QtWidgets.QLabel('(Automatic on Window Close -->)')
+        # self.saveButton = QtWidgets.QPushButton('Save Settings', self)
+        # self.saveButton.clicked.connect(self.saveButtonClicked)
 
         ########################################################################################
         # Add QtWidgets to the Window
