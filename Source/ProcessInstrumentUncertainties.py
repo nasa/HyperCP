@@ -32,7 +32,7 @@ class Instrument(ABC):
         pass
 
     @abstractmethod
-    def lightDarkStats(self, grp: HDFGroup, slice: dict, sensortype: str) -> dict[np.array]:
+    def lightDarkStats(self, grp: HDFGroup, slice: list, sensortype: str) -> dict[np.array]:
         """
         :param grp: HDFGroup representing the sensor specific data
         :param slice: Sliced sensor data
@@ -261,6 +261,7 @@ class Instrument(ABC):
             Ct[sensor] = np.array(Temp.columns[f'{sensor}_TEMPERATURE_UNCERTAINTIES'])
 
         ones = np.ones(len(Cal['ES']))  # to provide array of 1s with the correct shape
+        zeros = np.zeros(len(Cal['ES']))  # for testing
 
         # create lists containing mean values and their associated uncertainties (list order matters)
         if not stats['ES']['ave_Dark'].shape:
@@ -299,7 +300,15 @@ class Instrument(ABC):
                        cLin['ES'], cLin['LI'], cLin['LT'],
                        np.array(cStray['ES'])/100, np.array(cStray['LI'])/100, np.array(cStray['LT'])/100,
                        np.array(Ct['ES']), np.array(Ct['LI']), np.array(Ct['LT']),
-                       np.array(cPol['LI']), np.array(cPol['LT']), np.array(cPol['ES'])]
+                       np.array(cPol['LI']), np.array(cPol['LT']), np.array(cPol['ES'])
+                       ]
+
+                       # Cal['ES']*Coeff['ES']/200, Cal['LI']*Coeff['LI']/200, Cal['LT']*Coeff['LT']/200,
+                       # cStab['ES'], cStab['LI'], cStab['LT'],
+                       # cLin['ES'], cLin['LI'], cLin['LT'],
+                       # np.array(cStray['ES'])/100, np.array(cStray['LI'])/100, np.array(cStray['LT'])/100,
+                       # np.array(Ct['ES']), np.array(Ct['LI']), np.array(Ct['LT']),
+                       # np.array(cPol['LI']), np.array(cPol['LT']), np.array(cPol['ES'])]
 
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
         ES_unc, LI_unc, LT_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
@@ -523,6 +532,7 @@ class Instrument(ABC):
         Propagate_L2 = Propagate(M=100, cores=0)
         slice_size = len(es)
         ones = np.ones(slice_size)
+        zeros = np.zeros(slice_size)
 
         lw_means = [lt, rho, li,
                     ones, ones,
@@ -532,15 +542,23 @@ class Instrument(ABC):
                     ones, ones,
                     ones, ones]
 
-        lw_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+        lw_uncertainties = [zeros,
+                            # np.array(list(ltXstd.values())).flatten() * lt,
                             rhoDelta,
-                            np.array(list(liXstd.values())).flatten() * li,
-                            Cal['LI']/200, Cal['LT']/200,
-                            cStab['LI'], cStab['LT'],
-                            cLin['LI'], cLin['LT'],
-                            cStray['LI']/100, cStray['LI']/100,
-                            Ct['LI'], Ct['LI'],
-                            cPol['LI'], cPol['LI']]
+                            zeros,
+                            zeros, zeros,
+                            zeros, zeros,
+                            zeros, zeros,
+                            zeros, zeros,
+                            zeros, zeros,
+                            zeros, zeros]
+                            # np.array(list(liXstd.values())).flatten() * li,
+                            # Cal['LI']/200, Cal['LT']/200,
+                            # cStab['LI'], cStab['LT'],
+                            # cLin['LI'], cLin['LT'],
+                            # cStray['LI']/100, cStray['LI']/100,
+                            # Ct['LI'], Ct['LI'],
+                            # cPol['LI'], cPol['LI']]
 
         lwAbsUnc = Propagate_L2.Propagate_Lw(lw_means, lw_uncertainties)
         lw_vals = Propagate_L2.Lw(*lw_means)
@@ -553,16 +571,22 @@ class Instrument(ABC):
                      ones, ones, ones,
                      ones, ones, ones]
 
-        rrs_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+        rrs_uncertainties = [zeros,  # np.array(list(ltXstd.values())).flatten() * lt,
                              rhoDelta,
-                             np.array(list(liXstd.values())).flatten() * li,
-                             np.array(list(esXstd.values())).flatten() * es,
-                             Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
-                             cStab['ES'], cStab['LI'], cStab['LT'],
-                             cLin['ES'], cLin['LI'], cLin['LT'],
-                             cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
-                             Ct['ES'], Ct['LI'], Ct['LT'],
-                             cPol['LI'], cPol['LT'], cPol['ES']
+                             zeros,  # np.array(list(liXstd.values())).flatten() * li,
+                             zeros,  # np.array(list(esXstd.values())).flatten() * es,
+                             zeros, zeros, zeros,
+                             zeros, zeros, zeros,
+                             zeros, zeros, zeros,
+                             zeros, zeros, zeros,
+                             zeros, zeros, zeros,
+                             zeros, zeros, zeros,
+                             # Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
+                             # cStab['ES'], cStab['LI'], cStab['LT'],
+                             # cLin['ES'], cLin['LI'], cLin['LT'],
+                             # cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
+                             # Ct['ES'], Ct['LI'], Ct['LT'],
+                             # cPol['LI'], cPol['LT'], cPol['ES']
                              ]
 
         rrsAbsUnc = Propagate_L2.Propagate_RRS(rrs_means, rrs_uncertainties)
