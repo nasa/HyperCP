@@ -4,7 +4,7 @@ from ocdb.api.OCDBApi import new_api, OCDBApi
 def FidradDB_api(elem, date, cal_path):
     
     #api server_url configuration
-    api = new_api(server_url='https://ocdb-stage.eumetsat.int')
+    api = new_api(server_url='https://ocdb.eumetsat.int')
 
     #FidradDB connection and listening of all files for input instrument (serial number + type)
     list = OCDBApi.fidrad_list_files(api,elem)
