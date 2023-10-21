@@ -861,7 +861,7 @@ if __name__ == '__main__':
         import platform
 
         if platform.system() in ['Windows', 'Linux']:
-            import pyi_splash
+            import pyi_splash # <- Nils, this isn't defined (anymore?)
 
             pyi_splash.close()
     except ImportError:
