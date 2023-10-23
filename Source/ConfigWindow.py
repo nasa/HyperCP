@@ -618,6 +618,12 @@ class ConfigWindow(QtWidgets.QDialog):
         # self.l2WriteReportCheckBox.clicked.connect(self.l2SWriteReportCheckBoxUpdate)
         self.l2WriteReportCheckBoxUpdate()
 
+        logo = QtWidgets.QLabel(self)
+        # pixmap = QtGui.QPixmap('./Data/logo.jpg')
+        pixmap = QtGui.QPixmap('./Data/Img/logo_scale20.png')
+        logo.setPixmap(pixmap)
+        logo.setAlignment(QtCore.Qt.AlignCenter)
+
         self.saveButton = QtWidgets.QPushButton("Save/Close")
         self.saveAsButton = QtWidgets.QPushButton("Save As")
         self.cancelButton = QtWidgets.QPushButton("Cancel")
@@ -835,8 +841,8 @@ class ConfigWindow(QtWidgets.QDialog):
         plotInterpHBox.addWidget(self.l1bPlotIntervalLineEdit)
         VBox2.addLayout(plotInterpHBox)
 
-        VBox2.addSpacing(10)
-        VBox2.addStretch()
+        # VBox2.addSpacing(10)
+        # VBox2.addStretch()
 
         # L1BQC
         VBox2.addWidget(l1bqcLabel)
@@ -916,8 +922,8 @@ class ConfigWindow(QtWidgets.QDialog):
         RainFlagHBox.addWidget(self.l1bqcRainfallHumidityFlagLineEdit)
         VBox3.addLayout(RainFlagHBox)
 
-        VBox3.addSpacing(30)
-        VBox3.addStretch()
+        # VBox3.addSpacing(30)
+        # VBox3.addStretch()
 
         # L2
         VBox3.addWidget(l2Label)
@@ -964,27 +970,29 @@ class ConfigWindow(QtWidgets.QDialog):
         RhoHBox3.addWidget(self.RhoRadioButtonYour)
         VBox3.addLayout(RhoHBox3)
 
-        VBox3.addStretch()
-
-        # Right Vertical box
-        VBox4 = QtWidgets.QVBoxLayout()
-
         #   L2 NIR AtmoCorr
         NIRCorrectionHBox = QtWidgets.QHBoxLayout()
         NIRCorrectionHBox.addWidget(l2NIRCorrectionLabel)
         NIRCorrectionHBox.addWidget(self.l2NIRCorrectionCheckBox)
-        VBox4.addLayout(NIRCorrectionHBox)
-        VBox4.addWidget(self.SimpleNIRRadioButton)
-        VBox4.addWidget(self.SimSpecNIRRadioButton)
-        VBox4.addWidget(self.YourNIRRadioButton)
+        VBox3.addLayout(NIRCorrectionHBox)
+        VBox3.addWidget(self.SimpleNIRRadioButton)
+        VBox3.addWidget(self.SimSpecNIRRadioButton)
+        VBox3.addWidget(self.YourNIRRadioButton)
 
-        VBox4.addSpacing(5)
+        VBox3.addSpacing(5)
 
         #   L2 Remove negative spectra
         NegativeSpecHBox = QtWidgets.QHBoxLayout()
         NegativeSpecHBox.addWidget(self.l2NegativeSpecLabel)
         NegativeSpecHBox.addWidget(self.l2NegativeSpecCheckBox)
-        VBox4.addLayout(NegativeSpecHBox)
+        VBox3.addLayout(NegativeSpecHBox)
+
+        # VBox3.addStretch()
+
+        # Right Vertical box
+        VBox4 = QtWidgets.QVBoxLayout()
+
+
 
         #   L2 BRDF
         BRDFVBox = QtWidgets.QVBoxLayout()
@@ -1065,8 +1073,11 @@ class ConfigWindow(QtWidgets.QDialog):
         l2ReportHBox.addWidget(self.l2WriteReportCheckBox)
         VBox4.addLayout(l2ReportHBox)
 
-        VBox4.addSpacing(20)
+        # VBox4.addSpacing(20)
         VBox4.addStretch()
+
+        # Logo
+        VBox4.addWidget(logo)
 
         # Save/Cancel
         saveHBox = QtWidgets.QHBoxLayout()

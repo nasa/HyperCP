@@ -85,7 +85,7 @@ class Window(QtWidgets.QWidget):
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
-        pixmap = QtGui.QPixmap('./Data/Img/HyperCP_banner1.png')
+        pixmap = QtGui.QPixmap('./Data/Img/with_background_530x223.png')
         banner.setPixmap(pixmap)
         banner.setAlignment(QtCore.Qt.AlignCenter)
 

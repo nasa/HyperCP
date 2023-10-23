@@ -1,7 +1,7 @@
 # HyperInSPACE Community Processor (HyperCP)
 <html lang="en">
 
-<center><img src="Data/Img/HyperCP_banner1.png" alt="Banner"></center>
+<center><img src="Data/Img/with_background_530x223.png" alt="Banner"></center>
 
 Hyperspectral In situ Support for PACE (HyperInSPACE) Community Processor (HyperCP) is designed to provide hyperspectral in situ support for the <a href='https://pace.gsfc.nasa.gov/'>PACE mission</a> but also multispectral missions such as
 [Sentinel-3](https://sentinels.copernicus.eu/web/sentinel/missions/sentinel-3) by processing automated and manual, above-water,
@@ -99,7 +99,7 @@ the command line and type:
 
 A GUI window should pop up, looking approximately like this:
 
-<center><img src="Data/Img/Main.jpg" alt="banner"></center>
+<center><img src="Data/Img/Main.png" alt="banner"></center>
 
 When HyperCP/Main.py is launched for the first time, sub-directories will be created and databases downloaded and moved
 into them as described below. No system files will be changed.
