@@ -26,6 +26,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.setModal(True)
         self.sensor='ES'
 
+        self.ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
+
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
 
@@ -414,37 +416,58 @@ class AnomAnalWindow(QtWidgets.QDialog):
     def loadL1AQCfile(self):
         inputDirectory = self.inputDirectory
         # Open L1AQC HDF5 file for Deglitching
-        inLevel = "L1AQC"
+        '''NOTE: Need to update this to input an L1A file and process to L1AQ with NO DEGLITCHING first'''
+
+        # inLevel = "L1AQC"
+        inLevel = "L1A"
         subInputDir = os.path.join(inputDirectory + '/' + inLevel + '/')
         if os.path.exists(subInputDir):
-            inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1AQC HDF5 file for Deglitching", \
-                subInputDir)
+            inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1A HDF5 file for Deglitching", \
+                subInputDir,\
+                   "Images (*.hdf *.HDF)",\
+                    options=QtWidgets.QFileDialog.DontUseNativeDialog)
         else:
-            inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1AQC HDF5 file for Deglitching", \
-                inputDirectory)
-        try:
-            print(inFilePath[0])
-            if not "hdf" in inFilePath[0] and not "HDF" in inFilePath[0]:
-                msg = "This does not appear to be an HDF file."
-                Utilities.errorWindow("File Error", msg)
-                print(msg)
-                return
-        except:
-            print('No file returned')
-            return
+            inFilePath,_ = QtWidgets.QFileDialog.getOpenFileNames(self, "Open L1A HDF5 file for Deglitching", \
+                inputDirectory,\
+                   "Images (*.hdf *.HDF)",\
+                    options=QtWidgets.QFileDialog.DontUseNativeDialog)
+        # try:
+        #     print(inFilePath[0])
+        #     if not "hdf" in inFilePath[0] and not "HDF" in inFilePath[0]:
+        #         msg = "This does not appear to be an HDF file."
+        #         Utilities.errorWindow("File Error", msg)
+        #         print(msg)
+        #         return
+        # except:
+        #     print('No file returned')
+        #     return
 
         root = HDFRoot.readHDF5(inFilePath[0])
-        if root.attributes["PROCESSING_LEVEL"] != "1aqc":
-            msg = "This is not a Level 1AQC file."
+        if root.attributes["PROCESSING_LEVEL"] != "1a":
+            msg = "This is not a Level 1A file."
             Utilities.errorWindow("File Error", msg)
             print(msg)
             return
 
+        # Process L1A to L1AQC with no deglitching
+        flag_Trios = 0
+        fileName = os.path.basename(os.path.splitext(inFilePath[0])[0]).replace("_L1A","_L1AQC")+".hdf"
+        calibrationMap = Controller.processCalibrationConfig(ConfigFile.filename, ConfigFile.settings['CalibrationFiles'])
+        outputDirectory = MainConfig.settings['outDir']
+        pathOutLevel = os.path.join(outputDirectory, "L1AQC")
+        outFilePath = os.path.join(pathOutLevel,fileName)
+        temp = ConfigFile.settings['bL1aqcDeglitch']
+        ConfigFile.settings['bL1aqcDeglitch'] = 0
+        root = Controller.processL1aqc(inFilePath[0], outFilePath, calibrationMap, self.ancillaryData,flag_Trios)
+        ConfigFile.settings['bL1aqcDeglitch'] = temp
+
+
         Utilities.rootAddDateTime(root)
 
-        self.fileName = os.path.basename(os.path.splitext(inFilePath[0])[0])
+        # self.fileName = os.path.basename(os.path.splitext(inFilePath[0])[0])
+        self.fileName = fileName.replace(".hdf",'')
         self.setWindowTitle(self.fileName)
-        self.root = root
+        self.root = root # Undeglitched L1AQC
 
         # If a parameterization has been saved in the AnomAnalFile, set the properties in the local object
         # for all sensors
@@ -962,12 +985,11 @@ class AnomAnalWindow(QtWidgets.QDialog):
     def processButtonPressed(self):
         # Run L1AQC processing for this file
 
-        # inFilePath = os.path.join(self.inputDirectory, 'L1A', self.fileName+'.hdf')
         fileBaseName = self.fileName.split('_L1A')[0]
-        inFilePath = os.path.join(self.inputDirectory, 'L1A', fileBaseName+'_L1A.hdf')
+        # inFilePath = os.path.join(self.inputDirectory, 'L1A', fileBaseName+'_L1A.hdf')
+        inFilePath = os.path.join(self.inputDirectory, 'L1A', self.fileName.replace('L1AQC','L1A')+'.hdf')
         outFilePath = os.path.join(self.inputDirectory, 'L1AQC', fileBaseName+'_L1AQC.hdf')
 
-        # self.processL1aqc(inFilePath, outFilePath)
         # Jumpstart the logger:
         msg = "Process Single Level from Anomaly Analysis"
         os.environ["LOGFILE"] = (fileBaseName + '_L1A_L1AQC.log')
@@ -977,8 +999,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         calPath = os.path.join(PATH_TO_CONFIG, calFolder)
         print("Read CalibrationFile ", calPath)
         calibrationMap = CalibrationFileReader.read(calPath)
-        ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
-        root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
+        root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, self.ancillaryData, flag_Trios=0)
 
         # In case of processing failure, write the report at this Process level, unless running stations
         #   Use numeric level for writeReport
