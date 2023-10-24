@@ -71,7 +71,8 @@ class RhoCorrections:
             # Wavebands clips the ends off of the spectra reducing the amount of values from 200 to 189 for
             # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
 
-            zhang = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
+            # zhang = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
+            zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
                                                 relAzMean, newWaveBands)
 
             # get the relative difference between mobley and zhang and add in quadrature as uncertainty component
@@ -135,7 +136,8 @@ class RhoCorrections:
         return rhoScalar, rhoDelta
 
     @staticmethod
-    def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
+    # def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
+    def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands, Propagate = None):
         ''' Requires xarray: http://xarray.pydata.org/en/stable/installing.html
         Recommended installation using Anaconda:
         $ conda install xarray dask netCDF4 bottleneck'''
@@ -154,8 +156,8 @@ class RhoCorrections:
         sensor = {'ang': np.array([40, 180 - relAz]), 'wv': np.array(waveBands)}
 
         # # define uncertainties and create variable list for punpy. Inputs cannot be ordered dictionaries
-        # varlist = [windSpeedMean, AOD, 0.0, sza, wTemp, sal, relAz, np.array(waveBands)]
-        # ulist = [1.0, 0.01, 0.0, 0.5, 2, 0.5, 3, None]
+        varlist = [windSpeedMean, AOD, 0.0, sza, wTemp, sal, relAz, np.array(waveBands)]
+        ulist = [1.0, 0.01, 0.0, 0.5, 2, 0.5, 3, None]
 
         tic = time.process_time()
         rhoVector = ZhangRho.get_sky_sun_rho(env, sensor, round4cache=True)['rho']
@@ -164,11 +166,11 @@ class RhoCorrections:
         Utilities.writeLogFile(msg)
 
         # Presumably obsolete (Ashley)? -DAA
-        # if Propagate is None:
-        #     rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
-        # else:
-        #     rhoDelta = Propagate.Zhang_Rho_Uncertainty(mean_vals=varlist,
-        #                                                uncertainties=ulist,
-        #                                                )
+        if Propagate is None:
+            rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
+        else:
+            rhoDelta = Propagate.Zhang_Rho_Uncertainty(mean_vals=varlist,
+                                                       uncertainties=ulist,
+                                                       )
 
-        return rhoVector#, rhoDelta
+        return rhoVector, rhoDelta
