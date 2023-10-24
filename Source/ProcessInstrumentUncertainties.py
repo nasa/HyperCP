@@ -137,6 +137,12 @@ class Instrument(ABC):
             calibrationMap = CalibrationFileReader.read(calPath)
             waves, Coeff[sensor] = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, sensor)
 
+            if waves is None and Coeff is None:
+                msg = 'ProcessInstrumentUncertainties Fail'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
+
             # TODO: temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
