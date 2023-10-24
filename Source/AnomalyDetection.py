@@ -130,7 +130,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.AnomalyStepLineEdit.setText(str(ConfigFile.settings["fL1aqcAnomalyStep"]))
         self.AnomalyStepLineEdit.setValidator(intValidator)
 
-        self.loadButton = QtWidgets.QPushButton('Load L1AQC', self, clicked=self.loadL1AQCfile)
+        self.loadButton = QtWidgets.QPushButton('Load L1A', self, clicked=self.loadL1AQCfile)
 
         self.updateButton = QtWidgets.QPushButton('***  Update  ***', self, clicked=self.updateButtonPressed)
         self.updateButton.setToolTip('Updates all but the Min/Max Bands')
@@ -415,8 +415,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
     def loadL1AQCfile(self):
         inputDirectory = self.inputDirectory
-        # Open L1AQC HDF5 file for Deglitching
-        '''NOTE: Need to update this to input an L1A file and process to L1AQ with NO DEGLITCHING first'''
+        # Open L1A HDF5 file for Deglitching
 
         # inLevel = "L1AQC"
         inLevel = "L1A"
@@ -431,16 +430,16 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 inputDirectory,\
                    "Images (*.hdf *.HDF)",\
                     options=QtWidgets.QFileDialog.DontUseNativeDialog)
-        # try:
-        #     print(inFilePath[0])
-        #     if not "hdf" in inFilePath[0] and not "HDF" in inFilePath[0]:
-        #         msg = "This does not appear to be an HDF file."
-        #         Utilities.errorWindow("File Error", msg)
-        #         print(msg)
-        #         return
-        # except:
-        #     print('No file returned')
-        #     return
+        try:
+            print(inFilePath[0])
+            if not "hdf" in inFilePath[0] and not "HDF" in inFilePath[0]:
+                msg = "This does not appear to be an HDF file."
+                Utilities.errorWindow("File Error", msg)
+                print(msg)
+                return
+        except:
+            print('No file returned')
+            return
 
         root = HDFRoot.readHDF5(inFilePath[0])
         if root.attributes["PROCESSING_LEVEL"] != "1a":
@@ -456,6 +455,9 @@ class AnomAnalWindow(QtWidgets.QDialog):
         outputDirectory = MainConfig.settings['outDir']
         pathOutLevel = os.path.join(outputDirectory, "L1AQC")
         outFilePath = os.path.join(pathOutLevel,fileName)
+        # Add output level directory if necessary
+        if os.path.isdir(pathOutLevel) is False:
+            os.mkdir(pathOutLevel)
         temp = ConfigFile.settings['bL1aqcDeglitch']
         ConfigFile.settings['bL1aqcDeglitch'] = 0
         root = Controller.processL1aqc(inFilePath[0], outFilePath, calibrationMap, self.ancillaryData,flag_Trios)
@@ -563,7 +565,11 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.wavesLabel.setText(f' WAVES: {waves:.1f} m')
         self.speedLabel.setText(f' SPEED: {speed:.1f} m/s')
 
-        # Match data to photo, if possible
+        self.photoUpdate()
+        self.updateButtonPressed()
+
+
+    def photoUpdate(self): # Match data to photo, if possible
         pFormat = self.photoFormat.text()
         if '-' in pFormat[-5] or '+' in pFormat[-5]:
             tz = pFormat[-5:] # clumsy hardcoding of TZ pFormat: Must be the last 5 characters
@@ -580,7 +586,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             self.photoButton.setText('No Photo Found')
             self.photoButton.setDisabled(1)
 
-        self.updateButtonPressed()
+        # self.updateButtonPressed()
 
     def radioClick(self):
         # Before changing to the new sensor, locally save the parameters
@@ -660,7 +666,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Test for root
         if not hasattr(self, 'root'):
             note = QtWidgets.QMessageBox()
-            note.setText('You must load L1AQC file before plotting')
+            note.setText('You must load L1A file before plotting')
             note.exec_()
             return
 
@@ -803,6 +809,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         pLabel = f'Data reduced by {sum(gIndex)} ({percentLoss:.1f}%)'
         print(pLabel)
         self.pLossLightLineEdit.setText(f'{percentLoss:.1f}')
+
+        self.photoUpdate()
 
     def saveButtonPressed(self):
         # Saves local parameterizations to the ConfigFile.settings
@@ -1044,7 +1052,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Test for root
         if not hasattr(self, 'root'):
             note = QtWidgets.QMessageBox()
-            note.setText('You must load L1AQC file before continuing')
+            note.setText('You must load L1A file before continuing')
             note.exec_()
             return
         sensorType = self.sensor
