@@ -1595,7 +1595,8 @@ class ProcessL2:
                 waveSubset = wave_array[:,1].tolist()
 
             rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
-                                                            SalXSlice, RelAzXSlice, waveSubset, Rho_Uncertainty_Obj)
+                                                        SalXSlice, RelAzXSlice, waveSubset)
+                                                            # SalXSlice, RelAzXSlice, waveSubset, Rho_Uncertainty_Obj)
 
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[i]

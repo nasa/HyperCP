@@ -5,6 +5,7 @@ from pathlib import Path
 
 from Source import PATH_TO_CONFIG
 from Source.MainConfig import MainConfig
+from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.AnomalyDetection import AnomAnalWindow
@@ -1103,10 +1104,11 @@ class ConfigWindow(QtWidgets.QDialog):
     ###############################################################
     def addCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Add Calibration File Pressed")
-        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files")
+        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files",\
+                    options=QtWidgets.QFileDialog.DontUseNativeDialog)
         print(fnames)
 
-        if fnames:
+        if any(fnames):
             if ".sip" in fnames[0][0]:
                 src = fnames[0][0]
                 (_, filename) = os.path.split(src)
@@ -1125,6 +1127,26 @@ class ConfigWindow(QtWidgets.QDialog):
                     print(src)
                     print(dest)
                     shutil.copy(src, dest)
+
+            # Update the ConfigFile and the GUI(?)
+            # calFiles = ConfigFile.settings['CalibrationFiles']
+            configFileName = ConfigFile.filename
+            calFolder = os.path.splitext(configFileName)[0] + "_Calibration"
+            calPath = os.path.join(PATH_TO_CONFIG, calFolder)
+            calibrationMap = CalibrationFileReader.read(calPath)
+
+            # calibrationMap = Controller.processCalibrationConfig(configFileName, calFiles)
+            for calFileName in calibrationMap:
+                if '.cal' in calFileName.lower() or '.tdf' in calFileName.lower():
+                    enabled = True
+                    if calFileName.lower().startswith('hed') or calFileName.lower().startswith('hld'):
+                        frameType = 'ShutterDark'
+                    elif calFileName.lower().startswith('hse') or calFileName.lower().startswith('hsl'):
+                        frameType = 'ShutterLight'
+                    else:
+                        frameType = 'Not Required'
+                    # frameType = calibrationMap[calFileName].frameType # empty
+                    ConfigFile.setCalibrationConfig(calFileName, enabled, frameType)
 
     def deleteCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Remove Calibration File Pressed")
