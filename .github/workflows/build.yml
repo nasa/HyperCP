@@ -70,10 +70,12 @@ jobs:
           echo "BUNDLE_NAME=$(ls Bundled/dist | xargs)" >> $GITHUB_ENV
 
       - name: Zip Bundle
-        run: |
-          cd Bundled/dist/
-          zip ${{ env.BUNDLE_NAME }}.zip ${{ env.BUNDLE_NAME }} -r
-          cd -
+        uses: thedoctor0/zip-release@0.7.1
+        with:
+          type: 'zip'
+          directory: 'Bundled/dist/'
+          path: '${{ env.BUNDLE_NAME }}'
+          filename: '${{ env.BUNDLE_NAME }}.zip'
 
       - name: Upload Bundle
         uses: actions/upload-artifact@v3
