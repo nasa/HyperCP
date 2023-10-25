@@ -1,5 +1,6 @@
 import collections
 import warnings
+import time
 
 import numpy as np
 import scipy as sp
@@ -82,11 +83,7 @@ class ProcessL2:
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue
                 if float(k) >= 700 and float(k) <= 800:
-                    # avg += rrsSlice[k]
-                    # num += 1
                     NIRRRs.append(rrsSlice[k][-1])
-            # avg /= num
-            # avg = np.median(NIRRRs)
             rrsNIRCorr = min(NIRRRs)
             if rrsNIRCorr < 0:
                 rrsNIRCorr = 0
@@ -94,11 +91,9 @@ class ProcessL2:
             for k in rrsSlice:
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue
-                # rrsSlice[k] -= avg
-                rrsSlice[k][-1] -= rrsNIRCorr
-                # newRrsData.columns[k].append(rrsSlice[k])
 
-            # nirSlice[-1] = rrsNIRCorr
+                rrsSlice[k][-1] -= rrsNIRCorr
+
             nirSlice['NIR_offset'].append(rrsNIRCorr)
 
             # nLw correction
@@ -114,7 +109,6 @@ class ProcessL2:
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue
                 nLwSlice[k][-1] -= nLwNIRCorr
-                # newnLwData.columns[k].append(nLwSlice[k])
 
             nirnLwSlice['NIR_offset'].append(nLwNIRCorr)
 
@@ -178,7 +172,6 @@ class ProcessL2:
                     x.append(float(k))
                     ρ870.append(ρSlice[k][-1])
             if not ρ870:
-                # QtWidgets.QMessageBox(QtWidgets.QMessageBox.Critical, "Error", "NIR wavebands unavailable")
                 msg = 'No data found at 870 nm'
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -449,7 +442,7 @@ class ProcessL2:
                 #Calculate the normalized water leaving radiance
                 nLw = rrs*f0
 
-                # nLw uncertainty;                
+                # nLw uncertainty;
                 nLwUNC[k] = np.power((rrsUNC[k]*f0)**2 + f0UNC**2, 0.5)
 
                 newESData.columns[k].append(es)
@@ -532,15 +525,6 @@ class ProcessL2:
         newLWUNCData.columnsToDataset()
         newRrsUNCData.columnsToDataset()
         newnLwUNCData.columnsToDataset()
-
-        # # and ensure they are outputted in the correct groups
-        # if ConfigFile.settings["bL1bCal"] >= 2:
-        #     newESunc.columns = xUNC['esUNC']
-        #     newLIunc.columns = xUNC['liUNC']
-        #     newLTunc.columns = xUNC['ltUNC']
-        #     newESunc.columnsToDataset()
-        #     newLIunc.columnsToDataset()
-        #     newLTunc.columnsToDataset()
 
         if sensor == 'HYPER':
             newRhoHyper.columnsToDataset()
@@ -1609,13 +1593,15 @@ class ProcessL2:
                 wave_array = np.array(wave_list)
                 # wavelength is now truncated to only valid wavebands for use in Zhang models
                 waveSubset = wave_array[:,1].tolist()
-                
+
+            # rhoVector = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
+            #                                             SalXSlice, RelAzXSlice, waveSubset)
             rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
                                                             SalXSlice, RelAzXSlice, waveSubset, Rho_Uncertainty_Obj)
-            
+
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[i]
-                
+
             rhoScalar = None
 
         else:
@@ -1697,16 +1683,19 @@ class ProcessL2:
 
         # insert Uncertainties into analysis
         xUNC = {}
-        
+
         #### ADERU: add the case for factory
+        # NOTE: These .updates are what is triggering matrix_calculation.py:286: UserWarning:
+        tic = time.process_time()
         if ConfigFile.settings["bL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "seabird":
             xSlice.update(instrument.Factory(node, uncGroup, stats))  # update the xSlice dict with uncertianties and samples
+            # NOTE: This is slow.
             xUNC.update(instrument.rrsHyperUNCFACTORY(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
-       
+
         elif ConfigFile.settings["bL1bCal"] == 2:
             xSlice.update(instrument.Default(uncGroup, stats))  # update the xSlice dict with uncertianties and samples
             xUNC.update(instrument.rrsHyperUNC(uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
-        
+
         elif ConfigFile.settings["bL1bCal"] == 3:
             xSlice.update(
                 instrument.FRM(node, uncGroup,
@@ -1714,11 +1703,13 @@ class ProcessL2:
                                dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
                                stats, instrument_WB))
             xUNC.update(instrument.rrsHyperUNCFRM(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
-        
+
         else:
             xUNC = None
             # TODO: This should still estimate STD for TRIOS-Factory regime, instead of unc.
-
+        msg = f'Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s'
+        print(msg)
+        Utilities.writeLogFile(msg)
 
         # move uncertainties from xSlice to xUNC
         if xUNC is not None:
@@ -2147,7 +2138,7 @@ class ProcessL2:
         # Reflectance calculations complete
         #
 
-        # Filter reflectances for negative spectra
+        # Filter reflectances for negative ensemble spectra
         ''' # Any spectrum that has any negative values between
             #  400 - 700ish (adjustable below), remove the entire spectrum. Otherwise,
             # set negative bands to 0.'''

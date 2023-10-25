@@ -5,6 +5,7 @@ from pathlib import Path
 
 from Source import PATH_TO_CONFIG
 from Source.MainConfig import MainConfig
+from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.AnomalyDetection import AnomAnalWindow
@@ -618,6 +619,12 @@ class ConfigWindow(QtWidgets.QDialog):
         # self.l2WriteReportCheckBox.clicked.connect(self.l2SWriteReportCheckBoxUpdate)
         self.l2WriteReportCheckBoxUpdate()
 
+        logo = QtWidgets.QLabel(self)
+        # pixmap = QtGui.QPixmap('./Data/logo.jpg')
+        pixmap = QtGui.QPixmap('./Data/Img/logo_scale20.png')
+        logo.setPixmap(pixmap)
+        logo.setAlignment(QtCore.Qt.AlignCenter)
+
         self.saveButton = QtWidgets.QPushButton("Save/Close")
         self.saveAsButton = QtWidgets.QPushButton("Save As")
         self.cancelButton = QtWidgets.QPushButton("Cancel")
@@ -835,8 +842,8 @@ class ConfigWindow(QtWidgets.QDialog):
         plotInterpHBox.addWidget(self.l1bPlotIntervalLineEdit)
         VBox2.addLayout(plotInterpHBox)
 
-        VBox2.addSpacing(10)
-        VBox2.addStretch()
+        # VBox2.addSpacing(10)
+        # VBox2.addStretch()
 
         # L1BQC
         VBox2.addWidget(l1bqcLabel)
@@ -916,8 +923,8 @@ class ConfigWindow(QtWidgets.QDialog):
         RainFlagHBox.addWidget(self.l1bqcRainfallHumidityFlagLineEdit)
         VBox3.addLayout(RainFlagHBox)
 
-        VBox3.addSpacing(30)
-        VBox3.addStretch()
+        # VBox3.addSpacing(30)
+        # VBox3.addStretch()
 
         # L2
         VBox3.addWidget(l2Label)
@@ -964,27 +971,29 @@ class ConfigWindow(QtWidgets.QDialog):
         RhoHBox3.addWidget(self.RhoRadioButtonYour)
         VBox3.addLayout(RhoHBox3)
 
-        VBox3.addStretch()
-
-        # Right Vertical box
-        VBox4 = QtWidgets.QVBoxLayout()
-
         #   L2 NIR AtmoCorr
         NIRCorrectionHBox = QtWidgets.QHBoxLayout()
         NIRCorrectionHBox.addWidget(l2NIRCorrectionLabel)
         NIRCorrectionHBox.addWidget(self.l2NIRCorrectionCheckBox)
-        VBox4.addLayout(NIRCorrectionHBox)
-        VBox4.addWidget(self.SimpleNIRRadioButton)
-        VBox4.addWidget(self.SimSpecNIRRadioButton)
-        VBox4.addWidget(self.YourNIRRadioButton)
+        VBox3.addLayout(NIRCorrectionHBox)
+        VBox3.addWidget(self.SimpleNIRRadioButton)
+        VBox3.addWidget(self.SimSpecNIRRadioButton)
+        VBox3.addWidget(self.YourNIRRadioButton)
 
-        VBox4.addSpacing(5)
+        VBox3.addSpacing(5)
 
         #   L2 Remove negative spectra
         NegativeSpecHBox = QtWidgets.QHBoxLayout()
         NegativeSpecHBox.addWidget(self.l2NegativeSpecLabel)
         NegativeSpecHBox.addWidget(self.l2NegativeSpecCheckBox)
-        VBox4.addLayout(NegativeSpecHBox)
+        VBox3.addLayout(NegativeSpecHBox)
+
+        # VBox3.addStretch()
+
+        # Right Vertical box
+        VBox4 = QtWidgets.QVBoxLayout()
+
+
 
         #   L2 BRDF
         BRDFVBox = QtWidgets.QVBoxLayout()
@@ -1065,8 +1074,11 @@ class ConfigWindow(QtWidgets.QDialog):
         l2ReportHBox.addWidget(self.l2WriteReportCheckBox)
         VBox4.addLayout(l2ReportHBox)
 
-        VBox4.addSpacing(20)
+        # VBox4.addSpacing(20)
         VBox4.addStretch()
+
+        # Logo
+        VBox4.addWidget(logo)
 
         # Save/Cancel
         saveHBox = QtWidgets.QHBoxLayout()
@@ -1092,10 +1104,11 @@ class ConfigWindow(QtWidgets.QDialog):
     ###############################################################
     def addCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Add Calibration File Pressed")
-        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files")
+        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, "Add Calibration Files",\
+                    options=QtWidgets.QFileDialog.DontUseNativeDialog)
         print(fnames)
 
-        if fnames:
+        if any(fnames):
             if ".sip" in fnames[0][0]:
                 src = fnames[0][0]
                 (_, filename) = os.path.split(src)
@@ -1114,6 +1127,26 @@ class ConfigWindow(QtWidgets.QDialog):
                     print(src)
                     print(dest)
                     shutil.copy(src, dest)
+
+            # Update the ConfigFile and the GUI(?)
+            # calFiles = ConfigFile.settings['CalibrationFiles']
+            configFileName = ConfigFile.filename
+            calFolder = os.path.splitext(configFileName)[0] + "_Calibration"
+            calPath = os.path.join(PATH_TO_CONFIG, calFolder)
+            calibrationMap = CalibrationFileReader.read(calPath)
+
+            # calibrationMap = Controller.processCalibrationConfig(configFileName, calFiles)
+            for calFileName in calibrationMap:
+                if '.cal' in calFileName.lower() or '.tdf' in calFileName.lower():
+                    enabled = True
+                    if calFileName.lower().startswith('hed') or calFileName.lower().startswith('hld'):
+                        frameType = 'ShutterDark'
+                    elif calFileName.lower().startswith('hse') or calFileName.lower().startswith('hsl'):
+                        frameType = 'ShutterLight'
+                    else:
+                        frameType = 'Not Required'
+                    # frameType = calibrationMap[calFileName].frameType # empty
+                    ConfigFile.setCalibrationConfig(calFileName, enabled, frameType)
 
     def deleteCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Remove Calibration File Pressed")

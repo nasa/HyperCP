@@ -233,22 +233,29 @@ class ProcessL1b_FactoryCal:
         for gp in node.groups:
             # retrieve the LIGHT L1AQC dataset for a given sensor
             if sensor+"_LIGHT" in gp.id :
-                cf = calibrationMap[gp.attributes["CalFileName"]]
-                for cd in cf.data: 
+                try:
+                    cf = calibrationMap[gp.attributes["CalFileName"]]
+                except:
+                    # This can happen if you try to process L2 with a different calMap from L1B data
+                    msg = f'ProcessL1b_FactoryCal.extract_calibration_coeff: Mismatched Cal File: {gp.attributes["CalFileName"]}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return None, None
+
+                for cd in cf.data:
                     # Process only OPTIC3
                     if cd.fitType == "OPTIC3":
                         coeff.append(float(cd.coefficients[1]))
                         wvl.append(float(cd.id))
         return np.array(wvl), np.array(coeff)
-            
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
+
+
+
+
+
+
+
+
+
+
