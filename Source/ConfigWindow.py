@@ -4,8 +4,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from pathlib import Path
 
 from Source import PATH_TO_CONFIG
-from Source.MainConfig import MainConfig
-from Source.Controller import Controller
+# from Source.MainConfig import MainConfig
+# from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.AnomalyDetection import AnomAnalWindow
@@ -1137,7 +1137,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
             # calibrationMap = Controller.processCalibrationConfig(configFileName, calFiles)
             for calFileName in calibrationMap:
-                if '.cal' in calFileName.lower() or '.tdf' in calFileName.lower():
+                if '.cal' in calFileName.lower() or '.tdf' in calFileName.lower() or '.ini' in calFileName.lower():
                     enabled = True
                     if calFileName.lower().startswith('hed') or calFileName.lower().startswith('hld'):
                         frameType = 'ShutterDark'

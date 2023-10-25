@@ -381,7 +381,7 @@ class ConfigFile:
     @staticmethod
     def loadConfig(filename):
         # print("ConfigFile - Load Config")
-        calFormats = ['.cal', '.tdf']
+        calFormats = ['.cal', '.tdf', '.ini']
 
         # Load the default values first to insure all settings are present, then populate with saved values where possible
         ConfigFile.createDefaultConfig(filename, 0)
