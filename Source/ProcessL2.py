@@ -412,7 +412,7 @@ class ProcessL2:
                 es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and node
                 li = liXSlice[k][0]
                 lt = ltXSlice[k][0]
-                f0  = F0[k]
+                f0 = F0[k]
                 f0UNC = F0_unc[k]
 
                 esMedian = esXmedian[k][0]
