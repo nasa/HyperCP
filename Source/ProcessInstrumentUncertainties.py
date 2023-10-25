@@ -491,8 +491,8 @@ class Instrument(ABC):
                                                 waveSubset,
                                                 np.asarray(list(esXstd.keys()), dtype=float))
         else:
-            rho = rhoVec
-            rhoUNC = np.array(list(rhoDelta.values()), dtype=float)
+            rho = np.array(list(rhoVec.values()), dtype=float)
+            rhoUNC = rhoDelta
 
         # define dictionaries for uncertainty components
         Cal = {}
@@ -587,49 +587,51 @@ class Instrument(ABC):
         output = {}
 
         # interpolate output uncertainties to the waveSubset (common wavebands of interpolated es, li, & lt)
+        wvls = np.asarray(list(xSlice['es'].keys()), dtype=float)
+
         lwAbsUnc, _ = self.interp_common_wvls(lwAbsUnc,
                                               np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
-                                              np.array(waveSubset, dtype=float))
+                                              waveSubset)
         lw_vals, _ = self.interp_common_wvls(lw_vals,
                                              np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
-                                             np.array(waveSubset, dtype=float))
+                                             waveSubset)
         rrsAbsUnc, _ = self.interp_common_wvls(rrsAbsUnc,
                                                np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
-                                               np.array(waveSubset, dtype=float))
+                                               waveSubset)
         rrs_vals, _ = self.interp_common_wvls(rrs_vals,
                                               np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
-                                              np.array(waveSubset, dtype=float))
+                                              waveSubset)
 
         ## Band Convolution of Uncertainties
         if ConfigFile.settings["bL2WeightSentinel3A"]:
-            output["lwUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, wvls],
                                                                         [lwAbsUnc, None], "S3A")
-            output["rrsUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, wvls],
                                                                          [rrsAbsUnc, None], "S3A")
         elif ConfigFile.settings["bL2WeightSentinel3B"]:
-            output["lwUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, wvls],
                                                                         [lwAbsUnc, None], "S3B")
-            output["rrsUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, wvls],
                                                                          [rrsAbsUnc, None], "S3B")
         if ConfigFile.settings['bL2WeightMODISA']:
-            output["lwUNC_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, wvls],
                                                                     [lwAbsUnc, None], "MOD-A")
-            output["rrsUNC_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, wvls],
                                                                      [rrsAbsUnc, None], "MOD-A")
         if ConfigFile.settings['bL2WeightMODIST']:
-            output["lwUNC_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, wvls],
                                                                     [lwAbsUnc, None], "MOD-T")
-            output["rrsUNC_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals, wvls],
                                                                      [rrsAbsUnc, None], "MOD-T")
         if ConfigFile.settings['bL2WeightVIIRSN']:
-            output["lwUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, wvls],
                                                                     [lwAbsUnc, None], "VIIRS")
-            output["rrsUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, wvls],
                                                                      [rrsAbsUnc, None], "VIIRS")
         if ConfigFile.settings['bL2WeightVIIRSJ']:
-            output["lwUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, wvls],
                                                                     [lwAbsUnc, None], "VIIRS")
-            output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, wvls],
                                                                      [rrsAbsUnc, None], "VIIRS")
             pass
         output.update({"lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})
@@ -669,9 +671,13 @@ class Instrument(ABC):
             rhoUNC, _ = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
                                                 waveSubset,
                                                 np.asarray(list(esXstd.keys()), dtype=float))
-        else:
-            rho = rhoVec
-            rhoUNC = np.array(list(rhoDelta.values()), dtype=float)
+        else:  # zhang rho needs to be interpolated to radcal wavebands (len must be 255)
+            rho, _ = self.interp_common_wvls(np.array(list(rhoVec.values()), dtype=float),
+                                             waveSubset,
+                                             np.asarray(list(esXstd.keys()), dtype=float))
+            rhoUNC, _ = self.interp_common_wvls(rhoDelta,
+                                                waveSubset,
+                                                np.asarray(list(esXstd.keys()), dtype=float))
 
         # define dictionaries for uncertainty components
         Cal = {}
@@ -771,48 +777,49 @@ class Instrument(ABC):
         output = {}  # create dictionary to store uncertainty values which are returned from methods
 
         # interpolate output uncertainties to the waveSubset (common wavebands of interpolated es, li, & lt)
+        wvls = np.asarray(list(xSlice['es'].keys()), dtype=float)
         lwAbsUnc, _ = self.interp_common_wvls(lwAbsUnc,
                                              np.array(uncGrp.getDataset("ES_RADCAL_UNC").columns['wvl'], dtype=float),
-                                             np.array(waveSubset, dtype=float))
+                                             wvls)
         lw_vals, _ = self.interp_common_wvls(lw_vals,
                                             np.array(uncGrp.getDataset("ES_RADCAL_UNC").columns['wvl'], dtype=float),
-                                            np.array(waveSubset, dtype=float))
+                                            wvls)
         rrsAbsUnc, _ = self.interp_common_wvls(rrsAbsUnc,
                                               np.array(uncGrp.getDataset("ES_RADCAL_UNC").columns['wvl'], dtype=float),
-                                              np.array(waveSubset, dtype=float))
+                                              wvls)
         rrs_vals, _ = self.interp_common_wvls(rrs_vals,
                                              np.array(uncGrp.getDataset("ES_RADCAL_UNC").columns['wvl'], dtype=float),
-                                             np.array(waveSubset, dtype=float))
+                                             wvls)
 
         if ConfigFile.settings["bL2WeightSentinel3A"]:
-            output["lwUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, wvls],
                                                                         [lwAbsUnc, None], "S3A")
-            output["rrsUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, wvls],
                                                                          [rrsAbsUnc, None], "S3A")
         elif ConfigFile.settings["bL2WeightSentinel3B"]:
-            output["lwUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, wvls],
                                                                         [lwAbsUnc, None], "S3B")
-            output["rrsUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, wvls],
                                                                          [rrsAbsUnc, None], "S3B")
         if ConfigFile.settings['bL2WeightMODISA']:
-            output["lwUNC_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, wvls],
                                                                     [lwAbsUnc, None], "MOD-A")
-            output["rrsUNC_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, wvls],
                                                                      [rrsAbsUnc, None], "MOD-A")
         if ConfigFile.settings['bL2WeightMODIST']:
-            output["lwUNC_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, wvls],
                                                                     [lwAbsUnc, None], "MOD-T")
-            output["rrsUNC_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals,wvls],
                                                                      [rrsAbsUnc, None], "MOD-T")
         if ConfigFile.settings['bL2WeightVIIRSN']:
-            output["lwUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, wvls],
                                                                     [lwAbsUnc, None], "VIIRS")
-            output["rrsUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, wvls],
                                                                      [rrsAbsUnc, None], "VIIRS")
         if ConfigFile.settings['bL2WeightVIIRSJ']:
-            output["lwUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, np.array(waveSubset)],
+            output["lwUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, wvls],
                                                                    [lwAbsUnc, None], "VIIRS")
-            output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, np.array(waveSubset)],
+            output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, wvls],
                                                                     [rrsAbsUnc, None], "VIIRS")
             pass
         output.update({"lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})
