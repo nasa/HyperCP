@@ -311,13 +311,6 @@ class Instrument(ABC):
                        np.array(cPol['LI']), np.array(cPol['LT']), np.array(cPol['ES'])
                        ]
 
-                       # Cal['ES']*Coeff['ES']/200, Cal['LI']*Coeff['LI']/200, Cal['LT']*Coeff['LT']/200,
-                       # cStab['ES'], cStab['LI'], cStab['LT'],
-                       # cLin['ES'], cLin['LI'], cLin['LT'],
-                       # np.array(cStray['ES'])/100, np.array(cStray['LI'])/100, np.array(cStray['LT'])/100,
-                       # np.array(Ct['ES']), np.array(Ct['LI']), np.array(Ct['LT']),
-                       # np.array(cPol['LI']), np.array(cPol['LT']), np.array(cPol['ES'])]
-
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
         ES_unc, LI_unc, LT_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
 
@@ -494,11 +487,12 @@ class Instrument(ABC):
 
         if rhoScalar is not None:  # make rho a constant array if scalar
             rho = np.ones(len(list(esXstd.keys())))*rhoScalar
-            rhoDelta, _ = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
-                                                 waveSubset,
-                                                 np.asarray(list(esXstd.keys()), dtype=float))
+            rhoUnc, _ = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
+                                                waveSubset,
+                                                np.asarray(list(esXstd.keys()), dtype=float))
         else:
             rho = rhoVec
+            rhoUNC = np.array(list(rhoDelta.values()), dtype=float)
 
         # define dictionaries for uncertainty components
         Cal = {}
@@ -540,7 +534,7 @@ class Instrument(ABC):
         Propagate_L2 = Propagate(M=100, cores=0)
         slice_size = len(es)
         ones = np.ones(slice_size)
-        zeros = np.zeros(slice_size)
+        # zeros = np.zeros(slice_size)
 
         lw_means = [lt, rho, li,
                     ones, ones,
@@ -550,23 +544,15 @@ class Instrument(ABC):
                     ones, ones,
                     ones, ones]
 
-        lw_uncertainties = [zeros,
-                            # np.array(list(ltXstd.values())).flatten() * lt,
-                            rhoDelta,
-                            zeros,
-                            zeros, zeros,
-                            zeros, zeros,
-                            zeros, zeros,
-                            zeros, zeros,
-                            zeros, zeros,
-                            zeros, zeros]
-                            # np.array(list(liXstd.values())).flatten() * li,
-                            # Cal['LI']/200, Cal['LT']/200,
-                            # cStab['LI'], cStab['LT'],
-                            # cLin['LI'], cLin['LT'],
-                            # cStray['LI']/100, cStray['LI']/100,
-                            # Ct['LI'], Ct['LI'],
-                            # cPol['LI'], cPol['LI']]
+        lw_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+                            rhoUnc,
+                            np.array(list(liXstd.values())).flatten() * li,
+                            Cal['LI']/200, Cal['LT']/200,
+                            cStab['LI'], cStab['LT'],
+                            cLin['LI'], cLin['LT'],
+                            cStray['LI']/100, cStray['LI']/100,
+                            Ct['LI'], Ct['LI'],
+                            cPol['LI'], cPol['LI']]
 
         lwAbsUnc = Propagate_L2.Propagate_Lw(lw_means, lw_uncertainties)
         lw_vals = Propagate_L2.Lw(*lw_means)
@@ -579,22 +565,16 @@ class Instrument(ABC):
                      ones, ones, ones,
                      ones, ones, ones]
 
-        rrs_uncertainties = [zeros,  # np.array(list(ltXstd.values())).flatten() * lt,
-                             rhoDelta,
-                             zeros,  # np.array(list(liXstd.values())).flatten() * li,
-                             zeros,  # np.array(list(esXstd.values())).flatten() * es,
-                             zeros, zeros, zeros,
-                             zeros, zeros, zeros,
-                             zeros, zeros, zeros,
-                             zeros, zeros, zeros,
-                             zeros, zeros, zeros,
-                             zeros, zeros, zeros,
-                             # Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
-                             # cStab['ES'], cStab['LI'], cStab['LT'],
-                             # cLin['ES'], cLin['LI'], cLin['LT'],
-                             # cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
-                             # Ct['ES'], Ct['LI'], Ct['LT'],
-                             # cPol['LI'], cPol['LT'], cPol['ES']
+        rrs_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+                             rhoUNC,
+                             np.array(list(liXstd.values())).flatten() * li,
+                             np.array(list(esXstd.values())).flatten() * es,
+                             Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
+                             cStab['ES'], cStab['LI'], cStab['LT'],
+                             cLin['ES'], cLin['LI'], cLin['LT'],
+                             cStray['ES']/100, cStray['LI']/100, cStray['LT']/100,
+                             Ct['ES'], Ct['LI'], Ct['LT'],
+                             cPol['LI'], cPol['LT'], cPol['ES']
                              ]
 
         rrsAbsUnc = Propagate_L2.Propagate_RRS(rrs_means, rrs_uncertainties)
@@ -686,11 +666,12 @@ class Instrument(ABC):
 
         if rhoScalar is not None:  # make rho a constant array if scalar
             rho = np.ones(len(list(esXstd.keys())))*rhoScalar
-            rhoDelta, _ = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
-                                                 waveSubset,
-                                                 np.asarray(list(esXstd.keys()), dtype=float))
+            rhoUNC, _ = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
+                                                waveSubset,
+                                                np.asarray(list(esXstd.keys()), dtype=float))
         else:
             rho = rhoVec
+            rhoUNC = np.array(list(rhoDelta.values()), dtype=float)
 
         # define dictionaries for uncertainty components
         Cal = {}
@@ -746,7 +727,7 @@ class Instrument(ABC):
                    ones, ones]
 
         lw_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
-                           rhoDelta,
+                           rhoUNC,
                            np.array(list(liXstd.values())).flatten() * li,
                            Cal['LI']/200, Cal['LT']/200,
                            cStab['LI'], cStab['LT'],
@@ -768,7 +749,7 @@ class Instrument(ABC):
                 ones, ones, ones]
 
         rrs_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
-                             rhoDelta,
+                             rhoUNC,
                              np.array(list(liXstd.values())).flatten() * li,
                              np.array(list(esXstd.values())).flatten() * es,
                              Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
@@ -1242,7 +1223,10 @@ class HyperOCR(Instrument):
             signalAve = np.average(lightData[k])
 
             # Normalised signal standard deviation =
-            stdevSignal[wvl] = pow((pow(std_Light[i], 2) + pow(std_Dark[i], 2))/pow(signalAve, 2), 0.5)
+            if signalAve:
+                stdevSignal[wvl] = pow((pow(std_Light[i], 2) + pow(std_Dark[i], 2))/pow(signalAve, 2), 0.5)
+            else:
+                stdevSignal[wvl] = 0.0
 
         return dict(
             ave_Light=np.array(ave_Light),
