@@ -1623,6 +1623,7 @@ class ProcessL2:
                                                              Rho_Uncertainty_Obj)
         # Calculate hyperspectral Coddingtion TSIS_1 hybrid F0 function
         # F0_hyper = ProcessL2.Thuillier(dateTag, wavelength)
+        # NOTE: Need to check whether uncertainties are one sigma or two
         F0_hyper, F0_unc, F0_raw, F0_unc_raw, wv_raw = Utilities.TSIS_1(dateTag, wavelength)
         # Recycling _raw in TSIS_1 calls below prevents the dataset having to be reread
 
@@ -1759,6 +1760,9 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdMODISA
                 xSlice['ltSTD'] = ltXstdMODISA
 
+                # NOTE: According to AR, this may not be a robust way of estimating convolved uncertainties.
+                # He has implemented another way, but it is very slow due to multiple MC runs. Comment this out
+                # for now, but a sensitivity analysis may show it to be okay.
                 if xUNC is not None:
                     xUNC['esUNC'] = Weight_RSR.processMODISBands(esUNCSlice, sensor='A')
                     xUNC['liUNC'] = Weight_RSR.processMODISBands(liUNCSlice, sensor='A')

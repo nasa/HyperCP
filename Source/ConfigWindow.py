@@ -4,8 +4,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from pathlib import Path
 
 from Source import PATH_TO_CONFIG
-from Source.MainConfig import MainConfig
-from Source.Controller import Controller
+# from Source.MainConfig import MainConfig
+# from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.AnomalyDetection import AnomAnalWindow
@@ -560,6 +560,11 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2WeightSentinel3B"]) == 1:
             self.l2WeightSentinel3BCheckBox.setChecked(True)
 
+        l2WeightUncertaintiesLabel = QtWidgets.QLabel("Convolution uncertainties", self)
+        self.l2WeightUncertaintiesCheckBox = QtWidgets.QCheckBox('',self)
+        if int(ConfigFile.settings["bL2WeightUncertainties"]) == 1:
+            self.l2WeightUncertaintiesCheckBox.setChecked(True)
+
         #   Plots
         l2PlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
         l2PlotRrsLabel = QtWidgets.QLabel("Rrs", self)
@@ -605,8 +610,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)
         if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
             self.l2SaveSeaBASSCheckBox.setChecked(True)
-        # self.l2SaveSeaBASSCheckBox.clicked.connect(self.l2SaveSeaBASSCheckBoxUpdate)
-        # self.l1bSaveSeaBASSCheckBoxUpdate()
         self.l2SaveSeaBASSCheckBoxUpdate()
 
         self.l2SeaBASSHeaderLabel = QtWidgets.QLabel(f'  {ConfigFile.settings["seaBASSHeaderFileName"]}', self)
@@ -616,11 +619,9 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2WriteReportCheckBox.clicked.connect(self.l2WriteReportCheckBoxUpdate)
         if int(ConfigFile.settings["bL2WriteReport"]) == 1:
             self.l2WriteReportCheckBox.setChecked(True)
-        # self.l2WriteReportCheckBox.clicked.connect(self.l2SWriteReportCheckBoxUpdate)
         self.l2WriteReportCheckBoxUpdate()
 
         logo = QtWidgets.QLabel(self)
-        # pixmap = QtGui.QPixmap('./Data/logo.jpg')
         pixmap = QtGui.QPixmap('./Data/Img/logo_scale20.png')
         logo.setPixmap(pixmap)
         logo.setAlignment(QtCore.Qt.AlignCenter)
@@ -744,7 +745,6 @@ class ConfigWindow(QtWidgets.QDialog):
         # VBox1.addWidget(l1aqcAnomalySublabel1)
         # VBox1.addWidget(l1aqcAnomalySublabel2)
         VBox1.addWidget(self.l1aqcAnomalyButton)
-
 
         VBox1.addStretch()
 
@@ -993,8 +993,6 @@ class ConfigWindow(QtWidgets.QDialog):
         # Right Vertical box
         VBox4 = QtWidgets.QVBoxLayout()
 
-
-
         #   L2 BRDF
         BRDFVBox = QtWidgets.QVBoxLayout()
         BRDFHBox1 = QtWidgets.QHBoxLayout()
@@ -1033,6 +1031,10 @@ class ConfigWindow(QtWidgets.QDialog):
         l2WeightHBox2.addWidget(self.l2WeightVIIRSJCheckBox)
         VBox4.addLayout(l2WeightHBox2)
         VBox4.addWidget(l2WeightMODISALabel2)
+        l2WeightHBox3 = QtWidgets.QHBoxLayout()
+        l2WeightHBox3.addWidget(l2WeightUncertaintiesLabel)
+        l2WeightHBox3.addWidget(self.l2WeightUncertaintiesCheckBox)
+        VBox4.addLayout(l2WeightHBox3)
 
         VBox4.addSpacing(5)
 
@@ -1137,7 +1139,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
             # calibrationMap = Controller.processCalibrationConfig(configFileName, calFiles)
             for calFileName in calibrationMap:
-                if '.cal' in calFileName.lower() or '.tdf' in calFileName.lower():
+                if '.cal' in calFileName.lower() or '.tdf' in calFileName.lower() or '.ini' in calFileName.lower():
                     enabled = True
                     if calFileName.lower().startswith('hed') or calFileName.lower().startswith('hld'):
                         frameType = 'ShutterDark'
@@ -1921,6 +1923,9 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2WeightMODIST"] = int(self.l2WeightMODISTCheckBox.isChecked())
         ConfigFile.settings["bL2WeightSentinel3B"] = int(self.l2WeightSentinel3BCheckBox.isChecked())
         ConfigFile.settings["bL2WeightVIIRSJ"] = int(self.l2WeightVIIRSJCheckBox.isChecked())
+
+        ConfigFile.settings["bL2WeightUncertainties"] = int(self.l2WeightUncertaintiesCheckBox.isChecked())
+
         ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())
         ConfigFile.settings["bL2PlotnLw"] = int(self.l2PlotnLwCheckBox.isChecked())
         ConfigFile.settings["bL2PlotEs"] = int(self.l2PlotEsCheckBox.isChecked())
