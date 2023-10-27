@@ -250,7 +250,10 @@ class Instrument(ABC):
             stab.datasetToColumns()
             cStab[sensor] = np.asarray(list(stab.columns['1']))
 
-            Coeff[sensor] = np.asarray(list(radcal.columns['2']))
+            if ConfigFile.settings['SensorType'].lower() == "trios":
+                Coeff[sensor] = np.asarray(list(radcal.columns['2']))/10
+            elif ConfigFile.settings['SensorType'].lower() == "seabird":
+                Coeff[sensor] = np.asarray(list(radcal.columns['2']))
             Cal[sensor] = np.asarray(list(radcal.columns['3']))
 
             # TODO: temporary fix angular for ES is written as ES_POL
@@ -294,7 +297,7 @@ class Instrument(ABC):
                        ones, ones, ones,
                        ones, ones, ones,
                        ones, ones, ones]
-
+        
         uncertainty = [stats['ES']['std_Light'], esstdDark,
                        stats['LI']['std_Light'], listdDark,
                        stats['LT']['std_Light'], ltstdDark,
