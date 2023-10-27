@@ -466,6 +466,8 @@ class Instrument(ABC):
 
         :return: dictionary of output uncertainties that are generated
         """
+
+        waveSubset = np.array(waveSubset, dtype=float)  # convert waveSubset to numpy array
         esXstd = xSlice['esSTD_RAW']
         liXstd = xSlice['liSTD_RAW']
         ltXstd = xSlice['ltSTD_RAW']
@@ -486,8 +488,12 @@ class Instrument(ABC):
                                                 waveSubset,
                                                 np.asarray(list(esXstd.keys()), dtype=float))
         else:
-            rho = np.array(list(rhoVec.values()), dtype=float)
-            rhoUNC = rhoDelta
+            rho, _ = self.interp_common_wvls(np.array(list(rhoVec.values()), dtype=float),
+                                             waveSubset,
+                                             np.asarray(list(esXstd.keys()), dtype=float))
+            rhoUNC, _ = self.interp_common_wvls(rhoDelta,
+                                                waveSubset,
+                                                np.asarray(list(esXstd.keys()), dtype=float))
 
         # define dictionaries for uncertainty components
         Cal = {}
@@ -647,6 +653,7 @@ class Instrument(ABC):
         :return: dictionary of output uncertainties that are generated
         """
 
+        waveSubset = np.array(waveSubset, dtype=float)  # convert waveSubset to numpy array
         esXstd = xSlice['esSTD_RAW']
         liXstd = xSlice['liSTD_RAW']
         ltXstd = xSlice['ltSTD_RAW']
