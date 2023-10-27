@@ -467,19 +467,6 @@ class ProcessL1b:
 
         return True
 
-    # # Copies TIMETAG2 values to Timer and converts to seconds
-    # @staticmethod
-    # def copyTimetag2(timerDS, tt2DS):
-    #     if (timerDS.data is None) or (tt2DS.data is None):
-    #         msg = "copyTimetag2: Timer/TT2 is None"
-    #         print(msg)
-    #         Utilities.writeLogFile(msg)
-    #         return
-
-    #     for i in range(0, len(timerDS.data)):
-    #         tt2 = float(tt2DS.data["NONE"][i])
-    #         t = Utilities.timeTag2ToSec(tt2)
-    #         timerDS.data["NONE"][i] = t
 
     @staticmethod
     def processDarkCorrection(node, sensorType):

@@ -820,7 +820,7 @@ class ProcessL1aqc:
 
         ###########################################################################
         # Now deglitch
-        if ConfigFile.settings["SensorType"] == "Seabird":
+        if ConfigFile.settings["SensorType"].lower() == "seabird":
             node = ProcessL1aqc_deglitch.processL1aqc_deglitch(node)
         else:
             node.attributes['L1AQC_DEGLITCH'] = 'OFF'

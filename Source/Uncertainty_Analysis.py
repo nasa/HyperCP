@@ -94,6 +94,7 @@ class Propagate:
         corr_list = ['rand', 'rand', 'rand', 'rand', 'rand', 'rand', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst',
                      'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
 
+        # NOTE: ISSUE #95
         unc = self.MCP.propagate_random(self.instruments,
                                         mean_vals,
                                         uncertainties,

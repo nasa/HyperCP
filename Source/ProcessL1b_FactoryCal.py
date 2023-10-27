@@ -194,31 +194,34 @@ class ProcessL1b_FactoryCal:
         Utilities.writeLogFile(msg)
 
         for gp in node.groups:
-            # Apply calibration factors to each dataset in HDF
-            msg = f'  Group: {gp.id}'
-            print(msg)
-            Utilities.writeLogFile(msg)
-            if "CalFileName" in gp.attributes:
-                cf = calibrationMap[gp.attributes["CalFileName"]]
-                #print(gp.id, gp.attributes)
-                msg = f'    File: {cf.id}'
+            # Apply calibration factors to each dataset in HDF except the L1AQC datasets carried forward
+            # for L2 uncertainty propagation
+            if not 'L1AQC' in gp.id:
+                msg = f'  Group: {gp.id}'
                 print(msg)
                 Utilities.writeLogFile(msg)
+                if "CalFileName" in gp.attributes:
+                    cf = calibrationMap[gp.attributes["CalFileName"]]
+                    #print(gp.id, gp.attributes)
+                    msg = f'    File: {cf.id}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
 
-                ProcessL1b_FactoryCal.processGroup(gp, cf)
+                    ProcessL1b_FactoryCal.processGroup(gp, cf)
 
-                if esUnits == None:
-                    esUnits = cf.getUnits("ES")
-                if liUnits == None:
-                    liUnits = cf.getUnits("LI")
-                if ltUnits == None:
-                    ltUnits = cf.getUnits("LT")
-                if pyrUnits == None:
-                    pyrUnits = cf.getUnits("T") #Pyrometer
+                    if esUnits == None:
+                        esUnits = cf.getUnits("ES")
+                    if liUnits == None:
+                        liUnits = cf.getUnits("LI")
+                    if ltUnits == None:
+                        ltUnits = cf.getUnits("LT")
+                    if pyrUnits == None:
+                        pyrUnits = cf.getUnits("T") #Pyrometer
 
         node.attributes["LI_UNITS"] = liUnits
         node.attributes["LT_UNITS"] = ltUnits
         node.attributes["ES_UNITS"] = esUnits
+        node.attributes["L1AQC_UNITS"] = 'count'
         node.attributes["SATPYR_UNITS"] = pyrUnits
 
         return node
@@ -233,22 +236,29 @@ class ProcessL1b_FactoryCal:
         for gp in node.groups:
             # retrieve the LIGHT L1AQC dataset for a given sensor
             if sensor+"_LIGHT" in gp.id :
-                cf = calibrationMap[gp.attributes["CalFileName"]]
-                for cd in cf.data: 
+                try:
+                    cf = calibrationMap[gp.attributes["CalFileName"]]
+                except:
+                    # This can happen if you try to process L2 with a different calMap from L1B data
+                    msg = f'ProcessL1b_FactoryCal.extract_calibration_coeff: Mismatched Cal File: {gp.attributes["CalFileName"]}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return None, None
+
+                for cd in cf.data:
                     # Process only OPTIC3
                     if cd.fitType == "OPTIC3":
                         coeff.append(float(cd.coefficients[1]))
                         wvl.append(float(cd.id))
         return np.array(wvl), np.array(coeff)
-            
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
+
+
+
+
+
+
+
+
+
+

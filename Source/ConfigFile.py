@@ -132,6 +132,8 @@ class ConfigFile:
         print("bL2WeightSentinel3A", ConfigFile.settings["bL2WeightSentinel3B"])
         print("bL2WeightVIIRSN", ConfigFile.settings["bL2WeightVIIRSJ"])
 
+        print("bL2WeightUncertainties", ConfigFile.settings["bL2WeightUncertainties"])
+
         print("bL2PlotRrs", ConfigFile.settings["bL2PlotRrs"])
         print("bL2PlotnLw", ConfigFile.settings["bL2PlotnLw"])
         print("bL2PlotEs", ConfigFile.settings["bL2PlotEs"])
@@ -316,6 +318,10 @@ class ConfigFile:
         ConfigFile.settings["bL2WeightMODIST"] = 0
         ConfigFile.settings["bL2WeightSentinel3B"] = 0
         ConfigFile.settings["bL2WeightVIIRSJ"] = 0
+
+        ConfigFile.settings["bL2WeightUncertainties"] = 0
+
+
         ConfigFile.settings["bL2PlotRrs"] = 0
         ConfigFile.settings["bL2PlotnLw"] = 0
         ConfigFile.settings["bL2PlotEs"] = 0
@@ -381,6 +387,7 @@ class ConfigFile:
     @staticmethod
     def loadConfig(filename):
         # print("ConfigFile - Load Config")
+        calFormats = ['.cal', '.tdf', '.ini']
 
         # Load the default values first to insure all settings are present, then populate with saved values where possible
         ConfigFile.createDefaultConfig(filename, 0)
@@ -399,13 +406,14 @@ class ConfigFile:
                     if key.startswith("bL2Prod"):
                         ConfigFile.products[key] = value
                     else:
+                        # Clean out extraneous files (e.g., Full FRM Characterizations) from CalibrationFiles
+                        if key.startswith('CalibrationFiles'):
+                            for k in list(value.keys()):
+                                if not any(ele.lower() in k.lower() for ele in calFormats):
+                                    del value[k]
                         ConfigFile.settings[key] = value
 
                 ConfigFile.createCalibrationFolder()
-        #     return 1
-        # else:
-        #     print(f'Bad ConfigFile path: {configPath}')
-        #     return 0
 
 
     # Deletes a config

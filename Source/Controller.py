@@ -196,11 +196,11 @@ class Controller:
                 cf.sensorType = cf.getSensorType()
 
     @staticmethod
-    def processCalibrationConfig(configName, calFiles):
+    def processCalibrationConfig(configFileName, calFiles):
         ''' Read in SeaBird calibration files/configuration '''
 
         # print("processCalibrationConfig")
-        calFolder = os.path.splitext(configName)[0] + "_Calibration"
+        calFolder = os.path.splitext(configFileName)[0] + "_Calibration"
         calPath = os.path.join(PATH_TO_CONFIG, calFolder)
         print("Read CalibrationFile ", calPath)
         calibrationMap = CalibrationFileReader.read(calPath)

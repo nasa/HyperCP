@@ -85,7 +85,7 @@ class Window(QtWidgets.QWidget):
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
-        pixmap = QtGui.QPixmap('./Data/Img/HyperCP_banner1.png')
+        pixmap = QtGui.QPixmap('./Data/Img/with_background_530x223.png')
         banner.setPixmap(pixmap)
         banner.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -861,7 +861,7 @@ if __name__ == '__main__':
         import platform
 
         if platform.system() in ['Windows', 'Linux']:
-            import pyi_splash
+            import pyi_splash # <- Nils, this isn't defined (anymore?)
 
             pyi_splash.close()
     except ImportError:

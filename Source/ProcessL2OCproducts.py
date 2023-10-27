@@ -29,15 +29,22 @@ class ProcessL2OCproducts():
         dateTime = Reflectance.datasets['Rrs_HYPER'].columns['Datetime']
         dateTag = Reflectance.datasets['Rrs_HYPER'].columns['Datetag']
         timeTag2 = Reflectance.datasets['Rrs_HYPER'].columns['Timetag2']
-        Rrs412 = Reflectance.datasets["Rrs_MODISA"].columns['412']
-        Rrs443 = Reflectance.datasets["Rrs_MODISA"].columns['443']
-        Rrs488 = Reflectance.datasets["Rrs_MODISA"].columns['488']
-        Rrs531 = Reflectance.datasets["Rrs_MODISA"].columns['531']
-        Rrs547 = Reflectance.datasets["Rrs_MODISA"].columns['551'] # 551 in name only
-        Rrs555 = Reflectance.datasets["Rrs_MODISA"].columns['555']
-        Rrs667 = Reflectance.datasets["Rrs_MODISA"].columns['667'].copy()
 
-        waveSat = [412, 443, 488, 532, 547, 555, 667]
+        # Multispectral bands required for some algorithms
+        # Confirm necessary satellite bands are processed
+        if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
+            ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
+            ConfigFile.products["bL2Prodgocad"] or ConfigFile.products["bL2Prodgiop"] or \
+            ConfigFile.products["bL2Prodqaa"] or ConfigFile.products["bL2ProdweiQA"]:
+            Rrs412 = Reflectance.datasets["Rrs_MODISA"].columns['412']
+            Rrs443 = Reflectance.datasets["Rrs_MODISA"].columns['443']
+            Rrs488 = Reflectance.datasets["Rrs_MODISA"].columns['488']
+            Rrs531 = Reflectance.datasets["Rrs_MODISA"].columns['531']
+            Rrs547 = Reflectance.datasets["Rrs_MODISA"].columns['551'] # 551 in name only
+            Rrs555 = Reflectance.datasets["Rrs_MODISA"].columns['555']
+            Rrs667 = Reflectance.datasets["Rrs_MODISA"].columns['667'].copy()
+
+        # waveSat = [412, 443, 488, 532, 547, 555, 667]
 
         RrsHYPER = Reflectance.datasets["Rrs_HYPER"]
 
