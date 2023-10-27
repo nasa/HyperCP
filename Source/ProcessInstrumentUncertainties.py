@@ -206,6 +206,16 @@ class Instrument(ABC):
                                             np.array(uncGrp.getDataset("LT_RADCAL_UNC").columns['wvl'], dtype=float),
                                             data_wvl)
 
+        radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_CAL").data)['2']
+
+        ind_zero = radcal_cal <= 0
+        ind_nan = np.isnan(radcal_cal)
+        ind_nocal = ind_nan | ind_zero
+
+        es_Unc[ind_nocal == True] = 0
+        li_Unc[ind_nocal == True] = 0
+        lt_Unc[ind_nocal == True] = 0
+
         return dict(
             esUnc=es_Unc,
             liUnc=li_Unc,
@@ -264,7 +274,7 @@ class Instrument(ABC):
             Ct[sensor] = np.array(Temp.columns[f'{sensor}_TEMPERATURE_UNCERTAINTIES'])
 
         ones = np.ones(len(Cal['ES']))  # to provide array of 1s with the correct shape
-        zeros = np.zeros(len(Cal['ES']))  # for testing
+        # zeros = np.zeros(len(Cal['ES']))  # for testing
 
         # create lists containing mean values and their associated uncertainties (list order matters)
         if not stats['ES']['ave_Dark'].shape:
@@ -293,7 +303,8 @@ class Instrument(ABC):
                        ones, ones, ones,
                        ones, ones, ones,
                        ones, ones, ones,
-                       ones, ones, ones]
+                       ones, ones, ones
+                       ]
 
         uncertainty = [stats['ES']['std_Light'], esstdDark,
                        stats['LI']['std_Light'], listdDark,
@@ -313,13 +324,25 @@ class Instrument(ABC):
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()), dtype=float)  # std_Signal_Interpolated has keys which represent common wavebands for ES, LI, & LT.
         _, es_Unc = self.interp_common_wvls(ES_unc,
                                             np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
-                                            data_wvl)
+                                            data_wvl)  # TODO: change to linear interp
         _, li_Unc = self.interp_common_wvls(LI_unc,
                                             np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1'], dtype=float),
                                             data_wvl)
         _, lt_Unc = self.interp_common_wvls(LT_unc,
                                             np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'], dtype=float),
                                             data_wvl)
+
+        radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_CAL").data)['2']
+
+        ind_zero = radcal_cal <= 0
+        ind_nan = np.isnan(radcal_cal)
+        ind_nocal = ind_nan | ind_zero
+
+        for i, k in enumerate(es_Unc.keys()):
+            if ind_nocal[i]:
+                es_Unc[k] = [0.0]
+                li_Unc[k] = [0.0]
+                lt_Unc[k] = [0.0]
 
         return dict(
             esUnc=es_Unc,
@@ -564,7 +587,8 @@ class Instrument(ABC):
                      ones, ones, ones,
                      ones, ones, ones,
                      ones, ones, ones,
-                     ones, ones, ones]
+                     ones, ones, ones
+                     ]
 
         rrs_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
                              rhoUNC,
@@ -855,7 +879,7 @@ class Instrument(ABC):
         for i in range(newWavebands.shape[0]):
             newColumns[str(round(10*newWavebands[i])/10)] = []  # limit to one decimal place
 
-        new_y = sp.interpolate.InterpolatedUnivariateSpline(x, y, k=3)(newWavebands)
+        new_y = np.interp(newWavebands, x, y)  #InterpolatedUnivariateSpline(x, y, k=3)(newWavebands)
 
         for waveIndex in range(newWavebands.shape[0]):
             newColumns[str(round(10*newWavebands[waveIndex])/10)].append(new_y[waveIndex])
