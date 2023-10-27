@@ -375,7 +375,8 @@ class Propagate:
         # === environmental conditions during experiment ===
         env = collections.OrderedDict()
         env['wind'] = windSpeedMean
-        env['od'] = AOD
+        # clip AOD to 0.2 to ensure no error in Z17, potential underestimation of uncertainty however
+        env['od'] = AOD if AOD < 0.2 else 0.2
         env['C'] = cloud  # Not used
         env['zen_sun'] = sza
         env['wtem'] = wTemp

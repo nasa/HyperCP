@@ -41,11 +41,6 @@ class Instrument(ABC):
         :return:
         """
 
-        # NOTE: Why is this here, and how do calls below to self.lightDarkStats know how
-        # to choose either HyperOCR (L704-1153) vs. Trios (L1156-1525) classes?
-        # Answer: they know because of ProcessL2.py L1270 or L1276. Instrument is never called, only inherited methods
-        # HyperOCR or Trios are. I have made the method abstract to better reflect this.
-
         pass
 
     def generateSensorStats(self, InstrumentType: str, rawData: dict, rawSlice: dict, newWaveBands: np.array)\
@@ -1553,8 +1548,6 @@ class Trios(Instrument):
         if nband != len(raw_data[0]):
             print("ERROR: different number of pixels between dat and back")
             return None
-            '''NOTE: Please try to avoid putting in exit()s. They make it slightly harder to debug.
-                If needed, try using the processing fail splash screen to get your attention.'''
 
         # Data conversion
         mesure = raw_data/65535.0

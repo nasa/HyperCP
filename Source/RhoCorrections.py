@@ -147,9 +147,6 @@ class RhoCorrections:
         Utilities.writeLogFile(msg)
 
         # === environmental conditions during experiment ===
-        if AOD > 0.2:  # clip AOD to 0.2 to ensure no error in Z17, potential underestimation of uncertainty however
-            AOD = 0.2
-
         env = {'wind': windSpeedMean, 'od': AOD, 'C': cloud, 'zen_sun': sza, 'wtem': wTemp, 'sal': sal}
 
         # === The sensor ===
