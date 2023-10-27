@@ -373,9 +373,9 @@ class ProcessL2:
                     rrsUNC[k] = 0
 
         deleteKey = []
-        for k in esXSlice:  # loop through wavebands
-            if (k in liXSlice) and (k in ltXSlice):
-
+        for wvl in waveSubset:  # loop through wavebands
+            k = str(wvl)
+            if (k in esXSlice) and (k in liXSlice) and (k in ltXSlice):
                 # Initialize the new dataset if this is the first slice
                 if k not in newESData.columns:
                     newESData.columns[k] = []
@@ -440,7 +440,7 @@ class ProcessL2:
                     rrs = lw / es
 
                 #Calculate the normalized water leaving radiance
-                nLw = rrs*f0
+                nLw = rrs*f0  # need to chop the keys to match Z17 output
 
                 # nLw uncertainty;
                 nLwUNC[k] = np.power((rrsUNC[k]*f0)**2 + f0UNC**2, 0.5)
@@ -460,7 +460,7 @@ class ProcessL2:
                 newLTDataMedian.columns[k].append(ltMedian)
 
                 # Only populate valid wavelengths. Mark others for deletion
-                if float(k) in waveSubset:
+                if float(k) in waveSubset:  # should be redundant!
                     newRrsUncorrData.columns[k].append(rrs_uncorr)
                     newLWData.columns[k].append(lw)
                     newRrsData.columns[k].append(rrs)
@@ -1532,7 +1532,7 @@ class ProcessL2:
             if k != "Datetag" and k != "Datetime" and k != "Timetag2":
                 wavelengthStr.append(k)
                 wavelength.append(float(k))
-        waveSubset = wavelength # Only used for Zhang; No subsetting for threeC or Mobley corrections
+        waveSubset = wavelength  # Only used for Zhang; No subsetting for threeC or Mobley corrections
         rhoVec = {}
 
         Rho_Uncertainty_Obj = Propagate(M=100, cores=1)
