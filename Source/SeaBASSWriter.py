@@ -115,13 +115,16 @@ class SeaBASSWriter:
         newData = dsCopy
         dateDay = dsCopy['Datetag'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'Datetag')
-        del dsDelta.columns['Datetag']
+        if dsDelta is not None:
+            del dsDelta.columns['Datetag']
         dateDT = [Utilities.dateTagToDateTime(x) for x in dateDay]
         timeTag2 = dsCopy['Timetag2'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'Timetag2')
-        del dsDelta.columns['Timetag2']
+        if dsDelta is not None:
+            del dsDelta.columns['Timetag2']
 
-        dsDelta.columnsToDataset()
+        if dsDelta is not None:
+            dsDelta.columnsToDataset()
 
         timeDT = []
         for i in range(len(dateDT)):
@@ -151,17 +154,16 @@ class SeaBASSWriter:
         bands = list(dsCopy.dtype.names)
         ls = ['date','time','lat','lon','RelAz','SZA','AOT','cloud','wind']
 
-        if dtype == 'rrs':
-            fieldName = 'Rrs'
-        elif dtype == 'es':
-            fieldName = 'Es'
+        fieldSpecs = {}
+        fieldSpecs['rrs'] = {'fieldName': 'Rrs', 'unc_or_sd':'unc'}
+        fieldSpecs['es']  = {'fieldName': 'Es' , 'unc_or_sd':'sd'}
 
-        if dtype=='rrs':
-            fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands] \
-                + [f'{fieldName}{band}_unc' for band in bands])
-        else:
-            fieldsLineStr = ','.join(ls + [f'{fieldName}{band}' for band in bands] \
-                + [f'{fieldName}{band}_sd' for band in bands])
+        fieldsLine = ls + [f'{fieldSpecs[dtype]["fieldName"]}{band}' for band in bands]
+
+        if dsDelta is not None:
+            fieldsLine = fieldsLine + [f'{fieldSpecs[dtype]["fieldName"]}{band}_{fieldSpecs[dtype]["unc_or_sd"]}' for band in bands]
+
+        fieldsLineStr = ','.join(fieldsLine)
 
         lenRad = (len(dsCopy.dtype.names))
         unitsLine = ['yyyymmdd']
@@ -171,18 +173,23 @@ class SeaBASSWriter:
         unitsLine.append('%') # cloud
         unitsLine.append('m/s') # wind
         unitsLine.extend([units]*lenRad) # data
-        unitsLine.extend([units]*lenRad)    # data uncertainty
+        if dsDelta is not None:
+            unitsLine.extend([units]*lenRad)    # data uncertainty
         unitsLineStr = ','.join(unitsLine)
 
         # Add data for each row
         dataOut = []
         formatStr = str('{:04d}{:02d}{:02d},{:02d}:{:02d}:{:02d},{:.4f},{:.4f},{:.1f},{:.1f}'\
-            + ',{:.4f},{:.0f},{:.1f}'\
-             + ',{:.6f}'*lenRad  + ',{:.6f}'*lenRad)
+            + ',{:.4f},{:.0f},{:.1f}' + ',{:.6f}'*lenRad)
+        if dsDelta is not None:
+            formatStr = formatStr + ',{:.6f}' * lenRad
         for i in range(dsCopy.shape[0]):
             subList = [lat[i],lon[i],relAz[i],sza[i],aod[i],cloud[i],wind[i]]
             lineList = [timeDT[i].year,timeDT[i].month,timeDT[i].day,timeDT[i].hour,timeDT[i].minute,timeDT[i].second] +\
-                subList + list(dsCopy[i].tolist()) + list(dsDelta.data[i].tolist())
+                subList + list(dsCopy[i].tolist())
+
+            if dsDelta is not None:
+                lineList = lineList + list(dsDelta.data[i].tolist())
 
             # Replace NaNs with -9999.0
             lineList = [-9999.0 if np.isnan(element) else element for element in lineList]
@@ -290,7 +297,11 @@ class SeaBASSWriter:
         lonpos = lonposData.columns["LONGITUDE"]
 
         rrsData.datasetToColumns()
-        rrsDataDelta.datasetToColumns()
+
+        # In the case of TriOS factory, rrsDataDelta is None so datasetToColumns() is not applicable
+        if rrsDataDelta is not None:
+            rrsDataDelta.datasetToColumns()
+
         esData.datasetToColumns()
         esDataDelta.datasetToColumns()
         liData.datasetToColumns()
@@ -300,7 +311,11 @@ class SeaBASSWriter:
         esCols = esData.columns
         esColsD = esDataDelta.columns
         rrsCols = rrsData.columns
-        rrsColsD = rrsDataDelta.columns
+
+        # In the case of TriOS factory, rrsDataDelta is None
+        if rrsDataDelta is not None:
+            rrsColsD = rrsDataDelta.columns
+
         for k in list(esCols.keys()):
             if (k != 'Datetag') and (k != 'Timetag2'):
                 if float(k) < minWave or float(k) > maxWave:
@@ -310,11 +325,14 @@ class SeaBASSWriter:
             if (k != 'Datetag') and (k != 'Timetag2'):
                 if float(k) < minWave or float(k) > maxWave:
                      del rrsCols[k]
-                     del rrsColsD[k]
+                     if rrsDataDelta is not None:
+                         del rrsColsD[k]
         esData.columns = esCols
         esDataDelta.columns = esColsD
         rrsData.columns = rrsCols
-        rrsDataDelta.columns = rrsColsD
+
+        if rrsDataDelta is not None:
+            rrsDataDelta.columns = rrsColsD
 
         esData.columns["LATITUDE"] = latpos
         rrsData.columns["LATITUDE"] = latpos
@@ -326,7 +344,10 @@ class SeaBASSWriter:
         ltData.columns["LONGITUDE"] = lonpos
 
         rrsData.columnsToDataset()
-        rrsDataDelta.columnsToDataset()
+
+        if rrsDataDelta is not None:
+            rrsDataDelta.columnsToDataset()
+
         esData.columnsToDataset()
         esDataDelta.columnsToDataset()
         liData.columnsToDataset()
