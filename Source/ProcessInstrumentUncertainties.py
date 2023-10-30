@@ -260,7 +260,10 @@ class Instrument(ABC):
             stab.datasetToColumns()
             cStab[sensor] = np.asarray(list(stab.columns['1']))
 
-            Coeff[sensor] = np.asarray(list(radcal.columns['2']))
+            if ConfigFile.settings['SensorType'].lower() == "trios":
+                Coeff[sensor] = np.asarray(list(radcal.columns['2']))/10
+            elif ConfigFile.settings['SensorType'].lower() == "seabird":
+                Coeff[sensor] = np.asarray(list(radcal.columns['2']))
             Cal[sensor] = np.asarray(list(radcal.columns['3']))
 
             # TODO: temporary fix angular for ES is written as ES_POL
@@ -380,9 +383,16 @@ class Instrument(ABC):
 
         """
         # organise data
-        esSampleXSlice = xSlice['esSample']
-        liSampleXSlice = xSlice['liSample']
-        ltSampleXSlice = xSlice['ltSample']
+        # cut data down to wavelengths where rho values exist -- should be no change for M99
+        esSampleXSlice = np.asarray([{key: sample for key, sample in
+                                      xSlice['esSample'][i].items() if float(key) in waveSubset}
+                                     for i in range(len(xSlice['esSample']))])
+        liSampleXSlice = np.asarray([{key: sample for key, sample in
+                                      xSlice['liSample'][i].items() if float(key) in waveSubset}
+                                     for i in range(len(xSlice['liSample']))])
+        ltSampleXSlice = np.asarray([{key: sample for key, sample in
+                                      xSlice['ltSample'][i].items() if float(key) in waveSubset}
+                                     for i in range(len(xSlice['ltSample']))])
 
         if rhoScalar is not None:  # make rho a constant array if scalar
             rho = np.ones(len(waveSubset))*rhoScalar  # convert rhoScalar to the same dims as other values/Uncertainties
