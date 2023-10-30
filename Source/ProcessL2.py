@@ -407,7 +407,7 @@ class ProcessL2:
                     if sensor == 'HYPER':
                         newRhoHyper.columns[k] = []
                         if ConfigFile.settings["bL2PerformNIRCorrection"]:
-                            newNIRData.columns['NIR_offset'] = []  # not used until later; highly unpythonic
+                            newNIRData.columns['NIR_offset'] = [] # not used until later; highly unpythonic
                             newNIRnLwData.columns['NIR_offset'] = []
 
                 # At this waveband (k); still using complete wavelength set
