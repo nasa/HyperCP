@@ -443,7 +443,7 @@ class ProcessL2:
                 nLw = rrs*f0  # need to chop the keys to match Z17 output
 
                 # nLw uncertainty;
-                nLwUNC[k] = np.power((rrsUNC[k]*f0)**2 + f0UNC**2, 0.5)
+                nLwUNC[k] = np.power((rrsUNC[k]*f0)**2 + (rrs*f0UNC)**2, 0.5)
 
                 newESData.columns[k].append(es)
                 newLIData.columns[k].append(li)
