@@ -387,7 +387,7 @@ class Instrument(ABC):
         if rhoScalar is not None:  # make rho a constant array if scalar
             rho = np.ones(len(waveSubset))*rhoScalar  # convert rhoScalar to the same dims as other values/Uncertainties
         else:
-            rho = rhoVec
+            rho = np.asarray(list(rhoVec.values()), dtype=float)
 
         # initialise punpy propagation object
         mdraws = esSampleXSlice.shape[0]  # keep no. of monte carlo draws consistent
