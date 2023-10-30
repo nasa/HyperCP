@@ -354,8 +354,9 @@ class ProcessL2:
             esUNC = xUNC['esUNC']  # should already be convolved to hyperspec
             liUNC = xUNC['liUNC']
             ltUNC = xUNC['ltUNC']
-            for i, k in enumerate(esXSlice):
-                if (k in liXSlice) and (k in ltXSlice):
+            for i, wvl in enumerate(waveSubset):
+                k = str(wvl)
+                if (k in esXSlice) and (k in liXSlice) and (k in ltXSlice):
                     if sensor == 'HYPER':
                         lwUNC[k] = xUNC['lwUNC'][i]
                         rrsUNC[k] = xUNC['rrsUNC'][i]
@@ -364,8 +365,9 @@ class ProcessL2:
                         rrsUNC[k] = xUNC[f'rrsUNC_{sensor}'][i]
         else:
             # factory case
-            for i, k in enumerate(esXSlice):
-                if (k in liXSlice) and (k in ltXSlice):
+            for wvl in waveSubset:
+                k = str(wvl)
+                if (k in esXSlice) and (k in liXSlice) and (k in ltXSlice):
                     esUNC[k] = 0
                     liUNC[k] = 0
                     ltUNC[k] = 0
@@ -405,7 +407,7 @@ class ProcessL2:
                     if sensor == 'HYPER':
                         newRhoHyper.columns[k] = []
                         if ConfigFile.settings["bL2PerformNIRCorrection"]:
-                            newNIRData.columns['NIR_offset'] = [] # not used until later; highly unpythonic
+                            newNIRData.columns['NIR_offset'] = []  # not used until later; highly unpythonic
                             newNIRnLwData.columns['NIR_offset'] = []
 
                 # At this waveband (k); still using complete wavelength set
@@ -1702,7 +1704,7 @@ class ProcessL2:
                 instrument.FRM(node, uncGroup,
                                dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
                                dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
-                               stats, instrument_WB))
+                               stats, np.array(waveSubset, float)))  # instrument_WB
             xUNC.update(instrument.rrsHyperUNCFRM(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
         else:
