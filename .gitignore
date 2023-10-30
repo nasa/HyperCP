@@ -13,7 +13,7 @@ __pycache__/
 .vscode/
 
 # My changes (DAA @ NASA 2023-06-09)
-#.gitignore
+.gitignore
 Data/Zhang_rho_db.mat
 Data/Anc/
 Data/L*/
