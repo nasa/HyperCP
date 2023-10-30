@@ -206,15 +206,16 @@ class Instrument(ABC):
                                             np.array(uncGrp.getDataset("LT_RADCAL_UNC").columns['wvl'], dtype=float),
                                             data_wvl)
 
-        radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_CAL").data)['2']
+        # NOTE: Commented the following as SeaBird Factory does not contain _RADCAL_CAL datasets in the RAW_UNCERTAINTIES group
+        # radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_CAL").data)['2']
 
-        ind_zero = radcal_cal <= 0
-        ind_nan = np.isnan(radcal_cal)
-        ind_nocal = ind_nan | ind_zero
+        # ind_zero = radcal_cal <= 0
+        # ind_nan = np.isnan(radcal_cal)
+        # ind_nocal = ind_nan | ind_zero
 
-        es_Unc[ind_nocal == True] = 0
-        li_Unc[ind_nocal == True] = 0
-        lt_Unc[ind_nocal == True] = 0
+        # es_Unc[ind_nocal == True] = 0
+        # li_Unc[ind_nocal == True] = 0
+        # lt_Unc[ind_nocal == True] = 0
 
         return dict(
             esUnc=es_Unc,
@@ -261,6 +262,7 @@ class Instrument(ABC):
             cStab[sensor] = np.asarray(list(stab.columns['1']))
 
             if ConfigFile.settings['SensorType'].lower() == "trios":
+                # Convert TriOS mW/m2/nm to uW/cm^2/nm
                 Coeff[sensor] = np.asarray(list(radcal.columns['2']))/10
             elif ConfigFile.settings['SensorType'].lower() == "seabird":
                 Coeff[sensor] = np.asarray(list(radcal.columns['2']))
