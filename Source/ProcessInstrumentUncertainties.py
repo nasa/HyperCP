@@ -383,14 +383,21 @@ class Instrument(ABC):
 
         """
         # organise data
-        esSampleXSlice = xSlice['esSample']
-        liSampleXSlice = xSlice['liSample']
-        ltSampleXSlice = xSlice['ltSample']
+        # cut data down to wavelengths where rho values exist -- should be no change for M99
+        esSampleXSlice = np.asarray([{key: sample for key, sample in
+                                      xSlice['esSample'][i].items() if float(key) in waveSubset}
+                                     for i in range(len(xSlice['esSample']))])
+        liSampleXSlice = np.asarray([{key: sample for key, sample in
+                                      xSlice['liSample'][i].items() if float(key) in waveSubset}
+                                     for i in range(len(xSlice['liSample']))])
+        ltSampleXSlice = np.asarray([{key: sample for key, sample in
+                                      xSlice['ltSample'][i].items() if float(key) in waveSubset}
+                                     for i in range(len(xSlice['ltSample']))])
 
         if rhoScalar is not None:  # make rho a constant array if scalar
             rho = np.ones(len(waveSubset))*rhoScalar  # convert rhoScalar to the same dims as other values/Uncertainties
         else:
-            rho = rhoVec
+            rho = np.asarray(list(rhoVec.values()), dtype=float)
 
         # initialise punpy propagation object
         mdraws = esSampleXSlice.shape[0]  # keep no. of monte carlo draws consistent
