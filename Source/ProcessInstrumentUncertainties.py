@@ -206,15 +206,17 @@ class Instrument(ABC):
                                             np.array(uncGrp.getDataset("LT_RADCAL_UNC").columns['wvl'], dtype=float),
                                             data_wvl)
 
-        radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_CAL").data)['2']
+        radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_UNC").data)['unc']
 
         ind_zero = radcal_cal <= 0
         ind_nan = np.isnan(radcal_cal)
         ind_nocal = ind_nan | ind_zero
 
-        es_Unc[ind_nocal == True] = 0
-        li_Unc[ind_nocal == True] = 0
-        lt_Unc[ind_nocal == True] = 0
+        for i, k in enumerate(es_Unc.keys()):
+            if ind_nocal[i]:
+                es_Unc[k] = [0.0]
+                li_Unc[k] = [0.0]
+                lt_Unc[k] = [0.0]
 
         return dict(
             esUnc=es_Unc,
