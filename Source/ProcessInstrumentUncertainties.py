@@ -1257,8 +1257,8 @@ class HyperOCR(Instrument):
             wvl = str(float(k))
 
             # apply normalisation to the standard deviations used in uncertainty calculations
-            std_Light.append(np.std(lightData[k])/pow(N, 0.5))  # = (sigma / sqrt(N))**2 or sigma**2
-            std_Dark.append(np.std(darkData[k])/pow(Nd, 0.5))  # sigma here is essentially sigma**2 so N must be rooted
+            std_Light.append(np.power(np.std(lightData[k])/pow(N, 0.5), 2))  # = (sigma / sqrt(N))**2 or sigma**2
+            std_Dark.append(np.power(np.std(darkData[k])/pow(Nd, 0.5), 2))   # sigma here is essentially sigma**2 so N must be rooted
             ave_Light.append(np.average(lightData[k]))
             ave_Dark.append(np.average(darkData[k]))
 
@@ -1268,7 +1268,7 @@ class HyperOCR(Instrument):
             signalAve = np.average(lightData[k])
 
             # Normalised signal standard deviation =
-            if signalAve:
+            if signalAve:  # TODO: talk to Aga about this
                 stdevSignal[wvl] = pow((pow(std_Light[i], 2) + pow(std_Dark[i], 2))/pow(signalAve, 2), 0.5)
             else:
                 stdevSignal[wvl] = 0.0
@@ -1394,6 +1394,7 @@ class HyperOCR(Instrument):
                     self.cosine_error_correction(uncGrp, sensortype)
 
                 # error due to lack of symmetry in cosine response
+                # TODO: check each uncertainty contribution
                 sample_azi_delta_err1 = cm.generate_sample(mDraws, avg_azi_coserror, azi_unc, "syst")
                 sample_azi_delta_err2 = cm.generate_sample(mDraws, avg_azi_coserror, azi_delta, "syst")
                 sample_azi_delta_err = prop.combine_samples([sample_azi_delta_err1, sample_azi_delta_err2])
@@ -1605,9 +1606,9 @@ class Trios(Instrument):
 
         # get light and dark data before correction
         light_avg = np.mean(calibrated_light_measure, axis=0)  # [ind_nocal == False]
-        light_std = np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
+        light_std = np.power(np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5), 2)  # [ind_nocal == False]
         dark_avg = offset
-        dark_std = np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0) / pow(nmes, 0.5)
+        dark_std = np.power(np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0) / pow(nmes, 0.5), 2)
 
         stdevSignal = {}
         for i, wvl in enumerate(raw_wvl):
