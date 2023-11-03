@@ -1094,7 +1094,7 @@ class Instrument(ABC):
 
         # if delta < 2% : averaging the 2 azimuth plan
         AZI_avg_coserror = (coserror + coserror_90)/2.
-        AZI_delta = np.power(np.power(coserror_unc, 2) + np.power(coserror_90_unc, 2), 0.5)
+        AZI_delta = np.power(np.power(coserror_unc, 2) + np.power(coserror_90_unc, 2), 0.5)  # TODO: check this!
 
         # comparing cos_error for symetric zenith
         ZEN_delta_err = np.abs(AZI_avg_coserror - AZI_avg_coserror[:, ::-1])
@@ -1377,8 +1377,9 @@ class HyperOCR(Instrument):
 
             # alpha = ((S1-S12)/(S12**2)).tolist()
             alpha = self.alphafunc(S1, S12)
-            alpha_unc = np.power(np.power(S1_unc, 2) + np.power(S2_unc, 2) + np.power(S2_unc, 2), 0.5)
-            sample_alpha = cm.generate_sample(mDraws, alpha, alpha_unc, "syst")
+            sample_alpha = prop.run_samples(self.alphafunc, [sample_S1, sample_S12])
+            # alpha_unc = np.power(np.power(S1_unc, 2) + np.power(S12_unc, 2) + np.power(S2_unc, 2), 0.5)  # TODO: change this!
+            # sample_alpha = cm.generate_sample(mDraws, alpha, alpha_unc, "syst")
 
             # Updated calibration gain
             if sensortype == "ES":
@@ -1405,7 +1406,7 @@ class HyperOCR(Instrument):
                 sample_zen_err = prop.run_samples(self.ZENAvg_Coserr, [sample_radcal_wvl, sample_azi_avg_coserror])
                 sample_zen_avg_coserror = prop.combine_samples([sample_zen_err, sample_zen_delta_err])
 
-                full_hemi_coserr = self.FHemi_Coserr(avg_coserror, zenith_ang)
+                # full_hemi_coserr = self.FHemi_Coserr(avg_coserror, zenith_ang)
                 sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
 
                 ## Irradiance direct and diffuse ratio
@@ -1437,7 +1438,7 @@ class HyperOCR(Instrument):
             updated_radcal_gain[ind_nocal == True] = 1
 
             alpha = np.asarray(alpha)
-            Ct = np.asarray(Ct)
+            # Ct = np.asarray(Ct)
 
             # Filter Raw Data
             # ind_raw_data = (radcal_cal[radcal_wvl > 0]) > 0
