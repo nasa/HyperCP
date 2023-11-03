@@ -16,7 +16,7 @@ class ConfigFile:
     @staticmethod
     def printd():
         print("ConfigFile - Printd")
-        print("AncFile", ConfigFile.settings["AncFile"])
+        # print("AncFile", ConfigFile.settings["AncFile"])
         print("SensorType", ConfigFile.settings["SensorType"])
 
         print("fL1aUTCOffset", ConfigFile.settings["fL1aUTCOffset"])
@@ -198,7 +198,7 @@ class ConfigFile:
             fileName = fileName + ".cfg"
         ConfigFile.filename = fileName
         ConfigFile.settings["CalibrationFiles"] = {}
-        ConfigFile.settings["AncFile"] = ''
+        # ConfigFile.settings["AncFile"] = ''
         ConfigFile.settings["SensorType"] = "SeaBird" # SeaBird TriOS
         ConfigFile.settings["fL1aUTCOffset"] = 0
         ConfigFile.settings["bL1aCleanSZA"] = 0

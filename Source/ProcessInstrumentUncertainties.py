@@ -206,17 +206,16 @@ class Instrument(ABC):
                                             np.array(uncGrp.getDataset("LT_RADCAL_UNC").columns['wvl'], dtype=float),
                                             data_wvl)
 
-        radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_UNC").data)['unc']
+        # NOTE: Commented the following as SeaBird Factory does not contain _RADCAL_CAL datasets in the RAW_UNCERTAINTIES group
+        # radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_CAL").data)['2']
 
-        ind_zero = radcal_cal <= 0
-        ind_nan = np.isnan(radcal_cal)
-        ind_nocal = ind_nan | ind_zero
+        # ind_zero = radcal_cal <= 0
+        # ind_nan = np.isnan(radcal_cal)
+        # ind_nocal = ind_nan | ind_zero
 
-        for i, k in enumerate(es_Unc.keys()):
-            if ind_nocal[i]:
-                es_Unc[k] = [0.0]
-                li_Unc[k] = [0.0]
-                lt_Unc[k] = [0.0]
+        # es_Unc[ind_nocal == True] = 0
+        # li_Unc[ind_nocal == True] = 0
+        # lt_Unc[ind_nocal == True] = 0
 
         return dict(
             esUnc=es_Unc,
@@ -263,6 +262,7 @@ class Instrument(ABC):
             cStab[sensor] = np.asarray(list(stab.columns['1']))
 
             if ConfigFile.settings['SensorType'].lower() == "trios":
+                # Convert TriOS mW/m2/nm to uW/cm^2/nm
                 Coeff[sensor] = np.asarray(list(radcal.columns['2']))/10
             elif ConfigFile.settings['SensorType'].lower() == "seabird":
                 Coeff[sensor] = np.asarray(list(radcal.columns['2']))
@@ -1473,11 +1473,11 @@ class HyperOCR(Instrument):
             sample_data2 = prop.combine_samples([sample_straylight_1, sample_straylight_2])  # total straylight uncertainty
 
             # Calibration
-            data3 = self.DATA3(data2, cal_int, int_time, updated_radcal_gain)  # data2*(cal_int/int_time)/updated_radcal_gain
+            # data3 = self.DATA3(data2, cal_int, int_time, updated_radcal_gain)  # data2*(cal_int/int_time)/updated_radcal_gain
             sample_data3 = prop.run_samples(self.DATA3, [sample_data2, sample_cal_int, sample_int_time, sample_updated_radcal_gain])
 
             # thermal
-            data4 = self.DATA4(data3, Ct)
+            # data4 = self.DATA4(data3, Ct)
             sample_data4 = prop.run_samples(self.DATA4, [sample_data3, sample_Ct])
 
             # Cosine correction
@@ -1492,7 +1492,7 @@ class HyperOCR(Instrument):
 
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
 
-                data5 = self.DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserr)
+                # data5 = self.DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserr)
                 sample_data5 = prop.run_samples(self.DATA5, [sample_data4,
                                                              sample_sol_zen,
                                                              sample_dir_rat,
@@ -1501,26 +1501,13 @@ class HyperOCR(Instrument):
                                                              sample_fhemi_coserr])
                 unc = prop.process_samples(None, sample_data5)
                 sample = sample_data5
-                FRM_mesure = data5
             else:
                 unc = prop.process_samples(None, sample_data4)
                 sample = sample_data4
-                FRM_mesure = data4
-
-            # mask for arrays
-            # ind_zero = np.array([rc == 0 for rc in radcal_cal])  # changed due to raw_cal now being a np array
-            # ind_nan = np.array([np.isnan(rc) for rc in radcal_cal])
-            # ind_nocal = ind_nan | ind_zero
-
-            # Remove wvl without calibration from the dataset and make uncertainties relative
-            filtered_mesure = FRM_mesure[ind_nocal == False]
-            # rel_unc = np.power(np.power(unc[ind_nocal == False]*1e10, 2)/np.power(filtered_mesure*1e10, 2), 0.5)
 
             output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
             output[f"{sensortype.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
             output[f"{sensortype.lower()}Sample"] = sample[:, ind_nocal == False]  # samples keep raw
-
-            # TODO: interp to common wavebands to the lowest sized array
 
             # sort the outputs ready for following process
             # get sensor specific wavebands to be keys for uncs, then remove from output
