@@ -53,7 +53,7 @@ class RhoCorrections:
         rhoScalar = row[0][5]
 
         Delta = Propagate.M99_Rho_Uncertainty(mean_vals=[windSpeedMean, SZAMean, relAzMean],
-                                              uncertainties=[1, 0.5, 3])
+                                              uncertainties=[1, 0.5, 3])/rhoScalar
 
         # TODO: Model error estimation, requires ancillary data to be switched on. This could create a conflict.
         if not any([AOD is None, wTemp is None, sal is None, waveBands is None]) and \
@@ -77,12 +77,12 @@ class RhoCorrections:
 
             # get the relative difference between mobley and zhang and add in quadrature as uncertainty component
 
-            #   Is |M99 - Z17| the only estimate of glint uncertainty? I thought they had been modeled in MC. -DAA
-
-            pct_diff = (np.abs(rhoScalar - zhang) / rhoScalar) * rhoScalar  # *rhoScalar to put into absolute units
-            tot_diff = np.power(np.power(Delta, 2) + np.power(pct_diff, 2), 0.5)
+            #  Is |M99 - Z17| the only estimate of glint uncertainty? I thought they had been modeled in MC. -DAA
+            #  uncertainties must be in % form (relative and *100) in order to do sum of squares
+            pct_diff = (np.abs(rhoScalar - zhang) / rhoScalar)  # relative units
+            tot_diff = np.power(np.power(Delta * 100, 2) + np.power(pct_diff * 100, 2), 0.5)
             tot_diff[np.isnan(tot_diff)==True] = 0  # ensure no NaNs are present in the uncertainties.
-
+            tot_diff = (tot_diff/100) * rhoScalar
             # add back in filtered wavelengths
             rhoDelta = []
             i = 0
@@ -92,7 +92,9 @@ class RhoCorrections:
                     i += 1
                 else:
                     # in cases where we are outside the range in which Zhang is calculated a placeholder is used
-                    rhoDelta.append(np.power(np.power(Delta, 2) + np.power(0.003, 2), 0.5))
+                    rhoDelta.append((np.power(np.power((Delta / rhoScalar) * 100, 2) +
+                                     np.power((0.003 / rhoScalar) * 100, 2), 0.5)/100)*rhoScalar)
+                    # necessary to convert to relative before propagating, then converted back to absolute
         else:
             # this is temporary. It is possible for users to not select any ancillary data in the config, meaning Zhang
             # Rho will fail. It is far too easy for a user to do this, so I added the following line to make sure the
@@ -102,7 +104,8 @@ class RhoCorrections:
 
             # Not sure I follow. Ancillary data should be populated regardless of whether an ancillary file is
             # added (i.e., using the model data) - DAA
-            rhoDelta = np.power(np.power(Delta, 2) + np.power(0.003, 2), 0.5)
+            rhoDelta = (np.power(np.power((Delta / rhoScalar) * 100, 2)
+                        + np.power((0.003 / rhoScalar) * 100, 2), 0.5)/100)*rhoScalar
 
         return rhoScalar, rhoDelta
 

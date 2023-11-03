@@ -1094,7 +1094,7 @@ class Instrument(ABC):
 
         # if delta < 2% : averaging the 2 azimuth plan
         AZI_avg_coserror = (coserror + coserror_90)/2.
-        AZI_delta = np.power(np.power(coserror_unc, 2) + np.power(coserror_90_unc, 2), 0.5)
+        AZI_delta = np.power(np.power(coserror_unc, 2) + np.power(coserror_90_unc, 2), 0.5)  # TODO: check this!
 
         # comparing cos_error for symetric zenith
         ZEN_delta_err = np.abs(AZI_avg_coserror - AZI_avg_coserror[:, ::-1])
@@ -1377,8 +1377,9 @@ class HyperOCR(Instrument):
 
             # alpha = ((S1-S12)/(S12**2)).tolist()
             alpha = self.alphafunc(S1, S12)
-            alpha_unc = np.power(np.power(S1_unc, 2) + np.power(S2_unc, 2) + np.power(S2_unc, 2), 0.5)
-            sample_alpha = cm.generate_sample(mDraws, alpha, alpha_unc, "syst")
+            sample_alpha = prop.run_samples(self.alphafunc, [sample_S1, sample_S12])
+            # alpha_unc = np.power(np.power(S1_unc, 2) + np.power(S12_unc, 2) + np.power(S2_unc, 2), 0.5)  # TODO: change this!
+            # sample_alpha = cm.generate_sample(mDraws, alpha, alpha_unc, "syst")
 
             # Updated calibration gain
             if sensortype == "ES":
@@ -1405,7 +1406,7 @@ class HyperOCR(Instrument):
                 sample_zen_err = prop.run_samples(self.ZENAvg_Coserr, [sample_radcal_wvl, sample_azi_avg_coserror])
                 sample_zen_avg_coserror = prop.combine_samples([sample_zen_err, sample_zen_delta_err])
 
-                full_hemi_coserr = self.FHemi_Coserr(avg_coserror, zenith_ang)
+                # full_hemi_coserr = self.FHemi_Coserr(avg_coserror, zenith_ang)
                 sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
 
                 ## Irradiance direct and diffuse ratio
@@ -1437,7 +1438,7 @@ class HyperOCR(Instrument):
             updated_radcal_gain[ind_nocal == True] = 1
 
             alpha = np.asarray(alpha)
-            Ct = np.asarray(Ct)
+            # Ct = np.asarray(Ct)
 
             # Filter Raw Data
             # ind_raw_data = (radcal_cal[radcal_wvl > 0]) > 0
@@ -1473,11 +1474,11 @@ class HyperOCR(Instrument):
             sample_data2 = prop.combine_samples([sample_straylight_1, sample_straylight_2])  # total straylight uncertainty
 
             # Calibration
-            data3 = self.DATA3(data2, cal_int, int_time, updated_radcal_gain)  # data2*(cal_int/int_time)/updated_radcal_gain
+            # data3 = self.DATA3(data2, cal_int, int_time, updated_radcal_gain)  # data2*(cal_int/int_time)/updated_radcal_gain
             sample_data3 = prop.run_samples(self.DATA3, [sample_data2, sample_cal_int, sample_int_time, sample_updated_radcal_gain])
 
             # thermal
-            data4 = self.DATA4(data3, Ct)
+            # data4 = self.DATA4(data3, Ct)
             sample_data4 = prop.run_samples(self.DATA4, [sample_data3, sample_Ct])
 
             # Cosine correction
@@ -1492,7 +1493,7 @@ class HyperOCR(Instrument):
 
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
 
-                data5 = self.DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserr)
+                # data5 = self.DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserr)
                 sample_data5 = prop.run_samples(self.DATA5, [sample_data4,
                                                              sample_sol_zen,
                                                              sample_dir_rat,
@@ -1501,26 +1502,13 @@ class HyperOCR(Instrument):
                                                              sample_fhemi_coserr])
                 unc = prop.process_samples(None, sample_data5)
                 sample = sample_data5
-                FRM_mesure = data5
             else:
                 unc = prop.process_samples(None, sample_data4)
                 sample = sample_data4
-                FRM_mesure = data4
-
-            # mask for arrays
-            # ind_zero = np.array([rc == 0 for rc in radcal_cal])  # changed due to raw_cal now being a np array
-            # ind_nan = np.array([np.isnan(rc) for rc in radcal_cal])
-            # ind_nocal = ind_nan | ind_zero
-
-            # Remove wvl without calibration from the dataset and make uncertainties relative
-            filtered_mesure = FRM_mesure[ind_nocal == False]
-            # rel_unc = np.power(np.power(unc[ind_nocal == False]*1e10, 2)/np.power(filtered_mesure*1e10, 2), 0.5)
 
             output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
             output[f"{sensortype.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
             output[f"{sensortype.lower()}Sample"] = sample[:, ind_nocal == False]  # samples keep raw
-
-            # TODO: interp to common wavebands to the lowest sized array
 
             # sort the outputs ready for following process
             # get sensor specific wavebands to be keys for uncs, then remove from output
@@ -1725,8 +1713,9 @@ class Trios(Instrument):
             sample_S12_sl_corr = prop.combine_samples([sample_S12_sl_syst, sample_S12_sl_rand])
 
             alpha = self.alphafunc(S1, S12)
-            alpha_unc = np.power(np.power(S1_unc, 2) + np.power(S2_unc, 2) + np.power(S2_unc, 2), 0.5)
-            sample_alpha = cm.generate_sample(mDraws, alpha, alpha_unc, "syst")
+            sample_alpha = prop.run_samples(self.alphafunc, [sample_S1, sample_S12])
+            # alpha_unc = np.power(np.power(S1_unc, 2) + np.power(S2_unc, 2) + np.power(S2_unc, 2), 0.5)
+            # sample_alpha = cm.generate_sample(mDraws, alpha, alpha_unc, "syst")
 
             # Updated calibration gain
             if sensortype == "ES":
@@ -1761,7 +1750,7 @@ class Trios(Instrument):
                 res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
                 # res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
                 #                                                   L2_irr_grp=grp)  # , trios=instrument_number)
-                updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
+                # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_int_time_t0,
                                                                sample_t1])
@@ -1770,7 +1759,7 @@ class Trios(Instrument):
                 unc_PANEL = (np.asarray(
                     pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['3'])/100)*PANEL
                 sample_PANEL = cm.generate_sample(mDraws, PANEL, unc_PANEL, "syst")
-                updated_radcal_gain = self.update_cal_rad(PANEL, S12_sl_corr, LAMP, int_time_t0, t1)
+                # updated_radcal_gain = self.update_cal_rad(PANEL, S12_sl_corr, LAMP, int_time_t0, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_rad,
                                                               [sample_PANEL, sample_S12_sl_corr, sample_LAMP,
                                                                sample_int_time_t0, sample_t1])
@@ -1828,16 +1817,13 @@ class Trios(Instrument):
             sample_straylight_corr_mesure = prop.combine_samples([sample_straylight_1, sample_straylight_2])
 
             # Normalization Correction, based on integration time
-            normalized_mesure = straylight_corr_mesure*int_time_t0/int_time
             sample_normalized_mesure = sample_straylight_corr_mesure*int_time_t0/int_time
 
             # Calculate New Calibration Coeffs
-            calibrated_mesure = self.absolute_calibration(normalized_mesure, updated_radcal_gain)
             sample_calibrated_mesure = prop.run_samples(self.absolute_calibration,
                                                         [sample_normalized_mesure, sample_updated_radcal_gain])
 
             # Thermal correction
-            thermal_corr_mesure = self.thermal_corr(Ct, calibrated_mesure)
             sample_thermal_corr_mesure = prop.run_samples(self.thermal_corr, [sample_Ct, sample_calibrated_mesure])
 
             if sensortype.lower() == "es":
@@ -1846,17 +1832,8 @@ class Trios(Instrument):
                 direct_ratio = res_py6s['direct_ratio']
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith, 0.05, "rand")
-                                                    # np.asarray([0.05 for i in range(len(solar_zenith))]),
-                                                    # TODO: get second opinion on zen unc in 6S
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
 
-                ind_closest_zen = np.argmin(np.abs(zenith_ang - solar_zenith))
-                cos_corr = 1 - avg_coserror[:, ind_closest_zen]/100
-                Fhcorr = 1 - np.array(full_hemi_coserr)/100
-                cos_corr_mesure = (direct_ratio*thermal_corr_mesure*cos_corr) + (
-                        (1 - direct_ratio)*thermal_corr_mesure*Fhcorr)
-
-                FRM_mesure = cos_corr_mesure
                 sample_cos_corr_mesure = prop.run_samples(self.cosine_corr,
                                                           [sample_zen_avg_coserror, sample_fhemi_coserr, sample_zen_ang,
                                                            sample_thermal_corr_mesure, sample_sol_zen, sample_dir_rat])
@@ -1865,7 +1842,6 @@ class Trios(Instrument):
                 unc = cos_unc
                 sample = sample_cos_corr_mesure
             else:
-                FRM_mesure = thermal_corr_mesure
                 sample = sample_thermal_corr_mesure
                 unc = prop.process_samples(None, sample_thermal_corr_mesure)
 
@@ -1875,9 +1851,6 @@ class Trios(Instrument):
             ind_nocal = ind_nan | ind_zero
 
             # Remove wvl without calibration from the dataset and make uncertainties relative
-            filtered_mesure = FRM_mesure[ind_nocal == False]
-            # filtered_unc = np.power(np.power(unc[ind_nocal == False]*1e10, 2)/np.power(filtered_mesure*1e10, 2), 0.5)
-
             output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
             output[
                 f"{sensortype.lower()}Unc"] = unc[ind_nocal == False]  # dict(zip(str_wvl[self.ind_nocal==False], filtered_unc))  # unc in dict with wavelengths

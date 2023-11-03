@@ -13,7 +13,7 @@ __pycache__/
 .vscode/
 
 # My changes (DAA @ NASA 2023-06-09)
-.gitignore
+#.gitignore
 Data/Zhang_rho_db.mat
 Data/Anc/
 Data/L*/
@@ -24,7 +24,8 @@ Data/Photos/
 Plots/
 Logs/
 Config/*
-# !Config/sample*
+!Config/sample_Calibration/
+!Config/sample*
 Data/FidRadDB_characterization/
 .DS_Store
 .pylintrc
