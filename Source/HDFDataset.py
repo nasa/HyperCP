@@ -1,4 +1,3 @@
-
 import collections
 import sys
 
@@ -37,26 +36,16 @@ class HDFDataset:
         # Read attributes
         for k in f.attrs.keys():
             if type(f.attrs[k]) == np.ndarray:
-                #print(f.attrs[k])
-                #print(type(f.attrs[k].tolist()[0]))
-                if type(f.attrs[k].tolist()[0]) == bytes:
-                    self.attributes[k] = [k.decode("utf-8") for k in f.attrs[k]]
-                    #print("Attr:", self.attributes[k])
-                else:
-                    self.attributes[k] = [k for k in f.attrs[k]]
-
-            else:
-                if type(f.attrs[k]) == bytes:
-                    self.attributes[k] = f.attrs[k].decode("utf-8")
-                else:
-                    self.attributes[k] = f.attrs[k]
-        #print(f)
-        #print(type(f[:]))
+                self.attributes[k] = f.attrs[k]
+            elif type(f.attrs[k]) == np.int32:
+                self.attributes[k] = f.attrs[k]
+            else: # string attribute
+                self.attributes[k] = f.attrs[k].decode("utf-8")
 
         # Read dataset
         self.data = f[:] # Gets converted to numpy.ndarray
-        #print("Dataset:", name)
-        #print("Data:", self.data.dtype)
+        # print("Dataset:", name)
+        # print("Data:", self.data.dtype)
 
     def write(self, f):
         #print("id:", self.id)
@@ -65,6 +54,10 @@ class HDFDataset:
 
         if self.data is not None:
             dset = f.create_dataset(self.id, data=self.data, dtype=self.data.dtype)
+            # f = f.create_group(self.id)
+            # Write attributes
+            for k in self.attributes:
+                dset.attrs[k] = np.string_(self.attributes[k])
         else:
             print("Dataset.write(): Data is None")
 
@@ -88,18 +81,6 @@ class HDFDataset:
         for k in self.data.dtype.names:
             #print("type",type(ltData.data[k]))
             self.columns[k] = self.data[k].tolist()
-
-    def datasetToColumns2(self):
-        ''' Convert Prosoft format numpy array to columns '''
-        if self.data is None:
-            print("Warning - datasetToColumns2: data is empty")
-            return
-        self.columns = collections.OrderedDict()
-        ids = self.attributes["ID"]
-        for k in ids:
-            self.columns[k] = []
-        for k in ids:
-            self.columns[k].append(self.data[0][ids.index(k)])
 
     def columnsToDataset(self):
         ''' Converts columns into numpy array '''
@@ -136,7 +117,7 @@ class HDFDataset:
                 elif isinstance(item, int):
                     dtype.append((name, np.float64))
                 elif name.endswith('FLAG'):
-                    dtype.append((name, np.int))
+                    dtype.append((name, int))#np.int-->int: np.int is deprecated (https://stackoverflow.com/a/74946903/9670510)
                 else:
                     dtype.append((name, type(item)))
 
@@ -172,3 +153,10 @@ class HDFDataset:
                 self.columns[newName] = self.columns[oldName]
                 del self.columns[oldName]
         self.columnsToDataset()
+
+    def changeDatasetName(self,group, oldName,newName):
+        ''' Change the name of a dataset '''
+        group.datasets[newName]=group.datasets[oldName]
+        group.datasets[newName].id = newName
+        del group.datasets[oldName]
+

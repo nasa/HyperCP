@@ -1,7 +1,7 @@
 
 import sys
 
-from Utilities import Utilities
+from Source.Utilities import Utilities
 
 class RawFileReader:
     MAX_TAG_READ = 32

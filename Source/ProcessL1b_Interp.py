@@ -3,24 +3,307 @@ import collections
 import datetime as dt
 import calendar
 from inspect import currentframe, getframeinfo
-
+from pysolar.solar import get_azimuth, get_altitude
 import numpy as np
 import scipy as sp
+import warnings
 
-import HDFRoot
-from Utilities import Utilities
-from ConfigFile import ConfigFile
+from Source.HDFRoot import HDFRoot
+from Source.Utilities import Utilities
+from Source.ConfigFile import ConfigFile
 
 
 class ProcessL1b_Interp:
 
     @staticmethod
+    def interp_Anc(node, fileName):
+        '''
+        Time interpolation of Ancillary group only to be run prior to model fill and FRM cal/corrections
+            Required fields relAz, sza, solarAz must be in Ancillary already, or be obtained from SolarTrackers
+        '''
+        print('Interpolating Ancillary data to radiometry timestamps')
+        gpsGroup = None
+        STGroup = None
+        for gp in node.groups:
+            if gp.id.startswith("GP"):
+                gpsGroup = gp
+                for ds in gpsGroup.datasets:
+                    if ds != 'DATETIME':
+                        gpsGroup.datasets[ds].datasetToColumns()
+            if gp.id == ("ANCILLARY_METADATA"):
+                ancGroup = gp
+            if gp.id.startswith("ES"):
+                esGroup = gp
+            if gp.id.startswith("LI"):
+                liGroup = gp
+            if gp.id.startswith("LT"):
+                ltGroup = gp
+            if gp.id.startswith("SOLARTRACKER"):
+                STGroup = gp
+
+        # Conversion of datasets within groups to move date/timestamps into
+        # the data arrays and add datetime column. Also can change dataset name.
+        # Places the dataset into the new group.
+        # New group scheme combines both radiance sensors in one group
+
+        # Several new groups need to be added, but will be deleted below. Only new ANCILLARY_METADATA and GPS will be retained.
+        #
+        refGroup = node.addGroup("IRRADIANCE_TEMP")
+        sasGroup = node.addGroup("RADIANCE_TEMP")
+        ProcessL1b_Interp.convertDataset(esGroup, "ES", refGroup, "ES")
+        ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
+        ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
+
+        newGPSGroup = node.addGroup("GPS_TEMP")
+        courseData = None
+        sogData = None
+
+        # Required for non-Tracker:
+        #   May be acquired from Ancillary or SolarTracker (preferred)
+        relAzData = None
+        szaData = None
+        solAzData = None
+
+        if gpsGroup is not None:
+            newGPSGroup.attributes = gpsGroup.attributes.copy()
+            # These are from the raw data, not to be confused with those in the ancillary file
+            ProcessL1b_Interp.convertDataset(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
+            ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
+            latData = newGPSGroup.getDataset("LATITUDE")
+            lonData = newGPSGroup.getDataset("LONGITUDE")
+            # Only if the right NMEA data are provided (e.g. with SolarTracker)
+            if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
+                ProcessL1b_Interp.convertDataset(gpsGroup, "COURSE", newGPSGroup, "COURSE")
+                ProcessL1b_Interp.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")
+                courseData = newGPSGroup.getDataset("COURSE")
+                courseData.datasetToColumns()
+                sogData = newGPSGroup.getDataset("SPEED")
+                sogData.datasetToColumns()
+                newGPSGroup.datasets['SPEED'].id="SOG"
+            newGPSGroup.attributes["SOURCE"] = 'GPS'
+        else:
+            # These are from the ancillary file; place in GPS
+            #   Ignore COURSE and SOG
+            ProcessL1b_Interp.convertDataset(ancGroup, "LATITUDE", newGPSGroup, "LATITUDE")
+            ProcessL1b_Interp.convertDataset(ancGroup, "LONGITUDE", newGPSGroup, "LONGITUDE")
+            latData = newGPSGroup.getDataset("LATITUDE")
+            lonData = newGPSGroup.getDataset("LONGITUDE")
+            newGPSGroup.attributes["SOURCE"] = 'ANCILLARY'
+            newGPSGroup.attributes["CalFileName"] = 'ANCILLARY'
+
+
+        if STGroup is not None:
+            newSTGroup = node.addGroup('ST_TEMP')
+            for ds in STGroup.datasets:
+                if ds == 'REL_AZ':
+                    ProcessL1b_Interp.convertDataset(STGroup, "REL_AZ", newSTGroup, "REL_AZ")
+                    relAzData = newSTGroup.datasets['REL_AZ']
+                if ds == 'SOLAR_AZ':
+                    ProcessL1b_Interp.convertDataset(STGroup, "SOLAR_AZ", newSTGroup, "SOLAR_AZ")
+                    solAzData = newSTGroup.datasets['SOLAR_AZ']
+                if ds == 'SZA':
+                    ProcessL1b_Interp.convertDataset(STGroup, "SZA", newSTGroup, "SZA")
+                    szaData = newSTGroup.datasets['SZA']
+
+
+        newAncGroup = node.addGroup("ANCILLARY_TEMP")
+        newAncGroup.attributes = ancGroup.attributes.copy()
+
+        ####################################################################################
+        # Convert new Ancillary Group to flip date/timetags into columns and out of datasets
+        for ds in ancGroup.datasets:
+            if ds != "DATETAG" and ds != "TIMETAG2" and ds != "DATETIME":
+                ProcessL1b_Interp.convertDataset(ancGroup, ds, newAncGroup, ds)
+        ####################################################################################
+
+
+        # Required
+        # Preferentially from SolarTracker over Ancillary file
+        if not relAzData:
+            # Here from Ancillary file, not SolarTracker
+            if "REL_AZ" in newAncGroup.datasets:
+                relAzData = newAncGroup.getDataset("REL_AZ")
+        else:
+            # Here from SolarTracker; different timestamp from other Ancillary; interpolated below
+            ProcessL1b_Interp.convertDataset(STGroup,"REL_AZ", newAncGroup,"REL_AZ")
+        if not solAzData:
+            if "SOLAR_AZ" in newAncGroup.datasets:
+                solAzData = newAncGroup.getDataset("SOLAR_AZ")
+        else:
+            ProcessL1b_Interp.convertDataset(STGroup,"SOLAR_AZ", newAncGroup,"SOLAR_AZ")
+        if not szaData:
+            if "SZA" in newAncGroup.datasets:
+                szaData = newAncGroup.getDataset("SZA")
+        else:
+            ProcessL1b_Interp.convertDataset(STGroup,"SZA", newAncGroup,"SZA")
+
+        # Optional Data:
+        stationData = None
+        headingDataAnc = None
+        latDataAnc = None
+        lonDataAnc = None
+        cloudData = None
+        waveData = None
+        speedData = None
+        # Optional and may reside in SolarTracker or SATTHS group
+        pitchAncData = None
+        rollAncData = None
+        # Optional, assured with MERRA2 models when selected
+        saltData = None
+        sstData = None
+        windData = None
+        aodData = None
+
+        # Optional (already converted):
+        if "STATION" in newAncGroup.datasets:
+            stationData = newAncGroup.getDataset("STATION")
+        if "HEADING" in newAncGroup.datasets:
+            headingDataAnc = newAncGroup.getDataset("HEADING") # This HEADING derives from ancillary data file (NOT GPS or pySAS)
+        if "LATITUDE" in newAncGroup.datasets:
+            latDataAnc = newAncGroup.getDataset("LATITUDE")
+        if "LONGITUDE" in newAncGroup.datasets:
+            lonDataAnc = newAncGroup.getDataset("LONGITUDE")
+        if "SALINITY" in newAncGroup.datasets:
+            saltData = newAncGroup.getDataset("SALINITY")
+        if "SST" in newAncGroup.datasets:
+            sstData = newAncGroup.getDataset("SST")
+        if "WINDSPEED" in newAncGroup.datasets:
+            windData = newAncGroup.getDataset("WINDSPEED")
+        if "AOD" in newAncGroup.datasets:
+            aodData = newAncGroup.getDataset("AOD")
+        if "CLOUD" in newAncGroup.datasets:
+            cloudData = newAncGroup.getDataset("CLOUD")
+        if "WAVE_HT" in newAncGroup.datasets:
+            waveData = newAncGroup.getDataset("WAVE_HT")
+        if "SPEED_F_W" in newAncGroup.datasets:
+            speedData = newAncGroup.getDataset("SPEED_F_W")
+        # Allow for the unlikely option that pitch/roll data are included in both the SolarTracker/pySAS and Ancillary datasets
+        if "PITCH" in newAncGroup.datasets:
+            pitchAncData = newAncGroup.getDataset("PITCH")
+        if "ROLL" in newAncGroup.datasets:
+            rollAncData = newAncGroup.getDataset("ROLL")
+
+
+        # PysciDON interpolated to the SLOWEST sampling rate and ProSoft
+        # interpolates to the FASTEST. Not much in the literature on this, although
+        # Brewin et al. RSE 2016 used the slowest instrument on the AMT cruises,
+        # which makes the most sense for minimizing error.
+        esData = refGroup.getDataset("ES") # array with columns date, time, esdata*wavebands...
+        liData = sasGroup.getDataset("LI")
+        ltData = sasGroup.getDataset("LT")
+
+        # Interpolate all datasets to the SLOWEST radiometric sampling rate
+        esLength = len(esData.data["Timetag2"].tolist())
+        liLength = len(liData.data["Timetag2"].tolist())
+        ltLength = len(ltData.data["Timetag2"].tolist())
+
+        interpData = None
+        if esLength < liLength and esLength < ltLength:
+            msg = f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            interpData = esData
+        elif liLength < ltLength:
+            msg = f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            interpData = liData
+        else:
+            msg = f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            interpData = ltData
+
+        # latData, lonData need to correspond to interpData.
+        # Preferentially from GPS, else from Anc file (above)
+        if not ProcessL1b_Interp.interpolateData(latData, interpData, "LATITUDE", fileName):
+            return None
+        if not ProcessL1b_Interp.interpolateData(lonData, interpData, "LONGITUDE", fileName):
+            return None
+        if courseData:
+            if not ProcessL1b_Interp.interpolateData(courseData, interpData, "TRUE", fileName):
+                return None
+        if sogData:
+            if not ProcessL1b_Interp.interpolateData(sogData, interpData, "NONE", fileName):
+                return None
+
+        # Required:
+        if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['REL_AZ'], interpData, "REL_AZ", fileName):
+            msg = "Error: REL_AZ missing from Ancillary data, and no Tracker group"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+        # Solar geometries are not interpolated, but re-calculated, so need latData, lonData
+        if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['SOLAR_AZ'], interpData, "SOLAR_AZ", fileName, latData, lonData):
+            msg = "Error: SOLAR_AZ missing from Ancillary data, and no Tracker group"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+        if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['SZA'], interpData, "SZA", fileName, latData, lonData):
+            msg = "Error: SZA missing from Ancillary data, and no Tracker group"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+
+        # Optional:
+        #   Already in newAncGroup
+        if stationData:
+            ProcessL1b_Interp.interpolateData(stationData, interpData, "STATION", fileName)
+        if aodData:
+            ProcessL1b_Interp.interpolateData(aodData, interpData, "AOD", fileName)
+        if headingDataAnc:
+            ProcessL1b_Interp.interpolateData(headingDataAnc, interpData, "HEADING", fileName)
+        if latDataAnc:
+            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0 # Reserve lat/lon plots for actual GPS, not ancillary file
+            ProcessL1b_Interp.interpolateData(latDataAnc, interpData, "LATITUDE", fileName)
+            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
+        if lonDataAnc:
+            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0
+            ProcessL1b_Interp.interpolateData(lonDataAnc, interpData, "LONGITUDE", fileName)
+            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
+        if saltData:
+            ProcessL1b_Interp.interpolateData(saltData, interpData, "SALINITY", fileName)
+        if sstData:
+            ProcessL1b_Interp.interpolateData(sstData, interpData, "SST", fileName)
+        if windData:
+            ProcessL1b_Interp.interpolateData(windData, interpData, "WINDSPEED", fileName)
+        if cloudData:
+            ProcessL1b_Interp.interpolateData(cloudData, interpData, "CLOUD", fileName)
+        if waveData:
+            ProcessL1b_Interp.interpolateData(waveData, interpData, "WAVE_HT", fileName)
+        if speedData:
+            ProcessL1b_Interp.interpolateData(speedData, interpData, "SPEED_F_W", fileName)
+        if "PITCH" in ancGroup.datasets:
+            ProcessL1b_Interp.interpolateData(pitchAncData, interpData, "PITCH", fileName)
+        if "ROLL" in ancGroup.datasets:
+            ProcessL1b_Interp.interpolateData(rollAncData, interpData, "ROLL", fileName)
+
+        if STGroup is not None:
+            node.removeGroup(newSTGroup)
+        node.removeGroup(sasGroup)
+        node.removeGroup(refGroup)
+        node.removeGroup(gpsGroup)
+        newGPSGroup.id = 'GPS'
+        node.removeGroup(ancGroup)
+        newAncGroup.id = 'ANCILLARY_METADATA'
+
+        return True
+
+
+
+    @staticmethod
     def interpolateL1b_Interp(xData, xTimer, yTimer, newXData, dataName, kind='linear', fileName='default'):
         ''' Time interpolation
-            xTimer, yTimer are already converted from TimeTag2 to Datetimes'''
+            xTimer, yTimer are already converted from TimeTag2 to Datetimes
+            newXData is used instead of a return; often flipped back into xData on call
+        '''
 
         # List of datasets requiring angular interpolation (i.e. through 0 degrees)
-        angList = ['AZIMUTH', 'POINTING', 'REL_AZ', 'HEADING', 'SOLAR_AZ', 'SZA']
+        angList = ['AZIMUTH', 'POINTING', 'HEADING']
+        '''
+            NOTE: SOLAR_AZ and SZA are now recalculated for new timestamps rather than interpolated
+                REL_AZ is +/- 90-135 and should not be interpolated using interAngular
+        '''
 
         # List of datasets requiring fill instead of interpolation
         fillList = ['STATION']
@@ -39,12 +322,9 @@ class ProcessL1b_Interp:
             newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
 
             if dataName in angList:
-                ''' BUG: Unlike interp, interpAngular defaults to fill by extrapolation rather than
-                filling with the last actual value. This is probably only advisable for SOLAR_AZ.'''
-                if dataName == 'SOLAR_AZ' or dataName == 'SZA':
-                    newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value="extrapolate")
-                else:
-                    newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value=0)
+
+                newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value=0)
+
                 # Some angular measurements (like SAS pointing) are + and -, and get converted
                 # to all +. Convert them back to - for 180-359
                 if dataName == "POINTING":
@@ -70,7 +350,7 @@ class ProcessL1b_Interp:
 
     @staticmethod
     def convertDataset(group, datasetName, newGroup, newDatasetName):
-        ''' Converts a sensor group into the L1E format; option to change dataset name.
+        ''' Converts a sensor group into the L1B format; option to change dataset name.
             Moves dataset to new group.
             The separate DATETAG, TIMETAG2, and DATETIME datasets are combined into
             the sensor dataset. This also adds a temporary column in the sensor data
@@ -115,7 +395,7 @@ class ProcessL1b_Interp:
         newSensorData.columnsToDataset()
 
     @staticmethod
-    def interpolateData(xData, yData, dataName, fileName):
+    def interpolateData(xData, yData, dataName, fileName, latData=None, lonData=None):
         ''' Preforms time interpolation to match xData to yData. xData is the dataset to be
         interpolated, yData is the reference dataset with the times to be interpolated to.'''
 
@@ -150,7 +430,25 @@ class ProcessL1b_Interp:
             Utilities.writeLogFile(msg)
 
         # Perform interpolation on full hyperspectral time series
-        ProcessL1b_Interp.interpolateL1b_Interp(xData, xDatetime, yDatetime, xData, dataName, 'linear', fileName)
+        #   In the case of solar geometries, calculate to new times, don't interpolate
+        if dataName == 'SOLAR_AZ':
+            sunAzimuthAnc = []
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=UserWarning)
+                for i, dt_utc in enumerate(yDatetime):
+                    sunAzimuthAnc.append(get_azimuth(latData.columns['NONE'][i],lonData.columns['NONE'][i],dt_utc,0))
+            xData.columns['NONE'] = sunAzimuthAnc
+        elif dataName == 'SZA':
+            sunZenithAnc = []
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=UserWarning)
+                for i, dt_utc in enumerate(yDatetime):
+                    sunZenithAnc.append(90 - get_altitude(latData.columns['NONE'][i],lonData.columns['NONE'][i],dt_utc,0))
+            xData.columns['NONE'] = sunZenithAnc
+        else:
+            ProcessL1b_Interp.interpolateL1b_Interp(xData, xDatetime, yDatetime, xData, dataName, 'linear', fileName)
 
         xData.columnsToDataset()
 
@@ -208,90 +506,6 @@ class ProcessL1b_Interp:
         newDS.columns = newColumns
         newDS.columnsToDataset()
 
-
-    # @staticmethod
-    # def getDataAverage(n, data, time, width):
-    #     ''' Determines points to average data
-    #         Note: Prosoft always includes 1 point left/right of n
-    #         even if it is outside of specified width.
-
-    #         Not implemented in v1.0.B'''
-
-    #     lst = [data[n]]
-    #     i = n-1
-    #     while i >= 0:
-    #         lst.append(data[i])
-    #         if (time[n] - time[i]) > width:
-    #             break
-    #         i -= 1
-    #     i = n+1
-    #     while i < len(time):
-    #         lst.append(data[i])
-    #         if (time[i] - time[n]) > width:
-    #             break
-    #         i += 1
-    #     avg = 0
-    #     for v in lst:
-    #         avg += v
-    #     avg /= len(lst)
-    #     return avg
-
-    # @staticmethod
-    # def matchColumns(esData, liData, ltData):
-    #     ''' Makes each dataset have matching wavelength values
-
-    #         Not required; only for testing '''
-
-    #     msg = "Match Columns"
-    #     print(msg)
-    #     Utilities.writeLogFile(msg)
-
-    #     esData.datasetToColumns()
-    #     liData.datasetToColumns()
-    #     ltData.datasetToColumns()
-
-    #     matchMin = -1
-    #     matchMax = -1
-
-    #     # Determine the minimum and maximum values for k
-    #     for ds in [esData, liData, ltData]:
-    #         nMin = -1
-    #         nMax = -1
-    #         for k in ds.columns.keys():
-    #             if Utilities.isFloat(k):
-    #                 num = float(k)
-    #                 if nMin == -1:
-    #                     nMin = num
-    #                     nMax = num
-    #                 elif num < nMin:
-    #                     nMin = num
-    #                 elif num > nMax:
-    #                     nMax = num
-    #         if matchMin == -1:
-    #             matchMin = nMin
-    #             matchMax = nMax
-    #         if matchMin < nMin:
-    #             matchMin = nMin
-    #         if matchMax > nMax:
-    #             matchMax = nMax
-
-    #     # Remove values to match minimum and maximum
-    #     for ds in [esData, liData, ltData]:
-    #         l = []
-    #         for k in ds.columns.keys():
-    #             if Utilities.isFloat(k):
-    #                 num = float(k)
-    #                 if num < matchMin:
-    #                     l.append(k)
-    #                 elif num > matchMax:
-    #                     l.append(k)
-    #         for k in l:
-    #             del ds.columns[k]
-
-    #     esData.columnsToDataset()
-    #     liData.columnsToDataset()
-    #     ltData.columnsToDataset()
-
     @staticmethod
     def matchWavelengths(node):
         ''' Wavelength matching through interpolation.
@@ -301,7 +515,7 @@ class ProcessL1b_Interp:
             set in the Configuration Window. '''
 
         print('Interpolating to common wavelengths')
-        root = HDFRoot.HDFRoot()
+        root = HDFRoot()
         root.copyAttributes(node)
 
         interval = float(ConfigFile.settings["fL1bInterpInterval"])
@@ -321,6 +535,20 @@ class ProcessL1b_Interp:
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
 
+        # Propagate L1AQC data
+        for gp in node.groups:
+            if gp.id.endswith("_L1AQC"):
+                newGroup = root.addGroup(gp.id)
+                newGroup.copy(gp)
+                for ds in newGroup.datasets:
+                    if ds == 'DATETIME':
+                        del(gp.datasets[ds])
+                    elif ds.startswith('BACK_') or ds.startswith('CAL_'):
+                        continue
+                    else:
+                        newGroup.datasets[ds].datasetToColumns()
+
+
         esData = referenceGroup.getDataset("ES")
         liData = sasGroup.getDataset("LI")
         ltData = sasGroup.getDataset("LT")
@@ -331,6 +559,7 @@ class ProcessL1b_Interp:
 
         # Es dataset to dictionary
         esData.datasetToColumns()
+        # esRaw.datasetToColumns()
         columns = esData.columns
         columns.pop("Datetag")
         columns.pop("Timetag2")
@@ -345,6 +574,7 @@ class ProcessL1b_Interp:
 
         # Li dataset to dictionary
         liData.datasetToColumns()
+        # liRaw.datasetToColumns()
         columns = liData.columns
         columns.pop("Datetag")
         columns.pop("Timetag2")
@@ -359,6 +589,7 @@ class ProcessL1b_Interp:
 
         # Lt dataset to dictionary
         ltData.datasetToColumns()
+        # ltRaw.datasetToColumns()
         columns = ltData.columns
         columns.pop("Datetag")
         columns.pop("Timetag2")
@@ -370,7 +601,7 @@ class ProcessL1b_Interp:
 
         # Determine interpolated wavelength values
         ltStart = np.ceil(ltWavelength[0])
-        ltEnd = np.floor(ltWavelength[len(liWavelength)-1])
+        ltEnd = np.floor(ltWavelength[len(ltWavelength)-1])
 
         # No extrapolation
         start = max(esStart,liStart,ltStart)
@@ -390,19 +621,15 @@ class ProcessL1b_Interp:
     def processL1b_Interp(node, fileName):
         '''
         Process time and wavelength interpolation across instruments and ancillary data
+        Used for both SeaBird and TriOS L1b
         '''
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         # node  = Utilities.rootAddDateTime(node)
 
-        root = HDFRoot.HDFRoot() # creates a new instance of HDFRoot Class
+        root = HDFRoot() # creates a new instance of HDFRoot Class
         root.copyAttributes(node) # Now copy the attributes in from the L1a object
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
-        # root.attributes["FILE_CREATION_TIME"] = timestr
-        # if  ConfigFile.settings["bL1bDefaultCal"]:
-        #     root.attributes['CAL_TYPE'] = 'Default/Factory'
-        # else:
-        #     root.attributes['CAL_TYPE'] = 'Full Character'
         root.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
         msg = f"ProcessL1b_Interp.processL1b_Interp: {timestr}"
@@ -423,15 +650,42 @@ class ProcessL1b_Interp:
             if gp.id.startswith("PYROMETER"):
                 pyrGroup = gp
             if gp.id.startswith("ES"):
-                esGroup = gp
+                if gp.id.endswith("_DARK_L1AQC"):
+                    esL1AQCDark = gp
+                elif gp.id.endswith("_LIGHT_L1AQC"):
+                    esL1AQCLight = gp
+                elif gp.id.endswith("_L1AQC"):
+                    esL1AQC = gp
+                else:
+                    esGroup = gp
             if gp.id.startswith("LI"):
-                liGroup = gp
+                if gp.id.endswith("_DARK_L1AQC"):
+                    liL1AQCDark = gp
+                elif gp.id.endswith("_LIGHT_L1AQC"):
+                    liL1AQCLight = gp
+                elif gp.id.endswith("_L1AQC"):
+                    liL1AQC = gp
+                else:
+                    liGroup = gp
             if gp.id.startswith("LT"):
-                ltGroup = gp
+                if gp.id.endswith("_DARK_L1AQC"):
+                    ltL1AQCDark = gp
+                elif gp.id.endswith("_LIGHT_L1AQC"):
+                    ltL1AQCLight = gp
+                elif gp.id.endswith("_L1AQC"):
+                    ltL1AQC = gp
+                else:
+                    ltGroup = gp
             if gp.id == "SOLARTRACKER" or gp.id =="SOLARTRACKER_pySAS":
                 satnavGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
             if gp.id == ("ANCILLARY_METADATA"):
-                ancGroup = gp
+                ancGroup = root.addGroup('ANCILLARY_METADATA')
+                ancGroup.copy(gp)
+                for ds in ancGroup.datasets:
+                    if ds != 'DATETIME':
+                        ancGroup.datasets[ds].datasetToColumns()
+
+
             if gp.id == "SOLARTRACKER_STATUS":
                 satmsgGroup = gp
 
@@ -445,91 +699,73 @@ class ProcessL1b_Interp:
         ProcessL1b_Interp.convertDataset(esGroup, "ES", refGroup, "ES")
         ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
         ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
+        if ConfigFile.settings['SensorType'].lower() == 'trios':
+            esL1AQCGroup = root.addGroup('ES_L1AQC')
+            esL1AQCGroup.copy(esL1AQC)
+            liL1AQCGroup = root.addGroup('LI_L1AQC')
+            liL1AQCGroup.copy(liL1AQC)
+            ltL1AQCGroup = root.addGroup('LT_L1AQC')
+            ltL1AQCGroup.copy(ltL1AQC)
+        else:
+            esDarkGroup = root.addGroup('ES_DARK_L1AQC')
+            esDarkGroup.copy(esL1AQCDark)
+            esLightGroup = root.addGroup('ES_LIGHT_L1AQC')
+            esLightGroup.copy(esL1AQCLight)
+            liDarkGroup = root.addGroup('LI_DARK_L1AQC')
+            liDarkGroup.copy(liL1AQCDark)
+            liLightGroup = root.addGroup('LI_LIGHT_L1AQC')
+            liLightGroup.copy(liL1AQCLight)
+            ltDarkGroup = root.addGroup('LT_DARK_L1AQC')
+            ltDarkGroup.copy(ltL1AQCDark)
+            ltLightGroup = root.addGroup('LT_LIGHT_L1AQC')
+            ltLightGroup.copy(ltL1AQCLight)
+
 
         newGPSGroup = root.addGroup("GPS")
         if gpsGroup is not None:
-            # These are from the raw data, not to be confused with those in the ancillary file
-            ProcessL1b_Interp.convertDataset(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
-            ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
-            latData = newGPSGroup.getDataset("LATITUDE")
-            lonData = newGPSGroup.getDataset("LONGITUDE")
-            # Only if the right NMEA data are provided (e.g. with SolarTracker)
-            if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
-                ProcessL1b_Interp.convertDataset(gpsGroup, "COURSE", newGPSGroup, "COURSE")
-                ProcessL1b_Interp.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")
-                courseData = newGPSGroup.getDataset("COURSE")
-                sogData = newGPSGroup.getDataset("SPEED")
-                newGPSGroup.datasets['SPEED'].id="SOG"
+            # If Ancillary data have already been interpolated, this group must exist,
+            #   but it might be the data derived from Ancillary, and so require special treatment
+
+            # Test whether this group was derived from Ancillary or GPS
+            if 'SOURCE' not in gpsGroup.attributes:
+                # then interpolation of ancillary has not happened...
+
+                # These are from the raw data, not to be confused with those in the ancillary file
+                ProcessL1b_Interp.convertDataset(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
+                ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
+                latData = newGPSGroup.getDataset("LATITUDE")
+                lonData = newGPSGroup.getDataset("LONGITUDE")
+                # Only if the right NMEA data are provided (e.g. with SolarTracker)
+                if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
+                    ProcessL1b_Interp.convertDataset(gpsGroup, "COURSE", newGPSGroup, "COURSE")
+                    ProcessL1b_Interp.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")
+                    courseData = newGPSGroup.getDataset("COURSE")
+                    courseData.datasetToColumns()
+                    sogData = newGPSGroup.getDataset("SPEED")
+                    newGPSGroup.datasets['SPEED'].id="SOG"
+                    sogData.datasetToColumns()
+            else:
+                newGPSGroup.copy(gpsGroup)
+                latData = newGPSGroup.getDataset('LATITUDE')
+                lonData = newGPSGroup.getDataset("LONGITUDE")
+                latData.datasetToColumns()
+                lonData.datasetToColumns()
+                # Only if the right NMEA data are provided (e.g. with SolarTracker)
+                if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
+                    courseData = newGPSGroup.getDataset("COURSE")
+                    courseData.datasetToColumns()
+                    sogData = newGPSGroup.getDataset("SOG")
+                    sogData.datasetToColumns()
         else:
-            # These are from the ancillary file
-            ProcessL1b_Interp.convertDataset(ancGroup, "LATITUDE", newGPSGroup, "LATITUDE")
-            ProcessL1b_Interp.convertDataset(ancGroup, "LONGITUDE", newGPSGroup, "LONGITUDE")
-            latData = newGPSGroup.getDataset("LATITUDE")
-            lonData = newGPSGroup.getDataset("LONGITUDE")
+            courseData = None
+            sogData = None
+            latData = ancGroup.getDataset("LATITUDE")
+            lonData = ancGroup.getDataset("LONGITUDE")
 
-        # Metadata ancillary field and Pysolar data
-        if ancGroup is not None:
-            newAncGroup = root.addGroup("ANCILLARY_METADATA")
-            newAncGroup.attributes = ancGroup.attributes.copy()
-            for ds in ancGroup.datasets:
-                if ds != "DATETAG" and ds != "TIMETAG2" and ds != "DATETIME":
-                    ProcessL1b_Interp.convertDataset(ancGroup, ds, newAncGroup, ds)
-
-            if satnavGroup is None:
-                # Required:
-                relAzData = newAncGroup.getDataset("REL_AZ")
-                szaData = newAncGroup.getDataset("SZA")
-                solAzData = newAncGroup.getDataset("SOLAR_AZ")
-            # Optional:
-            stationData = None
-            headingDataAnc = None
-            latDataAnc = None
-            lonDataAnc = None
-            cloudData = None
-            waveData = None
-            speedData = None
-            # Optional and may reside in SolarTracker or SATTHS group
-            pitchData = None
-            rollData = None
-            # Optional, assured with MERRA2 models when selected
-            saltData = None
-            sstData = None
-            windData = None
-            aodData = None
-            # Optional:
-            if "STATION" in newAncGroup.datasets:
-                stationData = newAncGroup.getDataset("STATION")
-            if "HEADING" in newAncGroup.datasets:
-                headingDataAnc = newAncGroup.getDataset("HEADING") # This HEADING derives from ancillary data file (NOT GPS or pySAS)
-            if "LATITUDE" in newAncGroup.datasets:
-                latDataAnc = newAncGroup.getDataset("LATITUDE")
-            if "LONGITUDE" in newAncGroup.datasets:
-                lonDataAnc = newAncGroup.getDataset("LONGITUDE")
-            if "SALINITY" in newAncGroup.datasets:
-                saltData = newAncGroup.getDataset("SALINITY")
-            if "SST" in newAncGroup.datasets:
-                sstData = newAncGroup.getDataset("SST")
-            if "WINDSPEED" in newAncGroup.datasets:
-                windData = newAncGroup.getDataset("WINDSPEED")
-            if "AOD" in newAncGroup.datasets:
-                aodData = newAncGroup.getDataset("AOD")
-            if "CLOUD" in newAncGroup.datasets:
-                cloudData = newAncGroup.getDataset("CLOUD")
-            if "WAVE_HT" in newAncGroup.datasets:
-                waveData = newAncGroup.getDataset("WAVE_HT")
-            if "SPEED_F_W" in newAncGroup.datasets:
-                speedData = newAncGroup.getDataset("SPEED_F_W")
-            # Allow for the unlikely option that pitch/roll data are included in both the SolarTracker/pySAS and Ancillary datasets
-            if "PITCH" in newAncGroup.datasets:
-                pitchAncData = newAncGroup.getDataset("PITCH")
-            if "ROLL" in newAncGroup.datasets:
-                rollAncData = newAncGroup.getDataset("ROLL")
 
         if satnavGroup is not None:
             newSTGroup = root.addGroup("SOLARTRACKER")
             # Required
-            # ProcessL1b_Interp.convertDataset(satnavGroup, "AZIMUTH", newSTGroup, "AZIMUTH")
-            # ProcessL1b_Interp.convertDataset(satnavGroup, "ELEVATION", newSTGroup, "ELEVATION")
             ProcessL1b_Interp.convertDataset(satnavGroup, "SOLAR_AZ", newSTGroup, "SOLAR_AZ")
             solAzData = newSTGroup.getDataset("SOLAR_AZ")
             ProcessL1b_Interp.convertDataset(satnavGroup, "SZA", newSTGroup, "SZA")
@@ -609,7 +845,7 @@ class ProcessL1b_Interp:
 
         # Note that only the specified datasets in each group will be interpolated and
         # carried forward. For radiometers, this means that ancillary metadata such as
-        # SPEC_TEMP and THERMAL_RESP will be dropped at L1E and beyond.
+        # SPEC_TEMP and THERMAL_RESP will be dropped at L1B and beyond.
         # Required:
         if not ProcessL1b_Interp.interpolateData(esData, interpData, "ES", fileName):
             return None
@@ -617,24 +853,18 @@ class ProcessL1b_Interp:
             return None
         if not ProcessL1b_Interp.interpolateData(ltData, interpData, "LT", fileName):
             return None
-        if not ProcessL1b_Interp.interpolateData(latData, interpData, "LATITUDE", fileName):
-            return None
-        if not ProcessL1b_Interp.interpolateData(lonData, interpData, "LONGITUDE", fileName):
-            return None
-        if gpsGroup is not None:
-            if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
-                # Optional:
-                ProcessL1b_Interp.interpolateData(courseData, interpData, "COURSE", fileName) # COG (not heading), presumably?
-                ProcessL1b_Interp.interpolateData(sogData, interpData, "SOG", fileName)
+
 
         if satnavGroup is not None:
+            # Because of the fact that geometries have already been flipped into Ancillary and
+            # interpolated prior to applying cal/corrections, some of this is redundant
             # Required:
             if not ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName):
                 return None
-            if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName):
+            if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName, latData, lonData):
                 return None
             # Optional, but should all be there with the SOLAR TRACKER or pySAS
-            ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName)
+            ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData)
             ProcessL1b_Interp.interpolateData(pointingData, interpData, "POINTING", fileName)
 
             # Optional
@@ -647,55 +877,6 @@ class ProcessL1b_Interp:
             if "HEADING" in satnavGroup.datasets:
                 ProcessL1b_Interp.interpolateData(headingData, interpData, "HEADING", fileName)
 
-        if ancGroup is not None:
-            if satnavGroup is None:
-                # Required:
-                if not ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName):
-                    return None
-                if not ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName):
-                    return None
-                if not ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName):
-                    return None
-            else:
-                if relAzData:
-                    ProcessL1b_Interp.interpolateData(relAzData, interpData, "REL_AZ", fileName)
-                if szaData:
-                    ProcessL1b_Interp.interpolateData(szaData, interpData, "SZA", fileName)
-                if solAzData:
-                    ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName)
-
-            # Optional:
-            if stationData:
-                ProcessL1b_Interp.interpolateData(stationData, interpData, "STATION", fileName)
-            if aodData:
-                ProcessL1b_Interp.interpolateData(aodData, interpData, "AOD", fileName)
-            if headingDataAnc:
-                ProcessL1b_Interp.interpolateData(headingDataAnc, interpData, "HEADING", fileName)
-            if latDataAnc:
-                ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0 # Reserve lat/lon plots for actual GPS, not ancillary file
-                ProcessL1b_Interp.interpolateData(latDataAnc, interpData, "LATITUDE", fileName)
-                ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
-            if lonDataAnc:
-                ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0
-                ProcessL1b_Interp.interpolateData(lonDataAnc, interpData, "LONGITUDE", fileName)
-                ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
-            if saltData:
-                ProcessL1b_Interp.interpolateData(saltData, interpData, "SALINITY", fileName)
-            if sstData:
-                ProcessL1b_Interp.interpolateData(sstData, interpData, "SST", fileName)
-            if windData:
-                ProcessL1b_Interp.interpolateData(windData, interpData, "WINDSPEED", fileName)
-            if cloudData:
-                ProcessL1b_Interp.interpolateData(cloudData, interpData, "CLOUD", fileName)
-            if waveData:
-                ProcessL1b_Interp.interpolateData(waveData, interpData, "WAVE_HT", fileName)
-            if speedData:
-                ProcessL1b_Interp.interpolateData(speedData, interpData, "SPEED_F_W", fileName)
-            if "PITCH" in ancGroup.datasets:
-                ProcessL1b_Interp.interpolateData(pitchAncData, interpData, "PITCH", fileName)
-            if "ROLL" in ancGroup.datasets:
-                ProcessL1b_Interp.interpolateData(rollAncData, interpData, "ROLL", fileName)
-
         if pyrGroup is not None:
             # Optional:
             ProcessL1b_Interp.interpolateData(pyrData, interpData, "T", fileName)
@@ -705,16 +886,29 @@ class ProcessL1b_Interp:
         # Includes columnsToDataset for only the radiometry, for remaining groups, see below
         root = ProcessL1b_Interp.matchWavelengths(root)
 
-        #ProcessL1b_Interp.dataAveraging(newESData)
-        #ProcessL1b_Interp.dataAveraging(newLIData)
-        #ProcessL1b_Interp.dataAveraging(newLTData)
+        # FRM uncertainties
+        _unc = node.getGroup('RAW_UNCERTAINTIES')
+        if _unc is not None:
+
+            # Copy RAW_UNCERTAINTIES group over without interpolation
+            new_unc = root.addGroup('RAW_UNCERTAINTIES')
+            new_unc.copy(_unc)
+            for ds in new_unc.datasets:
+                new_unc.datasets[ds].datasetToColumns()
+        else:
+            print('No RAW_UNCERTAINTIES found. Moving on...')
 
         # DATETIME is not supported in HDF5; remove from groups that still have it
         for gp in root.groups:
             for dsName in gp.datasets:
-                ds = gp.datasets[dsName]
-                if "Datetime" in ds.columns:
-                    ds.columns.pop("Datetime")
-                ds.columnsToDataset() # redundant for radiometry, but harmless
+                if dsName == 'DATETIME':
+                    del(gp.datasets[dsName])
+                elif dsName.startswith('BACK_') or dsName.startswith('CAL_'):
+                    continue
+                else:
+                    ds = gp.datasets[dsName]
+                    if "Datetime" in ds.columns:
+                        ds.columns.pop("Datetime")
+                    ds.columnsToDataset() # redundant for radiometry, but harmless
 
         return root

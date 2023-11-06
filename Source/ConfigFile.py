@@ -1,8 +1,10 @@
-
 import collections
 import json
 import os
 import shutil
+
+from Source import PATH_TO_CONFIG
+
 
 class ConfigFile:
     filename = ''
@@ -11,15 +13,11 @@ class ConfigFile:
     minDeglitchBand = 350
     maxDeglitchBand = 850
 
-    fpHySP = os.path.dirname(__file__).split(os.path.sep)
-    fpHySP[0] = os.path.sep
-    fpHySP[-1] = ''
-    fpHySP = os.path.join(*fpHySP)
-
     @staticmethod
     def printd():
         print("ConfigFile - Printd")
-        print("AncFile", ConfigFile.settings["AncFile"])
+        # print("AncFile", ConfigFile.settings["AncFile"])
+        print("SensorType", ConfigFile.settings["SensorType"])
 
         print("fL1aUTCOffset", ConfigFile.settings["fL1aUTCOffset"])
         print("bL1aCleanSZA", ConfigFile.settings["bL1aCleanSZA"])
@@ -75,14 +73,16 @@ class ConfigFile:
 
         print("fL1aqcAnomalyStep", ConfigFile.settings["fL1aqcAnomalyStep"])
 
-        print("bL1bDefaultCal", ConfigFile.settings["bL1bDefaultCal"])
-        print("bL1bFullCal", ConfigFile.settings["bL1bFullCal"])
+        print("bL1bCal", ConfigFile.settings["bL1bCal"])
+        print("RadCalDir", ConfigFile.settings["RadCalDir"])
+        print("FullCalDir", ConfigFile.settings['FullCalDir'])
+        print("FidRadDB", ConfigFile.settings["FidRadDB"])
         print("fL1bInterpInterval", ConfigFile.settings["fL1bInterpInterval"])
         print("bL1bPlotTimeInterp", ConfigFile.settings["bL1bPlotTimeInterp"])
         print("fL1bPlotInterval", ConfigFile.settings["fL1bPlotInterval"])
 
-        print("bL1bqcGetAnc", ConfigFile.settings["bL1bqcGetAnc"])
-        print("bL1bqcObpgCreds", ConfigFile.settings["bL1bqcObpgCreds"])
+        print("bL1bGetAnc", ConfigFile.settings["bL1bGetAnc"])
+        print("bL1bObpgCreds", ConfigFile.settings["bL1bObpgCreds"])
 
         print("bL1bqcLtUVNIR", ConfigFile.settings["bL1bqcLtUVNIR"])
         print("fL1bqcMaxWind", ConfigFile.settings["fL1bqcMaxWind"])
@@ -90,6 +90,7 @@ class ConfigFile:
         print("fL1bqcSZAMax", ConfigFile.settings["fL1bqcSZAMax"])
 
         print("bL1bqcEnableSpecQualityCheck", ConfigFile.settings["bL1bqcEnableSpecQualityCheck"])
+        print("bL1bqcEnableSpecQualityCheckPlot", ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"])
         print("fL1bqcSpecFilterEs", ConfigFile.settings["fL1bqcSpecFilterEs"])
         print("fL1bqcSpecFilterLi", ConfigFile.settings["fL1bqcSpecFilterLi"])
         print("fL1bqcSpecFilterLt", ConfigFile.settings["fL1bqcSpecFilterLt"])
@@ -100,6 +101,7 @@ class ConfigFile:
         print("fL1bqcDawnDuskFlag", ConfigFile.settings["fL1bqcDawnDuskFlag"])
         print("fL1bqcRainfallHumidityFlag", ConfigFile.settings["fL1bqcRainfallHumidityFlag"])
 
+        print("bL2Stations", ConfigFile.settings["bL2Stations"])
         print("fL2TimeInterval", ConfigFile.settings["fL2TimeInterval"])
         print("bL2EnablePercentLt", ConfigFile.settings["bL2EnablePercentLt"])
         print("fL2PercentLt", ConfigFile.settings["fL2PercentLt"])
@@ -126,9 +128,11 @@ class ConfigFile:
         print("bL2WeightMODISA", ConfigFile.settings["bL2WeightMODISA"])
         print("bL2WeightSentinel3A", ConfigFile.settings["bL2WeightSentinel3A"])
         print("bL2WeightVIIRSN", ConfigFile.settings["bL2WeightVIIRSN"])
-        print("bL2WeightMODISA", ConfigFile.settings["bL2WeightMODIST"])
+        print("bL2WeightMODIST", ConfigFile.settings["bL2WeightMODIST"])
         print("bL2WeightSentinel3A", ConfigFile.settings["bL2WeightSentinel3B"])
         print("bL2WeightVIIRSN", ConfigFile.settings["bL2WeightVIIRSJ"])
+
+        print("bL2WeightUncertainties", ConfigFile.settings["bL2WeightUncertainties"])
 
         print("bL2PlotRrs", ConfigFile.settings["bL2PlotRrs"])
         print("bL2PlotnLw", ConfigFile.settings["bL2PlotnLw"])
@@ -187,17 +191,15 @@ class ConfigFile:
     @staticmethod
     def createDefaultConfig(fileName, new=1):
         # fileName: the filename of the configuration file without path
-        # new: 1=yes, 0=no
-        print("ConfigFile - Create Default Config")
+        # if new==1:
+        print("ConfigFile - Create Default Config, or fill in newly added parameters with default values.")
 
         if not fileName.endswith(".cfg"):
             fileName = fileName + ".cfg"
         ConfigFile.filename = fileName
-
         ConfigFile.settings["CalibrationFiles"] = {}
-
-        ConfigFile.settings["AncFile"] = ''
-
+        # ConfigFile.settings["AncFile"] = ''
+        ConfigFile.settings["SensorType"] = "SeaBird" # SeaBird TriOS
         ConfigFile.settings["fL1aUTCOffset"] = 0
         ConfigFile.settings["bL1aCleanSZA"] = 0
         ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,
@@ -256,18 +258,28 @@ class ConfigFile:
 
         ConfigFile.settings["fL1aqcAnomalyStep"] = 20
 
-        ConfigFile.settings["bL1bDefaultCal"] = 1
-        ConfigFile.settings["bL1bFullCal"] = 0
+        ConfigFile.settings["bL1bGetAnc"] = 0
+        ConfigFile.settings["bL1bObpgCreds"] = 0
+        ConfigFile.settings["fL1bDefaultWindSpeed"] = 5.0
+        ConfigFile.settings["fL1bDefaultAOD"] = 0.5
+        ConfigFile.settings["fL1bDefaultSalt"] = 35.0
+        ConfigFile.settings["fL1bDefaultSST"] = 26.0
+        ConfigFile.settings["bL1bCal"] = 1  # 1 for Factory, 2 for Class, 3 for Instrument Full
+        ConfigFile.settings["FullCalDir"] = os.getcwd()
+        ConfigFile.settings['RadCalDir'] = os.getcwd()
+        ConfigFile.settings['FidRadDB'] = False
+
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1bPlotTimeInterp"] = 0
         ConfigFile.settings["fL1bPlotInterval"] = 20 # nm
 
         ConfigFile.settings["bL1bqcLtUVNIR"] = 1
-        ConfigFile.settings["fL1bqcMaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
-        ConfigFile.settings["fL1bqcSZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
-        ConfigFile.settings["fL1bqcSZAMax"] = 60 # e.g. 60:Brewin 2016,
+        ConfigFile.settings["fL1bMaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
+        ConfigFile.settings["fL1bSZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
+        ConfigFile.settings["fL1bSZAMax"] = 60 # e.g. 60:Brewin 2016,
 
         ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 1
+        ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 1
         ConfigFile.settings["fL1bqcSpecFilterEs"] = 5
         ConfigFile.settings["fL1bqcSpecFilterLi"] = 8
         ConfigFile.settings["fL1bqcSpecFilterLt"] = 3
@@ -279,12 +291,6 @@ class ConfigFile:
         ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain
 
 
-        ConfigFile.settings["bL1bqcGetAnc"] = 0
-        ConfigFile.settings["bL1bqcObpgCreds"] = 0
-        ConfigFile.settings["fL1bqcDefaultWindSpeed"] = 5.0
-        ConfigFile.settings["fL1bqcDefaultAOD"] = 0.5
-        ConfigFile.settings["fL1bqcDefaultSalt"] = 35.0
-        ConfigFile.settings["fL1bqcDefaultSST"] = 26.0
 
         ConfigFile.settings["bL2Stations"] = 0
         ConfigFile.settings["fL2TimeInterval"] = 300
@@ -312,6 +318,10 @@ class ConfigFile:
         ConfigFile.settings["bL2WeightMODIST"] = 0
         ConfigFile.settings["bL2WeightSentinel3B"] = 0
         ConfigFile.settings["bL2WeightVIIRSJ"] = 0
+
+        ConfigFile.settings["bL2WeightUncertainties"] = 0
+
+
         ConfigFile.settings["bL2PlotRrs"] = 0
         ConfigFile.settings["bL2PlotnLw"] = 0
         ConfigFile.settings["bL2PlotEs"] = 0
@@ -366,7 +376,7 @@ class ConfigFile:
         ConfigFile.filename = filename
         params = dict(ConfigFile.settings, **ConfigFile.products)
         jsn = json.dumps(params)
-        fp = os.path.join("Config", filename)
+        fp = os.path.join(PATH_TO_CONFIG, filename)
 
         #print(os.path.abspath(os.curdir))
         with open(fp, 'w') as f:
@@ -377,11 +387,14 @@ class ConfigFile:
     @staticmethod
     def loadConfig(filename):
         # print("ConfigFile - Load Config")
+        calFormats = ['.cal', '.tdf', '.ini']
+
         # Load the default values first to insure all settings are present, then populate with saved values where possible
         ConfigFile.createDefaultConfig(filename, 0)
 
-        configPath = os.path.join("Config", filename)
+        configPath = os.path.join(PATH_TO_CONFIG, filename)
         if os.path.isfile(configPath):
+            # print(f'Populating ConfigFile with saved parameters: {filename}')
             ConfigFile.filename = filename
             text = ""
             with open(configPath, 'r') as f:
@@ -393,18 +406,24 @@ class ConfigFile:
                     if key.startswith("bL2Prod"):
                         ConfigFile.products[key] = value
                     else:
+                        # Clean out extraneous files (e.g., Full FRM Characterizations) from CalibrationFiles
+                        if key.startswith('CalibrationFiles'):
+                            for k in list(value.keys()):
+                                if not any(ele.lower() in k.lower() for ele in calFormats):
+                                    del value[k]
                         ConfigFile.settings[key] = value
 
                 ConfigFile.createCalibrationFolder()
+
 
     # Deletes a config
     @staticmethod
     def deleteConfig(filename):
         print("ConfigFile - Delete Config")
-        configPath = os.path.join("Config", filename)
-        seabassPath = os.path.join("Config", filename.split('.')[0], "hdr")
+        configPath = os.path.join(PATH_TO_CONFIG, filename)
+        seabassPath = os.path.join(PATH_TO_CONFIG, filename.split('.')[0], "hdr")
         if "seaBASSHeaderFileName" in ConfigFile.settings:
-            seabassPath = os.path.join("Config", ConfigFile.settings["seaBASSHeaderFileName"])
+            seabassPath = os.path.join(PATH_TO_CONFIG, ConfigFile.settings["seaBASSHeaderFileName"])
             if os.path.isfile(seabassPath):
                 os.remove(seabassPath)
         if os.path.isfile(configPath):
@@ -420,7 +439,7 @@ class ConfigFile:
     def getCalibrationDirectory():
         # print("ConfigFile - getCalibrationDirectory")
         calibrationDir = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-        calibrationPath = os.path.join("Config", calibrationDir)
+        calibrationPath = os.path.join(PATH_TO_CONFIG, calibrationDir)
         return calibrationPath
 
     @staticmethod

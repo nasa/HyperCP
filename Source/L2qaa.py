@@ -1,8 +1,9 @@
-
 import os
 import numpy as np
 
-from Water_IOPs import water_iops
+from Source import PATH_TO_DATA
+from Source.Water_IOPs import water_iops
+
 
 def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, SST, SAL):
     ''' Use weighted MODIS Aqua bands to calculate IOPs using
@@ -51,7 +52,7 @@ def L2qaa(Rrs412, Rrs443, Rrs488, Rrs555, Rrs667, RrsHyper, wavelength, SST, SAL
 
     # Pure seawater. Pope & Fry adjusted for S&T using Sullivan et al. 2006.
     #   (Now considering using inverted values from Lee et al. 2015...)
-    fp = os.path.join(os.path.abspath('.'), 'Data', 'Water_Absorption.sb') # <--- Set path to P&F water
+    fp = os.path.join(PATH_TO_DATA, 'Water_Absorption.sb') # <--- Set path to P&F water
     a_sw412, bb_sw412 = water_iops(fp, [412], SST, SAL)
     a_sw443, bb_sw443 = water_iops(fp, [443], SST, SAL)
     a_sw555, bb_sw555 = water_iops(fp, [555], SST, SAL)

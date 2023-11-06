@@ -1,8 +1,8 @@
-v1.1.2 In progress 
+v1.2.0 In progress
 
 DAA = dirk.a.aurin@nasa.gov
 NH = nils.haentjens@maine.edu
-
+AD = alexis.deru@acri-st.fr
 ---
 
 Next priorities:
@@ -10,7 +10,6 @@ Next priorities:
 * Implement TriOS platform support
 * Add IOP-based BRDF correction option
 * Propagate uncertainties from radiometry to OC products (beyond Rrs and nLw)
-* FPDF slow in PDF report building with figures; seek alternatives
 
 Minor issues:
 * Implement F0 convolution to gaussian RSR for HyperOCR for Lwn calculation
@@ -34,6 +33,54 @@ Ideas:
 * Produce kml files for GoogleEarth on entire cruise/directory
 
 ___________________________________________________________
+2023-06-05; AD & DAA
+* Fix ECMWF model retrievals
+
+2023-06-05; DAA & AD
+* Add HyperCP Collaboration Guidelines to the repo
+* Add Field Log example to the repo
+* Update license to add EUMETSAT
+* Accomodate negative relative azimuth to indicate direction
+* Update Class-based characterization file input in GUI
+* Update Class- and Full-based char files for new names/directories
+* Update Full-based code for SeaBird & TriOS
+
+2023-05-22; DAA
+* Interpolate Ancillary data group early in L1B in order to...
+* Obtain model data and fold into Ancillary, providing AOD for cosine correction
+* Restructure BACK_ CAL_ TriOS datasets and update Factory Cal pathway to accomodate
+* Change how TriOS file naming is handled (L0 group input to L1A)
+* Convert B1 C1 TriOS cals to numpy; deprecate use of panda dataframes
+* Debug COURSE/SOG propagation for various platform/GPS/Tracker configurations
+* Update TriOS units and attributes to mirror SeaBird more closely
+* Overhaul CLI scripting to use multilevel processing and accomodate TriOS (see run_sample.py and Main.Command)
+* Test end-to-end processing in GUI and CLI for TriOS and SeaBird samples (and SeaBird cruise data)
+
+2023-05-11; DAA
+* Propagate L1AQC SeaBird and TriOS to new L1B groups for use at L2 in instr. uncertainty budgets
+* Deprecate interpolation of solar geometries; calculate instead
+* Update L1AQC for new SeaBASS SensorAz field in Ancillary file
+* Extend attribute support for HDFDatasets to accomodate TriOS (e.g., int_time_t0)
+* Extract ProcessL1B FRM-branch code into new module ProcessL1b_FRMBranch
+* Update environment for punpy, Py6S
+* ConfigWindow Full Characterization button copies folders/files into Config/_Calibration folder
+
+2023-05-01; DAA
+* TriosL1A: sort all group dataset in increasing chronological order
+
+2023-04-28; DAA
+* Rewrite TriosL1A.py to adopt common HDF/GROUP/DATASET conventions as with SeaBird
+* Eliminate reading of Anc in TriosL1A and deprecate single-frame pathway
+* TriosL1A.py tested for sample data provided
+
+2023-04-26; DAA
+* Update to FPDF2
+* Update ConfigWindow and Controller for v1.2.0 and add TriOS modules (unstable)
+* Update environment.yml for new dependencies
+* Test all SeaBird samples L0-L2: stable (commit 687e6b9)
+
+2023-04-18; DAA
+* Update README with FRM4SOC2 additions
 
 2023-02-14; DAA
 * Address Issue #21 by demonstrating the Issue-Fork-Branch-PR process

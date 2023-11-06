@@ -1,24 +1,29 @@
-name: hyperinspace
+name: hypercp
 channels:
   - defaults
+  - conda-forge
+  - ocdb
 dependencies:
-  - conda
-  - python
-  - conda-env
-  - conda-build
-  - conda-verify
-  - _ipyw_jlab_nb_ext_conf
-  - anaconda
-  - anaconda-navigator
-  - navigator-updater
+  - python=3.11
+  - pyqt=5.15
+  - requests=2.28
+  - tqdm=4.65
+  - numpy=1.23
+  - h5py=3.7
+  - pytz=2022.7
+  - matplotlib
+  - scipy=1.10
+  - pandas=1.5
+  - pysolar=0.10
   - xarray
-  - bottleneck
-  - netcdf4
-  - dask
+  - cdsapi=0.6
+  - netcdf4=1.6
+  - py6s=1.9
+  - pytables=3.7
+  - pyspectral=0.12
   - pyqtgraph
+  - ocdb-client
   - pip
   - pip:
-    - pysolar
-    - fpdf==1.7.2
-    - tqdm==4.62.3
-prefix: /accounts/daurin/anaconda3
+    - punpy
+    - fpdf2

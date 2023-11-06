@@ -1,18 +1,18 @@
-
 import os
 import glob
 from fpdf import FPDF
 import random
 
-from SeaBASSHeader import SeaBASSHeader
-from ConfigFile import ConfigFile
+from Source import PATH_TO_CONFIG
+from Source.SeaBASSHeader import SeaBASSHeader
+from Source.ConfigFile import ConfigFile
 
 
 class PDF(FPDF):
 
     def header(self):
-        # Arial bold 15
-        self.set_font('Arial', 'B', 15)
+        # Times bold 15
+        self.set_font('Times', 'B', 15)
         # Calculate width of title and position
         w = self.get_string_width(self.title)
         # self.set_x((50 - w) / 2)
@@ -30,7 +30,7 @@ class PDF(FPDF):
     def format_intro(self, level, headerBlock, commentsDict, root):
         # Intros
         if level == "L1A":
-            intro = 'Raw binary to HDF5 and filter data on SZA.'
+            intro = 'Raw binary to HDF5 and filter data on SZA.\n'
 
             # If level completed (i.e. L2), use the attributes of the file, otherwise, use the ConfigFile settings
             metaData = ' \n'
@@ -65,7 +65,7 @@ class PDF(FPDF):
                     gpDict[gp.id] = gp
 
         if level == "L1AQC":
-            intro = 'Low level QC (pitch, roll, yaw, and azimuth) and deglitching.'
+            intro = 'Low level QC (pitch, roll, yaw, and azimuth) and deglitching.\n'
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
 
@@ -199,21 +199,23 @@ class PDF(FPDF):
                         metaData += f'LT Max.: {ConfigFile.settings["fL1aqcLTMaxLight"]}\n'
 
         if level == "L1B":
-            intro = 'Dark correction. Calibration and/or full characterization. Match timestamps & wavebands.'
+            intro = 'Dark correction. Calibration and/or full characterization. Match timestamps & wavebands.\n'
             metaData = ' \n'
             metaData += 'Processing Parameters: None\n'
             if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
                 metaData += f'Cal. Type: {root.attributes["CAL_TYPE"]}\n'
                 metaData += f'Wavelength Interp Int: {root.attributes["WAVE_INTERP"]}\n'
             else:
-                if  ConfigFile.settings["bL1bDefaultCal"]:
+                if  ConfigFile.settings["bL1bCal"] == 1:
                     metaData += 'Cal. Type: Default/Factory'
-                else:
-                    metaData += 'Cal. Type: Full Character'
+                elif ConfigFile.settings["bL1bCal"] == 2:
+                    metaData += 'Cal. Type: Class-based'
+                elif ConfigFile.settings["bL1bCal"] == 3:
+                    metaData += 'Cal. Type: Full-FRM'
                 metaData += f'Wavelength Interp Int: {ConfigFile.settings["fL1bInterpInterval"]}\n'
 
         if level == "L1BQC":
-            intro = 'Apply more quality control filters.'
+            intro = 'Apply more quality control filters.\n'
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
@@ -245,8 +247,8 @@ class PDF(FPDF):
                     metaData += f'Rain/Humidity Filter: {ConfigFile.settings["fL1bqcRainfallHumidityFlag"]}\n'
 
         if level == "L2":
-            intro = 'Apply temporal binning,station selection, glint correction,'\
-                'NIR corrections, reflectance calculation, and OC product calculation.'
+            intro = 'Apply temporal binning,station selection, glint correction,\n'\
+                'NIR corrections, reflectance calculation, and OC product calculation.\n'
 
             metaData = ' \n'
             metaData += 'Processing Parameters: \n'
@@ -284,16 +286,16 @@ class PDF(FPDF):
     def footer(self):
         # Position at 1.5 cm from bottom
         self.set_y(-15)
-        # Arial italic 8
-        self.set_font('Arial', 'I', 8)
+        # Times italic 8
+        self.set_font('Times', 'I', 8)
         # Text color in gray
         self.set_text_color(128)
         # Page number
         self.cell(0, 10, 'Page ' + str(self.page_no()), 0, 0, 'C')
 
     def chapter_title(self, num, label):
-        # Arial 12
-        self.set_font('Arial', '', 12)
+        # Times 12
+        self.set_font('Times', '', 12)
         # Background color
         self.set_fill_color(200, 220, 255)
         # Title
@@ -320,7 +322,7 @@ class PDF(FPDF):
         # Output justified text
         self.multi_cell(0, 5, intro)
         self.multi_cell(0, 5, metaData)
-        self.multi_cell(0, 5, "Process log:")
+        self.multi_cell(0, 5, "Process log:\n")
 
         # Read text log file
         with open(inLog, 'rb') as fh:
@@ -336,8 +338,8 @@ class PDF(FPDF):
             inPath = os.path.join(inPlotPath, 'L1AQC_Anoms')
 
             self.cell(0, 6, 'Example Deglitching', 0, 1, 'L', 1)
-            self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
-                'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1AQC_Anoms.')
+            self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral \n'\
+                'deglitching from anomaly analysis can be found in [output_directory]/Plots/L1AQC_Anoms.\n')
 
             print('Adding deglitching plots...')
             # ES
@@ -349,7 +351,7 @@ class PDF(FPDF):
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
             else:
-                self.multi_cell(0, 5, "None found.")
+                self.multi_cell(0, 5, "None found.\n")
 
             fileList = glob.glob(os.path.join(inPath, \
                 f'{filebasename}_L1A_ESLight_*.png' ))
@@ -360,7 +362,7 @@ class PDF(FPDF):
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
             else:
-                self.multi_cell(0, 5, "None found.")
+                self.multi_cell(0, 5, "None found.\n")
 
             # LI
             fileList = glob.glob(os.path.join(inPath, \
@@ -371,7 +373,7 @@ class PDF(FPDF):
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
             else:
-                self.multi_cell(0, 5, "None found.")
+                self.multi_cell(0, 5, "None found.\n")
 
             fileList = glob.glob(os.path.join(inPath, \
                 f'{filebasename}_L1A_LILight_*.png' ))
@@ -381,7 +383,7 @@ class PDF(FPDF):
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
             else:
-                self.multi_cell(0, 5, "None found.")
+                self.multi_cell(0, 5, "None found.\n")
 
             # LT
             fileList = glob.glob(os.path.join(inPath, \
@@ -392,7 +394,7 @@ class PDF(FPDF):
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
             else:
-                self.multi_cell(0, 5, "None found.")
+                self.multi_cell(0, 5, "None found.\n")
 
             fileList = glob.glob(os.path.join(inPath, \
                 f'{filebasename}_L1A_LTLight_*.png' ))
@@ -402,13 +404,13 @@ class PDF(FPDF):
                     # self.image(fileList[i], w = 175)
                     self.image(fileList[randIndx], w = 175)
             else:
-                self.multi_cell(0, 5, "None found.")
+                self.multi_cell(0, 5, "None found.\n")
 
         if level == "L1B":
             inPath = os.path.join(inPlotPath, f'{level}')
             self.cell(0, 6, 'Example Temporal Interpolations', 0, 1, 'L', 1)
-            self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral '\
-                'interpolations can be found in [output_directory]/Plots/L1B_Interp.')
+            self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral \n'\
+                'interpolations can be found in [output_directory]/Plots/L1B_Interp.\n')
 
             fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))
 
@@ -435,7 +437,7 @@ class PDF(FPDF):
                         randIndx = random.randint(0, len(res))
                         self.image(res[i], w = 175)
             else:
-                self.multi_cell(0, 5, "None found.")
+                self.multi_cell(0, 5, "None found.\n")
 
             # Not sure what happened to the spectral interpolation plotting...
             # inPath = os.path.join(inPlotPath, 'L1B_Interp')
@@ -448,8 +450,7 @@ class PDF(FPDF):
             #         self.image(fileList[i], w = 175)
             # else:
             #     self.multi_cell(0, 5, "None found.")
-
-        if level == "L2":
+        if level == "L1BQC":
             print('Adding spectral filter plots')
             inSpecFilterPath = os.path.join(inPlotPath, f'{level}_Spectral_Filter')
             fileList = glob.glob(os.path.join(inSpecFilterPath, f'*{filebasename}_*.png'))
@@ -457,6 +458,15 @@ class PDF(FPDF):
                 self.cell(0, 6, 'Spectral Filters', 0, 1, 'L', 1)
                 for i in range(0, len(fileList)):
                     self.image(fileList[i], w = 175)
+
+        if level == "L2":
+            # print('Adding spectral filter plots')
+            # inSpecFilterPath = os.path.join(inPlotPath, f'{level}_Spectral_Filter')
+            # fileList = glob.glob(os.path.join(inSpecFilterPath, f'*{filebasename}_*.png'))
+            # if len(fileList) > 0:
+            #     self.cell(0, 6, 'Spectral Filters', 0, 1, 'L', 1)
+            #     for i in range(0, len(fileList)):
+            #         self.image(fileList[i], w = 175)
 
             print('Adding radiometry plots')
             fileList = glob.glob(os.path.join(inPlotPath, level, f'*{filebasename}_*.png'))
@@ -473,18 +483,13 @@ class PDF(FPDF):
                 for i in range(0, len(fileList)):
                     self.image(fileList[i], w = 175)
 
-        # # Mention in italics
-        # self.set_font('', 'I')
-        # self.cell(0, 5, '(end of excerpt)')
 
-
-    # def print_chapter(self, root, level, title, inLog, inPlotPath, filebasename, fp):
-    def print_chapter(self, level, title, inLog, inPlotPath, filebasename, fp, root):
+    def print_chapter(self, level, title, inLog, inPlotPath, filebasename, root):
         self.add_page()
         self.chapter_title(level, title)
 
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
-        seaBASSHeaderPath = os.path.join("Config", seaBASSHeaderFileName)
+        seaBASSHeaderPath = os.path.join(PATH_TO_CONFIG, seaBASSHeaderFileName)
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
 
@@ -492,9 +497,6 @@ class PDF(FPDF):
 
         self.chapter_body(inLog, headerBlock, level, inPlotPath, filebasename, root)
 
-    # # @staticmethod
-    # def write_report(self, title):
-    #     self.title = title
 
 
 

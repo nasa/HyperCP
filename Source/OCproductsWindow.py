@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets
 
-from ConfigFile import ConfigFile
+from Source.ConfigFile import ConfigFile
 
 
 class OCproductsWindow(QtWidgets.QDialog):
@@ -441,21 +441,15 @@ class OCproductsWindow(QtWidgets.QDialog):
         disabled = not self.gocadCheckBox.isChecked()
         self.agLabel.setDisabled(disabled)
         self.agCheckBox.setDisabled(disabled)
-        if disabled:
-            self.agCheckBox.setChecked(False)
-
         self.SgLabel.setDisabled(disabled)
         self.SgCheckBox.setDisabled(disabled)
-        if disabled:
-            self.SgCheckBox.setChecked(False)
-
         self.DOCLabel.setDisabled(disabled)
         self.DOCCheckBox.setDisabled(disabled)
         if disabled:
-            self.DOCCheckBox.setChecked(False)
-
-        if disabled:
             ConfigFile.products["bL2Prodgocad"] = 0
+            self.agCheckBox.setChecked(False)
+            self.SgCheckBox.setChecked(False)
+            self.DOCCheckBox.setChecked(False)
         else:
             ConfigFile.products["bL2Prodgocad"] = 1
 
@@ -482,6 +476,14 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         if disabled:
             ConfigFile.products["bL2Prodgiop"] = 0
+            self.aGiopCheckBox.setChecked(False)
+            self.adgGiopCheckBox.setChecked(False)
+            self.adgSGiopCheckBox.setChecked(False)
+            self.aphGiopCheckBox.setChecked(False)
+            self.aphSGiopCheckBox.setChecked(False)
+            self.bbGiopCheckBox.setChecked(False)
+            self.bbpGiopCheckBox.setChecked(False)
+            self.bbpSGiopCheckBox.setChecked(False)
         else:
             ConfigFile.products["bL2Prodgiop"] = 1
 
@@ -506,6 +508,13 @@ class OCproductsWindow(QtWidgets.QDialog):
 
         if disabled:
             ConfigFile.products["bL2Prodqaa"] = 0
+            self.aQaaCheckBox.setChecked(False)
+            self.adgQaaCheckBox.setChecked(False)
+            self.aphQaaCheckBox.setChecked(False)
+            self.bQaaCheckBox.setChecked(False)
+            self.bbQaaCheckBox.setChecked(False)
+            self.bbpQaaCheckBox.setChecked(False)
+            self.cQaaCheckBox.setChecked(False)
         else:
             ConfigFile.products["bL2Prodqaa"] = 1
 

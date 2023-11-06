@@ -3,10 +3,11 @@ import numpy as np
 import scipy as sp
 import datetime as datetime
 
-from MainConfig import MainConfig
-from GetAnc import GetAnc
-from Utilities import Utilities
-from ConfigFile import ConfigFile
+from Source.MainConfig import MainConfig
+from Source.GetAnc import GetAnc
+from Source.GetAnc_ecmwf import GetAnc_ecmwf
+from Source.Utilities import Utilities
+from Source.ConfigFile import ConfigFile
 
 
 class ProcessL1bqc:
@@ -130,6 +131,8 @@ class ProcessL1bqc:
 
         if len(badTimes) == 0:
             badTimes = None
+            # In case filterData does not need to be run:
+            ltData.datasetToColumns()
         return badTimes
 
     @staticmethod
@@ -222,178 +225,25 @@ class ProcessL1bqc:
         return badTimes
 
     @staticmethod
-    def includeModelDefaults(ancGroup, modRoot):
-        ''' Include model data or defaults for blank ancillary fields '''
-        print('Filling blank ancillary data with models or defaults from Configuration')
-
-        epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc)
-        # radData = referenceGroup.getDataset("ES") # From node, the input file
-
-        # Convert ancillary date time
-        if ancGroup is not None:
-            ancGroup.datasets['LATITUDE'].datasetToColumns()
-            ancTime = ancGroup.datasets['LATITUDE'].columns['Timetag2']
-            ancSeconds = []
-            ancDatetime = []
-            for i, ancDate in enumerate(ancGroup.datasets['LATITUDE'].columns['Datetag']):
-                ancDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(ancDate),ancTime[i]))
-                ancSeconds.append((ancDatetime[i]-epoch).total_seconds())
-        # Convert model data date and time to datetime and then to seconds for interpolation
-        if modRoot is not None:
-            modTime = modRoot.groups[0].datasets["Timetag2"].tolist()
-            modSeconds = []
-            modDatetime = []
-            for i, modDate in enumerate(modRoot.groups[0].datasets["Datetag"].tolist()):
-                modDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(modDate),modTime[i]))
-                modSeconds.append((modDatetime[i]-epoch).total_seconds())
-
-        # Model or default fills
-        if 'WINDSPEED' in ancGroup.datasets:
-            ancGroup.datasets['WINDSPEED'].datasetToColumns()
-            windDataset = ancGroup.datasets['WINDSPEED']
-            wind = windDataset.columns['NONE']
-        else:
-            windDataset = ancGroup.addDataset('WINDSPEED')
-            wind = np.empty((1,len(ancSeconds)))
-            wind[:] = np.nan
-            wind = wind[0].tolist()
-        if 'AOD' in ancGroup.datasets:
-            ancGroup.datasets['AOD'].datasetToColumns()
-            aodDataset = ancGroup.datasets['AOD']
-            aod = aodDataset.columns['NONE']
-        else:
-            aodDataset = ancGroup.addDataset('AOD')
-            aod = np.empty((1,len(ancSeconds)))
-            aod[:] = np.nan
-            aod = aod[0].tolist()
-        # Default fills
-        if 'SALINITY' in ancGroup.datasets:
-            ancGroup.datasets['SALINITY'].datasetToColumns()
-            saltDataset = ancGroup.datasets['SALINITY']
-            salt = saltDataset.columns['NONE']
-        else:
-            saltDataset = ancGroup.addDataset('SALINITY')
-            salt = np.empty((1,len(ancSeconds)))
-            salt[:] = np.nan
-            salt = salt[0].tolist()
-        if 'SST' in ancGroup.datasets:
-            ancGroup.datasets['SST'].datasetToColumns()
-            sstDataset = ancGroup.datasets['SST']
-            sst = sstDataset.columns['NONE']
-        else:
-            sstDataset = ancGroup.addDataset('SST')
-            sst = np.empty((1,len(ancSeconds)))
-            sst[:] = np.nan
-            sst = sst[0].tolist()
-
-        # Initialize flags
-        windFlag = []
-        aodFlag = []
-        for i,ancSec in enumerate(ancSeconds):
-            if np.isnan(wind[i]):
-                windFlag.append('undetermined')
-            else:
-                windFlag.append('field')
-            if np.isnan(aod[i]):
-                aodFlag.append('undetermined')
-            else:
-                aodFlag.append('field')
-
-        # Replace Wind, AOD NaNs with modeled data where possible.
-        # These will be within one hour of the field data.
-        if modRoot is not None:
-            msg = 'Filling in field data with model data where needed.'
-            print(msg)
-            Utilities.writeLogFile(msg)
-
-            for i,ancSec in enumerate(ancSeconds):
-
-                if np.isnan(wind[i]):
-                    # msg = 'Replacing wind with model data'
-                    # print(msg)
-                    # Utilities.writeLogFile(msg)
-                    idx = Utilities.find_nearest(modSeconds,ancSec)
-                    wind[i] = modRoot.groups[0].datasets['Wind'][idx]
-                    windFlag[i] = 'model'
-                if np.isnan(aod[i]):
-                    # msg = 'Replacing AOD with model data'
-                    # print(msg)
-                    # Utilities.writeLogFile(msg)
-                    idx = Utilities.find_nearest(modSeconds,ancSec)
-                    aod[i] = modRoot.groups[0].datasets['AOD'][idx]
-                    aodFlag[i] = 'model'
-
-        # Replace Wind, AOD, SST, and Sal with defaults where still nan
-        msg = 'Filling in ancillary data with default values where still needed.'
-        print(msg)
-        Utilities.writeLogFile(msg)
-
-        saltFlag = []
-        sstFlag = []
-        for i, value in enumerate(wind):
-            if np.isnan(value):
-                wind[i] = ConfigFile.settings["fL1bqcDefaultWindSpeed"]
-                windFlag[i] = 'default'
-        for i, value in enumerate(aod):
-            if np.isnan(value):
-                aod[i] = ConfigFile.settings["fL1bqcDefaultAOD"]
-                aodFlag[i] = 'default'
-        for i, value in enumerate(salt):
-            if np.isnan(value):
-                salt[i] = ConfigFile.settings["fL1bqcDefaultSalt"]
-                saltFlag.append('default')
-            else:
-                saltFlag.append('field')
-        for i, value in enumerate(sst):
-            if np.isnan(value):
-                sst[i] = ConfigFile.settings["fL1bqcDefaultSST"]
-                sstFlag.append('default')
-            else:
-                sstFlag.append('field')
-
-        # Populate the datasets and flags with the InRad variables
-        windDataset.columns["NONE"] = wind
-        windDataset.columns["WINDFLAG"] = windFlag
-        windDataset.columnsToDataset()
-        aodDataset.columns["AOD"] = aod
-        aodDataset.columns["AODFLAG"] = aodFlag
-        aodDataset.columnsToDataset()
-        saltDataset.columns["NONE"] = salt
-        saltDataset.columns["SALTFLAG"] = saltFlag
-        saltDataset.columnsToDataset()
-        sstDataset.columns["NONE"] = sst
-        sstDataset.columns["SSTFLAG"] = sstFlag
-        sstDataset.columnsToDataset()
-
-        # Convert ancillary seconds back to date/timetags ...
-        ancDateTag = []
-        ancTimeTag2 = []
-        ancDT = []
-        for i, sec in enumerate(ancSeconds):
-            ancDT.append(datetime.datetime.utcfromtimestamp(sec).replace(tzinfo=datetime.timezone.utc))
-            ancDateTag.append(float(f'{int(ancDT[i].timetuple()[0]):04}{int(ancDT[i].timetuple()[7]):03}'))
-            ancTimeTag2.append(float( \
-                f'{int(ancDT[i].timetuple()[3]):02}{int(ancDT[i].timetuple()[4]):02}{int(ancDT[i].timetuple()[5]):02}{int(ancDT[i].microsecond/1000):03}'))
-
-        # Move the Timetag2 and Datetag into the arrays and remove the datasets
-        for ds in ancGroup.datasets:
-            ancGroup.datasets[ds].columns["Datetag"] = ancDateTag
-            ancGroup.datasets[ds].columns["Timetag2"] = ancTimeTag2
-            ancGroup.datasets[ds].columns["Datetime"] = ancDT
-            ancGroup.datasets[ds].columns.move_to_end('Timetag2', last=False)
-            ancGroup.datasets[ds].columns.move_to_end('Datetag', last=False)
-            ancGroup.datasets[ds].columns.move_to_end('Datetime', last=False)
-
-            ancGroup.datasets[ds].columnsToDataset()
-
-    @staticmethod
-    def QC(node, modRoot):
+    def QC(node):
         ''' Add model data. QC for wind, Lt, SZA, spectral outliers, and met filters'''
         print("Add model data. QC for wind, Lt, SZA, spectral outliers, and met filters")
 
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
         gpsGroup = node.getGroup('GPS')
+        if ConfigFile.settings['SensorType'].lower() == 'seabird':
+            esDarkGroup = node.getGroup('ES_DARK_L1AQC')
+            esLightGroup = node.getGroup('ES_LIGHT_L1AQC')
+            ltDarkGroup = node.getGroup('LT_DARK_L1AQC')
+            ltLightGroup = node.getGroup('LT_LIGHT_L1AQC')
+            liDarkGroup = node.getGroup('LI_DARK_L1AQC')
+            liLightGroup = node.getGroup('LI_LIGHT_L1AQC')
+        elif ConfigFile.settings['SensorType'].lower() == 'trios':
+            esGroup = node.getGroup('ES_L1AQC')
+            liGroup = node.getGroup('LI_L1AQC')
+            ltGroup = node.getGroup('LT_L1AQC')
+
         satnavGroup = None
         ancGroup = None
         pyrGroup = None
@@ -407,18 +257,18 @@ class ProcessL1bqc:
             if gp.id.startswith("PYROMETER"):
                 pyrGroup = gp
 
-        # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
-        # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
-        # to have model data and/or default values incorporated.
+        # # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
+        # # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
+        # # to have model data and/or default values incorporated.
 
-        # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
-        # is provided in Main Window, then use the model data to fill in gaps in the field
-        # record. Otherwise, use the selected default values from ConfigWindow
+        # # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
+        # # is provided in Main Window, then use the model data to fill in gaps in the field
+        # # record. Otherwise, use the selected default values from ConfigWindow
 
-        # This step is only necessary for the ancillary datasets that REQUIRE
-        # either field or GMAO or GUI default values. The remaining ancillary data
-        # are culled from datasets in groups in L1B
-        ProcessL1bqc.includeModelDefaults(ancGroup, modRoot)
+        # # This step is only necessary for the ancillary datasets that REQUIRE
+        # # either field or GMAO or GUI default values. The remaining ancillary data
+        # # are culled from datasets in groups in L1B
+        # ProcessL1bqc.includeModelDefaults(ancGroup, modRoot)
 
         # Shift metadata into the ANCILLARY group as needed (i.e. from GPS and tracker)
         #
@@ -562,6 +412,22 @@ class ProcessL1bqc:
                 Utilities.filterData(sasGroup, badTimes)
                 Utilities.filterData(ancGroup, badTimes)
 
+                # Filter L1AQC data for L1BQC criteria. badTimes start/stop
+                # are used to bracket the same spectral collections, though it
+                # will involve a difference number/percentage of the datasets.
+                if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                    Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(esLightGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liLightGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+                elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                    Utilities.filterData(esGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
+
+
         # Filter low SZAs and high winds after interpolating model/ancillary data
         maxWind = float(ConfigFile.settings["fL1bqcMaxWind"])
 
@@ -621,6 +487,18 @@ class ProcessL1bqc:
                 return False
             Utilities.filterData(sasGroup, badTimes)
             Utilities.filterData(ancGroup, badTimes)
+            # Filter L1AQC data for L1BQC criteria
+            if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
+                Utilities.filterData(esLightGroup,badTimes,'L1AQC')
+                Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
+                Utilities.filterData(liLightGroup,badTimes,'L1AQC')
+                Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
+                Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+            elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                Utilities.filterData(esGroup,badTimes,'L1AQC')
+                Utilities.filterData(liGroup,badTimes,'L1AQC')
+                Utilities.filterData(ltGroup,badTimes,'L1AQC')
 
         # Filter SZAs
         SZAMin = float(ConfigFile.settings["fL1bqcSZAMin"])
@@ -685,6 +563,18 @@ class ProcessL1bqc:
                 return False
             Utilities.filterData(sasGroup, badTimes)
             Utilities.filterData(ancGroup, badTimes)
+            # Filter L1AQC data for L1BQC criteria
+            if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
+                Utilities.filterData(esLightGroup,badTimes,'L1AQC')
+                Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
+                Utilities.filterData(liLightGroup,badTimes,'L1AQC')
+                Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
+                Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+            elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                Utilities.filterData(esGroup,badTimes,'L1AQC')
+                Utilities.filterData(liGroup,badTimes,'L1AQC')
+                Utilities.filterData(ltGroup,badTimes,'L1AQC')
 
        # Spectral Outlier Filter
         enableSpecQualityCheck = ConfigFile.settings['bL1bqcEnableSpecQualityCheck']
@@ -724,6 +614,19 @@ class ProcessL1bqc:
                     Utilities.writeLogFile(msg)
                     return False
 
+                # Filter L1AQC data for L1BQC criteria
+                if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                    Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(esLightGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liLightGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+                elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                    Utilities.filterData(esGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
+
         # Next apply the Meteorological Filter prior to slicing
         esData = referenceGroup.getDataset("ES")
         enableMetQualityCheck = int(ConfigFile.settings["bL1bqcEnableQualityFlags"])
@@ -748,6 +651,18 @@ class ProcessL1bqc:
                     return False
                 Utilities.filterData(sasGroup, badTimes)
                 Utilities.filterData(ancGroup, badTimes)
+                # Filter L1AQC data for L1BQC criteria
+                if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                    Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(esLightGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liLightGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+                elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                    Utilities.filterData(esGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
 
         return True
 
@@ -761,24 +676,8 @@ class ProcessL1bqc:
             for ds in grp.datasets:
                 grp.datasets[ds].datasetToColumns()
 
-        gpsGroup = None
-        for gp in node.groups:
-            if gp.id.startswith("GPS"):
-                gpsGroup = gp
-
-        # Retrieve MERRA2 model ancillary data
-        if ConfigFile.settings["bL1bqcGetAnc"] ==1:
-            msg = 'Model data for Wind and AOD may be used to replace blank values. Reading in model data...'
-            print(msg)
-            Utilities.writeLogFile(msg)
-            modRoot = GetAnc.getAnc(gpsGroup)
-            if modRoot is None:
-                return None
-        else:
-            modRoot = None
-
         # Need to either create a new ancData object, or populate the nans in the current one with the model data
-        if not ProcessL1bqc.QC(node, modRoot):
+        if not ProcessL1bqc.QC(node):
             return None
 
         node.attributes["PROCESSING_LEVEL"] = "1BQC"
@@ -866,8 +765,11 @@ class ProcessL1bqc:
         node.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
         node.attributes["DATETAG_UNITS"] = "YYYYDOY"
         node.attributes["TIMETAG2_UNITS"] = "HHMMSSmmm"
-        del(node.attributes["DATETAG"])
-        del(node.attributes["TIMETAG2"])
+
+        if "DATETAG" in node.attributes.keys():
+            del(node.attributes["DATETAG"])
+        if "TIMETAG2" in node.attributes.keys():
+            del(node.attributes["TIMETAG2"])
         if "COMMENT" in node.attributes.keys():
             del(node.attributes["COMMENT"])
         if "CLOUD_PERCENT" in node.attributes.keys():

@@ -4,12 +4,12 @@ import datetime as dt
 import os
 import numpy as np
 
-from HDFRoot import HDFRoot
-from HDFGroup import HDFGroup
-from MainConfig import MainConfig
-from Utilities import Utilities
-from RawFileReader import RawFileReader
-from ConfigFile import ConfigFile
+from Source.HDFRoot import HDFRoot
+from Source.HDFGroup import HDFGroup
+from Source.MainConfig import MainConfig
+from Source.Utilities import Utilities
+from Source.RawFileReader import RawFileReader
+from Source.ConfigFile import ConfigFile
 
 
 class ProcessL1a:

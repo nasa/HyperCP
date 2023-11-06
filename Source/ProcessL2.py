@@ -1,5 +1,6 @@
 import collections
 import warnings
+import time
 
 import numpy as np
 import scipy as sp
@@ -8,13 +9,15 @@ import copy
 from PyQt5 import QtWidgets
 from tqdm import tqdm
 
-import HDFRoot
-from Utilities import Utilities
-from ConfigFile import ConfigFile
-from RhoCorrections import RhoCorrections
-from Weight_RSR import Weight_RSR
-from ProcessL2OCproducts import ProcessL2OCproducts
-from ProcessL2BRDF import ProcessL2BRDF
+from Source.HDFRoot import HDFRoot
+from Source.Utilities import Utilities
+from Source.ConfigFile import ConfigFile
+from Source.RhoCorrections import RhoCorrections
+from Source.Uncertainty_Analysis import Propagate
+from Source.Weight_RSR import Weight_RSR
+from Source.ProcessL2OCproducts import ProcessL2OCproducts
+from Source.ProcessL2BRDF import ProcessL2BRDF
+from Source.ProcessInstrumentUncertainties import Trios, HyperOCR
 
 
 class ProcessL2:
@@ -52,8 +55,8 @@ class ProcessL2:
         newReflectanceGroup = node.getGroup("REFLECTANCE")
         newRrsData = newReflectanceGroup.getDataset(f'Rrs_{sensor}')
         newnLwData = newReflectanceGroup.getDataset(f'nLw_{sensor}')
-        newRrsDeltaData = newReflectanceGroup.getDataset(f'Rrs_{sensor}_unc')
-        newnLwDeltaData = newReflectanceGroup.getDataset(f'nLw_{sensor}_unc')
+        newRrsUNCData = newReflectanceGroup.getDataset(f'Rrs_{sensor}_unc')
+        newnLwUNCData = newReflectanceGroup.getDataset(f'nLw_{sensor}_unc')
 
         newNIRData = newReflectanceGroup.getDataset(f'nir_{sensor}')
         newNIRnLwData = newReflectanceGroup.getDataset(f'nir_nLw_{sensor}')
@@ -80,25 +83,17 @@ class ProcessL2:
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue
                 if float(k) >= 700 and float(k) <= 800:
-                    # avg += rrsSlice[k]
-                    # num += 1
                     NIRRRs.append(rrsSlice[k][-1])
-            # avg /= num
-            # avg = np.median(NIRRRs)
             rrsNIRCorr = min(NIRRRs)
             if rrsNIRCorr < 0:
                 rrsNIRCorr = 0
             # Subtract average from each waveband
-            ### Note: this is susceptible to negative NIR values, which have not yet
-            ###     been screened, thereby ADDING to Rrs across the spectrum...
             for k in rrsSlice:
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue
-                # rrsSlice[k] -= avg
-                rrsSlice[k][-1] -= rrsNIRCorr
-                # newRrsData.columns[k].append(rrsSlice[k])
 
-            # nirSlice[-1] = rrsNIRCorr
+                rrsSlice[k][-1] -= rrsNIRCorr
+
             nirSlice['NIR_offset'].append(rrsNIRCorr)
 
             # nLw correction
@@ -114,7 +109,6 @@ class ProcessL2:
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue
                 nLwSlice[k][-1] -= nLwNIRCorr
-                # newnLwData.columns[k].append(nLwSlice[k])
 
             nirnLwSlice['NIR_offset'].append(nLwNIRCorr)
 
@@ -178,7 +172,6 @@ class ProcessL2:
                     x.append(float(k))
                     ρ870.append(ρSlice[k][-1])
             if not ρ870:
-                # QtWidgets.QMessageBox(QtWidgets.QMessageBox.Critical, "Error", "NIR wavebands unavailable")
                 msg = 'No data found at 870 nm'
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -220,8 +213,8 @@ class ProcessL2:
 
         newRrsData.columnsToDataset()
         newnLwData.columnsToDataset()
-        newRrsDeltaData.columnsToDataset()
-        newnLwDeltaData.columnsToDataset()
+        newRrsUNCData.columnsToDataset()
+        newnLwUNCData.columnsToDataset()
         newNIRData.columnsToDataset()
         newNIRnLwData.columnsToDataset()
 
@@ -229,7 +222,7 @@ class ProcessL2:
 
 
     @staticmethod
-    def spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset):
+    def spectralReflectance(node, sensor, timeObj, xSlice, F0, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC):
         ''' The slices, stds, F0, rhoVec here are sensor-waveband specific '''
         esXSlice = xSlice['es']
         esXmedian = xSlice['esMedian']
@@ -247,7 +240,7 @@ class ProcessL2:
         threeCRho = int(ConfigFile.settings["bL23CRho"])
         ZhangRho = int(ConfigFile.settings["bL2ZhangRho"])
 
-       # Root (new/output) groups:
+        # Root (new/output) groups:
         newReflectanceGroup = node.getGroup("REFLECTANCE")
         newRadianceGroup = node.getGroup("RADIANCE")
         newIrradianceGroup = node.getGroup("IRRADIANCE")
@@ -267,12 +260,21 @@ class ProcessL2:
             newRrsUncorrData = newReflectanceGroup.addDataset(f"Rrs_{sensor}_uncorr") # Preserve uncorrected Rrs (= lt/es)
             newnLwData = newReflectanceGroup.addDataset(f"nLw_{sensor}")
 
-            newESDeltaData = newIrradianceGroup.addDataset(f"ES_{sensor}_sd")
-            newLIDeltaData = newRadianceGroup.addDataset(f"LI_{sensor}_sd")
-            newLTDeltaData = newRadianceGroup.addDataset(f"LT_{sensor}_sd")
-            newLWDeltaData = newRadianceGroup.addDataset(f"LW_{sensor}_unc")
-            newRrsDeltaData = newReflectanceGroup.addDataset(f"Rrs_{sensor}_unc")
-            newnLwDeltaData = newReflectanceGroup.addDataset(f"nLw_{sensor}_unc")
+            # September 2023. For clarity, drop the "Delta" nominclature in favor of
+            # either STD (standard deviation of the sample) or UNC (uncertainty)
+            newESSTDData = newIrradianceGroup.addDataset(f"ES_{sensor}_sd")
+            newLISTDData = newRadianceGroup.addDataset(f"LI_{sensor}_sd")
+            newLTSTDData = newRadianceGroup.addDataset(f"LT_{sensor}_sd")
+
+            # No average (mean or median) or standard deviation values associated with Lw or reflectances,
+            #   because these are calculated from the means of Lt, Li, Es
+
+            newESUNCData = newIrradianceGroup.addDataset(f"ES_{sensor}_unc")
+            newLIUNCData = newRadianceGroup.addDataset(f"LI_{sensor}_unc")
+            newLTUNCData = newRadianceGroup.addDataset(f"LT_{sensor}_unc")
+            newLWUNCData = newRadianceGroup.addDataset(f"LW_{sensor}_unc")
+            newRrsUNCData = newReflectanceGroup.addDataset(f"Rrs_{sensor}_unc")
+            newnLwUNCData = newReflectanceGroup.addDataset(f"nLw_{sensor}_unc")
 
             # For CV, use CV = STD/n
 
@@ -295,12 +297,19 @@ class ProcessL2:
             newRrsUncorrData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_uncorr")
             newnLwData = newReflectanceGroup.getDataset(f"nLw_{sensor}")
 
-            newESDeltaData = newIrradianceGroup.getDataset(f"ES_{sensor}_sd")
-            newLIDeltaData = newRadianceGroup.getDataset(f"LI_{sensor}_sd")
-            newLTDeltaData = newRadianceGroup.getDataset(f"LT_{sensor}_sd")
-            newLWDeltaData = newRadianceGroup.getDataset(f"LW_{sensor}_unc")
-            newRrsDeltaData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_unc")
-            newnLwDeltaData = newReflectanceGroup.getDataset(f"nLw_{sensor}_unc")
+            newESSTDData = newIrradianceGroup.getDataset(f"ES_{sensor}_sd")
+            newLISTDData = newRadianceGroup.getDataset(f"LI_{sensor}_sd")
+            newLTSTDData = newRadianceGroup.getDataset(f"LT_{sensor}_sd")
+
+            # No average (mean or median) or standard deviation values associated with Lw or reflectances,
+            #   because these are calculated from the means of Lt, Li, Es
+
+            newESUNCData = newIrradianceGroup.getDataset(f"ES_{sensor}_unc")
+            newLIUNCData = newRadianceGroup.getDataset(f"LI_{sensor}_unc")
+            newLTUNCData = newRadianceGroup.getDataset(f"LT_{sensor}_unc")
+            newLWUNCData = newRadianceGroup.getDataset(f"LW_{sensor}_unc")
+            newRrsUNCData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_unc")
+            newnLwUNCData = newReflectanceGroup.getDataset(f"nLw_{sensor}_unc")
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
@@ -333,10 +342,42 @@ class ProcessL2:
                             gp.datasets[ds].columns["Datetag"].append(dateTag)
                             gp.datasets[ds].columns["Timetag2"].append(timeTag)
 
-        deleteKey = []
-        for k in esXSlice: # loop through wavebands
-            if (k in liXSlice) and (k in ltXSlice):
+        # Organise Uncertainty into wavebands
+        lwUNC = {}
+        rrsUNC = {}
+        esUNC = {}
+        liUNC = {}
+        ltUNC = {}
 
+        # Only Factory - Trios has no uncertainty here
+        if ConfigFile.settings['bL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird' :
+            esUNC = xUNC['esUNC']  # should already be convolved to hyperspec
+            liUNC = xUNC['liUNC']
+            ltUNC = xUNC['ltUNC']
+            for i, wvl in enumerate(waveSubset):
+                k = str(wvl)
+                if (k in esXSlice) and (k in liXSlice) and (k in ltXSlice):
+                    if sensor == 'HYPER':
+                        lwUNC[k] = xUNC['lwUNC'][i]
+                        rrsUNC[k] = xUNC['rrsUNC'][i]
+                    else:  # apply the sensor specific Lw and Rrs uncertainties
+                        lwUNC[k] = xUNC[f'lwUNC_{sensor}'][i]
+                        rrsUNC[k] = xUNC[f'rrsUNC_{sensor}'][i]
+        else:
+            # factory case
+            for wvl in waveSubset:
+                k = str(wvl)
+                if (k in esXSlice) and (k in liXSlice) and (k in ltXSlice):
+                    esUNC[k] = 0
+                    liUNC[k] = 0
+                    ltUNC[k] = 0
+                    lwUNC[k] = 0
+                    rrsUNC[k] = 0
+
+        deleteKey = []
+        for wvl in waveSubset:  # loop through wavebands
+            k = str(wvl)
+            if (k in esXSlice) and (k in liXSlice) and (k in ltXSlice):
                 # Initialize the new dataset if this is the first slice
                 if k not in newESData.columns:
                     newESData.columns[k] = []
@@ -347,18 +388,21 @@ class ProcessL2:
                     newRrsUncorrData.columns[k] = []
                     newnLwData.columns[k] = []
 
-                    # No average (mean or median) values associated with Lw or reflectances,
+                    # No average (mean or median) or standard deviation values associated with Lw or reflectances,
                     #   because these are calculated from the means of Lt, Li, Es
                     newESDataMedian.columns[k] = []
                     newLIDataMedian.columns[k] = []
                     newLTDataMedian.columns[k] = []
 
-                    newESDeltaData.columns[k] = []
-                    newLIDeltaData.columns[k] = []
-                    newLTDeltaData.columns[k] = []
-                    newLWDeltaData.columns[k] = []
-                    newRrsDeltaData.columns[k] = []
-                    newnLwDeltaData.columns[k] = []
+                    newESSTDData.columns[k] = []
+                    newLISTDData.columns[k] = []
+                    newLTSTDData.columns[k] = []
+                    newESUNCData.columns[k] = []
+                    newLIUNCData.columns[k] = []
+                    newLTUNCData.columns[k] = []
+                    newLWUNCData.columns[k] = []
+                    newRrsUNCData.columns[k] = []
+                    newnLwUNCData.columns[k] = []
 
                     if sensor == 'HYPER':
                         newRhoHyper.columns[k] = []
@@ -370,7 +414,8 @@ class ProcessL2:
                 es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and node
                 li = liXSlice[k][0]
                 lt = ltXSlice[k][0]
-                f0  = F0[k]
+                f0 = F0[k]
+                f0UNC = F0_unc[k]
 
                 esMedian = esXmedian[k][0]
                 liMedian = liXmedian[k][0]
@@ -381,71 +426,26 @@ class ProcessL2:
                 ltSTD = ltXstd[k][0]
 
                 # Calculate the remote sensing reflectance
+                nLwUNC = {}
                 if threeCRho:
                     lw = (lt - (rhoScalar * li))
                     rrs = lw / es
 
-                    # Rrs uncertainty
-                    rrsDelta = abs(rrs) * (
-                            (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2 + (esSTD/es)**2
-                            )**0.5
-
-                    # Lw uncertainty
-                    lwDelta = abs(lw) * (
-                            (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2
-                            )**0.5
-
-                    #Calculate the normalized water leaving radiance
-                    nLw = rrs*f0
-
-                    # nLw uncertainty; no provision for F0 uncertainty here yet...
-                    nLwDelta = nLw * (
-                            (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2 + (esSTD/es)**2
-                            )**0.5
                 elif ZhangRho:
                     # Only populate the valid wavelengths
                     if float(k) in waveSubset:
                         lw = (lt - (rhoVec[k] * li))
                         rrs = lw / es
 
-                        # Rrs uncertainty
-                        rrsDelta = rrs * (
-                                (liSTD/li)**2 + (rhoDelta/rhoVec[k])**2 + (liSTD/li)**2 + (esSTD/es)**2
-                                )**0.5
-
-                        # Lw uncertainty
-                        lwDelta = lw * (
-                            (liSTD/li)**2 + (rhoDelta/rhoVec[k])**2 + (liSTD/li)**2
-                            )**0.5
-
-                        #Calculate the normalized water leaving radiance
-                        nLw = rrs*f0
-
-                        # nLw uncertainty; no provision for F0 uncertainty here yet ...
-                        nLwDelta = nLw * (
-                                (liSTD/li)**2 + (rhoDelta/rhoVec[k])**2 + (liSTD/li)**2 + (esSTD/es)**2
-                                )**0.5
                 else:
                     lw = (lt - (rhoScalar * li))
                     rrs = lw / es
 
-                    # Rrs uncertainty
-                    rrsDelta = rrs * (
-                            (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2 + (esSTD/es)**2
-                            )**0.5
+                #Calculate the normalized water leaving radiance
+                nLw = rrs*f0  # need to chop the keys to match Z17 output
 
-                    # Lw uncertainty
-                    lwDelta = lw * (
-                        (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2
-                        )**0.5
-
-                    #Calculate the normalized water leaving radiance
-                    nLw = rrs*f0
-
-                    # nLw uncertainty; no provision for F0 uncertainty here yet...
-                    nLwDelta = nLw * (
-                            (liSTD/li)**2 + (rhoDelta/rhoScalar)**2 + (liSTD/li)**2 + (esSTD/es)**2
-                            )**0.5
+                # nLw uncertainty;
+                nLwUNC[k] = np.power((rrsUNC[k]**2)*(f0**2) + (rrs**2)*(f0UNC**2), 0.5)
 
                 newESData.columns[k].append(es)
                 newLIData.columns[k].append(li)
@@ -453,24 +453,34 @@ class ProcessL2:
 
                 rrs_uncorr = lt / es
 
-                newESDeltaData.columns[k].append(esSTD)
-                newLIDeltaData.columns[k].append(liSTD)
-                newLTDeltaData.columns[k].append(ltSTD)
+                newESSTDData.columns[k].append(esSTD)
+                newLISTDData.columns[k].append(liSTD)
+                newLTSTDData.columns[k].append(ltSTD)
 
                 newESDataMedian.columns[k].append(esMedian)
                 newLIDataMedian.columns[k].append(liMedian)
                 newLTDataMedian.columns[k].append(ltMedian)
 
                 # Only populate valid wavelengths. Mark others for deletion
-                if float(k) in waveSubset:
+                if float(k) in waveSubset:  # should be redundant!
                     newRrsUncorrData.columns[k].append(rrs_uncorr)
                     newLWData.columns[k].append(lw)
                     newRrsData.columns[k].append(rrs)
                     newnLwData.columns[k].append(nLw)
 
-                    newLWDeltaData.columns[k].append(lwDelta)
-                    newRrsDeltaData.columns[k].append(rrsDelta)
-                    newnLwDeltaData.columns[k].append(nLwDelta)
+                    newLWUNCData.columns[k].append(lwUNC[k])
+                    newRrsUNCData.columns[k].append(rrsUNC[k])
+                    # newnLwUNCData.columns[k].append(nLwUNC)
+                    newnLwUNCData.columns[k].append(nLwUNC[k])
+                    if ConfigFile.settings['bL1bCal']==1 and ConfigFile.settings['SensorType'].lower() == 'trios':
+                    # Specifique case for Factory-Trios
+                        newESUNCData.columns[k].append(esUNC[k])
+                        newLIUNCData.columns[k].append(liUNC[k])
+                        newLTUNCData.columns[k].append(ltUNC[k])
+                    else:
+                        newESUNCData.columns[k].append(esUNC[k][0])
+                        newLIUNCData.columns[k].append(liUNC[k][0])
+                        newLTUNCData.columns[k].append(ltUNC[k][0])
 
                     if sensor == 'HYPER':
                         if ZhangRho:
@@ -490,9 +500,9 @@ class ProcessL2:
                 del newRrsData.columns[key]
                 del newnLwData.columns[key]
 
-                del newLWDeltaData.columns[key]
-                del newRrsDeltaData.columns[key]
-                del newnLwDeltaData.columns[key]
+                del newLWUNCData.columns[key]
+                del newRrsUNCData.columns[key]
+                del newnLwUNCData.columns[key]
                 if sensor == 'HYPER':
                     del newRhoHyper.columns[key]
 
@@ -508,12 +518,15 @@ class ProcessL2:
         newLIDataMedian.columnsToDataset()
         newLTDataMedian.columnsToDataset()
 
-        newESDeltaData.columnsToDataset()
-        newLIDeltaData.columnsToDataset()
-        newLTDeltaData.columnsToDataset()
-        newLWDeltaData.columnsToDataset()
-        newRrsDeltaData.columnsToDataset()
-        newnLwDeltaData.columnsToDataset()
+        newESSTDData.columnsToDataset()
+        newLISTDData.columnsToDataset()
+        newLTSTDData.columnsToDataset()
+        newESUNCData.columnsToDataset()
+        newLIUNCData.columnsToDataset()
+        newLTUNCData.columnsToDataset()
+        newLWUNCData.columnsToDataset()
+        newRrsUNCData.columnsToDataset()
+        newnLwUNCData.columnsToDataset()
 
         if sensor == 'HYPER':
             newRhoHyper.columnsToDataset()
@@ -1053,7 +1066,6 @@ class ProcessL2:
     def sliceAveHyper(y, hyperSlice):
         ''' Take the slice mean of the lowest X% of hyperspectral slices '''
         xSlice = collections.OrderedDict()
-        xStd = collections.OrderedDict()
         xMedian = collections.OrderedDict()
         hasNan = False
         # Ignore runtime warnings when array is all NaNs
@@ -1063,13 +1075,11 @@ class ProcessL2:
                 v = [hyperSlice[k][i] for i in y] # selects the lowest 5% within the interval window...
                 mean = np.nanmean(v) # ... and averages them
                 median = np.nanmedian(v) # ... and the median spectrum
-                std = np.nanstd(v) # ... and the stdev for uncertainty estimates
                 xSlice[k] = [mean]
                 xMedian[k] = [median]
-                xStd[k] = [std]
                 if np.isnan(mean):
                     hasNan = True
-        return hasNan, xSlice, xMedian, xStd
+        return hasNan, xSlice, xMedian
 
 
     @staticmethod
@@ -1136,7 +1146,7 @@ class ProcessL2:
 
 
     @staticmethod
-    def ensemblesReflectance(node, sasGroup, refGroup, ancGroup, start, end):
+    def ensemblesReflectance(node, sasGroup, refGroup, ancGroup, uncGroup, esRawGroup, liRawGroup, ltRawGroup, start, end):
         '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for
         meteorological quality flags. Perform glint corrections. Calculate the Rrs. Correct for NIR
         residuals.'''
@@ -1158,13 +1168,74 @@ class ProcessL2:
         ltSlice = ProcessL2.columnToSlice(ltColumns,start, end)
         n = len(list(ltSlice.values())[0])
 
+        # process raw groups for generating standard deviations
+        def _sliceRawData(ES_raw, LI_raw, LT_raw):
+            es_slce = {}
+            li_slce = {}
+            lt_slce = {}
+            for (ds, ds1, ds2) in zip(ES_raw, LI_raw, LT_raw):
+                if ConfigFile.settings['SensorType'].lower() == "seabird":
+                    mask = [ds.id == "DATETIME", ds1.id == "DATETIME", ds2.id == "DATETIME"]
+                    if any(mask):
+                        # slice DATETIME
+                        DS = [(i, d) for i, d in enumerate([ds, ds1, ds2]) if mask[i]]
+                        for i, d in DS:
+                            if i == 0:
+                                es_slce["datetime"] = d.data[start:end]
+                            if i == 1:
+                                li_slce["datetime"] = d.data[start:end]
+                            if i == 2:
+                                lt_slce["datetime"] = d.data[start:end]
+                if ds.id == "ES":
+                    es_slce["data"] = ProcessL2.columnToSlice(ds.columns, start, end)
+                if ds1.id == "LI":
+                    li_slce["data"] = ProcessL2.columnToSlice(ds1.columns, start, end)
+                if ds2.id == "LT":
+                    lt_slce["data"] = ProcessL2.columnToSlice(ds2.columns, start, end)
+            if all([es_slce, li_slce, lt_slce]):
+                return es_slce, li_slce, lt_slce
+            else:
+                return False
+
+        if not any([esRawGroup, liRawGroup, ltRawGroup]):
+            msg = "No L1AQC groups found"
+            print(msg)
+        else:
+            # slice L1AQC (aka "Raw" here) Data depending on SensorType
+            if ConfigFile.settings['SensorType'].lower() == "trios":
+                esRawSlice, liRawSlice, ltRawSlice = _sliceRawData(
+                                    esRawGroup.datasets.values(),
+                                    liRawGroup.datasets.values(),
+                                    ltRawGroup.datasets.values(),
+                                    )
+            elif ConfigFile.settings['SensorType'].lower() == "seabird":
+                esRawSlice = dict()
+                liRawSlice = dict()
+                ltRawSlice = dict()
+
+                esRawSlice['LIGHT'], liRawSlice['LIGHT'], ltRawSlice['LIGHT'] = \
+                    _sliceRawData(
+                                  esRawGroup['LIGHT'].datasets.values(),
+                                  liRawGroup['LIGHT'].datasets.values(),
+                                  ltRawGroup['LIGHT'].datasets.values(),
+                                  )
+                esRawSlice['DARK'], liRawSlice['DARK'], ltRawSlice['DARK'] = \
+                    _sliceRawData(
+                                  esRawGroup['DARK'].datasets.values(),
+                                  liRawGroup['DARK'].datasets.values(),
+                                  ltRawGroup['DARK'].datasets.values(),
+                                  )
+            else:
+                msg = "unrecognisable sensor type"
+                print(msg)
+                return False
+
         rhoDefault = float(ConfigFile.settings["fL2RhoSky"])
         threeCRho = int(ConfigFile.settings["bL23CRho"])
         ZhangRho = int(ConfigFile.settings["bL2ZhangRho"])
         enablePercentLt = float(ConfigFile.settings["bL2EnablePercentLt"])
         percentLt = float(ConfigFile.settings["fL2PercentLt"])
 
-        # Find the central index of the date/times to s
         timeStamp = esSlice.pop("Datetime")
         esSlice.pop("Datetag")
         esSlice.pop("Timetag2")
@@ -1177,37 +1248,91 @@ class ProcessL2:
         ltSlice.pop("Timetag2")
         ltSlice.pop("Datetime")
 
-        #Convolve es/li/lt slices to satellite bands using RSRs
+        # Process StdSlices for Band Convolution
+        # Get common wavebands from esSlice to interp stats
+        instrument_WB = np.asarray(list(esSlice.keys()), dtype=float)
+
+        if ConfigFile.settings['SensorType'].lower() == "trios":
+            instrument = Trios()
+            stats = instrument.generateSensorStats("TriOS",
+                        dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                        dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
+                        instrument_WB)
+        elif ConfigFile.settings['SensorType'].lower() == "seabird":
+            instrument = HyperOCR()  # check sensor-type
+            stats = instrument.generateSensorStats("SeaBird",
+                        dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                        dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
+                        instrument_WB)
+            # after dark substitution is done, condense to only dark corrected data (LIGHT key)
+            esRawGroup = esRawGroup['LIGHT']
+            liRawGroup = liRawGroup['LIGHT']
+            ltRawGroup = ltRawGroup['LIGHT']
+            esRawGroup.id = "ES_L1AQC"
+            liRawGroup.id = "LI_L1AQC"
+            ltRawGroup.id = "LT_L1AQC"
+        else:
+            msg = "class type not recognised"
+            print(msg)
+            return False
+
+        if not stats:
+            return False
+
+        # make std into dictionaries (data are ODs, but should not matter)
+        esStdSlice = {k: [stats['ES']['std_Signal_Interpolated'][k][0]] for k in esSlice}  # *esSlice[k][0]
+        liStdSlice = {k: [stats['LI']['std_Signal_Interpolated'][k][0]] for k in liSlice}  # *liSlice[k][0]
+        ltStdSlice = {k: [stats['LT']['std_Signal_Interpolated'][k][0]] for k in ltSlice}  # *ltSlice[k][0]
+
+        # Convolve es/li/lt slices to satellite bands using RSRs
         if ConfigFile.settings['bL2WeightMODISA']:
             print("Convolving MODIS Aqua (ir)radiances in the slice")
-            esSliceMODISA = Weight_RSR.processMODISBands(esSlice, sensor='A') # dictionary
+            esSliceMODISA = Weight_RSR.processMODISBands(esSlice, sensor='A')
             liSliceMODISA = Weight_RSR.processMODISBands(liSlice, sensor='A')
             ltSliceMODISA = Weight_RSR.processMODISBands(ltSlice, sensor='A')
+            esXstdMODISA = Weight_RSR.processMODISBands(esStdSlice, sensor='A')
+            liXstdMODISA = Weight_RSR.processMODISBands(liStdSlice, sensor='A')
+            ltXstdMODISA = Weight_RSR.processMODISBands(ltStdSlice, sensor='A')
         if ConfigFile.settings['bL2WeightMODIST']:
             print("Convolving MODIS Terra (ir)radiances in the slice")
             esSliceMODIST = Weight_RSR.processMODISBands(esSlice, sensor='T')
             liSliceMODIST = Weight_RSR.processMODISBands(liSlice, sensor='T')
             ltSliceMODIST = Weight_RSR.processMODISBands(ltSlice, sensor='T')
+            esXstdMODIST = Weight_RSR.processMODISBands(esStdSlice, sensor='T')
+            liXstdMODIST = Weight_RSR.processMODISBands(liStdSlice, sensor='T')
+            ltXstdMODIST = Weight_RSR.processMODISBands(ltStdSlice, sensor='T')
         if ConfigFile.settings['bL2WeightVIIRSN']:
             print("Convolving VIIRS NPP (ir)radiances in the slice")
             esSliceVIIRSN = Weight_RSR.processVIIRSBands(esSlice, sensor='N')
             liSliceVIIRSN = Weight_RSR.processVIIRSBands(liSlice, sensor='N')
             ltSliceVIIRSN = Weight_RSR.processVIIRSBands(ltSlice, sensor='N')
+            esXstdVIIRSN = Weight_RSR.processVIIRSBands(esStdSlice, sensor='N')
+            liXstdVIIRSN = Weight_RSR.processVIIRSBands(liStdSlice, sensor='N')
+            ltXstdVIIRSN = Weight_RSR.processVIIRSBands(ltStdSlice, sensor='N')
         if ConfigFile.settings['bL2WeightVIIRSJ']:
             print("Convolving VIIRS JPSS (ir)radiances in the slice")
             esSliceVIIRSJ = Weight_RSR.processVIIRSBands(esSlice, sensor='N')
             liSliceVIIRSJ = Weight_RSR.processVIIRSBands(liSlice, sensor='N')
             ltSliceVIIRSJ = Weight_RSR.processVIIRSBands(ltSlice, sensor='N')
+            esXstdVIIRSJ = Weight_RSR.processVIIRSBands(esStdSlice, sensor='N')
+            liXstdVIIRSJ = Weight_RSR.processVIIRSBands(liStdSlice, sensor='N')
+            ltXstdVIIRSJ = Weight_RSR.processVIIRSBands(ltStdSlice, sensor='N')
         if ConfigFile.settings['bL2WeightSentinel3A']:
             print("Convolving Sentinel 3A (ir)radiances in the slice")
             esSliceSentinel3A = Weight_RSR.processSentinel3Bands(esSlice, sensor='A')
             liSliceSentinel3A = Weight_RSR.processSentinel3Bands(liSlice, sensor='A')
             ltSliceSentinel3A = Weight_RSR.processSentinel3Bands(ltSlice, sensor='A')
+            esXstdSentinel3A = Weight_RSR.processSentinel3Bands(esStdSlice, sensor='A')
+            liXstdSentinel3A = Weight_RSR.processSentinel3Bands(liStdSlice, sensor='A')
+            ltXstdSentinel3A = Weight_RSR.processSentinel3Bands(ltStdSlice, sensor='A')
         if ConfigFile.settings['bL2WeightSentinel3B']:
             print("Convolving Sentinel 3B (ir)radiances in the slice")
             esSliceSentinel3B = Weight_RSR.processSentinel3Bands(esSlice, sensor='B')
             liSliceSentinel3B = Weight_RSR.processSentinel3Bands(liSlice, sensor='B')
             ltSliceSentinel3B = Weight_RSR.processSentinel3Bands(ltSlice, sensor='B')
+            esXstdSentinel3B = Weight_RSR.processSentinel3Bands(esStdSlice, sensor='B')
+            liXstdSentinel3B = Weight_RSR.processSentinel3Bands(liStdSlice, sensor='B')
+            ltXstdSentinel3B = Weight_RSR.processSentinel3Bands(ltStdSlice, sensor='B')
 
         # Store the mean datetime of the slice
         if len(timeStamp) > 0:
@@ -1238,11 +1363,11 @@ class ProcessL2:
         # There are sometimes only a small number of spectra in the slice,
         #  so the percent Lt estimation becomes highly questionable and is overridden here.
         if n <= 5 or x == 0:
-            x = n # if only 5 or fewer records retained, use them all...
+            x = n  # if only 5 or fewer records retained, use them all...
 
         # Find the indexes for the lowest X%
         lt780 = ProcessL2.interpolateColumn(ltSlice, 780.0)
-        index = np.argsort(lt780) # gives indexes if values were to be sorted
+        index = np.argsort(lt780)  # gives indexes if values were to be sorted
 
         if enablePercentLt and x > 1:
             # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest X% of unsorted lt780
@@ -1270,59 +1395,60 @@ class ProcessL2:
         node.getGroup('IRRADIANCE').datasets['Ensemble_N'].columnsToDataset()
         node.getGroup('RADIANCE').datasets['Ensemble_N'].columnsToDataset()
 
-
         # Take the mean of the lowest X% in the slice
         sliceAveFlag = []
-        flag,esXSlice,esXmedian,esXstd = ProcessL2.sliceAveHyper(y, esSlice)
+        flag,esXSlice,esXmedian = ProcessL2.sliceAveHyper(y, esSlice)
         sliceAveFlag.append(flag)
-        flag, liXSlice, liXmedian,liXstd = ProcessL2.sliceAveHyper(y, liSlice)
+        flag, liXSlice, liXmedian = ProcessL2.sliceAveHyper(y, liSlice)
         sliceAveFlag.append(flag)
-        flag, ltXSlice, ltXmedian,ltXstd = ProcessL2.sliceAveHyper(y, ltSlice)
+        flag, ltXSlice, ltXmedian = ProcessL2.sliceAveHyper(y, ltSlice)
         sliceAveFlag.append(flag)
 
         # Take the mean of the lowest X% for satellite weighted (ir)radiances in the slice
         # y indexes are from the hyperspectral data
         if ConfigFile.settings['bL2WeightMODISA']:
-            flag, esXSliceMODISA, esXmedianMODISA, esXstdMODISA = ProcessL2.sliceAveHyper(y, esSliceMODISA)
+            flag, esXSliceMODISA, esXmedianMODISA = ProcessL2.sliceAveHyper(y, esSliceMODISA)
             sliceAveFlag.append(flag)
-            flag, liXSliceMODISA, liXmedianMODISA, liXstdMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
+            flag, liXSliceMODISA, liXmedianMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
             sliceAveFlag.append(flag)
-            flag, ltXSliceMODISA, ltXmedianMODISA, ltXstdMODISA = ProcessL2.sliceAveHyper(y, ltSliceMODISA)
+            flag, liXSliceMODISA, liXmedianMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
+            sliceAveFlag.append(flag)
+            flag, ltXSliceMODISA, ltXmedianMODISA = ProcessL2.sliceAveHyper(y, ltSliceMODISA)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightMODIST']:
-            flag, esXSliceMODIST, esXmedianMODIST, esXstdMODIST = ProcessL2.sliceAveHyper(y, esSliceMODIST)
+            flag, esXSliceMODIST, esXmedianMODIST = ProcessL2.sliceAveHyper(y, esSliceMODIST)
             sliceAveFlag.append(flag)
-            flag, liXSliceMODIST, liXmedianMODIST, liXstdMODIST = ProcessL2.sliceAveHyper(y, liSliceMODIST)
+            flag, liXSliceMODIST, liXmedianMODIST = ProcessL2.sliceAveHyper(y, liSliceMODIST)
             sliceAveFlag.append(flag)
-            flag, ltXSliceMODIST, ltXmedianMODIST, ltXstdMODIST = ProcessL2.sliceAveHyper(y, ltSliceMODIST)
+            flag, ltXSliceMODIST, ltXmedianMODIST = ProcessL2.sliceAveHyper(y, ltSliceMODIST)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightVIIRSN']:
-            flag, esXSliceVIIRSN, esXmedianVIIRSN, esXstdVIIRSN = ProcessL2.sliceAveHyper(y, esSliceVIIRSN)
+            flag, esXSliceVIIRSN, esXmedianVIIRSN = ProcessL2.sliceAveHyper(y, esSliceVIIRSN)
             sliceAveFlag.append(flag)
-            flag, liXSliceVIIRSN, liXmedianVIIRSN, liXstdVIIRSN = ProcessL2.sliceAveHyper(y, liSliceVIIRSN)
+            flag, liXSliceVIIRSN, liXmedianVIIRSN = ProcessL2.sliceAveHyper(y, liSliceVIIRSN)
             sliceAveFlag.append(flag)
-            flag, ltXSliceVIIRSN, ltXmedianVIIRSN, ltXstdVIIRSN = ProcessL2.sliceAveHyper(y, ltSliceVIIRSN)
+            flag, ltXSliceVIIRSN, ltXmedianVIIRSN = ProcessL2.sliceAveHyper(y, ltSliceVIIRSN)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightVIIRSJ']:
-            flag, esXSliceVIIRSJ, esXmedianVIIRSJ, esXstdVIIRSJ = ProcessL2.sliceAveHyper(y, esSliceVIIRSJ)
+            flag, esXSliceVIIRSJ, esXmedianVIIRSJ = ProcessL2.sliceAveHyper(y, esSliceVIIRSJ)
             sliceAveFlag.append(flag)
-            flag, liXSliceVIIRSJ, liXmedianVIIRSJ, liXstdVIIRSJ = ProcessL2.sliceAveHyper(y, liSliceVIIRSJ)
+            flag, liXSliceVIIRSJ, liXmedianVIIRSJ = ProcessL2.sliceAveHyper(y, liSliceVIIRSJ)
             sliceAveFlag.append(flag)
-            flag, ltXSliceVIIRSJ, ltXmedianVIIRSJ, ltXstdVIIRSJ = ProcessL2.sliceAveHyper(y, ltSliceVIIRSJ)
+            flag, ltXSliceVIIRSJ, ltXmedianVIIRSJ = ProcessL2.sliceAveHyper(y, ltSliceVIIRSJ)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightSentinel3A']:
-            flag, esXSliceSentinel3A, esXmedianSentinel3A, esXstdSentinel3A = ProcessL2.sliceAveHyper(y, esSliceSentinel3A)
+            flag, esXSliceSentinel3A, esXmedianSentinel3A = ProcessL2.sliceAveHyper(y, esSliceSentinel3A)
             sliceAveFlag.append(flag)
-            flag, liXSliceSentinel3A, liXmedianSentinel3A, liXstdSentinel3A = ProcessL2.sliceAveHyper(y, liSliceSentinel3A)
+            flag, liXSliceSentinel3A, liXmedianSentinel3A = ProcessL2.sliceAveHyper(y, liSliceSentinel3A)
             sliceAveFlag.append(flag)
-            flag, ltXSliceSentinel3A, ltXmedianSentinel3A, ltXstdSentinel3A = ProcessL2.sliceAveHyper(y, ltSliceSentinel3A)
+            flag, ltXSliceSentinel3A, ltXmedianSentinel3A = ProcessL2.sliceAveHyper(y, ltSliceSentinel3A)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightSentinel3B']:
-            flag, esXSliceSentinel3B, esXmedianSentinel3B, esXstdSentinel3B = ProcessL2.sliceAveHyper(y, esSliceSentinel3B)
+            flag, esXSliceSentinel3B, esXmedianSentinel3B = ProcessL2.sliceAveHyper(y, esSliceSentinel3B)
             sliceAveFlag.append(flag)
-            flag, liXSliceSentinel3B, liXmedianSentinel3B, liXstdSentinel3B = ProcessL2.sliceAveHyper(y, liSliceSentinel3B)
+            flag, liXSliceSentinel3B, liXmedianSentinel3B = ProcessL2.sliceAveHyper(y, liSliceSentinel3B)
             sliceAveFlag.append(flag)
-            flag, ltXSliceSentinel3B, ltXmedianSentinel3B, ltXstdSentinel3B = ProcessL2.sliceAveHyper(y, ltSliceSentinel3B)
+            flag, ltXSliceSentinel3B, ltXmedianSentinel3B= ProcessL2.sliceAveHyper(y, ltSliceSentinel3B)
             sliceAveFlag.append(flag)
 
         # Make sure the XSlice averaging didn't bomb
@@ -1348,9 +1474,6 @@ class ProcessL2:
         WINDSPEEDXSlice = newAncGroup.getDataset('WINDSPEED').data['WINDSPEED'][-1].copy()
         if isinstance(WINDSPEEDXSlice, list):
             WINDSPEEDXSlice = WINDSPEEDXSlice[0]
-        AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
-        if isinstance(AODXSlice, list):
-            AODXSlice = AODXSlice[0]
         SZAXSlice = newAncGroup.getDataset('SZA').data['SZA'][-1].copy()
         if isinstance(SZAXSlice, list):
             SZAXSlice = SZAXSlice[0]
@@ -1366,6 +1489,20 @@ class ProcessL2:
         RelAzXSlice = newAncGroup.getDataset('REL_AZ').data['REL_AZ'][-1].copy()
         if isinstance(RelAzXSlice, list):
             RelAzXSlice = RelAzXSlice[0]
+
+        RelAzXSlice = abs(RelAzXSlice)
+
+        # Only required in Zhang17 currently
+        try:
+            AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
+            if isinstance(AODXSlice, list):
+                AODXSlice = AODXSlice[0]
+        except:
+            if ZhangRho:
+                msg = 'ProcessL2.ensemblesReflectance: No AOD data present in Ancillary. Activate model acquisition in L1B.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
 
         # These are optional; in fact, there is no implementation of incorporating CLOUD or WAVEs into
         # any of the current Rho corrections yet (even though cloud IS passed to Zhang_Rho)
@@ -1397,8 +1534,10 @@ class ProcessL2:
             if k != "Datetag" and k != "Datetime" and k != "Timetag2":
                 wavelengthStr.append(k)
                 wavelength.append(float(k))
-        waveSubset = wavelength # Only used for Zhang; No subsetting for threeC or Mobley corrections
+        waveSubset = wavelength  # Only used for Zhang; No subsetting for threeC or Mobley corrections
         rhoVec = {}
+
+        Rho_Uncertainty_Obj = Propagate(M=100, cores=1)
 
         if threeCRho:
             '''Placeholder for Groetsch et al. 2017'''
@@ -1407,7 +1546,7 @@ class ProcessL2:
             es750 = ProcessL2.interpolateColumn(esXSlice, 750.0)
             sky750 = li750[0]/es750[0]
 
-            rhoScalar, rhoDelta = RhoCorrections.threeCCorr(sky750, rhoDefault, WINDSPEEDXSlice)
+            rhoScalar, rhoUNC = RhoCorrections.threeCCorr(sky750, rhoDefault, WINDSPEEDXSlice)
             # The above is not wavelength dependent. No need for seperate values/vectors for satellites
             rhoVec = None
 
@@ -1416,6 +1555,9 @@ class ProcessL2:
             separated for sun and sky to include polarization factors.
 
             Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.'''
+
+            # reduce number of draws because of how computationally intensive the Zhang method is
+            Rho_Uncertainty_Obj = Propagate(M=10, cores=1)
 
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
@@ -1454,19 +1596,39 @@ class ProcessL2:
                 # wavelength is now truncated to only valid wavebands for use in Zhang models
                 waveSubset = wave_array[:,1].tolist()
 
-            rhoVector, rhoDelta = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, \
-                CloudXSlice,SZAXSlice,SSTXSlice,SalXSlice,RelAzXSlice,waveSubset)
+            # rhoVector = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
+            #                                             SalXSlice, RelAzXSlice, waveSubset)
+            rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
+                                                            SalXSlice, RelAzXSlice, waveSubset, Rho_Uncertainty_Obj)
+
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[i]
+
             rhoScalar = None
 
         else:
             # Full Mobley 1999 model from LUT
-            rhoScalar, rhoDelta = RhoCorrections.M99Corr(WINDSPEEDXSlice,SZAXSlice, RelAzXSlice)
-
+            try:
+                #   I'm still foggy on why AOD is needed for M99... DAA
+                # line 1508 is the same code, except if Zhang Rho is selected then a lack of AOD is a serious error
+                # code is repeated to retain the try/except component above but avoid printing the console and log
+                # messages if M99 is selected.
+                AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
+                if isinstance(AODXSlice, list):
+                    AODXSlice = AODXSlice[0]
+                rhoScalar, rhoUNC = RhoCorrections.M99Corr(WINDSPEEDXSlice, SZAXSlice, RelAzXSlice,
+                                                             Rho_Uncertainty_Obj,
+                                                             AOD=AODXSlice, cloud=CloudXSlice, wTemp=SSTXSlice,
+                                                             sal=SalXSlice, waveBands=waveSubset)
+            except NameError:
+                rhoScalar, rhoUNC = RhoCorrections.M99Corr(WINDSPEEDXSlice, SZAXSlice, RelAzXSlice,
+                                                             Rho_Uncertainty_Obj)
         # Calculate hyperspectral Coddingtion TSIS_1 hybrid F0 function
         # F0_hyper = ProcessL2.Thuillier(dateTag, wavelength)
-        F0_hyper, F0_raw, wv_raw = Utilities.TSIS_1(dateTag, wavelength)
+        # NOTE: Need to check whether uncertainties are one sigma or two
+        F0_hyper, F0_unc, F0_raw, F0_unc_raw, wv_raw = Utilities.TSIS_1(dateTag, wavelength)
+        # Recycling _raw in TSIS_1 calls below prevents the dataset having to be reread
+
         if F0_hyper is None:
             msg = "No hyperspectral TSIS-1 F0. Aborting."
             print(msg)
@@ -1481,7 +1643,7 @@ class ProcessL2:
             wave_array = np.array(wave_list)
             # wavelength is now truncated to only valid wavebands for use in Zhang models
             waveSubsetMODIS = wave_array[:,1].tolist()
-            F0_MODIS, F0_raw, wv_raw = Utilities.TSIS_1(dateTag, MODISwavelength, F0_raw, wv_raw)
+            F0_MODIS,F0_MODIS_unc = Utilities.TSIS_1(dateTag, MODISwavelength, F0_raw, F0_unc_raw, wv_raw)[0:2]
         if ConfigFile.settings['bL2WeightVIIRSN'] or ConfigFile.settings['bL2WeightVIIRSJ']:
             VIIRSwavelength = Weight_RSR.VIIRSBands()
             wave_old = VIIRSwavelength.copy()
@@ -1489,7 +1651,7 @@ class ProcessL2:
             wave_array = np.array(wave_list)
             # wavelength is now truncated to only valid wavebands for use in Zhang models
             waveSubsetVIIRS = wave_array[:,1].tolist()
-            F0_VIIRS, F0_raw, wv_raw = Utilities.TSIS_1(dateTag, VIIRSwavelength, F0_raw, wv_raw)
+            F0_VIIRS, F0_VIIRS_unc = Utilities.TSIS_1(dateTag, VIIRSwavelength, F0_raw, F0_unc_raw, wv_raw)[0:2]
         if ConfigFile.settings['bL2WeightSentinel3A'] or ConfigFile.settings['bL2WeightSentinel3B']:
             Sentinel3wavelength = Weight_RSR.Sentinel3Bands()
             wave_old = Sentinel3wavelength.copy()
@@ -1497,8 +1659,7 @@ class ProcessL2:
             wave_array = np.array(wave_list)
             # wavelength is now truncated to only valid wavebands for use in Zhang models
             waveSubsetSentinel3 = wave_array[:,1].tolist()
-            F0_Sentinel3, F0_raw, wv_raw = Utilities.TSIS_1(dateTag, Sentinel3wavelength, F0_raw, wv_raw)
-
+            F0_Sentinel3, F0_Sentinel3_unc = Utilities.TSIS_1(dateTag, Sentinel3wavelength, F0_raw, F0_unc_raw, wv_raw)[0:2]
 
         # Build a slice object for (ir)radiances to be passed to spectralReflectance method
         # These slices are unique and independant of node data or earlier slices in the same node object
@@ -1513,23 +1674,72 @@ class ProcessL2:
         xSlice['liMedian'] = liXmedian
         xSlice['ltMedian'] = ltXmedian
 
-        xSlice['esSTD'] = esXstd
-        xSlice['liSTD'] = liXstd
-        xSlice['ltSTD'] = ltXstd
-        F0 = F0_hyper
+        xSlice['esSTD'] = esStdSlice
+        xSlice['liSTD'] = liStdSlice
+        xSlice['ltSTD'] = ltStdSlice
+
+        xSlice['esSTD_RAW'] = stats['ES']['std_Signal']  # uninterpolated std for uncertainty calculation
+        xSlice['liSTD_RAW'] = stats['LI']['std_Signal']
+        xSlice['ltSTD_RAW'] = stats['LT']['std_Signal']
+
+        # F0 = F0_hyper
+
+        # insert Uncertainties into analysis
+        xUNC = {}
+
+        #### ADERU: add the case for factory
+        # NOTE: These .updates are what is triggering matrix_calculation.py:286: UserWarning:
+        tic = time.process_time()
+        if ConfigFile.settings["bL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "seabird":
+            xSlice.update(instrument.Factory(node, uncGroup, stats))  # update the xSlice dict with uncertianties and samples
+            # NOTE: This is slow.
+            xUNC.update(instrument.rrsHyperUNCFACTORY(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+
+        elif ConfigFile.settings["bL1bCal"] == 2:
+            xSlice.update(instrument.Default(uncGroup, stats))  # update the xSlice dict with uncertianties and samples
+            xUNC.update(instrument.rrsHyperUNC(uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+
+        elif ConfigFile.settings["bL1bCal"] == 3:
+            xSlice.update(
+                instrument.FRM(node, uncGroup,
+                               dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                               dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
+                               stats, np.array(waveSubset, float)))  # instrument_WB
+            xUNC.update(instrument.rrsHyperUNCFRM(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+
+        else:
+            xUNC = None
+            # TODO: This should still estimate STD for TRIOS-Factory regime, instead of unc.
+        msg = f'Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s'
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        # move uncertainties from xSlice to xUNC
+        if xUNC is not None:
+            for slice in list(xSlice.keys()):
+                if "sample" in slice.lower():
+                    xSlice.pop(slice)  # samples are no longer needed
+                elif "unc" in slice.lower():
+                    xUNC[f"{slice[0:2]}UNC"] = xSlice.pop(slice)  # transfer instrument uncs to xUNC
+            # TODO: compare uncertainty outputs to old results with t test
+
+            # for convolving to satellite bands
+            esUNCSlice = xUNC["esUNC"]  # ODicts... whereas lwUNC and rrsUNC are simple arrays
+            liUNCSlice = xUNC["liUNC"]
+            ltUNCSlice = xUNC["ltUNC"]
 
         # Populate the relevant fields in node
-        ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVec, waveSubset)
+        # ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, rhoScalar, rhoUNC, rhoVec, waveSubset, xUNC)
+        ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC)
 
         # Apply residual NIR corrections
         # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
-            rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(node, sensor, F0)
-
+            rrsNIRCorr, nLwNIRCorr = ProcessL2.nirCorrection(node, sensor, F0_hyper)
 
         # Satellites
         if ConfigFile.settings['bL2WeightMODISA'] or ConfigFile.settings['bL2WeightMODIST']:
-            F0 = F0_MODIS
+            # F0 = F0_MODIS
             rhoVecMODIS = None
 
             if ConfigFile.settings['bL2WeightMODISA']:
@@ -1552,8 +1762,16 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdMODISA
                 xSlice['ltSTD'] = ltXstdMODISA
 
+                # NOTE: According to AR, this may not be a robust way of estimating convolved uncertainties.
+                # He has implemented another way, but it is very slow due to multiple MC runs. Comment this out
+                # for now, but a sensitivity analysis may show it to be okay.
+                if xUNC is not None:
+                    xUNC['esUNC'] = Weight_RSR.processMODISBands(esUNCSlice, sensor='A')
+                    xUNC['liUNC'] = Weight_RSR.processMODISBands(liUNCSlice, sensor='A')
+                    xUNC['ltUNC'] = Weight_RSR.processMODISBands(ltUNCSlice, sensor='A')
+
                 sensor = 'MODISA'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS)
+                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_MODIS, F0_MODIS_unc, rhoScalar, rhoVecMODIS, waveSubsetMODIS, xUNC)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
@@ -1577,14 +1795,19 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdMODIST
                 xSlice['ltSTD'] = ltXstdMODIST
 
+                if xUNC is not None:
+                    xUNC['esUNC'] = Weight_RSR.processMODISBands(esUNCSlice, sensor='T')
+                    xUNC['liUNC'] = Weight_RSR.processMODISBands(liUNCSlice, sensor='T')
+                    xUNC['ltUNC'] = Weight_RSR.processMODISBands(ltUNCSlice, sensor='T')
+
                 sensor = 'MODIST'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecMODIS, waveSubsetMODIS)
+                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_MODIS, F0_MODIS_unc, rhoScalar, rhoVecMODIS, waveSubsetMODIS,  xUNC)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
 
         if ConfigFile.settings['bL2WeightVIIRSN'] or ConfigFile.settings['bL2WeightVIIRSJ']:
-            F0 = F0_VIIRS
+            # F0 = F0_VIIRS
             rhoVecVIIRS = None
 
             if ConfigFile.settings['bL2WeightVIIRSN']:
@@ -1606,8 +1829,13 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdVIIRSN
                 xSlice['ltSTD'] = ltXstdVIIRSN
 
+                if xUNC is not None:
+                    xUNC['esUNC'] = Weight_RSR.processVIIRSBands(esUNCSlice, sensor='N')
+                    xUNC['liUNC'] = Weight_RSR.processVIIRSBands(liUNCSlice, sensor='N')
+                    xUNC['ltUNC'] = Weight_RSR.processVIIRSBands(ltUNCSlice, sensor='N')
+
                 sensor = 'VIIRSN'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS,  waveSubsetVIIRS)
+                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_VIIRS, F0_VIIRS_unc, rhoScalar, rhoVecVIIRS,  waveSubsetVIIRS,  xUNC)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
@@ -1631,14 +1859,19 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdVIIRSJ
                 xSlice['ltSTD'] = ltXstdVIIRSJ
 
+                if xUNC is not None:
+                    xUNC['esUNC'] = Weight_RSR.processVIIRSBands(esUNCSlice, sensor='N')
+                    xUNC['liUNC'] = Weight_RSR.processVIIRSBands(liUNCSlice, sensor='N')
+                    xUNC['ltUNC'] = Weight_RSR.processVIIRSBands(ltUNCSlice, sensor='N')
+
                 sensor = 'VIIRSJ'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecVIIRS, waveSubsetVIIRS)
+                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_VIIRS, F0_VIIRS_unc, rhoScalar, rhoVecVIIRS, waveSubsetVIIRS,  xUNC)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
 
-        if ConfigFile.settings['bL2WeightSentinel3A'] or ConfigFile.settings['bL2WeightSentinel3B']:
-            F0 = F0_Sentinel3
+        if ConfigFile.settings['bL2WeightSentinel3A']:
+            # F0 = F0_Sentinel3
             rhoVecSentinel3 = None
 
             if ConfigFile.settings['bL2WeightSentinel3A']:
@@ -1660,8 +1893,13 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdSentinel3A
                 xSlice['ltSTD'] = ltXstdSentinel3A
 
+                if xUNC is not None:
+                    xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='A')
+                    xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='A')
+                    xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='A')
+
                 sensor = 'Sentinel3A'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3)
+                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_Sentinel3, F0_Sentinel3_unc, rhoScalar, rhoVecSentinel3, waveSubsetSentinel3,  xUNC)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
@@ -1685,8 +1923,13 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdSentinel3B
                 xSlice['ltSTD'] = ltXstdSentinel3B
 
+                if xUNC is not None:
+                    xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='B')
+                    xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='B')
+                    xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='B')
+
                 sensor = 'Sentinel3B'
-                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0, rhoScalar, rhoDelta, rhoVecSentinel3, waveSubsetSentinel3)
+                ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_Sentinel3, F0_Sentinel3_unc, rhoScalar, rhoVecSentinel3, waveSubsetSentinel3,  xUNC)
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
@@ -1695,15 +1938,14 @@ class ProcessL2:
 
 
     @staticmethod
-    def stationsEnsemblesReflectance(node, root,station=None):
-    # def stationsEnsemblesReflectance(node,station=None):
+    def stationsEnsemblesReflectance(node, root, station=None):
         ''' Extract stations if requested, then pass to ensemblesReflectance for ensemble
             averages, rho calcs, Rrs, Lwn, NIR correction, satellite convolution, OC Products.'''
 
         print("stationsEnsemblesReflectance")
 
         # Create a third HDF for copying root without altering it
-        rootCopy = HDFRoot.HDFRoot()
+        rootCopy = HDFRoot()
         rootCopy.addGroup("ANCILLARY")
         rootCopy.addGroup("IRRADIANCE")
         rootCopy.addGroup("RADIANCE")
@@ -1712,10 +1954,50 @@ class ProcessL2:
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
 
+        if ConfigFile.settings['SensorType'].lower() == 'seabird':
+            rootCopy.addGroup("ES_DARK_L1AQC")
+            rootCopy.addGroup("ES_LIGHT_L1AQC")
+            rootCopy.addGroup("LI_DARK_L1AQC")
+            rootCopy.addGroup("LI_LIGHT_L1AQC")
+            rootCopy.addGroup("LT_DARK_L1AQC")
+            rootCopy.addGroup("LT_LIGHT_L1AQC")
+            rootCopy.getGroup('ES_LIGHT_L1AQC').copy(root.getGroup('ES_LIGHT_L1AQC'))
+            rootCopy.getGroup('ES_DARK_L1AQC').copy(root.getGroup('ES_DARK_L1AQC'))
+            rootCopy.getGroup('LI_LIGHT_L1AQC').copy(root.getGroup('LI_LIGHT_L1AQC'))
+            rootCopy.getGroup('LI_DARK_L1AQC').copy(root.getGroup('LI_DARK_L1AQC'))
+            rootCopy.getGroup('LT_LIGHT_L1AQC').copy(root.getGroup('LT_LIGHT_L1AQC'))
+            rootCopy.getGroup('LT_DARK_L1AQC').copy(root.getGroup('LT_DARK_L1AQC'))
+
+            esRawGroup = {"LIGHT": rootCopy.getGroup('ES_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('ES_DARK_L1AQC')}
+            liRawGroup = {"LIGHT": rootCopy.getGroup('LI_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('LI_DARK_L1AQC')}
+            ltRawGroup = {"LIGHT": rootCopy.getGroup('LT_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('LT_DARK_L1AQC')}
+
+        elif ConfigFile.settings['SensorType'].lower() == 'trios':
+            rootCopy.addGroup("ES_L1AQC")
+            rootCopy.addGroup("LI_L1AQC")
+            rootCopy.addGroup("LT_L1AQC")
+            rootCopy.getGroup('ES_L1AQC').copy(root.getGroup('ES_L1AQC'))
+            rootCopy.getGroup('LI_L1AQC').copy(root.getGroup('LI_L1AQC'))
+            rootCopy.getGroup('LT_L1AQC').copy(root.getGroup('LT_L1AQC'))
+
+            esRawGroup = rootCopy.getGroup('ES_L1AQC')
+            liRawGroup = rootCopy.getGroup('LI_L1AQC')
+            ltRawGroup = rootCopy.getGroup('LT_L1AQC')
+
         # rootCopy will be manipulated in the making of node, but root will not
         referenceGroup = rootCopy.getGroup("IRRADIANCE")
         sasGroup = rootCopy.getGroup("RADIANCE")
         ancGroup = rootCopy.getGroup("ANCILLARY")
+
+        if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
+            rootCopy.addGroup("RAW_UNCERTAINTIES")
+            rootCopy.getGroup('RAW_UNCERTAINTIES').copy(root.getGroup('RAW_UNCERTAINTIES'))
+            uncGroup = rootCopy.getGroup("RAW_UNCERTAINTIES")
+        # Only Factory-Trios has no unc
+        else:
+            uncGroup = None
+
+        Utilities.rawDataAddDateTime(rootCopy) # For L1AQC data carried forward
         Utilities.rootAddDateTimeCol(rootCopy)
 
         ###############################################################################
@@ -1781,6 +2063,16 @@ class ProcessL2:
         esLength = len(list(esColumns.values())[0])
         interval = float(ConfigFile.settings["fL2TimeInterval"])
 
+        # interpolate Light/Dark data for Raw groups if HyperOCR data is being processed
+        if ConfigFile.settings['SensorType'].lower() == "seabird":
+            # in seabird case interpolate dark data to light timer before breaking into stations
+            instrument = HyperOCR()
+            if not any([instrument.darkToLightTimer(esRawGroup, 'ES'),
+                        instrument.darkToLightTimer(liRawGroup, 'LI'),
+                        instrument.darkToLightTimer(ltRawGroup, 'LT')]):
+                msg = "failed to interpolate dark data to light data timer"
+                print(msg)
+
         if interval == 0:
             # Here, take the complete time series
             print("No time binning. This can take a moment.")
@@ -1790,7 +2082,8 @@ class ProcessL2:
                 start = i
                 end = i+1
 
-                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, start, end):
+                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
+                                                      liRawGroup, ltRawGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance unsliced failed. Abort.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -1799,6 +2092,7 @@ class ProcessL2:
             msg = 'Binning datasets to ensemble time interval.'
             print(msg)
             Utilities.writeLogFile(msg)
+
             # Iterate over the time ensembles
             start = 0
             endTime = timeStamp[0] + datetime.timedelta(0,interval)
@@ -1813,7 +2107,6 @@ class ProcessL2:
                 # time = Utilities.timeTag2ToSec(tt2[i])
                 time = timeStamp[i]
                 if (time > endTime) or timeFlag: # end of increment reached
-
                     if timeFlag:
                         end = len(timeStamp)-1 # File shorter than interval; include all spectra
                     else:
@@ -1821,8 +2114,10 @@ class ProcessL2:
                         end = i # end of the slice is up to and not including...so -1 is not needed
                     if endTime > endFileTime:
                         endTime = endFileTime
+                        timeFlag = True
 
-                    if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, start, end):
+                    if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
+                                                          liRawGroup, ltRawGroup, start, end):
                         msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                         print(msg)
                         Utilities.writeLogFile(msg)
@@ -1838,7 +2133,8 @@ class ProcessL2:
             # For the rare case where end of record is reached at, but not exceeding, endTime...
             if not timeFlag:
                 end = i+1 # i is the index of end of record; plus one to include i due to -1 list slicing
-                if not ProcessL2.ensemblesReflectance(node,sasGroup, referenceGroup, ancGroup, start, end):
+                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
+                                                      liRawGroup, ltRawGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance ender clause failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -1848,7 +2144,7 @@ class ProcessL2:
         # Reflectance calculations complete
         #
 
-        # Filter reflectances for negative spectra
+        # Filter reflectances for negative ensemble spectra
         ''' # Any spectrum that has any negative values between
             #  400 - 700ish (adjustable below), remove the entire spectrum. Otherwise,
             # set negative bands to 0.'''
@@ -1901,7 +2197,7 @@ class ProcessL2:
 
         # Root is the input from L1BQC, node is the output
         # Root should not be impacted by data reduction in node...
-        node = HDFRoot.HDFRoot()
+        node = HDFRoot()
         node.addGroup("ANCILLARY")
         node.addGroup("REFLECTANCE")
         node.addGroup("IRRADIANCE")
@@ -1917,6 +2213,14 @@ class ProcessL2:
                     gp.copyAttributes(grp)
             for ds in grp.datasets:
                 grp.datasets[ds].datasetToColumns()
+
+            # Carry over L1AQC data for use in uncertainty budgets
+            if grp.id.endswith('_L1AQC'):
+                newGrp = node.addGroup(grp.id)
+                newGrp.copy(grp)
+
+                for ds in newGrp.datasets:
+                    newGrp.datasets[ds].datasetToColumns()
 
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):
@@ -1960,8 +2264,40 @@ class ProcessL2:
 
         # If requested, process BRDF corrections to Rrs and nLw
         if ConfigFile.settings["bL2BRDF"]:
-            ProcessL2BRDF.procBRDF(node)
+            if ConfigFile.settings['bL2BRDF_fQ']:
+                msg = "Applying iterative Morel et al. 2002 BRDF correction to Rrs and nLw"
+                print(msg)
+                Utilities.writeLogFile(msg)
+                ProcessL2BRDF.procBRDF(node,BRDF_option='M02')
+            else:
+                raise ValueError('BRDF: Only Morel et al. 2002 supported for the moment. '
+                                 'If ticking on BRDF in the configuration window, please also tick on Morel R.f/Q')
 
+        # Strip out L1AQC data
+        for gp in reversed(node.groups):
+            if gp.id.endswith('_L1AQC'):
+                node.removeGroup(gp)
+
+        # In the case of TriOS Factory, strip out uncertainty datasets
+        if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+            for gp in node.groups:
+                if gp.id == 'IRRADIANCE' or gp.id == 'RADIANCE' or gp.id == 'REFLECTANCE':
+                    removeList = []
+                    for dsName in reversed(gp.datasets):
+                        if dsName.endswith('_unc'):
+                           removeList.append(dsName)
+                    for dsName in removeList:
+                            gp.removeDataset(dsName)
+
+        # Change _median nomiclature to _uncorr
+        for gp in node.groups:
+            if gp.id == 'IRRADIANCE' or gp.id == 'RADIANCE' or gp.id == 'REFLECTANCE':
+                changeList = []
+                for dsName in gp.datasets:
+                    if dsName.endswith('_median'):
+                        changeList.append(dsName)
+                for dsName in changeList:
+                        gp.datasets[dsName].changeDatasetName(gp,dsName,dsName.replace('_median','_uncorr'))
 
 
         # Now strip datetimes from all datasets

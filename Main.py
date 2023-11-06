@@ -1,9 +1,15 @@
+
 '''
-HyperInSPACE is designed to provide Hyperspectral In situ Support for the PACE mission by processing
-above-water, hyperspectral radiometry from Satlantic HyperSAS instruments.
-See README.md or README.pdf for installation instructions and guide.
-Version 1.1.2: Under development August 2022 (See Changelog.md)
-Dirk Aurin, NASA GSFC dirk.a.aurin@nasa.gov
+HyperInSPACE Community Processor (HyperCP) is the successor to the
+Hyperspectral In situ Support for PACE (HyperInSPACE) project. It is
+designed to process above-water, hyperspectral radiometry from
+Satlantic/Sea-Bird HyperSAS instruments and TriOS RAMSES instruments.
+See README.md for installation instructions and processor guide.
+See Changelog.md for software updates.
+See HyperCP_Project_guidelines.md and HyperCP_Project_guidelines_APPENDIX.md
+for collaboration guidelines and contact information.
+See the Discussions tab on GitHub for software support and development
+forum.
 '''
 import argparse
 import os
@@ -14,24 +20,23 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import requests
 from tqdm import tqdm
 
-# Why does pylint have a problem with this path formulation?
-#   => All dependencies should be prepended Source.
-sys.path.append(os.path.join(os.path.dirname(__file__),'Source'))
-from MainConfig import MainConfig
-from Controller import Controller
-from ConfigFile import ConfigFile
-from ConfigWindow import ConfigWindow
-from GetAnc import GetAnc
-from SeaBASSHeader import SeaBASSHeader
-from Utilities import Utilities
 
-version = '1.1.2'
+from Source.MainConfig import MainConfig
+from Source.Controller import Controller
+from Source.ConfigFile import ConfigFile
+from Source.ConfigWindow import ConfigWindow
+from Source.GetAnc import GetAnc
+from Source.SeaBASSHeader import SeaBASSHeader
+from Source.Utilities import Utilities
+
+version = '1.2.0'
 
 class Window(QtWidgets.QWidget):
     ''' Window is the main GUI container '''
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        # self.setStyleSheet("background-color: #e3e6e1;")
         if not os.path.exists('Plots'):
             os.makedirs('Plots')
         if not os.path.exists('Config'):
@@ -81,7 +86,7 @@ class Window(QtWidgets.QWidget):
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
-        pixmap = QtGui.QPixmap('./Data/Img/banner2.png')
+        pixmap = QtGui.QPixmap('./Data/Img/with_background_530x223.png')
         banner.setPixmap(pixmap)
         banner.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -100,12 +105,9 @@ class Window(QtWidgets.QWidget):
         self.configComboBox.setRootModelIndex(self.fsm.setRootPath('Config'))
         self.fsm.directoryLoaded.connect(self.on_directoryLoaded)
         self.configComboBox.currentTextChanged.connect(self.comboBox1Changed)
-        #self.configComboBox.move(30, 50)
 
         self.configNewButton = QtWidgets.QPushButton('New', self)
-        #self.configNewButton.move(30, 80)
         self.configEditButton = QtWidgets.QPushButton('Edit', self)
-        #self.configEditButton.move(130, 80)
         self.configDeleteButton = QtWidgets.QPushButton('Delete', self)
 
         self.configNewButton.clicked.connect(self.configNewButtonPressed)
@@ -128,12 +130,12 @@ class Window(QtWidgets.QWidget):
         self.ancFileLabel = QtWidgets.QLabel('Ancillary Data File (SeaBASS format; MUST USE UTC)')
         self.ancFileLineEdit = QtWidgets.QLineEdit()
         self.ancFileLineEdit.setText(str(MainConfig.settings['metFile']))
+        self.ancFileDirectory = MainConfig.settings['ancFileDir']
         self.ancAddButton = QtWidgets.QPushButton('Add', self)
         self.ancRemoveButton = QtWidgets.QPushButton('Remove', self)
 
         self.ancAddButton.clicked.connect(self.ancAddButtonPressed)
         self.ancRemoveButton.clicked.connect(self.ancRemoveButtonPressed)
-
 
         singleLevelLabel = QtWidgets.QLabel('Single-Level Processing', self)
         singleLevelLabel_font = singleLevelLabel.font()
@@ -147,7 +149,6 @@ class Window(QtWidgets.QWidget):
         self.singleL1bqcButton = QtWidgets.QPushButton('L1B --> L1BQC', self)
         self.singleL2Button = QtWidgets.QPushButton('L1BQC --> L2', self)
 
-
         self.singleL1aButton.clicked.connect(self.singleL1aClicked)
         self.singleL1aqcButton.clicked.connect(self.singleL1aqcClicked)
         self.singleL1bButton.clicked.connect(self.singleL1bClicked)
@@ -159,10 +160,8 @@ class Window(QtWidgets.QWidget):
         multiLevelLabel_font.setPointSize(10)
         multiLevelLabel_font.setBold(True)
         multiLevelLabel.setFont(multiLevelLabel_font)
-        #self.multiLevelLabel.move(30, 140)
 
         self.multi2Button = QtWidgets.QPushButton('Raw (BIN) ----->> L2 (HDF5)', self)
-        #self.multi1Button.move(30, 170)
 
         self.multi2Button.clicked.connect(self.multi2Clicked)
 
@@ -173,14 +172,13 @@ class Window(QtWidgets.QWidget):
         self.popQueryCheckBoxUpdate()
         self.popQueryCheckBox.clicked.connect(self.popQueryCheckBoxUpdate)
 
-        saveLabel = QtWidgets.QLabel('(Automatic on Window Close -->)')
-        self.saveButton = QtWidgets.QPushButton('Save Settings', self)
-        self.saveButton.clicked.connect(self.saveButtonClicked)
+        # saveLabel = QtWidgets.QLabel('(Automatic on Window Close -->)')
+        # self.saveButton = QtWidgets.QPushButton('Save Settings', self)
+        # self.saveButton.clicked.connect(self.saveButtonClicked)
 
         ########################################################################################
         # Add QtWidgets to the Window
         vBox = QtWidgets.QVBoxLayout()
-        # vBox.addStretch(1)
 
         vBox.addWidget(banner)
         vBox.addWidget(configLabel)
@@ -214,7 +212,6 @@ class Window(QtWidgets.QWidget):
 
         vBox.addLayout(ancHBox)
         vBox.addStretch(1)
-
         vBox.addStretch(1)
 
         vBox.addWidget(singleLevelLabel)
@@ -234,23 +231,21 @@ class Window(QtWidgets.QWidget):
         popQueryBox.addWidget(self.popQueryCheckBox)
         vBox.addLayout(popQueryBox)
 
-        saveQueryBox = QtWidgets.QHBoxLayout()
-        saveQueryBox.addWidget(saveLabel)
-        saveQueryBox.addWidget(self.saveButton)
-        vBox.addLayout(saveQueryBox)
+        # saveQueryBox = QtWidgets.QHBoxLayout()
+        # saveQueryBox.addWidget(saveLabel)
+        # saveQueryBox.addWidget(self.saveButton)
+        # vBox.addLayout(saveQueryBox)
 
         vBox.addStretch(1)
 
         self.setLayout(vBox)
 
         self.setGeometry(300, 300, 290, 600)
-        # self.setGeometry(300, 300, 250, 600) This does nothing.
         self.setWindowTitle(f"Main v{MainConfig.settings['version']}")
         self.show()
 
     ########################################################################################
     # Build functionality modules
-    # def on_directoryLoaded(self, path):
     def on_directoryLoaded(self):
         index = self.configComboBox.findText(MainConfig.settings['cfgFile'])
         self.configComboBox.setCurrentIndex(index)
@@ -260,6 +255,7 @@ class Window(QtWidgets.QWidget):
         index = self.configComboBox.findText(MainConfig.settings['cfgFile'])
         self.configComboBox.setCurrentIndex(index)
         print('MainConfig: Configuration file changed to: ', value)
+        MainConfig.saveConfig(MainConfig.fileName)
 
     def configNewButtonPressed(self):
         print('New Config Dialogue')
@@ -285,14 +281,11 @@ class Window(QtWidgets.QWidget):
                 seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
                 print('Creating New SeaBASSHeader File: ', seaBASSHeaderFileName)
                 SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
+            MainConfig.saveConfig(MainConfig.fileName)
 
     def configEditButtonPressed(self):
         print('Edit Config Dialogue')
         configFileName = self.configComboBox.currentText()
-
-        # ConfigFile.settings['AncFile'] = self.ancFileLineEdit.text()
-        # if ConfigFile.settings['AncFile'] == '':
-        #     ConfigFile.settings['AncFile'] = None
 
         inputDir = self.inputDirectory
         configPath = os.path.join('Config', configFileName)
@@ -332,6 +325,7 @@ class Window(QtWidgets.QWidget):
         print('Data input directory changed: ', self.inputDirectory)
         self.inDirButton.setText(self.inputDirectory)
         MainConfig.settings['inDir'] = self.inputDirectory
+        MainConfig.saveConfig(MainConfig.fileName)
         return self.inputDirectory
 
     def outDirButtonPressed(self):
@@ -342,12 +336,13 @@ class Window(QtWidgets.QWidget):
         if self.outputDirectory == '':
             self.outputDirectory = temp
         if self.outputDirectory == '':
-            self.outputDirectory = './Data'
+            self.outputDirectory = './Data/Sample_Data'
         print('Data output directory changed: ', self.outputDirectory)
         print('NOTE: Subdirectories for data levels will be created here')
         print('      automatically, unless they already exist.')
         self.outDirButton.setText(self.outputDirectory)
         MainConfig.settings['outDir'] = self.outputDirectory
+        MainConfig.saveConfig(MainConfig.fileName)
         return self.outputDirectory
 
     def outInDirButtonPressed(self):
@@ -357,35 +352,55 @@ class Window(QtWidgets.QWidget):
         print('      automatically, unless they already exist.')
         self.outDirButton.setText(self.outputDirectory)
         MainConfig.settings['outDir'] = self.outputDirectory
+        MainConfig.saveConfig(MainConfig.fileName)
         return self.outputDirectory
 
     def ancAddButtonPressed(self):
-        print('Met File Add Dialogue')
-        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Meteorologic Data File',self.inputDirectory)
+        print('Ancillary File Add Dialogue')
+        if self.ancFileDirectory == '':
+            self.ancFileDirectory = self.inputDirectory # Reverts to Input directory first
+            if self.ancFileDirectory == '':
+                self.ancFileDirectory = './Data/Sample_Data' # Falls back to ./Data/Sample_Data
+        fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Ancillary Data File',self.ancFileDirectory)
         if any(fnames):
             print(fnames)
             if len(fnames[0]) == 1:
                 self.ancFileLineEdit.setText(fnames[0][0])
-            MainConfig.settings['metFile'] = fnames[0][0]
+            MainConfig.settings['metFile'] = fnames[0][0] # unclear why this sometimes does not "take" the first time
+            MainConfig.saveConfig(MainConfig.fileName)
 
     def ancRemoveButtonPressed(self):
         print('Wind File Remove Dialogue')
         self.ancFileLineEdit.setText('')
         MainConfig.settings['metFile'] = ''
+        self.ancFileDirectory = ''
+        MainConfig.saveConfig(MainConfig.fileName)
 
     def processSingle(self, level):
         print('Process Single-Level')
+
         t0Single=time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
-        configPath = os.path.join('Config', configFileName)
-        if not os.path.isfile(configPath):
+        MainConfig.settings['cfgPath'] = os.path.join('Config', configFileName)
+        if not os.path.isfile(MainConfig.settings['cfgPath']):
             message = 'Not valid Config File: ' + configFileName
             QtWidgets.QMessageBox.critical(self, 'Error', message)
             return
+        MainConfig.saveConfig(MainConfig.fileName)
         ConfigFile.loadConfig(configFileName)
         seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+        InstrumentType = ConfigFile.settings['SensorType']
+
+        # To check instrument type
+        if InstrumentType.lower() == 'trios':
+            flag_Trios = 1
+        elif InstrumentType.lower() == 'seabird':
+            flag_Trios = 0
+        else:
+            print('Error in configuration file: Sensor type not specified')
+            sys.exit()
 
         # Select data files
         if not self.inputDirectory[0]:
@@ -418,10 +433,13 @@ class Window(QtWidgets.QWidget):
             return
 
         print('Process Calibration Files')
-        filename = ConfigFile.filename
         calFiles = ConfigFile.settings['CalibrationFiles']
-        # print('JMR', filename, calFiles) # JMR?
-        calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+
+        if flag_Trios == 0:
+            calibrationMap = Controller.processCalibrationConfig(configFileName, calFiles)
+        else:
+            calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
+            # calibrationMap = 0
         if not calibrationMap.keys():
             print('No calibration files found. '
             'Check Config directory for your instrument files.')
@@ -432,7 +450,7 @@ class Window(QtWidgets.QWidget):
             print('Bad output directory.')
             return
 
-        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, ancFile)
+        Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, flag_Trios)
         t1Single = time.time()
         print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
 
@@ -464,10 +482,12 @@ class Window(QtWidgets.QWidget):
 
     def processMulti(self, level):
         print('Process Multi-Level')
+        MainConfig.saveConfig(MainConfig.fileName)
         t0Multi = time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
         configPath = os.path.join('Config', configFileName)
+        MainConfig.settings['cfgPath'] = configPath
         if not os.path.isfile(configPath):
             message = 'Not valid Config File: ' + configFileName
             QtWidgets.QMessageBox.critical(self, 'Error', message)
@@ -491,14 +511,22 @@ class Window(QtWidgets.QWidget):
         if not self.outputDirectory:
             return
 
-        ancFile = self.ancFileLineEdit.text()
-
-        print('Process Calibration Files')
-        filename = ConfigFile.filename
+        InstrumentType = ConfigFile.settings['SensorType']
         calFiles = ConfigFile.settings['CalibrationFiles']
-        calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        # To check instrument type
+        if InstrumentType.lower() == 'trios':
+            flag_Trios = 1
+            calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
+        elif InstrumentType.lower() == 'seabird':
+            flag_Trios = 0
+            print('Process Calibration Files')
+            filename = ConfigFile.filename
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        else:
+            print('Error in configuration file: Sensor type not specified')
+            sys.exit()
 
-        Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, ancFile)
+        Controller.processFilesMultiLevel(self.outputDirectory,fileNames, calibrationMap, flag_Trios)
         t1Multi = time.time()
         print(f'Time elapsed: {str(round((t1Multi-t0Multi)/60))} Minutes')
 
@@ -509,7 +537,6 @@ class Window(QtWidgets.QWidget):
     def popQueryCheckBoxUpdate(self):
         print('Main - popQueryCheckBoxUpdate')
         MainConfig.settings['popQuery'] = int(self.popQueryCheckBox.isChecked())
-        pass
 
     def saveButtonClicked(self):
         print('Main - saveButtonClicked')
@@ -520,12 +547,14 @@ class Window(QtWidgets.QWidget):
 class Command():
     ''' Class without using the GUI '''
 
-    def __init__(self, configFilePath, inputFile, outputDirectory, level, ancFile=None):
+    def __init__(self, configFilePath, from_level, inputFile, outputDirectory, level, ancFile=None):
 
         # Configuration File
         self.configFilename = configFilePath
         # Input File
         self.inputFile = inputFile
+        # Input Directory
+        self.inputDirectory = os.path.join(outputDirectory,from_level)
         # Output Directory
         self.outputDirectory = outputDirectory
         # Processing Level
@@ -570,62 +599,188 @@ class Command():
 
         # Update main configuration path with cmd line input
         MainConfig.settings['cfgFile'] = configFilePath
+        MainConfig.settings['cfgPath'] = configFilePath
         MainConfig.settings['version'] = version
         MainConfig.settings["metFile"] = self.ancFile
         MainConfig.settings["outDir"] = outputDirectory
-        if os.path.isfile(inputFile):
-            MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
+        if type(inputFile) is list:
+            # Process the entire directory of the first file in the list
+            # self.inputFile = os.path.dirname(inputFile[0])+'/'
+            MainConfig.settings["inDir"] = os.path.dirname(inputFile[0])+'/'
+        # if os.path.isfile(inputFile):
+        #     MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
         else:
+            # Single file
             MainConfig.settings["inDir"] = inputFile
         print("MainConfig - Config updated with cmd line arguments")
 
         # No GUI used: error message are display in prompt and not in graphical window
         MainConfig.settings["popQuery"] = -1
 
+        ''' Need INST, calfiles, and trios flag'''
+        ConfigFile.loadConfig(self.configFilename)
+
+        InstrumentType = ConfigFile.settings['SensorType']
+        calFiles = ConfigFile.settings['CalibrationFiles']
+        # To check instrument type
+        if InstrumentType.lower() == 'trios':
+            flag_Trios = 1
+            calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
+        elif InstrumentType.lower() == 'seabird':
+            flag_Trios = 0
+            print('Process Calibration Files')
+            filename = ConfigFile.filename
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        else:
+            print('Error in configuration file: Sensor type not specified')
+            sys.exit()
+
+        Controller.processFilesMultiLevel(self.outputDirectory,inputFile, calibrationMap, flag_Trios)
         # For our needs, we only use a single processing
-        self.processSingle(self.level)
+        # self.processSingle(self.level)
 
 
 
     ########################################################################################
 
-    def processSingle(self, level):
-        print('Process Single-Level')
-        t0Single=time.time()
-        # Load Config file
-        configFileName = self.configFilename
-        configPath = os.path.join('Config', configFileName)
-        if not os.path.isfile(configPath):
-            message = 'Not valid Config File: ' + configFileName
-            return
-        ConfigFile.loadConfig(configFileName)
-        seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
-        SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+    # def processSingle(self, level):
+    #     t0Single=time.time()
+    #     # Load Config file
+    #     configFileName = MainConfig.settings['cfgFile']
+    #     MainConfig.settings["inDir"] = self.inputDirectory
+    #     # self.inputDirectory = MainConfig.settings["inDir"]
+    #     # configFileName = self.configComboBox.currentText()
+    #     MainConfig.settings['cfgPath'] = os.path.join('Config', configFileName)
+    #     if not os.path.isfile(MainConfig.settings['cfgPath']):
+    #         message = 'Not valid Config File: ' + configFileName
+    #         QtWidgets.QMessageBox.critical(self, 'Error', message)
+    #         return
+    #     MainConfig.saveConfig(MainConfig.fileName)
+    #     ConfigFile.loadConfig(configFileName)
+    #     seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
+    #     SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+    #     InstrumentType = ConfigFile.settings['SensorType']
 
-        # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
-        # we keep variable fileNames which is a list
-        fileNames = [self.inputFile]
-        print('Files:', fileNames)
-        if not fileNames:
-            return
+    #     # To check instrument type
+    #     if InstrumentType.lower() == 'trios':
+    #         flag_Trios = 1
+    #     elif InstrumentType.lower() == 'seabird':
+    #         flag_Trios = 0
+    #     else:
+    #         print('Error in configuration file: Sensor type not specified')
+    #         sys.exit()
 
-        print('Process Calibration Files')
-        filename = ConfigFile.filename
-        calFiles = ConfigFile.settings['CalibrationFiles']
-        calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
-        if not calibrationMap.keys():
-            print('No calibration files found. '
-            'Check Config directory for your instrument files.')
-            return
+    #     # # Select data files
+    #     # if not self.inputDirectory[0]:
+    #     #     print('Bad input parent directory.')
+    #     #     return
 
-        print('Output Directory:', os.path.abspath(self.outputDirectory))
-        if not self.outputDirectory[0]:
-            print('Bad output directory.')
-            return
+    #     if level == 'L1A':
+    #         inLevel = '' # RAW already added above
+    #     if level == 'L1AQC':
+    #         inLevel = 'L1A'
+    #     if level == 'L1B':
+    #         inLevel = 'L1AQC'
+    #     if level == 'L1BQC':
+    #         inLevel = 'L1B'
+    #     if level == 'L2':
+    #         inLevel = 'L1BQC'
 
-        Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level, self.ancFile)
-        t1Single = time.time()
-        print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
+    #     # Check for subdirectory associated with level chosen
+    #     subInputDir = os.path.join(self.inputDirectory + '/' + inLevel + '/')
+    #     if os.path.exists(subInputDir):
+    #         # openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',subInputDir)
+        #     fileNames = self.inputFile #openFileNames[0] # The first element is the whole list
+
+        # # else:
+        # #     openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',self.inputDirectory)
+        # #     fileNames = openFileNames[0] # The first element is the whole list
+
+        # # print('Files:', openFileNames)
+        # if not fileNames:
+        #     return
+
+        # print('Process Calibration Files')
+        # calFiles = ConfigFile.settings['CalibrationFiles']
+
+        # if flag_Trios == 0:
+        #     calibrationMap = Controller.processCalibrationConfig(configFileName, calFiles)
+        # else:
+        #     calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
+        #     # calibrationMap = 0
+        # if not calibrationMap.keys():
+        #     print('No calibration files found. '
+        #     'Check Config directory for your instrument files.')
+        #     return
+
+        # print('Output Directory:', os.path.abspath(self.outputDirectory))
+        # if not self.outputDirectory[0]:
+        #     print('Bad output directory.')
+        #     return
+
+        # Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, flag_Trios)
+        # t1Single = time.time()
+        # print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
+        # # print('Process Single-Level')
+        # t0Single=time.time()
+        # # Load Config file
+        # configFileName = self.configFilename
+        # configPath = os.path.join('Config', configFileName)
+        # if not os.path.isfile(configPath):
+        #     message = 'Not valid Config File: ' + configFileName
+        #     print(message)
+        #     return
+
+        # ConfigFile.loadConfig(configFileName)
+        # seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
+        # SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+        # InstrumentType = ConfigFile.settings['SensorType']
+
+
+        # ## If a file is specified, then process a single file (Not suitable for L1A .dat file)
+        # if os.path.isfile(inputFile):
+        #     fileNames = [inputFile]
+        # ## if a folder is specified, the process is lauched on all files inside this folder
+        # else:
+        #     fileNames = glob.glob(inputFile+'/*.*')
+
+        # # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
+        # # we keep variable fileNames which is a list
+        # fileNames = [self.inputFile]
+        # print('Files:', fileNames)
+        # if not fileNames:
+        #     print('Error in input data')
+        #     return
+
+        # # To check insturment type
+        # if InstrumentType.lower() == 'trios':
+        #     flag_Trios = 1
+        # elif InstrumentType.lower() == 'seabird':
+        #     flag_Trios = 0
+        # else:
+        #     print('Error in configuration file: Sensor type not specified')
+        #     sys.exit()
+
+        # print('Process Calibration Files')
+        # filename = ConfigFile.filename
+        # calFiles = ConfigFile.settings['CalibrationFiles']
+        # if flag_Trios == 0 :
+        #     calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        #     if not calibrationMap.keys():
+        #         print('No calibration files found. '
+        #         'Check Config directory for your instrument files.')
+        #         return
+        # else:
+        #     calibrationMap = 0      #Cal files are not used for at the moment for Trios
+
+        # print('Output Directory:', os.path.abspath(self.outputDirectory))
+        # if not self.outputDirectory[0]:
+        #     print('Bad output directory.')
+        #     return
+
+        # Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level, flag_Trios)
+        # t1Single = time.time()
+        # print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
 
 
 # Arguments declaration
@@ -702,6 +857,16 @@ username = args.username
 password = args.password
 
 if __name__ == '__main__':
+    # Close splashscreen
+    try:
+        import platform
+
+        if platform.system() in ['Windows', 'Linux']:
+            import pyi_splash # <- Nils, this isn't defined (anymore?)
+
+            pyi_splash.close()
+    except ImportError:
+        pass
 
     # If the cmd argument is given, run the Command class without the GUI
     if cmd:

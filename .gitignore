@@ -1,21 +1,42 @@
+# Ignore OSX files
+.DS_Store
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# pyenv
+.python-version
+
+# vscode
+.vscode/
+
+.gitignore
 Data/Zhang_rho_db.mat
 Data/Anc/
 Data/L*/
+Data/Sample_Data/L*/
 Data/Reports/
+Data/Sample_Data/Reports/
 Data/Photos/
 Plots/
 Logs/
 Config/*
-!Config/sample_Calibration/
-!Config/sample*
-.vscode/
+# !Config/sample_Calibration/
+# !Config/sample*
+Data/FidRadDB_characterization/
 .DS_Store
 .pylintrc
 Source/.DS_Store
 *.pyc
 *.log
-
-Data/Sample_Data/*
-
 runtest.py
 run_NASA*.py
+# copernicus url and keys
+# Should I leave these alone? cdsapirc appears to regenerate automatically.
+.cdsapirc
+#.ecmwf_api_config
+
+#ignore ".idea/" if working with pycharm:
+.idea/

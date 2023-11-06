@@ -1,6 +1,6 @@
 
 import numpy as np
-from ConfigFile import ConfigFile
+from Source.ConfigFile import ConfigFile
 
 class L2par():
     

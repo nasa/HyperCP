@@ -1,9 +1,9 @@
 import os
 from PyQt5 import QtWidgets
 
-from SeaBASSHeader import SeaBASSHeader
-from ConfigFile import ConfigFile
-from MainConfig import MainConfig
+from Source.SeaBASSHeader import SeaBASSHeader
+from Source.ConfigFile import ConfigFile
+from Source.MainConfig import MainConfig
 
 
 class SeaBASSHeaderWindow(QtWidgets.QDialog):
@@ -432,7 +432,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
 
     def configUpdateButtonPressed(self, caller):
-        print("Updating comments from values in ConFigWindow")
+        print("Updating SeaBASS Header comments from values in ConfigWindow")
 
         # This will update subsequently from the ConfigFile on demand
         if ConfigFile.settings["bL1aCleanSZA"]:
@@ -633,10 +633,10 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         print("ConfigWindow - Save As Pressed")
         self.name, ok = QtWidgets.QInputDialog.getText(self, 'Save As SeaBASS Header File', 'Enter File Name')
         if ok:
-            print("Create SeaBASS Header: ", self.name)
 
             if not self.name.endswith(".hdr"):
                 self.name = self.name + ".hdr"
+            print("Create SeaBASS Header: ", self.name)
 
             self.nameLabel.update()
             SeaBASSHeaderWindow.saveButtonPressed(self)

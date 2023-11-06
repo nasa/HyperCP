@@ -1,16 +1,10 @@
 
 import collections
-import sys
 import h5py
 import numpy as np
 
-from HDFGroup import HDFGroup
-from HDFDataset import HDFDataset
-# For testing HDF4 support with pyhdf
-#from pyhdf.HDF import *
-#from pyhdf.SD import *
-#from pyhdf.V import *
-#from pyhdf.VS import *
+from Source.HDFGroup import HDFGroup
+from Source.HDFDataset import HDFDataset
 
 ''' May need to >>conda install hdf5=1.8.18<< in the future '''
 
@@ -42,7 +36,6 @@ class HDFRoot:
     def getGroup(self, name):
         for gp in self.groups:
             if gp.id == name:
-            # if gp.id.startswith(name): <- not sure what this was for, but it breaks on SOLARTRACKER_STATUS
                 return gp
         return None
 
@@ -50,7 +43,6 @@ class HDFRoot:
         gp = name
         if gp:
             self.groups.remove(gp)
-        # return
 
     def getDataset(self, name):
         if name in self.datasets:

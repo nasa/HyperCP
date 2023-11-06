@@ -3,9 +3,9 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
-from HDFRoot import HDFRoot
-from ConfigFile import ConfigFile
-from Utilities import Utilities
+from Source.HDFRoot import HDFRoot
+from Source.ConfigFile import ConfigFile
+from Source.Utilities import Utilities
 
 class ProcessL1aqc_deglitch:
     '''

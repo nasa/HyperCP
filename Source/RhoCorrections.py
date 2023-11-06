@@ -3,15 +3,17 @@ import time
 
 import numpy as np
 
-from ConfigFile import ConfigFile
-from Utilities import Utilities
-from HDFRoot import HDFRoot
-import ZhangRho
+from Source import ZhangRho, PATH_TO_DATA
+from Source.ConfigFile import ConfigFile
+from Source.Utilities import Utilities
+from Source.HDFRoot import HDFRoot
+
 
 class RhoCorrections:
 
     @staticmethod
-    def M99Corr(windSpeedMean,SZAMean,relAzMean):
+    def M99Corr(windSpeedMean, SZAMean, relAzMean, Propagate = None,
+                AOD=None, cloud=None, wTemp=None, sal=None, waveBands=None):
         ''' Mobley 1999 AO'''
 
         msg = 'Calculating M99 glint correction with complete LUT'
@@ -32,7 +34,7 @@ class RhoCorrections:
         relAz = phiViews[relAz_idx]
 
         # load in the LUT HDF file
-        inFilePath = os.path.join(ConfigFile.fpHySP, 'Data','rhoTable_AO1999.hdf')
+        inFilePath = os.path.join(PATH_TO_DATA, 'rhoTable_AO1999.hdf')
         try:
             lut = HDFRoot.readHDF5(inFilePath)
         except:
@@ -49,7 +51,61 @@ class RhoCorrections:
             (lut[:,2] == theta) & (lut[:,4] == relAz)]
 
         rhoScalar = row[0][5]
-        rhoDelta = 0.003 # Unknown; estimated from Ruddick 2006
+
+        Delta = Propagate.M99_Rho_Uncertainty(mean_vals=[windSpeedMean, SZAMean, relAzMean],
+                                              uncertainties=[1, 0.5, 3])/rhoScalar
+
+        # TODO: Model error estimation, requires ancillary data to be switched on. This could create a conflict.
+        if not any([AOD is None, wTemp is None, sal is None, waveBands is None]) and \
+                ((ConfigFile.settings["bL1bCal"] > 1) or (ConfigFile.settings['SensorType'].lower() == "seabird")):
+            # Fix: Truncate input parameters to stay within Zhang ranges:
+            # AOD
+            AOD = np.min([AOD,0.2])
+            # SZA
+            if 60 < SZAMean < 70:
+                SZAMean = SZAMean
+            elif SZAMean >= 70:
+                raise ValueError('SZAMean is to high (%s), Zhang correction cannot be performed above SZA=70.')
+            # wavelengths in range [350-1000] nm
+            newWaveBands = [w for w in waveBands if w >= 350 and w <= 1000]
+            # Wavebands clips the ends off of the spectra reducing the amount of values from 200 to 189 for
+            # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
+
+            # zhang = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
+            zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
+                                                relAzMean, newWaveBands)
+
+            # get the relative difference between mobley and zhang and add in quadrature as uncertainty component
+
+            #  Is |M99 - Z17| the only estimate of glint uncertainty? I thought they had been modeled in MC. -DAA
+            #  uncertainties must be in % form (relative and *100) in order to do sum of squares
+            pct_diff = (np.abs(rhoScalar - zhang) / rhoScalar)  # relative units
+            tot_diff = np.power(np.power(Delta * 100, 2) + np.power(pct_diff * 100, 2), 0.5)
+            tot_diff[np.isnan(tot_diff)==True] = 0  # ensure no NaNs are present in the uncertainties.
+            tot_diff = (tot_diff/100) * rhoScalar
+            # add back in filtered wavelengths
+            rhoDelta = []
+            i = 0
+            for w in waveBands:
+                if w >= 350 and w <= 1000:
+                    rhoDelta.append(tot_diff[i])
+                    i += 1
+                else:
+                    # in cases where we are outside the range in which Zhang is calculated a placeholder is used
+                    rhoDelta.append((np.power(np.power((Delta / rhoScalar) * 100, 2) +
+                                     np.power((0.003 / rhoScalar) * 100, 2), 0.5)/100)*rhoScalar)
+                    # necessary to convert to relative before propagating, then converted back to absolute
+        else:
+            # this is temporary. It is possible for users to not select any ancillary data in the config, meaning Zhang
+            # Rho will fail. It is far too easy for a user to do this, so I added the following line to make sure the
+            # processor doesn't break.
+            # 0.003 was chosen because it is the only number with any scientific justification
+            # (estimated from Ruddick 2006).
+
+            # Not sure I follow. Ancillary data should be populated regardless of whether an ancillary file is
+            # added (i.e., using the model data) - DAA
+            rhoDelta = (np.power(np.power((Delta / rhoScalar) * 100, 2)
+                        + np.power((0.003 / rhoScalar) * 100, 2), 0.5)/100)*rhoScalar
 
         return rhoScalar, rhoDelta
 
@@ -83,7 +139,8 @@ class RhoCorrections:
         return rhoScalar, rhoDelta
 
     @staticmethod
-    def ZhangCorr(windSpeedMean,AOD,cloud,sza,wTemp,sal,relAz,waveBands):
+    # def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
+    def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands, Propagate = None):
         ''' Requires xarray: http://xarray.pydata.org/en/stable/installing.html
         Recommended installation using Anaconda:
         $ conda install xarray dask netCDF4 bottleneck'''
@@ -101,10 +158,22 @@ class RhoCorrections:
         # positive z is upward
         sensor = {'ang': np.array([40, 180 - relAz]), 'wv': np.array(waveBands)}
 
+        # # define uncertainties and create variable list for punpy. Inputs cannot be ordered dictionaries
+        varlist = [windSpeedMean, AOD, 0.0, sza, wTemp, sal, relAz, np.array(waveBands)]
+        ulist = [1.0, 0.01, 0.0, 0.5, 2, 0.5, 3, None]
+
         tic = time.process_time()
         rhoVector = ZhangRho.get_sky_sun_rho(env, sensor, round4cache=True)['rho']
-        print(f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s')
+        msg = f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s'
+        print(msg)
+        Utilities.writeLogFile(msg)
 
-        rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
+        # Presumably obsolete (Ashley)? -DAA
+        if Propagate is None:
+            rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
+        else:
+            rhoDelta = Propagate.Zhang_Rho_Uncertainty(mean_vals=varlist,
+                                                       uncertainties=ulist,
+                                                       )
 
         return rhoVector, rhoDelta

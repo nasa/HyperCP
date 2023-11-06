@@ -7,6 +7,8 @@ import numpy as np
 import xarray as xr  # Only needed to read original data
 from scipy.interpolate import interpn
 
+from Source import PATH_TO_DATA
+
 
 logger = logging.getLogger('zhang17')
 
@@ -27,7 +29,7 @@ def load():
     logger.debug('Load constants')
     global db, quads, skyrad0, sunrad0, sdb, vdb, rad_boa_sca, rad_boa_vec
 
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Data', 'Zhang_rho_db.mat')
+    db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_db.mat')
     with xr.open_dataset(db_path, engine='netcdf4') as ds:
         skyrad0 = ds['skyrad0'].to_numpy().T
         sunrad0 = ds['sunrad0'].to_numpy().T
@@ -75,7 +77,7 @@ def my_sph2cart(azm, zen, r=1):
     """
     elev = np.pi / 2 - zen
     cos_elev = np.cos(elev)
-    xyz = np.empty((*np.broadcast_shapes(azm.shape, zen.shape), 3), dtype=np.float)
+    xyz = np.empty((*np.broadcast_shapes(azm.shape, zen.shape), 3), dtype=float)
     xyz[..., 0] = r * cos_elev * np.cos(azm)
     xyz[..., 1] = r * cos_elev * np.sin(azm)
     xyz[..., 2] = r * np.sin(elev)
@@ -331,7 +333,7 @@ def index_w(wv, t, s):
 
     n0_4 = n0 + (n1 + n2 * t + n3 * t ** 2) * s + n4 * t ** 2
     n5_7 = n5 + n6 * s + n7 * t
-    wv = np.array(wv, dtype=np.float)
+    wv = np.array(wv, dtype=float)
     mw = n0_4 + n5_7 * (wv ** -1) + n8 * (wv ** -2) + n9 * (wv ** -3)
     return mw
 
@@ -386,6 +388,10 @@ def fresnel(m, ang):
 
 
 def interpn_chunked(x, y, xi, chunked_axis=2, cache_size=(16 * 10 ** 6) / 4):
+    # x: array(arrays(0:3)) ranges of zen_sun(7), od(4), index(92476), waveband(131); x[chunked_axis=2]=index, so array(0:92475)
+    # y: skyrad0 (7x4x92746x131)
+    # xi: array(arrays(0:3)) env['zen_sun'](1), env['od'](1), db_idx(92476), sensor['wv'](depends on sensor))
+
     ndim = len(x)
     chunk = (y.size * y.dtype.itemsize) / cache_size  # TODO Optimize chunk size automatically based on cache size
     if chunk > 1:
