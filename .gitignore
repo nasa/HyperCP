@@ -12,7 +12,7 @@ __pycache__/
 # vscode
 .vscode/
 
-#.gitignore
+.gitignore
 Data/Zhang_rho_db.mat
 Data/Anc/
 Data/L*/
