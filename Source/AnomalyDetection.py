@@ -219,21 +219,12 @@ class AnomAnalWindow(QtWidgets.QDialog):
             self.ThresholdCheckBox.setChecked(False)
         self.ThresholdCheckBoxUpdate()
 
-        # # Set up datetime axis objects
-        # #   https://stackoverflow.com/questions/49046931/how-can-i-use-dateaxisitem-of-pyqtgraph
-        # class TimeAxisItem(pg.AxisItem):
-        #     def tickStrings(self, values, scale, spacing):
-        #         return [datetime.fromtimestamp(value, pytz.timezone("UTC")) for value in values]
-
-        # date_axis_Dark = TimeAxisItem(orientation='bottom')
-        # date_axis_Light = TimeAxisItem(orientation='bottom')
-
         # Set up realtime plot widgets
         self.plotWidgetDark = pg.PlotWidget(self)
         self.plotWidgetDark.addLegend()
-        self.plotWidgetDark.setAxisItems({'bottom': pg.DateAxisItem()})
+        self.plotWidgetDark.setAxisItems({'bottom': pg.DateAxisItem(utcOffset=0)})
         self.plotWidgetLight = pg.PlotWidget(self)
-        self.plotWidgetLight.setAxisItems({'bottom': pg.DateAxisItem()})
+        self.plotWidgetLight.setAxisItems({'bottom': pg.DateAxisItem(utcOffset=0)})
 
         guideLabel = QtWidgets.QLabel(\
             'Left-click-hold to pan, right-click-hold to zoom, or right-click-release for more options.\
@@ -1124,7 +1115,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 radUnits = self.root.attributes['LI_UNITS']
 
             text_ylabel=f'[DARKS]  {sensorType}({self.waveBand:.0f}) [{radUnits}]'
-            text_xlabel='Timestamp'
+            text_xlabel='Time series'
             figTitle = f'Band: {self.waveBand} Window: {window} Sigma: {sigma}'
             # self.plotWidgetDark.setWindowTitle(figTitle)
             print(f'{figTitle} Dark')
@@ -1133,8 +1124,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             self.plotWidgetDark.setLabel('bottom', text_xlabel,**styles)
             # self.plotWidgetDark.setLabel('bottom', text_xlabel,**styles)
             self.plotWidgetDark.showGrid(x=True, y=True)
-            # ''' legend not working '''
-            # self.plotWidgetDark.addLegend()
+
         else:
             ph = self.phLight
             phAve = self.phTimeAveLight
@@ -1153,7 +1143,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 radUnits = self.root.attributes['LI_UNITS']
 
             text_ylabel=f'[LIGHTS]  {sensorType}({self.waveBand:.0f}) [{radUnits}]'
-            text_xlabel='Timestamp'
+            text_xlabel='Time series'
             figTitle = f'Band: {self.waveBand} Window: {window} Sigma: {sigma}'
             print(f'{figTitle} Dark')
             # self.plotWidgetLight.setWindowTitle(figTitle, **styles)
@@ -1165,8 +1155,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(self.waveBand,radiometry1D, window, sigma, lightDark, minRad, maxRad,minMaxBand)
         avg = Utilities.movingAverage(radiometry1D, window).tolist()
 
-        # ''' Use numeric series (x) for now in place of datetime '''
-        # x = np.arange(0,len(radiometry1D),1)
+        # Convert to timestamp
         x = np.array([x.timestamp() for x in dateTime])
 
         # First Pass
