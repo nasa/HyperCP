@@ -4,14 +4,14 @@
 
 <center><img src="Data/Img/with_background_530x223.png" alt="Banner"></center>
 
-Hyperspectral In situ Support for PACE (HyperInSPACE) Community Processor (HyperCP) is designed to provide hyperspectral in situ support for the <a href='https://pace.gsfc.nasa.gov/'>PACE mission</a> but also multispectral missions such as
+Hyperspectral In situ Support for PACE (HyperInSPACE) Community Processor (HyperCP) is designed to provide hyperspectral support for the <a href='https://pace.gsfc.nasa.gov/'>PACE mission</a> but also multispectral missions such as
 [Sentinel-3](https://sentinels.copernicus.eu/web/sentinel/missions/sentinel-3) by processing automated and manual, above-water,
 hyperspectral ocean color radiometry data using state-of-the-art methods and protocols for quality assurance,
 uncertainty estimation/propagation, sky/sunglint correction, convolution to satellite wavebands, and ocean color product
-retrieval. Data output are formatted to text files for submission to the [SeaBASS](https://seabass.gsfc.nasa.gov/) and [OCDB](https://ocdb.eumetsat.int/) databases and saved as comprehensive HDF5 records with automated processing reports. The package is designed to facilitate rigorous, flexible, and transparent data processing for the ocean color remote sensing community, particularly PIs funded by NASA to submit such radiometric data to SeaBASS. Radiometry processed in HyperCP are used for water optical characterization, ocean color product retrieval algorithm development, and orbital platform validation.
+retrieval. Data outputs are formatted to text files for submission to the [SeaBASS](https://seabass.gsfc.nasa.gov/) and [OCDB](https://ocdb.eumetsat.int/) databases and saved as comprehensive HDF5 records with automated processing reports. The package is designed to facilitate rigorous, flexible, and transparent data processing for the ocean color remote sensing community. Radiometry processed in HyperCP is used for water optical characterization, ocean color product retrieval algorithm development, and orbital platform validation.
 
 Currently, HyperCP supports <a href='https://www.seabird.com/'>Sea-Bird Scientific</a> HyperSAS packages with and
-without SolarTracker or pySAS robotic platforms as well as [TriOS](https://www.trios.de/en/radiometers.html) used in manual configuration. If you are interested in integrating support for your platform, contact us at the email addresses below the copyright.
+without SolarTracker or pySAS robotic platforms as well as [TriOS](https://www.trios.de/en/radiometers.html) used in manual configuration. If you are interested in integrating support for your platform, contact us at the email addresses below or in the Discussions tab of the GitHub repository.
 
 ## Version 1.2.0
 
@@ -33,7 +33,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 **Co-authors**: Nathan Vandenberg @ UVictoria, Maycira Costa @ UVictoria (in the frame of [PySciDON](https://ieeexplore.ieee.org/abstract/document/8121926)), Alexis Deru @ ACRI-ST, Ashley Ramsay @ NPL, Agnieszka Bialek @ NPL, Marine Bretagnon @ ACRI-ST (in the frame of Copernicus' [FRM4SOC-2](https://frm4soc2.eumetsat.int/)), Gabriele Bai @ ACRI-ST, Juan Ignacio Gossn @ EUMETSAT, Nils Haentjens @ UMaine
 
-**Contact**: Discussions tab in GitHub, or Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>, Juan Ignacio Gossn @ EUMETSAT <JuanIgnacio.Gossn@eumetsat.int>
+**Contact**: Discussions tab in GitHub, or Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>, and Juan Ignacio Gossn @ EUMETSAT <JuanIgnacio.Gossn@eumetsat.int>
 
 ## Requirements and Installation
 
@@ -42,11 +42,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 Clone this repository (branch: "master") to a convenient directory on your computer:
 
 ```
-prompt$ git clone --depth 1 https://github.com/nasa/HyperInSPACE.git /path/to/convenient/directory
+prompt$ git clone --depth 1 https://github.com/nasa/HyperCP.git /path/to/convenient/directory
 ```
 
 or, if you are unfamiliar with git, simply download and unzip by clicking ```Code >> Download ZIP```  -
-we encourage you to use git though (see why below).
+we encourage you to use git though (see why below). A link to bundled executable versions of HyperCP for Windows, MacOS, and Linux will be added soon.
 
 ### 2. Get the HyperCP environment
 
@@ -79,19 +79,15 @@ using the software. From the HyperCP directory, type:
 (hypercp) prompt$ git pull
 ```
 
-[If, instead, you are not using git you should regularly re-download and unzip the repository if you want to ensure you
+[If, instead, you are not using git you should regularly re-download and unzip the repository or the bundled executable version to ensure you
 are using the latest version of the software].
 
-To report an issue, please submit it [here](https://github.com/nasa/HyperInSPACE/issues), the HyperCP Team will take
-care of it :).
+To report a bug, please submit it [here](https://github.com/nasa/HyperCP/issues), the HyperCP Team will take
+care of it :). All other support inquiries should be directed to the Discussions board [here](https://github.com/nasa/HyperCP/discussions)
 
 ### 3. Launch HyperCP for the first time!
 
-<!---*Bug: Very rarely, when running the program for the first time, the first RAW binary data file opened for processing
- is not read in properly. Processing will fail with the error message: [filename] does not match expected input level.
- The file will process properly if run a second time (assuming it is a healthy file). Cause unknown.*-->
-
-To finalise and test the setting up, let's launch HyperCP for the first time: navigate to the project folder on
+To finalize and test the set-up, let's launch HyperCP for the first time: navigate to the project folder on
 the command line and type:
 
 ```
@@ -123,7 +119,7 @@ into them as described below. No system files will be changed.
 
 #### 3.2 Database (downloaded after first launch)
 
-- **Zhang skyglint correction database**: This (~ 2.3 GB) database will be - optionally - used for the glint correction
+- **Zhang skyglint correction database**: This (~ 2.3 GB) database will be optionally used for the glint correction
 based on the method of [Zhang et al., 2017, OE, 25(4)](https://opg.optica.org/oe/fulltext.cfm?uri=oe-25-4-A1&id=357012)).
 It will stored at ```/Data/Zhang_rho_db.mat```.
 If this download should fail for any reason, further instructions will be given
@@ -143,7 +139,7 @@ to start using HyperCP!
 3. Create a new Configuration (or edit an existing Configuration)
 4. Add and enable only *relevant* calibration and instrument files to the Configuration; there is no such thing as a standard instrument package
 5. Choose appropriate processing parameters for L1A-L2 (do not depend on software defaults; there is no such thing as a standard data collection)
-6. HDF files will be produced at each level of processing, plus optional SeaBASS text files for radiometry at L2. Plots can be produced at L1AQC, L1B, and L2. Processing logs and plots are aggregated into optional PDF Reports at L2 (covering all processing from RAW to L2) written to a dedicated Reports directory in the selected Output directory.
+6. HDF5 files will be produced at each level of processing, plus optional SeaBASS text files for radiometry at L2. Plots can be produced at L1AQC, L1B, and L2. Processing logs and plots are aggregated into optional PDF Reports at L2 (covering all processing from RAW to L2) written to a dedicated Reports directory in the selected Output directory.
 
 
 ### Main Window: Description
@@ -172,20 +168,17 @@ The Main window appears once Main.py is launched, as described [above](README.md
  4. Single-level processing
  5. Multi-level processing
 
- NB: Your Main window set up (including configuration file, Input/Output directories, and Ancillary File) will be saved in
- Config/main.config using the Save button or upon closing the Main window, and reopened the next time you launch Main.py.
+Pop-up windows for failed processing (i.e, no output data due to either corrupt raw data or stringent quality control filtering) files can be suppressed using the check box. No output file at a given processing level is often a normal result of quality control filtering, so checking this box allows batches to continue uninterrupted (or frees the core if multi-core processing via command line).
 
- <!--
- This text seems to be misplaced here! to check
- For batch processing, pop-up windows from "failed"
- (no output due to either corrupt raw binary data or stringent quality control filtering) files can be suppressed.
- Producing no output file at a given processing level is often a normal result of quality control filtering,
- so this option allows batches to continue uninterrupted (or freeing the core in use if multi-core processing via command line).-->
+ NB: Your Main window set up (including configuration file, Input/Output directories, and Ancillary File) will be saved automatically in
+ Config/main.config and reopened the next time you launch Main.py.
+
+
 
 #### 1. Configuration Section
 
-The configuration section in the main window involves setting the correct config (.cfg) file, which in turn includes
- details of which processing parameters as well as which calibration/characterisation files will be used to run HyperCP.
+The configuration section in the Main window involves setting the correct config (.cfg) file, which in turn includes
+ details of which processing parameters and calibration/characterisation files will be used to run HyperCP.
 
 You will need to read [this](README_configuration.md) to learn how to set your configuration file appropriately.
 
@@ -222,6 +215,7 @@ Optional data fields in the SeaBASS format include
 
 - station number,
 - ship heading,
+- ship speed,
 - relative sensor azimuth,
 - aerosol optical depth,
 - cloud cover,
@@ -229,38 +223,32 @@ Optional data fields in the SeaBASS format include
 - water temperature,
 - wind speed.
 
-Example ancillary files are included for use as a template. It is recommended that ancillary files are checked with the
-```FCHECK``` utility as described [here](https://seabass.gsfc.nasa.gov/wiki/FCHECK). They will be interpreted using the
-included ```SB_support.py``` module from NASA/OBPG.
+Example ancillary files are included in /Data/Sample_Data for use as a template. It is recommended that ancillary files are checked with the ```FCHECK``` utility as described [here](https://seabass.gsfc.nasa.gov/wiki/FCHECK). They will be interpreted using the included ```SB_support.py``` module from NASA/OBPG.
 
 In case environmental conditions were not logged in the field, or for filling in gaps in logged data, they will be
-retrieved from GMAO models as described below. The ancillary data file is optional (though strongly advised for adding
-wind speed at a minimum) provided the sensor suite is equipped with a SolarTracker or equivalent to supply the relevant
-sensor/solar geometries combined with a GPS for position and time. If no SolarTracker-type instrument is present to
-report the relative sensor/solar geometries, the ancillary file must be provided with at least the ship heading and
-relative angle between the bow of the ship and the sensor azimuth as a function of time (see sample file provided).
- If no GPS is present, position and time are also required in an ancillary file. Application of the Zhang et al. (2017)
- glint correction will require the addition of GMAO model data for aerosol optical depth.
+retrieved from GMAO or ECMWF models as described below. The ancillary data file is optional (though strongly advised for adding wind speed at a minimum) provided the sensor suite is equipped with a SolarTracker, pySAS, or equivalent to supply the relevant sensor/solar geometries combined with a GPS for position and time. If no SolarTracker-type instrument is present to report the relative sensor/solar geometries, the ancillary file must be provided with at least the ship heading and relative angle between the bow of the ship and the sensor azimuth as a function of time (see sample "NOTRACKER" configuration provided). If no GPS is present, position and time are also required in an ancillary file. Application of the Zhang et al. (2017) glint correction will require the addition of GMAO or ECMWF model data for aerosol optical depth.
 
 
 #### 4. Single-level Processing
 
-HyperCP's workflow follows processing levels going from L0 to L2, resembling quite well the satellite processing levels.
-In this section, you can execute each of the processors that take you from a processing level to the next individually.
+HyperCP's workflow follows processing levels from L0 to L2, resembling satellite processing levels.
+In this section you can execute each of the processors that take you from one processing level to the next individually.
 
 A file selection dialogue will appear. Multiple data files can be processed together (successively) by simply selecting
 them together in the GUI  (e.g. ```Shift-``` or ```Ctrl-``` click, or ```Ctrl-A``` for all, depending on your platform).
-Input files will be checked for match to  expected input level (e.g. L1AQC file input for for L1B processing).
+Input files will be checked for matching expected input level (e.g. L1AQC file input for for L1B processing will raise an error).
 
 #### 5. Multi-level Processing
 
+
 Multi-level processing works the same as  single-level by processing each input raw file through all levels before moving
 on to the next raw file. However, it  will only continue with a given file if the preceding level was created immediately
-(within 1 minute) prior. *In other words, if -- due to changes in QA/QC parameterization -- a file is entirely discarded
+(within 1 minute) prior. In other words, if -- due to changes in QA/QC parameterization -- a file is entirely discarded
 at a given level, but an old file of the same name still exists in that directory, it will be ignored, and processing
 for that file will be terminated for higher levels.
 
 ### Processing workflow overview
+<center><img src="Data/Img/Flow_chart_1.2.0.png" alt="Banner"></center>
 
 Level 1A through Level 2 processing configurations are adjusted in the Configuration window.
 If you are reading this for the first time, opening the Configuration Window is a good reference to accompany the
