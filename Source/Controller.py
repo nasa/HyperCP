@@ -333,12 +333,19 @@ class Controller:
             try:
                 root.writeHDF5(outFilePath)
             except:
-                msg = "L1aqc processing failed. Nothing to output."
+                msg = "Controller.processL1aqc: Unable to open HDF file. May be open in another application."
                 if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                     Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
+        else:
+            msg = "L1aqc processing failed. Nothing to output."
+            if MainConfig.settings["popQuery"] == 0:
+                Utilities.errorWindow("File Error", msg)
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
 
         return root
 
