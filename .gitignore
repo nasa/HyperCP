@@ -12,6 +12,10 @@ __pycache__/
 # vscode
 .vscode/
 
+# Backup stores
+~*
+
+# HyperCP
 .gitignore
 Data/Zhang_rho_db.mat
 Data/Anc/
@@ -33,8 +37,8 @@ Source/.DS_Store
 *.log
 runtest.py
 run_NASA*.py
+
 # copernicus url and keys
-# Should I leave these alone? cdsapirc appears to regenerate automatically.
 .cdsapirc
 #.ecmwf_api_config
 
