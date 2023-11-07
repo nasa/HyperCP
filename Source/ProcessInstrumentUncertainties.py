@@ -151,7 +151,7 @@ class Instrument(ABC):
         ones = np.ones(len(Cal['ES']))  # to provide array of 1s with the correct shape
 
         # create lists containing mean values and their associated uncertainties (list order matters)
-        if not stats['ES']['ave_Dark'].shape:
+        if ConfigFile.settings['SensorType'].lower() == "trios":
             # for trios the dark average and std is one value
             esaveDark = ones*stats['ES']['ave_Dark']
             liaveDark = ones*stats['LI']['ave_Dark']
@@ -160,7 +160,7 @@ class Instrument(ABC):
             listdDark = ones*stats['LI']['std_Dark']
             ltstdDark = ones*stats['LT']['std_Dark']
 
-        else:
+        elif ConfigFile.settings['SensorType'].lower() == "seabird":
             # for seabird it is an array of length 255
             esaveDark = stats['ES']['ave_Dark']
             liaveDark = stats['LI']['ave_Dark']
@@ -193,6 +193,10 @@ class Instrument(ABC):
 
         # NOTE: ISSUE #95
         ES_unc, LI_unc, LT_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
+        es, li, lt = PropagateL1B.instruments(*mean_values)
+        ES_unc = ES_unc/es  # convert to relative uncertainty
+        LI_unc = LI_unc/li  # convert to relative uncertainty
+        LT_unc = LT_unc/lt  # convert to relative uncertainty
 
         # return uncertainties as dictionary to be appended to xSlice
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()), dtype=float)  # std_Signal_Interpolated has keys which represent common wavebands for ES, LI, & LT.
@@ -282,16 +286,16 @@ class Instrument(ABC):
         # zeros = np.zeros(len(Cal['ES']))  # for testing
 
         # create lists containing mean values and their associated uncertainties (list order matters)
-        if not stats['ES']['ave_Dark'].shape:
+        if ConfigFile.settings['SensorType'].lower() == "trios":
             # for trios the dark average and std is one value
-            esaveDark = ones*stats['ES']['ave_Dark']
-            liaveDark = ones*stats['LI']['ave_Dark']
-            ltaveDark = ones*stats['LT']['ave_Dark']
-            esstdDark = ones*stats['ES']['std_Dark']
-            listdDark = ones*stats['LI']['std_Dark']
-            ltstdDark = ones*stats['LT']['std_Dark']
+            esaveDark = stats['ES']['ave_Dark']
+            liaveDark = stats['LI']['ave_Dark']
+            ltaveDark = stats['LT']['ave_Dark']
+            esstdDark = stats['ES']['std_Dark']
+            listdDark = stats['LI']['std_Dark']
+            ltstdDark = stats['LT']['std_Dark']
 
-        else:
+        elif ConfigFile.settings['SensorType'].lower() == "seabird":
             # for seabird it is an array of length 255
             esaveDark = stats['ES']['ave_Dark']
             liaveDark = stats['LI']['ave_Dark']
@@ -323,13 +327,17 @@ class Instrument(ABC):
                        ]
 
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
-        ES_unc, LI_unc, LT_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
+        es_unc, li_unc, lt_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
+        es, li, lt = PropagateL1B.instruments(*mean_values)
+        ES_unc = es_unc / es  # convert to relative uncertainty
+        LI_unc = li_unc / li  # convert to relative uncertainty
+        LT_unc = lt_unc / lt  # convert to relative uncertainty
 
         # return uncertainties as dictionary to be appended to xSlice
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()), dtype=float)  # std_Signal_Interpolated has keys which represent common wavebands for ES, LI, & LT.
         _, es_Unc = self.interp_common_wvls(ES_unc,
                                             np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
-                                            data_wvl)  # TODO: change to linear interp
+                                            data_wvl)
         _, li_Unc = self.interp_common_wvls(LI_unc,
                                             np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1'], dtype=float),
                                             data_wvl)
@@ -1580,6 +1588,9 @@ class Trios(Instrument):
             print("ERROR: different number of pixels between dat and back")
             return None
 
+        ones = np.ones(len(raw_cal))  # to provide array of 1s with the correct shape # TODO: check this is always right shape
+        # ensure all TriOS outputs are length 255 to match SeaBird HyperOCR stats output
+
         # Data conversion
         mesure = raw_data/65535.0
         calibrated_mesure = np.zeros((nmes, nband))
@@ -1600,14 +1611,14 @@ class Trios(Instrument):
             normalised_light_measure = back_corrected_mesure*int_time_t0/int_time[n]  # do not do the dark substitution as we need light data
 
             # Sensitivity calibration
-            calibrated_mesure[n, :] = normalized_mesure/raw_cal
-            calibrated_light_measure[n, :] = normalised_light_measure/raw_cal
+            calibrated_mesure[n, :] = normalized_mesure  # /raw_cal
+            calibrated_light_measure[n, :] = normalised_light_measure  # /raw_cal
 
         # get light and dark data before correction
         light_avg = np.mean(calibrated_light_measure, axis=0)  # [ind_nocal == False]
         light_std = np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
-        dark_avg = offset
-        dark_std = np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0) / pow(nmes, 0.5)
+        dark_avg = ones * offset
+        dark_std = ones * np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0) / pow(nmes, 0.5)
 
         stdevSignal = {}
         for i, wvl in enumerate(raw_wvl):
