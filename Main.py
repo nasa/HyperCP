@@ -29,7 +29,7 @@ from Source.GetAnc import GetAnc
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.Utilities import Utilities
 
-version = '1.2.0'
+version = '1.2.1'
 
 class Window(QtWidgets.QWidget):
     ''' Window is the main GUI container '''
