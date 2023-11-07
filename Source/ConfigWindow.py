@@ -1119,8 +1119,8 @@ class ConfigWindow(QtWidgets.QDialog):
                 print(dest)
                 shutil.copy(src, dest)
                 CalibrationFileReader.readSip(dest)
-                [folder,_] = filename.split('.')
-                os.rmdir(os.path.join(self.calibrationPath,folder))
+                # [folder,_] = filename.split('.')
+                # os.rmdir(os.path.join(self.calibrationPath,folder))
 
             else:
                 for src in fnames[0]:

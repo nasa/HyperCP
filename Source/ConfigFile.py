@@ -201,20 +201,20 @@ class ConfigFile:
         # ConfigFile.settings["AncFile"] = ''
         ConfigFile.settings["SensorType"] = "SeaBird" # SeaBird TriOS
         ConfigFile.settings["fL1aUTCOffset"] = 0
-        ConfigFile.settings["bL1aCleanSZA"] = 0
+        ConfigFile.settings["bL1aCleanSZA"] = 1
         ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,
 
         ConfigFile.settings["bL1aqcSolarTracker"] = 1
-        ConfigFile.settings["bL1aqcCleanPitchRoll"] = 0
+        ConfigFile.settings["bL1aqcCleanPitchRoll"] = 1
         ConfigFile.settings["fL1aqcPitchRollPitch"] = 5 # 2-5 deg. IOCCG Draft Protocols
         ConfigFile.settings["fL1aqcPitchRollRoll"] = 5 # 2-5 deg. IOCCG Draft Protocols
         ConfigFile.settings["fL1aqcRotatorHomeAngle"] = 0.0 # Require knowledge of deployment set-up
-        ConfigFile.settings["bL1aqcRotatorDelay"] = 0
+        ConfigFile.settings["bL1aqcRotatorDelay"] = 1
         ConfigFile.settings["fL1aqcRotatorDelay"] = 2.0 # 60.0s Vandenberg 2016, but for SolarTracker, not pySAS
         ConfigFile.settings["bL1aqcRotatorAngle"] = 0
         ConfigFile.settings["fL1aqcRotatorAngleMin"] = -40.0 # Require knowledge of deployment set-up
         ConfigFile.settings["fL1aqcRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
-        ConfigFile.settings["bL1aqcCleanSunAngle"] = 0
+        ConfigFile.settings["bL1aqcCleanSunAngle"] = 1
         ConfigFile.settings["fL1aqcSunAngleMin"] = 90.0 # Zhang 2017: 45*, Mobley 1999: 90, Zibordi 2009 (and IOCCG Protocols): 90
         ConfigFile.settings["fL1aqcSunAngleMax"] = 135.0 # Zhang 2017: 90*, Mobley 1999: 135, Zibordi 2009 (and IOCCG Protocols): 90
 
@@ -261,7 +261,7 @@ class ConfigFile:
         ConfigFile.settings["bL1bGetAnc"] = 0
         ConfigFile.settings["bL1bObpgCreds"] = 0
         ConfigFile.settings["fL1bDefaultWindSpeed"] = 5.0
-        ConfigFile.settings["fL1bDefaultAOD"] = 0.5
+        ConfigFile.settings["fL1bDefaultAOD"] = 0.2
         ConfigFile.settings["fL1bDefaultSalt"] = 35.0
         ConfigFile.settings["fL1bDefaultSST"] = 26.0
         ConfigFile.settings["bL1bCal"] = 1  # 1 for Factory, 2 for Class, 3 for Instrument Full
@@ -284,7 +284,7 @@ class ConfigFile:
         ConfigFile.settings["fL1bqcSpecFilterLi"] = 8
         ConfigFile.settings["fL1bqcSpecFilterLt"] = 3
 
-        ConfigFile.settings["bL1bqcEnableQualityFlags"] = 1
+        ConfigFile.settings["bL1bqcEnableQualityFlags"] = 0
         ConfigFile.settings["fL1bqcCloudFlag"] = 1.0 # 1.0 basically disregards this, though cloud cover can still be used in glint correction; 0.05 Ruddick 2006, IOCCG Protocols
         ConfigFile.settings["fL1bqcSignificantEsFlag"] = 2.0 # Wernand 2002
         ConfigFile.settings["fL1bqcDawnDuskFlag"] = 1.0 # Wernand 2002
@@ -292,13 +292,13 @@ class ConfigFile:
 
         ConfigFile.settings["bL2Stations"] = 0
         ConfigFile.settings["fL2TimeInterval"] = 300
-        ConfigFile.settings["bL2EnablePercentLt"] = 0
-        ConfigFile.settings["fL2PercentLt"] = 5 # 5% Hooker et al. 2002, Hooker and Morel 2003; <10% IOCCG Protocols
+        ConfigFile.settings["bL2EnablePercentLt"] = 1
+        ConfigFile.settings["fL2PercentLt"] = 10 # 5% Hooker et al. 2002, Hooker and Morel 2003; <10% IOCCG Protocols
 
         ConfigFile.settings["fL2RhoSky"] = 0.0256 # Mobley 1999
-        ConfigFile.settings["bL23CRho"] = 1
+        ConfigFile.settings["bL23CRho"] = 0
         ConfigFile.settings["bL2ZhangRho"] = 0
-        ConfigFile.settings["bL2DefaultRho"] = 0
+        ConfigFile.settings["bL2DefaultRho"] = 1
 
         ConfigFile.settings["bL2PerformNIRCorrection"] = 1
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 0 # Mobley 1999 adapted to minimum 700-800, not 750 nm
@@ -306,8 +306,8 @@ class ConfigFile:
 
         ConfigFile.settings["bL2NegativeSpec"] = 1
 
-        ConfigFile.settings["bL2BRDF"] = 1
-        ConfigFile.settings["bL2BRDF_fQ"] = 1
+        ConfigFile.settings["bL2BRDF"] = 0
+        ConfigFile.settings["bL2BRDF_fQ"] = 0
         ConfigFile.settings["bL2BRDF_IOP"] = 0
 
         ConfigFile.settings["bL2WeightMODISA"] = 0
@@ -320,11 +320,11 @@ class ConfigFile:
         ConfigFile.settings["bL2WeightUncertainties"] = 0
 
 
-        ConfigFile.settings["bL2PlotRrs"] = 0
-        ConfigFile.settings["bL2PlotnLw"] = 0
-        ConfigFile.settings["bL2PlotEs"] = 0
-        ConfigFile.settings["bL2PlotLi"] = 0
-        ConfigFile.settings["bL2PlotLt"] = 0
+        ConfigFile.settings["bL2PlotRrs"] = 1
+        ConfigFile.settings["bL2PlotnLw"] = 1
+        ConfigFile.settings["bL2PlotEs"] = 1
+        ConfigFile.settings["bL2PlotLi"] = 1
+        ConfigFile.settings["bL2PlotLt"] = 1
 
         ConfigFile.products["bL2Prodoc3m"] = 0
         ConfigFile.products["bL2Prodkd490"] = 0
@@ -359,7 +359,7 @@ class ConfigFile:
         ConfigFile.products["bL2ProdcQaa"] = 0
 
         ConfigFile.settings["seaBASSHeaderFileName"] = os.path.splitext(fileName)[0] + ".hdr" #
-        ConfigFile.settings["bL2SaveSeaBASS"] = 0
+        ConfigFile.settings["bL2SaveSeaBASS"] = 1
         ConfigFile.settings["bL2WriteReport"] = 1
 
         # If this is a new config file, save it
