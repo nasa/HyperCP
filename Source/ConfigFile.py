@@ -210,7 +210,7 @@ class ConfigFile:
         ConfigFile.settings["fL1aqcPitchRollRoll"] = 5 # 2-5 deg. IOCCG Draft Protocols
         ConfigFile.settings["fL1aqcRotatorHomeAngle"] = 0.0 # Require knowledge of deployment set-up
         ConfigFile.settings["bL1aqcRotatorDelay"] = 0
-        ConfigFile.settings["fL1aqcRotatorDelay"] = 5.0 # 60.0s Vandenberg 2016, but for SolarTracker, not pySAS
+        ConfigFile.settings["fL1aqcRotatorDelay"] = 2.0 # 60.0s Vandenberg 2016, but for SolarTracker, not pySAS
         ConfigFile.settings["bL1aqcRotatorAngle"] = 0
         ConfigFile.settings["fL1aqcRotatorAngleMin"] = -40.0 # Require knowledge of deployment set-up
         ConfigFile.settings["fL1aqcRotatorAngleMax"] = 40.0 # Require knowledge of deployment set-up
@@ -274,9 +274,9 @@ class ConfigFile:
         ConfigFile.settings["fL1bPlotInterval"] = 20 # nm
 
         ConfigFile.settings["bL1bqcLtUVNIR"] = 1
-        ConfigFile.settings["fL1bMaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
-        ConfigFile.settings["fL1bSZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
-        ConfigFile.settings["fL1bSZAMax"] = 60 # e.g. 60:Brewin 2016,
+        ConfigFile.settings["fL1bqcMaxWind"] = 10.0 # 6-7 m/s: IOCCG Draft Protocols, D'Alimonte pers. comm. 2019; 10 m/s: NASA SeaWiFS Protocols; 15 m/s: Zibordi 2009,
+        ConfigFile.settings["fL1bqcSZAMin"] = 20 # e.g. 20: Zhang 2017, depends on wind
+        ConfigFile.settings["fL1bqcSZAMax"] = 60 # e.g. 60:Brewin 2016,
 
         ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 1
         ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 1
@@ -289,8 +289,6 @@ class ConfigFile:
         ConfigFile.settings["fL1bqcSignificantEsFlag"] = 2.0 # Wernand 2002
         ConfigFile.settings["fL1bqcDawnDuskFlag"] = 1.0 # Wernand 2002
         ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain
-
-
 
         ConfigFile.settings["bL2Stations"] = 0
         ConfigFile.settings["fL2TimeInterval"] = 300
