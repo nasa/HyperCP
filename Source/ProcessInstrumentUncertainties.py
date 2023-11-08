@@ -151,27 +151,27 @@ class Instrument(ABC):
         ones = np.ones(len(Cal['ES']))  # to provide array of 1s with the correct shape
 
         # create lists containing mean values and their associated uncertainties (list order matters)
-        if ConfigFile.settings['SensorType'].lower() == "trios":
-            # for trios the dark average and std is one value
-            esaveDark = ones*stats['ES']['ave_Dark']
-            liaveDark = ones*stats['LI']['ave_Dark']
-            ltaveDark = ones*stats['LT']['ave_Dark']
-            esstdDark = ones*stats['ES']['std_Dark']
-            listdDark = ones*stats['LI']['std_Dark']
-            ltstdDark = ones*stats['LT']['std_Dark']
+        # if ConfigFile.settings['SensorType'].lower() == "trios":
+        #     # for trios the dark average and std is one value
+        #     esaveDark = ones*stats['ES']['ave_Dark']
+        #     liaveDark = ones*stats['LI']['ave_Dark']
+        #     ltaveDark = ones*stats['LT']['ave_Dark']
+        #     esstdDark = ones*stats['ES']['std_Dark']
+        #     listdDark = ones*stats['LI']['std_Dark']
+        #     ltstdDark = ones*stats['LT']['std_Dark']
+        #
+        # elif ConfigFile.settings['SensorType'].lower() == "seabird":
+        #     # for seabird it is an array of length 255
+        #     esaveDark = stats['ES']['ave_Dark']
+        #     liaveDark = stats['LI']['ave_Dark']
+        #     ltaveDark = stats['LT']['ave_Dark']
+        #     esstdDark = stats['ES']['std_Dark']
+        #     listdDark = stats['LI']['std_Dark']
+        #     ltstdDark = stats['LT']['std_Dark']
 
-        elif ConfigFile.settings['SensorType'].lower() == "seabird":
-            # for seabird it is an array of length 255
-            esaveDark = stats['ES']['ave_Dark']
-            liaveDark = stats['LI']['ave_Dark']
-            ltaveDark = stats['LT']['ave_Dark']
-            esstdDark = stats['ES']['std_Dark']
-            listdDark = stats['LI']['std_Dark']
-            ltstdDark = stats['LT']['std_Dark']
-
-        mean_values = [stats['ES']['ave_Light'], esaveDark,
-                       stats['LI']['ave_Light'], liaveDark,
-                       stats['LT']['ave_Light'], ltaveDark,
+        mean_values = [stats['ES']['ave_Light'], stats['ES']['ave_Dark'],
+                       stats['LI']['ave_Light'], stats['LI']['ave_Dark'],
+                       stats['LT']['ave_Light'], stats['LT']['ave_Dark'],
                        Coeff['ES'], Coeff['LI'], Coeff['LT'],
                        ones, ones, ones,
                        ones, ones, ones,
@@ -179,9 +179,9 @@ class Instrument(ABC):
                        ones, ones, ones,
                        ones, ones, ones]
 
-        uncertainty = [stats['ES']['std_Light'], esstdDark,
-                       stats['LI']['std_Light'], listdDark,
-                       stats['LT']['std_Light'], ltstdDark,
+        uncertainty = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
+                       stats['LI']['std_Light'], stats['LI']['std_Dark'],
+                       stats['LT']['std_Light'], stats['LT']['std_Dark'],
                        Cal['ES']*Coeff['ES']/200, Cal['LI']*Coeff['LI']/200, Cal['LT']*Coeff['LT']/200,
                        cStab['ES'], cStab['LI'], cStab['LT'],
                        cLin['ES'], cLin['LI'], cLin['LT'],
@@ -286,27 +286,27 @@ class Instrument(ABC):
         # zeros = np.zeros(len(Cal['ES']))  # for testing
 
         # create lists containing mean values and their associated uncertainties (list order matters)
-        if ConfigFile.settings['SensorType'].lower() == "trios":
-            # for trios the dark average and std is one value
-            esaveDark = stats['ES']['ave_Dark']
-            liaveDark = stats['LI']['ave_Dark']
-            ltaveDark = stats['LT']['ave_Dark']
-            esstdDark = stats['ES']['std_Dark']
-            listdDark = stats['LI']['std_Dark']
-            ltstdDark = stats['LT']['std_Dark']
+        # if ConfigFile.settings['SensorType'].lower() == "trios":
+        #     # for trios the dark average and std is one value
+        #     esaveDark = stats['ES']['ave_Dark']
+        #     liaveDark = stats['LI']['ave_Dark']
+        #     ltaveDark = stats['LT']['ave_Dark']
+        #     esstdDark = stats['ES']['std_Dark']
+        #     listdDark = stats['LI']['std_Dark']
+        #     ltstdDark = stats['LT']['std_Dark']
+        #
+        # elif ConfigFile.settings['SensorType'].lower() == "seabird":
+        #     # for seabird it is an array of length 255
+        #     esaveDark = stats['ES']['ave_Dark']
+        #     liaveDark = stats['LI']['ave_Dark']
+        #     ltaveDark = stats['LT']['ave_Dark']
+        #     esstdDark = stats['ES']['std_Dark']
+        #     listdDark = stats['LI']['std_Dark']
+        #     ltstdDark = stats['LT']['std_Dark']
 
-        elif ConfigFile.settings['SensorType'].lower() == "seabird":
-            # for seabird it is an array of length 255
-            esaveDark = stats['ES']['ave_Dark']
-            liaveDark = stats['LI']['ave_Dark']
-            ltaveDark = stats['LT']['ave_Dark']
-            esstdDark = stats['ES']['std_Dark']
-            listdDark = stats['LI']['std_Dark']
-            ltstdDark = stats['LT']['std_Dark']
-
-        mean_values = [stats['ES']['ave_Light'], esaveDark,
-                       stats['LI']['ave_Light'], liaveDark,
-                       stats['LT']['ave_Light'], ltaveDark,
+        mean_values = [stats['ES']['ave_Light'], stats['ES']['ave_Dark'],
+                       stats['LI']['ave_Light'], stats['LI']['ave_Dark'],
+                       stats['LT']['ave_Light'], stats['LT']['ave_Dark'],
                        Coeff['ES'], Coeff['LI'], Coeff['LT'],
                        ones, ones, ones,
                        ones, ones, ones,
@@ -315,9 +315,9 @@ class Instrument(ABC):
                        ones, ones, ones
                        ]
 
-        uncertainty = [stats['ES']['std_Light'], esstdDark,
-                       stats['LI']['std_Light'], listdDark,
-                       stats['LT']['std_Light'], ltstdDark,
+        uncertainty = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
+                       stats['LI']['std_Light'], stats['LI']['std_Dark'],
+                       stats['LT']['std_Light'], stats['LT']['std_Dark'],
                        Cal['ES']*Coeff['ES']/200, Cal['LI']*Coeff['LI']/200, Cal['LT']*Coeff['LT']/200,
                        cStab['ES'], cStab['LI'], cStab['LT'],
                        cLin['ES'], cLin['LI'], cLin['LT'],
