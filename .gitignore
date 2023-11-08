@@ -28,7 +28,7 @@ Data/Photos/
 Plots/
 Logs/
 Config/*
-!Config/sample*
+# !Config/sample*
 Data/FidRadDB_characterization/
 .pylintrc
 *.pyc
