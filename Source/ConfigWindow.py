@@ -1723,7 +1723,7 @@ class ConfigWindow(QtWidgets.QDialog):
         disabled = (not self.l2NIRCorrectionCheckBox.isChecked())
         self.SimpleNIRRadioButton.setDisabled(disabled)
         self.SimSpecNIRRadioButton.setDisabled(disabled)
-        self.YourNIRRadioButton.setDisabled(disabled)
+        self.YourNIRRadioButton.setDisabled(True)
         if disabled:
             ConfigFile.settings["bL2PerformNIRCorrection"] = 0
         else:
