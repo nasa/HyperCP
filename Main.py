@@ -20,6 +20,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import requests
 from tqdm import tqdm
 
+
 from Source.MainConfig import MainConfig
 from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile

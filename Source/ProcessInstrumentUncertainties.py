@@ -1224,6 +1224,7 @@ class HyperOCR(Instrument):
         return newDarkData
 
     def lightDarkStats(self, grp, slice, sensortype):
+        # SeaBird HyperOCR
         lightGrp = grp[0]
         lightSlice = slice[0]
         darkGrp = grp[1]
@@ -1497,7 +1498,6 @@ class HyperOCR(Instrument):
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
                                                     np.asarray([0.05 for i in range(np.size(solar_zenith))]),
                                                     "rand")  # TODO: get second opinion on zen unc in 6S
-
 
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
 
