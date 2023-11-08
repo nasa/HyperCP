@@ -1,5 +1,6 @@
 # Ignore OSX files
 .DS_Store
+Source/.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -16,7 +17,7 @@ __pycache__/
 ~*
 
 # HyperCP
-.gitignore
+# .gitignore
 Data/Zhang_rho_db.mat
 Data/Anc/
 Data/L*/
@@ -27,12 +28,9 @@ Data/Photos/
 Plots/
 Logs/
 Config/*
-# !Config/sample_Calibration/
-# !Config/sample*
+!Config/sample*
 Data/FidRadDB_characterization/
-.DS_Store
 .pylintrc
-Source/.DS_Store
 *.pyc
 *.log
 runtest.py

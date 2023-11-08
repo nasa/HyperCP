@@ -2,13 +2,13 @@
 /investigators=Giorgio_DallOlmo
 /affiliations=Plymouth_Marine_Laboratory
 /contact=gdal@pml.ac.uk
-/experiment=FICE
-/cruise=FICE2
+/experiment=FRM4SOC2
+/cruise=FICE22
 /station=AAOT
 /data_file_name=FICE_Ancillary_TrueRelAz_v2.sb
 /documents=NA
 /calibration_files=NA
-/data_type=pigment
+/data_type=above_water
 /data_status=final
 /start_date=20220714
 /end_date=20220721
@@ -18,10 +18,19 @@
 /south_latitude=45.314[DEG]
 /east_longitude=12.508[DEG]
 /west_longitude=12.508[DEG]
-/water_depth=NA
+/water_depth=17
 /measurement_depth=0
 /missing=-9999
 /delimiter=comma
+! 
+! COMMENTS
+!
+! FRM4SOC-2 Field InterComparison Experiment (FICE)
+! July 11 - 21, 2022
+! Acqua Alta Oceanographic Tower (AAOT), CNR-ISMAR
+! 
+! RelAz refer to solar-sensor relative azimuth angle.
+! Manually operated TriOS triplet. Height: ~15 m, Tower color: Red/yellow.
 /fields=year,month,day,hour,minute,second,lat,lon,wind,wdir,Wt,At,sal,RelAz,heading,TrueRelAz
 /units=yyyy,mo,dd,hh,mn,ss,degrees,degrees,m/s,degrees,degreesC,degreesC,PSU,degrees,degrees,degrees
 /end_header

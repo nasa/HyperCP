@@ -5,7 +5,7 @@
 /experiment=KORUS
 /cruise=KR_2016
 /documents=KORUS_Onnuri_Location_AWS_noblanks.xlsm,KORUS_flow_thru.xlsx,KORUS_seabass_synthesis.xlsx
-/data_type=flow_thru
+/data_type=above_water
 /data_status=preliminary
 /station=NA
 /water_depth=NA
@@ -20,8 +20,11 @@
 /east_longitude=129.57[DEG]
 /west_longitude=129.57[DEG]
 ! 
+! NASA FSG SolarTracker aboard the RV Onnuri, South Korean waters
 ! Combined ancillary data from ship data and field logs on the RV Onnuri
 ! Station names are NASA FSG conventions and do not agree with KIOST, UNH, UMass, etc.
+! 
+! Home angle: 0, Min/Max Az: -20/45, Height: ~ 8-9 m
 !
 /missing=-9999.0
 /delimiter=comma

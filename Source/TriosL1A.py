@@ -138,7 +138,8 @@ class TriosL1A:
 
         if 'LT' not in sensor and 'LI' not in sensor and 'ES' not in sensor:
             print('Error in config file. Check frame type for calibration files')
-            exit()
+            # exit()
+            return None,None
         else:
             None
 
@@ -326,6 +327,9 @@ class TriosL1A:
                         print("ERROR : naming convention os not respected")
 
                     start,stop = TriosL1A.formatting_instrument(name,cal_path,file,root,configPath)
+
+                    if start is None:
+                        return None, None
 
                 '''
                 File naming convention on TriOS TBD depending on convention used in MSDA_XE
