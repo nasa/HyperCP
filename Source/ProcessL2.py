@@ -1701,7 +1701,8 @@ class ProcessL2:
             xUNC.update(instrument.rrsHyperUNCFACTORY(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
         elif ConfigFile.settings["bL1bCal"] == 2:
-            xSlice.update(instrument.Default(uncGroup, stats, dict(ES=esXSlice, LI=liXSlice, LT=ltXSlice)))  # update the xSlice dict with uncertianties and samples
+            # update the xSlice dict with uncertianties and samples
+            xSlice.update(instrument.Default(uncGroup, stats))
             # convert uncertainties back into absolute form using the signals recorded from ProcessL2
             xSlice['esUnc'] = {u[0]: [u[1][0] * s[0]] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
             xSlice['liUnc'] = {u[0]: [u[1][0] * s[0]] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
