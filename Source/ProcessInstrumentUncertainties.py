@@ -563,7 +563,11 @@ class Instrument(ABC):
             stab.datasetToColumns()
             cStab[sensor] = np.asarray(list(stab.columns['1']))
 
-            Coeff[sensor] = np.asarray(list(radcal.columns['2']))
+            if ConfigFile.settings['SensorType'].lower() == "trios":
+                # Convert TriOS mW/m2/nm to uW/cm^2/nm
+                Coeff[sensor] = np.asarray(list(radcal.columns['2'])) / 10
+            elif ConfigFile.settings['SensorType'].lower() == "seabird":
+                Coeff[sensor] = np.asarray(list(radcal.columns['2']))
             Cal[sensor] = np.asarray(list(radcal.columns['3']))
 
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
@@ -1588,9 +1592,6 @@ class Trios(Instrument):
             print("ERROR: different number of pixels between dat and back")
             return None
 
-        ones = np.ones(len(raw_cal))  # to provide array of 1s with the correct shape # TODO: check this is always right shape
-        # ensure all TriOS outputs are length 255 to match SeaBird HyperOCR stats output
-
         # Data conversion
         mesure = raw_data/65535.0
         calibrated_mesure = np.zeros((nmes, nband))
@@ -1617,13 +1618,17 @@ class Trios(Instrument):
         # get light and dark data before correction
         light_avg = np.mean(calibrated_light_measure, axis=0)  # [ind_nocal == False]
         light_std = np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
+
+        # ensure all TriOS outputs are length 255 to match SeaBird HyperOCR stats output
+        ones = np.ones(nband)  # to provide array of 1s with the correct shape
         dark_avg = ones * offset
         dark_std = ones * np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0) / pow(nmes, 0.5)
+        # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
 
         stdevSignal = {}
         for i, wvl in enumerate(raw_wvl):
             stdevSignal[wvl] = pow(
-                (pow(light_std[i], 2) + pow(dark_std, 2)), 0.5) / np.average(calibrated_mesure, axis=0)[i]
+                (pow(light_std[i], 2) + pow(dark_std[i], 2)), 0.5) / np.average(calibrated_mesure, axis=0)[i]
 
         return dict(
             ave_Light=np.array(light_avg),
@@ -1634,6 +1639,7 @@ class Trios(Instrument):
         )
 
     def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
+        # TriOS specific
         output = {}
         stats = None  # stats is unused in this method, but required as an input because of Seabird
         for sensortype in ['ES', 'LI', 'LT']:
@@ -1762,6 +1768,7 @@ class Trios(Instrument):
                 # res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
                 #                                                   L2_irr_grp=grp)  # , trios=instrument_number)
                 # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
+                # Convert TriOS mW/m2/nm to uW/cm^2/nm
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_int_time_t0,
                                                                sample_t1])
@@ -1771,6 +1778,7 @@ class Trios(Instrument):
                     pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['3'])/100)*PANEL
                 sample_PANEL = cm.generate_sample(mDraws, PANEL, unc_PANEL, "syst")
                 # updated_radcal_gain = self.update_cal_rad(PANEL, S12_sl_corr, LAMP, int_time_t0, t1)
+                # Convert TriOS mW/m2/nm to uW/cm^2/nm
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_rad,
                                                               [sample_PANEL, sample_S12_sl_corr, sample_LAMP,
                                                                sample_int_time_t0, sample_t1])
