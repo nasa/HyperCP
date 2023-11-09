@@ -138,7 +138,7 @@ class Instrument(ABC):
                 Utilities.writeLogFile(msg)
                 return None
 
-            # TODO: temporary fix angular for ES is written as ES_POL
+            # temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
             cPol[sensor] = np.asarray(list(pol.columns['1']))
@@ -150,25 +150,9 @@ class Instrument(ABC):
 
         ones = np.ones(len(Cal['ES']))  # to provide array of 1s with the correct shape
 
-        # create lists containing mean values and their associated uncertainties (list order matters)
-        # if ConfigFile.settings['SensorType'].lower() == "trios":
-        #     # for trios the dark average and std is one value
-        #     esaveDark = ones*stats['ES']['ave_Dark']
-        #     liaveDark = ones*stats['LI']['ave_Dark']
-        #     ltaveDark = ones*stats['LT']['ave_Dark']
-        #     esstdDark = ones*stats['ES']['std_Dark']
-        #     listdDark = ones*stats['LI']['std_Dark']
-        #     ltstdDark = ones*stats['LT']['std_Dark']
-        #
-        # elif ConfigFile.settings['SensorType'].lower() == "seabird":
-        #     # for seabird it is an array of length 255
-        #     esaveDark = stats['ES']['ave_Dark']
-        #     liaveDark = stats['LI']['ave_Dark']
-        #     ltaveDark = stats['LT']['ave_Dark']
-        #     esstdDark = stats['ES']['std_Dark']
-        #     listdDark = stats['LI']['std_Dark']
-        #     ltstdDark = stats['LT']['std_Dark']
+        # sensor specific behaviour handled in ProcessInstrumentUncertainties.LightDarkStats()
 
+        # create lists containing mean values and their associated uncertainties (list order matters)
         mean_values = [stats['ES']['ave_Light'], stats['ES']['ave_Dark'],
                        stats['LI']['ave_Light'], stats['LI']['ave_Dark'],
                        stats['LT']['ave_Light'], stats['LT']['ave_Dark'],
@@ -190,13 +174,14 @@ class Instrument(ABC):
                        np.array(cPol['LI']), np.array(cPol['LT']), np.array(cPol['ES'])]
 
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
-
-        # NOTE: ISSUE #95
-        ES_unc, LI_unc, LT_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
-        es, li, lt = PropagateL1B.instruments(*mean_values)
-        ES_unc = ES_unc/es  # convert to relative uncertainty
-        LI_unc = LI_unc/li  # convert to relative uncertainty
-        LT_unc = LT_unc/lt  # convert to relative uncertainty
+        es_unc, li_unc, lt_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
+        es, li, lt = PropagateL1B.instruments(*mean_values)  # signal generated from measurement function applied
+        # in punpy call, so uncertainties are now relative to what means are provided in mean_values
+        # convert to relative uncertainty
+        ES_unc = es_unc / es
+        LI_unc = li_unc / li
+        LT_unc = lt_unc / lt  # when converted back to absolute in ProcessL2, they will be converted to the same units
+        # as ES, lI, & LT respectively.
 
         # return uncertainties as dictionary to be appended to xSlice
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()), dtype=float)  # std_Signal_Interpolated has keys which represent common wavebands for ES, LI, & LT.
@@ -209,17 +194,6 @@ class Instrument(ABC):
         _, lt_Unc = self.interp_common_wvls(LT_unc,
                                             np.array(uncGrp.getDataset("LT_RADCAL_UNC").columns['wvl'], dtype=float),
                                             data_wvl)
-
-        # NOTE: Commented the following as SeaBird Factory does not contain _RADCAL_CAL datasets in the RAW_UNCERTAINTIES group
-        # radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_CAL").data)['2']
-
-        # ind_zero = radcal_cal <= 0
-        # ind_nan = np.isnan(radcal_cal)
-        # ind_nocal = ind_nan | ind_zero
-
-        # es_Unc[ind_nocal == True] = 0
-        # li_Unc[ind_nocal == True] = 0
-        # lt_Unc[ind_nocal == True] = 0
 
         return dict(
             esUnc=es_Unc,
@@ -272,7 +246,7 @@ class Instrument(ABC):
                 Coeff[sensor] = np.asarray(list(radcal.columns['2']))
             Cal[sensor] = np.asarray(list(radcal.columns['3']))
 
-            # TODO: temporary fix angular for ES is written as ES_POL
+            # temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
             cPol[sensor] = np.asarray(list(pol.columns['1']))
@@ -283,27 +257,10 @@ class Instrument(ABC):
             Ct[sensor] = np.array(Temp.columns[f'{sensor}_TEMPERATURE_UNCERTAINTIES'])
 
         ones = np.ones(len(Cal['ES']))  # to provide array of 1s with the correct shape
-        # zeros = np.zeros(len(Cal['ES']))  # for testing
+
+        # sensor specific behaviour handled in ProcessInstrumentUncertainties.LightDarkStats()
 
         # create lists containing mean values and their associated uncertainties (list order matters)
-        # if ConfigFile.settings['SensorType'].lower() == "trios":
-        #     # for trios the dark average and std is one value
-        #     esaveDark = stats['ES']['ave_Dark']
-        #     liaveDark = stats['LI']['ave_Dark']
-        #     ltaveDark = stats['LT']['ave_Dark']
-        #     esstdDark = stats['ES']['std_Dark']
-        #     listdDark = stats['LI']['std_Dark']
-        #     ltstdDark = stats['LT']['std_Dark']
-        #
-        # elif ConfigFile.settings['SensorType'].lower() == "seabird":
-        #     # for seabird it is an array of length 255
-        #     esaveDark = stats['ES']['ave_Dark']
-        #     liaveDark = stats['LI']['ave_Dark']
-        #     ltaveDark = stats['LT']['ave_Dark']
-        #     esstdDark = stats['ES']['std_Dark']
-        #     listdDark = stats['LI']['std_Dark']
-        #     ltstdDark = stats['LT']['std_Dark']
-
         mean_values = [stats['ES']['ave_Light'], stats['ES']['ave_Dark'],
                        stats['LI']['ave_Light'], stats['LI']['ave_Dark'],
                        stats['LT']['ave_Light'], stats['LT']['ave_Dark'],
@@ -328,10 +285,13 @@ class Instrument(ABC):
 
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
         es_unc, li_unc, lt_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
-        es, li, lt = PropagateL1B.instruments(*mean_values)
-        ES_unc = es_unc / es  # convert to relative uncertainty
-        LI_unc = li_unc / li  # convert to relative uncertainty
-        LT_unc = lt_unc / lt  # convert to relative uncertainty
+        es, li, lt = PropagateL1B.instruments(*mean_values)  # signal generated from measurement function applied
+        # in punpy call, so uncertainties are now relative to what means are provided in mean_values
+        # convert to relative uncertainty
+        ES_unc = es_unc / es
+        LI_unc = li_unc / li
+        LT_unc = lt_unc / lt  # when converted back to absolute in ProcessL2, they will be converted to the same units
+        # as ES, lI, & LT respectively.
 
         # return uncertainties as dictionary to be appended to xSlice
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()), dtype=float)  # std_Signal_Interpolated has keys which represent common wavebands for ES, LI, & LT.
@@ -1317,7 +1277,6 @@ class HyperOCR(Instrument):
             radcal_cal = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['2']
             S1 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['6']
             S2 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['8']
-            # TODO: Check if multiplying by np.abs(S1/S2) is correct
             S1_unc = (pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['7']/100)[1:].to_list()*np.abs(S1[1:])
             S2_unc = (pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['9']/100)[1:].to_list()*np.abs(S2[1:])
             mZ = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_STRAYDATA_LSF").data))
@@ -1674,7 +1633,10 @@ class Trios(Instrument):
             mZ_unc = mZ_unc[1:, 1:]  # remove 1st line and column, we work on 255 pixel not 256.
             Ct = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data[1:].transpose().tolist())[4])
             Ct_unc = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data[1:].transpose().tolist())[5])
-            LAMP = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['2'])
+
+            # Convert TriOS mW/m2/nm to uW/cm^2/nm
+            LAMP = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['2']) / 10  # div by 10
+            # corrects LAMP and LAMP_unc
             LAMP_unc = (np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['3'])/100)*LAMP
 
             # Defined constants
@@ -1768,7 +1730,6 @@ class Trios(Instrument):
                 # res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
                 #                                                   L2_irr_grp=grp)  # , trios=instrument_number)
                 # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
-                # Convert TriOS mW/m2/nm to uW/cm^2/nm
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_int_time_t0,
                                                                sample_t1])
@@ -1778,7 +1739,6 @@ class Trios(Instrument):
                     pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['3'])/100)*PANEL
                 sample_PANEL = cm.generate_sample(mDraws, PANEL, unc_PANEL, "syst")
                 # updated_radcal_gain = self.update_cal_rad(PANEL, S12_sl_corr, LAMP, int_time_t0, t1)
-                # Convert TriOS mW/m2/nm to uW/cm^2/nm
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_rad,
                                                               [sample_PANEL, sample_S12_sl_corr, sample_LAMP,
                                                                sample_int_time_t0, sample_t1])
