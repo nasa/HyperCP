@@ -381,7 +381,7 @@ class ProcessL1aqc:
             roll = None
             gp  = None
             for group in node.groups:
-                if group.id.startswith("SOLARTRACKER"):
+                if group.id.startswith("SOLARTRACKER") and group.id != 'SOLARTRACKER_STATUS':
                     gp = group
                     timeStamp = gp.getDataset("DATETIME").data
                     if "PITCH" in gp.datasets:

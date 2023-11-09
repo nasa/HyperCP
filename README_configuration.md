@@ -67,7 +67,7 @@ where xxx is the serial number of the SeaBird instrument, followed (where approp
 externally supplied heading data from the ship's NMEA datastream or from a seperate, external dual antenna GPS
 incorporated into the SolarTracker. DO NOT USE COURSE DATA FROM SINGLE GPS SYSTEMS.
 
-For **TriOS RAMSES** device, you will need to associate each radiometers number to its type of acquisition (Li, Lt or Es), for exemple :
+For **TriOS RAMSES** device, you will need to associate each radiometers number to its type of acquisition (Li, Lt or Es), for example :
 
 - **SAM_8166.ini**: Li
 - **SAM_8329.ini**: Es
@@ -269,8 +269,8 @@ the user to download model data from the NASA EARTHDATA server. These data are g
  *(Note: MERRA2 files downloaded prior to March 15, 2022 can be deleted as the file name format has changed.)*
  Details for how these data are applied to above water radiometry are given below.
 
-As of January 2020, access to these data requires a user login and password, which can be obtained
-[here](https://oceancolor.gsfc.nasa.gov/registration). A link to register is also provided in the Configuration window
+Access to these data requires a user login and password, which can be obtained for free
+[here](https://www.earthdata.nasa.gov/eosdis/science-system-description/eosdis-components/earthdata-login). A link to register is also provided in the Configuration window
 at L1BQC. When the user selects ```Download Ancillary Models```, pop-up windows will allow the user to enter a login and
 password. Once this has been done once, canceling the login pop-up dialog will force the program to use the current
 configuration (i.e. it is only necessary to re-enter the password if it has changed.)

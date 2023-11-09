@@ -210,7 +210,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         l1bSublabel3 = QtWidgets.QLabel("   Ancillary data are required for Zhang glint correction and", self)
         l1bSublabel4 = QtWidgets.QLabel("   can fill in wind for M99 and QC. Select database download:", self)
-        l1bSublabel5 = QtWidgets.QLabel("    (GMAO PROMPTS FOR EARTHDATA LOGIN: <a href=\"https://oceancolor.gsfc.nasa.gov/registration/\">register</a>)", self)
+        l1bSublabel5 = QtWidgets.QLabel("    (GMAO PROMPTS FOR EARTHDATA LOGIN: <a href=\"https://www.earthdata.nasa.gov/eosdis/science-system-description/eosdis-components/earthdata-login/\">register</a>)", self)
         l1bSublabel6 = QtWidgets.QLabel("    Fallback values when no model available:", self)
         l1bSublabel5.setOpenExternalLinks(True)
         self.l1bGetAncCheckBox1 = QtWidgets.QCheckBox("GMAO MERRA2", self)
@@ -1119,8 +1119,8 @@ class ConfigWindow(QtWidgets.QDialog):
                 print(dest)
                 shutil.copy(src, dest)
                 CalibrationFileReader.readSip(dest)
-                [folder,_] = filename.split('.')
-                os.rmdir(os.path.join(self.calibrationPath,folder))
+                # [folder,_] = filename.split('.')
+                # os.rmdir(os.path.join(self.calibrationPath,folder))
 
             else:
                 for src in fnames[0]:

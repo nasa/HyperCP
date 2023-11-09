@@ -515,10 +515,10 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! LT Dark Sigma = {ConfigFile.settings["fL1aqcLTSigmaDark"]}\n'+\
             f'! LT Light Sigma = {ConfigFile.settings["fL1aqcLTSigmaLight"]}\n'+\
             f'! Wavelength Interp Int = {ConfigFile.settings["fL1bInterpInterval"]}\n'+\
-            f'! Default Wind = {ConfigFile.settings["fL1bqcDefaultWindSpeed"]}\n'+\
-            f'! Default AOD = {ConfigFile.settings["fL1bqcDefaultAOD"]}\n'+\
-            f'! Default Salt = {ConfigFile.settings["fL1bqcDefaultSalt"]}\n'+\
-            f'! Default SST = {ConfigFile.settings["fL1bqcDefaultSST"]}\n'+\
+            f'! Default Wind = {ConfigFile.settings["fL1bDefaultWindSpeed"]}\n'+\
+            f'! Default AOD = {ConfigFile.settings["fL1bDefaultAOD"]}\n'+\
+            f'! Default Salt = {ConfigFile.settings["fL1bDefaultSalt"]}\n'+\
+            f'! Default SST = {ConfigFile.settings["fL1bDefaultSST"]}\n'+\
             f'! Max Wind = {ConfigFile.settings["fL1bqcMaxWind"]}\n'+\
             f'! Min SZA = {ConfigFile.settings["fL1bqcSZAMin"]}\n'+\
             f'! Max SZA = {ConfigFile.settings["fL1bqcSZAMax"]}\n'+\

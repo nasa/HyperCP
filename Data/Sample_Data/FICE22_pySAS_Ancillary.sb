@@ -21,7 +21,7 @@
 /start_time=00:00:00[GMT]
 /end_time=10:35:00[GMT]
 /measurement_depth=0
-/water_depth=NA
+/water_depth=17
 !
 ! COMMENTS
 !
@@ -31,6 +31,8 @@
 !
 ! Ancillary data from: % https://www.comune.venezia.it/content/3-piattaforma-ISMAR-CNR
 ! and field notes. relAz refers to target relative azimuth in pySAS.
+!
+! Home angle: 0, Min/Max Az: -126/+42, Height: 9m, Tower color: Red/yellow.	
 !
 /fields=station,year,month,day,hour,minute,second,lat,lon,Wt,wind,wdir,waveht,cloud,sal,aot_550
 /units=none,yyyy,mo,dd,hh,mn,ss,degrees,degrees,degreesC,m/s,degrees,m,%,psu,none

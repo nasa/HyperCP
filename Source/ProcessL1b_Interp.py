@@ -38,7 +38,7 @@ class ProcessL1b_Interp:
                 liGroup = gp
             if gp.id.startswith("LT"):
                 ltGroup = gp
-            if gp.id.startswith("SOLARTRACKER"):
+            if gp.id.startswith("SOLARTRACKER") and gp.id != "SOLARTRACKER_STATUS":
                 STGroup = gp
 
         # Conversion of datasets within groups to move date/timestamps into

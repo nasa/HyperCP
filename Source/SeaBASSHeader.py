@@ -181,6 +181,10 @@ class SeaBASSHeader:
             f'! LT Light Window = {ConfigFile.settings["fL1aqcLTWindowLight"]}\n'+\
             f'! LT Dark Sigma = {ConfigFile.settings["fL1aqcLTSigmaDark"]}\n'+\
             f'! LT Light Sigma = {ConfigFile.settings["fL1aqcLTSigmaLight"]}\n'+\
+            f'! Default Wind = {ConfigFile.settings["fL1bDefaultWindSpeed"]}\n'+\
+            f'! Default AOD = {ConfigFile.settings["fL1bDefaultAOD"]}\n'+\
+            f'! Default Salt = {ConfigFile.settings["fL1bDefaultSalt"]}\n'+\
+            f'! Default SST = {ConfigFile.settings["fL1bDefaultSST"]}\n'+\
             f'! Wavelength Interp Int = {ConfigFile.settings["fL1bInterpInterval"]}\n'+\
             f'! Max Wind = {ConfigFile.settings["fL1bqcMaxWind"]}\n'+\
             f'! Min SZA = {ConfigFile.settings["fL1bqcSZAMin"]}\n'+\
@@ -194,10 +198,6 @@ class SeaBASSHeader:
             f'! Es Flag = {ConfigFile.settings["fL1bqcSignificantEsFlag"]}\n'+\
             f'! Dawn/Dusk Flag = {ConfigFile.settings["fL1bqcDawnDuskFlag"]}\n'+\
             f'! Rain/Humidity Flag = {ConfigFile.settings["fL1bqcRainfallHumidityFlag"]}\n'+\
-            f'! Default Wind = {ConfigFile.settings["fL1bqcDefaultWindSpeed"]}\n'+\
-            f'! Default AOD = {ConfigFile.settings["fL1bqcDefaultAOD"]}\n'+\
-            f'! Default Salt = {ConfigFile.settings["fL1bqcDefaultSalt"]}\n'+\
-            f'! Default SST = {ConfigFile.settings["fL1bqcDefaultSST"]}\n'+\
             f'! Ensemble Interval = {ConfigFile.settings["fL2TimeInterval"]}\n'+\
             f'! Percent Lt Filter = {ltFilt}\n'+\
             f'! Percent Light = {ConfigFile.settings["fL2PercentLt"]}\n'+\
