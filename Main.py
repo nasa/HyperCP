@@ -86,7 +86,8 @@ class Window(QtWidgets.QWidget):
 
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
-        pixmap = QtGui.QPixmap('./Data/Img/with_background_530x223.png')
+        # pixmap = QtGui.QPixmap('./Data/Img/with_background_530x223.png')
+        pixmap = QtGui.QPixmap('./Data/Img/banner_530x151.png')
         banner.setPixmap(pixmap)
         banner.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -119,7 +120,7 @@ class Window(QtWidgets.QWidget):
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self)
         self.inDirButton.clicked.connect(self.inDirButtonPressed)
 
-        self.outDirLabel = QtWidgets.QLabel('Output Data/Plots Parent Directory', self)
+        self.outDirLabel = QtWidgets.QLabel('Output Data/Plots Directory', self)
         self.outputDirectory = MainConfig.settings['outDir']
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self)
         self.outDirButton.clicked.connect(self.outDirButtonPressed)
@@ -139,7 +140,7 @@ class Window(QtWidgets.QWidget):
 
         singleLevelLabel = QtWidgets.QLabel('Single-Level Processing', self)
         singleLevelLabel_font = singleLevelLabel.font()
-        singleLevelLabel_font.setPointSize(10)
+        singleLevelLabel_font.setPointSize(14)
         singleLevelLabel_font.setBold(True)
         singleLevelLabel.setFont(singleLevelLabel_font)
 
@@ -157,7 +158,7 @@ class Window(QtWidgets.QWidget):
 
         multiLevelLabel = QtWidgets.QLabel('Multi-Level Processing', self)
         multiLevelLabel_font = multiLevelLabel.font()
-        multiLevelLabel_font.setPointSize(10)
+        multiLevelLabel_font.setPointSize(14)
         multiLevelLabel_font.setBold(True)
         multiLevelLabel.setFont(multiLevelLabel_font)
 
@@ -172,9 +173,6 @@ class Window(QtWidgets.QWidget):
         self.popQueryCheckBoxUpdate()
         self.popQueryCheckBox.clicked.connect(self.popQueryCheckBoxUpdate)
 
-        # saveLabel = QtWidgets.QLabel('(Automatic on Window Close -->)')
-        # self.saveButton = QtWidgets.QPushButton('Save Settings', self)
-        # self.saveButton.clicked.connect(self.saveButtonClicked)
 
         ########################################################################################
         # Add QtWidgets to the Window
@@ -190,18 +188,19 @@ class Window(QtWidgets.QWidget):
         configHBox.addWidget(self.configEditButton)
         configHBox.addWidget(self.configDeleteButton)
         vBox.addLayout(configHBox)
-        vBox.addStretch(1) # allows vBox to stretch open here when resized
+        # vBox.addStretch(1) # allows vBox to stretch open here when resized
 
-        vBox.addWidget(self.inDirLabel)
-        vBox.addWidget(self.inDirButton)
+        inDataHBox = QtWidgets.QHBoxLayout()
+        inDataHBox.addWidget(self.inDirLabel)
+        inDataHBox.addWidget(self.inDirButton)
+        vBox.addLayout(inDataHBox)
+
+        vBox.addWidget(self.outInDirButton)
 
         outHBox = QtWidgets.QHBoxLayout()
         outHBox.addWidget(self.outDirLabel)
-        outHBox.addWidget(self.outInDirButton)
+        outHBox.addWidget(self.outDirButton)
         vBox.addLayout(outHBox)
-        vBox.addWidget(self.outDirButton)
-
-        vBox.addSpacing(10)
 
         vBox.addWidget(self.ancFileLabel)
         vBox.addWidget(self.ancFileLineEdit)
@@ -211,37 +210,34 @@ class Window(QtWidgets.QWidget):
         ancHBox.addWidget(self.ancRemoveButton)
 
         vBox.addLayout(ancHBox)
-        vBox.addStretch(1)
-        vBox.addStretch(1)
 
-        vBox.addWidget(singleLevelLabel)
-        vBox.addWidget(self.singleL1aButton)
-        vBox.addWidget(self.singleL1aqcButton)
-        vBox.addWidget(self.singleL1bButton)
-        vBox.addWidget(self.singleL1bqcButton)
-        vBox.addWidget(self.singleL2Button)
+        singleHBox = QtWidgets.QHBoxLayout()
+        singleHBox.addWidget(singleLevelLabel)
+        singleVBox = QtWidgets.QVBoxLayout()
+        singleVBox.addWidget(self.singleL1aButton)
+        singleVBox.addWidget(self.singleL1aqcButton)
+        singleVBox.addWidget(self.singleL1bButton)
+        singleVBox.addWidget(self.singleL1bqcButton)
+        singleVBox.addWidget(self.singleL2Button)
+        singleHBox.addLayout(singleVBox)
+        vBox.addLayout(singleHBox)
 
-        vBox.addStretch(1)
-
-        vBox.addWidget(multiLevelLabel)
-        vBox.addWidget(self.multi2Button)
+        multiHBox = QtWidgets.QHBoxLayout()
+        multiHBox.addWidget(multiLevelLabel)
+        multiHBox.addWidget(self.multi2Button)
+        vBox.addLayout(multiHBox)
 
         popQueryBox = QtWidgets.QHBoxLayout()
         popQueryBox.addWidget(popQueryLabel)
         popQueryBox.addWidget(self.popQueryCheckBox)
         vBox.addLayout(popQueryBox)
 
-        # saveQueryBox = QtWidgets.QHBoxLayout()
-        # saveQueryBox.addWidget(saveLabel)
-        # saveQueryBox.addWidget(self.saveButton)
-        # vBox.addLayout(saveQueryBox)
-
-        vBox.addStretch(1)
-
+        vBox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(vBox)
 
-        self.setGeometry(300, 300, 290, 600)
+        # self.setGeometry(300, 300, 290, 600)
         self.setWindowTitle(f"Main v{MainConfig.settings['version']}")
+        self.setFixedSize(self.sizeHint())
         self.show()
 
     ########################################################################################
