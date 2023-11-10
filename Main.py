@@ -120,10 +120,12 @@ class Window(QtWidgets.QWidget):
         self.inDirButton = QtWidgets.QPushButton(self.inputDirectory,self)
         self.inDirButton.clicked.connect(self.inDirButtonPressed)
 
-        self.outDirLabel = QtWidgets.QLabel('Output Data/Plots Directory', self)
+        self.outDirLabel = QtWidgets.QLabel('Output Directory', self)
         self.outputDirectory = MainConfig.settings['outDir']
         self.outDirButton = QtWidgets.QPushButton(self.outputDirectory,self)
         self.outDirButton.clicked.connect(self.outDirButtonPressed)
+        # self.outDirButton.setGeometry(200, 150, 100, 40)
+        self.outDirButton.resize(50,100)
 
         self.outInDirButton = QtWidgets.QPushButton('^^^ Mimic Input Dir. vvv',self)
         self.outInDirButton.clicked.connect(self.outInDirButtonPressed)
@@ -205,6 +207,8 @@ class Window(QtWidgets.QWidget):
         vBox.addWidget(self.ancFileLabel)
         vBox.addWidget(self.ancFileLineEdit)
 
+        # vBox.addStretch(1)
+
         ancHBox = QtWidgets.QHBoxLayout()
         ancHBox.addWidget(self.ancAddButton)
         ancHBox.addWidget(self.ancRemoveButton)
@@ -233,11 +237,12 @@ class Window(QtWidgets.QWidget):
         vBox.addLayout(popQueryBox)
 
         # vBox.setContentsMargins(0, 0, 0, 0)
+        # vBox.addStretch(1)
         self.setLayout(vBox)
 
         # self.setGeometry(300, 300, 290, 600)
         self.setWindowTitle(f"Main v{MainConfig.settings['version']}")
-        self.setFixedSize(self.sizeHint())
+        # self.setFixedSize(self.sizeHint())
         self.show()
 
     ########################################################################################
