@@ -30,7 +30,9 @@
 ! Acqua Alta Oceanographic Tower (AAOT), CNR-ISMAR
 !
 ! Ancillary data from: % https://www.comune.venezia.it/content/3-piattaforma-ISMAR-CNR
-! and field notes. relAz refers to target relative azimuth in pySAS.
+! and field notes.
+!
+! Sea-Bird HyperSAS with pySAS robot
 !
 ! Home angle: 0, Min/Max Az: -126/+42, Height: 9m, Tower color: Red/yellow.	
 !
