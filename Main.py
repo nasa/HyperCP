@@ -232,7 +232,7 @@ class Window(QtWidgets.QWidget):
         popQueryBox.addWidget(self.popQueryCheckBox)
         vBox.addLayout(popQueryBox)
 
-        vBox.setContentsMargins(0, 0, 0, 0)
+        # vBox.setContentsMargins(0, 0, 0, 0)
         self.setLayout(vBox)
 
         # self.setGeometry(300, 300, 290, 600)
