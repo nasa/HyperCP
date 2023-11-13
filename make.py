@@ -18,7 +18,7 @@ if platform.system() == 'Darwin':
     os_specific_options = [
         f'--icon={os.path.relpath(os.path.join("Data", "Img", "logo.icns"), root)}',
         '--windowed',
-        '--target-arch=universal2',
+        # '--target-arch=universal2',  # Fails on GitHub but bundle works on both architecture
         # Required for code signing
         '--osx-bundle-identifier=com.nasa.hypercp.hypercp',
         # f'--codesign-identity={os.getenv("CODESIGN_HASH")}',
