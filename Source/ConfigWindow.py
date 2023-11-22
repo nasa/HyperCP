@@ -279,8 +279,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.fullFilesLineEdit.setDisabled(True)
 
         self.l1bFRMRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
-        # '''NOTE: Temporarily disabled while under development'''
-        # self.l1bFRMRadio2.setDisabled(True)
         if ConfigFile.settings['FidRadDB']:
             self.l1bFRMRadio1.setChecked(False)
             self.l1bFRMRadio2.setChecked(True)
@@ -308,6 +306,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bInterpIntervalLineEdit = QtWidgets.QLineEdit(self)
         self.l1bInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1bInterpInterval"]))
         self.l1bInterpIntervalLineEdit.setValidator(doubleValidator)
+        self.l1bInterpIntervalLineEdit.setDisabled(True) # No longer an option; not accomodated in uncertainties
 
         # l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Plots ({os.path.split(MainConfig.settings['outDir'])[-1]}/Plots/L1B_Interp/)", self)
         l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Interpolation Plots", self)
