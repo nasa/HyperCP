@@ -786,6 +786,7 @@ class Controller:
             print("Processing: " + fp)
 
             if not flag_Trios:
+                flag_L1 = 0
                 if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A', flag_Trios):
                     flag_L1 = 1
 
