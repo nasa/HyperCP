@@ -39,7 +39,8 @@ class Utilities:
             for fp in inFilePath:
                 if not os.path.isfile(fp):
                     msg = 'No such file...'
-                    Utilities.errorWindow("File Error", msg)
+                    if not MainConfig.settings['popQuery']:
+                        Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False
@@ -48,7 +49,8 @@ class Utilities:
         else:
             if not os.path.isfile(inFilePath):
                 msg = 'No such file...'
-                Utilities.errorWindow("File Error", msg)
+                if not MainConfig.settings['popQuery']:
+                    Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
