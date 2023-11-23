@@ -1,6 +1,6 @@
 
 ---
-After 2023-05-05, this Changelog was deemed redundant with the GitHub commit logs.
+After 2023-06-05, this Changelog was deemed redundant with the GitHub commit logs.
 Contributors, please make concise commits with good memos.
 ---
 
