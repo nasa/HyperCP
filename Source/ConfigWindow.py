@@ -1987,7 +1987,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
             ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
                 ConfigFile.products["bL2Prodgocad"] or ConfigFile.products["bL2Prodgiop"] or \
-                ConfigFile.products["bL2Prodqaa"]:
+                ConfigFile.products["bL2Prodqaa"] or ConfigFile.products["bL2ProdweiQA"]:
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
             self.l2WeightMODISACheckBox.setChecked(True)

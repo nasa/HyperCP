@@ -54,6 +54,7 @@ class Controller:
                     root = HDFRoot.readHDF5(inFilePath)
                 except:
                     msg = "Controller.writeReport: Unable to open HDF file. May be open in another application."
+                    # if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                     Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -292,6 +293,7 @@ class Controller:
                     root.writeHDF5(outFilePath)
                 except:
                     msg = 'Unable to write L1A file. It may be open in another program.'
+                    # if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                     Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -334,14 +336,14 @@ class Controller:
                 root.writeHDF5(outFilePath)
             except:
                 msg = "Controller.processL1aqc: Unable to open HDF file. May be open in another application."
-                if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                    Utilities.errorWindow("File Error", msg)
+                # if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
         else:
             msg = "L1aqc processing failed. Nothing to output."
-            if MainConfig.settings["popQuery"] == 0:
+            if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
@@ -389,7 +391,7 @@ class Controller:
                 return None
         else:
             msg = "L1b processing failed. Nothing to output."
-            if MainConfig.settings["popQuery"] == 0:
+            if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
@@ -493,7 +495,7 @@ class Controller:
                 return None
         else:
             msg = "L2 processing failed. Nothing to output."
-            if MainConfig.settings["popQuery"] == 0:
+            if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                 Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
