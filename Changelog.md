@@ -1,3 +1,9 @@
+
+---
+After 2023-05-05, this Changelog was deemed redundant with the GitHub commit logs.
+Contributors, please make concise commits with good memos.
+---
+
 v1.2.0 In progress
 
 DAA = dirk.a.aurin@nasa.gov
