@@ -1,4 +1,5 @@
 import os
+import time
 import numpy as np
 
 # for analysis NPL developed packages
@@ -389,4 +390,16 @@ class Propagate:
         sensor['ang'] = [40, 180 - relAz]  # relAz should vary from about 90-135
         sensor['wv'] = waveBands
 
-        return ZhangRho.get_sky_sun_rho(env, sensor)['rho']
+        msg = f"Uncertainty_Analysis.zhangWrapper. Wind: {env['wind']} AOT: {env['od']} Cloud: {env['C']} SZA: {env['zen_sun']} SST: {env['wtemp']} SSS: {env['sal']}"
+        Utilities.writeLogFile(msg)
+        print(msg)
+        msg = f"Uncertainty_Analysis.zhangWrapper. VZA: {sensor['ang'][0]} 180-RAz: {sensor['ang'][1]}"
+        Utilities.writeLogFile(msg)
+        print(msg)
+
+        tic = time.process_time()
+        rho = ZhangRho.get_sky_sun_rho(env, sensor)['rho']
+        msg = f'zhangWrapper Z17 Elapsed Time: {time.process_time() - tic:.1f} s'
+        print(msg)
+        Utilities.writeLogFile(msg)
+        return rho
