@@ -374,11 +374,13 @@ class Propagate:
         """ Wrapper for Zhang17 rho calculation to be called by punpy """
         # === environmental conditions during experiment ===
         env = collections.OrderedDict()
-        env['wind'] = windSpeedMean
+        # Build in guardrails limiting to database bounds (DAA 2023-11-24)
+        env['wind'] = windSpeedMean if windSpeedMean <= 15 else 15
         # clip AOD to 0.2 to ensure no error in Z17, potential underestimation of uncertainty however
-        env['od'] = AOD if AOD < 0.2 else 0.2
+        env['od'] = AOD if AOD <= 0.2 else 0.2
         env['C'] = cloud  # Not used
-        env['zen_sun'] = sza
+        env['zen_sun'] = sza if sza <=60 else 60
+        # Appears these are only use for Fresnel and are analytical and not inherently limited
         env['wtem'] = wTemp
         env['sal'] = sal
 
