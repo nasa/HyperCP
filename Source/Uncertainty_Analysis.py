@@ -377,23 +377,27 @@ class Propagate:
         env = collections.OrderedDict()
         # Build in guardrails limiting to database bounds (DAA 2023-11-24)
         env['wind'] = windSpeedMean if windSpeedMean <= 15 else 15
+        env['wind'] = windSpeedMean if windSpeedMean >= 0 else 0
         # clip AOD to 0.2 to ensure no error in Z17, potential underestimation of uncertainty however
         env['od'] = AOD if AOD <= 0.2 else 0.2
+        env['od'] = AOD if AOD >= 0 else 0
         env['C'] = cloud  # Not used
         env['zen_sun'] = sza if sza <=60 else 60
+        env['zen_sun'] = sza if sza >=0 else 0
         # Appears these are only use for Fresnel and are analytical and not inherently limited
         env['wtem'] = wTemp
         env['sal'] = sal
 
         # === The sensor ===
         sensor = collections.OrderedDict()
+        # Current database is not limited near these values
         sensor['ang'] = [40, 180 - relAz]  # relAz should vary from about 90-135
         sensor['wv'] = waveBands
 
-        msg = f"Uncertainty_Analysis.zhangWrapper. Wind: {env['wind']} AOT: {env['od']} Cloud: {env['C']} SZA: {env['zen_sun']} SST: {env['wtemp']} SSS: {env['sal']}"
+        msg = f"Uncertainty_Analysis.zhangWrapper. Wind: {env['wind']:.1f} AOT: {env['od']:.2f} Cloud: {env['C']:.1f} SZA: {env['zen_sun']:.1f} SST: {env['wtem']:.1f} SSS: {env['sal']:.1f}"
         Utilities.writeLogFile(msg)
         print(msg)
-        msg = f"Uncertainty_Analysis.zhangWrapper. VZA: {sensor['ang'][0]} 180-RAz: {sensor['ang'][1]}"
+        msg = f"Uncertainty_Analysis.zhangWrapper. VZA: {sensor['ang'][0]:.1f} RelAz: {relAz:.1f}"
         Utilities.writeLogFile(msg)
         print(msg)
 
