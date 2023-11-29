@@ -8,7 +8,7 @@ from Source.Utilities import Utilities
 
 class AncillaryReader:
 
-    # Reads a wind speed SeaBASS file and returns an HDFDataset
+    # Reads SeaBASS ancillary data file and returns an HDFDataset
     @staticmethod
     def readAncillary(fp):
         print("AncillaryReader.readAncillary: " + fp)
@@ -225,4 +225,18 @@ class AncillaryReader:
 
         return ancillaryData
 
+    # Reads SeaBASS ancillary data file and returns an HDFDataset
+    @staticmethod
+    def readAncillaryHeader(fp):
+        print("AncillaryReader.readAncillaryHeader: " + fp)
 
+        try:
+            print('This may take a moment on large SeaBASS files...')
+            ancData=readSB(fp, no_warn=True)
+        except IOError:
+            msg = "Unable to read ancillary data file. Make sure it is in SeaBASS format."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+
+        return ancData.headers

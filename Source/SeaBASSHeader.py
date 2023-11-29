@@ -73,8 +73,8 @@ class SeaBASSHeader:
 
         SeaBASSHeader.settings["documents"] = ''
 
-        SeaBASSHeader.settings["instrument_manufacturer"] = 'Sea-Bird'
-        SeaBASSHeader.settings["instrument_model"] = 'HyperSAS'
+        SeaBASSHeader.settings["instrument_manufacturer"] = ''
+        SeaBASSHeader.settings["instrument_model"] = ''
         SeaBASSHeader.settings["calibration_date"] = ''
         SeaBASSHeader.refreshCalibrationFiles()
 
@@ -107,10 +107,10 @@ class SeaBASSHeader:
 
 
         # This will update subsequently from the ConfigFile on demand
-        if ConfigFile.settings["bL1aCleanSZA"]:
-            szaFilt = "On"
-        else:
-            szaFilt = "Off"
+        # if ConfigFile.settings["bL1aCleanSZA"]:
+        #     szaFilt = "On"
+        # else:
+        #     szaFilt = "Off"
         if ConfigFile.settings["bL1aqcCleanPitchRoll"]:
             pitchRollFilt = "On"
         else:
@@ -129,6 +129,16 @@ class SeaBASSHeader:
         else:
             deglitchFilt = "Off"
 
+        if ConfigFile.settings['bL1bCal'] == 1:
+            if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                FRMPath = 'Non-FRM_Class-based'
+            else:
+                FRMPath = 'Factory_Calibration'
+        elif ConfigFile.settings['bL1bCal'] == 2:
+            FRMPath = 'FRM_Class-based'
+        elif ConfigFile.settings['bL1bCal'] == 3:
+            FRMPath = 'FRM-Full-Characterization'
+
         if ConfigFile.settings["bL1bqcEnableSpecQualityCheck"]:
             specFilt = "On"
         else:
@@ -144,34 +154,30 @@ class SeaBASSHeader:
             ltFilt = "Off"
 
         if ConfigFile.settings["bL2ZhangRho"]:
-            rhoCorr = 'Zhang et al. 2017'
+            # rhoCorr = 'Zhang et al. 2017'
             SeaBASSHeader.settings["rho_correction"] = 'Z17'
         else:
-            rhoCorr = 'Mobley 1999'
+            # rhoCorr = 'Mobley 1999'
             SeaBASSHeader.settings["rho_correction"] = 'M99'
 
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
             if ConfigFile.settings["bL2SimpleNIRCorrection"]:
-                NIRFilt = 'Mueller and Austin 1995'
+                # NIRFilt = 'Mueller and Austin 1995'
                 SeaBASSHeader.settings["NIR_residual_correction"] = 'MA95'
             else:
-                NIRFilt = 'Ruddick et al. 2005/2006'
+                # NIRFilt = 'Ruddick et al. 2005/2006'
                 SeaBASSHeader.settings["NIR_residual_correction"] = 'R06'
         else:
-            NIRFilt = "Off"
+            # NIRFilt = "Off"
             SeaBASSHeader.settings["NIR_residual_correction"] = 'NA'
         if ConfigFile.settings["bL2NegativeSpec"]:
             NegativeFilt = "On"
         else:
             NegativeFilt = "Off"
 
-
-
         SeaBASSHeader.settings["comments"] =\
             f'! HyperInSPACE vers = {MainConfig.settings["version"]}\n'+\
             f'! HyperInSPACE Config = {ConfigFile.filename}\n'+\
-            f'! SZA Filter = {szaFilt}\n'+\
-            f'! SZA Max = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
             f'! Rotator Home Angle = {ConfigFile.settings["fL1aqcRotatorHomeAngle"]}\n'+\
             f'! Rotator Delay = {ConfigFile.settings["fL1aqcRotatorDelay"]}\n'+\
             f'! Pitch/Roll Filter = {pitchRollFilt}\n'+\
@@ -195,8 +201,7 @@ class SeaBASSHeader:
             f'! LT Light Window = {ConfigFile.settings["fL1aqcLTWindowLight"]}\n'+\
             f'! LT Dark Sigma = {ConfigFile.settings["fL1aqcLTSigmaDark"]}\n'+\
             f'! LT Light Sigma = {ConfigFile.settings["fL1aqcLTSigmaLight"]}\n'+\
-            f'! Default Wind = {ConfigFile.settings["fL1bDefaultWindSpeed"]}\n'+\
-            f'! Default AOD = {ConfigFile.settings["fL1bDefaultAOD"]}\n'+\
+            f'! FRM Pathway = {FRMPath}\n'+\
             f'! Default Salt = {ConfigFile.settings["fL1bDefaultSalt"]}\n'+\
             f'! Default SST = {ConfigFile.settings["fL1bDefaultSST"]}\n'+\
             f'! Wavelength Interp Int = {ConfigFile.settings["fL1bInterpInterval"]}\n'+\
@@ -215,8 +220,6 @@ class SeaBASSHeader:
             f'! Ensemble Interval = {ConfigFile.settings["fL2TimeInterval"]}\n'+\
             f'! Percent Lt Filter = {ltFilt}\n'+\
             f'! Percent Light = {ConfigFile.settings["fL2PercentLt"]}\n'+\
-            f'! Glint_Correction = {rhoCorr}\n'+\
-            f'! NIR Correction = {NIRFilt}\n'+\
             f'! Remove Negatives = {NegativeFilt}'
             # f'! Processing DateTime = {time.asctime()}'
 
@@ -274,6 +277,10 @@ class SeaBASSHeader:
         print("SeaBASSHeader - refreshCalibrationFiles")
         calibrationPath = ConfigFile.getCalibrationDirectory()
         files = os.listdir(calibrationPath)
+        if ConfigFile.settings['bL1bCal'] != 3:
+            # Only keep the full characterization files if running Full FRM
+            files = [item for item in files if not item.startswith('CP')]
+
         SeaBASSHeader.settings["calibration_files"] = (','.join(files))
 
 
