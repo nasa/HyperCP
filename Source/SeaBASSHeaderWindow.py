@@ -203,6 +203,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.wind_speedLineEdit = QtWidgets.QLineEdit(self)
         self.wind_speedLineEdit.setText(str(SeaBASSHeader.settings["wind_speed"]))
         # self.wind_speedLineEdit.setValidator(doubleValidator)
+
+        # No need to include rho, NIR, BRDF fields to override values extracted from data
         ##
 
         self.openButton = QtWidgets.QPushButton("Open/Copy")
@@ -471,15 +473,21 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             rhoCorr = "3C"
         elif ConfigFile.settings["bL2ZhangRho"]:
             rhoCorr = 'Zhang et al. 2017'
+            SeaBASSHeader.settings["rho_correction"] = 'Z17'
         else:
             rhoCorr = 'Mobley 1999'
+            SeaBASSHeader.settings["rho_correction"] = 'M99'
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
             if ConfigFile.settings["bL2SimpleNIRCorrection"]:
                 NIRFilt = 'Mueller and Austin 1995'
+                SeaBASSHeader.settings["NIR_residual_correction"] = 'MA95'
             else:
                 NIRFilt = 'Ruddick et al. 2005/2006'
+                SeaBASSHeader.settings["NIR_residual_correction"] = 'R06'
         else:
             NIRFilt = "Off"
+            SeaBASSHeader.settings["NIR_residual_correction"] = 'NA'
+
         if ConfigFile.settings["bL2NegativeSpec"]:
             NegativeFilt = "On"
         else:
@@ -515,7 +523,6 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! LT Dark Sigma = {ConfigFile.settings["fL1aqcLTSigmaDark"]}\n'+\
             f'! LT Light Sigma = {ConfigFile.settings["fL1aqcLTSigmaLight"]}\n'+\
             f'! Wavelength Interp Int = {ConfigFile.settings["fL1bInterpInterval"]}\n'+\
-            f'! Default Wind = {ConfigFile.settings["fL1bDefaultWindSpeed"]}\n'+\
             f'! Default AOD = {ConfigFile.settings["fL1bDefaultAOD"]}\n'+\
             f'! Default Salt = {ConfigFile.settings["fL1bDefaultSalt"]}\n'+\
             f'! Default SST = {ConfigFile.settings["fL1bDefaultSST"]}\n'+\
@@ -534,8 +541,6 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! Ensemble Interval = {ConfigFile.settings["fL2TimeInterval"]}\n'+\
             f'! Percent Lt Filter = {ltFilt}\n'+\
             f'! Percent Light = {ConfigFile.settings["fL2PercentLt"]}\n'+\
-            f'! Glint_Correction = {rhoCorr}\n'+\
-            f'! NIR Correction = {NIRFilt}\n'+\
             f'! Remove Negatives = {NegativeFilt}'
             # f'! Processing DateTime = {time.asctime()}'
 

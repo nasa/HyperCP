@@ -1765,10 +1765,10 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2BRDF_fQ"] = 0
         else:
             ConfigFile.settings["bL2BRDF_fQ"] = 1
-            # This will require chlor_a in derived products to be turned on
-            # which in turn requires MODIS bands...
-            self.l2WeightMODISACheckBox.setChecked(True)
-            ConfigFile.products["bL2Prodoc3m"] = 1
+            # # This will require chlor_a in derived products to be turned on
+            # # which in turn requires MODIS bands...
+            # self.l2WeightMODISACheckBox.setChecked(True)
+            # ConfigFile.products["bL2Prodoc3m"] = 1
 
 
     def l2BRDF_IOPCheckBoxUpdate(self):
@@ -1979,9 +1979,9 @@ class ConfigWindow(QtWidgets.QDialog):
         self.close()
 
     def checkForChlor(self):
-        # Confirm Chl is produced if BRDF R.f/Q if used
-        if self.l2BRDF_fQCheckBox.isChecked():
-            ConfigFile.products["bL2Prodoc3m"] = 1
+        # # Confirm Chl is produced if BRDF R.f/Q if used
+        # if self.l2BRDF_fQCheckBox.isChecked():
+        #     ConfigFile.products["bL2Prodoc3m"] = 1
 
         # Confirm necessary satellite bands are processed
         if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \

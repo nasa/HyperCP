@@ -49,6 +49,9 @@ class SeaBASSHeader:
         print("secchi_depth", SeaBASSHeader.settings["secchi_depth"])
         print("wind_speed", SeaBASSHeader.settings["wind_speed"])
 
+        print("rho_correction", SeaBASSHeader.settings["rho_correction"])
+        print("NIR_residual_correction", SeaBASSHeader.settings["NIR_residual_correction"])
+        print("BRDF_correction", SeaBASSHeader.settings["BRDF_correction"])
 
         print("comments", SeaBASSHeader.settings["comments"])
         print("other_comments", SeaBASSHeader.settings["other_comments"])
@@ -70,7 +73,7 @@ class SeaBASSHeader:
 
         SeaBASSHeader.settings["documents"] = ''
 
-        SeaBASSHeader.settings["instrument_manufacturer"] = 'Satlantic'
+        SeaBASSHeader.settings["instrument_manufacturer"] = 'Sea-Bird'
         SeaBASSHeader.settings["instrument_model"] = 'HyperSAS'
         SeaBASSHeader.settings["calibration_date"] = ''
         SeaBASSHeader.refreshCalibrationFiles()
@@ -97,6 +100,11 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["south_latitude"] = ''
         SeaBASSHeader.settings["east_longitude"] = ''
         SeaBASSHeader.settings["west_longitude"] = ''
+
+        SeaBASSHeader.settings["rho_correction"] = ''
+        SeaBASSHeader.settings["NIR_residual_correction"] = ''
+        SeaBASSHeader.settings["BRDF_correction"] = ''
+
 
         # This will update subsequently from the ConfigFile on demand
         if ConfigFile.settings["bL1aCleanSZA"]:
@@ -137,15 +145,21 @@ class SeaBASSHeader:
 
         if ConfigFile.settings["bL2ZhangRho"]:
             rhoCorr = 'Zhang et al. 2017'
+            SeaBASSHeader.settings["rho_correction"] = 'Z17'
         else:
             rhoCorr = 'Mobley 1999'
+            SeaBASSHeader.settings["rho_correction"] = 'M99'
+
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
             if ConfigFile.settings["bL2SimpleNIRCorrection"]:
                 NIRFilt = 'Mueller and Austin 1995'
+                SeaBASSHeader.settings["NIR_residual_correction"] = 'MA95'
             else:
                 NIRFilt = 'Ruddick et al. 2005/2006'
+                SeaBASSHeader.settings["NIR_residual_correction"] = 'R06'
         else:
             NIRFilt = "Off"
+            SeaBASSHeader.settings["NIR_residual_correction"] = 'NA'
         if ConfigFile.settings["bL2NegativeSpec"]:
             NegativeFilt = "On"
         else:

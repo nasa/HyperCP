@@ -34,10 +34,10 @@ class ProcessL2BRDF():
         viewz = 40
         # Iterate over root groups to extract ancillary and radiometric quantities to feed the BRDF function.
         for gp in root.groups:
-            if (gp.id == "DERIVED_PRODUCTS"):
-                # chlorophyll is needed for M02 scheme
-                chl = gp.datasets["chlor_a"].columns["chlor_a"]
-                # Could bring in IOPS for IOP BRDF here...
+            # if (gp.id == "DERIVED_PRODUCTS"):
+            #     # chlorophyll is needed for M02 scheme
+            #     chl = gp.datasets["chlor_a"].columns["chlor_a"]
+            #     # Could bring in IOPS for IOP BRDF here...
             if (gp.id == "ANCILLARY"):
                 solz = gp.datasets["SZA"].columns["SZA"]
                 relaz = gp.datasets["REL_AZ"].columns["REL_AZ"]
@@ -78,7 +78,7 @@ class ProcessL2BRDF():
                     # Transform Rrs to np.array
                     I['Rrs'] = np.array([v for k,v in Rrs.items() if k not in ['Datetime','Datetag','Timetag2']]).T
                     I['wavelengths'] = wavelength
-                    I['chl'] = np.array(chl)
+                    # I['chl'] = np.array(chl)
                     I['sza'] = np.array(solz)
                     # give oza the same dimension as the other ancillary inputs!
                     I['oza'] = viewz * np.ones(np.shape(I['sza']))
