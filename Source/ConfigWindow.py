@@ -1756,6 +1756,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2BRDF_IOPCheckBox.setChecked(False)
         else:
             ConfigFile.settings["bL2BRDF"] = 1
+            self.l2BRDF_fQCheckBox.setChecked(True) # Until IOP-based is ready
 
     def l2BRDF_fQCheckBoxUpdate(self):
         print("ConfigWindow - l2BRDF_fQCheckBoxUpdate")
@@ -1809,7 +1810,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
             # Update comments to reflect any changes in ConfigWindow
-            SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
+            SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config1')
             seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
             seaBASSHeaderDialog.show()
         else:
@@ -1835,7 +1836,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # Confirm that SeaBASS Headers need to be/are updated
         SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
         # This now updates the SeaBASS Header comments to reflect the ConfigWindow parameters automatically.
-        SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
+        SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config2')
         SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
 
         self.checkForChlor()
@@ -1966,7 +1967,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
             # Confirm that SeaBASS Headers need to be/are updated
             if ConfigFile.settings["bL2SaveSeaBASS"]:
-                SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
+                SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config2')
             else:
                 self.close()
 

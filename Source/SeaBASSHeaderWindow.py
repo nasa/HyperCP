@@ -480,18 +480,20 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         # This will update subsequently from the ConfigFile on demand
 
         # First try to fill left column metadata headers using the Ancillary fill if provided.
-        fp = MainConfig.settings["metFile"]
-        if not os.path.isfile(fp):
-            print("Specified ancillary file not found: " + fp)
-        else:
-            metaHeaders = AncillaryReader.readAncillaryHeader(fp)
-            for key in metaHeaders.keys():
-                # The ancillary file may cover a whole cruise, so only use the general metadata, not the specific
-                omitList = ['data_file_name','calibration_files','data_status','station','documents','start_date','end_date',\
-                            'north_latitude','south_latitude','east_longitude','west_longitude','start_time','end_time',\
-                                'measurement_depth','water_depth','fields','units']
-                if key in SeaBASSHeader.settings and SeaBASSHeader.settings[key] == '' and key not in omitList:
-                    SeaBASSHeader.settings[key] = metaHeaders[key]
+        #   Only when opening, not when saving
+        if caller == 'config1':
+            fp = MainConfig.settings["metFile"]
+            if not os.path.isfile(fp):
+                print("Specified ancillary file not found: " + fp)
+            else:
+                metaHeaders = AncillaryReader.readAncillaryHeader(fp)
+                for key in metaHeaders.keys():
+                    # The ancillary file may cover a whole cruise, so only use the general metadata, not the specific
+                    omitList = ['data_file_name','calibration_files','data_status','station','documents','start_date','end_date',\
+                                'north_latitude','south_latitude','east_longitude','west_longitude','start_time','end_time',\
+                                    'measurement_depth','water_depth','fields','units']
+                    if key in SeaBASSHeader.settings and SeaBASSHeader.settings[key] == '' and key not in omitList:
+                        SeaBASSHeader.settings[key] = metaHeaders[key]
 
         # if ConfigFile.settings["bL1aCleanSZA"]:
         #     szaFilt = "On"
