@@ -79,8 +79,13 @@ using the software. From the HyperCP directory, type:
 (hypercp) prompt$ git pull
 ```
 
-[If, instead, you are not using git you should regularly re-download and unzip the repository or the bundled executable version to ensure you
-are using the latest version of the software].
+[If, instead, you are not using git you should regularly re-download and unzip the repository or the bundled executable version to ensure you are using the latest version of the software].
+
+If environment problems are encountered after updating HyperCP (e.g, dependencies are not found), try updating the environment (after activating hypercp) using:
+
+```
+conda env update --file environment.yml --prune
+```
 
 To report a bug, please submit it [here](https://github.com/nasa/HyperCP/issues), the HyperCP Team will take
 care of it :). All other support inquiries should be directed to the Discussions board [here](https://github.com/nasa/HyperCP/discussions)

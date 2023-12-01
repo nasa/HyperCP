@@ -12,6 +12,7 @@ from Source.Controller import Controller
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
 from Source.HDFRoot import HDFRoot
+from Source.HDFDataset import HDFDataset
 from Source.Utilities import Utilities
 from Source.FieldPhotos import FieldPhotos
 from Source.CalibrationFileReader import CalibrationFileReader
@@ -26,7 +27,15 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.setModal(True)
         self.sensor='ES'
 
+        #   This is going to truncate the ancillary data, so for the purposes of re-use, copy it
         self.ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
+        # ancData = HDFDataset()
+        # ancData.attributes = ancillaryData.attributes.copy()
+        # ancData.data = ancillaryData.data.copy()
+        # ancData.datasetToColumns()
+        # ancData.id = 'AncillaryData'
+        # self.ancillaryDataComplete = ancillaryData
+        # self.ancillaryData = ancData
 
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
@@ -40,6 +49,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.anomAnalFileName = anomAnalFileName + '_anoms.csv'
         fp = os.path.join(PATH_TO_CONFIG, self.anomAnalFileName)
         if os.path.exists(fp):
+            print(f'{self.anomAnalFileName} found. Loading params.')
             self.params = Utilities.readAnomAnalFile(fp)
         else:
             self.params = {}
@@ -130,7 +140,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.AnomalyStepLineEdit.setText(str(ConfigFile.settings["fL1aqcAnomalyStep"]))
         self.AnomalyStepLineEdit.setValidator(intValidator)
 
-        self.loadButton = QtWidgets.QPushButton('Load L1A', self, clicked=self.loadL1AQCfile)
+        self.loadButton = QtWidgets.QPushButton('Load L1A', self, clicked=self.loadL1Afile)
 
         self.updateButton = QtWidgets.QPushButton('***  Update  ***', self, clicked=self.updateButtonPressed)
         self.updateButton.setToolTip('Updates all but the Min/Max Bands')
@@ -386,7 +396,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, pFormat, tz)
 
         # Run this on first opening the GUI
-        self.loadL1AQCfile()
+        self.loadL1Afile()
 
         ##############################################
 
@@ -404,7 +414,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # This creates problem prior to window opening. Use the update button after sliding.
         # self.updateButtonPressed()
 
-    def loadL1AQCfile(self):
+    def loadL1Afile(self):
         inputDirectory = self.inputDirectory
         # Open L1A HDF5 file for Deglitching
 
@@ -452,6 +462,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         temp = ConfigFile.settings['bL1aqcDeglitch']
         ConfigFile.settings['bL1aqcDeglitch'] = 0
         root = Controller.processL1aqc(inFilePath[0], outFilePath, calibrationMap, self.ancillaryData,flag_Trios)
+        # Restore full ancillary data
+        # self.ancillaryData = self.ancillaryDataComplete
         ConfigFile.settings['bL1aqcDeglitch'] = temp
 
 
@@ -465,6 +477,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # If a parameterization has been saved in the AnomAnalFile, set the properties in the local object
         # for all sensors
         if self.fileName in self.params.keys():
+            print(f'{self.fileName} found in {self.anomAnalFileName}')
             ref = 0
             for sensor in ['ES','LI','LT']:
                 setattr(self,f'{sensor}WindowDark', self.params[self.fileName][ref+0] )
@@ -490,6 +503,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
             else:
                 self.ThresholdCheckBox.setChecked(False)
             self.ThresholdCheckBoxUpdate()
+        else:
+            print(f'{self.fileName} not found in {self.anomAnalFileName}. Falling back to Config settings')
 
         # Set the GUI parameters for the current sensor from the local object
         self.WindowDarkLineEdit.setText(str(getattr(self,f'{self.sensor}WindowDark')))
@@ -853,6 +868,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             'LTMinMaxBandDark','LTMinLight','LTMaxLight','LTMinMaxBandLight','Threshold']
         # fieldnames = params.keys()
 
+        print(f'Saving {filePath}')
         with open(filePath, 'w', newline='') as csvfile:
             paramwriter = csv.writer(csvfile, delimiter=',',
                                 quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -999,6 +1015,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         print("Read CalibrationFile ", calPath)
         calibrationMap = CalibrationFileReader.read(calPath)
         root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, self.ancillaryData, flag_Trios=0)
+        # Restore full ancillary data
+        self.ancillaryData = self.ancillaryDataComplete
 
         # In case of processing failure, write the report at this Process level, unless running stations
         #   Use numeric level for writeReport
