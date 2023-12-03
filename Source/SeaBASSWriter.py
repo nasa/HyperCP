@@ -311,7 +311,9 @@ class SeaBASSWriter:
 
         rrsData.datasetToColumns()
         nLwData.datasetToColumns()
-        nLwData_BRDF.datasetToColumns()
+
+        if ConfigFile.settings['bL2BRDF']:
+            nLwData_BRDF.datasetToColumns()
 
         # In the case of TriOS factory, rrsUnc is None so datasetToColumns() is not applicable
         if rrsUnc is not None:
