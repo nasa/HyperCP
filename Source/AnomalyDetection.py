@@ -462,6 +462,12 @@ class AnomAnalWindow(QtWidgets.QDialog):
         temp = ConfigFile.settings['bL1aqcDeglitch']
         ConfigFile.settings['bL1aqcDeglitch'] = 0
         root = Controller.processL1aqc(inFilePath[0], outFilePath, calibrationMap, self.ancillaryData,flag_Trios)
+
+        if root is None:
+            msg = "L1A file fails basic L1AQC."
+            Utilities.errorWindow("File Error", msg)
+            print(msg)
+            return
         # Restore full ancillary data
         # self.ancillaryData = self.ancillaryDataComplete
         ConfigFile.settings['bL1aqcDeglitch'] = temp
