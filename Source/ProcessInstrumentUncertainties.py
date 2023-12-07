@@ -281,10 +281,14 @@ class Instrument(ABC):
         uncertainty = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
                        stats['LI']['std_Light'], stats['LI']['std_Dark'],
                        stats['LT']['std_Light'], stats['LT']['std_Dark'],
-                       Cal['ES']*Coeff['ES']/200, Cal['LI']*Coeff['LI']/200, Cal['LT']*Coeff['LT']/200,
+                       Cal['ES']*Coeff['ES']/200,
+                       Cal['LI']*Coeff['LI']/200,
+                       Cal['LT']*Coeff['LT']/200,
                        cStab['ES'], cStab['LI'], cStab['LT'],
                        cLin['ES'], cLin['LI'], cLin['LT'],
-                       np.array(cStray['ES'])/100, np.array(cStray['LI'])/100, np.array(cStray['LT'])/100,
+                       np.array(cStray['ES'])/100,
+                       np.array(cStray['LI'])/100,
+                       np.array(cStray['LT'])/100,
                        np.array(Ct['ES']), np.array(Ct['LI']), np.array(Ct['LT']),
                        np.array(cPol['LI']), np.array(cPol['LT']), np.array(cPol['ES'])
                        ]
@@ -298,7 +302,9 @@ class Instrument(ABC):
         LI_unc = li_unc / li
         LT_unc = lt_unc / lt  # when converted back to absolute in ProcessL2, they will be converted to the same units
         # as ES, lI, & LT respectively.
-
+        ES_unc[np.isnan(ES_unc)] = 0.0
+        LI_unc[np.isnan(LI_unc)] = 0.0
+        LT_unc[np.isnan(LT_unc)] = 0.0
         # return uncertainties as dictionary to be appended to xSlice
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()), dtype=float)  # std_Signal_Interpolated has keys which represent common wavebands for ES, LI, & LT.
         _, es_Unc = self.interp_common_wvls(ES_unc,
@@ -311,17 +317,17 @@ class Instrument(ABC):
                                             np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'], dtype=float),
                                             data_wvl)
 
-        radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_CAL").data)['2']
-
-        ind_zero = radcal_cal <= 0
-        ind_nan = np.isnan(radcal_cal)
-        ind_nocal = ind_nan | ind_zero
-
-        for i, k in enumerate(es_Unc.keys()):
-            if ind_nocal[i]:
-                es_Unc[k] = [0.0]
-                li_Unc[k] = [0.0]
-                lt_Unc[k] = [0.0]
+        # radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_CAL").data)['2']
+        #
+        # ind_zero = radcal_cal <= 0
+        # ind_nan = np.isnan(radcal_cal)
+        # ind_nocal = ind_nan | ind_zero
+        #
+        # for i, k in enumerate(es_Unc.keys()):
+        #     if ind_nocal[i]:
+        #         es_Unc[k] = [0.0]
+        #         li_Unc[k] = [0.0]
+        #         lt_Unc[k] = [0.0]
 
         return dict(
             esUnc=es_Unc,
@@ -1480,8 +1486,21 @@ class HyperOCR(Instrument):
                 unc = prop.process_samples(None, sample_data5)
                 sample = sample_data5
             else:
-                unc = prop.process_samples(None, sample_data4)
-                sample = sample_data4
+                pol = uncGrp.getDataset(f"CLASS_HYPEROCR_{sensortype}_POLDATA_CAL")
+                pol.datasetToColumns()
+                x = pol.columns['0']
+                y = pol.columns['1']
+                y_new = np.interp(radcal_wvl, x, y)
+                pol.columns['0'] = radcal_wvl
+                pol.columns['1'] = y_new
+
+                pol_unc = np.asarray(list(pol.columns['1']))  # [1:]
+                sample_pol = cm.generate_sample(mDraws, np.ones(len(pol_unc)), pol_unc, "syst")
+
+                sample_pol_mesure = prop.run_samples(self.DATA6, [sample_data4, sample_pol])
+
+                unc = prop.process_samples(None, sample_pol_mesure)
+                sample = sample_pol_mesure
 
             output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
             output[f"{sensortype.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
@@ -1518,6 +1537,10 @@ class HyperOCR(Instrument):
         cos_corr = (1 - avg_coserror[:, ind_closest_zen]/100)
         Fhcorr = (1 - full_hemi_coserror/100)
         return (direct_ratio*data4*cos_corr) + ((1 - direct_ratio)*data4*Fhcorr)
+
+    @staticmethod
+    def DATA6(signal, Cpol):
+        return signal*Cpol
 
     @staticmethod
     def update_cal_ES(S12_sl_corr, LAMP, cal_int, t1):
@@ -1827,8 +1850,22 @@ class Trios(Instrument):
                 unc = cos_unc
                 sample = sample_cos_corr_mesure
             else:
-                sample = sample_thermal_corr_mesure
-                unc = prop.process_samples(None, sample_thermal_corr_mesure)
+                # read pol uncertainties and interpolate to radcal wavebands
+                pol = uncGrp.getDataset(f"CLASS_RAMSES_{sensortype}_POLDATA_CAL")
+                pol.datasetToColumns()
+                x = pol.columns['0']
+                y = pol.columns['1']
+                y_new = np.interp(radcal_wvl, x, y)
+                pol.columns['0'] = radcal_wvl
+                pol.columns['1'] = y_new
+
+                pol_unc = np.asarray(list(pol.columns['1']))
+                sample_pol = cm.generate_sample(mDraws, np.ones(len(pol_unc)), pol_unc, "syst")
+
+                sample_pol_mesure = prop.run_samples(self.CPOL_MF, [sample_thermal_corr_mesure, sample_pol])
+
+                sample = sample_pol_mesure
+                unc = prop.process_samples(None, sample_pol_mesure)
 
             # mask for arrays
             ind_zero = np.array([rc[0] == 0 for rc in raw_cal])  # changed due to raw_cal now being a np array
@@ -1855,6 +1892,10 @@ class Trios(Instrument):
     @staticmethod
     def back_Mesure(B0, B1, int_time, t0):
         return B0 + B1*(int_time/t0)
+
+    @staticmethod
+    def CPOL_MF(signal, Cpol):
+        return signal*Cpol
 
     @staticmethod
     def update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1):

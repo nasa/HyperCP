@@ -130,15 +130,20 @@ class ProcessL1b:
 
 
     @staticmethod
-    def read_unc_coefficient_frm(root, inpath):
+    def read_unc_coefficient_frm(root, inpath, classbased_dir):
         ''' SeaBird or TriOS'''
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
         # Read uncertainty parameters from full calibration from TARTU
-        for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
-            Utilities.read_char(f, gp)
+        # for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
+        #     Utilities.read_char(f, gp)
+        # temporarily use class-based polar unc for FRM
+        for f in glob.glob(os.path.join(classbased_dir, r'*class_POLAR*')):
+            if any([s in os.path.basename(f) for s in ["LI", "LT"]]):  # don't read ES Pol which is the manufacturer cosine error
+                Utilities.read_char(f, gp)
+        # Polar correction to be developed and added to FRM branch.
         # for f in glob.glob(os.path.join(inpath, r'*RADCAL*', '*')):
         for f in glob.glob(os.path.join(inpath, r'*RADCAL*')):
             Utilities.read_char(f, gp)
@@ -573,8 +578,10 @@ class ProcessL1b:
 
 
         # Add class-based files (RAW_UNCERTAINTIES)
+        classbased_dir = os.path.join('Data', 'Class_Based_Characterizations',
+                                      ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
         if ConfigFile.settings['bL1bCal'] == 1:
-            classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            # classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
             node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
             if node is None:
@@ -585,7 +592,6 @@ class ProcessL1b:
 
         # Add class-based files + RADCAL file
         elif ConfigFile.settings['bL1bCal'] == 2:
-            classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             radcal_dir = ConfigFile.settings['RadCalDir']
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
@@ -618,7 +624,9 @@ class ProcessL1b:
                     for sens_type in types:
                         try:
                             FidradDB_api(sensor+'_'+sens_type, acq_time, inpath)
-                        except: None
+                        except ValueError:
+                            # ValueError returned for ES_POL as file does not exist
+                            None
 
                 # Check the number of cal files
                 cal_count = 0
@@ -629,7 +637,7 @@ class ProcessL1b:
                     print("Aborting")
                     exit()
 
-            node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
+            node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
             if node is None:
                 msg = 'Error loading FRM characterization files. Check directory.'
                 print(msg)
