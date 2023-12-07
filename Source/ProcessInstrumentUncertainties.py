@@ -8,6 +8,7 @@ import calendar
 import collections
 from decimal import Decimal
 from inspect import currentframe, getframeinfo
+import warnings
 
 # NPL packages
 import punpy
@@ -178,15 +179,18 @@ class Instrument(ABC):
         es, li, lt = PropagateL1B.instruments(*mean_values)  # signal generated from measurement function applied
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
         # convert to relative uncertainty
-        # BUG: For calibrations with zeroes for Coeff (i.e., lamp constraints), this will yield NaN uncertainties
+        # For calibrations with zeroes for Coeff (i.e., lamp constraints), this will yield NaN uncertainties
         # Temporary workaround (results in zeroes instead)
-        es[es==0] = 1
-        li[li==0] = 1
-        lt[lt==0] = 1
-        ES_unc = es_unc / es
-        LI_unc = li_unc / li
-        LT_unc = lt_unc / lt  # when converted back to absolute in ProcessL2, they will be converted to the same units
-        # as ES, lI, & LT respectively.
+        # es[es==0] = 1
+        # li[li==0] = 1
+        # lt[lt==0] = 1
+        # Restored to yield NaN uncertainties in uncharacterized bands
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="invalid value encountered in divide")
+            ES_unc = es_unc / es
+            LI_unc = li_unc / li
+            LT_unc = lt_unc / lt  # when converted back to absolute in ProcessL2, they will be converted to the same units
+                                # as ES, lI, & LT respectively.
 
 
         # return uncertainties as dictionary to be appended to xSlice
@@ -298,13 +302,13 @@ class Instrument(ABC):
         es, li, lt = PropagateL1B.instruments(*mean_values)  # signal generated from measurement function applied
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
         # convert to relative uncertainty
-        ES_unc = es_unc / es
-        LI_unc = li_unc / li
-        LT_unc = lt_unc / lt  # when converted back to absolute in ProcessL2, they will be converted to the same units
-        # as ES, lI, & LT respectively.
-        ES_unc[np.isnan(ES_unc)] = 0.0
-        LI_unc[np.isnan(LI_unc)] = 0.0
-        LT_unc[np.isnan(LT_unc)] = 0.0
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="invalid value encountered in divide")
+            ES_unc = es_unc / es
+            LI_unc = li_unc / li
+            LT_unc = lt_unc / lt  # when converted back to absolute in ProcessL2, they will be converted to the same units
+            # as ES, lI, & LT respectively.
+
         # return uncertainties as dictionary to be appended to xSlice
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()), dtype=float)  # std_Signal_Interpolated has keys which represent common wavebands for ES, LI, & LT.
         _, es_Unc = self.interp_common_wvls(ES_unc,

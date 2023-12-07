@@ -39,7 +39,8 @@ class Utilities:
             for fp in inFilePath:
                 if not os.path.isfile(fp):
                     msg = 'No such file...'
-                    Utilities.errorWindow("File Error", msg)
+                    if not MainConfig.settings['popQuery']:
+                        Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False
@@ -48,7 +49,8 @@ class Utilities:
         else:
             if not os.path.isfile(inFilePath):
                 msg = 'No such file...'
-                Utilities.errorWindow("File Error", msg)
+                if not MainConfig.settings['popQuery']:
+                    Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
@@ -984,6 +986,10 @@ class Utilities:
         if rType=='Rrs' or rType=='nLw':
             print('Plotting Rrs')
             group = root.getGroup("REFLECTANCE")
+            if rType=='Rrs':
+                units = group.attributes['Rrs_UNITS']
+            else:
+                units = group.attributes['nLw_UNITS']
             Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_HYPER_unc')
@@ -1021,25 +1027,35 @@ class Utilities:
             if rType=='ES':
                 print('Plotting Es')
                 group = root.getGroup("IRRADIANCE")
+                units = group.attributes['ES_UNITS']
                 Data = group.getDataset(f'{rType}_HYPER')
 
             if rType=='LI':
                 print('Plotting Li')
                 group = root.getGroup("RADIANCE")
+                units = group.attributes['LI_UNITS']
                 Data = group.getDataset(f'{rType}_HYPER')
 
             if rType=='LT':
                 print('Plotting Lt')
                 group = root.getGroup("RADIANCE")
+                units = group.attributes['LT_UNITS']
                 Data = group.getDataset(f'{rType}_HYPER')
                 lwData = group.getDataset(f'LW_HYPER')
                 if plotDelta:
                     # lwDataDelta = group.getDataset(f'LW_HYPER_{suffix}')
                     lwDataDelta = group.getDataset(f'LW_HYPER_unc') # Lw does not have STD
+                    # For the purpose of plotting, use zeros for NaN uncertainties
+                    lwDataDelta.data = np.nan_to_num(lwDataDelta.data)
 
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_HYPER_{suffix}')
-            plotRange = [305, 1140]
+                # For the purpose of plotting, use zeros for NaN uncertainties
+                dataDelta.data = np.nan_to_num(dataDelta.data)
+            # plotRange = [305, 1140]
+            plotRange = [305, 1000]
+
+
 
         font = {'family': 'serif',
             'color':  'darkred',
@@ -1306,9 +1322,9 @@ class Utilities:
 
         plt.xlabel('wavelength (nm)', fontdict=font)
         if rType=='LT':
-            plt.ylabel('LT (LW dashed)', fontdict=font)
+            plt.ylabel(f'LT (LW dash) [{units}]', fontdict=font)
         else:
-            plt.ylabel(rType, fontdict=font)
+            plt.ylabel(f'{rType} [{units}]', fontdict=font)
 
         # Tweak spacing to prevent clipping of labels
         plt.subplots_adjust(left=0.15)

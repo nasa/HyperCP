@@ -279,8 +279,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.fullFilesLineEdit.setDisabled(True)
 
         self.l1bFRMRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
-        # '''NOTE: Temporarily disabled while under development'''
-        # self.l1bFRMRadio2.setDisabled(True)
         if ConfigFile.settings['FidRadDB']:
             self.l1bFRMRadio1.setChecked(False)
             self.l1bFRMRadio2.setChecked(True)
@@ -308,6 +306,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bInterpIntervalLineEdit = QtWidgets.QLineEdit(self)
         self.l1bInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1bInterpInterval"]))
         self.l1bInterpIntervalLineEdit.setValidator(doubleValidator)
+        self.l1bInterpIntervalLineEdit.setDisabled(True) # No longer an option; not accomodated in uncertainties
 
         # l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Plots ({os.path.split(MainConfig.settings['outDir'])[-1]}/Plots/L1B_Interp/)", self)
         l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Interpolation Plots", self)
@@ -1759,6 +1758,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2BRDF_IOPCheckBox.setChecked(False)
         else:
             ConfigFile.settings["bL2BRDF"] = 1
+            self.l2BRDF_fQCheckBox.setChecked(True) # Until IOP-based is ready
 
     def l2BRDF_fQCheckBoxUpdate(self):
         print("ConfigWindow - l2BRDF_fQCheckBoxUpdate")
@@ -1768,10 +1768,10 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2BRDF_fQ"] = 0
         else:
             ConfigFile.settings["bL2BRDF_fQ"] = 1
-            # This will require chlor_a in derived products to be turned on
-            # which in turn requires MODIS bands...
-            self.l2WeightMODISACheckBox.setChecked(True)
-            ConfigFile.products["bL2Prodoc3m"] = 1
+            # # This will require chlor_a in derived products to be turned on
+            # # which in turn requires MODIS bands...
+            # self.l2WeightMODISACheckBox.setChecked(True)
+            # ConfigFile.products["bL2Prodoc3m"] = 1
 
 
     def l2BRDF_IOPCheckBoxUpdate(self):
@@ -1812,7 +1812,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
             # Update comments to reflect any changes in ConfigWindow
-            SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
+            SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config1')
             seaBASSHeaderDialog = SeaBASSHeaderWindow(seaBASSHeaderFileName, inputDir, self)
             seaBASSHeaderDialog.show()
         else:
@@ -1838,7 +1838,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # Confirm that SeaBASS Headers need to be/are updated
         SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
         # This now updates the SeaBASS Header comments to reflect the ConfigWindow parameters automatically.
-        SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
+        SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config2')
         SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
 
         self.checkForChlor()
@@ -1969,7 +1969,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
             # Confirm that SeaBASS Headers need to be/are updated
             if ConfigFile.settings["bL2SaveSeaBASS"]:
-                SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config')
+                SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config2')
             else:
                 self.close()
 
@@ -1982,15 +1982,15 @@ class ConfigWindow(QtWidgets.QDialog):
         self.close()
 
     def checkForChlor(self):
-        # Confirm Chl is produced if BRDF R.f/Q if used
-        if self.l2BRDF_fQCheckBox.isChecked():
-            ConfigFile.products["bL2Prodoc3m"] = 1
+        # # Confirm Chl is produced if BRDF R.f/Q if used
+        # if self.l2BRDF_fQCheckBox.isChecked():
+        #     ConfigFile.products["bL2Prodoc3m"] = 1
 
         # Confirm necessary satellite bands are processed
         if ConfigFile.products["bL2Prodoc3m"] or ConfigFile.products["bL2Prodkd490"] or \
             ConfigFile.products["bL2Prodpic"] or ConfigFile.products["bL2Prodpoc"] or \
                 ConfigFile.products["bL2Prodgocad"] or ConfigFile.products["bL2Prodgiop"] or \
-                ConfigFile.products["bL2Prodqaa"]:
+                ConfigFile.products["bL2Prodqaa"] or ConfigFile.products["bL2ProdweiQA"]:
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
             self.l2WeightMODISACheckBox.setChecked(True)
