@@ -1152,7 +1152,9 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def deleteCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Remove Calibration File Pressed")
-        os.remove(os.path.join(self.calibrationPath,self.calibrationFileComboBox.currentText()))
+        cal_fp = os.path.join(self.calibrationPath,self.calibrationFileComboBox.currentText())
+        if os.path.exists(cal_fp):  # if cal file removed from empty then does not crash.
+            os.remove(cal_fp)
 
     def getCalibrationSettings(self):
         print("CalibrationEditWindow - getCalibrationSettings")
