@@ -26,16 +26,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.waveBands = []
         self.setModal(True)
         self.sensor='ES'
+        self.sliderWave=525
 
         #   This is going to truncate the ancillary data, so for the purposes of re-use, copy it
         self.ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
-        # ancData = HDFDataset()
-        # ancData.attributes = ancillaryData.attributes.copy()
-        # ancData.data = ancillaryData.data.copy()
-        # ancData.datasetToColumns()
-        # ancData.id = 'AncillaryData'
-        # self.ancillaryDataComplete = ancillaryData
-        # self.ancillaryData = ancData
 
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
@@ -82,6 +76,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
         intValidator = QtGui.QIntValidator()
         doubleValidator = QtGui.QDoubleValidator()
 
+        # Set up the window
+        self.commentLabel =  QtWidgets.QLabel('Comments',self)
+        self.commentLineEdit = QtWidgets.QLineEdit(self)
+
         # Put up the metadata at the top of the window
         self.fileDateLabel = QtWidgets.QLabel(self)
         self.windSpeedLabel = QtWidgets.QLabel(self)
@@ -105,7 +103,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
             # Adds to Config, and saves
             ConfigFile.settings['sL1aqcphotoFormat'] = 'IMG_%Y%m%d_%H%M%S.jpg-0400'
             ConfigFile.saveConfig(ConfigFile.filename)
-
 
         # These will be adjusted on the slider once a file is loaded
         interval = 10
@@ -206,9 +203,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.MinLightLineEdit.setText(str(ConfigFile.settings[f'fL1aqc{self.sensor}MinLight']))
         self.MinLightLineEdit.returnPressed.connect(self.updateButton.click)
 
-        # self.MinMaxLightButton = QtWidgets.QPushButton('Set Band:', self, clicked=self.MinMaxLightButtonPressed)
-        # self.MinMaxLightButton.setToolTip('Select this band for Min/Max thresholding')
-        # self.MinMaxLightLabel = QtWidgets.QLabel("", self)
         self.GoToButton = QtWidgets.QPushButton('Go To Set Band', self, clicked=self.GoToButtonPressed)
         self.GoToButton.setToolTip('Go to threshold waveband')
 
@@ -221,7 +215,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.pLossLightLineEdit = QtWidgets.QLineEdit(self)
         self.pLossLightLineEdit.setText('0')
 
-        # self.ThresholdLabel = QtWidgets.QLabel("Threshold", self)
         self.ThresholdCheckBox = QtWidgets.QCheckBox("Threshold", self)
         if int(ConfigFile.settings["bL1aqcThreshold"]) == 1:
             self.ThresholdCheckBox.setChecked(True)
@@ -286,6 +279,12 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         # Layout ######################################################
         self.VBox = QtWidgets.QVBoxLayout()
+
+        self.HBoxComment = QtWidgets.QHBoxLayout()
+        self.HBoxComment.addWidget(self.commentLabel)
+        self.HBoxComment.addWidget(self.commentLineEdit)
+        self.VBox.addLayout(self.HBoxComment)
+
         self.HBoxMeta1 = QtWidgets.QHBoxLayout()
         self.HBoxMeta2 = QtWidgets.QHBoxLayout()
         self.HBoxMeta1.addWidget(self.fileDateLabel)
@@ -414,11 +413,13 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # This creates problem prior to window opening. Use the update button after sliding.
         # self.updateButtonPressed()
 
+    # def loadL1Afile(self, next=False):
     def loadL1Afile(self):
         inputDirectory = self.inputDirectory
         # Open L1A HDF5 file for Deglitching
 
-        # inLevel = "L1AQC"
+        self.sensor == "ES"
+
         inLevel = "L1A"
         subInputDir = os.path.join(inputDirectory + '/' + inLevel + '/')
         if os.path.exists(subInputDir):
@@ -484,6 +485,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # for all sensors
         if self.fileName in self.params.keys():
             print(f'{self.fileName} found in {self.anomAnalFileName}')
+
             ref = 0
             for sensor in ['ES','LI','LT']:
                 setattr(self,f'{sensor}WindowDark', self.params[self.fileName][ref+0] )
@@ -498,6 +500,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 setattr(self,f'{sensor}MinMaxBandLight', self.params[self.fileName][ref+9] )
                 ref += 10
             setattr(self,'Threshold', self.params[self.fileName][30])
+            self.commentLineEdit.setText(self.params[self.fileName][31])
             if getattr(self,'Threshold') == 1:
                 self.ThresholdCheckBox.setChecked(True)
                 # if getattr(self,f'{self.sensor}MinMaxBandDark'):
@@ -855,6 +858,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         ConfigFile.settings[f'bL1aqcThreshold'] = getattr(self,f'Threshold')
         params.append(getattr(self,f'Threshold'))
+        params.append(self.commentLineEdit.text())
 
         self.params[self.fileName] = params
 
@@ -871,7 +875,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             'LIWindowDark','LIWindowLight','LISigmaDark','LISigmaLight','LIMinDark','LIMaxDark',
             'LIMinMaxBandDark','LIMinLight','LIMaxLight','LIMinMaxBandLight',
             'LTWindowDark','LTWindowLight','LTSigmaDark','LTSigmaLight','LTMinDark','LTMaxDark',
-            'LTMinMaxBandDark','LTMinLight','LTMaxLight','LTMinMaxBandLight','Threshold']
+            'LTMinMaxBandDark','LTMinLight','LTMaxLight','LTMinMaxBandLight','Threshold','Comments']
         # fieldnames = params.keys()
 
         print(f'Saving {filePath}')
@@ -1081,21 +1085,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
          # Set parameters in the local object from the GUI
         setattr(self,f'{self.sensor}MinMaxBandLight', self.waveBand)
         # self.MinMaxLightLabel.setText(str(self.waveBand) +'nm' )
-
-    # def MinMaxLightButtonPressed(self):
-    #     print('Updating waveband for Light thresholds')
-    #     # Test for root
-    #     if not hasattr(self, 'root'):
-    #         note = QtWidgets.QMessageBox()
-    #         note.setText('You must load L1AQC file before continuing')
-    #         note.exec_()
-    #         return
-    #     sensorType = self.sensor
-    #     print(sensorType)
-
-    #      # Set parameters in the local object from the GUI
-    #     setattr(self,f'{self.sensor}MinMaxBandLight', self.waveBand)
-    #     self.MinMaxLightLabel.setText(str(self.waveBand) +'nm' )
 
     def GoToButtonPressed(self):
         print('Updating wavebands')

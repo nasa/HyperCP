@@ -473,7 +473,7 @@ class ProcessL1aqc:
                 if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
                     gp = group
 
-            if 'gp' in locals():
+            if gp is not None:
                 if gp.getDataset("POINTING"):
                     timeStamp = gp.getDataset("DATETIME").data
                     rotator = gp.getDataset("POINTING").data["ROTATOR"]
@@ -524,6 +524,11 @@ class ProcessL1aqc:
                     msg = 'No POINTING data found. Filtering on rotator delay failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
+            else:
+                msg = 'No solar tracker data found. Filtering on rotator delay failed.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
 
 
         # Apply Absolute Rotator Angle Filter

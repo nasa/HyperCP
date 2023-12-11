@@ -640,8 +640,6 @@ class Command():
         # For our needs, we only use a single processing
         # self.processSingle(self.level)
 
-
-
     ########################################################################################
 
     # def processSingle(self, level):
@@ -691,97 +689,97 @@ class Command():
     #     subInputDir = os.path.join(self.inputDirectory + '/' + inLevel + '/')
     #     if os.path.exists(subInputDir):
     #         # openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',subInputDir)
-        #     fileNames = self.inputFile #openFileNames[0] # The first element is the whole list
+    #     fileNames = self.inputFile #openFileNames[0] # The first element is the whole list
 
-        # # else:
-        # #     openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',self.inputDirectory)
-        # #     fileNames = openFileNames[0] # The first element is the whole list
+    # # else:
+    # #     openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',self.inputDirectory)
+    # #     fileNames = openFileNames[0] # The first element is the whole list
 
-        # # print('Files:', openFileNames)
-        # if not fileNames:
-        #     return
+    # # print('Files:', openFileNames)
+    # if not fileNames:
+    #     return
 
-        # print('Process Calibration Files')
-        # calFiles = ConfigFile.settings['CalibrationFiles']
+    # print('Process Calibration Files')
+    # calFiles = ConfigFile.settings['CalibrationFiles']
 
-        # if flag_Trios == 0:
-        #     calibrationMap = Controller.processCalibrationConfig(configFileName, calFiles)
-        # else:
-        #     calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
-        #     # calibrationMap = 0
-        # if not calibrationMap.keys():
-        #     print('No calibration files found. '
-        #     'Check Config directory for your instrument files.')
-        #     return
+    # if flag_Trios == 0:
+    #     calibrationMap = Controller.processCalibrationConfig(configFileName, calFiles)
+    # else:
+    #     calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
+    #     # calibrationMap = 0
+    # if not calibrationMap.keys():
+    #     print('No calibration files found. '
+    #     'Check Config directory for your instrument files.')
+    #     return
 
-        # print('Output Directory:', os.path.abspath(self.outputDirectory))
-        # if not self.outputDirectory[0]:
-        #     print('Bad output directory.')
-        #     return
+    # print('Output Directory:', os.path.abspath(self.outputDirectory))
+    # if not self.outputDirectory[0]:
+    #     print('Bad output directory.')
+    #     return
 
-        # Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, flag_Trios)
-        # t1Single = time.time()
-        # print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
-        # # print('Process Single-Level')
-        # t0Single=time.time()
-        # # Load Config file
-        # configFileName = self.configFilename
-        # configPath = os.path.join('Config', configFileName)
-        # if not os.path.isfile(configPath):
-        #     message = 'Not valid Config File: ' + configFileName
-        #     print(message)
-        #     return
+    # Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, flag_Trios)
+    # t1Single = time.time()
+    # print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
+    # # print('Process Single-Level')
+    # t0Single=time.time()
+    # # Load Config file
+    # configFileName = self.configFilename
+    # configPath = os.path.join('Config', configFileName)
+    # if not os.path.isfile(configPath):
+    #     message = 'Not valid Config File: ' + configFileName
+    #     print(message)
+    #     return
 
-        # ConfigFile.loadConfig(configFileName)
-        # seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
-        # SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-        # InstrumentType = ConfigFile.settings['SensorType']
+    # ConfigFile.loadConfig(configFileName)
+    # seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
+    # SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
+    # InstrumentType = ConfigFile.settings['SensorType']
 
 
-        # ## If a file is specified, then process a single file (Not suitable for L1A .dat file)
-        # if os.path.isfile(inputFile):
-        #     fileNames = [inputFile]
-        # ## if a folder is specified, the process is lauched on all files inside this folder
-        # else:
-        #     fileNames = glob.glob(inputFile+'/*.*')
+    # ## If a file is specified, then process a single file (Not suitable for L1A .dat file)
+    # if os.path.isfile(inputFile):
+    #     fileNames = [inputFile]
+    # ## if a folder is specified, the process is lauched on all files inside this folder
+    # else:
+    #     fileNames = glob.glob(inputFile+'/*.*')
 
-        # # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
-        # # we keep variable fileNames which is a list
-        # fileNames = [self.inputFile]
-        # print('Files:', fileNames)
-        # if not fileNames:
-        #     print('Error in input data')
-        #     return
+    # # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
+    # # we keep variable fileNames which is a list
+    # fileNames = [self.inputFile]
+    # print('Files:', fileNames)
+    # if not fileNames:
+    #     print('Error in input data')
+    #     return
 
-        # # To check insturment type
-        # if InstrumentType.lower() == 'trios':
-        #     flag_Trios = 1
-        # elif InstrumentType.lower() == 'seabird':
-        #     flag_Trios = 0
-        # else:
-        #     print('Error in configuration file: Sensor type not specified')
-        #     sys.exit()
+    # # To check insturment type
+    # if InstrumentType.lower() == 'trios':
+    #     flag_Trios = 1
+    # elif InstrumentType.lower() == 'seabird':
+    #     flag_Trios = 0
+    # else:
+    #     print('Error in configuration file: Sensor type not specified')
+    #     sys.exit()
 
-        # print('Process Calibration Files')
-        # filename = ConfigFile.filename
-        # calFiles = ConfigFile.settings['CalibrationFiles']
-        # if flag_Trios == 0 :
-        #     calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
-        #     if not calibrationMap.keys():
-        #         print('No calibration files found. '
-        #         'Check Config directory for your instrument files.')
-        #         return
-        # else:
-        #     calibrationMap = 0      #Cal files are not used for at the moment for Trios
+    # print('Process Calibration Files')
+    # filename = ConfigFile.filename
+    # calFiles = ConfigFile.settings['CalibrationFiles']
+    # if flag_Trios == 0 :
+    #     calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+    #     if not calibrationMap.keys():
+    #         print('No calibration files found. '
+    #         'Check Config directory for your instrument files.')
+    #         return
+    # else:
+    #     calibrationMap = 0      #Cal files are not used for at the moment for Trios
 
-        # print('Output Directory:', os.path.abspath(self.outputDirectory))
-        # if not self.outputDirectory[0]:
-        #     print('Bad output directory.')
-        #     return
+    # print('Output Directory:', os.path.abspath(self.outputDirectory))
+    # if not self.outputDirectory[0]:
+    #     print('Bad output directory.')
+    #     return
 
-        # Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level, flag_Trios)
-        # t1Single = time.time()
-        # print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
+    # Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level, flag_Trios)
+    # t1Single = time.time()
+    # print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
 
 
 # Arguments declaration
