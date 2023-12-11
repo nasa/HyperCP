@@ -612,6 +612,7 @@ class Command():
         #     MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
         else:
             # Single file
+            # MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
             MainConfig.settings["inDir"] = inputFile
         print("MainConfig - Config updated with cmd line arguments")
 
@@ -636,6 +637,7 @@ class Command():
             print('Error in configuration file: Sensor type not specified')
             sys.exit()
 
+        # if inputFile is not type('list'): inputFile = [inputFile]
         Controller.processFilesMultiLevel(self.outputDirectory,inputFile, calibrationMap, flag_Trios)
         # For our needs, we only use a single processing
         # self.processSingle(self.level)
