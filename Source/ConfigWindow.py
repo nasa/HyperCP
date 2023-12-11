@@ -1549,20 +1549,20 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bqcSpecQualityCheckPlotBox.setDisabled(disabled)
 
         if disabled:
-            ConfigFile.settings["bL1qcEnableSpecQualityCheck"] = 0
-            ConfigFile.settings["bL1qcEnableSpecQualityCheckPlot"] = 0
+            ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 0
+            ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 0
             self.l1bqcSpecQualityCheckPlotBox.setChecked(False)
         else:
-            ConfigFile.settings["bL1qcEnableSpecQualityCheck"] = 1
+            ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 1
 
     def l1bqcSpecQualityCheckPlotBoxUpdate(self):
         print("ConfigWindow - l1bqcSpecQualityCheckPlotBoxUpdate")
 
         disabled = (not self.l1bqcSpecQualityCheckPlotBox.isChecked())
         if disabled:
-            ConfigFile.settings["bL1qcEnableSpecQualityCheckPlot"] = 0
+            ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 0
         else:
-            ConfigFile.settings["bL1qcEnableSpecQualityCheckPlot"] = 1
+            ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 1
 
     def l1bqcQualityFlagCheckBoxUpdate(self):
         print("ConfigWindow - l1bqcQualityFlagCheckBoxUpdate")
