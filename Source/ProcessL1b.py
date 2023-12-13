@@ -129,13 +129,14 @@ class ProcessL1b:
 
 
     @staticmethod
-    def read_unc_coefficient_frm(root, inpath):
 
+    def read_unc_coefficient_frm(root, inpath, classbased_dir):
         ''' SeaBird or TriOS'''
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
+# <<<<<<< dev
         sensorIDs = Utilities.get_sensor_dict(root)
         acq_time = root.attributes["TIME-STAMP"].replace('_', '')
         cal_char_types = ['POLAR','RADCAL','STRAY','ANGULAR','THERMAL']
@@ -148,6 +149,25 @@ class ProcessL1b:
                 matchingFile = FidradDB_choose_cal_char_file('%s_%s' % (sensorID,cal_char_type), acq_time, cal_char_candidates_subset)
                 if matchingFile is not None:
                     Utilities.read_char(matchingFile, gp)
+# =======
+#         # Read uncertainty parameters from full calibration from TARTU
+#         # for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
+#         #     Utilities.read_char(f, gp)
+#         # temporarily use class-based polar unc for FRM
+#         for f in glob.glob(os.path.join(classbased_dir, r'*class_POLAR*')):
+#             if any([s in os.path.basename(f) for s in ["LI", "LT"]]):  # don't read ES Pol which is the manufacturer cosine error
+#                 Utilities.read_char(f, gp)
+#         # Polar correction to be developed and added to FRM branch.
+#         # for f in glob.glob(os.path.join(inpath, r'*RADCAL*', '*')):
+#         for f in glob.glob(os.path.join(inpath, r'*RADCAL*')):
+#             Utilities.read_char(f, gp)
+#         for f in glob.glob(os.path.join(inpath, r'*STRAY*')):
+#             Utilities.read_char(f, gp)
+#         for f in glob.glob(os.path.join(inpath, r'*ANGULAR*')):
+#             Utilities.read_char(f, gp)
+#         for f in glob.glob(os.path.join(inpath, r'*THERMAL*')):
+#             Utilities.read_char(f, gp)
+# >>>>>>> dev
 
         if len(gp.datasets) < 23:
             print(f'Too few characterization files found: {len(gp.datasets)} of 23')
@@ -573,8 +593,10 @@ class ProcessL1b:
 
 
         # Add class-based files (RAW_UNCERTAINTIES)
+        classbased_dir = os.path.join('Data', 'Class_Based_Characterizations',
+                                      ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
         if ConfigFile.settings['bL1bCal'] == 1:
-            classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            # classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
             node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
             if node is None:
@@ -585,7 +607,6 @@ class ProcessL1b:
 
         # Add class-based files + RADCAL file
         elif ConfigFile.settings['bL1bCal'] == 2:
-            classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             radcal_dir = ConfigFile.settings['RadCalDir']
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
@@ -617,10 +638,28 @@ class ProcessL1b:
                 for sensorID in sensorIDs:
                     for cal_char_type in cal_char_types:
                         try:
+# <<<<<<< dev
                             FidradDB_api(sensorID+'_'+cal_char_type, acq_time, inpath)
-                        except: None
+#                         except: None
 
-            node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
+#             node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
+# =======
+#                             FidradDB_api(sensor+'_'+sens_type, acq_time, inpath)
+                        except ValueError:
+                            # ValueError returned for ES_POL as file does not exist
+                            None
+
+#                 # Check the number of cal files
+#                 cal_count = 0
+#                 for root_dir, cur_dir, files in os.walk(inpath):
+#                     cal_count += len(files)
+#                 if cal_count !=12:
+#                     print("The number of calibration files doesn't match with the required number (12).")
+#                     print("Aborting")
+#                     exit()
+
+            node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
+# >>>>>>> dev
             if node is None:
                 msg = 'Error loading FRM characterization files. Check directory.'
                 print(msg)

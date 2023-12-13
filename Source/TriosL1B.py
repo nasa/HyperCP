@@ -263,7 +263,9 @@ class TriosL1B:
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
-
+        # classbased_dir needed for FRM whilst pol is handled in class-based way
+        classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
+                                      ConfigFile.settings['SensorType'] + "_initial")
 
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
@@ -272,7 +274,6 @@ class TriosL1B:
 
         # Add Class-based characterization files + RADCAL files
         elif ConfigFile.settings['bL1bCal'] == 2:
-            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             radcal_dir = ConfigFile.settings['RadCalDir']
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
@@ -303,10 +304,28 @@ class TriosL1B:
                 for sensorID in sensorIDs:
                     for cal_char_type in cal_char_types:
                         try:
+# <<<<<<< dev
                             FidradDB_api(sensorID+'_'+cal_char_type, acq_time, inpath)
-                        except: None
+#                         except: None
 
-            node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
+#             node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
+# =======
+#                             FidradDB_api(sensor+'_'+sens_type, acq_time, inpath)
+                        except ValueError:
+                            # fidrad has value error for Es_Pol as it does not exist
+                            None
+
+#                 # Check the number of cal files
+#                 cal_count = 0
+#                 for root_dir, cur_dir, files in os.walk(inpath):
+#                     cal_count += len(files)
+#                 if cal_count !=12:
+#                     print("The number of calibration files doesn't match with the required number (12).")
+#                     print("Aborting")
+#                     exit()
+
+            node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
+# >>>>>>> dev
             if node is None:
                 msg = 'Error loading FRM characterization files. Check directory.'
                 print(msg)

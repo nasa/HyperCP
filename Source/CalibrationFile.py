@@ -123,7 +123,7 @@ class CalibrationFile:
 
             return True
 
-        except:
+        except KeyError:
             # pass
             pmsg = "Failed to read message successfully"
             print(pmsg)
@@ -144,6 +144,7 @@ class CalibrationFile:
 
         if self.verifyRaw(msg) == False:
             print("Message not read successfully:\n" + str(msg))
+            self.verifyRaw(msg)
             return -1
 
         for i in range(0, len(self.data)):
