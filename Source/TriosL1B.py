@@ -294,31 +294,38 @@ class TriosL1B:
                 print('Full-Char dir:', inpath)
 
             elif ConfigFile.settings['FidRadDB'] == 1:
-                sensorID = Utilities.get_sensor_dict(node)
+                sensorIDs = Utilities.get_sensor_dict(node)
                 acq_time = node.attributes["TIME-STAMP"].replace('_','')
-                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB_characterization', "TriOS", acq_time)
+                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB_characterization', "TriOS")
                 print('FidRadDB Char dir:', inpath)
 
                 # FidRad DB connection and download of calibration files by api
-                types = ['STRAY','RADCAL','POLAR','THERMAL','ANGULAR']
-                for sensor in sensorID:
-                    for sens_type in types:
+                cal_char_types = ['STRAY','RADCAL','POLAR','THERMAL','ANGULAR']
+                for sensorID in sensorIDs:
+                    for cal_char_type in cal_char_types:
                         try:
-                            FidradDB_api(sensor+'_'+sens_type, acq_time, inpath)
+# <<<<<<< dev
+                            FidradDB_api(sensorID+'_'+cal_char_type, acq_time, inpath)
+#                         except: None
+
+#             node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
+# =======
+#                             FidradDB_api(sensor+'_'+sens_type, acq_time, inpath)
                         except ValueError:
                             # fidrad has value error for Es_Pol as it does not exist
                             None
 
-                # Check the number of cal files
-                cal_count = 0
-                for root_dir, cur_dir, files in os.walk(inpath):
-                    cal_count += len(files)
-                if cal_count !=12:
-                    print("The number of calibration files doesn't match with the required number (12).")
-                    print("Aborting")
-                    exit()
+#                 # Check the number of cal files
+#                 cal_count = 0
+#                 for root_dir, cur_dir, files in os.walk(inpath):
+#                     cal_count += len(files)
+#                 if cal_count !=12:
+#                     print("The number of calibration files doesn't match with the required number (12).")
+#                     print("Aborting")
+#                     exit()
 
             node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
+# >>>>>>> dev
             if node is None:
                 msg = 'Error loading FRM characterization files. Check directory.'
                 print(msg)
