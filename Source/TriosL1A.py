@@ -334,7 +334,14 @@ class TriosL1A:
                 '''
                 File naming convention on TriOS TBD depending on convention used in MSDA_XE
                 '''
-                new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
+                try:
+                    new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
+                except IndexError as err:
+                    # print(err)
+                    msg = "possibly an error in naming of Raw files"
+                    Utilities.writeLogFile(msg)
+                    new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_Spectrum_RAW_')[1]
+
                 # new_name = outFilePath + '/' + 'Trios_' + str(start) + '_' + str(stop) + '_L1A.hdf'
                 outFFP.append(os.path.join(outFilePath,f'{new_name}_L1A.hdf'))
                 root.attributes["L1A_FILENAME"] = outFFP[-1]

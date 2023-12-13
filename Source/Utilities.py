@@ -2121,7 +2121,7 @@ class Utilities:
         # Get thermal coefficient from characterization
         uncDS.datasetToColumns()
         therm_coeff = uncDS.data[list(uncDS.columns.keys())[2]]
-        therm_coeff_unc = uncDS.data[list(uncDS.columns.keys())[3]] / 2  # uncertainty is k=2 from char file
+        therm_unc = uncDS.data[list(uncDS.columns.keys())[3]]
         ThermCorr = []
         ThermUnc = []
 
@@ -2130,7 +2130,10 @@ class Utilities:
             for i in range(len(therm_coeff)):
                 try:
                     ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp - refTemp)))
-                    ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp - refTemp)))
+                    if ConfigFile.settings["bL1bCal"] == 3:
+                        ThermUnc.append(therm_unc[i] / 2)  # div by 2 because uncertainty is k=2
+                    else:
+                        ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp - refTemp)))
                 except IndexError:
                     ThermCorr.append(1.0)
                     ThermUnc.append(0)
@@ -2142,7 +2145,11 @@ class Utilities:
             for i in range(len(therm_coeff)):
                 try:
                     ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+2.5 - refTemp)))
-                    ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp+ambTemp+2.5 - refTemp)))
+                    if ConfigFile.settings["bL1bCal"] == 3:
+                        ThermUnc.append(therm_unc[i] / 2)
+                        # uncertainty is k=2 from char file
+                    else:
+                        ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp+ambTemp+2.5 - refTemp)))
                 except IndexError:
                     ThermCorr.append(1.0)
                     ThermUnc.append(0)

@@ -263,7 +263,9 @@ class TriosL1B:
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
-
+        # classbased_dir needed for FRM whilst pol is handled in class-based way
+        classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
+                                      ConfigFile.settings['SensorType'] + "_initial")
 
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
@@ -272,7 +274,6 @@ class TriosL1B:
 
         # Add Class-based characterization files + RADCAL files
         elif ConfigFile.settings['bL1bCal'] == 2:
-            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             radcal_dir = ConfigFile.settings['RadCalDir']
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
@@ -304,7 +305,9 @@ class TriosL1B:
                     for sens_type in types:
                         try:
                             FidradDB_api(sensor+'_'+sens_type, acq_time, inpath)
-                        except: None
+                        except ValueError:
+                            # fidrad has value error for Es_Pol as it does not exist
+                            None
 
                 # Check the number of cal files
                 cal_count = 0
@@ -315,7 +318,7 @@ class TriosL1B:
                     print("Aborting")
                     exit()
 
-            node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
+            node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
             if node is None:
                 msg = 'Error loading FRM characterization files. Check directory.'
                 print(msg)
