@@ -389,6 +389,8 @@ class ConfigFile:
 
         # Load the default values first to insure all settings are present, then populate with saved values where possible
         ConfigFile.createDefaultConfig(filename, 0)
+        goodSettingsKeys = ConfigFile.settings.keys()
+        goodProdKeys = ConfigFile.products.keys()
 
         configPath = os.path.join(PATH_TO_CONFIG, filename)
         if os.path.isfile(configPath):
@@ -402,14 +404,16 @@ class ConfigFile:
 
                 for key, value in fullCollection.items():
                     if key.startswith("bL2Prod"):
-                        ConfigFile.products[key] = value
+                        if key in goodProdKeys:
+                            ConfigFile.products[key] = value
                     else:
-                        # Clean out extraneous files (e.g., Full FRM Characterizations) from CalibrationFiles
-                        if key.startswith('CalibrationFiles'):
-                            for k in list(value.keys()):
-                                if not any(ele.lower() in k.lower() for ele in calFormats):
-                                    del value[k]
-                        ConfigFile.settings[key] = value
+                        if key in goodSettingsKeys:
+                            # Clean out extraneous files (e.g., Full FRM Characterizations) from CalibrationFiles
+                            if key.startswith('CalibrationFiles'):
+                                for k in list(value.keys()):
+                                    if not any(ele.lower() in k.lower() for ele in calFormats):
+                                        del value[k]
+                            ConfigFile.settings[key] = value
 
                 ConfigFile.createCalibrationFolder()
 

@@ -336,7 +336,6 @@ class ProcessL1aqc:
             print(msg)
             Utilities.writeLogFile(msg)
 
-
             i = 0
             start = -1
             stop =[]
@@ -473,7 +472,7 @@ class ProcessL1aqc:
                 if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
                     gp = group
 
-            if 'gp' in locals():
+            if gp is not None:
                 if gp.getDataset("POINTING"):
                     timeStamp = gp.getDataset("DATETIME").data
                     rotator = gp.getDataset("POINTING").data["ROTATOR"]
@@ -524,6 +523,11 @@ class ProcessL1aqc:
                     msg = 'No POINTING data found. Filtering on rotator delay failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
+            else:
+                msg = 'No solar tracker data found. Filtering on rotator delay failed.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
 
 
         # Apply Absolute Rotator Angle Filter
@@ -541,56 +545,57 @@ class ProcessL1aqc:
                 if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
                     gp = group
 
-            if gp.getDataset("POINTING"):
-                timeStamp = gp.getDataset("DATETIME").data
-                rotator = gp.getDataset("POINTING").data["ROTATOR"]
-                # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
-                # It may also be set for when no SolarTracker is present and it's not included in the
-                # ancillary data, but that's not relevant here
-                home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
+            if gp is not None:
+                if gp.getDataset("POINTING"):
+                    timeStamp = gp.getDataset("DATETIME").data
+                    rotator = gp.getDataset("POINTING").data["ROTATOR"]
+                    # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
+                    # It may also be set for when no SolarTracker is present and it's not included in the
+                    # ancillary data, but that's not relevant here
+                    home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
 
-                absRotatorMin = float(ConfigFile.settings["fL1aqcRotatorAngleMin"])
-                absRotatorMax = float(ConfigFile.settings["fL1aqcRotatorAngleMax"])
+                    absRotatorMin = float(ConfigFile.settings["fL1aqcRotatorAngleMin"])
+                    absRotatorMax = float(ConfigFile.settings["fL1aqcRotatorAngleMax"])
 
-                start = -1
-                stop = []
-                for index in range(len(rotator)):
-                    if rotator[index] + home > absRotatorMax or rotator[index] + home < absRotatorMin or math.isnan(rotator[index]):
-                        i += 1
-                        if start == -1:
-                            # print('Absolute rotator angle outside bounds. ' + str(round(rotator[index] + home)))
-                            start = index
-                        stop = index
-                    else:
-                        if start != -1:
-                            # print('Absolute rotator angle passed: ' + str(round(rotator[index] + home)))
-                            startstop = [timeStamp[start],timeStamp[stop]]
-                            msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]))
-                            # print(msg)
-                            Utilities.writeLogFile(msg)
+                    start = -1
+                    stop = []
+                    for index in range(len(rotator)):
+                        if rotator[index] + home > absRotatorMax or rotator[index] + home < absRotatorMin or math.isnan(rotator[index]):
+                            i += 1
+                            if start == -1:
+                                # print('Absolute rotator angle outside bounds. ' + str(round(rotator[index] + home)))
+                                start = index
+                            stop = index
+                        else:
+                            if start != -1:
+                                # print('Absolute rotator angle passed: ' + str(round(rotator[index] + home)))
+                                startstop = [timeStamp[start],timeStamp[stop]]
+                                msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]))
+                                # print(msg)
+                                Utilities.writeLogFile(msg)
 
-                            badTimes.append(startstop)
-                            start = -1
-                msg = f'Percentage of Tracker data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %'
-                print(msg)
-                Utilities.writeLogFile(msg)
-
-                if start != -1 and stop == index: # Records from a mid-point to the end are bad
-                    startstop = [timeStamp[start],timeStamp[stop]]
-                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
-                    # print(msg)
+                                badTimes.append(startstop)
+                                start = -1
+                    msg = f'Percentage of Tracker data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %'
+                    print(msg)
                     Utilities.writeLogFile(msg)
-                    if badTimes is None: # only one set of records
-                        badTimes = [startstop]
-                    else:
-                        badTimes.append(startstop)
 
-                if start==0 and stop==index: # All records are bad
-                    return None
-            else:
-                msg = 'No rotator data found. Filtering on absolute rotator angle failed.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                    if start != -1 and stop == index: # Records from a mid-point to the end are bad
+                        startstop = [timeStamp[start],timeStamp[stop]]
+                        msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+                        # print(msg)
+                        Utilities.writeLogFile(msg)
+                        if badTimes is None: # only one set of records
+                            badTimes = [startstop]
+                        else:
+                            badTimes.append(startstop)
+
+                    if start==0 and stop==index: # All records are bad
+                        return None
+                else:
+                    msg = 'No rotator data found. Filtering on absolute rotator angle failed.'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
 
         # General setup for ancillary or SolarTracker data prior to Relative Solar Azimuth option
         if ConfigFile.settings["bL1aqcSolarTracker"]:
@@ -601,40 +606,41 @@ class ProcessL1aqc:
                 if group.id.startswith("SOLARTRACKER"):
                     gp = group
 
-            if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):
-                timeStamp = gp.getDataset("DATETIME").data
-                # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
-                # It may also be set here for when no SolarTracker is present and it's not included in the
-                # ancillary data. See below.
-                home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
-                sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]# strips off dtype name
-                gp.addDataset("SOLAR_AZ")
-                gp.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
-                # gp.datasets["SOLAR_AZ"].data = sunAzimuth
-                # sunAzimuth = sunAzimuth["SUN"]
-                del(gp.datasets["AZIMUTH"])
-                sunZenith = 90 - gp.getDataset("ELEVATION").data["SUN"]
-                # sunZenith["None"] = 90 - sunZenith["SUN"]
-                gp.addDataset("SZA")
-                gp.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
-                # gp.datasets["SZA"].data = sunZenith
-                # sunZenith = sunZenith["SUN"] # strips off dtype name
-                del(gp.datasets["ELEVATION"])
-                if gp.id == "SOLARTRACKER":
-                    sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
-                elif gp.id == "SOLARTRACKER_pySAS":
-                    sasAzimuth = gp.getDataset("HEADING").data["SAS"]
-                newRelAzData = gp.addDataset("REL_AZ")
+            if gp is not None:
+                if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):
+                    timeStamp = gp.getDataset("DATETIME").data
+                    # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
+                    # It may also be set here for when no SolarTracker is present and it's not included in the
+                    # ancillary data. See below.
+                    home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
+                    sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]# strips off dtype name
+                    gp.addDataset("SOLAR_AZ")
+                    gp.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
+                    # gp.datasets["SOLAR_AZ"].data = sunAzimuth
+                    # sunAzimuth = sunAzimuth["SUN"]
+                    del(gp.datasets["AZIMUTH"])
+                    sunZenith = 90 - gp.getDataset("ELEVATION").data["SUN"]
+                    # sunZenith["None"] = 90 - sunZenith["SUN"]
+                    gp.addDataset("SZA")
+                    gp.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
+                    # gp.datasets["SZA"].data = sunZenith
+                    # sunZenith = sunZenith["SUN"] # strips off dtype name
+                    del(gp.datasets["ELEVATION"])
+                    if gp.id == "SOLARTRACKER":
+                        sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
+                    elif gp.id == "SOLARTRACKER_pySAS":
+                        sasAzimuth = gp.getDataset("HEADING").data["SAS"]
+                    newRelAzData = gp.addDataset("REL_AZ")
 
-                relAz = sasAzimuth - sunAzimuth
+                    relAz = sasAzimuth - sunAzimuth
 
-                # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
-                relAz[relAz>180] = relAz[relAz>180] - 360
-                relAz[relAz<-180] = relAz[relAz<-180] + 360
-            else:
-                msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
-                print(msg)
-                Utilities.writeLogFile(msg)
+                    # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
+                    relAz[relAz>180] = relAz[relAz>180] - 360
+                    relAz[relAz<-180] = relAz[relAz<-180] + 360
+                else:
+                    msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
         else:
             relAz = relAzAnc
 

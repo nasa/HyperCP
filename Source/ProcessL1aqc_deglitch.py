@@ -315,6 +315,7 @@ class ProcessL1aqc_deglitch:
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         root.attributes["FILE_CREATION_TIME"] = timestr
+        # root.attributes['Deglitcher_Comments'] = ConfigFile.settings['AnomAnalComments']
         if ConfigFile.settings['bL1aqcDeglitch']:
             root.attributes['L1AQC_DEGLITCH'] = 'ON'
             for sensor in ["ES","LI","LT"]:

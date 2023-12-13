@@ -1597,7 +1597,7 @@ class Utilities:
         specArray = []
         normSpec = []
 
-        if ConfigFile.settings['bL1qcEnableSpecQualityCheckPlot']:
+        if ConfigFile.settings['bL1bqcEnableSpecQualityCheckPlot']:
             # cmap = cm.get_cmap("jet")
             # color=iter(cmap(np.linspace(0,1,total)))
             print('Creating plots...')
@@ -1636,7 +1636,7 @@ class Utilities:
         # Duplicates each element to a list of two elements in a list:
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
 
-        if ConfigFile.settings['bL1qcEnableSpecQualityCheckPlot']:
+        if ConfigFile.settings['bL1bqcEnableSpecQualityCheckPlot']:
             # t0 = time.time()
             for timei in range(total):
             # for i in badIndx:
@@ -1914,21 +1914,22 @@ class Utilities:
             paramreader = csv.DictReader(csvfile)
             for row in paramreader:
 
-                paramDict[row['filename']] = [int(row['ESWindowDark']), int(row['ESWindowLight']), \
+                paramDict[row['filename']] = [ int(row['ESWindowDark']), int(row['ESWindowLight']),
                                     float(row['ESSigmaDark']), float(row['ESSigmaLight']),
                                     float(row['ESMinDark']), float(row['ESMaxDark']),
                                     float(row['ESMinMaxBandDark']),float(row['ESMinLight']),
                                     float(row['ESMaxLight']),float(row['ESMinMaxBandLight']),
                                     int(row['LIWindowDark']), int(row['LIWindowLight']),
                                     float(row['LISigmaDark']), float(row['LISigmaLight']),
-                                    float(row['LIMinDark']), float(row['LIMaxDark']),\
-                                    float(row['LIMinMaxBandDark']),float(row['LIMinLight']),\
-                                    float(row['LIMaxLight']),float(row['LIMinMaxBandLight']),\
+                                    float(row['LIMinDark']), float(row['LIMaxDark']),
+                                    float(row['LIMinMaxBandDark']),float(row['LIMinLight']),
+                                    float(row['LIMaxLight']),float(row['LIMinMaxBandLight']),
                                     int(row['LTWindowDark']), int(row['LTWindowLight']),
                                     float(row['LTSigmaDark']), float(row['LTSigmaLight']),
-                                    float(row['LTMinDark']), float(row['LTMaxDark']),\
-                                    float(row['LTMinMaxBandDark']),float(row['LTMinLight']),\
-                                    float(row['LTMaxLight']),float(row['LTMinMaxBandLight']),int(row['Threshold']) ]
+                                    float(row['LTMinDark']), float(row['LTMaxDark']),
+                                    float(row['LTMinMaxBandDark']),float(row['LTMinLight']),
+                                    float(row['LTMaxLight']),float(row['LTMinMaxBandLight']),int(row['Threshold']),
+                                    row['Comments'] ]
                 paramDict[row['filename']] = [None if v==-999 else v for v in paramDict[row['filename']]]
 
         return paramDict
