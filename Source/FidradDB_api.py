@@ -5,6 +5,9 @@ import os
 
 def FidradDB_choose_cal_char_file(elem, acq_time, cal_char_candidates):
 
+    if len(cal_char_candidates) == 0:
+        return
+
     # Listening of the date versioning of filtered calibration files
     fileTimeStamps = np.array([int(os.path.basename(i).split('_')[-1].split('.')[0]) for i in cal_char_candidates])
 
@@ -15,8 +18,10 @@ def FidradDB_choose_cal_char_file(elem, acq_time, cal_char_candidates):
         fileTimeStamp = min(fileTimeStamps, key=lambda x: abs(x - int(acq_time)))
     else:
         # Selection of the closest char data file PRE-EXISTING to the measuring date
-        fileTimeStamp = np.max(fileTimeStamps[np.array(fileTimeStamps) < int(acq_time)])
-
+        try:
+            fileTimeStamp = np.max(fileTimeStamps[np.array(fileTimeStamps) < int(acq_time)])
+        except:
+            fileTimeStamp = min(fileTimeStamps, key=lambda x: abs(x - int(acq_time)))
     # Selection of the corresponding calibration file
     matching = [s for s in cal_char_candidates if str(fileTimeStamp) in os.path.basename(s)][0]
 

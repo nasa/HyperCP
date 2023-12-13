@@ -144,8 +144,10 @@ class ProcessL1b:
 
         for sensorID in sensorIDs:
             for cal_char_type in cal_char_types:
-                matchingFile = FidradDB_choose_cal_char_file('%s_%s' % (sensorID,cal_char_type), acq_time, cal_char_candidates)
-                Utilities.read_char(matchingFile, gp)
+                cal_char_candidates_subset = [f for f in cal_char_candidates if '%s_%s' % (sensorID,cal_char_type) in os.path.basename(f)]
+                matchingFile = FidradDB_choose_cal_char_file('%s_%s' % (sensorID,cal_char_type), acq_time, cal_char_candidates_subset)
+                if matchingFile is not None:
+                    Utilities.read_char(matchingFile, gp)
 
         if len(gp.datasets) < 23:
             print(f'Too few characterization files found: {len(gp.datasets)} of 23')
@@ -607,7 +609,7 @@ class ProcessL1b:
                 sensorIDs = Utilities.get_sensor_dict(node)
                 acq_datetime = datetime.strptime(node.attributes["TIME-STAMP"], "%a %b %d %H:%M:%S %Y")
                 acq_time = acq_datetime.strftime('%Y%m%d%H%M%S')
-                inpath = os.path.join('Data', 'FidRadDB_characterization', "SeaBird", acq_time)
+                inpath = os.path.join('Data', 'FidRadDB_characterization', "SeaBird")
                 print('FidRadDB Char dir:', inpath)
 
                 # FidRad DB connection and download of calibration files by api
