@@ -15,6 +15,7 @@ __pycache__/
 
 # Backup stores
 ~*
+*.py~
 
 # HyperCP
 .gitignore
@@ -30,13 +31,14 @@ Logs/
 Config/*
 *.cfg
 *.hdr
-# !Config/sample*
+
 Data/FidRadDB_characterization/
 .pylintrc
 *.pyc
 *.log
 runtest.py
-run_NASA*.py
+run_*.py
+!run_sample.py
 
 # copernicus url and keys
 .cdsapirc

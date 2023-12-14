@@ -391,7 +391,7 @@ class Propagate:
         # === The sensor ===
         sensor = collections.OrderedDict()
         # Current database is not limited near these values
-        sensor['ang'] = [40, 180 - relAz]  # relAz should vary from about 90-135
+        sensor['ang'] = [40, abs(180 - relAz)]  # relAz should vary from about 90-135
         sensor['wv'] = waveBands
 
         msg = f"Uncertainty_Analysis.zhangWrapper. Wind: {env['wind']:.1f} AOT: {env['od']:.2f} Cloud: {env['C']:.1f} SZA: {env['zen_sun']:.1f} SST: {env['wtem']:.1f} SSS: {env['sal']:.1f}"
