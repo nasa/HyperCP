@@ -597,6 +597,7 @@ class Command():
         # Create a default main.config to be filled with cmd argument
         # to avoid reading the one generated with the GUI
         MainConfig.createDefaultConfig("cmdline_main.config", version)
+        MainConfig.fileName = 'cmdline_main.config'
 
         # Update main configuration path with cmd line input
         MainConfig.settings['cfgFile'] = configFilePath
@@ -620,6 +621,8 @@ class Command():
 
         # No GUI used: error message are display in prompt and not in graphical window
         MainConfig.settings["popQuery"] = -1
+
+        MainConfig.saveConfig(MainConfig.fileName)
 
         ''' Need INST, calfiles, and trios flag'''
         ConfigFile.loadConfig(self.configFilename)
