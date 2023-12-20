@@ -8,7 +8,7 @@ from Main import Command, cmd
 
 '''
 This script is an example of how to run HyperCP in batch mode without using the GUI.
-NB: You should lunch the GUI at least a first time to get the necessary ancillary data to perform the Zhang surface correction (see README.md)
+NB: You should launch the GUI at least a first time to get the necessary ancillary data to perform the Zhang surface correction (see README.md)
 If you are just beginning to use HyperCP, please do not modify anything outside the CUSTOM SET UP section.
 '''
 ################################################### CUSTOM SET UP ###################################################

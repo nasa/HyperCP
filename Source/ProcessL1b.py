@@ -136,37 +136,52 @@ class ProcessL1b:
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
-# <<<<<<< dev
-        sensorIDs = Utilities.get_sensor_dict(root)
-        acq_time = root.attributes["TIME-STAMP"].replace('_', '')
-        cal_char_types = ['POLAR','RADCAL','STRAY','ANGULAR','THERMAL']
+# # <<<<<<< dev
+#         sensorIDs = Utilities.get_sensor_dict(root)
+#         # acq_time = root.attributes["TIME-STAMP"].replace('_', '')
+#         acq_datetime = datetime.strptime(root.attributes["TIME-STAMP"], "%a %b %d %H:%M:%S %Y")
+#         acq_time = acq_datetime.strftime('%Y%m%d%H%M%S')
+#         cal_char_types = ['POLAR','RADCAL','STRAY','ANGULAR','THERMAL']
 
-        cal_char_candidates = glob.glob(os.path.join(inpath, '*.TXT'))
+#         cal_char_candidates = glob.glob(os.path.join(inpath, '*.TXT'))
+#         cal_class_candidates = glob.glob(os.path.join(classbased_dir, '*.txt'))
 
-        for sensorID in sensorIDs:
-            for cal_char_type in cal_char_types:
-                cal_char_candidates_subset = [f for f in cal_char_candidates if '%s_%s' % (sensorID,cal_char_type) in os.path.basename(f)]
-                matchingFile = FidradDB_choose_cal_char_file('%s_%s' % (sensorID,cal_char_type), acq_time, cal_char_candidates_subset)
-                if matchingFile is not None:
-                    Utilities.read_char(matchingFile, gp)
-# =======
-#         # Read uncertainty parameters from full calibration from TARTU
-#         # for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
-#         #     Utilities.read_char(f, gp)
-#         # temporarily use class-based polar unc for FRM
-#         for f in glob.glob(os.path.join(classbased_dir, r'*class_POLAR*')):
-#             if any([s in os.path.basename(f) for s in ["LI", "LT"]]):  # don't read ES Pol which is the manufacturer cosine error
-#                 Utilities.read_char(f, gp)
-#         # Polar correction to be developed and added to FRM branch.
-#         # for f in glob.glob(os.path.join(inpath, r'*RADCAL*', '*')):
-#         for f in glob.glob(os.path.join(inpath, r'*RADCAL*')):
-#             Utilities.read_char(f, gp)
-#         for f in glob.glob(os.path.join(inpath, r'*STRAY*')):
-#             Utilities.read_char(f, gp)
-#         for f in glob.glob(os.path.join(inpath, r'*ANGULAR*')):
-#             Utilities.read_char(f, gp)
-#         for f in glob.glob(os.path.join(inpath, r'*THERMAL*')):
-#             Utilities.read_char(f, gp)
+#         for sensorID in sensorIDs:
+#             for cal_char_type in cal_char_types:
+#                 # temporarily use class-based polar unc for FRM
+#                 if 'POLAR' in cal_char_type:
+#                     # don't read ES Pol which is the manufacturer cosine error
+#                     if 'ES' not in sensorIDs[sensorID]:
+#                         cal_char_candidates_subset = [f for f in cal_class_candidates if '%s_class_%s' % (sensorIDs[sensorID],cal_char_type) in os.path.basename(f)]
+#                     else:
+#                         cal_char_candidates_subset = None
+#                 else:
+#                     cal_char_candidates_subset = [f for f in cal_char_candidates if '%s_%s' % (sensorID,cal_char_type) in os.path.basename(f)]
+
+#                 if cal_char_candidates_subset is not None:
+#                     matchingFile = FidradDB_choose_cal_char_file('%s_%s' % (sensorID,cal_char_type), acq_time, cal_char_candidates_subset)
+#                 else:
+#                     matchingFile = None
+#                 if matchingFile is not None:
+#                     Utilities.read_char(matchingFile, gp)
+# # =======
+        # Read uncertainty parameters from full calibration from TARTU
+        # for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
+        #     Utilities.read_char(f, gp)
+        # temporarily use class-based polar unc for FRM
+        for f in glob.glob(os.path.join(classbased_dir, r'*class_POLAR*')):
+            if any([s in os.path.basename(f) for s in ["LI", "LT"]]):  # don't read ES Pol which is the manufacturer cosine error
+                Utilities.read_char(f, gp)
+        # Polar correction to be developed and added to FRM branch.
+        # for f in glob.glob(os.path.join(inpath, r'*RADCAL*', '*')):
+        for f in glob.glob(os.path.join(inpath, r'*RADCAL*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*STRAY*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*ANGULAR*')):
+            Utilities.read_char(f, gp)
+        for f in glob.glob(os.path.join(inpath, r'*THERMAL*')):
+            Utilities.read_char(f, gp)
 # >>>>>>> dev
 
         if len(gp.datasets) < 23:

@@ -612,8 +612,10 @@ class Command():
         #     MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
         else:
             # Single file
-            # MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
-            MainConfig.settings["inDir"] = inputFile
+            MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
+            # MainConfig.settings["inDir"] = inputFile
+            # Now make it a list as it is expected to be
+            inputFile = [inputFile]
         print("MainConfig - Config updated with cmd line arguments")
 
         # No GUI used: error message are display in prompt and not in graphical window
