@@ -984,7 +984,7 @@ class Utilities:
         # In the case of reflectances, only use _unc. There are no _std, because reflectances are calculated
         # from the average Lw and Es values within the ensembles
         if rType=='Rrs' or rType=='nLw':
-            print('Plotting Rrs')
+            print('Plotting Rrs or nLw')
             group = root.getGroup("REFLECTANCE")
             if rType=='Rrs':
                 units = group.attributes['Rrs_UNITS']
@@ -992,7 +992,7 @@ class Utilities:
                 units = group.attributes['nLw_UNITS']
             Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_HYPER_unc')
+                dataDelta = group.getDataset(f'{rType}_HYPER_unc').data.copy()
 
             plotRange = [340, 800]
             if ConfigFile.settings['bL2WeightMODISA']:
@@ -1044,14 +1044,14 @@ class Utilities:
                 lwData = group.getDataset(f'LW_HYPER')
                 if plotDelta:
                     # lwDataDelta = group.getDataset(f'LW_HYPER_{suffix}')
-                    lwDataDelta = group.getDataset(f'LW_HYPER_unc') # Lw does not have STD
+                    lwDataDelta = group.getDataset(f'LW_HYPER_unc').data.copy() # Lw does not have STD
                     # For the purpose of plotting, use zeros for NaN uncertainties
-                    lwDataDelta.data = np.nan_to_num(lwDataDelta.data)
+                    lwDataDelta = Utilities.datasetNan2Zero(lwDataDelta)
 
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_HYPER_{suffix}')
+                dataDelta = group.getDataset(f'{rType}_HYPER_{suffix}').data.copy() # Do not change the L2 data
                 # For the purpose of plotting, use zeros for NaN uncertainties
-                dataDelta.data = np.nan_to_num(dataDelta.data)
+                dataDelta = Utilities.datasetNan2Zero(dataDelta)
             # plotRange = [305, 1140]
             plotRange = [305, 1000]
 
@@ -1147,7 +1147,7 @@ class Utilities:
             for k in x:
                 y.append(Data.data[k][i])
                 if plotDelta:
-                    dy.append(dataDelta.data[k][i])
+                    dy.append(dataDelta[k][i])
             # Add Lw to Lt plots
             if rType=='LT':
                 yLw = []
@@ -1155,7 +1155,7 @@ class Utilities:
                 for k in xLw:
                     yLw.append(lwData.data[k][i])
                     if plotDelta:
-                        dyLw.append(lwDataDelta.data[k][i])
+                        dyLw.append(lwDataDelta[k][i])
 
             # Satellite Bands
             y_MODISA = []
@@ -1793,7 +1793,7 @@ class Utilities:
                     for k in xQAA:
                         y.append(DataQAA.data[k][i])
                         # if plotDelta:
-                        #     dy.append(dataDelta.data[k][i])
+                        #     dy.append(dataDelta[k][i])
 
                     c=next(colorQAA)
                     if max(y) > maxIOP:
@@ -2829,3 +2829,12 @@ class Utilities:
                                     device = line.rstrip()
                                     name = device + '_' + gp.attributes['CHARACTERISATION_FILE_TYPE']
                                 key = None
+
+    @staticmethod
+    def datasetNan2Zero(inputArray):
+        ''' Workaround nans within a Group.Dataset '''
+        # There must be a better way...
+        for i, value in enumerate(inputArray[0]):
+                    if np.isnan(value):
+                        inputArray[0][i] = 0.0
+        return inputArray
