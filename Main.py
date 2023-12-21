@@ -882,6 +882,7 @@ if __name__ == '__main__':
             GetAnc.userCreds(username, password)
         Command(configFilePath, inputFile, outputDirectory, level, ancFile)
     else:
+        os.environ['HYPERINSPACE_CMD'] = 'FALSE'
         app = QtWidgets.QApplication(sys.argv)
         win = Window()
         sys.exit(app.exec_())
