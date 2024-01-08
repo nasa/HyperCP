@@ -2834,7 +2834,8 @@ class Utilities:
     def datasetNan2Zero(inputArray):
         ''' Workaround nans within a Group.Dataset '''
         # There must be a better way...
-        for i, value in enumerate(inputArray[0]):
+        for ens, row in enumerate(inputArray):
+            for i, value in enumerate(row):
                     if np.isnan(value):
-                        inputArray[0][i] = 0.0
+                        inputArray[ens][i] = 0.0
         return inputArray
