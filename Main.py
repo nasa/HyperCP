@@ -30,6 +30,7 @@ from Source.SeaBASSHeader import SeaBASSHeader
 from Source.Utilities import Utilities
 
 version = '1.2.1'
+CODE_HOME = os.getcwd()
 
 class Window(QtWidgets.QWidget):
     ''' Window is the main GUI container '''
@@ -37,15 +38,18 @@ class Window(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         # self.setStyleSheet("background-color: #e3e6e1;")
-        if not os.path.exists('Plots'):
-            os.makedirs('Plots')
-        if not os.path.exists('Config'):
-            os.makedirs('Config')
-        if not os.path.exists('Logs'):
-            os.makedirs('Logs')
+
+        # Create - if inexistent - directories Plots, Config and Logs
+        HyperCP_dirs = ['Plots','Config','Logs']
+        for dir in HyperCP_dirs:
+            dirPath = os.path.join(CODE_HOME,dir)
+            if not os.path.exists(dirPath):
+                os.makedirs(dirPath)
 
         # Confirm that core data files are in place. Download if necessary.
-        if not os.path.exists(os.path.join('Data','Zhang_rho_db.mat')):
+        # 1: Zhang DB:
+        local_filename = os.path.join(CODE_HOME, 'Data', 'Zhang_rho_db.mat')
+        if not os.path.exists(local_filename):
             infoText = '  NEW INSTALLATION\nGlint database required.\nClick OK to download.\n\nWARNING: THIS IS A 2.5 GB DOWNLOAD.\n\n\
             If canceled, Zhang et al. (2017) glint correction will fail. If download fails, a link and instructions will be provided in the terminal.'
             YNReply = Utilities.YNWindow('Database Download',infoText)
@@ -53,7 +57,6 @@ class Window(QtWidgets.QWidget):
 
                 url = 'https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat'
                 download_session=requests.Session()
-                local_filename = os.path.join('Data','Zhang_rho_db.mat')
                 try:
                     file_size=int(download_session.head(url).headers["Content-length"])
                     file_size_read=round(int(file_size)/(1024**3),2)
@@ -70,10 +73,9 @@ class Window(QtWidgets.QWidget):
                             f.write(chunk)
                     progress_bar.close()
                 else:
-                    print('Failed to download core databases.')
-                    print('Download from: \
-                                             https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat \
-                                                      and place in HyperInSPACE/Data directory.')
+                    print('Failed to download core databases.'
+                          'Try download from %s (e.g. copy paste this URL in your internet browser) and place under'
+                          ' %s/Data directory.' % (url,CODE_HOME))
 
         self.initUI()
 
@@ -84,26 +86,29 @@ class Window(QtWidgets.QWidget):
         MainConfig.loadConfig(MainConfig.fileName, version) # version in case it has to make new
         MainConfig.settings['version'] = version # version to update if necessary
 
+        # Banner
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
         # pixmap = QtGui.QPixmap('./Data/Img/with_background_530x223.png')
-        pixmap = QtGui.QPixmap('./Data/Img/banner_530x151.png')
+        pixmap = QtGui.QPixmap(os.path.join(CODE_HOME,'Data','Img','banner_530x151.png'))
         banner.setPixmap(pixmap)
         banner.setAlignment(QtCore.Qt.AlignCenter)
 
-        # Configuration File
+        # Configuration File section
         configLabel = QtWidgets.QLabel('Select/Create Configuration File', self)
         configLabel_font = configLabel.font()
         configLabel_font.setPointSize(10)
         configLabel_font.setBold(True)
         configLabel.setFont(configLabel_font)
+
         self.fsm = QtWidgets.QFileSystemModel()
         self.fsm.setNameFilters(['*.cfg'])
         self.fsm.setNameFilterDisables(False) # This activates the Filter (on Win10)
         self.fsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
+
         self.configComboBox = QtWidgets.QComboBox(self)
         self.configComboBox.setModel(self.fsm)
-        self.configComboBox.setRootModelIndex(self.fsm.setRootPath('Config'))
+        self.configComboBox.setRootModelIndex(self.fsm.setRootPath(os.path.join(CODE_HOME,'Config')))
         self.fsm.directoryLoaded.connect(self.on_directoryLoaded)
         self.configComboBox.currentTextChanged.connect(self.comboBox1Changed)
 
@@ -178,6 +183,9 @@ class Window(QtWidgets.QWidget):
 
         ########################################################################################
         # Add QtWidgets to the Window
+        ########################################################################################
+
+        # vBox = vertical box layout
         vBox = QtWidgets.QVBoxLayout()
 
         vBox.addWidget(banner)
@@ -217,12 +225,14 @@ class Window(QtWidgets.QWidget):
 
         singleHBox = QtWidgets.QHBoxLayout()
         singleHBox.addWidget(singleLevelLabel)
+
         singleVBox = QtWidgets.QVBoxLayout()
         singleVBox.addWidget(self.singleL1aButton)
         singleVBox.addWidget(self.singleL1aqcButton)
         singleVBox.addWidget(self.singleL1bButton)
         singleVBox.addWidget(self.singleL1bqcButton)
         singleVBox.addWidget(self.singleL2Button)
+
         singleHBox.addLayout(singleVBox)
         vBox.addLayout(singleHBox)
 
@@ -241,7 +251,7 @@ class Window(QtWidgets.QWidget):
         self.setLayout(vBox)
 
         # self.setGeometry(300, 300, 290, 600)
-        self.setWindowTitle(f"Main v{MainConfig.settings['version']}")
+        self.setWindowTitle(f"HyperCP Main v{MainConfig.settings['version']}")
         # self.setFixedSize(self.sizeHint())
         self.show()
 
@@ -264,7 +274,7 @@ class Window(QtWidgets.QWidget):
         if ok:
             if not fileName.endswith(".cfg"):
                 fileName = fileName + ".cfg"
-            fp = os.path.join("Config", fileName)
+            fp = os.path.join(CODE_HOME,"Config", fileName)
             if os.path.exists(fp):
                 ret = QtWidgets.QMessageBox.question(self, 'File Exists', "Overwrite Config File?", QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
 
@@ -289,7 +299,7 @@ class Window(QtWidgets.QWidget):
         configFileName = self.configComboBox.currentText()
 
         inputDir = self.inputDirectory
-        configPath = os.path.join('Config', configFileName)
+        configPath = os.path.join(CODE_HOME, 'Config', configFileName)
         if os.path.isfile(configPath):
             ConfigFile.loadConfig(configFileName)
             configDialog = ConfigWindow(configFileName, inputDir, self)
@@ -301,7 +311,7 @@ class Window(QtWidgets.QWidget):
     def configDeleteButtonPressed(self):
         print('Delete Config Dialogue')
         configFileName = self.configComboBox.currentText()
-        configPath = os.path.join('Config', configFileName)
+        configPath = os.path.join(CODE_HOME,'Config', configFileName)
         if os.path.isfile(configPath):
             configDeleteMessage = 'Delete ' + configFileName + '?'
 
@@ -322,7 +332,7 @@ class Window(QtWidgets.QWidget):
         if self.inputDirectory == '':
             self.inputDirectory = temp
         if self.inputDirectory == '':
-            self.inputDirectory = './Data'
+            self.inputDirectory = os.path.join(CODE_HOME,'/Data')
         print('Data input directory changed: ', self.inputDirectory)
         self.inDirButton.setText(self.inputDirectory)
         MainConfig.settings['inDir'] = self.inputDirectory
@@ -337,7 +347,7 @@ class Window(QtWidgets.QWidget):
         if self.outputDirectory == '':
             self.outputDirectory = temp
         if self.outputDirectory == '':
-            self.outputDirectory = './Data/Sample_Data'
+            self.outputDirectory = os.path.join(CODE_HOME,'Data','Sample_Data')
         print('Data output directory changed: ', self.outputDirectory)
         print('NOTE: Subdirectories for data levels will be created here')
         print('      automatically, unless they already exist.')
@@ -361,7 +371,7 @@ class Window(QtWidgets.QWidget):
         if self.ancFileDirectory == '':
             self.ancFileDirectory = self.inputDirectory # Reverts to Input directory first
             if self.ancFileDirectory == '':
-                self.ancFileDirectory = './Data/Sample_Data' # Falls back to ./Data/Sample_Data
+                self.ancFileDirectory = os.path.join(CODE_HOME,'Data','Sample_Data') # Falls back to ./Data/Sample_Data
         fnames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Select Ancillary Data File',self.ancFileDirectory)
         if any(fnames):
             print(fnames)
@@ -383,7 +393,7 @@ class Window(QtWidgets.QWidget):
         t0Single=time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
-        MainConfig.settings['cfgPath'] = os.path.join('Config', configFileName)
+        MainConfig.settings['cfgPath'] = os.path.join(CODE_HOME,'Config', configFileName)
         if not os.path.isfile(MainConfig.settings['cfgPath']):
             message = 'Not valid Config File: ' + configFileName
             QtWidgets.QMessageBox.critical(self, 'Error', message)
@@ -420,7 +430,7 @@ class Window(QtWidgets.QWidget):
             inLevel = 'L1BQC'
 
         # Check for subdirectory associated with level chosen
-        subInputDir = os.path.join(self.inputDirectory + '/' + inLevel + '/')
+        subInputDir = os.path.join(self.inputDirectory,inLevel)
         if os.path.exists(subInputDir):
             openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',subInputDir)
             fileNames = openFileNames[0] # The first element is the whole list
@@ -487,7 +497,7 @@ class Window(QtWidgets.QWidget):
         t0Multi = time.time()
         # Load Config file
         configFileName = self.configComboBox.currentText()
-        configPath = os.path.join('Config', configFileName)
+        configPath = os.path.join(CODE_HOME,'Config', configFileName)
         MainConfig.settings['cfgPath'] = configPath
         if not os.path.isfile(configPath):
             message = 'Not valid Config File: ' + configFileName
@@ -608,12 +618,12 @@ class Command():
         if type(inputFile) is list:
             # Process the entire directory of the first file in the list
             # self.inputFile = os.path.dirname(inputFile[0])+'/'
-            MainConfig.settings["inDir"] = os.path.dirname(inputFile[0])+'/'
+            MainConfig.settings["inDir"] = os.path.dirname(inputFile[0])
         # if os.path.isfile(inputFile):
         #     MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
         else:
             # Single file
-            MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
+            MainConfig.settings["inDir"] = os.path.dirname(inputFile)
             # MainConfig.settings["inDir"] = inputFile
             # Now make it a list as it is expected to be
             inputFile = [inputFile]
