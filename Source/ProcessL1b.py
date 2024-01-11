@@ -652,29 +652,13 @@ class ProcessL1b:
                 cal_char_types = ['STRAY','RADCAL','POLAR','THERMAL','ANGULAR']
                 for sensorID in sensorIDs:
                     for cal_char_type in cal_char_types:
-                        try:
-# <<<<<<< dev
-                            FidradDB_api(sensorID+'_'+cal_char_type, acq_time, inpath)
-#                         except: None
-
-#             node = ProcessL1b.read_unc_coefficient_frm(node, inpath)
-# =======
-#                             FidradDB_api(sensor+'_'+sens_type, acq_time, inpath)
-                        except ValueError:
-                            # ValueError returned for ES_POL as file does not exist
-                            None
-
-#                 # Check the number of cal files
-#                 cal_count = 0
-#                 for root_dir, cur_dir, files in os.walk(inpath):
-#                     cal_count += len(files)
-#                 if cal_count !=12:
-#                     print("The number of calibration files doesn't match with the required number (12).")
-#                     print("Aborting")
-#                     exit()
+                        # Exceptions due to non-existing cal/char files now handled directly in FidradDB_api function
+                        # If cal/char file missing entails an error, this should be handled while performing the particular
+                        # correction, not here.
+                        FidradDB_api(sensorID+'_'+cal_char_type, acq_time, inpath)
 
             node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
-# >>>>>>> dev
+
             if node is None:
                 msg = 'Error loading FRM characterization files. Check directory.'
                 print(msg)
