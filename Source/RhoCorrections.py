@@ -172,8 +172,12 @@ class RhoCorrections:
         if Propagate is None:
             rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
         else:
+            tic = time.process_time()
             rhoDelta = Propagate.Zhang_Rho_Uncertainty(mean_vals=varlist,
                                                        uncertainties=ulist,
                                                        )
+            msg = f'Zhang_Rho_Uncertainty Elapsed Time: {time.process_time() - tic:.1f} s'
+            print(msg)
+            Utilities.writeLogFile(msg)
 
         return rhoVector, rhoDelta
