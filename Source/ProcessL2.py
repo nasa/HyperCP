@@ -86,6 +86,13 @@ class ProcessL2:
                     NIRRRs.append(rrsSlice[k][-1])
             rrsNIRCorr = min(NIRRRs)
             if rrsNIRCorr < 0:
+                #   NOTE: SeaWiFS protocols for residual NIR were never intended to ADD reflectance
+                #   This is most likely in blue, non-turbid waters not intended for NIR offset correction.
+                #   Revert to NIR correction of 0 when this happens. No good way to update the L2 attribute
+                #   metadata because it may only be on some ensembles within a file.
+                msg = f'Bad NIR Correction. Revert to No NIR correction.'
+                print(msg)
+                Utilities.writeLogFile(msg)
                 rrsNIRCorr = 0
             # Subtract average from each waveband
             for k in rrsSlice:
@@ -200,13 +207,26 @@ class ProcessL2:
             nLwNIRCorr = εnLw/np.pi
 
             # Now apply to rrs and nLw
-            ### NOTE: This correction is also susceptible to a correction that ADDS to Rrs
-            ###         spectrally, depending on spectral shape (see test_SimSpec.m)
+            # NOTE: This correction is also susceptible to a correction that ADDS to reflectance
+            #   spectrally, depending on spectral shape (see test_SimSpec.m).
+            #   This is most likely in blue, non-turbid waters not intended for SimSpec.
+            #   Revert to NIR correction of 0 when this happens. No good way to update the L2 attribute
+            #   metadata because it may only be on some ensembles within a file.
+            if rrsNIRCorr < 0:
+                    msg = f'Bad NIR Correction. Revert to No NIR correction.'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    rrsNIRCorr = 0
+                    nLwNIRCorr = 0
+                    # L2 metadata will be updated
+
             for k in rrsSlice:
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
                     continue
+
                 rrsSlice[k][-1] -= float(rrsNIRCorr) # Only working on the last (most recent' [-1]) element of the slice
                 nLwSlice[k][-1] -= float(nLwNIRCorr)
+
 
             nirSlice['NIR_offset'].append(rrsNIRCorr)
             nirnLwSlice['NIR_offset'].append(nLwNIRCorr)
@@ -351,12 +371,14 @@ class ProcessL2:
 
         # Only Factory - Trios has no uncertainty here
         if ConfigFile.settings['bL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird' :
-            esUNC = xUNC['esUNC']  # should already be convolved to hyperspec
-            liUNC = xUNC['liUNC']
-            ltUNC = xUNC['ltUNC']
+            esUNC = xUNC[f'esUNC_{sensor}']  # should already be convolved to hyperspec
+            liUNC = xUNC[f'liUNC_{sensor}']  # added reference to HYPER as band convolved uncertainties will no longer
+            ltUNC = xUNC[f'ltUNC_{sensor}']  # overwite normal instrument uncertainties during processing
             for i, wvl in enumerate(waveSubset):
                 k = str(wvl)
-                if (k in esXSlice) and (k in liXSlice) and (k in ltXSlice):
+                if (any([wvl == float(x) for x in esXSlice]) and
+                        any([wvl == float(x) for x in liXSlice]) and
+                        any([wvl == float(x) for x in ltXSlice])):  # More robust (able to handle sensor and hyper bands
                     if sensor == 'HYPER':
                         lwUNC[k] = xUNC['lwUNC'][i]
                         rrsUNC[k] = xUNC['rrsUNC'][i]
@@ -367,7 +389,9 @@ class ProcessL2:
             # factory case
             for wvl in waveSubset:
                 k = str(wvl)
-                if (k in esXSlice) and (k in liXSlice) and (k in ltXSlice):
+                if (any([wvl == float(x) for x in esXSlice]) and
+                        any([wvl == float(x) for x in liXSlice]) and
+                        any([wvl == float(x) for x in ltXSlice])):  # old version had issues with '.0'
                     esUNC[k] = 0
                     liUNC[k] = 0
                     ltUNC[k] = 0
@@ -377,7 +401,9 @@ class ProcessL2:
         deleteKey = []
         for wvl in waveSubset:  # loop through wavebands
             k = str(wvl)
-            if (k in esXSlice) and (k in liXSlice) and (k in ltXSlice):
+            if (any([wvl == float(x) for x in esXSlice]) and
+                    any([wvl == float(x) for x in liXSlice]) and
+                    any([wvl == float(x) for x in ltXSlice])):
                 # Initialize the new dataset if this is the first slice
                 if k not in newESData.columns:
                     newESData.columns[k] = []
@@ -1687,8 +1713,7 @@ class ProcessL2:
         # insert Uncertainties into analysis
         xUNC = {}
 
-        #### ADERU: add the case for factory
-        # NOTE: These .updates are what is triggering matrix_calculation.py:286: UserWarning:
+        # NOTE: These ".update" object calls are what is triggering matrix_calculation.py:286: UserWarning:
         tic = time.process_time()
         if ConfigFile.settings["bL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "seabird":
             xSlice.update(instrument.Factory(node, uncGroup, stats))  # update the xSlice dict with uncertianties and samples
@@ -1725,7 +1750,7 @@ class ProcessL2:
 
         else:
             xUNC = None
-            # TODO: This should still estimate STD for TRIOS-Factory regime, instead of unc.
+            # TODO: This could still estimate STD for TRIOS-Factory regime instead of FRM unc.
         msg = f'Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s'
         print(msg)
         Utilities.writeLogFile(msg)
@@ -1736,16 +1761,14 @@ class ProcessL2:
                 if "sample" in slice.lower():
                     xSlice.pop(slice)  # samples are no longer needed
                 elif "unc" in slice.lower():
-                    xUNC[f"{slice[0:2]}UNC"] = xSlice.pop(slice)  # transfer instrument uncs to xUNC
-            # TODO: compare uncertainty outputs to old results with t test
+                    xUNC[f"{slice[0:2]}UNC_HYPER"] = xSlice.pop(slice)  # transfer instrument uncs to xUNC
 
             # for convolving to satellite bands
-            esUNCSlice = xUNC["esUNC"]  # ODicts... whereas lwUNC and rrsUNC are simple arrays
-            liUNCSlice = xUNC["liUNC"]
-            ltUNCSlice = xUNC["ltUNC"]
+            esUNCSlice = xUNC["esUNC_HYPER"]  # ODicts... whereas lwUNC and rrsUNC are simple arrays
+            liUNCSlice = xUNC["liUNC_HYPER"]
+            ltUNCSlice = xUNC["ltUNC_HYPER"]
 
         # Populate the relevant fields in node
-        # ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, rhoScalar, rhoUNC, rhoVec, waveSubset, xUNC)
         ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC)
 
         # Apply residual NIR corrections
@@ -1781,6 +1804,7 @@ class ProcessL2:
                 # NOTE: According to AR, this may not be a robust way of estimating convolved uncertainties.
                 # He has implemented another way, but it is very slow due to multiple MC runs. Comment this out
                 # for now, but a sensitivity analysis may show it to be okay.
+                # NOTE: 1/2024 Why is this not commented out if the slow, more accurate way is now implemented?
                 if xUNC is not None:
                     xUNC['esUNC'] = Weight_RSR.processMODISBands(esUNCSlice, sensor='A')
                     xUNC['liUNC'] = Weight_RSR.processMODISBands(liUNCSlice, sensor='A')
@@ -1909,10 +1933,10 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdSentinel3A
                 xSlice['ltSTD'] = ltXstdSentinel3A
 
-                if xUNC is not None:
-                    xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='A')
-                    xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='A')
-                    xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='A')
+                # if xUNC is not None:
+                #     xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='A')
+                #     xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='A')
+                #     xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='A')
 
                 sensor = 'Sentinel3A'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_Sentinel3, F0_Sentinel3_unc, rhoScalar, rhoVecSentinel3, waveSubsetSentinel3,  xUNC)
@@ -1939,10 +1963,10 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdSentinel3B
                 xSlice['ltSTD'] = ltXstdSentinel3B
 
-                if xUNC is not None:
-                    xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='B')
-                    xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='B')
-                    xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='B')
+                # if xUNC is not None:
+                #     xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='B')
+                #     xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='B')
+                #     xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='B')
 
                 sensor = 'Sentinel3B'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_Sentinel3, F0_Sentinel3_unc, rhoScalar, rhoVecSentinel3, waveSubsetSentinel3,  xUNC)

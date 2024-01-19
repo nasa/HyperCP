@@ -4,6 +4,8 @@ import numpy as np
 
 # for analysis NPL developed packages
 import punpy
+from Source.Weight_RSR import Weight_RSR
+
 import Source.matheo.band_integration as band_integration
 from Source.matheo.srf_utils import (
     return_iter_srf,
@@ -263,22 +265,34 @@ class Propagate:
                np.array((LTLIGHT - LTDARK)*LTCal*LTStab*LTLin*LTStray*LTT*LTPol)
 
     @staticmethod
-    def band_Conv_Sensor_S3A(Hyperspec, Wavelengths):
-        """ band convolution of Rrs for S3A"""
-        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
-                                                                           wl=Wavelengths,
-                                                                           platform_name="Sentinel-3A",
-                                                                           sensor_name="olci", u_d=None)
-        return rad_band
+    def band_Conv_Sensor_S3A(Hyperspec, Wavelengths) -> np.array:
+        """ band convolution of Rrs for S3A using Source.Weight_RSR"""
+        # rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
+        #                                                                    wl=Wavelengths,
+        #                                                                    platform_name="Sentinel-3A",
+        #                                                                    sensor_name="olci", u_d=None)
+
+        # convert inputs into expected format for Weight_RSR
+        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        rad_band = Weight_RSR.processSentinel3Bands(
+            hyperspec_as_dict, sensor='A'
+        )
+        return np.array([value[0] for value in rad_band.values()])  # convert back to np.array for correct punpy return
 
     @staticmethod
-    def band_Conv_Sensor_S3B(Hyperspec, Wavelengths):
-        """ band convolution of Rrs for S3B"""
-        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
-                                                                           wl=Wavelengths,
-                                                                           platform_name="Sentinel-3B",
-                                                                           sensor_name="olci", u_d=None)
-        return rad_band
+    def band_Conv_Sensor_S3B(Hyperspec, Wavelengths) -> np.array:
+        """ band convolution of Rrs for S3B using Source.Weight_RSR"""
+        # rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
+        #                                                                    wl=Wavelengths,
+        #                                                                    platform_name="Sentinel-3B",
+        #                                                                    sensor_name="olci", u_d=None)
+
+        # convert to expected format
+        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        rad_band = Weight_RSR.processSentinel3Bands(
+            hyperspec_as_dict, sensor='B'
+        )
+        return np.array([value[0] for value in rad_band.values()])  # return apropriate for punpy
 
     @staticmethod
     def band_Conv_Sensor_AQUA(Hyperspec, Wavelengths):
@@ -377,13 +391,13 @@ class Propagate:
         env = collections.OrderedDict()
         # Build in guardrails limiting to database bounds (DAA 2023-11-24)
         env['wind'] = windSpeedMean if windSpeedMean <= 15 else 15
-        env['wind'] = windSpeedMean if windSpeedMean >= 0 else 0
+        env['wind'] = env['wind'] if env['wind'] >= 0 else 0
         # clip AOD to 0.2 to ensure no error in Z17, potential underestimation of uncertainty however
         env['od'] = AOD if AOD <= 0.2 else 0.2
-        env['od'] = AOD if AOD >= 0 else 0
+        env['od'] = env['od'] if env['od'] >= 0 else 0
         env['C'] = cloud  # Not used
         env['zen_sun'] = sza if sza <=60 else 60
-        env['zen_sun'] = sza if sza >=0 else 0
+        env['zen_sun'] = env['zen_sun'] if env['zen_sun'] >=0 else 0
         # Appears these are only use for Fresnel and are analytical and not inherently limited
         env['wtem'] = wTemp
         env['sal'] = sal
@@ -391,19 +405,17 @@ class Propagate:
         # === The sensor ===
         sensor = collections.OrderedDict()
         # Current database is not limited near these values
-        sensor['ang'] = [40, 180 - relAz]  # relAz should vary from about 90-135
+        sensor['ang'] = [40, 180 - abs(relAz)]  # relAz should vary from about 90-135
         sensor['wv'] = waveBands
 
-        msg = f"Uncertainty_Analysis.zhangWrapper. Wind: {env['wind']:.1f} AOT: {env['od']:.2f} Cloud: {env['C']:.1f} SZA: {env['zen_sun']:.1f} SST: {env['wtem']:.1f} SSS: {env['sal']:.1f}"
-        Utilities.writeLogFile(msg)
-        print(msg)
-        msg = f"Uncertainty_Analysis.zhangWrapper. VZA: {sensor['ang'][0]:.1f} RelAz: {relAz:.1f}"
-        Utilities.writeLogFile(msg)
-        print(msg)
+        # msg = (f"Uncertainty_Analysis.zhangWrapper. Wind: {env['wind']:.1f} AOT: {env['od']:.2f} Cloud: {env['C']:.1f} SZA: {env['zen_sun']:.1f} "
+        #      f"SST: {env['wtem']:.1f} SSS: {env['sal']:.1f} VZA: {sensor['ang'][0]:.1f} RelAz: {relAz:.1f}")
+        # Utilities.writeLogFile(msg)
+        # print(msg)
 
-        tic = time.process_time()
+        # tic = time.process_time()
         rho = ZhangRho.get_sky_sun_rho(env, sensor)['rho']
-        msg = f'zhangWrapper Z17 Elapsed Time: {time.process_time() - tic:.1f} s'
-        print(msg)
-        Utilities.writeLogFile(msg)
+        # msg = f'zhangWrapper Z17 Elapsed Time: {time.process_time() - tic:.1f} s'
+        # print(msg)
+        # Utilities.writeLogFile(msg)
         return rho

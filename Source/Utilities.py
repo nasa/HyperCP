@@ -984,7 +984,7 @@ class Utilities:
         # In the case of reflectances, only use _unc. There are no _std, because reflectances are calculated
         # from the average Lw and Es values within the ensembles
         if rType=='Rrs' or rType=='nLw':
-            print('Plotting Rrs')
+            print('Plotting Rrs or nLw')
             group = root.getGroup("REFLECTANCE")
             if rType=='Rrs':
                 units = group.attributes['Rrs_UNITS']
@@ -992,7 +992,7 @@ class Utilities:
                 units = group.attributes['nLw_UNITS']
             Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_HYPER_unc')
+                dataDelta = group.getDataset(f'{rType}_HYPER_unc').data.copy()
 
             plotRange = [340, 800]
             if ConfigFile.settings['bL2WeightMODISA']:
@@ -1044,14 +1044,14 @@ class Utilities:
                 lwData = group.getDataset(f'LW_HYPER')
                 if plotDelta:
                     # lwDataDelta = group.getDataset(f'LW_HYPER_{suffix}')
-                    lwDataDelta = group.getDataset(f'LW_HYPER_unc') # Lw does not have STD
+                    lwDataDelta = group.getDataset(f'LW_HYPER_unc').data.copy() # Lw does not have STD
                     # For the purpose of plotting, use zeros for NaN uncertainties
-                    lwDataDelta.data = np.nan_to_num(lwDataDelta.data)
+                    lwDataDelta = Utilities.datasetNan2Zero(lwDataDelta)
 
             if plotDelta:
-                dataDelta = group.getDataset(f'{rType}_HYPER_{suffix}')
+                dataDelta = group.getDataset(f'{rType}_HYPER_{suffix}').data.copy() # Do not change the L2 data
                 # For the purpose of plotting, use zeros for NaN uncertainties
-                dataDelta.data = np.nan_to_num(dataDelta.data)
+                dataDelta = Utilities.datasetNan2Zero(dataDelta)
             # plotRange = [305, 1140]
             plotRange = [305, 1000]
 
@@ -1147,7 +1147,7 @@ class Utilities:
             for k in x:
                 y.append(Data.data[k][i])
                 if plotDelta:
-                    dy.append(dataDelta.data[k][i])
+                    dy.append(dataDelta[k][i])
             # Add Lw to Lt plots
             if rType=='LT':
                 yLw = []
@@ -1155,7 +1155,7 @@ class Utilities:
                 for k in xLw:
                     yLw.append(lwData.data[k][i])
                     if plotDelta:
-                        dyLw.append(lwDataDelta.data[k][i])
+                        dyLw.append(lwDataDelta[k][i])
 
             # Satellite Bands
             y_MODISA = []
@@ -1597,7 +1597,7 @@ class Utilities:
         specArray = []
         normSpec = []
 
-        if ConfigFile.settings['bL1qcEnableSpecQualityCheckPlot']:
+        if ConfigFile.settings['bL1bqcEnableSpecQualityCheckPlot']:
             # cmap = cm.get_cmap("jet")
             # color=iter(cmap(np.linspace(0,1,total)))
             print('Creating plots...')
@@ -1636,7 +1636,7 @@ class Utilities:
         # Duplicates each element to a list of two elements in a list:
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
 
-        if ConfigFile.settings['bL1qcEnableSpecQualityCheckPlot']:
+        if ConfigFile.settings['bL1bqcEnableSpecQualityCheckPlot']:
             # t0 = time.time()
             for timei in range(total):
             # for i in badIndx:
@@ -1793,7 +1793,7 @@ class Utilities:
                     for k in xQAA:
                         y.append(DataQAA.data[k][i])
                         # if plotDelta:
-                        #     dy.append(dataDelta.data[k][i])
+                        #     dy.append(dataDelta[k][i])
 
                     c=next(colorQAA)
                     if max(y) > maxIOP:
@@ -1914,21 +1914,22 @@ class Utilities:
             paramreader = csv.DictReader(csvfile)
             for row in paramreader:
 
-                paramDict[row['filename']] = [int(row['ESWindowDark']), int(row['ESWindowLight']), \
+                paramDict[row['filename']] = [ int(row['ESWindowDark']), int(row['ESWindowLight']),
                                     float(row['ESSigmaDark']), float(row['ESSigmaLight']),
                                     float(row['ESMinDark']), float(row['ESMaxDark']),
                                     float(row['ESMinMaxBandDark']),float(row['ESMinLight']),
                                     float(row['ESMaxLight']),float(row['ESMinMaxBandLight']),
                                     int(row['LIWindowDark']), int(row['LIWindowLight']),
                                     float(row['LISigmaDark']), float(row['LISigmaLight']),
-                                    float(row['LIMinDark']), float(row['LIMaxDark']),\
-                                    float(row['LIMinMaxBandDark']),float(row['LIMinLight']),\
-                                    float(row['LIMaxLight']),float(row['LIMinMaxBandLight']),\
+                                    float(row['LIMinDark']), float(row['LIMaxDark']),
+                                    float(row['LIMinMaxBandDark']),float(row['LIMinLight']),
+                                    float(row['LIMaxLight']),float(row['LIMinMaxBandLight']),
                                     int(row['LTWindowDark']), int(row['LTWindowLight']),
                                     float(row['LTSigmaDark']), float(row['LTSigmaLight']),
-                                    float(row['LTMinDark']), float(row['LTMaxDark']),\
-                                    float(row['LTMinMaxBandDark']),float(row['LTMinLight']),\
-                                    float(row['LTMaxLight']),float(row['LTMinMaxBandLight']),int(row['Threshold']) ]
+                                    float(row['LTMinDark']), float(row['LTMaxDark']),
+                                    float(row['LTMinMaxBandDark']),float(row['LTMinLight']),
+                                    float(row['LTMaxLight']),float(row['LTMinMaxBandLight']),int(row['Threshold']),
+                                    row['Comments'] ]
                 paramDict[row['filename']] = [None if v==-999 else v for v in paramDict[row['filename']]]
 
         return paramDict
@@ -2828,3 +2829,13 @@ class Utilities:
                                     device = line.rstrip()
                                     name = device + '_' + gp.attributes['CHARACTERISATION_FILE_TYPE']
                                 key = None
+
+    @staticmethod
+    def datasetNan2Zero(inputArray):
+        ''' Workaround nans within a Group.Dataset '''
+        # There must be a better way...
+        for ens, row in enumerate(inputArray):
+            for i, value in enumerate(row):
+                    if np.isnan(value):
+                        inputArray[ens][i] = 0.0
+        return inputArray
