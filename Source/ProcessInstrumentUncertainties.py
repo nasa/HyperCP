@@ -22,6 +22,7 @@ from Source.HDFRoot import HDFRoot  # for typing
 from Source.HDFGroup import HDFGroup  # for typing
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.Uncertainty_Analysis import Propagate
+from Source.Weight_RSR import Weight_RSR
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 
@@ -405,22 +406,84 @@ class Instrument(ABC):
         output = {}
 
         if ConfigFile.settings["bL2WeightSentinel3A"]:
-            sample_lw_S3A = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3A, [sample_Lw, sample_wavelengths])
-            sample_rrs_S3A = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3A, [sample_Rrs, sample_wavelengths])
+            # changes made here should not affect output uncertainties, but will give us more control over how
+            # uncertainty components such as esUncSlice are convolved. (We were missing a small amount of convolution
+            # uncertainty before!
+            sample_es_S3A = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3A, [esSample, sample_wavelengths])
+            sample_li_S3A = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3A, [liSample, sample_wavelengths])
+            sample_lt_S3A = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3A, [ltSample, sample_wavelengths])
+
+            sample_rho_S3A = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3A, [rhoSample, sample_wavelengths])
+
+            esDeltaBand = Propagate_L2_FRM.process_samples(None, sample_es_S3A)
+            liDeltaBand = Propagate_L2_FRM.process_samples(None, sample_li_S3A)
+            ltDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lt_S3A)
+
+            rhoDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rho_S3A)
+
+            # sample_lw_S3A = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3A, [sample_Lw, sample_wavelengths])
+            # sample_rrs_S3A = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3A, [sample_Rrs, sample_wavelengths])
+
+            # rrs and lw samples now derrived from running convolved instrument data through LW and Rrs measurement funcs
+            # should be a time save vs running the band convolution code again!
+            sample_lw_S3A = Propagate_L2_FRM.run_samples(Propagate.Lw_FRM, [sample_lt_S3A,
+                                                                                  sample_rho_S3A,
+                                                                                  sample_li_S3A
+                                                                                 ])
+
+            sample_rrs_S3A = Propagate_L2_FRM.run_samples(Propagate.Rrs_FRM, [sample_lt_S3A,
+                                                                                    sample_rho_S3A,
+                                                                                    sample_li_S3A,
+                                                                                    sample_es_S3A
+                                                                                   ])
 
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_S3A)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_S3A)
 
+            # put in expected format (converted from punpy conpatible outputs) and put in output dictionary which will
+            # be returned to ProcessingL2 and used to update xSlice/xUNC
+            output["esUNC_Sentinel3A"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), esDeltaBand)}
+            output["liUNC_Sentinel3A"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), liDeltaBand)}
+            output["ltUNC_Sentinel3A"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
+            output["rhoUNC_Sentinel3A"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
             output["lwUNC_Sentinel3A"] = lwDeltaBand
-            output["rrsUNC_Sentinel3A"] = rrsDeltaBand
+            output["rrsUNC_Sentinel3A"] = rrsDeltaBand  # L2 uncertainty products can be reported as np arrays
 
         if ConfigFile.settings["bL2WeightSentinel3B"]:
-            sample_lw_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B, [sample_Lw, sample_wavelengths])
-            sample_rrs_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B, [sample_Rrs, sample_wavelengths])
+            sample_es_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B, [esSample, sample_wavelengths])
+            sample_li_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B, [liSample, sample_wavelengths])
+            sample_lt_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B, [ltSample, sample_wavelengths])
+
+            sample_rho_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B,
+                                                          [rhoSample, sample_wavelengths])
+
+            esDeltaBand = Propagate_L2_FRM.process_samples(None, sample_es_S3B)
+            liDeltaBand = Propagate_L2_FRM.process_samples(None, sample_li_S3B)
+            ltDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lt_S3B)
+
+            rhoDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rho_S3B)
+
+            # sample_lw_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B, [sample_Lw, sample_wavelengths])
+            # sample_rrs_S3B = Propagate_L2_FRM.run_samples(Propagate.band_Conv_Sensor_S3B, [sample_Rrs, sample_wavelengths])
+
+            sample_lw_S3B = Propagate_L2_FRM.run_samples(Propagate.Lw_FRM, [sample_lt_S3B,
+                                                                                  sample_rho_S3B,
+                                                                                  sample_li_S3B
+                                                                                 ])
+
+            sample_rrs_S3B = Propagate_L2_FRM.run_samples(Propagate.Rrs_FRM, [sample_lt_S3B,
+                                                                                    sample_rho_S3B,
+                                                                                    sample_li_S3B,
+                                                                                    sample_es_S3B
+                                                                                   ])
 
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_S3B)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_S3B)
 
+            output["esUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), esDeltaBand)}
+            output["liUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), liDeltaBand)}
+            output["ltUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
+            output["rhoUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
             output["lwUNC_Sentinel3B"] = lwDeltaBand
             output["rrsUNC_Sentinel3B"] = rrsDeltaBand
 
