@@ -723,7 +723,8 @@ class Instrument(ABC):
             output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
                                                                      [rrsAbsUnc, None], "VIIRS")
             pass
-        output.update({"lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})
+        output.update({"rhoUNC_HYPER": {str(k): val for k, val in zip(waveSubset, rhoUNC)},
+                       "lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})
 
         return output
 
@@ -1043,7 +1044,7 @@ class Instrument(ABC):
         return Ct*calibrated_mesure
 
     @staticmethod
-    def prepare_cos(uncGrp, sensortype, level=None):
+    def prepare_cos(uncGrp, sensortype, level=None, ind_raw_wvl=None):
         """
         read from hdf and prepare inputs for cos_err measurement function
         """
@@ -1076,6 +1077,13 @@ class Instrument(ABC):
         zenith_ang = np.asarray([float(x) for x in zenith_ang])
         zen_unc = np.asarray([0.05 for x in zenith_ang])  # default of 0.5 for solar zenith unc
 
+        if ind_raw_wvl is not None:
+            radcal_wvl = radcal_wvl[ind_raw_wvl]
+            coserror = coserror[ind_raw_wvl]
+            coserror_90 = coserror_90[ind_raw_wvl]
+            cos_unc = cos_unc[ind_raw_wvl]
+            cos90_unc = cos90_unc[ind_raw_wvl]
+
         return [radcal_wvl, coserror, coserror_90, zenith_ang], [radcal_unc, cos_unc, cos90_unc, zen_unc]
 
     @staticmethod
@@ -1103,9 +1111,9 @@ class Instrument(ABC):
         zen90 = np.argmin(np.abs(zenith_ang - 90))
         deltaZen = (zenith_ang[1::] - zenith_ang[:-1])
 
-        full_hemi_coserror = np.zeros(255)
+        full_hemi_coserror = np.zeros(ZEN_avg_coserror.shape[0])
 
-        for i in range(255):
+        for i in range(ZEN_avg_coserror.shape[0]):
             full_hemi_coserror[i] = np.sum(
                 ZEN_avg_coserror[i, zen0:zen90]*np.sin(2*np.pi*zenith_ang[zen0:zen90]/180)*deltaZen[
                                                                                            zen0:zen90]*np.pi/180)
@@ -1358,7 +1366,7 @@ class HyperOCR(Instrument):
             # Read FRM characterisation
             radcal_wvl = np.asarray(
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['1'][1:].tolist())
-            radcal_cal = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['2']
+            radcal_cal = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['2'][1:]
             S1 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['6']
             S2 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['8']
             S1_unc = (pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['7']/100)[1:].to_list()*np.abs(S1[1:])
@@ -1385,6 +1393,16 @@ class HyperOCR(Instrument):
             # set up uncertainty propagation
             mDraws = 100  # number of monte carlo draws
             prop = punpy.MCPropagation(mDraws, parallel_cores=1)
+            # ind_raw_data = (radcal_cal[radcal_wvl > 0]) > 0
+            ind_raw_wvl = (radcal_wvl > 0)
+
+            mZ = mZ[:, ind_raw_wvl]
+            mZ = mZ[ind_raw_wvl, :]
+            mZ_unc = mZ_unc[:, ind_raw_wvl]
+            mZ_unc = mZ_unc[ind_raw_wvl, :]
+
+            Ct = Ct[ind_raw_wvl]
+            Ct_unc = Ct_unc[ind_raw_wvl]
 
             # uncertainties from data:
             sample_int_time = cm.generate_sample(mDraws, int_time, None, None)
@@ -1393,12 +1411,12 @@ class HyperOCR(Instrument):
             sample_Ct = cm.generate_sample(mDraws, Ct, Ct_unc, "syst")
 
             # pad Lamp data and generate sample
-            LAMP = np.pad(LAMP, (0, nband - len(LAMP)), mode='constant')  # PAD with zero if not 255 long
-            LAMP_unc = np.pad(LAMP_unc, (0, nband - len(LAMP_unc)), mode='constant')
+            # LAMP = np.pad(LAMP, (0, nband - len(LAMP)), mode='constant')  # PAD with zero if not 255 long
+            # LAMP_unc = np.pad(LAMP_unc, (0, nband - len(LAMP_unc)), mode='constant')
             sample_LAMP = cm.generate_sample(mDraws, LAMP, LAMP_unc, "syst")
 
             # Non-linearity alpha computation
-            cal_int = radcal_cal.pop(0)
+            cal_int = radcal_cal[ind_raw_wvl]  # .pop(0)
             sample_cal_int = cm.generate_sample(100, cal_int, None, None)
 
             t1 = S1.iloc[0]
@@ -1406,8 +1424,10 @@ class HyperOCR(Instrument):
             t2 = S2.iloc[0]
             S2 = S2.drop(S2.index[0])
 
-            S1 = np.asarray(S1, dtype=float)
-            S2 = np.asarray(S2, dtype=float)
+            S1 = np.asarray(S1, dtype=float)[ind_raw_wvl]
+            S2 = np.asarray(S2, dtype=float)[ind_raw_wvl]
+            S1_unc = S1_unc[ind_raw_wvl]
+            S2_unc = S2_unc[ind_raw_wvl]
 
             sample_t1 = cm.generate_sample(mDraws, t1, None, None)
             sample_S1 = cm.generate_sample(mDraws, np.asarray(S1), S1_unc, "rand")
@@ -1440,7 +1460,7 @@ class HyperOCR(Instrument):
             # Updated calibration gain
             if sensortype == "ES":
                 ## Compute avg cosine error
-                cos_mean_vals, cos_uncertainties = self.prepare_cos(uncGrp, sensortype, 'L2')
+                cos_mean_vals, cos_uncertainties = self.prepare_cos(uncGrp, sensortype, 'L2', ind_raw_wvl)
                 corr = [None, "syst", "syst", "rand"]
                 sample_radcal_wvl, sample_coserr, sample_coserr90, sample_zen_ang = [
                     cm.generate_sample(mDraws, samp, cos_uncertainties[i], corr[i]) for i, samp in
@@ -1448,6 +1468,14 @@ class HyperOCR(Instrument):
 
                 avg_coserror, avg_azi_coserror, zenith_ang, zen_delta, azi_delta, zen_unc, azi_unc = \
                     self.cosine_error_correction(uncGrp, sensortype)
+
+                # correct to available wavebands!
+                avg_coserror = avg_coserror[ind_raw_wvl, :]
+                avg_azi_coserror = avg_azi_coserror[ind_raw_wvl, :]
+                zen_delta = zen_delta[ind_raw_wvl, :]
+                azi_delta = azi_delta[ind_raw_wvl, :]
+                zen_unc = zen_unc[ind_raw_wvl, :]
+                azi_unc = azi_unc[ind_raw_wvl, :]
 
                 # error due to lack of symmetry in cosine response
                 sample_azi_delta_err1 = cm.generate_sample(mDraws, avg_azi_coserror, azi_unc, "syst")
@@ -1477,8 +1505,8 @@ class HyperOCR(Instrument):
                 PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['2'])
                 PANEL_unc = (np.asarray(
                     pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['3'])/100)*PANEL
-                PANEL = np.pad(PANEL, (0, nband - len(PANEL)), mode='constant')
-                PANEL_unc = np.pad(PANEL_unc, (0, nband - len(PANEL_unc)), mode='constant')
+                # PANEL = np.pad(PANEL, (0, nband - len(PANEL)), mode='constant')
+                # PANEL_unc = np.pad(PANEL_unc, (0, nband - len(PANEL_unc)), mode='constant')
                 sample_PANEL = cm.generate_sample(100, PANEL, PANEL_unc, "syst")
                 updated_radcal_gain = self.update_cal_rad(S12_sl_corr, LAMP, PANEL, cal_int, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_rad,
@@ -1491,7 +1519,7 @@ class HyperOCR(Instrument):
             ind_nan = np.isnan(radcal_cal)
             ind_nocal = ind_nan | ind_zero
             # set 1 instead of 0 to perform calibration (otherwise division per 0)
-            updated_radcal_gain[ind_nocal == True] = 1
+            # updated_radcal_gain[ind_nocal == True] = 1
 
             alpha = np.asarray(alpha)
             # Ct = np.asarray(Ct)
@@ -1501,7 +1529,7 @@ class HyperOCR(Instrument):
             # raw_filtered = np.asarray([raw_data[n][ind_raw_data] for n in range(nmes)])
             # dark_filtered = np.asarray([raw_dark[n][ind_raw_data] for n in range(nmes)])
             data = np.mean(raw_data, axis=0)  # raw data already dark subtracted, use mean for statistical analysis
-
+            # data is already 180 len for PML HyperOCR
             # signal uncertainties
             std_light = stats[sensortype]['std_Light']  # standard deviations are taken from generateSensorStats
             std_dark = stats[sensortype]['std_Dark']
@@ -1535,7 +1563,9 @@ class HyperOCR(Instrument):
 
             # thermal
             # data4 = self.DATA4(data3, Ct)
+            # plot before and after temp correction
             sample_data4 = prop.run_samples(self.DATA4, [sample_data3, sample_Ct])
+            # plot here as well
 
             # Cosine correction
             if sensortype == "ES":
@@ -1566,7 +1596,7 @@ class HyperOCR(Instrument):
                 pol.columns['0'] = radcal_wvl
                 pol.columns['1'] = y_new
 
-                pol_unc = np.asarray(list(pol.columns['1']))  # [1:]
+                pol_unc = np.asarray(list(pol.columns['1']))[ind_raw_wvl]  # [1:]
                 sample_pol = cm.generate_sample(mDraws, np.ones(len(pol_unc)), pol_unc, "syst")
 
                 sample_pol_mesure = prop.run_samples(self.DATA6, [sample_data4, sample_pol])
@@ -1574,9 +1604,11 @@ class HyperOCR(Instrument):
                 unc = prop.process_samples(None, sample_pol_mesure)
                 sample = sample_pol_mesure
 
-            output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
-            output[f"{sensortype.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
-            output[f"{sensortype.lower()}Sample"] = sample[:, ind_nocal == False]  # samples keep raw
+            ind_cal = (radcal_cal[ind_raw_wvl]) > 0
+
+            output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_raw_wvl == True][ind_cal == True]
+            output[f"{sensortype.lower()}Unc"] = unc[ind_cal == True]  # relative uncertainty
+            output[f"{sensortype.lower()}Sample"] = sample[:, ind_cal == True]  # samples keep raw
 
             # sort the outputs ready for following process
             # get sensor specific wavebands to be keys for uncs, then remove from output
