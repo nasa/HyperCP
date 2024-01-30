@@ -911,7 +911,8 @@ class Instrument(ABC):
             output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
                                                                     [rrsAbsUnc, None], "VIIRS")
             pass
-        output.update({"lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})
+        output.update({"rhoUNC_HYPER": {str(k): val for k, val in zip(waveSubset, rhoUNC)},
+                       "lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})
 
         return output
 

@@ -300,6 +300,7 @@ class ProcessL2:
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.addDataset(f"rho_{sensor}")
+                newRhoUNCHyper = newReflectanceGroup.addDataset(f"rho_{sensor}_unc")
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     newNIRData = newReflectanceGroup.addDataset(f'nir_{sensor}')
                     newNIRnLwData = newReflectanceGroup.addDataset(f'nir_nLw_{sensor}')
@@ -333,6 +334,7 @@ class ProcessL2:
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
+                newRhoUNCHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     newNIRData = newReflectanceGroup.getDataset(f'nir_{sensor}')
                     newNIRnLwData = newReflectanceGroup.addDataset(f'nir_nLw_{sensor}')
@@ -365,6 +367,7 @@ class ProcessL2:
         # Organise Uncertainty into wavebands
         lwUNC = {}
         rrsUNC = {}
+        rhoUNC = {}
         esUNC = {}
         liUNC = {}
         ltUNC = {}
@@ -374,6 +377,7 @@ class ProcessL2:
             esUNC = xUNC[f'esUNC_{sensor}']  # should already be convolved to hyperspec
             liUNC = xUNC[f'liUNC_{sensor}']  # added reference to HYPER as band convolved uncertainties will no longer
             ltUNC = xUNC[f'ltUNC_{sensor}']  # overwite normal instrument uncertainties during processing
+            rhoUNC = xUNC[f'rhoUNC_{sensor}']
             for i, wvl in enumerate(waveSubset):
                 k = str(wvl)
                 if (any([wvl == float(x) for x in esXSlice]) and
@@ -395,6 +399,7 @@ class ProcessL2:
                     esUNC[k] = 0
                     liUNC[k] = 0
                     ltUNC[k] = 0
+                    rhoUNC[k] = 0
                     lwUNC[k] = 0
                     rrsUNC[k] = 0
 
@@ -432,6 +437,7 @@ class ProcessL2:
 
                     if sensor == 'HYPER':
                         newRhoHyper.columns[k] = []
+                        newRhoUNCHyper.columns[k] = []
                         if ConfigFile.settings["bL2PerformNIRCorrection"]:
                             newNIRData.columns['NIR_offset'] = [] # not used until later; highly unpythonic
                             newNIRnLwData.columns['NIR_offset'] = []
@@ -511,8 +517,10 @@ class ProcessL2:
                     if sensor == 'HYPER':
                         if ZhangRho:
                             newRhoHyper.columns[k].append(rhoVec[k])
+                            newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
                         else:
                             newRhoHyper.columns[k].append(rhoScalar)
+                            newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
                 else:
                     deleteKey.append(k)
 
@@ -556,6 +564,7 @@ class ProcessL2:
 
         if sensor == 'HYPER':
             newRhoHyper.columnsToDataset()
+            newRhoUNCHyper.columnsToDataset()
             newRrsUncorrData.columnsToDataset()
 
 
