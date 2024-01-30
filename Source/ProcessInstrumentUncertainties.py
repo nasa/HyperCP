@@ -1162,6 +1162,9 @@ class Instrument(ABC):
 
 
 class HyperOCR(Instrument):
+
+    warnings.filterwarnings("ignore", message="One of the provided covariance matrix is not positivedefinite. It has been slightly changed")
+
     def __init__(self):
         super().__init__()
         self.instrument = "HyperOCR"
@@ -1619,6 +1622,9 @@ class HyperOCR(Instrument):
 
 
 class Trios(Instrument):
+
+    warnings.filterwarnings("ignore", message="One of the provided covariance matrix is not positivedefinite. It has been slightly changed")
+
     def __init__(self):
         super().__init__()
 
