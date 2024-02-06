@@ -4,6 +4,7 @@ import pandas as pd
 import Py6S
 import pytz
 from datetime import datetime as dt
+import matplotlib.pyplot as plt
 
 # internal files
 from Source.ConfigFile import ConfigFile
@@ -200,6 +201,29 @@ class ProcessL1b_FRMCal:
 
         return ZEN_avg_coserror, full_hemi_coserror, zenith_ang
 
+    @staticmethod
+    def Zong_SL_correction_matrix(LSF):
+        LSF[LSF<=0] = 0
+        SDF = np.copy(LSF)
+        for i in range(len(LSF)):
+        # for j in range(len(LSF)):
+            # define IB indexes
+            j1 = i-3
+            j2 = i+3
+            if j1 <= 0:
+                j1 = 0
+            IB = LSF[i,j1:j2+1]
+            IBsum = np.sum(IB)
+            if np.sum(IB) == 0:
+                IBsum = 1.0   
+            # Zong eq. 1
+            SDF[i,:] = SDF[i,:]/np.float(IBsum)    
+            SDF[i,j1:j2+1] = 0
+              
+        A = np.identity(len(LSF)) + SDF   # Matrix A from eq. 8
+        C = np.linalg.inv(A)              # Matrix C from eq. 9       
+        
+        return C
 
     @staticmethod
     def Slaper_SL_correction(input_data, SL_matrix, n_iter=5):
@@ -249,15 +273,18 @@ class ProcessL1b_FRMCal:
             dark = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_CAL").data)['4'][1:].tolist())
             S1 = pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_CAL").data)['6']
             S2 = pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_CAL").data)['8']
+            Ct = pd.DataFrame(unc_grp.getDataset(sensortype+"_TEMPDATA_CAL").data)[sensortype+"_TEMPERATURE_COEFFICIENTS"][1:].tolist()
             mZ = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_STRAYDATA_LSF").data))
             mZ = mZ[1:,1:] # remove 1st line and column, we work on 255 pixel not 256.
-            Ct = pd.DataFrame(unc_grp.getDataset(sensortype+"_TEMPDATA_CAL").data)[sensortype+"_TEMPERATURE_COEFFICIENTS"][1:].tolist()
             LAMP = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_LAMP").data)['2'])
+
+            # create Zong SDF straylight correction matrix
+            C_zong = ProcessL1b_FRMCal.Zong_SL_correction_matrix(mZ)
 
             # Defined constants
             nband = len(radcal_wvl)
             nmes  = len(raw_data)
-            n_iter = 5
+            # n_iter = 5
 
             # Non-linearity alpha computation
             cal_int = radcal_cal.pop(0)
@@ -265,7 +292,8 @@ class ProcessL1b_FRMCal:
             t2 = S2.pop(0)
             k = t1/(t2-t1)
             S12 = (1+k)*S1 - k*S2
-            S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter)
+            # S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, LSF, n_iter) # Slapper
+            S12_sl_corr = np.matmul(C_zong, S12) # Zong SL corr
             alpha = ((S1-S12)/(S12**2)).tolist()
             LAMP = np.pad(LAMP, (0, nband-len(LAMP)), mode='constant') # PAD with zero if not 255 long
 
@@ -295,9 +323,12 @@ class ProcessL1b_FRMCal:
             str_wvl = np.asarray([str(x) for x in wvl])
             dark = dark[ind_nocal==False]
             alpha = np.asarray(alpha)[ind_nocal==False]
-            mZ = mZ[:, ind_nocal==False]
-            mZ = mZ[ind_nocal==False, :]
             Ct = np.asarray(Ct)[ind_nocal==False]
+            # mZ = mZ[:, ind_nocal==False]
+            # mZ = mZ[ind_nocal==False, :]
+            C_zong = C_zong[:, ind_nocal==False]
+            C_zong = C_zong[ind_nocal==False, :]
+            
 
             FRM_mesure = np.zeros((nmes, len(updated_radcal_gain)))
             ind_raw_data = (radcal_cal[radcal_wvl>0])>0
@@ -307,7 +338,8 @@ class ProcessL1b_FRMCal:
                 # Non-linearity
                 data = data*(1-alpha*data)
                 # Straylight
-                data = ProcessL1b_FRMCal.Slaper_SL_correction(data, mZ, n_iter)
+                # data = ProcessL1b_FRMCal.Slaper_SL_correction(data, mZ, n_iter)
+                data = np.matmul(C_zong, data)
                 # Calibration
                 data = data * (cal_int/int_time[n]) / updated_radcal_gain
                 # thermal

@@ -42,8 +42,10 @@ class TriosL1B:
         mZ = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_STRAYDATA_LSF").data))
         mZ = mZ[1:,1:] # remove 1st line and column, we work on 255 pixel not 256.
         Ct = pd.DataFrame(unc_grp.getDataset(sensortype+"_TEMPDATA_CAL").data)[sensortype+"_TEMPERATURE_COEFFICIENTS"][1:].tolist()
-
         LAMP = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_LAMP").data)['2'])
+
+        # create Zong SDF straylight correction matrix
+        C_zong = ProcessL1b_FRMCal.Zong_SL_correction_matrix(mZ)
 
         # Defined constants
         nband = len(B0)
@@ -57,7 +59,8 @@ class TriosL1B:
         S2 = S2/65535.0
         k = t1/(t2-t1)
         S12 = (1+k)*S1 - k*S2
-        S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter)
+        # S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter) # slapper
+        S12_sl_corr = np.matmul(C_zong, S12) # Zong SL corr
         alpha = ((S1-S12)/(S12**2)).tolist()
 
         # Updated calibration gain
@@ -92,7 +95,8 @@ class TriosL1B:
             # Non-linearity correction
             linear_corr_mesure = offset_corrected_mesure*(1-alpha*offset_corrected_mesure)
             # Straylight correction over measurement
-            straylight_corr_mesure = ProcessL1b_FRMCal.Slaper_SL_correction(linear_corr_mesure, mZ, n_iter)
+            # straylight_corr_mesure = ProcessL1b_FRMCal.Slaper_SL_correction(linear_corr_mesure, mZ, n_iter)
+            straylight_corr_mesure = np.matmul(C_zong, linear_corr_mesure)
             # Normalization for integration time
             normalized_mesure = straylight_corr_mesure * int_time_t0/int_time[n]
             # Absolute calibration
