@@ -237,10 +237,11 @@ class Instrument(ABC):
         for sensor in ["ES", "LI", "LT"]:
             radcal = uncGrp.getDataset(f"{sensor}_RADCAL_CAL")
             radcal.datasetToColumns()
+            ind_rad_wvl = (np.array(radcal.columns['1']) > 0)
 
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            cStray[sensor] = np.asarray(list(straylight.columns['1']))
+            cStray[sensor] = np.asarray(list(straylight.columns['1']))[ind_rad_wvl]
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
@@ -252,10 +253,10 @@ class Instrument(ABC):
 
             if ConfigFile.settings['SensorType'].lower() == "trios":
                 # Convert TriOS mW/m2/nm to uW/cm^2/nm
-                Coeff[sensor] = np.asarray(list(radcal.columns['2']))/10
+                Coeff[sensor] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl]/10
             elif ConfigFile.settings['SensorType'].lower() == "seabird":
-                Coeff[sensor] = np.asarray(list(radcal.columns['2']))
-            Cal[sensor] = np.asarray(list(radcal.columns['3']))
+                Coeff[sensor] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl]
+            Cal[sensor] = np.asarray(list(radcal.columns['3']))[ind_rad_wvl]
 
             # temporary fix angular for ES is written as ES_POL
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
@@ -313,13 +314,13 @@ class Instrument(ABC):
         # return uncertainties as dictionary to be appended to xSlice
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()), dtype=float)  # std_Signal_Interpolated has keys which represent common wavebands for ES, LI, & LT.
         _, es_Unc = self.interp_common_wvls(ES_unc,
-                                            np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                                            np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float)[ind_rad_wvl],
                                             data_wvl)
         _, li_Unc = self.interp_common_wvls(LI_unc,
-                                            np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1'], dtype=float),
+                                            np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1'], dtype=float)[ind_rad_wvl],
                                             data_wvl)
         _, lt_Unc = self.interp_common_wvls(LT_unc,
-                                            np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'], dtype=float),
+                                            np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'], dtype=float)[ind_rad_wvl],
                                             data_wvl)
 
         # radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_CAL").data)['2']
@@ -555,16 +556,6 @@ class Instrument(ABC):
         liXstd = xSlice['liSTD_RAW']
         ltXstd = xSlice['ltSTD_RAW']
 
-        es, _ = self.interp_common_wvls(np.asarray(list(xSlice['es'].values()), dtype=float).flatten(),
-                                        np.asarray(list(xSlice['es'].keys()), dtype=float).flatten(),
-                                        np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float))
-        li, _ = self.interp_common_wvls(np.asarray(list(xSlice['li'].values()), dtype=float).flatten(),
-                                        np.asarray(list(xSlice['li'].keys()), dtype=float).flatten(),
-                                        np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1'], dtype=float))
-        lt, _ = self.interp_common_wvls(np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(),
-                                        np.asarray(list(xSlice['lt'].keys()), dtype=float).flatten(),
-                                        np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'], dtype=float))
-
         if rhoScalar is not None:  # make rho a constant array if scalar
             rho = np.ones(len(list(esXstd.keys())))*rhoScalar
             rhoUNC, _ = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
@@ -590,10 +581,11 @@ class Instrument(ABC):
         for sensor in ["ES", "LI", "LT"]:
             radcal = uncGrp.getDataset(f"{sensor}_RADCAL_CAL")
             radcal.datasetToColumns()
+            ind_rad_wvl = (np.array(radcal.columns['1']) > 0)
 
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            cStray[sensor] = np.asarray(list(straylight.columns['1']))
+            cStray[sensor] = np.asarray(list(straylight.columns['1']))[ind_rad_wvl]
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
@@ -605,10 +597,10 @@ class Instrument(ABC):
 
             if ConfigFile.settings['SensorType'].lower() == "trios":
                 # Convert TriOS mW/m2/nm to uW/cm^2/nm
-                Coeff[sensor] = np.asarray(list(radcal.columns['2'])) / 10
+                Coeff[sensor] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl]/10
             elif ConfigFile.settings['SensorType'].lower() == "seabird":
-                Coeff[sensor] = np.asarray(list(radcal.columns['2']))
-            Cal[sensor] = np.asarray(list(radcal.columns['3']))
+                Coeff[sensor] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl]
+            Cal[sensor] = np.asarray(list(radcal.columns['3']))[ind_rad_wvl]
 
             pol = uncGrp.getDataset(sensor + "_POLDATA_CAL")
             pol.datasetToColumns()
@@ -618,6 +610,17 @@ class Instrument(ABC):
             Temp = uncGrp.getDataset(sensor + "_TEMPDATA_CAL")
             Temp.datasetToColumns()
             Ct[sensor] = np.array(Temp.columns[f'{sensor}_TEMPERATURE_UNCERTAINTIES'])
+
+        # moved here so ind_rad_wvl exists for masking
+        es, _ = self.interp_common_wvls(np.asarray(list(xSlice['es'].values()), dtype=float).flatten(),
+                                        np.asarray(list(xSlice['es'].keys()), dtype=float).flatten(),
+                                        np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float)[ind_rad_wvl])
+        li, _ = self.interp_common_wvls(np.asarray(list(xSlice['li'].values()), dtype=float).flatten(),
+                                        np.asarray(list(xSlice['li'].keys()), dtype=float).flatten(),
+                                        np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1'], dtype=float)[ind_rad_wvl])
+        lt, _ = self.interp_common_wvls(np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(),
+                                        np.asarray(list(xSlice['lt'].keys()), dtype=float).flatten(),
+                                        np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'], dtype=float)[ind_rad_wvl])
 
         Propagate_L2 = Propagate(M=100, cores=0)
         slice_size = len(es)
@@ -679,45 +682,170 @@ class Instrument(ABC):
         # wvls = np.asarray(list(xSlice['es'].keys()), dtype=float)
 
         lwAbsUnc, _ = self.interp_common_wvls(lwAbsUnc,
-                                              np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                                              np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float)[ind_rad_wvl],
                                               waveSubset)
         lw_vals, _ = self.interp_common_wvls(lw_vals,
-                                             np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                                             np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float)[ind_rad_wvl],
                                              waveSubset)
         rrsAbsUnc, _ = self.interp_common_wvls(rrsAbsUnc,
-                                               np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                                               np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float)[ind_rad_wvl],
                                                waveSubset)
         rrs_vals, _ = self.interp_common_wvls(rrs_vals,
-                                              np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                                              np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float)[ind_rad_wvl],
                                               waveSubset)
 
         ## Band Convolution of Uncertainties
+        # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
+        esUNC_band = np.array([i[0] for i in xSlice['esUnc'].values()])
+        liUNC_band = np.array([i[0] for i in xSlice['liUnc'].values()])
+        ltUNC_band = np.array([i[0] for i in xSlice['ltUnc'].values()])
+        esUNC_band[np.isnan(esUNC_band)] = 0.0
+        liUNC_band[np.isnan(liUNC_band)] = 0.0
+        ltUNC_band[np.isnan(ltUNC_band)] = 0.0
+
         if ConfigFile.settings["bL2WeightSentinel3A"]:
+
+            # convolve instrument uncertainties to chosen bands also for later reporting alongside L2 products
+            # it is more correct to convolve to L1B products before passing rrs through the measurement function to
+            # acquire convolved Rrs Uncertainties.
+            esDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
+                [esUNC_band, None], "S3A")
+            output["esUNC_Sentinel3A"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), esDeltaBand)}
+
+            liDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['li'].values()), dtype=float).flatten(), waveSubset],
+                [liUNC_band, None], "S3A")
+            output["liUNC_Sentinel3A"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), liDeltaBand)}
+
+            ltDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(), waveSubset],
+                [ltUNC_band, None], "S3A")
+            output["ltUNC_Sentinel3A"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
+
+            rhoDeltaBand = Convolve.band_Conv_Uncertainty(
+                [rho, waveSubset], [rhoUNC, None], "S3A")
+            output["rhoUNC_Sentinel3A"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
+
             output["lwUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
                                                                         [lwAbsUnc, None], "S3A")
             output["rrsUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
                                                                          [rrsAbsUnc, None], "S3A")
-        elif ConfigFile.settings["bL2WeightSentinel3B"]:
+
+        if ConfigFile.settings["bL2WeightSentinel3B"]:
+
+            esDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
+                [esUNC_band, None], "S3B")
+            output["esUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), esDeltaBand)}
+            liDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['li'].values()), dtype=float).flatten(), waveSubset],
+                [liUNC_band, None], "S3B")
+            output["liUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), liDeltaBand)}
+            ltDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(), waveSubset],
+                [ltUNC_band, None], "S3B")
+            output["ltUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
+            rhoDeltaBand = Convolve.band_Conv_Uncertainty(
+                [rho, waveSubset], [rhoUNC, None], "S3B")
+            output["rhoUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
+
             output["lwUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
                                                                         [lwAbsUnc, None], "S3B")
             output["rrsUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
                                                                          [rrsAbsUnc, None], "S3B")
         if ConfigFile.settings['bL2WeightMODISA']:
+
+            esDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
+                [esUNC_band, None], "MOD-A")
+            output["esUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), esDeltaBand)}
+
+            liDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['li'].values()), dtype=float).flatten(), waveSubset],
+                [liUNC_band, None], "MOD-A")
+            output["liUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), liDeltaBand)}
+
+            ltDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(), waveSubset],
+                [ltUNC_band, None], "MOD-A")
+            output["ltUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
+
+            rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "MOD-A")
+            output["rhoUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
+
             output["lwUNC_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
                                                                     [lwAbsUnc, None], "MOD-A")
             output["rrsUNC_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
                                                                      [rrsAbsUnc, None], "MOD-A")
         if ConfigFile.settings['bL2WeightMODIST']:
+
+            esDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
+                [esUNC_band, None], "MOD-T")
+            output["esUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), esDeltaBand)}
+
+            liDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['li'].values()), dtype=float).flatten(), waveSubset],
+                [liUNC_band, None], "MOD-T")
+            output["liUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), liDeltaBand)}
+
+            ltDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(), waveSubset],
+                [ltUNC_band, None], "MOD-T")
+            output["ltUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
+
+            rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "MOD-T")
+            output["rhoUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
+
             output["lwUNC_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
                                                                     [lwAbsUnc, None], "MOD-T")
             output["rrsUNC_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
                                                                      [rrsAbsUnc, None], "MOD-T")
         if ConfigFile.settings['bL2WeightVIIRSN']:
+
+            esDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
+                [esUNC_band, None], "VIIRS")
+            output["esUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), esDeltaBand)}
+
+            liDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['li'].values()), dtype=float).flatten(), waveSubset],
+                [liUNC_band, None], "VIIRS")
+            output["liUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), liDeltaBand)}
+
+            ltDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(), waveSubset],
+                [ltUNC_band, None], "VIIRS")
+            output["ltUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
+
+            rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "VIIRS")
+            output["rhoUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
+
             output["lwUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
                                                                     [lwAbsUnc, None], "VIIRS")
             output["rrsUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
                                                                      [rrsAbsUnc, None], "VIIRS")
         if ConfigFile.settings['bL2WeightVIIRSJ']:
+
+            esDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
+                [esUNC_band, None], "VIIRS")
+            output["esUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), esDeltaBand)}
+
+            liDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
+                [liUNC_band, None], "VIIRS")
+            output["liUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), liDeltaBand)}
+
+            ltDeltaBand = Convolve.band_Conv_Uncertainty(
+                [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
+                [ltUNC_band, None], "VIIRS")
+            output["ltUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
+
+            rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "VIIRS")
+            output["rhoUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
+
             output["lwUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
                                                                     [lwAbsUnc, None], "VIIRS")
             output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
@@ -1387,7 +1515,7 @@ class HyperOCR(Instrument):
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['3'])/100*LAMP
 
             # Defined constants
-            nband = len(radcal_wvl)
+            # nband = len(radcal_wvl)
             n_iter = 5
 
             # set up uncertainty propagation
