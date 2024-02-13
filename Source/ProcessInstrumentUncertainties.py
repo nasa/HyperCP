@@ -1664,7 +1664,7 @@ class HyperOCR(Instrument):
             ind_nan = np.isnan(radcal_cal)
             ind_nocal = ind_nan | ind_zero
             # set 1 instead of 0 to perform calibration (otherwise division per 0)
-            # updated_radcal_gain[ind_nocal == True] = 1
+            updated_radcal_gain[ind_nocal == True] = 1
 
             alpha = np.asarray(alpha)
             # Ct = np.asarray(Ct)
