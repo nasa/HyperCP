@@ -202,14 +202,14 @@ class ProcessL1b_FRMCal:
         return ZEN_avg_coserror, full_hemi_coserror, zenith_ang
 
     @staticmethod
-    def Zong_SL_correction_matrix(LSF):
+    def Zong_SL_correction_matrix(LSF, n_IB: int = 3):
         LSF[LSF<=0] = 0
         SDF = np.copy(LSF)
         for i in range(len(LSF)):
         # for j in range(len(LSF)):
             # define IB indexes
-            j1 = i-3
-            j2 = i+3
+            j1 = i-n_IB
+            j2 = i+n_IB
             if j1 <= 0:
                 j1 = 0
             IB = LSF[i,j1:j2+1]
