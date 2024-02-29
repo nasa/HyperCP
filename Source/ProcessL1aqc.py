@@ -175,23 +175,30 @@ class ProcessL1aqc:
         # Solar geometry from GPS alone; No Tracker, no Ancillary
         relAzAnc = []
         if not ConfigFile.settings["bL1aqcSolarTracker"] and not ancillaryData:
-            # Solar geometry is preferentially acquired from SolarTracker or pySAS
-            # Otherwise resorts to ancillary data. Otherwise processing fails.
-            # Run Pysolar to obtain solar geometry.
-            sunAzimuthAnc = []
-            sunZenithAnc = []
-            for i, dt_utc in enumerate(gpsDateTime):
-                sunAzimuthAnc.append(get_azimuth(latAnc[i],lonAnc[i],dt_utc,0))
-                sunZenithAnc.append(90 - get_altitude(latAnc[i],lonAnc[i],dt_utc,0))
+            # Only proceed if GPS is present
+            if 'gpsDateTime' in locals():
+                # Solar geometry is preferentially acquired from SolarTracker or pySAS
+                # Otherwise resorts to ancillary data. Otherwise processing fails.
+                # Run Pysolar to obtain solar geometry.
+                sunAzimuthAnc = []
+                sunZenithAnc = []
+                for i, dt_utc in enumerate(gpsDateTime):
+                    sunAzimuthAnc.append(get_azimuth(latAnc[i],lonAnc[i],dt_utc,0)) # latAnc lonAnc from GPS, not ancillary file
+                    sunZenithAnc.append(90 - get_altitude(latAnc[i],lonAnc[i],dt_utc,0))
 
-            # SATTHS fluxgate compass on SAS
-            if compass is None:
-                msg = 'Required ancillary data for sensor offset missing. Abort.'
+                # SATTHS fluxgate compass on SAS
+                if compass is None:
+                    msg = 'Required ancillary data for sensor offset missing. Abort.'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return None
+                else:
+                    relAzAnc = compass - sunAzimuthAnc
+            else:
+                msg = 'Required GPS data is missing. Check tdf files and ancillary data. Abort.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-            else:
-                relAzAnc = compass - sunAzimuthAnc
 
         # If ancillary file is provided, use it. Otherwise fill in what you can using the datetime, lat, lon from GPS
         if ancillaryData is not None:
