@@ -135,7 +135,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.data_statusLineEdit = QtWidgets.QLineEdit(self)
         self.data_statusLineEdit.setText(str(SeaBASSHeader.settings["data_status"]))
 
-        water_depthLabel = QtWidgets.QLabel("water_depth (use -999 for missing)", self)
+        water_depthLabel = QtWidgets.QLabel("water_depth (use -9999 for missing)", self)
         water_depthLabel_font = water_depthLabel.font()
         water_depthLabel_font.setBold(True)
         water_depthLabel.setFont(water_depthLabel_font)
