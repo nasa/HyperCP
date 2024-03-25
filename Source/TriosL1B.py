@@ -168,6 +168,11 @@ class TriosL1B:
             ds.columns["wvl"] = filtered_wvl_flt
             ds.columns["diffuse_ratio"] = diffuse_ratio[ind_nocal==False]
             ds.columnsToDataset()
+            
+            ds = py6s_grp.addDataset("solar_zenith")
+            ds.columns["solar_zenith"] = [solar_zenith]
+            ds.columnsToDataset()
+
 
         return True
 

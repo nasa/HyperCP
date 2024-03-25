@@ -386,5 +386,9 @@ class ProcessL1b_FRMCal:
                 ds.columns["wvl"] = wvl
                 ds.columns["diffuse_ratio"] = diffuse_ratio
                 ds.columnsToDataset()
+                
+                ds = py6s_grp.addDataset("solar_zenith")
+                ds.columns["solar_zenith"] = [solar_zenith]
+                ds.columnsToDataset()
                              
         return True
