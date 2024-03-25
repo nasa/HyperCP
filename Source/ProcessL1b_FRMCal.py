@@ -296,29 +296,13 @@ class ProcessL1b_FRMCal:
             S12_sl_corr = np.matmul(C_zong, S12) # Zong SL corr
             alpha = ((S1-S12)/(S12**2)).tolist()
             LAMP = np.pad(LAMP, (0, nband-len(LAMP)), mode='constant') # PAD with zero if not 255 long
-
-            # Updated calibration gain
-            if sensortype == "ES":
-                updated_radcal_gain = (S12_sl_corr/LAMP) * (10*cal_int/t1)
-                ## Compute avg cosine error
-                avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMCal.cosine_error_correction(node, sensortype)
-                ## Irradiance direct and diffuse ratio
-                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
-            else:
-                PANEL = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_PANEL").data)['2'])
-                PANEL = np.pad(PANEL, (0, nband-len(PANEL)), mode='constant')
-                updated_radcal_gain = (np.pi*S12_sl_corr)/(LAMP*PANEL) * (10*cal_int/t1)
-
-
+           
             ## sensitivity factor : if gain==0 (or NaN), no calibration is performed and data is affected to 0
             ind_zero = radcal_cal<=0
             ind_nan  = np.isnan(radcal_cal)
             ind_nocal = ind_nan | ind_zero
-            # set 1 instead of 0 to perform calibration (otherwise division per 0)
-            updated_radcal_gain[ind_nocal==True] = 1
-
+            
             # keep only defined wavelength
-            updated_radcal_gain = updated_radcal_gain[ind_nocal==False]
             wvl = radcal_wvl[ind_nocal==False]
             str_wvl = np.asarray([str(x) for x in wvl])
             dark = dark[ind_nocal==False]
@@ -328,10 +312,31 @@ class ProcessL1b_FRMCal:
             # mZ = mZ[ind_nocal==False, :]
             C_zong = C_zong[:, ind_nocal==False]
             C_zong = C_zong[ind_nocal==False, :]
-            
-
-            FRM_mesure = np.zeros((nmes, len(updated_radcal_gain)))
             ind_raw_data = (radcal_cal[radcal_wvl>0])>0
+            
+            # Updated calibration gain
+            if sensortype == "ES":
+                updated_radcal_gain = (S12_sl_corr/LAMP) * (10*cal_int/t1)
+                ## Compute avg cosine error
+                avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMCal.cosine_error_correction(node, sensortype)
+                ## Irradiance direct and diffuse ratio
+                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
+                ## retrive py6s variables for given wvl
+                solar_zenith = res_py6s['solar_zenith']
+                direct_ratio = res_py6s['direct_ratio'][ind_raw_data]
+                diffuse_ratio = res_py6s['diffuse_ratio'][ind_raw_data]
+                # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
+                model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[ind_raw_data]/10
+            else:
+                PANEL = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_PANEL").data)['2'])
+                PANEL = np.pad(PANEL, (0, nband-len(PANEL)), mode='constant')
+                updated_radcal_gain = (np.pi*S12_sl_corr)/(LAMP*PANEL) * (10*cal_int/t1)
+
+            # set 1 instead of 0 to perform calibration (otherwise division per 0)
+            updated_radcal_gain[ind_nocal==True] = 1
+            updated_radcal_gain = updated_radcal_gain[ind_nocal==False]
+
+            FRM_mesure = np.zeros((nmes, len(updated_radcal_gain))) 
             for n in range(nmes):
                 # raw data
                 data = raw_data[n][ind_raw_data]
@@ -346,8 +351,6 @@ class ProcessL1b_FRMCal:
                 data = data * Ct
                 # Cosine correction
                 if sensortype == "ES":
-                    solar_zenith = res_py6s['solar_zenith']
-                    direct_ratio = res_py6s['direct_ratio'][ind_raw_data]
                     ind_closest_zen = np.argmin(np.abs(zenith_ang-solar_zenith))
                     cos_corr = (1-avg_coserror[:,ind_closest_zen]/100)[ind_nocal==False]
                     Fhcorr = (1-full_hemi_coserror/100)[ind_nocal==False]
@@ -364,5 +367,24 @@ class ProcessL1b_FRMCal:
             ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
             rec_arr = np.rec.fromarrays(np.array(filtered_mesure).transpose(), dtype=ds_dt)
             grp.getDataset(sensortype).data = rec_arr
-
+            
+            # Store Py6S results in new group
+            if sensortype == "ES":
+                py6s_grp = node.addGroup("PY6S_MODEL")
+                
+                ds = py6s_grp.addDataset("py6s_irradiance")
+                ds.columns["wvl"] = wvl
+                ds.columns["irradiance"] = model_irr
+                ds.columnsToDataset()
+                
+                ds = py6s_grp.addDataset("direct_ratio")
+                ds.columns["wvl"] = wvl
+                ds.columns["direct_ratio"] = direct_ratio
+                ds.columnsToDataset()
+                
+                ds = py6s_grp.addDataset("diffuse_ratio")
+                ds.columns["wvl"] = wvl
+                ds.columns["diffuse_ratio"] = diffuse_ratio
+                ds.columnsToDataset()
+                             
         return True

@@ -70,6 +70,14 @@ class TriosL1B:
             avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMCal.cosine_error_correction(node, sensortype)
             # Irradiance direct and diffuse ratio
             res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
+            # retrive py6s variables
+            solar_zenith = res_py6s['solar_zenith']
+            direct_ratio = res_py6s['direct_ratio']
+            diffuse_ratio = res_py6s['diffuse_ratio']
+            # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
+            model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])/10
+            
+            
         else:
             PANEL = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_PANEL").data)['2'])
             updated_radcal_gain = (np.pi*S12_sl_corr)/(LAMP*PANEL) * (int_time_t0/t1)
@@ -84,7 +92,7 @@ class TriosL1B:
         mesure = raw_data/65535.0
         FRM_mesure = np.zeros((nmes, nband))
         back_mesure = np.zeros((nmes, nband))
-
+                    
         for n in range(nmes):
             # Background correction : B0 and B1 read from full charaterisation
             back_mesure[n,:] = B0 + B1*(int_time[n]/int_time_t0)
@@ -106,8 +114,6 @@ class TriosL1B:
             thermal_corr_mesure = Ct*calibrated_mesure
             # Cosine correction : commented for the moment
             if sensortype == "ES":
-                solar_zenith = res_py6s['solar_zenith']
-                direct_ratio = res_py6s['direct_ratio']
                 ind_closest_zen = np.argmin(np.abs(zenith_ang-solar_zenith))
                 cos_corr = 1-avg_coserror[:,ind_closest_zen]/100
                 Fhcorr = 1-full_hemi_coserror/100
@@ -120,6 +126,7 @@ class TriosL1B:
         # Remove wvl without calibration from the dataset
         # unit conversion from mW/m2 to uW/cm2 : divide per 10
         filtered_mesure = FRM_mesure[:,ind_nocal==False]/10
+        filtered_wvl_flt = radcal_wvl[ind_nocal==False]
         filtered_wvl = str_wvl[ind_nocal==False]
 
         # Replace raw data with calibrated data in hdf root
@@ -142,6 +149,25 @@ class TriosL1B:
         stats[sensortype] = {'ave_Light': np.array(light_avg), 'ave_Dark': np.array(back_avg),
                           'std_Light': np.array(light_std), 'std_Dark': np.array(back_std),
                           'std_Signal': stdevSignal, 'wvl':str_wvl}  # std_Signal stored as dict to help when interpolating wavebands
+
+        # Store Py6S results in new group
+        if sensortype == "ES":
+            py6s_grp = node.addGroup("PY6S_MODEL")
+            
+            ds = py6s_grp.addDataset("py6s_irradiance")
+            ds.columns["wvl"] = filtered_wvl_flt
+            ds.columns["irradiance"] = model_irr[ind_nocal==False]
+            ds.columnsToDataset()
+            
+            ds = py6s_grp.addDataset("direct_ratio")
+            ds.columns["wvl"] = filtered_wvl_flt
+            ds.columns["direct_ratio"] = direct_ratio[ind_nocal==False]
+            ds.columnsToDataset()
+            
+            ds = py6s_grp.addDataset("diffuse_ratio")
+            ds.columns["wvl"] = filtered_wvl_flt
+            ds.columns["diffuse_ratio"] = diffuse_ratio[ind_nocal==False]
+            ds.columnsToDataset()
 
         return True
 

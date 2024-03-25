@@ -898,6 +898,18 @@ class ProcessL1b_Interp:
         else:
             print('No RAW_UNCERTAINTIES found. Moving on...')
 
+        # PY6S model 
+        py6s_grp = node.getGroup('PY6S_MODEL')
+        if py6s_grp is not None:
+            # Copy py6s_model group over without interpolation
+            new_py6s = root.addGroup('PY6S_MODEL')
+            new_py6s.copy(py6s_grp)
+            for ds in new_py6s.datasets:
+                new_py6s.datasets[ds].datasetToColumns()
+        else:
+            print('No py6s_model found. Moving on...')
+
+
         # DATETIME is not supported in HDF5; remove from groups that still have it
         for gp in root.groups:
             for dsName in gp.datasets:
