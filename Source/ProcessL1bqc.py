@@ -247,6 +247,7 @@ class ProcessL1bqc:
         satnavGroup = None
         ancGroup = None
         pyrGroup = None
+        py6sGroup = None
         for gp in node.groups:
             if gp.id.startswith("SOLARTRACKER"):
                 if gp.id != "SOLARTRACKER_STATUS":
@@ -256,6 +257,9 @@ class ProcessL1bqc:
                 ancGroup.id = "ANCILLARY" # shift back from ANCILLARY_METADATA
             if gp.id.startswith("PYROMETER"):
                 pyrGroup = gp
+            if gp.id.startswith("PY6S"):
+                py6sGroup = gp
+
 
         # # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
         # # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
@@ -427,6 +431,9 @@ class ProcessL1bqc:
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
                     Utilities.filterData(ltGroup,badTimes,'L1AQC')
 
+                if py6sGroup is not None:
+                    Utilities.filterData(py6sGroup,badTimes)
+
 
         # Filter low SZAs and high winds after interpolating model/ancillary data
         maxWind = float(ConfigFile.settings["fL1bqcMaxWind"])
@@ -499,6 +506,9 @@ class ProcessL1bqc:
                 Utilities.filterData(esGroup,badTimes,'L1AQC')
                 Utilities.filterData(liGroup,badTimes,'L1AQC')
                 Utilities.filterData(ltGroup,badTimes,'L1AQC')
+            if py6sGroup is not None:
+                Utilities.filterData(py6sGroup,badTimes)
+
 
         # Filter SZAs
         SZAMin = float(ConfigFile.settings["fL1bqcSZAMin"])
@@ -575,6 +585,8 @@ class ProcessL1bqc:
                 Utilities.filterData(esGroup,badTimes,'L1AQC')
                 Utilities.filterData(liGroup,badTimes,'L1AQC')
                 Utilities.filterData(ltGroup,badTimes,'L1AQC')
+            # if py6sGroup is not None:
+            #         Utilities.filterData(py6sGroup,badTimes)
 
        # Spectral Outlier Filter
         enableSpecQualityCheck = ConfigFile.settings['bL1bqcEnableSpecQualityCheck']
@@ -626,6 +638,8 @@ class ProcessL1bqc:
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
                     Utilities.filterData(ltGroup,badTimes,'L1AQC')
+                # if py6sGroup is not None:
+                #     Utilities.filterData(py6sGroup,badTimes)
 
         # Next apply the Meteorological Filter prior to slicing
         esData = referenceGroup.getDataset("ES")
@@ -663,6 +677,8 @@ class ProcessL1bqc:
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
                     Utilities.filterData(ltGroup,badTimes,'L1AQC')
+                # if py6sGroup is not None:
+                #     Utilities.filterData(py6sGroup,badTimes)
 
         return True
 
@@ -760,6 +776,18 @@ class ProcessL1bqc:
             gp.attributes['LI_MAX_LIGHT'] = node.attributes['LI_MAX_LIGHT']
             gp.attributes['LI_MIN_DARK'] = node.attributes['LI_MIN_DARK']
             gp.attributes['LI_MIN_LIGHT'] = node.attributes['LI_MIN_LIGHT']
+
+        # Py6S model
+        py6sGroup = None
+        for gp in node.groups:
+            if gp.id.startswith("PY6S"):
+                py6sGroup = gp
+        if py6sGroup is not None:
+            gp = node.getGroup('PY6S_MODEL')
+            gp.attributes['Irradiance Units'] = 'W/m^2/um' # See ProcessL1b
+            gp.attributes['direct_ratio'] = 'percent_direct_solar_irradiance'
+            gp.attributes['diffuse_ratio'] = 'percent_diffuse_solar_irradiance'
+
 
         # Root
         node.attributes["HYPERINSPACE"] = MainConfig.settings["version"]

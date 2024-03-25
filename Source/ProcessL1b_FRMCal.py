@@ -215,14 +215,14 @@ class ProcessL1b_FRMCal:
             IB = LSF[i,j1:j2+1]
             IBsum = np.sum(IB)
             if np.sum(IB) == 0:
-                IBsum = 1.0   
+                IBsum = 1.0
             # Zong eq. 1
-            SDF[i,:] = SDF[i,:]/np.float(IBsum)    
+            SDF[i,:] = SDF[i,:]/np.float(IBsum)
             SDF[i,j1:j2+1] = 0
-              
+
         A = np.identity(len(LSF)) + SDF   # Matrix A from eq. 8
-        C = np.linalg.inv(A)              # Matrix C from eq. 9       
-        
+        C = np.linalg.inv(A)              # Matrix C from eq. 9
+
         return C
 
     @staticmethod
@@ -257,6 +257,7 @@ class ProcessL1b_FRMCal:
 
     def processL1b_SeaBird(node):
         # calibration of HyperOCR following the FRM processing of FRM4SOC2
+        import time
 
         unc_grp = node.getGroup('RAW_UNCERTAINTIES')
 
@@ -296,12 +297,12 @@ class ProcessL1b_FRMCal:
             S12_sl_corr = np.matmul(C_zong, S12) # Zong SL corr
             alpha = ((S1-S12)/(S12**2)).tolist()
             LAMP = np.pad(LAMP, (0, nband-len(LAMP)), mode='constant') # PAD with zero if not 255 long
-           
+
             ## sensitivity factor : if gain==0 (or NaN), no calibration is performed and data is affected to 0
             ind_zero = radcal_cal<=0
             ind_nan  = np.isnan(radcal_cal)
             ind_nocal = ind_nan | ind_zero
-            
+
             # keep only defined wavelength
             wvl = radcal_wvl[ind_nocal==False]
             str_wvl = np.asarray([str(x) for x in wvl])
@@ -313,14 +314,17 @@ class ProcessL1b_FRMCal:
             C_zong = C_zong[:, ind_nocal==False]
             C_zong = C_zong[ind_nocal==False, :]
             ind_raw_data = (radcal_cal[radcal_wvl>0])>0
-            
+
             # Updated calibration gain
             if sensortype == "ES":
                 updated_radcal_gain = (S12_sl_corr/LAMP) * (10*cal_int/t1)
                 ## Compute avg cosine error
                 avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMCal.cosine_error_correction(node, sensortype)
                 ## Irradiance direct and diffuse ratio
+                tic = time.perf_counter()
                 res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
+                toc = time.perf_counter()
+                print(f'Py6S run in {toc - tic:0.4f} seconds')
                 ## retrive py6s variables for given wvl
                 solar_zenith = res_py6s['solar_zenith']
                 direct_ratio = res_py6s['direct_ratio'][ind_raw_data]
@@ -336,7 +340,7 @@ class ProcessL1b_FRMCal:
             updated_radcal_gain[ind_nocal==True] = 1
             updated_radcal_gain = updated_radcal_gain[ind_nocal==False]
 
-            FRM_mesure = np.zeros((nmes, len(updated_radcal_gain))) 
+            FRM_mesure = np.zeros((nmes, len(updated_radcal_gain)))
             for n in range(nmes):
                 # raw data
                 data = raw_data[n][ind_raw_data]
@@ -367,21 +371,21 @@ class ProcessL1b_FRMCal:
             ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
             rec_arr = np.rec.fromarrays(np.array(filtered_mesure).transpose(), dtype=ds_dt)
             grp.getDataset(sensortype).data = rec_arr
-            
+
             # Store Py6S results in new group
             if sensortype == "ES":
                 py6s_grp = node.addGroup("PY6S_MODEL")
-                
+
                 ds = py6s_grp.addDataset("py6s_irradiance")
                 ds.columns["wvl"] = wvl
                 ds.columns["irradiance"] = model_irr
                 ds.columnsToDataset()
-                
+
                 ds = py6s_grp.addDataset("direct_ratio")
                 ds.columns["wvl"] = wvl
                 ds.columns["direct_ratio"] = direct_ratio
                 ds.columnsToDataset()
-                
+
                 ds = py6s_grp.addDataset("diffuse_ratio")
                 ds.columns["wvl"] = wvl
                 ds.columns["diffuse_ratio"] = diffuse_ratio
