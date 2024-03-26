@@ -4,6 +4,8 @@ import numpy as np
 
 # for analysis NPL developed packages
 import punpy
+from Source.Weight_RSR import Weight_RSR
+
 import Source.matheo.band_integration as band_integration
 from Source.matheo.srf_utils import (
     return_iter_srf,
@@ -263,22 +265,34 @@ class Propagate:
                np.array((LTLIGHT - LTDARK)*LTCal*LTStab*LTLin*LTStray*LTT*LTPol)
 
     @staticmethod
-    def band_Conv_Sensor_S3A(Hyperspec, Wavelengths):
-        """ band convolution of Rrs for S3A"""
-        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
-                                                                           wl=Wavelengths,
-                                                                           platform_name="Sentinel-3A",
-                                                                           sensor_name="olci", u_d=None)
-        return rad_band
+    def band_Conv_Sensor_S3A(Hyperspec, Wavelengths) -> np.array:
+        """ band convolution of Rrs for S3A using Source.Weight_RSR"""
+        # rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
+        #                                                                    wl=Wavelengths,
+        #                                                                    platform_name="Sentinel-3A",
+        #                                                                    sensor_name="olci", u_d=None)
+
+        # convert inputs into expected format for Weight_RSR
+        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        rad_band = Weight_RSR.processSentinel3Bands(
+            hyperspec_as_dict, sensor='A'
+        )
+        return np.array([value[0] for value in rad_band.values()])  # convert back to np.array for correct punpy return
 
     @staticmethod
-    def band_Conv_Sensor_S3B(Hyperspec, Wavelengths):
-        """ band convolution of Rrs for S3B"""
-        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
-                                                                           wl=Wavelengths,
-                                                                           platform_name="Sentinel-3B",
-                                                                           sensor_name="olci", u_d=None)
-        return rad_band
+    def band_Conv_Sensor_S3B(Hyperspec, Wavelengths) -> np.array:
+        """ band convolution of Rrs for S3B using Source.Weight_RSR"""
+        # rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
+        #                                                                    wl=Wavelengths,
+        #                                                                    platform_name="Sentinel-3B",
+        #                                                                    sensor_name="olci", u_d=None)
+
+        # convert to expected format
+        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        rad_band = Weight_RSR.processSentinel3Bands(
+            hyperspec_as_dict, sensor='B'
+        )
+        return np.array([value[0] for value in rad_band.values()])  # return apropriate for punpy
 
     @staticmethod
     def band_Conv_Sensor_AQUA(Hyperspec, Wavelengths):

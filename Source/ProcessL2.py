@@ -300,6 +300,7 @@ class ProcessL2:
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.addDataset(f"rho_{sensor}")
+                newRhoUNCHyper = newReflectanceGroup.addDataset(f"rho_{sensor}_unc")
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     newNIRData = newReflectanceGroup.addDataset(f'nir_{sensor}')
                     newNIRnLwData = newReflectanceGroup.addDataset(f'nir_nLw_{sensor}')
@@ -333,6 +334,7 @@ class ProcessL2:
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
+                newRhoUNCHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     newNIRData = newReflectanceGroup.getDataset(f'nir_{sensor}')
                     newNIRnLwData = newReflectanceGroup.addDataset(f'nir_nLw_{sensor}')
@@ -365,18 +367,22 @@ class ProcessL2:
         # Organise Uncertainty into wavebands
         lwUNC = {}
         rrsUNC = {}
+        rhoUNC = {}
         esUNC = {}
         liUNC = {}
         ltUNC = {}
 
         # Only Factory - Trios has no uncertainty here
         if ConfigFile.settings['bL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird' :
-            esUNC = xUNC['esUNC']  # should already be convolved to hyperspec
-            liUNC = xUNC['liUNC']
-            ltUNC = xUNC['ltUNC']
+            esUNC = xUNC[f'esUNC_{sensor}']  # should already be convolved to hyperspec
+            liUNC = xUNC[f'liUNC_{sensor}']  # added reference to HYPER as band convolved uncertainties will no longer
+            ltUNC = xUNC[f'ltUNC_{sensor}']  # overwite normal instrument uncertainties during processing
+            rhoUNC = xUNC[f'rhoUNC_{sensor}']
             for i, wvl in enumerate(waveSubset):
                 k = str(wvl)
-                if (k in esXSlice) and (k in liXSlice) and (k in ltXSlice):
+                if (any([wvl == float(x) for x in esXSlice]) and
+                        any([wvl == float(x) for x in liXSlice]) and
+                        any([wvl == float(x) for x in ltXSlice])):  # More robust (able to handle sensor and hyper bands
                     if sensor == 'HYPER':
                         lwUNC[k] = xUNC['lwUNC'][i]
                         rrsUNC[k] = xUNC['rrsUNC'][i]
@@ -387,17 +393,22 @@ class ProcessL2:
             # factory case
             for wvl in waveSubset:
                 k = str(wvl)
-                if (k in esXSlice) and (k in liXSlice) and (k in ltXSlice):
+                if (any([wvl == float(x) for x in esXSlice]) and
+                        any([wvl == float(x) for x in liXSlice]) and
+                        any([wvl == float(x) for x in ltXSlice])):  # old version had issues with '.0'
                     esUNC[k] = 0
                     liUNC[k] = 0
                     ltUNC[k] = 0
+                    rhoUNC[k] = 0
                     lwUNC[k] = 0
                     rrsUNC[k] = 0
 
         deleteKey = []
         for wvl in waveSubset:  # loop through wavebands
             k = str(wvl)
-            if (k in esXSlice) and (k in liXSlice) and (k in ltXSlice):
+            if (any([wvl == float(x) for x in esXSlice]) and
+                    any([wvl == float(x) for x in liXSlice]) and
+                    any([wvl == float(x) for x in ltXSlice])):
                 # Initialize the new dataset if this is the first slice
                 if k not in newESData.columns:
                     newESData.columns[k] = []
@@ -426,6 +437,7 @@ class ProcessL2:
 
                     if sensor == 'HYPER':
                         newRhoHyper.columns[k] = []
+                        newRhoUNCHyper.columns[k] = []
                         if ConfigFile.settings["bL2PerformNIRCorrection"]:
                             newNIRData.columns['NIR_offset'] = [] # not used until later; highly unpythonic
                             newNIRnLwData.columns['NIR_offset'] = []
@@ -505,8 +517,16 @@ class ProcessL2:
                     if sensor == 'HYPER':
                         if ZhangRho:
                             newRhoHyper.columns[k].append(rhoVec[k])
+                            if xUNC is not None:  # TriOS factory does not require uncertainties
+                                newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
+                            else:
+                                newRhoUNCHyper.columns[k].append(np.nan)
                         else:
                             newRhoHyper.columns[k].append(rhoScalar)
+                            if xUNC is not None:  # perhaps there is a better check for TriOS Factory branch?
+                                newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
+                            else:
+                                newRhoUNCHyper.columns[k].append(np.nan)
                 else:
                     deleteKey.append(k)
 
@@ -550,6 +570,7 @@ class ProcessL2:
 
         if sensor == 'HYPER':
             newRhoHyper.columnsToDataset()
+            newRhoUNCHyper.columnsToDataset()
             newRrsUncorrData.columnsToDataset()
 
 
@@ -1755,12 +1776,12 @@ class ProcessL2:
                 if "sample" in slice.lower():
                     xSlice.pop(slice)  # samples are no longer needed
                 elif "unc" in slice.lower():
-                    xUNC[f"{slice[0:2]}UNC"] = xSlice.pop(slice)  # transfer instrument uncs to xUNC
+                    xUNC[f"{slice[0:2]}UNC_HYPER"] = xSlice.pop(slice)  # transfer instrument uncs to xUNC
 
             # for convolving to satellite bands
-            esUNCSlice = xUNC["esUNC"]  # ODicts... whereas lwUNC and rrsUNC are simple arrays
-            liUNCSlice = xUNC["liUNC"]
-            ltUNCSlice = xUNC["ltUNC"]
+            esUNCSlice = xUNC["esUNC_HYPER"]  # ODicts... whereas lwUNC and rrsUNC are simple arrays
+            liUNCSlice = xUNC["liUNC_HYPER"]
+            ltUNCSlice = xUNC["ltUNC_HYPER"]
 
         # Populate the relevant fields in node
         ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC)
@@ -1927,10 +1948,10 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdSentinel3A
                 xSlice['ltSTD'] = ltXstdSentinel3A
 
-                if xUNC is not None:
-                    xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='A')
-                    xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='A')
-                    xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='A')
+                # if xUNC is not None:
+                #     xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='A')
+                #     xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='A')
+                #     xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='A')
 
                 sensor = 'Sentinel3A'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_Sentinel3, F0_Sentinel3_unc, rhoScalar, rhoVecSentinel3, waveSubsetSentinel3,  xUNC)
@@ -1957,10 +1978,10 @@ class ProcessL2:
                 xSlice['liSTD'] = liXstdSentinel3B
                 xSlice['ltSTD'] = ltXstdSentinel3B
 
-                if xUNC is not None:
-                    xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='B')
-                    xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='B')
-                    xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='B')
+                # if xUNC is not None:
+                #     xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='B')
+                #     xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='B')
+                #     xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='B')
 
                 sensor = 'Sentinel3B'
                 ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_Sentinel3, F0_Sentinel3_unc, rhoScalar, rhoVecSentinel3, waveSubsetSentinel3,  xUNC)
