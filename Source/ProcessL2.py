@@ -517,10 +517,16 @@ class ProcessL2:
                     if sensor == 'HYPER':
                         if ZhangRho:
                             newRhoHyper.columns[k].append(rhoVec[k])
-                            newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
+                            if xUNC is not None:  # TriOS factory does not require uncertainties
+                                newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
+                            else:
+                                newRhoUNCHyper.columns[k].append(np.nan)
                         else:
                             newRhoHyper.columns[k].append(rhoScalar)
-                            newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
+                            if xUNC is not None:  # perhaps there is a better check for TriOS Factory branch?
+                                newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
+                            else:
+                                newRhoUNCHyper.columns[k].append(np.nan)
                 else:
                     deleteKey.append(k)
 
