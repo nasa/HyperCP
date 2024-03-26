@@ -1030,10 +1030,10 @@ class ConfigWindow(QtWidgets.QDialog):
         l2WeightHBox2.addWidget(self.l2WeightVIIRSJCheckBox)
         VBox4.addLayout(l2WeightHBox2)
         VBox4.addWidget(l2WeightMODISALabel2)
-        l2WeightHBox3 = QtWidgets.QHBoxLayout()
-        l2WeightHBox3.addWidget(l2WeightUncertaintiesLabel)
-        l2WeightHBox3.addWidget(self.l2WeightUncertaintiesCheckBox)
-        VBox4.addLayout(l2WeightHBox3)
+        # l2WeightHBox3 = QtWidgets.QHBoxLayout()
+        # l2WeightHBox3.addWidget(l2WeightUncertaintiesLabel)
+        # l2WeightHBox3.addWidget(self.l2WeightUncertaintiesCheckBox)
+        # VBox4.addLayout(l2WeightHBox3)
 
         VBox4.addSpacing(5)
 
