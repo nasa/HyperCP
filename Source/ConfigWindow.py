@@ -559,10 +559,10 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2WeightSentinel3B"]) == 1:
             self.l2WeightSentinel3BCheckBox.setChecked(True)
 
-        l2WeightUncertaintiesLabel = QtWidgets.QLabel("Convolution uncertainties", self)
-        self.l2WeightUncertaintiesCheckBox = QtWidgets.QCheckBox('',self)
-        if int(ConfigFile.settings["bL2WeightUncertainties"]) == 1:
-            self.l2WeightUncertaintiesCheckBox.setChecked(True)
+        # l2WeightUncertaintiesLabel = QtWidgets.QLabel("Convolution uncertainties", self)
+        # self.l2WeightUncertaintiesCheckBox = QtWidgets.QCheckBox('',self)
+        # if int(ConfigFile.settings["bL2WeightUncertainties"]) == 1:
+        #     self.l2WeightUncertaintiesCheckBox.setChecked(True)
 
         #   Plots
         l2PlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
@@ -1931,7 +1931,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2WeightSentinel3B"] = int(self.l2WeightSentinel3BCheckBox.isChecked())
         ConfigFile.settings["bL2WeightVIIRSJ"] = int(self.l2WeightVIIRSJCheckBox.isChecked())
 
-        ConfigFile.settings["bL2WeightUncertainties"] = int(self.l2WeightUncertaintiesCheckBox.isChecked())
+        # ConfigFile.settings["bL2WeightUncertainties"] = int(self.l2WeightUncertaintiesCheckBox.isChecked())
 
         ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())
         ConfigFile.settings["bL2PlotnLw"] = int(self.l2PlotnLwCheckBox.isChecked())

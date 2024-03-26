@@ -132,7 +132,7 @@ class ConfigFile:
         print("bL2WeightSentinel3A", ConfigFile.settings["bL2WeightSentinel3B"])
         print("bL2WeightVIIRSN", ConfigFile.settings["bL2WeightVIIRSJ"])
 
-        print("bL2WeightUncertainties", ConfigFile.settings["bL2WeightUncertainties"])
+        # print("bL2WeightUncertainties", ConfigFile.settings["bL2WeightUncertainties"])
 
         print("bL2PlotRrs", ConfigFile.settings["bL2PlotRrs"])
         print("bL2PlotnLw", ConfigFile.settings["bL2PlotnLw"])
@@ -317,7 +317,7 @@ class ConfigFile:
         ConfigFile.settings["bL2WeightSentinel3B"] = 0
         ConfigFile.settings["bL2WeightVIIRSJ"] = 0
 
-        ConfigFile.settings["bL2WeightUncertainties"] = 0
+        # ConfigFile.settings["bL2WeightUncertainties"] = 0
 
 
         ConfigFile.settings["bL2PlotRrs"] = 1
