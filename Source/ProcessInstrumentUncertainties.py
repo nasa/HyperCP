@@ -1125,8 +1125,8 @@ class Instrument(ABC):
 
             rhoDeltaBand = Convolve.band_Conv_Uncertainty(
                 [rho, waveSubset], [rhoUNC, None], "S3A")
-            output["rhoUNC_Sentinel3A"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
 
+            output["rhoUNC_Sentinel3A"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
             output["lwUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
                                                                         [lwAbsUnc, None], "S3A")
             output["rrsUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
@@ -1147,8 +1147,8 @@ class Instrument(ABC):
             output["ltUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
             rhoDeltaBand = Convolve.band_Conv_Uncertainty(
                 [rho, waveSubset], [rhoUNC, None], "S3B")
-            output["rhoUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
 
+            output["rhoUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
             output["lwUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
                                                                         [lwAbsUnc, None], "S3B")
             output["rrsUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
@@ -1158,21 +1158,21 @@ class Instrument(ABC):
             esDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
                 [esUNC_band, None], "MOD-A")
-            output["esUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), esDeltaBand)}
+            output["esUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), esDeltaBand)}
 
             liDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['li'].values()), dtype=float).flatten(), waveSubset],
                 [liUNC_band, None], "MOD-A")
-            output["liUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), liDeltaBand)}
+            output["liUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), liDeltaBand)}
 
             ltDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(), waveSubset],
                 [ltUNC_band, None], "MOD-A")
-            output["ltUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
+            output["ltUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), ltDeltaBand)}
 
             rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "MOD-A")
-            output["rhoUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
 
+            output["rhoUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), rhoDeltaBand)}
             output["lwUNC_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
                                                                     [lwAbsUnc, None], "MOD-A")
             output["rrsUNC_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
@@ -1182,21 +1182,21 @@ class Instrument(ABC):
             esDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
                 [esUNC_band, None], "MOD-T")
-            output["esUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), esDeltaBand)}
+            output["esUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), esDeltaBand)}
 
             liDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['li'].values()), dtype=float).flatten(), waveSubset],
                 [liUNC_band, None], "MOD-T")
-            output["liUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), liDeltaBand)}
+            output["liUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), liDeltaBand)}
 
             ltDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(), waveSubset],
                 [ltUNC_band, None], "MOD-T")
-            output["ltUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
+            output["ltUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), ltDeltaBand)}
 
             rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "MOD-T")
-            output["rhoUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
 
+            output["rhoUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), rhoDeltaBand)}
             output["lwUNC_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
                                                                     [lwAbsUnc, None], "MOD-T")
             output["rrsUNC_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals,waveSubset],
@@ -1205,50 +1205,50 @@ class Instrument(ABC):
 
             esDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
-                [esUNC_band, None], "VIIRS")
-            output["esUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), esDeltaBand)}
+                [esUNC_band, None], "VIIRS-N")
+            output["esUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.VIIRSBands(), esDeltaBand)}
 
             liDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['li'].values()), dtype=float).flatten(), waveSubset],
-                [liUNC_band, None], "VIIRS")
-            output["liUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), liDeltaBand)}
+                [liUNC_band, None], "VIIRS-N")
+            output["liUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.VIIRSBands(), liDeltaBand)}
 
             ltDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(), waveSubset],
-                [ltUNC_band, None], "VIIRS")
-            output["ltUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
+                [ltUNC_band, None], "VIIRS-N")
+            output["ltUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.VIIRSBands(), ltDeltaBand)}
 
-            rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "VIIRS")
-            output["rhoUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
+            rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "VIIRS-N")
 
+            output["rhoUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.VIIRSBands(), rhoDeltaBand)}
             output["lwUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                    [lwAbsUnc, None], "VIIRS")
+                                                                    [lwAbsUnc, None], "VIIRS-N")
             output["rrsUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                     [rrsAbsUnc, None], "VIIRS")
+                                                                     [rrsAbsUnc, None], "VIIRS-N")
         if ConfigFile.settings['bL2WeightVIIRSJ']:
 
             esDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
-                [esUNC_band, None], "VIIRS")
-            output["esUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), esDeltaBand)}
+                [esUNC_band, None], "VIIRS-J")
+            output["esUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.VIIRSBands(), esDeltaBand)}
 
             liDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
-                [liUNC_band, None], "VIIRS")
-            output["liUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), liDeltaBand)}
+                [liUNC_band, None], "VIIRS-J")
+            output["liUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.VIIRSBands(), liDeltaBand)}
 
             ltDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
-                [ltUNC_band, None], "VIIRS")
-            output["ltUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
+                [ltUNC_band, None], "VIIRS-J")
+            output["ltUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.VIIRSBands(), ltDeltaBand)}
 
-            rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "VIIRS")
-            output["rhoUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
+            rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "VIIRS-J")
 
+            output["rhoUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.VIIRSBands(), rhoDeltaBand)}
             output["lwUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                   [lwAbsUnc, None], "VIIRS")
+                                                                   [lwAbsUnc, None], "VIIRS-J")
             output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                    [rrsAbsUnc, None], "VIIRS")
+                                                                    [rrsAbsUnc, None], "VIIRS-J")
             pass
         output.update({"rhoUNC_HYPER": {str(k): val for k, val in zip(waveSubset, rhoUNC)},
                        "lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})

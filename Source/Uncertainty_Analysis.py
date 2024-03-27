@@ -432,4 +432,4 @@ class SensorNotSupportedError():
     sensor not suppored, perhaps there is a typo in the sensor string
     """
     def __init__(self, message):
-        super().__init__(message)
+        print(message)
