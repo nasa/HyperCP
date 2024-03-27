@@ -559,10 +559,10 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2WeightSentinel3B"]) == 1:
             self.l2WeightSentinel3BCheckBox.setChecked(True)
 
-        l2WeightUncertaintiesLabel = QtWidgets.QLabel("Convolution uncertainties", self)
-        self.l2WeightUncertaintiesCheckBox = QtWidgets.QCheckBox('',self)
-        if int(ConfigFile.settings["bL2WeightUncertainties"]) == 1:
-            self.l2WeightUncertaintiesCheckBox.setChecked(True)
+        # l2WeightUncertaintiesLabel = QtWidgets.QLabel("Convolution uncertainties", self)
+        # self.l2WeightUncertaintiesCheckBox = QtWidgets.QCheckBox('',self)
+        # if int(ConfigFile.settings["bL2WeightUncertainties"]) == 1:
+        #     self.l2WeightUncertaintiesCheckBox.setChecked(True)
 
         #   Plots
         l2PlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
@@ -1030,10 +1030,10 @@ class ConfigWindow(QtWidgets.QDialog):
         l2WeightHBox2.addWidget(self.l2WeightVIIRSJCheckBox)
         VBox4.addLayout(l2WeightHBox2)
         VBox4.addWidget(l2WeightMODISALabel2)
-        l2WeightHBox3 = QtWidgets.QHBoxLayout()
-        l2WeightHBox3.addWidget(l2WeightUncertaintiesLabel)
-        l2WeightHBox3.addWidget(self.l2WeightUncertaintiesCheckBox)
-        VBox4.addLayout(l2WeightHBox3)
+        # l2WeightHBox3 = QtWidgets.QHBoxLayout()
+        # l2WeightHBox3.addWidget(l2WeightUncertaintiesLabel)
+        # l2WeightHBox3.addWidget(self.l2WeightUncertaintiesCheckBox)
+        # VBox4.addLayout(l2WeightHBox3)
 
         VBox4.addSpacing(5)
 
@@ -1931,7 +1931,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2WeightSentinel3B"] = int(self.l2WeightSentinel3BCheckBox.isChecked())
         ConfigFile.settings["bL2WeightVIIRSJ"] = int(self.l2WeightVIIRSJCheckBox.isChecked())
 
-        ConfigFile.settings["bL2WeightUncertainties"] = int(self.l2WeightUncertaintiesCheckBox.isChecked())
+        # ConfigFile.settings["bL2WeightUncertainties"] = int(self.l2WeightUncertaintiesCheckBox.isChecked())
 
         ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())
         ConfigFile.settings["bL2PlotnLw"] = int(self.l2PlotnLwCheckBox.isChecked())
