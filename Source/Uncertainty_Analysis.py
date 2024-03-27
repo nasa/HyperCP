@@ -213,12 +213,14 @@ class Propagate:
             func = self.band_Conv_Sensor_AQUA
         elif platform.upper() == "MOD-T" or platform.lower().rstrip().replace('-', '') == "eos-terra":
             func = self.band_Conv_Sensor_TERRA
-        elif platform.upper() == "VIIRS" or platform.lower().rstrip().replace('-', '') == "noaa-20":
-            func = self.band_Conv_Sensor_NOAA
+        elif platform.upper() == "VIIRS-J" or platform.lower().rstrip().replace('-', '') == "noaa-J":
+            func = self.band_Conv_Sensor_NOAA_J
+        elif platform.upper() == "VIIRS-N" or platform.lower().rstrip().replace('-', '') == "noaa-N":
+            func = self.band_Conv_Sensor_NOAA_N
         else:
             msg = "sensor not supported"
             print(msg)
-            return False
+            raise SensorNotSupportedError("sensor not suppored, perhaps there is a typo in the sensor string")
         return self.MCP.propagate_standard(func,
                                            mean_vals,
                                            uncertainties,
@@ -260,6 +262,7 @@ class Propagate:
     def instruments(ESLIGHT, ESDARK, LILIGHT, LIDARK, LTLIGHT, LTDARK, ESCal, LICal, LTCal, ESStab, LIStab, LTStab,
                     ESLin, LILin, LTLin, ESStray, LIStray, LTStray, EST, LIT, LTT, LIPol, LTPol, ESCos):
         """ Instrument specific uncertainties measurement function """
+
         return np.array((ESLIGHT - ESDARK)*ESCal*ESStab*ESLin*ESStray*EST*ESCos), \
                np.array((LILIGHT - LIDARK)*LICal*LIStab*LILin*LIStray*LIT*LIPol), \
                np.array((LTLIGHT - LTDARK)*LTCal*LTStab*LTLin*LTStray*LTT*LTPol)
@@ -267,12 +270,7 @@ class Propagate:
     @staticmethod
     def band_Conv_Sensor_S3A(Hyperspec, Wavelengths) -> np.array:
         """ band convolution of Rrs for S3A using Source.Weight_RSR"""
-        # rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
-        #                                                                    wl=Wavelengths,
-        #                                                                    platform_name="Sentinel-3A",
-        #                                                                    sensor_name="olci", u_d=None)
 
-        # convert inputs into expected format for Weight_RSR
         hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
         rad_band = Weight_RSR.processSentinel3Bands(
             hyperspec_as_dict, sensor='A'
@@ -282,44 +280,52 @@ class Propagate:
     @staticmethod
     def band_Conv_Sensor_S3B(Hyperspec, Wavelengths) -> np.array:
         """ band convolution of Rrs for S3B using Source.Weight_RSR"""
-        # rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
-        #                                                                    wl=Wavelengths,
-        #                                                                    platform_name="Sentinel-3B",
-        #                                                                    sensor_name="olci", u_d=None)
 
-        # convert to expected format
         hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
         rad_band = Weight_RSR.processSentinel3Bands(
             hyperspec_as_dict, sensor='B'
         )
-        return np.array([value[0] for value in rad_band.values()])  # return apropriate for punpy
+        return np.array([value[0] for value in rad_band.values()])  # return np.array for punpy
 
     @staticmethod
-    def band_Conv_Sensor_AQUA(Hyperspec, Wavelengths):
-        """ band convolution of Rrs for EOS-AQUA Modis"""
-        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
-                                                                           wl=Wavelengths,
-                                                                           platform_name="EOS-Aqua",
-                                                                           sensor_name="modis", u_d=None)
-        return rad_band
+    def band_Conv_Sensor_AQUA(Hyperspec, Wavelengths) -> np.array:
+        """ band convolution of Rrs for EOS-AQUA Modis using Source.Weight_RSR"""
+
+        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        rad_band = Weight_RSR.processMODISBands(
+            hyperspec_as_dict, sensor='A'
+        )
+        return np.array([value[0] for value in rad_band.values()])  # return as np.array for punpy
 
     @staticmethod
-    def band_Conv_Sensor_TERRA(Hyperspec, Wavelengths):
-        """ band convolution of Rrs for EOS-Terra Modis"""
-        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
-                                                                           wl=Wavelengths,
-                                                                           platform_name="EOS-Terra",
-                                                                           sensor_name="modis", u_d=None)
-        return rad_band
+    def band_Conv_Sensor_TERRA(Hyperspec, Wavelengths) -> np.array:
+        """ band convolution of Rrs for EOS-Terra Modis using Source.Weight_RSR"""
+
+        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        rad_band = Weight_RSR.processMODISBands(
+            hyperspec_as_dict, sensor='T'
+        )
+        return np.array([value[0] for value in rad_band.values()])
 
     @staticmethod
-    def band_Conv_Sensor_NOAA(Hyperspec, Wavelengths):
-        """ band convolution of Rrs for NOAA Virrs"""
-        rad_band, band_centres = band_integration.spectral_band_int_sensor(d=Hyperspec,
-                                                                           wl=Wavelengths,
-                                                                           platform_name="NOAA-20",
-                                                                           sensor_name="viirs", u_d=None)
-        return rad_band
+    def band_Conv_Sensor_NOAA_J(Hyperspec, Wavelengths) -> np.array:
+        """ band convolution of Rrs for NOAA Virrs using Source.Weight_RSR"""
+
+        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        rad_band = Weight_RSR.processVIIRSBands(
+            hyperspec_as_dict, sensor='J'  # uses else to identify, string does not matter
+        )
+        return np.array([value[0] for value in rad_band.values()])
+
+    @staticmethod
+    def band_Conv_Sensor_NOAA_N(Hyperspec, Wavelengths) -> np.array:
+        """ band convolution of Rrs for NOAA Virrs using Source.Weight_RSR"""
+
+        hyperspec_as_dict = {str(k): [val] for k, val in zip(Wavelengths, Hyperspec)}
+        rad_band = Weight_RSR.processVIIRSBands(
+            hyperspec_as_dict, sensor='N'
+        )
+        return np.array([value[0] for value in rad_band.values()])
 
     @staticmethod
     def Lw(lt, rhoVec, li, c2, c3, clin2, clin3, cstab2, cstab3, cstray2, cstray3, cT2, cT3, cpol1, cpol2):
@@ -419,3 +425,11 @@ class Propagate:
         # print(msg)
         # Utilities.writeLogFile(msg)
         return rho
+
+
+class SensorNotSupportedError():
+    """
+    sensor not suppored, perhaps there is a typo in the sensor string
+    """
+    def __init__(self, message):
+        print(message)
