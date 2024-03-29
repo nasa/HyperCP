@@ -303,7 +303,8 @@ Individual spectra may be filtered out for:
 - **Meteorological flags**: based on **(Ruddick et al. 2006, Mobley, 1999, Wernand et al. 2002, Garaba et al. 2012,
     Vandenberg 2017)** can be optionally applied to screen for undesirable data. Specifically, data are filtered for:
 
-    - **Cloud cover**:  Unusually high sky radiance to donwelling irradiance ratio.
+    - **Cloud cover**:  Unusually high sky radiance to downelling irradiance ratio. Threshold in Ruddick et al. 2006 based
+        on M99 models is <0.05 for clear sky where O(0.3) represents fully overcast.
         Default: $\frac{L_{i}(750)}{E_{s}(750)} \geq 1.0$
 
     - **Too hazy atmosphere**: Unusually low Es at 480 nm.
