@@ -83,11 +83,7 @@ class TriosL1B:
         # Data conversion
         mesure = raw_data/65535.0
         FRM_mesure = np.zeros((nmes, nband))
-        back_mesure = np.zeros((nmes, nband))
-        model_irr  = np.zeros((nmes, len(updated_radcal_gain)))
-        direct_ratio  = np.zeros((nmes, len(updated_radcal_gain)))
-        diffuse_ratio = np.zeros((nmes, len(updated_radcal_gain)))
-        solar_zenith  = np.zeros(nmes)     
+        back_mesure = np.zeros((nmes, nband))    
         for n in range(nmes):
             # Background correction : B0 and B1 read from full charaterisation
             back_mesure[n,:] = B0 + B1*(int_time[n]/int_time_t0)
@@ -117,15 +113,13 @@ class TriosL1B:
             # Cosine correction : commented for the moment
             if sensortype == "ES":
                 # retrive py6s variables for given wvl
-                solar_zenith[n] = res_py6s[n]['solar_zenith']
-                direct_ratio[n,:] = res_py6s[n]['direct_ratio']
-                diffuse_ratio[n,:] = res_py6s[n]['diffuse_ratio']
-                # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
-                model_irr[n,:] = (res_py6s[n]['direct_irr']+res_py6s[n]['diffuse_irr']+res_py6s[n]['env_irr'])/10   
-                ind_closest_zen = np.argmin(np.abs(zenith_ang-solar_zenith[n]))
+                solar_zenith = res_py6s['solar_zenith'][n]
+                direct_ratio = res_py6s['direct_ratio'][n]
+                diffuse_ratio = res_py6s['diffuse_ratio'][n]
+                ind_closest_zen = np.argmin(np.abs(zenith_ang-solar_zenith))
                 cos_corr = 1-avg_coserror[:,ind_closest_zen]/100
                 Fhcorr = 1-full_hemi_coserror/100
-                cos_corr_mesure = (direct_ratio[n,:]*thermal_corr_mesure*cos_corr) + ((1-direct_ratio[n,:])*thermal_corr_mesure*Fhcorr)
+                cos_corr_mesure = (direct_ratio*thermal_corr_mesure*cos_corr) + ((1-direct_ratio)*thermal_corr_mesure*Fhcorr)
                 FRM_mesure[n,:] = cos_corr_mesure
             else:
                 FRM_mesure[n,:] = thermal_corr_mesure
@@ -158,6 +152,13 @@ class TriosL1B:
 
         # Store Py6S results in new group
         if sensortype == "ES":
+            # retrive py6s variables for given wvl
+            solar_zenith = res_py6s['solar_zenith']
+            direct_ratio = res_py6s['direct_ratio'][:,ind_nocal==False]
+            diffuse_ratio = res_py6s['diffuse_ratio'][:,ind_nocal==False]
+            # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
+            model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_nocal==False]/10   
+            
             py6s_grp = node.addGroup("PY6S_MODEL")
             for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
                 # copy datetime dataset for interp process
@@ -166,17 +167,17 @@ class TriosL1B:
 
             ds = py6s_grp.addDataset("py6s_irradiance")
             ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
-            rec_arr = np.rec.fromarrays(np.array(model_irr[:,ind_nocal==False]).transpose(), dtype=ds_dt)
+            rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
             ds.data = rec_arr
 
             ds = py6s_grp.addDataset("direct_ratio")
             ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
-            rec_arr = np.rec.fromarrays(np.array(direct_ratio[:,ind_nocal==False]).transpose(), dtype=ds_dt)
+            rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
             ds.data = rec_arr
             
             ds = py6s_grp.addDataset("diffuse_ratio")
             ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
-            rec_arr = np.rec.fromarrays(np.array(diffuse_ratio[:,ind_nocal==False]).transpose(), dtype=ds_dt)
+            rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
             ds.data = rec_arr
             
             ds = py6s_grp.addDataset("solar_zenith")

@@ -5,6 +5,7 @@ import Py6S
 import pytz
 from datetime import datetime as dt
 import matplotlib.pyplot as plt
+from scipy import interpolate
 
 # internal files
 from Source.ConfigFile import ConfigFile
@@ -74,17 +75,23 @@ class ProcessL1b_FRMCal:
         ## Py6S configuration
         n_mesure = len(datetime)
         nband = len(wvl)
-        res_py6s = {}
         
         # Py6S called over 1min bin
-        dt = datetime[1]-datetime[0]
-        n_min = int(3*60//dt.total_seconds())  # nb of mesures over a bin
+        deltat = datetime[1]-datetime[0]
+        n_min = int(3*60//deltat.total_seconds())  # nb of mesures over a bin
         n_bin = len(datetime)//n_min  # nb of bin in a cast
         if len(datetime) % n_min != 0: 
             # +1 to account for last points that fall in the last bin (smaller than 1min)
             n_bin += 1
 
-        for n in range(n_bin): # +1 to account for last points that fall in the last bin (smaller than 1min)
+        direct = np.zeros((n_bin, nband))
+        diffuse = np.zeros((n_bin, nband))
+        irr_direct = np.zeros((n_bin, nband))
+        irr_diffuse = np.zeros((n_bin, nband))
+        irr_env = np.zeros((n_bin, nband))
+        solar_zenith = np.zeros(n_bin)
+
+        for n in range(n_bin):
             # find ancillary point that match the 1st mesure of the 1min ensemble 
             ind_anc = np.argmin(np.abs(np.array(anc_datetime)-datetime[n*n_min]))
             s = Py6S.SixS()
@@ -103,29 +110,39 @@ class ProcessL1b_FRMCal:
             wavelengths, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl)
             
             # extract value from Py6s
-            total_gaseous_transmittance = np.array([res[x].values['total_gaseous_transmittance'] for x in range(nband)])
-            direct = np.array([res[x].values['percent_direct_solar_irradiance'] for x in range(nband)])
-            diffuse = np.array([res[x].values['percent_diffuse_solar_irradiance'] for x in range(nband)])
-            env = np.array([res[x].values['percent_environmental_irradiance'] for x in range(nband)])
-            irr_direct = np.array([res[x].values['direct_solar_irradiance'] for x in range(nband)])
-            irr_diffuse = np.array([res[x].values['diffuse_solar_irradiance'] for x in range(nband)])
-            irr_env = np.array([res[x].values['environmental_irradiance'] for x in range(nband)])
+            # total_gaseous_transmittance[n,:] = np.array([res[x].values['total_gaseous_transmittance'] for x in range(nband)])
+            # env[n,:]  = np.array([res[x].values['percent_environmental_irradiance'] for x in range(nband)])
+            direct[n,:]  = np.array([res[x].values['percent_direct_solar_irradiance'] for x in range(nband)])
+            diffuse[n,:]  = np.array([res[x].values['percent_diffuse_solar_irradiance'] for x in range(nband)])
+            irr_direct[n,:]  = np.array([res[x].values['direct_solar_irradiance'] for x in range(nband)])
+            irr_diffuse[n,:]  = np.array([res[x].values['diffuse_solar_irradiance'] for x in range(nband)])
+            irr_env[n,:]  = np.array([res[x].values['environmental_irradiance'] for x in range(nband)])
+            solar_zenith[n] = sun_zenith[ind_anc]
             
             # Check for potential zero values and interpolate them with neighbour
-            val, ind0 = np.where([direct==0])
+            val, ind0 = np.where([direct[n,:]==0])
             if len(ind0)>0:
                 for i0 in ind0:
-                    direct[i0] = (direct[i0-1]+direct[i0+1])/2
-            
-            # store the results for the full 1 min ensemble 
-            for i in range(n*n_min,(n+1)*n_min):
-                res_py6s[i] = {'direct_ratio': direct, 'diffuse_ratio': diffuse, 'env_ratio': env,
-                            'direct_irr': irr_direct, 'diffuse_irr': irr_diffuse, 'env_irr': irr_env,
-                            'solar_zenith':sun_zenith[ind_anc], 'total_gaseous_transmittance':total_gaseous_transmittance}
-                # Last py6s bin is artificially 1min long, (larger than the true last bin).
-                # We break out when reaching the len of the cast. This is done only to manage the last bin.
-                if i == n_mesure-1 : break
-                
+                    direct[n,i0] = (direct[n,i0-1]+direct[n,i0+1])/2
+                        
+        # interpolate results 
+        res_py6s = {}
+        x_bin  = [n*n_min for n in range(n_bin)]
+        x_full = np.linspace(0, n_mesure, n_mesure)
+        f =  interpolate.interp1d(x_bin, solar_zenith, fill_value='extrapolate')
+        res_py6s['solar_zenith'] = f(x_full)
+        f =  interpolate.interp1d(x_bin, direct, fill_value='extrapolate', axis=0)
+        res_py6s['direct_ratio'] = f(x_full)
+        f =  interpolate.interp1d(x_bin, diffuse, fill_value='extrapolate', axis=0)
+        res_py6s['diffuse_ratio'] = f(x_full)
+        f =  interpolate.interp1d(x_bin, irr_direct, fill_value='extrapolate', axis=0)
+        res_py6s['direct_irr'] = f(x_full)
+        f =  interpolate.interp1d(x_bin, irr_diffuse, fill_value='extrapolate', axis=0)
+        res_py6s['diffuse_irr'] = f(x_full)
+        f =  interpolate.interp1d(x_bin, irr_env, fill_value='extrapolate', axis=0)
+        res_py6s['env_irr'] = f(x_full)
+
+        
         ### Py6S called only once per cast, for starttime
         # ind_anc = np.argmin(np.abs(np.array(anc_datetime)-datetime[0]))
         # s = Py6S.SixS()
@@ -159,45 +176,6 @@ class ProcessL1b_FRMCal:
         # res_py6s = {'direct_ratio': direct, 'diffuse_ratio': diffuse, 'env_ratio': env,
         #             'direct_irr': irr_direct, 'diffuse_irr': irr_diffuse, 'env_irr': irr_env,
         #             'solar_zenith':sun_zenith[ind_anc], 'total_gaseous_transmittance':total_gaseous_transmittance}
-
-
-        ### if Py6S values need to be computed for each replicates
-        # for n in range(n_mesure):
-        #     ind_anc = np.argmin(np.abs(np.array(anc_datetime)-datetime[n]))
-        #     s = Py6S.SixS()
-        #     s.atmos_profile = Py6S.AtmosProfile.PredefinedType(Py6S.AtmosProfile.MidlatitudeSummer)
-        #     s.aero_profile  = Py6S.AeroProfile.PredefinedType(Py6S.AeroProfile.Maritime)
-        #     s.month = datetime[n].month
-        #     s.day = datetime[n].day
-        #     s.geometry.solar_z = sun_zenith[ind_anc]
-        #     s.geometry.solar_a = sun_azimuth[ind_anc]
-        #     s.geometry.view_a = rel_az[ind_anc]
-        #     s.geometry.view_z = 180
-        #     s.altitudes = Py6S.Altitudes()
-        #     s.altitudes.set_target_sea_level()
-        #     s.altitudes.set_sensor_sea_level()
-        #     s.aot550 = 0.153
-        #     # s.run()
-        #     # print(s.outputs.fulltext)
-        #     # print(s.outputs.values)
-        #     # exit()
-        #     wavelengths, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl)
-        #     # extract value from Py6s
-        #     total_gaseous_transmittance = np.array([res[x].values['total_gaseous_transmittance'] for x in range(nband)])
-        #     direct = np.array([res[x].values['percent_direct_solar_irradiance'] for x in range(nband)])
-        #     diffuse = np.array([res[x].values['percent_diffuse_solar_irradiance'] for x in range(nband)])
-        #     env = np.array([res[x].values['percent_environmental_irradiance'] for x in range(nband)])
-        #     irr_direct = np.array([res[x].values['direct_solar_irradiance'] for x in range(nband)])
-        #     irr_diffuse = np.array([res[x].values['diffuse_solar_irradiance'] for x in range(nband)])
-        #     irr_env = np.array([res[x].values['environmental_irradiance'] for x in range(nband)])
-        #     # Check for potential zero values and interpolate them with neighbour
-        #     val, ind0 = np.where([direct==0])
-        #     if len(ind0)>0:
-        #         for i0 in ind0:
-        #             direct[i0] = (direct[i0-1]+direct[i0+1])/2
-        #     res_py6s[n] = {'direct_ratio': direct, 'diffuse_ratio': diffuse, 'env_ratio': env,
-        #                 'direct_irr': irr_direct, 'diffuse_irr': irr_diffuse, 'env_irr': irr_env,
-        #                 'solar_zenith':sun_zenith[ind_anc], 'total_gaseous_transmittance':total_gaseous_transmittance}
 
         return res_py6s
 
@@ -374,10 +352,6 @@ class ProcessL1b_FRMCal:
             updated_radcal_gain = updated_radcal_gain[ind_nocal==False]
 
             FRM_mesure = np.zeros((nmes, len(updated_radcal_gain)))
-            model_irr  = np.zeros((nmes, len(updated_radcal_gain)))
-            direct_ratio  = np.zeros((nmes, len(updated_radcal_gain)))
-            diffuse_ratio = np.zeros((nmes, len(updated_radcal_gain)))
-            solar_zenith  = np.zeros(nmes)
             for n in range(nmes):
                 # raw data
                 data = raw_data[n][ind_raw_data]
@@ -393,15 +367,13 @@ class ProcessL1b_FRMCal:
                 # Cosine correction
                 if sensortype == "ES":
                     # retrive py6s variables for given wvl
-                    solar_zenith[n] = res_py6s[n]['solar_zenith']
-                    direct_ratio[n,:] = res_py6s[n]['direct_ratio'][ind_raw_data]
-                    diffuse_ratio[n,:] = res_py6s[n]['diffuse_ratio'][ind_raw_data]
-                    # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
-                    model_irr[n,:] = (res_py6s[n]['direct_irr']+res_py6s[n]['diffuse_irr']+res_py6s[n]['env_irr'])[ind_raw_data]/10
-                    ind_closest_zen = np.argmin(np.abs(zenith_ang-solar_zenith[n]))
+                    solar_zenith = res_py6s['solar_zenith'][n]
+                    direct_ratio = res_py6s['direct_ratio'][n,ind_raw_data]
+                    diffuse_ratio = res_py6s['diffuse_ratio'][n,ind_raw_data]
+                    ind_closest_zen = np.argmin(np.abs(zenith_ang-solar_zenith))
                     cos_corr = (1-avg_coserror[:,ind_closest_zen]/100)[ind_nocal==False]
                     Fhcorr = (1-full_hemi_coserror/100)[ind_nocal==False]
-                    data = (direct_ratio[n,:]*data*cos_corr) + ((1-direct_ratio[n,:])*data*Fhcorr)
+                    data = (direct_ratio*data*cos_corr) + ((1-direct_ratio)*data*Fhcorr)
                     FRM_mesure[n,:] = data
                 else:
                     FRM_mesure[n,:] = data
@@ -417,6 +389,12 @@ class ProcessL1b_FRMCal:
 
             # Store Py6S results in new group
             if sensortype == "ES":
+                solar_zenith = res_py6s['solar_zenith']
+                direct_ratio = res_py6s['direct_ratio'][:,ind_raw_data]
+                diffuse_ratio = res_py6s['diffuse_ratio'][:,ind_raw_data]
+                # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
+                model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_raw_data]/10
+                
                 py6s_grp = node.addGroup("PY6S_MODEL")
                 for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
                     # copy datetime dataset for interp process

@@ -1784,6 +1784,7 @@ class ProcessL2:
             ltUNCSlice = xUNC["ltUNC_HYPER"]
 
         # Populate the relevant fields in node
+        print("ADERU", sensor)
         ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC)
 
         # Apply residual NIR corrections
