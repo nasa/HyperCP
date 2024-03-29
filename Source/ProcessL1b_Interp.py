@@ -531,6 +531,8 @@ class ProcessL1b_Interp:
             root.groups.append(node.getGroup("SOLARTRACKER_STATUS"))
         if node.getGroup("PYROMETER"):
             root.groups.append(node.getGroup("PYROMETER"))
+        if node.getGroup("PY6S_MODEL"):
+            root.groups.append(node.getGroup("PY6S_MODEL"))
 
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
@@ -547,7 +549,6 @@ class ProcessL1b_Interp:
                         continue
                     else:
                         newGroup.datasets[ds].datasetToColumns()
-
 
         esData = referenceGroup.getDataset("ES")
         liData = sasGroup.getDataset("LI")
@@ -684,11 +685,11 @@ class ProcessL1b_Interp:
                 for ds in ancGroup.datasets:
                     if ds != 'DATETIME':
                         ancGroup.datasets[ds].datasetToColumns()
-
-
             if gp.id == "SOLARTRACKER_STATUS":
                 satmsgGroup = gp
-
+            if gp.id == "PY6S_MODEL":
+                py6s_grp = gp
+                
         # New group scheme combines both radiance sensors in one group
         refGroup = root.addGroup("IRRADIANCE")
         sasGroup = root.addGroup("RADIANCE")
@@ -699,6 +700,7 @@ class ProcessL1b_Interp:
         ProcessL1b_Interp.convertDataset(esGroup, "ES", refGroup, "ES")
         ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
         ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
+                
         if ConfigFile.settings['SensorType'].lower() == 'trios':
             esL1AQCGroup = root.addGroup('ES_L1AQC')
             esL1AQCGroup.copy(esL1AQC)
@@ -719,8 +721,7 @@ class ProcessL1b_Interp:
             ltDarkGroup.copy(ltL1AQCDark)
             ltLightGroup = root.addGroup('LT_LIGHT_L1AQC')
             ltLightGroup.copy(ltL1AQCLight)
-
-
+        
         newGPSGroup = root.addGroup("GPS")
         if gpsGroup is not None:
             # If Ancillary data have already been interpolated, this group must exist,
@@ -805,11 +806,23 @@ class ProcessL1b_Interp:
                     newSatMSG.columns[k] = satMSG.data[k].tolist()
                 newSatMSG.columnsToDataset()
 
-
         if pyrGroup is not None:
             newPyrGroup = root.addGroup("PYROMETER")
             ProcessL1b_Interp.convertDataset(pyrGroup, "T", newPyrGroup, "T")
             pyrData = newPyrGroup.getDataset("T")
+
+
+        # convert datetime into py6s group
+        py6s_grp = node.getGroup("PY6S_MODEL")
+        if py6s_grp is not None:
+            py6s_grp_new = root.addGroup("PY6S_MODEL")
+            ProcessL1b_Interp.convertDataset(py6s_grp, "py6s_irradiance", py6s_grp_new, "py6s_irradiance")
+            ProcessL1b_Interp.convertDataset(py6s_grp, "direct_ratio", py6s_grp_new, "direct_ratio")
+            ProcessL1b_Interp.convertDataset(py6s_grp, "diffuse_ratio", py6s_grp_new, "diffuse_ratio")
+            ProcessL1b_Interp.convertDataset(py6s_grp, "solar_zenith", py6s_grp_new, "solar_zenith")
+
+
+
 
         # PysciDON interpolated to the SLOWEST sampling rate and ProSoft
         # interpolates to the FASTEST. Not much in the literature on this, although
@@ -881,6 +894,18 @@ class ProcessL1b_Interp:
             # Optional:
             ProcessL1b_Interp.interpolateData(pyrData, interpData, "T", fileName)
 
+        # Py6S group interpolation
+        if py6s_grp_new is not None:
+            py6s_irradiance = py6s_grp_new.getDataset("py6s_irradiance")
+            direct_ratio = py6s_grp_new.getDataset("direct_ratio")
+            diffuse_ratio = py6s_grp_new.getDataset("diffuse_ratio")
+            solar_zenith = py6s_grp_new.getDataset("solar_zenith")
+            ProcessL1b_Interp.interpolateData(py6s_irradiance, interpData, "py6s_irradiance", fileName)
+            ProcessL1b_Interp.interpolateData(direct_ratio, interpData, "direct_ratio", fileName)
+            ProcessL1b_Interp.interpolateData(diffuse_ratio, interpData, "diffuse_ratio", fileName)
+            ProcessL1b_Interp.interpolateData(solar_zenith, interpData, "solar_zenith", fileName)
+
+
         # Match wavelengths across instruments
         # Calls interpolateWavelengths and matchColumns
         # Includes columnsToDataset for only the radiometry, for remaining groups, see below
@@ -889,7 +914,6 @@ class ProcessL1b_Interp:
         # FRM uncertainties
         _unc = node.getGroup('RAW_UNCERTAINTIES')
         if _unc is not None:
-
             # Copy RAW_UNCERTAINTIES group over without interpolation
             new_unc = root.addGroup('RAW_UNCERTAINTIES')
             new_unc.copy(_unc)
@@ -897,18 +921,7 @@ class ProcessL1b_Interp:
                 new_unc.datasets[ds].datasetToColumns()
         else:
             print('No RAW_UNCERTAINTIES found. Moving on...')
-
-        # PY6S model 
-        py6s_grp = node.getGroup('PY6S_MODEL')
-        if py6s_grp is not None:
-            # Copy py6s_model group over without interpolation
-            new_py6s = root.addGroup('PY6S_MODEL')
-            new_py6s.copy(py6s_grp)
-            for ds in new_py6s.datasets:
-                new_py6s.datasets[ds].datasetToColumns()
-        else:
-            print('No py6s_model found. Moving on...')
-
+        
 
         # DATETIME is not supported in HDF5; remove from groups that still have it
         for gp in root.groups:

@@ -70,14 +70,6 @@ class TriosL1B:
             avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMCal.cosine_error_correction(node, sensortype)
             # Irradiance direct and diffuse ratio
             res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
-            # retrive py6s variables
-            solar_zenith = res_py6s['solar_zenith']
-            direct_ratio = res_py6s['direct_ratio']
-            diffuse_ratio = res_py6s['diffuse_ratio']
-            # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
-            model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])/10
-            
-            
         else:
             PANEL = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_PANEL").data)['2'])
             updated_radcal_gain = (np.pi*S12_sl_corr)/(LAMP*PANEL) * (int_time_t0/t1)
@@ -91,42 +83,50 @@ class TriosL1B:
         # Data conversion
         mesure = raw_data/65535.0
         FRM_mesure = np.zeros((nmes, nband))
-        back_mesure = np.zeros((nmes, nband))
-                    
+        back_mesure = np.zeros((nmes, nband))    
         for n in range(nmes):
             # Background correction : B0 and B1 read from full charaterisation
             back_mesure[n,:] = B0 + B1*(int_time[n]/int_time_t0)
             back_corrected_mesure = mesure[n] - back_mesure[n,:]
+           
             # Offset substraction : dark index read from attribute
             offset = np.mean(back_corrected_mesure[DarkPixelStart:DarkPixelStop])
             offset_corrected_mesure = back_corrected_mesure - offset
+            
             # Non-linearity correction
             linear_corr_mesure = offset_corrected_mesure*(1-alpha*offset_corrected_mesure)
+            
             # Straylight correction over measurement
             # straylight_corr_mesure = ProcessL1b_FRMCal.Slaper_SL_correction(linear_corr_mesure, mZ, n_iter)
             straylight_corr_mesure = np.matmul(C_zong, linear_corr_mesure)
+            
             # Normalization for integration time
             normalized_mesure = straylight_corr_mesure * int_time_t0/int_time[n]
+            
             # Absolute calibration
             # calibrated_mesure_origin = (offset_corrected_mesure*int_time_t0/int_time[n])/radcal_cal
             calibrated_mesure = normalized_mesure/updated_radcal_gain
+            
             # Thermal correction
             thermal_corr_mesure = Ct*calibrated_mesure
+            
             # Cosine correction : commented for the moment
             if sensortype == "ES":
+                # retrive py6s variables for given wvl
+                solar_zenith = res_py6s['solar_zenith'][n]
+                direct_ratio = res_py6s['direct_ratio'][n]
+                diffuse_ratio = res_py6s['diffuse_ratio'][n]
                 ind_closest_zen = np.argmin(np.abs(zenith_ang-solar_zenith))
                 cos_corr = 1-avg_coserror[:,ind_closest_zen]/100
                 Fhcorr = 1-full_hemi_coserror/100
                 cos_corr_mesure = (direct_ratio*thermal_corr_mesure*cos_corr) + ((1-direct_ratio)*thermal_corr_mesure*Fhcorr)
                 FRM_mesure[n,:] = cos_corr_mesure
-
             else:
                 FRM_mesure[n,:] = thermal_corr_mesure
 
         # Remove wvl without calibration from the dataset
         # unit conversion from mW/m2 to uW/cm2 : divide per 10
         filtered_mesure = FRM_mesure[:,ind_nocal==False]/10
-        filtered_wvl_flt = radcal_wvl[ind_nocal==False]
         filtered_wvl = str_wvl[ind_nocal==False]
 
         # Replace raw data with calibrated data in hdf root
@@ -152,28 +152,38 @@ class TriosL1B:
 
         # Store Py6S results in new group
         if sensortype == "ES":
+            # retrive py6s variables for given wvl
+            solar_zenith = res_py6s['solar_zenith']
+            direct_ratio = res_py6s['direct_ratio'][:,ind_nocal==False]
+            diffuse_ratio = res_py6s['diffuse_ratio'][:,ind_nocal==False]
+            # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
+            model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_nocal==False]/10   
+            
             py6s_grp = node.addGroup("PY6S_MODEL")
-            
+            for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
+                # copy datetime dataset for interp process
+                ds = py6s_grp.addDataset(dsname)
+                ds.data = grp.getDataset(dsname).data
+
             ds = py6s_grp.addDataset("py6s_irradiance")
-            ds.columns["wvl"] = filtered_wvl_flt
-            ds.columns["irradiance"] = model_irr[ind_nocal==False]
-            ds.columnsToDataset()
-            
+            ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
+            rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
+            ds.data = rec_arr
+
             ds = py6s_grp.addDataset("direct_ratio")
-            ds.columns["wvl"] = filtered_wvl_flt
-            ds.columns["direct_ratio"] = direct_ratio[ind_nocal==False]
-            ds.columnsToDataset()
+            ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
+            rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
+            ds.data = rec_arr
             
             ds = py6s_grp.addDataset("diffuse_ratio")
-            ds.columns["wvl"] = filtered_wvl_flt
-            ds.columns["diffuse_ratio"] = diffuse_ratio[ind_nocal==False]
-            ds.columnsToDataset()
+            ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
+            rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
+            ds.data = rec_arr
             
             ds = py6s_grp.addDataset("solar_zenith")
-            ds.columns["solar_zenith"] = [solar_zenith]
+            ds.columns["solar_zenith"] = solar_zenith
             ds.columnsToDataset()
-
-
+            
         return True
 
     @staticmethod
