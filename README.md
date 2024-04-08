@@ -35,6 +35,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 **Contact**: Discussions tab in GitHub, or Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>, and Juan Ignacio Gossn @ EUMETSAT <JuanIgnacio.Gossn@eumetsat.int>
 
+## Contents:
+### [Requirements and Installation](#requirements-and-installation)
+### [Launch the Program](#3-launch-hypercp-for-the-first-time)
+### [Quick Start Guide](#quick-start-overview)
+### [Main Window](#main-window-description)
+### [Configuration Window](README_configuration.md)
+
+
 ## Requirements and Installation
 
 ### 1. Get the HyperCP repository
@@ -185,7 +193,7 @@ Pop-up windows for failed processing (i.e, no output data due to either corrupt 
 The configuration section in the Main window involves setting the correct config (.cfg) file, which in turn includes
  details of which processing parameters and calibration/characterisation files will be used to run HyperCP.
 
-You will need to read [this](README_configuration.md) to learn how to set your configuration file appropriately.
+You will need to read the [Configuration README](README_configuration.md) to learn how to set your configuration file appropriately.
 
 1. The 'New' button allows creation of a new configuration file.
 2. 'Edit' allows editing the currently selected configuration file.
