@@ -725,7 +725,7 @@ class Instrument(ABC):
                             Ct['LI'], Ct['LI'],
                             cPol['LI'], cPol['LI']]
 
-        lwAbsUnc = Propagate_L2.Propagate_Lw(lw_means, lw_uncertainties)
+        lwAbsUnc = Propagate_L2.Propagate_Lw_HYPER(lw_means, lw_uncertainties)
         lw_vals = Propagate_L2.Lw(*lw_means)
 
         rrs_means = [lt, rho, li, es,
@@ -749,7 +749,7 @@ class Instrument(ABC):
                              cPol['LI'], cPol['LT'], cPol['ES']
                              ]
 
-        rrsAbsUnc = Propagate_L2.Propagate_RRS(rrs_means, rrs_uncertainties)
+        rrsAbsUnc = Propagate_L2.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
         rrs_vals = Propagate_L2.RRS(*rrs_means)
 
         ## BAND CONVOLUTION
@@ -814,10 +814,10 @@ class Instrument(ABC):
             # TODO: explore using punpy to output the correlation between ES, LI, & LT to input into propagation of LW
             #  and Rrs
 
-            output["lwUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                        [lwAbsUnc, None], "S3A")
-            output["rrsUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                         [rrsAbsUnc, None], "S3A")
+            output["lwUNC_Sentinel3A"] = Convolve.Propagate_Lw_Convolved(lw_means, lw_uncertainties,
+                                                                         "S3A", waveSubset)
+            output["rrsUNC_Sentinel3A"] = Convolve.Propagate_RRS_Convolved(rrs_means, rrs_uncertainties,
+                                                                           "S3A", waveSubset)
 
         if ConfigFile.settings["bL2WeightSentinel3B"]:
 
@@ -837,10 +837,10 @@ class Instrument(ABC):
                 [rho, waveSubset], [rhoUNC, None], "S3B")
             output["rhoUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
 
-            output["lwUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                        [lwAbsUnc, None], "S3B")
-            output["rrsUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                         [rrsAbsUnc, None], "S3B")
+            output["lwUNC_Sentinel3B"] = Convolve.Propagate_Lw_Convolved(lw_means, lw_uncertainties,
+                                                                         "S3B", waveSubset)
+            output["rrsUNC_Sentinel3B"] = Convolve.Propagate_RRS_Convolved(rrs_means, rrs_uncertainties,
+                                                                           "S3B", waveSubset)
         if ConfigFile.settings['bL2WeightMODISA']:
 
             esDeltaBand = Convolve.band_Conv_Uncertainty(
@@ -861,10 +861,10 @@ class Instrument(ABC):
             rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "MOD-A")
             output["rhoUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), rhoDeltaBand)}
 
-            output["lwUNC_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                    [lwAbsUnc, None], "MOD-A")
-            output["rrsUNC_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                     [rrsAbsUnc, None], "MOD-A")
+            output["lwUNC_MODISA"] = Convolve.Propagate_Lw_Convolved(lw_means, lw_uncertainties,
+                                                                     "MOD-A", waveSubset)
+            output["rrsUNC_MODISA"] = Convolve.Propagate_RRS_Convolved(rrs_means, rrs_uncertainties,
+                                                                       "MOD-A", waveSubset)
         if ConfigFile.settings['bL2WeightMODIST']:
 
             esDeltaBand = Convolve.band_Conv_Uncertainty(
@@ -885,10 +885,10 @@ class Instrument(ABC):
             rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "MOD-T")
             output["rhoUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), rhoDeltaBand)}
 
-            output["lwUNC_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                    [lwAbsUnc, None], "MOD-T")
-            output["rrsUNC_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                     [rrsAbsUnc, None], "MOD-T")
+            output["lwUNC_MODIST"] = Convolve.Propagate_Lw_Convolved(lw_means, lw_uncertainties,
+                                                                     "MOD-T", waveSubset)
+            output["rrsUNC_MODIST"] = Convolve.Propagate_RRS_Convolved(rrs_means, rrs_uncertainties,
+                                                                       "MOD-T", waveSubset)
         if ConfigFile.settings['bL2WeightVIIRSN']:
 
             esDeltaBand = Convolve.band_Conv_Uncertainty(
@@ -909,10 +909,10 @@ class Instrument(ABC):
             rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "VIIRS-N")
             output["rhoUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.VIIRSBands(), rhoDeltaBand)}
 
-            output["lwUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                    [lwAbsUnc, None], "VIIRS-N")
-            output["rrsUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                     [rrsAbsUnc, None], "VIIRS-N")
+            output["lwUNC_VIIRSN"] = Convolve.Propagate_Lw_Convolved(lw_means, lw_uncertainties,
+                                                                     "VIIRS-N", waveSubset)
+            output["rrsUNC_VIIRSN"] = Convolve.Propagate_RRS_Convolved(rrs_means, rrs_uncertainties,
+                                                                       "VIIRS-N", waveSubset)
         if ConfigFile.settings['bL2WeightVIIRSJ']:
 
             esDeltaBand = Convolve.band_Conv_Uncertainty(
@@ -933,10 +933,10 @@ class Instrument(ABC):
             rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "VIIRS-J")
             output["rhoUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.VIIRSBands(), rhoDeltaBand)}
 
-            output["lwUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                    [lwAbsUnc, None], "VIIRS-J")
-            output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                     [rrsAbsUnc, None], "VIIRS-J")
+            output["lwUNC_VIIRSJ"] = Convolve.Propagate_Lw_Convolved(lw_means, lw_uncertainties,
+                                                                     "VIIRS-J", waveSubset)
+            output["rrsUNC_VIIRSJ"] = Convolve.Propagate_RRS_Convolved(rrs_means, rrs_uncertainties,
+                                                                       "VIIRS-J", waveSubset)
             pass
         output.update({"rhoUNC_HYPER": {str(k): val for k, val in zip(waveSubset, rhoUNC)},
                        "lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})
@@ -1049,7 +1049,7 @@ class Instrument(ABC):
                            cPol['LI'], cPol['LI']]
 
         # NOTE: ISSUE #95
-        lwAbsUnc = Propagate_L2.Propagate_Lw(lw_means, lw_uncertainties)
+        lwAbsUnc = Propagate_L2.Propagate_Lw_HYPER(lw_means, lw_uncertainties)
         lw_vals = Propagate_L2.Lw(*lw_means)
 
         rrs_means = [lt, rho, li, es,
@@ -1072,7 +1072,7 @@ class Instrument(ABC):
                              cPol['LI'], cPol['LT'], cPol['ES']
                              ]
 
-        rrsAbsUnc = Propagate_L2.Propagate_RRS(rrs_means, rrs_uncertainties)
+        rrsAbsUnc = Propagate_L2.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
         rrs_vals = Propagate_L2.RRS(*rrs_means)
 
         ## BAND CONVOLUTION
@@ -1107,7 +1107,6 @@ class Instrument(ABC):
         ltUNC_band[np.isnan(ltUNC_band)] = 0.0
 
         if ConfigFile.settings["bL2WeightSentinel3A"]:
-
             esDeltaBand = Convolve.band_Conv_Uncertainty(
                 [np.asarray(list(xSlice['es'].values()), dtype=float).flatten(), waveSubset],
                 [esUNC_band, None], "S3A")
@@ -1125,12 +1124,13 @@ class Instrument(ABC):
 
             rhoDeltaBand = Convolve.band_Conv_Uncertainty(
                 [rho, waveSubset], [rhoUNC, None], "S3A")
-
             output["rhoUNC_Sentinel3A"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
-            output["lwUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                        [lwAbsUnc, None], "S3A")
-            output["rrsUNC_Sentinel3A"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                         [rrsAbsUnc, None], "S3A")
+
+            output["lwUNC_Sentinel3A"] = Convolve.Propagate_Lw_Convolved(lw_means, lw_uncertainties,
+                                                                         "S3A", waveSubset)
+            output["rrsUNC_Sentinel3A"] = Convolve.Propagate_RRS_Convolved(rrs_means, rrs_uncertainties,
+                                                                           "S3A", waveSubset)
+
         if ConfigFile.settings["bL2WeightSentinel3B"]:
 
             esDeltaBand = Convolve.band_Conv_Uncertainty(
@@ -1147,12 +1147,12 @@ class Instrument(ABC):
             output["ltUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), ltDeltaBand)}
             rhoDeltaBand = Convolve.band_Conv_Uncertainty(
                 [rho, waveSubset], [rhoUNC, None], "S3B")
-
             output["rhoUNC_Sentinel3B"] = {str(k): [val] for k, val in zip(Weight_RSR.Sentinel3Bands(), rhoDeltaBand)}
-            output["lwUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                        [lwAbsUnc, None], "S3B")
-            output["rrsUNC_Sentinel3B"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                         [rrsAbsUnc, None], "S3B")
+
+            output["lwUNC_Sentinel3B"] = Convolve.Propagate_Lw_Convolved(lw_means, lw_uncertainties,
+                                                                         "S3B", waveSubset)
+            output["rrsUNC_Sentinel3B"] = Convolve.Propagate_RRS_Convolved(rrs_means, rrs_uncertainties,
+                                                                           "S3B", waveSubset)
         if ConfigFile.settings['bL2WeightMODISA']:
 
             esDeltaBand = Convolve.band_Conv_Uncertainty(
@@ -1169,14 +1169,14 @@ class Instrument(ABC):
                 [np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(), waveSubset],
                 [ltUNC_band, None], "MOD-A")
             output["ltUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), ltDeltaBand)}
-
             rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "MOD-A")
 
             output["rhoUNC_MODISA"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), rhoDeltaBand)}
-            output["lwUNC_MODISA"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                    [lwAbsUnc, None], "MOD-A")
-            output["rrsUNC_MODISA"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                     [rrsAbsUnc, None], "MOD-A")
+
+            output["lwUNC_MODISA"] = Convolve.Propagate_Lw_Convolved(lw_means, lw_uncertainties,
+                                                                     "MOD-A", waveSubset)
+            output["rrsUNC_MODISA"] = Convolve.Propagate_RRS_Convolved(rrs_means, rrs_uncertainties,
+                                                                       "MOD-A", waveSubset)
         if ConfigFile.settings['bL2WeightMODIST']:
 
             esDeltaBand = Convolve.band_Conv_Uncertainty(
@@ -1197,10 +1197,10 @@ class Instrument(ABC):
             rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "MOD-T")
 
             output["rhoUNC_MODIST"] = {str(k): [val] for k, val in zip(Weight_RSR.MODISBands(), rhoDeltaBand)}
-            output["lwUNC_MODIST"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                    [lwAbsUnc, None], "MOD-T")
-            output["rrsUNC_MODIST"] = Convolve.band_Conv_Uncertainty([rrs_vals,waveSubset],
-                                                                     [rrsAbsUnc, None], "MOD-T")
+            output["lwUNC_MODIST"] = Convolve.Propagate_Lw_Convolved(lw_means, lw_uncertainties,
+                                                                     "MOD-T", waveSubset)
+            output["rrsUNC_MODIST"] = Convolve.Propagate_RRS_Convolved(rrs_means, rrs_uncertainties,
+                                                                       "MOD-T", waveSubset)
         if ConfigFile.settings['bL2WeightVIIRSN']:
 
             esDeltaBand = Convolve.band_Conv_Uncertainty(
@@ -1221,10 +1221,10 @@ class Instrument(ABC):
             rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "VIIRS-N")
 
             output["rhoUNC_VIIRSN"] = {str(k): [val] for k, val in zip(Weight_RSR.VIIRSBands(), rhoDeltaBand)}
-            output["lwUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                    [lwAbsUnc, None], "VIIRS-N")
-            output["rrsUNC_VIIRSN"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                     [rrsAbsUnc, None], "VIIRS-N")
+            output["lwUNC_VIIRSN"] = Convolve.Propagate_Lw_Convolved(lw_means, lw_uncertainties,
+                                                                     "VIIRS-N", waveSubset)
+            output["rrsUNC_VIIRSN"] = Convolve.Propagate_RRS_Convolved(rrs_means, rrs_uncertainties,
+                                                                       "VIIRS-N", waveSubset)
         if ConfigFile.settings['bL2WeightVIIRSJ']:
 
             esDeltaBand = Convolve.band_Conv_Uncertainty(
@@ -1245,10 +1245,10 @@ class Instrument(ABC):
             rhoDeltaBand = Convolve.band_Conv_Uncertainty([rho, waveSubset], [rhoUNC, None], "VIIRS-J")
 
             output["rhoUNC_VIIRSJ"] = {str(k): [val] for k, val in zip(Weight_RSR.VIIRSBands(), rhoDeltaBand)}
-            output["lwUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([lw_vals, waveSubset],
-                                                                   [lwAbsUnc, None], "VIIRS-J")
-            output["rrsUNC_VIIRSJ"] = Convolve.band_Conv_Uncertainty([rrs_vals, waveSubset],
-                                                                    [rrsAbsUnc, None], "VIIRS-J")
+            output["lwUNC_VIIRSJ"] = Convolve.Propagate_Lw_Convolved(lw_means, lw_uncertainties,
+                                                                     "VIIRS-J", waveSubset)
+            output["rrsUNC_VIIRSJ"] = Convolve.Propagate_RRS_Convolved(rrs_means, rrs_uncertainties,
+                                                                       "VIIRS-J", waveSubset)
             pass
         output.update({"rhoUNC_HYPER": {str(k): val for k, val in zip(waveSubset, rhoUNC)},
                        "lwUNC": lwAbsUnc, "rrsUNC": rrsAbsUnc})
