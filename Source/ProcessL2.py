@@ -334,7 +334,7 @@ class ProcessL2:
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
-                newRhoUNCHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
+                newRhoUNCHyper = newReflectanceGroup.getDataset(f"rho_{sensor}_unc")
                 if ConfigFile.settings["bL2PerformNIRCorrection"]:
                     newNIRData = newReflectanceGroup.getDataset(f'nir_{sensor}')
                     newNIRnLwData = newReflectanceGroup.addDataset(f'nir_nLw_{sensor}')
