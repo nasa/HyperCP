@@ -187,6 +187,8 @@ class RhoCorrections:
         Utilities.writeLogFile(msg)
 
         # Presumably obsolete (Ashley)? -DAA
+        # It will be once the LUT  is finished, right now the Z17 without a propagate object is important for the
+        # Monte Carlo runs
         if Propagate is None:
             rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
         else:
