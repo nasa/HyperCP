@@ -715,9 +715,9 @@ class Instrument(ABC):
                     ones, ones,
                     ones, ones]
 
-        lw_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+        lw_uncertainties = [np.abs(np.array(list(ltXstd.values())).flatten() * lt),
                             rhoUNC,
-                            np.array(list(liXstd.values())).flatten() * li,
+                            np.abs(np.array(list(liXstd.values())).flatten() * li),
                             Cal['LI']/200, Cal['LT']/200,
                             cStab['LI'], cStab['LT'],
                             cLin['LI'], cLin['LT'],
@@ -737,10 +737,10 @@ class Instrument(ABC):
                      ones, ones, ones
                      ]
 
-        rrs_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+        rrs_uncertainties = [np.abs(np.array(list(ltXstd.values())).flatten() * lt),
                              rhoUNC,
-                             np.array(list(liXstd.values())).flatten() * li,
-                             np.array(list(esXstd.values())).flatten() * es,
+                             np.abs(np.array(list(liXstd.values())).flatten() * li),
+                             np.abs(np.array(list(esXstd.values())).flatten() * es),
                              Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
                              cStab['ES'], cStab['LI'], cStab['LT'],
                              cLin['ES'], cLin['LI'], cLin['LT'],
@@ -1038,9 +1038,9 @@ class Instrument(ABC):
                    ones, ones,
                    ones, ones]
 
-        lw_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+        lw_uncertainties = [np.abs(np.array(list(ltXstd.values())).flatten() * lt),
                            rhoUNC,
-                           np.array(list(liXstd.values())).flatten() * li,
+                           np.abs(np.array(list(liXstd.values())).flatten() * li),
                            Cal['LI']/200, Cal['LT']/200,
                            cStab['LI'], cStab['LT'],
                            cLin['LI'], cLin['LT'],
@@ -1060,10 +1060,10 @@ class Instrument(ABC):
                 ones, ones, ones,
                 ones, ones, ones]
 
-        rrs_uncertainties = [np.array(list(ltXstd.values())).flatten() * lt,
+        rrs_uncertainties = [np.abs(np.array(list(ltXstd.values())).flatten() * lt),
                              rhoUNC,
-                             np.array(list(liXstd.values())).flatten() * li,
-                             np.array(list(esXstd.values())).flatten() * es,
+                             np.abs(np.array(list(liXstd.values())).flatten() * li),
+                             np.abs(np.array(list(esXstd.values())).flatten() * es),
                              Cal['ES']/200, Cal['LI']/200, Cal['LT']/200,
                              cStab['ES'], cStab['LI'], cStab['LT'],
                              cLin['ES'], cLin['LI'], cLin['LT'],
