@@ -820,6 +820,8 @@ class ProcessL1b_Interp:
             ProcessL1b_Interp.convertDataset(py6s_grp, "direct_ratio", py6s_grp_new, "direct_ratio")
             ProcessL1b_Interp.convertDataset(py6s_grp, "diffuse_ratio", py6s_grp_new, "diffuse_ratio")
             ProcessL1b_Interp.convertDataset(py6s_grp, "solar_zenith", py6s_grp_new, "solar_zenith")
+        else:
+            py6s_grp_new = None
 
 
 
