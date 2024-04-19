@@ -1410,13 +1410,13 @@ class Instrument(ABC):
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR_AZ90").data))[1:, 2:]
             cos90_unc = (np.asarray(
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY_AZ90").data))[1:,
-                         2:]/100)*coserror_90
+                         2:]/100)*np.abs(coserror_90)
         else:
             # reading in data changes if at L2 (because hdf files have different layout)
             radcal_wvl = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['1'][1:].tolist())
             coserror = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR").data))[1:, 2:]
             cos_unc = (np.asarray(
-                pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY").data))[1:, 2:]/100)*coserror
+                pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY").data))[1:, 2:]/100)*np.abs(coserror)
             coserror_90 = np.asarray(
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR_AZ90").data))[1:, 2:]
             cos90_unc = (np.asarray(
