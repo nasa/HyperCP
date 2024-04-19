@@ -4,6 +4,7 @@ import datetime
 import numpy as np
 from pysolar.solar import get_azimuth, get_altitude
 import bisect
+import copy
 
 from Source.HDFDataset import HDFDataset
 from Source.ProcessL1aqc_deglitch import ProcessL1aqc_deglitch
@@ -131,8 +132,6 @@ class ProcessL1aqc:
         for gp in node.groups:
             cf = calibrationMap[gp.attributes["CalFileName"]]
             ProcessL1aqc.renameGroup(gp,cf)
-        # else:
-
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
@@ -176,40 +175,55 @@ class ProcessL1aqc:
         # Solar geometry from GPS alone; No Tracker, no Ancillary
         relAzAnc = []
         if not ConfigFile.settings["bL1aqcSolarTracker"] and not ancillaryData:
-            # Solar geometry is preferentially acquired from SolarTracker or pySAS
-            # Otherwise resorts to ancillary data. Otherwise processing fails.
-            # Run Pysolar to obtain solar geometry.
-            sunAzimuthAnc = []
-            sunZenithAnc = []
-            for i, dt_utc in enumerate(gpsDateTime):
-                sunAzimuthAnc.append(get_azimuth(latAnc[i],lonAnc[i],dt_utc,0))
-                sunZenithAnc.append(90 - get_altitude(latAnc[i],lonAnc[i],dt_utc,0))
+            # Only proceed if GPS is present
+            if 'gpsDateTime' in locals():
+                # Solar geometry is preferentially acquired from SolarTracker or pySAS
+                # Otherwise resorts to ancillary data. Otherwise processing fails.
+                # Run Pysolar to obtain solar geometry.
+                sunAzimuthAnc = []
+                sunZenithAnc = []
+                for i, dt_utc in enumerate(gpsDateTime):
+                    sunAzimuthAnc.append(get_azimuth(latAnc[i],lonAnc[i],dt_utc,0)) # latAnc lonAnc from GPS, not ancillary file
+                    sunZenithAnc.append(90 - get_altitude(latAnc[i],lonAnc[i],dt_utc,0))
 
-            # SATTHS fluxgate compass on SAS
-            if compass is None:
-                msg = 'Required ancillary data for sensor offset missing. Abort.'
+                # SATTHS fluxgate compass on SAS
+                if compass is None:
+                    msg = 'Required ancillary data for sensor offset missing. Abort.'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return None
+                else:
+                    relAzAnc = compass - sunAzimuthAnc
+            else:
+                msg = 'Required GPS data is missing. Check tdf files and ancillary data. Abort.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-            else:
-                relAzAnc = compass - sunAzimuthAnc
 
         # If ancillary file is provided, use it. Otherwise fill in what you can using the datetime, lat, lon from GPS
         if ancillaryData is not None:
-            ancDateTime = ancillaryData.columns["DATETIME"][0].copy()
 
             # Remove all ancillary data that does not intersect GPS data
             # Change this to ES to work around set-ups with no GPS
+            ancData = HDFDataset()
+            ancData.attributes = copy.deepcopy(ancillaryData.attributes)#.copy()
+            ancData.data = copy.deepcopy(ancillaryData.data)#.copy()
+            # ancData.data = np.copy(ancillaryData.data)
+            ancData.datasetToColumns()
+            ancData.id = 'AncillaryData'
+
+            ancDateTime = ancData.columns["DATETIME"][0].copy()
+
             print('Removing non-pertinent ancillary data.')
             lower = bisect.bisect_left(ancDateTime, min(esDateTime))
             lower = list(range(0,lower-1))
             upper = bisect.bisect_right(ancDateTime, max(esDateTime))
             upper = list(range(upper,len(ancDateTime)))
-            ancillaryData.colDeleteRow(upper)
-            ancillaryData.colDeleteRow(lower)
+            ancData.colDeleteRow(upper)
+            ancData.colDeleteRow(lower)
 
             # Test if any data is left
-            if not ancillaryData.columns["DATETIME"][0]:
+            if not ancData.columns["DATETIME"][0]:
                 msg = "No coincident ancillary data found. Check ancillary file. Aborting"
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -222,11 +236,11 @@ class ProcessL1aqc:
                 Alternatively, can use the azimuth of the SAS from fluxgate
                 compass (e.g., SATTHS) as a last resort'''
 
-            timeStamp = ancillaryData.columns["DATETIME"][0]
+            timeStamp = ancData.columns["DATETIME"][0]
             ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
             ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]
-            latAnc = ancillaryData.columns["LATITUDE"][0]
-            lonAnc = ancillaryData.columns["LONGITUDE"][0]
+            latAnc = ancData.columns["LATITUDE"][0]
+            lonAnc = ancData.columns["LONGITUDE"][0]
 
             # Solar geometry is preferentially acquired from SolarTracker or pySAS
             # Otherwise resorts to ancillary data. Otherwise processing fails.
@@ -239,13 +253,13 @@ class ProcessL1aqc:
 
             # relAzAnc either from ancillary relZz, ancillary sensorAz, (or THS compass above ^^)
             relAzAnc = []
-            if "REL_AZ" in ancillaryData.columns:
-                relAzAnc = ancillaryData.columns["REL_AZ"][0]
+            if "REL_AZ" in ancData.columns:
+                relAzAnc = ancData.columns["REL_AZ"][0]
 
             sasAzAnc = []
             # This is a new SeaBASS field
-            if "SENSOR_AZ" in ancillaryData.columns:
-                sasAzAnc = ancillaryData.columns["SENSOR_AZ"][0]
+            if "SENSOR_AZ" in ancData.columns:
+                sasAzAnc = ancData.columns["SENSOR_AZ"][0]
 
             if not ConfigFile.settings["bL1aqcSolarTracker"] and not relAzAnc and not sasAzAnc:
                 msg = 'Required ancillary sensor geometries missing. Abort.'
@@ -258,30 +272,30 @@ class ProcessL1aqc:
                 for i, sasAz in enumerate(sasAzAnc):
                     relAzAnc.append(sasAz - sunAzimuthAnc[i])
 
-            if "HEADING" in ancillaryData.columns:
+            if "HEADING" in ancData.columns:
                 # HEADING/shipAzimuth comes from ancillary data file here (not GPS or SATNAV)
-                shipAzimuth = ancillaryData.columns["HEADING"][0]
+                shipAzimuth = ancData.columns["HEADING"][0]
 
-            if "STATION" in ancillaryData.columns:
-                station = ancillaryData.columns["STATION"][0]
-            if "SALINITY" in ancillaryData.columns:
-                salt = ancillaryData.columns["SALINITY"][0]
-            if "SST" in ancillaryData.columns:
-                sst = ancillaryData.columns["SST"][0]
-            if "WINDSPEED" in ancillaryData.columns:
-                wind = ancillaryData.columns["WINDSPEED"][0]
-            if "AOD" in ancillaryData.columns:
-                aod = ancillaryData.columns["AOD"][0]
-            if "CLOUD" in ancillaryData.columns:
-                cloud = ancillaryData.columns["CLOUD"][0]
-            if "WAVE_HT" in ancillaryData.columns:
-                wave = ancillaryData.columns["WAVE_HT"][0]
-            if "SPEED_F_W" in ancillaryData.columns:
-                speed_f_w = ancillaryData.columns["SPEED_F_W"][0]
-            if "PITCH" in ancillaryData.columns:
-                pitch = ancillaryData.columns["PITCH"][0]
-            if "ROLL" in ancillaryData.columns:
-                roll = ancillaryData.columns["ROLL"][0]
+            if "STATION" in ancData.columns:
+                station = ancData.columns["STATION"][0]
+            if "SALINITY" in ancData.columns:
+                salt = ancData.columns["SALINITY"][0]
+            if "SST" in ancData.columns:
+                sst = ancData.columns["SST"][0]
+            if "WINDSPEED" in ancData.columns:
+                wind = ancData.columns["WINDSPEED"][0]
+            if "AOD" in ancData.columns:
+                aod = ancData.columns["AOD"][0]
+            if "CLOUD" in ancData.columns:
+                cloud = ancData.columns["CLOUD"][0]
+            if "WAVE_HT" in ancData.columns:
+                wave = ancData.columns["WAVE_HT"][0]
+            if "SPEED_F_W" in ancData.columns:
+                speed_f_w = ancData.columns["SPEED_F_W"][0]
+            if "PITCH" in ancData.columns:
+                pitch = ancData.columns["PITCH"][0]
+            if "ROLL" in ancData.columns:
+                roll = ancData.columns["ROLL"][0]
 
         else:
             # If no ancillary file is provided, create an ancillary group from GPS
@@ -328,7 +342,6 @@ class ProcessL1aqc:
             msg = "Filtering file for GPS status"
             print(msg)
             Utilities.writeLogFile(msg)
-
 
             i = 0
             start = -1
@@ -397,17 +410,17 @@ class ProcessL1aqc:
                         roll = gp.getDataset("ROLL").data["NONE"]
             # ...and failing that, try to pull from ancillary data
             if pitch is None or roll is None:
-                if "PITCH" in ancillaryData.columns:
+                if "PITCH" in ancData.columns:
                     msg = "Pitch data from ancillary file used."
                     print(msg)
                     Utilities.writeLogFile(msg)
-                    pitch = ancillaryData.columns["PITCH"][0]
-                    if "ROLL" in ancillaryData.columns:
+                    pitch = ancData.columns["PITCH"][0]
+                    if "ROLL" in ancData.columns:
                         msg = "Roll data from ancillary file used."
                         print(msg)
                         Utilities.writeLogFile(msg)
-                        roll = ancillaryData.columns["ROLL"][0]
-                    timeStamp = ancillaryData.columns["DATETIME"][0]
+                        roll = ancData.columns["ROLL"][0]
+                    timeStamp = ancData.columns["DATETIME"][0]
                 else:
                     msg = "Pitch and roll data not found for tilt sensor or in Ancillary Data.\n"
                     msg = msg + " Try adding to Ancillary Data or turning off tilt filter. Aborting."
@@ -466,7 +479,7 @@ class ProcessL1aqc:
                 if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
                     gp = group
 
-            if 'gp' in locals():
+            if gp is not None:
                 if gp.getDataset("POINTING"):
                     timeStamp = gp.getDataset("DATETIME").data
                     rotator = gp.getDataset("POINTING").data["ROTATOR"]
@@ -517,6 +530,11 @@ class ProcessL1aqc:
                     msg = 'No POINTING data found. Filtering on rotator delay failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
+            else:
+                msg = 'No solar tracker data found. Filtering on rotator delay failed.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
 
 
         # Apply Absolute Rotator Angle Filter
@@ -534,56 +552,57 @@ class ProcessL1aqc:
                 if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
                     gp = group
 
-            if gp.getDataset("POINTING"):
-                timeStamp = gp.getDataset("DATETIME").data
-                rotator = gp.getDataset("POINTING").data["ROTATOR"]
-                # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
-                # It may also be set for when no SolarTracker is present and it's not included in the
-                # ancillary data, but that's not relevant here
-                home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
+            if gp is not None:
+                if gp.getDataset("POINTING"):
+                    timeStamp = gp.getDataset("DATETIME").data
+                    rotator = gp.getDataset("POINTING").data["ROTATOR"]
+                    # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
+                    # It may also be set for when no SolarTracker is present and it's not included in the
+                    # ancillary data, but that's not relevant here
+                    home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
 
-                absRotatorMin = float(ConfigFile.settings["fL1aqcRotatorAngleMin"])
-                absRotatorMax = float(ConfigFile.settings["fL1aqcRotatorAngleMax"])
+                    absRotatorMin = float(ConfigFile.settings["fL1aqcRotatorAngleMin"])
+                    absRotatorMax = float(ConfigFile.settings["fL1aqcRotatorAngleMax"])
 
-                start = -1
-                stop = []
-                for index in range(len(rotator)):
-                    if rotator[index] + home > absRotatorMax or rotator[index] + home < absRotatorMin or math.isnan(rotator[index]):
-                        i += 1
-                        if start == -1:
-                            # print('Absolute rotator angle outside bounds. ' + str(round(rotator[index] + home)))
-                            start = index
-                        stop = index
-                    else:
-                        if start != -1:
-                            # print('Absolute rotator angle passed: ' + str(round(rotator[index] + home)))
-                            startstop = [timeStamp[start],timeStamp[stop]]
-                            msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]))
-                            # print(msg)
-                            Utilities.writeLogFile(msg)
+                    start = -1
+                    stop = []
+                    for index in range(len(rotator)):
+                        if rotator[index] + home > absRotatorMax or rotator[index] + home < absRotatorMin or math.isnan(rotator[index]):
+                            i += 1
+                            if start == -1:
+                                # print('Absolute rotator angle outside bounds. ' + str(round(rotator[index] + home)))
+                                start = index
+                            stop = index
+                        else:
+                            if start != -1:
+                                # print('Absolute rotator angle passed: ' + str(round(rotator[index] + home)))
+                                startstop = [timeStamp[start],timeStamp[stop]]
+                                msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]))
+                                # print(msg)
+                                Utilities.writeLogFile(msg)
 
-                            badTimes.append(startstop)
-                            start = -1
-                msg = f'Percentage of Tracker data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %'
-                print(msg)
-                Utilities.writeLogFile(msg)
-
-                if start != -1 and stop == index: # Records from a mid-point to the end are bad
-                    startstop = [timeStamp[start],timeStamp[stop]]
-                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
-                    # print(msg)
+                                badTimes.append(startstop)
+                                start = -1
+                    msg = f'Percentage of Tracker data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %'
+                    print(msg)
                     Utilities.writeLogFile(msg)
-                    if badTimes is None: # only one set of records
-                        badTimes = [startstop]
-                    else:
-                        badTimes.append(startstop)
 
-                if start==0 and stop==index: # All records are bad
-                    return None
-            else:
-                msg = 'No rotator data found. Filtering on absolute rotator angle failed.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                    if start != -1 and stop == index: # Records from a mid-point to the end are bad
+                        startstop = [timeStamp[start],timeStamp[stop]]
+                        msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+                        # print(msg)
+                        Utilities.writeLogFile(msg)
+                        if badTimes is None: # only one set of records
+                            badTimes = [startstop]
+                        else:
+                            badTimes.append(startstop)
+
+                    if start==0 and stop==index: # All records are bad
+                        return None
+                else:
+                    msg = 'No rotator data found. Filtering on absolute rotator angle failed.'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
 
         # General setup for ancillary or SolarTracker data prior to Relative Solar Azimuth option
         if ConfigFile.settings["bL1aqcSolarTracker"]:
@@ -594,40 +613,41 @@ class ProcessL1aqc:
                 if group.id.startswith("SOLARTRACKER"):
                     gp = group
 
-            if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):
-                timeStamp = gp.getDataset("DATETIME").data
-                # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
-                # It may also be set here for when no SolarTracker is present and it's not included in the
-                # ancillary data. See below.
-                home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
-                sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]# strips off dtype name
-                gp.addDataset("SOLAR_AZ")
-                gp.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
-                # gp.datasets["SOLAR_AZ"].data = sunAzimuth
-                # sunAzimuth = sunAzimuth["SUN"]
-                del(gp.datasets["AZIMUTH"])
-                sunZenith = 90 - gp.getDataset("ELEVATION").data["SUN"]
-                # sunZenith["None"] = 90 - sunZenith["SUN"]
-                gp.addDataset("SZA")
-                gp.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
-                # gp.datasets["SZA"].data = sunZenith
-                # sunZenith = sunZenith["SUN"] # strips off dtype name
-                del(gp.datasets["ELEVATION"])
-                if gp.id == "SOLARTRACKER":
-                    sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
-                elif gp.id == "SOLARTRACKER_pySAS":
-                    sasAzimuth = gp.getDataset("HEADING").data["SAS"]
-                newRelAzData = gp.addDataset("REL_AZ")
+            if gp is not None:
+                if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):
+                    timeStamp = gp.getDataset("DATETIME").data
+                    # Rotator Home Angle Offset is generally set in the .sat file when setting up the SolarTracker
+                    # It may also be set here for when no SolarTracker is present and it's not included in the
+                    # ancillary data. See below.
+                    home = float(ConfigFile.settings["fL1aqcRotatorHomeAngle"])
+                    sunAzimuth = gp.getDataset("AZIMUTH").data["SUN"]# strips off dtype name
+                    gp.addDataset("SOLAR_AZ")
+                    gp.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
+                    # gp.datasets["SOLAR_AZ"].data = sunAzimuth
+                    # sunAzimuth = sunAzimuth["SUN"]
+                    del(gp.datasets["AZIMUTH"])
+                    sunZenith = 90 - gp.getDataset("ELEVATION").data["SUN"]
+                    # sunZenith["None"] = 90 - sunZenith["SUN"]
+                    gp.addDataset("SZA")
+                    gp.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
+                    # gp.datasets["SZA"].data = sunZenith
+                    # sunZenith = sunZenith["SUN"] # strips off dtype name
+                    del(gp.datasets["ELEVATION"])
+                    if gp.id == "SOLARTRACKER":
+                        sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
+                    elif gp.id == "SOLARTRACKER_pySAS":
+                        sasAzimuth = gp.getDataset("HEADING").data["SAS"]
+                    newRelAzData = gp.addDataset("REL_AZ")
 
-                relAz = sasAzimuth - sunAzimuth
+                    relAz = sasAzimuth - sunAzimuth
 
-                # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
-                relAz[relAz>180] = relAz[relAz>180] - 360
-                relAz[relAz<-180] = relAz[relAz<-180] + 360
-            else:
-                msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
-                print(msg)
-                Utilities.writeLogFile(msg)
+                    # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
+                    relAz[relAz>180] = relAz[relAz>180] - 360
+                    relAz[relAz<-180] = relAz[relAz<-180] + 360
+                else:
+                    msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
         else:
             relAz = relAzAnc
 
@@ -692,41 +712,41 @@ class ProcessL1aqc:
 
         # Look for additional datasets in provided ancillaryData and populate the new ancillary group
         if ancillaryData is not None:
-            ancGroup.attributes = ancillaryData.attributes.copy()
+            ancGroup.attributes = ancData.attributes.copy()
             ancGroup.attributes["FrameType"] = "Not Required"
-            if "HEADING" in ancillaryData.columns:
+            if "HEADING" in ancData.columns:
                 ancGroup.addDataset("HEADING")
                 ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
-            if "STATION" in ancillaryData.columns:
+            if "STATION" in ancData.columns:
                 ancGroup.addDataset("STATION")
                 ancGroup.datasets["STATION"].data = np.array(station, dtype=[('NONE', '<f8')])
-            if "SALINITY" in ancillaryData.columns:
+            if "SALINITY" in ancData.columns:
                 ancGroup.addDataset("SALINITY")
                 ancGroup.datasets["SALINITY"].data = np.array(salt, dtype=[('NONE', '<f8')])
-            if "SST" in ancillaryData.columns:
+            if "SST" in ancData.columns:
                 ancGroup.addDataset("SST")
                 ancGroup.datasets["SST"].data = np.array(sst, dtype=[('NONE', '<f8')])
-            if "WINDSPEED" in ancillaryData.columns:
+            if "WINDSPEED" in ancData.columns:
                 ancGroup.addDataset("WINDSPEED")
                 ancGroup.datasets["WINDSPEED"].data = np.array(wind, dtype=[('NONE', '<f8')])
-            if "AOD" in ancillaryData.columns:
+            if "AOD" in ancData.columns:
                 ancGroup.addDataset("AOD")
                 ancGroup.datasets["AOD"].data = np.array(aod, dtype=[('NONE', '<f8')])
-            if "CLOUD" in ancillaryData.columns:
+            if "CLOUD" in ancData.columns:
                 ancGroup.addDataset("CLOUD")
                 ancGroup.datasets["CLOUD"].data = np.array(cloud, dtype=[('NONE', '<f8')])
-            if "WAVE_HT" in ancillaryData.columns:
+            if "WAVE_HT" in ancData.columns:
                 ancGroup.addDataset("WAVE_HT")
                 ancGroup.datasets["WAVE_HT"].data = np.array(wave, dtype=[('NONE', '<f8')])
-            if "SPEED_F_W" in ancillaryData.columns:
+            if "SPEED_F_W" in ancData.columns:
                 ancGroup.addDataset("SPEED_F_W")
                 ancGroup.datasets["SPEED_F_W"].data = np.array(speed_f_w, dtype=[('NONE', '<f8')])
-            if "PITCH" in ancillaryData.columns:
+            if "PITCH" in ancData.columns:
                 ancGroup.addDataset("PITCH")
-                ancGroup.datasets["PITCH"].data = np.array(ancillaryData.columns["PITCH"][0], dtype=[('NONE', '<f8')])
-            if "ROLL" in ancillaryData.columns:
+                ancGroup.datasets["PITCH"].data = np.array(ancData.columns["PITCH"][0], dtype=[('NONE', '<f8')])
+            if "ROLL" in ancData.columns:
                 ancGroup.addDataset("ROLL")
-                ancGroup.datasets["ROLL"].data = np.array(ancillaryData.columns["ROLL"][0], dtype=[('NONE', '<f8')])
+                ancGroup.datasets["ROLL"].data = np.array(ancData.columns["ROLL"][0], dtype=[('NONE', '<f8')])
 
         ######################################################################################################
 

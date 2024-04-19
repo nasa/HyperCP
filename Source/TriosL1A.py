@@ -127,7 +127,8 @@ class TriosL1A:
 
 
     # Function for data formatting
-    def formatting_instrument(name,cal_path,input_file,root,configPath):
+    @staticmethod
+    def formatting_instrument(name, cal_path, input_file, root, configPath):
         print('Formatting ' +name+ ' Data')
         # Extract measurement type from config file
         with open(configPath, 'r') as fc:
@@ -276,7 +277,8 @@ class TriosL1A:
     def triosL1A(fp, outFilePath): #, configPath, ancillaryData):
 
         configPath = MainConfig.settings['cfgPath']
-        cal_path = configPath.split('.')[0] + '_Calibration/'
+        cal_path = configPath[0:configPath.rfind('.')] + '_Calibration/'
+        # my home directory name unfortunately includes a '.' which caused a bug here, solved with the change
 
         if '.mlb' in fp[0]:   # Multi frame
             acq_time = []
@@ -334,7 +336,14 @@ class TriosL1A:
                 '''
                 File naming convention on TriOS TBD depending on convention used in MSDA_XE
                 '''
-                new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
+                try:
+                    new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
+                except IndexError as err:
+                    # print(err)
+                    msg = "possibly an error in naming of Raw files"
+                    Utilities.writeLogFile(msg)
+                    new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_Spectrum_RAW_')[1]
+
                 # new_name = outFilePath + '/' + 'Trios_' + str(start) + '_' + str(stop) + '_L1A.hdf'
                 outFFP.append(os.path.join(outFilePath,f'{new_name}_L1A.hdf'))
                 root.attributes["L1A_FILENAME"] = outFFP[-1]

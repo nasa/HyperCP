@@ -315,6 +315,7 @@ class ProcessL1aqc_deglitch:
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         root.attributes["FILE_CREATION_TIME"] = timestr
+        # root.attributes['Deglitcher_Comments'] = ConfigFile.settings['AnomAnalComments']
         if ConfigFile.settings['bL1aqcDeglitch']:
             root.attributes['L1AQC_DEGLITCH'] = 'ON'
             for sensor in ["ES","LI","LT"]:
@@ -324,12 +325,21 @@ class ProcessL1aqc_deglitch:
                 root.attributes[f'{sensor}_WINDOW_LIGHT'] = str(ConfigFile.settings[f'fL1aqc{sensor}WindowLight'])
                 root.attributes[f'{sensor}_SIGMA_DARK'] = str(ConfigFile.settings[f'fL1aqc{sensor}SigmaDark'])
                 root.attributes[f'{sensor}_SIGMA_LIGHT'] = str(ConfigFile.settings[f'fL1aqc{sensor}SigmaLight'])
-                root.attributes[f'{sensor}_MIN_DARK'] = ConfigFile.settings[f'fL1aqc{sensor}MinDark']
-                root.attributes[f'{sensor}_MAX_DARK'] = ConfigFile.settings[f'fL1aqc{sensor}MaxDark']
-                root.attributes[f'{sensor}_MINMAX_BAND_DARK'] = ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandDark']
-                root.attributes[f'{sensor}_MIN_LIGHT'] = ConfigFile.settings[f'fL1aqc{sensor}MinLight']
-                root.attributes[f'{sensor}_MAX_LIGHT'] = ConfigFile.settings[f'fL1aqc{sensor}MaxLight']
-                root.attributes[f'{sensor}_MINMAX_BAND_LIGHT'] = ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandLight']
+                if ConfigFile.settings["bL1aqcThreshold"]:
+                    root.attributes[f'{sensor}_THRESHOLDS'] = 'TRUE'
+                    root.attributes[f'{sensor}_MIN_DARK'] = ConfigFile.settings[f'fL1aqc{sensor}MinDark']
+                    root.attributes[f'{sensor}_MAX_DARK'] = ConfigFile.settings[f'fL1aqc{sensor}MaxDark']
+                    root.attributes[f'{sensor}_MINMAX_BAND_DARK'] = ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandDark']
+                    root.attributes[f'{sensor}_MIN_LIGHT'] = ConfigFile.settings[f'fL1aqc{sensor}MinLight']
+                    root.attributes[f'{sensor}_MAX_LIGHT'] = ConfigFile.settings[f'fL1aqc{sensor}MaxLight']
+                    root.attributes[f'{sensor}_MINMAX_BAND_LIGHT'] = ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandLight']
+                else:
+                    root.attributes[f'{sensor}_MIN_DARK'] = 'None'
+                    root.attributes[f'{sensor}_MAX_DARK'] = 'None'
+                    root.attributes[f'{sensor}_MINMAX_BAND_DARK'] = 'None'
+                    root.attributes[f'{sensor}_MIN_LIGHT'] = 'None'
+                    root.attributes[f'{sensor}_MAX_LIGHT'] = 'None'
+                    root.attributes[f'{sensor}_MINMAX_BAND_LIGHT'] = 'None'
         else:
             root.attributes['L1AQC_DEGLITCH'] = 'OFF'
 

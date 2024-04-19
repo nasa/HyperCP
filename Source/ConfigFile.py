@@ -132,7 +132,7 @@ class ConfigFile:
         print("bL2WeightSentinel3A", ConfigFile.settings["bL2WeightSentinel3B"])
         print("bL2WeightVIIRSN", ConfigFile.settings["bL2WeightVIIRSJ"])
 
-        print("bL2WeightUncertainties", ConfigFile.settings["bL2WeightUncertainties"])
+        # print("bL2WeightUncertainties", ConfigFile.settings["bL2WeightUncertainties"])
 
         print("bL2PlotRrs", ConfigFile.settings["bL2PlotRrs"])
         print("bL2PlotnLw", ConfigFile.settings["bL2PlotnLw"])
@@ -267,7 +267,7 @@ class ConfigFile:
         ConfigFile.settings["bL1bCal"] = 1  # 1 for Factory, 2 for Class, 3 for Instrument Full
         ConfigFile.settings["FullCalDir"] = os.getcwd()
         ConfigFile.settings['RadCalDir'] = os.getcwd()
-        ConfigFile.settings['FidRadDB'] = False
+        ConfigFile.settings['FidRadDB'] = 0
 
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1bPlotTimeInterp"] = 0
@@ -317,7 +317,7 @@ class ConfigFile:
         ConfigFile.settings["bL2WeightSentinel3B"] = 0
         ConfigFile.settings["bL2WeightVIIRSJ"] = 0
 
-        ConfigFile.settings["bL2WeightUncertainties"] = 0
+        # ConfigFile.settings["bL2WeightUncertainties"] = 0
 
 
         ConfigFile.settings["bL2PlotRrs"] = 1
@@ -389,6 +389,8 @@ class ConfigFile:
 
         # Load the default values first to insure all settings are present, then populate with saved values where possible
         ConfigFile.createDefaultConfig(filename, 0)
+        goodSettingsKeys = ConfigFile.settings.keys()
+        goodProdKeys = ConfigFile.products.keys()
 
         configPath = os.path.join(PATH_TO_CONFIG, filename)
         if os.path.isfile(configPath):
@@ -402,14 +404,16 @@ class ConfigFile:
 
                 for key, value in fullCollection.items():
                     if key.startswith("bL2Prod"):
-                        ConfigFile.products[key] = value
+                        if key in goodProdKeys:
+                            ConfigFile.products[key] = value
                     else:
-                        # Clean out extraneous files (e.g., Full FRM Characterizations) from CalibrationFiles
-                        if key.startswith('CalibrationFiles'):
-                            for k in list(value.keys()):
-                                if not any(ele.lower() in k.lower() for ele in calFormats):
-                                    del value[k]
-                        ConfigFile.settings[key] = value
+                        if key in goodSettingsKeys:
+                            # Clean out extraneous files (e.g., Full FRM Characterizations) from CalibrationFiles
+                            if key.startswith('CalibrationFiles'):
+                                for k in list(value.keys()):
+                                    if not any(ele.lower() in k.lower() for ele in calFormats):
+                                        del value[k]
+                            ConfigFile.settings[key] = value
 
                 ConfigFile.createCalibrationFolder()
 

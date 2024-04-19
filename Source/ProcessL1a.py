@@ -24,7 +24,10 @@ class ProcessL1a:
         # Generate root attributes
         root = HDFRoot()
         root.id = "/"
-        MainConfig.loadConfig('main.config','version')
+        if os.environ['HYPERINSPACE_CMD'] == 'TRUE':
+            MainConfig.loadConfig('cmdline_main.config','version')
+        else:
+            MainConfig.loadConfig('main.config','version')
         root.attributes["HYPERINSPACE"] = MainConfig.settings["version"]
         root.attributes["CAL_FILE_NAMES"] = ','.join(calibrationMap.keys())
         root.attributes["WAVELENGTH_UNITS"] = "nm"

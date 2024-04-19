@@ -56,6 +56,8 @@ class RawFileReader:
                 b = f.read(RawFileReader.MAX_TAG_READ)
                 f.seek(pos)
 
+                if "SATHSE" in str(b):
+                    pass
                 if not b:
                     break
 

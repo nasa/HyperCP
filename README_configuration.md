@@ -303,7 +303,8 @@ Individual spectra may be filtered out for:
 - **Meteorological flags**: based on **(Ruddick et al. 2006, Mobley, 1999, Wernand et al. 2002, Garaba et al. 2012,
     Vandenberg 2017)** can be optionally applied to screen for undesirable data. Specifically, data are filtered for:
 
-    - **Cloud cover**:  Unusually high sky radiance to donwelling irradiance ratio.
+    - **Cloud cover**:  Unusually high sky radiance to downelling irradiance ratio. Threshold in Ruddick et al. 2006 based
+        on M99 models is <0.05 for clear sky where O(0.3) represents fully overcast.
         Default: $\frac{L_{i}(750)}{E_{s}(750)} \geq 1.0$
 
     - **Too hazy atmosphere**: Unusually low Es at 480 nm.
@@ -380,36 +381,33 @@ timestamps of the radiometer suite to within one hour. Radiometer timestamps sti
 extract it from the GMAO models, if available. Otherwise, the default values set in the Configuration window will be
 used as a last resort.
 
-*{TODO: Include additional skylight/skyglint corrections, such as Groetsch et al. 2017/2020}*
-*{TODO: Include a bidirectional correction to Lw based on, e.g. Lee 2011, Zibordi 2009 (for starters; ultimately the BRDF will need to be better parameterized for all conditions and water types.)}*
-
 Remote sensing reflectance is then calculated as
 
-```math
+$$
+\displaystyle
 Rrs = \frac{L_{t} - \rho_{sky}.L_{i}}{E_{s}}
-```
+$$
 
 (e.g. Mobley 1999, Mueller et al. 2003, Ruddick et al. 2006)).
 Normalized water leaving radiance (nLw) is calculated as $Rrs.F0$, where F0 is the top of atmosphere incident radiation
 adjusted for the Earth-Sun distance on the day sampled. This is now estimated using the Coddington et al. (2021) TSIS-1
 hybrid model.
 
-Uncertainties in Li, Lt, and Es are estimated using the standard deviation of spectra within each ensemble (e.g. Li_sd)
+Prior to version v1.2, uncertainties in Li, Lt, and Es were estimated using the standard deviation of spectra within each ensemble (e.g. Li_sd)
 or full-file average if no ensembles are extracted. For the Mobley 1999 (M99) glint correction, uncertainty in Rho_sky
 (Rho_sky_Delta) is estimated as +/- 0.01 based on the range of model estimates for Rho_sky cited in M99 for the range of
 likely conditions for which it is held constant. Uncertainty in Rho_sky is otherwise estimated as +/- 0.003 from Ruddick
 et al. 2006 Appendix 2; intended for clear skies, though in the future variation in Rho_sky_Delta as a mutable function
 of sky and sea surface conditions should be better constrained when possible (i.e. further research is required).
-Uncertainty in Rrs (i.e. Rrs_unc) and nLw are estimated using sum of squares propagation of from Li_sd, Lt_sd, Es_sd,
+Uncertainty in Rrs (i.e. Rrs_unc) and nLw were estimated using sum of squares propagation of from Li_sd, Lt_sd, Es_sd,
 and Rho_sky_Delta assuming random, uncorrelated error. So, e.g.:
 
-```math
+$$
 Rrs_{unc} = Rrs *  \sqrt{(\frac{L_{i,sd}}{L_{i}})^2 + (\frac{\rho_{sky}}{\rho_{sky}})^2 + (\frac{L_{t,sd}}{L_{t}})^2 + (\frac{E_{s,sd}}{E_{s}})^2}
-```
+$$
 
-To know more in detail how HyperCP deals with these uncertainties, please read
-[this](https://frm4soc2.eumetsat.int/sites/default/files/inline-files/FRM4SOC-2_D-10_v2.4_210042023_NPL_EUMETSAT_signed.pdf)
-report.
+Since v1.2.0, uncertainties in L2 products include systematic and random sensor error in addition to uncertainties associated with the glint correction, environmental variability, BRDF correction (v1.2.2), and satellite band convolution. The full details of how HyperCP propagates these uncertainties can be found in
+[this report](https://frm4soc2.eumetsat.int/sites/default/files/inline-files/FRM4SOC-2_D-10_v2.4_210042023_NPL_EUMETSAT_signed.pdf).
 
 Additional glint may be removed from the Rrs and nLw by subtracting the value in the NIR from the entire spectrum
 (Mueller et al. 2003 (NASA Protocols)). This approach, however, assumes neglible water-leaving radiance in the 750-800 nm

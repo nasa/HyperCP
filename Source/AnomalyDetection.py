@@ -12,6 +12,7 @@ from Source.Controller import Controller
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
 from Source.HDFRoot import HDFRoot
+from Source.HDFDataset import HDFDataset
 from Source.Utilities import Utilities
 from Source.FieldPhotos import FieldPhotos
 from Source.CalibrationFileReader import CalibrationFileReader
@@ -25,7 +26,9 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.waveBands = []
         self.setModal(True)
         self.sensor='ES'
+        self.sliderWave=525
 
+        #   This is going to truncate the ancillary data, so for the purposes of re-use, copy it
         self.ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
 
         pg.setConfigOption('background', 'w')
@@ -40,6 +43,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.anomAnalFileName = anomAnalFileName + '_anoms.csv'
         fp = os.path.join(PATH_TO_CONFIG, self.anomAnalFileName)
         if os.path.exists(fp):
+            print(f'{self.anomAnalFileName} found. Loading params.')
             self.params = Utilities.readAnomAnalFile(fp)
         else:
             self.params = {}
@@ -72,6 +76,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
         intValidator = QtGui.QIntValidator()
         doubleValidator = QtGui.QDoubleValidator()
 
+        # Set up the window
+        self.commentLabel =  QtWidgets.QLabel('Comments',self)
+        self.commentLineEdit = QtWidgets.QLineEdit(self)
+
         # Put up the metadata at the top of the window
         self.fileDateLabel = QtWidgets.QLabel(self)
         self.windSpeedLabel = QtWidgets.QLabel(self)
@@ -95,7 +103,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
             # Adds to Config, and saves
             ConfigFile.settings['sL1aqcphotoFormat'] = 'IMG_%Y%m%d_%H%M%S.jpg-0400'
             ConfigFile.saveConfig(ConfigFile.filename)
-
 
         # These will be adjusted on the slider once a file is loaded
         interval = 10
@@ -130,7 +137,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.AnomalyStepLineEdit.setText(str(ConfigFile.settings["fL1aqcAnomalyStep"]))
         self.AnomalyStepLineEdit.setValidator(intValidator)
 
-        self.loadButton = QtWidgets.QPushButton('Load L1A', self, clicked=self.loadL1AQCfile)
+        self.loadButton = QtWidgets.QPushButton('Load L1A', self, clicked=self.loadL1Afile)
 
         self.updateButton = QtWidgets.QPushButton('***  Update  ***', self, clicked=self.updateButtonPressed)
         self.updateButton.setToolTip('Updates all but the Min/Max Bands')
@@ -196,9 +203,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.MinLightLineEdit.setText(str(ConfigFile.settings[f'fL1aqc{self.sensor}MinLight']))
         self.MinLightLineEdit.returnPressed.connect(self.updateButton.click)
 
-        # self.MinMaxLightButton = QtWidgets.QPushButton('Set Band:', self, clicked=self.MinMaxLightButtonPressed)
-        # self.MinMaxLightButton.setToolTip('Select this band for Min/Max thresholding')
-        # self.MinMaxLightLabel = QtWidgets.QLabel("", self)
         self.GoToButton = QtWidgets.QPushButton('Go To Set Band', self, clicked=self.GoToButtonPressed)
         self.GoToButton.setToolTip('Go to threshold waveband')
 
@@ -211,7 +215,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.pLossLightLineEdit = QtWidgets.QLineEdit(self)
         self.pLossLightLineEdit.setText('0')
 
-        # self.ThresholdLabel = QtWidgets.QLabel("Threshold", self)
         self.ThresholdCheckBox = QtWidgets.QCheckBox("Threshold", self)
         if int(ConfigFile.settings["bL1aqcThreshold"]) == 1:
             self.ThresholdCheckBox.setChecked(True)
@@ -276,6 +279,12 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         # Layout ######################################################
         self.VBox = QtWidgets.QVBoxLayout()
+
+        self.HBoxComment = QtWidgets.QHBoxLayout()
+        self.HBoxComment.addWidget(self.commentLabel)
+        self.HBoxComment.addWidget(self.commentLineEdit)
+        self.VBox.addLayout(self.HBoxComment)
+
         self.HBoxMeta1 = QtWidgets.QHBoxLayout()
         self.HBoxMeta2 = QtWidgets.QHBoxLayout()
         self.HBoxMeta1.addWidget(self.fileDateLabel)
@@ -386,7 +395,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, pFormat, tz)
 
         # Run this on first opening the GUI
-        self.loadL1AQCfile()
+        self.loadL1Afile()
 
         ##############################################
 
@@ -404,11 +413,13 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # This creates problem prior to window opening. Use the update button after sliding.
         # self.updateButtonPressed()
 
-    def loadL1AQCfile(self):
+    # def loadL1Afile(self, next=False):
+    def loadL1Afile(self):
         inputDirectory = self.inputDirectory
         # Open L1A HDF5 file for Deglitching
 
-        # inLevel = "L1AQC"
+        self.sensor == "ES"
+
         inLevel = "L1A"
         subInputDir = os.path.join(inputDirectory + '/' + inLevel + '/')
         if os.path.exists(subInputDir):
@@ -452,6 +463,14 @@ class AnomAnalWindow(QtWidgets.QDialog):
         temp = ConfigFile.settings['bL1aqcDeglitch']
         ConfigFile.settings['bL1aqcDeglitch'] = 0
         root = Controller.processL1aqc(inFilePath[0], outFilePath, calibrationMap, self.ancillaryData,flag_Trios)
+
+        if root is None:
+            msg = "L1A file fails basic L1AQC."
+            Utilities.errorWindow("File Error", msg)
+            print(msg)
+            return
+        # Restore full ancillary data
+        # self.ancillaryData = self.ancillaryDataComplete
         ConfigFile.settings['bL1aqcDeglitch'] = temp
 
 
@@ -465,6 +484,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # If a parameterization has been saved in the AnomAnalFile, set the properties in the local object
         # for all sensors
         if self.fileName in self.params.keys():
+            print(f'{self.fileName} found in {self.anomAnalFileName}')
+
             ref = 0
             for sensor in ['ES','LI','LT']:
                 setattr(self,f'{sensor}WindowDark', self.params[self.fileName][ref+0] )
@@ -479,6 +500,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 setattr(self,f'{sensor}MinMaxBandLight', self.params[self.fileName][ref+9] )
                 ref += 10
             setattr(self,'Threshold', self.params[self.fileName][30])
+            self.commentLineEdit.setText(self.params[self.fileName][31])
             if getattr(self,'Threshold') == 1:
                 self.ThresholdCheckBox.setChecked(True)
                 # if getattr(self,f'{self.sensor}MinMaxBandDark'):
@@ -490,6 +512,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
             else:
                 self.ThresholdCheckBox.setChecked(False)
             self.ThresholdCheckBoxUpdate()
+        else:
+            print(f'{self.fileName} not found in {self.anomAnalFileName}. Falling back to Config settings')
 
         # Set the GUI parameters for the current sensor from the local object
         self.WindowDarkLineEdit.setText(str(getattr(self,f'{self.sensor}WindowDark')))
@@ -834,6 +858,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         ConfigFile.settings[f'bL1aqcThreshold'] = getattr(self,f'Threshold')
         params.append(getattr(self,f'Threshold'))
+        params.append(self.commentLineEdit.text())
 
         self.params[self.fileName] = params
 
@@ -850,9 +875,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
             'LIWindowDark','LIWindowLight','LISigmaDark','LISigmaLight','LIMinDark','LIMaxDark',
             'LIMinMaxBandDark','LIMinLight','LIMaxLight','LIMinMaxBandLight',
             'LTWindowDark','LTWindowLight','LTSigmaDark','LTSigmaLight','LTMinDark','LTMaxDark',
-            'LTMinMaxBandDark','LTMinLight','LTMaxLight','LTMinMaxBandLight','Threshold']
+            'LTMinMaxBandDark','LTMinLight','LTMaxLight','LTMinMaxBandLight','Threshold','Comments']
         # fieldnames = params.keys()
 
+        print(f'Saving {filePath}')
         with open(filePath, 'w', newline='') as csvfile:
             paramwriter = csv.writer(csvfile, delimiter=',',
                                 quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -999,6 +1025,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         print("Read CalibrationFile ", calPath)
         calibrationMap = CalibrationFileReader.read(calPath)
         root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, self.ancillaryData, flag_Trios=0)
+        # Restore full ancillary data
+        self.ancillaryData = self.ancillaryDataComplete
 
         # In case of processing failure, write the report at this Process level, unless running stations
         #   Use numeric level for writeReport
@@ -1057,21 +1085,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
          # Set parameters in the local object from the GUI
         setattr(self,f'{self.sensor}MinMaxBandLight', self.waveBand)
         # self.MinMaxLightLabel.setText(str(self.waveBand) +'nm' )
-
-    # def MinMaxLightButtonPressed(self):
-    #     print('Updating waveband for Light thresholds')
-    #     # Test for root
-    #     if not hasattr(self, 'root'):
-    #         note = QtWidgets.QMessageBox()
-    #         note.setText('You must load L1AQC file before continuing')
-    #         note.exec_()
-    #         return
-    #     sensorType = self.sensor
-    #     print(sensorType)
-
-    #      # Set parameters in the local object from the GUI
-    #     setattr(self,f'{self.sensor}MinMaxBandLight', self.waveBand)
-    #     self.MinMaxLightLabel.setText(str(self.waveBand) +'nm' )
 
     def GoToButtonPressed(self):
         print('Updating wavebands')

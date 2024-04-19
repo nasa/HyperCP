@@ -201,22 +201,23 @@ class ProcessL1b_FactoryCal:
                 print(msg)
                 Utilities.writeLogFile(msg)
                 if "CalFileName" in gp.attributes:
-                    cf = calibrationMap[gp.attributes["CalFileName"]]
-                    #print(gp.id, gp.attributes)
-                    msg = f'    File: {cf.id}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    if gp.attributes["CalFileName"] != 'ANCILLARY':  # GPS constructed from Ancillary data will cause bug here
+                        cf = calibrationMap[gp.attributes["CalFileName"]]
+                        #print(gp.id, gp.attributes)
+                        msg = f'    File: {cf.id}'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
 
-                    ProcessL1b_FactoryCal.processGroup(gp, cf)
+                        ProcessL1b_FactoryCal.processGroup(gp, cf)
 
-                    if esUnits == None:
-                        esUnits = cf.getUnits("ES")
-                    if liUnits == None:
-                        liUnits = cf.getUnits("LI")
-                    if ltUnits == None:
-                        ltUnits = cf.getUnits("LT")
-                    if pyrUnits == None:
-                        pyrUnits = cf.getUnits("T") #Pyrometer
+                        if esUnits == None:
+                            esUnits = cf.getUnits("ES")
+                        if liUnits == None:
+                            liUnits = cf.getUnits("LI")
+                        if ltUnits == None:
+                            ltUnits = cf.getUnits("LT")
+                        if pyrUnits == None:
+                            pyrUnits = cf.getUnits("T") #Pyrometer
 
         node.attributes["LI_UNITS"] = liUnits
         node.attributes["LT_UNITS"] = ltUnits

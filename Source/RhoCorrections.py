@@ -75,6 +75,17 @@ class RhoCorrections:
             zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
                                                 relAzMean, newWaveBands)
 
+            import matplotlib.pyplot as plt
+
+            # fig = plt.figure()
+            # plt.plot(newWaveBands, rhoScalar * np.ones(len(newWaveBands)), label="M99")
+            # plt.plot(newWaveBands, zhang, label="Z17")
+            # # plt.title("Mobley99 rho vs Zhang - Tartu")
+            # plt.title("Mobley99 rho vs Zhang - HEREON")
+            # plt.xlabel("Wavelength (nm)")
+            # plt.ylabel("Rho Value")
+            # plt.legend()
+            # plt.savefig("rho_vals_HEREON.jpg")
             # get the relative difference between mobley and zhang and add in quadrature as uncertainty component
 
             #  Is |M99 - Z17| the only estimate of glint uncertainty? I thought they had been modeled in MC. -DAA
@@ -107,6 +118,13 @@ class RhoCorrections:
             rhoDelta = (np.power(np.power((Delta / rhoScalar) * 100, 2)
                         + np.power((0.003 / rhoScalar) * 100, 2), 0.5)/100)*rhoScalar
 
+        # fig = plt.figure()
+        # plt.plot(waveBands, rhoDelta)
+        # # plt.title("Rho Uncertainty - Tartu")
+        # plt.title("Rho Uncertainty - HEREON")
+        # plt.xlabel("Wavelength (nm)")
+        # plt.ylabel("Rho Uncertainty (absolute)")
+        # plt.savefig("rho_unc_HEREON.jpg")
         return rhoScalar, rhoDelta
 
     @staticmethod
@@ -169,11 +187,17 @@ class RhoCorrections:
         Utilities.writeLogFile(msg)
 
         # Presumably obsolete (Ashley)? -DAA
+        # It will be once the LUT  is finished, right now the Z17 without a propagate object is important for the
+        # Monte Carlo runs
         if Propagate is None:
             rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
         else:
+            tic = time.process_time()
             rhoDelta = Propagate.Zhang_Rho_Uncertainty(mean_vals=varlist,
                                                        uncertainties=ulist,
                                                        )
+            msg = f'Zhang_Rho_Uncertainty Elapsed Time: {time.process_time() - tic:.1f} s'
+            print(msg)
+            Utilities.writeLogFile(msg)
 
         return rhoVector, rhoDelta

@@ -2,6 +2,7 @@ import os
 from PyQt5 import QtWidgets
 
 from Source.SeaBASSHeader import SeaBASSHeader
+from Source.AncillaryReader import AncillaryReader
 from Source.ConfigFile import ConfigFile
 from Source.MainConfig import MainConfig
 
@@ -39,6 +40,17 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.versionLineEdit = QtWidgets.QLineEdit(self)
         self.versionLineEdit.setText(str(SeaBASSHeader.settings["version"]))
 
+        instructionLabel1 = QtWidgets.QLabel(" ENTRIES NOT IN BOLD BELOW CAN BE CAPTURED FROM")
+        instructionLabel1a = QtWidgets.QLabel(" THE ANCILLARY SEABASS FILE AND CONFIGURATION")
+        instructionLabel1_font = instructionLabel1.font()
+        instructionLabel1_font.setPointSize(10)
+        instructionLabel1_font.setBold(True)
+        instructionLabel1.setFont(instructionLabel1_font)
+        instructionLabel1a_font = instructionLabel1a.font()
+        instructionLabel1a_font.setPointSize(10)
+        instructionLabel1a_font.setBold(True)
+        instructionLabel1a.setFont(instructionLabel1a_font)
+
         instructionLabelSub = QtWidgets.QLabel("To match fields to existing SeaBASS entries,")
         instructionLabelSub1 = QtWidgets.QLabel(
             "check the 'Lists' pull-down menu<a href=\"https://seabass.gsfc.nasa.gov\"> here</a>.")
@@ -70,6 +82,9 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.stationLineEdit.setText(str(SeaBASSHeader.settings["station"]))
 
         platformLabel = QtWidgets.QLabel("platform/ship", self)
+        platformLabel_font = platformLabel.font()
+        platformLabel_font.setBold(True)
+        platformLabel.setFont(platformLabel_font)
         self.platformLineEdit = QtWidgets.QLineEdit(self)
         try:
             self.platformLineEdit.setText(str(SeaBASSHeader.settings["platform"]))
@@ -79,14 +94,23 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
 
         documentsLabel = QtWidgets.QLabel("documents", self)
+        documentsLabel_font = documentsLabel.font()
+        documentsLabel_font.setBold(True)
+        documentsLabel.setFont(documentsLabel_font)
         self.documentsLineEdit = QtWidgets.QLineEdit(self)
         self.documentsLineEdit.setText(str(SeaBASSHeader.settings["documents"]))
 
         instrument_manufacturerLabel = QtWidgets.QLabel("instrument_manufacturer", self)
+        instrument_manufacturerLabel_font = instrument_manufacturerLabel.font()
+        instrument_manufacturerLabel_font.setBold(True)
+        instrument_manufacturerLabel.setFont(instrument_manufacturerLabel_font)
         self.instrument_manufacturerLineEdit = QtWidgets.QLineEdit(self)
         self.instrument_manufacturerLineEdit.setText(str(SeaBASSHeader.settings["instrument_manufacturer"]))
 
         instrument_modelLabel = QtWidgets.QLabel("instrument_model", self)
+        instrument_modelLabel_font = instrument_modelLabel.font()
+        instrument_modelLabel_font.setBold(True)
+        instrument_modelLabel.setFont(documentsLabel_font)
         self.instrument_modelLineEdit = QtWidgets.QLineEdit(self)
         self.instrument_modelLineEdit.setText(str(SeaBASSHeader.settings["instrument_model"]))
 
@@ -105,32 +129,44 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.data_typeLineEdit.setText(str(SeaBASSHeader.settings["data_type"]))
 
         data_statusLabel = QtWidgets.QLabel("data_status (e.g. preliminary)", self)
+        data_statusLabel_font = data_statusLabel.font()
+        data_statusLabel_font.setBold(True)
+        data_statusLabel.setFont(data_statusLabel_font)
         self.data_statusLineEdit = QtWidgets.QLineEdit(self)
         self.data_statusLineEdit.setText(str(SeaBASSHeader.settings["data_status"]))
 
-        water_depthLabel = QtWidgets.QLabel("water_depth (use -999 for missing)", self)
+        water_depthLabel = QtWidgets.QLabel("water_depth (use -9999 for missing)", self)
+        water_depthLabel_font = water_depthLabel.font()
+        water_depthLabel_font.setBold(True)
+        water_depthLabel.setFont(water_depthLabel_font)
         self.water_depthLineEdit = QtWidgets.QLineEdit(self)
         self.water_depthLineEdit.setText(str(SeaBASSHeader.settings["water_depth"]))
-        ''' doubleValidator causing a block to data entry'''
-        # self.water_depthLineEdit.setValidator(doubleValidator)
 
         measurement_depthLabel = QtWidgets.QLabel("measurement_depth", self)
+        measurement_depthLabel_font = measurement_depthLabel.font()
+        measurement_depthLabel_font.setBold(True)
+        measurement_depthLabel.setFont(measurement_depthLabel_font)
         self.measurement_depthLineEdit = QtWidgets.QLineEdit(self)
         self.measurement_depthLineEdit.setText(str(SeaBASSHeader.settings["measurement_depth"]))
-        # self.measurement_depthLineEdit.setValidator(doubleValidator)
 
         cloud_percentLabel = QtWidgets.QLabel("cloud_percent", self)
+        cloud_percentLabel_font = cloud_percentLabel.font()
+        cloud_percentLabel_font.setBold(True)
+        cloud_percentLabel.setFont(cloud_percentLabel_font)
         self.cloud_percentLineEdit = QtWidgets.QLineEdit(self)
         self.cloud_percentLineEdit.setText(str(SeaBASSHeader.settings["cloud_percent"]))
-        ''' intValidator causing block to data entry '''
-        # self.cloud_percentLineEdit.setValidator(intValidator)
 
         wave_heightLabel = QtWidgets.QLabel("wave_height", self)
+        wave_heightLabel_font = wave_heightLabel.font()
+        wave_heightLabel_font.setBold(True)
+        wave_heightLabel.setFont(wave_heightLabel_font)
         self.wave_heightLineEdit = QtWidgets.QLineEdit(self)
         self.wave_heightLineEdit.setText(str(SeaBASSHeader.settings["wave_height"]))
-        # self.wave_heightLineEdit.setValidator(doubleValidator)
 
         secchi_depthLabel = QtWidgets.QLabel("secchi_depth", self)
+        secchi_depthLabel_font = secchi_depthLabel.font()
+        secchi_depthLabel_font.setBold(True)
+        secchi_depthLabel.setFont(secchi_depthLabel_font)
         self.secchi_depthLineEdit = QtWidgets.QLineEdit(self)
         self.secchi_depthLineEdit.setText(str(SeaBASSHeader.settings["secchi_depth"]))
         # self.secchi_depthLineEdit.setValidator(doubleValidator)
@@ -149,7 +185,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.other_commentsLineEdit.setPlainText(SeaBASSHeader.settings["other_comments"])
 
         #############################
-        instructionLabel2 = QtWidgets.QLabel("  If left blank, the entries below will be extracted from processed files")
+        instructionLabel2 = QtWidgets.QLabel(" ENTRIES BELOW ARE EXTRACTED FROM CONFIGURATION AND DATA")
         instructionLabel2_font = instructionLabel2.font()
         instructionLabel2_font.setPointSize(10)
         instructionLabel2_font.setBold(True)
@@ -199,10 +235,12 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.west_longitudeLineEdit.setText(str(SeaBASSHeader.settings["west_longitude"]))
         # self.west_longitudeLineEdit.setValidator(doubleValidator)
 
-        wind_speedLabel = QtWidgets.QLabel("wind_speed (only autopopulated at L2)", self)
+        wind_speedLabel = QtWidgets.QLabel("wind_speed", self)
         self.wind_speedLineEdit = QtWidgets.QLineEdit(self)
         self.wind_speedLineEdit.setText(str(SeaBASSHeader.settings["wind_speed"]))
         # self.wind_speedLineEdit.setValidator(doubleValidator)
+
+        # No need to include rho, NIR, BRDF fields to override values extracted from data
         ##
 
         self.openButton = QtWidgets.QPushButton("Open/Copy")
@@ -222,8 +260,11 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         VBox.addWidget(linkSeaBASSLabel)
 
         VBox1 = QtWidgets.QVBoxLayout()
-        VBox1.addSpacing(10)
-        #VBox1.addWidget(instructionLabel)
+        # VBox1.addSpacing(10)
+
+        VBox1.addWidget(instructionLabel1)
+        VBox1.addWidget(instructionLabel1a)
+
         HBoxVersion = QtWidgets.QHBoxLayout()
         HBoxVersion.addWidget(versionLabel)
         HBoxVersion.addWidget(self.versionLineEdit)
@@ -231,6 +272,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
         VBox1.addWidget(instructionLabelSub)
         VBox1.addWidget(instructionLabelSub1)
+
         # Horizontal Box
         HBox1 = QtWidgets.QHBoxLayout()
         HBox1.addWidget(investigatorsLabel)
@@ -325,6 +367,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         VBox2 = QtWidgets.QVBoxLayout()
         #############
 
+        VBox2.addWidget(instructionLabel2)
+
         HBoxSub = QtWidgets.QHBoxLayout()
         VBoxSub = QtWidgets.QVBoxLayout()
 
@@ -346,7 +390,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         VBox2.addLayout(HBox30)
 
         # VBox1.addSpacing(20)
-        VBox2.addWidget(instructionLabel2)
+
 
         HBox6 = QtWidgets.QHBoxLayout()
         HBox6.addWidget(stationLabel)
@@ -433,12 +477,28 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
     def configUpdateButtonPressed(self, caller):
         print("Updating SeaBASS Header comments from values in ConfigWindow")
-
         # This will update subsequently from the ConfigFile on demand
-        if ConfigFile.settings["bL1aCleanSZA"]:
-            szaFilt = "On"
-        else:
-            szaFilt = "Off"
+
+        # First try to fill left column metadata headers using the Ancillary fill if provided.
+        #   Only when opening, not when saving
+        if caller == 'config1':
+            fp = MainConfig.settings["metFile"]
+            if not os.path.isfile(fp):
+                print("Specified ancillary file not found: " + fp)
+            else:
+                metaHeaders = AncillaryReader.readAncillaryHeader(fp)
+                for key in metaHeaders.keys():
+                    # The ancillary file may cover a whole cruise, so only use the general metadata, not the specific
+                    omitList = ['data_file_name','calibration_files','data_status','station','documents','start_date','end_date',\
+                                'north_latitude','south_latitude','east_longitude','west_longitude','start_time','end_time',\
+                                    'measurement_depth','water_depth','fields','units']
+                    if key in SeaBASSHeader.settings and SeaBASSHeader.settings[key] == '' and key not in omitList:
+                        SeaBASSHeader.settings[key] = metaHeaders[key]
+
+        # if ConfigFile.settings["bL1aCleanSZA"]:
+        #     szaFilt = "On"
+        # else:
+        #     szaFilt = "Off"
         if ConfigFile.settings["bL1aqcCleanPitchRoll"]:
             pitchRollFilt = "On"
         else:
@@ -455,6 +515,17 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             deglitchFilt = "On"
         else:
             deglitchFilt = "Off"
+
+        if ConfigFile.settings['bL1bCal'] == 1:
+            if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                FRMPath = 'Non-FRM_Class-based'
+            else:
+                FRMPath = 'Factory_Calibration'
+        elif ConfigFile.settings['bL1bCal'] == 2:
+            FRMPath = 'FRM_Class-based'
+        elif ConfigFile.settings['bL1bCal'] == 3:
+            FRMPath = 'FRM-Full-Characterization'
+
         if ConfigFile.settings["bL1bqcEnableSpecQualityCheck"]:
             specFilt = "On"
         else:
@@ -470,16 +541,22 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL23CRho"]:
             rhoCorr = "3C"
         elif ConfigFile.settings["bL2ZhangRho"]:
-            rhoCorr = 'Zhang et al. 2017'
+            # rhoCorr = 'Zhang et al. 2017'
+            SeaBASSHeader.settings["rho_correction"] = 'Z17'
         else:
-            rhoCorr = 'Mobley 1999'
+            # rhoCorr = 'Mobley 1999'
+            SeaBASSHeader.settings["rho_correction"] = 'M99'
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
             if ConfigFile.settings["bL2SimpleNIRCorrection"]:
-                NIRFilt = 'Mueller and Austin 1995'
+                # NIRFilt = 'Mueller and Austin 1995'
+                SeaBASSHeader.settings["NIR_residual_correction"] = 'MA95'
             else:
-                NIRFilt = 'Ruddick et al. 2005/2006'
+                # NIRFilt = 'Ruddick et al. 2005/2006'
+                SeaBASSHeader.settings["NIR_residual_correction"] = 'R06'
         else:
-            NIRFilt = "Off"
+            # NIRFilt = "Off"
+            SeaBASSHeader.settings["NIR_residual_correction"] = 'NA'
+
         if ConfigFile.settings["bL2NegativeSpec"]:
             NegativeFilt = "On"
         else:
@@ -489,8 +566,6 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.settings["comments"] =\
             f'! HyperInSPACE vers = {MainConfig.settings["version"]}\n'+\
             f'! HyperInSPACE Config = {ConfigFile.filename}\n'+\
-            f'! SZA Filter = {szaFilt}\n'+\
-            f'! SZA Max = {ConfigFile.settings["fL1aCleanSZAMax"]}\n'+\
             f'! Rotator Home Angle = {ConfigFile.settings["fL1aqcRotatorHomeAngle"]}\n'+\
             f'! Rotator Delay = {ConfigFile.settings["fL1aqcRotatorDelay"]}\n'+\
             f'! Pitch/Roll Filter = {pitchRollFilt}\n'+\
@@ -514,11 +589,8 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! LT Light Window = {ConfigFile.settings["fL1aqcLTWindowLight"]}\n'+\
             f'! LT Dark Sigma = {ConfigFile.settings["fL1aqcLTSigmaDark"]}\n'+\
             f'! LT Light Sigma = {ConfigFile.settings["fL1aqcLTSigmaLight"]}\n'+\
+            f'! FRM Pathway = {FRMPath}\n'+\
             f'! Wavelength Interp Int = {ConfigFile.settings["fL1bInterpInterval"]}\n'+\
-            f'! Default Wind = {ConfigFile.settings["fL1bDefaultWindSpeed"]}\n'+\
-            f'! Default AOD = {ConfigFile.settings["fL1bDefaultAOD"]}\n'+\
-            f'! Default Salt = {ConfigFile.settings["fL1bDefaultSalt"]}\n'+\
-            f'! Default SST = {ConfigFile.settings["fL1bDefaultSST"]}\n'+\
             f'! Max Wind = {ConfigFile.settings["fL1bqcMaxWind"]}\n'+\
             f'! Min SZA = {ConfigFile.settings["fL1bqcSZAMin"]}\n'+\
             f'! Max SZA = {ConfigFile.settings["fL1bqcSZAMax"]}\n'+\
@@ -534,8 +606,6 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             f'! Ensemble Interval = {ConfigFile.settings["fL2TimeInterval"]}\n'+\
             f'! Percent Lt Filter = {ltFilt}\n'+\
             f'! Percent Light = {ConfigFile.settings["fL2PercentLt"]}\n'+\
-            f'! Glint_Correction = {rhoCorr}\n'+\
-            f'! NIR Correction = {NIRFilt}\n'+\
             f'! Remove Negatives = {NegativeFilt}'
             # f'! Processing DateTime = {time.asctime()}'
 
@@ -593,7 +663,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         SeaBASSHeader.settings["start_date"] = self.start_dateLineEdit.text()
         SeaBASSHeader.settings["end_date"] = self.end_dateLineEdit.text()
         SeaBASSHeader.settings["start_time"] = self.start_timeLineEdit.text()
-        SeaBASSHeader.settings["end_date"] = self.end_dateLineEdit.text()
+        SeaBASSHeader.settings["end_time"] = self.end_timeLineEdit.text()
 
         SeaBASSHeader.settings["north_latitude"] = self.north_latitudeLineEdit.text()
         SeaBASSHeader.settings["south_latitude"] = self.south_latitudeLineEdit.text()
