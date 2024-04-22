@@ -200,11 +200,34 @@ class Propagate:
         self._platform = platform  # set platform which is used in self.RRS_Conv
         self._wavebands = wavebands  # set wavebands to be used in self.RRS_Conv
 
-        return self.MCP.propagate_random(self.Lw_Conv,
-                                         mean_vals,
-                                         uncertainties,
-                                         corr_between=self.corr_matrix_Default_Lw,
-                                         corr_x=corr_list)
+        rnd_unc = np.array(uncertainties)
+        rnd_unc[np.where(np.array(corr_list, dtype=str) == 'syst')] = 0.0
+        sys_unc = np.array(uncertainties)
+        sys_unc[np.where(np.array(corr_list, dtype=str) == 'rand')] = 0.0
+
+        # propagate random and systematic uncertainties separately
+        random = self.MCP.propagate_random(
+            self.Lw_Conv,
+            mean_vals,
+            uncertainties,
+            corr_between=self.corr_matrix_Default_Lw,
+        )
+
+        systematic = self.MCP.propagate_systematic(
+            self.Lw_Conv,
+            mean_vals,
+            uncertainties,
+            corr_between=self.corr_matrix_Default_Lw,
+        )
+
+        # Old method of uncertainty propagation (v1.2.1)
+        # old = self.MCP.propagate_random(self.Lw_Conv,
+        #                                 mean_vals,
+        #                                 uncertainties,
+        #                                 corr_between=self.corr_matrix_Default_Lw,
+        #                                 corr_x=corr_list)
+
+        return np.sqrt(random ** 2 + systematic ** 2)
 
     def Propagate_RRS_HYPER(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
         """
@@ -258,11 +281,36 @@ class Propagate:
         self._platform = platform  # set platform which is used in self.RRS_Conv
         self._wavebands = wavebands  # set wavebands to be used in self.RRS_Conv
 
-        return self.MCP.propagate_standard(self.RRS_Conv,
-                                           mean_vals,
-                                           uncertainties,
-                                           corr_between=self.corr_matrix_Default_RRS,
-                                           corr_x=corr_list)
+        rnd_unc = np.array(uncertainties)
+        rnd_unc[np.where(np.array(corr_list, dtype=str) == 'syst')] = 0.0
+        sys_unc = np.array(uncertainties)
+        sys_unc[np.where(np.array(corr_list, dtype=str) == 'rand')] = 0.0
+
+        # propagate random and systematic uncertainties separately
+        random = self.MCP.propagate_random(
+            self.RRS_Conv,
+            mean_vals,
+            uncertainties,
+            corr_between=self.corr_matrix_Default_RRS,
+        )
+
+        systematic = self.MCP.propagate_systematic(
+            self.RRS_Conv,
+            mean_vals,
+            uncertainties,
+            corr_between=self.corr_matrix_Default_RRS,
+        )
+
+        # Old method of uncertainty propagation (v1.2.1)
+        # old = self.MCP.propagate_random(
+        #     self.RRS_Conv,
+        #     mean_vals,
+        #     uncertainties,
+        #     corr_between=self.corr_matrix_Default_RRS,
+        #     corr_x=corr_list
+        # )
+
+        return np.sqrt(random ** 2 + systematic ** 2)
 
     def def_sensor_mfunc(self, platform):
         """

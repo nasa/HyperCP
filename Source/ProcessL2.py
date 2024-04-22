@@ -1707,7 +1707,7 @@ class ProcessL2:
         xSlice = {}
         # Full hyperspectral
         sensor = 'HYPER'
-        xSlice['es'] = esXSlice
+        xSlice['es'] = esXSlice  # this sometimes has negative values because of instrument noise, we should take the absolute
         xSlice['li'] = liXSlice
         xSlice['lt'] = ltXSlice
 
@@ -1734,9 +1734,9 @@ class ProcessL2:
             xSlice.update(instrument.Factory(node, uncGroup, stats))  # update the xSlice dict with uncertianties and samples
             # NOTE: This is slow.
             # convert uncertainties back into absolute form using the signals recorded from ProcessL2
-            xSlice['esUnc'] = {u[0]: [u[1][0]*s[0]] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
-            xSlice['liUnc'] = {u[0]: [u[1][0]*s[0]] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
-            xSlice['ltUnc'] = {u[0]: [u[1][0]*s[0]] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
+            xSlice['esUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
+            xSlice['liUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
+            xSlice['ltUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
 
             xUNC.update(instrument.rrsHyperUNCFACTORY(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
@@ -1744,9 +1744,9 @@ class ProcessL2:
             # update the xSlice dict with uncertianties and samples
             xSlice.update(instrument.Default(uncGroup, stats))
             # convert uncertainties back into absolute form using the signals recorded from ProcessL2
-            xSlice['esUnc'] = {u[0]: [u[1][0] * s[0]] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
-            xSlice['liUnc'] = {u[0]: [u[1][0] * s[0]] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
-            xSlice['ltUnc'] = {u[0]: [u[1][0] * s[0]] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
+            xSlice['esUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
+            xSlice['liUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
+            xSlice['ltUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
 
             # validation of uncertainty methods
             # t1 = np.asarray(list(xSlice['esUnc'].values()), dtype=float)/xSlice['esTestUnc']
