@@ -11,11 +11,11 @@ jobs:
 
   Build:
     name: 📦 Bundle Application
-    uses: ./.github/workflows/Build.yml
+    uses: .github/workflows/Build.yml
 
   Release:
     name: 📝 Draft Release Page
-    uses: ./.github/workflows/Release.yml
+    uses: .github/workflows/Release.yml
     needs:
       - Build
 
