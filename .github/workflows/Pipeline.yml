@@ -5,8 +5,8 @@ on:
     branches:
       - master
       - bundle
-  tags:
-    - 'v[0-9]+.[0-9]+.*'
+    tags:
+      - 'v[0-9]+.[0-9]+.*'
   workflow_dispatch:
 
 jobs:
@@ -23,6 +23,7 @@ jobs:
 
   ArtifactCleanUp:
     name: 🗑️ Artifact Cleanup
+    runs-on: ubuntu-latest
     needs:
       - Build
       - Release
