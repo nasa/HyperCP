@@ -33,9 +33,11 @@ jobs:
         with:
           ref: ${{ steps.extract_branch.outputs.branch }}
 
-      - name: Setup Conda Environment
+      - name: Setup Mambaforge
         uses: conda-incubator/setup-miniconda@v3
         with:
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
           activate-environment: hypercp
           use-mamba: true
 
@@ -44,7 +46,7 @@ jobs:
         with:
           path: ${{ env.CONDA }}/envs
           key:
-            conda-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('etc/environment.yml') }}-${{ env.CACHE_NUMBER }}
+            conda-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environment.yml') }}-${{ env.CACHE_NUMBER }}
         env:
           # Increase this value to reset cache if environment.yml has not changed
           CACHE_NUMBER: 0
