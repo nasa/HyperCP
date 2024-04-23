@@ -77,10 +77,9 @@ jobs:
           filename: '${{ env.BUNDLE_NAME }}.zip'
 
       - name: Upload Bundle
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BUNDLE_NAME }}
           path: Bundled/dist/${{ env.BUNDLE_NAME }}.zip
           compression-level: 0
-        # Known issue of double zip: https://github.com/actions/upload-artifact/issues/39
-        # However, need to zip before upload for release
+          # Double zip as need zip for release page (ideally want to prevent unzip from download artifact)
