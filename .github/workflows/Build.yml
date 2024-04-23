@@ -41,8 +41,8 @@ jobs:
           activate-environment: hypercp
           use-mamba: true
 
-      - name: Cache Conda Environment
-        uses: actions/cache@v3
+      - name: Cache Environment
+        uses: actions/cache@v4
         with:
           path: ${{ env.CONDA }}/envs
           key:
@@ -53,32 +53,34 @@ jobs:
         id: cache
 
       - name: Update Environment
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           mamba env update -n hypercp -f environment.yml
           mamba install --channel=conda-forge pyinstaller==6.6
-        if: steps.cache.outputs.cache-hit != 'true'
-#      - name: Setup conda environment
-#        uses: conda-incubator/setup-miniconda@v3
-#        with:
-#          auto-activate-base: false
-#          activate-environment: hypercp
-#          environment-file: environment.yml
-#          use-mamba: true
-##          use-only-tar-bz2: true
-#      - name: Install PyInstaller
-#        run: conda install --channel=conda-forge pyinstaller==6.6
-      - name: Capture conda environment
+
+      - name: Capture Environment
         run: |
-          conda info
-          conda list
+          mamba info
+          mamba list
 
       - name: Make Bundle
         run: |
           python make.py
           echo "BUNDLE_NAME=$(ls Bundled/dist | head -1 | xargs)" >> $GITHUB_ENV
 
-      - name: Upload Bundle
-        uses: actions/upload-artifact@v4
+      - name: Zip Bundle
+        uses: thedoctor0/zip-release@0.7.1
         with:
-          name: ${{ env.BUNDLE_NAME }}.zip
-          path: Bundled/dist/${{ env.BUNDLE_NAME }}/
+          type: 'zip'
+          directory: 'Bundled/dist/'
+          path: '${{ env.BUNDLE_NAME }}'
+          filename: '${{ env.BUNDLE_NAME }}.zip'
+
+      - name: Upload Bundle
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.BUNDLE_NAME }}
+          path: Bundled/dist/${{ env.BUNDLE_NAME }}.zip
+          compression-level: 0
+        # Known issue of double zip: https://github.com/actions/upload-artifact/issues/39
+        # However, need to zip before upload for release
