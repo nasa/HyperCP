@@ -51,7 +51,7 @@ jobs:
         id: cache
 
       - name: Update Environment
-        run:
+        run: |
           mamba env update -n hypercp -f environment.yml
           mamba install --channel=conda-forge pyinstaller==6.6
         if: steps.cache.outputs.cache-hit != 'true'
