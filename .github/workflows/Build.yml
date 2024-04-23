@@ -1,0 +1,69 @@
+name: Build
+
+on:
+  workflow_call:
+    outputs:
+      files:
+        description: 'Artifact filenames.'
+        value: |
+          ${{ jobs.Build.outputs.ubuntu_artifact_filename }}
+          ${{ jobs.Build.outputs.macos_artifact_filename }}
+          ${{ jobs.Build.outputs.windows_artifact_filename }}
+
+jobs:
+  Build:
+    name: Bundle
+
+    runs-on: ${{ matrix.os }}
+    defaults:  # Required for conda environment activation
+      run:
+        shell: bash -el {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
+
+    steps:
+      - name: Get Branch Name
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.extract_branch.outputs.branch }}
+
+#      - name: Cache conda
+#        uses: actions/cache@v2
+#        env:
+#          # Increase this value to reset cache if etc/example-environment.yml has not changed
+#          CACHE_NUMBER: 0
+#        with:
+#          path: ~/conda_pkgs_dir
+#          key:
+#            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}
+      - name: Setup conda environment
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: false
+          activate-environment: hypercp
+          environment-file: environment.yml
+          use-mamba: true
+#          use-only-tar-bz2: true
+      - name: Install PyInstaller
+        run: conda install --channel=conda-forge pyinstaller==6.6
+      - name: Capture conda environment
+        run: |
+          conda info
+          conda list
+
+      - name: Make Bundle
+        run: |
+          python make.py
+          echo "BUNDLE_NAME=$(ls Bundled/dist | head -1 | xargs)" >> $GITHUB_ENV
+
+      - name: Upload Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUNDLE_NAME }}.zip
+          path: Bundled/dist/${{ env.BUNDLE_NAME }}/

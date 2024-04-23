@@ -1,0 +1,31 @@
+name: Pipeline
+
+on:
+  push:
+    branches:
+      - master
+      - bundle
+  workflow_dispatch:
+
+jobs:
+
+  Build:
+    name: 📦 Bundle Application
+    uses: ./.github/workflows/Build.yml
+
+  Release:
+    name: 📝 Draft Release Page
+    uses: ./.github/workflows/Release.yml
+    needs:
+      - Build
+
+  ArtifactCleanUp:
+    name: 🗑️ Artifact Cleanup
+    if: startsWith(github.ref, 'refs/heads/master') || startsWith(github.ref, 'refs/tags')
+    uses: geekyeggo/delete-artifact@v4
+    needs:
+      - Bundle
+      - Release
+    with:
+      name: ${{ needs.Build.outputs.files }}
+      token: ${{ secrets.GITHUB_TOKEN }}
