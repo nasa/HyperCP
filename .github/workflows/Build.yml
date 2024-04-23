@@ -33,25 +33,38 @@ jobs:
         with:
           ref: ${{ steps.extract_branch.outputs.branch }}
 
-#      - name: Cache conda
-#        uses: actions/cache@v2
-#        env:
-#          # Increase this value to reset cache if etc/example-environment.yml has not changed
-#          CACHE_NUMBER: 0
-#        with:
-#          path: ~/conda_pkgs_dir
-#          key:
-#            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yml') }}
-      - name: Setup conda environment
+      - name: Setup Conda Environment
         uses: conda-incubator/setup-miniconda@v3
         with:
-          auto-activate-base: false
           activate-environment: hypercp
-          environment-file: environment.yml
           use-mamba: true
-#          use-only-tar-bz2: true
-      - name: Install PyInstaller
-        run: conda install --channel=conda-forge pyinstaller==6.6
+
+      - name: Cache Conda Environment
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.CONDA }}/envs
+          key:
+            conda-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('etc/environment.yml') }}-${{ env.CACHE_NUMBER }}
+        env:
+          # Increase this value to reset cache if environment.yml has not changed
+          CACHE_NUMBER: 0
+        id: cache
+
+      - name: Update Environment
+        run:
+          mamba env update -n hypercp -f environment.yml
+          mamba install --channel=conda-forge pyinstaller==6.6
+        if: steps.cache.outputs.cache-hit != 'true'
+#      - name: Setup conda environment
+#        uses: conda-incubator/setup-miniconda@v3
+#        with:
+#          auto-activate-base: false
+#          activate-environment: hypercp
+#          environment-file: environment.yml
+#          use-mamba: true
+##          use-only-tar-bz2: true
+#      - name: Install PyInstaller
+#        run: conda install --channel=conda-forge pyinstaller==6.6
       - name: Capture conda environment
         run: |
           conda info
