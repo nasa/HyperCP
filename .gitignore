@@ -11,6 +11,7 @@
 
 # HyperCP
 .gitignore
+/Bundled/
 Data/Zhang_rho_db.mat
 Data/Anc/
 Data/L*/
