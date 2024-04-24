@@ -3,8 +3,10 @@ import numpy as np
 from netCDF4 import Dataset
 from scipy.interpolate import RegularGridInterpolator as rgi
 import os
-
+import xarray as xr
 from Source import PATH_TO_DATA
+import Source.ocbrdf.main as oc_brdf
+
 
 class ProcessL2BRDF():
     # purpose: estimate BRDF factors for a given suite of observations.
@@ -54,7 +56,7 @@ class ProcessL2BRDF():
                     if ds.startswith("Rrs"):
                         # Can't change datasets in this loop, so make a list
                         # TODO consider uncertainties!
-                        if not (ds.endswith("_unc") or ds.endswith("_uncorr")):
+                        if not (ds.endswith("_unc") or ds.endswith("_uncorr") or ds.endswith("_L11") or ds.endswith("_M02")):
                             Rrs_list.append(ds)
                 # Extract the spectrla information
                 for ds in Rrs_list:
@@ -90,37 +92,114 @@ class ProcessL2BRDF():
                     for k,v in I.items():
                         if np.shape(v) == ():
                             I[k] = I[k].reshape((1,))
-
-                    # Calculate BRDF correction
-                    _, brdf = ProcessL2BRDF.ApplyBRDF(I, BRDF_option)
-
-                    # Insure brdf is a list of lists, even if there is only one ensemble
-                    brdf = brdf.T.tolist()
-                    brdf_dict = dict(zip(wv_str,brdf))
-
-                    # Apply factors to Rrs
-                    Rrs_BRDF = Rrs.copy()
-                    for k in Rrs:
-                        if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
-                            Rrs_BRDF[k] = ( np.array(Rrs[k]) * np.array(brdf_dict[k]) ).tolist()
-
-                    # Store BRDF corrected Rrs
-                    Rrs_BRDF_ds = gp.addDataset(f"{ds}_" + BRDF_option)
-                    Rrs_BRDF_ds.columns  = Rrs_BRDF
-                    Rrs_BRDF_ds.columnsToDataset()
-
-                    # Apply same factors to corresponding nLw
-                    nLw_ds = gp.getDataset(ds.replace('Rrs','nLw'))
-                    nLw = nLw_ds.columns
-                    nLw_BRDF = nLw.copy()
-                    for k in nLw:
-                        if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
-                            nLw_BRDF[k] = ( np.array(nLw[k]) * np.array(brdf_dict[k]) ).tolist()
-
-                    # Store BRDF corrected nLw
-                    nLw_BRDF_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option)
-                    nLw_BRDF_ds.columns = nLw_BRDF
-                    nLw_BRDF_ds.columnsToDataset()
+                            
+                            
+                    # Calculate BRDF correction for Morel
+                    if BRDF_option == 'M02':
+                        
+                        # Calculate BRDF correction
+                        _, brdf = ProcessL2BRDF.ApplyBRDF(I, BRDF_option)
+    
+                        # Insure brdf is a list of lists, even if there is only one ensemble
+                        brdf = brdf.T.tolist()
+                        brdf_dict = dict(zip(wv_str,brdf))
+    
+                        # Apply factors to Rrs
+                        Rrs_BRDF = Rrs.copy()
+                        for k in Rrs:
+                            if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
+                                Rrs_BRDF[k] = ( np.array(Rrs[k]) * np.array(brdf_dict[k]) ).tolist()
+    
+                        # Store BRDF corrected Rrs
+                        Rrs_BRDF_ds = gp.addDataset(f"{ds}_" + BRDF_option)
+                        Rrs_BRDF_ds.columns  = Rrs_BRDF
+                        Rrs_BRDF_ds.columnsToDataset()
+    
+                        # Apply same factors to corresponding nLw
+                        nLw_ds = gp.getDataset(ds.replace('Rrs','nLw'))
+                        nLw = nLw_ds.columns
+                        nLw_BRDF = nLw.copy()
+                        for k in nLw:
+                            if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
+                                nLw_BRDF[k] = ( np.array(nLw[k]) * np.array(brdf_dict[k]) ).tolist()
+    
+                        # Store BRDF corrected nLw
+                        nLw_BRDF_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option)
+                        nLw_BRDF_ds.columns = nLw_BRDF
+                        nLw_BRDF_ds.columnsToDataset()
+                        
+                    # Calculate BRDF correction for Lee11 or O23
+                    elif BRDF_option=='L11' or BRDF_option=='O23' :
+                        
+                        # fomating input into xarray wanted by OLCI-BRDF code
+                        xr_ds = xr.Dataset({
+                            'Rw': xr.DataArray(
+                                        data   = I['Rrs']*np.pi,
+                                        dims   = ['n', 'bands'],
+                                        coords = {'n':range(len(I['sza'])), 'bands':wavelength}),
+                            'sza': xr.DataArray(
+                                        data = I['sza'],
+                                        dims   = ['n']),
+                            'raa': xr.DataArray(
+                                        data = I['raa'],
+                                        dims   = ['n']),
+                            'vza': xr.DataArray(
+                                        data = I['oza'],
+                                        dims   = ['n']),
+                            } )
+                        
+                        # Compute and apply BRDF
+                        OC_BRDF = oc_brdf.brdf_prototype(xr_ds, brdf_model=BRDF_option)
+                        
+                        # Store BRDF corrected rrs
+                        Rrs_BRDF = Rrs.copy()
+                        for k in Rrs:
+                            if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
+                                Rrs_BRDF[k] = np.array(OC_BRDF.nrrs.sel(bands=float(k))).tolist() 
+                        
+                        Rrs_BRDF_ds = gp.addDataset(f"{ds}_" + BRDF_option)
+                        Rrs_BRDF_ds.columns = Rrs_BRDF
+                        Rrs_BRDF_ds.columnsToDataset()
+    
+                        # Apply same factors to corresponding nLw
+                        nLw_ds = gp.getDataset(ds.replace('Rrs','nLw'))
+                        nLw = nLw_ds.columns
+                        nLw_BRDF = nLw.copy()
+                        for k in nLw:
+                            if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
+                                nLw_BRDF[k] = (np.array(nLw[k])*np.array(OC_BRDF.C_brdf.sel(bands=float(k)))).tolist()
+    
+                        # Store BRDF corrected nLw
+                        nLw_BRDF_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option)
+                        nLw_BRDF_ds.columns = nLw_BRDF
+                        nLw_BRDF_ds.columnsToDataset()
+                        
+                        # import matplotlib.pyplot as plt
+                        # plt.figure()
+                        # ii = 0
+                        # plt.plot(wavelength, np.array(Rrs_ds.data[ii]).tolist()[3:], label="raw rrs")
+                        # plt.plot(wavelength, np.array(Rrs_BRDF_ds.data[ii]).tolist()[3:], label="BRDF corrected rrs")
+                        # plt.legend()
+                        # plt.xlabel('wavelength [nm]')
+                        # plt.ylabel('Rrs')
+                        # plt.title('TRIOS LEE BRDF correction')
+                        # plt.figure()
+                        # plt.plot(wavelength, np.array(nLw_ds.data[ii]).tolist()[3:], label="raw nLw")
+                        # plt.plot(wavelength, np.array(nLw_BRDF_ds.data[ii]).tolist()[3:], label="BRDF corrected nLw")
+                        # plt.legend()
+                        # plt.xlabel('wavelength [nm]')
+                        # plt.ylabel('nLw')
+                        # plt.title('TRIOS LEE BRDF correction')
+                        # plt.figure()
+                        # plt.plot(wavelength, OC_BRDF.C_brdf, 'b', label="BRDF factor")
+                        # plt.plot(wavelength, OC_BRDF.C_brdf+OC_BRDF.brdf_unc, 'b--', label="BRDF factor unc")
+                        # plt.plot(wavelength, OC_BRDF.C_brdf-OC_BRDF.brdf_unc, 'b--')
+                        # plt.legend()
+                        # plt.xlabel('wavelength [nm]')
+                        # plt.ylabel('BRDF factor')
+                        # plt.title('TRIOS LEE BRDF' )       
+                    
+                    
 
     @staticmethod
     def removeRedundantDimensions(inputParameterGrid, LUT):

@@ -76,12 +76,12 @@ class ProcessL1b_FRMCal:
         n_mesure = len(datetime)
         nband = len(wvl)
         
-        # Py6S called over 1min bin
+        # Py6S called over 3min bin
         deltat = datetime[1]-datetime[0]
         n_min = int(3*60//deltat.total_seconds())  # nb of mesures over a bin
         n_bin = len(datetime)//n_min  # nb of bin in a cast
         if len(datetime) % n_min != 0: 
-            # +1 to account for last points that fall in the last bin (smaller than 1min)
+            # +1 to account for last points that fall in the last bin (smaller than 3 min)
             n_bin += 1
 
         direct = np.zeros((n_bin, nband))
@@ -92,7 +92,7 @@ class ProcessL1b_FRMCal:
         solar_zenith = np.zeros(n_bin)
 
         for n in range(n_bin):
-            # find ancillary point that match the 1st mesure of the 1min ensemble 
+            # find ancillary point that match the 1st mesure of the 3min ensemble 
             ind_anc = np.argmin(np.abs(np.array(anc_datetime)-datetime[n*n_min]))
             s = Py6S.SixS()
             s.atmos_profile = Py6S.AtmosProfile.PredefinedType(Py6S.AtmosProfile.MidlatitudeSummer)
