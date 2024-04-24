@@ -511,14 +511,17 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2BRDFCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2BRDF"]) == 1:
             self.l2BRDFCheckBox.setChecked(True)
+       
         self.l2BRDF_fQLabel = QtWidgets.QLabel("Morel R.f/Q", self)
         self.l2BRDF_fQCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2BRDF_fQ"]) == 1:
             self.l2BRDF_fQCheckBox.setChecked(True)
+
         self.l2BRDF_IOPLabel = QtWidgets.QLabel("Lee IOP", self)
         self.l2BRDF_IOPCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2BRDF_IOP"]) == 1:
             self.l2BRDF_IOPCheckBox.setChecked(True)
+            
         self.l2BRDFCheckBoxUpdate()
 
 
@@ -1750,29 +1753,29 @@ class ConfigWindow(QtWidgets.QDialog):
         disabled = (not self.l2BRDFCheckBox.isChecked())
         self.l2BRDF_fQCheckBox.setDisabled(disabled)
         self.l2BRDF_fQLabel.setDisabled(disabled)
-        # self.l2BRDF_IOPCheckBox.setDisabled(disabled)
-        self.l2BRDF_IOPCheckBox.setDisabled(True)
-        # self.l2BRDF_IOPLabel.setDisabled(disabled)
-        self.l2BRDF_IOPLabel.setDisabled(True)
-
+        self.l2BRDF_IOPCheckBox.setDisabled(disabled)
+        self.l2BRDF_IOPLabel.setDisabled(disabled)
+        
         if disabled:
             ConfigFile.settings["bL2BRDF"] = 0
             ConfigFile.settings["bL2BRDF_fQ"] = 0
             ConfigFile.settings["bL2BRDF_IOP"] = 0
             self.l2BRDF_fQCheckBox.setChecked(False)
             self.l2BRDF_IOPCheckBox.setChecked(False)
-        else:
-            ConfigFile.settings["bL2BRDF"] = 1
-            self.l2BRDF_fQCheckBox.setChecked(True) # Until IOP-based is ready
+        # else:
+        #     ConfigFile.settings["bL2BRDF"] = 1
+        #     self.l2BRDF_fQCheckBox.setChecked(True) # Until IOP-based is ready
 
     def l2BRDF_fQCheckBoxUpdate(self):
         print("ConfigWindow - l2BRDF_fQCheckBoxUpdate")
-
         disabled = (not self.l2BRDF_fQCheckBox.isChecked())
         if disabled:
             ConfigFile.settings["bL2BRDF_fQ"] = 0
         else:
             ConfigFile.settings["bL2BRDF_fQ"] = 1
+            # ConfigFile.settings["bL2BRDF_IOP"] = 0
+            # self.l2BRDF_IOPCheckBox.setChecked(False)
+            
             # # This will require chlor_a in derived products to be turned on
             # # which in turn requires MODIS bands...
             # self.l2WeightMODISACheckBox.setChecked(True)
@@ -1781,12 +1784,14 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def l2BRDF_IOPCheckBoxUpdate(self):
         print("ConfigWindow - l2BRDF_IOPCheckBoxUpdate")
-
         disabled = (not self.l2BRDF_IOPCheckBox.isChecked())
         if disabled:
             ConfigFile.settings["bL2BRDF_IOP"] = 0
         else:
             ConfigFile.settings["bL2BRDF_IOP"] = 1
+            # ConfigFile.settings["bL2BRDF_fQ"] = 0
+            # self.l2BRDF_fQCheckBox.setChecked(False)
+
 
 
     def l2OCproductsButtonPressed(self):

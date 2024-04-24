@@ -271,6 +271,8 @@ class SeaBASSWriter:
         if ConfigFile.settings['bL2BRDF']:
             if ConfigFile.settings['bL2BRDF_fQ']:
                 nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_M02")
+            if ConfigFile.settings['bL2BRDF_IOP']:
+                nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_L11")
             # There are currently no additional uncertainties added for BRDF
             # nLwUnc_BRDF = reflectanceGroup.getDataset("nLw_HYPER_unc")
 

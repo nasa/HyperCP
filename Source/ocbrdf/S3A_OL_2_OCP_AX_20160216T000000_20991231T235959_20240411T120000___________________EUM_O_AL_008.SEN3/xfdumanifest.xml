@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xfdu:XFDU xmlns:xfdu="urn:ccsds:schema:xfdu:1" xmlns:sentinel-safe="http://www.esa.int/safe/sentinel/1.1" xmlns:sentinel3="http://www.esa.int/safe/sentinel/sentinel-3/1.0" xmlns:sentinel3aux="http://www.esa.int/safe/sentinel/sentinel-3/adf/1.0" version="esa/safe/sentinel/sentinel-3/adf/1.0">
+  <informationPackageMap>
+    <xfdu:contentUnit ID="packageUnit" unitType="Information Package" textInfo="SENTINEL-3 ADF" pdiID="processing" dmdID="measurementQualityInformation processing generalProductInformation">
+      <xfdu:contentUnit ID="ADFUnit" unitType="Annotation Data Unit" textInfo="ADF processed automatically" repID="ADFData">
+        <dataObjectPointer dataObjectID="ADFData"/>
+      </xfdu:contentUnit>
+    </xfdu:contentUnit>
+  </informationPackageMap>
+  <metadataSection>
+    <metadataObject ID="generalProductInformation" classification="DESCRIPTION" category="DMD">
+      <metadataWrap mimeType="text/xml" vocabularyName="Sentinel-SAFE" textInfo="General Product Information">
+        <xmlData>
+          <sentinel3aux:generalProductInformation>
+            <sentinel3aux:fileName>S3A_OL_2_OCP_AX_20160216T000000_20991231T235959_20240411T120000___________________EUM_O_AL_008.SEN3</sentinel3aux:fileName>
+            <sentinel3aux:fileType>OL_2_OCP_AX</sentinel3aux:fileType>
+            <sentinel3aux:timeliness>AL</sentinel3aux:timeliness>
+            <sentinel3aux:baselineCollection>007</sentinel3aux:baselineCollection>
+            <sentinel3aux:familyName>Sentinel-3</sentinel3aux:familyName>
+            <sentinel3aux:number>A</sentinel3aux:number>
+            <sentinel3aux:productSize>4141741</sentinel3aux:productSize>
+            <sentinel3aux:creationTime>20240411T120000</sentinel3aux:creationTime>
+            <sentinel3aux:validityStartTime>2016-02-16T00:00:00.000000Z</sentinel3aux:validityStartTime>
+            <sentinel3aux:validityStopTime>2099-12-31T23:59:59.000000Z</sentinel3aux:validityStopTime>
+          </sentinel3aux:generalProductInformation>
+        </xmlData>
+      </metadataWrap>
+    </metadataObject>
+    <metadataObject ID="processing" classification="PROVENANCE" category="PDI">
+      <metadataWrap mimeType="text/xml" vocabularyName="Sentinel-SAFE" textInfo="Processing">
+        <xmlData>
+          <sentinel-safe:processing name="AdfProcessing">
+            <sentinel-safe:facility name="EUM" organisation="European Organisation for the Exploitation of Meteorological Satellites" site="Darmstadt" country="Germany">
+              <sentinel-safe:hardware name="OPE"/>
+              <sentinel-safe:software name="ADC" version="1.0"/>
+            </sentinel-safe:facility>
+            <sentinel-safe:resource name="S3IPF PDS 007.2 - Auxiliary Data Format Specification – OLCI Level 2" role="Auxiliary Data Format Specification" version="2.10"/>
+          </sentinel-safe:processing>
+        </xmlData>
+      </metadataWrap>
+    </metadataObject>
+    <metadataObject ID="measurementQualityInformation" classification="DESCRIPTION" category="DMD">
+      <metadataWrap mimeType="text/xml" vocabularyName="Sentinel-SAFE" textInfo="Quality Information">
+        <xmlData>
+          <sentinel-safe:qualityInformation>
+            <sentinel-safe:extension>
+              <sentinel3aux:adfQuality>
+                <sentinel3aux:adfQualityCheck>PASSED</sentinel3aux:adfQualityCheck>
+              </sentinel3aux:adfQuality>
+            </sentinel-safe:extension>
+          </sentinel-safe:qualityInformation>
+        </xmlData>
+      </metadataWrap>
+    </metadataObject>
+  </metadataSection>
+  <dataObjectSection>
+    <dataObject ID="ADFData" repID="ADFData">
+      <byteStream mimeType="application/x-netcdf" size="4141741">
+        <fileLocation locatorType="URL" textInfo="OL_2_OCP_AX" href="OL_2_OCP_AX.nc"/>
+        <checksum checksumName="MD5">ff3208eddef40cc53fdb0750b5c28cf1</checksum>
+      </byteStream>
+    </dataObject>
+  </dataObjectSection>
+</xfdu:XFDU>
