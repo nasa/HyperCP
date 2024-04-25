@@ -233,7 +233,7 @@ class ProcessL2BRDF():
         return inputParameterGrid, LUT, nonRedundantDims
 
     @staticmethod
-    def Morel2002singleIteration(I, R_gothic, foq, OC4MEcoeff, chlConvergeFlag):
+    def Morel2002singleIteration(I, R_gothic, foq, OC4MEcoeff):
         '''
         Purpose:
         1) Compute one iteration to get Morel (M02) BRDF factors by linear interpolation of gothic R and f/Q LUTs.
@@ -259,7 +259,7 @@ class ProcessL2BRDF():
             TODO For the moment OC4ME is applied with a tolerance of 25 nm spectral distance to the nominal blue, cyan, green and yellow wavelengths
             Nonetheless, OC4ME must in the future be replaced by something more generic.
         :return:
-        I: Modified inputs (Rrs --> Rrs*BRDF(1 iteration), log_chl = OC4ME(Rrs))
+        I: Modified inputs (log_chl = OC4ME(Rrs*BRDF))
         BRDFfactors1Iter: M02 BRDF factors (same shape as I['Rrs'] = N1x...xNnxNlambda) for a single iteration
         '''
 
@@ -338,12 +338,8 @@ class ProcessL2BRDF():
         BRDFfactors1Iter = (foq['coeff0'] * R_gothic['coeff0'][...,np.newaxis]) / (
                             foq['coeff' ] * R_gothic['coeff' ][...,np.newaxis])
 
-        # For those casts where convergence was achieved, BRDF factors will be set to 1.
-        # NB: This is more efficient than splitting the casts in for loops.
-        BRDFfactors1Iter[chlConvergeFlag, ...] = 1
-
         #  Update Rrs and compute new chlorophyll with OC4ME:
-        I['Rrs'] = I['Rrs'] * BRDFfactors1Iter
+        Rrs_chlor = I['Rrs'] * BRDFfactors1Iter
 
         #### Compute log10(CHL) using OC4ME ####
 
@@ -363,7 +359,7 @@ class ProcessL2BRDF():
             OC4MEwaveNominalSensor[color] = waveSat
 
         #  Cache necessary bands with generic tags (colours, given that nominal wavelengths may change between sensors)
-        OC4ME_Rrs = {color: I['Rrs'][..., np.where(I['wavelengths'] == OC4MEwaveNominalSensor[color])[0][0]] for color
+        OC4ME_Rrs = {color: Rrs_chlor[..., np.where(I['wavelengths'] == OC4MEwaveNominalSensor[color])[0][0]] for color
                      in OC4MEwaveNominalSensor}
 
         # Compute the OC4ME "R"
@@ -493,12 +489,20 @@ class ProcessL2BRDF():
         chlConvergeFlag = np.zeros(shapeInp).astype(bool)  # Initially is not converged (obviously)
         for nIter in range(OC4MEnIter):
             chlPrevIter = 10 ** I['log_chl']
-            I, BRDFfactors1Iter = ProcessL2BRDF.Morel2002singleIteration(I, R_gothic, foq, OC4MEcoeff, chlConvergeFlag)
-            # Only update BRDF factor if convergence has been reached in the previous iteration!
-            BRDFfactors *= BRDFfactors1Iter
+            I, BRDFfactors1Iter = ProcessL2BRDF.Morel2002singleIteration(I, R_gothic, foq, OC4MEcoeff)
 
-            #  Update chlConvergenceFlag according to |chl_old-chl_new| < epsilon * chl_new
+            #  Check if convergence is reached |chl_old-chl_new| < epsilon * chl_new
             chlNewIter = 10 ** I['log_chl']
             chlConvergeFlag = chlConvergeFlag | (np.abs(chlPrevIter - chlNewIter) < OC4MEepsilon * chlNewIter)
+
+            if nIter == 1:
+                BRDFfactors = BRDFfactors1Iter
+            else:
+                # Update only if convergence was not reached.
+                BRDFfactors[~chlConvergeFlag,:] = BRDFfactors1Iter[~chlConvergeFlag,:]
+
+        # Update Rrs with BRDF factors
+        I['Rrs'] = I['Rrs']*BRDFfactors
+
 
         return I, BRDFfactors
