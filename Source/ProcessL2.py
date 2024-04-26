@@ -2338,9 +2338,9 @@ class ProcessL2:
             #     Utilities.writeLogFile(msg)
             #     ProcessL2BRDF.procBRDF(node, BRDF_option='O23')
                 
-            else:
-                raise ValueError('BRDF: Only Morel et al. 2002 and Lee 2011 supported for the moment. '
-                                 'If ticking on BRDF in the configuration window, please also tick on Morel R.f/Q')
+        else:
+            raise ValueError('BRDF: Only Morel et al. 2002 and Lee 2011 supported for the moment. '
+                             'If ticking on BRDF in the configuration window, please also tick on Morel R.f/Q')
 
 
         # Strip out L1AQC data
