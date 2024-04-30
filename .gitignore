@@ -22,10 +22,12 @@ Data/Photos/
 Plots/
 Logs/
 Config/*
-!Config/sample_*_Calibration
-!Config/sample_*.cfg
-!Config/sample_*.hdr
-!Config/sample_*.csv
+
+## To update sample configurations, uncomment:
+# !Config/sample_*_Calibration
+# !Config/sample_*.cfg
+# !Config/sample_*.hdr
+# !Config/sample_*.csv
 
 Data/FidRadDB_characterization/
 .pylintrc
