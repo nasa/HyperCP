@@ -1105,6 +1105,11 @@ class Instrument(ABC):
         esUNC_band[np.isnan(esUNC_band)] = 0.0
         liUNC_band[np.isnan(liUNC_band)] = 0.0
         ltUNC_band[np.isnan(ltUNC_band)] = 0.0
+        ## Absolute uncertainties, after conversion from relative with field data, may have negative values
+        # Take the absolute value of absolute uncertainties
+        esUNC_band = np.abs(esUNC_band)
+        liUNC_band = np.abs(liUNC_band)
+        ltUNC_band = np.abs(ltUNC_band)
 
         if ConfigFile.settings["bL2WeightSentinel3A"]:
             esDeltaBand = Convolve.band_Conv_Uncertainty(
@@ -1945,10 +1950,10 @@ class HyperOCR(Instrument):
 
             # Cosine correction
             if sensortype == "ES":
-                
+
                 ## ADERU: Py6S results now match the length of input data
                 ## I arbitrary select the first value here (index 0). If I understand correctly
-                ## this will need to read the stored value in the py6S group instead of recomputing it. 
+                ## this will need to read the stored value in the py6S group instead of recomputing it.
                 solar_zenith = np.array(res_py6s['solar_zenith'][0])
                 direct_ratio = res_py6s['direct_ratio'][0]
 
@@ -2149,7 +2154,7 @@ class Trios(Instrument):
             mZ_unc = mZ_unc[1:, 1:]  # remove 1st line and column, we work on 255 pixel not 256.
             Ct = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data[1:].transpose().tolist())[4])
             Ct_unc = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data[1:].transpose().tolist())[5])
-            
+
             # Convert TriOS mW/m2/nm to uW/cm^2/nm
             LAMP = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['2']) / 10  # div by 10
             # corrects LAMP and LAMP_unc
@@ -2338,10 +2343,10 @@ class Trios(Instrument):
 
             if sensortype.lower() == "es":
                 # get cosine correction attributes and samples from dictionary
-                
+
                 ## ADERU: Py6S results now match the length of input data
                 ## I arbitrary select the first value here (index 0). If I understand correctly
-                ## this will need to read the stored value in the py6S group instead of recomputing it. 
+                ## this will need to read the stored value in the py6S group instead of recomputing it.
                 solar_zenith = res_py6s['solar_zenith'][0]
                 direct_ratio = res_py6s['direct_ratio'][0]
 

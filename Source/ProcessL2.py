@@ -2319,14 +2319,29 @@ class ProcessL2:
 
         # If requested, process BRDF corrections to Rrs and nLw
         if ConfigFile.settings["bL2BRDF"]:
+
             if ConfigFile.settings['bL2BRDF_fQ']:
                 msg = "Applying iterative Morel et al. 2002 BRDF correction to Rrs and nLw"
                 print(msg)
                 Utilities.writeLogFile(msg)
-                ProcessL2BRDF.procBRDF(node,BRDF_option='M02')
-            else:
-                raise ValueError('BRDF: Only Morel et al. 2002 supported for the moment. '
-                                 'If ticking on BRDF in the configuration window, please also tick on Morel R.f/Q')
+                ProcessL2BRDF.procBRDF(node, BRDF_option='M02')
+
+            if ConfigFile.settings['bL2BRDF_IOP']:
+                msg = "Applying Lee et al. 2011 BRDF correction to Rrs and nLw"
+                print(msg)
+                Utilities.writeLogFile(msg)
+                ProcessL2BRDF.procBRDF(node, BRDF_option='L11')
+
+            # if ConfigFile.settings['bL2BRDF_O23']:
+            #     msg = "Applying O23 BRDF correction to Rrs and nLw"
+            #     print(msg)
+            #     Utilities.writeLogFile(msg)
+            #     ProcessL2BRDF.procBRDF(node, BRDF_option='O23')
+
+        # else:
+        #     raise ValueError('BRDF: Only Morel et al. 2002 and Lee 2011 supported for the moment. '
+        #                      'If ticking on BRDF in the configuration window, please also tick on Morel R.f/Q')
+
 
         # Strip out L1AQC data
         for gp in reversed(node.groups):

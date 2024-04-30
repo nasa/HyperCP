@@ -682,19 +682,19 @@ class ProcessL1b:
         else:
             modRoot = None
 
-        if modRoot is not None:
-            # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
-            # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
-            # to have model data and/or default values incorporated.
+        # if modRoot is not None:
+        # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
+        # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
+        # to have model data and/or default values incorporated.
 
-            # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
-            # is provided in Main Window, then use the model data to fill in gaps in the field
-            # record. Otherwise, use the selected default values from ConfigWindow
+        # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
+        # is provided in Main Window, then use the model data to fill in gaps in the field
+        # record. Otherwise, use the selected default values from ConfigWindow
 
-            # This step is only necessary for the ancillary datasets that REQUIRE
-            # either field or GMAO or GUI default values. The remaining ancillary data
-            # are culled from datasets in groups in L1B
-            ProcessL1b.includeModelDefaults(ancGroup, modRoot)
+        # This step is only necessary for the ancillary datasets that REQUIRE
+        # either field or GMAO or GUI default values. The remaining ancillary data
+        # are culled from datasets in groups in L1B
+        ProcessL1b.includeModelDefaults(ancGroup, modRoot)
 
         # Calibration
         # Depending on the Configuration, process either the factory
