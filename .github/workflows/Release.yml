@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  workflow_call:
+    outputs:
+      artifacts:
+        description: "Newline-delimited list of artifact filenames downloaded"
+        value: ${{ jobs.Release.outputs.artifacts }}
+
+jobs:
+
+  Release:
+    name: Draft Release Page
+    runs-on: ubuntu-latest
+
+    outputs:
+      artifacts: ${{ steps.get_variables.outputs.artifacts }}
+
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: True
+
+      - name: Extract Git tag and Artifact names
+        id: get_variables
+        run: |
+          GIT_TAG=${GITHUB_REF#refs/*/}
+          RELEASE_VERSION=${GIT_TAG#v}
+          RELEASE_DATETIME="$(date --utc '+%Y-%m-%d %H:%M:%S')"
+          # write to step outputs
+          cat >> "$GITHUB_OUTPUT" << EOF
+          gitTag=${GIT_TAG}
+          version=${RELEASE_VERSION}
+          datetime=${RELEASE_DATETIME}
+          EOF
+          # Multi-line variables
+          echo "artifacts<<EOF" >> $GITHUB_OUTPUT
+          ls | xargs -n 1 >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release Page
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.get_variables.outputs.artifacts }}
+          body: |
+            **Automated Release created on: ${{ steps.get_variables.outputs.datetime }}**
+  
+            ## New Features
+            * tbd
+  
+            ## Changes
+            * tbd
+  
+            ## Bug Fixes
+            * tbd
+          draft: true
+          prerelease: false

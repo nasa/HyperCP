@@ -21,8 +21,8 @@ On macOS, bundled application are not signed, hence macOS Gatekeeper will raise 
 
     cd HyperCP-v1.2.0-Darwin
     sudo xattr -r -d com.apple.quarantine HyperCP-v1.2.0-Darwin
-    sudo xattr -r -d com.apple.quarantine _internal/**/*.dylib
-    sudo xattr -r -d com.apple.quarantine _internal/**/*.so
+    sudo xattr -r -d com.apple.quarantine **/*.dylib
+    sudo xattr -r -d com.apple.quarantine **/*.so
 
 Another workaround (not recommended) is to disable macOS Gatekeeper only during the time HyperCP is used.
 
