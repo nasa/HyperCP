@@ -2,6 +2,7 @@ import os
 import re
 import glob
 import platform
+import subprocess
 
 import PyInstaller.__main__
 
@@ -15,9 +16,14 @@ os_specific_options = []
 add_data_sep = ':'
 if platform.system() == 'Darwin':
     os_specific_options = [
-        # f'--icon={os.path.relpath(os.path.join("Data", "Img", "logo.icns"), root)}',
+        f'--icon={os.path.relpath(os.path.join("Data", "Img", "logo.icns"), root)}',
+        '--windowed',
+        # '--target-arch=universal2',  # Fails on GitHub but bundle works on both architecture
+        # Required for code signing
         '--osx-bundle-identifier=com.nasa.hypercp.hypercp',
-        # '--target-arch=universal2',
+        # f'--codesign-identity={os.getenv("CODESIGN_HASH")}',
+        # f'--osx-entitlements-file={os.path.join("Bundled", "entitlements.plist")}',
+
     ]
 elif platform.system() == 'Windows':
     os_specific_options = [
@@ -37,8 +43,24 @@ with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Main.py'), 
             version = l.split('=')[1].strip(" \n'")
             break
 
+# Get git hash (without git package)
+try:
+    __git_hash__ = subprocess.check_output(['git', 'rev-parse', 'HEAD'],  #'--short',
+                                           cwd=os.path.dirname(os.path.abspath(__file__))).decode('ascii').strip()
+except (subprocess.SubprocessError, FileNotFoundError):
+    __git_hash__ = 'git_na'
+
+# Update version.txt file
+if os.path.exists('version.txt'):
+    os.remove('version.txt')
+with open('version.txt', 'w') as f:
+    f.write(f"version={version}\n")
+    f.write(f"git_hash={__git_hash__}\n")
+    f.close()
+
 # Include all Data files (except Zhang table)
 linked_data = [
+    f'--add-data={os.path.relpath("version.txt", root)}{add_data_sep}.',
     f'--add-data={os.path.relpath("Config", root)}{add_data_sep}Config',
     f'--add-data={os.path.relpath(".ecmwf_api_config", root)}{add_data_sep}.',
 ]
