@@ -41,14 +41,14 @@ Adding new files will automatically copy these files from the directory you iden
  ```HyperInSPACE/Config``` directory manually.
 
 The calibration or instrument file is selected using the drop-down menu. Enable (in the neighboring checkbox) only the
-files that correspond to the data you want to process with this configuration. You will need to know which .cal/.tdf
-files correspond to each sensor/instrument, and which represent light and dark shutter measurements.
+files that correspond to the data you want to process with this configuration. For TriOS sensors, you will need to know which .ini
+files correspond to each sensor/instrument, but HyperCP can now automatically recognize Es/Li/Lt Light/Dark light and dark calibration files, as described below.
 
 For **HyperOCR**:
 
 - **SATMSG.tdf**: SAS Solar Tracker status message string (Frame Type: Not Required)
 - **SATTHSUUUUA.tdf**: Tilt-heading sensor (Frame Type: Not Required) ‡
-- **SATNAVxxxA.tdf**: SeaBird Solar Tracker (Frame Type: Not Required)
+- **SATNAVxxxA.tdf**: Sea-Bird Solar Tracker (Frame Type: Not Required)
 - **UMTWR_v0.tdf**: UMaine Solar Tracker (Frame Type: Not Required)
 - **GPRMC_NMEAxxx.tdf**: GPS (Frame Type: Not Required)
 - **SATPYR.tdf**: Pyrometer (Frame Type: Not Required)
@@ -60,12 +60,12 @@ For **HyperOCR**:
 - **HSLxxxA.cal**: Lt (Frame Type: Light)
 
 where xxx is the serial number of the SeaBird instrument, followed (where appropriate) by factory calibration codes
-(usually A, B, C, etc. associated with the date of calibration).
+(usually A, B, C, etc. associated with the date of calibration). Note that if you have a robotic platform, you only need one .tdf file for the tracker: SATNAV for Sea-Bird Solar Tracker or UMTWR for UMaine Solar tracker (pySAS).
 ***Be sure to choose the factory calibration files appropriate to the date of data collection.***
 
-‡ **Note**: Use of built-in flux-gate compass is extremely inadvisable on a steel ship or platform. Best practice is to use
+‡ **Note**: Use of built-in flux-gate compass is inadvisable on a steel ship or platform. Best practice is to use
 externally supplied heading data from the ship's NMEA datastream or from a seperate, external dual antenna GPS
-incorporated into the SolarTracker. DO NOT USE COURSE DATA FROM SINGLE GPS SYSTEMS.
+incorporated into the SolarTracker. DO NOT USE COURSE DATA FROM SINGLE GPS SYSTEMS FOR SENSOR ORIENTATION.
 
 For **TriOS RAMSES** device, you will need to associate each radiometers number to its type of acquisition (Li, Lt or Es), for example :
 
@@ -84,16 +84,13 @@ be used to select the file to enable the instrument and set the frame type.
             ShutterLight/ShutterDark for light/dark correction or "Not Required" for all other data.
      - [TriOS] Li/Lt/Es can be selected. This is used to specify the target of each radiometers.
 
-For each calibration file:
 
-Click ```Enable``` to enable the calibration file. Select the frame type used for radiometer data or ```Not Required```
-for navigational and ancillary data. Data from the GPS and SATNAV instruments, etc. are interpreted using the corresponding
-Telemetry Definition Files ('.tdf').
+Each file added (.cal, .ini, .tdf) is enabled by default, but you can unclick the ```Enable``` box or remove those added in error or unused. Selecting the frame type used for radiometer data or ```Not Required``` for navigational and ancillary data should be automatic, but is worth checking. Data from the GPS and SATNAV instruments, etc. are interpreted using the corresponding Telemetry Definition Files ('.tdf').
 
-Once you have created your new Configuration, CAL/TDF files are copied from their chosen locations into
+Once you have created your new Configuration, CAL/INI/TDF files are copied from their chosen locations into
 the /Config directory HyperCP directory structure within an automatically created sub-directory named for the
 Configuration (i.e., a configuration named "KORUS" creates a KORUS.cfg configuration file in ```/Config ``` and creates
-the /Config/KORUS_Calibration directory with the chosen calibration & TDF files).
+the ```/Config/KORUS_Calibration``` directory with the chosen calibration & TDF files).
 
 *The values set in the configuration file should be considered carefully. They will depend on your viewing geometry and
 desired quality control thresholds. Do not use default values without consideration.*

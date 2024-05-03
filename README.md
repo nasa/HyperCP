@@ -40,7 +40,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ### [Launch the Program](#3-launch-hypercp-for-the-first-time)
 ### [Quick Start Guide](#quick-start-overview)
 ### [Main Window](#main-window-description)
-### [Configuration Window](README_configuration.md)
+### [Configuration Window (README_configuration.md)](README_configuration.md)
 
 
 ## Requirements and Installation
@@ -53,7 +53,7 @@ Clone this repository (branch: "master") to a convenient directory on your compu
 prompt$ git clone --depth 1 https://github.com/nasa/HyperCP.git /path/to/convenient/directory
 ```
 
-or, if you are unfamiliar with git, simply download and unzip by clicking ```Code >> Download ZIP```  -
+If you are, or plan to be, a HyperCP Team collaborator, or if you are interested in early release branches, drop '--depth 1' from the clone command. If you are unfamiliar with git, simply download and unzip by clicking ```Code >> Download ZIP```  -
 we encourage you to use git though (see why below). A link to bundled executable versions of HyperCP for Windows, MacOS, and Linux will be added soon.
 
 ### 2. Get the HyperCP environment
