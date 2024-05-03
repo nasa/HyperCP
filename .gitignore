@@ -31,6 +31,8 @@ Config/
 ## To allow local changes to a file on remote, but not have those tracked:
 # git update-index --skip-worktree Config/sample_SEABIRD_pySAS.cfg
 #   Had to be run for each file due to conflicts with unrelated config files
+#   See aliases in .bashrc
+#   Will cause conflict changing branches if local files are different across branches
 
 Data/FidRadDB_characterization/
 .pylintrc
