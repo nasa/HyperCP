@@ -1746,9 +1746,9 @@ class HyperOCR(Instrument):
 
             sample_mZ = cm.generate_sample(mDraws, mZ, mZ_unc, "rand")
             sample_n_IB = self.gen_n_IB_sample(mDraws)
-            sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
-                                             [sample_mZ, sample_n_IB])
-            C_zong = ProcessL1b_FRMCal.Zong_SL_correction_matrix(mZ)
+            # sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
+            #                                  [sample_mZ, sample_n_IB])
+            # C_zong = ProcessL1b_FRMCal.Zong_SL_correction_matrix(mZ)
 
             Ct = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data
                                          )[f'{sensortype}_TEMPERATURE_COEFFICIENTS'][1:].tolist())
@@ -1800,7 +1800,7 @@ class HyperOCR(Instrument):
             S12 = self.S12func(k, S1, S2)
             sample_S12 = prop.run_samples(self.S12func, [sample_k, sample_S1, sample_S2])
 
-            S12_sl_corr = self.Slaper_SL_correction(S12, mZ, n_iter=5)  # enable slaper to fix issue with uncertainties (temporary)
+            S12_sl_corr = self.Slaper_SL_correction(S12, mZ, n_iter)  # enable slaper to fix issue with uncertainties (temporary)
             # S12_sl_corr = self.Zong_SL_correction(S12, C_zong)
             # sample_S12_sl_corr = prop.run_samples(self.Zong_SL_correction, [sample_S12, sample_C_zong])
 
@@ -2202,7 +2202,7 @@ class Trios(Instrument):
             # sample_S12_sl_corr = prop.run_samples(self.Zong_SL_correction, [sample_S12, sample_C_zong])
 
             # calculates difference between n=4 and n=5, then propagates as an error
-            S12_sl_corr = self.Slaper_SL_correction(S12, mZ, n_iter=5)
+            S12_sl_corr = self.Slaper_SL_correction(S12, mZ, n_iter)
             S12_sl_corr_unc = []
             sl4 = self.Slaper_SL_correction(S12, mZ, n_iter=4)
             for i in range(len(S12_sl_corr)):  # get the difference between n=4 and n=5
