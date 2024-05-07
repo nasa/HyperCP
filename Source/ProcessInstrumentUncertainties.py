@@ -1746,9 +1746,9 @@ class HyperOCR(Instrument):
 
             sample_mZ = cm.generate_sample(mDraws, mZ, mZ_unc, "rand")
             sample_n_IB = self.gen_n_IB_sample(mDraws)
-            sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
-                                             [sample_mZ, sample_n_IB])
-            C_zong = ProcessL1b_FRMCal.Zong_SL_correction_matrix(mZ)
+            # sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
+            #                                  [sample_mZ, sample_n_IB])
+            # C_zong = ProcessL1b_FRMCal.Zong_SL_correction_matrix(mZ)
 
             Ct = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data
                                          )[f'{sensortype}_TEMPERATURE_COEFFICIENTS'][1:].tolist())
@@ -1760,14 +1760,14 @@ class HyperOCR(Instrument):
 
             # Defined constants
             # nband = len(radcal_wvl)
-            # n_iter = 5
+            n_iter = 5
 
             Ct = Ct[ind_raw_wvl]
             Ct_unc = Ct_unc[ind_raw_wvl]
 
             # uncertainties from data:
             sample_int_time = cm.generate_sample(mDraws, int_time, None, None)
-            # sample_n_iter = cm.generate_sample(mDraws, n_iter, None, None, dtype=int)
+            sample_n_iter = cm.generate_sample(mDraws, n_iter, None, None, dtype=int)
             # sample_mZ = cm.generate_sample(mDraws, mZ, mZ_unc, "rand")
             sample_Ct = cm.generate_sample(mDraws, Ct, Ct_unc, "syst")
 
@@ -1800,30 +1800,27 @@ class HyperOCR(Instrument):
             S12 = self.S12func(k, S1, S2)
             sample_S12 = prop.run_samples(self.S12func, [sample_k, sample_S1, sample_S2])
 
-            # S12_sl_corr = self.Slaper_SL_correction(S12, mZ, n_iter=5)
-            S12_sl_corr = self.Zong_SL_correction(S12, C_zong)
-            sample_S12_sl_corr = prop.run_samples(self.Zong_SL_correction, [sample_S12, sample_C_zong])
+            S12_sl_corr = self.Slaper_SL_correction(S12, mZ, n_iter)  # enable slaper to fix issue with uncertainties (temporary)
+            # S12_sl_corr = self.Zong_SL_correction(S12, C_zong)
+            # sample_S12_sl_corr = prop.run_samples(self.Zong_SL_correction, [sample_S12, sample_C_zong])
 
             # S12_unc = (prop.process_samples(None, sample_S12_sl_corr)/S12_sl_corr)*100
 
-            # sl4 = self.Slaper_SL_correction(S12, mZ, n_iter=4)
-            # sl4 = self.Zong_SL_correction(S12, C_zong)
-            # for i in range(len(S12_sl_corr)):  # get the difference between n=4 and n=5
-            #     if S12_sl_corr[i] > sl4[i]:
-            #         S12_sl_corr_unc.append(S12_sl_corr[i] - sl4[i])
-            #     else:
-            #         S12_sl_corr_unc.append(sl4[i] - S12_sl_corr[i])
+            S12_sl_corr_unc = []
+            sl4 = self.Slaper_SL_correction(S12, mZ, n_iter=4)
+            for i in range(len(S12_sl_corr)):  # get the difference between n=4 and n=5
+                if S12_sl_corr[i] > sl4[i]:
+                    S12_sl_corr_unc.append(S12_sl_corr[i] - sl4[i])
+                else:
+                    S12_sl_corr_unc.append(sl4[i] - S12_sl_corr[i])
 
-            # sample_S12_sl_syst = cm.generate_sample(mDraws, S12_sl_corr, np.array(S12_sl_corr_unc), "syst")
-            # sample_S12_sl_rand = prop.run_samples(self.Slaper_SL_correction, [sample_S12, sample_mZ, sample_n_iter])
-            # sample_S12_sl_rand = prop.run_samples(self.Zong_SL_correction, [sample_S12, sample_C_zong])
-            # sample_S12_sl_corr = prop.combine_samples([sample_S12_sl_syst, sample_S12_sl_rand])
+            sample_S12_sl_syst = cm.generate_sample(mDraws, S12_sl_corr, np.array(S12_sl_corr_unc), "syst")
+            sample_S12_sl_rand = prop.run_samples(self.Slaper_SL_correction, [sample_S12, sample_mZ, sample_n_iter])
+            sample_S12_sl_corr = prop.combine_samples([sample_S12_sl_syst, sample_S12_sl_rand])
 
             # alpha = ((S1-S12)/(S12**2)).tolist()
             alpha = self.alphafunc(S1, S12)
             sample_alpha = prop.run_samples(self.alphafunc, [sample_S1, sample_S12])
-            # alpha_unc = np.power(np.power(S1_unc, 2) + np.power(S12_unc, 2) + np.power(S2_unc, 2), 0.5)  # TODO: change this!
-            # sample_alpha = cm.generate_sample(mDraws, alpha, alpha_unc, "syst")
 
             # Updated calibration gain
             if sensortype == "ES":
@@ -1849,13 +1846,11 @@ class HyperOCR(Instrument):
                 sample_azi_delta_err1 = cm.generate_sample(mDraws, avg_azi_coserror, azi_unc, "syst")
                 sample_azi_delta_err2 = cm.generate_sample(mDraws, avg_azi_coserror, azi_delta, "syst")
                 sample_azi_delta_err = prop.combine_samples([sample_azi_delta_err1, sample_azi_delta_err2])
-                sample_azi_err = prop.run_samples(self.AZAvg_Coserr, [sample_coserr, sample_coserr90])
-                sample_azi_avg_coserror = prop.combine_samples([sample_azi_err, sample_azi_delta_err])
-
+                # lines removed to prevent double counting of monte carlo uncertainty for cosine correction!
                 sample_zen_delta_err1 = cm.generate_sample(mDraws, avg_coserror, zen_unc, "syst")
                 sample_zen_delta_err2 = cm.generate_sample(mDraws, avg_coserror, zen_delta, "syst")
                 sample_zen_delta_err = prop.combine_samples([sample_zen_delta_err1, sample_zen_delta_err2])
-                sample_zen_err = prop.run_samples(self.ZENAvg_Coserr, [sample_radcal_wvl, sample_azi_avg_coserror])
+                sample_zen_err = prop.run_samples(self.ZENAvg_Coserr, [sample_radcal_wvl, sample_azi_delta_err])
                 sample_zen_avg_coserror = prop.combine_samples([sample_zen_err, sample_zen_delta_err])
 
                 # full_hemi_coserr = self.FHemi_Coserr(avg_coserror, zenith_ang)
@@ -1918,25 +1913,24 @@ class HyperOCR(Instrument):
             data1_unc = (prop.process_samples(None, sample_data1)/data1)*100
 
             # Straylight
-            # data2 = self.Slaper_SL_correction(data1, mZ, n_iter)
-            data2 = self.Zong_SL_correction(data1, C_zong)
-            sample_data2 = prop.run_samples(self.Zong_SL_correction, [sample_data1, sample_C_zong])
+            data2 = self.Slaper_SL_correction(data1, mZ, n_iter)
+            # data2 = self.Zong_SL_correction(data1, C_zong)
+            # sample_data2 = prop.run_samples(self.Zong_SL_correction, [sample_data1, sample_C_zong])
 
-            data2_unc = (prop.process_samples(None, sample_data2)/data2)*100
+            # data2_unc = (prop.process_samples(None, sample_data2)/data2)*100
 
-            # S12_sl_corr_unc = []
-            # sl4 = self.Slaper_SL_correction(data1, mZ, n_iter=4)
-            # sl4 = self.Zong_SL_correction(data1, C_zong)
-            # for i in range(len(data2)):  # get the difference between n=4 and n=5
-            #     if data1[i] > sl4[i]:
-            #         S12_sl_corr_unc.append(data2[i] - sl4[i])
-            #     else:
-            #         S12_sl_corr_unc.append(sl4[i] - data2[i])
+            S12_sl_corr_unc = []
+            sl4 = self.Slaper_SL_correction(data1, mZ, n_iter=4)
+            for i in range(len(data2)):  # get the difference between n=4 and n=5
+                if data2[i] > sl4[i]:
+                    S12_sl_corr_unc.append(data2[i] - sl4[i])
+                else:
+                    S12_sl_corr_unc.append(sl4[i] - data2[i])
 
-            # sample_straylight_1 = cm.generate_sample(mDraws, data2, np.array(S12_sl_corr_unc), "syst")  # model error of method
-            # sample_straylight_2 = prop.run_samples(self.Slaper_SL_correction,[sample_data1, sample_mZ, sample_n_iter])  # error from method
-            # sample_straylight_2 = prop.run_samples(self.Zong_SL_correction,[sample_data1, sample_C_zong])  # error from method
-            # sample_data2 = prop.combine_samples([sample_straylight_1, sample_straylight_2])  # total straylight uncertainty
+            sample_straylight_1 = cm.generate_sample(mDraws, data2, np.array(S12_sl_corr_unc), "syst")  # model error of method
+            sample_straylight_2 = prop.run_samples(self.Slaper_SL_correction,[sample_data1, sample_mZ, sample_n_iter])  # error from method
+
+            sample_data2 = prop.combine_samples([sample_straylight_1, sample_straylight_2])  # total straylight uncertainty
 
             # Calibration
             # data3 = self.DATA3(data2, cal_int, int_time, updated_radcal_gain)  # data2*(cal_int/int_time)/updated_radcal_gain
@@ -2164,7 +2158,7 @@ class Trios(Instrument):
             nband = len(B0)
             nmes = len(raw_data)
             grp.attributes["nmes"] = nmes
-            # n_iter = 5
+            n_iter = 5
 
             # set up uncertainty propagation
             mDraws = 100  # number of monte carlo draws
@@ -2172,12 +2166,12 @@ class Trios(Instrument):
 
             # uncertainties from data:
             sample_mZ = cm.generate_sample(mDraws, mZ, mZ_unc, "rand")
-            sample_n_IB = self.gen_n_IB_sample(mDraws)  # n_IB sample must be integer and in the range 3-6
-            sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
-                                             [sample_mZ, sample_n_IB])
-            C_zong = ProcessL1b_FRMCal.Zong_SL_correction_matrix(mZ, 3)
+            # sample_n_IB = self.gen_n_IB_sample(mDraws)  # n_IB sample must be integer and in the range 3-6
+            # sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
+            #                                  [sample_mZ, sample_n_IB])
+            # C_zong = ProcessL1b_FRMCal.Zong_SL_correction_matrix(mZ, 3)
 
-            # sample_n_iter = cm.generate_sample(mDraws, n_iter, None, None, dtype=int)
+            sample_n_iter = cm.generate_sample(mDraws, n_iter, None, None, dtype=int)
             sample_int_time_t0 = cm.generate_sample(mDraws, int_time_t0, None, None)
             sample_LAMP = cm.generate_sample(mDraws, LAMP, LAMP_unc, "syst")
             sample_Ct = cm.generate_sample(mDraws, Ct, Ct_unc, "syst")
@@ -2204,23 +2198,22 @@ class Trios(Instrument):
             S12 = self.S12func(k, S1, S2)
             sample_S12 = prop.run_samples(self.S12func, [sample_k, sample_S1, sample_S2])
 
-            S12_sl_corr = self.Zong_SL_correction(S12, C_zong)
-            sample_S12_sl_corr = prop.run_samples(self.Zong_SL_correction, [sample_S12, sample_C_zong])
+            # S12_sl_corr = self.Zong_SL_correction(S12, C_zong)
+            # sample_S12_sl_corr = prop.run_samples(self.Zong_SL_correction, [sample_S12, sample_C_zong])
 
             # calculates difference between n=4 and n=5, then propagates as an error
-            # S12_sl_corr = self.Slaper_SL_correction(S12, mZ, n_iter=5)
-            # S12_sl_corr_unc = []
-            # sl4 = self.Slaper_SL_correction(S12, mZ, n_iter=4)
-            # for i in range(len(S12_sl_corr)):  # get the difference between n=4 and n=5
-            #     if S12_sl_corr[i] > sl4[i]:
-            #         S12_sl_corr_unc.append(S12_sl_corr[i] - sl4[i])
-            #     else:
-            #         S12_sl_corr_unc.append(sl4[i] - S12_sl_corr[i])
+            S12_sl_corr = self.Slaper_SL_correction(S12, mZ, n_iter)
+            S12_sl_corr_unc = []
+            sl4 = self.Slaper_SL_correction(S12, mZ, n_iter=4)
+            for i in range(len(S12_sl_corr)):  # get the difference between n=4 and n=5
+                if S12_sl_corr[i] > sl4[i]:
+                    S12_sl_corr_unc.append(S12_sl_corr[i] - sl4[i])
+                else:
+                    S12_sl_corr_unc.append(sl4[i] - S12_sl_corr[i])
 
-            # sample_S12_sl_syst = cm.generate_sample(mDraws, S12_sl_corr, np.array(S12_sl_corr_unc), "syst")
-            # # sample_S12_sl_rand = prop.run_samples(self.Slaper_SL_correction, [sample_S12, sample_mZ, sample_n_iter])
-            # sample_S12_sl_rand = prop.run_samples(self.Zong_SL_correction, [sample_S12, sample_C_zong])
-            # sample_S12_sl_corr = prop.combine_samples([sample_S12_sl_syst, sample_S12_sl_rand])
+            sample_S12_sl_syst = cm.generate_sample(mDraws, S12_sl_corr, np.array(S12_sl_corr_unc), "syst")
+            sample_S12_sl_rand = prop.run_samples(self.Slaper_SL_correction, [sample_S12, sample_mZ, sample_n_iter])
+            sample_S12_sl_corr = prop.combine_samples([sample_S12_sl_syst, sample_S12_sl_rand])
 
             alpha = self.alphafunc(S1, S12)
             sample_alpha = prop.run_samples(self.alphafunc, [sample_S1, sample_S12])
@@ -2244,13 +2237,11 @@ class Trios(Instrument):
                 sample_azi_delta_err1 = cm.generate_sample(mDraws, avg_azi_coserror, azi_unc, "syst")
                 sample_azi_delta_err2 = cm.generate_sample(mDraws, avg_azi_coserror, azi_delta, "syst")
                 sample_azi_delta_err = prop.combine_samples([sample_azi_delta_err1, sample_azi_delta_err2])
-                sample_azi_err = prop.run_samples(self.AZAvg_Coserr, [sample_coserr, sample_coserr90])
-                sample_azi_avg_coserror = prop.combine_samples([sample_azi_err, sample_azi_delta_err])
-
+                # removed double counting of monte carlo uncertainty in cosine correction
                 sample_zen_delta_err1 = cm.generate_sample(mDraws, avg_coserror, zen_unc, "syst")
                 sample_zen_delta_err2 = cm.generate_sample(mDraws, avg_coserror, zen_delta, "syst")
                 sample_zen_delta_err = prop.combine_samples([sample_zen_delta_err1, sample_zen_delta_err2])
-                sample_zen_err = prop.run_samples(self.ZENAvg_Coserr, [sample_radcal_wvl, sample_azi_avg_coserror])
+                sample_zen_err = prop.run_samples(self.ZENAvg_Coserr, [sample_radcal_wvl, sample_azi_delta_err])
                 sample_zen_avg_coserror = prop.combine_samples([sample_zen_err, sample_zen_delta_err])
 
                 # full_hemi_coserr = self.FHemi_Coserr(avg_coserror, zenith_ang)
@@ -2311,25 +2302,22 @@ class Trios(Instrument):
                                                          [sample_offset_corrected_mesure, sample_alpha])
 
             # Straylight Correction
-            straylight_corr_mesure = self.Zong_SL_correction(linear_corr_mesure, C_zong)
-            sample_straylight_corr_mesure = prop.run_samples(self.Zong_SL_correction, [sample_linear_corr_mesure, sample_C_zong])
-
-            # straylight_corr_mesure = self.Slaper_SL_correction(linear_corr_mesure, mZ, n_iter)
             # straylight_corr_mesure = self.Zong_SL_correction(linear_corr_mesure, C_zong)
-            #
-            # S12_sl_corr_unc = []
-            # # sl4 = self.Slaper_SL_correction(linear_corr_mesure, mZ, n_iter=4)
-            # sl4 = self.Zong_SL_correction(linear_corr_mesure, C_zong)
-            # for i in range(len(straylight_corr_mesure)):  # get the difference between n=4 and n=5
-            #     if linear_corr_mesure[i] > sl4[i]:
-            #         S12_sl_corr_unc.append(straylight_corr_mesure[i] - sl4[i])
-            #     else:
-            #         S12_sl_corr_unc.append(sl4[i] - straylight_corr_mesure[i])
-            #
-            # sample_straylight_1 = cm.generate_sample(mDraws, straylight_corr_mesure, np.array(S12_sl_corr_unc), "syst")
-            # # sample_straylight_2 = prop.run_samples(self.Slaper_SL_correction,[sample_linear_corr_mesure, sample_mZ, sample_n_iter])
-            # sample_straylight_2 = prop.run_samples(self.Zong_SL_correction,[sample_linear_corr_mesure, sample_C_zong])
-            # sample_straylight_corr_mesure = prop.combine_samples([sample_straylight_1, sample_straylight_2])
+            # sample_straylight_corr_mesure = prop.run_samples(self.Zong_SL_correction, [sample_linear_corr_mesure, sample_C_zong])
+
+            straylight_corr_mesure = self.Slaper_SL_correction(linear_corr_mesure, mZ, n_iter)
+
+            S12_sl_corr_unc = []
+            sl4 = self.Slaper_SL_correction(linear_corr_mesure, mZ, n_iter=4)
+            for i in range(len(straylight_corr_mesure)):  # get the difference between n=4 and n=5
+                if straylight_corr_mesure[i] > sl4[i]:
+                    S12_sl_corr_unc.append(straylight_corr_mesure[i] - sl4[i])
+                else:
+                    S12_sl_corr_unc.append(sl4[i] - straylight_corr_mesure[i])
+
+            sample_straylight_1 = cm.generate_sample(mDraws, straylight_corr_mesure, np.array(S12_sl_corr_unc), "syst")
+            sample_straylight_2 = prop.run_samples(self.Slaper_SL_correction,[sample_linear_corr_mesure, sample_mZ, sample_n_iter])
+            sample_straylight_corr_mesure = prop.combine_samples([sample_straylight_1, sample_straylight_2])
 
             # Normalization Correction, based on integration time
             sample_normalized_mesure = sample_straylight_corr_mesure*int_time_t0/int_time
