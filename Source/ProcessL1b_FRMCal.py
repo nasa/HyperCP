@@ -237,7 +237,7 @@ class ProcessL1b_FRMCal:
             if np.sum(IB) == 0:
                 IBsum = 1.0
             # Zong eq. 1
-            SDF[i,:] = SDF[i,:]/np.float(IBsum)
+            SDF[i,:] = SDF[i,:]/float(IBsum)
             SDF[i,j1:j2+1] = 0
 
         A = np.identity(len(LSF)) + SDF   # Matrix A from eq. 8
