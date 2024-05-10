@@ -302,12 +302,14 @@ class TriosL1A:
 
 
                 ## Test filename for station/cast
-                match1 = re.search(r'\d{4}S', file.split('/')[-1])
+                match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
+                match2 = re.search(r'\d{4}S', file.split('/')[-1])
                 # match2 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
                 if match1 is not None:
                     a_name = match1.group()
-                # elif match2 is not None:
-                #     a_time = match2.group()
+                elif match2 is not None:
+                    a_name = match1.group()
+                    # a_time = match2.group()
                 else:
                     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
                     print("  L0 filename should have a cast to identify triplet instrument")
@@ -365,7 +367,8 @@ class TriosL1A:
                 '''
                 try:
                     new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
-                    new_name = new_name+'_'+str(start)
+                    if match2 is not None:
+                        new_name = new_name+'_'+str(start)
                 except IndexError as err:
                     # print(err)
                     msg = "possibly an error in naming of Raw files"
