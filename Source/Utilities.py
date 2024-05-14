@@ -1340,8 +1340,10 @@ class Utilities:
         # plt.show() # --> QCoreApplication::exec: The event loop is already running
 
         # Save the plot
-        filebasename = filename.split('_')
-        fp = os.path.join(plotDir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
+        # filebasename = filename.split('_')
+        # fp = os.path.join(plotDir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
+        filebasename = filename.split('.hdf')
+        fp = os.path.join(plotDir, filebasename[0] + '_' + rType + '.png')
         plt.savefig(fp)
         plt.close() # This prevents displaying the plot on screen with certain IDEs
 
