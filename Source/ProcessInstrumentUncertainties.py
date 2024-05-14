@@ -115,9 +115,12 @@ class Instrument(ABC):
             radcal = uncGrp.getDataset(f"{sensor}_RADCAL_UNC") # SIRREX data
             radcal.datasetToColumns()
 
+            # added attribute in node for Factory branch which accounts for missing calibration data.
+            cal_start = int(node.attributes['CAL_START'])
+            cal_stop = int(node.attributes['CAL_STOP'])
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            cStray[sensor] = np.asarray(list(straylight.columns['1']))
+            cStray[sensor] = np.asarray(list(straylight.columns['1']))[cal_start:cal_stop]
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
@@ -998,9 +1001,11 @@ class Instrument(ABC):
             radcal = uncGrp.getDataset(f"{sensor}_RADCAL_UNC")
             radcal.datasetToColumns()
 
+            cal_start = int(node.attributes['CAL_START'])
+            cal_stop = int(node.attributes['CAL_STOP'])
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            cStray[sensor] = np.asarray(list(straylight.columns['1']))
+            cStray[sensor] = np.asarray(list(straylight.columns['1']))[cal_start:cal_stop]
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
