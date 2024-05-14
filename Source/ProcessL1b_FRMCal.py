@@ -75,12 +75,12 @@ class ProcessL1b_FRMCal:
         ## Py6S configuration
         n_mesure = len(datetime)
         nband = len(wvl)
-        
+
         # Py6S called over 3min bin
         deltat = datetime[1]-datetime[0]
         n_min = int(3*60//deltat.total_seconds())  # nb of mesures over a bin
         n_bin = len(datetime)//n_min  # nb of bin in a cast
-        if len(datetime) % n_min != 0: 
+        if len(datetime) % n_min != 0:
             # +1 to account for last points that fall in the last bin (smaller than 3 min)
             n_bin += 1
 
@@ -92,7 +92,7 @@ class ProcessL1b_FRMCal:
         solar_zenith = np.zeros(n_bin)
 
         for n in range(n_bin):
-            # find ancillary point that match the 1st mesure of the 3min ensemble 
+            # find ancillary point that match the 1st mesure of the 3min ensemble
             ind_anc = np.argmin(np.abs(np.array(anc_datetime)-datetime[n*n_min]))
             s = Py6S.SixS()
             s.atmos_profile = Py6S.AtmosProfile.PredefinedType(Py6S.AtmosProfile.MidlatitudeSummer)
@@ -108,7 +108,7 @@ class ProcessL1b_FRMCal:
             s.altitudes.set_sensor_sea_level()
             s.aot550 = aod[ind_anc]
             wavelengths, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl)
-            
+
             # extract value from Py6s
             # total_gaseous_transmittance[n,:] = np.array([res[x].values['total_gaseous_transmittance'] for x in range(nband)])
             # env[n,:]  = np.array([res[x].values['percent_environmental_irradiance'] for x in range(nband)])
@@ -118,14 +118,18 @@ class ProcessL1b_FRMCal:
             irr_diffuse[n,:]  = np.array([res[x].values['diffuse_solar_irradiance'] for x in range(nband)])
             irr_env[n,:]  = np.array([res[x].values['environmental_irradiance'] for x in range(nband)])
             solar_zenith[n] = sun_zenith[ind_anc]
-            
+
             # Check for potential zero values and interpolate them with neighbour
             val, ind0 = np.where([direct[n,:]==0])
             if len(ind0)>0:
                 for i0 in ind0:
-                    direct[n,i0] = (direct[n,i0-1]+direct[n,i0+1])/2
-                        
-        # interpolate results 
+                    if i0==ind0[-1]:
+                        # End of array. Take left neighbor.
+                        direct[n,i0] = direct[n,i0-1]
+                    else:
+                        direct[n,i0] = (direct[n,i0-1]+direct[n,i0+1])/2
+
+        # interpolate results
         res_py6s = {}
         x_bin  = [n*n_min for n in range(n_bin)]
         x_full = np.linspace(0, n_mesure, n_mesure)
@@ -142,7 +146,7 @@ class ProcessL1b_FRMCal:
         f =  interpolate.interp1d(x_bin, irr_env, fill_value='extrapolate', axis=0)
         res_py6s['env_irr'] = f(x_full)
 
-        
+
         ### Py6S called only once per cast, for starttime
         # ind_anc = np.argmin(np.abs(np.array(anc_datetime)-datetime[0]))
         # s = Py6S.SixS()
@@ -395,7 +399,7 @@ class ProcessL1b_FRMCal:
                 diffuse_ratio = res_py6s['diffuse_ratio'][:,ind_raw_data]
                 # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
                 model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_raw_data]/10
-                
+
                 py6s_grp = node.addGroup("PY6S_MODEL")
                 for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
                     # copy datetime dataset for interp process
@@ -411,14 +415,14 @@ class ProcessL1b_FRMCal:
                 ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
                 rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
                 ds.data = rec_arr
-                
+
                 ds = py6s_grp.addDataset("diffuse_ratio")
                 ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
                 rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
                 ds.data = rec_arr
-                
+
                 ds = py6s_grp.addDataset("solar_zenith")
                 ds.columns["solar_zenith"] = solar_zenith
                 ds.columnsToDataset()
-                             
+
         return True
