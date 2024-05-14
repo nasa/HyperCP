@@ -83,33 +83,33 @@ class TriosL1B:
         # Data conversion
         mesure = raw_data/65535.0
         FRM_mesure = np.zeros((nmes, nband))
-        back_mesure = np.zeros((nmes, nband))    
+        back_mesure = np.zeros((nmes, nband))
         for n in range(nmes):
             # Background correction : B0 and B1 read from full charaterisation
             back_mesure[n,:] = B0 + B1*(int_time[n]/int_time_t0)
             back_corrected_mesure = mesure[n] - back_mesure[n,:]
-           
+
             # Offset substraction : dark index read from attribute
             offset = np.mean(back_corrected_mesure[DarkPixelStart:DarkPixelStop])
             offset_corrected_mesure = back_corrected_mesure - offset
-            
+
             # Non-linearity correction
             linear_corr_mesure = offset_corrected_mesure*(1-alpha*offset_corrected_mesure)
-            
+
             # Straylight correction over measurement
             straylight_corr_mesure = ProcessL1b_FRMCal.Slaper_SL_correction(linear_corr_mesure, mZ, n_iter)
             # straylight_corr_mesure = np.matmul(C_zong, linear_corr_mesure)
-            
+
             # Normalization for integration time
             normalized_mesure = straylight_corr_mesure * int_time_t0/int_time[n]
-            
+
             # Absolute calibration
             # calibrated_mesure_origin = (offset_corrected_mesure*int_time_t0/int_time[n])/radcal_cal
             calibrated_mesure = normalized_mesure/updated_radcal_gain
-            
+
             # Thermal correction
             thermal_corr_mesure = Ct*calibrated_mesure
-            
+
             # Cosine correction : commented for the moment
             if sensortype == "ES":
                 # retrive py6s variables for given wvl
@@ -157,8 +157,8 @@ class TriosL1B:
             direct_ratio = res_py6s['direct_ratio'][:,ind_nocal==False]
             diffuse_ratio = res_py6s['diffuse_ratio'][:,ind_nocal==False]
             # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
-            model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_nocal==False]/10   
-            
+            model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_nocal==False]/10
+
             py6s_grp = node.addGroup("PY6S_MODEL")
             for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
                 # copy datetime dataset for interp process
@@ -174,16 +174,16 @@ class TriosL1B:
             ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
             rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
             ds.data = rec_arr
-            
+
             ds = py6s_grp.addDataset("diffuse_ratio")
             ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
             rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
             ds.data = rec_arr
-            
+
             ds = py6s_grp.addDataset("solar_zenith")
             ds.columns["solar_zenith"] = solar_zenith
             ds.columnsToDataset()
-            
+
         return True
 
     @staticmethod
@@ -384,19 +384,19 @@ class TriosL1B:
         else:
             modRoot = None
 
-        if modRoot is not None:
-            # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
-            # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
-            # to have model data and/or default values incorporated.
+        # if modRoot is not None:
+        # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
+        # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
+        # to have model data and/or default values incorporated.
 
-            # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
-            # is provided in Main Window, then use the model data to fill in gaps in the field
-            # record. Otherwise, use the selected default values from ConfigWindow
+        # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
+        # is provided in Main Window, then use the model data to fill in gaps in the field
+        # record. Otherwise, use the selected default values from ConfigWindow
 
-            # This step is only necessary for the ancillary datasets that REQUIRE
-            # either field or GMAO or GUI default values. The remaining ancillary data
-            # are culled from datasets in groups in L1B
-            ProcessL1b.includeModelDefaults(ancGroup, modRoot)
+        # This step is only necessary for the ancillary datasets that REQUIRE
+        # either field or GMAO or GUI default values. The remaining ancillary data
+        # are culled from datasets in groups in L1B
+        ProcessL1b.includeModelDefaults(ancGroup, modRoot)
 
         ## Dark Correction & Absolute Calibration
         stats = {}

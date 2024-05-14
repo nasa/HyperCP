@@ -308,7 +308,7 @@ class TriosL1A:
                 if match1 is not None:
                     a_name = match1.group()
                 elif match2 is not None:
-                    a_name = match1.group()
+                    a_name = match2.group()
                     # a_time = match2.group()
                 else:
                     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
