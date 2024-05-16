@@ -172,6 +172,29 @@ class ProcessL1b_FactoryCal:
                 ProcessL1b_FactoryCal.processDataset(ds, cd, inttime)
 
     @staticmethod
+    def get_cal_file_lines(calibrationMap):
+        """
+        function to recover effective calibration start and stop pixel from cal files.
+        """
+        coefs = {}
+        indx = {}
+        for k, var in calibrationMap.items():
+            coefs[k] = []
+            for d in var.data:
+                if d.type == 'ES' or d.type == 'LI' or d.type == 'LT':
+                    coefs[k].append(d.coefficients)
+
+            indx[k] = []
+            for i, c in enumerate(coefs[k]):
+                if len(c) > 0:
+                    indx[k].append(i)
+
+        # todo: assess if this is stricly necessary, all indexes the same in examples used for testing
+        start = max([ind[0] for ind in indx.values()]) - 1  # -1 to cover the first pixel which has no coef but is valid
+        end = min([ind[-1] for ind in indx.values()])
+        return start, end
+
+    @staticmethod
     def processL1b_SeaBird(node, calibrationMap):
         '''
         Calibrates L1a using information from calibration file
@@ -183,6 +206,11 @@ class ProcessL1b_FactoryCal:
         pyrUnits = None
 
         now = dt.datetime.now()
+        # get effective calibration and save to node attributes
+        start, end = ProcessL1b_FactoryCal.get_cal_file_lines(calibrationMap)
+        node.attributes['CAL_START'] = str(start)
+        node.attributes['CAL_STOP'] = str(end)
+        # node.attributes['CAL_LINES'] = lines
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
         msg = f"ProcessL1b_FactoryCal.processL1b: {timestr}"

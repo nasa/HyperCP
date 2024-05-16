@@ -404,7 +404,7 @@ class ProcessL2:
                     rrsUNC[k] = 0
 
         deleteKey = []
-        for wvl in waveSubset:  # loop through wavebands
+        for i, wvl in enumerate(waveSubset):  # loop through wavebands
             k = str(wvl)
             if (any([wvl == float(x) for x in esXSlice]) and
                     any([wvl == float(x) for x in liXSlice]) and
@@ -524,7 +524,12 @@ class ProcessL2:
                         else:
                             newRhoHyper.columns[k].append(rhoScalar)
                             if xUNC is not None:  # perhaps there is a better check for TriOS Factory branch?
-                                newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
+                                try:
+                                    # todo: explore why rho UNC is 1 index smaller than everything else
+                                    # last wvl is missing
+                                    newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
+                                except KeyError:
+                                    newRhoUNCHyper.columns[k].append(0)
                             else:
                                 newRhoUNCHyper.columns[k].append(np.nan)
                 else:

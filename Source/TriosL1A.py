@@ -281,30 +281,53 @@ class TriosL1A:
         # my home directory name unfortunately includes a '.' which caused a bug here, solved with the change
 
         if '.mlb' in fp[0]:   # Multi frame
-            acq_time = []
+            # acq_time = []
+            acq_name = []
             for file in fp:
 
-                ## Test filename for different date formating
+                # ## Test filename for different date formating
+                # match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
+                # match2 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
+                # if match1 is not None:
+                #     a_time = match1.group()
+                # elif match2 is not None:
+                #     a_time = match2.group()
+                # else:
+                #     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
+                #     print("  L0 filename should have a date to identify triplet instrument")
+                #     print("  either 'yyymmdd_hhmmss' or 'yyy-mm-dd_hh-mm-ss' ")
+                #     exit()
+
+                # acq_time.append(a_time)
+
+
+                ## Test filename for station/cast
                 match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
-                match2 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
+                match2 = re.search(r'\d{4}S', file.split('/')[-1])
+                # match2 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
                 if match1 is not None:
-                    a_time = match1.group()
+                    a_name = match1.group()
                 elif match2 is not None:
-                    a_time = match2.group()
+                    a_name = match2.group()
+                    # a_time = match2.group()
                 else:
                     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
-                    print("  L0 filename should have a date to identify triplet instrument")
-                    print("  either 'yyymmdd_hhmmss' or 'yyy-mm-dd_hh-mm-ss' ")
+                    print("  L0 filename should have a cast to identify triplet instrument")
+                    print("  ending in 4 digits before S.mlb ")
                     exit()
 
-                acq_time.append(a_time)
+                # acq_time.append(a_cast)
+                acq_name.append(a_name)
 
-            acq_time = list(dict.fromkeys(acq_time)) # Returns unique timestamps
+            # acq_time = list(dict.fromkeys(acq_time)) # Returns unique timestamps
+            acq_name = list(dict.fromkeys(acq_name)) # Returns unique names
             outFFP = []
-            for a_time in acq_time:
+            # for a_time in acq_time:
+            for a_name in acq_name:
                 print("")
                 print("Generate the telemetric file...")
-                print('Processing: ' +a_time)
+                # print('Processing: ' +a_time)
+                print('Processing: ' +a_name)
 
                 # hdfout = a_time + '_.hdf'
 
@@ -319,9 +342,11 @@ class TriosL1A:
                 root.attributes["SATPYR_UNITS"] = "count"
                 root.attributes["PROCESSING_LEVEL"] = "1a"
 
-                ffp = [s for s in fp if a_time in s]
+                # ffp = [s for s in fp if a_time in s]
+                ffp = [s for s in fp if a_name in s]
                 root.attributes["RAW_FILE_NAME"] = str(ffp)
-                root.attributes["TIME-STAMP"] = a_time
+                # root.attributes["TIME-STAMP"] = a_name
+                root.attributes["CAST"] = a_name
                 for file in ffp:
                     if "SAM_" in file:
                         name = file[file.index('SAM_')+4:file.index('SAM_')+8]
@@ -332,12 +357,18 @@ class TriosL1A:
 
                     if start is None:
                         return None, None
+                    root.attributes["TIME-STAMP"] = start
 
                 '''
                 File naming convention on TriOS TBD depending on convention used in MSDA_XE
+
+                The D-6 requirements to add the timestamp manually on every acquisition is impractical.
+                Convert to using any unique name and append timestamp from data (start)
                 '''
                 try:
                     new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
+                    if match2 is not None:
+                        new_name = new_name+'_'+str(start)
                 except IndexError as err:
                     # print(err)
                     msg = "possibly an error in naming of Raw files"
