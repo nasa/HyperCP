@@ -1,6 +1,7 @@
 
 import datetime as dt
 import numpy as np
+import re
 from Source.Utilities import Utilities
 
 class ProcessL1b_FactoryCal:
@@ -176,18 +177,22 @@ class ProcessL1b_FactoryCal:
         """
         function to recover effective calibration start and stop pixel from cal files.
         """
+        cal_name_pattern = re.compile("HS.", re.IGNORECASE)  # patter for selecting shutterlight data
         coefs = {}
         indx = {}
         for k, var in calibrationMap.items():
-            coefs[k] = []
-            for d in var.data:
-                if d.type == 'ES' or d.type == 'LI' or d.type == 'LT':
-                    coefs[k].append(d.coefficients)
+            # filer for cal names to take out cals such as shutter dark and GPS/Tilt.
+            if re.search(cal_name_pattern, k) and k.endswith('.cal'):  # any(['HSE' in k, 'HSL' in k]):
+            # var.frameType == "shutterlight":  # ideal solution for this section, but frameType not populated in cal data
+                coefs[k] = []
+                for d in var.data:
+                    if d.type == 'ES' or d.type == 'LI' or d.type == 'LT':
+                        coefs[k].append(d.coefficients)
 
-            indx[k] = []
-            for i, c in enumerate(coefs[k]):
-                if len(c) > 0:
-                    indx[k].append(i)
+                indx[k] = []
+                for i, c in enumerate(coefs[k]):
+                    if len(c) > 0:
+                        indx[k].append(i)
 
         # todo: assess if this is stricly necessary, all indexes the same in examples used for testing
         start = max([ind[0] for ind in indx.values()]) - 1  # -1 to cover the first pixel which has no coef but is valid
