@@ -53,7 +53,8 @@ class RhoCorrections:
         rhoScalar = row[0][5]
 
         Delta = Propagate.M99_Rho_Uncertainty(mean_vals=[windSpeedMean, SZAMean, relAzMean],
-                                              uncertainties=[1, 0.5, 3])/rhoScalar
+                                              uncertainties=[2, 0.5, 3])/rhoScalar
+        # todo: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
 
         # TODO: Model error estimation, requires ancillary data to be switched on. This could create a conflict.
         if not any([AOD is None, wTemp is None, sal is None, waveBands is None]) and \
@@ -178,7 +179,8 @@ class RhoCorrections:
 
         # # define uncertainties and create variable list for punpy. Inputs cannot be ordered dictionaries
         varlist = [windSpeedMean, AOD, 0.0, sza, wTemp, sal, relAz, np.array(waveBands)]
-        ulist = [1.0, 0.01, 0.0, 0.5, 2, 0.5, 3, None]
+        ulist = [2.0, 0.01, 0.0, 0.5, 2, 0.5, 3, None]
+        # todo: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
 
         tic = time.process_time()
         rhoVector = ZhangRho.get_sky_sun_rho(env, sensor, round4cache=True)['rho']
