@@ -29,7 +29,7 @@ from Source.GetAnc import GetAnc
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.Utilities import Utilities
 
-version = '1.2.2'
+version = '1.2.3'
 CODE_HOME = os.getcwd()
 
 class Window(QtWidgets.QWidget):
