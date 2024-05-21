@@ -539,23 +539,31 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         else:
             ltFilt = "Off"
         if ConfigFile.settings["bL23CRho"]:
-            rhoCorr = "3C"
+            SeaBASSHeader.settings["rho_correction"] = '3C'
         elif ConfigFile.settings["bL2ZhangRho"]:
-            # rhoCorr = 'Zhang et al. 2017'
             SeaBASSHeader.settings["rho_correction"] = 'Z17'
         else:
-            # rhoCorr = 'Mobley 1999'
             SeaBASSHeader.settings["rho_correction"] = 'M99'
         if ConfigFile.settings["bL2PerformNIRCorrection"]:
             if ConfigFile.settings["bL2SimpleNIRCorrection"]:
-                # NIRFilt = 'Mueller and Austin 1995'
                 SeaBASSHeader.settings["NIR_residual_correction"] = 'MA95'
             else:
-                # NIRFilt = 'Ruddick et al. 2005/2006'
                 SeaBASSHeader.settings["NIR_residual_correction"] = 'R06'
         else:
-            # NIRFilt = "Off"
             SeaBASSHeader.settings["NIR_residual_correction"] = 'NA'
+
+        if ConfigFile.settings["bL2BRDF"]:
+            if ConfigFile.settings["bL2BRDF_fQ"]:
+                # Morel 2002
+                SeaBASSHeader.settings["BRDF_correction"] = 'Rrs:M02,Lwnex:M02'
+            elif ConfigFile.settings["bL2BRDF_IOP"]:
+                # Lee 2011
+                SeaBASSHeader.settings["BRDF_correction"] = 'Rrs:L11,Lwnex:L11'
+            # elif ConfigFile.settings["bL2BRDF_OXX"]:
+            #     # Lee 2011 adapted by D'Allimonte et al.
+            #     SeaBASSHeader.settings["BRDF_correction"] = 'Rrs:OXX,Lwnex:OXX'
+        else:
+            SeaBASSHeader.settings["BRDF_correction"] = 'NoBRDF'
 
         if ConfigFile.settings["bL2NegativeSpec"]:
             NegativeFilt = "On"
