@@ -271,8 +271,10 @@ class SeaBASSWriter:
         if ConfigFile.settings['bL2BRDF']:
             if ConfigFile.settings['bL2BRDF_fQ']:
                 nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_M02")
+                rrsData_BRDF = reflectanceGroup.getDataset("Rrs_HYPER_M02")
             if ConfigFile.settings['bL2BRDF_IOP']:
                 nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_L11")
+                rrsData_BRDF = reflectanceGroup.getDataset("Rrs_HYPER_L11")
             # There are currently no additional uncertainties added for BRDF
             # nLwUnc_BRDF = reflectanceGroup.getDataset("nLw_HYPER_unc")
 
@@ -303,6 +305,7 @@ class SeaBASSWriter:
 
         if ConfigFile.settings['bL2BRDF']:
             nLwData_BRDF.datasetToColumns()
+            rrsData_BRDF.datasetToColumns()
 
         # In the case of TriOS factory, rrsUnc is None so datasetToColumns() is not applicable
         if rrsUnc is not None:
@@ -321,6 +324,7 @@ class SeaBASSWriter:
         nLwCols = nLwData.columns
         if ConfigFile.settings['bL2BRDF']:
             nLwCols_BRDF = nLwData_BRDF.columns
+            rrsCols_BRDF = rrsData_BRDF.columns
 
         # In the case of TriOS factory, rrsUnc is None
         if rrsUnc is not None:
@@ -349,6 +353,10 @@ class SeaBASSWriter:
                 if (k != 'Datetag') and (k != 'Timetag2'):
                     if float(k) < minWave or float(k) > maxWave:
                         del nLwCols_BRDF[k]
+            for k in list(rrsCols_BRDF.keys()):
+                if (k != 'Datetag') and (k != 'Timetag2'):
+                    if float(k) < minWave or float(k) > maxWave:
+                        del rrsCols_BRDF[k]
 
         esData.columns = esCols
         esUnc.columns = esColsUnc
@@ -356,6 +364,7 @@ class SeaBASSWriter:
         nLwData.columns = nLwCols
         if ConfigFile.settings['bL2BRDF']:
             nLwData_BRDF.columns = nLwCols_BRDF
+            rrsData_BRDF.columns = rrsCols_BRDF
 
         if rrsUnc is not None:
             rrsUnc.columns = rrsColsUnc
@@ -373,6 +382,9 @@ class SeaBASSWriter:
             nLwData_BRDF.columns["LATITUDE"] = latpos
             nLwData_BRDF.columns["LONGITUDE"] = lonpos
             nLwData_BRDF.columnsToDataset()
+            rrsData_BRDF.columns["LATITUDE"] = latpos
+            rrsData_BRDF.columns["LONGITUDE"] = lonpos
+            rrsData_BRDF.columnsToDataset()
         # liData.columns["LATITUDE"] = latpos
         # ltData.columns["LATITUDE"] = latpos
         # liData.columns["LONGITUDE"] = lonpos
@@ -502,6 +514,14 @@ class SeaBASSWriter:
             nLwData_BRDF.columns["SZA"] = sza
             nLwData_BRDF.columns["WIND"] = wind
             nLwData_BRDF.columnsToDataset()
+            rrsData_BRDF.columns["AOD"] = aod
+            rrsData_BRDF.columns["CLOUD"] = cloud
+            rrsData_BRDF.columns["SOLAR_AZ"] = azimuth
+            rrsData_BRDF.columns["HEADING"] = heading
+            rrsData_BRDF.columns["REL_AZ"] = relAz
+            rrsData_BRDF.columns["SZA"] = sza
+            rrsData_BRDF.columns["WIND"] = wind
+            rrsData_BRDF.columnsToDataset()
 
         # Format the non-specific header block
         headerBlock = SeaBASSWriter.formatHeader(fp,root, level='2')
@@ -512,18 +532,21 @@ class SeaBASSWriter:
         formattedEs, fieldsEs, unitsEs = SeaBASSWriter.formatData2(esData,esUnc,'es',irradianceGroup.attributes["ES_UNITS"])
         if ConfigFile.settings['bL2BRDF']:
             formattednLw_BRDF, fieldsnLw_BRDF, unitsnLw_BRDF  = SeaBASSWriter.formatData2(nLwData_BRDF,nLwUnc,'Lwnex',reflectanceGroup.attributes["nLw_UNITS"])
+            formattedRrs_BRDF, fieldsRrs_BRDF, unitsRrs_BRDF  = SeaBASSWriter.formatData2(rrsData_BRDF,rrsUnc,'rrs',reflectanceGroup.attributes["Rrs_UNITS"])
 
         # formattedLi, fieldsLi, unitsLi  = SeaBASSWriter.formatData2(liData,'li',radianceGroup.attributes["LI_UNITS"])
         # formattedLt, fieldsLt, unitsLt  = SeaBASSWriter.formatData2(ltData,'lt',radianceGroup.attributes["LT_UNITS"])
 
         # # Write SeaBASS files
+        # Need to update headerBlock for BRDF
+        headerBlock['BRDF_correction'] = SeaBASSHeader.settings['BRDF_correction']
         SeaBASSWriter.writeSeaBASS('Rrs',fp,headerBlock,formattedRrs,fieldsRrs,unitsRrs)
         SeaBASSWriter.writeSeaBASS('Lwn',fp,headerBlock,formattednLw,fieldsnLw,unitsnLw)
         SeaBASSWriter.writeSeaBASS('Es',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
+
+
         if ConfigFile.settings['bL2BRDF']:
-            # Need to update headerBlock for BRDF
-            if ConfigFile.settings['bL2BRDF_fQ']:
-                headerBlock['BRDF_correction'] = 'M02'
             SeaBASSWriter.writeSeaBASS('Lwnex',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
+            SeaBASSWriter.writeSeaBASS('rrs',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
         # SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
         # SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)

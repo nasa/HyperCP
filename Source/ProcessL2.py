@@ -2337,15 +2337,11 @@ class ProcessL2:
                 Utilities.writeLogFile(msg)
                 ProcessL2BRDF.procBRDF(node, BRDF_option='L11')
 
-            # if ConfigFile.settings['bL2BRDF_O23']:
-            #     msg = "Applying O23 BRDF correction to Rrs and nLw"
+            # if ConfigFile.settings['bL2BRDF_OXX']:
+            #     msg = "Applying OXX BRDF correction to Rrs and nLw"
             #     print(msg)
             #     Utilities.writeLogFile(msg)
-            #     ProcessL2BRDF.procBRDF(node, BRDF_option='O23')
-
-        # else:
-        #     raise ValueError('BRDF: Only Morel et al. 2002 and Lee 2011 supported for the moment. '
-        #                      'If ticking on BRDF in the configuration window, please also tick on Morel R.f/Q')
+            #     ProcessL2BRDF.procBRDF(node, BRDF_option='OXX')
 
 
         # Strip out L1AQC data

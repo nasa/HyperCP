@@ -488,12 +488,12 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL2SimSpecNIRCorrection"] == 1:
             self.SimSpecNIRRadioButton.setChecked(True)
         self.SimSpecNIRRadioButton.clicked.connect(self.l2SimSpecNIRRadioButtonClicked)
-        self.YourNIRRadioButton = QtWidgets.QRadioButton("   Your NIR Residual (2023) (universal)")
-        self.YourNIRRadioButton.setAutoExclusive(False)
+        # self.YourNIRRadioButton = QtWidgets.QRadioButton("   Your NIR Residual (2023) (universal)")
+        # self.YourNIRRadioButton.setAutoExclusive(False)
         # if ConfigFile.settings["bL2YourNIRCorrection"] == 1:
         #     self.YourNIRRadioButton.setChecked(True)
         # self.YourNIRRadioButton.clicked.connect(self.l2YourNIRRadioButtonClicked)
-        self.YourNIRRadioButton.setDisabled(True)
+        # self.YourNIRRadioButton.setDisabled(True)
 
         self.l2NIRCorrectionCheckBoxUpdate()
 
@@ -511,7 +511,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2BRDFCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2BRDF"]) == 1:
             self.l2BRDFCheckBox.setChecked(True)
-       
+
         self.l2BRDF_fQLabel = QtWidgets.QLabel("Morel R.f/Q", self)
         self.l2BRDF_fQCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2BRDF_fQ"]) == 1:
@@ -521,7 +521,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2BRDF_IOPCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2BRDF_IOP"]) == 1:
             self.l2BRDF_IOPCheckBox.setChecked(True)
-            
+
         self.l2BRDFCheckBoxUpdate()
 
 
@@ -980,7 +980,7 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addLayout(NIRCorrectionHBox)
         VBox3.addWidget(self.SimpleNIRRadioButton)
         VBox3.addWidget(self.SimSpecNIRRadioButton)
-        VBox3.addWidget(self.YourNIRRadioButton)
+        # VBox3.addWidget(self.YourNIRRadioButton)
 
         VBox3.addSpacing(5)
 
@@ -1710,29 +1710,29 @@ class ConfigWindow(QtWidgets.QDialog):
         print("ConfigWindow - l2NIRCorrection set to Simple")
         self.SimpleNIRRadioButton.setChecked(True)
         self.SimSpecNIRRadioButton.setChecked(False)
-        self.YourNIRRadioButton.setChecked(False)
+        # self.YourNIRRadioButton.setChecked(False)
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 1
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
     def l2SimSpecNIRRadioButtonClicked(self):
         print("ConfigWindow - l2NIRCorrection set to SimSpec")
         self.SimpleNIRRadioButton.setChecked(False)
         self.SimSpecNIRRadioButton.setChecked(True)
-        self.YourNIRRadioButton.setChecked(False)
+        # self.YourNIRRadioButton.setChecked(False)
         ConfigFile.settings["bL2SimpleNIRCorrection"] = 0
         ConfigFile.settings["bL2SimSpecNIRCorrection"] = 1
-    def l2YourNIRRadioButtonClicked(self):
-        print("ConfigWindow - l2NIRCorrection set to Simple. You have not submitted Your method.")
-        self.SimpleNIRRadioButton.setChecked(True)
-        self.SimSpecNIRRadioButton.setChecked(False)
-        self.YourNIRRadioButton.setChecked(True)
-        ConfigFile.settings["bL2SimpleNIRCorrection"] = 1 # Mock up. Use Simple
-        ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
+    # def l2YourNIRRadioButtonClicked(self):
+    #     print("ConfigWindow - l2NIRCorrection set to Simple. You have not submitted Your method.")
+    #     self.SimpleNIRRadioButton.setChecked(True)
+    #     self.SimSpecNIRRadioButton.setChecked(False)
+    #     # self.YourNIRRadioButton.setChecked(True)
+    #     ConfigFile.settings["bL2SimpleNIRCorrection"] = 1 # Mock up. Use Simple
+    #     ConfigFile.settings["bL2SimSpecNIRCorrection"] = 0
     def l2NIRCorrectionCheckBoxUpdate(self):
         print("ConfigWindow - l2NIRCorrectionCheckBoxUpdate")
         disabled = (not self.l2NIRCorrectionCheckBox.isChecked())
         self.SimpleNIRRadioButton.setDisabled(disabled)
         self.SimSpecNIRRadioButton.setDisabled(disabled)
-        self.YourNIRRadioButton.setDisabled(True)
+        # self.YourNIRRadioButton.setDisabled(True)
         if disabled:
             ConfigFile.settings["bL2PerformNIRCorrection"] = 0
         else:
@@ -1755,17 +1755,16 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2BRDF_fQLabel.setDisabled(disabled)
         self.l2BRDF_IOPCheckBox.setDisabled(disabled)
         self.l2BRDF_IOPLabel.setDisabled(disabled)
-        
+
         if disabled:
             ConfigFile.settings["bL2BRDF"] = 0
             ConfigFile.settings["bL2BRDF_fQ"] = 0
             ConfigFile.settings["bL2BRDF_IOP"] = 0
             self.l2BRDF_fQCheckBox.setChecked(False)
             self.l2BRDF_IOPCheckBox.setChecked(False)
-        # else:
-        #     ConfigFile.settings["bL2BRDF"] = 1
-        #     self.l2BRDF_fQCheckBox.setChecked(True) # Until IOP-based is ready
 
+    # Make BRDF type exclusive so that it is clear what is written to SeaBASS output
+    #   Reprocess to change to another BRDF type
     def l2BRDF_fQCheckBoxUpdate(self):
         print("ConfigWindow - l2BRDF_fQCheckBoxUpdate")
         disabled = (not self.l2BRDF_fQCheckBox.isChecked())
@@ -1773,14 +1772,8 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2BRDF_fQ"] = 0
         else:
             ConfigFile.settings["bL2BRDF_fQ"] = 1
-            # ConfigFile.settings["bL2BRDF_IOP"] = 0
-            # self.l2BRDF_IOPCheckBox.setChecked(False)
-            
-            # # This will require chlor_a in derived products to be turned on
-            # # which in turn requires MODIS bands...
-            # self.l2WeightMODISACheckBox.setChecked(True)
-            # ConfigFile.products["bL2Prodoc3m"] = 1
-
+            ConfigFile.settings["bL2BRDF_IOP"] = 0
+            self.l2BRDF_IOPCheckBox.setChecked(False)
 
     def l2BRDF_IOPCheckBoxUpdate(self):
         print("ConfigWindow - l2BRDF_IOPCheckBoxUpdate")
@@ -1789,8 +1782,8 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2BRDF_IOP"] = 0
         else:
             ConfigFile.settings["bL2BRDF_IOP"] = 1
-            # ConfigFile.settings["bL2BRDF_fQ"] = 0
-            # self.l2BRDF_fQCheckBox.setChecked(False)
+            ConfigFile.settings["bL2BRDF_fQ"] = 0
+            self.l2BRDF_fQCheckBox.setChecked(False)
 
 
 

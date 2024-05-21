@@ -170,6 +170,20 @@ class SeaBASSHeader:
         else:
             # NIRFilt = "Off"
             SeaBASSHeader.settings["NIR_residual_correction"] = 'NA'
+
+        if ConfigFile.settings["bL2BRDF"]:
+            if ConfigFile.settings["bL2BRDF_fQ"]:
+                # Morel 2002
+                SeaBASSHeader.settings["BRDF_correction"] = 'Rrs:M02,Lwnex:M02'
+            elif ConfigFile.settings["bL2BRDF_IOP"]:
+                # Lee 2011
+                SeaBASSHeader.settings["BRDF_correction"] = 'Rrs:L11,Lwnex:L11'
+            # elif ConfigFile.settings["bL2BRDF_OXX"]:
+            #     # Lee 2011 adapted by D'Allimonte et al.
+            #     SeaBASSHeader.settings["BRDF_correction"] = 'Rrs:OXX,Lwnex:OXX'
+        else:
+            SeaBASSHeader.settings["BRDF_correction"] = 'NoBRDF'
+
         if ConfigFile.settings["bL2NegativeSpec"]:
             NegativeFilt = "On"
         else:
