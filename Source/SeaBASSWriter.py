@@ -52,7 +52,19 @@ class SeaBASSWriter:
             winCol = wind.columns["WINDSPEED"]
             aveWind = np.nanmean(winCol)
 
-        headerBlock['original_file_name'] = node.attributes['RAW_FILE_NAME']
+        if ConfigFile.settings['SensorType'].lower() =='trios':
+            fileNameString = node.attributes['RAW_FILE_NAME']
+            fileNameList = fileNameString.split(',')
+            headerRawNames = ''
+            for i, fp in enumerate(fileNameList):
+                fp = fp.replace("[",'').replace("'",'').replace("]",'')
+                if i==len(fileNameList)-1:
+                    headerRawNames = headerRawNames + os.path.basename(fp)
+                else:
+                    headerRawNames = headerRawNames + os.path.basename(fp) +','
+            headerBlock['original_file_name'] = headerRawNames
+        else:
+            headerBlock['original_file_name'] = node.attributes['RAW_FILE_NAME']
         # headerBlock['data_file_name'] = os.path.split(fp)[1].replace('.hdf','.sb')
         # headerBlock['data_file_name'] = SeaBASSWriter.sbFileName()
         headerBlock['comments'] = headerBlock['comments'] + f'\n! DateTime Processed = {time.asctime()}'
@@ -83,7 +95,10 @@ class SeaBASSWriter:
             station = node.getGroup('ANCILLARY').getDataset('STATION').data[0][2]
             headerBlock['station'] = station
         else:
-            headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
+            if ConfigFile.settings['SensorType'].lower() =='trios':
+                headerBlock['station'] = headerRawNames
+            else:
+                headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
         if headerBlock['start_time'] == '':
             headerBlock['start_time'] = startTime
         if headerBlock['end_time'] == '':
