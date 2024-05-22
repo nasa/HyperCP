@@ -248,16 +248,16 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL1bCal"]==1:
             self.DefaultCalRadioButton.setChecked(True)
         self.DefaultCalRadioButton.clicked.connect(self.l1bDefaultCalRadioButtonClicked)
-        DefaultCalRadioButtonTriOS = QtWidgets.QRadioButton("TriOS")
-        DefaultCalRadioButtonSeaBird = QtWidgets.QRadioButton("SeaBird (Non-FRM Class-based)")
+        self.DefaultCalRadioButtonTriOS = QtWidgets.QRadioButton("TriOS")
+        self.DefaultCalRadioButtonSeaBird = QtWidgets.QRadioButton("SeaBird (Non-FRM Class-based)")
         if CurrentSensor.lower() == 'trios':
-            DefaultCalRadioButtonTriOS.setChecked(True)
-            DefaultCalRadioButtonSeaBird.setChecked(False)
-            DefaultCalRadioButtonSeaBird.setDisabled(True)
+            self.DefaultCalRadioButtonTriOS.setChecked(True)
+            self.DefaultCalRadioButtonSeaBird.setChecked(False)
+            self.DefaultCalRadioButtonSeaBird.setDisabled(True)
         else:
-            DefaultCalRadioButtonSeaBird.setChecked(True)
-            DefaultCalRadioButtonTriOS.setChecked(False)
-            DefaultCalRadioButtonTriOS.setDisabled(True)
+            self.DefaultCalRadioButtonSeaBird.setChecked(True)
+            self.DefaultCalRadioButtonTriOS.setChecked(False)
+            self.DefaultCalRadioButtonTriOS.setDisabled(True)
 
 
         self.ClassCalRadioButton = QtWidgets.QRadioButton("FRM Class-based (RadCal required)")
@@ -798,8 +798,8 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addWidget(self.DefaultCalRadioButton)
         CalHBox2 = QtWidgets.QHBoxLayout()
         CalHBox2.addStretch()
-        CalHBox2.addWidget(DefaultCalRadioButtonTriOS)
-        CalHBox2.addWidget(DefaultCalRadioButtonSeaBird)
+        CalHBox2.addWidget(self.DefaultCalRadioButtonTriOS)
+        CalHBox2.addWidget(self.DefaultCalRadioButtonSeaBird)
         VBox2.addLayout(CalHBox2)
 
         VBox2.addWidget(self.ClassCalRadioButton)
@@ -1184,6 +1184,24 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["SensorType"] = sensor
 
         self.l1aqcDeglitchCheckBoxUpdate()
+        CurrentSensor = ConfigFile.settings["SensorType"]
+        if CurrentSensor.lower() == "seabird":
+            comboList = ['ShutterLight','ShutterDark','Not Required']
+            self.calibrationFrameTypeComboBox.clear()
+            self.calibrationFrameTypeComboBox.addItems(comboList)
+            # self.calibrationFrameTypeComboBox.setEnabled(False)
+            self.DefaultCalRadioButtonSeaBird.setChecked(True)
+            self.DefaultCalRadioButtonTriOS.setChecked(False)
+            self.DefaultCalRadioButtonTriOS.setDisabled(True)
+
+        elif CurrentSensor.lower() == "trios":
+            comboList = ['LI','LT','ES']
+            self.calibrationFrameTypeComboBox.clear()
+            self.calibrationFrameTypeComboBox.addItems(comboList)
+            # self.calibrationFrameTypeComboBox.setEnabled(True)
+            self.DefaultCalRadioButtonTriOS.setChecked(True)
+            self.DefaultCalRadioButtonSeaBird.setChecked(False)
+            self.DefaultCalRadioButtonSeaBird.setDisabled(True)
 
     def setCalibrationSettings(self):
         print("CalibrationEditWindow - setCalibrationSettings")
