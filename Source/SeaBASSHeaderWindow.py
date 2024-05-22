@@ -555,10 +555,10 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL2BRDF"]:
             if ConfigFile.settings["bL2BRDF_fQ"]:
                 # Morel 2002
-                SeaBASSHeader.settings["BRDF_correction"] = 'Rrs:M02,Lwnex:M02'
+                SeaBASSHeader.settings["BRDF_correction"] = 'M02'
             elif ConfigFile.settings["bL2BRDF_IOP"]:
                 # Lee 2011
-                SeaBASSHeader.settings["BRDF_correction"] = 'Rrs:L11,Lwnex:L11'
+                SeaBASSHeader.settings["BRDF_correction"] = 'L11'
             # elif ConfigFile.settings["bL2BRDF_OXX"]:
             #     # Lee 2011 adapted by D'Allimonte et al.
             #     SeaBASSHeader.settings["BRDF_correction"] = 'Rrs:OXX,Lwnex:OXX'
