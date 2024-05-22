@@ -785,6 +785,11 @@ class Instrument(ABC):
         esUNC_band[np.isnan(esUNC_band)] = 0.0
         liUNC_band[np.isnan(liUNC_band)] = 0.0
         ltUNC_band[np.isnan(ltUNC_band)] = 0.0
+        ## Absolute uncertainties, after conversion from relative with field data, may have negative values
+        # Take the absolute value of absolute uncertainties
+        esUNC_band = np.abs(esUNC_band)
+        liUNC_band = np.abs(liUNC_band)
+        ltUNC_band = np.abs(ltUNC_band)
 
         if ConfigFile.settings["bL2WeightSentinel3A"]:
 
