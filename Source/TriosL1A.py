@@ -36,7 +36,7 @@ class TriosL1A:
         index = 0
         for line in file_dat:
             index = index + 1
-        # checking end of attributes
+            # checking end of attributes
             if '[END] of [Attributes]' in line:
                 flag = 1
                 break
@@ -63,7 +63,7 @@ class TriosL1A:
         index = 0
         for line in file_dat:
             index = index + 1
-        # checking end of attributes
+            # checking end of attributes
             if 'DateTime' in line:
                 flag = 1
                 break
@@ -108,7 +108,12 @@ class TriosL1A:
         metadata = metadata[~metadata[0].str.contains(r'\[')]
         metadata = metadata.reset_index(drop=True)
         data = pd.read_csv(inputfile, skiprows=flag_data+1, nrows=255, header=None, sep=r'\s+')
-
+        
+        # NAN filtering, set to zero
+        for col in data:
+            indnan = data[col].astype(str).str.contains('nan', case=False)
+            data.loc[indnan, col] = '0.0'
+        
         return metadata,data
 
     # Generic function for adding metadata from the ini file
@@ -232,7 +237,7 @@ class TriosL1A:
         # B1 = gp.addDataset('CAL_'+sensor,data=cal[1].astype(np.float64))
         B1 = gp.addDataset('CAL_'+sensor)
         # B1.data = cal[1].astype(np.float64)
-        B1.columns["0"] = cal.values[:,1]
+        B1.columns["0"] = cal.values[:,1].astype(np.float64)
         B1.columnsToDataset()
 
         TriosL1A.get_attr(metacal,B1)
@@ -245,9 +250,7 @@ class TriosL1A:
         # C1.data = back[[1,2]].astype(np.float64)
         # C1.data = np.array(back[[1,2]].astype(np.float64))
 
-
         TriosL1A.get_attr(metaback,C1)
-
         start_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[0][0]-2), "%Y%m%dT%H%M%SZ")
         stop_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[-1][0]-2), "%Y%m%dT%H%M%SZ")
 
