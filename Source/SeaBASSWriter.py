@@ -164,12 +164,14 @@ class SeaBASSWriter:
         newData = SeaBASSWriter.removeColumns(newData,'SOLAR_AZ')
         wind = dsCopy['WIND'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'WIND')
+        bincount = dsCopy['BINCOUNT'].tolist()
+        newData = SeaBASSWriter.removeColumns(newData,'BINCOUNT')
 
         dsCopy = newData
 
         # Change field names for SeaBASS compliance
         bands = list(dsCopy.dtype.names)
-        ls = ['date','time','lat','lon','RelAz','SZA','AOT','cloud','wind']
+        ls = ['date','time','lat','lon','RelAz','SZA','AOT','cloud','wind','bincount']
 
         fieldSpecs = {}
         fieldSpecs['rrs'] = {'fieldName': 'Rrs', 'unc_or_sd':'unc'}
@@ -192,6 +194,7 @@ class SeaBASSWriter:
         unitsLine.append('unitless') # AOD
         unitsLine.append('%') # cloud
         unitsLine.append('m/s') # wind
+        unitsLine.append('none') # bincount
         unitsLine.extend([units]*lenRad) # data
         if dsDelta is not None:
             unitsLine.extend([units]*lenRad)    # data uncertainty
@@ -200,11 +203,11 @@ class SeaBASSWriter:
         # Add data for each row
         dataOut = []
         formatStr = str('{:04d}{:02d}{:02d},{:02d}:{:02d}:{:02d},{:.4f},{:.4f},{:.1f},{:.1f}'\
-            + ',{:.4f},{:.0f},{:.1f}' + ',{:.6f}'*lenRad)
+            + ',{:.4f},{:.0f},{:.1f},{:.0f}' + ',{:.6f}'*lenRad)
         if dsDelta is not None:
             formatStr = formatStr + ',{:.6f}' * lenRad
         for i in range(dsCopy.shape[0]):
-            subList = [lat[i],lon[i],relAz[i],sza[i],aod[i],cloud[i],wind[i]]
+            subList = [lat[i],lon[i],relAz[i],sza[i],aod[i],cloud[i],wind[i],bincount[i]]
             lineList = [timeDT[i].year,timeDT[i].month,timeDT[i].day,timeDT[i].hour,timeDT[i].minute,timeDT[i].second] +\
                 subList + list(dsCopy[i].tolist())
 
@@ -306,6 +309,12 @@ class SeaBASSWriter:
             print("SeaBASSWriter: Radiometric data is missing")
             return
 
+        # Append bincount to datasets
+        bincountData = reflectanceGroup.getDataset("Ensemble_N")
+        bincountData.datasetToColumns()
+        bincount = bincountData.columns["N"]
+
+
         # Append latpos/lonpos to datasets
         ancGroup = root.getGroup("ANCILLARY")
         latposData = ancGroup.getDataset("LATITUDE")
@@ -385,6 +394,9 @@ class SeaBASSWriter:
             rrsUnc.columns = rrsColsUnc
             nLwUnc.columns = nLwColsUnc
 
+        esData.columns["BINCOUNT"] = bincount
+        rrsData.columns["BINCOUNT"] = bincount
+        nLwData.columns["BINCOUNT"] = bincount
         esData.columns["LATITUDE"] = latpos
         rrsData.columns["LATITUDE"] = latpos
         nLwData.columns["LATITUDE"] = latpos
@@ -394,9 +406,11 @@ class SeaBASSWriter:
         rrsData.columnsToDataset()
         nLwData.columnsToDataset()
         if ConfigFile.settings['bL2BRDF']:
+            nLwData_BRDF.columns["BINCOUNT"] = bincount
             nLwData_BRDF.columns["LATITUDE"] = latpos
             nLwData_BRDF.columns["LONGITUDE"] = lonpos
             nLwData_BRDF.columnsToDataset()
+            rrsData_BRDF.columns["BINCOUNT"] = bincount
             rrsData_BRDF.columns["LATITUDE"] = latpos
             rrsData_BRDF.columns["LONGITUDE"] = lonpos
             rrsData_BRDF.columnsToDataset()
