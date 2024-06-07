@@ -82,16 +82,23 @@ class O23:
         return Coeffs(Gw0,Gw1,Gp0,Gp1)
 
     """ Compute remote-sensing reflectance, without Raman effect (vanish in the normalization factor) """
-    def forward(self, omegab, etab, normalized=False):
+    def forward(self, ds, normalized=False):
+
+        omega_b = ds['omega_b']
+        eta_b = ds['eta_b']
+
         if normalized:
             coeffs = self.coeffs0
         else:
             coeffs = self.coeffs
-        Rrs = (coeffs.Gw0+coeffs.Gw1*omegab*etab)*omegab*etab + (coeffs.Gp0+coeffs.Gp1*omegab*(1-etab))*omegab*(1-etab)
-        return Rrs
+        mod_Rrs = (coeffs.Gw0+coeffs.Gw1*omega_b*eta_b)*omega_b*eta_b + (coeffs.Gp0+coeffs.Gp1*omega_b*(1-eta_b))*omega_b*(1-eta_b)
+
+        return mod_Rrs
 
     """ Apply QAA to retrieve IOP (omega_b, eta_b) from rrs """
-    def backward(self, Rrs, iter_brdf):
+    def backward(self, ds, iter_brdf):
+
+        Rrs = ds['nrrs']
 
         # Select G coeff according to iteration
         if iter_brdf == 0:
@@ -161,8 +168,8 @@ class O23:
         k = xr.where(k > 0, k, np.nan)
 
         # Compute final IOPs
-        omega_b = bb / k
-        eta_b = self.bbw / bb
+        ds['omega_b'] = bb / k
+        ds['eta_b'] = self.bbw / bb
 
-        return omega_b, eta_b
+        return ds
 
