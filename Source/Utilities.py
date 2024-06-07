@@ -885,6 +885,9 @@ class Utilities:
         msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
+        # internal switch to trigger the reset of CAL & BACK 
+        # dataset that we have to delete to avoid conflict during filtering
+        do_reset = False 
 
         if level != 'L1AQC':
             if group.id == "ANCILLARY":
@@ -895,10 +898,17 @@ class Utilities:
                 timeStamp = group.getDataset("LI").data["Datetime"]
         else:
              timeStamp = group.getDataset("Timestamp").data["Datetime"]
-             # TRIOS: copy CAL & BACK before filetering
+             # TRIOS: copy CAL & BACK before filetering, and delete them 
+             # to avoid conflict when filtering more row than 255
              if ConfigFile.settings['SensorType'].lower() == 'trios':
+                 do_reset = True
                  raw_cal  = group.getDataset("CAL_"+group.id[0:2]).data
                  raw_back = group.getDataset("BACK_"+group.id[0:2]).data
+                 raw_cal_att  = group.getDataset("CAL_"+group.id[0:2]).attributes
+                 raw_back_att = group.getDataset("BACK_"+group.id[0:2]).attributes
+                 del group.datasets['CAL_'+group.id[0:2]]
+                 del group.datasets['BACK_'+group.id[0:2]]
+
 
         startLength = len(timeStamp)
         msg = f'   Length of dataset prior to removal {startLength} long'
@@ -939,13 +949,17 @@ class Utilities:
                 break
             timeStamp = newTimeStamp.copy()
 
-        # TRIOS: reset CAL and BACK as before filtering
         if ConfigFile.settings['SensorType'].lower() == 'trios':
+            # TRIOS: reset CAL and BACK as before filtering
+            if do_reset:
+                group.addDataset("CAL_"+group.id[0:2])
+                group.datasets["CAL_"+group.id[0:2]].data = raw_cal
+                group.datasets["CAL_"+group.id[0:2]].attributes = raw_cal_att
+                group.addDataset("BACK_"+group.id[0:2])
+                group.datasets["BACK_"+group.id[0:2]].data = raw_back
+                group.datasets["BACK_"+group.id[0:2]].attributes = raw_back_att
+                
             for ds in group.datasets:
-                if "BACK" in ds:
-                    group.datasets[ds].data = raw_back
-                if "CAL" in ds:
-                    group.datasets[ds].data = raw_cal
                 group.datasets[ds].datasetToColumns()
         else:
             for ds in group.datasets:

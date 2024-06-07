@@ -430,6 +430,14 @@ class ProcessL1bqc:
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
                     Utilities.filterData(ltGroup,badTimes,'L1AQC')
+                    
+                    # print('badTimes', len(badTimes))
+                    # for dname in esGroup.datasets:
+                    #     ds = esGroup.getDataset(dname).data
+                    #     print(dname, np.shape(ds))
+                        
+                    # # esGroup.datasets.remove('BACK_ES')
+                    # #    del esGroup.datasets['BACK_ES']
 
                 if py6sGroup is not None:
                     Utilities.filterData(py6sGroup,badTimes)
