@@ -43,16 +43,16 @@ class L11:
         bands_required = [442, 490, 560, 665]
         bands_ref = bands.sel(bands=bands_required, method='nearest')
         for band_ref, band_required in zip(bands_ref, bands_required):
-            assert abs(band_ref - band_required) < threshold, 'Band %d nm missing or too far'%br
+            assert abs(band_ref - band_required) < threshold, 'Band %d nm missing or too far'% band_ref
         self.b442, self.b490, self.b560, self.b665 = bands_ref
 
         # Read BRDF LUT and compute default coeffs
         LUT_OCP = xr.open_dataset(adf,group='BRDF/L11')
         self.LUT = xr.Dataset()
         self.LUT['Gw0'] = LUT_OCP.Gw0
-        self.LUT['Gw1'] = LUT_OCP.Gw1 
-        self.LUT['Gp0'] = LUT_OCP.Gp0 
-        self.LUT['Gp1'] = LUT_OCP.Gp1 
+        self.LUT['Gw1'] = LUT_OCP.Gw1
+        self.LUT['Gp0'] = LUT_OCP.Gp0
+        self.LUT['Gp1'] = LUT_OCP.Gp1
 
         self.coeffs0 = self.interp(0.,0.,0.)
         self.coeffs = Coeffs(np.nan,np.nan,np.nan,np.nan)
@@ -84,16 +84,22 @@ class L11:
         return Coeffs(Gw0,Gw1,Gp0,Gp1)
 
     """ Compute remote-sensing reflectance, without Raman effect (vanish in the normalization factor) """
-    def forward(self, omegab, etab, normalized=False):
+    def forward(self, ds, normalized=False):
+        omega_b = ds['omega_b']
+        eta_b = ds['eta_b']
+
         if normalized:
             coeffs = self.coeffs0
         else:
             coeffs = self.coeffs
-        Rrs = (coeffs.Gw0+coeffs.Gw1*omegab*etab)*omegab*etab + (coeffs.Gp0+coeffs.Gp1*omegab*(1-etab))*omegab*(1-etab)
-        return Rrs
+        mod_Rrs = (coeffs.Gw0+coeffs.Gw1*omega_b*eta_b)*omega_b*eta_b + (coeffs.Gp0+coeffs.Gp1*omega_b*(1-eta_b))*omega_b*(1-eta_b)
+
+        return mod_Rrs
 
     """ Apply QAA to retrieve IOP (omega_b, eta_b) from Rrs """
-    def backward(self, Rrs, iter_brdf):
+    def backward(self, ds, iter_brdf):
+
+        Rrs = ds['nrrs']
 
         # Select G coeff according to iteration
         if iter_brdf == 0:
@@ -166,8 +172,8 @@ class L11:
         k = xr.where(k > 0, k, np.nan)
 
         # Compute final IOPs
-        omega_b = bb / k
-        eta_b = self.bbw / bb
+        ds['omega_b'] = bb / k
+        ds['eta_b'] = self.bbw / bb
 
-        return omega_b, eta_b
+        return ds
 
