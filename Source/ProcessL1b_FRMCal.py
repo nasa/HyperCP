@@ -304,7 +304,7 @@ class ProcessL1b_FRMCal:
             LAMP = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_LAMP").data)['2'])
 
             # create Zong SDF straylight correction matrix
-            # C_zong = ProcessL1b_FRMCal.Zong_SL_correction_matrix(mZ)
+            C_zong = ProcessL1b_FRMCal.Zong_SL_correction_matrix(mZ)
 
             # Defined constants
             nband = len(radcal_wvl)
@@ -318,8 +318,8 @@ class ProcessL1b_FRMCal:
             k = t1/(t2-t1)
             S12 = (1+k)*S1 - k*S2
 
-            S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter)  # Slapper
-            # S12_sl_corr = np.matmul(C_zong, S12) # Zong SL corr
+            # S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter)  # Slapper
+            S12_sl_corr = np.matmul(C_zong, S12) # Zong SL corr
             alpha = ((S1-S12)/(S12**2)).tolist()
             LAMP = np.pad(LAMP, (0, nband-len(LAMP)), mode='constant') # PAD with zero if not 255 long
 
@@ -336,8 +336,8 @@ class ProcessL1b_FRMCal:
             Ct = np.asarray(Ct)[ind_nocal==False]
             mZ = mZ[:, ind_nocal==False]
             mZ = mZ[ind_nocal==False, :]
-            # C_zong = C_zong[:, ind_nocal==False]
-            # C_zong = C_zong[ind_nocal==False, :]
+            C_zong = C_zong[:, ind_nocal==False]
+            C_zong = C_zong[ind_nocal==False, :]
             ind_raw_data = (radcal_cal[radcal_wvl>0])>0
 
             # Updated calibration gain
@@ -363,8 +363,8 @@ class ProcessL1b_FRMCal:
                 # Non-linearity
                 data = data*(1-alpha*data)
                 # Straylight
-                data = ProcessL1b_FRMCal.Slaper_SL_correction(data, mZ, n_iter)
-                # data = np.matmul(C_zong, data)
+                # data = ProcessL1b_FRMCal.Slaper_SL_correction(data, mZ, n_iter)
+                data = np.matmul(C_zong, data)
                 # Calibration
                 data = data * (cal_int/int_time[n]) / updated_radcal_gain
                 # thermal
