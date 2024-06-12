@@ -2,6 +2,8 @@ import netCDF4
 import numpy as np
 import sys
 import xarray as xr
+# from .brdf_model_M02 import M02
+from .brdf_model_M02 import M02
 from .brdf_model_L11 import L11
 from .brdf_model_O23 import O23
 from .brdf_utils import ADF_OCP
@@ -29,12 +31,14 @@ Main BRDF correction module
 def brdf_prototype(ds, adf=None, brdf_model='L11'):
 
     # Initialise model
-    if brdf_model == 'L11':
+    if brdf_model == 'M02':
+        BRDF_model = M02(bands=ds.bands, aot=ds.aot, wind=ds.wind, adf=None) # Don't use brdf_py.ADF context
+    elif brdf_model == 'L11':
         BRDF_model = L11(bands=ds.bands, adf=None) # Don't use brdf_py.ADF context
     elif brdf_model == 'O23':
         BRDF_model = O23(bands=ds.bands, adf=None) # Don't use brdf_py.ADF context
     else:
-        print("BRDF model %s not existing"%brdf_model)
+        print("BRDF model %s not supported" % brdf_model)
         sys.exit(1)
 
     # Init pixel
@@ -42,15 +46,31 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
 
     # Compute IOP and normalize by iterating
     ds['nrrs'] = ds['Rw'] / np.pi
-    for iter_brdf in range(BRDF_model.niter):
-        ds['omega_b'], ds['eta_b'] = BRDF_model.backward(ds['nrrs'], iter_brdf)
+
+    ds['convergeFlag'] = (0 * ds['sza']).astype(bool)
+    ds['C_brdf'] = 0 * ds['nrrs'] + 1
+
+    for iter_brdf in range(int(BRDF_model.niter)):
+
+        ds = BRDF_model.backward(ds, iter_brdf)
+
+        if brdf_model == 'M02':
+            # Initialise chl_iter
+            if iter_brdf == 0:
+                chl_iter = {}
+                chl_iter[-1] = 0*ds['sza'] + float(BRDF_model.OC4MEchl0)
+
+            chl_iter[iter_brdf] = 10 ** ds['log_chl']
+            #  Check if convergence is reached |chl_old-chl_new| < epsilon * chl_new
+            ds['convergeFlag'] = (ds['convergeFlag']) | (
+                (np.abs(chl_iter[iter_brdf - 1] - chl_iter[iter_brdf]) < float(BRDF_model.OC4MEepsilon) * chl_iter[iter_brdf]))
 
         # Apply forward model in both geometries
-        rrs_mod = BRDF_model.forward(ds.omega_b, ds.eta_b)
-        rrs_mod0 = BRDF_model.forward(ds.omega_b, ds.eta_b, normalized=True)
+        forward_mod  = BRDF_model.forward(ds).transpose('n','bands')
+        forward_mod0 = BRDF_model.forward(ds, normalized=True).transpose('n','bands')
 
         # Normalize reflectance
-        ds['C_brdf'] = rrs_mod0 / rrs_mod
+        ds['C_brdf'].where(~ds['convergeFlag'])[:] = forward_mod0.where(~ds['convergeFlag'])[:] / forward_mod.where(~ds['convergeFlag'])[:]
         ds['nrrs'] = ds['Rw']/np.pi * ds['C_brdf']
 
 

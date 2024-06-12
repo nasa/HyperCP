@@ -93,44 +93,8 @@ class ProcessL2BRDF():
                         if np.shape(v) == ():
                             I[k] = I[k].reshape((1,))
                             
-                            
-                    # Calculate BRDF correction for Morel
-                    if BRDF_option == 'M02':
-                        
-                        # Calculate BRDF correction
-                        _, brdf = ProcessL2BRDF.ApplyBRDF(I, BRDF_option)
-    
-                        # Insure brdf is a list of lists, even if there is only one ensemble
-                        brdf = brdf.T.tolist()
-                        brdf_dict = dict(zip(wv_str,brdf))
-    
-                        # Apply factors to Rrs
-                        Rrs_BRDF = Rrs.copy()
-                        for k in Rrs:
-                            if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
-                                Rrs_BRDF[k] = ( np.array(Rrs[k]) * np.array(brdf_dict[k]) ).tolist()
-    
-                        # Store BRDF corrected Rrs
-                        Rrs_BRDF_ds = gp.addDataset(f"{ds}_" + BRDF_option)
-                        Rrs_BRDF_ds.columns  = Rrs_BRDF
-                        Rrs_BRDF_ds.columnsToDataset()
-    
-                        # Apply same factors to corresponding nLw
-                        nLw_ds = gp.getDataset(ds.replace('Rrs','nLw'))
-                        nLw = nLw_ds.columns
-                        nLw_BRDF = nLw.copy()
-                        for k in nLw:
-                            if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
-                                nLw_BRDF[k] = ( np.array(nLw[k]) * np.array(brdf_dict[k]) ).tolist()
-    
-                        # Store BRDF corrected nLw
-                        nLw_BRDF_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option)
-                        nLw_BRDF_ds.columns = nLw_BRDF
-                        nLw_BRDF_ds.columnsToDataset()
-                        
                     # Calculate BRDF correction for Lee11 or O23
-                    elif BRDF_option=='L11' or BRDF_option=='O23' :
-                        
+                    if BRDF_option in ['L11','O23','M02']:
                         # fomating input into xarray wanted by OLCI-BRDF code
                         xr_ds = xr.Dataset({
                             'Rw': xr.DataArray(
@@ -146,6 +110,12 @@ class ProcessL2BRDF():
                             'vza': xr.DataArray(
                                         data = I['oza'],
                                         dims   = ['n']),
+                            'wind': xr.DataArray(
+                                        data=I['wind'],
+                                        dims=['n']),
+                            'aot': xr.DataArray(
+                                        data=I['aot'],
+                                        dims=['n']),
                             } )
                         
                         # Compute and apply BRDF
@@ -197,7 +167,9 @@ class ProcessL2BRDF():
                         # plt.legend()
                         # plt.xlabel('wavelength [nm]')
                         # plt.ylabel('BRDF factor')
-                        # plt.title('TRIOS LEE BRDF' )       
+                        # plt.title('TRIOS LEE BRDF' )
+                    else:
+                        raise ValueError('BRDF option %s not supported.' % BRDF_option)
                     
                     
 
