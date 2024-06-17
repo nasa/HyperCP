@@ -301,15 +301,6 @@ class Propagate:
             corr_between=self.corr_matrix_Default_RRS,
         )
 
-        # Old method of uncertainty propagation (v1.2.1)
-        # old = self.MCP.propagate_random(
-        #     self.RRS_Conv,
-        #     mean_vals,
-        #     uncertainties,
-        #     corr_between=self.corr_matrix_Default_RRS,
-        #     corr_x=corr_list
-        # )
-
         return np.sqrt(random ** 2 + systematic ** 2)
 
     def def_sensor_mfunc(self, platform):
@@ -558,8 +549,8 @@ class Propagate:
         env['od'] = AOD if AOD <= 0.2 else 0.2
         env['od'] = env['od'] if env['od'] >= 0 else 0
         env['C'] = cloud  # Not used
-        env['zen_sun'] = sza if sza <=60 else 60
-        env['zen_sun'] = env['zen_sun'] if env['zen_sun'] >=0 else 0
+        env['zen_sun'] = sza if sza <= 60 else 60
+        env['zen_sun'] = env['zen_sun'] if env['zen_sun'] >= 0 else 0
         # Appears these are only use for Fresnel and are analytical and not inherently limited
         env['wtem'] = wTemp
         env['sal'] = sal
@@ -583,7 +574,7 @@ class Propagate:
         return rho
 
 
-class SensorNotSupportedError():
+class SensorNotSupportedError:
     """
     sensor not suppored, perhaps there is a typo in the sensor string
     """

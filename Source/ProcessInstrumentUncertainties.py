@@ -395,7 +395,7 @@ class Instrument(ABC):
         Propagate_L2_FRM = punpy.MCPropagation(mdraws, parallel_cores=1)
 
         # get sample for rho
-        rhoSample = cm.generate_sample(mdraws, rho, rhoDelta, "syst")  # removed *rho because rhoDelta should be in abs units
+        rhoSample = cm.generate_sample(mdraws, rho, rhoDelta, "syst")
 
         # initialise lists to store uncertainties per replicate
 
@@ -403,7 +403,8 @@ class Instrument(ABC):
         liSample = np.asarray([[i[0] for i in k.values()] for k in liSampleXSlice])
         ltSample = np.asarray([[i[0] for i in k.values()] for k in ltSampleXSlice])
 
-        sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)  # no uncertainty in wvls
+        # no uncertainty in wvls
+        sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)
         sample_Lw = Propagate_L2_FRM.run_samples(Propagate.Lw_FRM, [ltSample, rhoSample, liSample])
         sample_Rrs = Propagate_L2_FRM.run_samples(Propagate.Rrs_FRM, [ltSample, rhoSample, liSample, esSample])
 

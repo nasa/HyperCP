@@ -54,8 +54,8 @@ class RhoCorrections:
 
         Delta = Propagate.M99_Rho_Uncertainty(mean_vals=[windSpeedMean, SZAMean, relAzMean],
                                               uncertainties=[2, 0.5, 3])/rhoScalar
-        # todo: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
 
+        # TODO: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
         # TODO: Model error estimation, requires ancillary data to be switched on. This could create a conflict.
         if not any([AOD is None, wTemp is None, sal is None, waveBands is None]) and \
                 ((ConfigFile.settings["bL1bCal"] > 1) or (ConfigFile.settings['SensorType'].lower() == "seabird")):
@@ -72,11 +72,10 @@ class RhoCorrections:
             # Wavebands clips the ends off of the spectra reducing the amount of values from 200 to 189 for
             # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
 
-            # zhang = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
             zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
                                                 relAzMean, newWaveBands)
 
-            import matplotlib.pyplot as plt
+            # import matplotlib.pyplot as plt
 
             # fig = plt.figure()
             # plt.plot(newWaveBands, rhoScalar * np.ones(len(newWaveBands)), label="M99")
@@ -94,7 +93,7 @@ class RhoCorrections:
             pct_diff = (np.abs(rhoScalar - zhang) / rhoScalar)  # relative units
             tot_diff = np.power(np.power(Delta * 100, 2) + np.power(pct_diff * 100, 2), 0.5)
             tot_diff[np.isnan(tot_diff)==True] = 0  # ensure no NaNs are present in the uncertainties.
-            tot_diff = (tot_diff/100) * rhoScalar
+            tot_diff = (tot_diff/100) * rhoScalar  # ensure difference is in proper units
             # add back in filtered wavelengths
             rhoDelta = []
             i = 0
@@ -103,7 +102,7 @@ class RhoCorrections:
                     rhoDelta.append(tot_diff[i])
                     i += 1
                 else:
-                    # in cases where we are outside the range in which Zhang is calculated a placeholder is used
+                    # in cases where we are outside the range in which Zhang is calculated 0.003 from Ruddick is used
                     rhoDelta.append((np.power(np.power((Delta / rhoScalar) * 100, 2) +
                                      np.power((0.003 / rhoScalar) * 100, 2), 0.5)/100)*rhoScalar)
                     # necessary to convert to relative before propagating, then converted back to absolute
