@@ -1972,8 +1972,8 @@ class HyperOCR(Instrument):
                 ## ADERU: Py6S results now match the length of input data
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
-                solar_zenith = np.array(res_py6s['solar_zenith'][0])
-                direct_ratio = res_py6s['direct_ratio'][0]
+                solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
+                direct_ratio = np.mean(res_py6s['direct_ratio'][:, ind_raw_wvl], axis=0)
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
                                                     np.asarray([0.05 for i in range(np.size(solar_zenith))]),
@@ -2341,8 +2341,8 @@ class Trios(Instrument):
                 ## ADERU: Py6S results now match the length of input data
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
-                solar_zenith = res_py6s['solar_zenith'][0]
-                direct_ratio = res_py6s['direct_ratio'][0]
+                solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
+                direct_ratio = np.mean(res_py6s['direct_ratio'], axis=0)
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith, 0.05, "rand")
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
