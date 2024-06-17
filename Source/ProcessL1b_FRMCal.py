@@ -107,7 +107,7 @@ class ProcessL1b_FRMCal:
             s.altitudes.set_target_sea_level()
             s.altitudes.set_sensor_sea_level()
             s.aot550 = aod[ind_anc]
-            wavelengths, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl)
+            wavelengths, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl, n=1)
 
             # extract value from Py6s
             # total_gaseous_transmittance[n,:] = np.array([res[x].values['total_gaseous_transmittance'] for x in range(nband)])
