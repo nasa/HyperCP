@@ -698,6 +698,7 @@ class ProcessL1bqc:
         # For completeness, flip datasets into colums in all groups
         for grp in node.groups:
             for ds in grp.datasets:
+                print (grp.id, ds)
                 grp.datasets[ds].datasetToColumns()
 
         # Need to either create a new ancData object, or populate the nans in the current one with the model data
