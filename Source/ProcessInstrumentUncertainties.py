@@ -9,6 +9,7 @@ import collections
 from decimal import Decimal
 from inspect import currentframe, getframeinfo
 import warnings
+import copy
 
 # NPL packages
 import punpy
@@ -57,7 +58,9 @@ class Instrument(ABC):
             if InstrumentType.lower() == "trios":
                 # rawData is the group and used to access _CAL, _BACK, and other information about the
                 # DarkPixels... not entirely clear.
-                output[sensortype] = self.lightDarkStats(rawData[sensortype], rawSlice[sensortype], sensortype)
+                output[sensortype] = self.lightDarkStats(
+                    copy.deepcopy(rawData[sensortype]), copy.deepcopy(rawSlice[sensortype]), sensortype
+                )  # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation
             elif InstrumentType.lower() == "seabird":
                 # rawData here is the group, passed along only for the purpose of
                 # confirming "FrameTypes", i.e., ShutterLight or ShutterDark. Calculations
@@ -1679,9 +1682,9 @@ class HyperOCR(Instrument):
     def lightDarkStats(self, grp, slice, sensortype):
         # SeaBird HyperOCR
         lightGrp = grp[0]
-        lightSlice = slice[0]
+        lightSlice = copy.deepcopy(slice[0])  # copy to prevent changing of Raw data
         darkGrp = grp[1]
-        darkSlice = slice[1]
+        darkSlice = copy.deepcopy(slice[1])
 
         if darkGrp.attributes["FrameType"] == "ShutterDark" and darkGrp.getDataset(sensortype):
             darkData = darkSlice['data']  # darkGrp.getDataset(sensortype)
