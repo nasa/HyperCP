@@ -1196,7 +1196,7 @@ class ProcessL2:
         '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for
         meteorological quality flags. Perform glint corrections. Calculate the Rrs. Correct for NIR
         residuals.'''
-
+ 
         esData = refGroup.getDataset("ES")
         liData = sasGroup.getDataset("LI")
         ltData = sasGroup.getDataset("LT")
@@ -2262,6 +2262,7 @@ class ProcessL2:
         node.addGroup("REFLECTANCE")
         node.addGroup("IRRADIANCE")
         node.addGroup("RADIANCE")
+        # node.addGroup("PY6S_MODEL")
         node.copyAttributes(root)
         node.attributes["PROCESSING_LEVEL"] = "2"
         # Remaining attributes managed below...
@@ -2275,10 +2276,9 @@ class ProcessL2:
                 grp.datasets[ds].datasetToColumns()
 
             # Carry over L1AQC data for use in uncertainty budgets
-            if grp.id.endswith('_L1AQC'):
+            if grp.id.endswith('_L1AQC') or grp.id.startswith('PY6S_MODEL'):
                 newGrp = node.addGroup(grp.id)
                 newGrp.copy(grp)
-
                 for ds in newGrp.datasets:
                     newGrp.datasets[ds].datasetToColumns()
 

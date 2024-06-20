@@ -1574,6 +1574,20 @@ class Instrument(ABC):
         return ZEN_avg_coserror, AZI_avg_coserror, zenith_ang, ZEN_delta_err, ZEN_delta, AZI_delta_err, AZI_delta
 
 
+    @staticmethod
+    def read_py6s_model(node):
+        res_py6s = {}
+        # py6s_gp = node.getGroup('PY6S_MODEL_full')
+        py6s_gp = node.getGroup('PY6S_MODEL')
+        py6s_gp.getDataset("direct_ratio").datasetToColumns()
+        res_py6s['solar_zenith'] = np.asarray(py6s_gp.getDataset('solar_zenith').columns['solar_zenith'])
+        res_py6s['wavelengths'] = np.asarray(list(py6s_gp.getDataset('direct_ratio').columns.keys())[2:], dtype=float)
+        res_py6s['direct_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("direct_ratio").data))
+        res_py6s['diffuse_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("diffuse_ratio").data))
+        return res_py6s
+
+
+
 class HyperOCR(Instrument):
 
     warnings.filterwarnings("ignore", message="One of the provided covariance matrix is not positivedefinite. It has been slightly changed")
@@ -1894,7 +1908,9 @@ class HyperOCR(Instrument):
 
                 ## Irradiance direct and diffuse ratio
                 # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, trios=0)
-                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
+                # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
+                res_py6s = Instrument.read_py6s_model(node)
+
 
                 # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, cal_int, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
@@ -1986,13 +2002,14 @@ class HyperOCR(Instrument):
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
                 solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
-                direct_ratio = np.mean(res_py6s['direct_ratio'][:, ind_raw_wvl], axis=0)
+                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
+                direct_ratio, _ = self.interp_common_wvls(direct_ratio, res_py6s['wavelengths'], radcal_wvl)
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
                                                     np.asarray([0.05 for i in range(np.size(solar_zenith))]),
                                                     "rand")  # TODO: get second opinion on zen unc in 6S
 
-                sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
+                sample_dir_rat = cm.generate_sample(mDraws, direct_ratio[ind_raw_wvl], 0.08*direct_ratio, "syst")
 
                 # data5 = self.DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserr)
                 sample_data5 = prop.run_samples(self.DATA5, [sample_data4,
@@ -2318,9 +2335,11 @@ class Trios(Instrument):
                 sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
 
                 # Irradiance direct and diffuse ratio
-                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
-                # res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
-                #                                                   L2_irr_grp=grp)  # , trios=instrument_number)
+                # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
+                res_py6s = Instrument.read_py6s_model(node)
+                # fliter the first two columns here
+
+                direct_ratio = res_py6s["direct_ratio"][:, 2:]
                 # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_int_time_t0,
@@ -2398,8 +2417,8 @@ class Trios(Instrument):
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
                 solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
-                direct_ratio = np.mean(res_py6s['direct_ratio'], axis=0)
-
+                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
+                direct_ratio, _ = self.interp_common_wvls(direct_ratio, res_py6s['wavelengths'], radcal_wvl)
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith, 0.05, "rand")
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
 

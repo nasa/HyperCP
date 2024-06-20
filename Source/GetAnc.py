@@ -123,9 +123,10 @@ class GetAnc:
                     Utilities.writeLogFile(msg)
                     alert = QtWidgets.QMessageBox()
                     alert.setText(f'Request error: {status}\n \
-                                    Enter server credentials in the\n \
-                                    Configuration Window L1BQC and\n  \
-                                    check network path.')
+                                    Check that server credentials have \n \
+                                    been entered in Configuration Window L1BQC. \n  \
+                                    MERRA2 model data are not available until \n \
+                                    the third week of the following month.')
                     alert.exec_()
                     return None
 
