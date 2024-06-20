@@ -676,7 +676,7 @@ class ProcessL1b_Interp:
                 elif gp.id.endswith("_L1AQC"):
                     ltL1AQC = gp
                 else:
-                    ltGroup = gp
+                    ltGroup = gp                        
             if gp.id == "SOLARTRACKER" or gp.id =="SOLARTRACKER_pySAS":
                 satnavGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
             if gp.id == ("ANCILLARY_METADATA"):
@@ -721,7 +721,8 @@ class ProcessL1b_Interp:
             ltDarkGroup.copy(ltL1AQCDark)
             ltLightGroup = root.addGroup('LT_LIGHT_L1AQC')
             ltLightGroup.copy(ltL1AQCLight)
-        
+         
+            
         newGPSGroup = root.addGroup("GPS")
         if gpsGroup is not None:
             # If Ancillary data have already been interpolated, this group must exist,
@@ -907,7 +908,6 @@ class ProcessL1b_Interp:
             ProcessL1b_Interp.interpolateData(diffuse_ratio, interpData, "diffuse_ratio", fileName)
             ProcessL1b_Interp.interpolateData(solar_zenith, interpData, "solar_zenith", fileName)
 
-
         # Match wavelengths across instruments
         # Calls interpolateWavelengths and matchColumns
         # Includes columnsToDataset for only the radiometry, for remaining groups, see below
@@ -923,8 +923,13 @@ class ProcessL1b_Interp:
                 new_unc.datasets[ds].datasetToColumns()
         else:
             print('No RAW_UNCERTAINTIES found. Moving on...')
-        
-
+            
+        # # copy py6s_full
+        # py6s_full = node.getGroup('PY6S_MODEL_full')
+        # if py6s_full is not None:
+        #     p6sfullGroup = root.addGroup('PY6S_MODEL_full')
+        #     p6sfullGroup.copy(py6s_full)
+          
         # DATETIME is not supported in HDF5; remove from groups that still have it
         for gp in root.groups:
             for dsName in gp.datasets:

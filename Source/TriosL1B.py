@@ -434,6 +434,7 @@ class TriosL1B:
         # interpolate to the chosen spectral resolution. HyperSAS instruments operate on
         # different timestamps and wavebands, so interpolation is required.
         node = ProcessL1b_Interp.processL1b_Interp(node, outFilePath)
+        
 
 
         node.attributes["LI_UNITS"] = 'uW/cm^2/nm/sr'

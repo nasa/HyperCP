@@ -151,39 +151,36 @@ class ProcessL1b_FRMCal:
         res_py6s['env_irr'] = f(x_full)
 
 
-        ### Py6S called only once per cast, for starttime
-        # ind_anc = np.argmin(np.abs(np.array(anc_datetime)-datetime[0]))
-        # s = Py6S.SixS()
-        # s.atmos_profile = Py6S.AtmosProfile.PredefinedType(Py6S.AtmosProfile.MidlatitudeSummer)
-        # s.aero_profile  = Py6S.AeroProfile.PredefinedType(Py6S.AeroProfile.Maritime)
-        # s.month = datetime[0].month
-        # s.day = datetime[0].day
-        # s.geometry.solar_z = sun_zenith[ind_anc]
-        # s.geometry.solar_a = sun_azimuth[ind_anc]
-        # s.geometry.view_a = rel_az[ind_anc]
-        # s.geometry.view_z = 180
-        # s.altitudes = Py6S.Altitudes()
-        # s.altitudes.set_target_sea_level()
-        # s.altitudes.set_sensor_sea_level()
-        # s.aot550 = aod[ind_anc]
-        # wavelengths, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl)
-        # # extract value from Py6s
-        # total_gaseous_transmittance = np.array([res[x].values['total_gaseous_transmittance'] for x in range(nband)])
-        # direct = np.array([res[x].values['percent_direct_solar_irradiance'] for x in range(nband)])
-        # diffuse = np.array([res[x].values['percent_diffuse_solar_irradiance'] for x in range(nband)])
-        # env = np.array([res[x].values['percent_environmental_irradiance'] for x in range(nband)])
-        # irr_direct = np.array([res[x].values['direct_solar_irradiance'] for x in range(nband)])
-        # irr_diffuse = np.array([res[x].values['diffuse_solar_irradiance'] for x in range(nband)])
-        # irr_env = np.array([res[x].values['environmental_irradiance'] for x in range(nband)])
-        # # Check for potential zero values and interpolate them with neighbour
-        # val, ind0 = np.where([direct==0])
-        # if len(ind0)>0:
-        #     for i0 in ind0:
-        #         direct[i0] = (direct[i0-1]+direct[i0+1])/2
-
-        # res_py6s = {'direct_ratio': direct, 'diffuse_ratio': diffuse, 'env_ratio': env,
-        #             'direct_irr': irr_direct, 'diffuse_irr': irr_diffuse, 'env_irr': irr_env,
-        #             'solar_zenith':sun_zenith[ind_anc], 'total_gaseous_transmittance':total_gaseous_transmittance}
+        # if called_L2 == False:
+        #     wavelengths = [str(w) for w in wavelengths]
+        #     py6s_grp = node.addGroup("PY6S_MODEL_full")
+        #     ds = py6s_grp.addDataset("direct_irr")
+        #     # ds.data = res_py6s['direct_irr'] 
+        #     # ds.columnsToDataset()
+        #     ds_dt = np.dtype({'names': wavelengths,'formats': [np.float64]*len(wavelengths)})
+        #     rec_arr = np.rec.fromarrays(np.array(res_py6s['direct_irr'] ).transpose(), dtype=ds_dt)
+        #     ds.data = rec_arr
+        #     ds = py6s_grp.addDataset("diffuse_irr")
+        #     # ds.data = res_py6s['diffuse_irr'] 
+        #     # ds.columnsToDataset()
+        #     ds_dt = np.dtype({'names': wavelengths,'formats': [np.float64]*len(wavelengths)})
+        #     rec_arr = np.rec.fromarrays(np.array(res_py6s['diffuse_irr'] ).transpose(), dtype=ds_dt)
+        #     ds.data = rec_arr
+        #     ds = py6s_grp.addDataset("direct_ratio")
+        #     # ds.data = res_py6s['direct_ratio'] 
+        #     # ds.columnsToDataset()
+        #     ds_dt = np.dtype({'names': wavelengths,'formats': [np.float64]*len(wavelengths)})
+        #     rec_arr = np.rec.fromarrays(np.array(res_py6s['direct_ratio'] ).transpose(), dtype=ds_dt)
+        #     ds.data = rec_arr
+        #     ds = py6s_grp.addDataset("diffuse_ratio")
+        #     # ds.data = res_py6s['diffuse_ratio'] 
+        #     # ds.columnsToDataset()
+        #     ds_dt = np.dtype({'names': wavelengths,'formats': [np.float64]*len(wavelengths)})
+        #     rec_arr = np.rec.fromarrays(np.array(res_py6s['diffuse_ratio'] ).transpose(), dtype=ds_dt)
+        #     ds.data = rec_arr
+        #     ds = py6s_grp.addDataset("solar_zenith")
+        #     ds.columns["solar_zenith"] = res_py6s['solar_zenith']
+        #     ds.columnsToDataset()
 
         return res_py6s
 

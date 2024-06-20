@@ -1574,6 +1574,18 @@ class Instrument(ABC):
         return ZEN_avg_coserror, AZI_avg_coserror, zenith_ang, ZEN_delta_err, ZEN_delta, AZI_delta_err, AZI_delta
 
 
+    @staticmethod
+    def read_py6s_model(node):
+        res_py6s = {}
+        # py6s_gp = node.getGroup('PY6S_MODEL_full')
+        py6s_gp = node.getGroup('PY6S_MODEL')
+        res_py6s['solar_zenith'] = np.asarray(py6s_gp.getDataset('solar_zenith').columns['solar_zenith'])
+        res_py6s['direct_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("direct_ratio").data))
+        res_py6s['diffuse_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("diffuse_ratio").data))
+        return res_py6s
+
+
+
 class HyperOCR(Instrument):
 
     warnings.filterwarnings("ignore", message="One of the provided covariance matrix is not positivedefinite. It has been slightly changed")
@@ -1895,6 +1907,8 @@ class HyperOCR(Instrument):
                 ## Irradiance direct and diffuse ratio
                 # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, trios=0)
                 res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
+                # res_py6s = Instrument.read_py6s_model(node)
+
 
                 # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, cal_int, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
@@ -2319,6 +2333,7 @@ class Trios(Instrument):
 
                 # Irradiance direct and diffuse ratio
                 res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
+                # res_py6s = Instrument.read_py6s_model(node)     
                 # res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
                 #                                                   L2_irr_grp=grp)  # , trios=instrument_number)
                 # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
