@@ -438,15 +438,15 @@ class Instrument(ABC):
             # rrs and lw samples now derrived from running convolved instrument data through LW and Rrs measurement funcs
             # should be a time save vs running the band convolution code again!
             sample_lw_S3A = Propagate_L2_FRM.run_samples(Propagate.Lw_FRM, [sample_lt_S3A,
-                                                                                  sample_rho_S3A,
-                                                                                  sample_li_S3A
-                                                                                 ])
+                                                                            sample_rho_S3A,
+                                                                            sample_li_S3A
+                                                                            ])
 
             sample_rrs_S3A = Propagate_L2_FRM.run_samples(Propagate.Rrs_FRM, [sample_lt_S3A,
-                                                                                    sample_rho_S3A,
-                                                                                    sample_li_S3A,
-                                                                                    sample_es_S3A
-                                                                                   ])
+                                                                              sample_rho_S3A,
+                                                                              sample_li_S3A,
+                                                                              sample_es_S3A
+                                                                              ])
 
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_S3A)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_S3A)
