@@ -9,10 +9,12 @@ import collections
 from decimal import Decimal
 from inspect import currentframe, getframeinfo
 import warnings
+import copy
 
 # NPL packages
 import punpy
 import comet_maths as cm
+import matplotlib.pyplot as plt
 
 # HCP files
 from Source import PATH_TO_CONFIG
@@ -25,6 +27,8 @@ from Source.Uncertainty_Analysis import Propagate
 from Source.Weight_RSR import Weight_RSR
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
+
+from Source.Uncertainty_Visualiser import Show_Uncertainties  # class for uncertainty visualisation plots
 
 
 class Instrument(ABC):
@@ -57,7 +61,9 @@ class Instrument(ABC):
             if InstrumentType.lower() == "trios":
                 # rawData is the group and used to access _CAL, _BACK, and other information about the
                 # DarkPixels... not entirely clear.
-                output[sensortype] = self.lightDarkStats(rawData[sensortype], rawSlice[sensortype], sensortype)
+                output[sensortype] = self.lightDarkStats(
+                    copy.deepcopy(rawData[sensortype]), copy.deepcopy(rawSlice[sensortype]), sensortype
+                )  # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation
             elif InstrumentType.lower() == "seabird":
                 # rawData here is the group, passed along only for the purpose of
                 # confirming "FrameTypes", i.e., ShutterLight or ShutterDark. Calculations
@@ -395,7 +401,7 @@ class Instrument(ABC):
         Propagate_L2_FRM = punpy.MCPropagation(mdraws, parallel_cores=1)
 
         # get sample for rho
-        rhoSample = cm.generate_sample(mdraws, rho, rhoDelta, "syst")  # removed *rho because rhoDelta should be in abs units
+        rhoSample = cm.generate_sample(mdraws, rho, rhoDelta, "syst")
 
         # initialise lists to store uncertainties per replicate
 
@@ -403,7 +409,8 @@ class Instrument(ABC):
         liSample = np.asarray([[i[0] for i in k.values()] for k in liSampleXSlice])
         ltSample = np.asarray([[i[0] for i in k.values()] for k in ltSampleXSlice])
 
-        sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)  # no uncertainty in wvls
+        # no uncertainty in wvls
+        sample_wavelengths = cm.generate_sample(mdraws, np.array(waveSubset), None, None)
         sample_Lw = Propagate_L2_FRM.run_samples(Propagate.Lw_FRM, [ltSample, rhoSample, liSample])
         sample_Rrs = Propagate_L2_FRM.run_samples(Propagate.Rrs_FRM, [ltSample, rhoSample, liSample, esSample])
 
@@ -431,15 +438,15 @@ class Instrument(ABC):
             # rrs and lw samples now derrived from running convolved instrument data through LW and Rrs measurement funcs
             # should be a time save vs running the band convolution code again!
             sample_lw_S3A = Propagate_L2_FRM.run_samples(Propagate.Lw_FRM, [sample_lt_S3A,
-                                                                                  sample_rho_S3A,
-                                                                                  sample_li_S3A
-                                                                                 ])
+                                                                            sample_rho_S3A,
+                                                                            sample_li_S3A
+                                                                            ])
 
             sample_rrs_S3A = Propagate_L2_FRM.run_samples(Propagate.Rrs_FRM, [sample_lt_S3A,
-                                                                                    sample_rho_S3A,
-                                                                                    sample_li_S3A,
-                                                                                    sample_es_S3A
-                                                                                   ])
+                                                                              sample_rho_S3A,
+                                                                              sample_li_S3A,
+                                                                              sample_es_S3A
+                                                                              ])
 
             lwDeltaBand = Propagate_L2_FRM.process_samples(None, sample_lw_S3A)
             rrsDeltaBand = Propagate_L2_FRM.process_samples(None, sample_rrs_S3A)
@@ -1572,7 +1579,9 @@ class Instrument(ABC):
         res_py6s = {}
         # py6s_gp = node.getGroup('PY6S_MODEL_full')
         py6s_gp = node.getGroup('PY6S_MODEL')
+        py6s_gp.getDataset("direct_ratio").datasetToColumns()
         res_py6s['solar_zenith'] = np.asarray(py6s_gp.getDataset('solar_zenith').columns['solar_zenith'])
+        res_py6s['wavelengths'] = np.asarray(list(py6s_gp.getDataset('direct_ratio').columns.keys())[2:], dtype=float)
         res_py6s['direct_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("direct_ratio").data))
         res_py6s['diffuse_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("diffuse_ratio").data))
         return res_py6s
@@ -1690,9 +1699,9 @@ class HyperOCR(Instrument):
     def lightDarkStats(self, grp, slice, sensortype):
         # SeaBird HyperOCR
         lightGrp = grp[0]
-        lightSlice = slice[0]
+        lightSlice = copy.deepcopy(slice[0])  # copy to prevent changing of Raw data
         darkGrp = grp[1]
-        darkSlice = slice[1]
+        darkSlice = copy.deepcopy(slice[1])
 
         if darkGrp.attributes["FrameType"] == "ShutterDark" and darkGrp.getDataset(sensortype):
             darkData = darkSlice['data']  # darkGrp.getDataset(sensortype)
@@ -1899,8 +1908,8 @@ class HyperOCR(Instrument):
 
                 ## Irradiance direct and diffuse ratio
                 # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, trios=0)
-                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
-                # res_py6s = Instrument.read_py6s_model(node)
+                # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
+                res_py6s = Instrument.read_py6s_model(node)
 
 
                 # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, cal_int, t1)
@@ -1950,6 +1959,13 @@ class HyperOCR(Instrument):
             sample_dark = cm.generate_sample(100, np.mean(raw_dark, axis=0), std_dark, "rand")
             sample_dark_corr_data = prop.run_samples(self.dark_Substitution, [sample_light, sample_dark])
 
+            # plt.figure()
+            # plt.plot(radcal_wvl, np.mean(sample_light, axis=0))
+            # plt.plot(radcal_wvl, np.mean(sample_dark, axis=0), color='k')
+            # plt.legend()
+            # plt.grid()
+            # plt.savefig(f"check_signal_FRM_{sensortype}.png")
+
             # Non-linearity
             data1 = self.DATA1(data, alpha)  # data*(1 - alpha*data)
             sample_data1 = prop.run_samples(self.DATA1, [sample_dark_corr_data, sample_alpha])
@@ -1985,14 +2001,15 @@ class HyperOCR(Instrument):
                 ## ADERU: Py6S results now match the length of input data
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
-                solar_zenith = np.array(res_py6s['solar_zenith'][0])
-                direct_ratio = res_py6s['direct_ratio'][0]
+                solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
+                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
+                direct_ratio, _ = self.interp_common_wvls(direct_ratio, res_py6s['wavelengths'], radcal_wvl)
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
                                                     np.asarray([0.05 for i in range(np.size(solar_zenith))]),
                                                     "rand")  # TODO: get second opinion on zen unc in 6S
 
-                sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
+                sample_dir_rat = cm.generate_sample(mDraws, direct_ratio[ind_raw_wvl], 0.08*direct_ratio, "syst")
 
                 # data5 = self.DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserr)
                 sample_data5 = prop.run_samples(self.DATA5, [sample_data4,
@@ -2033,6 +2050,49 @@ class HyperOCR(Instrument):
                 output[f"{sensortype.lower()}Unc"], wvls, newWaveBands)
             output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
+
+            # example uncertainty plotting - used to generate unc breakdown plots
+            # p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
+            # time = node.attributes['TIME-STAMP'].split(' ')[-2]  # for labelling
+            # if sensortype.upper() == 'ES':
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_data5, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
+            #     )
+            # else:
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
+            #     )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_data4, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_data3, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_data2, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_data1, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_dark_corr_data, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
+            #     save={
+            #         "cal_type": node.attributes["CAL_TYPE"],
+            #         "time": node.attributes['TIME-STAMP'],
+            #         "instrument": "SeaBird"
+            #     }
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_light, radcal_wvl, fig_name=f"breakdown_{sensortype}", name=f"light", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_dark, radcal_wvl, fig_name=f"breakdown_{sensortype}", name=f"dark", xlim=(400, 800),
+            #     save={
+            #         "cal_type": node.attributes["CAL_TYPE"],
+            #         "time": node.attributes['TIME-STAMP'],
+            #         "instrument": "SeaBird"
+            #     }
+            # )
 
         return output
 
@@ -2275,10 +2335,11 @@ class Trios(Instrument):
                 sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
 
                 # Irradiance direct and diffuse ratio
-                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
-                # res_py6s = Instrument.read_py6s_model(node)     
-                # res_py6s = ProcessL1b.get_direct_irradiance_ratio(node, sensortype, trios=0,
-                #                                                   L2_irr_grp=grp)  # , trios=instrument_number)
+                # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
+                res_py6s = Instrument.read_py6s_model(node)
+                # fliter the first two columns here
+
+                direct_ratio = res_py6s["direct_ratio"][:, 2:]
                 # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_int_time_t0,
@@ -2355,9 +2416,9 @@ class Trios(Instrument):
                 ## ADERU: Py6S results now match the length of input data
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
-                solar_zenith = res_py6s['solar_zenith'][0]
-                direct_ratio = res_py6s['direct_ratio'][0]
-
+                solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
+                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
+                direct_ratio, _ = self.interp_common_wvls(direct_ratio, res_py6s['wavelengths'], radcal_wvl)
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith, 0.05, "rand")
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
 
