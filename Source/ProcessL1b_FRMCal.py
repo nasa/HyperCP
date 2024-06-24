@@ -78,7 +78,7 @@ class ProcessL1b_FRMCal:
         nband = len(wvl)
 
         # Py6S called over 3min bin
-        deltat = datetime[1]-datetime[0]
+        deltat = (datetime[-1]-datetime[0])/len(datetime)
         n_min = int(3*60//deltat.total_seconds())  # nb of mesures over a bin
         n_bin = len(datetime)//n_min  # nb of bin in a cast
         if len(datetime) % n_min != 0:

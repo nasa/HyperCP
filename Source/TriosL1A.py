@@ -307,12 +307,13 @@ class TriosL1A:
                 ## Test filename for station/cast
                 match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
                 match2 = re.search(r'\d{4}S', file.split('/')[-1])
-                # match2 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
+                match3 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
                 if match1 is not None:
                     a_name = match1.group()
                 elif match2 is not None:
                     a_name = match2.group()
-                    # a_time = match2.group()
+                elif match3 is not None:
+                    a_name = match3.group()
                 else:
                     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
                     print("  L0 filename should have a cast to identify triplet instrument")

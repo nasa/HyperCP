@@ -896,6 +896,8 @@ class Utilities:
                 timeStamp = group.getDataset("ES").data["Datetime"]
             if group.id == "RADIANCE":
                 timeStamp = group.getDataset("LI").data["Datetime"]
+            if group.id == "PY6S_MODEL":
+                timeStamp = group.getDataset("solar_zenith").data["Datetime"]
         else:
              timeStamp = group.getDataset("Timestamp").data["Datetime"]
              # TRIOS: copy CAL & BACK before filetering, and delete them 

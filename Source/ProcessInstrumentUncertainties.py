@@ -1783,7 +1783,7 @@ class HyperOCR(Instrument):
             # Read FRM characterisation
             radcal_wvl = np.asarray(
                 pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['1'][1:].tolist())
-            radcal_cal = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['2']
+            radcal_cal_raw = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['2']
             S1 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['6']
             S2 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['8']
             S1_unc = np.array((pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['7'])[1:].to_list())  # removed /100 as not relative in tartu file
@@ -1834,8 +1834,8 @@ class HyperOCR(Instrument):
             sample_LAMP = cm.generate_sample(mDraws, LAMP, LAMP_unc, "syst")
 
             # Non-linearity alpha computation
-            cal_int = radcal_cal.pop(0)
-            radcal_cal = radcal_cal[ind_raw_wvl]
+            cal_int = radcal_cal_raw.pop(0)
+            radcal_cal = radcal_cal_raw[ind_raw_wvl]
             sample_cal_int = cm.generate_sample(100, cal_int, None, None)
 
             t1 = S1.iloc[0]
@@ -2009,7 +2009,8 @@ class HyperOCR(Instrument):
                                                     np.asarray([0.05 for i in range(np.size(solar_zenith))]),
                                                     "rand")  # TODO: get second opinion on zen unc in 6S
 
-                sample_dir_rat = cm.generate_sample(mDraws, direct_ratio[ind_raw_wvl], 0.08*direct_ratio, "syst")
+                # sample_dir_rat = cm.generate_sample(mDraws, direct_ratio[ind_raw_wvl], 0.08*direct_ratio, "syst")
+                sample_dir_rat = cm.generate_sample(mDraws, direct_ratio[ind_raw_wvl], 0.08*direct_ratio[ind_raw_wvl], "syst")
 
                 # data5 = self.DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserr)
                 sample_data5 = prop.run_samples(self.DATA5, [sample_data4,
@@ -2037,7 +2038,7 @@ class HyperOCR(Instrument):
                 unc = prop.process_samples(None, sample_pol_mesure)
                 sample = sample_pol_mesure
 
-            ind_cal = (radcal_cal[ind_raw_wvl]) > 0
+            ind_cal = (radcal_cal_raw[ind_raw_wvl]) > 0
 
             output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_raw_wvl == True][ind_cal == True]
             output[f"{sensortype.lower()}Unc"] = unc[ind_cal == True]  # relative uncertainty
