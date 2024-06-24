@@ -7,6 +7,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from Source.HDFGroup import HDFGroup
 
 
 class Show_Uncertainties(ABC):
@@ -120,3 +121,41 @@ class Show_Uncertainties(ABC):
         To plot every sample from FRM processing - To be implemented -
         """
         pass
+
+    def plot_breakdown_Class(self, mean_values: list, uncertainty: list, wavelengths: dict, cumulative: bool = True,
+                             cast: str = ''):
+        """
+
+        """
+        keys = ["stdev", "Cal", "Stab", "Lin", "cT", "Stray"]
+        output = {"ES": {}, "LI": {}, "LT": {}}
+        vals = {}
+        indx = 0
+        # nul = np.zeroes(len(uncertainty[0]))
+        uncs = np.zeros(np.asarray(uncertainty).shape)
+        # generate class based uncertaitnies from 0 and adding each contribution in turn
+        vals['ES'], vals['LI'], vals['LT'] = self.punpy_MCP.instruments(*mean_values) # get values to make uncs relative
+        for i in [0, 3, 6, 9, 15, 12]:
+            uncs[i:i+3] = uncertainty[i:i+3]
+            (
+                output['ES'][keys[indx]],
+                output['LI'][keys[indx]],
+                output['LT'][keys[indx]]
+            ) = self.punpy_MCP.propagate_Instrument_Uncertainty(mean_values, uncs)
+            indx += 1
+            if not cumulative:
+                uncs = np.zeros(np.asarray(uncertainty).shape)  # reset uncertaitnies
+
+        # now we plot the result
+
+        for sensor in ['ES', 'LI', 'LT']:
+
+            plt.figure(f"{sensor}_{cast}")
+            for key in keys:
+                plt.plot(wavelengths[sensor], (output[sensor][key] / vals[sensor]) * 100, label=key)
+            plt.xlabel("Wavelengths")
+            plt.ylabel("Relative Uncertainties (%)")
+            plt.title(f"Class-Based branch Breakdown of {sensor} Uncertainties")
+            plt.legend()
+            plt.grid()
+            plt.savefig(f"{sensor}_{cast}_class_breakdown.png")
