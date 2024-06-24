@@ -2160,12 +2160,12 @@ class Utilities:
             # We use ambiant_temp+2.5° instead to estimate internal temp
             for i in range(len(therm_coeff)):
                 try:
-                    ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+2.5 - refTemp)))
+                    ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))  # was 2.5
                     if ConfigFile.settings["bL1bCal"] == 3:
                         ThermUnc.append(therm_unc[i] / 2)
                         # uncertainty is k=2 from char file
                     else:
-                        ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp+ambTemp+2.5 - refTemp)))
+                        ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))  # was 2.5
                 except IndexError:
                     ThermCorr.append(1.0)
                     ThermUnc.append(0)
