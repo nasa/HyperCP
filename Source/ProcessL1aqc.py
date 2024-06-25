@@ -215,9 +215,11 @@ class ProcessL1aqc:
             ancDateTime = ancData.columns["DATETIME"][0].copy()
 
             print('Removing non-pertinent ancillary data.')
-            lower = bisect.bisect_left(ancDateTime, min(esDateTime))
+            # lower = bisect.bisect_left(ancDateTime, min(esDateTime))
+            lower = np.abs([d-min(esDateTime) for d in ancDateTime]).argmin()
             lower = list(range(0,lower-1))
-            upper = bisect.bisect_right(ancDateTime, max(esDateTime))
+            # upper = bisect.bisect_right(ancDateTime, max(esDateTime))+1
+            upper = np.abs([d-max(esDateTime) for d in ancDateTime]).argmin()
             upper = list(range(upper,len(ancDateTime)))
             ancData.colDeleteRow(upper)
             ancData.colDeleteRow(lower)
