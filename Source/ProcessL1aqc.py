@@ -217,7 +217,9 @@ class ProcessL1aqc:
             print('Removing non-pertinent ancillary data.')
             lower = bisect.bisect_left(ancDateTime, min(esDateTime))
             lower = list(range(0,lower-1))
-            upper = bisect.bisect_right(ancDateTime, max(esDateTime))
+            # add one point to upper limit to ensure that at least 2 ancillary 
+            # timestamp are selected when dealing with short cast
+            upper = bisect.bisect_right(ancDateTime, max(esDateTime))+1
             upper = list(range(upper,len(ancDateTime)))
             ancData.colDeleteRow(upper)
             ancData.colDeleteRow(lower)
