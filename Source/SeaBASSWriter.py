@@ -576,6 +576,7 @@ class SeaBASSWriter:
 
         if ConfigFile.settings['bL2BRDF']:
             SeaBASSWriter.writeSeaBASS('Lwnex',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
-            SeaBASSWriter.writeSeaBASS('rrs',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
+            # SeaBASSWriter.writeSeaBASS('rrs',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
+            SeaBASSWriter.writeSeaBASS('Rrsex',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
         # SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
         # SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)
