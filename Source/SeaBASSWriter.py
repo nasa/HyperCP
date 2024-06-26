@@ -568,13 +568,15 @@ class SeaBASSWriter:
 
         # # Write SeaBASS files
         # Need to update headerBlock for BRDF
-        headerBlock['BRDF_correction'] = SeaBASSHeader.settings['BRDF_correction']
+        # headerBlock['BRDF_correction'] = SeaBASSHeader.settings['BRDF_correction']
+        headerBlock['BRDF_correction'] = 'noBRDF'
         SeaBASSWriter.writeSeaBASS('Rrs',fp,headerBlock,formattedRrs,fieldsRrs,unitsRrs)
         SeaBASSWriter.writeSeaBASS('Lwn',fp,headerBlock,formattednLw,fieldsnLw,unitsnLw)
         SeaBASSWriter.writeSeaBASS('Es',fp,headerBlock,formattedEs,fieldsEs,unitsEs)
 
 
         if ConfigFile.settings['bL2BRDF']:
+            headerBlock['BRDF_correction'] = SeaBASSHeader.settings['BRDF_correction']
             SeaBASSWriter.writeSeaBASS('Lwnex',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
             # SeaBASSWriter.writeSeaBASS('rrs',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
             SeaBASSWriter.writeSeaBASS('Rrsex',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
