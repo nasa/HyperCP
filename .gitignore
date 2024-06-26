@@ -21,7 +21,8 @@ Data/Sample_Data/Reports/
 Data/Photos/
 Plots/
 Logs/
-Config/
+# The /* is required if you later want to unignored subsets
+Config/* 
 
 # To update sample configurations, uncomment:
 !Config/sample_*_Calibration/
