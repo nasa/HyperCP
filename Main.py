@@ -617,8 +617,8 @@ class Command():
         else:
             # Single file
             MainConfig.settings["inDir"] = os.path.dirname(inputFile)
-            # Now make it a list as it is expected to be
-            # inputFile = [inputFile]        
+        # Now make it a list as it is expected to be
+        # inputFile = [inputFile]        
 
         # No GUI used: error message are display in prompt and not in graphical window
         MainConfig.settings["popQuery"] = -1
@@ -643,7 +643,10 @@ class Command():
             sys.exit()
 
         if processMultiLevel:
-            Controller.processFilesMultiLevel(self.outputDirectory,inputFile, calibrationMap, flag_Trios)
+            if InstrumentType.lower() == "trios" and to_level == "L1A":
+                Controller.processFilesMultiLevel(self.outputDirectory,inputFile, calibrationMap, flag_Trios)
+            else:
+                Controller.processFilesMultiLevel(self.outputDirectory,[inputFile], calibrationMap, flag_Trios)
         else:
             # processSingleLevel is only prepared for a singleton file at a time
             Controller.processSingleLevel(self.outputDirectory, inputFile, calibrationMap, to_level, flag_Trios)
