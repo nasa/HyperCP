@@ -975,6 +975,8 @@ class Utilities:
 
     @staticmethod
     def plotRadiometry(root, filename, rType, plotDelta = False):
+        # refresh figure to ensure debug plots do not affect Rrs plotting
+        plt.figure()
 
         dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
