@@ -556,21 +556,17 @@ class Window(QtWidgets.QWidget):
 ###################################################################################
 
 class Command():
-    ''' Class without using the GUI '''
+    ''' Class for batching without using the GUI. Scripted calls preferred, but 
+        direct call possible. '''
 
-    def __init__(self, configFilePath, from_level, inputFile, outputDirectory, level, ancFile=None):
+    def __init__(self, configFilePath, from_level, inputFile, outputDirectory, to_level, 
+                 ancFile=None, processMultiLevel=False):
 
-        # Configuration File
         self.configFilename = configFilePath
-        # Input File
         self.inputFile = inputFile
-        # Input Directory
         self.inputDirectory = os.path.join(outputDirectory,from_level)
-        # Output Directory
         self.outputDirectory = outputDirectory
-        # Processing Level
-        self.level = level
-        # Ancillary File
+        self.level = to_level
         self.ancFile = ancFile
 
         super().__init__()
@@ -584,7 +580,6 @@ class Command():
             try:
                 r = requests.get(url, stream=True)
                 r.raise_for_status()
-
             except requests.exceptions.HTTPError as err:
                 print('Error in download_file:',err)
 
@@ -604,7 +599,7 @@ class Command():
                                 https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat \
                                     and place in HyperInSPACE/Data directory.')
 
-        # Create a default main.config to be filled with cmd argument
+        # Create a default main config to be filled with cmd argument
         # to avoid reading the one generated with the GUI
         MainConfig.createDefaultConfig("cmdline_main.config", version)
         MainConfig.fileName = 'cmdline_main.config'
@@ -615,31 +610,26 @@ class Command():
         MainConfig.settings['version'] = version
         MainConfig.settings["metFile"] = self.ancFile
         MainConfig.settings["outDir"] = outputDirectory
+
         if type(inputFile) is list:
             # Process the entire directory of the first file in the list
-            # self.inputFile = os.path.dirname(inputFile[0])+'/'
-            MainConfig.settings["inDir"] = os.path.dirname(inputFile[0])
-        # if os.path.isfile(inputFile):
-        #     MainConfig.settings["inDir"] = os.path.dirname(inputFile)+'/'
+            MainConfig.settings["inDir"] = os.path.dirname(inputFile[0])        
         else:
             # Single file
             MainConfig.settings["inDir"] = os.path.dirname(inputFile)
-            # MainConfig.settings["inDir"] = inputFile
             # Now make it a list as it is expected to be
-            inputFile = [inputFile]
-        print("MainConfig - Config updated with cmd line arguments")
+            # inputFile = [inputFile]        
 
         # No GUI used: error message are display in prompt and not in graphical window
         MainConfig.settings["popQuery"] = -1
-
         MainConfig.saveConfig(MainConfig.fileName)
-
-        ''' Need INST, calfiles, and trios flag'''
+        print("MainConfig - Config updated with cmd line arguments")
+        
         ConfigFile.loadConfig(self.configFilename)
 
         InstrumentType = ConfigFile.settings['SensorType']
         calFiles = ConfigFile.settings['CalibrationFiles']
-        # To check instrument type
+        
         if InstrumentType.lower() == 'trios':
             flag_Trios = 1
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
@@ -652,154 +642,14 @@ class Command():
             print('Error in configuration file: Sensor type not specified')
             sys.exit()
 
-        # if inputFile is not type('list'): inputFile = [inputFile]
-        Controller.processFilesMultiLevel(self.outputDirectory,inputFile, calibrationMap, flag_Trios)
-        # For our needs, we only use a single processing
-        # self.processSingle(self.level)
-
-    ########################################################################################
-
-    # def processSingle(self, level):
-    #     t0Single=time.time()
-    #     # Load Config file
-    #     configFileName = MainConfig.settings['cfgFile']
-    #     MainConfig.settings["inDir"] = self.inputDirectory
-    #     # self.inputDirectory = MainConfig.settings["inDir"]
-    #     # configFileName = self.configComboBox.currentText()
-    #     MainConfig.settings['cfgPath'] = os.path.join('Config', configFileName)
-    #     if not os.path.isfile(MainConfig.settings['cfgPath']):
-    #         message = 'Not valid Config File: ' + configFileName
-    #         QtWidgets.QMessageBox.critical(self, 'Error', message)
-    #         return
-    #     MainConfig.saveConfig(MainConfig.fileName)
-    #     ConfigFile.loadConfig(configFileName)
-    #     seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
-    #     SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-    #     InstrumentType = ConfigFile.settings['SensorType']
-
-    #     # To check instrument type
-    #     if InstrumentType.lower() == 'trios':
-    #         flag_Trios = 1
-    #     elif InstrumentType.lower() == 'seabird':
-    #         flag_Trios = 0
-    #     else:
-    #         print('Error in configuration file: Sensor type not specified')
-    #         sys.exit()
-
-    #     # # Select data files
-    #     # if not self.inputDirectory[0]:
-    #     #     print('Bad input parent directory.')
-    #     #     return
-
-    #     if level == 'L1A':
-    #         inLevel = '' # RAW already added above
-    #     if level == 'L1AQC':
-    #         inLevel = 'L1A'
-    #     if level == 'L1B':
-    #         inLevel = 'L1AQC'
-    #     if level == 'L1BQC':
-    #         inLevel = 'L1B'
-    #     if level == 'L2':
-    #         inLevel = 'L1BQC'
-
-    #     # Check for subdirectory associated with level chosen
-    #     subInputDir = os.path.join(self.inputDirectory + '/' + inLevel + '/')
-    #     if os.path.exists(subInputDir):
-    #         # openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',subInputDir)
-    #     fileNames = self.inputFile #openFileNames[0] # The first element is the whole list
-
-    # # else:
-    # #     openFileNames = QtWidgets.QFileDialog.getOpenFileNames(self, 'Open File',self.inputDirectory)
-    # #     fileNames = openFileNames[0] # The first element is the whole list
-
-    # # print('Files:', openFileNames)
-    # if not fileNames:
-    #     return
-
-    # print('Process Calibration Files')
-    # calFiles = ConfigFile.settings['CalibrationFiles']
-
-    # if flag_Trios == 0:
-    #     calibrationMap = Controller.processCalibrationConfig(configFileName, calFiles)
-    # else:
-    #     calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
-    #     # calibrationMap = 0
-    # if not calibrationMap.keys():
-    #     print('No calibration files found. '
-    #     'Check Config directory for your instrument files.')
-    #     return
-
-    # print('Output Directory:', os.path.abspath(self.outputDirectory))
-    # if not self.outputDirectory[0]:
-    #     print('Bad output directory.')
-    #     return
-
-    # Controller.processFilesSingleLevel(self.outputDirectory,fileNames, calibrationMap, level, flag_Trios)
-    # t1Single = time.time()
-    # print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
-    # # print('Process Single-Level')
-    # t0Single=time.time()
-    # # Load Config file
-    # configFileName = self.configFilename
-    # configPath = os.path.join('Config', configFileName)
-    # if not os.path.isfile(configPath):
-    #     message = 'Not valid Config File: ' + configFileName
-    #     print(message)
-    #     return
-
-    # ConfigFile.loadConfig(configFileName)
-    # seaBASSHeaderFileName = ConfigFile.settings['seaBASSHeaderFileName']
-    # SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-    # InstrumentType = ConfigFile.settings['SensorType']
-
-
-    # ## If a file is specified, then process a single file (Not suitable for L1A .dat file)
-    # if os.path.isfile(inputFile):
-    #     fileNames = [inputFile]
-    # ## if a folder is specified, the process is lauched on all files inside this folder
-    # else:
-    #     fileNames = glob.glob(inputFile+'/*.*')
-
-    # # Only one file is given in argument (inputFile) but to keep the same use of the Controller function,
-    # # we keep variable fileNames which is a list
-    # fileNames = [self.inputFile]
-    # print('Files:', fileNames)
-    # if not fileNames:
-    #     print('Error in input data')
-    #     return
-
-    # # To check insturment type
-    # if InstrumentType.lower() == 'trios':
-    #     flag_Trios = 1
-    # elif InstrumentType.lower() == 'seabird':
-    #     flag_Trios = 0
-    # else:
-    #     print('Error in configuration file: Sensor type not specified')
-    #     sys.exit()
-
-    # print('Process Calibration Files')
-    # filename = ConfigFile.filename
-    # calFiles = ConfigFile.settings['CalibrationFiles']
-    # if flag_Trios == 0 :
-    #     calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
-    #     if not calibrationMap.keys():
-    #         print('No calibration files found. '
-    #         'Check Config directory for your instrument files.')
-    #         return
-    # else:
-    #     calibrationMap = 0      #Cal files are not used for at the moment for Trios
-
-    # print('Output Directory:', os.path.abspath(self.outputDirectory))
-    # if not self.outputDirectory[0]:
-    #     print('Bad output directory.')
-    #     return
-
-    # Controller.processFilesSingleLevel(self.outputDirectory, fileNames, calibrationMap, level, flag_Trios)
-    # t1Single = time.time()
-    # print(f'Time elapsed: {str(round((t1Single-t0Single)/60))} minutes')
-
+        if processMultiLevel:
+            Controller.processFilesMultiLevel(self.outputDirectory,inputFile, calibrationMap, flag_Trios)
+        else:
+            # processSingleLevel is only prepared for a singleton file at a time
+            Controller.processSingleLevel(self.outputDirectory, inputFile, calibrationMap, to_level, flag_Trios)
 
 # Arguments declaration
+######## This section is not up to date. Scripted calls to Command are preferred. ##########
 parser = argparse.ArgumentParser(description='Arguments description')
 # Mandatory arguments
 required = parser.add_argument_group('Required arguments')
@@ -834,6 +684,13 @@ required.add_argument('-l',
                     choices=['L1A', 'L1AQC', 'L1B', 'L1BQC', 'L2'],
                     default=None,
                     type=str)
+required.add_argument('-m',
+                    action="store",
+                    dest="multiLevel",
+                    help='Single or multilevel processing (L0-L2): -m False',
+                    choices=['True','False'],
+                    default='False',
+                    type=str)
 required.add_argument('-a',
                     action="store",
                     dest="ancFile",
@@ -856,8 +713,12 @@ required.add_argument('-p',
 args = parser.parse_args()
 
 # If the commandline option is given, check if all needed information are given
-if args.cmd and (args.configFilePath is None or args.inputFile is None or args.outputDirectory is None or args.level is None):
-    parser.error("-cmd requires -c config -i inputFile -o outputDirectory -l processingLevel")
+if args.cmd and (args.configFilePath is None or 
+                 args.inputFile is None or 
+                 args.multiLevel is None or 
+                 args.outputDirectory is None or 
+                 args.level is None):
+    parser.error("-cmd requires -c config -i inputFile -m multiLevel -o outputDirectory -l processingLevel")
 # If the commandline option is given, check if all needed information are given
 if args.cmd and args.level=='L1BQC' and (args.username is None or args.password is None):
     parser.error("L1BQC processing requires username and password for https://oceancolor.gsfc.nasa.gov/")
@@ -871,6 +732,7 @@ level = args.level
 ancFile = args.ancFile
 username = args.username
 password = args.password
+multiLevel = args.multiLevel
 
 if __name__ == '__main__':
     # Close splashscreen
@@ -890,7 +752,7 @@ if __name__ == '__main__':
         if not (args.username is None or args.password is None):
             # Only for L2 processing set credentials
             GetAnc.userCreds(username, password)
-        Command(configFilePath, inputFile, outputDirectory, level, ancFile)
+        Command(configFilePath, inputFile, multiLevel, outputDirectory, level, ancFile)
     else:
         os.environ['HYPERINSPACE_CMD'] = 'FALSE'
         app = QtWidgets.QApplication(sys.argv)
