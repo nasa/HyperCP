@@ -159,4 +159,6 @@ class Show_Uncertainties(ABC):
             plt.title(f"Class-Based branch Breakdown of {sensor} Uncertainties")
             plt.legend()
             plt.grid()
+            if isinstance(cast, list):
+                cast = cast[0]
             plt.savefig(f"{sensor}_{cast}_class_breakdown.png")

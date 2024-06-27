@@ -322,7 +322,7 @@ class Instrument(ABC):
                 LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
                 ),
             True,
-            node.attributes["RAW_FILE_NAME"]
+            type(self).__name__ + '_' + node.attributes["CAST"]
         )
 
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
