@@ -102,7 +102,7 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["west_longitude"] = ''
 
         SeaBASSHeader.settings["rho_correction"] = ''
-        SeaBASSHeader.settings["NIR_residual_correction"] = ''
+        SeaBASSHeader.settings["NIR_residual_correction"] = 'noBRDF'
         SeaBASSHeader.settings["BRDF_correction"] = ''
 
 

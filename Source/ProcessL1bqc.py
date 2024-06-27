@@ -136,7 +136,7 @@ class ProcessL1bqc:
         return badTimes
 
     @staticmethod
-    def metQualityCheck(refGroup, sasGroup):
+    def metQualityCheck(refGroup, sasGroup, py6sGroup):
         ''' Perform meteorological quality control '''
 
         esFlag = float(ConfigFile.settings["fL1bqcSignificantEsFlag"])
@@ -646,8 +646,8 @@ class ProcessL1bqc:
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
                     Utilities.filterData(ltGroup,badTimes,'L1AQC')
-                # if py6sGroup is not None:
-                #     Utilities.filterData(py6sGroup,badTimes)
+                if py6sGroup is not None:
+                    Utilities.filterData(py6sGroup,badTimes)
 
         # Next apply the Meteorological Filter prior to slicing
         esData = referenceGroup.getDataset("ES")
@@ -656,7 +656,7 @@ class ProcessL1bqc:
             msg = "Applying meteorological filtering to eliminate spectra."
             print(msg)
             Utilities.writeLogFile(msg)
-            badTimes = ProcessL1bqc.metQualityCheck(referenceGroup, sasGroup)
+            badTimes = ProcessL1bqc.metQualityCheck(referenceGroup, sasGroup, py6sGroup)
 
             if badTimes is not None:
                 if len(badTimes) == esData.data.size:
@@ -685,8 +685,8 @@ class ProcessL1bqc:
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
                     Utilities.filterData(ltGroup,badTimes,'L1AQC')
-                # if py6sGroup is not None:
-                #     Utilities.filterData(py6sGroup,badTimes)
+                if py6sGroup is not None:
+                    Utilities.filterData(py6sGroup,badTimes)
 
         return True
 
@@ -698,7 +698,7 @@ class ProcessL1bqc:
         # For completeness, flip datasets into colums in all groups
         for grp in node.groups:
             for ds in grp.datasets:
-                print (grp.id, ds)
+                # print (grp.id, ds)
                 grp.datasets[ds].datasetToColumns()
 
         # Need to either create a new ancData object, or populate the nans in the current one with the model data

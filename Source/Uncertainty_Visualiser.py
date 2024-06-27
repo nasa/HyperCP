@@ -127,7 +127,7 @@ class Show_Uncertainties(ABC):
         """
 
         """
-        keys = ["stdev", "Cal", "Stab", "Lin", "cT", "Stray"]
+        keys = ["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
         output = {"ES": {}, "LI": {}, "LT": {}}
         vals = {}
         indx = 0
@@ -135,8 +135,11 @@ class Show_Uncertainties(ABC):
         uncs = np.zeros(np.asarray(uncertainty).shape)
         # generate class based uncertaitnies from 0 and adding each contribution in turn
         vals['ES'], vals['LI'], vals['LT'] = self.punpy_MCP.instruments(*mean_values) # get values to make uncs relative
-        for i in [0, 3, 6, 9, 15, 12]:
-            uncs[i:i+3] = uncertainty[i:i+3]
+        for i in [0, 6, 9, 12, 18, 15, 21]:
+            if i == 0:
+                uncs[0:6] = uncertainty[0:6]
+            else:
+                uncs[i:i+3] = uncertainty[i:i+3]
             (
                 output['ES'][keys[indx]],
                 output['LI'][keys[indx]],

@@ -525,9 +525,8 @@ class Controller:
         if flag_Trios and level == "L1A":
             # inFilePath is a list of filepath strings at L1A
             # Grab input name and extension of first file
-            inFileName = os.path.split(inFilePath[0])[1]
-            # outFilePath = [os.path.join(pathOutLevel, os.path.splitext(os.path.basename(fp.rsplit('_',1)[0]))[0]+"_"+level+".hdf") for fp in inFilePath]
-            outFilePath = pathOutLevel #os.path.split(outFilePath[0])[0] # Just the path to first file; no files
+            inFileName = os.path.split(inFilePath[0])[1]            
+            outFilePath = pathOutLevel # Just the path to first file; no files
         else:
             # inFilePath is a singleton filepath string
             inFilePath = os.path.abspath(inFilePath)
