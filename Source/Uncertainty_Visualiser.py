@@ -130,13 +130,12 @@ class Show_Uncertainties(ABC):
         keys = ["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
         output = {"ES": {}, "LI": {}, "LT": {}}
         vals = {}
-        indx = 0
         # nul = np.zeroes(len(uncertainty[0]))
         uncs = np.zeros(np.asarray(uncertainty).shape)
         # generate class based uncertaitnies from 0 and adding each contribution in turn
         vals['ES'], vals['LI'], vals['LT'] = self.punpy_MCP.instruments(*mean_values) # get values to make uncs relative
-        for i in [0, 6, 9, 12, 18, 15, 21]:
-            if i == 0:
+        for indx, i in enumerate([0, 6, 9, 12, 18, 15, 21]):
+            if indx == 0:
                 uncs[0:6] = uncertainty[0:6]
             else:
                 uncs[i:i+3] = uncertainty[i:i+3]
@@ -145,7 +144,6 @@ class Show_Uncertainties(ABC):
                 output['LI'][keys[indx]],
                 output['LT'][keys[indx]]
             ) = self.punpy_MCP.propagate_Instrument_Uncertainty(mean_values, uncs)
-            indx += 1
             if not cumulative:
                 uncs = np.zeros(np.asarray(uncertainty).shape)  # reset uncertaitnies
 
