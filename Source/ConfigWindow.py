@@ -1844,6 +1844,7 @@ class ConfigWindow(QtWidgets.QDialog):
             seaBASSHeaderDialog.show()
             # print("SeaBASS Header file lost. Please restore to Config directory or recreate.")
         self.l2SeaBASSHeaderLabel.setText(f'  {ConfigFile.settings["seaBASSHeaderFileName"]}')
+        ConfigWindow.refreshConfig(self)
 
     def l2WriteReportCheckBoxUpdate(self):
         print("ConfigWindow - l2WriteReportCheckBoxUpdate")
