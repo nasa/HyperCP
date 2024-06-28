@@ -559,13 +559,13 @@ class Command():
     ''' Class for batching without using the GUI. Scripted calls preferred, but 
         direct call possible. '''
 
-    def __init__(self, configFilePath, from_level, inputFile, outputDirectory, to_level, 
+    def __init__(self, configFilePath, from_level, inputFile, dataDirectory, to_level, 
                  ancFile=None, processMultiLevel=False):
 
         self.configFilename = configFilePath
         self.inputFile = inputFile
-        self.inputDirectory = os.path.join(outputDirectory,from_level)
-        self.outputDirectory = outputDirectory
+        self.inputDirectory = os.path.join(dataDirectory,from_level)
+        self.outputDirectory = dataDirectory
         self.level = to_level
         self.ancFile = ancFile
 
@@ -609,7 +609,7 @@ class Command():
         MainConfig.settings['cfgPath'] = configFilePath
         MainConfig.settings['version'] = version
         MainConfig.settings["metFile"] = self.ancFile
-        MainConfig.settings["outDir"] = outputDirectory
+        MainConfig.settings["outDir"] = self.outputDirectory
 
         if type(inputFile) is list:
             # Process the entire directory of the first file in the list
