@@ -71,7 +71,7 @@ Data/FidRadDB_characterization/
 *.log
 runtest.py
 run_*.py
-!run_sample.py
+!run_Sample_Data.py
 
 # copernicus url and keys
 .cdsapirc
