@@ -124,7 +124,7 @@ class GetAnc:
                     alert = QtWidgets.QMessageBox()
                     alert.setText(f'Request error: {status}\n \
                                     Check that server credentials have \n \
-                                    been entered in Configuration Window L1BQC. \n  \
+                                    been entered in Configuration Window L1B. \n  \
                                     MERRA2 model data are not available until \n \
                                     the third week of the following month.')
                     alert.exec_()

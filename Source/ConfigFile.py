@@ -253,6 +253,8 @@ class ConfigFile:
                             ConfigFile.settings[key] = value
 
                 ConfigFile.createCalibrationFolder()
+        else:
+            print(f'####### Configuration {filename} not found. Using defaults. No cals.############')
 
 
     # Deletes a config

@@ -29,7 +29,7 @@ from Source.GetAnc import GetAnc
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.Utilities import Utilities
 
-version = '1.2.3'
+version = '1.2.4'
 CODE_HOME = os.getcwd()
 
 class Window(QtWidgets.QWidget):
@@ -559,13 +559,13 @@ class Command():
     ''' Class for batching without using the GUI. Scripted calls preferred, but 
         direct call possible. '''
 
-    def __init__(self, configFilePath, from_level, inputFile, outputDirectory, to_level, 
+    def __init__(self, configFilePath, from_level, inputFile, dataDirectory, to_level, 
                  ancFile=None, processMultiLevel=False):
 
         self.configFilename = configFilePath
         self.inputFile = inputFile
-        self.inputDirectory = os.path.join(outputDirectory,from_level)
-        self.outputDirectory = outputDirectory
+        self.inputDirectory = os.path.join(dataDirectory,from_level)
+        self.outputDirectory = dataDirectory
         self.level = to_level
         self.ancFile = ancFile
 
@@ -609,7 +609,7 @@ class Command():
         MainConfig.settings['cfgPath'] = configFilePath
         MainConfig.settings['version'] = version
         MainConfig.settings["metFile"] = self.ancFile
-        MainConfig.settings["outDir"] = outputDirectory
+        MainConfig.settings["outDir"] = self.outputDirectory
 
         if type(inputFile) is list:
             # Process the entire directory of the first file in the list
@@ -617,8 +617,8 @@ class Command():
         else:
             # Single file
             MainConfig.settings["inDir"] = os.path.dirname(inputFile)
-            # Now make it a list as it is expected to be
-            # inputFile = [inputFile]        
+        # Now make it a list as it is expected to be
+        # inputFile = [inputFile]        
 
         # No GUI used: error message are display in prompt and not in graphical window
         MainConfig.settings["popQuery"] = -1
@@ -643,7 +643,10 @@ class Command():
             sys.exit()
 
         if processMultiLevel:
-            Controller.processFilesMultiLevel(self.outputDirectory,inputFile, calibrationMap, flag_Trios)
+            if InstrumentType.lower() == "trios" and to_level == "L1A":
+                Controller.processFilesMultiLevel(self.outputDirectory,inputFile, calibrationMap, flag_Trios)
+            else:
+                Controller.processFilesMultiLevel(self.outputDirectory,[inputFile], calibrationMap, flag_Trios)
         else:
             # processSingleLevel is only prepared for a singleton file at a time
             Controller.processSingleLevel(self.outputDirectory, inputFile, calibrationMap, to_level, flag_Trios)

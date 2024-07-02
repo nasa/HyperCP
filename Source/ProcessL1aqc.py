@@ -216,11 +216,13 @@ class ProcessL1aqc:
 
             print('Removing non-pertinent ancillary data.')
             # lower = bisect.bisect_left(ancDateTime, min(esDateTime))
+            # First ancillary element during radiometry
             lower = np.abs([d-min(esDateTime) for d in ancDateTime]).argmin()
-            lower = list(range(0,lower-1))
+            lower = list(range(0,lower-1)) # keep one before that
             # upper = bisect.bisect_right(ancDateTime, max(esDateTime))+1
+            # Last ancillary element during radiometry
             upper = np.abs([d-max(esDateTime) for d in ancDateTime]).argmin()
-            upper = list(range(upper,len(ancDateTime)))
+            upper = list(range(upper+2,len(ancDateTime))) # keep one after that
             ancData.colDeleteRow(upper)
             ancData.colDeleteRow(lower)
 
