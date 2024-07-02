@@ -54,13 +54,16 @@ class Show_Uncertainties(ABC):
         plt.xlim(xmin, xmax)
         # rel_unc_in_lim = np.max(rel_unc[np.argmin(np.abs(x - xmin)):np.argmin(np.abs(x - xmax))])
         # ymax = np.max(rel_unc_in_lim)
-        plt.ylim(0, 8)
+        plt.ylim(0, 3)
         if save:
             plt.grid()
             plt.legend()
             if isinstance(save, dict):
                 t = save['time'].split(' ')
-                plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']} {' '.join([t[2], t[1], t[-1], t[-2]])}")
+                try:
+                    plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']} {' '.join([t[2], t[1], t[-1], t[-2]])}")
+                except IndexError:
+                    plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']} {t}")
                 sp = f"{fig_name}_{save['cal_type']}_{save['time']}_{save['instrument']}_unc_in_pct.png"
                 plt.savefig(sp)
             else:
