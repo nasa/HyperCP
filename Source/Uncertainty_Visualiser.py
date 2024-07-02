@@ -54,7 +54,7 @@ class Show_Uncertainties(ABC):
         plt.xlim(xmin, xmax)
         # rel_unc_in_lim = np.max(rel_unc[np.argmin(np.abs(x - xmin)):np.argmin(np.abs(x - xmax))])
         # ymax = np.max(rel_unc_in_lim)
-        plt.ylim(0, 3)
+        plt.ylim(0, 4)
         if save:
             plt.grid()
             plt.legend()
@@ -65,7 +65,7 @@ class Show_Uncertainties(ABC):
                 except IndexError:
                     plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']} {t}")
                 sp = f"{fig_name}_{save['cal_type']}_{save['time']}_{save['instrument']}_unc_in_pct.png"
-                plt.savefig(sp)
+                plt.savefig(sp.replace(':', '-').replace(' ', '_'))
             else:
                 plt.title(f"{fig_name}")
                 plt.savefig(f"{fig_name}_unc_in_pct.png")
@@ -133,13 +133,12 @@ class Show_Uncertainties(ABC):
         keys = ["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
         output = {"ES": {}, "LI": {}, "LT": {}}
         vals = {}
-        indx = 0
         # nul = np.zeroes(len(uncertainty[0]))
         uncs = np.zeros(np.asarray(uncertainty).shape)
         # generate class based uncertaitnies from 0 and adding each contribution in turn
         vals['ES'], vals['LI'], vals['LT'] = self.punpy_MCP.instruments(*mean_values) # get values to make uncs relative
-        for i in [0, 6, 9, 12, 18, 15, 21]:
-            if i == 0:
+        for indx, i in enumerate([0, 6, 9, 12, 18, 15, 21]):
+            if indx == 0:
                 uncs[0:6] = uncertainty[0:6]
             else:
                 uncs[i:i+3] = uncertainty[i:i+3]
@@ -148,7 +147,6 @@ class Show_Uncertainties(ABC):
                 output['LI'][keys[indx]],
                 output['LT'][keys[indx]]
             ) = self.punpy_MCP.propagate_Instrument_Uncertainty(mean_values, uncs)
-            indx += 1
             if not cumulative:
                 uncs = np.zeros(np.asarray(uncertainty).shape)  # reset uncertaitnies
 
