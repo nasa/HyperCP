@@ -120,7 +120,7 @@ class ConfigFile:
         ConfigFile.settings["fL1bqcSpecFilterLt"] = 3
 
         ConfigFile.settings["bL1bqcEnableQualityFlags"] = 0
-        ConfigFile.settings["fL1bqcCloudFlag"] = 1.0 # 1.0 basically disregards this, though cloud cover can still be used in glint correction; 0.05 Ruddick 2006, IOCCG Protocols
+        ConfigFile.settings["fL1bqcCloudFlag"] = 0.05 # 0.05 Ruddick 2006, IOCCG Protocols
         ConfigFile.settings["fL1bqcSignificantEsFlag"] = 2.0 # Wernand 2002
         ConfigFile.settings["fL1bqcDawnDuskFlag"] = 1.0 # Wernand 2002
         ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain

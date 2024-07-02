@@ -136,7 +136,7 @@ class ProcessL1bqc:
         return badTimes
 
     @staticmethod
-    def metQualityCheck(refGroup, sasGroup, py6sGroup):
+    def metQualityCheck(refGroup, sasGroup, py6sGroup, ancGroup):
         ''' Perform meteorological quality control '''
 
         esFlag = float(ConfigFile.settings["fL1bqcSignificantEsFlag"])
@@ -174,45 +174,47 @@ class ProcessL1bqc:
         es720 = ProcessL1bqc.interpolateColumn(esColumns, 720.0)
         es750 = ProcessL1bqc.interpolateColumn(esColumns, 750.0)
         badTimes = []
+        flags1 = ancGroup.datasets['MET_FLAGS'].columns['Flag1']
+        flags2 = ancGroup.datasets['MET_FLAGS'].columns['Flag2']
+        flags3 = ancGroup.datasets['MET_FLAGS'].columns['Flag3']
+        flags4 = ancGroup.datasets['MET_FLAGS'].columns['Flag4']
+        flags5 = ancGroup.datasets['MET_FLAGS'].columns['Flag5']
         for indx, dateTime in enumerate(esTime):
-            # Masking spectra affected by clouds (Ruddick 2006, IOCCG Protocols).
-            # The alternative to masking is to process them differently (e.g. See Ruddick_Rho)
-            # Therefore, set this very high if you don't want it triggered (e.g. 1.0, see Readme)
-            if li750[indx]/es750[indx] >= cloudFLAG:
-                # msg = f"Quality Check: Li(750)/Es(750) >= cloudFLAG:{cloudFLAG}"
-                # print(msg)
-                # Utilities.writeLogFile(msg)
-                badTimes.append(dateTime)
+            # Flag spectra affected by clouds (Compare with 6S Es).
+            if py6sGroup is not None:
+                if li750[indx]/es750[indx] >= cloudFLAG:
+                    badTimes.append(dateTime)
+                    flags1[indx] = True
 
-            # Threshold for significant es
+            # Flag spectra affected by clouds (Ruddick 2006, IOCCG Protocols).
+            if li750[indx]/es750[indx] >= cloudFLAG:
+                badTimes.append(dateTime)
+                flags2[indx] = True
+                
+
+            # Flag for significant es
             # Wernand 2002
             if es480[indx] < esFlag:
-                # msg = f"Quality Check: es(480) < esFlag:{esFlag}"
-                # print(msg)
-                # Utilities.writeLogFile(msg)
                 badTimes.append(dateTime)
+                flags3[indx] = True
 
-            # Masking spectra affected by dawn/dusk radiation
+            # Flag spectra affected by dawn/dusk radiation
             # Wernand 2002
             #v = esXSlice["470.0"][0] / esXSlice["610.0"][0] # Fix 610 -> 680
             if es470[indx]/es680[indx] < dawnDuskFlag:
-                # msg = f'Quality Check: ES(470.0)/ES(680.0) < dawnDuskFlag:{dawnDuskFlag}'
-                # print(msg)
-                # Utilities.writeLogFile(msg)
                 badTimes.append(dateTime)
+                flags4[indx] = True
 
-            # Masking spectra affected by rainfall and high humidity
+            # Flag spectra affected by rainfall and high humidity
             # Wernand 2002 (940/370), Garaba et al. 2012 also uses Es(940/370), presumably 720 was developed by Wang...???
             ''' Follow up on the source of this flag'''
             if es720[indx]/es370[indx] < humidityFlag:
-                # msg = f'Quality Check: ES(720.0)/ES(370.0) < humidityFlag:{humidityFlag}'
-                # print(msg)
-                # Utilities.writeLogFile(msg)
                 badTimes.append(dateTime)
+                flags5[indx] = True
 
         badTimes = np.unique(badTimes)
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
-        msg = f'{len(np.unique(badTimes))/len(esTime)*100:.1f}% of spectra flagged'
+        msg = f'{len(np.unique(badTimes))/len(esTime)*100:.1f}% of spectra flagged (not filtered)'
         print(msg)
         Utilities.writeLogFile(msg)
 
@@ -383,6 +385,19 @@ class ProcessL1bqc:
                 if gp.id == pyrGroup.id:
                     node.removeGroup(gp)
 
+        enableMetQualityCheck = ConfigFile.settings["bL1bqcEnableQualityFlags"]
+        if enableMetQualityCheck:
+            ancGroup.addDataset('MET_FLAGS')
+            ancGroup.datasets['MET_FLAGS'].columns['Datetag'] = ancGroup.datasets['LATITUDE'].columns['Datetag']
+            ancGroup.datasets['MET_FLAGS'].columns['Timetag2'] = ancGroup.datasets['LATITUDE'].columns['Timetag2']
+            lenAnc = len(ancGroup.datasets['MET_FLAGS'].columns['Timetag2'])
+            ancGroup.datasets['MET_FLAGS'].columns['Flag1'] = [False for i in range(lenAnc)]
+            ancGroup.datasets['MET_FLAGS'].columns['Flag2'] = [False for i in range(lenAnc)]
+            ancGroup.datasets['MET_FLAGS'].columns['Flag3'] = [False for i in range(lenAnc)]
+            ancGroup.datasets['MET_FLAGS'].columns['Flag4'] = [False for i in range(lenAnc)]
+            ancGroup.datasets['MET_FLAGS'].columns['Flag5'] = [False for i in range(lenAnc)]
+
+
         # At this stage, all datasets in all groups of node have Timetag2
         #     and Datetag incorporated into data arrays. Calculate and add
         #     Datetime to each data array.
@@ -430,14 +445,6 @@ class ProcessL1bqc:
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
                     Utilities.filterData(ltGroup,badTimes,'L1AQC')
-                    
-                    # print('badTimes', len(badTimes))
-                    # for dname in esGroup.datasets:
-                    #     ds = esGroup.getDataset(dname).data
-                    #     print(dname, np.shape(ds))
-                        
-                    # # esGroup.datasets.remove('BACK_ES')
-                    # #    del esGroup.datasets['BACK_ES']
 
                 if py6sGroup is not None:
                     Utilities.filterData(py6sGroup,badTimes)
@@ -649,44 +656,44 @@ class ProcessL1bqc:
                 if py6sGroup is not None:
                     Utilities.filterData(py6sGroup,badTimes)
 
-        # Next apply the Meteorological Filter prior to slicing
-        esData = referenceGroup.getDataset("ES")
-        enableMetQualityCheck = int(ConfigFile.settings["bL1bqcEnableQualityFlags"])
+        # Next apply the Meteorological FLAGGING prior to slicing
+        esData = referenceGroup.getDataset("ES")        
         if enableMetQualityCheck:
-            msg = "Applying meteorological filtering to eliminate spectra."
+            # msg = "Applying meteorological filtering to eliminate spectra."
+            msg = "Applying meteorological flags. Met flags are NOT used to eliminate spectra."
             print(msg)
             Utilities.writeLogFile(msg)
-            badTimes = ProcessL1bqc.metQualityCheck(referenceGroup, sasGroup, py6sGroup)
+            badTimes = ProcessL1bqc.metQualityCheck(referenceGroup, sasGroup, py6sGroup, ancGroup)
 
-            if badTimes is not None:
-                if len(badTimes) == esData.data.size:
-                    msg = "All data flagged for deletion. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
-                print('Removing records...')
-                check = Utilities.filterData(referenceGroup, badTimes)
-                if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
-                Utilities.filterData(sasGroup, badTimes)
-                Utilities.filterData(ancGroup, badTimes)
-                # Filter L1AQC data for L1BQC criteria
-                if ConfigFile.settings['SensorType'].lower() == 'seabird':
-                    Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
-                    Utilities.filterData(esLightGroup,badTimes,'L1AQC')
-                    Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
-                    Utilities.filterData(liLightGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
-                elif ConfigFile.settings['SensorType'].lower() == 'trios':
-                    Utilities.filterData(esGroup,badTimes,'L1AQC')
-                    Utilities.filterData(liGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
-                if py6sGroup is not None:
-                    Utilities.filterData(py6sGroup,badTimes)
+            # if badTimes is not None:
+            #     if len(badTimes) == esData.data.size:
+            #         msg = "All data flagged for deletion. Abort."
+            #         print(msg)
+            #         Utilities.writeLogFile(msg)
+            #         return False
+            #     print('Removing records...')
+            #     check = Utilities.filterData(referenceGroup, badTimes)
+            #     if check > 0.99:
+            #         msg = "Too few spectra remaining. Abort."
+            #         print(msg)
+            #         Utilities.writeLogFile(msg)
+            #         return False
+            #     Utilities.filterData(sasGroup, badTimes)
+            #     Utilities.filterData(ancGroup, badTimes)
+            #     # Filter L1AQC data for L1BQC criteria
+            #     if ConfigFile.settings['SensorType'].lower() == 'seabird':
+            #         Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
+            #         Utilities.filterData(esLightGroup,badTimes,'L1AQC')
+            #         Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
+            #         Utilities.filterData(liLightGroup,badTimes,'L1AQC')
+            #         Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
+            #         Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+            #     elif ConfigFile.settings['SensorType'].lower() == 'trios':
+            #         Utilities.filterData(esGroup,badTimes,'L1AQC')
+            #         Utilities.filterData(liGroup,badTimes,'L1AQC')
+            #         Utilities.filterData(ltGroup,badTimes,'L1AQC')
+            #     if py6sGroup is not None:
+            #         Utilities.filterData(py6sGroup,badTimes)
 
         return True
 
