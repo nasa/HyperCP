@@ -91,9 +91,11 @@ class RhoCorrections:
             #  Is |M99 - Z17| the only estimate of glint uncertainty? I thought they had been modeled in MC. -DAA
             #  uncertainties must be in % form (relative and *100) in order to do sum of squares
             pct_diff = (np.abs(rhoScalar - zhang) / rhoScalar)  # relative units
-            tot_diff = np.power(np.power(Delta * 100, 2) + np.power(pct_diff * 100, 2), 0.5)
+            tot_diff = np.sqrt(Delta**2 + pct_diff**2)
+            # tot_diff = np.power(np.power(Delta * 100, 2) + np.power(pct_diff * 100, 2), 0.5)
             tot_diff[np.isnan(tot_diff)==True] = 0  # ensure no NaNs are present in the uncertainties.
-            tot_diff = (tot_diff/100) * rhoScalar  # ensure difference is in proper units
+            tot_diff = tot_diff*rhoScalar
+            # tot_diff = (tot_diff/100) * rhoScalar  # ensure difference is in proper units
             # add back in filtered wavelengths
             rhoDelta = []
             i = 0
@@ -103,8 +105,7 @@ class RhoCorrections:
                     i += 1
                 else:
                     # in cases where we are outside the range in which Zhang is calculated 0.003 from Ruddick is used
-                    rhoDelta.append((np.power(np.power((Delta / rhoScalar) * 100, 2) +
-                                     np.power((0.003 / rhoScalar) * 100, 2), 0.5)/100)*rhoScalar)
+                    rhoDelta.append(np.sqrt(Delta**2 + (0.003/rhoScalar)**2)*rhoScalar)
                     # necessary to convert to relative before propagating, then converted back to absolute
         else:
             # this is temporary. It is possible for users to not select any ancillary data in the config, meaning Zhang
