@@ -121,28 +121,54 @@ class ProcessL2BRDF():
                         # Compute and apply BRDF
                         OC_BRDF = oc_brdf.brdf_prototype(xr_ds, brdf_model=BRDF_option)
                         
-                        # Store BRDF corrected rrs
+                        # replace UNC nan value with closest non-nan value
+                        BRDF_unc = OC_BRDF.brdf_unc.data
+                        arr = np.array(BRDF_unc.copy())
+                        mask = np.isnan(arr)
+                        arr[mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), arr[~mask])
+                        OC_BRDF.brdf_unc.data = arr
+                        
+                        # Store BRDF corrected rrs & unc
                         Rrs_BRDF = Rrs.copy()
+                        Rrs_unc_ds = gp.getDataset(f"{ds}_unc")
+                        Rrs_unc = Rrs_unc_ds.columns
+                        Rrs_BRDF_unc = Rrs_unc.copy()
                         for k in Rrs:
                             if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
-                                Rrs_BRDF[k] = np.array(OC_BRDF.nrrs.sel(bands=float(k))).tolist() 
+                                Rrs_BRDF[k] = np.array(OC_BRDF.nrrs.sel(bands=float(k))).tolist()
+                                brdf = np.array(OC_BRDF.C_brdf.sel(bands=float(k))).tolist()
+                                brdf_unc = np.array(OC_BRDF.brdf_unc.sel(bands=float(k))).tolist()
+                                Rrs_BRDF_unc[k] = [np.sqrt( (brdf[0]*Rrs_unc[k][0])**2 + (Rrs[k][0]*brdf_unc[0])**2 )]
                         
                         Rrs_BRDF_ds = gp.addDataset(f"{ds}_" + BRDF_option)
                         Rrs_BRDF_ds.columns = Rrs_BRDF
                         Rrs_BRDF_ds.columnsToDataset()
+                        Rrs_BRDF_unc_ds = gp.addDataset(f"{ds}_" + BRDF_option + '_unc')
+                        Rrs_BRDF_unc_ds.columns = Rrs_BRDF_unc
+                        Rrs_BRDF_unc_ds.columnsToDataset()
     
-                        # Apply same factors to corresponding nLw
+                        # Apply same factors to corresponding nLw & unc
                         nLw_ds = gp.getDataset(ds.replace('Rrs','nLw'))
                         nLw = nLw_ds.columns
                         nLw_BRDF = nLw.copy()
+                        nLw_unc_ds = gp.getDataset(f"{ds}_unc".replace('Rrs','nLw'))
+                        nLw_unc = nLw_unc_ds.columns
+                        nLw_BRDF_unc = nLw_unc.copy()
+                        
                         for k in nLw:
                             if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
                                 nLw_BRDF[k] = (np.array(nLw[k])*np.array(OC_BRDF.C_brdf.sel(bands=float(k)))).tolist()
+                                brdf = np.array(OC_BRDF.C_brdf.sel(bands=float(k))).tolist()
+                                brdf_unc = np.array(OC_BRDF.brdf_unc.sel(bands=float(k))).tolist()
+                                nLw_BRDF_unc[k] = [np.sqrt( (brdf[0]*nLw_unc[k][0])**2 + (nLw[k][0]*brdf_unc[0])**2 )]
     
                         # Store BRDF corrected nLw
                         nLw_BRDF_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option)
                         nLw_BRDF_ds.columns = nLw_BRDF
                         nLw_BRDF_ds.columnsToDataset()
+                        nLw_BRDF_unc_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_"+BRDF_option+"_unc")
+                        nLw_BRDF_unc_ds.columns = nLw_BRDF_unc
+                        nLw_BRDF_unc_ds.columnsToDataset()
                         
                         # import matplotlib.pyplot as plt
                         # plt.figure()
