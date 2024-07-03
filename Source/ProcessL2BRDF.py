@@ -84,7 +84,7 @@ class ProcessL2BRDF():
                     I['sza'] = np.array(solz)
                     # give oza the same dimension as the other ancillary inputs!
                     I['oza'] = viewz * np.ones(np.shape(I['sza']))
-                    I['raa'] = np.array(relaz)
+                    I['raa'] = np.array(np.abs(relaz))
                     I['aot'] = np.array(aod)
                     I['wind'] = np.array(wind)
 
