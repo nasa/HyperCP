@@ -63,7 +63,7 @@ class Show_Uncertainties(ABC):
                 try:
                     plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']} {' '.join([t[2], t[1], t[-1], t[-2]])}")
                 except IndexError:
-                    plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']} {t}")
+                    plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']}")
                 sp = f"{fig_name}_{save['cal_type']}_{save['time']}_{save['instrument']}_unc_in_pct.png"
                 plt.savefig(sp.replace(':', '-').replace(' ', '_'))
             else:
