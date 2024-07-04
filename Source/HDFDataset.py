@@ -113,6 +113,9 @@ class HDFDataset:
                     #dtype.append((name, h5py.special_dtype(vlen=str)))
                     dtype.append((name, "|S" + str(len(item))))
                     #dtype.append((name, np.dtype(str)))
+                elif isinstance(item, bool):
+                    dtype.append((name, np.bool))
+                    # with either bool or np.bool, the dtype in the data assignment for the np.empty below is '?'
                 # Note: hdf4 only supports 32 bit int, convert to float64
                 elif isinstance(item, int):
                     dtype.append((name, np.float64))

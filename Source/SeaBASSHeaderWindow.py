@@ -687,6 +687,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         ConfigFile.settings["seaBASSHeaderFileName"] = self.name
 
         # QtWidgets.QMessageBox.about(self, "Edit SeaBASSHeader File", "SeaBASSHeader File Saved")
+        ConfigFile.saveConfig(ConfigFile.filename)        
         self.close()
 
     def refreshWindow(self):
