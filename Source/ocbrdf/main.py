@@ -70,9 +70,8 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
         forward_mod0 = BRDF_model.forward(ds, normalized=True).transpose('n','bands')
 
         # Normalize reflectance
-        ds['C_brdf'].where(~ds['convergeFlag'])[:] = forward_mod0.where(~ds['convergeFlag'])[:] / forward_mod.where(~ds['convergeFlag'])[:]
+        ds['C_brdf'] = xr.where(ds['convergeFlag'],ds['C_brdf'],forward_mod0/forward_mod)
         ds['nrrs'] = ds['Rw']/np.pi * ds['C_brdf']
-
 
     # Compute uncertainty
     brdf_uncertainty(ds)

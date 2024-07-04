@@ -378,7 +378,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bqcSpecQualityCheckPlotBoxUpdate()
 
         # L1BQC Meteorology Flags
-        l1bqcQualityFlagLabel = QtWidgets.QLabel("   Enable Meteorological Filters (Experimental)", self)
+        l1bqcQualityFlagLabel = QtWidgets.QLabel("   Enable Meteorological Flags (Experimental/Non-exclusive)", self)
         self.l1bqcQualityFlagCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bqcEnableQualityFlags"]) == 1:
             self.l1bqcQualityFlagCheckBox.setChecked(True)
