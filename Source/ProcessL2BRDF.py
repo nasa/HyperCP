@@ -123,10 +123,13 @@ class ProcessL2BRDF():
                         
                         # replace UNC nan value with closest non-nan value
                         BRDF_unc = OC_BRDF.brdf_unc.data
-                        arr = np.array(BRDF_unc.copy())
-                        mask = np.isnan(arr)
-                        arr[mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), arr[~mask])
-                        OC_BRDF.brdf_unc.data = arr
+                        try:
+                            arr = np.array(BRDF_unc.copy())
+                            mask = np.isnan(arr)
+                            arr[mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), arr[~mask])
+                            OC_BRDF.brdf_unc.data = arr
+                        except:
+                                print("An error occured in BRDF computation.")
                         
                         # Store BRDF corrected rrs & unc
                         Rrs_BRDF = Rrs.copy()
@@ -187,13 +190,29 @@ class ProcessL2BRDF():
                         # plt.ylabel('nLw')
                         # plt.title('TRIOS LEE BRDF correction')
                         # plt.figure()
-                        # plt.plot(wavelength, OC_BRDF.C_brdf, 'b', label="BRDF factor")
-                        # plt.plot(wavelength, OC_BRDF.C_brdf+OC_BRDF.brdf_unc, 'b--', label="BRDF factor unc")
-                        # plt.plot(wavelength, OC_BRDF.C_brdf-OC_BRDF.brdf_unc, 'b--')
+                        # plt.plot(wavelength, OC_BRDF.C_brdf[0], 'b', label="BRDF factor")
+                        # plt.plot(wavelength, OC_BRDF.C_brdf[0]+OC_BRDF.brdf_unc, 'b--', label="BRDF factor unc")
+                        # plt.plot(wavelength, OC_BRDF.C_brdf[0]-OC_BRDF.brdf_unc, 'b--')
                         # plt.legend()
                         # plt.xlabel('wavelength [nm]')
                         # plt.ylabel('BRDF factor')
-                        # plt.title('TRIOS LEE BRDF' )
+                        # plt.title('Seabird M02 BRDF' )
+                        # plt.figure()
+                        # plt.plot(wavelength, np.array(nLw_unc_ds.data[ii]).tolist()[3:], label="nLw unc")
+                        # plt.plot(wavelength, np.array(nLw_BRDF_unc_ds.data[ii]).tolist()[3:], label="nLw brdf unc")
+                        # plt.legend()
+                        # plt.xlabel('wavelength [nm]')
+                        # plt.ylabel('nLw uncertainties')
+                        # plt.title('SeaBird Morel BRDF' )
+                        # plt.figure()
+                        # plt.plot(wavelength, np.array(Rrs_unc_ds.data[ii]).tolist()[3:], label="rrs unc")
+                        # plt.plot(wavelength, np.array(Rrs_BRDF_unc_ds.data[ii]).tolist()[3:], label="rrs brdf unc")
+                        # plt.legend()
+                        # plt.xlabel('wavelength [nm]')
+                        # plt.ylabel('Rrs uncertainties')
+                        # plt.title('SeaBird Morel BRDF' )
+                        
+                        
                     else:
                         raise ValueError('BRDF option %s not supported.' % BRDF_option)
                     
