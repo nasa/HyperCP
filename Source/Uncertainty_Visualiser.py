@@ -7,7 +7,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-from Source.HDFGroup import HDFGroup
 
 
 class Show_Uncertainties(ABC):
@@ -54,18 +53,15 @@ class Show_Uncertainties(ABC):
         plt.xlim(xmin, xmax)
         # rel_unc_in_lim = np.max(rel_unc[np.argmin(np.abs(x - xmin)):np.argmin(np.abs(x - xmax))])
         # ymax = np.max(rel_unc_in_lim)
-        plt.ylim(0, 4)
+        plt.ylim(0, 8)
         if save:
             plt.grid()
             plt.legend()
             if isinstance(save, dict):
                 t = save['time'].split(' ')
-                try:
-                    plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']} {' '.join([t[2], t[1], t[-1], t[-2]])}")
-                except IndexError:
-                    plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']}")
+                plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']} {' '.join([t[2], t[1], t[-1], t[-2]])}")
                 sp = f"{fig_name}_{save['cal_type']}_{save['time']}_{save['instrument']}_unc_in_pct.png"
-                plt.savefig(sp.replace(':', '-').replace(' ', '_'))
+                plt.savefig(sp)
             else:
                 plt.title(f"{fig_name}")
                 plt.savefig(f"{fig_name}_unc_in_pct.png")
@@ -124,44 +120,3 @@ class Show_Uncertainties(ABC):
         To plot every sample from FRM processing - To be implemented -
         """
         pass
-
-    def plot_breakdown_Class(self, mean_values: list, uncertainty: list, wavelengths: dict, cumulative: bool = True,
-                             cast: str = ''):
-        """
-
-        """
-        keys = ["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
-        output = {"ES": {}, "LI": {}, "LT": {}}
-        vals = {}
-        # nul = np.zeroes(len(uncertainty[0]))
-        uncs = np.zeros(np.asarray(uncertainty).shape)
-        # generate class based uncertaitnies from 0 and adding each contribution in turn
-        vals['ES'], vals['LI'], vals['LT'] = self.punpy_MCP.instruments(*mean_values) # get values to make uncs relative
-        for indx, i in enumerate([0, 6, 9, 12, 18, 15, 21]):
-            if indx == 0:
-                uncs[0:6] = uncertainty[0:6]
-            else:
-                uncs[i:i+3] = uncertainty[i:i+3]
-            (
-                output['ES'][keys[indx]],
-                output['LI'][keys[indx]],
-                output['LT'][keys[indx]]
-            ) = self.punpy_MCP.propagate_Instrument_Uncertainty(mean_values, uncs)
-            if not cumulative:
-                uncs = np.zeros(np.asarray(uncertainty).shape)  # reset uncertaitnies
-
-        # now we plot the result
-
-        for sensor in ['ES', 'LI', 'LT']:
-
-            plt.figure(f"{sensor}_{cast}")
-            for key in keys:
-                plt.plot(wavelengths[sensor], (output[sensor][key] / vals[sensor]) * 100, label=key)
-            plt.xlabel("Wavelengths")
-            plt.ylabel("Relative Uncertainties (%)")
-            plt.title(f"Class-Based branch Breakdown of {sensor} Uncertainties")
-            plt.legend()
-            plt.grid()
-            if isinstance(cast, list):
-                cast = cast[0]
-            plt.savefig(f"{sensor}_{cast}_class_breakdown.png")
