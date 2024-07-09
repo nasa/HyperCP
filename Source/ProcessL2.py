@@ -1669,9 +1669,9 @@ class ProcessL2:
             except NameError:
                 rhoScalar, rhoUNC = RhoCorrections.M99Corr(WINDSPEEDXSlice, SZAXSlice, RelAzXSlice,
                                                              Rho_Uncertainty_Obj)
+        
         # Calculate hyperspectral Coddingtion TSIS_1 hybrid F0 function
-        # F0_hyper = ProcessL2.Thuillier(dateTag, wavelength)
-        # NOTE: Need to check whether uncertainties are one sigma or two
+        # NOTE: TSIS uncertainties reported as 1-sigma
         F0_hyper, F0_unc, F0_raw, F0_unc_raw, wv_raw = Utilities.TSIS_1(dateTag, wavelength)
         # Recycling _raw in TSIS_1 calls below prevents the dataset having to be reread
 
@@ -2048,6 +2048,7 @@ class ProcessL2:
         referenceGroup = rootCopy.getGroup("IRRADIANCE")
         sasGroup = rootCopy.getGroup("RADIANCE")
         ancGroup = rootCopy.getGroup("ANCILLARY")
+        py6SGroup = rootCopy.getGroup("PY6S_MODEL")
 
         if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("RAW_UNCERTAINTIES")
@@ -2112,6 +2113,7 @@ class ProcessL2:
                     return False
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
+                ProcessL2.filterData(py6SGroup, badTimes)
 
         #####################################################################
         #
