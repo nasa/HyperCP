@@ -84,7 +84,7 @@ class ProcessL2BRDF():
                     I['sza'] = np.array(solz)
                     # give oza the same dimension as the other ancillary inputs!
                     I['oza'] = viewz * np.ones(np.shape(I['sza']))
-                    I['raa'] = np.array(relaz)
+                    I['raa'] = np.array(np.abs(relaz))
                     I['aot'] = np.array(aod)
                     I['wind'] = np.array(wind)
 
@@ -121,28 +121,57 @@ class ProcessL2BRDF():
                         # Compute and apply BRDF
                         OC_BRDF = oc_brdf.brdf_prototype(xr_ds, brdf_model=BRDF_option)
                         
-                        # Store BRDF corrected rrs
+                        # replace UNC nan value with closest non-nan value
+                        BRDF_unc = OC_BRDF.brdf_unc.data
+                        try:
+                            arr = np.array(BRDF_unc.copy())
+                            mask = np.isnan(arr)
+                            arr[mask] = np.interp(np.flatnonzero(mask), np.flatnonzero(~mask), arr[~mask])
+                            OC_BRDF.brdf_unc.data = arr
+                        except:
+                                print("An error occured in BRDF computation.")
+                        
+                        # Store BRDF corrected rrs & unc
                         Rrs_BRDF = Rrs.copy()
+                        Rrs_unc_ds = gp.getDataset(f"{ds}_unc")
+                        Rrs_unc = Rrs_unc_ds.columns
+                        Rrs_BRDF_unc = Rrs_unc.copy()
                         for k in Rrs:
                             if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
-                                Rrs_BRDF[k] = np.array(OC_BRDF.nrrs.sel(bands=float(k))).tolist() 
+                                Rrs_BRDF[k] = np.array(OC_BRDF.nrrs.sel(bands=float(k))).tolist()
+                                brdf = np.array(OC_BRDF.C_brdf.sel(bands=float(k))).tolist()
+                                brdf_unc = np.array(OC_BRDF.brdf_unc.sel(bands=float(k))).tolist()
+                                Rrs_BRDF_unc[k] = [np.sqrt( (brdf[0]*Rrs_unc[k][0])**2 + (Rrs[k][0]*brdf_unc[0])**2 )]
                         
                         Rrs_BRDF_ds = gp.addDataset(f"{ds}_" + BRDF_option)
                         Rrs_BRDF_ds.columns = Rrs_BRDF
                         Rrs_BRDF_ds.columnsToDataset()
+                        Rrs_BRDF_unc_ds = gp.addDataset(f"{ds}_" + BRDF_option + '_unc')
+                        Rrs_BRDF_unc_ds.columns = Rrs_BRDF_unc
+                        Rrs_BRDF_unc_ds.columnsToDataset()
     
-                        # Apply same factors to corresponding nLw
+                        # Apply same factors to corresponding nLw & unc
                         nLw_ds = gp.getDataset(ds.replace('Rrs','nLw'))
                         nLw = nLw_ds.columns
                         nLw_BRDF = nLw.copy()
+                        nLw_unc_ds = gp.getDataset(f"{ds}_unc".replace('Rrs','nLw'))
+                        nLw_unc = nLw_unc_ds.columns
+                        nLw_BRDF_unc = nLw_unc.copy()
+                        
                         for k in nLw:
                             if (k != 'Datetime') and (k != 'Datetag') and (k != 'Timetag2'):
                                 nLw_BRDF[k] = (np.array(nLw[k])*np.array(OC_BRDF.C_brdf.sel(bands=float(k)))).tolist()
+                                brdf = np.array(OC_BRDF.C_brdf.sel(bands=float(k))).tolist()
+                                brdf_unc = np.array(OC_BRDF.brdf_unc.sel(bands=float(k))).tolist()
+                                nLw_BRDF_unc[k] = [np.sqrt( (brdf[0]*nLw_unc[k][0])**2 + (nLw[k][0]*brdf_unc[0])**2 )]
     
                         # Store BRDF corrected nLw
                         nLw_BRDF_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_" + BRDF_option)
                         nLw_BRDF_ds.columns = nLw_BRDF
                         nLw_BRDF_ds.columnsToDataset()
+                        nLw_BRDF_unc_ds = gp.addDataset(f"{ds.replace('Rrs','nLw')}_"+BRDF_option+"_unc")
+                        nLw_BRDF_unc_ds.columns = nLw_BRDF_unc
+                        nLw_BRDF_unc_ds.columnsToDataset()
                         
                         # import matplotlib.pyplot as plt
                         # plt.figure()
@@ -161,13 +190,29 @@ class ProcessL2BRDF():
                         # plt.ylabel('nLw')
                         # plt.title('TRIOS LEE BRDF correction')
                         # plt.figure()
-                        # plt.plot(wavelength, OC_BRDF.C_brdf, 'b', label="BRDF factor")
-                        # plt.plot(wavelength, OC_BRDF.C_brdf+OC_BRDF.brdf_unc, 'b--', label="BRDF factor unc")
-                        # plt.plot(wavelength, OC_BRDF.C_brdf-OC_BRDF.brdf_unc, 'b--')
+                        # plt.plot(wavelength, OC_BRDF.C_brdf[0], 'b', label="BRDF factor")
+                        # plt.plot(wavelength, OC_BRDF.C_brdf[0]+OC_BRDF.brdf_unc, 'b--', label="BRDF factor unc")
+                        # plt.plot(wavelength, OC_BRDF.C_brdf[0]-OC_BRDF.brdf_unc, 'b--')
                         # plt.legend()
                         # plt.xlabel('wavelength [nm]')
                         # plt.ylabel('BRDF factor')
-                        # plt.title('TRIOS LEE BRDF' )
+                        # plt.title('Seabird M02 BRDF' )
+                        # plt.figure()
+                        # plt.plot(wavelength, np.array(nLw_unc_ds.data[ii]).tolist()[3:], label="nLw unc")
+                        # plt.plot(wavelength, np.array(nLw_BRDF_unc_ds.data[ii]).tolist()[3:], label="nLw brdf unc")
+                        # plt.legend()
+                        # plt.xlabel('wavelength [nm]')
+                        # plt.ylabel('nLw uncertainties')
+                        # plt.title('SeaBird Morel BRDF' )
+                        # plt.figure()
+                        # plt.plot(wavelength, np.array(Rrs_unc_ds.data[ii]).tolist()[3:], label="rrs unc")
+                        # plt.plot(wavelength, np.array(Rrs_BRDF_unc_ds.data[ii]).tolist()[3:], label="rrs brdf unc")
+                        # plt.legend()
+                        # plt.xlabel('wavelength [nm]')
+                        # plt.ylabel('Rrs uncertainties')
+                        # plt.title('SeaBird Morel BRDF' )
+                        
+                        
                     else:
                         raise ValueError('BRDF option %s not supported.' % BRDF_option)
                     
