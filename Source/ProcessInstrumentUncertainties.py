@@ -126,9 +126,7 @@ class Instrument(ABC):
             cal_stop = int(node.attributes['CAL_STOP'])
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            cStray[sensor] = np.asarray(list(straylight.columns['1']))[cal_start:cal_stop+1]
-            # +1 here fixed a bug. Slicing arrays gives the first stop-start elements, not elements up to stop index.
-            # Therefore for 255 pixels we need 0:255 not 0:254 to capture all pixels in the sl values.
+            cStray[sensor] = np.asarray(list(straylight.columns['1']))[cal_start:cal_stop]
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
@@ -223,7 +221,7 @@ class Instrument(ABC):
             ltUnc=lt_Unc,
         )
 
-    def Default(self, uncGrp: HDFGroup, stats: dict, node: HDFRoot) -> dict[str, np.array]:
+    def Default(self, uncGrp: HDFGroup, stats: dict) -> dict[str, np.array]:
         """
 
         :param uncGrp: HDFGroup which contains the uncertainty budget, all imput uncertainties
@@ -313,20 +311,6 @@ class Instrument(ABC):
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
         es_unc, li_unc, lt_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
         es, li, lt = PropagateL1B.instruments(*mean_values)  # signal generated from measurement function applied
-
-        p_unc = Show_Uncertainties(PropagateL1B)
-        p_unc.plot_breakdown_Class(
-            mean_values,
-            uncertainty,
-            dict(
-                ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
-                LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
-                LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
-                ),
-            True,
-            type(self).__name__ + '_' + node.attributes["CAST"]
-        )
-
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
         # convert to relative uncertainty
         with warnings.catch_warnings():
@@ -1033,9 +1017,7 @@ class Instrument(ABC):
             cal_stop = int(node.attributes['CAL_STOP'])
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            cStray[sensor] = np.asarray(list(straylight.columns['1']))[cal_start:cal_stop+1]
-            # +1 here fixed a bug. Slicing arrays gives the first stop-start elements, not elements up to stop index.
-            # Therefore for 255 pixels we need 0:255 not 0:254 to capture all pixels in the sl values.
+            cStray[sensor] = np.asarray(list(straylight.columns['1']))[cal_start:cal_stop]
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
@@ -1969,15 +1951,12 @@ class HyperOCR(Instrument):
             sample_updated_radcal_gain[:, ind_nocal == True] = 1
 
             data = np.mean(raw_data, axis=0)  # raw data already dark subtracted, use mean for statistical analysis
-            data[ind_nocal == True] = 0  # 0 out data outside of cal so it doesn't affect statistics
-            dark = np.mean(raw_dark, axis=0)
-            dark[ind_nocal == True] = 0
             # data is already 180 len for PML HyperOCR
             # signal uncertainties
             std_light = stats[sensortype]['std_Light']  # standard deviations are taken from generateSensorStats
             std_dark = stats[sensortype]['std_Dark']
-            sample_light = cm.generate_sample(100, data, std_light, "rand")
-            sample_dark = cm.generate_sample(100, dark, std_dark, "rand")
+            sample_light = cm.generate_sample(100, np.mean(raw_data, axis=0), std_light, "rand")
+            sample_dark = cm.generate_sample(100, np.mean(raw_dark, axis=0), std_dark, "rand")
             sample_dark_corr_data = prop.run_samples(self.dark_Substitution, [sample_light, sample_dark])
 
             # plt.figure()
@@ -2073,38 +2052,49 @@ class HyperOCR(Instrument):
             output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
 
-            # example uncertainty plotting - used to generate unc breakdown plots
-            # Utilities.plotUncertainties(prop, node)
-            p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
-            time = node.attributes['TIME-STAMP'].split(' ')[-2]  # for labelling
-            if sensortype.upper() == 'ES':
-                p_unc.plot_unc_from_sample_1D(
-                    sample_data5, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
-                )
-            else:
-                p_unc.plot_unc_from_sample_1D(
-                    sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
-                )
-            p_unc.plot_unc_from_sample_1D(
-                sample_data4, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
-            )
-            p_unc.plot_unc_from_sample_1D(
-                sample_data3, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
-            )
-            p_unc.plot_unc_from_sample_1D(
-                sample_data2, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
-            )
-            p_unc.plot_unc_from_sample_1D(
-                sample_data1, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
-            )
-            p_unc.plot_unc_from_sample_1D(
-                sample_dark_corr_data, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
-                save={
-                    "cal_type": node.attributes["CAL_TYPE"],
-                    "time": node.attributes['TIME-STAMP'],
-                    "instrument": "SeaBird"
-                }
-            )
+            # # example uncertainty plotting - used to generate unc breakdown plots
+            # # Utilities.plotUncertainties(prop, node)
+            # p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
+            # time = node.attributes['TIME-STAMP'].split(' ')[-2]  # for labelling
+            # if sensortype.upper() == 'ES':
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_data5, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
+            #     )
+            # else:
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
+            #     )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_data4, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_data3, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_data2, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_data1, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_dark_corr_data, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
+            #     save={
+            #         "cal_type": node.attributes["CAL_TYPE"],
+            #         "time": node.attributes['TIME-STAMP'],
+            #         "instrument": "SeaBird"
+            #     }
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_light, radcal_wvl, fig_name=f"breakdown_{sensortype}", name=f"light", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_dark, radcal_wvl, fig_name=f"breakdown_{sensortype}", name=f"dark", xlim=(400, 800),
+            #     save={
+            #         "cal_type": node.attributes["CAL_TYPE"],
+            #         "time": node.attributes['TIME-STAMP'],
+            #         "instrument": "SeaBird"
+            #     }
+            # )
 
         return output
 
@@ -2470,7 +2460,7 @@ class Trios(Instrument):
                 f"{sensortype.lower()}Unc"] = unc[ind_nocal == False]  # dict(zip(str_wvl[self.ind_nocal==False], filtered_unc))  # unc in dict with wavelengths
             output[f"{sensortype.lower()}Sample"] = sample[:, ind_nocal == False]  # samples keep raw
 
-        # for sensortype in ['ES', 'LI', 'LT']:
+        for sensortype in ['ES', 'LI', 'LT']:
             # get sensor specific wavebands - output[f"{sensortype.lower()}Wvls"].pop
             wvls = np.asarray(output.pop(f"{sensortype.lower()}Wvls"), dtype=float)
             _, output[f"{sensortype.lower()}Unc"] = self.interp_common_wvls(
@@ -2478,39 +2468,49 @@ class Trios(Instrument):
             output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
 
-            # example uncertainty plotting - used to generate unc breakdown plots
-            # Utilities.plotUncertainties(prop, node)
-            p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
-            time = node.attributes['TIME-STAMP'].replace('T', '-').split('Z')[0]  # for labelling
-            if sensortype.upper() == 'ES':
-                p_unc.plot_unc_from_sample_1D(
-                    sample_cos_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
-                )
-            else:
-                p_unc.plot_unc_from_sample_1D(
-                    sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
-                )
-            p_unc.plot_unc_from_sample_1D(
-                sample_thermal_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
-            )
-            p_unc.plot_unc_from_sample_1D(
-                sample_calibrated_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
-            )
-            p_unc.plot_unc_from_sample_1D(
-                sample_straylight_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
-            )
-            p_unc.plot_unc_from_sample_1D(
-                sample_linear_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
-            )
-            p_unc.plot_unc_from_sample_1D(
-                sample_offset_corrected_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
-                save={
-                    "cal_type": node.attributes["CAL_TYPE"],
-                    "time": node.attributes['TIME-STAMP'],
-                    "instrument": "TriOS"
-                }
-            )
-
+            # # example uncertainty plotting - used to generate unc breakdown plots
+            # # Utilities.plotUncertainties(prop, node)
+            # p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
+            # time = node.attributes['TIME-STAMP'].split(' ')[-2]  # for labelling
+            # if sensortype.upper() == 'ES':
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_data5, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
+            #     )
+            # else:
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
+            #     )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_data4, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_data3, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_data2, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_data1, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_dark_corr_data, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
+            #     save={
+            #         "cal_type": node.attributes["CAL_TYPE"],
+            #         "time": node.attributes['TIME-STAMP'],
+            #         "instrument": "SeaBird"
+            #     }
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_light, radcal_wvl, fig_name=f"breakdown_{sensortype}", name=f"light", xlim=(400, 800)
+            # )
+            # p_unc.plot_unc_from_sample_1D(
+            #     sample_dark, radcal_wvl, fig_name=f"breakdown_{sensortype}", name=f"dark", xlim=(400, 800),
+            #     save={
+            #         "cal_type": node.attributes["CAL_TYPE"],
+            #         "time": node.attributes['TIME-STAMP'],
+            #         "instrument": "SeaBird"
+            #     }
+            # )
         return output  # return products as dictionary to be appended to xSlice
 
     # Measurement functions

@@ -197,8 +197,6 @@ class ProcessL1b_FactoryCal:
         # todo: assess if this is stricly necessary, all indexes the same in examples used for testing
         start = max([ind[0] for ind in indx.values()]) - 1  # -1 to cover the first pixel which has no coef but is valid
         end = min([ind[-1] for ind in indx.values()])
-        if start < 0: #  cannot be less than 0
-            start = 0
         return start, end
 
     @staticmethod
