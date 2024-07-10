@@ -86,7 +86,15 @@ class ProcessL2BRDF():
                     I['sza'] = np.array(solz)
                     # give oza the same dimension as the other ancillary inputs!
                     I['oza'] = viewz * np.ones(np.shape(I['sza']))
-                    I['raa'] = np.array(relaz)
+
+                    # relaz [-180;180] follows the convention "A", i.e.:
+                    # relaz is the azimuth angle between:
+                    #     i) vector pointing from the sensor (your location) to target water patch, and
+                    #     ii) vector pointing from the sensor (your location) to Sun
+                    # BRDF LUT follow convention "B", or "OLCI" convention, see https://www.eumetsat.int/media/50720, Fig. 6.
+                    # Additionally, BRDF LUTs are have azimuth ranged [0-180] due to azimuthal symmetry w.r.t. solar plane
+
+                    I['raa'] = np.array(180-np.abs(relaz)) # relaz converted to convention "B" + azimuthal symmetry w.r.t. solar plane
                     I['aot'] = np.array(aod)
                     I['wind'] = np.array(wind)
 

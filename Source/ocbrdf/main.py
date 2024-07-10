@@ -28,21 +28,24 @@ Main BRDF correction module
         C_brdf: BRDF correction factor
         brdf_unc: uncertainty of C_brdf
         nrrs_unc : uncertainty of nrrs
-"""
-def brdf_prototype(ds, adf=None, brdf_model='L11'):
 
+    Relative azimuth in the BRDF LUTs follows the OLCI convention. See https://www.eumetsat.int/media/50720, Fig. 6.
+"""
+
+
+def brdf_prototype(ds, adf=None, brdf_model='L11'):
     # TEST brdf_models not supported in the GUI: hard overwrite
     # brdf_model = 'M02SeaDAS'
 
     # Initialise model
     if brdf_model == 'M02':
-        BRDF_model = M02(bands=ds.bands, aot=ds.aot, wind=ds.wind, adf=None) # Don't use brdf_py.ADF context
+        BRDF_model = M02(bands=ds.bands, aot=ds.aot, wind=ds.wind, adf=None)  # Don't use brdf_py.ADF context
     elif brdf_model == 'M02SeaDAS':
         BRDF_model = M02SeaDAS(bands=ds.bands, adf=None)  # Don't use brdf_py.ADF context
     elif brdf_model == 'L11':
-        BRDF_model = L11(bands=ds.bands, adf=None) # Don't use brdf_py.ADF context
+        BRDF_model = L11(bands=ds.bands, adf=None)  # Don't use brdf_py.ADF context
     elif brdf_model == 'O23':
-        BRDF_model = O23(bands=ds.bands, adf=None) # Don't use brdf_py.ADF context
+        BRDF_model = O23(bands=ds.bands, adf=None)  # Don't use brdf_py.ADF context
     else:
         print("BRDF model %s not supported" % brdf_model)
         sys.exit(1)
@@ -60,56 +63,67 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
 
         ds = BRDF_model.backward(ds, iter_brdf)
 
-        if brdf_model in ['M02','M02SeaDAS']:
+        if brdf_model in ['M02', 'M02SeaDAS']:
             # Initialise chl_iter
             if iter_brdf == 0:
                 chl_iter = {}
-                chl_iter[-1] = 0*ds['sza'] + float(BRDF_model.OC4MEchl0)
+                chl_iter[-1] = 0 * ds['sza'] + float(BRDF_model.OC4MEchl0)
 
             chl_iter[iter_brdf] = 10 ** ds['log10_chl']
             #  Check if convergence is reached |chl_old-chl_new| < epsilon * chl_new
             ds['convergeFlag'] = (ds['convergeFlag']) | (
-                (np.abs(chl_iter[iter_brdf - 1] - chl_iter[iter_brdf]) < float(BRDF_model.OC4MEepsilon) * chl_iter[iter_brdf]))
+                (np.abs(chl_iter[iter_brdf - 1] - chl_iter[iter_brdf]) < float(BRDF_model.OC4MEepsilon) * chl_iter[
+                    iter_brdf]))
 
         # Apply forward model in both geometries
-        forward_mod  = BRDF_model.forward(ds).transpose('n','bands')
-        forward_mod0 = BRDF_model.forward(ds, normalized=True).transpose('n','bands')
+        forward_mod = BRDF_model.forward(ds).transpose('n', 'bands')
+        forward_mod0 = BRDF_model.forward(ds, normalized=True).transpose('n', 'bands')
 
         # Normalize reflectance
-        ds['C_brdf'] = xr.where(ds['convergeFlag'],ds['C_brdf'],forward_mod0/forward_mod)
-        ds['nrrs'] = ds['Rw']/np.pi * ds['C_brdf']
+        ds['C_brdf'] = xr.where(ds['convergeFlag'], ds['C_brdf'], forward_mod0 / forward_mod)
+        ds['nrrs'] = ds['Rw'] / np.pi * ds['C_brdf']
+
+    # Flag BRDF where NaN and set to 1
+    ds['C_brdf_fail'] = np.isnan(ds['C_brdf'])
+    ds['C_brdf'] = xr.where(ds['C_brdf_fail'], 1, ds['C_brdf'])
 
     # Compute uncertainty
     brdf_uncertainty(ds)
-    
+
     # Compute flag
-    ds['flags_level2'] = ds['Rw']*0 #TODO
+    ds['flags_level2'] = ds['Rw'] * 0  # TODO
 
     # Convert to reflectance unit
     ds['rho_ex_w'] = ds['nrrs'] * np.pi
 
     return ds
 
+
 ''' Compute uncertainty of BRDF factor and propagate to nrrs '''
+
+
 def brdf_uncertainty(ds, adf=None):
-    
     # Read LUT
     if adf is None:
         adf = ADF_OCP
     # LUT = xr.open_dataset(adf,group='BRDF').unc
     LUT = xr.open_dataset(adf % 'UNC', engine='netcdf4')
-    
-    # Interpolate relative uncertainty
-    unc = LUT['unc'].interp(lambda_unc=ds.bands, theta_s_unc=ds.theta_s, theta_v_unc=ds.theta_v, delta_phi_unc=ds.delta_phi)
 
-    
+    # Interpolate relative uncertainty
+    unc = LUT['unc'].interp(lambda_unc=ds.bands, theta_s_unc=ds.theta_s, theta_v_unc=ds.theta_v,
+                            delta_phi_unc=ds.delta_phi)
+
     # Compute absolute uncertainty of factor
     ds['brdf_unc'] = unc * ds['C_brdf']
 
+    # Flag BRDF where NaN and set to 1
+    ds['brdf_unc_fail'] = np.isnan(ds['brdf_unc'])
+    ds['brdf_unc'] = xr.where(ds['brdf_unc_fail'], 0, ds['brdf_unc'])
+
     # Propagate to nrrs
-    nrrs_unc2 = ds['brdf_unc']*ds['brdf_unc']*ds['Rw']*ds['Rw']
+    nrrs_unc2 = ds['brdf_unc'] * ds['brdf_unc'] * ds['Rw'] * ds['Rw']
     if 'Rw_unc' in ds:
-        nrrs_unc2 += ds['C_brdf']*ds['C_brdf']*ds['Rw_unc']*ds['Rw_unc']
+        nrrs_unc2 += ds['C_brdf'] * ds['C_brdf'] * ds['Rw_unc'] * ds['Rw_unc']
     ds['nrrs_unc'] = np.sqrt(nrrs_unc2)
 
 
