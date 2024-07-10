@@ -4,6 +4,7 @@ import sys
 import xarray as xr
 # from .brdf_model_M02 import M02
 from .brdf_model_M02 import M02
+from .brdf_model_M02SeaDAS import M02SeaDAS
 from .brdf_model_L11 import L11
 from .brdf_model_O23 import O23
 from .brdf_utils import ADF_OCP
@@ -30,9 +31,14 @@ Main BRDF correction module
 """
 def brdf_prototype(ds, adf=None, brdf_model='L11'):
 
+    # TEST brdf_models not supported in the GUI: hard overwrite
+    # brdf_model = 'M02SeaDAS'
+
     # Initialise model
     if brdf_model == 'M02':
         BRDF_model = M02(bands=ds.bands, aot=ds.aot, wind=ds.wind, adf=None) # Don't use brdf_py.ADF context
+    elif brdf_model == 'M02SeaDAS':
+        BRDF_model = M02SeaDAS(bands=ds.bands, adf=None)  # Don't use brdf_py.ADF context
     elif brdf_model == 'L11':
         BRDF_model = L11(bands=ds.bands, adf=None) # Don't use brdf_py.ADF context
     elif brdf_model == 'O23':
@@ -54,13 +60,13 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
 
         ds = BRDF_model.backward(ds, iter_brdf)
 
-        if brdf_model == 'M02':
+        if brdf_model in ['M02','M02SeaDAS']:
             # Initialise chl_iter
             if iter_brdf == 0:
                 chl_iter = {}
                 chl_iter[-1] = 0*ds['sza'] + float(BRDF_model.OC4MEchl0)
 
-            chl_iter[iter_brdf] = 10 ** ds['log_chl']
+            chl_iter[iter_brdf] = 10 ** ds['log10_chl']
             #  Check if convergence is reached |chl_old-chl_new| < epsilon * chl_new
             ds['convergeFlag'] = (ds['convergeFlag']) | (
                 (np.abs(chl_iter[iter_brdf - 1] - chl_iter[iter_brdf]) < float(BRDF_model.OC4MEepsilon) * chl_iter[iter_brdf]))
@@ -91,10 +97,10 @@ def brdf_uncertainty(ds, adf=None):
     if adf is None:
         adf = ADF_OCP
     # LUT = xr.open_dataset(adf,group='BRDF').unc
-    LUT = xr.open_dataset(adf,group='BRDF')['unc']
+    LUT = xr.open_dataset(adf % 'UNC', engine='netcdf4')
     
     # Interpolate relative uncertainty
-    unc = LUT.interp(lambda_unc=ds.bands, theta_s_unc=ds.theta_s, theta_v_unc=ds.theta_v, delta_phi_unc=ds.delta_phi)
+    unc = LUT['unc'].interp(lambda_unc=ds.bands, theta_s_unc=ds.theta_s, theta_v_unc=ds.theta_v, delta_phi_unc=ds.delta_phi)
 
     
     # Compute absolute uncertainty of factor
