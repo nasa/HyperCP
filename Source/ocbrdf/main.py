@@ -28,6 +28,8 @@ Main BRDF correction module
         C_brdf: BRDF correction factor
         brdf_unc: uncertainty of C_brdf
         nrrs_unc : uncertainty of nrrs
+        
+    Relative azimuth in the BRDF LUTs follows the OLCI convention. See https://www.eumetsat.int/media/50720, Fig. 6.
 """
 def brdf_prototype(ds, adf=None, brdf_model='L11'):
 
