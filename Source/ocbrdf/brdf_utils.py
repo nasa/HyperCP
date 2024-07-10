@@ -5,7 +5,7 @@ import os
 # Define default auxiliary data file (OLCI OCP ADF)
 ref_path = os.path.dirname(os.path.realpath(__file__))
 # ADF_OCP = os.path.join(ref_path, '..', 'AuxiliaryData/OCP/S3A_OL_2_OCP_AX_20160216T000000_20991231T235959_20240327T100000___________________EUM_O_AL_008.SEN3/OL_2_OCP_AX.nc')
-ADF_OCP = os.path.join(ref_path, 'S3A_OL_2_OCP_AX_20160216T000000_20991231T235959_20240411T120000___________________EUM_O_AL_008.SEN3/OL_2_OCP_AX.nc')
+ADF_OCP = os.path.join(ref_path, 'BRDF_LUTs','BRDF_%s.nc')
 
 def solve_2nd_order_poly(A, B, C):
     """ Solve 2nd order polynomial inversion 

@@ -47,7 +47,7 @@ class L11:
         self.b442, self.b490, self.b560, self.b665 = bands_ref
 
         # Read BRDF LUT and compute default coeffs
-        LUT_OCP = xr.open_dataset(adf,group='BRDF/L11')
+        LUT_OCP = xr.open_dataset(adf % 'L11',engine='netcdf4')
         self.LUT = xr.Dataset()
         self.LUT['Gw0'] = LUT_OCP.Gw0
         self.LUT['Gw1'] = LUT_OCP.Gw1
