@@ -83,9 +83,13 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
         ds['C_brdf'] = xr.where(ds['convergeFlag'], ds['C_brdf'], forward_mod0 / forward_mod)
         ds['nrrs'] = ds['Rw'] / np.pi * ds['C_brdf']
 
-    # Flag BRDF where NaN and set to 1
+    # Flag BRDF where NaN and set to 1 (no correction applied).
     ds['C_brdf_fail'] = np.isnan(ds['C_brdf'])
     ds['C_brdf'] = xr.where(ds['C_brdf_fail'], 1, ds['C_brdf'])
+
+    # If QAA_fail is raised, raise C_brdf_fail (but still apply C_brdf).
+    if 'QAA_fail' in ds:
+        ds['C_brdf_fail'] = (ds['C_brdf_fail']) | (ds['QAA_fail'])
 
     # Compute uncertainty
     brdf_uncertainty(ds)
@@ -116,7 +120,7 @@ def brdf_uncertainty(ds, adf=None):
     # Compute absolute uncertainty of factor
     ds['brdf_unc'] = unc * ds['C_brdf']
 
-    # Flag BRDF where NaN and set to 1
+    # Flag BRDF_unc where NaN and set to 0
     ds['brdf_unc_fail'] = np.isnan(ds['brdf_unc'])
     ds['brdf_unc'] = xr.where(ds['brdf_unc_fail'], 0, ds['brdf_unc'])
 
