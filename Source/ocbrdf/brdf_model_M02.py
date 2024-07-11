@@ -139,6 +139,12 @@ class M02:
         Rrs560 = Rrs.sel(bands=b560)
 
         # Compute the OC4ME "R"
+        # NB: Could be the case that Rrs[442-560]<0,
+        #   then ds['log10_chl_OC4ME_Ratio'] will be NaN.
+        #   then ds['log10_chl'] will be NaN.
+        #   then forward_mod0/forward_mod (in brdf_prototype, ocbrdf/main.py) will be NaN.
+        #   then ds['C_BRDF'] = NaN.
+        #   In this case, C_BRDF will be set to 1 and C_BRDF_flag will be raised (see brdf_prototype, ocbrdf/main.py).
         ds['log10_chl_OC4ME_Ratio'] = np.log10(np.max([Rrs442, Rrs490, Rrs510], axis=0) / Rrs560)
 
         ds['log10_chl'] = 0 * ds['log10_chl_OC4ME_Ratio']
