@@ -174,13 +174,16 @@ class ProcessL1bqc:
         es720 = ProcessL1bqc.interpolateColumn(esColumns, 720.0)
         es750 = ProcessL1bqc.interpolateColumn(esColumns, 750.0)
         badTimes = []
+
         flags1 = ancGroup.datasets['MET_FLAGS'].columns['Flag1']
         flags2 = ancGroup.datasets['MET_FLAGS'].columns['Flag2']
         flags3 = ancGroup.datasets['MET_FLAGS'].columns['Flag3']
         flags4 = ancGroup.datasets['MET_FLAGS'].columns['Flag4']
         flags5 = ancGroup.datasets['MET_FLAGS'].columns['Flag5']
+
         for indx, dateTime in enumerate(esTime):
-            # Flag spectra affected by clouds (Compare with 6S Es).
+            # Flag spectra affected by clouds (Compare with 6S Es). Placeholder while under development
+            # Need to propagate 6S even in Default and Class for this to work
             if py6sGroup is not None:
                 if li750[indx]/es750[indx] >= cloudFLAG:
                     badTimes.append(dateTime)
@@ -217,12 +220,12 @@ class ProcessL1bqc:
         msg = f'{len(np.unique(badTimes))/len(esTime)*100:.1f}% of spectra flagged (not filtered)'
         print(msg)
         Utilities.writeLogFile(msg)
-
+        
+        # Restore timestamps to columns (since it's not going to filterData, where it otherwise happens)
+        esData.datasetToColumns()
+        liData.datasetToColumns()
+        ltData.datasetToColumns()
         if len(badTimes) == 0:
-            # Restore timestamps to columns (since it's not going to filterData, where it otherwise happens)
-            esData.datasetToColumns()
-            liData.datasetToColumns()
-            ltData.datasetToColumns()
             badTimes = None
         return badTimes
 
