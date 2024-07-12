@@ -124,7 +124,7 @@ class AncillaryReader:
                 Utilities.writeLogFile(msg)
                 relAzAngle = ancData.data[ds]
                 relAzAngleUnits = ancData.variables[ds][1]
-            if ds == "sensoraz": # This is a new SeaBASS field
+            if ds == "sensor_azimuth": # This is a new SeaBASS field
                 msg = f'Found data: {ds}'
                 print(msg)
                 Utilities.writeLogFile(msg)
