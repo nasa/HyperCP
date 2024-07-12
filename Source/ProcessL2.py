@@ -1749,7 +1749,7 @@ class ProcessL2:
 
         elif ConfigFile.settings["bL1bCal"] == 2:
             # update the xSlice dict with uncertianties and samples
-            xSlice.update(instrument.Default(uncGroup, stats))
+            xSlice.update(instrument.Default(uncGroup, stats, node))
             # convert uncertainties back into absolute form using the signals recorded from ProcessL2
             xSlice['esUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
             xSlice['liUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}

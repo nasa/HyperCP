@@ -209,14 +209,14 @@ class Propagate:
         random = self.MCP.propagate_random(
             self.Lw_Conv,
             mean_vals,
-            uncertainties,
+            rnd_unc,
             corr_between=self.corr_matrix_Default_Lw,
         )
 
         systematic = self.MCP.propagate_systematic(
             self.Lw_Conv,
             mean_vals,
-            uncertainties,
+            sys_unc,
             corr_between=self.corr_matrix_Default_Lw,
         )
 
@@ -290,14 +290,14 @@ class Propagate:
         random = self.MCP.propagate_random(
             self.RRS_Conv,
             mean_vals,
-            uncertainties,
+            rnd_unc,
             corr_between=self.corr_matrix_Default_RRS,
         )
 
         systematic = self.MCP.propagate_systematic(
             self.RRS_Conv,
             mean_vals,
-            uncertainties,
+            sys_unc,
             corr_between=self.corr_matrix_Default_RRS,
         )
 
