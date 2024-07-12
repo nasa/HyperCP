@@ -2,7 +2,6 @@ import netCDF4
 import numpy as np
 import sys
 import xarray as xr
-# from .brdf_model_M02 import M02
 from .brdf_model_M02 import M02
 from .brdf_model_M02SeaDAS import M02SeaDAS
 from .brdf_model_L11 import L11
@@ -29,6 +28,16 @@ Main BRDF correction module
         brdf_unc: uncertainty of C_brdf
         nrrs_unc : uncertainty of nrrs
 
+    Information to keep for any usage and adaptation of the brdf_hypercp module:
+        Brdf_hypercp is part of the EUMETSAT study 
+        "BRDF correction of S3 OLCI water reflectance products", 
+        Contract N.: RB_EUM-CO-21-4600002626-JIG. 
+        Study team members: Davide  D'Alimonte (davide.dalimonte@aequora.org), 
+        Tamito Kajiyama (tamito.kajiyama@aequora.org), 
+        Jaime Pitarch (jaime.pitarchportero@artov.ismar.cnr.it), 
+        Vittorio Brando (vittorio.brando@cnr.it),  
+        Marco Talone (talone@icm.csic.es) and 
+        Constant Mazeran (constant.mazeran@solvo.fr).
     Relative azimuth in the BRDF LUTs follows the OLCI convention. See https://www.eumetsat.int/media/50720, Fig. 6.
 """
 
