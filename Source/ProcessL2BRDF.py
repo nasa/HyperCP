@@ -5,7 +5,7 @@ from scipy.interpolate import RegularGridInterpolator as rgi
 import os
 import xarray as xr
 from Source import PATH_TO_DATA
-import Source.ocbrdf.main as oc_brdf
+import Source.ocbrdf.ocbrdf_main as oc_brdf
 
 
 class ProcessL2BRDF():
