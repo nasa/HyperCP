@@ -595,6 +595,8 @@ class ProcessL2:
                 timeStamp = group.getDataset("ES").data["Datetime"]
             if group.id == "RADIANCE":
                 timeStamp = group.getDataset("LI").data["Datetime"]
+            if group.id == "PY6S_MODEL":
+                timeStamp = group.getDataset("direct_ratio").data["Datetime"]
         else:
             if group.id == "IRRADIANCE":
                 timeStamp = group.getDataset(f"ES_{sensor}").data["Datetime"]
@@ -2009,10 +2011,13 @@ class ProcessL2:
         rootCopy.addGroup("ANCILLARY")
         rootCopy.addGroup("IRRADIANCE")
         rootCopy.addGroup("RADIANCE")
+        rootCopy.addGroup('PY6S_MODEL')
 
         rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
+        rootCopy.getGroup('PY6S_MODEL').copy(root.getGroup('PY6S_MODEL'))
+
 
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("ES_DARK_L1AQC")

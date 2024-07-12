@@ -47,7 +47,7 @@ class L11:
         self.b442, self.b490, self.b560, self.b665 = bands_ref
 
         # Read BRDF LUT and compute default coeffs
-        LUT_OCP = xr.open_dataset(adf,group='BRDF/L11')
+        LUT_OCP = xr.open_dataset(adf % 'L11',engine='netcdf4')
         self.LUT = xr.Dataset()
         self.LUT['Gw0'] = LUT_OCP.Gw0
         self.LUT['Gw1'] = LUT_OCP.Gw1
@@ -155,6 +155,11 @@ class L11:
         cC = (coeffs.Gw0 * bbw0 - Rrs0 * k0) * k0 + coeffs.Gw1 * bbw0 * bbw0
         bbp0 = solve_2nd_order_poly(cA, cB, cC)
 
+        # Assume bbp0 = 0 if solve_2nd_order_poly fails to retrieve non-negative numbers
+        # In this case activate bbp0_fail flag (which in turn activates QAA_fail)
+        bbp0_fail = (bbp0 < 0) | (np.isinf(bbp0)) | (np.isnan(bbp0))
+        bbp0 = xr.where(bbp0_fail, 0, bbp0)
+
         # Compute bbp slope and extrapolate at all bands
         gamma = self.gamma[0] * (1.0 - self.gamma[1] * np.exp(-self.gamma[2] * (rrs442 / rrs560)))
         bbp = bbp0 * np.power(band0 / self.bands, gamma)
@@ -168,8 +173,15 @@ class L11:
         cB = - (coeffs.Gw0 * self.bbw + coeffs.Gp0 * bbp)
         cC = - (coeffs.Gw1 * self.bbw *self.bbw + coeffs.Gp1 * bbp * bbp)
         k = solve_2nd_order_poly(cA, cB, cC)
-        # Set 0 to nan to avoid division by zero
-        k = xr.where(k > 0, k, np.nan)
+
+        # If k is not a positive value, then
+        #   i) k --> bbw + aw
+        #   ii) k_fail flag is activated
+        k_fail = (k <= 0) | (np.isinf(k)) | (np.isnan(k))
+        k = xr.where(k_fail, self.aw + self.bbw, k)
+
+        # Set QAA_fail is either bbp0_fail or k_fail are activated
+        ds['QAA_fail'] = (bbp0_fail) | (k_fail)
 
         # Compute final IOPs
         ds['omega_b'] = bb / k
