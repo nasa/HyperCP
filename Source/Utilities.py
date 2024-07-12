@@ -975,8 +975,6 @@ class Utilities:
 
     @staticmethod
     def plotRadiometry(root, filename, rType, plotDelta = False):
-        # refresh figure to ensure debug plots do not affect Rrs plotting
-        plt.figure()
 
         dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
@@ -2151,7 +2149,7 @@ class Utilities:
                 try:
                     ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp - refTemp)))
                     if ConfigFile.settings["bL1bCal"] == 3:
-                        ThermUnc.append(np.abs(therm_unc[i]*(InternalTemp - refTemp)) / 2)  # div by 2 because uncertainty is k=2
+                        ThermUnc.append(therm_unc[i] / 2)  # div by 2 because uncertainty is k=2
                     else:
                         ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp - refTemp)))
                 except IndexError:
@@ -2164,12 +2162,12 @@ class Utilities:
             # We use ambiant_temp+2.5° instead to estimate internal temp
             for i in range(len(therm_coeff)):
                 try:
-                    ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))  # was 2.5
+                    ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+2.5 - refTemp)))
                     if ConfigFile.settings["bL1bCal"] == 3:
-                        ThermUnc.append(np.abs(therm_unc[i]*(InternalTemp+ambTemp+5 - refTemp)) / 2)
+                        ThermUnc.append(therm_unc[i] / 2)
                         # uncertainty is k=2 from char file
                     else:
-                        ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))  # was 2.5
+                        ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp+ambTemp+2.5 - refTemp)))
                 except IndexError:
                     ThermCorr.append(1.0)
                     ThermUnc.append(0)

@@ -595,6 +595,8 @@ class ProcessL2:
                 timeStamp = group.getDataset("ES").data["Datetime"]
             if group.id == "RADIANCE":
                 timeStamp = group.getDataset("LI").data["Datetime"]
+            if group.id == "PY6S_MODEL":
+                timeStamp = group.getDataset("direct_ratio").data["Datetime"]
         else:
             if group.id == "IRRADIANCE":
                 timeStamp = group.getDataset(f"ES_{sensor}").data["Datetime"]
@@ -1669,9 +1671,9 @@ class ProcessL2:
             except NameError:
                 rhoScalar, rhoUNC = RhoCorrections.M99Corr(WINDSPEEDXSlice, SZAXSlice, RelAzXSlice,
                                                              Rho_Uncertainty_Obj)
+        
         # Calculate hyperspectral Coddingtion TSIS_1 hybrid F0 function
-        # F0_hyper = ProcessL2.Thuillier(dateTag, wavelength)
-        # NOTE: Need to check whether uncertainties are one sigma or two
+        # NOTE: TSIS uncertainties reported as 1-sigma
         F0_hyper, F0_unc, F0_raw, F0_unc_raw, wv_raw = Utilities.TSIS_1(dateTag, wavelength)
         # Recycling _raw in TSIS_1 calls below prevents the dataset having to be reread
 
@@ -1747,7 +1749,7 @@ class ProcessL2:
 
         elif ConfigFile.settings["bL1bCal"] == 2:
             # update the xSlice dict with uncertianties and samples
-            xSlice.update(instrument.Default(uncGroup, stats, node))
+            xSlice.update(instrument.Default(uncGroup, stats))
             # convert uncertainties back into absolute form using the signals recorded from ProcessL2
             xSlice['esUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
             xSlice['liUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
@@ -2009,10 +2011,13 @@ class ProcessL2:
         rootCopy.addGroup("ANCILLARY")
         rootCopy.addGroup("IRRADIANCE")
         rootCopy.addGroup("RADIANCE")
+        rootCopy.addGroup('PY6S_MODEL')
 
         rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
+        rootCopy.getGroup('PY6S_MODEL').copy(root.getGroup('PY6S_MODEL'))
+
 
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("ES_DARK_L1AQC")
@@ -2048,6 +2053,7 @@ class ProcessL2:
         referenceGroup = rootCopy.getGroup("IRRADIANCE")
         sasGroup = rootCopy.getGroup("RADIANCE")
         ancGroup = rootCopy.getGroup("ANCILLARY")
+        py6SGroup = rootCopy.getGroup("PY6S_MODEL")
 
         if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("RAW_UNCERTAINTIES")
@@ -2112,6 +2118,7 @@ class ProcessL2:
                     return False
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
+                ProcessL2.filterData(py6SGroup, badTimes)
 
         #####################################################################
         #

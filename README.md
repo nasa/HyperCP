@@ -241,6 +241,8 @@ Example ancillary files are included in /Data/Sample_Data for use as a template.
 In case environmental conditions were not logged in the field, or for filling in gaps in logged data, they will be
 retrieved from GMAO or ECMWF models as described below. The ancillary data file is optional (though strongly advised for adding wind speed at a minimum) provided the sensor suite is equipped with a SolarTracker, pySAS, or equivalent to supply the relevant sensor/solar geometries combined with a GPS for position and time. If no SolarTracker-type instrument is present to report the relative sensor/solar geometries, the ancillary file must be provided with at least the ship heading and relative angle between the bow of the ship and the sensor azimuth as a function of time (see sample "NOTRACKER" configuration provided). If no GPS is present, position and time are also required in an ancillary file. Application of the Zhang et al. (2017) glint correction will require the addition of GMAO or ECMWF model data for aerosol optical depth.
 
+**The relative azimuth convention adopted in HyperCP (and expected in ancillary inputs) defines relAz as the angle between the sensor viewing angle (from the sensor to the target) and the solar azimuth angle (from the sensor to the sun). Certain modules in HyperCP, including the Zhang et al. 2017 glint correction and the Morel 2002 BRDF correction use 180 - relAz.**
+
 
 #### 4. Single-level Processing
 
