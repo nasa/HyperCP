@@ -93,8 +93,7 @@ class Instrument(ABC):
 
         return output
 
-
-    def Factory(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict) -> dict[np.array]:
+    def Factory(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict) -> dict[str: dict]:
         """
 
         :param node: HDFRoot which stores the L1BQC data for L2Processing
@@ -126,7 +125,9 @@ class Instrument(ABC):
             cal_stop = int(node.attributes['CAL_STOP'])
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            cStray[sensor] = np.asarray(list(straylight.columns['1']))[cal_start:cal_stop]
+            cStray[sensor] = np.asarray(list(straylight.columns['1']))[cal_start:cal_stop + 1]
+            # +1 here fixed a bug. Slicing arrays gives the first stop-start elements, not elements up to stop index.
+            # Therefore for 255 pixels we need 0:255 not 0:254 to capture all pixels in the sl values.
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
@@ -221,7 +222,7 @@ class Instrument(ABC):
             ltUnc=lt_Unc,
         )
 
-    def Default(self, uncGrp: HDFGroup, stats: dict) -> dict[str, np.array]:
+    def Default(self, uncGrp: HDFGroup, stats: dict, node: HDFRoot) -> dict[str, dict]:
         """
 
         :param uncGrp: HDFGroup which contains the uncertainty budget, all imput uncertainties
@@ -313,6 +314,20 @@ class Instrument(ABC):
         es, li, lt = PropagateL1B.instruments(*mean_values)  # signal generated from measurement function applied
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
         # convert to relative uncertainty
+
+        p_unc = Show_Uncertainties(PropagateL1B)
+        p_unc.plot_breakdown_Class(
+            mean_values,
+            uncertainty,
+            dict(
+                ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
+                LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
+                LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
+                ),
+            True,
+            type(self).__name__ + '_' + node.attributes["CAST"]
+        )
+
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
             ES_unc = es_unc / es
@@ -1017,7 +1032,9 @@ class Instrument(ABC):
             cal_stop = int(node.attributes['CAL_STOP'])
             straylight = uncGrp.getDataset(f"{sensor}_STRAYDATA_CAL")
             straylight.datasetToColumns()
-            cStray[sensor] = np.asarray(list(straylight.columns['1']))[cal_start:cal_stop]
+            cStray[sensor] = np.asarray(list(straylight.columns['1']))[cal_start:cal_stop + 1]
+            # +1 here fixed a bug. Slicing arrays gives the first stop-start elements, not elements up to stop index.
+            # Therefore for 255 pixels we need 0:255 not 0:254 to capture all pixels in the sl values.
 
             linear = uncGrp.getDataset(sensor + "_NLDATA_CAL")
             linear.datasetToColumns()
@@ -1951,12 +1968,15 @@ class HyperOCR(Instrument):
             sample_updated_radcal_gain[:, ind_nocal == True] = 1
 
             data = np.mean(raw_data, axis=0)  # raw data already dark subtracted, use mean for statistical analysis
+            data[ind_nocal == True] = 0  # 0 out data outside of cal so it doesn't affect statistics
+            dark = np.mean(raw_dark, axis=0)
+            dark[ind_nocal == True] = 0
             # data is already 180 len for PML HyperOCR
             # signal uncertainties
             std_light = stats[sensortype]['std_Light']  # standard deviations are taken from generateSensorStats
             std_dark = stats[sensortype]['std_Dark']
-            sample_light = cm.generate_sample(100, np.mean(raw_data, axis=0), std_light, "rand")
-            sample_dark = cm.generate_sample(100, np.mean(raw_dark, axis=0), std_dark, "rand")
+            sample_light = cm.generate_sample(100, data, std_light, "rand")
+            sample_dark = cm.generate_sample(100, dark, std_dark, "rand")
             sample_dark_corr_data = prop.run_samples(self.dark_Substitution, [sample_light, sample_dark])
 
             # plt.figure()

@@ -75,25 +75,12 @@ class RhoCorrections:
             zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
                                                 relAzMean, newWaveBands)
 
-            # import matplotlib.pyplot as plt
-
-            # fig = plt.figure()
-            # plt.plot(newWaveBands, rhoScalar * np.ones(len(newWaveBands)), label="M99")
-            # plt.plot(newWaveBands, zhang, label="Z17")
-            # # plt.title("Mobley99 rho vs Zhang - Tartu")
-            # plt.title("Mobley99 rho vs Zhang - HEREON")
-            # plt.xlabel("Wavelength (nm)")
-            # plt.ylabel("Rho Value")
-            # plt.legend()
-            # plt.savefig("rho_vals_HEREON.jpg")
-            # get the relative difference between mobley and zhang and add in quadrature as uncertainty component
-
-            #  Is |M99 - Z17| the only estimate of glint uncertainty? I thought they had been modeled in MC. -DAA
-            #  uncertainties must be in % form (relative and *100) in order to do sum of squares
+            # |M99 - Z17| is an estimation of model error, added to MC M99 uncertainty in quadrature to give combined
+            # uncertainty
             pct_diff = (np.abs(rhoScalar - zhang) / rhoScalar)  # relative units
-            tot_diff = np.power(np.power(Delta * 100, 2) + np.power(pct_diff * 100, 2), 0.5)
-            tot_diff[np.isnan(tot_diff)==True] = 0  # ensure no NaNs are present in the uncertainties.
-            tot_diff = (tot_diff/100) * rhoScalar  # ensure difference is in proper units
+            tot_diff = np.sqrt(Delta ** 2 + pct_diff ** 2)
+            tot_diff[np.isnan(tot_diff) == True] = 0  # ensure no NaNs are present in the uncertainties.
+            tot_diff = tot_diff * rhoScalar  # ensure difference is in proper units
             # add back in filtered wavelengths
             rhoDelta = []
             i = 0
@@ -103,28 +90,22 @@ class RhoCorrections:
                     i += 1
                 else:
                     # in cases where we are outside the range in which Zhang is calculated 0.003 from Ruddick is used
-                    rhoDelta.append((np.power(np.power((Delta / rhoScalar) * 100, 2) +
-                                     np.power((0.003 / rhoScalar) * 100, 2), 0.5)/100)*rhoScalar)
+                    rhoDelta.append(np.sqrt(Delta**2 + (0.003 / rhoScalar)**2) * rhoScalar)
                     # necessary to convert to relative before propagating, then converted back to absolute
         else:
+            ## NOTES ##
             # this is temporary. It is possible for users to not select any ancillary data in the config, meaning Zhang
             # Rho will fail. It is far too easy for a user to do this, so I added the following line to make sure the
             # processor doesn't break.
-            # 0.003 was chosen because it is the only number with any scientific justification
-            # (estimated from Ruddick 2006).
-
             # Not sure I follow. Ancillary data should be populated regardless of whether an ancillary file is
             # added (i.e., using the model data) - DAA
-            rhoDelta = (np.power(np.power((Delta / rhoScalar) * 100, 2)
-                        + np.power((0.003 / rhoScalar) * 100, 2), 0.5)/100)*rhoScalar
+            # yes but if none of the ancillary datasets i.e. ECMWF are selected then surely info like AOD could be
+            # missing? -AJR.
 
-        # fig = plt.figure()
-        # plt.plot(waveBands, rhoDelta)
-        # # plt.title("Rho Uncertainty - Tartu")
-        # plt.title("Rho Uncertainty - HEREON")
-        # plt.xlabel("Wavelength (nm)")
-        # plt.ylabel("Rho Uncertainty (absolute)")
-        # plt.savefig("rho_unc_HEREON.jpg")
+            # 0.003 was chosen because it is the only number with any scientific justification
+            # (estimated from Ruddick 2006).
+            rhoDelta = np.sqrt(Delta**2 + (0.003 / rhoScalar)**2) * rhoScalar
+
         return rhoScalar, rhoDelta
 
     @staticmethod
