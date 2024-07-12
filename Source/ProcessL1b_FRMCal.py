@@ -10,7 +10,7 @@ from scipy import interpolate
 
 # internal files
 from Source.ConfigFile import ConfigFile
-
+from Source.Utilities import Utilities
 
 class ProcessL1b_FRMCal:
 
@@ -280,9 +280,54 @@ class ProcessL1b_FRMCal:
 
         return mX[n_iter-1,:]
 
-    def processL1b_SeaBird(node):
+    @staticmethod
+    def processL1b_SeaBird(node, calibrationMap):
         # calibration of HyperOCR following the FRM processing of FRM4SOC2
-        import time
+        esUnits = None
+        liUnits = None
+        ltUnits = None
+        pyrUnits = None
+
+        now = dt.now()
+        timestr = now.strftime("%d-%b-%Y %H:%M:%S")
+        node.attributes["FILE_CREATION_TIME"] = timestr
+        msg = f"ProcessL1b_FactoryCal.processL1b: {timestr}"
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        msg = "Applying factory calibrations."
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        for gp in node.groups:
+            if not 'L1AQC' in gp.id:
+                msg = f'  Group: {gp.id}'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                if "CalFileName" in gp.attributes:
+                    if gp.attributes["CalFileName"] != 'ANCILLARY':  # GPS constructed from Ancillary data will cause bug here
+                        cf = calibrationMap[gp.attributes["CalFileName"]]
+                        #print(gp.id, gp.attributes)
+                        msg = f'    File: {cf.id}'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+
+                        if esUnits == None:
+                            esUnits = cf.getUnits("ES")
+                        if liUnits == None:
+                            liUnits = cf.getUnits("LI")
+                        if ltUnits == None:
+                            ltUnits = cf.getUnits("LT")
+                        if pyrUnits == None:
+                            pyrUnits = cf.getUnits("T") #Pyrometer
+
+        node.attributes["LI_UNITS"] = liUnits
+        node.attributes["LT_UNITS"] = ltUnits
+        node.attributes["ES_UNITS"] = esUnits
+        node.attributes["L1AQC_UNITS"] = 'count'
+        node.attributes["SATPYR_UNITS"] = pyrUnits
+
+        # setup node attrs
 
         unc_grp = node.getGroup('RAW_UNCERTAINTIES')
 

@@ -712,7 +712,11 @@ class ProcessL1b:
             ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
 
         elif ConfigFile.settings['bL1bCal'] == 3:
-            if not ProcessL1b_FRMCal.processL1b_SeaBird(node):
+            calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
+            calPath = os.path.join(PATH_TO_CONFIG, calFolder)
+            print("Read CalibrationFile ", calPath)
+            calibrationMap = CalibrationFileReader.read(calPath)
+            if not ProcessL1b_FRMCal.processL1b_SeaBird(node, calibrationMap):
                 msg = 'Error in ProcessL1b.process_FRM_calibration'
                 print(msg)
                 Utilities.writeLogFile(msg)
