@@ -133,54 +133,31 @@ class ProcessL1b_FRMCal:
                     else:
                         direct[n,i0] = (direct[n,i0-1]+direct[n,i0+1])/2
 
-        # interpolate results
+        # if only 1 bin, repeat value for each timestamp over cast duration (<3min)
         res_py6s = {}
-        x_bin  = [n*n_min for n in range(n_bin)]
-        x_full = np.linspace(0, n_mesure, n_mesure)
-        f =  interpolate.interp1d(x_bin, solar_zenith, fill_value='extrapolate')
-        res_py6s['solar_zenith'] = f(x_full)
-        f =  interpolate.interp1d(x_bin, direct, fill_value='extrapolate', axis=0)
-        res_py6s['direct_ratio'] = f(x_full)
-        f =  interpolate.interp1d(x_bin, diffuse, fill_value='extrapolate', axis=0)
-        res_py6s['diffuse_ratio'] = f(x_full)
-        f =  interpolate.interp1d(x_bin, irr_direct, fill_value='extrapolate', axis=0)
-        res_py6s['direct_irr'] = f(x_full)
-        f =  interpolate.interp1d(x_bin, irr_diffuse, fill_value='extrapolate', axis=0)
-        res_py6s['diffuse_irr'] = f(x_full)
-        f =  interpolate.interp1d(x_bin, irr_env, fill_value='extrapolate', axis=0)
-        res_py6s['env_irr'] = f(x_full)
-
-
-        # if called_L2 == False:
-        #     wavelengths = [str(w) for w in wavelengths]
-        #     py6s_grp = node.addGroup("PY6S_MODEL_full")
-        #     ds = py6s_grp.addDataset("direct_irr")
-        #     # ds.data = res_py6s['direct_irr'] 
-        #     # ds.columnsToDataset()
-        #     ds_dt = np.dtype({'names': wavelengths,'formats': [np.float64]*len(wavelengths)})
-        #     rec_arr = np.rec.fromarrays(np.array(res_py6s['direct_irr'] ).transpose(), dtype=ds_dt)
-        #     ds.data = rec_arr
-        #     ds = py6s_grp.addDataset("diffuse_irr")
-        #     # ds.data = res_py6s['diffuse_irr'] 
-        #     # ds.columnsToDataset()
-        #     ds_dt = np.dtype({'names': wavelengths,'formats': [np.float64]*len(wavelengths)})
-        #     rec_arr = np.rec.fromarrays(np.array(res_py6s['diffuse_irr'] ).transpose(), dtype=ds_dt)
-        #     ds.data = rec_arr
-        #     ds = py6s_grp.addDataset("direct_ratio")
-        #     # ds.data = res_py6s['direct_ratio'] 
-        #     # ds.columnsToDataset()
-        #     ds_dt = np.dtype({'names': wavelengths,'formats': [np.float64]*len(wavelengths)})
-        #     rec_arr = np.rec.fromarrays(np.array(res_py6s['direct_ratio'] ).transpose(), dtype=ds_dt)
-        #     ds.data = rec_arr
-        #     ds = py6s_grp.addDataset("diffuse_ratio")
-        #     # ds.data = res_py6s['diffuse_ratio'] 
-        #     # ds.columnsToDataset()
-        #     ds_dt = np.dtype({'names': wavelengths,'formats': [np.float64]*len(wavelengths)})
-        #     rec_arr = np.rec.fromarrays(np.array(res_py6s['diffuse_ratio'] ).transpose(), dtype=ds_dt)
-        #     ds.data = rec_arr
-        #     ds = py6s_grp.addDataset("solar_zenith")
-        #     ds.columns["solar_zenith"] = res_py6s['solar_zenith']
-        #     ds.columnsToDataset()
+        if n_bin == 1:
+            res_py6s['solar_zenith'] = np.repeat(solar_zenith, n_mesure)
+            res_py6s['direct_ratio'] = np.repeat(direct, n_mesure, axis=0)
+            res_py6s['diffuse_ratio'] = np.repeat(diffuse, n_mesure, axis=0)
+            res_py6s['direct_irr'] = np.repeat(irr_direct, n_mesure, axis=0)
+            res_py6s['diffuse_irr'] = np.repeat(irr_diffuse, n_mesure, axis=0)
+            res_py6s['env_irr'] = np.repeat(irr_env, n_mesure, axis=0)
+        # if more than 1 bin, interpolate fo each timestamp
+        else:
+            x_bin  = [n*n_min for n in range(n_bin)]
+            x_full = np.linspace(0, n_mesure, n_mesure)
+            f =  interpolate.interp1d(x_bin, solar_zenith, fill_value='extrapolate')
+            res_py6s['solar_zenith'] = f(x_full)
+            f =  interpolate.interp1d(x_bin, direct, fill_value='extrapolate', axis=0)
+            res_py6s['direct_ratio'] = f(x_full)
+            f =  interpolate.interp1d(x_bin, diffuse, fill_value='extrapolate', axis=0)
+            res_py6s['diffuse_ratio'] = f(x_full)
+            f =  interpolate.interp1d(x_bin, irr_direct, fill_value='extrapolate', axis=0)
+            res_py6s['direct_irr'] = f(x_full)
+            f =  interpolate.interp1d(x_bin, irr_diffuse, fill_value='extrapolate', axis=0)
+            res_py6s['diffuse_irr'] = f(x_full)
+            f =  interpolate.interp1d(x_bin, irr_env, fill_value='extrapolate', axis=0)
+            res_py6s['env_irr'] = f(x_full)
 
         return res_py6s
 
