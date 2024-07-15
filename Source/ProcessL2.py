@@ -2016,7 +2016,12 @@ class ProcessL2:
         rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
-        rootCopy.getGroup('PY6S_MODEL').copy(root.getGroup('PY6S_MODEL'))
+        for gp in root.groups:
+            if gp.id == 'PY6S_MODEL':                
+                py6s_available = True
+                rootCopy.getGroup('PY6S_MODEL').copy(root.getGroup('PY6S_MODEL'))
+            else:
+                py6s_available = False
 
 
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
@@ -2053,7 +2058,8 @@ class ProcessL2:
         referenceGroup = rootCopy.getGroup("IRRADIANCE")
         sasGroup = rootCopy.getGroup("RADIANCE")
         ancGroup = rootCopy.getGroup("ANCILLARY")
-        py6SGroup = rootCopy.getGroup("PY6S_MODEL")
+        if py6s_available:
+            py6SGroup = rootCopy.getGroup("PY6S_MODEL")
 
         if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("RAW_UNCERTAINTIES")
@@ -2118,7 +2124,8 @@ class ProcessL2:
                     return False
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
-                ProcessL2.filterData(py6SGroup, badTimes)
+                if py6s_available:
+                    ProcessL2.filterData(py6SGroup, badTimes)
 
         #####################################################################
         #
