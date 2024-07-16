@@ -6,7 +6,7 @@ from .brdf_model_M02 import M02
 from .brdf_model_M02SeaDAS import M02SeaDAS
 from .brdf_model_L11 import L11
 from .brdf_model_O23 import O23
-from .brdf_utils import ADF_OCP
+from .brdf_utils import ADF_OCP, squeeze_trivial_dims
 
 """
 Main BRDF correction module
@@ -46,6 +46,9 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
     # TEST brdf_models not supported in the GUI: hard overwrite
     # brdf_model = 'M02SeaDAS'
 
+    # Squeeze trivial dimensions (e.g. # of casts, extractions, etc. to avoid interpolation issues)
+    ds, squeezedDims = squeeze_trivial_dims(ds)
+
     # Initialise model
     if brdf_model == 'M02':
         BRDF_model = M02(bands=ds.bands, aot=ds.aot, wind=ds.wind, adf=None)  # Don't use brdf_py.ADF context
@@ -70,14 +73,16 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
 
     for iter_brdf in range(int(BRDF_model.niter)):
 
+        # M02: Initialise chl_iter
+        if brdf_model in ['M02', 'M02SeaDAS'] and (iter_brdf == 0):
+            chl_iter = {}
+            ds['log10_chl'] = 0 * ds['sza'] + float(np.log10(BRDF_model.OC4MEchl0))
+            chl_iter[-1]    = 0 * ds['sza'] + float(BRDF_model.OC4MEchl0)
+
         ds = BRDF_model.backward(ds, iter_brdf)
 
+        # M02: Check convergence (dummy for M02SeaDAS for the moment... epsilon set to 0)
         if brdf_model in ['M02', 'M02SeaDAS']:
-            # Initialise chl_iter
-            if iter_brdf == 0:
-                chl_iter = {}
-                chl_iter[-1] = 0 * ds['sza'] + float(BRDF_model.OC4MEchl0)
-
             chl_iter[iter_brdf] = 10 ** ds['log10_chl']
             #  Check if convergence is reached |chl_old-chl_new| < epsilon * chl_new
             ds['convergeFlag'] = (ds['convergeFlag']) | (
@@ -85,11 +90,20 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
                     iter_brdf]))
 
         # Apply forward model in both geometries
-        forward_mod = BRDF_model.forward(ds).transpose('n', 'bands')
-        forward_mod0 = BRDF_model.forward(ds, normalized=True).transpose('n', 'bands')
+        # forward_mod = BRDF_model.forward(ds).transpose('n', 'bands')
+        # forward_mod0 = BRDF_model.forward(ds, normalized=True).transpose('n', 'bands')
+        forward_mod = BRDF_model.forward(ds)
+        forward_mod0 = BRDF_model.forward(ds, normalized=True)
+
+        ratio = forward_mod0 / forward_mod
+
+        # Drop remnant coordinates to avoid ambiguities in the update of the BRDF factor.
+        for coord in ratio.coords:
+            if coord not in ds['C_brdf'].coords:
+                ratio = ratio.drop(coord)
 
         # Normalize reflectance
-        ds['C_brdf'] = xr.where(ds['convergeFlag'], ds['C_brdf'], forward_mod0 / forward_mod)
+        ds['C_brdf'] = xr.where(ds['convergeFlag'], ds['C_brdf'], ratio)
         ds['nrrs'] = ds['Rw'] / np.pi * ds['C_brdf']
 
     # Flag BRDF where NaN and set to 1 (no correction applied).
@@ -101,7 +115,7 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
         ds['C_brdf_fail'] = (ds['C_brdf_fail']) | (ds['QAA_fail'])
 
     # Compute uncertainty
-    brdf_uncertainty(ds)
+    ds = brdf_uncertainty(ds)
 
     # Compute flag
     ds['flags_level2'] = ds['Rw'] * 0  # TODO
@@ -109,13 +123,15 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
     # Convert to reflectance unit
     ds['rho_ex_w'] = ds['nrrs'] * np.pi
 
+    # Expand squeezed trivial dimensions
+    for dim,d0 in squeezedDims.items():
+        ds = ds.expand_dims(dim,axis=d0)
+
     return ds
 
-
-''' Compute uncertainty of BRDF factor and propagate to nrrs '''
-
-
 def brdf_uncertainty(ds, adf=None):
+    ''' Compute uncertainty of BRDF factor and propagate to nrrs '''
+
     # Read LUT
     if adf is None:
         adf = ADF_OCP
@@ -123,8 +139,8 @@ def brdf_uncertainty(ds, adf=None):
     LUT = xr.open_dataset(adf % 'UNC', engine='netcdf4')
 
     # Interpolate relative uncertainty
-    unc = LUT['unc'].interp(lambda_unc=ds.bands, theta_s_unc=ds.theta_s, theta_v_unc=ds.theta_v,
-                            delta_phi_unc=ds.delta_phi)
+    unc = LUT['unc'].interp(lambda_unc=ds.bands, theta_s_unc=ds.sza, theta_v_unc=ds.vza,
+                            delta_phi_unc=ds.raa)
 
     # Compute absolute uncertainty of factor
     ds['brdf_unc'] = unc * ds['C_brdf']
@@ -139,5 +155,4 @@ def brdf_uncertainty(ds, adf=None):
         nrrs_unc2 += ds['C_brdf'] * ds['C_brdf'] * ds['Rw_unc'] * ds['Rw_unc']
     ds['nrrs_unc'] = np.sqrt(nrrs_unc2)
 
-
-
+    return ds
