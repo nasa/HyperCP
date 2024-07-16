@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import sys
 import xarray as xr
 
-from .brdf_utils import ADF_OCP, solve_2nd_order_poly
+from .brdf_utils import ADF_OCP, solve_2nd_order_poly, drop_unused_coords
 from .Raman import Raman
 
 
@@ -179,6 +179,12 @@ class L11:
         #   ii) k_fail flag is activated
         k_fail = (k <= 0) | (np.isinf(k)) | (np.isnan(k))
         k = xr.where(k_fail, self.aw + self.bbw, k)
+
+        # Drop unused coords to avoid issues
+        bb        = drop_unused_coords(bb)
+        k         = drop_unused_coords(k)
+        k_fail    = drop_unused_coords(k_fail)
+        bbp0_fail = drop_unused_coords(bbp0_fail)
 
         # Set QAA_fail is either bbp0_fail or k_fail are activated
         ds['QAA_fail'] = (bbp0_fail) | (k_fail)
