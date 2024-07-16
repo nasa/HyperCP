@@ -315,18 +315,18 @@ class Instrument(ABC):
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
         # convert to relative uncertainty
 
-        p_unc = Show_Uncertainties(PropagateL1B)
-        p_unc.plot_breakdown_Class(
-            mean_values,
-            uncertainty,
-            dict(
-                ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
-                LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
-                LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
-                ),
-            True,
-            type(self).__name__ + '_' + node.attributes["CAST"]
-        )
+        # p_unc = Show_Uncertainties(PropagateL1B)
+        # p_unc.plot_breakdown_Class(
+        #     mean_values,
+        #     uncertainty,
+        #     dict(
+        #         ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
+        #         LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
+        #         LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
+        #         ),
+        #     True,
+        #     type(self).__name__ + '_' + node.attributes["CAST"]
+        # )
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
@@ -1891,48 +1891,86 @@ class HyperOCR(Instrument):
 
             # Updated calibration gain
             if sensortype == "ES":
-                ## Compute avg cosine error
-                cos_mean_vals, cos_uncertainties = self.prepare_cos(uncGrp, sensortype, 'L2', ind_raw_wvl)
-                corr = [None, "syst", "syst", "rand"]
-                sample_radcal_wvl, sample_coserr, sample_coserr90, sample_zen_ang = [
-                    cm.generate_sample(mDraws, samp, cos_uncertainties[i], corr[i]) for i, samp in
-                    enumerate(cos_mean_vals)]
-
-                avg_coserror, avg_azi_coserror, zenith_ang, zen_delta, azi_delta, zen_unc, azi_unc = \
-                    self.cosine_error_correction(uncGrp, sensortype)
-
-                # correct to available wavebands!
-                avg_coserror = avg_coserror[ind_raw_wvl, :]
-                avg_azi_coserror = avg_azi_coserror[ind_raw_wvl, :]
-                zen_delta = zen_delta[ind_raw_wvl, :]
-                azi_delta = azi_delta[ind_raw_wvl, :]
-                zen_unc = zen_unc[ind_raw_wvl, :]
-                azi_unc = azi_unc[ind_raw_wvl, :]
-
-                # error due to lack of symmetry in cosine response
-                sample_azi_delta_err1 = cm.generate_sample(mDraws, avg_azi_coserror, azi_unc, "syst")
-                sample_azi_delta_err2 = cm.generate_sample(mDraws, avg_azi_coserror, azi_delta, "syst")
-                sample_azi_delta_err = prop.combine_samples([sample_azi_delta_err1, sample_azi_delta_err2])
-                # lines removed to prevent double counting of monte carlo uncertainty for cosine correction!
-                sample_zen_delta_err1 = cm.generate_sample(mDraws, avg_coserror, zen_unc, "syst")
-                sample_zen_delta_err2 = cm.generate_sample(mDraws, avg_coserror, zen_delta, "syst")
-                sample_zen_delta_err = prop.combine_samples([sample_zen_delta_err1, sample_zen_delta_err2])
-                sample_zen_err = prop.run_samples(self.ZENAvg_Coserr, [sample_radcal_wvl, sample_azi_delta_err])
-                sample_zen_avg_coserror = prop.combine_samples([sample_zen_err, sample_zen_delta_err])
-
-                # full_hemi_coserr = self.FHemi_Coserr(avg_coserror, zenith_ang)
-                sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
-
                 ## Irradiance direct and diffuse ratio
-                # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, trios=0)
-                # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
                 res_py6s = Instrument.read_py6s_model(node)
 
-
-                # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, cal_int, t1)
+                ## compute updated radiometric calibration (required step after applying straylight correction)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_cal_int,
                                                                sample_t1])
+
+                ## Compute avg cosine error
+
+                # make zenith angle sample for cosine correction -- read from TU file column header, represents
+                # available zenith angles and incurs no uncertainty (hence None, None in generate_sample).
+                raw_zen = uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR").attributes["COLUMN_NAMES"].split('\t')[2:]
+                zenith_ang = np.asarray([float(x) for x in raw_zen])
+                sample_zen_ang = cm.generate_sample(mDraws, zenith_ang, None, None)
+
+                # Note: uncGrp already in scope
+                coserror = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype+"_ANGDATA_COSERROR").data))[1:, 2:]
+                cos_unc = (np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY").data))[1:, 2:] / 100) * np.abs(coserror)
+                coserror_90 = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype+"_ANGDATA_COSERROR_AZ90").data))[1:, 2:]
+                cos90_unc = (np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY_AZ90").data))[1:, 2:] / 100) * np.abs(coserror_90)
+
+                # get indexes for first and last radiometric calibration wavelengths in range [300-1000]
+                i1 = np.argmin(np.abs(radcal_wvl - 300))
+                i2 = np.argmin(np.abs(radcal_wvl - 1000))
+
+                # comparing cos_error for 2 azimuth to check for asymmetry (ideally would be 0)
+                azi_avg_coserr = (coserror + coserror_90) / 2.
+                # each value has 4 numbers azi = 0, azi = 90, -zen, +zen which need their TU uncertainties combining
+                total_coserror_err = np.sqrt(cos_unc**2 + cos90_unc**2 + cos_unc[:, ::-1]**2 + cos90_unc[:, ::-1]**2)
+
+                # comparing cos_error for symetric zenith (ideally would be 0)
+                zen_avg_coserr = (azi_avg_coserr + azi_avg_coserr[:, ::-1]) / 2.
+
+                # get total error due to asymmetry  todo: find a smart way to do this without for loops
+                tot_asymmetry_err = np.zeros(coserror.shape, float)
+                for i in range(255):
+                    for j in range(45):
+                        tot_asymmetry_err[i, j] = np.std(
+                            [coserror[i, j], coserror_90[i, j],
+                             coserror[i, -j], coserror_90[i, -j]]
+                        )  # get std across the 4 measurements azi_0, azi_90, zen, -zen
+
+                # PDF of total error in cosine, combines TU uncertainties from lab characterisation and asymmetry in
+                # cosine response
+                zen_unc = np.sqrt(total_coserror_err**2 + tot_asymmetry_err**2)
+
+                # 0 out data that is OOB (out of bounds)
+                zen_avg_coserr[0:i1, :] = 0
+                zen_avg_coserr[i2:, :] = 0
+                zen_unc[0:i1, :] = 0
+                zen_unc[i2:, :] = 0
+
+                # use mean and error to build PDF, converting error to uncertainty using Monte Carlo
+                sample_zen_avg_coserror = cm.generate_sample(mDraws, zen_avg_coserr, zen_unc, "syst")
+
+                # Compute full hemisperical coserror
+                zen0 = np.argmin(np.abs(zenith_ang))
+                zen90 = np.argmin(np.abs(zenith_ang - 90))
+                deltaZen = (zenith_ang[1::] - zenith_ang[:-1])
+                full_hemi_coserror = np.zeros(zen_avg_coserr.shape[0])
+                sensitivity_coeff = np.zeros(zen_avg_coserr.shape[0])
+                zen_unc_sum = np.zeros(zen_avg_coserr.shape[0])
+                for i in range(zen_avg_coserr.shape[0]):
+                    full_hemi_coserror[i] = np.sum(
+                        zen_avg_coserr[i, zen0:zen90] *
+                        np.sin(2 * np.pi * zenith_ang[zen0:zen90] / 180) * deltaZen[zen0:zen90] * np.pi / 180
+                    )
+                    # calculate the sensitivity coefficient from the LPU
+                    sensitivity_coeff[i] = np.sum(
+                        np.cos(2 * np.pi * zenith_ang[zen0:zen90] / 180) * deltaZen[zen0:zen90] * np.pi / 180
+                    )  # sin(x) differentiates to cos(x)
+
+                    zen_unc_sum[i] = np.sum(zen_unc[i, zen0:zen90])
+
+                # get full hemispherical uncertainty using the LPU
+                fhemi_unc = np.sqrt(sensitivity_coeff**2 * zen_unc_sum**2)
+
+                # PDF of full hemispherical cosine error uncertainty
+                sample_fhemi_coserr = cm.generate_sample(mDraws, full_hemi_coserror, fhemi_unc, "syst")
             else:
                 PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['2'])
                 PANEL_unc = (np.asarray(
@@ -2098,17 +2136,6 @@ class HyperOCR(Instrument):
             # )
             # p_unc.plot_unc_from_sample_1D(
             #     sample_dark_corr_data, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
-            #     save={
-            #         "cal_type": node.attributes["CAL_TYPE"],
-            #         "time": node.attributes['TIME-STAMP'],
-            #         "instrument": "SeaBird"
-            #     }
-            # )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_light, radcal_wvl, fig_name=f"breakdown_{sensortype}", name=f"light", xlim=(400, 800)
-            # )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_dark, radcal_wvl, fig_name=f"breakdown_{sensortype}", name=f"dark", xlim=(400, 800),
             #     save={
             #         "cal_type": node.attributes["CAL_TYPE"],
             #         "time": node.attributes['TIME-STAMP'],
@@ -2331,41 +2358,91 @@ class Trios(Instrument):
 
             # Updated calibration gain
             if sensortype == "ES":
-                # Compute avg cosine error (not done for the moment)
-                cos_mean_vals, cos_uncertainties = self.prepare_cos(uncGrp, sensortype, 'L2')
-                corr = [None, "syst", "syst", "rand"]
-                sample_radcal_wvl, sample_coserr, sample_coserr90, sample_zen_ang = [
-                    cm.generate_sample(mDraws, samp, cos_uncertainties[i], corr[i]) for i, samp in
-                    enumerate(cos_mean_vals)]
-                # ZEN_avg_coserror, AZI_avg_coserror, zenith_ang, ZEN_delta_err, ZEN_delta, AZI_delta_err, AZI_delta
-                avg_coserror, avg_azi_coserror, zenith_ang, zen_delta, azi_delta, zen_unc, azi_unc = \
-                    self.cosine_error_correction(uncGrp, sensortype)
-                # two components for cos unc, one from the file (rand), one is the difference between two symmetries
-
-                # error due to lack of symmetry in cosine response
-                sample_azi_delta_err1 = cm.generate_sample(mDraws, avg_azi_coserror, azi_unc, "syst")
-                sample_azi_delta_err2 = cm.generate_sample(mDraws, avg_azi_coserror, azi_delta, "syst")
-                sample_azi_delta_err = prop.combine_samples([sample_azi_delta_err1, sample_azi_delta_err2])
-                # removed double counting of monte carlo uncertainty in cosine correction
-                sample_zen_delta_err1 = cm.generate_sample(mDraws, avg_coserror, zen_unc, "syst")
-                sample_zen_delta_err2 = cm.generate_sample(mDraws, avg_coserror, zen_delta, "syst")
-                sample_zen_delta_err = prop.combine_samples([sample_zen_delta_err1, sample_zen_delta_err2])
-                sample_zen_err = prop.run_samples(self.ZENAvg_Coserr, [sample_radcal_wvl, sample_azi_delta_err])
-                sample_zen_avg_coserror = prop.combine_samples([sample_zen_err, sample_zen_delta_err])
-
-                # full_hemi_coserr = self.FHemi_Coserr(avg_coserror, zenith_ang)
-                sample_fhemi_coserr = prop.run_samples(self.FHemi_Coserr, [sample_zen_avg_coserror, sample_zen_ang])
-
                 # Irradiance direct and diffuse ratio
                 # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
                 res_py6s = Instrument.read_py6s_model(node)
-                # fliter the first two columns here
 
-                direct_ratio = res_py6s["direct_ratio"][:, 2:]
                 # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
                                                               [sample_S12_sl_corr, sample_LAMP, sample_int_time_t0,
                                                                sample_t1])
+                ## Compute avg cosine error
+
+                # make zenith angle sample for cosine correction -- read from TU file column header, represents
+                # available zenith angles and incurs no uncertainty (hence None, None in generate_sample).
+                raw_zen = uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR").attributes["COLUMN_NAMES"].split('\t')[2:]
+                zenith_ang = np.asarray([float(x) for x in raw_zen])
+                sample_zen_ang = cm.generate_sample(mDraws, zenith_ang, None, None)
+
+                # Note: uncGrp already in scope
+                coserror = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR").data))[1:, 2:]
+                cos_unc = (np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY").data))[1:,
+                           2:] / 100) * np.abs(coserror)
+                coserror_90 = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR_AZ90").data))[
+                              1:, 2:]
+                cos90_unc = (np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY_AZ90").data))[
+                             1:, 2:] / 100) * np.abs(coserror_90)
+
+                # get indexes for first and last radiometric calibration wavelengths in range [300-1000]
+                i1 = np.argmin(np.abs(radcal_wvl - 300))
+                i2 = np.argmin(np.abs(radcal_wvl - 1000))
+
+                # comparing cos_error for 2 azimuth to check for asymmetry (ideally would be 0)
+                azi_avg_coserr = (coserror + coserror_90) / 2.
+                # each value has 4 numbers azi = 0, azi = 90, -zen, +zen which need their TU uncertainties combining
+                total_coserror_err = np.sqrt(
+                    cos_unc ** 2 + cos90_unc ** 2 + cos_unc[:, ::-1] ** 2 + cos90_unc[:, ::-1] ** 2)
+
+                # comparing cos_error for symetric zenith (ideally would be 0)
+                zen_avg_coserr = (azi_avg_coserr + azi_avg_coserr[:, ::-1]) / 2.
+
+                # get total error due to asymmetry  todo: find a smart way to do this without for loops
+                tot_asymmetry_err = np.zeros(coserror.shape, float)
+                for i in range(255):
+                    for j in range(45):
+                        tot_asymmetry_err[i, j] = np.std(
+                            [coserror[i, j], coserror_90[i, j],
+                             coserror[i, -j], coserror_90[i, -j]]
+                        )  # get std across the 4 measurements azi_0, azi_90, zen, -zen
+
+                # PDF of total error in cosine, combines TU uncertainties from lab characterisation and asymmetry in
+                # cosine response
+                zen_unc = np.sqrt(total_coserror_err ** 2 + tot_asymmetry_err ** 2)
+
+                # 0 out data that is OOB (out of bounds)
+                zen_avg_coserr[0:i1, :] = 0
+                zen_avg_coserr[i2:, :] = 0
+                zen_unc[0:i1, :] = 0
+                zen_unc[i2:, :] = 0
+
+                # use mean and error to build PDF, converting error to uncertainty using Monte Carlo
+                sample_zen_avg_coserror = cm.generate_sample(mDraws, zen_avg_coserr, zen_unc, "syst")
+
+                # Compute full hemisperical coserror
+                zen0 = np.argmin(np.abs(zenith_ang))
+                zen90 = np.argmin(np.abs(zenith_ang - 90))
+                deltaZen = (zenith_ang[1::] - zenith_ang[:-1])
+                full_hemi_coserror = np.zeros(zen_avg_coserr.shape[0])
+                sensitivity_coeff = np.zeros(zen_avg_coserr.shape[0])
+                zen_unc_sum = np.zeros(zen_avg_coserr.shape[0])
+                for i in range(zen_avg_coserr.shape[0]):
+                    full_hemi_coserror[i] = np.sum(
+                        zen_avg_coserr[i, zen0:zen90] *
+                        np.sin(2 * np.pi * zenith_ang[zen0:zen90] / 180) * deltaZen[zen0:zen90] * np.pi / 180
+                    )
+                    # calculate the sensitivity coefficient from the LPU
+                    sensitivity_coeff[i] = np.sum(
+                        np.cos(2 * np.pi * zenith_ang[zen0:zen90] / 180) * deltaZen[zen0:zen90] * np.pi / 180
+                    )  # sin(x) differentiates to cos(x)
+
+                    zen_unc_sum[i] = np.sum(zen_unc[i, zen0:zen90])
+
+                # get full hemispherical uncertainty using the LPU
+                fhemi_unc = np.sqrt(sensitivity_coeff ** 2 * zen_unc_sum ** 2)
+
+                # PDF of full hemispherical cosine error uncertainty
+                sample_fhemi_coserr = cm.generate_sample(mDraws, full_hemi_coserror, fhemi_unc, "syst")
+
             else:
                 PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['2'])
                 unc_PANEL = (np.asarray(
@@ -2491,46 +2568,36 @@ class Trios(Instrument):
             # # example uncertainty plotting - used to generate unc breakdown plots
             # # Utilities.plotUncertainties(prop, node)
             # p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
-            # time = node.attributes['TIME-STAMP'].split(' ')[-2]  # for labelling
+            # time = ' '.join(node.attributes['TIME-STAMP'][0:-1].split('T'))  # time string for labelling
             # if sensortype.upper() == 'ES':
             #     p_unc.plot_unc_from_sample_1D(
-            #         sample_data5, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
+            #         sample_cos_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
             #     )
             # else:
             #     p_unc.plot_unc_from_sample_1D(
             #         sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
             #     )
             # p_unc.plot_unc_from_sample_1D(
-            #     sample_data4, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
+            #     sample_thermal_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
             # )
             # p_unc.plot_unc_from_sample_1D(
-            #     sample_data3, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
+            #     sample_calibrated_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
             # )
             # p_unc.plot_unc_from_sample_1D(
-            #     sample_data2, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
+            #     sample_straylight_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
             # )
             # p_unc.plot_unc_from_sample_1D(
-            #     sample_data1, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
+            #     sample_linear_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
             # )
             # p_unc.plot_unc_from_sample_1D(
-            #     sample_dark_corr_data, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
+            #     sample_offset_corrected_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
             #     save={
             #         "cal_type": node.attributes["CAL_TYPE"],
             #         "time": node.attributes['TIME-STAMP'],
-            #         "instrument": "SeaBird"
+            #         "instrument": "TriOS"
             #     }
             # )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_light, radcal_wvl, fig_name=f"breakdown_{sensortype}", name=f"light", xlim=(400, 800)
-            # )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_dark, radcal_wvl, fig_name=f"breakdown_{sensortype}", name=f"dark", xlim=(400, 800),
-            #     save={
-            #         "cal_type": node.attributes["CAL_TYPE"],
-            #         "time": node.attributes['TIME-STAMP'],
-            #         "instrument": "SeaBird"
-            #     }
-            # )
+
         return output  # return products as dictionary to be appended to xSlice
 
     # Measurement functions
