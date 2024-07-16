@@ -232,7 +232,7 @@ class SeaBASSWriter:
         if not os.path.exists(os.path.split(fp)[0] + '/SeaBASS'):
             print('Creating a SeaBASS directory')
             os.makedirs(os.path.split(fp)[0] + '/SeaBASS')
-
+        
         outFileName = SeaBASSWriter.sbFileName(fp,headerBlock,formattedData,dtype)
 
         outFile = open(outFileName,'w',newline='\n')
@@ -578,9 +578,14 @@ class SeaBASSWriter:
 
 
         if ConfigFile.settings['bL2BRDF']:
-            # headerBlock['BRDF_correction'] = SeaBASSHeader.settings['BRDF_correction']
-            SeaBASSWriter.writeSeaBASS('Lwnex',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
-            # SeaBASSWriter.writeSeaBASS('rrs',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
-            SeaBASSWriter.writeSeaBASS('Rrsex',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
+            # Use M02 and L11 in filenames to avoid conflict with datatype "_IOP_"
+            if ConfigFile.settings['bL2BRDF_fQ']:
+                SeaBASSWriter.writeSeaBASS('Lwn_M02',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
+                SeaBASSWriter.writeSeaBASS('Rrs_M02',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
+
+            if ConfigFile.settings['bL2BRDF_IOP']:
+                SeaBASSWriter.writeSeaBASS('Lwn_L11',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
+                SeaBASSWriter.writeSeaBASS('Rrs_L11',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
+
         # SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
         # SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)

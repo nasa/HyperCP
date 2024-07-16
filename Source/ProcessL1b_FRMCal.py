@@ -1,4 +1,5 @@
 # python packages
+import logging
 import numpy as np
 import os
 import pandas as pd
@@ -123,6 +124,75 @@ class ProcessL1b_FRMCal:
             irr_env[n,:]  = np.array([res[x].values['environmental_irradiance'] for x in range(nband)])
             solar_zenith[n] = sun_zenith[ind_anc]
 
+
+            if np.isnan(direct).any():
+                logging.warning("direct contains NaN values at: %s" % wvl[np.isnan(direct)[0]])
+
+            if np.isnan(diffuse).any():
+                logging.warning("diffuse contains NaN values at: %s" % wvl[np.isnan(diffuse)[0]])
+
+            if np.isnan(irr_direct).any():
+                logging.warning("irr_direct contains NaN values at: %s" % wvl[np.isnan(irr_direct)[0]])
+
+            if np.isnan(irr_diffuse).any():
+                logging.warning("irr_diffuse contains NaN values at: %s" % wvl[np.isnan(irr_diffuse)[0]])
+
+            if np.isnan(irr_env).any():
+                logging.warning("irr_env contains NaN values at: %s" % wvl[np.isnan(irr_env)[0]])
+
+            if np.isnan(solar_zenith).any():
+                logging.warning("solar_zenith contains NaN values at: %s" % wvl[np.isnan(solar_zenith)[0]])
+
+            # Check for potential NaN values and interpolate them with neighbour
+            # direct
+            ind0 = np.where(np.isnan(direct[n, :]))[0]
+            if len(ind0)>0:
+                for i0 in ind0:
+                    if i0==ind0[-1]:
+                        # End of array. Take left neighbor.
+                        direct[n,i0] = direct[n,i0-1]
+                    else:
+                        direct[n,i0] = (direct[n,i0-1]+direct[n,i0+1])/2
+            # diffuse
+            ind0 = np.where(np.isnan(diffuse[n, :]))[0]
+            if len(ind0)>0:
+                for i0 in ind0:
+                    if i0==ind0[-1]:
+                        # End of array. Take left neighbor.
+                        diffuse[n,i0] = diffuse[n,i0-1]
+                    else:
+                        diffuse[n,i0] = (diffuse[n,i0-1]+diffuse[n,i0+1])/2
+
+            # irr_direct
+            ind0 = np.where(np.isnan(irr_direct[n, :]))[0]
+            if len(ind0)>0:
+                for i0 in ind0:
+                    if i0==ind0[-1]:
+                        # End of array. Take left neighbor.
+                        irr_direct[n,i0] = irr_direct[n,i0-1]
+                    else:
+                        irr_direct[n,i0] = (irr_direct[n,i0-1]+irr_direct[n,i0+1])/2
+
+            # irr_diffuse
+            ind0 = np.where(np.isnan(irr_diffuse[n, :]))[0]
+            if len(ind0)>0:
+                for i0 in ind0:
+                    if i0==ind0[-1]:
+                        # End of array. Take left neighbor.
+                        irr_diffuse[n,i0] = irr_diffuse[n,i0-1]
+                    else:
+                        irr_diffuse[n,i0] = (irr_diffuse[n,i0-1]+irr_diffuse[n,i0+1])/2
+
+            # irr_env
+            ind0 = np.where(np.isnan(irr_env[n, :]))[0]
+            if len(ind0)>0:
+                for i0 in ind0:
+                    if i0==ind0[-1]:
+                        # End of array. Take left neighbor.
+                        irr_env[n,i0] = irr_env[n,i0-1]
+                    else:
+                        irr_env[n,i0] = (irr_env[n,i0-1]+irr_env[n,i0+1])/2
+
             # Check for potential zero values and interpolate them with neighbour
             val, ind0 = np.where([direct[n,:]==0])
             if len(ind0)>0:
@@ -136,6 +206,7 @@ class ProcessL1b_FRMCal:
         # if only 1 bin, repeat value for each timestamp over cast duration (<3min)
         res_py6s = {}
         if n_bin == 1:
+            logging.warning("n_bin == 1, cast is probably too short")
             res_py6s['solar_zenith'] = np.repeat(solar_zenith, n_mesure)
             res_py6s['direct_ratio'] = np.repeat(direct, n_mesure, axis=0)
             res_py6s['diffuse_ratio'] = np.repeat(diffuse, n_mesure, axis=0)
