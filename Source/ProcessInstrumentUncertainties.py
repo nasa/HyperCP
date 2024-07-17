@@ -1550,6 +1550,16 @@ class Instrument(ABC):
         return cos_corr_mesure
 
     @staticmethod
+    def get_cos_corr(zenith_angle, solar_zenith, cosine_error):
+        ind_closest_zen = np.argmin(np.abs(zenith_angle - solar_zenith))
+        return 1 - cosine_error[:, ind_closest_zen]/100
+
+    @staticmethod
+    def cos_corr(signal, direct_ratio, cos_correction, full_hemi_cos_error):
+        Fhcorr = (1 - full_hemi_cos_error / 100)
+        return (direct_ratio * signal * cos_correction) + ((1 - direct_ratio) * signal * Fhcorr)
+
+    @staticmethod
     def cos_corr_fun(avg_coserror, zenith_ang, sol_zen):
         ind_closest_zen = np.argmin(np.abs(zenith_ang - sol_zen))
         return 1 - avg_coserror[:, ind_closest_zen]/100
@@ -2071,12 +2081,21 @@ class HyperOCR(Instrument):
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio[ind_raw_wvl], 0.08*direct_ratio[ind_raw_wvl], "syst")
 
                 # data5 = self.DATA5(data4, solar_zenith, direct_ratio, zenith_ang, avg_coserror, full_hemi_coserr)
-                sample_data5 = prop.run_samples(self.DATA5, [sample_data4,
-                                                             sample_sol_zen,
-                                                             sample_dir_rat,
-                                                             sample_zen_ang,
-                                                             sample_zen_avg_coserror, # check that zen_avg_coserror is correct
-                                                             sample_fhemi_coserr])
+                sample_cos_corr = prop.run_samples(
+                    self.get_cos_corr, [sample_zen_ang,
+                                        sample_sol_zen,
+                                        sample_zen_avg_coserror]
+                )
+                sample_data5 = prop.run_samples(
+                    self.cos_corr, [sample_data4, sample_dir_rat, sample_cos_corr, sample_fhemi_coserr]
+                )
+                # sample_data5 = prop.run_samples(self.DATA5, [sample_data4,
+                #                                              sample_sol_zen,
+                #                                              sample_dir_rat,
+                #                                              sample_zen_ang,
+                #                                              sample_zen_avg_coserror, # check that zen_avg_coserror is correct
+                #                                              sample_fhemi_coserr])
+
                 unc = prop.process_samples(None, sample_data5)
                 sample = sample_data5
             else:
@@ -2442,7 +2461,9 @@ class Trios(Instrument):
 
                 # PDF of full hemispherical cosine error uncertainty
                 sample_fhemi_coserr = cm.generate_sample(mDraws, full_hemi_coserror, fhemi_unc, "syst")
-
+                p_unc = Show_Uncertainties(prop)
+                p_unc.plot_unc_from_sample_1D(sample_zen_avg_coserror, radcal_wvl, "zen")
+                p_unc.plot_unc_from_sample_1D(sample_fhemi_coserr, radcal_wvl, "fhemi")
             else:
                 PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['2'])
                 unc_PANEL = (np.asarray(
@@ -2520,14 +2541,20 @@ class Trios(Instrument):
                 direct_ratio, _ = self.interp_common_wvls(direct_ratio, res_py6s['wavelengths'], radcal_wvl)
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith, 0.05, "rand")
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
+                sample_cos_corr = prop.run_samples(
+                    self.get_cos_corr, [sample_zen_ang,
+                                        sample_sol_zen,
+                                        sample_zen_avg_coserror]
+                )
+                sample_cos_corr_mesure = prop.run_samples(
+                    self.cos_corr, [sample_thermal_corr_mesure, sample_dir_rat, sample_cos_corr, sample_fhemi_coserr]
+                )
+                # sample_cos_corr_mesure = prop.run_samples(self.cosine_corr,
+                #                                           [sample_zen_avg_coserror, sample_fhemi_coserr, sample_zen_ang,
+                #                                            sample_thermal_corr_mesure, sample_sol_zen, sample_dir_rat])
 
-                sample_cos_corr_mesure = prop.run_samples(self.cosine_corr,
-                                                          [sample_zen_avg_coserror, sample_fhemi_coserr, sample_zen_ang,
-                                                           sample_thermal_corr_mesure, sample_sol_zen, sample_dir_rat])
-                cos_unc = prop.process_samples(None, sample_cos_corr_mesure)
-
-                unc = cos_unc
                 sample = sample_cos_corr_mesure
+                unc = prop.process_samples(None, sample_cos_corr_mesure)
             else:
                 # read pol uncertainties and interpolate to radcal wavebands
                 pol = uncGrp.getDataset(f"CLASS_RAMSES_{sensortype}_POLDATA_CAL")
@@ -2565,8 +2592,8 @@ class Trios(Instrument):
             output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
 
-            # # example uncertainty plotting - used to generate unc breakdown plots
-            # # Utilities.plotUncertainties(prop, node)
+            # example uncertainty plotting - used to generate unc breakdown plots
+            # Utilities.plotUncertainties(prop, node)
             # p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
             # time = ' '.join(node.attributes['TIME-STAMP'][0:-1].split('T'))  # time string for labelling
             # if sensortype.upper() == 'ES':
