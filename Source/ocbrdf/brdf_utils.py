@@ -30,3 +30,17 @@ def solve_2nd_order_poly(A, B, C):
     x = xr.where(x > 0, x, 0.)
 
     return x
+
+def drop_unused_coords(var):
+    for coord in var.coords:
+        if coord not in var.dims:
+            var = var.drop(coord)
+    return var
+
+def squeeze_trivial_dims(ds):
+    squeezedDims = {}
+    for d0,dim in enumerate(ds.dims):
+        if ds.sizes[dim] == 1:
+            squeezedDims[dim] = d0
+
+    return ds.squeeze(), squeezedDims

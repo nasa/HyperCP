@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import sys
 import xarray as xr
 
-from .brdf_utils import ADF_OCP, solve_2nd_order_poly
+from .brdf_utils import ADF_OCP, solve_2nd_order_poly, drop_unused_coords
 
 ''' Morel et al. (2002) BRDF correction
     R gothic included
@@ -56,6 +56,9 @@ class M02:
                                                        'wind_speeds_FOQ':'wind_foq',
                                                        'tau_a_FOQ':'aot_foq',
                                                        'log_chl_FOQ':'log_chl_foq'})
+
+        # f0 factor to convert Rrs to Irradiance Reflectance (R) --> in order to apply OC4ME
+        self.LUT['f0'] = LUT_OCP.f0_LUT
 
         # Index of refraction
         self.n_w = float(LUT_OCP.water_refraction_index.data)
@@ -132,28 +135,45 @@ class M02:
         # Local renaming of bands
         b442, b490, b510, b560 = self.b442, self.b490, self.b510, self.b560
 
-        # Apply upper and lower limits to Rrs(665) #TODO check if not finite or missing?
-        Rrs442 = Rrs.sel(bands=b442)
-        Rrs490 = Rrs.sel(bands=b490)
-        Rrs510 = Rrs.sel(bands=b510)
-        Rrs560 = Rrs.sel(bands=b560)
+        # Clip to f0 log10(CHL) values
+        log10_chl_f0 = np.clip(ds['log10_chl'],
+                           float(np.min(self.LUT['f0'].log_chl_f0)/np.log(10)),
+                           float(np.max(self.LUT['f0'].log_chl_f0)/np.log(10)))
+
+        # f/Q LUT indexed with ln(CHL), i.e. log_e(CHL)
+        log_chl_f0 = log10_chl_f0 * np.log(10)
+        f0_chl = self.LUT['f0'].interp(log_chl_f0=log_chl_f0)
+
+        fQ_chl = self.coeffs.foq.interp(log_chl_foq=log10_chl_f0)
+
+        # Drop unused coordinates to avoid ambiguities in indexation...
+        Rrs = drop_unused_coords(Rrs)
+        f0_chl = drop_unused_coords(f0_chl)
+        fQ_chl = drop_unused_coords(fQ_chl)
+
+        # Get Rrs at relevant bands for OC4ME and convert to Irradiance Reflectance (R)
+        R442 = np.pi * Rrs.sel(bands=b442) * f0_chl.sel(bands_f0=2.0) / fQ_chl.interp(wavelengths_FOQ=b442)
+        R490 = np.pi * Rrs.sel(bands=b490) * f0_chl.sel(bands_f0=3.0) / fQ_chl.interp(wavelengths_FOQ=b490)
+        R510 = np.pi * Rrs.sel(bands=b510) * f0_chl.sel(bands_f0=4.0) / fQ_chl.interp(wavelengths_FOQ=b510)
+        R560 = np.pi * Rrs.sel(bands=b560) * f0_chl.sel(bands_f0=5.0) / fQ_chl.interp(wavelengths_FOQ=b560)
+
+        R442 = drop_unused_coords(R442)
+        R490 = drop_unused_coords(R490)
+        R510 = drop_unused_coords(R510)
+        R560 = drop_unused_coords(R560)
 
         # Compute the OC4ME "R"
-        # NB: Could be the case that Rrs[442-560]<0,
+        # NB: Could be the case that R[442-560]<0,
         #   then ds['log10_chl_OC4ME_Ratio'] will be NaN.
         #   then ds['log10_chl'] will be NaN.
         #   then forward_mod0/forward_mod (in brdf_prototype, ocbrdf/main.py) will be NaN.
         #   then ds['C_BRDF'] = NaN.
         #   In this case, C_BRDF will be set to 1 and C_BRDF_flag will be raised (see brdf_prototype, ocbrdf/main.py).
-        ds['log10_chl_OC4ME_Ratio'] = np.log10(np.max([Rrs442, Rrs490, Rrs510], axis=0) / Rrs560)
+        ds['log10_chl_OC4ME_Ratio'] = np.log10(np.max([R442, R490, R510], axis=0) / R560)
 
         ds['log10_chl'] = 0 * ds['log10_chl_OC4ME_Ratio']
         # Apply OC4ME 5-degree polynomial
         for k, Ak in enumerate(self.OC4MEcoeff):
             ds['log10_chl'] += Ak * (ds['log10_chl_OC4ME_Ratio'] ** k)
-
-        ds['theta_s'] = ds['sza']
-        ds['theta_v'] = ds['vza']
-        ds['delta_phi'] = ds['raa']
 
         return ds

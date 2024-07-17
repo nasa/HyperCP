@@ -2261,6 +2261,8 @@ class ProcessL2:
                 ProcessL2.filterData(node.getGroup("IRRADIANCE"), badTimes, sensor = "HYPER")
                 ProcessL2.filterData(node.getGroup("RADIANCE"), badTimes, sensor = "HYPER")
                 ProcessL2.filterData(node.getGroup("ANCILLARY"), badTimes)
+                if py6s_available:
+                    ProcessL2.filterData(node.getGroup("PY6S_MODEL"), badTimes)
 
         return True
 

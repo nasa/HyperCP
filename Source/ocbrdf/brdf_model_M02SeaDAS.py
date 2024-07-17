@@ -132,8 +132,4 @@ class M02SeaDAS:
         for k, Ak in enumerate(self.OC4MEcoeff):
             ds['log10_chl'] += Ak * (ds['log10_chl_OC4ME_Ratio'] ** k)
 
-        ds['theta_s'] = ds['sza']
-        ds['theta_v'] = ds['vza']
-        ds['delta_phi'] = ds['raa']
-
         return ds
