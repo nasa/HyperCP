@@ -2087,7 +2087,7 @@ class HyperOCR(Instrument):
                                         sample_zen_avg_coserror]
                 )
                 sample_data5 = prop.run_samples(
-                    self.cos_corr, [sample_data4, sample_dir_rat, sample_cos_corr, sample_fhemi_coserr]
+                    self.cos_corr, [sample_data4, sample_dir_rat, sample_cos_corr[:,ind_raw_wvl], sample_fhemi_coserr[:,ind_raw_wvl]]
                 )
                 # sample_data5 = prop.run_samples(self.DATA5, [sample_data4,
                 #                                              sample_sol_zen,
@@ -2461,9 +2461,9 @@ class Trios(Instrument):
 
                 # PDF of full hemispherical cosine error uncertainty
                 sample_fhemi_coserr = cm.generate_sample(mDraws, full_hemi_coserror, fhemi_unc, "syst")
-                p_unc = Show_Uncertainties(prop)
-                p_unc.plot_unc_from_sample_1D(sample_zen_avg_coserror, radcal_wvl, "zen")
-                p_unc.plot_unc_from_sample_1D(sample_fhemi_coserr, radcal_wvl, "fhemi")
+                # p_unc = Show_Uncertainties(prop)
+                # p_unc.plot_unc_from_sample_1D(sample_zen_avg_coserror, radcal_wvl, "zen")
+                # p_unc.plot_unc_from_sample_1D(sample_fhemi_coserr, radcal_wvl, "fhemi")
             else:
                 PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['2'])
                 unc_PANEL = (np.asarray(
