@@ -123,7 +123,7 @@ class L11:
             Rrs665_ = 1.27*np.power(Rrs560, 1.47) + 0.00018*np.power(Rrs490/Rrs560,-3.19)
             # Redefine Rrs665 and Rrs[bands=b665] (both important for computations below)
             Rrs665 = xr.where(mask, Rrs665_, Rrs665)
-            Rrs.loc[dict(bands=665)] = Rrs665
+            Rrs.loc[dict(bands=b665)] = Rrs665
 
         # Calculate rrs below water for absorption computation
         rrs = Rrs / (0.52 + 1.7*Rrs)
