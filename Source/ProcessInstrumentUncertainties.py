@@ -315,18 +315,19 @@ class Instrument(ABC):
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
         # convert to relative uncertainty
 
-        # p_unc = Show_Uncertainties(PropagateL1B)
-        # p_unc.plot_breakdown_Class(
-        #     mean_values,
-        #     uncertainty,
-        #     dict(
-        #         ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
-        #         LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
-        #         LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
-        #         ),
-        #     True,
-        #     type(self).__name__ + '_' + node.attributes["CAST"]
-        # )
+        if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+            p_unc = Show_Uncertainties(PropagateL1B)
+            p_unc.plot_breakdown_Class(
+                mean_values,
+                uncertainty,
+                dict(
+                    ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
+                    LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
+                    LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
+                    ),
+                True,
+                type(self).__name__ + '_' + node.attributes["CAST"]
+            )
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
@@ -2129,38 +2130,38 @@ class HyperOCR(Instrument):
             output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
 
-            # # example uncertainty plotting - used to generate unc breakdown plots
-            # # Utilities.plotUncertainties(prop, node)
-            # p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
-            # time = node.attributes['TIME-STAMP'].split(' ')[-2]  # for labelling
-            # if sensortype.upper() == 'ES':
-            #     p_unc.plot_unc_from_sample_1D(
-            #         sample_data5, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
-            #     )
-            # else:
-            #     p_unc.plot_unc_from_sample_1D(
-            #         sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
-            #     )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_data4, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
-            # )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_data3, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
-            # )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_data2, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
-            # )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_data1, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
-            # )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_dark_corr_data, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
-            #     save={
-            #         "cal_type": node.attributes["CAL_TYPE"],
-            #         "time": node.attributes['TIME-STAMP'],
-            #         "instrument": "SeaBird"
-            #     }
-            # )
+            if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+                # example uncertainty plotting - used to generate unc breakdown plots
+                p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
+                time = node.attributes['TIME-STAMP'].split(' ')[-2]  # for labelling
+                if sensortype.upper() == 'ES':
+                    p_unc.plot_unc_from_sample_1D(
+                        sample_data5, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
+                    )
+                else:
+                    p_unc.plot_unc_from_sample_1D(
+                        sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
+                    )
+                p_unc.plot_unc_from_sample_1D(
+                    sample_data4, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
+                )
+                p_unc.plot_unc_from_sample_1D(
+                    sample_data3, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
+                )
+                p_unc.plot_unc_from_sample_1D(
+                    sample_data2, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
+                )
+                p_unc.plot_unc_from_sample_1D(
+                    sample_data1, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
+                )
+                p_unc.plot_unc_from_sample_1D(
+                    sample_dark_corr_data, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
+                    save={
+                        "cal_type": node.attributes["CAL_TYPE"],
+                        "time": node.attributes['TIME-STAMP'],
+                        "instrument": "SeaBird"
+                    }
+                )
 
         return output
 
@@ -2461,9 +2462,10 @@ class Trios(Instrument):
 
                 # PDF of full hemispherical cosine error uncertainty
                 sample_fhemi_coserr = cm.generate_sample(mDraws, full_hemi_coserror, fhemi_unc, "syst")
-                # p_unc = Show_Uncertainties(prop)
-                # p_unc.plot_unc_from_sample_1D(sample_zen_avg_coserror, radcal_wvl, "zen")
-                # p_unc.plot_unc_from_sample_1D(sample_fhemi_coserr, radcal_wvl, "fhemi")
+                if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+                    p_unc = Show_Uncertainties(prop)
+                    p_unc.plot_unc_from_sample_1D(sample_zen_avg_coserror, radcal_wvl, "zen")
+                    p_unc.plot_unc_from_sample_1D(sample_fhemi_coserr, radcal_wvl, "fhemi")
             else:
                 PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['2'])
                 unc_PANEL = (np.asarray(
@@ -2592,38 +2594,37 @@ class Trios(Instrument):
             output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
 
-            # example uncertainty plotting - used to generate unc breakdown plots
-            # Utilities.plotUncertainties(prop, node)
-            # p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
-            # time = ' '.join(node.attributes['TIME-STAMP'][0:-1].split('T'))  # time string for labelling
-            # if sensortype.upper() == 'ES':
-            #     p_unc.plot_unc_from_sample_1D(
-            #         sample_cos_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
-            #     )
-            # else:
-            #     p_unc.plot_unc_from_sample_1D(
-            #         sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
-            #     )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_thermal_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
-            # )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_calibrated_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
-            # )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_straylight_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
-            # )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_linear_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
-            # )
-            # p_unc.plot_unc_from_sample_1D(
-            #     sample_offset_corrected_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
-            #     save={
-            #         "cal_type": node.attributes["CAL_TYPE"],
-            #         "time": node.attributes['TIME-STAMP'],
-            #         "instrument": "TriOS"
-            #     }
-            # )
+            if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+                p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
+                time = ' '.join(node.attributes['TIME-STAMP'][0:-1].split('T'))  # time string for labelling
+                if sensortype.upper() == 'ES':
+                    p_unc.plot_unc_from_sample_1D(
+                        sample_cos_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
+                    )
+                else:
+                    p_unc.plot_unc_from_sample_1D(
+                        sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
+                    )
+                p_unc.plot_unc_from_sample_1D(
+                    sample_thermal_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
+                )
+                p_unc.plot_unc_from_sample_1D(
+                    sample_calibrated_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
+                )
+                p_unc.plot_unc_from_sample_1D(
+                    sample_straylight_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
+                )
+                p_unc.plot_unc_from_sample_1D(
+                    sample_linear_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
+                )
+                p_unc.plot_unc_from_sample_1D(
+                    sample_offset_corrected_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
+                    save={
+                        "cal_type": node.attributes["CAL_TYPE"],
+                        "time": node.attributes['TIME-STAMP'],
+                        "instrument": "TriOS"
+                    }
+                )
 
         return output  # return products as dictionary to be appended to xSlice
 

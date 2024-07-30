@@ -152,14 +152,13 @@ class ConfigFile:
         ConfigFile.settings["bL2WeightSentinel3B"] = 0
         ConfigFile.settings["bL2WeightVIIRSJ"] = 0
 
-        # ConfigFile.settings["bL2WeightUncertainties"] = 0
-
-
         ConfigFile.settings["bL2PlotRrs"] = 1
         ConfigFile.settings["bL2PlotnLw"] = 1
         ConfigFile.settings["bL2PlotEs"] = 1
         ConfigFile.settings["bL2PlotLi"] = 1
         ConfigFile.settings["bL2PlotLt"] = 1
+
+        ConfigFile.settings["bL2UncertaintyBreakdownPlot"] = 0
 
         ConfigFile.products["bL2Prodoc3m"] = 0
         ConfigFile.products["bL2Prodkd490"] = 0
