@@ -209,12 +209,10 @@ class ConfigFile:
         params = dict(ConfigFile.settings, **ConfigFile.products)
         params['FullCalDir'] = os.path.relpath(params['FullCalDir'])
         params['RadCalDir'] = os.path.relpath(params['RadCalDir'])
-        jsn = json.dumps(params)
         fp = os.path.join(PATH_TO_CONFIG, filename)
 
-        #print(os.path.abspath(os.curdir))
         with open(fp, 'w') as f:
-            f.write(jsn)
+            json.dump(params,f,indent=4)
         ConfigFile.createCalibrationFolder()
 
     # Loads the cfg file
