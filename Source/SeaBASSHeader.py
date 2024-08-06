@@ -255,13 +255,10 @@ class SeaBASSHeader:
     def saveSeaBASSHeader(filename):
         print("SeaBASSHeader - Save SeaBASSHeader")
 
-        jsn = json.dumps(SeaBASSHeader.settings)
         fp = os.path.join(PATH_TO_CONFIG, filename)
 
-        #print(os.path.abspath(os.curdir))
         with open(fp, 'w') as f:
-            f.write(jsn)
-        # SeaBASSHeader.createCalibrationFolder()
+            json.dump(SeaBASSHeader.settings,f,indent=4)
 
     # Loads the hdr file
     @staticmethod
