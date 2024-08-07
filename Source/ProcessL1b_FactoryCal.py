@@ -189,15 +189,15 @@ class ProcessL1b_FactoryCal:
                 coefs[k] = []
                 for d in var.data:
                     if d.type == 'ES' or d.type == 'LI' or d.type == 'LT':
-                        coefs[k].append(d.coefficients)
+                        coefs[k].append(d.fitType)
 
                 indx[k] = []
                 for i, c in enumerate(coefs[k]):
-                    if len(c) > 0:
+                    if c == 'OPTIC3':
                         indx[k].append(i)
 
         # todo: assess if this is stricly necessary, all indexes the same in examples used for testing
-        start = max([ind[0] for ind in indx.values()]) - 1  # -1 to cover the first pixel which has no coef but is valid
+        start = max([ind[0] for ind in indx.values()])  # -1 to cover the first pixel which has no coef but is valid
         end = min([ind[-1] for ind in indx.values()])
         if start < 0: #  cannot be less than 0
             start = 0
