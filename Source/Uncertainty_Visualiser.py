@@ -65,9 +65,11 @@ class Show_Uncertainties(ABC):
                     plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']}")
                 sp = f"{fig_name}_{save['cal_type']}_{save['time']}_{save['instrument']}_unc_in_pct.png"
                 plt.savefig(sp.replace(':', '-').replace(' ', '_'))
+                fig.close()
             else:
                 plt.title(f"{fig_name}")
                 plt.savefig(f"{fig_name}_unc_in_pct.png")
+                fig.close()
 
     def plot_val_from_sample_1D(
             self, sample: np.array, x: np.array, name: Optional[str] = None, xlim: Optional[tuple] = None
