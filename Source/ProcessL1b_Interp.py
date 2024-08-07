@@ -417,17 +417,29 @@ class ProcessL1b_Interp:
         print('           To '+str(len(yDatetime))+' timestamps from '+\
             str(min(yDatetime))+' to '+str(max(yDatetime)))
 
-        # xData will be interpolated to yDatetimes
-        xData.columns["Datetag"] = yData.data["Datetag"].tolist()
-        xData.columns["Timetag2"] = yData.data["Timetag2"].tolist()
-        xData.columns["Datetime"] = yData.data["Datetime"].tolist()
-
         if Utilities.hasNan(xData):
             frameinfo = getframeinfo(currentframe())
             # print(frameinfo.filename, frameinfo.lineno)
             msg = f'found NaN {frameinfo.lineno}'
             print(msg)
             Utilities.writeLogFile(msg)
+
+            if dataName == 'REL_AZ':
+                # Replace nans by interpolating over them if necessary
+                y = np.array(xData.columns['NONE'])
+                nans, x= Utilities.nan_helper(y) # x is a lambda function
+                y[nans]= np.interp(x(nans), x(~nans), y[~nans])
+                xData.columns['NONE'] = y.tolist()
+                xData.columnsToDataset()
+                
+                msg = f'Replaced NaNs in {dataName}'
+                print(msg)
+                Utilities.writeLogFile(msg)
+        
+        # xData will be interpolated to yDatetimes
+        xData.columns["Datetag"] = yData.data["Datetag"].tolist()
+        xData.columns["Timetag2"] = yData.data["Timetag2"].tolist()
+        xData.columns["Datetime"] = yData.data["Datetime"].tolist()    
 
         # Perform interpolation on full hyperspectral time series
         #   In the case of solar geometries, calculate to new times, don't interpolate

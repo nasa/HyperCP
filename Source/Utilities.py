@@ -666,9 +666,28 @@ class Utilities:
                 #         return True
         return False
 
-    # Check if the list contains strictly increasing values
     @staticmethod
+    def nan_helper(y):
+        """Helper to handle indices and logical indices of NaNs.
+
+        Input:
+            - y, 1d numpy array with possible NaNs
+        Output:
+            - nans, logical indices of NaNs
+            - index, a function, with signature indices= index(logical_indices),
+            to convert logical indices of NaNs to 'equivalent' indices
+        Example:
+            >>> # linear interpolation of NaNs
+            >>> nans, x= nan_helper(y)
+            >>> y[nans]= np.interp(x(nans), x(~nans), y[~nans])
+        """
+
+        return np.isnan(y), lambda z: z.nonzero()[0]
+
+        
+    @staticmethod    
     def isIncreasing(l):
+        ''' Check if the list contains strictly increasing values '''
         return all(x<y for x, y in zip(l, l[1:]))
 
     @staticmethod
