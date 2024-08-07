@@ -203,7 +203,6 @@ class Instrument(ABC):
             LT_unc = lt_unc / lt  # when converted back to absolute in ProcessL2, they will be converted to the same units
                                 # as ES, lI, & LT respectively.
 
-
         # return uncertainties as dictionary to be appended to xSlice
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()), dtype=float)  # std_Signal_Interpolated has keys which represent common wavebands for ES, LI, & LT.
         _, es_Unc = self.interp_common_wvls(ES_unc,
