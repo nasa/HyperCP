@@ -2,6 +2,8 @@
 import datetime as dt
 import numpy as np
 import re
+
+from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.Utilities import Utilities
 
 class ProcessL1b_FactoryCal:
@@ -259,6 +261,11 @@ class ProcessL1b_FactoryCal:
         node.attributes["ES_UNITS"] = esUnits
         node.attributes["L1AQC_UNITS"] = 'count'
         node.attributes["SATPYR_UNITS"] = pyrUnits
+
+        # Calculate 6S model
+        sensortype = "ES"          
+        # Irradiance direct and diffuse ratio
+        res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
 
         return node
 

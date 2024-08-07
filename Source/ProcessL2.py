@@ -2025,12 +2025,14 @@ class ProcessL2:
         rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
+        
+        py6s_available = False
         for gp in root.groups:
             if gp.id == 'PY6S_MODEL':                
                 py6s_available = True
                 rootCopy.getGroup('PY6S_MODEL').copy(root.getGroup('PY6S_MODEL'))
-            else:
-                py6s_available = False
+                break            
+                
 
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("ES_DARK_L1AQC")
