@@ -652,6 +652,20 @@ class ProcessL1b:
             print(msg)
             Utilities.writeLogFile(msg)
             return None
+        
+        # For SeaBird (shutter darks), now that dark correction is complete, change the dark timestamps to their
+        #   _ADJUSTED values (matching nearest lights) for the sake of filtering the data later
+        for gp in node.groups:
+            if '_DARK_L1AQC' in gp.id:
+                gp.datasets['DATETAG'] = gp.datasets['DATETAG_ADJUSTED']
+                gp.datasets['DATETAG'].id = 'DATETAG'
+                gp.removeDataset('DATETAG_ADJUSTED')
+                gp.datasets['TIMETAG2'] = gp.datasets['TIMETAG2_ADJUSTED']
+                gp.datasets['TIMETAG2'].id = 'TIMETAG2'
+                gp.removeDataset('TIMETAG2_ADJUSTED')
+
+                gp.removeDataset('DATETIME')
+                gp = Utilities.groupAddDateTime(gp) 
 
         # Interpolate only the Ancillary group, and then fold in model data
         '''

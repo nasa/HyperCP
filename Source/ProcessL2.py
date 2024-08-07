@@ -1216,6 +1216,15 @@ class ProcessL2:
         ltSlice = ProcessL2.columnToSlice(ltColumns,start, end)
         n = len(list(ltSlice.values())[0])
 
+        # Test for ensemble shorter than 1 minute, which will have too few darks in Lt at L1AQC for uncertainties
+        esStartTime = esSlice['Datetime'][0]
+        esStopTime = esSlice['Datetime'][-1]
+        if (esStopTime - esStartTime) < datetime.timedelta(seconds=60):
+            msg = 'ProcessL2.ensemblesReflectance ensemble is less than 1 minute. Skipping.'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return False
+
         # process raw groups for generating standard deviations
         def _sliceRawData(ES_raw, LI_raw, LT_raw):
             es_slce = {}
@@ -2023,7 +2032,6 @@ class ProcessL2:
             else:
                 py6s_available = False
 
-
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("ES_DARK_L1AQC")
             rootCopy.addGroup("ES_LIGHT_L1AQC")
@@ -2138,6 +2146,7 @@ class ProcessL2:
         interval = float(ConfigFile.settings["fL2TimeInterval"])
 
         # interpolate Light/Dark data for Raw groups if HyperOCR data is being processed
+        # NOTE: Why is this necessary? Aren't we interested in the variability of darks at native acquisition frequency? -DA
         if ConfigFile.settings['SensorType'].lower() == "seabird":
             # in seabird case interpolate dark data to light timer before breaking into stations
             instrument = HyperOCR()
@@ -2171,24 +2180,32 @@ class ProcessL2:
             start = 0
             endTime = timeStamp[0] + datetime.timedelta(0,interval)
             endFileTime = timeStamp[-1]
-            timeFlag = False
+            EndOfFileFlag = False
             # endTime is theoretical based on interval
             if endTime > endFileTime:
                 endTime = endFileTime
-                timeFlag = True # In case the whole file is shorter than the selected interval
+                EndOfFileFlag = True # In case the whole file is shorter than the selected interval
 
             for i in range(0, esLength):
                 # time = Utilities.timeTag2ToSec(tt2[i])
                 time = timeStamp[i]
-                if (time > endTime) or timeFlag: # end of increment reached
-                    if timeFlag:
+                if (time > endTime) or EndOfFileFlag: # end of increment reached
+                    if EndOfFileFlag:
                         end = len(timeStamp)-1 # File shorter than interval; include all spectra
+                        if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
+                                                          liRawGroup, ltRawGroup, start, end):
+                            msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+
+                            break # End of file reached. Safe to break
                     else:
                         endTime = time + datetime.timedelta(0,interval) # increment for the next bin loop
                         end = i # end of the slice is up to and not including...so -1 is not needed
+                    
                     if endTime > endFileTime:
                         endTime = endFileTime
-                        timeFlag = True
+                        EndOfFileFlag = True
 
                     if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
                                                           liRawGroup, ltRawGroup, start, end):
@@ -2197,15 +2214,15 @@ class ProcessL2:
                         Utilities.writeLogFile(msg)
 
                         start = i
-                        continue
+                        continue # End of ensemble reached. Continue.
                     start = i
 
-                    if timeFlag:
+                    if EndOfFileFlag:
                         # No need to continue incrementing; all records captured in one ensemble
                         break
 
             # For the rare case where end of record is reached at, but not exceeding, endTime...
-            if not timeFlag:
+            if not EndOfFileFlag:
                 end = i+1 # i is the index of end of record; plus one to include i due to -1 list slicing
                 if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
                                                       liRawGroup, ltRawGroup, start, end):

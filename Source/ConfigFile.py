@@ -152,14 +152,13 @@ class ConfigFile:
         ConfigFile.settings["bL2WeightSentinel3B"] = 0
         ConfigFile.settings["bL2WeightVIIRSJ"] = 0
 
-        # ConfigFile.settings["bL2WeightUncertainties"] = 0
-
-
         ConfigFile.settings["bL2PlotRrs"] = 1
         ConfigFile.settings["bL2PlotnLw"] = 1
         ConfigFile.settings["bL2PlotEs"] = 1
         ConfigFile.settings["bL2PlotLi"] = 1
         ConfigFile.settings["bL2PlotLt"] = 1
+
+        ConfigFile.settings["bL2UncertaintyBreakdownPlot"] = 0
 
         ConfigFile.products["bL2Prodoc3m"] = 0
         ConfigFile.products["bL2Prodkd490"] = 0
@@ -210,12 +209,10 @@ class ConfigFile:
         params = dict(ConfigFile.settings, **ConfigFile.products)
         params['FullCalDir'] = os.path.relpath(params['FullCalDir'])
         params['RadCalDir'] = os.path.relpath(params['RadCalDir'])
-        jsn = json.dumps(params)
         fp = os.path.join(PATH_TO_CONFIG, filename)
 
-        #print(os.path.abspath(os.curdir))
         with open(fp, 'w') as f:
-            f.write(jsn)
+            json.dump(params,f,indent=4)
         ConfigFile.createCalibrationFolder()
 
     # Loads the cfg file

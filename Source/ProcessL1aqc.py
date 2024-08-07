@@ -64,6 +64,58 @@ class ProcessL1aqc:
         Utilities.writeLogFile(msg)
 
         return finalCount/originalLength
+    
+    @staticmethod
+    def filterData_ADJUSTED(group, badTimes):
+        ''' Delete additional flagged records for Sea-Bird Darks with adjusted 
+            timestamps to match Lights '''
+
+        msg = f'Remove {group.id} Data'
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        timeStamp = group.getDataset("DATETIME_ADJUSTED").data
+
+        startLength = len(timeStamp)
+        msg = f'   Length of dataset prior to removal {startLength} long'
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        # Delete the records in badTime ranges from each dataset in the group
+        finalCount = 0
+        originalLength = len(timeStamp)
+        for dateTime in badTimes:
+            # Need to reinitialize for each loop
+            startLength = len(timeStamp)
+            newTimeStamp = []
+
+            start = dateTime[0]
+            stop = dateTime[1]
+
+            # msg = f'Eliminate data between: {dateTime}'
+            # print(msg)
+            # Utilities.writeLogFile(msg)
+
+            if startLength > 0:
+                rowsToDelete = []
+                for i in range(startLength):
+                    if start <= timeStamp[i] and stop >= timeStamp[i]:
+                        rowsToDelete.append(i)
+                        finalCount += 1
+                    else:
+                        newTimeStamp.append(timeStamp[i])
+                group.datasetDeleteRow(rowsToDelete)
+            else:
+                msg = 'Data group is empty. Continuing.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+            timeStamp = newTimeStamp.copy()
+
+        msg = f'   Length of records removed from dataset: {finalCount}'
+        print(msg)
+        Utilities.writeLogFile(msg)
+
+        return finalCount/originalLength
 
     @staticmethod
     def renameGroup(gp, cf):
@@ -332,6 +384,24 @@ class ProcessL1aqc:
         #############################################################################################
         # Begin Filtering
         #############################################################################################
+
+        # For QC with badTimes when badTimes has only one record per interval (rather than a time span),
+        #   L1AQC dark timestamps for Sea-Bird will not be captured by the exact badTimes. Therefore, set each dark 
+        #   sample timestamp to the nearest light sample.
+        if ConfigFile.settings["SensorType"].lower() == "seabird":
+            groupDict = {}
+            for iGp, gp in enumerate(node.groups):
+                groupDict[gp.id] = iGp
+            for gp in node.groups:
+                if "DARK" in gp.id:
+                    if "LI" in gp.id:
+                        lightGroup = node.groups[groupDict["LI_LIGHT"]]
+                    elif "LT" in gp.id:
+                        lightGroup = node.groups[groupDict["LT_LIGHT"]]
+                    elif "ES" in gp.id:
+                        lightGroup = node.groups[groupDict["ES_LIGHT"]]
+
+                    gp = Utilities.fixDarkTimes(gp,lightGroup)
 
         badTimes = []
 
@@ -841,10 +911,29 @@ class ProcessL1aqc:
                     print(msg)
                     Utilities.writeLogFile(msg)
 
+                    if gp.attributes['FrameType'] == 'ShutterDark':
+                        fractionRemoved = ProcessL1aqc.filterData_ADJUSTED(gp, badTimes)
+
+                        # Now test whether the overlap has eliminated all radiometric data
+                        if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
+                            msg = "Radiometric data >98'%' eliminated. Aborting."
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+                            return None
+
+                        gpTimeset  = gp.getDataset("TIMETAG2")
+
+                        gpTime = gpTimeset.data["NONE"]
+                        lenGpTime = len(gpTime)
+                        msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+
 
         ###########################################################################
         # Now deglitch
         if ConfigFile.settings["SensorType"].lower() == "seabird":
+            # Deglitching is handled seperately for lights and darks, so no need to filter on _ADJUSTED timestamps
             node = ProcessL1aqc_deglitch.processL1aqc_deglitch(node)
         else:
             node.attributes['L1AQC_DEGLITCH'] = 'OFF'

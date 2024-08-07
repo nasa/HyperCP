@@ -562,11 +562,6 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2WeightSentinel3B"]) == 1:
             self.l2WeightSentinel3BCheckBox.setChecked(True)
 
-        # l2WeightUncertaintiesLabel = QtWidgets.QLabel("Convolution uncertainties", self)
-        # self.l2WeightUncertaintiesCheckBox = QtWidgets.QCheckBox('',self)
-        # if int(ConfigFile.settings["bL2WeightUncertainties"]) == 1:
-        #     self.l2WeightUncertaintiesCheckBox.setChecked(True)
-
         #   Plots
         l2PlotsLabel = QtWidgets.QLabel("Generate Spectral Plots", self)
         l2PlotRrsLabel = QtWidgets.QLabel("Rrs", self)
@@ -593,6 +588,12 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2PlotLtCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2PlotLt"]) == 1:
             self.l2PlotLtCheckBox.setChecked(True)
+
+        l2UncertaintyBreakdownPlotsLabel = QtWidgets.QLabel("Uncertainty Breakdown Plots", self)
+        l2UncertaintyBreakdownPlotLabel = QtWidgets.QLabel(" ", self)
+        self.l2UncertaintyBreakdownPlotCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2UncertaintyBreakdownPlot"]) == 1:
+            self.l2UncertaintyBreakdownPlotCheckBox.setChecked(True)
 
         self.l2StationsCheckBox.clicked.connect(self.l2StationsCheckBoxUpdate)
         self.l2EnablePercentLtCheckBox.clicked.connect(self.l2EnablePercentLtCheckBoxUpdate)
@@ -1055,6 +1056,12 @@ class ConfigWindow(QtWidgets.QDialog):
         l2PlotHBox.addWidget(l2PlotLtLabel)
         l2PlotHBox.addWidget(self.l2PlotLtCheckBox)
         VBox4.addLayout(l2PlotHBox)
+
+        VBox4.addWidget(l2UncertaintyBreakdownPlotsLabel)
+        l2PlotUncHBox = QtWidgets.QHBoxLayout()
+        l2PlotUncHBox.addSpacing(45)
+        l2PlotUncHBox.addWidget(self.l2UncertaintyBreakdownPlotCheckBox)
+        VBox4.addLayout(l2PlotUncHBox)
 
         VBox4.addSpacing(5)
 
@@ -1948,13 +1955,12 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2WeightSentinel3B"] = int(self.l2WeightSentinel3BCheckBox.isChecked())
         ConfigFile.settings["bL2WeightVIIRSJ"] = int(self.l2WeightVIIRSJCheckBox.isChecked())
 
-        # ConfigFile.settings["bL2WeightUncertainties"] = int(self.l2WeightUncertaintiesCheckBox.isChecked())
-
         ConfigFile.settings["bL2PlotRrs"] = int(self.l2PlotRrsCheckBox.isChecked())
         ConfigFile.settings["bL2PlotnLw"] = int(self.l2PlotnLwCheckBox.isChecked())
         ConfigFile.settings["bL2PlotEs"] = int(self.l2PlotEsCheckBox.isChecked())
         ConfigFile.settings["bL2PlotLi"] = int(self.l2PlotLiCheckBox.isChecked())
         ConfigFile.settings["bL2PlotLt"] = int(self.l2PlotLtCheckBox.isChecked())
+        ConfigFile.settings["bL2UncertaintyBreakdownPlot"] = int(self.l2UncertaintyBreakdownPlotCheckBox.isChecked())
         ConfigFile.settings["bL2SaveSeaBASS"] = int(self.l2SaveSeaBASSCheckBox.isChecked())
         ConfigFile.settings["bL2WriteReport"] = int(self.l2WriteReportCheckBox.isChecked())
 

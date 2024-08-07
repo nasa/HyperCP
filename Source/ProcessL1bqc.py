@@ -247,7 +247,7 @@ class ProcessL1bqc:
         elif ConfigFile.settings['SensorType'].lower() == 'trios':
             esGroup = node.getGroup('ES_L1AQC')
             liGroup = node.getGroup('LI_L1AQC')
-            ltGroup = node.getGroup('LT_L1AQC')
+            ltGroup = node.getGroup('LT_L1AQC')        
 
         satnavGroup = None
         ancGroup = None
@@ -421,6 +421,9 @@ class ProcessL1bqc:
             # This is not well optimized for large files...
             badTimes = ProcessL1bqc.ltQuality(sasGroup)
 
+            # NOTE: There is a problem for individual timestamps in badTimes that will not match Darks from L1AQC data
+            #   Need to convert singleton start-stop records in badTimes to ranges of time to capture Darks in L1AQC data
+
             if badTimes is not None:
                 print('Removing records... Can be slow for large files')
                 check = Utilities.filterData(referenceGroup, badTimes)
@@ -438,12 +441,18 @@ class ProcessL1bqc:
                 # are used to bracket the same spectral collections, though it
                 # will involve a difference number/percentage of the datasets.
                 if ConfigFile.settings['SensorType'].lower() == 'seabird':
-                    Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
-                    Utilities.filterData(esLightGroup,badTimes,'L1AQC')
-                    Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
-                    Utilities.filterData(liLightGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+                    check = []
+                    check.append(Utilities.filterData(esDarkGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(esLightGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(liDarkGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(liLightGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(ltDarkGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(ltLightGroup,badTimes,'L1AQC'))
+                    if any(np.array(check) > 0.99):
+                        msg = "Too few spectra remaining. Abort."
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        return False
                 elif ConfigFile.settings['SensorType'].lower() == 'trios':
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
@@ -514,12 +523,18 @@ class ProcessL1bqc:
             Utilities.filterData(ancGroup, badTimes)
             # Filter L1AQC data for L1BQC criteria
             if ConfigFile.settings['SensorType'].lower() == 'seabird':
-                Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
-                Utilities.filterData(esLightGroup,badTimes,'L1AQC')
-                Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
-                Utilities.filterData(liLightGroup,badTimes,'L1AQC')
-                Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
-                Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+                check = []
+                check.append(Utilities.filterData(esDarkGroup,badTimes,'L1AQC'))
+                check.append(Utilities.filterData(esLightGroup,badTimes,'L1AQC'))
+                check.append(Utilities.filterData(liDarkGroup,badTimes,'L1AQC'))
+                check.append(Utilities.filterData(liLightGroup,badTimes,'L1AQC'))
+                check.append(Utilities.filterData(ltDarkGroup,badTimes,'L1AQC'))
+                check.append(Utilities.filterData(ltLightGroup,badTimes,'L1AQC'))
+                if any(np.array(check) > 0.99):
+                    msg = "Too few spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
             elif ConfigFile.settings['SensorType'].lower() == 'trios':
                 Utilities.filterData(esGroup,badTimes,'L1AQC')
                 Utilities.filterData(liGroup,badTimes,'L1AQC')
@@ -593,18 +608,24 @@ class ProcessL1bqc:
             Utilities.filterData(ancGroup, badTimes)
             # Filter L1AQC data for L1BQC criteria
             if ConfigFile.settings['SensorType'].lower() == 'seabird':
-                Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
-                Utilities.filterData(esLightGroup,badTimes,'L1AQC')
-                Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
-                Utilities.filterData(liLightGroup,badTimes,'L1AQC')
-                Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
-                Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+                check = []
+                check.append(Utilities.filterData(esDarkGroup,badTimes,'L1AQC'))
+                check.append(Utilities.filterData(esLightGroup,badTimes,'L1AQC'))
+                check.append(Utilities.filterData(liDarkGroup,badTimes,'L1AQC'))
+                check.append(Utilities.filterData(liLightGroup,badTimes,'L1AQC'))
+                check.append(Utilities.filterData(ltDarkGroup,badTimes,'L1AQC'))
+                check.append(Utilities.filterData(ltLightGroup,badTimes,'L1AQC'))
+                if any(np.array(check) > 0.99):
+                    msg = "Too few spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
             elif ConfigFile.settings['SensorType'].lower() == 'trios':
                 Utilities.filterData(esGroup,badTimes,'L1AQC')
                 Utilities.filterData(liGroup,badTimes,'L1AQC')
                 Utilities.filterData(ltGroup,badTimes,'L1AQC')
-            # if py6sGroup is not None:
-            #         Utilities.filterData(py6sGroup,badTimes)
+            if py6sGroup is not None:
+                    Utilities.filterData(py6sGroup,badTimes)
 
        # Spectral Outlier Filter
         enableSpecQualityCheck = ConfigFile.settings['bL1bqcEnableSpecQualityCheck']
@@ -646,12 +667,18 @@ class ProcessL1bqc:
 
                 # Filter L1AQC data for L1BQC criteria
                 if ConfigFile.settings['SensorType'].lower() == 'seabird':
-                    Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
-                    Utilities.filterData(esLightGroup,badTimes,'L1AQC')
-                    Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
-                    Utilities.filterData(liLightGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
+                    check = []
+                    check.append(Utilities.filterData(esDarkGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(esLightGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(liDarkGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(liLightGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(ltDarkGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(ltLightGroup,badTimes,'L1AQC'))
+                    if any(np.array(check) > 0.99):
+                        msg = "Too few spectra remaining. Abort."
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        return False
                 elif ConfigFile.settings['SensorType'].lower() == 'trios':
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
@@ -667,36 +694,6 @@ class ProcessL1bqc:
             print(msg)
             Utilities.writeLogFile(msg)
             badTimes = ProcessL1bqc.metQualityCheck(referenceGroup, sasGroup, py6sGroup, ancGroup)
-
-            # if badTimes is not None:
-            #     if len(badTimes) == esData.data.size:
-            #         msg = "All data flagged for deletion. Abort."
-            #         print(msg)
-            #         Utilities.writeLogFile(msg)
-            #         return False
-            #     print('Removing records...')
-            #     check = Utilities.filterData(referenceGroup, badTimes)
-            #     if check > 0.99:
-            #         msg = "Too few spectra remaining. Abort."
-            #         print(msg)
-            #         Utilities.writeLogFile(msg)
-            #         return False
-            #     Utilities.filterData(sasGroup, badTimes)
-            #     Utilities.filterData(ancGroup, badTimes)
-            #     # Filter L1AQC data for L1BQC criteria
-            #     if ConfigFile.settings['SensorType'].lower() == 'seabird':
-            #         Utilities.filterData(esDarkGroup,badTimes,'L1AQC')
-            #         Utilities.filterData(esLightGroup,badTimes,'L1AQC')
-            #         Utilities.filterData(liDarkGroup,badTimes,'L1AQC')
-            #         Utilities.filterData(liLightGroup,badTimes,'L1AQC')
-            #         Utilities.filterData(ltDarkGroup,badTimes,'L1AQC')
-            #         Utilities.filterData(ltLightGroup,badTimes,'L1AQC')
-            #     elif ConfigFile.settings['SensorType'].lower() == 'trios':
-            #         Utilities.filterData(esGroup,badTimes,'L1AQC')
-            #         Utilities.filterData(liGroup,badTimes,'L1AQC')
-            #         Utilities.filterData(ltGroup,badTimes,'L1AQC')
-            #     if py6sGroup is not None:
-            #         Utilities.filterData(py6sGroup,badTimes)
 
         return True
 

@@ -13,11 +13,12 @@ class MainConfig:
     @staticmethod
     def saveConfig(fileName):
         print("ConfigFile - Save Config")
-        jsn = json.dumps(MainConfig.settings)
+        # jsn = json.dumps(MainConfig.settings)
         fp = os.path.join(PATH_TO_CONFIG, fileName)
 
         with open(fp, 'w') as f:
-            f.write(jsn)
+            json.dump(MainConfig.settings,f,indent=4)
+            # f.write(jsn)
 
     # Loads the cfg file
     @staticmethod

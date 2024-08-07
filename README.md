@@ -53,8 +53,7 @@ Clone this repository (branch: "master") to a convenient directory on your compu
 prompt$ git clone --depth 1 https://github.com/nasa/HyperCP.git /path/to/convenient/directory
 ```
 
-If you are, or plan to be, a HyperCP Team collaborator, or if you are interested in early release branches, drop '--depth 1' from the clone command. If you are unfamiliar with git, simply download and unzip by clicking ```Code >> Download ZIP```  -
-we encourage you to use git though (see why below). A link to bundled executable versions of HyperCP for Windows, MacOS, and Linux will be added soon.
+If you are, or plan to be, a HyperCP Team collaborator, or if you are interested in early release branches, drop '--depth 1' from the clone command. If you are unfamiliar with git or having difficulty with the anaconda environment, [bundled releases](https://github.com/nasa/HyperCP/releases) are available for Mac, Windows, and Linux. Go to the latest release (named for the Version above) and under Assets download and unzip the version for your operating system.
 
 ### 2. Get the HyperCP environment
 

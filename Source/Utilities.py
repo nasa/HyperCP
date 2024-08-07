@@ -389,11 +389,13 @@ class Utilities:
         return datetime.datetime(year,mon,day,0,0,0,0,tzinfo=datetime.timezone.utc)
 
 
-    # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
-    # Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
-    # in the 20th or 21st centuries
+    
     @staticmethod
     def rootAddDateTime(node):
+        ''' Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
+         Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
+         in the 20th or 21st centuries '''
+        
         for gp in node.groups:
             # print(gp.id)
             if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
@@ -424,11 +426,48 @@ class Utilities:
                 dateTime.data = timeStamp
         return node
 
-    # Add a data column to each group dataset for DATETIME, as defined by TIMETAG2 and DATETAG
-    # Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
-    # in the 20th or 21st centuries
+    @staticmethod
+    def groupAddDateTime(gp):
+        ''' Add a dataset to one group for DATETIME, as defined by TIMETAG2 and DATETAG
+         Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
+         in the 20th or 21st centuries '''
+        
+        # for gp in node.groups:
+        # print(gp.id)
+        if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
+            timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
+            dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
+            timeStamp = []
+            for i, timei in enumerate(timeData):
+                # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
+                # Filter for aberrant Datetags
+                t = str(int(timei)).zfill(9)
+                h = int(t[:2])
+                m = int(t[2:4])
+                s = int(t[4:6])
+
+                if (str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20")) \
+                    and timei != 0.0 and not np.isnan(timei) \
+                        and h < 60 and m < 60 and s < 60:
+
+                    dt = Utilities.dateTagToDateTime(dateTag[i])
+                    timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
+                else:
+                    msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    gp.datasetDeleteRow(i)
+
+            dateTime = gp.addDataset("DATETIME")
+            dateTime.data = timeStamp
+        return gp
+    
     @staticmethod
     def rootAddDateTimeCol(node):
+        ''' Add a data column to each group dataset for DATETIME, as defined by TIMETAG2 and DATETAG
+            Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
+            in the 20th or 21st centuries'''
+        
         for gp in node.groups:
             if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
 
@@ -875,12 +914,41 @@ class Utilities:
 
         return newYList
 
+    @staticmethod
+    def fixDarkTimes(darkGroup,lightGroup):        
+        ''' Find the nearest timestamp in the light data to each dark measurements (Sea-Bird) '''
+        
+        darkDatetime = darkGroup.datasets["DATETIME"].data
+        lightDatetime = lightGroup.datasets["DATETIME"].data
+        
+        dateTagNew = darkGroup.addDataset('DATETAG_ADJUSTED')
+        timeTagNew = darkGroup.addDataset('TIMETAG2_ADJUSTED')
+        dateTimeNew = darkGroup.addDataset('DATETIME_ADJUSTED')
+
+        dateTag = []
+        timeTag = []
+        dateTime = []
+        for i, darkTime in enumerate(darkDatetime):
+            iLight = Utilities.find_nearest(lightDatetime,darkTime)                            
+
+            dateTag.append(lightGroup.datasets['DATETAG'].data[iLight])
+            timeTag.append(lightGroup.datasets['TIMETAG2'].data[iLight])
+            dateTime.append(lightGroup.datasets['DATETIME'].data[iLight])
+
+        dateTagNew.data = dateTag
+        timeTagNew.data = timeTag
+        dateTimeNew.data = dateTime
+
+        return darkGroup
+
 
     @staticmethod
     def filterData(group, badTimes, level = None):
         ''' Delete flagged records. Level is only specified to point to the timestamp.
             All data in the group (including satellite sensors) will be deleted.
-            Called by both ProcessL1bqc and ProcessL2.'''
+            Called by both ProcessL1bqc and ProcessL2. 
+            
+            filterData for L1AQC is contained within ProcessL1aqc.py'''
 
         msg = f'Remove {group.id} Data'
         print(msg)
@@ -2861,47 +2929,4 @@ class Utilities:
                         inputArray[ens][i] = 0.0
         return inputArray
     
-    #  @staticmethod
-    # def plotUncertainties(prop, node):
-    #  # example uncertainty plotting - used to generate unc breakdown plots
-    #     p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
-    #     time = node.attributes['TIME-STAMP'].split(' ')[-2]  # for labelling
-    #     if sensortype.upper() == 'ES':
-    #         p_unc.plot_unc_from_sample_1D(
-    #             sample_data5, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
-    #         )
-    #     else:
-    #         p_unc.plot_unc_from_sample_1D(
-    #             sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
-    #         )
-    #     p_unc.plot_unc_from_sample_1D(
-    #         sample_data4, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
-    #     )
-    #     p_unc.plot_unc_from_sample_1D(
-    #         sample_data3, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
-    #     )
-    #     p_unc.plot_unc_from_sample_1D(
-    #         sample_data2, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
-    #     )
-    #     p_unc.plot_unc_from_sample_1D(
-    #         sample_data1, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
-    #     )
-    #     p_unc.plot_unc_from_sample_1D(
-    #         sample_dark_corr_data, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
-    #         save={
-    #             "cal_type": node.attributes["CAL_TYPE"],
-    #             "time": node.attributes['TIME-STAMP'],
-    #             "instrument": "SeaBird"
-    #         }
-    #     )
-    #     p_unc.plot_unc_from_sample_1D(
-    #         sample_light, radcal_wvl, fig_name=f"breakdown_{sensortype}", name=f"light", xlim=(400, 800)
-    #     )
-    #     p_unc.plot_unc_from_sample_1D(
-    #         sample_dark, radcal_wvl, fig_name=f"breakdown_{sensortype}", name=f"dark", xlim=(400, 800),
-    #         save={
-    #             "cal_type": node.attributes["CAL_TYPE"],
-    #             "time": node.attributes['TIME-STAMP'],
-    #             "instrument": "SeaBird"
-    #         }
-    #     )
+   
