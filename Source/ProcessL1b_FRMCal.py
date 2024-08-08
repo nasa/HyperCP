@@ -126,22 +126,22 @@ class ProcessL1b_FRMCal:
 
 
             if np.isnan(direct).any():
-                logging.warning("direct contains NaN values at: %s" % wvl[np.isnan(direct)[0]])
+                logging.warning("direct contains NaN values (interpolating) at: %s" % wvl[np.isnan(direct)[n]])
 
             if np.isnan(diffuse).any():
-                logging.warning("diffuse contains NaN values at: %s" % wvl[np.isnan(diffuse)[0]])
+                logging.warning("diffuse contains NaN values (interpolating) at: %s" % wvl[np.isnan(diffuse)[n]])
 
             if np.isnan(irr_direct).any():
-                logging.warning("irr_direct contains NaN values at: %s" % wvl[np.isnan(irr_direct)[0]])
+                logging.warning("irr_direct contains NaN values (interpolating) at: %s" % wvl[np.isnan(irr_direct)[n]])
 
             if np.isnan(irr_diffuse).any():
-                logging.warning("irr_diffuse contains NaN values at: %s" % wvl[np.isnan(irr_diffuse)[0]])
+                logging.warning("irr_diffuse contains NaN values (interpolating) at: %s" % wvl[np.isnan(irr_diffuse)[n]])
 
             if np.isnan(irr_env).any():
-                logging.warning("irr_env contains NaN values at: %s" % wvl[np.isnan(irr_env)[0]])
+                logging.warning("irr_env contains NaN values (interpolating) at: %s" % wvl[np.isnan(irr_env)[n]])
 
             if np.isnan(solar_zenith).any():
-                logging.warning("solar_zenith contains NaN values at: %s" % wvl[np.isnan(solar_zenith)[0]])
+                logging.warning("solar_zenith contains NaN values (interpolating) at: %s" % wvl[np.isnan(solar_zenith)[n]])
 
             # Check for potential NaN values and interpolate them with neighbour
             # direct
