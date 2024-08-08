@@ -3,6 +3,8 @@ import logging
 from typing import Optional
 from functools import lru_cache
 
+import time
+
 import numpy as np
 import xarray as xr  # Only needed to read original data
 from scipy.interpolate import interpn
@@ -26,7 +28,8 @@ def load():
     """
     Load look up tables from Zhang et al. 2017
     """
-    logger.debug('Load constants')
+    logger.debug('Start load constants')
+    start = time.perf_counter()
     global db, quads, skyrad0, sunrad0, sdb, vdb, rad_boa_sca, rad_boa_vec
 
     db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_db.mat')
@@ -36,10 +39,17 @@ def load():
         rad_boa_sca = ds['Radiance_BOA_sca'].to_numpy().T
         rad_boa_vec = ds['Radiance_BOA_vec'].to_numpy().T
 
-    db = xr.open_dataset(db_path, group='db', engine='netcdf4')
-    quads = xr.open_dataset(db_path, group='quads', engine='netcdf4')
-    sdb = xr.open_dataset(db_path, group='sdb', engine='netcdf4')
-    vdb = xr.open_dataset(db_path, group='vdb', engine='netcdf4')
+    with xr.open_dataset(db_path, group='db', engine='netcdf4') as ds:
+        db = ds
+
+    with xr.open_dataset(db_path, group='quads', engine='netcdf4') as ds:
+        quads = ds
+
+    with xr.open_dataset(db_path, group='sdb', engine='netcdf4') as ds:
+        sdb = ds
+
+    with xr.open_dataset(db_path, group='vdb', engine='netcdf4') as ds:
+        vdb = ds
 
     quads = {k: quads[k].to_numpy().T for k in ['zen', 'azm', 'du', 'dphi', 'sun05',
                                                 'zen_num', 'azm_num', 'zen0', 'azm0']}
@@ -48,6 +58,13 @@ def load():
            for k in ['wind', 'od', 'zen_sun', 'zen_view', 'azm_view', 'wv']}
     vdb = {k: vdb[k].to_numpy().T.squeeze()
            for k in ['wind', 'od', 'zen_sun', 'zen_view', 'azm_view', 'wv']}
+
+    end = time.perf_counter()
+    write = f'Loading constants at {start} in {end - start:0.4f} seconds'
+    logger.debug(write)
+    # write to file in home each time the constants are loaded
+    # with open(os.path.join(os.path.expanduser('~'), 'zhang17.log'), 'a') as f:
+    #     f.write(write + '\n')
 
 
 def clear_memory():
