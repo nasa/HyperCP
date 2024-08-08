@@ -143,6 +143,7 @@ class ProcessL1b_FRMCal:
             if np.isnan(solar_zenith).any():
                 logging.warning("solar_zenith contains NaN values (interpolating) at: %s" % wvl[np.isnan(solar_zenith)[n]])
 
+
             # Check for potential NaN values and interpolate them with neighbour
             # direct
             ind0 = np.where(np.isnan(direct[n, :]))[0]
