@@ -1,7 +1,6 @@
 import multiprocessing
 import os
 import glob
-import sys
 import time
 
 from Main import Command
