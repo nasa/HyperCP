@@ -10,7 +10,6 @@ from Source.matheo.srf_utils import (
 from Source.matheo.punpy_util import func_with_unc
 # from Source.matheo.utils.function_def import iter_f, f_tophat, f_triangle, f_gaussian
 import numpy as np
-import scipy.sparse
 from typing import Optional, Union, Tuple, List, Iterable, Callable
 from comet_maths import interpolate_1d
 

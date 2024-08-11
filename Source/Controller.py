@@ -5,7 +5,6 @@ import collections
 
 from Source import PATH_TO_CONFIG
 from Source.HDFRoot import HDFRoot
-from Source.HDFDataset import HDFDataset
 from Source.SeaBASSWriter import SeaBASSWriter
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.CalibrationFile import CalibrationFile

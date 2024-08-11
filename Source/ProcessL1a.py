@@ -158,7 +158,7 @@ class ProcessL1a:
                     newDay = False
                     for time in gpsTime:
                         gpsSec = Utilities.utcToSec(time)
-                        if not 'gpsSecPrior' in locals():
+                        if 'gpsSecPrior' not in locals():
                             gpsSecPrior = gpsSec
                         # Test for a change of ~24 hrs between this sample and the last sample
                         # To cross 0, gpsSecPrior would need to be approaching 86400 seconds
@@ -220,7 +220,7 @@ class ProcessL1a:
                             return None
                         else:
                             if np.isnan(elevation).all():
-                                msg = f'SZA: elevation all NaNs.'
+                                msg = 'SZA: elevation all NaNs.'
                             else:
                                 msg = f'SZA passed filter: {round(90-np.nanmax(elevation))}'
                             print(msg)

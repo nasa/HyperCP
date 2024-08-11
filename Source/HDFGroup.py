@@ -92,7 +92,7 @@ class HDFGroup:
         # Read attributes
         #print("Attributes:", [k for k in f.attrs.keys()])
         for k in f.attrs.keys():
-            if type(f.attrs[k]) == np.ndarray:
+            if type(f.attrs[k]) == np.ndarray:  # noqa: E721
                 self.attributes[k] = f.attrs[k]
             else: # string attribute
                 self.attributes[k] = f.attrs[k].decode("utf-8")

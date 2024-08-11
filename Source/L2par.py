@@ -1,5 +1,4 @@
 
-import numpy as np
 from Source.ConfigFile import ConfigFile
 
 class L2par():

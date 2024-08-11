@@ -237,7 +237,7 @@ class GetAnc_ecmwf:
 
     def getAnc_ecmwf(inputGroup):
         ''' Retrieve model data from ECMWF and save in Data/Anc and in ModData '''
-        cwd = os.getcwd()
+        # cwd = os.getcwd()
         ancPath = os.path.join(PATH_TO_DATA, 'Anc')
 
         # Get the dates, times, and locations from the input group

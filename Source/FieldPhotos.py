@@ -1,14 +1,11 @@
 
-from fileinput import filename
 import os
-import sys
 import glob
 import datetime
 import pytz
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap
 
-from Source.Utilities import Utilities
 
 class FieldPhotos(QtWidgets.QDialog):
 

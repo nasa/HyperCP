@@ -53,10 +53,10 @@ class PDF(FPDF):
                         key != 'delimiter':
                     # L1A data has not populated file-specific metadata into the SeaBASS header yet
                     if key != 'station' and key != 'original_file_name' and \
-                        not 'start' in key and not 'end' in key and not 'latitude' in key and \
-                            not 'longitude' in key and not 'wind' in key and \
-                                not 'cloud' in key and not 'wave' in key and not 'secchi' in key and \
-                                    not 'water_depth' in key:
+                        'start' not in key and 'end' not in key and 'latitude' not in key and \
+                            'longitude' not in key and 'wind' not in key and \
+                                'cloud' not in key and 'wave' not in key and 'secchi' not in key and \
+                                    'water_depth' not in key:
                         metaData += f'/{key}={value}\n'
 
         if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.

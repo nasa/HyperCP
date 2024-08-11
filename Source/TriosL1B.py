@@ -50,7 +50,7 @@ class TriosL1B:
         # Defined constants
         nband = len(B0)
         nmes  = len(raw_data)
-        n_iter = 2
+        # n_iter = 2
 
         # Non-linearity alpha computation
         t1 = S1.pop(0)

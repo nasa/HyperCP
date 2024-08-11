@@ -4,8 +4,6 @@ import scipy as sp
 import datetime as datetime
 
 from Source.MainConfig import MainConfig
-from Source.GetAnc import GetAnc
-from Source.GetAnc_ecmwf import GetAnc_ecmwf
 from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
 
