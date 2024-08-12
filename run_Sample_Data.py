@@ -1,11 +1,21 @@
 import multiprocessing
 import os
 import glob
-import sys
 import time
 
 from Main import Command
-''' Scripted command line call to HyperCP '''
+''' Scripted command line call to HyperCP. Set up the configuration file using the GUI first,
+    or by editing ./Config/[yourconfig].cfg JSON file. 
+
+    Run scripted call to single-level or multi-level (L0 - L2) command line calls to HyperCP 
+    from terminal.
+    
+    Recommend making a copy for your own purposes. This file is tracked with git and controlled
+    by the HyperCP team.
+
+    D. Aurin NASA/GSFC Aug 2024
+    '''
+
 # Run scripted call to single-level or multi-level (L0 - L2) command line calls to HyperCP from terminal.
 #
 # Before running:
@@ -15,18 +25,19 @@ from Main import Command
 #
 # IMPORTANT: Set up the HyperCP Configuration in the GUI before running this script.
 #           (Sample configurations have been provided in the HyperCP repository)
-# Multithreading is available to run multiple files simulataneous, with the exception
-#           of manually acquired TriOS (.mlb) raw files (e.g., multi-level) 
-# Cannot be run on the same machine simultaneously with alternate Configurations.
-# By default processes all files in the PROC_LEVEL -1 directory to PROC_LEVEL.
+# Multithreading is available to run multiple files simulataneously
+#   NOTE: Multithreading not yet available for manually acquired TriOS (.mlb) raw files (e.g., multi-level) 
+#   NOTE: Cannot be run on the same machine simultaneously with alternate Configurations.
+
+# By default processes all files in the PROC_LEVEL -1 level directory to PROC_LEVEL directory.
 
 os.environ["HYPERINSPACE_CMD"] = "TRUE"
 ################################################### CUSTOM SET UP ###################################################
 # Batch options
-MULTI_TASK = True      # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
+MULTI_TASK = True       # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
 MULTI_LEVEL = True      # Process raw (L0) to Level-2 (L2)
 CLOBBER = True          # True overwrites existing files
-PROC_LEVEL = "L2"    # Process to this level: L1A, L1AQC, L1B, LBQC, L2 (ignored for MULTI_LEVEL)
+PROC_LEVEL = "L2"       # Process to this level: L1A, L1AQC, L1B, LBQC, L2 (ignored for MULTI_LEVEL)
 
 # Dataset options
 PLATFORM = "pySAS"
@@ -39,39 +50,48 @@ CRUISE = "FICE22"
 #   This requires a custom Configuration file (e.g., "FICE22_pySAS_Class.cfg"). Set this up in the GUI.
 L1B_REGIME = ""
 
-# PATH options
+# L2_VERSION: Optional. [M99NN, M99MA, M99SimSpec, Z17NN, etc.]
+#   Denote a special output path for Level-2 processing alternatives.
+L2_VERSION = "Z17SS"
+
+#################################
+## PATH options
 PATH_OS = os.path.expanduser('~')
 PATH_HCP = f"{PATH_OS}/GitRepos/HyperCP"                # Local path to HyperCP repository.
-PATH_DATA = f"{PATH_HCP}/Data/Sample_Data/{PLATFORM}"   # Top level data directory containing RAW/ and ancillary file.
+PATH_DATA = f'{PATH_OS}/Projects/HyperPACE/field_data/HyperSAS/{CRUISE}'   # Top level data directory containing RAW/ and ancillary file.
+##################################
+
 PATH_ANC = os.path.join(
     PATH_DATA, f"{CRUISE}_pySAS_Ancillary.sb"
     # PATH_DATA, f"{CRUISE}_TriOS_Ancillary.sb"
     # PATH_DATA, f"{CRUISE}_Ancillary.sb"
     )
 
-# L2_VERSION: Optional. [M99NN, M99MA, M99SimSpec, Z17NN, etc.]
-#   Denote a special output path for Level-2 processing alternatives.
-L2_VERSION = ""
 if MULTI_LEVEL or PROC_LEVEL == "L1A":
     PATH_INPUT = PATH_DATA
 else:
     PATH_INPUT = os.path.join(PATH_DATA,L1B_REGIME)
 # PATH_OUTPUT does not require folder names of data levels. HyperCP will automate that.
-PATH_OUTPUT = os.path.join(PATH_DATA,L1B_REGIME,L2_VERSION)
-
-PATH_CFG = os.path.join(
-    PATH_HCP, "Config", f"sample_{INST_TYPE}_pySAS.cfg"
-    # PATH_HCP, "Config",f"sample_{INST_TYPE}_NOTRACKER.cfg"
-    # PATH_HCP, "Config",f"sample_{INST_TYPE}_NOTRACKER_{L1B_REGIME}.cfg"
-    # PATH_HCP, "Config",f"{CRUISE}_{L1B_REGIME}.cfg"
-    )   # Set up in advance in the GUI
-
-# Tip: When running multiple FRM-pathways, move the RAW directory to where the input data directory needs to be.
-################################################# END CUSTOM SET UP #################################################
+PATH_OUTPUT = os.path.join(PATH_DATA,L1B_REGIME)
 
 # Add output directory if necessary (ignore data level directories)
 if os.path.isdir(PATH_OUTPUT) is False:
     os.mkdir(PATH_OUTPUT)
+    PATH_OUTPUT = os.path.join(PATH_DATA,L1B_REGIME,L2_VERSION)
+    if os.path.isdir(PATH_OUTPUT) is False:
+        os.mkdir(PATH_OUTPUT)
+
+# Set these up in advance in the GUI. One config file for each REGIME, edited for each VERSION.
+if L1B_REGIME == "":
+    PATH_CFG = os.path.join(    
+        PATH_HCP, 'Config', f'{CRUISE}.cfg'    
+        )   
+else:
+    PATH_CFG = os.path.join(    
+        PATH_HCP, 'Config', f'{CRUISE}_{L1B_REGIME}.cfg'    
+        )  
+# Tip: When running multiple FRM-pathways, move the RAW directory to where the input data directory needs to be.
+################################################# END CUSTOM SET UP #################################################
 
 ## Setup remaining globals ##
 TO_LEVELS = ["L1A", "L1AQC", "L1B", "L1BQC", "L2"]
@@ -92,9 +112,10 @@ if not MULTI_LEVEL:
 
 def run_Command(fp_input_files):
     """Run either directly or using multiprocessor pool below."""
-    #   fp_input_files is a string unles TriOS RAW, then list.
+    #   fp_input_files is a string unless TriOS RAW, then list.
 
-    # This will skip the file if either 1) the result exists and no CLOBBER, or 2) the Level failed and produced a report.
+    # This will skip the file if either 1) the result exists and no CLOBBER, or 
+    #   2) the Level failed and produced a report.
     # Override with CLOBBER, above.
     to_skip = {
         level: [
@@ -112,7 +133,7 @@ def run_Command(fp_input_files):
         # One or more files. (fp_input_files is a list of one or more files)
         from_level = FROM_LEVELS[0]
         to_level = 'L1A'
-        inputFileBase = fp_input_files        
+        inputFileBase = fp_input_files        # Full-path file
         test = [
                 os.path.exists(inputFileBase[i])
                 for i, x in enumerate(fp_input_files)
@@ -124,19 +145,25 @@ def run_Command(fp_input_files):
             print(f"Bad input path: {fp_input_files}")
             print("***********************************")
             return
-        print("************************************************")
-        print(f"*** [{inputFileBase}] PROCESSING L0 - L2 ***")
-        print("************************************************")
+        inputFileBase = os.path.splitext(os.path.basename(fp_input_files))[0]     # 'FRM4SOC2_FICE22_NASA_20220715_120000_L1BQC'  
+        if INST_TYPE.lower() == 'seabird' and inputFileBase in to_skip[to_level] and not CLOBBER:
+            print("************************************************")
+            print(f"*** [{inputFileBase}] ALREADY PROCESSED TO {to_level} ***")
+            print("************************************************")
+        else:
+            print("************************************************")
+            print(f"*** [{inputFileBase}] PROCESSING L0 - L2 ***")
+            print("************************************************")
 
-        Command(
-            PATH_CFG,
-            from_level,
-            fp_input_files,
-            PATH_OUTPUT,
-            to_level,
-            PATH_ANC,
-            MULTI_LEVEL
-            )        
+            Command(
+                PATH_CFG,
+                from_level,
+                fp_input_files,
+                PATH_OUTPUT,
+                to_level,
+                PATH_ANC,
+                MULTI_LEVEL
+                )       
     
     else:
         # One file at a time with or without multithread. (fp_input_files is a string of one file)
