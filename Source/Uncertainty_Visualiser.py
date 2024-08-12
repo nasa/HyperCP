@@ -1,13 +1,10 @@
 # docs and typing
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Optional, Union
 
 # packages
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import xarray as xr
-from Source.HDFGroup import HDFGroup
 
 class Show_Uncertainties(ABC):
     def __init__(self, punpy_prop_obj):

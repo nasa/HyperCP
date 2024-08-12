@@ -188,7 +188,7 @@ def QAscores_5Bands(test_Rrs, test_lambda):
     nRrs_denom = np.sqrt(np.nansum(test_Rrs**2, 0))
     # nRrs_denom = repmat(nRrs_denom,[inCol,1]);
     nRrs_denom = npm.repmat(nRrs_denom, inCol, 1)
-    nRrs = test_Rrs/nRrs_denom;      
+    nRrs = test_Rrs/nRrs_denom      
 
     # SAM input, inCol*inRow*refRow 
     test_Rrs2 = np.repeat(test_Rrs_orig[:, :, np.newaxis], refRow, axis=2)

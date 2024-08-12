@@ -1,7 +1,6 @@
 
 import collections
 import numpy as np
-from numpy.lib.function_base import append
 from scipy.interpolate import InterpolatedUnivariateSpline
 from itertools import compress
 

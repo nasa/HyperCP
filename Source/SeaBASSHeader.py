@@ -237,7 +237,7 @@ class SeaBASSHeader:
             f'! Remove Negatives = {NegativeFilt}'
             # f'! Processing DateTime = {time.asctime()}'
 
-        SeaBASSHeader.settings["other_comments"] = f'!\n'\
+        SeaBASSHeader.settings["other_comments"] = '!\n'\
             '! Other comments...\n'\
             '!'
 

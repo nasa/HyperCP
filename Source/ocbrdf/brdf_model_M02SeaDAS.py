@@ -1,10 +1,4 @@
-import netCDF4
 import numpy as np
-from scipy import ndimage
-from scipy.spatial import ConvexHull
-import os
-from matplotlib import pyplot as plt
-import sys
 import xarray as xr
 
 from .brdf_utils import ADF_OCP, solve_2nd_order_poly

@@ -142,7 +142,7 @@ class CalibrationFile:
         #    self.data[i].printd()
         #print("file:", msg)
 
-        if self.verifyRaw(msg) == False:
+        if self.verifyRaw(msg) is False:
             print("Message not read successfully:\n" + str(msg))
             self.verifyRaw(msg)
             return -1

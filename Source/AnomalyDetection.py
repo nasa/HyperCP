@@ -12,7 +12,6 @@ from Source.Controller import Controller
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
 from Source.HDFRoot import HDFRoot
-from Source.HDFDataset import HDFDataset
 from Source.Utilities import Utilities
 from Source.FieldPhotos import FieldPhotos
 from Source.CalibrationFileReader import CalibrationFileReader
@@ -434,7 +433,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     options=QtWidgets.QFileDialog.DontUseNativeDialog)
         try:
             print(inFilePath[0])
-            if not "hdf" in inFilePath[0] and not "HDF" in inFilePath[0]:
+            if "hdf" not in inFilePath[0] and "HDF" not in inFilePath[0]:
                 msg = "This does not appear to be an HDF file."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
@@ -856,8 +855,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
             params.append(getattr(self,f'{sensor}MaxLight'))
             params.append(getattr(self,f'{sensor}MinMaxBandLight'))
 
-        ConfigFile.settings[f'bL1aqcThreshold'] = getattr(self,f'Threshold')
-        params.append(getattr(self,f'Threshold'))
+        ConfigFile.settings['bL1aqcThreshold'] = getattr(self,'Threshold')
+        params.append(getattr(self,'Threshold'))
         params.append(self.commentLineEdit.text())
 
         self.params[self.fileName] = params
@@ -884,7 +883,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                                 quotechar='|', quoting=csv.QUOTE_MINIMAL)
             paramwriter.writerow(header)
             for key, values in self.params.items():
-                values = [-999 if v==None else v for v in values]
+                values = [-999 if v is None else v for v in values]
                 paramwriter.writerow([key]+values)
 
     def plotButtonPressed(self):

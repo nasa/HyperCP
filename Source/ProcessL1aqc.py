@@ -3,7 +3,6 @@ import math
 import datetime
 import numpy as np
 from pysolar.solar import get_azimuth, get_altitude
-import bisect
 import copy
 
 from Source.HDFDataset import HDFDataset

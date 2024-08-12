@@ -157,9 +157,9 @@ class readSB:
 
             """ Extract header """
             if not end_header \
-                and not '/begin_header' in line.lower() \
-                and not '/end_header' in line.lower() \
-                and not '!' in line:
+                and '/begin_header' not in line.lower() \
+                and '/end_header' not in line.lower() \
+                and '!' not in line:
                 try:
                     [h,v] = line.split('=', 1)
                     h = h.lower()
@@ -172,7 +172,7 @@ class readSB:
                     return
 
             """ Extract fields """
-            if '/fields=' in line.lower() and not '!' in line:
+            if '/fields=' in line.lower() and '!' not in line:
                 try:
                     _vars = line.split('=', 1)[1].lower().split(',')
                     for var in _vars:
@@ -183,11 +183,11 @@ class readSB:
                     return
 
             """ Extract units """
-            if '/units=' in line.lower() and not '!' in line:
+            if '/units=' in line.lower() and '!' not in line:
                 _units = line.split('=', 1)[1].lower().split(',')
 
             """ Extract missing val """
-            if '/missing=' in line.lower() and not '!' in line:
+            if '/missing=' in line.lower() and '!' not in line:
                 try:
                     self.missing = float(line.split('=', 1)[1])
 
@@ -196,13 +196,13 @@ class readSB:
                     return
 
             """ Extract optical depth warning """
-            if '/optical_depth_warning=' in line.lower() and not '!' in line:
+            if '/optical_depth_warning=' in line.lower() and '!' not in line:
                 _opt_shallow = line.split('=', 1)[1]
                 if 'true' in _opt_shallow:
                     self.optically_shallow = True
 
             """ Extract below detection limit """
-            if '/below_detection_limit=' in line.lower() and not '!' in line:
+            if '/below_detection_limit=' in line.lower() and '!' not in line:
                 try:
                     self.bdl = float(line.split('=', 1)[1])
 
@@ -211,7 +211,7 @@ class readSB:
                     return
 
             """ Extract below detection limit """
-            if '/above_detection_limit=' in line.lower() and not '!' in line:
+            if '/above_detection_limit=' in line.lower() and '!' not in line:
                 try:
                     self.adl = float(line.split('=', 1)[1])
 
@@ -220,11 +220,11 @@ class readSB:
                     return
 
             """ Extract PI """
-            if '/investigators=' in line.lower() and not '!' in line:
+            if '/investigators=' in line.lower() and '!' not in line:
                 self.pi = line.split('=', 1)[1].split(',', 1)[0]
 
             """ Extract delimiter """
-            if '/delimiter=' in line.lower() and not '!' in line:
+            if '/delimiter=' in line.lower() and '!' not in line:
                 if 'comma' in line.lower():
                     delim = ',+'
                 elif 'space' in line.lower():
@@ -236,7 +236,7 @@ class readSB:
                     return
 
             """ Extract comments, but not history of metadata changes """
-            if '!' in line and not '!/' in line:
+            if '!' in line and '!/' not in line:
                 self.comments.append(line[1:])
 
             """ Check for required SeaBASS file header elements before parsing data matrix """

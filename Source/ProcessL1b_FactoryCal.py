@@ -233,7 +233,7 @@ class ProcessL1b_FactoryCal:
         for gp in node.groups:
             # Apply calibration factors to each dataset in HDF except the L1AQC datasets carried forward
             # for L2 uncertainty propagation
-            if not 'L1AQC' in gp.id:
+            if 'L1AQC' not in gp.id:
                 msg = f'  Group: {gp.id}'
                 print(msg)
                 Utilities.writeLogFile(msg)

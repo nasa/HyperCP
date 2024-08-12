@@ -309,7 +309,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bInterpIntervalLineEdit.setDisabled(True) # No longer an option; not accomodated in uncertainties
 
         # l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Plots ({os.path.split(MainConfig.settings['outDir'])[-1]}/Plots/L1B_Interp/)", self)
-        l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Interpolation Plots", self)
+        l1bPlotTimeInterpLabel = QtWidgets.QLabel("    Generate Interpolation Plots", self)
         self.l1bPlotTimeInterpCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1bPlotTimeInterp"]) == 1:
             self.l1bPlotTimeInterpCheckBox.setChecked(True)
@@ -590,7 +590,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l2PlotLtCheckBox.setChecked(True)
 
         l2UncertaintyBreakdownPlotsLabel = QtWidgets.QLabel("Uncertainty Breakdown Plots", self)
-        l2UncertaintyBreakdownPlotLabel = QtWidgets.QLabel(" ", self)
+        # l2UncertaintyBreakdownPlotLabel = QtWidgets.QLabel(" ", self)
         self.l2UncertaintyBreakdownPlotCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2UncertaintyBreakdownPlot"]) == 1:
             self.l2UncertaintyBreakdownPlotCheckBox.setChecked(True)

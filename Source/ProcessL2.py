@@ -90,7 +90,7 @@ class ProcessL2:
                 #   This is most likely in blue, non-turbid waters not intended for NIR offset correction.
                 #   Revert to NIR correction of 0 when this happens. No good way to update the L2 attribute
                 #   metadata because it may only be on some ensembles within a file.
-                msg = f'Bad NIR Correction. Revert to No NIR correction.'
+                msg = 'Bad NIR Correction. Revert to No NIR correction.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 rrsNIRCorr = 0
@@ -213,7 +213,7 @@ class ProcessL2:
             #   Revert to NIR correction of 0 when this happens. No good way to update the L2 attribute
             #   metadata because it may only be on some ensembles within a file.
             if rrsNIRCorr < 0:
-                    msg = f'Bad NIR Correction. Revert to No NIR correction.'
+                    msg = 'Bad NIR Correction. Revert to No NIR correction.'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     rrsNIRCorr = 0
@@ -1438,7 +1438,7 @@ class ProcessL2:
             y = index
 
         EnsembleN = len(y) # After taking lowest X%
-        if not 'Ensemble_N' in node.getGroup('REFLECTANCE').datasets:
+        if 'Ensemble_N' not in node.getGroup('REFLECTANCE').datasets:
             node.getGroup('REFLECTANCE').addDataset('Ensemble_N')
             node.getGroup('IRRADIANCE').addDataset('Ensemble_N')
             node.getGroup('RADIANCE').addDataset('Ensemble_N')
@@ -1644,7 +1644,7 @@ class ProcessL2:
                     Utilities.writeLogFile(msg)
                     return False
             if min(wavelength) < 350 or max(wavelength) > 1000:
-                msg = f'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'
+                msg = 'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 wave_old = wavelength.copy()

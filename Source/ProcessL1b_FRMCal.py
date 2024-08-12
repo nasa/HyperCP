@@ -6,7 +6,6 @@ import pandas as pd
 import Py6S
 import pytz
 from datetime import datetime as dt
-import matplotlib.pyplot as plt
 from scipy import interpolate
 
 # internal files
@@ -348,7 +347,7 @@ class ProcessL1b_FRMCal:
         Utilities.writeLogFile(msg)
 
         for gp in node.groups:
-            if not 'L1AQC' in gp.id:
+            if 'L1AQC' not in gp.id:
                 msg = f'  Group: {gp.id}'
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -403,7 +402,7 @@ class ProcessL1b_FRMCal:
             # Defined constants
             nband = len(radcal_wvl)
             nmes  = len(raw_data)
-            n_iter = 5
+            # n_iter = 5
 
             # Non-linearity alpha computation
             cal_int = radcal_cal.pop(0)

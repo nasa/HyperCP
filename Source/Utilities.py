@@ -25,7 +25,7 @@ from Source.SB_support import readSB
 from Source.HDFRoot import HDFRoot
 from Source.ConfigFile import ConfigFile
 from Source.MainConfig import MainConfig
-from Source.Uncertainty_Visualiser import Show_Uncertainties  # class for uncertainty visualisation plots
+# from Source.Uncertainty_Visualiser import Show_Uncertainties  # class for uncertainty visualisation plots
 
 # This gets reset later in Controller.processSingleLevel to reflect the file being processed.
 if "LOGFILE" not in os.environ:
@@ -473,12 +473,12 @@ class Utilities:
 
                 # Provision for L1AQC carry-over groups. These do not have Datetag or Timetag2
                 #   dataset, but still have DATETAG and TIMETAG2 datasets
-                if not '_L1AQC' in gp.id:
+                if '_L1AQC' not in gp.id:
                     for ds in gp.datasets:
                         # Make sure all datasets have been transcribed to columns
                         gp.datasets[ds].datasetToColumns()
 
-                        if not 'Datetime' in gp.datasets[ds].columns:
+                        if 'Datetime' not in gp.datasets[ds].columns:
                             if 'Timetag2' in gp.datasets[ds].columns:  # changed to ensure the new (irr)radiance groups don't throw errors
                                 timeData = gp.datasets[ds].columns["Timetag2"]
                                 dateTag = gp.datasets[ds].columns["Datetag"]
