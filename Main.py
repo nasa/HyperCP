@@ -693,12 +693,12 @@ class Command:
         MainConfig.settings["metFile"] = self.ancFile
         MainConfig.settings["outDir"] = self.outputDirectory
 
-        if isinstance(inputFile,list):
+        if isinstance(iFile,list):
             # Process the entire directory of the first file in the list
-            MainConfig.settings["inDir"] = os.path.dirname(inputFile[0])
+            MainConfig.settings["inDir"] = os.path.dirname(iFile[0])
         else:
             # Single file
-            MainConfig.settings["inDir"] = os.path.dirname(inputFile)
+            MainConfig.settings["inDir"] = os.path.dirname(iFile)
         # Now make it a list as it is expected to be
         # inputFile = [inputFile]
 
@@ -727,16 +727,16 @@ class Command:
         if processMultiLevel:
             if InstrumentType.lower() == "trios" and to_level == "L1A":
                 Controller.processFilesMultiLevel(
-                    self.outputDirectory, inputFile, calibrationMap, flag_Trios
+                    self.outputDirectory, iFile, calibrationMap, flag_Trios
                 )
             else:
                 Controller.processFilesMultiLevel(
-                    self.outputDirectory, [inputFile], calibrationMap, flag_Trios
+                    self.outputDirectory, [iFile], calibrationMap, flag_Trios
                 )
         else:
             # processSingleLevel is only prepared for a singleton file at a time
             Controller.processSingleLevel(
-                self.outputDirectory, inputFile, calibrationMap, to_level, flag_Trios
+                self.outputDirectory, iFile, calibrationMap, to_level, flag_Trios
             )
 
 
