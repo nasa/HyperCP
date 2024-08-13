@@ -521,7 +521,7 @@ class Window(QtWidgets.QWidget):
             return
 
         Controller.processFilesSingleLevel(
-            self.outputDirectory, fileNames, calibrationMap, level, flag_Trios
+            self.outputDirectory, fileNames, calibrationMap, lvl, flag_Trios
         )
         t1Single = time.time()
         print(f"Time elapsed: {str(round((t1Single-t0Single)/60))} minutes")
