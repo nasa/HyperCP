@@ -1,9 +1,9 @@
-
+''' Process L1A to L1AQC '''
 import math
 import datetime
+import copy
 import numpy as np
 from pysolar.solar import get_azimuth, get_altitude
-import copy
 
 from Source.HDFDataset import HDFDataset
 from Source.ProcessL1aqc_deglitch import ProcessL1aqc_deglitch
@@ -11,7 +11,7 @@ from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
 
 class ProcessL1aqc:
-
+    ''' Process L1A to L1AQC '''
 
     @staticmethod
     def filterData(group, badTimes):

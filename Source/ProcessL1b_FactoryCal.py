@@ -1,13 +1,15 @@
-
+''' Process L1AQC to L1B for SeaBird in Factory or Class regime '''
+import re
 import datetime as dt
 import numpy as np
-import re
+import pandas as pd
+
 
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.Utilities import Utilities
 
 class ProcessL1b_FactoryCal:
-
+    '''Process L1AQC to L1B for SeaBird in Factory or Class regime '''
     # Used to calibrate raw data (convert from L1a to L1b)
     # Reference: "SAT-DN-00134_Instrument File Format.pdf"
     @staticmethod
@@ -247,13 +249,13 @@ class ProcessL1b_FactoryCal:
 
                         ProcessL1b_FactoryCal.processGroup(gp, cf)
 
-                        if esUnits == None:
+                        if esUnits is None:
                             esUnits = cf.getUnits("ES")
-                        if liUnits == None:
+                        if liUnits is None:
                             liUnits = cf.getUnits("LI")
-                        if ltUnits == None:
+                        if ltUnits is None:
                             ltUnits = cf.getUnits("LT")
-                        if pyrUnits == None:
+                        if pyrUnits is None:
                             pyrUnits = cf.getUnits("T") #Pyrometer
 
         node.attributes["LI_UNITS"] = liUnits
@@ -263,9 +265,48 @@ class ProcessL1b_FactoryCal:
         node.attributes["SATPYR_UNITS"] = pyrUnits
 
         # Calculate 6S model
-        sensortype = "ES"          
+        sensortype = "ES"
         # Irradiance direct and diffuse ratio
         res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
+
+        # Store Py6S results in new group
+        grp = node.getGroup(sensortype)
+        solar_zenith = res_py6s['solar_zenith']
+        # ProcessL1b_FRMCal.get_direct_irradiance_ratio uses Es bands to run 6S and then works around bands that
+        #  don't have values from Tartu for full FRM. Here, use all the Es bands.
+        direct_ratio = res_py6s['direct_ratio']
+        diffuse_ratio = res_py6s['diffuse_ratio']
+        # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
+        # model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_raw_data]/10
+        model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])/10
+
+        py6s_grp = node.addGroup("PY6S_MODEL")
+        for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
+            # copy datetime dataset for interp process
+            ds = py6s_grp.addDataset(dsname)
+            ds.data = grp.getDataset(dsname).data
+
+        ds = py6s_grp.addDataset("py6s_irradiance")
+
+        irr_grp = node.getGroup('ES_LIGHT_L1AQC')
+        str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
+        ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
+        rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
+        ds.data = rec_arr
+
+        ds = py6s_grp.addDataset("direct_ratio")
+        ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
+        rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
+        ds.data = rec_arr
+
+        ds = py6s_grp.addDataset("diffuse_ratio")
+        ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
+        rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
+        ds.data = rec_arr
+
+        ds = py6s_grp.addDataset("solar_zenith")
+        ds.columns["solar_zenith"] = solar_zenith
+        ds.columnsToDataset()
 
         return node
 
