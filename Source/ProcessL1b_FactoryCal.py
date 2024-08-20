@@ -4,7 +4,6 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
-
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.Utilities import Utilities
 
@@ -15,30 +14,30 @@ class ProcessL1b_FactoryCal:
     @staticmethod
     def processDataset(ds, cd, inttime=None, immersed=False):
         #print("FitType:", cd.fitType)
-        if cd.fitType == "OPTIC1":
-            ProcessL1b_FactoryCal.processOPTIC1(ds, cd, immersed)
-        elif cd.fitType == "OPTIC2":
+        if cd.fitType == "OPTIC2":
             ProcessL1b_FactoryCal.processOPTIC2(ds, cd, immersed)
+        # elif cd.fitType == "OPTIC1":
+        #     ProcessL1b_FactoryCal.processOPTIC1(ds, cd, immersed)
         elif cd.fitType == "OPTIC3":
             ProcessL1b_FactoryCal.processOPTIC3(ds, cd, immersed, inttime)
         elif cd.fitType == "OPTIC4":
             ProcessL1b_FactoryCal.processOPTIC4(ds, cd, immersed)
-        elif cd.fitType == "THERM1":
-            ProcessL1b_FactoryCal.processTHERM1(ds, cd)
+        # elif cd.fitType == "THERM1":
+        #     ProcessL1b_FactoryCal.processTHERM1(ds, cd)
         elif cd.fitType == "POW10":
             ProcessL1b_FactoryCal.processPOW10(ds, cd, immersed)
         elif cd.fitType == "POLYU":
             ProcessL1b_FactoryCal.processPOLYU(ds, cd)
         elif cd.fitType == "POLYF":
             ProcessL1b_FactoryCal.processPOLYF(ds, cd)
-        elif cd.fitType == "DDMM":
-            ProcessL1b_FactoryCal.processDDMM(ds, cd)
-        elif cd.fitType == "HHMMSS":
-            ProcessL1b_FactoryCal.processHHMMSS(ds, cd)
-        elif cd.fitType == "DDMMYY":
-            ProcessL1b_FactoryCal.processDDMMYY(ds, cd)
-        elif cd.fitType == "TIME2":
-            ProcessL1b_FactoryCal.processTIME2(ds, cd)
+        # elif cd.fitType == "DDMM":
+        #     ProcessL1b_FactoryCal.processDDMM(ds, cd)
+        # elif cd.fitType == "HHMMSS":
+        #     ProcessL1b_FactoryCal.processHHMMSS(ds, cd)
+        # elif cd.fitType == "DDMMYY":
+        #     ProcessL1b_FactoryCal.processDDMMYY(ds, cd)
+        # elif cd.fitType == "TIME2":
+        #     ProcessL1b_FactoryCal.processTIME2(ds, cd)
         elif cd.fitType == "COUNT":
             pass
         elif cd.fitType == "NONE":
@@ -48,10 +47,10 @@ class ProcessL1b_FactoryCal:
             print(msg)
             Utilities.writeLogFile(msg)
 
-    # Process OPTIC1 - not implemented
-    @staticmethod
-    def processOPTIC1(ds, cd, immersed):
-        return
+    # # Process OPTIC1 - not implemented
+    # @staticmethod
+    # def processOPTIC1(ds, cd, immersed):
+    #     return
 
     @staticmethod
     def processOPTIC2(ds, cd, immersed):
@@ -93,12 +92,12 @@ class ProcessL1b_FactoryCal:
         for x in range(ds.data.shape[0]):
             ds.data[k][x] = im * a1 * (ds.data[k][x] - a0) * (cint/aint)
 
-    # Process THERM1 - not implemented
-    #   This is for optical thermal sensors like pyrometers, I believe.
-    #   This is not for thermal responsivity of OPTICS3 sensors
-    @staticmethod
-    def processTHERM1(ds, cd):
-        return
+    # # Process THERM1 - not implemented
+    # #   This is for optical thermal sensors like pyrometers, I believe.
+    # #   This is not for thermal responsivity of OPTICS3 sensors
+    # @staticmethod
+    # def processTHERM1(ds, cd):
+    #     return
 
     @staticmethod
     def processPOW10(ds, cd, immersed):
@@ -114,8 +113,8 @@ class ProcessL1b_FactoryCal:
         k = cd.id
         for x in range(ds.data.shape[0]):
             num = 0
-            for i in range(0, len(cd.coefficients)):
-                a = float(cd.coefficients[i])
+            for i, coeff in enumerate(cd.coefficients):
+                a = float(coeff)
                 num += a * pow(ds.data[k][x],i)
             ds.data[k][x] = num
 
@@ -129,32 +128,32 @@ class ProcessL1b_FactoryCal:
                 num *= (ds.data[k][x] - float(a))
             ds.data[k][x] = num
 
-    @staticmethod
-    def processDDMM(ds, cd):
-        ''' Process DDMM - not implemented '''
-        return
-        #s = "{:.2f}".format(x)
-        #x = s[:1] + " " + s[1:3] + "\' " + s[3:5] + "\""
+    # @staticmethod
+    # def processDDMM(ds, cd):
+    #     ''' Process DDMM - not implemented '''
+    #     return
+    #     #s = "{:.2f}".format(x)
+    #     #x = s[:1] + " " + s[1:3] + "\' " + s[3:5] + "\""
 
-    @staticmethod
-    def processHHMMSS(ds, cd):
-        ''' Process HHMMSS - not implemented '''
-        return
-        #s = "{:.2f}".format(x)
-        #x = s[:2] + ":" + s[2:4] + ":" + s[4:6] + "." + s[6:8]
+    # @staticmethod
+    # def processHHMMSS(ds, cd):
+    #     ''' Process HHMMSS - not implemented '''
+    #     return
+    #     #s = "{:.2f}".format(x)
+    #     #x = s[:2] + ":" + s[2:4] + ":" + s[4:6] + "." + s[6:8]
 
-    @staticmethod
-    def processDDMMYY(ds, cd):
-        ''' Process DDMMYY - not implemented '''
-        return
-        #s = str(x)
-        #x = s[:2] + "/" + s[2:4] + "/" + s[4:]
+    # @staticmethod
+    # def processDDMMYY(ds, cd):
+    #     ''' Process DDMMYY - not implemented '''
+    #     return
+    #     #s = str(x)
+    #     #x = s[:2] + "/" + s[2:4] + "/" + s[4:]
 
-    @staticmethod
-    def processTIME2(ds, cd):
-        ''' Process TIME2 - not implemented '''
-        return
-        #x = datetime.fromtimestamp(x).strftime("%y-%m-%d %H:%M:%S")
+    # @staticmethod
+    # def processTIME2(ds, cd):
+    #     ''' Process TIME2 - not implemented '''
+    #     return
+    #     #x = datetime.fromtimestamp(x).strftime("%y-%m-%d %H:%M:%S")
 
     # Used to calibrate raw data (from L1a to L1b)
     @staticmethod
@@ -198,9 +197,9 @@ class ProcessL1b_FactoryCal:
                     if c == 'OPTIC3':
                         indx[k].append(i)
 
-        # todo: assess if this is stricly necessary, all indexes the same in examples used for testing
-        start = max([ind[0] for ind in indx.values()])  # -1 to cover the first pixel which has no coef but is valid
-        end = min([ind[-1] for ind in indx.values()])
+        # TODO: assess if this is stricly necessary, all indexes the same in examples used for testing
+        start = max(ind[0] for ind in indx.values())  # -1 to cover the first pixel which has no coef but is valid
+        end = min(ind[-1] for ind in indx.values())
         if start < 0: #  cannot be less than 0
             start = 0
         return start, end
@@ -322,7 +321,7 @@ class ProcessL1b_FactoryCal:
             if sensor+"_LIGHT" in gp.id :
                 try:
                     cf = calibrationMap[gp.attributes["CalFileName"]]
-                except:
+                except Exception:
                     # This can happen if you try to process L2 with a different calMap from L1B data
                     msg = f'ProcessL1b_FactoryCal.extract_calibration_coeff: Mismatched Cal File: {gp.attributes["CalFileName"]}'
                     print(msg)

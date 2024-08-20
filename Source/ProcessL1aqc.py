@@ -63,7 +63,7 @@ class ProcessL1aqc:
         Utilities.writeLogFile(msg)
 
         return finalCount/originalLength
-    
+
     @staticmethod
     def filterData_ADJUSTED(group, badTimes):
         ''' Delete additional flagged records for Sea-Bird Darks with adjusted 
@@ -285,11 +285,11 @@ class ProcessL1aqc:
                 return None
 
             # Reinitialize with new, smaller dataset
-            ''' Essential ancillary data for non-SolarTracker file includes
-                lat, lon, datetime, ship heading and offset between bow and
-                SAS instrument from which SAS azimuth is calculated.
-                Alternatively, can use the azimuth of the SAS from fluxgate
-                compass (e.g., SATTHS) as a last resort'''
+            # NOTE: Essential ancillary data for non-SolarTracker file includes
+            #    lat, lon, datetime, ship heading and offset between bow and
+            #    SAS instrument from which SAS azimuth is calculated.
+            #    Alternatively, can use the azimuth of the SAS from fluxgate
+            #    compass (e.g., SATTHS) as a last resort
 
             timeStamp = ancData.columns["DATETIME"][0]
             ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
@@ -434,11 +434,12 @@ class ProcessL1aqc:
                         Utilities.writeLogFile(msg)
                         badTimes.append(startstop)
                         start = -1
+                endex = index
             msg = f'Percentage of data failed on GPS Status: {round(100*i/len(timeStamp))} %'
             print(msg)
             Utilities.writeLogFile(msg)
 
-            if start != -1 and stop == index: # Records from a mid-point to the end are bad
+            if start != -1 and stop == endex: # Records from a mid-point to the end are bad
                 startstop = [timeStamp[start],timeStamp[stop]]
                 msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
                 # print(msg)
@@ -448,7 +449,7 @@ class ProcessL1aqc:
                 else:
                     badTimes.append(startstop)
 
-            if start==0 and stop==index: # All records are bad
+            if start==0 and stop==endex: # All records are bad
                 return None
 
 
@@ -507,8 +508,8 @@ class ProcessL1aqc:
             i = 0
             start = -1
             stop =[]
-            for index in range(len(pitch)):
-                if abs(pitch[index]) > pitchMax or abs(roll[index]) > rollMax:
+            for index, pitchi in enumerate(pitch):
+                if abs(pitchi) > pitchMax or abs(roll[index]) > rollMax:
                     i += 1
                     if start == -1:
                         # print('Pitch or roll angle outside bounds. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
@@ -568,17 +569,17 @@ class ProcessL1aqc:
 
                     kickout = 0
                     i = 0
-                    for index in range(len(rotator)):
+                    for index, rotatori in enumerate(rotator):
                         if index == 0:
-                            lastAngle = rotator[index]
+                            lastAngle = rotatori
                         else:
-                            if rotator[index] > (lastAngle + 0.05) or rotator[index] < (lastAngle - 0.05):
+                            if rotatori > (lastAngle + 0.05) or rotatori < (lastAngle - 0.05):
                                 i += 1
                                 # Detect angle changed
                                 start = timeStamp[index]
                                 # print('Rotator delay kick-out. ' + str(timeInt) )
                                 startIndex = index
-                                lastAngle = rotator[index]
+                                lastAngle = rotatori
                                 kickout = 1
 
                             else:
@@ -639,16 +640,16 @@ class ProcessL1aqc:
 
                     start = -1
                     stop = []
-                    for index in range(len(rotator)):
-                        if rotator[index] + home > absRotatorMax or rotator[index] + home < absRotatorMin or math.isnan(rotator[index]):
+                    for index, rotatori in enumerate(rotator):
+                        if rotatori + home > absRotatorMax or rotatori + home < absRotatorMin or math.isnan(rotatori):
                             i += 1
                             if start == -1:
-                                # print('Absolute rotator angle outside bounds. ' + str(round(rotator[index] + home)))
+                                # print('Absolute rotator angle outside bounds. ' + str(round(rotatori + home)))
                                 start = index
                             stop = index
                         else:
                             if start != -1:
-                                # print('Absolute rotator angle passed: ' + str(round(rotator[index] + home)))
+                                # print('Absolute rotator angle passed: ' + str(round(rotatori + home)))
                                 startstop = [timeStamp[start],timeStamp[stop]]
                                 msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]))
                                 # print(msg)
@@ -698,14 +699,14 @@ class ProcessL1aqc:
                     gp.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])
                     # gp.datasets["SOLAR_AZ"].data = sunAzimuth
                     # sunAzimuth = sunAzimuth["SUN"]
-                    del(gp.datasets["AZIMUTH"])
+                    del gp.datasets["AZIMUTH"]
                     sunZenith = 90 - gp.getDataset("ELEVATION").data["SUN"]
                     # sunZenith["None"] = 90 - sunZenith["SUN"]
                     gp.addDataset("SZA")
                     gp.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
                     # gp.datasets["SZA"].data = sunZenith
                     # sunZenith = sunZenith["SUN"] # strips off dtype name
-                    del(gp.datasets["ELEVATION"])
+                    del gp.datasets["ELEVATION"]
                     if gp.id == "SOLARTRACKER":
                         sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
                     elif gp.id == "SOLARTRACKER_pySAS":
@@ -841,8 +842,8 @@ class ProcessL1aqc:
             # The length of relAz (and therefore the value of i) depends on whether ancillary
             #  data are used or SolarTracker data
             # relAz and timeStamp are 1:1, but could be TRACKER or ANCILLARY
-            for index in range(len(relAz)):
-                relAzimuthAngle = relAz[index]
+            for index, relAzi in enumerate(relAz):
+                relAzimuthAngle = relAzi
 
                 if abs(relAzimuthAngle) > relAzimuthMax or abs(relAzimuthAngle) < relAzimuthMin or math.isnan(relAzimuthAngle):
                     i += 1
@@ -876,7 +877,7 @@ class ProcessL1aqc:
                     badTimes.append(startstop)
 
             if start==0 and stop==index: # All records are bad
-                msg = ("All records out of bounds. Aborting.")
+                msg = "All records out of bounds. Aborting."
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None

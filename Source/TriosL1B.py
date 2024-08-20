@@ -300,7 +300,7 @@ class TriosL1B:
                 newGroup.copy(gp)
                 for ds in newGroup.datasets:
                     if ds == 'DATETIME':
-                        del(gp.datasets[ds])
+                        del gp.datasets[ds]
                     elif ds.startswith('BACK_') or ds.startswith('CAL_'):
                         continue
                     else:
@@ -315,7 +315,6 @@ class TriosL1B:
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
             print("Factory TriOS RAMSES - no uncertainty computation")
-
 
         # Add Class-based characterization files + RADCAL files
         elif ConfigFile.settings['bL1bCal'] == 2:
