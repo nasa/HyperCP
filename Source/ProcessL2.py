@@ -2300,7 +2300,7 @@ class ProcessL2:
         node.addGroup("RADIANCE")
         # node.addGroup("PY6S_MODEL")
         node.copyAttributes(root)
-        node.attributes["PROCESSING_LEVEL"] = "2"
+        node.attributes["PROCESSING_LEVEL"] = "2"        
         # Remaining attributes managed below...
 
         # For completeness, flip datasets into columns in all groups
@@ -2414,5 +2414,9 @@ class ProcessL2:
                 if "Datetime" in ds.columns:
                     ds.columns.pop("Datetime")
                 ds.columnsToDataset()
+
+        now = datetime.datetime.now()
+        timestr = now.strftime("%d-%b-%Y %H:%M:%S")
+        node.attributes["FILE_CREATION_TIME"] = timestr
 
         return node

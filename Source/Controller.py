@@ -6,22 +6,21 @@ import numpy as np
 
 from Source import PATH_TO_CONFIG
 from Source.HDFRoot import HDFRoot
-from Source.SeaBASSWriter import SeaBASSWriter
-from Source.CalibrationFileReader import CalibrationFileReader
-from Source.CalibrationFile import CalibrationFile
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
-from Source.Utilities import Utilities
-from Source.AncillaryReader import AncillaryReader
-
 from Source.ProcessL1a import ProcessL1a
+from Source.TriosL1A import TriosL1A
+from Source.AncillaryReader import AncillaryReader
 from Source.ProcessL1aqc import ProcessL1aqc
+from Source.CalibrationFileReader import CalibrationFileReader
+from Source.CalibrationFile import CalibrationFile
 from Source.ProcessL1b import ProcessL1b
+from Source.TriosL1B import TriosL1B
 from Source.ProcessL1bqc import ProcessL1bqc
 from Source.ProcessL2 import ProcessL2
-from Source.TriosL1A import TriosL1A
-from Source.TriosL1B import TriosL1B
+from Source.SeaBASSWriter import SeaBASSWriter
 from Source.PDFreport import PDF
+from Source.Utilities import Utilities
 
 
 class Controller:
@@ -421,7 +420,7 @@ class Controller:
             return None
 
         root.attributes['In_Filepath'] = inFilePath
-        root = ProcessL1bqc.processL1bqc(root)
+        root = ProcessL1bqc.processL1bqc(root)        
 
         # Write output file
         if root is not None:
@@ -643,6 +642,8 @@ class Controller:
                 # root variable is replaced by L2 node unless station extraction, in which case
                 #   it is retained and node is returned from ProcessL2
                 root = HDFRoot.readHDF5(inFilePath)
+                root.attributes['L1BQC_FILE_NAME'] = inFileName
+                del root.attributes["In_Filepath"]
             except Exception:
                 msg = "Unable to open file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
@@ -702,6 +703,7 @@ class Controller:
                         print(msg)
                         Utilities.writeLogFile(msg)
 
+                        # Cannot overwrite root here, in case there is more than one station in the file.
                         Controller.processL2(root, outFilePathStation,station)
                         Utilities.checkOutputFiles(outFilePathStation)
 
@@ -719,8 +721,16 @@ class Controller:
                                 if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
                                     msg = f'Output SeaBASS for HDF: \n{outFilePathStation}'
                                     print(msg)
-                                    Utilities.writeLogFile(msg)
-                                    SeaBASSWriter.outputTXT_Type2(outFilePathStation)
+                                    Utilities.writeLogFile(msg)                                    
+                                    sbFileName = SeaBASSWriter.outputTXT_Type2(outFilePathStation)
+
+                                    # If this is being output to SeaBASS later, add a root attribute 
+                                    # with the SeaBASS filename base (i.e., not rrs or es)
+                                    baseName = sbFileName[0:sbFileName.find('L2')-1]
+                                    # Need to reopen the station L2 to update the attribute
+                                    stationRoot = HDFRoot.readHDF5(outFilePathStation)
+                                    stationRoot.attributes['SeaBASS_File_Name_Base'] = baseName
+                                    stationRoot.writeHDF5(outFilePathStation)
                                 # return True
 
                         # Write L2 report for each station, regardless of pass/fail
@@ -732,7 +742,7 @@ class Controller:
                     Utilities.writeLogFile(msg)
 
             else:
-                # Even where not extracting stations, processL2 returns node, not root, but to comply with expectations
+                # Even where not extracting stations, processL2 returns PL2 node, not root, but to comply with expectations
                 # below based on the other levels and PDF reporting, overwrite root with node
                 root = Controller.processL2(root,outFilePath)
                 Utilities.checkOutputFiles(outFilePath)
@@ -752,7 +762,13 @@ class Controller:
                             msg = f'Output SeaBASS for HDF: \n{outFilePath}'
                             print(msg)
                             Utilities.writeLogFile(msg)
-                            SeaBASSWriter.outputTXT_Type2(outFilePath)
+                            sbFileName = SeaBASSWriter.outputTXT_Type2(outFilePath)
+
+                            # If this is being output to SeaBASS later, add a root attribute 
+                            # with the SeaBASS filename base (i.e., not rrs or es)
+                            baseName = sbFileName[0:sbFileName.find('L2')-1]
+                            root.attributes['SeaBASS_File_Name_Base'] = baseName
+                            root.writeHDF5(outFilePath)
 
         # If the process failed at any level, write a report and return
         if root is None and ConfigFile.settings["bL2Stations"] == 0:
