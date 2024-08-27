@@ -1,7 +1,6 @@
-
+''' Process L1B to L1BQC '''
 import numpy as np
 import scipy as sp
-import datetime as datetime
 
 from Source.MainConfig import MainConfig
 from Source.Utilities import Utilities
@@ -120,8 +119,8 @@ class ProcessL1bqc:
 
         badTimes = np.unique(badTimes)
         # Duplicate each element to a list of two elements in a list
-        ''' BUG: This is not optimal as it creates one badTimes record for each bad
-            timestamp, rather than span of timestamps from badtimes[i][0] to badtimes[i][1]'''
+        # BUG: This is not optimal as it creates one badTimes record for each bad
+        #    timestamp, rather than span of timestamps from badtimes[i][0] to badtimes[i][1]
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
         msg = f'{len(np.unique(badTimes))/len(ltDatetime)*100:.1f}% of spectra flagged'
         print(msg)
@@ -191,7 +190,6 @@ class ProcessL1bqc:
             if li750[indx]/es750[indx] >= cloudFLAG:
                 badTimes.append(dateTime)
                 flags2[indx] = True
-                
 
             # Flag for significant es
             # Wernand 2002
@@ -208,7 +206,7 @@ class ProcessL1bqc:
 
             # Flag spectra affected by rainfall and high humidity
             # Wernand 2002 (940/370), Garaba et al. 2012 also uses Es(940/370), presumably 720 was developed by Wang...???
-            ''' Follow up on the source of this flag'''
+            # NOTE: Follow up on the source of this flag
             if es720[indx]/es370[indx] < humidityFlag:
                 badTimes.append(dateTime)
                 flags5[indx] = True
@@ -218,7 +216,7 @@ class ProcessL1bqc:
         msg = f'{len(np.unique(badTimes))/len(esTime)*100:.1f}% of spectra flagged (not filtered)'
         print(msg)
         Utilities.writeLogFile(msg)
-        
+
         # Restore timestamps to columns (since it's not going to filterData, where it otherwise happens)
         esData.datasetToColumns()
         liData.datasetToColumns()
@@ -719,6 +717,7 @@ class ProcessL1bqc:
         gp.attributes["HUMIDITY_UNITS"] = "percent"
         gp.attributes["LATITUDE_UNITS"] = "dec. deg. N"
         gp.attributes["LONGITUDE_UNITS"] = "dec. deg. E"
+        gp.attributes["MET_FLAGS"] = "1: 6S Cloud, 2: Ruddick Cloud, 3: Es, 4: Dark,s 5: Rain"
         gp.attributes["PITCH_UNITS"] = "degrees"
         gp.attributes["POINTING_UNITS"] = "degrees"
         gp.attributes["REL_AZ_UNITS"] = "degrees"

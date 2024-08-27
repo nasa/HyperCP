@@ -2035,7 +2035,6 @@ class ProcessL2:
                 rootCopy.getGroup('PY6S_MODEL').copy(root.getGroup('PY6S_MODEL'))
                 break
 
-
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("ES_DARK_L1AQC")
             rootCopy.addGroup("ES_LIGHT_L1AQC")
@@ -2112,17 +2111,17 @@ class ProcessL2:
             for index, stn in enumerate(stations):
                 # print(f'index: {index}, station: {station}, datetime: {dateTime[index]}')
                 # if np.isnan(station) and start == False:
-                if (stn != station) and (start == False):
+                if (stn != station) and (start is False):
                     start = dateTime[index]
                 # if not np.isnan(station) and not (start == False) and (stop == False):
-                if not (stn!=station) and not (start == False) and (stop == False):
+                if not (stn!=station) and (start is not False) and (stop is False):
                     stop = dateTime[index-1]
                     badTimes.append([start, stop])
                     start = False
                     stop = False
                 # End of file, no active station
                 # if np.isnan(station) and not (start == False) and (index == len(stations)-1):
-                if (stn != station) and not (start == False) and (index == len(stations)-1):
+                if (stn != station) and not (start is False) and (index == len(stations)-1):
                     stop = dateTime[index]
                     badTimes.append([start, stop])
 

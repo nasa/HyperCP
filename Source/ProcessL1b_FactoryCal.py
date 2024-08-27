@@ -264,6 +264,8 @@ class ProcessL1b_FactoryCal:
         node.attributes["SATPYR_UNITS"] = pyrUnits
 
         # Calculate 6S model
+        print('Running Py6S')
+
         sensortype = "ES"
         # Irradiance direct and diffuse ratio
         res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
