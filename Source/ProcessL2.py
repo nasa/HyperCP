@@ -1137,70 +1137,77 @@ class ProcessL2:
 
 
     @staticmethod
-    def sliceAveAnc(node, start, end, y, ancGroup):
-        ''' Take the slice AND the mean averages of ancillary data with X% '''
-        if node.getGroup('ANCILLARY'):
-            newAncGroup = node.getGroup('ANCILLARY')
-        else:
-            newAncGroup = node.addGroup('ANCILLARY')
+    def sliceAveOther(node, start, end, y, ancGroup, py6SGroup):
+        ''' Take the slice AND the mean averages of ancillary and 6S data with X% '''        
 
-        for ds in ancGroup.datasets:
-            if newAncGroup.getDataset(ds):
-                newDS = newAncGroup.getDataset(ds)
+        def _sliceAveOther(node, start, end, y, group):
+            if node.getGroup(group.id):
+                newGroup = node.getGroup(group.id)
             else:
-                newDS = newAncGroup.addDataset(ds)
-            DS = ancGroup.getDataset(ds)
-            DS.datasetToColumns()
-            dsSlice = ProcessL2.columnToSlice(DS.columns,start, end)
-            dsXSlice = None
+                newGroup = node.addGroup(group.id)
 
-            for subset in dsSlice: # ancillary datasets contain columns (including date, time, and flags)
-                if subset == 'Datetime':
-                    timeStamp = dsSlice[subset]
-                    # Stores the mean datetime by converting to (and back from) epoch second
-                    if len(timeStamp) > 0:
-                        epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
-                        tsSeconds = []
-                        for dt in timeStamp:
-                            tsSeconds.append((dt-epoch).total_seconds())
-                        meanSec = np.mean(tsSeconds)
-                        dateTime = datetime.datetime.utcfromtimestamp(meanSec).replace(tzinfo=datetime.timezone.utc)
-                        date = Utilities.datetime2DateTag(dateTime)
-                        sliceTime = Utilities.datetime2TimeTag2(dateTime)
-                if subset not in ('Datetime', 'Datetag', 'Timetag2'):
-                    v = [dsSlice[subset][i] for i in y] # y is an array of indexes for the lowest X%
+            for dsID in group.datasets:
+                if newGroup.getDataset(dsID):
+                    newDS = newGroup.getDataset(dsID)
+                else:
+                    newDS = newGroup.addDataset(dsID)
+                ds = group.getDataset(dsID)
+                ds.datasetToColumns()
+                dsSlice = ProcessL2.columnToSlice(ds.columns,start, end)
+                dsXSlice = None
 
-                    if dsXSlice is None:
-                        dsXSlice = collections.OrderedDict()
-                        dsXSlice['Datetag'] = [date]
-                        dsXSlice['Timetag2'] = [sliceTime]
-                        dsXSlice['Datetime'] = [dateTime]
+                for subDScol in dsSlice: # each dataset contains columns (including date, time, data, and possibly flags)
+                    if subDScol == 'Datetime':
+                        timeStamp = dsSlice[subDScol]
+                        # Stores the mean datetime by converting to (and back from) epoch second
+                        if len(timeStamp) > 0:
+                            epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
+                            tsSeconds = []
+                            for dt in timeStamp:
+                                tsSeconds.append((dt-epoch).total_seconds())
+                            meanSec = np.mean(tsSeconds)
+                            dateTime = datetime.datetime.utcfromtimestamp(meanSec).replace(tzinfo=datetime.timezone.utc)
+                            date = Utilities.datetime2DateTag(dateTime)
+                            sliceTime = Utilities.datetime2TimeTag2(dateTime)
+                    if subDScol not in ('Datetime', 'Datetag', 'Timetag2'):
+                        v = [dsSlice[subDScol][i] for i in y] # y is an array of indexes for the lowest X%
 
-                    if subset not in dsXSlice:
-                        dsXSlice[subset] = []
-                    if (subset.endswith('FLAG')) or (subset.endswith('STATION')):
-                        # Find the most frequest element
-                        dsXSlice[subset].append(Utilities.mostFrequent(v))
-                    else:
-                        # Otherwise take a nanmean of the slice
-                        with warnings.catch_warnings():
-                            warnings.simplefilter("ignore", category=RuntimeWarning)
-                            dsXSlice[subset].append(np.nanmean(v)) # Warns of empty when empty...
+                        if dsXSlice is None:
+                            dsXSlice = collections.OrderedDict()
+                            dsXSlice['Datetag'] = [date]
+                            dsXSlice['Timetag2'] = [sliceTime]
+                            dsXSlice['Datetime'] = [dateTime]
 
-            if subset not in newDS.columns:
-                newDS.columns = dsXSlice
-            else:
-                for item in newDS.columns:
-                    newDS.columns[item] = np.append(newDS.columns[item], dsXSlice[item])
+                        if subDScol not in dsXSlice:
+                            dsXSlice[subDScol] = []
+                        if (subDScol.endswith('FLAG')) or (subDScol.endswith('STATION')):
+                            # Find the most frequest element
+                            dsXSlice[subDScol].append(Utilities.mostFrequent(v))
+                        else:
+                            # Otherwise take a nanmean of the slice
+                            with warnings.catch_warnings():
+                                warnings.simplefilter("ignore", category=RuntimeWarning)
+                                dsXSlice[subDScol].append(np.nanmean(v)) # Warns of empty when empty...
 
-            newDS.columns.move_to_end('Timetag2', last=False)
-            newDS.columns.move_to_end('Datetag', last=False)
-            newDS.columns.move_to_end('Datetime', last=False)
-            newDS.columnsToDataset()
+                # Just test a sample column to see if it needs adding or appending
+                if subDScol not in newDS.columns:
+                    newDS.columns = dsXSlice
+                else:
+                    for item in newDS.columns:
+                        newDS.columns[item] = np.append(newDS.columns[item], dsXSlice[item])
 
+                newDS.columns.move_to_end('Timetag2', last=False)
+                newDS.columns.move_to_end('Datetag', last=False)
+                newDS.columns.move_to_end('Datetime', last=False)
+                newDS.columnsToDataset()
+
+        _sliceAveOther(node, start, end, y, ancGroup)
+        _sliceAveOther(node, start, end, y, py6SGroup)
 
     @staticmethod
-    def ensemblesReflectance(node, sasGroup, refGroup, ancGroup, uncGroup, esRawGroup, liRawGroup, ltRawGroup, start, end):
+    def ensemblesReflectance(node, sasGroup, refGroup, ancGroup, uncGroup,
+                             esRawGroup, liRawGroup, ltRawGroup,
+                             py6SGroup, start, end):
         '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for
         meteorological quality flags. Perform glint corrections. Calculate the Rrs. Correct for NIR
         residuals.'''
@@ -1230,6 +1237,23 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)
             return False
+        #Py6S
+        if py6SGroup is not None:
+            diffuseData = py6SGroup.getDataset("diffuse_ratio")
+            directData = py6SGroup.getDataset("direct_ratio")
+            py6SesData = py6SGroup.getDataset("py6s_irradiance")
+            # no need to retain SZA
+            # Copy datasets to dictionary
+            diffuseData.datasetToColumns()
+            diffuseColumns = diffuseData.columns
+            directData.datasetToColumns()
+            directColumns = directData.columns
+            py6SesData.datasetToColumns()
+            py6SesColumns = py6SesData.columns
+
+            # diffuseSlice = ProcessL2.columnToSlice(diffuseColumns,start, end)
+            # directSlice = ProcessL2.columnToSlice(directColumns,start, end)
+            # py6SesSlice = ProcessL2.columnToSlice(py6SesColumns,start, end)
 
         # process raw groups for generating standard deviations
         def _sliceRawData(ES_raw, LI_raw, LT_raw):
@@ -1310,6 +1334,18 @@ class ProcessL2:
         ltSlice.pop("Datetag")
         ltSlice.pop("Timetag2")
         ltSlice.pop("Datetime")
+
+        # directSlice.pop("Datetag")
+        # directSlice.pop("Timetag2")
+        # directSlice.pop("Datetime")
+
+        # diffuseSlice.pop("Datetag")
+        # diffuseSlice.pop("Timetag2")
+        # diffuseSlice.pop("Datetime")
+
+        # py6SesSlice.pop("Datetag")
+        # py6SesSlice.pop("Timetag2")
+        # py6SesSlice.pop("Datetime")
 
         # Process StdSlices for Band Convolution
         # Get common wavebands from esSlice to interp stats
@@ -1525,7 +1561,7 @@ class ProcessL2:
         # (Combines Slice and XSlice -- as above -- into one method)
         # node.groups.append(ancGroup)
 
-        ProcessL2.sliceAveAnc(node, start, end, y, ancGroup)
+        ProcessL2.sliceAveOther(node, start, end, y, ancGroup, py6SGroup)
         newAncGroup = node.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
 
@@ -1671,7 +1707,7 @@ class ProcessL2:
 
         else:
             # Full Mobley 1999 model from LUT
-            try:                
+            try:
                 AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
                 if isinstance(AODXSlice, list):
                     AODXSlice = AODXSlice[0]
@@ -2071,6 +2107,8 @@ class ProcessL2:
         ancGroup = rootCopy.getGroup("ANCILLARY")
         if py6s_available:
             py6SGroup = rootCopy.getGroup("PY6S_MODEL")
+        else:
+            py6SGroup = None
 
         if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("RAW_UNCERTAINTIES")
@@ -2168,8 +2206,9 @@ class ProcessL2:
                 start = i
                 end = i+1
 
-                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
-                                                      liRawGroup, ltRawGroup, start, end):
+                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
+                                                            uncGroup, esRawGroup,liRawGroup, ltRawGroup,
+                                                            py6SGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance unsliced failed. Abort.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -2195,8 +2234,9 @@ class ProcessL2:
                 if (timei > endTime) or EndOfFileFlag: # end of increment reached
                     if EndOfFileFlag:
                         end = len(timeStamp)-1 # File shorter than interval; include all spectra
-                        if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
-                                                          liRawGroup, ltRawGroup, start, end):
+                        if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
+                                                            uncGroup, esRawGroup,liRawGroup, ltRawGroup,
+                                                            py6SGroup, start, end):
                             msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                             print(msg)
                             Utilities.writeLogFile(msg)
@@ -2210,8 +2250,9 @@ class ProcessL2:
                         endTime = endFileTime
                         EndOfFileFlag = True
 
-                    if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
-                                                          liRawGroup, ltRawGroup, start, end):
+                    if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
+                                                            uncGroup, esRawGroup,liRawGroup, ltRawGroup,
+                                                            py6SGroup, start, end):
                         msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                         print(msg)
                         Utilities.writeLogFile(msg)
@@ -2227,8 +2268,9 @@ class ProcessL2:
             # For the rare case where end of record is reached at, but not exceeding, endTime...
             if not EndOfFileFlag:
                 end = i+1 # i is the index of end of record; plus one to include i due to -1 list slicing
-                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
-                                                      liRawGroup, ltRawGroup, start, end):
+                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
+                                                            uncGroup, esRawGroup,liRawGroup, ltRawGroup,
+                                                            py6SGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance ender clause failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -2298,12 +2340,12 @@ class ProcessL2:
         node.addGroup("REFLECTANCE")
         node.addGroup("IRRADIANCE")
         node.addGroup("RADIANCE")
-        # node.addGroup("PY6S_MODEL")
+        node.addGroup("PY6S_MODEL")
         node.copyAttributes(root)
-        node.attributes["PROCESSING_LEVEL"] = "2"        
+        node.attributes["PROCESSING_LEVEL"] = "2"
         # Remaining attributes managed below...
 
-        # For completeness, flip datasets into columns in all groups
+        # Copy attributes from root and for completeness, flip datasets into columns in all groups
         for grp in root.groups:
             for gp in node.groups:
                 if gp.id == grp.id:
@@ -2312,7 +2354,7 @@ class ProcessL2:
                 grp.datasets[ds].datasetToColumns()
 
             # Carry over L1AQC data for use in uncertainty budgets
-            if grp.id.endswith('_L1AQC') or grp.id.startswith('PY6S_MODEL'):
+            if grp.id.endswith('_L1AQC'): #or grp.id.startswith('PY6S_MODEL'):
                 newGrp = node.addGroup(grp.id)
                 newGrp.copy(grp)
                 for ds in newGrp.datasets:
