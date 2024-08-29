@@ -30,7 +30,7 @@ from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
 
-VERSION = "1.2.4"
+VERSION = "1.2.5"
 CODE_HOME = os.getcwd()
 
 
