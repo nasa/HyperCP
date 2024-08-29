@@ -88,7 +88,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.platformLineEdit = QtWidgets.QLineEdit(self)
         try:
             self.platformLineEdit.setText(str(SeaBASSHeader.settings["platform"]))
-        except:
+        except Exception:
             SeaBASSHeader.settings["platform"] = ''
             self.platformLineEdit.setText(str(SeaBASSHeader.settings["platform"]))
 
@@ -687,7 +687,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         ConfigFile.settings["seaBASSHeaderFileName"] = self.name
 
         # QtWidgets.QMessageBox.about(self, "Edit SeaBASSHeader File", "SeaBASSHeader File Saved")
-        ConfigFile.saveConfig(ConfigFile.filename)        
+        ConfigFile.saveConfig(ConfigFile.filename)
         self.close()
 
     def refreshWindow(self):

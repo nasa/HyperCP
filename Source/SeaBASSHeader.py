@@ -257,7 +257,7 @@ class SeaBASSHeader:
 
         fp = os.path.join(PATH_TO_CONFIG, filename)
 
-        with open(fp, 'w') as f:
+        with open(fp, 'w', encoding="utf-8") as f:
             json.dump(SeaBASSHeader.settings,f,indent=4)
 
     # Loads the hdr file
@@ -268,7 +268,7 @@ class SeaBASSHeader:
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.filename = filename
             text = ""
-            with open(seaBASSHeaderPath, 'r') as f:
+            with open(seaBASSHeaderPath, 'r', encoding="utf-8") as f:
                 text = f.read()
                 SeaBASSHeader.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
                 # SeaBASSHeader.createCalibrationFolder()

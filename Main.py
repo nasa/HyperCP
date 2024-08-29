@@ -27,6 +27,7 @@ from Source.ConfigFile import ConfigFile
 from Source.ConfigWindow import ConfigWindow
 from Source.GetAnc import GetAnc
 from Source.SeaBASSHeader import SeaBASSHeader
+from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
 
 VERSION = "1.2.4"
@@ -723,6 +724,11 @@ class Command:
         else:
             print("Error in configuration file: Sensor type not specified")
             sys.exit()
+
+        # Update the SeaBASS .hdr file in case changes were made to the configuration without using the GUI
+        SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings['seaBASSHeaderFileName'])
+        SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config1')
+        SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings['seaBASSHeaderFileName'])
 
         if processMultiLevel:
             if InstrumentType.lower() == "trios" and to_level == "L1A":
