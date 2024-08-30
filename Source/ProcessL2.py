@@ -1201,14 +1201,8 @@ class ProcessL2:
                 newDS.columns.move_to_end('Datetime', last=False)
                 newDS.columnsToDataset()
 
-        _sliceAveOther(node, start, end, y, ancGroup)
-        if py6SGroup is None:
-            msg = "6S model not found, probably because lower level data was processed before v1.2.5. "
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return None
+        _sliceAveOther(node, start, end, y, ancGroup)        
         _sliceAveOther(node, start, end, y, py6SGroup)
-        return 1
 
     @staticmethod
     def ensemblesReflectance(node, sasGroup, refGroup, ancGroup, uncGroup,
@@ -1567,9 +1561,7 @@ class ProcessL2:
         # (Combines Slice and XSlice -- as above -- into one method)
         # node.groups.append(ancGroup)
 
-        status = ProcessL2.sliceAveOther(node, start, end, y, ancGroup, py6SGroup)
-        if status is None:
-            return False
+        ProcessL2.sliceAveOther(node, start, end, y, ancGroup, py6SGroup)
         newAncGroup = node.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
 

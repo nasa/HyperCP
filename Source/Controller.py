@@ -651,6 +651,14 @@ class Controller:
                 Utilities.writeLogFile(msg)
                 return False#None, outFilePath
 
+            # Check for new 6S model group
+            test = root.getGroup('PY6S_MODEL')
+            if test is None:
+                msg = "6S model not found, probably because lower level data was processed before v1.2.5. "
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
+
             # Check L2 file for low-level uncertainty processing matching the uncertainty processing
             # called here (i.e., don't let Factory-Only files get processed for FRM-Class or FRM-Full)
             if ConfigFile.settings["bL1bCal"] == 3 and 'FRM-Full' not in root.attributes['CAL_TYPE']:
