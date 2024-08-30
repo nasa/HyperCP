@@ -17,8 +17,8 @@ import sys
 import time
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-import requests
-from tqdm import tqdm
+# import requests
+# from tqdm import tqdm
 
 
 from Source.MainConfig import MainConfig
@@ -53,43 +53,9 @@ class Window(QtWidgets.QWidget):
                 os.makedirs(dirPath)
 
         # Confirm that core data files are in place. Download if necessary.
-        # 1: Zhang DB:
-        local_filename = os.path.join(CODE_HOME, "Data", "Zhang_rho_db.mat")
-        if not os.path.exists(local_filename):
-            infoText = "  NEW INSTALLATION\nGlint database required.\nClick OK to download.\n\nWARNING: THIS IS A 2.5 GB DOWNLOAD.\n\n\
-            If canceled, Zhang et al. (2017) glint correction will fail. If download fails, a link and instructions will be provided in the terminal."
-            YNReply = Utilities.YNWindow("Database Download", infoText)
-            if YNReply == QtWidgets.QMessageBox.Ok:
-
-                url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat"
-                download_session = requests.Session()
-                try:
-                    file_size = int(
-                        download_session.head(url).headers["Content-length"]
-                    )
-                    file_size_read = round(int(file_size) / (1024**3), 2)
-                    print(
-                        f"##### Downloading {file_size_read}GB data file. This could take several minutes. ##### "
-                    )
-                    download_file = download_session.get(url, stream=True)
-                    download_file.raise_for_status()
-                except requests.exceptions.HTTPError as err:
-                    print("Error in download_file:", err)
-                if download_file.ok:
-                    progress_bar = tqdm(
-                        total=file_size, unit="iB", unit_scale=True, unit_divisor=1024
-                    )
-                    with open(local_filename, "wb") as f:
-                        for chunk in download_file.iter_content(chunk_size=1024):
-                            progress_bar.update(len(chunk))
-                            f.write(chunk)
-                    progress_bar.close()
-                else:
-                    print(
-                        "Failed to download core databases."
-                        f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
-                        f" {CODE_HOME}/Data directory."
-                    )
+        fpfZhang = os.path.join(CODE_HOME, "Data", "Zhang_rho_db.mat")
+        if not os.path.exists(fpfZhang):
+            Utilities.downloadZhangDB(fpfZhang)
 
         self.initUI()
 
@@ -647,40 +613,9 @@ class Command:
         super().__init__()
 
         # Confirm that core data files are in place. Download if necessary.
-        if not os.path.exists(os.path.join("Data", "Zhang_rho_db.mat")):
-            print(
-                "##### Downloading 2.5 GB data file. This could take several minutes. #####"
-            )
-            print(
-                "#####        Program will open when download is complete.            #####"
-            )
-            url = (
-                "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat"
-            )
-            local_filename = os.path.join("Data", "Zhang_rho_db.mat")
-            try:
-                r = requests.get(url, stream=True, timeout=600)
-                r.raise_for_status()
-            except requests.exceptions.HTTPError as err:
-                print("Error in download_file:", err)
-
-            if r.ok:
-                with open(local_filename, "wb") as f:
-                    n = 0
-                    for chunk in r.iter_content(chunk_size=1024):
-                        n += 1
-                        if (n % 1000) == 0:
-                            print(".", end="")
-                        if chunk:  # filter out keep-alive new chunks
-                            f.write(chunk)
-                    print(" done.")
-            else:
-                print("Failed to download core databases.")
-                print(
-                    "Download from: \
-                                https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat \
-                                    and place in HyperInSPACE/Data directory."
-                )
+        fpfZhang = os.path.join(CODE_HOME, "Data", "Zhang_rho_db.mat")
+        if not os.path.exists(fpfZhang):
+            Utilities.downloadZhangDB(fpfZhang)
 
         # Create a default main config to be filled with cmd argument
         # to avoid reading the one generated with the GUI
