@@ -236,7 +236,7 @@ class PDF(FPDF):
             else:
                 metaData += f'Max Wind: {ConfigFile.settings["fL1bqcMaxWind"]}\n'
                 metaData += f'Min SZA: {ConfigFile.settings["fL1bqcSZAMin"]}\n'
-                metaData += f'Max SZA: {ConfigFile.settings["fL1bqcSZAMin"]}\n'
+                metaData += f'Max SZA: {ConfigFile.settings["fL1bqcSZAMax"]}\n'
                 if ConfigFile.settings['bL1bqcEnableSpecQualityCheck']:
                     metaData += f'Filter Sigma Es: {ConfigFile.settings["fL1bqcSpecFilterEs"]}\n'
                     metaData += f'Filter Sigma Li: {ConfigFile.settings["fL1bqcSpecFilterLi"]}\n'
