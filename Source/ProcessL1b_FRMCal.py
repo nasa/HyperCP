@@ -4,9 +4,11 @@ import os
 from datetime import datetime as dt
 import numpy as np
 import pandas as pd
-import Py6S
 import pytz
 from scipy import interpolate
+import concurrent.futures
+
+from j6s import SixS
 
 # internal files
 from Source.ConfigFile import ConfigFile
@@ -93,37 +95,111 @@ class ProcessL1b_FRMCal:
         irr_env = np.zeros((n_bin, nband))
         solar_zenith = np.zeros(n_bin)
 
+        # Instanciate the class only once outside the loop
+        s = SixS()
+
         for n in range(n_bin):
             # find ancillary point that match the 1st mesure of the 3min ensemble
             ind_anc = np.argmin(np.abs(np.array(anc_datetime)-datetime[n*n_min]))
-            s = Py6S.SixS()
-            s.atmos_profile = Py6S.AtmosProfile.PredefinedType(Py6S.AtmosProfile.MidlatitudeSummer)
-            s.aero_profile  = Py6S.AeroProfile.PredefinedType(Py6S.AeroProfile.Maritime)
-            s.month = datetime[ind_anc].month
-            s.day = datetime[ind_anc].day
-            s.geometry.solar_z = sun_zenith[ind_anc]
-            s.geometry.solar_a = sun_azimuth[ind_anc]
-            s.geometry.view_a = rel_az[ind_anc]
-            s.geometry.view_z = 180
-            s.altitudes = Py6S.Altitudes()
-            s.altitudes.set_target_sea_level()
-            s.altitudes.set_sensor_sea_level()
-            s.aot550 = aod[ind_anc]
-            n_cores = None
-            if os.name == 'nt':  # if system is windows do not do parallel processing to avoid potential error
-                n_cores = 1
-            _, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl, n=n_cores)
 
-            # extract value from Py6s
-            # total_gaseous_transmittance[n,:] = np.array([res[x].values['total_gaseous_transmittance'] for x in range(nband)])
-            # env[n,:]  = np.array([res[x].values['percent_environmental_irradiance'] for x in range(nband)])
-            direct[n,:]  = np.array([res[x].values['percent_direct_solar_irradiance'] for x in range(nband)])
-            diffuse[n,:]  = np.array([res[x].values['percent_diffuse_solar_irradiance'] for x in range(nband)])
-            irr_direct[n,:]  = np.array([res[x].values['direct_solar_irradiance'] for x in range(nband)])
-            irr_diffuse[n,:]  = np.array([res[x].values['diffuse_solar_irradiance'] for x in range(nband)])
-            irr_env[n,:]  = np.array([res[x].values['environmental_irradiance'] for x in range(nband)])
-            solar_zenith[n] = sun_zenith[ind_anc]
+            s.geometry(
+                sun_zen=sun_zenith[ind_anc],
+                sun_azi=sun_azimuth[ind_anc],
+                view_zen=180,
+                view_azi=rel_az[ind_anc],
+                month=datetime[ind_anc].month,
+                day=datetime[ind_anc].day
+            )
+            s.gas()
+            s.aerosol(aot_550=aod[ind_anc])
+            s.target_altitude()
+            s.sensor_altitude()
 
+            s.to_be_implemented()
+
+            # Create placeholder to contain the values
+            percent_direct_solar_irradiance = [0] * len(wvl)
+            percent_diffuse_solar_irradiance = [0] * len(wvl)
+            direct_solar_irradiance = [0] * len(wvl)
+            diffuse_solar_irradiance = [0] * len(wvl)
+            environmental_irradiance = [0] * len(wvl)
+
+            # Determine the number of workers to use
+            num_workers = os.cpu_count()
+            logging.info(f"Running on {num_workers} threads")
+            iterations_per_worker = len(wvl) // num_workers
+            logging.info(f"{iterations_per_worker} iteration per threads")
+
+            # Create the function for 6s that will be run by each worker
+            def run_model_and_accumulate(
+                    start,
+                    end,
+                    s,
+                    wvl,
+                    percent_direct_solar_irradiance,
+                    percent_diffuse_solar_irradiance,
+                    direct_solar_irradiance,
+                    diffuse_solar_irradiance,
+                    environmental_irradiance
+            ):
+                for i in range(start, end):
+                    wavelength = wvl[i]
+                    s.wavelength(wavelength)
+
+                    temp = s.run()
+
+                    # if math.isnan(float(temp["atmospheric_reflectance_at_sensor"])):
+                    #     print("atmospheric_path_radiance is NaN ...")
+
+                    # TODO: provide warning (with wavelength) if any of the values are NaN
+
+                    percent_direct_solar_irradiance[i] = float(
+                        temp["percent_of_direct_solar_irradiance_at_target"]
+                    )
+                    percent_diffuse_solar_irradiance[i] = float(
+                        temp["percent_of_diffuse_atmospheric_irradiance_at_target"]
+                    )
+                    direct_solar_irradiance[i] = float(
+                        temp["direct_solar_irradiance_at_target_[W m-2 um-1]"]
+                    )
+                    diffuse_solar_irradiance[i] = float(
+                        temp["diffuse_atmospheric_irradiance_at_target_[W m-2 um-1]"]
+                    )
+                    environmental_irradiance[i] = float(
+                        temp["environement_irradiance_at_target_[W m-2 um-1]"]
+                    )
+
+                return
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+                futures = []
+                for i in range(num_workers):
+                    # Calculate the start and end indices for this worker
+                    start = i * iterations_per_worker
+                    end = (
+                        start + iterations_per_worker
+                        if i != num_workers - 1
+                        else len(wvl)
+                    )
+
+                    # Start the worker
+                    futures.append(
+                        executor.submit(
+                            run_model_and_accumulate,
+                            start,
+                            end,
+                            s,
+                            wvl,
+                            percent_direct_solar_irradiance,
+                            percent_diffuse_solar_irradiance,
+                            direct_solar_irradiance,
+                            diffuse_solar_irradiance,
+                            environmental_irradiance
+                        )
+                    )
+
+            # Wait for all workers to finish
+            concurrent.futures.wait(futures)
 
             if np.isnan(direct).any():
                 logging.debug("direct contains NaN values at: %s", wvl[np.isnan(direct)[n]])
