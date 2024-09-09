@@ -506,7 +506,7 @@ class ProcessL1b:
         # Instead of using TT2 or seconds, use python datetimes to avoid problems crossing
         # UTC midnight.
         if not ProcessL1b.darkCorrection(darkData, darkDateTime, lightData, lightDateTime):
-            msg = f'ProcessL1d.darkCorrection failed  for {sensorType}'
+            msg = f'ProcessL1b.darkCorrection failed  for {sensorType}'
             print(msg)
             Utilities.writeLogFile(msg)
             return False

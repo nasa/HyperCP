@@ -1342,9 +1342,9 @@ class ConfigWindow(QtWidgets.QDialog):
 
         disabled = (not self.l1aqcDeglitchCheckBox.isChecked())
         if disabled:
-            ConfigFile.settings["bL1dDeglitch"] = 0
+            ConfigFile.settings["bL1aqcDeglitch"] = 0
         else:
-            ConfigFile.settings["bL1dDeglitch"] = 1
+            ConfigFile.settings["bL1aqcDeglitch"] = 1
 
     def l1aqcAnomalyButtonPressed(self):
         print("CalibrationEditWindow - Launching anomaly analysis module")

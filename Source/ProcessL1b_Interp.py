@@ -688,9 +688,9 @@ class ProcessL1b_Interp:
                 elif gp.id.endswith("_L1AQC"):
                     ltL1AQC = gp
                 else:
-                    ltGroup = gp                        
+                    ltGroup = gp           
             if gp.id == "SOLARTRACKER" or gp.id =="SOLARTRACKER_pySAS":
-                satnavGroup = gp # Now labelled SOLARTRACKER at L1B to L1D
+                satnavGroup = gp
             if gp.id == ("ANCILLARY_METADATA"):
                 ancGroup = root.addGroup('ANCILLARY_METADATA')
                 ancGroup.copy(gp)
