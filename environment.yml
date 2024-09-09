@@ -1,5 +1,6 @@
 name: hypercp
 channels:
+  - defaults
   - conda-forge
   - ocdb
 dependencies:
@@ -17,7 +18,7 @@ dependencies:
   - xarray
   - cdsapi>=0.7.2
   - netcdf4=1.6
-  - j6s
+  - py6s=1.9
   - pytables=3.7
   - pyspectral=0.12
   - pyqtgraph
