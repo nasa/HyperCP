@@ -282,7 +282,9 @@ reflectance within each ensemble.
 
 ### Executing HyperCP from the command line
 
-There is a command line option for batching a single level which can be triggered by adding the ```-cmd``` argument:
+There are a couple of way HyperCP can be run without the GUI. The first is to make a scripted call to the Command class in the Main.py file. This is demonstrated with the [run_Sample_Data.py](run_Sample_Data.py) script provided in the top level of the repository. By copying this file and customizing it for your data (e.g., changing file paths to make your directories), and editing the processing configuration (either in the GUI or manually editting the relevant ./Config/your_Configuration.cfg file) you can use a direct python call to the script to run HyperCP. As demonstrated in the sample script, it can be run for multiple levels and can use multiple core threads to speed up processing.
+
+There is also a command line option for batching a single level which can be triggered by adding the ```-cmd``` argument:
 
 ```
 (hypercp) prompt$ python Main.py -c config -i inputFile -o outputDirectory -l processingLevel
@@ -290,7 +292,6 @@ There is a command line option for batching a single level which can be triggere
 
 where ```config``` is the configuration file, and the other arguments are self-explanatory
 (```processingLevel``` should be in all caps, e.g., ```L1AQC```).
-An example script has been provided (```run_sample.py```) for batching files using the command line option.
 
 ## References
 - Abe, N., B. Zadrozny and J. Langford (2006). Outlier detection by active learning. Proceedings of the 12th ACM SIGKDD international conference on Knowledge discovery and data mining. Philadelphia, PA, USA, Association for Computing Machinery: 504–509.

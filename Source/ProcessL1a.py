@@ -1,4 +1,4 @@
-
+'''Process Raw (L0) data to L1A HDF5'''
 import collections
 import datetime as dt
 import os
@@ -13,12 +13,9 @@ from Source.ConfigFile import ConfigFile
 
 
 class ProcessL1a:
-
+    '''Process L1A'''
     @staticmethod
     def processL1a(fp, calibrationMap):
-        '''
-        Reads a raw binary file and generates a L1a HDF5 file
-        '''
         (_, fileName) = os.path.split(fp)
 
         # Generate root attributes
@@ -141,11 +138,11 @@ class ProcessL1a:
             # Another case for GPGGA input...
             if gpsGroup.id.startswith("GPGGA"):
                 # No date is provided in GPGGA, need to find nearest time in Es and take the Datetag from Es
-                ''' Catch-22. In order to covert the gps time, we need the year and day, which GPGGA does not have.
-                    To get these, could compare to find the nearest DATETAG in Es. In order to compare the gps time
-                    to the Es time to find the nearest, I would need to convert them to datetimes ... which would
-                    require the year and day. Instead, I use either the first or last Datetag from Es, depending
-                    on whether UTC 00:00 was crossed.'''
+                # NOTE: Catch-22. To covert the gps time, we need the year and day, which GPGGA does not have.
+                # To get these, could compare to find the nearest DATETAG in Es. In order to compare the gps time
+                # to the Es time to find the nearest, need to convert them to datetimes ... which would
+                # require the year and day. Instead, I use either the first or last Datetag from Es, depending
+                # on whether UTC 00:00 was crossed.
                 # If the date does not change in Es, then no problem, use the Datetag of Es first element.
                 # Otherwise, change the datetag at midnight by one day
                 gpsDateTag = []
@@ -212,7 +209,7 @@ class ProcessL1a:
                         elevation = elevData.data.tolist()
                         szaLimit = float(ConfigFile.settings["fL1aCleanSZAMax"])
 
-                        ''' It would be good to add local time as a printed output with SZA'''
+                        # NOTE: It would be good to add local time as a printed output with SZA
                         if (90-np.nanmax(elevation)) > szaLimit:
                             msg = f'SZA too low. Discarding entire file. {round(90-np.nanmax(elevation))}'
                             print(msg)

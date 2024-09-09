@@ -73,6 +73,7 @@ For **TriOS RAMSES** device, you will need to associate each radiometers number 
 - **SAM_8329.ini**: Es
 - **SAM_8595.ini**: Lt
 
+‡ **Note**: For **TriOS RAMSES**, HyperCP currently expects the Matlab output files (.mlb) from MSDA-XE acquisition software as described in [Measurement Procedure Document D-6](https://frm4soc2.eumetsat.int/sites/default/files/inline-files/FRM4SOC-2_D-06_MeasurementProcedure_v3.1_24032023_RBINS_EUMETSAT_signed.pdf). Additional file formats supporting TriOS systems (e.g. SoRad) are under development.
 
 Selections:
 
