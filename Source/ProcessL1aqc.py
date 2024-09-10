@@ -789,9 +789,9 @@ class ProcessL1aqc:
 
         # Look for additional datasets in provided ancillaryData and populate the new ancillary group
         # if ancillaryData is not None:
+        ancGroup.attributes["FrameType"] = "Not Required"
         if ancData is not None:
-            ancGroup.attributes = ancData.attributes.copy()
-            ancGroup.attributes["FrameType"] = "Not Required"
+            ancGroup.attributes = ancData.attributes.copy()            
             if "HEADING" in ancData.columns:
                 ancGroup.addDataset("HEADING")
                 ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
