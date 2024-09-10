@@ -125,7 +125,7 @@ class Window(QtWidgets.QWidget):
             "Ancillary Data File (SeaBASS format; MUST USE UTC)"
         )
         self.ancFileLineEdit = QtWidgets.QLineEdit()
-        self.ancFileLineEdit.setText(str(MainConfig.settings["metFile"]))
+        self.ancFileLineEdit.setText(str(MainConfig.settings["ancFile"]))
         self.ancFileDirectory = MainConfig.settings["ancFileDir"]
         self.ancAddButton = QtWidgets.QPushButton("Add", self)
         self.ancRemoveButton = QtWidgets.QPushButton("Remove", self)
@@ -247,17 +247,18 @@ class Window(QtWidgets.QWidget):
         self.show()
 
     ########################################################################################
-    # Build functionality modules
+    # Build functionality methods
     def on_directoryLoaded(self):
         index = self.configComboBox.findText(MainConfig.settings["cfgFile"])
         self.configComboBox.setCurrentIndex(index)
+        # MainConfig.saveConfig(MainConfig.fileName)
 
     def comboBox1Changed(self, value):
         MainConfig.settings["cfgFile"] = value
         index = self.configComboBox.findText(MainConfig.settings["cfgFile"])
         self.configComboBox.setCurrentIndex(index)
         print("MainConfig: Configuration file changed to: ", value)
-        MainConfig.saveConfig(MainConfig.fileName)
+        # MainConfig.saveConfig(MainConfig.fileName)
 
     def configNewButtonPressed(self):
         print("New Config Dialogue")
@@ -297,6 +298,9 @@ class Window(QtWidgets.QWidget):
 
     def configEditButtonPressed(self):
         print("Edit Config Dialogue")
+
+        MainConfig.saveConfig(MainConfig.fileName)
+
         configFileName = self.configComboBox.currentText()
 
         inputDir = self.inputDirectory
@@ -329,6 +333,7 @@ class Window(QtWidgets.QWidget):
         else:
             message = "Not a Config File: " + configFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
+        MainConfig.saveConfig(MainConfig.fileName)
 
     def inDirButtonPressed(self):
         temp = self.inputDirectory
@@ -391,15 +396,13 @@ class Window(QtWidgets.QWidget):
             print(fnames)
             if len(fnames[0]) == 1:
                 self.ancFileLineEdit.setText(fnames[0][0])
-            MainConfig.settings["metFile"] = fnames[0][
-                0
-            ]  # unclear why this sometimes does not "take" the first time
-            MainConfig.saveConfig(MainConfig.fileName)
+            MainConfig.settings["ancFile"] = fnames[0][0]  # unclear why this sometimes does not "take" the first time
+        MainConfig.saveConfig(MainConfig.fileName)
 
     def ancRemoveButtonPressed(self):
         print("Wind File Remove Dialogue")
         self.ancFileLineEdit.setText("")
-        MainConfig.settings["metFile"] = ""
+        MainConfig.settings["ancFile"] = ""
         self.ancFileDirectory = ""
         MainConfig.saveConfig(MainConfig.fileName)
 
@@ -410,8 +413,7 @@ class Window(QtWidgets.QWidget):
         # Load Config file
         configFileName = self.configComboBox.currentText()
         MainConfig.settings["cfgPath"] = os.path.join(
-            CODE_HOME, "Config", configFileName
-        )
+            CODE_HOME, "Config", configFileName)
         if not os.path.isfile(MainConfig.settings["cfgPath"]):
             message = "Not valid Config File: " + configFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
@@ -498,6 +500,9 @@ class Window(QtWidgets.QWidget):
         #         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
 
         # if reply == QtWidgets.QMessageBox.Yes:
+        configFileName = self.configComboBox.currentText()
+        MainConfig.settings["cfgPath"] = os.path.join(
+            CODE_HOME, "Config", configFileName)
         MainConfig.saveConfig(MainConfig.fileName)
         event.accept()
         # else:
@@ -580,9 +585,9 @@ class Window(QtWidgets.QWidget):
         print("Main - popQueryCheckBoxUpdate")
         MainConfig.settings["popQuery"] = int(self.popQueryCheckBox.isChecked())
 
-    def saveButtonClicked(self):
-        print("Main - saveButtonClicked")
-        MainConfig.saveConfig(MainConfig.fileName)
+    # def saveButtonClicked(self):
+    #     print("Main - saveButtonClicked")
+    #     MainConfig.saveConfig(MainConfig.fileName)
 
 
 ###################################################################################
@@ -623,10 +628,10 @@ class Command:
         MainConfig.fileName = "cmdline_main.config"
 
         # Update main configuration path with cmd line input
-        MainConfig.settings["cfgFile"] = configFilePath
-        MainConfig.settings["cfgPath"] = configFilePath
+        MainConfig.settings["cfgFile"] = os.path.split(configFP)[-1]
+        MainConfig.settings["cfgPath"] = configFP
         MainConfig.settings["version"] = VERSION
-        MainConfig.settings["metFile"] = self.ancFile
+        MainConfig.settings["ancFile"] = self.ancFile
         MainConfig.settings["outDir"] = self.outputDirectory
 
         if isinstance(iFile,list):

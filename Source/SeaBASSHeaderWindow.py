@@ -482,7 +482,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         # First try to fill left column metadata headers using the Ancillary fill if provided.
         #   Only when opening, not when saving
         if caller == 'config1':
-            fp = MainConfig.settings["metFile"]
+            fp = MainConfig.settings["ancFile"]
             if not os.path.isfile(fp):
                 print("Specified ancillary file not found: " + fp)
             else:

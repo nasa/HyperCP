@@ -569,7 +569,7 @@ class Controller:
                     Controller.trios_L1A_files = outFFPs
 
             elif level == "L1AQC":
-                ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
+                ancillaryData = Controller.processAncData(MainConfig.settings["ancFile"])
                 # If called locally from Controller and not AnomalyDetection.py, then
                 #   try to load the parameter file for this cruise/configuration and update
                 #   ConfigFile.settings to reflect the appropriate parameterizations for this

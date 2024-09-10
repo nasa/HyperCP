@@ -126,22 +126,22 @@ class ProcessL1b_FRMCal:
 
 
             if np.isnan(direct).any():
-                logging.debug("direct contains NaN values at: %s" % wvl[np.isnan(direct)[n]])
+                logging.debug("direct contains NaN values at: %s", wvl[np.isnan(direct)[n]])
 
             if np.isnan(diffuse).any():
-                logging.debug("diffuse contains NaN values at: %s" % wvl[np.isnan(diffuse)[n]])
+                logging.debug("diffuse contains NaN values at: %s", wvl[np.isnan(diffuse)[n]])
 
             if np.isnan(irr_direct).any():
-                logging.debug("irr_direct contains NaN values at: %s" % wvl[np.isnan(irr_direct)[n]])
+                logging.debug("irr_direct contains NaN values at: %s", wvl[np.isnan(irr_direct)[n]])
 
             if np.isnan(irr_diffuse).any():
-                logging.debug("irr_diffuse contains NaN values at: %s" % wvl[np.isnan(irr_diffuse)[n]])
+                logging.debug("irr_diffuse contains NaN values at: %s", wvl[np.isnan(irr_diffuse)[n]])
 
             if np.isnan(irr_env).any():
-                logging.debug("irr_env contains NaN values at: %s" % wvl[np.isnan(irr_env)[n]])
+                logging.debug("irr_env contains NaN values at: %s", wvl[np.isnan(irr_env)[n]])
 
             if np.isnan(solar_zenith).any():
-                logging.debug("solar_zenith contains NaN values at: %s" % wvl[np.isnan(solar_zenith)[n]])
+                logging.debug("solar_zenith contains NaN values at: %s", wvl[np.isnan(solar_zenith)[n]])
 
             # Check for potential NaN values and interpolate them with neighbour
             # direct

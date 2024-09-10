@@ -28,7 +28,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.sliderWave=525
 
         #   This is going to truncate the ancillary data, so for the purposes of re-use, copy it
-        self.ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
+        self.ancillaryData = Controller.processAncData(MainConfig.settings["ancFile"])
 
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
