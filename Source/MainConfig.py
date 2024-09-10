@@ -47,6 +47,7 @@ class MainConfig:
         print("MainConfig - Refresh or create from default Config")
 
         MainConfig.settings["cfgFile"] = fileName
+        MainConfig.settings["cfgPath"] = os.path.join('./Config',fileName)
         MainConfig.settings["version"] = version
         MainConfig.settings["inDir"] = './Data'
         MainConfig.settings["outDir"] = './Data'

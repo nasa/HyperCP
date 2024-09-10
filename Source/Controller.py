@@ -55,8 +55,8 @@ class Controller:
                     root = HDFRoot.readHDF5(inFilePath)
                 except Exception:
                     msg = "Controller.writeReport: Unable to open HDF file. May be open in another application."
-                    # if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                    Utilities.errorWindow("File Error", msg)
+                    if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                        Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return
@@ -294,8 +294,8 @@ class Controller:
                     root.writeHDF5(outFilePath)
                 except Exception:
                     msg = 'Unable to write L1A file. It may be open in another program.'
-                    # if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                    Utilities.errorWindow("File Error", msg)
+                    if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                        Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return None, None
@@ -337,8 +337,8 @@ class Controller:
                 root.writeHDF5(outFilePath)
             except Exception:
                 msg = "Controller.processL1aqc: Unable to open HDF file. May be open in another application."
-                # if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                Utilities.errorWindow("File Error", msg)
+                if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                    Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None

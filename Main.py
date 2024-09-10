@@ -644,7 +644,7 @@ class Command:
         # inputFile = [inputFile]
 
         # No GUI used: error message are display in prompt and not in graphical window
-        MainConfig.settings["popQuery"] = -1
+        MainConfig.settings["popQuery"] = 0
         MainConfig.saveConfig(MainConfig.fileName)
         print("MainConfig - Config updated with cmd line arguments")
 
