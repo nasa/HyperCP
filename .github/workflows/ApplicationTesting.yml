@@ -36,4 +36,6 @@ jobs:
 
       - name: 🧪 Run Tests
         run: |
-          python run_sample_data.py
+          ls
+          pwd
+          python run_Sample_Data.py

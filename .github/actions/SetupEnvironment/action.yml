@@ -8,10 +8,10 @@ runs:
     - name: 🐍 Setup Mambaforge
       uses: conda-incubator/setup-miniconda@v3
       with:
-        miniforge-variant: Mambaforge
         miniforge-version: latest
+#        miniforge-variant: Mambaforge
+#        use-mamba: true  # mambaforge is now deprecated in favor of miniforge
         activate-environment: hypercp
-        use-mamba: true
 
     - name: 🔂 Cache Environment
       uses: actions/cache@v4
