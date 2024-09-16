@@ -283,6 +283,10 @@ class Utilities:
 
     @staticmethod
     def writeLogFile(logText, mode='a'):
+        if not os.path.exists('Logs'):
+            import logging
+            logging.getLogger().warning('Made directory: Logs/')
+            os.mkdir('Logs')
         with open('Logs/' + os.environ["LOGFILE"], mode, encoding="utf-8") as logFile:
             logFile.write(logText + "\n")
 
