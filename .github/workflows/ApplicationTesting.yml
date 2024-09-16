@@ -3,6 +3,7 @@ name: ApplicationTesting
 on:
   push:
     branches:
+      - master
       - dev
   workflow_dispatch:
 
@@ -36,6 +37,4 @@ jobs:
 
       - name: 🧪 Run Tests
         run: |
-          ls
-          pwd
           python run_Sample_Data.py

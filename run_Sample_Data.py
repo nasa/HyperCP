@@ -29,8 +29,8 @@ from Main import Command
 
 ################################################### CUSTOM SET UP ###################################################
 # Batch options
-MULTI_TASK = True   # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
-MULTI_LEVEL = False  # Process raw (L0) to Level-2 (L2)
+MULTI_TASK = False  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
+MULTI_LEVEL = True  # Process raw (L0) to Level-2 (L2)
 CLOBBER = True      # True overwrites existing files
 PROC_LEVEL = "L2"   # Process to this level: L1A, L1AQC, L1B, LBQC, L2 (ignored for MULTI_LEVEL)
 
