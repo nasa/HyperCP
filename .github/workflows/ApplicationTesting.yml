@@ -12,9 +12,9 @@ jobs:
     name: Application Tests
 
     runs-on: ${{ matrix.os }}
-    defaults: # Required for conda environment activation
-      run:
-        shell: bash -el {0}
+#    defaults: # Required for conda environment activation
+#      run:
+#        shell: bash -el {0}
     strategy:
       fail-fast: false
       matrix:
@@ -22,9 +22,9 @@ jobs:
 
     steps:
       - name: 🔧 Setup Environment
-        uses: ./.github/workflows/SetupEnvironment.yml
+        uses: ./.github/actions/SetupEnvironment
 
-      - name: 📓 Capture Environment
+      - name: 📑 Capture Environment
         run: |
           mamba info
           mamba list

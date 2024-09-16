@@ -3,6 +3,7 @@ description: 'Setup python environment with conda'
 
 runs:
   using: "composite"
+
   steps:
     - name: ⏬ Checkout repository
       uses: actions/checkout@v4
@@ -17,7 +18,7 @@ runs:
         activate-environment: hypercp
         use-mamba: true
 
-    - name: Cache Environment
+    - name: 🔂 Cache Environment
       uses: actions/cache@v4
       with:
         path: ${{ env.CONDA }}/envs
@@ -28,13 +29,13 @@ runs:
         CACHE_NUMBER: 0
       id: cache
 
-    - name: Update Environment
+    - name: 🔄 Update Environment
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
         mamba env update -n hypercp -f environment.yml
         mamba install --channel=conda-forge pyinstaller==6.6
 
-    - name: 📓 Capture Environment
+    - name: 📸 Capture Environment
       run: |
         mamba info
         mamba list
