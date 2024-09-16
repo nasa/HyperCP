@@ -51,8 +51,7 @@ L2_VERSION = ""
 
 #################################
 ## PATH options
-PATH_OS = os.path.expanduser("~")
-PATH_HCP = os.path.join(PATH_OS,'GitRepos','HyperCP')  # Local path to HyperCP repository.
+PATH_HCP = os.path.dirname(os.path.abspath(__file__))  # Path to HyperCP repository on host
 # PATH_DATA = f"{PATH_OS}/Projects/HyperPACE/field_data/HyperSAS/{CRUISE}"  # Top level data directory containing RAW/ and ancillary file.
 PATH_DATA = os.path.join(PATH_HCP,'Data','Sample_Data',PLATFORM)
 ##################################
