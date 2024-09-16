@@ -26,11 +26,13 @@ runs:
 
     - name: 🔄 Update Environment
       if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash -el {0}
       run: |
         mamba env update -n hypercp -f environment.yml
         mamba install --channel=conda-forge pyinstaller==6.6
 
     - name: 📸 Capture Environment
+      shell: bash -el {0}
       run: |
         mamba info
         mamba list
