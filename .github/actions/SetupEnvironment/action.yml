@@ -1,0 +1,38 @@
+name: SetupEnvironment
+description: 'Setup python environment with conda'
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: 🐍 Setup Mambaforge
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        miniforge-version: latest
+#        miniforge-variant: Mambaforge
+#        use-mamba: true  # mambaforge is now deprecated in favor of miniforge
+        activate-environment: hypercp
+
+    - name: 🔂 Cache Environment
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.CONDA }}/envs
+        key:
+          conda-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environment.yml') }}-${{ env.CACHE_NUMBER }}
+      env:
+        # Increase this value to reset cache if environment.yml has not changed
+        CACHE_NUMBER: 0
+      id: cache
+
+    - name: 🔄 Update Environment
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash -el {0}
+      run: |
+        mamba env update -n hypercp -f environment.yml
+        mamba install --channel=conda-forge pyinstaller==6.6
+
+    - name: 📸 Capture Environment
+      shell: bash -el {0}
+      run: |
+        mamba info
+        mamba list

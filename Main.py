@@ -620,7 +620,7 @@ class Command:
         # Confirm that core data files are in place. Download if necessary.
         fpfZhang = os.path.join(CODE_HOME, "Data", "Zhang_rho_db.mat")
         if not os.path.exists(fpfZhang):
-            Utilities.downloadZhangDB(fpfZhang)
+            Utilities.downloadZhangDB(fpfZhang, force=True)
 
         # Create a default main config to be filled with cmd argument
         # to avoid reading the one generated with the GUI

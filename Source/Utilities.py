@@ -33,11 +33,11 @@ class Utilities:
     """A catchall class for HyperCP utilities"""
 
     @staticmethod
-    def downloadZhangDB(fpfZhang):
+    def downloadZhangDB(fpfZhang, force=False):
         infoText = "  NEW INSTALLATION\nGlint database required.\nClick OK to download.\n\nWARNING: THIS IS A 2.5 GB DOWNLOAD.\n\n\
         If canceled, Zhang et al. (2017) glint correction will fail. If download fails, a link and instructions will be provided in the terminal."
-        YNReply = Utilities.YNWindow("Database Download", infoText)
-        if YNReply == QMessageBox.Ok:
+        YNReply = True if force else Utilities.YNWindow("Database Download", infoText) == QMessageBox.Ok
+        if YNReply:
 
             url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat"
             download_session = requests.Session()
@@ -283,6 +283,10 @@ class Utilities:
 
     @staticmethod
     def writeLogFile(logText, mode='a'):
+        if not os.path.exists('Logs'):
+            import logging
+            logging.getLogger().warning('Made directory: Logs/')
+            os.mkdir('Logs')
         with open('Logs/' + os.environ["LOGFILE"], mode, encoding="utf-8") as logFile:
             logFile.write(logText + "\n")
 
