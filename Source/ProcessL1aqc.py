@@ -789,9 +789,8 @@ class ProcessL1aqc:
 
         # Look for additional datasets in provided ancillaryData and populate the new ancillary group
         # if ancillaryData is not None:
-        ancGroup.attributes["FrameType"] = "Not Required"
         if ancData is not None:
-            ancGroup.attributes = ancData.attributes.copy()            
+            ancGroup.attributes = ancData.attributes.copy()
             if "HEADING" in ancData.columns:
                 ancGroup.addDataset("HEADING")
                 ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
@@ -825,7 +824,7 @@ class ProcessL1aqc:
             if "ROLL" in ancData.columns:
                 ancGroup.addDataset("ROLL")
                 ancGroup.datasets["ROLL"].data = np.array(ancData.columns["ROLL"][0], dtype=[('NONE', '<f8')])
-
+        ancGroup.attributes["FrameType"] = "Not Required"
         ######################################################################################################
 
         # Apply Relative Azimuth filter

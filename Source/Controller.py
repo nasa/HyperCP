@@ -616,6 +616,7 @@ class Controller:
                     print(msg)
                     Utilities.writeLogFile(msg)
                 root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData,flag_Trios)
+                # BUG: The above throws 2 class TypeErrors between the return statement at the end of the method and here??
                 Utilities.checkOutputFiles(outFilePath)
 
             elif level == "L1B":
