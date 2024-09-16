@@ -1,0 +1,34 @@
+name: ApplicationTesting
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+jobs:
+
+  ApplicationTesting:
+    name: Application Tests
+
+    runs-on: ${{ matrix.os }}
+    defaults: # Required for conda environment activation
+      run:
+        shell: bash -el {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ 'ubuntu-latest', 'macos-latest', 'windows-latest' ]
+
+    steps:
+      - name: 🔧 Setup Environment
+        uses: ./.github/workflows/SetupEnvironment.yml
+
+      - name: 📓 Capture Environment
+        run: |
+          mamba info
+          mamba list
+
+      - name: 🧪 Run Tests
+        run: |
+          python run_sample_data.py
