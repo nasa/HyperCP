@@ -12,9 +12,9 @@ jobs:
     name: Application Tests
 
     runs-on: ${{ matrix.os }}
-#    defaults: # Required for conda environment activation
-#      run:
-#        shell: bash -el {0}
+    defaults: # Required for conda environment activation
+      run:
+        shell: bash -el {0}
     strategy:
       fail-fast: false
       matrix:
