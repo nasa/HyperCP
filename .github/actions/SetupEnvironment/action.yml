@@ -5,11 +5,6 @@ runs:
   using: "composite"
 
   steps:
-    - name: ⏬ Checkout repository
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ github.event.inputs.branch }}
-
     - name: 🐍 Setup Mambaforge
       uses: conda-incubator/setup-miniconda@v3
       with:

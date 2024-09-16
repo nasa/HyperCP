@@ -21,6 +21,11 @@ jobs:
         os: [ 'ubuntu-latest', 'macos-latest', 'windows-latest' ]
 
     steps:
+      - name: ⏬ Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
       - name: 🔧 Setup Environment
         uses: ./.github/actions/SetupEnvironment
 
