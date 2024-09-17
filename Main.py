@@ -584,6 +584,7 @@ class Window(QtWidgets.QWidget):
     def popQueryCheckBoxUpdate(self):
         print("Main - popQueryCheckBoxUpdate")
         MainConfig.settings["popQuery"] = int(self.popQueryCheckBox.isChecked())
+        MainConfig.saveConfig(MainConfig.fileName)
 
     # def saveButtonClicked(self):
     #     print("Main - saveButtonClicked")
@@ -644,7 +645,7 @@ class Command:
         # inputFile = [inputFile]
 
         # No GUI used: error message are display in prompt and not in graphical window
-        MainConfig.settings["popQuery"] = 0
+        MainConfig.settings["popQuery"] = 1 # 1 suppresses popup
         MainConfig.saveConfig(MainConfig.fileName)
         print("MainConfig - Config updated with cmd line arguments")
 

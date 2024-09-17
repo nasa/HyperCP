@@ -1604,13 +1604,29 @@ class Instrument(ABC):
     @staticmethod
     def read_py6s_model(node):
         res_py6s = {}
-        # py6s_gp = node.getGroup('PY6S_MODEL_full')
-        py6s_gp = node.getGroup('PY6S_MODEL')
-        py6s_gp.getDataset("direct_ratio").datasetToColumns()
+        
+        # Create a temporary group to pop date time columns
+        newGrp = node.addGroup('temp')
+        newGrp.copy(node.getGroup('PY6S_MODEL'))
+        for ds in newGrp.datasets:
+            newGrp.datasets[ds].datasetToColumns()
+        py6s_gp = node.getGroup('temp')
+        
+        py6s_gp.getDataset("direct_ratio").columns.pop('Datetime')
+        py6s_gp.getDataset("direct_ratio").columns.pop('Timetag2')
+        py6s_gp.getDataset("direct_ratio").columns.pop('Datetag')
+        py6s_gp.getDataset("direct_ratio").columnsToDataset()
+        py6s_gp.getDataset("diffuse_ratio").columns.pop('Datetime')
+        py6s_gp.getDataset("diffuse_ratio").columns.pop('Timetag2')
+        py6s_gp.getDataset("diffuse_ratio").columns.pop('Datetag')
+        py6s_gp.getDataset("diffuse_ratio").columnsToDataset()
+
+        # py6s_gp.getDataset("direct_ratio").datasetToColumns()
         res_py6s['solar_zenith'] = np.asarray(py6s_gp.getDataset('solar_zenith').columns['solar_zenith'])
         res_py6s['wavelengths'] = np.asarray(list(py6s_gp.getDataset('direct_ratio').columns.keys())[2:], dtype=float)
         res_py6s['direct_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("direct_ratio").data))
         res_py6s['diffuse_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("diffuse_ratio").data))
+        node.removeGroup(py6s_gp)
         return res_py6s
 
 
