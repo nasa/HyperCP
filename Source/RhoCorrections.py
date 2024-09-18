@@ -2,11 +2,14 @@ import os
 import time
 
 import numpy as np
+import xarray as xr
+import matplotlib.pyplot as plt
 
 from Source import ZhangRho, PATH_TO_DATA
 from Source.ConfigFile import ConfigFile
 from Source.Utilities import Utilities
 from Source.HDFRoot import HDFRoot
+from Source.Water_IOPs import water_iops
 
 
 class RhoCorrections:
@@ -72,8 +75,10 @@ class RhoCorrections:
             # Wavebands clips the ends off of the spectra reducing the amount of values from 200 to 189 for
             # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
 
-            zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal,
-                                                relAzMean, newWaveBands)
+            zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, newWaveBands)
+            # this is the method to read zhang from the LUT. It is commented out pending the sensitivity study and
+            # correction to the interpolation errors that have been noted.
+            # zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, None)
 
             # |M99 - Z17| is an estimation of model error, added to MC M99 uncertainty in quadrature to give combined
             # uncertainty
@@ -183,3 +188,39 @@ class RhoCorrections:
             Utilities.writeLogFile(msg)
 
         return rhoVector, rhoDelta
+
+    @staticmethod
+    def read_Z17_LUT(ws, aod, sza, wt, sal, rel_az, nwb, zhang=None) -> np.array:
+        """
+        windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang
+
+        """
+        db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_LUT.nc')
+
+        with xr.open_dataset(db_path, engine='netcdf4') as LUT:
+            zhang_ws = LUT.interp({"wind": ws}, method='linear')
+            zhang_sza = zhang_ws.interp({"sza": sza}, method='linear')
+            zhang_aod = zhang_sza.interp({"aot": aod}, method='linear')
+            zhang_wt = zhang_aod.interp({"SST": wt}, method='linear')
+            zhang_sal = zhang_wt.interp({"sal": sal}, method='linear')
+            zhang_rel_az = zhang_sal.interp({"relAz": rel_az}, method='linear').Glint.values
+
+        # plotting commented here for use in testing phase
+        # zhang_L = np.interp(nwb, LUT.wavelength.values, zhang_rel_az)
+
+        # plt.figure("LUT-Interp")
+        # plt.plot(nwb, zhang_L, label='Piecewise-all-linear', linestyle='--', color='r')
+        # plt.plot(nwb, zhang, label='Calculated', linestyle='--', color='k')
+
+        # plt.legend()
+        # plt.xlabel("Wavelength (nm)")
+        # plt.ylabel("Zhang rho")
+        # plt.grid()
+        # plt.title("Comparison of interpolation methods used to read Z17 LUT")
+        # plt.savefig("Z17_LUT_interp_compare.png")
+
+        # plt.close("LUT-Interp")  # close the figure so it cannot interact with others (good encapsulation)
+
+        # using numpy interp in the end for wavelength as per Tom's suggestion. Not important since wavebands
+        # match LUT in test case (I used Pysas wavebands to generate LUT).
+        return np.interp(nwb, LUT.wavelength.values, zhang_rel_az)
