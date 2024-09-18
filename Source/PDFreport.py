@@ -1,7 +1,8 @@
+""" Build PDF report for each file """
 import os
 import glob
-from fpdf import FPDF
 import random
+from fpdf import FPDF
 
 from Source import PATH_TO_CONFIG
 from Source.SeaBASSHeader import SeaBASSHeader
@@ -53,10 +54,10 @@ class PDF(FPDF):
                         key != 'delimiter':
                     # L1A data has not populated file-specific metadata into the SeaBASS header yet
                     if key != 'station' and key != 'original_file_name' and \
-                        not 'start' in key and not 'end' in key and not 'latitude' in key and \
-                            not 'longitude' in key and not 'wind' in key and \
-                                not 'cloud' in key and not 'wave' in key and not 'secchi' in key and \
-                                    not 'water_depth' in key:
+                        'start' not in key and 'end' not in key and 'latitude' not in key and \
+                            'longitude' not in key and 'wind' not in key and \
+                                'cloud' not in key and 'wave' not in key and 'secchi' not in key and \
+                                    'water_depth' not in key:
                         metaData += f'/{key}={value}\n'
 
         if root.attributes['Fail'] == 0: # otherwise this is a report of failed process, so root is None.
@@ -235,7 +236,7 @@ class PDF(FPDF):
             else:
                 metaData += f'Max Wind: {ConfigFile.settings["fL1bqcMaxWind"]}\n'
                 metaData += f'Min SZA: {ConfigFile.settings["fL1bqcSZAMin"]}\n'
-                metaData += f'Max SZA: {ConfigFile.settings["fL1bqcSZAMin"]}\n'
+                metaData += f'Max SZA: {ConfigFile.settings["fL1bqcSZAMax"]}\n'
                 if ConfigFile.settings['bL1bqcEnableSpecQualityCheck']:
                     metaData += f'Filter Sigma Es: {ConfigFile.settings["fL1bqcSpecFilterEs"]}\n'
                     metaData += f'Filter Sigma Li: {ConfigFile.settings["fL1bqcSpecFilterLi"]}\n'
@@ -299,7 +300,7 @@ class PDF(FPDF):
         # Background color
         self.set_fill_color(200, 220, 255)
         # Title
-        self.cell(0, 6, '%s : %s' % (num, label), 0, 1, 'L', 1)
+        self.cell(0, 6, f'{num} : {label}', 0, 1, 'L', 1)
         # Line break
         self.ln(4)
 
@@ -419,8 +420,8 @@ class PDF(FPDF):
 
                 # for i in range(0, len(fileList)):
                 res = [i for i in fileList if 'L1B_LI' not in i and 'L1B_ES' not in i and 'L1B_LT' not in i]
-                for i in range (0, len(res)): #range(0, len(fileList)):
-                    self.image(res[i], w = 175)
+                for i, resi in enumerate(res):
+                    self.image(resi, w = 175)
                 res = [i for i in fileList if 'L1B_ES' in i]
                 if len(res) >= 3:
                     for i in range (0, 3): #range(0, len(fileList)):
@@ -456,32 +457,34 @@ class PDF(FPDF):
             fileList = glob.glob(os.path.join(inSpecFilterPath, f'*{filebasename}_*.png'))
             if len(fileList) > 0:
                 self.cell(0, 6, 'Spectral Filters', 0, 1, 'L', 1)
-                for i in range(0, len(fileList)):
-                    self.image(fileList[i], w = 175)
+                for i, file in enumerate(fileList):
+                    self.image(file, w = 175)
 
-        if level == "L2":
-            # print('Adding spectral filter plots')
-            # inSpecFilterPath = os.path.join(inPlotPath, f'{level}_Spectral_Filter')
-            # fileList = glob.glob(os.path.join(inSpecFilterPath, f'*{filebasename}_*.png'))
-            # if len(fileList) > 0:
-            #     self.cell(0, 6, 'Spectral Filters', 0, 1, 'L', 1)
-            #     for i in range(0, len(fileList)):
-            #         self.image(fileList[i], w = 175)
-
+        if level == "L2":            
             print('Adding radiometry plots')
             fileList = glob.glob(os.path.join(inPlotPath, level, f'*{filebasename}_*.png'))
             if len(fileList) > 0:
                 self.cell(0, 6, 'Radiometry', 0, 1, 'L', 1)
-                for i in range(0, len(fileList)):
-                    self.image(fileList[i], w = 175)
+                for i, file in enumerate(fileList):
+                    if ConfigFile.settings["bL2Stations"]:
+                        if "STATION" in file:
+                            self.image(file, w = 175)
+                    else:
+                        if "STATION" not in file:
+                            self.image(file, w = 175)
 
             print('Adding ocean color product plots')
             inProdPath = os.path.join(inPlotPath, f'{level}_Products')
             fileList = glob.glob(os.path.join(inProdPath, f'*{filebasename}_*.png'))
             if len(fileList) > 0:
                 self.cell(0, 6, 'Derived Spectral Products', 0, 1, 'L', 1)
-                for i in range(0, len(fileList)):
-                    self.image(fileList[i], w = 175)
+                for i,file in enumerate(fileList):
+                    if ConfigFile.settings["bL2Stations"]:
+                        if "STATION" in file:
+                            self.image(file, w = 175)
+                    else:
+                        if "STATION" not in file:
+                            self.image(file, w = 175)
 
 
     def print_chapter(self, level, title, inLog, inPlotPath, filebasename, root):

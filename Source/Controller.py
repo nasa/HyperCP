@@ -1,30 +1,30 @@
+"""The controller module in Model-View-Controller"""
 import os
 import datetime
-import numpy as np
 import collections
+import numpy as np
 
 from Source import PATH_TO_CONFIG
 from Source.HDFRoot import HDFRoot
-from Source.HDFDataset import HDFDataset
-from Source.SeaBASSWriter import SeaBASSWriter
-from Source.CalibrationFileReader import CalibrationFileReader
-from Source.CalibrationFile import CalibrationFile
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
-from Source.Utilities import Utilities
-from Source.AncillaryReader import AncillaryReader
-
 from Source.ProcessL1a import ProcessL1a
+from Source.TriosL1A import TriosL1A
+from Source.AncillaryReader import AncillaryReader
 from Source.ProcessL1aqc import ProcessL1aqc
+from Source.CalibrationFileReader import CalibrationFileReader
+from Source.CalibrationFile import CalibrationFile
 from Source.ProcessL1b import ProcessL1b
+from Source.TriosL1B import TriosL1B
 from Source.ProcessL1bqc import ProcessL1bqc
 from Source.ProcessL2 import ProcessL2
-from Source.TriosL1A import TriosL1A
-from Source.TriosL1B import TriosL1B
+from Source.SeaBASSWriter import SeaBASSWriter
 from Source.PDFreport import PDF
+from Source.Utilities import Utilities
 
 
 class Controller:
+    """The controller class in Model-View-Controller"""
 
     trios_L1A_files = []
 
@@ -44,7 +44,7 @@ class Controller:
             root = HDFRoot.readHDF5(outFilePath)
             fail = 0
             root.attributes['Fail'] = 0
-        except:
+        except Exception:
             fail =1
             # Processing failed at this level. Open the level below it
             #   This won't work for ProcessL1A looking back for RAW...
@@ -53,10 +53,10 @@ class Controller:
                     # Processing successful at the next lower level
                     # Shift from the output to the input directory
                     root = HDFRoot.readHDF5(inFilePath)
-                except:
+                except Exception:
                     msg = "Controller.writeReport: Unable to open HDF file. May be open in another application."
-                    # if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                    Utilities.errorWindow("File Error", msg)
+                    if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                        Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return
@@ -134,7 +134,7 @@ class Controller:
 
         try:
             pdf.output(outPDF, 'F')
-        except:
+        except Exception:
             msg = 'Unable to write the PDF file. It may be open in another program.'
             Utilities.errorWindow("File Error", msg)
             print(msg)
@@ -292,10 +292,10 @@ class Controller:
             if root is not None:
                 try:
                     root.writeHDF5(outFilePath)
-                except:
+                except Exception:
                     msg = 'Unable to write L1A file. It may be open in another program.'
-                    # if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                    Utilities.errorWindow("File Error", msg)
+                    if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                        Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return None, None
@@ -320,7 +320,7 @@ class Controller:
         print("ProcessL1aqc")
         try:
             root = HDFRoot.readHDF5(inFilePath)
-        except:
+        except Exception:
             msg = "Unable to open file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
             print(msg)
@@ -335,10 +335,10 @@ class Controller:
         if root is not None:
             try:
                 root.writeHDF5(outFilePath)
-            except:
+            except Exception:
                 msg = "Controller.processL1aqc: Unable to open HDF file. May be open in another application."
-                # if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                Utilities.errorWindow("File Error", msg)
+                if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                    Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
@@ -360,12 +360,12 @@ class Controller:
             return None
 
         # Process the data
-        msg = ("ProcessL1b: " + inFilePath)
+        msg = "ProcessL1b: " + inFilePath
         print(msg)
         Utilities.writeLogFile(msg)
         try:
             root = HDFRoot.readHDF5(inFilePath)
-        except:
+        except Exception:
             msg = "Controller.processL1b: Unable to open HDF file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
             print(msg)
@@ -384,7 +384,7 @@ class Controller:
         if root is not None:
             try:
                 root.writeHDF5(outFilePath)
-            except:
+            except Exception:
                 msg = "Controller.ProcessL1b: Unable to write file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
@@ -412,7 +412,7 @@ class Controller:
         print("ProcessL1bqc")
         try:
             root = HDFRoot.readHDF5(inFilePath)
-        except:
+        except Exception:
             msg = "Unable to open file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
             print(msg)
@@ -420,13 +420,13 @@ class Controller:
             return None
 
         root.attributes['In_Filepath'] = inFilePath
-        root = ProcessL1bqc.processL1bqc(root)
+        root = ProcessL1bqc.processL1bqc(root)        
 
         # Write output file
         if root is not None:
             try:
                 root.writeHDF5(outFilePath)
-            except:
+            except Exception:
                 msg = "Unable to write file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
@@ -488,7 +488,7 @@ class Controller:
             try:
                 node.writeHDF5(outFilePath)
                 return node
-            except:
+            except Exception:
                 msg = "Unable to write file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
@@ -525,7 +525,7 @@ class Controller:
         if flag_Trios and level == "L1A":
             # inFilePath is a list of filepath strings at L1A
             # Grab input name and extension of first file
-            inFileName = os.path.split(inFilePath[0])[1]            
+            inFileName = os.path.split(inFilePath[0])[1]
             outFilePath = pathOutLevel # Just the path to first file; no files
         else:
             # inFilePath is a singleton filepath string
@@ -539,7 +539,7 @@ class Controller:
         if ConfigFile.settings["bL2Stations"] == 1 and level == 'L2':
             os.environ["LOGFILE"] = f'Stations_{fileName}_{level}.log'
         else:
-            os.environ["LOGFILE"] = (fileName + '_' + level + '.log')
+            os.environ["LOGFILE"] = fileName + '_' + level + '.log'
         msg = "Process Single Level"
         print(msg)
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
@@ -569,7 +569,7 @@ class Controller:
                     Controller.trios_L1A_files = outFFPs
 
             elif level == "L1AQC":
-                ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
+                ancillaryData = Controller.processAncData(MainConfig.settings["ancFile"])
                 # If called locally from Controller and not AnomalyDetection.py, then
                 #   try to load the parameter file for this cruise/configuration and update
                 #   ConfigFile.settings to reflect the appropriate parameterizations for this
@@ -581,14 +581,14 @@ class Controller:
                     anomAnalFileName = anomAnalFileName + '_anoms.csv'
                     fp = os.path.join(PATH_TO_CONFIG, anomAnalFileName)
                     if os.path.exists(fp):
-                        msg = f"Deglitching file {fp} found for {ConfigFile.filename.split('.')[0]}. Using these parameters."
+                        msg = f"Deglitching file {fp} found for {ConfigFile.filename.split('.', maxsplit=1)[0]}. Using these parameters."
                         print(msg)
                         Utilities.writeLogFile(msg)
                         params = Utilities.readAnomAnalFile(fp)
                         # If a parameterization has been saved in the AnomAnalFile, set the properties in the local object
                         # for all sensors
                         l1aqcfileName = fileName + '_L1AQC'
-                        if l1aqcfileName in params.keys():
+                        if l1aqcfileName in params:
                             ref = 0
                             for sensor in ['ES','LI','LT']:
                                 print(f'{sensor}: Setting ConfigFile.settings to match saved parameterization. ')
@@ -616,6 +616,7 @@ class Controller:
                     print(msg)
                     Utilities.writeLogFile(msg)
                 root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData,flag_Trios)
+                # BUG: The above throws 2 class TypeErrors between the return statement at the end of the method and here??
                 Utilities.checkOutputFiles(outFilePath)
 
             elif level == "L1B":
@@ -635,19 +636,29 @@ class Controller:
                 print('No such input file: ' + inFilePath)
                 return False#None, outFilePath
 
-            msg = ("ProcessL2: " + inFilePath)
+            msg = "ProcessL2: " + inFilePath
             print(msg)
             Utilities.writeLogFile(msg)
             try:
                 # root variable is replaced by L2 node unless station extraction, in which case
                 #   it is retained and node is returned from ProcessL2
                 root = HDFRoot.readHDF5(inFilePath)
-            except:
+                root.attributes['L1BQC_FILE_NAME'] = inFileName
+                del root.attributes["In_Filepath"]
+            except Exception:
                 msg = "Unable to open file. May be open in another application."
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False#None, outFilePath
+
+            # Check for new 6S model group
+            test = root.getGroup('PY6S_MODEL')
+            if test is None:
+                msg = "6S model not found, probably because lower level data was processed before v1.2.5. "
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
 
             # Check L2 file for low-level uncertainty processing matching the uncertainty processing
             # called here (i.e., don't let Factory-Only files get processed for FRM-Class or FRM-Full)
@@ -680,7 +691,7 @@ class Controller:
                 for ds in ancGroup.datasets:
                     try:
                         ancGroup.datasets[ds].datasetToColumns()
-                    except:
+                    except Exception:
                         print('Error: Something wrong with root ANCILLARY')
                 stations = np.array(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
                 stations = np.unique(stations[~np.isnan(stations)]).tolist()
@@ -693,7 +704,7 @@ class Controller:
                         # Current SeaBASS convention experiment_cruise_measurement_datetime_Revision#.sb
                         # For HDF, leave off measurement; add at SeaBASS writer
                         outPath, filename = os.path.split(outFilePath)
-                        filename,ext = filename.split('.')
+                        filename,_ = filename.split('.')
                         filename = f'{filename}_STATION_{stationStr}.hdf'
                         outFilePathStation = os.path.join(outPath,filename)
 
@@ -701,7 +712,8 @@ class Controller:
                         print(msg)
                         Utilities.writeLogFile(msg)
 
-                        node = Controller.processL2(root, outFilePathStation,station)
+                        # Cannot overwrite root here, in case there is more than one station in the file.
+                        Controller.processL2(root, outFilePathStation,station)
                         Utilities.checkOutputFiles(outFilePathStation)
 
                         if os.path.isfile(outFilePathStation):
@@ -718,8 +730,16 @@ class Controller:
                                 if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
                                     msg = f'Output SeaBASS for HDF: \n{outFilePathStation}'
                                     print(msg)
-                                    Utilities.writeLogFile(msg)
-                                    SeaBASSWriter.outputTXT_Type2(outFilePathStation)
+                                    Utilities.writeLogFile(msg)                                    
+                                    sbFileName = SeaBASSWriter.outputTXT_Type2(outFilePathStation)
+
+                                    # If this is being output to SeaBASS later, add a root attribute 
+                                    # with the SeaBASS filename base (i.e., not rrs or es)
+                                    baseName = sbFileName[0:sbFileName.find('L2')-1]
+                                    # Need to reopen the station L2 to update the attribute
+                                    stationRoot = HDFRoot.readHDF5(outFilePathStation)
+                                    stationRoot.attributes['SeaBASS_File_Name_Base'] = baseName
+                                    stationRoot.writeHDF5(outFilePathStation)
                                 # return True
 
                         # Write L2 report for each station, regardless of pass/fail
@@ -731,7 +751,7 @@ class Controller:
                     Utilities.writeLogFile(msg)
 
             else:
-                # Even where not extracting stations, processL2 returns node, not root, but to comply with expectations
+                # Even where not extracting stations, processL2 returns PL2 node, not root, but to comply with expectations
                 # below based on the other levels and PDF reporting, overwrite root with node
                 root = Controller.processL2(root,outFilePath)
                 Utilities.checkOutputFiles(outFilePath)
@@ -751,7 +771,13 @@ class Controller:
                             msg = f'Output SeaBASS for HDF: \n{outFilePath}'
                             print(msg)
                             Utilities.writeLogFile(msg)
-                            SeaBASSWriter.outputTXT_Type2(outFilePath)
+                            sbFileName = SeaBASSWriter.outputTXT_Type2(outFilePath)
+
+                            # If this is being output to SeaBASS later, add a root attribute 
+                            # with the SeaBASS filename base (i.e., not rrs or es)
+                            baseName = sbFileName[0:sbFileName.find('L2')-1]
+                            root.attributes['SeaBASS_File_Name_Base'] = baseName
+                            root.writeHDF5(outFilePath)
 
         # If the process failed at any level, write a report and return
         if root is None and ConfigFile.settings["bL2Stations"] == 0:

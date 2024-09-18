@@ -1,11 +1,13 @@
+''' Process L1BQC to L2 '''
 import collections
 import warnings
 import time
 
+import datetime
+import copy
 import numpy as np
 import scipy as sp
-import datetime as datetime
-import copy
+
 from PyQt5 import QtWidgets
 from tqdm import tqdm
 
@@ -90,7 +92,7 @@ class ProcessL2:
                 #   This is most likely in blue, non-turbid waters not intended for NIR offset correction.
                 #   Revert to NIR correction of 0 when this happens. No good way to update the L2 attribute
                 #   metadata because it may only be on some ensembles within a file.
-                msg = f'Bad NIR Correction. Revert to No NIR correction.'
+                msg = 'Bad NIR Correction. Revert to No NIR correction.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 rrsNIRCorr = 0
@@ -161,7 +163,7 @@ class ProcessL2:
             ρ780 = []
             x = []
             for k in ρSlice:
-                if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
+                if k in ('Datetime', 'Datetag', 'Timetag2'):
                     continue
                 if float(k) >= 760 and float(k) <= 800:
                     x.append(float(k))
@@ -173,7 +175,7 @@ class ProcessL2:
             ρ870 = []
             x = []
             for k in ρSlice:
-                if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
+                if k in ('Datetime', 'Datetag', 'Timetag2'):
                     continue
                 if float(k) >= 850 and float(k) <= 890:
                     x.append(float(k))
@@ -182,6 +184,8 @@ class ProcessL2:
                 msg = 'No data found at 870 nm'
                 print(msg)
                 Utilities.writeLogFile(msg)
+                ρ3 = None
+                F03 = None
             else:
                 ρ3 = sp.interpolate.interp1d(x,ρ870)(870)
                 F03 = sp.interpolate.interp1d(wavelength,F0)(870)
@@ -213,12 +217,12 @@ class ProcessL2:
             #   Revert to NIR correction of 0 when this happens. No good way to update the L2 attribute
             #   metadata because it may only be on some ensembles within a file.
             if rrsNIRCorr < 0:
-                    msg = f'Bad NIR Correction. Revert to No NIR correction.'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    rrsNIRCorr = 0
-                    nLwNIRCorr = 0
-                    # L2 metadata will be updated
+                msg = 'Bad NIR Correction. Revert to No NIR correction.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                rrsNIRCorr = 0
+                nLwNIRCorr = 0
+                # L2 metadata will be updated
 
             for k in rrsSlice:
                 if (k == 'Datetime') or (k == 'Datetag') or (k == 'Timetag2'):
@@ -266,7 +270,7 @@ class ProcessL2:
         newIrradianceGroup = node.getGroup("IRRADIANCE")
 
         # If this is the first ensemble spectrum, set up the new datasets
-        if not (f'Rrs_{sensor}' in newReflectanceGroup.datasets):
+        if not f'Rrs_{sensor}' in newReflectanceGroup.datasets:
             newESData = newIrradianceGroup.addDataset(f"ES_{sensor}")
             newLIData = newRadianceGroup.addDataset(f"LI_{sensor}")
             newLTData = newRadianceGroup.addDataset(f"LT_{sensor}")
@@ -343,9 +347,9 @@ class ProcessL2:
         # If this is the first spectrum, add date/time, otherwise append
         # Groups REFLECTANCE, IRRADIANCE, and RADIANCE are intiallized with empty datasets, but
         # ANCILLARY is not.
-        if ("Datetag" not in newRrsData.columns):
+        if "Datetag" not in newRrsData.columns:
             for gp in node.groups:
-                if (gp.id == "ANCILLARY"): # Ancillary is already populated. The other groups only have empty (named) datasets
+                if gp.id == "ANCILLARY": # Ancillary is already populated. The other groups only have empty (named) datasets
                     continue
                 else:
                     for ds in gp.datasets:
@@ -355,7 +359,7 @@ class ProcessL2:
                             gp.datasets[ds].columns["Timetag2"] = [timeTag]
         else:
             for gp in node.groups:
-                if (gp.id == "ANCILLARY"):
+                if gp.id == "ANCILLARY":
                     continue
                 else:
                     for ds in gp.datasets:
@@ -406,9 +410,9 @@ class ProcessL2:
         deleteKey = []
         for i, wvl in enumerate(waveSubset):  # loop through wavebands
             k = str(wvl)
-            if (any([wvl == float(x) for x in esXSlice]) and
-                    any([wvl == float(x) for x in liXSlice]) and
-                    any([wvl == float(x) for x in ltXSlice])):
+            if (any(wvl == float(x) for x in esXSlice) and
+                    any(wvl == float(x) for x in liXSlice) and
+                    any(wvl == float(x) for x in ltXSlice)):
                 # Initialize the new dataset if this is the first slice
                 if k not in newESData.columns:
                     newESData.columns[k] = []
@@ -460,17 +464,17 @@ class ProcessL2:
                 # Calculate the remote sensing reflectance
                 nLwUNC = {}
                 if threeCRho:
-                    lw = (lt - (rhoScalar * li))
+                    lw = lt - (rhoScalar * li)
                     rrs = lw / es
 
                 elif ZhangRho:
                     # Only populate the valid wavelengths
                     if float(k) in waveSubset:
-                        lw = (lt - (rhoVec[k] * li))
+                        lw = lt - (rhoVec[k] * li)
                         rrs = lw / es
 
                 else:
-                    lw = (lt - (rhoScalar * li))
+                    lw = lt - (rhoScalar * li)
                     rrs = lw / es
 
                 #Calculate the normalized water leaving radiance
@@ -588,7 +592,7 @@ class ProcessL2:
         print(msg)
         Utilities.writeLogFile(msg)
 
-        if sensor == None:
+        if sensor is None:
             if group.id == "ANCILLARY":
                 timeStamp = group.getDataset("LATITUDE").data["Datetime"]
             if group.id == "IRRADIANCE":
@@ -632,7 +636,7 @@ class ProcessL2:
                         try:
                             rowsToDelete.append(i)
                             finalCount += 1
-                        except:
+                        except Exception:
                             print('error')
                     else:
                         newTimeStamp.append(timeStamp[i])
@@ -650,8 +654,8 @@ class ProcessL2:
             # if ds != "STATION":
             try:
                 group.datasets[ds].datasetToColumns()
-            except:
-                print('sheeeeit')
+            except Exception:
+                print('error')
 
         msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
         print(msg)
@@ -767,8 +771,8 @@ class ProcessL2:
 
         badTimes = np.unique(badTimes)
         # Duplicate each element to a list of two elements in a list
-        ''' BUG: This is not optimal as it creates one badTimes record for each bad
-            timestamp, rather than span of timestamps from badtimes[i][0] to badtimes[i][1]'''
+        # BUG: This is not optimal as it creates one badTimes record for each bad
+        #   timestamp, rather than span of timestamps from badtimes[i][0] to badtimes[i][1]
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
         msg = f'{len(np.unique(badTimes))/len(ltDatetime)*100:.1f}% of spectra flagged'
         print(msg)
@@ -780,9 +784,11 @@ class ProcessL2:
 
 
     @staticmethod
-    def negReflectance(reflGroup, field, VIS = [400,700]):
+    def negReflectance(reflGroup, field, VIS = None):
         ''' Perform negative reflectance spectra checking '''
         # Run for entire file, not just one ensemble
+        if VIS is None:
+            VIS = [400,700]
 
         reflData = reflGroup.getDataset(field)
         # reflData.datasetToColumns()
@@ -907,7 +913,7 @@ class ProcessL2:
 
             # Masking spectra affected by rainfall and high humidity
             # Wernand 2002 (940/370), Garaba et al. 2012 also uses Es(940/370), presumably 720 was developed by Wang...???
-            ''' Follow up on the source of this flag'''
+            # TODO: Follow up on the source of this flag
             if es720[indx]/es370[indx] < humidityFlag:
                 msg = f'Quality Check: ES(720.0)/ES(370.0) < humidityFlag:{humidityFlag}'
                 print(msg)
@@ -1131,74 +1137,81 @@ class ProcessL2:
 
 
     @staticmethod
-    def sliceAveAnc(node, start, end, y, ancGroup):
-        ''' Take the slice AND the mean averages of ancillary data with X% '''
-        if node.getGroup('ANCILLARY'):
-            newAncGroup = node.getGroup('ANCILLARY')
-        else:
-            newAncGroup = node.addGroup('ANCILLARY')
+    def sliceAveOther(node, start, end, y, ancGroup, py6SGroup):
+        ''' Take the slice AND the mean averages of ancillary and 6S data with X% '''        
 
-        for ds in ancGroup.datasets:
-            if newAncGroup.getDataset(ds):
-                newDS = newAncGroup.getDataset(ds)
+        def _sliceAveOther(node, start, end, y, group):
+            if node.getGroup(group.id):
+                newGroup = node.getGroup(group.id)
             else:
-                newDS = newAncGroup.addDataset(ds)
-            DS = ancGroup.getDataset(ds)
-            DS.datasetToColumns()
-            dsSlice = ProcessL2.columnToSlice(DS.columns,start, end)
-            dsXSlice = None
+                newGroup = node.addGroup(group.id)
 
-            for subset in dsSlice: # ancillary datasets contain columns (including date, time, and flags)
-                if subset == 'Datetime':
-                    timeStamp = dsSlice[subset]
-                    # Stores the mean datetime by converting to (and back from) epoch second
-                    if len(timeStamp) > 0:
-                        epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
-                        tsSeconds = []
-                        for dt in timeStamp:
-                            tsSeconds.append((dt-epoch).total_seconds())
-                        meanSec = np.mean(tsSeconds)
-                        dateTime = datetime.datetime.utcfromtimestamp(meanSec).replace(tzinfo=datetime.timezone.utc)
-                        date = Utilities.datetime2DateTag(dateTime)
-                        time = Utilities.datetime2TimeTag2(dateTime)
-                if subset != 'Datetime' and subset != 'Datetag' and subset != 'Timetag2':
-                    v = [dsSlice[subset][i] for i in y] # y is an array of indexes for the lowest X%
+            for dsID in group.datasets:
+                if newGroup.getDataset(dsID):
+                    newDS = newGroup.getDataset(dsID)
+                else:
+                    newDS = newGroup.addDataset(dsID)
+                ds = group.getDataset(dsID)
+                ds.datasetToColumns()
+                dsSlice = ProcessL2.columnToSlice(ds.columns,start, end)
+                dsXSlice = None
 
-                    if dsXSlice is None:
-                        dsXSlice = collections.OrderedDict()
-                        dsXSlice['Datetag'] = [date]
-                        dsXSlice['Timetag2'] = [time]
-                        dsXSlice['Datetime'] = [dateTime]
+                for subDScol in dsSlice: # each dataset contains columns (including date, time, data, and possibly flags)
+                    if subDScol == 'Datetime':
+                        timeStamp = dsSlice[subDScol]
+                        # Stores the mean datetime by converting to (and back from) epoch second
+                        if len(timeStamp) > 0:
+                            epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc) #Unix zero hour
+                            tsSeconds = []
+                            for dt in timeStamp:
+                                tsSeconds.append((dt-epoch).total_seconds())
+                            meanSec = np.mean(tsSeconds)
+                            dateTime = datetime.datetime.utcfromtimestamp(meanSec).replace(tzinfo=datetime.timezone.utc)
+                            date = Utilities.datetime2DateTag(dateTime)
+                            sliceTime = Utilities.datetime2TimeTag2(dateTime)
+                    if subDScol not in ('Datetime', 'Datetag', 'Timetag2'):
+                        v = [dsSlice[subDScol][i] for i in y] # y is an array of indexes for the lowest X%
 
-                    if subset not in dsXSlice:
-                            dsXSlice[subset] = []
-                    if (subset.endswith('FLAG')) or (subset.endswith('STATION')):
-                        # Find the most frequest element
-                        dsXSlice[subset].append(Utilities.mostFrequent(v))
-                    else:
-                        # Otherwise take a nanmean of the slice
-                        with warnings.catch_warnings():
-                            warnings.simplefilter("ignore", category=RuntimeWarning)
-                            dsXSlice[subset].append(np.nanmean(v)) # Warns of empty when empty...
+                        if dsXSlice is None:
+                            dsXSlice = collections.OrderedDict()
+                            dsXSlice['Datetag'] = [date]
+                            dsXSlice['Timetag2'] = [sliceTime]
+                            dsXSlice['Datetime'] = [dateTime]
 
-            if subset not in newDS.columns:
-                newDS.columns = dsXSlice
-            else:
-                for item in newDS.columns:
-                    newDS.columns[item] = np.append(newDS.columns[item], dsXSlice[item])
+                        if subDScol not in dsXSlice:
+                            dsXSlice[subDScol] = []
+                        if (subDScol.endswith('FLAG')) or (subDScol.endswith('STATION')):
+                            # Find the most frequest element
+                            dsXSlice[subDScol].append(Utilities.mostFrequent(v))
+                        else:
+                            # Otherwise take a nanmean of the slice
+                            with warnings.catch_warnings():
+                                warnings.simplefilter("ignore", category=RuntimeWarning)
+                                dsXSlice[subDScol].append(np.nanmean(v)) # Warns of empty when empty...
 
-            newDS.columns.move_to_end('Timetag2', last=False)
-            newDS.columns.move_to_end('Datetag', last=False)
-            newDS.columns.move_to_end('Datetime', last=False)
-            newDS.columnsToDataset()
+                # Just test a sample column to see if it needs adding or appending
+                if subDScol not in newDS.columns:
+                    newDS.columns = dsXSlice
+                else:
+                    for item in newDS.columns:
+                        newDS.columns[item] = np.append(newDS.columns[item], dsXSlice[item])
 
+                newDS.columns.move_to_end('Timetag2', last=False)
+                newDS.columns.move_to_end('Datetag', last=False)
+                newDS.columns.move_to_end('Datetime', last=False)
+                newDS.columnsToDataset()
+
+        _sliceAveOther(node, start, end, y, ancGroup)        
+        _sliceAveOther(node, start, end, y, py6SGroup)
 
     @staticmethod
-    def ensemblesReflectance(node, sasGroup, refGroup, ancGroup, uncGroup, esRawGroup, liRawGroup, ltRawGroup, start, end):
+    def ensemblesReflectance(node, sasGroup, refGroup, ancGroup, uncGroup,
+                             esRawGroup, liRawGroup, ltRawGroup,
+                             py6SGroup, start, end):
         '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for
         meteorological quality flags. Perform glint corrections. Calculate the Rrs. Correct for NIR
         residuals.'''
- 
+
         esData = refGroup.getDataset("ES")
         liData = sasGroup.getDataset("LI")
         ltData = sasGroup.getDataset("LT")
@@ -1224,6 +1237,23 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)
             return False
+        #Py6S
+        if py6SGroup is not None:
+            diffuseData = py6SGroup.getDataset("diffuse_ratio")
+            directData = py6SGroup.getDataset("direct_ratio")
+            py6SesData = py6SGroup.getDataset("py6s_irradiance")
+            # no need to retain SZA
+            # Copy datasets to dictionary
+            diffuseData.datasetToColumns()
+            diffuseColumns = diffuseData.columns
+            directData.datasetToColumns()
+            directColumns = directData.columns
+            py6SesData.datasetToColumns()
+            py6SesColumns = py6SesData.columns
+
+            # diffuseSlice = ProcessL2.columnToSlice(diffuseColumns,start, end)
+            # directSlice = ProcessL2.columnToSlice(directColumns,start, end)
+            # py6SesSlice = ProcessL2.columnToSlice(py6SesColumns,start, end)
 
         # process raw groups for generating standard deviations
         def _sliceRawData(ES_raw, LI_raw, LT_raw):
@@ -1304,6 +1334,18 @@ class ProcessL2:
         ltSlice.pop("Datetag")
         ltSlice.pop("Timetag2")
         ltSlice.pop("Datetime")
+
+        # directSlice.pop("Datetag")
+        # directSlice.pop("Timetag2")
+        # directSlice.pop("Datetime")
+
+        # diffuseSlice.pop("Datetag")
+        # diffuseSlice.pop("Timetag2")
+        # diffuseSlice.pop("Datetime")
+
+        # py6SesSlice.pop("Datetag")
+        # py6SesSlice.pop("Timetag2")
+        # py6SesSlice.pop("Datetime")
 
         # Process StdSlices for Band Convolution
         # Get common wavebands from esSlice to interp stats
@@ -1407,11 +1449,11 @@ class ProcessL2:
             timeObj['dateTag'] = dateTag
             timeObj['timeTag'] = timeTag
 
-        '''# Calculates the lowest X% (based on Hooker & Morel 2003; Hooker et al. 2002; Zibordi et al. 2002, IOCCG Protocols)
-        X will depend on FOV and integration time of instrument. Hooker cites a rate of 2 Hz.
-        It remains unclear to me from Hooker 2002 whether the recommendation is to take the average of the ir/radiances
-        within the threshold and calculate Rrs, or to calculate the Rrs within the threshold, and then average, however IOCCG
-        Protocols pretty clearly state to average the ir/radiances first, then calculate the Rrs...as done here.'''
+        # Calculates the lowest X% (based on Hooker & Morel 2003; Hooker et al. 2002; Zibordi et al. 2002, IOCCG Protocols)
+        # X will depend on FOV and integration time of instrument. Hooker cites a rate of 2 Hz.
+        # It remains unclear to me from Hooker 2002 whether the recommendation is to take the average of the ir/radiances
+        # within the threshold and calculate Rrs, or to calculate the Rrs within the threshold, and then average, however IOCCG
+        # Protocols pretty clearly state to average the ir/radiances first, then calculate the Rrs...as done here.
         x = round(n*percentLt/100) # number of retained values
         msg = f'{n} spectra in slice (ensemble).'
         print(msg)
@@ -1438,7 +1480,7 @@ class ProcessL2:
             y = index
 
         EnsembleN = len(y) # After taking lowest X%
-        if not 'Ensemble_N' in node.getGroup('REFLECTANCE').datasets:
+        if 'Ensemble_N' not in node.getGroup('REFLECTANCE').datasets:
             node.getGroup('REFLECTANCE').addDataset('Ensemble_N')
             node.getGroup('IRRADIANCE').addDataset('Ensemble_N')
             node.getGroup('RADIANCE').addDataset('Ensemble_N')
@@ -1519,7 +1561,7 @@ class ProcessL2:
         # (Combines Slice and XSlice -- as above -- into one method)
         # node.groups.append(ancGroup)
 
-        ProcessL2.sliceAveAnc(node, start, end, y, ancGroup)
+        ProcessL2.sliceAveOther(node, start, end, y, ancGroup, py6SGroup)
         newAncGroup = node.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
 
@@ -1554,7 +1596,7 @@ class ProcessL2:
             AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
             if isinstance(AODXSlice, list):
                 AODXSlice = AODXSlice[0]
-        except:
+        except Exception:
             if ZhangRho:
                 msg = 'ProcessL2.ensemblesReflectance: No AOD data present in Ancillary. Activate model acquisition in L1B.'
                 print(msg)
@@ -1597,7 +1639,7 @@ class ProcessL2:
         Rho_Uncertainty_Obj = Propagate(M=100, cores=1)
 
         if threeCRho:
-            '''Placeholder for Groetsch et al. 2017'''
+            # NOTE: Placeholder for Groetsch et al. 2017
 
             li750 = ProcessL2.interpolateColumn(liXSlice, 750.0)
             es750 = ProcessL2.interpolateColumn(esXSlice, 750.0)
@@ -1608,10 +1650,10 @@ class ProcessL2:
             rhoVec = None
 
         elif ZhangRho:
-            ''' Zhang rho is based on Zhang et al. 2017 and calculates the wavelength-dependent rho vector
-            separated for sun and sky to include polarization factors.
+            # Zhang rho is based on Zhang et al. 2017 and calculates the wavelength-dependent rho vector
+            # separated for sun and sky to include polarization factors.
 
-            Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.'''
+            # Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.
 
             # reduce number of draws because of how computationally intensive the Zhang method is
             Rho_Uncertainty_Obj = Propagate(M=10, cores=1)
@@ -1644,7 +1686,7 @@ class ProcessL2:
                     Utilities.writeLogFile(msg)
                     return False
             if min(wavelength) < 350 or max(wavelength) > 1000:
-                msg = f'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'
+                msg = 'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 wave_old = wavelength.copy()
@@ -1666,10 +1708,6 @@ class ProcessL2:
         else:
             # Full Mobley 1999 model from LUT
             try:
-                #   I'm still foggy on why AOD is needed for M99... DAA
-                # line 1508 is the same code, except if Zhang Rho is selected then a lack of AOD is a serious error
-                # code is repeated to retain the try/except component above but avoid printing the console and log
-                # messages if M99 is selected.
                 AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
                 if isinstance(AODXSlice, list):
                     AODXSlice = AODXSlice[0]
@@ -1680,7 +1718,7 @@ class ProcessL2:
             except NameError:
                 rhoScalar, rhoUNC = RhoCorrections.M99Corr(WINDSPEEDXSlice, SZAXSlice, RelAzXSlice,
                                                              Rho_Uncertainty_Obj)
-        
+
         # Calculate hyperspectral Coddingtion TSIS_1 hybrid F0 function
         # NOTE: TSIS uncertainties reported as 1-sigma
         F0_hyper, F0_unc, F0_raw, F0_unc_raw, wv_raw = Utilities.TSIS_1(dateTag, wavelength)
@@ -1788,11 +1826,11 @@ class ProcessL2:
 
         # move uncertainties from xSlice to xUNC
         if xUNC is not None:
-            for slice in list(xSlice.keys()):
-                if "sample" in slice.lower():
-                    xSlice.pop(slice)  # samples are no longer needed
-                elif "unc" in slice.lower():
-                    xUNC[f"{slice[0:2]}UNC_HYPER"] = xSlice.pop(slice)  # transfer instrument uncs to xUNC
+            for sliceKey in list(xSlice.keys()):
+                if "sample" in sliceKey.lower():
+                    xSlice.pop(sliceKey)  # samples are no longer needed
+                elif "unc" in sliceKey.lower():
+                    xUNC[f"{sliceKey[0:2]}UNC_HYPER"] = xSlice.pop(sliceKey)  # transfer instrument uncs to xUNC
 
             # for convolving to satellite bands
             esUNCSlice = xUNC["esUNC_HYPER"]  # ODicts... whereas lwUNC and rrsUNC are simple arrays
@@ -2025,12 +2063,13 @@ class ProcessL2:
         rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
+
+        py6s_available = False
         for gp in root.groups:
-            if gp.id == 'PY6S_MODEL':                
+            if gp.id == 'PY6S_MODEL':
                 py6s_available = True
                 rootCopy.getGroup('PY6S_MODEL').copy(root.getGroup('PY6S_MODEL'))
-            else:
-                py6s_available = False
+                break
 
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("ES_DARK_L1AQC")
@@ -2068,6 +2107,8 @@ class ProcessL2:
         ancGroup = rootCopy.getGroup("ANCILLARY")
         if py6s_available:
             py6SGroup = rootCopy.getGroup("PY6S_MODEL")
+        else:
+            py6SGroup = None
 
         if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("RAW_UNCERTAINTIES")
@@ -2096,7 +2137,7 @@ class ProcessL2:
             try:
                 stations = ancGroup.getDataset("STATION").columns["STATION"]
                 dateTime = ancGroup.getDataset("STATION").columns["Datetime"]
-            except:
+            except Exception:
                 msg = "No station data found in ancGroup. Aborting."
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -2108,17 +2149,17 @@ class ProcessL2:
             for index, stn in enumerate(stations):
                 # print(f'index: {index}, station: {station}, datetime: {dateTime[index]}')
                 # if np.isnan(station) and start == False:
-                if (stn != station) and (start == False):
+                if (stn != station) and (start is False):
                     start = dateTime[index]
                 # if not np.isnan(station) and not (start == False) and (stop == False):
-                if not (stn!=station) and not (start == False) and (stop == False):
+                if not (stn!=station) and (start is not False) and (stop is False):
                     stop = dateTime[index-1]
                     badTimes.append([start, stop])
                     start = False
                     stop = False
                 # End of file, no active station
                 # if np.isnan(station) and not (start == False) and (index == len(stations)-1):
-                if (stn != station) and not (start == False) and (index == len(stations)-1):
+                if (stn != station) and not (start is False) and (index == len(stations)-1):
                     stop = dateTime[index]
                     badTimes.append([start, stop])
 
@@ -2165,8 +2206,9 @@ class ProcessL2:
                 start = i
                 end = i+1
 
-                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
-                                                      liRawGroup, ltRawGroup, start, end):
+                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
+                                                            uncGroup, esRawGroup,liRawGroup, ltRawGroup,
+                                                            py6SGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance unsliced failed. Abort.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -2188,27 +2230,29 @@ class ProcessL2:
 
             for i in range(0, esLength):
                 # time = Utilities.timeTag2ToSec(tt2[i])
-                time = timeStamp[i]
-                if (time > endTime) or EndOfFileFlag: # end of increment reached
+                timei = timeStamp[i]
+                if (timei > endTime) or EndOfFileFlag: # end of increment reached
                     if EndOfFileFlag:
                         end = len(timeStamp)-1 # File shorter than interval; include all spectra
-                        if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
-                                                          liRawGroup, ltRawGroup, start, end):
+                        if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
+                                                            uncGroup, esRawGroup,liRawGroup, ltRawGroup,
+                                                            py6SGroup, start, end):
                             msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                             print(msg)
                             Utilities.writeLogFile(msg)
 
                             break # End of file reached. Safe to break
                     else:
-                        endTime = time + datetime.timedelta(0,interval) # increment for the next bin loop
+                        endTime = timei + datetime.timedelta(0,interval) # increment for the next bin loop
                         end = i # end of the slice is up to and not including...so -1 is not needed
-                    
+
                     if endTime > endFileTime:
                         endTime = endFileTime
                         EndOfFileFlag = True
 
-                    if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
-                                                          liRawGroup, ltRawGroup, start, end):
+                    if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
+                                                            uncGroup, esRawGroup,liRawGroup, ltRawGroup,
+                                                            py6SGroup, start, end):
                         msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                         print(msg)
                         Utilities.writeLogFile(msg)
@@ -2224,8 +2268,9 @@ class ProcessL2:
             # For the rare case where end of record is reached at, but not exceeding, endTime...
             if not EndOfFileFlag:
                 end = i+1 # i is the index of end of record; plus one to include i due to -1 list slicing
-                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, uncGroup, esRawGroup,
-                                                      liRawGroup, ltRawGroup, start, end):
+                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
+                                                            uncGroup, esRawGroup,liRawGroup, ltRawGroup,
+                                                            py6SGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance ender clause failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -2236,9 +2281,9 @@ class ProcessL2:
         #
 
         # Filter reflectances for negative ensemble spectra
-        ''' # Any spectrum that has any negative values between
-            #  400 - 700ish (adjustable below), remove the entire spectrum. Otherwise,
-            # set negative bands to 0.'''
+        # NOTE: Any spectrum that has any negative values between
+        #  400 - 700ish (hard-coded below), remove the entire spectrum. Otherwise,
+        # set negative bands to 0.
 
         if ConfigFile.settings["bL2NegativeSpec"]:
             fRange = [400, 680]
@@ -2295,12 +2340,12 @@ class ProcessL2:
         node.addGroup("REFLECTANCE")
         node.addGroup("IRRADIANCE")
         node.addGroup("RADIANCE")
-        # node.addGroup("PY6S_MODEL")
+        node.addGroup("PY6S_MODEL")
         node.copyAttributes(root)
         node.attributes["PROCESSING_LEVEL"] = "2"
         # Remaining attributes managed below...
 
-        # For completeness, flip datasets into columns in all groups
+        # Copy attributes from root and for completeness, flip datasets into columns in all groups
         for grp in root.groups:
             for gp in node.groups:
                 if gp.id == grp.id:
@@ -2309,7 +2354,7 @@ class ProcessL2:
                 grp.datasets[ds].datasetToColumns()
 
             # Carry over L1AQC data for use in uncertainty budgets
-            if grp.id.endswith('_L1AQC') or grp.id.startswith('PY6S_MODEL'):
+            if grp.id.endswith('_L1AQC'): #or grp.id.startswith('PY6S_MODEL'):
                 newGrp = node.addGroup(grp.id)
                 newGrp.copy(grp)
                 for ds in newGrp.datasets:
@@ -2385,23 +2430,23 @@ class ProcessL2:
         # In the case of TriOS Factory, strip out uncertainty datasets
         if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
             for gp in node.groups:
-                if gp.id == 'IRRADIANCE' or gp.id == 'RADIANCE' or gp.id == 'REFLECTANCE':
+                if gp.id in ('IRRADIANCE', 'RADIANCE', 'REFLECTANCE'):
                     removeList = []
                     for dsName in reversed(gp.datasets):
                         if dsName.endswith('_unc'):
-                           removeList.append(dsName)
+                            removeList.append(dsName)
                     for dsName in removeList:
-                            gp.removeDataset(dsName)
+                        gp.removeDataset(dsName)
 
         # Change _median nomiclature to _uncorr
         for gp in node.groups:
-            if gp.id == 'IRRADIANCE' or gp.id == 'RADIANCE' or gp.id == 'REFLECTANCE':
+            if gp.id in ('IRRADIANCE', 'RADIANCE', 'REFLECTANCE'):
                 changeList = []
                 for dsName in gp.datasets:
                     if dsName.endswith('_median'):
                         changeList.append(dsName)
                 for dsName in changeList:
-                        gp.datasets[dsName].changeDatasetName(gp,dsName,dsName.replace('_median','_uncorr'))
+                    gp.datasets[dsName].changeDatasetName(gp,dsName,dsName.replace('_median','_uncorr'))
 
 
         # Now strip datetimes from all datasets
@@ -2411,5 +2456,9 @@ class ProcessL2:
                 if "Datetime" in ds.columns:
                     ds.columns.pop("Datetime")
                 ds.columnsToDataset()
+
+        now = datetime.datetime.now()
+        timestr = now.strftime("%d-%b-%Y %H:%M:%S")
+        node.attributes["FILE_CREATION_TIME"] = timestr
 
         return node

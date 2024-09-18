@@ -88,7 +88,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         self.platformLineEdit = QtWidgets.QLineEdit(self)
         try:
             self.platformLineEdit.setText(str(SeaBASSHeader.settings["platform"]))
-        except:
+        except Exception:
             SeaBASSHeader.settings["platform"] = ''
             self.platformLineEdit.setText(str(SeaBASSHeader.settings["platform"]))
 
@@ -482,7 +482,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         # First try to fill left column metadata headers using the Ancillary fill if provided.
         #   Only when opening, not when saving
         if caller == 'config1':
-            fp = MainConfig.settings["metFile"]
+            fp = MainConfig.settings["ancFile"]
             if not os.path.isfile(fp):
                 print("Specified ancillary file not found: " + fp)
             else:
@@ -570,7 +570,10 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         else:
             NegativeFilt = "Off"
 
-        MainConfig.loadConfig('main.config','version')
+        if os.environ["HYPERINSPACE_CMD"]:
+            MainConfig.loadConfig('cmdline_main.config','version')
+        else:
+            MainConfig.loadConfig('main.config','version')
         SeaBASSHeader.settings["comments"] =\
             f'! HyperInSPACE vers = {MainConfig.settings["version"]}\n'+\
             f'! HyperInSPACE Config = {ConfigFile.filename}\n'+\
@@ -687,7 +690,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         ConfigFile.settings["seaBASSHeaderFileName"] = self.name
 
         # QtWidgets.QMessageBox.about(self, "Edit SeaBASSHeader File", "SeaBASSHeader File Saved")
-        ConfigFile.saveConfig(ConfigFile.filename)        
+        ConfigFile.saveConfig(ConfigFile.filename)
         self.close()
 
     def refreshWindow(self):

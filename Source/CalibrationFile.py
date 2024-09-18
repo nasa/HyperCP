@@ -1,4 +1,6 @@
-
+''' Interpret raw SeaBird-style data files
+    Reads raw files line by line and parses the data 
+'''
 import binascii
 import os
 import sys
@@ -7,9 +9,10 @@ from Source.CalibrationData import CalibrationData
 from Source.Utilities import Utilities
 
 
-# CalibrationFile class stores information about an instrument
-# obtained from reading a calibration file
 class CalibrationFile:
+    '''CalibrationFile class stores information about an instrument
+        obtained from reading a calibration file'''
+
     def __init__(self):
         self.id = ""
         self.name = ""
@@ -42,7 +45,7 @@ class CalibrationFile:
             if not line:
                 break
             line = line.strip()
-            
+
             # Ignore comments and empty lines
             if line.startswith("#") or len(line) == 0:
                 continue
@@ -54,9 +57,7 @@ class CalibrationFile:
 
             # Determines the frame synchronization string by appending
             # ids from INSTRUMENT and SN lines
-            # ToDo: Add a check to ensure INSTRUMENT and SN are the first two lines
-            if cdtype == "INSTRUMENT" or cdtype == "VLF_INSTRUMENT" or \
-               cdtype == "SN" or cdtype == "VLF_SN":
+            if cdtype in ('INSTRUMENT', 'VLF_INSTRUMENT', 'SN', 'VLF_SN'):
                 self.id += cd.id
 
             # Read in coefficients
@@ -88,9 +89,9 @@ class CalibrationFile:
     def verifyRaw(self, msg):
         try:
             nRead = 0
-            for i in range(0, len(self.data)):
-                v = 0
-                cd = self.data[i]
+            for i, cd in enumerate(self.data):
+                v = 0 # for debugging; ignore
+                # cd = self.data[i]
 
                 # Read variable length message frames (field length == -1)
                 if cd.fieldLength == -1:
@@ -116,7 +117,7 @@ class CalibrationFile:
                             # print(nRead, cd.fieldLength, b)
                             v = cd.convertRaw(b)
                     nRead  += cd.fieldLength
-                
+
                 # Passed EndOfFile
                 #if nRead > len(msg):
                 #    return False
@@ -142,15 +143,14 @@ class CalibrationFile:
         #    self.data[i].printd()
         #print("file:", msg)
 
-        if self.verifyRaw(msg) == False:
+        if self.verifyRaw(msg) is False:
             print("Message not read successfully:\n" + str(msg))
             self.verifyRaw(msg)
             return -1
 
-        for i in range(0, len(self.data)):
+        for i, cd in enumerate(self.data):
             v = 0
-            cd = self.data[i]
-
+            # cd = self.data[i]
 
             # Get value from message frame
 
@@ -180,14 +180,12 @@ class CalibrationFile:
             if cd.type.upper() == "INSTRUMENT" or cd.type.upper() == "VLF_INSTRUMENT":
                 instrumentId = cd.id
 
-
             # Stores value in dataset or attribute depending on type
 
             # Stores raw data into hdf datasets according to type
             if cd.fitType.upper() != "NONE" and cd.fitType.upper() != "DELIMITER":
                 cdtype = cd.type.upper()
-                if cdtype != "INSTRUMENT" and cdtype != "VLF_INSTRUMENT" and \
-                   cdtype != "SN" and cdtype != "VLF_SN":
+                if cdtype not in ('INSTRUMENT', 'VLF_INSTRUMENT', 'SN', 'VLF_SN'):
                     ds = gp.getDataset(cd.type)
                     if ds is None:
                         ds = gp.addDataset(cd.type)
@@ -196,7 +194,6 @@ class CalibrationFile:
                     #ds.addColumn(cd.id)
                     ds.appendColumn(cd.id, v)
                 else:
-                    # ToDo: move to better position
                     if sys.version_info[0] < 3: # Python3
                         gp.attributes[cdtype.encode('utf-8')] = cd.id
                     else: # Python2
@@ -206,7 +203,6 @@ class CalibrationFile:
             if cd.fitType.upper() == "NONE":
                 cdtype = cd.type.upper()
                 if cdtype == "SN" or cdtype == "DATARATE" or cdtype == "RATE":
-                    # ToDo: move to better position
                     if sys.version_info[0] < 3:
                         gp.attributes[cdtype.encode('utf-8')] = cd.id
                     else:
@@ -239,7 +235,7 @@ class CalibrationFile:
             ds1 = gp.getDataset("DATETAG")
             if ds1 is None:
                 ds1 = gp.addDataset("DATETAG")
-            ds1.appendColumn(u"NONE", v)
+            ds1.appendColumn("NONE", v)
             # Read TIMETAG2
             b = msg[nRead:nRead+4]
             if sys.version_info[0] < 3:
@@ -251,7 +247,6 @@ class CalibrationFile:
             ds1 = gp.getDataset("TIMETAG2")
             if ds1 is None:
                 ds1 = gp.addDataset("TIMETAG2")
-            ds1.appendColumn(u"NONE", v)
+            ds1.appendColumn("NONE", v)
 
         return nRead
-

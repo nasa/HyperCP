@@ -1,6 +1,7 @@
+'''Write L2 files (Es and Rrs) to SeaBASS files. Rename to SeaBASS format.'''
 import os
-import numpy as np
 import time
+import numpy as np
 
 from Source import PATH_TO_CONFIG
 from Source.HDFRoot import HDFRoot
@@ -10,6 +11,7 @@ from Source.Utilities import Utilities
 
 
 class SeaBASSWriter:
+    '''L2 SeaBASS file writer'''
 
     @staticmethod
     def sbFileName(fp,headerBlock,formattedData,dtype):
@@ -75,14 +77,18 @@ class SeaBASSWriter:
         dateDT = [Utilities.dateTagToDateTime(x) for x in dateDay]
         timeTag2 = esData.data['Timetag2'].tolist()
         timeDT = []
-        for i in range(len(dateDT)):
-            timeDT.append(Utilities.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
+        for i, dtDT in enumerate(dateDT):
+            timeDT.append(Utilities.timeTag2ToDateTime(dtDT,timeTag2[i]))
 
         # Python 2 format operator
-        startTime = "%02d:%02d:%02d[GMT]" % (min(timeDT).hour, min(timeDT).minute, min(timeDT).second)
-        endTime = "%02d:%02d:%02d[GMT]" % (max(timeDT).hour, max(timeDT).minute, max(timeDT).second)
-        startDate = "%04d%02d%02d" % (min(timeDT).year, min(timeDT).month, min(timeDT).day)
-        endDate = "%04d%02d%02d" % (max(timeDT).year, max(timeDT).month, max(timeDT).day)
+        # startTime = "%02d:%02d:%02d[GMT]" % (min(timeDT).hour, min(timeDT).minute, min(timeDT).second)
+        startTime = f"{min(timeDT).hour:02d}:{min(timeDT).minute:02d}:{min(timeDT).second:02d}[GMT]"
+        # endTime = "%02d:%02d:%02d[GMT]" % (max(timeDT).hour, max(timeDT).minute, max(timeDT).second)
+        endTime = f"{max(timeDT).hour:02d}:{max(timeDT).minute:02d}:{max(timeDT).second:02d}[GMT]"
+        # startDate = "%04d%02d%02d" % (min(timeDT).year, min(timeDT).month, min(timeDT).day)
+        startDate = f"{min(timeDT).year:04d}{min(timeDT).month:02d}{min(timeDT).day:02d}"
+        # endDate = "%04d%02d%02d" % (max(timeDT).year, max(timeDT).month, max(timeDT).day)
+        endDate = f"{max(timeDT).year:04d}{max(timeDT).month:02d}{max(timeDT).day:02d}"
 
         # Convert Position
         # Python 3 format syntax
@@ -232,7 +238,7 @@ class SeaBASSWriter:
         if not os.path.exists(os.path.split(fp)[0] + '/SeaBASS'):
             print('Creating a SeaBASS directory')
             os.makedirs(os.path.split(fp)[0] + '/SeaBASS')
-        
+
         outFileName = SeaBASSWriter.sbFileName(fp,headerBlock,formattedData,dtype)
 
         outFile = open(outFileName,'w',newline='\n')
@@ -269,7 +275,7 @@ class SeaBASSWriter:
         # Make sure hdf can be read
         try:
             root = HDFRoot.readHDF5(fp)
-        except:
+        except Exception:
             print('SeaBassWriter: cannot open HDF. May be open in another app.')
             return
 
@@ -358,20 +364,20 @@ class SeaBASSWriter:
         for k in list(esCols.keys()):
             if (k != 'Datetag') and (k != 'Timetag2'):
                 if float(k) < minWave or float(k) > maxWave:
-                     del esCols[k]
-                     del esColsUnc[k]
+                    del esCols[k]
+                    del esColsUnc[k]
         for k in list(rrsCols.keys()):
             if (k != 'Datetag') and (k != 'Timetag2'):
                 if float(k) < minWave or float(k) > maxWave:
-                     del rrsCols[k]
-                     if rrsUnc is not None:
-                         del rrsColsUnc[k]
+                    del rrsCols[k]
+                    if rrsUnc is not None:
+                        del rrsColsUnc[k]
         for k in list(nLwCols.keys()):
             if (k != 'Datetag') and (k != 'Timetag2'):
                 if float(k) < minWave or float(k) > maxWave:
-                     del nLwCols[k]
-                     if nLwUnc is not None:
-                         del nLwColsUnc[k]
+                    del nLwCols[k]
+                    if nLwUnc is not None:
+                        del nLwColsUnc[k]
         if ConfigFile.settings['bL2BRDF']:
             for k in list(nLwCols_BRDF.keys()):
                 if (k != 'Datetag') and (k != 'Timetag2'):
@@ -589,3 +595,5 @@ class SeaBASSWriter:
 
         # SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
         # SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)
+
+        return headerBlock['data_file_name']

@@ -50,7 +50,7 @@ class TriosL1B:
         # Defined constants
         nband = len(B0)
         nmes  = len(raw_data)
-        n_iter = 2
+        # n_iter = 2
 
         # Non-linearity alpha computation
         t1 = S1.pop(0)
@@ -300,7 +300,7 @@ class TriosL1B:
                 newGroup.copy(gp)
                 for ds in newGroup.datasets:
                     if ds == 'DATETIME':
-                        del(gp.datasets[ds])
+                        del gp.datasets[ds]
                     elif ds.startswith('BACK_') or ds.startswith('CAL_'):
                         continue
                     else:
@@ -315,7 +315,6 @@ class TriosL1B:
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
             print("Factory TriOS RAMSES - no uncertainty computation")
-
 
         # Add Class-based characterization files + RADCAL files
         elif ConfigFile.settings['bL1bCal'] == 2:

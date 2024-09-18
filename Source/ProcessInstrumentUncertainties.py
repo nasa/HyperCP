@@ -2016,9 +2016,9 @@ class HyperOCR(Instrument):
             sample_updated_radcal_gain[:, ind_nocal == True] = 1
 
             data = np.mean(raw_data, axis=0)  # raw data already dark subtracted, use mean for statistical analysis
-            data[ind_nocal == True] = 0  # 0 out data outside of cal so it doesn't affect statistics
+            data[ind_nocal is True] = 0  # 0 out data outside of cal so it doesn't affect statistics
             dark = np.mean(raw_dark, axis=0)
-            dark[ind_nocal == True] = 0
+            dark[ind_nocal is True] = 0
             # data is already 180 len for PML HyperOCR
             # signal uncertainties
             std_light = stats[sensortype]['std_Light']  # standard deviations are taken from generateSensorStats

@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 import numpy as np
-from netCDF4 import Dataset
-from scipy.interpolate import RegularGridInterpolator as rgi
-import os
 import xarray as xr
 from Source import PATH_TO_DATA
 import Source.ocbrdf.ocbrdf_main as oc_brdf

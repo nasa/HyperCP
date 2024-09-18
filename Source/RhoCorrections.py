@@ -84,7 +84,7 @@ class RhoCorrections:
             # uncertainty
             pct_diff = (np.abs(rhoScalar - zhang) / rhoScalar)  # relative units
             tot_diff = np.sqrt(Delta ** 2 + pct_diff ** 2)
-            tot_diff[np.isnan(tot_diff) == True] = 0  # ensure no NaNs are present in the uncertainties.
+            tot_diff[np.isnan(tot_diff) is True] = 0  # ensure no NaNs are present in the uncertainties.
             tot_diff = tot_diff * rhoScalar  # ensure difference is in proper units
             # add back in filtered wavelengths
             rhoDelta = []

@@ -1,12 +1,11 @@
-# python packages
+''' L1AQC to L1B for Full-FRM or Class-based '''
 import logging
-import numpy as np
 import os
+from datetime import datetime as dt
+import numpy as np
 import pandas as pd
 import Py6S
 import pytz
-from datetime import datetime as dt
-import matplotlib.pyplot as plt
 from scipy import interpolate
 
 # internal files
@@ -14,6 +13,7 @@ from Source.ConfigFile import ConfigFile
 from Source.Utilities import Utilities
 
 class ProcessL1b_FRMCal:
+    ''' L1AQC to L1B for Full-FRM or Class-based '''
 
     @staticmethod
     def get_direct_irradiance_ratio(node: object, sensortype: object, called_L2: bool = False) -> object:
@@ -33,22 +33,22 @@ class ProcessL1b_FRMCal:
             else:
                 return False
 
-            keys = dict(
-                        anc = 'ANCILLARY',
-                        rel = 'REL_AZ',
-                        sza = 'SZA',
-                        saa = 'SOLAR_AZ',
-                        irad = irad_key
-                        )
+            keys = {
+                        'anc' : 'ANCILLARY',
+                        'rel' : 'REL_AZ',
+                        'sza' : 'SZA',
+                        'saa' : 'SOLAR_AZ',
+                        'irad' : irad_key
+            }
         else:
             # keys as before
-            keys = dict(
-                        anc = 'ANCILLARY_METADATA',
-                        rel = 'NONE',
-                        sza = 'NONE',
-                        saa = 'NONE',
-                        irad = f'{sensortype}'
-                        )
+            keys = {
+                        'anc' : 'ANCILLARY_METADATA',
+                        'rel' : 'NONE',
+                        'sza' : 'NONE',
+                        'saa' : 'NONE',
+                        'irad' : f'{sensortype}'
+            }
 
         anc_grp = node.getGroup(keys['anc'])
 
@@ -67,7 +67,7 @@ class ProcessL1b_FRMCal:
         wvl = np.asarray([float(x) for x in str_wvl])
         if not called_L2:
             datetime = irr_grp.datasets['DATETIME'].data
-        else:  # TODO: tested for Trios case answer is the same either method, test for seabird case
+        else:
             datetag = np.asarray(pd.DataFrame(irr_grp.getDataset("DATETAG").data))
             timetag = np.asarray(pd.DataFrame(irr_grp.getDataset("TIMETAG2").data))
             dtime = [dt.strptime(str(int(x[0])) + str(int(y[0])).rjust(9, '0'), "%Y%j%H%M%S%f") for x, y in
@@ -112,7 +112,7 @@ class ProcessL1b_FRMCal:
             n_cores = None
             if os.name == 'nt':  # if system is windows do not do parallel processing to avoid potential error
                 n_cores = 1
-            wavelengths, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl, n=n_cores)
+            _, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl, n=n_cores)
 
             # extract value from Py6s
             # total_gaseous_transmittance[n,:] = np.array([res[x].values['total_gaseous_transmittance'] for x in range(nband)])
@@ -126,22 +126,22 @@ class ProcessL1b_FRMCal:
 
 
             if np.isnan(direct).any():
-                logging.warning("direct contains NaN values at: %s" % wvl[np.isnan(direct)[0]])
+                logging.debug("direct contains NaN values at: %s", wvl[np.isnan(direct)[n]])
 
             if np.isnan(diffuse).any():
-                logging.warning("diffuse contains NaN values at: %s" % wvl[np.isnan(diffuse)[0]])
+                logging.debug("diffuse contains NaN values at: %s", wvl[np.isnan(diffuse)[n]])
 
             if np.isnan(irr_direct).any():
-                logging.warning("irr_direct contains NaN values at: %s" % wvl[np.isnan(irr_direct)[0]])
+                logging.debug("irr_direct contains NaN values at: %s", wvl[np.isnan(irr_direct)[n]])
 
             if np.isnan(irr_diffuse).any():
-                logging.warning("irr_diffuse contains NaN values at: %s" % wvl[np.isnan(irr_diffuse)[0]])
+                logging.debug("irr_diffuse contains NaN values at: %s", wvl[np.isnan(irr_diffuse)[n]])
 
             if np.isnan(irr_env).any():
-                logging.warning("irr_env contains NaN values at: %s" % wvl[np.isnan(irr_env)[0]])
+                logging.debug("irr_env contains NaN values at: %s", wvl[np.isnan(irr_env)[n]])
 
             if np.isnan(solar_zenith).any():
-                logging.warning("solar_zenith contains NaN values at: %s" % wvl[np.isnan(solar_zenith)[0]])
+                logging.debug("solar_zenith contains NaN values at: %s", wvl[np.isnan(solar_zenith)[n]])
 
             # Check for potential NaN values and interpolate them with neighbour
             # direct
@@ -194,7 +194,7 @@ class ProcessL1b_FRMCal:
                         irr_env[n,i0] = (irr_env[n,i0-1]+irr_env[n,i0+1])/2
 
             # Check for potential zero values and interpolate them with neighbour
-            val, ind0 = np.where([direct[n,:]==0])
+            _, ind0 = np.where([direct[n,:]==0])
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
@@ -248,13 +248,13 @@ class ProcessL1b_FRMCal:
         zenith_ang = np.asarray([float(x) for x in zenith_ang])
 
         # comparing cos_error for 2 azimuth
-        AZI_delta_cos = coserror-coserror_90
+        # AZI_delta_cos = coserror-coserror_90
 
         # if delta < 2% : averaging the 2 azimuth plan
         AZI_avg_coserror = (coserror+coserror_90)/2.
 
         # comparing cos_error for symetric zenith
-        ZEN_delta_cos = AZI_avg_coserror - AZI_avg_coserror[:,::-1]
+        # ZEN_delta_cos = AZI_avg_coserror - AZI_avg_coserror[:,::-1]
 
         # if delta < 2% : averaging symetric zenith
         ZEN_avg_coserror = (AZI_avg_coserror+AZI_avg_coserror[:,::-1])/2.
@@ -348,7 +348,7 @@ class ProcessL1b_FRMCal:
         Utilities.writeLogFile(msg)
 
         for gp in node.groups:
-            if not 'L1AQC' in gp.id:
+            if 'L1AQC' not in gp.id:
                 msg = f'  Group: {gp.id}'
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -403,7 +403,7 @@ class ProcessL1b_FRMCal:
             # Defined constants
             nband = len(radcal_wvl)
             nmes  = len(raw_data)
-            n_iter = 5
+            # n_iter = 5
 
             # Non-linearity alpha computation
             cal_int = radcal_cal.pop(0)
@@ -520,3 +520,4 @@ class ProcessL1b_FRMCal:
                 ds.columnsToDataset()
 
         return True
+    

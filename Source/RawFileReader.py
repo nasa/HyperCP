@@ -1,9 +1,10 @@
-
+"""Read raw Sea-Bird file"""
 import sys
 
 from Source.Utilities import Utilities
 
 class RawFileReader:
+    """Read raw Sea-Bird file"""
     MAX_TAG_READ = 32
     MAX_BLOCK_READ = 1024
     SATHDR_READ = 128
@@ -19,7 +20,7 @@ class RawFileReader:
         else:
             end = hdr.find(bytes(b"\x0D\x0A".decode("unicode_escape"), "utf-8"))
 
-        ''' BUG: TO DO: This is still screwing up the SAS SERIAL NUMBER hdr'''
+        # BUG: TO DO: This is still screwing up the SAS SERIAL NUMBER hdr
         sp1 = hdr.find(b" ") # returns the first occurence where substring is found
         # sp2 = hdr.rfind(b" ") # returns the highest index where substring is found
         sp2 = hdr.find(b"(") - 1
@@ -107,7 +108,7 @@ class RawFileReader:
 
                                 try:
                                     num = cf.convertRaw(msg, gp)
-                                except:
+                                except Exception:
                                     pmsg = f'Unable to convert the following raw message: {msg}'
                                     print(pmsg)
                                     Utilities.writeLogFile(pmsg)
@@ -117,11 +118,11 @@ class RawFileReader:
                                     ds = gp.getDataset("POSFRAME")
                                     if ds is None:
                                         ds = gp.addDataset("POSFRAME")
-                                    ds.appendColumn(u"COUNT", posframe)
+                                    ds.appendColumn("COUNT", posframe)
                                     posframe += 1
                                     f.read(num)
 
                                 break
                         if num > 0:
                             break
-
+                        

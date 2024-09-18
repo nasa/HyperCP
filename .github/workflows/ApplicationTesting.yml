@@ -1,0 +1,40 @@
+name: ApplicationTesting
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+  workflow_dispatch:
+
+jobs:
+
+  ApplicationTesting:
+    name: Application Tests
+
+    runs-on: ${{ matrix.os }}
+    defaults: # Required for conda environment activation
+      run:
+        shell: bash -el {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ 'ubuntu-latest', 'macos-latest', 'windows-latest' ]
+
+    steps:
+      - name: ⏬ Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: 🔧 Setup Environment
+        uses: ./.github/actions/SetupEnvironment
+
+      - name: 📑 Capture Environment
+        run: |
+          mamba info
+          mamba list
+
+      - name: 🧪 Run Tests
+        run: |
+          python run_Sample_Data.py

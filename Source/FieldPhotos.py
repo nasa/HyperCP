@@ -1,14 +1,11 @@
 
-from fileinput import filename
 import os
-import sys
 import glob
 import datetime
 import pytz
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap
 
-from Source.Utilities import Utilities
 
 class FieldPhotos(QtWidgets.QDialog):
 
@@ -111,6 +108,7 @@ class FieldPhotos(QtWidgets.QDialog):
 
             # dFormat = 'IMG_%Y%m%d_%H%M%S.jpg'
             dFormat = f"{format.split('.')[0]}%z" # tack on the time zone below
+            dFormatAlt = f"{format.split('.')[0]}%f%z" # for case with microseconds
             # picDateTime = []
             picList = []
             picDTList = []
@@ -126,8 +124,18 @@ class FieldPhotos(QtWidgets.QDialog):
                     if tDiff < tDiffLim:
                         picList.append(fp)
                         picDTList.append(picDateTime)
-                except:
-                    print(f'This file does not match the format. Rename or update format in AnomAnal GUI. {fileName}')
+                except Exception:
+                    try:
+                        dT = datetime.datetime.strptime(fileName, dFormatAlt)
+                        # picDateTime.append(dT.astimezone(pytz.utc))
+                        picDateTime = dT.astimezone(pytz.utc)
+                        # tDiff = abs(picDateTime-midDatetime).seconds / 60
+                        tDiff = abs(picDateTime-midDatetime)
+                        if tDiff < tDiffLim:
+                            picList.append(fp)
+                            picDTList.append(picDateTime)
+                    except Exception:
+                        print(f'This file does not match the format. Rename or update format in AnomAnal GUI. {fileName}')
 
 
             if len(picList) > 0:

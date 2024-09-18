@@ -292,14 +292,14 @@ class ProcessL1aqc_deglitch:
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 try:
                     gp.datasetDeleteRow(np.where(badIndexDark))
-                except:
+                except Exception:
                     print('Error deleting group datasets. Check that Light/Dark cals are correctly identified in Configuration Window.')
 
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
                 try:
                     gp.datasetDeleteRow(np.where(badIndexLight))
-                except:
+                except Exception:
                     print('Error deleting group datasets. Check that Light/Dark cals are correctly identified in Configuration Window.')
 
         return False

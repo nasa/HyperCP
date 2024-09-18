@@ -1,11 +1,12 @@
+'''Establish class to hold Main window configurations'''
 import os
 import collections
 import json
 
 from Source import PATH_TO_CONFIG
 
-
 class MainConfig:
+    '''Class to hold Main window configurations'''
     fileName = "main.config"
     settings = collections.OrderedDict()
 
@@ -16,7 +17,7 @@ class MainConfig:
         # jsn = json.dumps(MainConfig.settings)
         fp = os.path.join(PATH_TO_CONFIG, fileName)
 
-        with open(fp, 'w') as f:
+        with open(fp, 'w', encoding="utf-8") as f:
             json.dump(MainConfig.settings,f,indent=4)
             # f.write(jsn)
 
@@ -31,7 +32,7 @@ class MainConfig:
         configPath = os.path.join(PATH_TO_CONFIG, fileName)
         if os.path.isfile(configPath):
             text = ""
-            with open(configPath, 'r') as f:
+            with open(configPath, 'r', encoding="utf-8") as f:
                 text = f.read()
                 fullCollection = json.loads(text, object_pairs_hook=collections.OrderedDict)
 
@@ -46,9 +47,11 @@ class MainConfig:
         print("MainConfig - Refresh or create from default Config")
 
         MainConfig.settings["cfgFile"] = fileName
+        MainConfig.settings["cfgPath"] = os.path.join('./Config',fileName)
         MainConfig.settings["version"] = version
         MainConfig.settings["inDir"] = './Data'
         MainConfig.settings["outDir"] = './Data'
         MainConfig.settings["ancFileDir"] = './Data/Sample_Data'
-        MainConfig.settings["metFile"] = ""
+        # MainConfig.settings["metFile"] = ""
+        MainConfig.settings["ancFile"] = ""
         MainConfig.settings["popQuery"] = 0

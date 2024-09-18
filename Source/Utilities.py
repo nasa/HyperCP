@@ -1,15 +1,14 @@
-
+""" A cornucopia of addition methods """
 import os
 import datetime
 import collections
-
-import pytz
 from collections import Counter
 import csv
 import re
-
+from tqdm import tqdm
+import requests
 from PyQt5.QtWidgets import QMessageBox
-
+import pytz
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 import numpy as np
@@ -18,20 +17,57 @@ from scipy.interpolate import splev, splrep
 import scipy as sp
 import pandas as pd
 from pandas.plotting import register_matplotlib_converters
-register_matplotlib_converters()
-from tqdm import tqdm
 
 from Source.SB_support import readSB
 from Source.HDFRoot import HDFRoot
 from Source.ConfigFile import ConfigFile
 from Source.MainConfig import MainConfig
-from Source.Uncertainty_Visualiser import Show_Uncertainties  # class for uncertainty visualisation plots
+# from Source.Uncertainty_Visualiser import Show_Uncertainties  # class for uncertainty visualisation plots
+register_matplotlib_converters()
 
 # This gets reset later in Controller.processSingleLevel to reflect the file being processed.
 if "LOGFILE" not in os.environ:
     os.environ["LOGFILE"] = "temp.log"
 
 class Utilities:
+    """A catchall class for HyperCP utilities"""
+
+    @staticmethod
+    def downloadZhangDB(fpfZhang, force=False):
+        infoText = "  NEW INSTALLATION\nGlint database required.\nClick OK to download.\n\nWARNING: THIS IS A 2.5 GB DOWNLOAD.\n\n\
+        If canceled, Zhang et al. (2017) glint correction will fail. If download fails, a link and instructions will be provided in the terminal."
+        YNReply = True if force else Utilities.YNWindow("Database Download", infoText) == QMessageBox.Ok
+        if YNReply:
+
+            url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat"
+            download_session = requests.Session()
+            try:
+                file_size = int(
+                    download_session.head(url).headers["Content-length"]
+                )
+                file_size_read = round(int(file_size) / (1024**3), 2)
+                print(
+                    f"##### Downloading {file_size_read}GB data file. This could take several minutes. ##### "
+                )
+                download_file = download_session.get(url, stream=True)
+                download_file.raise_for_status()
+            except requests.exceptions.HTTPError as err:
+                print("Error in download_file:", err)
+            if download_file.ok:
+                progress_bar = tqdm(
+                    total=file_size, unit="iB", unit_scale=True, unit_divisor=1024
+                )
+                with open(fpfZhang, "wb") as f:
+                    for chunk in download_file.iter_content(chunk_size=1024):
+                        progress_bar.update(len(chunk))
+                        f.write(chunk)
+                progress_bar.close()
+            else:
+                print(
+                    "Failed to download core databases."
+                    f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
+                    f" {os.getcwd()}/Data directory."
+                )
 
     @staticmethod
     def checkInputFiles(inFilePath, flag_Trios, level="L1A+"):
@@ -78,20 +114,21 @@ class Utilities:
             print(msg)
             Utilities.writeLogFile(msg)
 
+
     @staticmethod
     def SASUTCOffset(node):
         for gp in node.groups:
             if not gp.id.startswith("SATMSG"): # Don't convert these strings to datasets.
 
-                    timeStamp = gp.datasets["DATETIME"].data
-                    timeStampNew = [time + datetime.timedelta(hours=ConfigFile.settings["fL1aUTCOffset"]) for time in timeStamp]
-                    TimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStampNew]
-                    DateTag = [Utilities.datetime2DateTag(dt) for dt in timeStampNew]
-                    gp.datasets["DATETIME"].data = timeStampNew
-                    gp.datasets["DATETAG"].data["NONE"] = DateTag
-                    gp.datasets["DATETAG"].datasetToColumns()
-                    gp.datasets["TIMETAG2"].data["NONE"] = TimeTag2
-                    gp.datasets["TIMETAG2"].datasetToColumns()
+                timeStamp = gp.datasets["DATETIME"].data
+                timeStampNew = [time + datetime.timedelta(hours=ConfigFile.settings["fL1aUTCOffset"]) for time in timeStamp]
+                TimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStampNew]
+                DateTag = [Utilities.datetime2DateTag(dt) for dt in timeStampNew]
+                gp.datasets["DATETIME"].data = timeStampNew
+                gp.datasets["DATETAG"].data["NONE"] = DateTag
+                gp.datasets["DATETAG"].datasetToColumns()
+                gp.datasets["TIMETAG2"].data["NONE"] = TimeTag2
+                gp.datasets["TIMETAG2"].datasetToColumns()
 
         return node
 
@@ -145,8 +182,8 @@ class Utilities:
         avg_f0 = np.empty(len(wavelength))
         avg_f0[:] = np.nan
         avg_f0_unc = avg_f0.copy()
-        for i in range(len(wavelength)):
-            idx = np.where((wv_raw >= wavelength[i]-5.) & ( wv_raw <= wavelength[i]+5.))
+        for i, wv in enumerate(wavelength):
+            idx = np.where((wv_raw >= wv-5.) & ( wv_raw <= wv+5.))
             if idx:
                 avg_f0[i] = np.mean(F0_fs[idx])
                 avg_f0_unc[i] = np.mean(F0_unc_raw[idx])
@@ -158,6 +195,7 @@ class Utilities:
         F0_unc = collections.OrderedDict(zip(wavelengthStr, avg_f0_unc))
 
         return F0, F0_unc, F0_raw, F0_unc_raw, wv_raw
+
 
     @staticmethod
     def Thuillier(dateTag, wavelength):
@@ -197,10 +235,12 @@ class Utilities:
 
         return F0
 
+
     @staticmethod
     def mostFrequent(List):
         occurence_count = Counter(List)
         return occurence_count.most_common(1)[0][0]
+
 
     @staticmethod
     def find_nearest(array,value):
@@ -208,12 +248,6 @@ class Utilities:
         idx = (np.abs(array - value)).argmin()
         return idx
 
-        # ''' ONLY FOR SORTED ARRAYS'''
-        # idx = np.searchsorted(array, value, side="left")
-        # if idx > 0 and (idx == len(array) or math.fabs(value - array[idx-1]) < math.fabs(value - array[idx])):
-        #     return array[idx-1]
-        # else:
-        #     return array[idx]
 
     @staticmethod
     def errorWindow(winText,errorText):
@@ -224,6 +258,7 @@ class Utilities:
         msgBox.setWindowTitle(winText)
         msgBox.setStandardButtons(QMessageBox.Ok)
         msgBox.exec_()
+
 
     @staticmethod
     def waitWindow(winText,waitText):
@@ -248,7 +283,11 @@ class Utilities:
 
     @staticmethod
     def writeLogFile(logText, mode='a'):
-        with open('Logs/' + os.environ["LOGFILE"], mode) as logFile:
+        if not os.path.exists('Logs'):
+            import logging
+            logging.getLogger().warning('Made directory: Logs/')
+            os.mkdir('Logs')
+        with open('Logs/' + os.environ["LOGFILE"], mode, encoding="utf-8") as logFile:
             logFile.write(logText + "\n")
 
     # Converts degrees minutes to decimal degrees format
@@ -389,13 +428,12 @@ class Utilities:
         return datetime.datetime(year,mon,day,0,0,0,0,tzinfo=datetime.timezone.utc)
 
 
-    
     @staticmethod
     def rootAddDateTime(node):
         ''' Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
          Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
          in the 20th or 21st centuries '''
-        
+
         for gp in node.groups:
             # print(gp.id)
             if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
@@ -426,12 +464,13 @@ class Utilities:
                 dateTime.data = timeStamp
         return node
 
+
     @staticmethod
     def groupAddDateTime(gp):
         ''' Add a dataset to one group for DATETIME, as defined by TIMETAG2 and DATETAG
          Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
          in the 20th or 21st centuries '''
-        
+
         # for gp in node.groups:
         # print(gp.id)
         if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
@@ -461,24 +500,25 @@ class Utilities:
             dateTime = gp.addDataset("DATETIME")
             dateTime.data = timeStamp
         return gp
-    
+
+
     @staticmethod
     def rootAddDateTimeCol(node):
         ''' Add a data column to each group dataset for DATETIME, as defined by TIMETAG2 and DATETAG
             Also screens for nonsense timetags like 0.0 or NaN, and datetags that are not
             in the 20th or 21st centuries'''
-        
+
         for gp in node.groups:
             if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
 
                 # Provision for L1AQC carry-over groups. These do not have Datetag or Timetag2
                 #   dataset, but still have DATETAG and TIMETAG2 datasets
-                if not '_L1AQC' in gp.id:
+                if '_L1AQC' not in gp.id:
                     for ds in gp.datasets:
                         # Make sure all datasets have been transcribed to columns
                         gp.datasets[ds].datasetToColumns()
 
-                        if not 'Datetime' in gp.datasets[ds].columns:
+                        if 'Datetime' not in gp.datasets[ds].columns:
                             if 'Timetag2' in gp.datasets[ds].columns:  # changed to ensure the new (irr)radiance groups don't throw errors
                                 timeData = gp.datasets[ds].columns["Timetag2"]
                                 dateTag = gp.datasets[ds].columns["Datetag"]
@@ -629,11 +669,6 @@ class Utilities:
 
         return True
 
-    # @staticmethod
-    # def epochSecToDateTagTimeTag2(eSec):
-    #     dateTime = datetime.datetime.utcfromtimestamp(eSec)
-    #     year = dateTime.timetuple()[0]
-    #     return
 
     # Checks if a string is a floating point number
     @staticmethod
@@ -666,9 +701,28 @@ class Utilities:
                 #         return True
         return False
 
-    # Check if the list contains strictly increasing values
+    @staticmethod
+    def nan_helper(y):
+        """Helper to handle indices and logical indices of NaNs.
+
+        Input:
+            - y, 1d numpy array with possible NaNs
+        Output:
+            - nans, logical indices of NaNs
+            - index, a function, with signature indices= index(logical_indices),
+            to convert logical indices of NaNs to 'equivalent' indices
+        Example:
+            >>> # linear interpolation of NaNs
+            >>> nans, x= nan_helper(y)
+            >>> y[nans]= np.interp(x(nans), x(~nans), y[~nans])
+        """
+
+        return np.isnan(y), lambda z: z.nonzero()[0]
+
+
     @staticmethod
     def isIncreasing(l):
+        ''' Check if the list contains strictly increasing values '''
         return all(x<y for x, y in zip(l, l[1:]))
 
     @staticmethod
@@ -720,15 +774,15 @@ class Utilities:
     @staticmethod
     def darkConvolution(data,avg,std,sigma):
         badIndex = []
-        for i in range(len(data)):
+        for i, dat in enumerate(data):
             if i < 1 or i > len(data)-2:
                 # First and last avg values from convolution are not to be trusted
                 badIndex.append(True)
-            elif np.isnan(data[i]):
+            elif np.isnan(dat):
                 badIndex.append(False)
             else:
                 # Use stationary standard deviation anomaly (from rolling average) detection for dark data
-                if (data[i] > avg[i] + (sigma*std)) or (data[i] < avg[i] - (sigma*std)):
+                if (dat > avg[i] + (sigma*std)) or (dat < avg[i] - (sigma*std)):
                     badIndex.append(True)
                 else:
                     badIndex.append(False)
@@ -737,15 +791,15 @@ class Utilities:
     @staticmethod
     def lightConvolution(data,avg,rolling_std,sigma):
         badIndex = []
-        for i in range(len(data)):
+        for i, dat in enumerate(data):
             if i < 1 or i > len(data)-2:
                 # First and last avg values from convolution are not to be trusted
                 badIndex.append(True)
-            elif np.isnan(data[i]):
+            elif np.isnan(dat):
                 badIndex.append(False)
             else:
                 # Use rolling standard deviation anomaly (from rolling average) detection for dark data
-                if (data[i] > avg[i] + (sigma*rolling_std[i])) or (data[i] < avg[i] - (sigma*rolling_std[i])):
+                if (dat > avg[i] + (sigma*rolling_std[i])) or (dat < avg[i] - (sigma*rolling_std[i])):
                     badIndex.append(True)
                 else:
                     badIndex.append(False)
@@ -755,7 +809,7 @@ class Utilities:
     def deglitchThresholds(band,data,minRad,maxRad,minMaxBand):
 
         badIndex = []
-        for i in range(len(data)):
+        for dat in data:
             badIndex.append(False)
             # ConfigFile setting updated directly from the checkbox in AnomDetection.
             # This insures values of badIndex are false if unthresholded or Min or Max are None
@@ -763,11 +817,11 @@ class Utilities:
                 # Only run on the pre-selected waveband
                 if band == minMaxBand:
                     if minRad or minRad==0: # beware falsy zeros...
-                        if data[i] < minRad:
+                        if dat < minRad:
                             badIndex[-1] = True
 
                     if maxRad or maxRad==0:
-                        if data[i] > maxRad:
+                        if dat > maxRad:
                             badIndex[-1] = True
         return badIndex
 
@@ -777,9 +831,9 @@ class Utilities:
         ''' Wrapper for scipy interp1d that works even if
             values in new_x are outside the range of values in x'''
 
-        ''' NOTE: This will fill missing values at the beginning and end of data record with
-            the nearest actual record. This is fine for integrated datasets, but may be dramatic
-            for some gappy ancillary records of lower temporal resolution.'''
+        # ''' NOTE: This will fill missing values at the beginning and end of data record with
+        #     the nearest actual record. This is fine for integrated datasets, but may be dramatic
+        #     for some gappy ancillary records of lower temporal resolution.'''
         # If the last value to interp to is larger than the last value interp'ed from,
         # then append that higher value onto the values to interp from
         n0 = len(x)-1
@@ -812,14 +866,14 @@ class Utilities:
         ''' Wrapper for scipy interp1d that works even if
             values in new_x are outside the range of values in x'''
 
-        ''' NOTE: Except for SOLAR_AZ and SZA, which are extrapolated, this will fill missing values at the
-            beginning and end of data record with the nearest actual record. This is fine for integrated
-            datasets, but may be dramatic for some gappy ancillary records of lower temporal resolution.
-            NOTE: SOLAR_AZ and SZA should no longer be int/extrapolated at all, but recalculated in L1B
+        # ''' NOTE: Except for SOLAR_AZ and SZA, which are extrapolated, this will fill missing values at the
+        #     beginning and end of data record with the nearest actual record. This is fine for integrated
+        #     datasets, but may be dramatic for some gappy ancillary records of lower temporal resolution.
+        #     NOTE: SOLAR_AZ and SZA should no longer be int/extrapolated at all, but recalculated in L1B
 
-            NOTE: REL_AZ (sun to sensor) may be negative and should be 90 - 135, so does not require angular
-            interpolation.
-            '''
+        #     NOTE: REL_AZ (sun to sensor) may be negative and should be 90 - 135, so does not require angular
+        #     interpolation.
+        #     '''
 
         # Eliminate NaNs
         whrNan = np.where(np.isnan(y))[0]
@@ -881,8 +935,8 @@ class Utilities:
         spl = splrep(x, y)
         new_y = splev(new_x, spl)
 
-        for i in range(len(new_y)):
-            if np.isnan(new_y[i]):
+        for newy in new_y:
+            if np.isnan(newy):
                 print("NaN")
 
         return new_y
@@ -917,10 +971,10 @@ class Utilities:
     @staticmethod
     def fixDarkTimes(darkGroup,lightGroup):        
         ''' Find the nearest timestamp in the light data to each dark measurements (Sea-Bird) '''
-        
+
         darkDatetime = darkGroup.datasets["DATETIME"].data
         lightDatetime = lightGroup.datasets["DATETIME"].data
-        
+
         dateTagNew = darkGroup.addDataset('DATETAG_ADJUSTED')
         timeTagNew = darkGroup.addDataset('TIMETAG2_ADJUSTED')
         dateTimeNew = darkGroup.addDataset('DATETIME_ADJUSTED')
@@ -928,8 +982,8 @@ class Utilities:
         dateTag = []
         timeTag = []
         dateTime = []
-        for i, darkTime in enumerate(darkDatetime):
-            iLight = Utilities.find_nearest(lightDatetime,darkTime)                            
+        for darkTime in darkDatetime:
+            iLight = Utilities.find_nearest(lightDatetime,darkTime)                 
 
             dateTag.append(lightGroup.datasets['DATETAG'].data[iLight])
             timeTag.append(lightGroup.datasets['TIMETAG2'].data[iLight])
@@ -967,17 +1021,17 @@ class Utilities:
             if group.id == "PY6S_MODEL":
                 timeStamp = group.getDataset("solar_zenith").data["Datetime"]
         else:
-             timeStamp = group.getDataset("Timestamp").data["Datetime"]
-             # TRIOS: copy CAL & BACK before filetering, and delete them 
-             # to avoid conflict when filtering more row than 255
-             if ConfigFile.settings['SensorType'].lower() == 'trios':
-                 do_reset = True
-                 raw_cal  = group.getDataset("CAL_"+group.id[0:2]).data
-                 raw_back = group.getDataset("BACK_"+group.id[0:2]).data
-                 raw_cal_att  = group.getDataset("CAL_"+group.id[0:2]).attributes
-                 raw_back_att = group.getDataset("BACK_"+group.id[0:2]).attributes
-                 del group.datasets['CAL_'+group.id[0:2]]
-                 del group.datasets['BACK_'+group.id[0:2]]
+            timeStamp = group.getDataset("Timestamp").data["Datetime"]
+            # TRIOS: copy CAL & BACK before filetering, and delete them 
+            # to avoid conflict when filtering more row than 255
+            if ConfigFile.settings['SensorType'].lower() == 'trios':
+                do_reset = True
+                raw_cal  = group.getDataset("CAL_"+group.id[0:2]).data
+                raw_back = group.getDataset("BACK_"+group.id[0:2]).data
+                raw_cal_att  = group.getDataset("CAL_"+group.id[0:2]).attributes
+                raw_back_att = group.getDataset("BACK_"+group.id[0:2]).attributes
+                del group.datasets['CAL_'+group.id[0:2]]
+                del group.datasets['BACK_'+group.id[0:2]]
 
 
         startLength = len(timeStamp)
@@ -1007,7 +1061,7 @@ class Utilities:
                         try:
                             rowsToDelete.append(i)
                             finalCount += 1
-                        except:
+                        except Exception:
                             print('error')
                     else:
                         newTimeStamp.append(timeStamp[i])
@@ -1028,7 +1082,7 @@ class Utilities:
                 group.addDataset("BACK_"+group.id[0:2])
                 group.datasets["BACK_"+group.id[0:2]].data = raw_back
                 group.datasets["BACK_"+group.id[0:2]].attributes = raw_back_att
-                
+
             for ds in group.datasets:
                 group.datasets[ds].datasetToColumns()
         else:
@@ -1060,8 +1114,8 @@ class Utilities:
 
         # dataDelta in this case can be STD (for TriOS Factory) or UNC (otherwise)
         dataDelta = None
-        ''' Note: If only one spectrum is left in a given ensemble, STD will
-        be zero for Es, Li, and Lt.'''
+        # Note: If only one spectrum is left in a given ensemble, STD will
+        #be zero for Es, Li, and Lt.'''
         if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
             suffix = 'sd'
         else:
@@ -1109,7 +1163,7 @@ class Utilities:
                     dataDelta_Sentinel3B = group.getDataset(f'{rType}_Sentinel3B_unc')
 
         else:
-            ''' Could include satellite convolved (ir)radiances in the future '''
+            # Could include satellite convolved (ir)radiances in the future '''
             if rType=='ES':
                 print('Plotting Es')
                 group = root.getGroup("IRRADIANCE")
@@ -1127,10 +1181,10 @@ class Utilities:
                 group = root.getGroup("RADIANCE")
                 units = group.attributes['LT_UNITS']
                 Data = group.getDataset(f'{rType}_HYPER')
-                lwData = group.getDataset(f'LW_HYPER')
+                lwData = group.getDataset('LW_HYPER')
                 if plotDelta:
                     # lwDataDelta = group.getDataset(f'LW_HYPER_{suffix}')
-                    lwDataDelta = group.getDataset(f'LW_HYPER_unc').data.copy() # Lw does not have STD
+                    lwDataDelta = group.getDataset('LW_HYPER_unc').data.copy() # Lw does not have STD
                     # For the purpose of plotting, use zeros for NaN uncertainties
                     lwDataDelta = Utilities.datasetNan2Zero(lwDataDelta)
 
@@ -1430,110 +1484,6 @@ class Utilities:
         # fp = os.path.join(plotDir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
         filebasename = filename.split('.hdf')
         fp = os.path.join(plotDir, filebasename[0] + '_' + rType + '.png')
-        plt.savefig(fp)
-        plt.close() # This prevents displaying the plot on screen with certain IDEs
-
-    @staticmethod
-    def plotRadiometryL1D(root, filename, rType):
-
-        dirPath = os.getcwd()
-        outDir = MainConfig.settings["outDir"]
-        # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
-        # and build on that (HyperInSPACE/Plots/etc...)
-        if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
-            outDir = dirPath
-
-        # Otherwise, put Plots in the chosen output directory from Main
-        plotDir = os.path.join(outDir,'Plots','L1D')
-
-        if not os.path.exists(plotDir):
-            os.makedirs(plotDir)
-
-        plotRange = [305, 1140]
-
-        if rType=='ES':
-            print('Plotting Es')
-            group = root.getGroup(rType)
-            Data = group.getDataset(rType)
-
-        if rType=='LI':
-            print('Plotting Li')
-            group = root.getGroup(rType)
-            Data = group.getDataset(rType)
-
-        if rType=='LT':
-            print('Plotting Lt')
-            group = root.getGroup(rType)
-            Data = group.getDataset(rType)
-
-        font = {'family': 'serif',
-            'color':  'darkred',
-            'weight': 'normal',
-            'size': 16,
-            }
-
-        # Hyperspectral
-        x = []
-        wave = []
-
-        # For each waveband
-        for k in Data.data.dtype.names:
-            if Utilities.isFloat(k):
-                if float(k)>=plotRange[0] and float(k)<=plotRange[1]: # also crops off date and time
-                    x.append(k)
-                    wave.append(float(k))
-
-        total = Data.data.shape[0]
-        maxRad = 0
-        minRad = 0
-        cmap = cm.get_cmap("jet")
-        color=iter(cmap(np.linspace(0,1,total)))
-
-        plt.figure(1, figsize=(8,6))
-        for i in range(total):
-            # Hyperspectral
-            y = []
-            for k in x:
-                y.append(Data.data[k][i])
-
-            c=next(color)
-            if max(y) > maxRad:
-                maxRad = max(y)+0.1*max(y)
-            if rType == 'LI' and maxRad > 20:
-                maxRad = 20
-            if rType == 'LT' and maxRad > 10:
-                maxRad = 10
-            if min(y) < minRad:
-                minRad = min(y)-0.1*min(y)
-            if rType == 'LI':
-                minRad = 0
-            if rType == 'LT':
-                minRad = 0
-            if rType == 'ES':
-                minRad = 0
-
-            # Plot the Hyperspectral spectrum
-            plt.plot(wave, y, c=c, zorder=-1)
-
-        axes = plt.gca()
-        axes.set_title(filename, fontdict=font)
-        # axes.set_xlim([390, 800])
-        axes.set_ylim([minRad, maxRad])
-
-        plt.xlabel('wavelength (nm)', fontdict=font)
-        plt.ylabel(rType, fontdict=font)
-
-        # Tweak spacing to prevent clipping of labels
-        plt.subplots_adjust(left=0.15)
-        plt.subplots_adjust(bottom=0.15)
-
-        axes.grid()
-
-        # plt.show() # --> QCoreApplication::exec: The event loop is already running
-
-        # Save the plot
-        filebasename = filename.split('_')
-        fp = os.path.join(plotDir, '_'.join(filebasename[0:-1]) + '_' + rType + '.png')
         plt.savefig(fp)
         plt.close() # This prevents displaying the plot on screen with certain IDEs
 
@@ -1853,7 +1803,7 @@ class Utilities:
                 colorGOCAD = iter(cmap(np.linspace(0,1,totalGOCAD)))
 
                 # Sg
-                sgDataGOCAD = group.getDataset(f'gocad_Sg')
+                sgDataGOCAD = group.getDataset('gocad_Sg')
 
                 sgGOCAD = []
                 waveSgGOCAD = []
@@ -1865,7 +1815,7 @@ class Utilities:
                             waveSgGOCAD.append(float(k))
 
                 # DOC
-                docDataGOCAD = group.getDataset(f'gocad_doc')
+                docDataGOCAD = group.getDataset('gocad_doc')
 
         maxIOP = 0
         minIOP = 0
@@ -1998,7 +1948,7 @@ class Utilities:
     @staticmethod
     def readAnomAnalFile(filePath):
         paramDict = {}
-        with open(filePath, newline='') as csvfile:
+        with open(filePath, newline='', encoding="utf-8") as csvfile:
             paramreader = csv.DictReader(csvfile)
             for row in paramreader:
 
@@ -2326,7 +2276,6 @@ class Utilities:
                     sensorID[grp.attributes["IDDevice"][4:8]] = "LT"
 
         return sensorID
-
 
 
     @staticmethod
@@ -2770,84 +2719,84 @@ class Utilities:
                     ds.columns[index[i]].append(x)
 
 
-    @staticmethod
-    def read_unc(filepath: str, gp) -> None:
-        """
-        Reads in L1/L2 data using the header to organise the data storage object
-        :filepath: - the full path to the file to be opened, requires a file to have begin_data and end_data before
-        and after the main data body
-        :gp: HDFGroup object - Input data is stored as HDFDatasets and appended to this group.
-        return type: None - may be changed to bool for better error handling
-        """
-        begin_data = False  # set up data flag
-        attrs = {}
-        end_flag = 0
+    # @staticmethod
+    # def read_unc(filepath: str, gp) -> None:
+    #     """
+    #     Reads in L1/L2 data using the header to organise the data storage object
+    #     :filepath: - the full path to the file to be opened, requires a file to have begin_data and end_data before
+    #     and after the main data body
+    #     :gp: HDFGroup object - Input data is stored as HDFDatasets and appended to this group.
+    #     return type: None - may be changed to bool for better error handling
+    #     """
+    #     begin_data = False  # set up data flag
+    #     attrs = {}
+    #     end_flag = 0
 
-        with open(filepath, 'r') as f:  # open file
-            key = None; index = None
-            while True:  # start loop
-                line = Utilities.getline(f, '\n')  # reads the file until a '\n' character is reached
-                if end_flag == 0:  # end condition not met
+    #     with open(filepath, 'r', encoding="utf-8") as f:  # open file
+    #         key = None; index = None
+    #         while True:  # start loop
+    #             line = Utilities.getline(f, '\n')  # reads the file until a '\n' character is reached
+    #             if end_flag == 0:  # end condition not met
 
-                    if '[END_OF_CALDATA]' in line:  # end conditions met
-                        begin_data = False  # set to not collect data
-                        ds.columnsToDataset()  # convert read data to dataset
-                        end_flag = 1
+    #                 if '[END_OF_CALDATA]' in line:  # end conditions met
+    #                     begin_data = False  # set to not collect data
+    #                     ds.columnsToDataset()  # convert read data to dataset
+    #                     end_flag = 1
 
-                    elif line.startswith('!'):  # first lines start with '!' so can be used to determine which file is being read
-                        if 'FRM' in line:
-                            gp.attributes['INSTRUMENT_CAL_TYPE'] = line[1:]
-                        else:
-                            caltype = line[1:]
-                            if 'CAL_FILE' not in gp.attributes.keys():
-                                gp.attributes['CAL_FILE'] = []
-                            gp.attributes['CAL_FILE'].append(line[1:])
+    #                 elif line.startswith('!'):  # first lines start with '!' so can be used to determine which file is being read
+    #                     if 'FRM' in line:
+    #                         gp.attributes['INSTRUMENT_CAL_TYPE'] = line[1:]
+    #                     else:
+    #                         caltype = line[1:]
+    #                         if 'CAL_FILE' not in gp.attributes.keys():
+    #                             gp.attributes['CAL_FILE'] = []
+    #                         gp.attributes['CAL_FILE'].append(line[1:])
 
-                    # elif line.startswith('SAT'):
-                    #     device = line.rstrip()
-                    #     name = device+'_'+caltype
+    #                 # elif line.startswith('SAT'):
+    #                 #     device = line.rstrip()
+    #                 #     name = device+'_'+caltype
 
-                    # elif line.startswith('SAM_'):
-                    #     device = line.rstrip()
-                    #     name = device+'_'+caltype
+    #                 # elif line.startswith('SAM_'):
+    #                 #     device = line.rstrip()
+    #                 #     name = device+'_'+caltype
 
-                    elif begin_data:
-                        Utilities.parseLine(line, ds)  # add the data
+    #                 elif begin_data:
+    #                     Utilities.parseLine(line, ds)  # add the data
 
-                    else:  # part of header
-                        if '[CALDATA]' in line:  # begin reading data
-                            begin_data = True
-                            ds = gp.addDataset(name)
-                            if ds is None:
-                                ds = gp.getDataset(name)
-                            ds.attributes['INDEX'] = [x for x in index if x != ' ']  # populate ds attributes with column names
-                            index = None
-                            # populate ds attributes with header data
-                            for k, v in attrs.items():
-                                ds.attributes[k] = v  # set the attributes
-                            attrs.clear()
+    #                 else:  # part of header
+    #                     if '[CALDATA]' in line:  # begin reading data
+    #                         begin_data = True
+    #                         ds = gp.addDataset(name)
+    #                         if ds is None:
+    #                             ds = gp.getDataset(name)
+    #                         ds.attributes['INDEX'] = [x for x in index if x != ' ']  # populate ds attributes with column names
+    #                         index = None
+    #                         # populate ds attributes with header data
+    #                         for k, v in attrs.items():
+    #                             ds.attributes[k] = v  # set the attributes
+    #                         attrs.clear()
 
-                        else:  # part of header, check if attribute or column names
-                            if line.startswith('['):  # if line has '[ ]' then take the next line as the attribute
-                                key = line[1:-1]
-                            elif key is not None:
-                                attrs[key] = line
-                                if key == "DEVICE":
-                                    device = line.rstrip()
-                                    name = device+'_'+caltype
-                                key = None
-                            else:  # only blank lines and comments get here
-                                if index is None and len(line.split(',')) > 2:  # if comma separated then must be column names!
-                                    index = list(line[1:].split(','))
+    #                     else:  # part of header, check if attribute or column names
+    #                         if line.startswith('['):  # if line has '[ ]' then take the next line as the attribute
+    #                             key = line[1:-1]
+    #                         elif key is not None:
+    #                             attrs[key] = line
+    #                             if key == "DEVICE":
+    #                                 device = line.rstrip()
+    #                                 name = device+'_'+caltype
+    #                             key = None
+    #                         else:  # only blank lines and comments get here
+    #                             if index is None and len(line.split(',')) > 2:  # if comma separated then must be column names!
+    #                                 index = list(line[1:].split(','))
 
-                else:  # check for end condition
-                    # this will skip the first real line after 'END_OF_XXXXDATA', however this is always a comment so ignored.
-                    if end_flag >= 3:
-                        break  # end if empty lines found after [END_DATA], else more data to be read
-                    elif not line:
-                        end_flag += 1
-                    else:
-                        end_flag = 0
+    #             else:  # check for end condition
+    #                 # this will skip the first real line after 'END_OF_XXXXDATA', however this is always a comment so ignored.
+    #                 if end_flag >= 3:
+    #                     break  # end if empty lines found after [END_DATA], else more data to be read
+    #                 elif not line:
+    #                     end_flag += 1
+    #                 else:
+    #                     end_flag = 0
 
     @staticmethod
     def parseLine_no_index(line: str, ds) -> None:
@@ -2867,7 +2816,7 @@ class Utilities:
         end_count = 0
         Azimuth_angle = None
 
-        with open(filepath, 'r') as f:  # open file
+        with open(filepath, 'r', encoding="utf-8") as f:  # open file
             key = None
             while True:  # start loop
                 line = Utilities.getline(f, '\n')  # reads the file until a '\n' character is reached
@@ -2925,8 +2874,8 @@ class Utilities:
         # There must be a better way...
         for ens, row in enumerate(inputArray):
             for i, value in enumerate(row):
-                    if np.isnan(value):
-                        inputArray[ens][i] = 0.0
+                if np.isnan(value):
+                    inputArray[ens][i] = 0.0
         return inputArray
-    
+
    

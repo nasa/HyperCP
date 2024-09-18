@@ -54,7 +54,7 @@ class GetAnc:
     def getAnc(inputGroup):
         ''' Retrieve model data and save in Data/Anc and in ModData '''
         server = 'oceandata.sci.gsfc.nasa.gov'
-        cwd = os.getcwd()
+        # cwd = os.getcwd()
 
         if not os.path.exists(os.path.join(PATH_TO_DATA, 'Anc')):
             os.makedirs(os.path.join(PATH_TO_DATA, 'Anc'))

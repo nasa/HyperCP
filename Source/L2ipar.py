@@ -1,6 +1,4 @@
 
-import numpy as np
-
 from Source.Utilities import Utilities
 
 def L2ipar(wavelength, Es, fullSpec):

@@ -1,4 +1,4 @@
-
+'''Read in calibration and telemetry definition files'''
 import collections
 import os.path
 import shutil
@@ -8,7 +8,7 @@ from Source.CalibrationFile import CalibrationFile
 
 
 class CalibrationFileReader:
-
+    '''Read in calibration and telemetry definition files. Return the calibrationMap.'''
     # reads calibration files stored in directory
     @staticmethod
     def read(fp):

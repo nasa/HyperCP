@@ -1,13 +1,13 @@
+''' Process L1AQC to L1B '''
 import os
 import datetime as dt
 import calendar
 from inspect import currentframe, getframeinfo
 import glob
 from datetime import datetime
-
 import numpy as np
 
-from Source import PATH_TO_DATA, PATH_TO_CONFIG
+from Source import PATH_TO_CONFIG
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ConfigFile import ConfigFile
@@ -16,7 +16,7 @@ from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
-from Source.FidradDB_api import FidradDB_api, FidradDB_choose_cal_char_file
+from Source.FidradDB_api import FidradDB_api
 
 class ProcessL1b:
     '''L1B mainly for SeaBird with some shared methods'''
@@ -506,7 +506,7 @@ class ProcessL1b:
         # Instead of using TT2 or seconds, use python datetimes to avoid problems crossing
         # UTC midnight.
         if not ProcessL1b.darkCorrection(darkData, darkDateTime, lightData, lightDateTime):
-            msg = f'ProcessL1d.darkCorrection failed  for {sensorType}'
+            msg = f'ProcessL1b.darkCorrection failed  for {sensorType}'
             print(msg)
             Utilities.writeLogFile(msg)
             return False
@@ -552,8 +552,8 @@ class ProcessL1b:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
-        ''' Introduce a new group for carrying L1AQC data forward. Groups keep consistent timestamps across all datasets,
-            so it has to be a new group to avoid conflict with interpolated timestamps. '''
+        # Introduce a new group for carrying L1AQC data forward. Groups keep consistent timestamps across all datasets,
+        #    so it has to be a new group to avoid conflict with interpolated timestamps. 
 
         # Due to the way light/dark sampling works with OCRs, each will need its own group
         esDarkGroup = node.addGroup('ES_DARK_L1AQC')
@@ -652,7 +652,7 @@ class ProcessL1b:
             print(msg)
             Utilities.writeLogFile(msg)
             return None
-        
+
         # For SeaBird (shutter darks), now that dark correction is complete, change the dark timestamps to their
         #   _ADJUSTED values (matching nearest lights) for the sake of filtering the data later
         for gp in node.groups:
@@ -665,14 +665,12 @@ class ProcessL1b:
                 gp.removeDataset('TIMETAG2_ADJUSTED')
 
                 gp.removeDataset('DATETIME')
-                gp = Utilities.groupAddDateTime(gp) 
+                gp = Utilities.groupAddDateTime(gp)
 
         # Interpolate only the Ancillary group, and then fold in model data
-        '''
-            This is run ahead of the other groups for all processing pathways. Anc group
-            exists regardless of Ancillary file being provided
-            NOTE: Need to test without an anc file and with SolarTracker geometries
-        '''
+        # This is run ahead of the other groups for all processing pathways. Anc group
+        # exists regardless of Ancillary file being provided
+
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
             msg = 'Error interpolating ancillary data'
             print(msg)
@@ -737,7 +735,7 @@ class ProcessL1b:
                 return None
 
         # Interpolation
-        ''' Used with both TriOS and SeaBird '''
+        # Used with both TriOS and SeaBird
         # Match instruments to a common timestamp (slowest shutter, should be Lt) and
         # interpolate to the chosen spectral resolution. HyperSAS instruments operate on
         # different timestamps and wavebands, so interpolation is required.

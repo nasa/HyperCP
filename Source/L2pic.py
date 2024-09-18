@@ -1,7 +1,4 @@
 
-import numpy as np
-from Source.ConfigFile import ConfigFile
-
 def L2pic(root):
     ''' Use weighted MODIS Aqua bands to calculate particulate inorganic carbon  in mol m^-3 '''
 

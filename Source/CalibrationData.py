@@ -4,9 +4,10 @@ import math
 import struct
 import sys
 
-# CalibrationData class stores information regarding the 
-# sensor definition lines and coewfficients from the calibration file
 class CalibrationData:
+    ''' CalibrationData class stores information regarding the 
+         sensor definition lines and coefficients from the calibration file'''
+
     def __init__(self):
         self.type = ""
         self.id = ""
@@ -37,7 +38,7 @@ class CalibrationData:
 
         if self.type == 'POSITION':
             self.type = 'POINTING'
-            self.id = 'ROTATOR'            
+            self.id = 'ROTATOR'
 
 
     # Reads a coefficients line in the cal file
