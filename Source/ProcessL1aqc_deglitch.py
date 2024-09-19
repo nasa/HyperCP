@@ -132,6 +132,8 @@ class ProcessL1aqc_deglitch:
         lightData = None
 
         for gp in node.groups:
+            if 'FrameType' not in gp.attributes:
+                continue
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 darkData = gp.getDataset(sensorType)
                 darkDateTime = Utilities.getDateTime(gp)
@@ -289,6 +291,8 @@ class ProcessL1aqc_deglitch:
 
         # Delete the glitchy rows of the datasets
         for gp in node.groups:
+            if 'FrameType' not in gp.attributes:
+                continue
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 try:
                     gp.datasetDeleteRow(np.where(badIndexDark))

@@ -709,6 +709,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         lightData = None
         # Extract Light & Dark datasets from the sensor group
         for gp in self.root.groups:
+            if "FrameType" not in gp.attributes:
+                continue
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 darkData = gp.getDataset(sensorType)
                 darkDateTime = Utilities.getDateTime(gp)
@@ -899,6 +901,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
             lightData = None
 
             for gp in self.root.groups:
+                if "FrameType" not in gp.attributes:
+                    continue
                 if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                     darkData = gp.getDataset(sensorType)
                     darkDateTime = Utilities.getDateTime(gp)
