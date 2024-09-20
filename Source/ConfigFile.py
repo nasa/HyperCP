@@ -211,7 +211,7 @@ class ConfigFile:
         params['RadCalDir'] = os.path.relpath(params['RadCalDir'])
         fp = os.path.join(PATH_TO_CONFIG, filename)
 
-        with open(fp, 'w') as f:
+        with open(fp, 'w', encoding="utf-8") as f:
             json.dump(params,f,indent=4)
         ConfigFile.createCalibrationFolder()
 
@@ -231,7 +231,7 @@ class ConfigFile:
             # print(f'Populating ConfigFile with saved parameters: {filename}')
             ConfigFile.filename = filename
             text = ""
-            with open(configPath, 'r') as f:
+            with open(configPath, 'r', encoding="utf-8") as f:
                 text = f.read()
                 # ConfigFile.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
                 fullCollection = json.loads(text, object_pairs_hook=collections.OrderedDict)

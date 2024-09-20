@@ -434,9 +434,9 @@ class Window(QtWidgets.QWidget):
             sys.exit()
 
         # Select data files
-        if not self.inputDirectory[0]:
-            print("Bad input parent directory.")
-            return
+        # if not self.inputDirectory[0]:
+        #     print("Bad input parent directory.")
+        #     return
 
         if lvl == "L1A":
             inLevel = "raw"
@@ -584,6 +584,7 @@ class Window(QtWidgets.QWidget):
     def popQueryCheckBoxUpdate(self):
         print("Main - popQueryCheckBoxUpdate")
         MainConfig.settings["popQuery"] = int(self.popQueryCheckBox.isChecked())
+        MainConfig.saveConfig(MainConfig.fileName)
 
     # def saveButtonClicked(self):
     #     print("Main - saveButtonClicked")
@@ -644,7 +645,7 @@ class Command:
         # inputFile = [inputFile]
 
         # No GUI used: error message are display in prompt and not in graphical window
-        MainConfig.settings["popQuery"] = 0
+        MainConfig.settings["popQuery"] = 1 # 1 suppresses popup
         MainConfig.saveConfig(MainConfig.fileName)
         print("MainConfig - Config updated with cmd line arguments")
 
@@ -813,13 +814,13 @@ if __name__ == "__main__":
 
     # If the cmd argument is given, run the Command class without the GUI
     if cmd:
-        os.environ["HYPERINSPACE_CMD"] = "TRUE"
+        os.environ["HYPERINSPACE_CMD"] = "TRUE" # Must be a string
         if not (args.username is None or args.password is None):
             # Only for L2 processing set credentials
             GetAnc.userCreds(username, password)
         Command(configFilePath, inputFile, multiLevel, outputDirectory, level, ancFile)
     else:
-        os.environ["HYPERINSPACE_CMD"] = "FALSE"
+        os.environ["HYPERINSPACE_CMD"] = "FALSE" # Must be a string
         app = QtWidgets.QApplication(sys.argv)
         win = Window()
         sys.exit(app.exec_())

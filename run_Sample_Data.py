@@ -82,7 +82,7 @@ elif PLATFORM.lower() == 'manual_trios':
 else:
     PATH_CFG = os.path.join(PATH_HCP, "Config", f"{CRUISE}.cfg")
 ################################################# END CUSTOM SET UP #################################################
-os.environ["HYPERINSPACE_CMD"] = "TRUE"
+os.environ["HYPERINSPACE_CMD"].lower() = "true"
 
 ## Setup remaining globals ##
 TO_LEVELS = ["L1A", "L1AQC", "L1B", "L1BQC", "L2"]
