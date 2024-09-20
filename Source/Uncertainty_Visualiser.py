@@ -24,13 +24,39 @@ class UncertaintyGUI(ABC):
         self._engine = UncertaintyEngine(mcp)
         del mcp, _mcp  # free up memory
 
-    def pie_plot_class(self, mean_vals, uncs, wavelengths, cast):
+    def pie_plot_class(self, mean_vals, uncs, wavelengths, cast, ancGrp):
         results, values = self._engine.breakdown_Class(mean_vals, uncs, False)
         labels = dict(
-            ES=["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
-            LI=["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-            LT=["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
+            ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
+            LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
         )
+
+        # build table of anc data
+        aod = ancGrp.datasets['AOD'].columns['AOD'][0]
+        rel_az = ancGrp.datasets['REL_AZ'].columns['REL_AZ'][0]
+        saa = ancGrp.datasets['SOLAR_AZ'].columns['SOLAR_AZ'][0]
+        sza = ancGrp.datasets['SZA'].columns['SZA'][0]
+        ws = ancGrp.datasets['WINDSPEED'].columns['WINDSPEED'][0]
+        sst = ancGrp.datasets['SST'].columns['SST'][0]
+
+        col_labels = ['value']
+        row_labels = [
+            'Aerosol Optical Depth',
+            'Relative Azimuth',
+            'Solar Azimuth',
+            'Solar Zenith',
+            'Wind Speed',
+            'Water Temperature'
+        ]
+        table_vals = [
+            [aod],
+            [rel_az],
+            [saa],
+            [sza],
+            [ws],
+            [sst]
+        ]
 
         for sensor in results.keys():
             indexes = [
@@ -42,20 +68,54 @@ class UncertaintyGUI(ABC):
                 wvl_at_indx = wavelengths[sensor][indx]  # why is numpy like this?
                 fig, ax = plt.subplots()
 
+                # the_table = plt.table(cellText=table_vals,
+                #                       colWidths=[0.1],
+                #                       rowLabels=row_labels,
+                #                       colLabels=col_labels,
+                #                       loc="best",
+                #                       )
+                # plt.text(0.1, 0.5, 'Ancillary Data', size=12)
+
                 ax.pie(
-                    [self._engine.getpct(results[sensor][key], values[sensor])[50] for key in labels[sensor]],
+                    [self._engine.getpct(results[sensor][key], values[sensor])[indx] for key in labels[sensor]],
                     labels=labels[sensor],
                     autopct='%1.1f%%'
                 )
                 plt.title(f"{sensor} Class Based Uncertainty Components at {wvl_at_indx}nm")
-                plt.savefig(f"test_pie_plot_{sensor}_{cast}.png")
+                plt.savefig(f"test_pie_plot_{sensor}_{cast}_{wvl_at_indx}.png")
                 plt.close(fig)
 
-    def pie_plot_class_l2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast):
+    def pie_plot_class_l2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast, ancGrp):
+        # build table of anc data
+        aod = ancGrp.datasets['AOD'].columns['AOD'][0]
+        rel_az = ancGrp.datasets['REL_AZ'].columns['REL_AZ'][0]
+        saa = ancGrp.datasets['SOLAR_AZ'].columns['SOLAR_AZ'][0]
+        sza = ancGrp.datasets['SZA'].columns['SZA'][0]
+        ws = ancGrp.datasets['WINDSPEED'].columns['WINDSPEED'][0]
+        sst = ancGrp.datasets['SST'].columns['SST'][0]
+
+        col_labels = ['value']
+        row_labels = [
+            'Aerosol Optical Depth',
+            'Relative Azimuth',
+            'Solar Azimuth',
+            'Solar Zenith',
+            'Wind Speed',
+            'Water Temperature'
+        ]
+        table_vals = [
+            [aod],
+            [rel_az],
+            [saa],
+            [sza],
+            [ws],
+            [sst]
+        ]
+
         results, values = self._engine.breakdown_Class_L2(rrs_vals, lw_vals, rrs_uncs, lw_uncs, False)
         labels = dict(
-            Lw=["stdev", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-            Rrs=["stdev", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
+            Lw=["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            Rrs=["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
         )
         for product in results.keys():
             indexes = [
@@ -67,7 +127,14 @@ class UncertaintyGUI(ABC):
                 wvl_at_indx = wavelengths[indx]  # why is numpy like this?
                 fig, ax = plt.subplots()
 
-                ax.pie([self._engine.getpct(results[product][key], values[product])[50] for key in labels[product]],
+                # the_table = plt.table(cellText=table_vals,
+                #                       colWidths=[0.1],
+                #                       rowLabels=row_labels,
+                #                       colLabels=col_labels,
+                #                       loc='best')
+                # plt.text(12, 3.4, 'Ancillary Data', size=8)
+
+                ax.pie([self._engine.getpct(results[product][key], values[product])[indx] for key in labels[product]],
                        labels=labels[product], autopct='%1.1f%%')
                 plt.title(f"{product} Class Based Uncertainty Components at {wvl_at_indx}nm")
                 plt.savefig(f"test_pie_plot_{product}_{cast}_{wvl_at_indx}.png")
@@ -78,9 +145,9 @@ class UncertaintyGUI(ABC):
     def plot_class(self, mean_vals, uncs, wavelengths, cast=""):
         results, values = self._engine.breakdown_Class(mean_vals, uncs, True)
         keys = dict(
-            ES=["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
-            LI=["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-            LT=["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
+            ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
+            LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
         )
 
         # now we plot the result
@@ -103,8 +170,8 @@ class UncertaintyGUI(ABC):
     def plot_class_L2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast=""):
         results, values = self._engine.breakdown_Class_L2(rrs_vals, lw_vals, rrs_uncs, lw_uncs, True)
         keys = dict(
-            Lw=["stdev", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-            Rrs=["stdev", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
+            Lw=["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            Rrs=["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
         )
         # now we plot the result
         for product in ['Lw', 'Rrs']:
@@ -240,9 +307,9 @@ class UncertaintyEngine(ABC):
 
         """
         keys = dict(
-            ES=["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
-            LI=["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-            LT=["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
+            ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
+            LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
         )
         output = {"ES": {}, "LI": {}, "LT": {}}
         vals = {}
@@ -270,7 +337,7 @@ class UncertaintyEngine(ABC):
         Breakdown uncertainties for L2 products when running in class based mode
         """
 
-        keys = ["stdev", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
+        keys = ["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
         output = {"Lw": {}, "Rrs": {}}
         vals = {}
         uRrs = np.zeros(np.asarray(rrs_uncs).shape)
