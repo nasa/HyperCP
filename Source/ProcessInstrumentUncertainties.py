@@ -28,7 +28,7 @@ from Source.Weight_RSR import Weight_RSR
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 
-from Source.Uncertainty_Visualiser import Show_Uncertainties  # class for uncertainty visualisation plots
+from Source.Uncertainty_Visualiser import UncertaintyEngine, UncertaintyGUI # class for uncertainty visualisation plots
 
 
 class Instrument(ABC):
@@ -314,9 +314,29 @@ class Instrument(ABC):
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
         # convert to relative uncertainty
 
+        # plot class based L1B uncertainties
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-            p_unc = Show_Uncertainties(PropagateL1B)
-            p_unc.plot_breakdown_Class(
+            # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
+            # value
+            stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+            if stations is not None:
+                cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
+                        f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
+            else:
+                cast = f"{type(self).__name__}_{node.attributes['CAST']}"
+
+            p_unc = UncertaintyGUI(PropagateL1B)
+            p_unc.pie_plot_class(
+                mean_values,
+                uncertainty,
+                dict(
+                    ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
+                    LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
+                    LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
+                ),
+                cast
+            )
+            p_unc.plot_class(
                 mean_values,
                 uncertainty,
                 dict(
@@ -324,8 +344,7 @@ class Instrument(ABC):
                     LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
                     LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
                     ),
-                True,
-                type(self).__name__ + '_' + node.attributes["CAST"]
+                cast
             )
 
         with warnings.catch_warnings():
@@ -643,9 +662,10 @@ class Instrument(ABC):
 
         return output
 
-    def rrsHyperUNC(self, uncGrp: HDFGroup, rhoScalar: float, rhoVec: np.array, rhoDelta: np.array,
+    def rrsHyperUNC(self, node, uncGrp: HDFGroup, rhoScalar: float, rhoVec: np.array, rhoDelta: np.array,
                     waveSubset: np.array, xSlice: dict[str, np.array]) -> dict[str, np.array]:
         """
+        :param node: HDFRoot
         :param uncGrp: HDFGroup storing the uncertainty budget
         :param rhoScalar: rho input if Mobley99 or threeC rho is used
         :param rhoVec: rho input if Zhang17 rho is used
@@ -776,6 +796,36 @@ class Instrument(ABC):
 
         rrsAbsUnc = Propagate_L2.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
         rrs_vals = Propagate_L2.RRS(*rrs_means)
+
+        # Plot Class based L2 uncertainties
+        if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+            # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
+            # value
+            stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+            if stations is not None:
+                cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
+                        f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
+            else:
+                cast = f"{type(self).__name__}_{node.attributes['CAST']}"
+
+            p_unc = UncertaintyGUI()
+            p_unc.pie_plot_class_l2(
+                rrs_means,
+                lw_means,
+                rrs_uncertainties,
+                lw_uncertainties,
+                np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),  # pass radcal wavelengths
+                cast
+            )
+
+            p_unc.plot_class_L2(
+                rrs_means,
+                lw_means,
+                rrs_uncertainties,
+                lw_uncertainties,
+                np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                cast
+            )
 
         ## BAND CONVOLUTION
         # band convolution of uncertainties is done here to include uncertainty contribution of band convolution process
@@ -1130,6 +1180,36 @@ class Instrument(ABC):
         rrs_vals, _ = self.interp_common_wvls(rrs_vals,
                                              np.array(uncGrp.getDataset("ES_RADCAL_UNC").columns['wvl'], dtype=float),
                                              waveSubset)
+
+        # Plot Class based L2 uncertainties
+        if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+            # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
+            # value
+            stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+            if stations is not None:
+                cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
+                        f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
+            else:
+                cast = f"{type(self).__name__}_{node.attributes['CAST']}"
+
+            p_unc = UncertaintyGUI()
+            p_unc.pie_plot_class_l2(
+                rrs_means,
+                lw_means,
+                rrs_uncertainties,
+                lw_uncertainties,
+                np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),  # pass radcal wavelengths
+                cast
+            )
+
+            p_unc.plot_class_L2(
+                rrs_means,
+                lw_means,
+                rrs_uncertainties,
+                lw_uncertainties,
+                np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                cast
+            )
 
         ## Band Convolution of Uncertainties
         # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
@@ -2130,8 +2210,7 @@ class HyperOCR(Instrument):
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
 
             if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-                # example uncertainty plotting - used to generate unc breakdown plots
-                p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
+                p_unc = UncertaintyGUI(prop)  # initialise plotting obj - punpy MCP as arg
                 time = node.attributes['TIME-STAMP'].split(' ')[-2]  # for labelling
                 if sensortype.upper() == 'ES':
                     p_unc.plot_unc_from_sample_1D(
@@ -2461,10 +2540,11 @@ class Trios(Instrument):
 
                 # PDF of full hemispherical cosine error uncertainty
                 sample_fhemi_coserr = cm.generate_sample(mDraws, full_hemi_coserror, fhemi_unc, "syst")
-                if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-                    p_unc = Show_Uncertainties(prop)
-                    p_unc.plot_unc_from_sample_1D(sample_zen_avg_coserror, radcal_wvl, "zen")
-                    p_unc.plot_unc_from_sample_1D(sample_fhemi_coserr, radcal_wvl, "fhemi")
+
+                # I was doing some debugging here, sorry that this ended up in the PR.
+                # p_unc = UncertaintyGUI(prop)
+                # p_unc.plot_unc_from_sample_1D(sample_zen_avg_coserror, radcal_wvl, "zen")
+                # p_unc.plot_unc_from_sample_1D(sample_fhemi_coserr, radcal_wvl, "fhemi")
             else:
                 PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['2'])
                 unc_PANEL = (np.asarray(
@@ -2594,7 +2674,7 @@ class Trios(Instrument):
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
 
             if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-                p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
+                p_unc = UncertaintyGUI(prop)  # initialise plotting obj - punpy MCP as arg
                 time = ' '.join(node.attributes['TIME-STAMP'][0:-1].split('T'))  # time string for labelling
                 if sensortype.upper() == 'ES':
                     p_unc.plot_unc_from_sample_1D(
