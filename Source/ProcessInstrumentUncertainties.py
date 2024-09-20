@@ -215,6 +215,40 @@ class Instrument(ABC):
                                             np.array(uncGrp.getDataset("LT_RADCAL_UNC").columns['wvl'], dtype=float),
                                             data_wvl)
 
+        # plot class based L1B uncertainties
+        if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+            # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
+            # value
+            stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+            if stations is not None:
+                cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
+                        f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
+            else:
+                cast = f"{type(self).__name__}_{node.attributes['CAST']}"
+
+            p_unc = UncertaintyGUI(PropagateL1B)
+            p_unc.pie_plot_class(
+                mean_values,
+                uncertainty,
+                dict(
+                    ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
+                    LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
+                    LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
+                ),
+                cast,
+                node.getGroup("ANCILLARY")
+            )
+            p_unc.plot_class(
+                mean_values,
+                uncertainty,
+                dict(
+                    ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
+                    LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
+                    LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
+                    ),
+                cast
+            )
+
         return dict(
             esUnc=es_Unc,
             liUnc=li_Unc,
@@ -334,7 +368,8 @@ class Instrument(ABC):
                     LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
                     LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
                 ),
-                cast
+                cast,
+                node.getGroup("ANCILLARY")
             )
             p_unc.plot_class(
                 mean_values,
@@ -815,7 +850,8 @@ class Instrument(ABC):
                 rrs_uncertainties,
                 lw_uncertainties,
                 np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),  # pass radcal wavelengths
-                cast
+                cast,
+                node.getGroup("ANCILLARY")
             )
 
             p_unc.plot_class_L2(
@@ -1199,7 +1235,8 @@ class Instrument(ABC):
                 rrs_uncertainties,
                 lw_uncertainties,
                 np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),  # pass radcal wavelengths
-                cast
+                cast,
+                node.getGroup("ANCILLARY")
             )
 
             p_unc.plot_class_L2(
@@ -1688,7 +1725,8 @@ class Instrument(ABC):
         py6s_gp = node.getGroup('PY6S_MODEL')
         py6s_gp.getDataset("direct_ratio").datasetToColumns()
         res_py6s['solar_zenith'] = np.asarray(py6s_gp.getDataset('solar_zenith').columns['solar_zenith'])
-        res_py6s['wavelengths'] = np.asarray(list(py6s_gp.getDataset('direct_ratio').columns.keys())[2:], dtype=float)
+        # changed to 3: because timetag2 was included and causing a bug
+        res_py6s['wavelengths'] = np.asarray(list(py6s_gp.getDataset('direct_ratio').columns.keys())[3:], dtype=float)
         res_py6s['direct_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("direct_ratio").data))
         res_py6s['diffuse_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("diffuse_ratio").data))
         return res_py6s
@@ -1846,8 +1884,13 @@ class HyperOCR(Instrument):
             wvl = str(float(k))
 
             # apply normalisation to the standard deviations used in uncertainty calculations
-            std_Light.append(np.std(lightData[k])/pow(N, 0.5))  # = (sigma / sqrt(N))**2 or sigma**2
-            std_Dark.append(np.std(darkData[k])/pow(Nd, 0.5))  # sigma here is essentially sigma**2 so N must be rooted
+            if N > 25:  # normal case
+                std_Light.append(np.std(lightData[k])/np.sqrt(N))
+                std_Dark.append(np.std(darkData[k])/np.sqrt(Nd) )  # sigma here is essentially sigma**2 so N must sqrt
+            else:  # few scans, use different statistics
+                std_Light.append((N-1/N-3)*(lightData[k] / np.sqrt(N))**2)
+                std_Dark.append((Nd-1/Nd-3)*(darkData[k] / np.sqrt(Nd))**2)
+
             ave_Light.append(np.average(lightData[k]))
             ave_Dark.append(np.average(darkData[k]))
 
@@ -2150,8 +2193,8 @@ class HyperOCR(Instrument):
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
                 solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
-                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
-                direct_ratio, _ = self.interp_common_wvls(direct_ratio, res_py6s['wavelengths'], radcal_wvl)
+                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 3:], axis=0)
+                direct_ratio, _ = self.interp_common_wvls(np.array(direct_ratio, float), res_py6s['wavelengths'], radcal_wvl)
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
                                                     np.asarray([0.05 for i in range(np.size(solar_zenith))]),
