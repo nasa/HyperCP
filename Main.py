@@ -434,9 +434,9 @@ class Window(QtWidgets.QWidget):
             sys.exit()
 
         # Select data files
-        if not self.inputDirectory[0]:
-            print("Bad input parent directory.")
-            return
+        # if not self.inputDirectory[0]:
+        #     print("Bad input parent directory.")
+        #     return
 
         if lvl == "L1A":
             inLevel = "raw"
@@ -814,13 +814,13 @@ if __name__ == "__main__":
 
     # If the cmd argument is given, run the Command class without the GUI
     if cmd:
-        os.environ["HYPERINSPACE_CMD"] = "TRUE"
+        os.environ["HYPERINSPACE_CMD"] = "TRUE" # Must be a string
         if not (args.username is None or args.password is None):
             # Only for L2 processing set credentials
             GetAnc.userCreds(username, password)
         Command(configFilePath, inputFile, multiLevel, outputDirectory, level, ancFile)
     else:
-        os.environ["HYPERINSPACE_CMD"] = "FALSE"
+        os.environ["HYPERINSPACE_CMD"] = "FALSE" # Must be a string
         app = QtWidgets.QApplication(sys.argv)
         win = Window()
         sys.exit(app.exec_())
