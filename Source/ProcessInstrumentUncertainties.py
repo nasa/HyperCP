@@ -231,9 +231,9 @@ class Instrument(ABC):
                 mean_values,
                 uncertainty,
                 dict(
-                    ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
-                    LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
-                    LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
+                    ES=waves,
+                    LI=waves,
+                    LT=waves
                 ),
                 cast,
                 node.getGroup("ANCILLARY")
@@ -242,9 +242,9 @@ class Instrument(ABC):
                 mean_values,
                 uncertainty,
                 dict(
-                    ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
-                    LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
-                    LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
+                    ES=waves,
+                    LI=waves,
+                    LT=waves
                     ),
                 cast
             )
@@ -1234,17 +1234,16 @@ class Instrument(ABC):
                 lw_means,
                 rrs_uncertainties,
                 lw_uncertainties,
-                np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),  # pass radcal wavelengths
+                np.array(waves),  # pass radcal wavelengths
                 cast,
                 node.getGroup("ANCILLARY")
             )
-
             p_unc.plot_class_L2(
                 rrs_means,
                 lw_means,
                 rrs_uncertainties,
                 lw_uncertainties,
-                np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                np.array(waves),
                 cast
             )
 
