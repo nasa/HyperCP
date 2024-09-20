@@ -204,7 +204,7 @@ class UncertaintyGUI(ABC):
         :param xlim: xlimit in the format (x_min, x_max)
         """
         means = np.mean(sample, axis=0)
-        abs_unc_k1 = self._engine.punpy_MCP.process_samples(None, sample)
+        abs_unc_k1 = self._engine.punpy_MCP.MCP.process_samples(None, sample)
         rel_unc = ((abs_unc_k1*1e10) / (means*1e10)) * 100
 
         fig = plt.figure(fig_name)
@@ -255,7 +255,7 @@ class UncertaintyGUI(ABC):
         :param xlim: xlimit in the format (x_min, x_max)
         """
         means = np.mean(sample, axis=0)
-        abs_unc_k1 = self._engine.punpy_MCP.process_samples(None, sample)
+        abs_unc_k1 = self._engine.punpy_MCP.MCP.process_samples(None, sample)
         # rel_unc = (abs_unc_k1 / means) * 100
 
         if name is not None:
@@ -297,7 +297,7 @@ class UncertaintyGUI(ABC):
 class UncertaintyEngine(ABC):
     def __init__(self, punpy_prop_obj):
         """
-        :param punpy_prop_obj: Monte Carlo Propagation object from punpy package
+        :param MCPropagation: Monte Carlo Propagation object from Uncertainty_Analysis.py
         """
         super().__init__()
         self.punpy_MCP = punpy_prop_obj
