@@ -40,7 +40,7 @@ class RhoCorrections:
         inFilePath = os.path.join(PATH_TO_DATA, 'rhoTable_AO1999.hdf')
         try:
             lut = HDFRoot.readHDF5(inFilePath)
-        except:
+        except Exception:
             msg = "Unable to open M99 LUT."
             Utilities.errorWindow("File Error", msg)
             print(msg)

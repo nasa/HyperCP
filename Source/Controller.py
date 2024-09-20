@@ -665,21 +665,21 @@ class Controller:
             if ConfigFile.settings["bL1bCal"] == 3 and 'FRM-Full' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
                     f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
-                Utilities.errorWindow("File Error", msg)
+                # Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
             if ConfigFile.settings["bL1bCal"] == 2 and 'FRM-Class' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
                     f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
-                Utilities.errorWindow("File Error", msg)
+                # Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
             if ConfigFile.settings["bL1bCal"] == 1 and 'Factory' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
                     f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
-                Utilities.errorWindow("File Error", msg)
+                # Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False

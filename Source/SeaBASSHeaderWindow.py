@@ -476,12 +476,12 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
 
 
     def configUpdateButtonPressed(self, caller):
-        print("Updating SeaBASS Header comments from values in ConfigWindow")
+        print("Updating SeaBASS Header comments from values in ConfigFile")
         # This will update subsequently from the ConfigFile on demand
 
         # First try to fill left column metadata headers using the Ancillary fill if provided.
-        #   Only when opening, not when saving
-        if caller == 'config1':
+        #   Only when opening, not when saving 
+        if caller == 'config1' and not os.environ["HYPERINSPACE_CMD"].lower() == 'true': # os.environ must be string
             fp = MainConfig.settings["ancFile"]
             if not os.path.isfile(fp):
                 print("Specified ancillary file not found: " + fp)
@@ -570,7 +570,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         else:
             NegativeFilt = "Off"
 
-        if os.environ["HYPERINSPACE_CMD"]:
+        if os.environ["HYPERINSPACE_CMD"].lower() == 'true': #os.environs must be strings
             MainConfig.loadConfig('cmdline_main.config','version')
         else:
             MainConfig.loadConfig('main.config','version')
