@@ -255,8 +255,7 @@ class Controller:
                     calibrationMap[key] = cf
 
             if ".tdf" in key:
-                with open(os.path.join(calPath, key), 'rb') as f:
-                    cf = CalibrationFile()
+                with open(os.path.join(calPath, key), 'rb') as f:                    
                     cf.read(f)
                     #print("id:", cf.id)
                     calibrationMap[key] = cf
