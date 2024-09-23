@@ -101,7 +101,7 @@ class Propagate:
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
     ], dtype=np.float64)
 
-    def __init__(self, M: int = 10000, cores: int = 1):
+    def __init__(self, M: int = 100, cores: int = 1):
         self._platform: str = ''  # internally used variable to store platform string to use in L2 conv products
         self._wavebands: np.array = None  # stores wavebands for convolution
         if isinstance(cores, int):
