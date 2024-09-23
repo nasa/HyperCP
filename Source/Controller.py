@@ -222,11 +222,17 @@ class Controller:
                     del calibrationMap[key]
             else:
                 del calibrationMap[key]
+                
         return calibrationMap
 
     @staticmethod
     def processCalibrationConfigTrios(calFiles):
-        ''' Write pseudo calibration/configuration map for TriOS'''
+        ''' Write calibration/configuration map for TriOS'''
+
+        configFileName = ConfigFile.filename
+        calFolder = os.path.splitext(configFileName)[0] + "_Calibration"
+        calPath = os.path.join(PATH_TO_CONFIG, calFolder)
+        print("Read CalibrationFile ", calPath)
 
         # print("processCalibrationConfig")
         calibrationMap = collections.OrderedDict()
@@ -246,6 +252,13 @@ class Controller:
                     cf.media = "Air"
                     cf.measMode = "Surface"
                     cf.frameType = "Combined"
+                    calibrationMap[key] = cf
+
+            if ".tdf" in key:
+                with open(os.path.join(calPath, key), 'rb') as f:
+                    cf = CalibrationFile()
+                    cf.read(f)
+                    #print("id:", cf.id)
                     calibrationMap[key] = cf
 
         return calibrationMap
