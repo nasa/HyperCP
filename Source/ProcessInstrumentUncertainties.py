@@ -1740,11 +1740,12 @@ class Instrument(ABC):
         # py6s_gp.getDataset("direct_ratio").datasetToColumns()
         res_py6s['solar_zenith'] = np.asarray(py6s_gp.getDataset('solar_zenith').columns['solar_zenith'])
         res_py6s['wavelengths'] = np.asarray(list(py6s_gp.getDataset('direct_ratio').columns.keys())[2:], dtype=float)
-        if 'timetag' in res_py6s['wavelengths'][0]:
-            # because timetag2 was included for some data and caused a bug
-            res_py6s['wavelengths'] = res_py6s['wavelengths'][1:]
         res_py6s['direct_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("direct_ratio").data))
         res_py6s['diffuse_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("diffuse_ratio").data))
+        if 'timetag' in res_py6s['wavelengths']:
+            # because timetag2 was included for some data and caused a bug
+            # if any index is removed from wavelengths we must query if direct_ratio is the correct length
+            res_py6s['wavelengths'] = res_py6s['wavelengths'][1:]
         node.removeGroup(py6s_gp)
         return res_py6s
 
@@ -2210,7 +2211,7 @@ class HyperOCR(Instrument):
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
                 solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
-                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 3:], axis=0)
+                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
                 direct_ratio, _ = self.interp_common_wvls(np.array(direct_ratio, float), res_py6s['wavelengths'], radcal_wvl)
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
