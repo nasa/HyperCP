@@ -1740,7 +1740,7 @@ class Instrument(ABC):
         # py6s_gp.getDataset("direct_ratio").datasetToColumns()
         res_py6s['solar_zenith'] = np.asarray(py6s_gp.getDataset('solar_zenith').columns['solar_zenith'])
         res_py6s['wavelengths'] = np.asarray(list(py6s_gp.getDataset('direct_ratio').columns.keys())[2:], dtype=float)
-        if 'timetag' in res_py6s['wavelengths'][0]:
+        if 'timetag' in res_py6s['wavelengths']:
             # because timetag2 was included for some data and caused a bug
             res_py6s['wavelengths'] = res_py6s['wavelengths'][1:]
         res_py6s['direct_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("direct_ratio").data))

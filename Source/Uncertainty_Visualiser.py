@@ -8,6 +8,7 @@ import numpy as np
 from punpy import MCPropagation
 
 from Source.Uncertainty_Analysis import Propagate
+from Source.ConfigFile import ConfigFile
 
 
 # I think it may be best to put something in controller.py which then calls plotting from utilities or another file.
