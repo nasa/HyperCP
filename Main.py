@@ -31,7 +31,7 @@ from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
 
 VERSION = "1.2.7"
-CODE_HOME = os.getcwd()
+CODE_HOME = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
 
 class Window(QtWidgets.QWidget):
