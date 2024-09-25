@@ -2210,7 +2210,7 @@ class HyperOCR(Instrument):
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
                 solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
-                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 3:], axis=0)
+                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
                 direct_ratio, _ = self.interp_common_wvls(np.array(direct_ratio, float), res_py6s['wavelengths'], radcal_wvl)
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
