@@ -1,9 +1,9 @@
+'''Deglitching of L1AQC radiometry time series'''
 import os
 import sys
 import csv
-import numpy as np
-
 import warnings
+import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
 
@@ -17,6 +17,7 @@ from Source.FieldPhotos import FieldPhotos
 from Source.CalibrationFileReader import CalibrationFileReader
 
 class AnomAnalWindow(QtWidgets.QDialog):
+    '''Anomaly Analysis supervised screening and deglitching GUI'''
 
     def __init__(self, inputDirectory, parent=None):
         super().__init__(parent)
@@ -26,9 +27,15 @@ class AnomAnalWindow(QtWidgets.QDialog):
         self.setModal(True)
         self.sensor='ES'
         self.sliderWave=525
+        self.fileName = None
+        self.root = None
+        self.start = None
+        self.end = None
+        self.photoList = None
+        self.photoDT = None
 
         #   This is going to truncate the ancillary data, so for the purposes of re-use, copy it
-        self.ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
+        self.ancillaryData = Controller.processAncData(MainConfig.settings["ancFile"])
 
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
@@ -417,7 +424,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         inputDirectory = self.inputDirectory
         # Open L1A HDF5 file for Deglitching
 
-        self.sensor == "ES"
+        # self.sensor == "ES"
 
         inLevel = "L1A"
         subInputDir = os.path.join(inputDirectory + '/' + inLevel + '/')
@@ -438,7 +445,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 return
-        except:
+        except Exception:
             print('No file returned')
             return
 
@@ -535,7 +542,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 self.start = gpsGroup.datasets['DATETIME'].data[0]
                 self.end = gpsGroup.datasets['DATETIME'].data[-1]
             if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
-                    trackerGroup = group
+                trackerGroup = group
 
         # For case of no GPS
         if self.start is None:
@@ -630,7 +637,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         radioButton = self.sender()
         if radioButton.isChecked():
             self.sensor = radioButton.text()
-            print("Sensor is %s" % (self.sensor))
+            print(f"Sensor is {self.sensor}")
             # Now update the LineEdits with saved values in the local object
             self.WindowDarkLineEdit.setText(str(getattr(self,f'{self.sensor}WindowDark')))
             self.WindowLightLineEdit.setText(str(getattr(self,f'{self.sensor}WindowLight')))
@@ -709,6 +716,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
         lightData = None
         # Extract Light & Dark datasets from the sensor group
         for gp in self.root.groups:
+            if "FrameType" not in gp.attributes:
+                continue
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 darkData = gp.getDataset(sensorType)
                 darkDateTime = Utilities.getDateTime(gp)
@@ -740,7 +749,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
             radiometry1D = dark2D[f'{self.waveBand:03.2f}']
 
-            self.realTimePlot(self, radiometry1D, darkDateTime, sensorType,lightDark)
+            # self.realTimePlot(self, radiometry1D, darkDateTime, sensorType,lightDark)
+            AnomAnalWindow.realTimePlot(self, radiometry1D, darkDateTime, sensorType,lightDark)
 
         # Update the slider
         self.sLabel.setText(f'Deglitching only performed from 350-850 nm: {self.waveBand}')
@@ -767,7 +777,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
             radiometry1D = light2D[f'{self.waveBand:03.2f}']
             # print(self.waveBand)
 
-            self.realTimePlot(self, radiometry1D, lightDateTime, sensorType, lightDark)
+            # self.realTimePlot(self, radiometry1D, lightDateTime, sensorType, lightDark)
+            AnomAnalWindow.realTimePlot(self, radiometry1D, lightDateTime, sensorType, lightDark)
 
         # Now run the deglitcher for all wavebands light and dark to calculate the % loss to the data from this sensor
         # Darks
@@ -878,7 +889,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # fieldnames = params.keys()
 
         print(f'Saving {filePath}')
-        with open(filePath, 'w', newline='') as csvfile:
+        with open(filePath, 'w', newline='', encoding="utf-8") as csvfile:
             paramwriter = csv.writer(csvfile, delimiter=',',
                                 quotechar='|', quoting=csv.QUOTE_MINIMAL)
             paramwriter.writerow(header)
@@ -899,6 +910,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
             lightData = None
 
             for gp in self.root.groups:
+                if "FrameType" not in gp.attributes:
+                    continue
                 if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                     darkData = gp.getDataset(sensorType)
                     darkDateTime = Utilities.getDateTime(gp)
@@ -991,7 +1004,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
                 # Collapse the badIndexes from all wavebands into one timeseries
                 # Convert to an array and test along the columns (i.e. each timestamp)
-                gIndex = np.any(np.array(globalBadIndex), 0)
+                # gIndex = np.any(np.array(globalBadIndex), 0)
                 # NOTE: if you similarly collapse globBads 1-3, you should get the same result as gIndex
 
                 # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
@@ -1100,7 +1113,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # self.MinMaxLightLabel.setText(str(self.waveBand) +'nm' )
 
 
-    @staticmethod
+    # @staticmethod
     def realTimePlot(self, radiometry1D, dateTime, sensorType,lightDark):
         # Radiometry at this point is 1D 'column' from the appropriate group/dataset/waveband
         #   in time (radiometry1D)
@@ -1191,7 +1204,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             ph3rd.setData(x_anomaly3, y_anomaly3, symbolPen='c',symbol='o', symbolBrush=None, name='Threshold exceeded')
 
 
-        except:
+        except Exception:
             e = sys.exc_info()[0]
-            print("Error: %s" % e)
+            print(f"Error: {e}")
 

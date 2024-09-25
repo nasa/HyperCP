@@ -29,8 +29,8 @@ from Main import Command
 
 ################################################### CUSTOM SET UP ###################################################
 # Batch options
-MULTI_TASK = True   # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
-MULTI_LEVEL = False  # Process raw (L0) to Level-2 (L2)
+MULTI_TASK = False  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
+MULTI_LEVEL = True  # Process raw (L0) to Level-2 (L2)
 CLOBBER = True      # True overwrites existing files
 PROC_LEVEL = "L2"   # Process to this level: L1A, L1AQC, L1B, LBQC, L2 (ignored for MULTI_LEVEL)
 
@@ -51,8 +51,7 @@ L2_VERSION = ""
 
 #################################
 ## PATH options
-PATH_OS = os.path.expanduser("~")
-PATH_HCP = os.path.join(PATH_OS,'GitRepos','HyperCP')  # Local path to HyperCP repository.
+PATH_HCP = os.path.dirname(os.path.abspath(__file__))  # Path to HyperCP repository on host
 # PATH_DATA = f"{PATH_OS}/Projects/HyperPACE/field_data/HyperSAS/{CRUISE}"  # Top level data directory containing RAW/ and ancillary file.
 PATH_DATA = os.path.join(PATH_HCP,'Data','Sample_Data',PLATFORM)
 ##################################
@@ -83,7 +82,7 @@ elif PLATFORM.lower() == 'manual_trios':
 else:
     PATH_CFG = os.path.join(PATH_HCP, "Config", f"{CRUISE}.cfg")
 ################################################# END CUSTOM SET UP #################################################
-os.environ["HYPERINSPACE_CMD"] = "TRUE"
+os.environ["HYPERINSPACE_CMD"].lower() = "true"
 
 ## Setup remaining globals ##
 TO_LEVELS = ["L1A", "L1AQC", "L1B", "L1BQC", "L2"]

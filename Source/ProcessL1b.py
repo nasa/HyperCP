@@ -486,7 +486,7 @@ class ProcessL1b:
         lightDateTime = None
 
         for gp in node.groups:
-            if not gp.id.endswith('_L1AQC'):
+            if not gp.id.endswith('_L1AQC') and 'FrameType' in gp.attributes:
                 if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensorType):
                     darkGroup = gp
                     darkData = gp.getDataset(sensorType)
@@ -514,12 +514,12 @@ class ProcessL1b:
         # Now that the dark correction is done, we can strip the dark shutter data from the
         # HDF object.
         for gp in node.groups:
-            if not gp.id.endswith('_L1AQC'):
+            if not gp.id.endswith('_L1AQC') and 'FrameType' in gp.attributes:
                 if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensorType):
                     node.removeGroup(gp)
         # And rename the corrected light frame
         for gp in node.groups:
-            if not gp.id.endswith('_L1AQC'):
+            if not gp.id.endswith('_L1AQC') and 'FrameType' in gp.attributes:
                 if gp.attributes["FrameType"] == "ShutterLight" and gp.getDataset(sensorType):
                     gp.id = gp.id[0:2] # Strip off "_LIGHT" from the name
         return True

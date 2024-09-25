@@ -357,6 +357,7 @@ class ProcessL1aqc:
         else:
             # If no ancillary file is provided, create an ancillary group from GPS
             # Generate HDFDataset
+            ancData = None
             ancillaryData = HDFDataset()
             ancillaryData.id = "AncillaryData"
 
@@ -787,9 +788,9 @@ class ProcessL1aqc:
             timeStamp = timeStampAnc
 
         # Look for additional datasets in provided ancillaryData and populate the new ancillary group
-        if ancillaryData is not None:
+        # if ancillaryData is not None:
+        if ancData is not None:
             ancGroup.attributes = ancData.attributes.copy()
-            ancGroup.attributes["FrameType"] = "Not Required"
             if "HEADING" in ancData.columns:
                 ancGroup.addDataset("HEADING")
                 ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
@@ -823,7 +824,7 @@ class ProcessL1aqc:
             if "ROLL" in ancData.columns:
                 ancGroup.addDataset("ROLL")
                 ancGroup.datasets["ROLL"].data = np.array(ancData.columns["ROLL"][0], dtype=[('NONE', '<f8')])
-
+        ancGroup.attributes["FrameType"] = "Not Required"
         ######################################################################################################
 
         # Apply Relative Azimuth filter

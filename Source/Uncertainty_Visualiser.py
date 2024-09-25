@@ -5,15 +5,191 @@ from typing import Optional, Union
 # packages
 import matplotlib.pyplot as plt
 import numpy as np
+from punpy import MCPropagation
 
-class Show_Uncertainties(ABC):
-    def __init__(self, punpy_prop_obj):
-        """
-        :param punpy_prop_obj: Monte Carlo Propagation object from punpy package
-        """
+from Source.Uncertainty_Analysis import Propagate
+from Source.ConfigFile import ConfigFile
+
+
+# I think it may be best to put something in controller.py which then calls plotting from utilities or another file.
+class UncertaintyGUI(ABC):
+    def __init__(self, _mcp: Union[Propagate, MCPropagation] =None):
         super().__init__()
-        self.punpy_MCP = punpy_prop_obj
-        # mpl.use('qtagg')
+        if _mcp is None:
+            mcp = Propagate(M=100, cores=1)
+        elif isinstance(_mcp, MCPropagation):
+            mcp = Propagate()
+            mcp.MCP = _mcp
+        else:
+            mcp = _mcp
+        self._engine = UncertaintyEngine(mcp)
+        del mcp, _mcp  # free up memory
+
+    def pie_plot_class(self, mean_vals, uncs, wavelengths, cast, ancGrp):
+        results, values = self._engine.breakdown_Class(mean_vals, uncs, False)
+        labels = dict(
+            ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
+            LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
+        )
+
+        # build table of anc data
+        aod = ancGrp.datasets['AOD'].columns['AOD'][0]
+        rel_az = ancGrp.datasets['REL_AZ'].columns['REL_AZ'][0]
+        saa = ancGrp.datasets['SOLAR_AZ'].columns['SOLAR_AZ'][0]
+        sza = ancGrp.datasets['SZA'].columns['SZA'][0]
+        ws = ancGrp.datasets['WINDSPEED'].columns['WINDSPEED'][0]
+        sst = ancGrp.datasets['SST'].columns['SST'][0]
+
+        col_labels = ['value']
+        row_labels = [
+            'Aerosol Optical Depth',
+            'Relative Azimuth',
+            'Solar Azimuth',
+            'Solar Zenith',
+            'Wind Speed',
+            'Water Temperature'
+        ]
+        table_vals = [
+            [aod],
+            [rel_az],
+            [saa],
+            [sza],
+            [ws],
+            [sst]
+        ]
+
+        for sensor in results.keys():
+            indexes = [
+                np.argmin(np.abs(wavelengths[sensor] - 675)),
+                np.argmin(np.abs(wavelengths[sensor] - 560)),
+                np.argmin(np.abs(wavelengths[sensor] - 442))
+            ]
+            for indx in indexes:
+                wvl_at_indx = wavelengths[sensor][indx]  # why is numpy like this?
+                fig, ax = plt.subplots()
+
+                # the_table = plt.table(cellText=table_vals,
+                #                       colWidths=[0.1],
+                #                       rowLabels=row_labels,
+                #                       colLabels=col_labels,
+                #                       loc="best",
+                #                       )
+                # plt.text(0.1, 0.5, 'Ancillary Data', size=12)
+
+                ax.pie(
+                    [self._engine.getpct(results[sensor][key], values[sensor])[indx] for key in labels[sensor]],
+                    labels=labels[sensor],
+                    autopct='%1.1f%%'
+                )
+                plt.title(f"{sensor} Class Based Uncertainty Components at {wvl_at_indx}nm")
+                plt.savefig(f"test_pie_plot_{sensor}_{cast}_{wvl_at_indx}.png")
+                plt.close(fig)
+
+    def pie_plot_class_l2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast, ancGrp):
+        # build table of anc data
+        aod = ancGrp.datasets['AOD'].columns['AOD'][0]
+        rel_az = ancGrp.datasets['REL_AZ'].columns['REL_AZ'][0]
+        saa = ancGrp.datasets['SOLAR_AZ'].columns['SOLAR_AZ'][0]
+        sza = ancGrp.datasets['SZA'].columns['SZA'][0]
+        ws = ancGrp.datasets['WINDSPEED'].columns['WINDSPEED'][0]
+        sst = ancGrp.datasets['SST'].columns['SST'][0]
+
+        col_labels = ['value']
+        row_labels = [
+            'Aerosol Optical Depth',
+            'Relative Azimuth',
+            'Solar Azimuth',
+            'Solar Zenith',
+            'Wind Speed',
+            'Water Temperature'
+        ]
+        table_vals = [
+            [aod],
+            [rel_az],
+            [saa],
+            [sza],
+            [ws],
+            [sst]
+        ]
+
+        results, values = self._engine.breakdown_Class_L2(rrs_vals, lw_vals, rrs_uncs, lw_uncs, False)
+        labels = dict(
+            Lw=["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            Rrs=["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
+        )
+        for product in results.keys():
+            indexes = [
+                np.argmin(np.abs(wavelengths - 675)),
+                np.argmin(np.abs(wavelengths - 560)),
+                np.argmin(np.abs(wavelengths - 442))
+            ]
+            for indx in indexes:
+                wvl_at_indx = wavelengths[indx]  # why is numpy like this?
+                fig, ax = plt.subplots()
+
+                # the_table = plt.table(cellText=table_vals,
+                #                       colWidths=[0.1],
+                #                       rowLabels=row_labels,
+                #                       colLabels=col_labels,
+                #                       loc='best')
+                # plt.text(12, 3.4, 'Ancillary Data', size=8)
+
+                ax.pie([self._engine.getpct(results[product][key], values[product])[indx] for key in labels[product]],
+                       labels=labels[product], autopct='%1.1f%%')
+                plt.title(f"{product} Class Based Uncertainty Components at {wvl_at_indx}nm")
+                plt.savefig(f"test_pie_plot_{product}_{cast}_{wvl_at_indx}.png")
+                # todo: put different wavelengths in a subplot instead of making separate plots
+                # todo: make table of ancillary data to include with plots
+                plt.close(fig)
+
+    def plot_class(self, mean_vals, uncs, wavelengths, cast=""):
+        results, values = self._engine.breakdown_Class(mean_vals, uncs, True)
+        keys = dict(
+            ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
+            LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
+        )
+
+        # now we plot the result
+        for sensor in ['ES', 'LI', 'LT']:
+            plt.figure(f"{sensor}_{cast}")
+            for key in keys[sensor]:
+                plt.plot(wavelengths[sensor], self._engine.getpct(results[sensor][key], values[sensor]), label=key)
+            plt.xlabel("Wavelengths")
+            plt.xlim(400, 890)
+            plt.ylabel("Relative Uncertainty (%)")
+            plt.ylim(0, 15)
+            plt.title(f"Class-Based branch Breakdown of {sensor} Uncertainties")
+            plt.legend()
+            plt.grid()
+            if isinstance(cast, list):
+                cast = cast[0]
+            plt.savefig(f"{sensor}_{cast}_class_breakdown.png")
+            plt.close(f"{sensor}_{cast}")
+
+    def plot_class_L2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast=""):
+        results, values = self._engine.breakdown_Class_L2(rrs_vals, lw_vals, rrs_uncs, lw_uncs, True)
+        keys = dict(
+            Lw=["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            Rrs=["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
+        )
+        # now we plot the result
+        for product in ['Lw', 'Rrs']:
+            plt.figure(f"{product}_{cast}")
+            for key in keys[product]:
+                plt.plot(wavelengths, self._engine.getpct(results[product][key], values[product]), label=key)
+            plt.xlabel("Wavelengths")
+            plt.xlim(400,700)
+            plt.ylabel("Relative Uncertainty (%)")
+            plt.ylim(0,15)
+            plt.title(f"Class-Based branch Breakdown of {product} Uncertainties")
+            plt.legend()
+            plt.grid()
+            if isinstance(cast, list):
+                cast = cast[0]
+            plt.savefig(f"{product}_{cast}_class_breakdown.png")
+            plt.close(f"{product}_{cast}")
 
     def plot_unc_from_sample_1D(
         self, sample: np.array, x: np.array, fig_name: Optional[str] = "breakdown", name: Optional[str] = None,
@@ -29,7 +205,7 @@ class Show_Uncertainties(ABC):
         :param xlim: xlimit in the format (x_min, x_max)
         """
         means = np.mean(sample, axis=0)
-        abs_unc_k1 = self.punpy_MCP.process_samples(None, sample)
+        abs_unc_k1 = self._engine.punpy_MCP.MCP.process_samples(None, sample)
         rel_unc = ((abs_unc_k1*1e10) / (means*1e10)) * 100
 
         fig = plt.figure(fig_name)
@@ -62,11 +238,11 @@ class Show_Uncertainties(ABC):
                     plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']}")
                 sp = f"{fig_name}_{save['cal_type']}_{save['time']}_{save['instrument']}_unc_in_pct.png"
                 plt.savefig(sp.replace(':', '-').replace(' ', '_'))
-                fig.close()
+                plt.close(fig)
             else:
                 plt.title(f"{fig_name}")
                 plt.savefig(f"{fig_name}_unc_in_pct.png")
-                fig.close()
+                plt.close(fig)
 
     def plot_val_from_sample_1D(
             self, sample: np.array, x: np.array, name: Optional[str] = None, xlim: Optional[tuple] = None
@@ -80,7 +256,7 @@ class Show_Uncertainties(ABC):
         :param xlim: xlimit in the format (x_min, x_max)
         """
         means = np.mean(sample, axis=0)
-        abs_unc_k1 = self.punpy_MCP.process_samples(None, sample)
+        abs_unc_k1 = self._engine.punpy_MCP.MCP.process_samples(None, sample)
         # rel_unc = (abs_unc_k1 / means) * 100
 
         if name is not None:
@@ -112,23 +288,30 @@ class Show_Uncertainties(ABC):
         ymax = np.max(means_in_lim)
         plt.ylim(0, ymax + (2*abs_unc_k1))
         plt.savefig(f"{name}_mean_with_abs_unc.png")
+        plt.close(fig)
 
         # for 2D samples
         # means = xr.DataArray(data=means, dims=("x", "y"), coords={"x": x})
         # u_rel = xr.DataArray(data=rel_unc, dims=("x", "y"), coords={"x": x})
 
-    def plot_all_FRM(self):
-        """
-        To plot every sample from FRM processing - To be implemented -
-        """
-        pass
 
-    def plot_breakdown_Class(self, mean_values: list, uncertainty: list, wavelengths: dict, cumulative: bool = True,
-                             cast: str = ''):
+class UncertaintyEngine(ABC):
+    def __init__(self, punpy_prop_obj):
+        """
+        :param MCPropagation: Monte Carlo Propagation object from Uncertainty_Analysis.py
+        """
+        super().__init__()
+        self.punpy_MCP = punpy_prop_obj
+
+    def breakdown_Class(self, mean_values: list, uncertainty: list, cumulative: bool = True):
         """
 
         """
-        keys = ["stdev", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
+        keys = dict(
+            ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
+            LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
+            LT=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"]
+        )
         output = {"ES": {}, "LI": {}, "LT": {}}
         vals = {}
         # nul = np.zeroes(len(uncertainty[0]))
@@ -141,25 +324,151 @@ class Show_Uncertainties(ABC):
             else:
                 uncs[i:i+3] = uncertainty[i:i+3]
             (
-                output['ES'][keys[indx]],
-                output['LI'][keys[indx]],
-                output['LT'][keys[indx]]
+                output['ES'][keys['ES'][indx]],
+                output['LI'][keys['LI'][indx]],
+                output['LT'][keys['LT'][indx]]
             ) = self.punpy_MCP.propagate_Instrument_Uncertainty(mean_values, uncs)
             if not cumulative:
                 uncs = np.zeros(np.asarray(uncertainty).shape)  # reset uncertaitnies
 
-        # now we plot the result
+        return output, vals
 
-        for sensor in ['ES', 'LI', 'LT']:
+    def breakdown_Class_L2(self, rrs_vals: list, lw_vals: list, rrs_uncs: list, lw_uncs: list, cumulative: bool = True):
+        """
+        Breakdown uncertainties for L2 products when running in class based mode
+        """
 
-            plt.figure(f"{sensor}_{cast}")
-            for key in keys:
-                plt.plot(wavelengths[sensor], (output[sensor][key] / vals[sensor]) * 100, label=key)
-            plt.xlabel("Wavelengths")
-            plt.ylabel("Relative Uncertainties (%)")
-            plt.title(f"Class-Based branch Breakdown of {sensor} Uncertainties")
-            plt.legend()
-            plt.grid()
-            if isinstance(cast, list):
-                cast = cast[0]
-            plt.savefig(f"{sensor}_{cast}_class_breakdown.png")
+        keys = ["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
+        output = {"Lw": {}, "Rrs": {}}
+        vals = {}
+        uRrs = np.zeros(np.asarray(rrs_uncs).shape)
+
+        # generate class based uncertaitnies from 0 and adding each contribution in turn
+        vals['Rrs'] = self.punpy_MCP.RRS(*rrs_vals) # get values to make uncs relative
+
+        for indx, i in enumerate([0, 1, 4, 7, 10, 16, 13, 19, 21]):
+            if indx == 0:
+                uRrs[0:4] = rrs_uncs[0:4]
+                uRrs[1] = np.zeros(len(rrs_uncs[1]))
+            elif indx == 1:
+                uRrs[1] = rrs_uncs[1]  # add rho
+            elif indx == 7:
+                uRrs[i:i + 2] = rrs_uncs[i:i + 2]
+            elif indx == 8:
+                uRrs[i] = rrs_uncs[i]
+            else:
+                uRrs[i:i+3] = rrs_uncs[i:i+3]
+
+            output['Rrs'][keys[indx]] = self.punpy_MCP.Propagate_RRS_HYPER(rrs_vals, uRrs)
+
+            if not cumulative:
+                uRrs = np.zeros(np.asarray(rrs_uncs).shape)  # reset uncertaitnies
+
+        vals['Lw'] = self.punpy_MCP.Lw(*lw_vals)
+        uLw = np.zeros(np.asarray(lw_uncs).shape)
+        for indx, i in enumerate([0, 1, 3, 5, 7, 11, 9, 13]):
+            if indx == 0:
+                uLw[0] = lw_uncs[0]
+                uLw[2] = lw_uncs[2]
+            elif indx == 1:
+                uLw[1] = lw_uncs[1]  # add rho
+            else:
+                uLw[i:i + 2] = lw_uncs[i:i + 2]
+
+            output['Lw'][keys[indx]] = self.punpy_MCP.Propagate_Lw_HYPER(lw_vals, uLw)
+            if not cumulative:
+                uLw = np.zeros(np.asarray(lw_uncs).shape)  # reset uncertaitnies
+
+        return output, vals
+
+    @staticmethod
+    def getpct(val1, val2):
+        pct = []
+        for i in range(len(val1)):
+            if val1[i] != 0:  # ignore wavelengths where we do not have an output
+                pct.append(val1[i]/val2[i])
+            else:
+                pct.append(0)  # put zero there instead of np.nan, it will be easy to avoid in plotting
+        return np.array(pct) * 100  # convert to np array so we can use numpy broadcasting
+
+# this is my Pie-Chart widget that I made for another project. It would introduce a pyqtchart dependency.
+# pyqtchart must have the same version as pyqt5
+
+# import PyQt5
+# from PyQt5.QtWidgets import (
+#     QPushButton, QAbstractScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem
+# )
+# from PyQt5.QtChart import QChart, QChartView, QPieSeries, QPieSlice
+# from PyQt5.QtGui import QIcon, QColor, QFont
+#
+# class piChart(QWidget):
+#     def __init__(self, vals, tot, sensor, *args, **kwargs):
+#         super(piChart, self).__init__(*args, **kwargs)
+#         self._isopen = False
+#
+#         # create pi chart
+#         self.series = QPieSeries()
+#         self.series.append("Noise", self.getpct(tot, vals["stdev"]))
+#         self.series.append("Calibration", self.getpct(tot, vals["Cal"]))
+#         self.series.append("Stability", self.getpct(tot, vals["Stab"]))
+#         self.series.append("Non-Linearity", self.getpct(tot, vals["Lin"]))
+#         self.series.append("Temperature", self.getpct(tot, vals["cT"]))
+#         self.series.append("Straylight", self.getpct(tot, vals["Stray"]))
+#
+#         if sensor == 'ES':
+#             self.series.append("Cosine", self.getpct(tot, vals["Cos"]))
+#         else:
+#             self.series.append("Polarisation", self.getpct(tot, vals["Pol"]))
+#
+#         # set slice properties
+#         l_font = QFont()
+#         l_font.setPixelSize(10)
+#         l_font.setPointSize(10)
+#         self.series.setHoleSize(0.35)
+#         for i, slce in enumerate(self.series.slices()):
+#             colours = np.linspace(0, 359, len(self.series.slices()))
+#             slce.setBrush(QColor.fromHsv(*[int(colours[i]), 180, 210]))
+#             slce.setLabelFont(l_font)
+#
+#         chart = QChart()
+#         chart.addSeries(self.series)
+#         chart.setAnimationOptions(QChart.SeriesAnimations)
+#         title_font = QFont()
+#         title_font.setPixelSize(18)
+#         title_font.setPointSize(18)
+#         chart.setTitleFont(title_font)
+#         chart.setTitle(f"Uncertainty Breakdown {sensor}")
+#         # self.legend = chart.legend()
+#         # self.legend.font.pointsize = 20
+#         chartview = QChartView(chart)
+#
+#         vbox = QVBoxLayout()
+#         vbox.addWidget(chartview)
+#
+#         self.setLayout(vbox)
+#
+#     def setExploded(self):
+#         # slice = QPieSlice()
+#         if not self._isopen:
+#             for slce in self.series.slices():
+#                 slce.setLabelVisible(True)
+#                 slce.setExploded(True)
+#                 self._isopen = True
+#         else:
+#             for slce in self.series.slices():
+#                 slce.setLabelVisible(False)
+#                 slce.setExploded(False)
+#                 self._isopen = False
+#
+#     @staticmethod
+#     def getpct(val1, val2):
+#         pct = []
+#         for i in range(len(val1)):
+#             pct.append(val2[i]/val1[i])
+#         return np.mean(pct) * 100
+#
+#     def init(self):
+#         pass
+#
+#     def setBehaviour(self):
+#         pass

@@ -1807,7 +1807,7 @@ class ProcessL2:
             # t2 = np.asarray(list(xSlice['liUnc'].values()), dtype=float)/xSlice['liTestUnc']
             # t3 = np.asarray(list(xSlice['ltUnc'].values()), dtype=float)/xSlice['ltTestUnc']
             # print(t1, t2, t3)
-            xUNC.update(instrument.rrsHyperUNC(uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+            xUNC.update(instrument.rrsHyperUNC(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
         elif ConfigFile.settings["bL1bCal"] == 3:
             xSlice.update(

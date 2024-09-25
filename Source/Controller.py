@@ -55,8 +55,8 @@ class Controller:
                     root = HDFRoot.readHDF5(inFilePath)
                 except Exception:
                     msg = "Controller.writeReport: Unable to open HDF file. May be open in another application."
-                    # if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                    Utilities.errorWindow("File Error", msg)
+                    if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                        Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return
@@ -294,8 +294,8 @@ class Controller:
                     root.writeHDF5(outFilePath)
                 except Exception:
                     msg = 'Unable to write L1A file. It may be open in another program.'
-                    # if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                    Utilities.errorWindow("File Error", msg)
+                    if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                        Utilities.errorWindow("File Error", msg)
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return None, None
@@ -337,8 +337,8 @@ class Controller:
                 root.writeHDF5(outFilePath)
             except Exception:
                 msg = "Controller.processL1aqc: Unable to open HDF file. May be open in another application."
-                # if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                Utilities.errorWindow("File Error", msg)
+                if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                    Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
@@ -569,7 +569,7 @@ class Controller:
                     Controller.trios_L1A_files = outFFPs
 
             elif level == "L1AQC":
-                ancillaryData = Controller.processAncData(MainConfig.settings["metFile"])
+                ancillaryData = Controller.processAncData(MainConfig.settings["ancFile"])
                 # If called locally from Controller and not AnomalyDetection.py, then
                 #   try to load the parameter file for this cruise/configuration and update
                 #   ConfigFile.settings to reflect the appropriate parameterizations for this
@@ -616,6 +616,7 @@ class Controller:
                     print(msg)
                     Utilities.writeLogFile(msg)
                 root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData,flag_Trios)
+                # BUG: The above throws 2 class TypeErrors between the return statement at the end of the method and here??
                 Utilities.checkOutputFiles(outFilePath)
 
             elif level == "L1B":
@@ -664,21 +665,21 @@ class Controller:
             if ConfigFile.settings["bL1bCal"] == 3 and 'FRM-Full' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
                     f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
-                Utilities.errorWindow("File Error", msg)
+                # Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
             if ConfigFile.settings["bL1bCal"] == 2 and 'FRM-Class' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
                     f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
-                Utilities.errorWindow("File Error", msg)
+                # Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
             if ConfigFile.settings["bL1bCal"] == 1 and 'Factory' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
                     f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
-                Utilities.errorWindow("File Error", msg)
+                # Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
