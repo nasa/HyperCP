@@ -4,7 +4,7 @@ import datetime
 import collections
 import numpy as np
 
-from Source import PATH_TO_CONFIG
+from Source import PATH_TO_CONFIG, PACKAGE_DIR
 from Source.HDFRoot import HDFRoot
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
@@ -78,8 +78,7 @@ class Controller:
         reportPath = os.path.join(pathOut, 'Reports')
         if os.path.isdir(reportPath) is False:
             os.mkdir(reportPath)
-        dirPath = os.getcwd()
-        inLogPath = os.path.join(dirPath, 'Logs')
+        inLogPath = os.path.join(PACKAGE_DIR, 'Logs')
 
         inPlotPath = os.path.join(pathOut,'Plots')
         # The inPlotPath is going to be different for L1A-L1E than L2 for many cruises...
