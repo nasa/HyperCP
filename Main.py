@@ -20,7 +20,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # import requests
 # from tqdm import tqdm
 
-
+from Source import PACKAGE_DIR as CODE_HOME
 from Source.MainConfig import MainConfig
 from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
@@ -31,7 +31,6 @@ from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
 
 VERSION = "1.2.7"
-CODE_HOME = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
 
 class Window(QtWidgets.QWidget):
@@ -605,7 +604,7 @@ class Command:
         iFile,
         dataDirectory,
         to_level,
-        anc=None,
+        anc='',
         processMultiLevel=False,
     ):
 
@@ -687,120 +686,121 @@ class Command:
             )
 
 
-# Arguments declaration
-######## This section is not up to date. Scripted calls to Command are preferred. ##########
-parser = argparse.ArgumentParser(description="Arguments description")
-# Mandatory arguments
-required = parser.add_argument_group("Required arguments")
-required.add_argument(
-    "-cmd",
-    action="store_true",
-    dest="cmd",
-    help="To use for commandline mode. If not given, the GUI mode is run",
-    default=None,
-)
-required.add_argument(
-    "-c",
-    action="store",
-    dest="configFilePath",
-    help="Path of the configuration file",
-    default=None,
-    type=str,
-)
-required.add_argument(
-    "-i",
-    action="store",
-    dest="inputFile",
-    help="Path of the input file",
-    default=None,
-    type=str,
-)
-required.add_argument(
-    "-o",
-    action="store",
-    dest="outputDirectory",
-    help="Path of the output folder",
-    default=None,
-    type=str,
-)
-required.add_argument(
-    "-l",
-    action="store",
-    dest="level",
-    help="Level of the generated file. e.g.: Computing RAW to L1A means -l L1A",
-    choices=["L1A", "L1AQC", "L1B", "L1BQC", "L2"],
-    default=None,
-    type=str,
-)
-required.add_argument(
-    "-m",
-    action="store",
-    dest="multiLevel",
-    help="Single or multilevel processing (L0-L2): -m False",
-    choices=["True", "False"],
-    default="False",
-    type=str,
-)
-required.add_argument(
-    "-a",
-    action="store",
-    dest="ancFile",
-    help="Path of the ancillary file",
-    default=None,
-    type=str,
-)
-required.add_argument(
-    "-u",
-    action="store",
-    dest="username",
-    help="Username of the account on https://oceancolor.gsfc.nasa.gov/",
-    default=None,
-    type=str,
-)
-required.add_argument(
-    "-p",
-    action="store",
-    dest="password",
-    help="Password of the account on https://oceancolor.gsfc.nasa.gov/",
-    default=None,
-    type=str,
-)
-
-args = parser.parse_args()
-
-# If the commandline option is given, check if all needed information are given
-if args.cmd and (
-    args.configFilePath is None
-    or args.inputFile is None
-    or args.multiLevel is None
-    or args.outputDirectory is None
-    or args.level is None
-):
-    parser.error(
-        "-cmd requires -c config -i inputFile -m multiLevel -o outputDirectory -l processingLevel"
-    )
-# If the commandline option is given, check if all needed information are given
-if (
-    args.cmd
-    and args.level == "L1BQC"
-    and (args.username is None or args.password is None)
-):
-    parser.error(
-        "L1BQC processing requires username and password for https://oceancolor.gsfc.nasa.gov/"
-    )
-
-# We store all arguments in variables
-cmd = args.cmd
-configFilePath = args.configFilePath
-inputFile = args.inputFile
-outputDirectory = args.outputDirectory
-level = args.level
-ancFile = args.ancFile
-username = args.username
-password = args.password
-multiLevel = args.multiLevel
-
 if __name__ == "__main__":
+    # Arguments declaration
+    ######## This section is not up to date. Scripted calls to Command are preferred. ##########
+    parser = argparse.ArgumentParser(description="Arguments description")
+    # Mandatory arguments
+    required = parser.add_argument_group("Required arguments")
+    required.add_argument(
+        "-cmd",
+        action="store_true",
+        dest="cmd",
+        help="To use for commandline mode. If not given, the GUI mode is run",
+        default=None,
+    )
+    required.add_argument(
+        "-c",
+        action="store",
+        dest="configFilePath",
+        help="Path of the configuration file",
+        default=None,
+        type=str,
+    )
+    required.add_argument(
+        "-i",
+        action="store",
+        dest="inputFile",
+        help="Path of the input file",
+        default=None,
+        type=str,
+    )
+    required.add_argument(
+        "-o",
+        action="store",
+        dest="outputDirectory",
+        help="Path of the output folder",
+        default=None,
+        type=str,
+    )
+    required.add_argument(
+        "-l",
+        action="store",
+        dest="level",
+        help="Level of the generated file. e.g.: Computing RAW to L1A means -l L1A",
+        choices=["L1A", "L1AQC", "L1B", "L1BQC", "L2"],
+        default=None,
+        type=str,
+    )
+    required.add_argument(
+        "-m",
+        action="store",
+        dest="multiLevel",
+        help="Single or multilevel processing (L0-L2): -m False",
+        choices=["True", "False"],
+        default="False",
+        type=str,
+    )
+    required.add_argument(
+        "-a",
+        action="store",
+        dest="ancFile",
+        help="Path of the ancillary file",
+        default=None,
+        type=str,
+    )
+    required.add_argument(
+        "-u",
+        action="store",
+        dest="username",
+        help="Username of the account on https://oceancolor.gsfc.nasa.gov/",
+        default=None,
+        type=str,
+    )
+    required.add_argument(
+        "-p",
+        action="store",
+        dest="password",
+        help="Password of the account on https://oceancolor.gsfc.nasa.gov/",
+        default=None,
+        type=str,
+    )
+
+    args = parser.parse_args()
+
+    # If the commandline option is given, check if all needed information are given
+    if args.cmd and (
+        args.configFilePath is None
+        or args.inputFile is None
+        or args.multiLevel is None
+        or args.outputDirectory is None
+        or args.level is None
+    ):
+        parser.error(
+            "-cmd requires -c config -i inputFile -m multiLevel -o outputDirectory -l processingLevel"
+        )
+    # If the commandline option is given, check if all needed information are given
+    if (
+        args.cmd
+        and args.level == "L1BQC"
+        and (args.username is None or args.password is None)
+    ):
+        parser.error(
+            "L1BQC processing requires username and password for https://oceancolor.gsfc.nasa.gov/"
+        )
+
+    # We store all arguments in variables
+    cmd = args.cmd
+    configFilePath = args.configFilePath
+    inputFile = args.inputFile
+    outputDirectory = args.outputDirectory
+    level = args.level
+    ancFile = args.ancFile
+    username = args.username
+    password = args.password
+    multiLevel = args.multiLevel
+
+
     # Close splashscreen
     try:
         import platform

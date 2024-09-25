@@ -7,7 +7,7 @@ import glob
 from datetime import datetime
 import numpy as np
 
-from Source import PATH_TO_CONFIG
+from Source import PATH_TO_CONFIG, PATH_TO_DATA
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ConfigFile import ConfigFile
@@ -578,10 +578,10 @@ class ProcessL1b:
 
 
         # Add class-based files (RAW_UNCERTAINTIES)
-        classbased_dir = os.path.join('Data', 'Class_Based_Characterizations',
+        classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
                                       ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
         if ConfigFile.settings['bL1bCal'] == 1:
-            # classbased_dir = os.path.join('Data', 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+            # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
             node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
             if node is None:
@@ -615,7 +615,7 @@ class ProcessL1b:
                 sensorIDs = Utilities.get_sensor_dict(node)
                 acq_datetime = datetime.strptime(node.attributes["TIME-STAMP"], "%a %b %d %H:%M:%S %Y")
                 acq_time = acq_datetime.strftime('%Y%m%d%H%M%S')
-                inpath = os.path.join('Data', 'FidRadDB_characterization', "SeaBird")
+                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB_characterization', "SeaBird")
                 print('FidRadDB Char dir:', inpath)
 
                 # FidRad DB connection and download of calibration files by api
