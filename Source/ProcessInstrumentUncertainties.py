@@ -5,6 +5,7 @@ import numpy as np
 import scipy as sp
 import pandas as pd
 import calendar
+from datetime import datetime
 import collections
 from decimal import Decimal
 from inspect import currentframe, getframeinfo
@@ -217,14 +218,16 @@ class Instrument(ABC):
 
         # plot class based L1B uncertainties
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-            # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
-            # value
-            stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-            if stations is not None:
-                cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
-                        f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
-            else:
-                cast = f"{type(self).__name__}_{node.attributes['CAST']}"
+            acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
+            cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
+            # # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
+            # # value
+            # stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+            # if stations is not None:
+            #     cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
+            #             f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
+            # else:
+            #     cast = f"{type(self).__name__}_{node.attributes['CAST']}"
 
             p_unc = UncertaintyGUI(PropagateL1B)
             p_unc.pie_plot_class(
@@ -352,16 +355,23 @@ class Instrument(ABC):
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
             # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
             # value
-            if 'STATION' in node.getGroup("ANCILLARY").datasets:
-                stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-            else:
-                stations = None
+            #       NOTE: For continuous, autonomous acquisition (e.g. SolarTracker, pySAS, SoRad, DALEC), stations are 
+            #       only associated with specific spectra during times that intersect with station designation in the 
+            #       Ancillary file. If station extraction is performed in L2, then the resulting HDF will have only one 
+            #       unique station designation, though that may include multiple ensembles, depending on how long the ship
+            #       was on station. - DA
+            acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
+            cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
+            # if 'STATION' in node.getGroup("ANCILLARY").datasets:
+                # stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+            # else:
+            #     stations = None
 
-            if stations is not None:
-                cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
-                        f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
-            else:
-                cast = f"{type(self).__name__}_{node.attributes['CAST']}"
+            # if stations is not None:
+            #     cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
+            #             f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
+            # else:
+            #     cast = f"{type(self).__name__}_{node.attributes['CAST']}"
 
             p_unc = UncertaintyGUI(PropagateL1B)
             p_unc.pie_plot_class(
@@ -838,17 +848,19 @@ class Instrument(ABC):
 
         # Plot Class based L2 uncertainties
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-            # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
-            # value
-            if 'STATION' in node.getGroup("ANCILLARY").datasets:
-                stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-            else:
-                stations = None
-            if stations is not None:
-                cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
-                        f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
-            else:
-                cast = f"{type(self).__name__}_{node.attributes['CAST']}"
+            acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
+            cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
+            # # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
+            # # value
+            # if 'STATION' in node.getGroup("ANCILLARY").datasets:
+            #     stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+            # else:
+            #     stations = None
+            # if stations is not None:
+            #     cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
+            #             f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
+            # else:
+            #     cast = f"{type(self).__name__}_{node.attributes['CAST']}"
 
             p_unc = UncertaintyGUI()
             p_unc.pie_plot_class_l2(
@@ -1226,14 +1238,16 @@ class Instrument(ABC):
 
         # Plot Class based L2 uncertainties
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-            # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
-            # value
-            stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-            if stations is not None:
-                cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
-                        f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
-            else:
-                cast = f"{type(self).__name__}_{node.attributes['CAST']}"
+            acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
+            cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
+            # # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
+            # # value
+            # stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+            # if stations is not None:
+            #     cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
+            #             f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
+            # else:
+            #     cast = f"{type(self).__name__}_{node.attributes['CAST']}"
 
             p_unc = UncertaintyGUI()
             p_unc.pie_plot_class_l2(
