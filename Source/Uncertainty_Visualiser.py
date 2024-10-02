@@ -121,8 +121,8 @@ class UncertaintyGUI(ABC):
 
         results, values = self._engine.breakdown_Class_L2(rrs_vals, lw_vals, rrs_uncs, lw_uncs, False)
         labels = dict(
-            Lw=["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-            Rrs=["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
+            Lw=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
+            Rrs=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"]
         )
         for product in results.keys():
             indexes = [
@@ -351,23 +351,23 @@ class UncertaintyEngine(ABC):
         Breakdown uncertainties for L2 products when running in class based mode
         """
 
-        keys = ["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
+        keys = ["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"]
+        keys_lw = ["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"]
         output = {"Lw": {}, "Rrs": {}}
         vals = {}
         uRrs = np.zeros(np.asarray(rrs_uncs).shape)
 
         # generate class based uncertaitnies from 0 and adding each contribution in turn
         vals['Rrs'] = self.punpy_MCP.RRS(*rrs_vals) # get values to make uncs relative
-
-        for indx, i in enumerate([0, 1, 4, 7, 10, 16, 13, 19, 21]):
+        for indx, i in enumerate([0, 4, 7, 10, 16, 13, 19, 21, 1]):
             if indx == 0:
                 uRrs[0:4] = rrs_uncs[0:4]
                 uRrs[1] = np.zeros(len(rrs_uncs[1]))
-            elif indx == 1:
-                uRrs[1] = rrs_uncs[1]  # add rho
-            elif indx == 7:
-                uRrs[i:i + 2] = rrs_uncs[i:i + 2]
             elif indx == 8:
+                uRrs[1] = rrs_uncs[1]  # add rho
+            elif indx == 6:
+                uRrs[i:i + 2] = rrs_uncs[i:i + 2]
+            elif indx == 7:
                 uRrs[i] = rrs_uncs[i]
             else:
                 uRrs[i:i+3] = rrs_uncs[i:i+3]
@@ -379,16 +379,16 @@ class UncertaintyEngine(ABC):
 
         vals['Lw'] = self.punpy_MCP.Lw(*lw_vals)
         uLw = np.zeros(np.asarray(lw_uncs).shape)
-        for indx, i in enumerate([0, 1, 3, 5, 7, 11, 9, 13]):
+        for indx, i in enumerate([0, 3, 5, 7, 11, 9, 13, 1]):
             if indx == 0:
                 uLw[0] = lw_uncs[0]
                 uLw[2] = lw_uncs[2]
-            elif indx == 1:
+            elif indx == 7:
                 uLw[1] = lw_uncs[1]  # add rho
             else:
                 uLw[i:i + 2] = lw_uncs[i:i + 2]
 
-            output['Lw'][keys[indx]] = self.punpy_MCP.Propagate_Lw_HYPER(lw_vals, uLw)
+            output['Lw'][keys_lw[indx]] = self.punpy_MCP.Propagate_Lw_HYPER(lw_vals, uLw)
             if not cumulative:
                 uLw = np.zeros(np.asarray(lw_uncs).shape)  # reset uncertaitnies
 
