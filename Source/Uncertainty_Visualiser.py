@@ -88,7 +88,7 @@ class UncertaintyGUI(ABC):
                     autopct='%1.1f%%'
                 )
                 plt.title(f"{sensor} Class Based Uncertainty Components at {wvl_at_indx}nm")
-                fp = os.path.join(self.plot_folder,f"test_pie_plot_{sensor}_{cast}_{wvl_at_indx}.png")
+                fp = os.path.join(self.plot_folder,f"pie_{sensor}_{cast}_{wvl_at_indx}.png")
                 plt.savefig(fp)
                 plt.close(fig)
 
@@ -144,7 +144,7 @@ class UncertaintyGUI(ABC):
                 ax.pie([self._engine.getpct(results[product][key], values[product])[indx] for key in labels[product]],
                        labels=labels[product], autopct='%1.1f%%')
                 plt.title(f"{product} Class Based Uncertainty Components at {wvl_at_indx}nm")
-                fp = os.path.join(self.plot_folder,f"test_pie_plot_{product}_{cast}_{wvl_at_indx}.png")
+                fp = os.path.join(self.plot_folder,f"pie_{product}_{cast}_{wvl_at_indx}.png")
                 plt.savefig(fp)
                 # todo: put different wavelengths in a subplot instead of making separate plots
                 # todo: make table of ancillary data to include with plots
@@ -172,7 +172,7 @@ class UncertaintyGUI(ABC):
             plt.grid()
             if isinstance(cast, list):
                 cast = cast[0]
-            fp = os.path.join(self.plot_folder,f"{sensor}_{cast}_class_breakdown.png")
+            fp = os.path.join(self.plot_folder,f"spectral_{sensor}_{cast}.png")
             plt.savefig(fp)
             plt.close(f"{sensor}_{cast}")
 
@@ -196,7 +196,7 @@ class UncertaintyGUI(ABC):
             plt.grid()
             if isinstance(cast, list):
                 cast = cast[0]
-            fp = os.path.join(self.plot_folder,f"{product}_{cast}_class_breakdown.png")
+            fp = os.path.join(self.plot_folder,f"spectral_{product}_{cast}.png")
             plt.savefig(fp)
             plt.close(f"{product}_{cast}")
 
