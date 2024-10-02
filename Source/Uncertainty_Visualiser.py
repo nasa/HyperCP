@@ -1,4 +1,5 @@
 # docs and typing
+import os
 from abc import ABC
 from typing import Optional, Union
 
@@ -8,6 +9,7 @@ import numpy as np
 from punpy import MCPropagation
 
 from Source.Uncertainty_Analysis import Propagate
+from Source.MainConfig import MainConfig
 
 
 # I think it may be best to put something in controller.py which then calls plotting from utilities or another file.
@@ -23,6 +25,10 @@ class UncertaintyGUI(ABC):
             mcp = _mcp
         self._engine = UncertaintyEngine(mcp)
         del mcp, _mcp  # free up memory
+
+        self.plot_folder = os.path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
+        if not os.path.exists(self.plot_folder):
+            os.makedirs(self.plot_folder)
 
     def pie_plot_class(self, mean_vals, uncs, wavelengths, cast, ancGrp):
         results, values = self._engine.breakdown_Class(mean_vals, uncs, False)
@@ -82,7 +88,8 @@ class UncertaintyGUI(ABC):
                     autopct='%1.1f%%'
                 )
                 plt.title(f"{sensor} Class Based Uncertainty Components at {wvl_at_indx}nm")
-                plt.savefig(f"test_pie_plot_{sensor}_{cast}_{wvl_at_indx}.png")
+                fp = os.path.join(self.plot_folder,f"test_pie_plot_{sensor}_{cast}_{wvl_at_indx}.png")
+                plt.savefig(fp)
                 plt.close(fig)
 
     def pie_plot_class_l2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast, ancGrp):
@@ -137,7 +144,8 @@ class UncertaintyGUI(ABC):
                 ax.pie([self._engine.getpct(results[product][key], values[product])[indx] for key in labels[product]],
                        labels=labels[product], autopct='%1.1f%%')
                 plt.title(f"{product} Class Based Uncertainty Components at {wvl_at_indx}nm")
-                plt.savefig(f"test_pie_plot_{product}_{cast}_{wvl_at_indx}.png")
+                fp = os.path.join(self.plot_folder,f"test_pie_plot_{product}_{cast}_{wvl_at_indx}.png")
+                plt.savefig(fp)
                 # todo: put different wavelengths in a subplot instead of making separate plots
                 # todo: make table of ancillary data to include with plots
                 plt.close(fig)
@@ -164,7 +172,8 @@ class UncertaintyGUI(ABC):
             plt.grid()
             if isinstance(cast, list):
                 cast = cast[0]
-            plt.savefig(f"{sensor}_{cast}_class_breakdown.png")
+            fp = os.path.join(self.plot_folder,f"{sensor}_{cast}_class_breakdown.png")
+            plt.savefig(fp)
             plt.close(f"{sensor}_{cast}")
 
     def plot_class_L2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast=""):
@@ -187,7 +196,8 @@ class UncertaintyGUI(ABC):
             plt.grid()
             if isinstance(cast, list):
                 cast = cast[0]
-            plt.savefig(f"{product}_{cast}_class_breakdown.png")
+            fp = os.path.join(self.plot_folder,f"{product}_{cast}_class_breakdown.png")
+            plt.savefig(fp)
             plt.close(f"{product}_{cast}")
 
     def plot_unc_from_sample_1D(
@@ -236,11 +246,14 @@ class UncertaintyGUI(ABC):
                 except IndexError:
                     plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']}")
                 sp = f"{fig_name}_{save['cal_type']}_{save['time']}_{save['instrument']}_unc_in_pct.png"
-                plt.savefig(sp.replace(':', '-').replace(' ', '_'))
+                sp.replace(':', '-').replace(' ', '_')
+                fp = os.path.join(self.plot_folder,sp)
+                plt.savefig(fp)
                 plt.close(fig)
             else:
                 plt.title(f"{fig_name}")
-                plt.savefig(f"{fig_name}_unc_in_pct.png")
+                fp = os.path.join(self.plot_folder,f"{fig_name}_unc_in_pct.png")
+                plt.savefig(fp)
                 plt.close(fig)
 
     def plot_val_from_sample_1D(
@@ -286,7 +299,8 @@ class UncertaintyGUI(ABC):
         means_in_lim = np.max(means[np.argmin(np.abs(x - xmin)):np.argmin(np.abs(x - xmax))])
         ymax = np.max(means_in_lim)
         plt.ylim(0, ymax + (2*abs_unc_k1))
-        plt.savefig(f"{name}_mean_with_abs_unc.png")
+        fp = os.path.join(self.plot_folder,f"{name}_mean_with_abs_unc.png")
+        plt.savefig(fp)
         plt.close(fig)
 
         # for 2D samples

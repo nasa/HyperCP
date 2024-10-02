@@ -82,7 +82,7 @@ elif PLATFORM.lower() == 'manual_trios':
 else:
     PATH_CFG = os.path.join(PATH_HCP, "Config", f"{CRUISE}.cfg")
 ################################################# END CUSTOM SET UP #################################################
-os.environ["HYPERINSPACE_CMD"].lower() = "true"
+os.environ["HYPERINSPACE_CMD"] = "true"
 
 ## Setup remaining globals ##
 TO_LEVELS = ["L1A", "L1AQC", "L1B", "L1BQC", "L2"]
@@ -132,7 +132,7 @@ def run_Command(fp_input_files):
             print(f"Bad input path: {fp_input_files}")
             print("***********************************")
             return
-        inputFileBase = os.path.splitext(os.path.basename(fp_input_files))[0]  # 'FRM4SOC2_FICE22_NASA_20220715_120000_L1BQC'
+        inputFileBase = os.path.splitext(os.path.basename(fp_input_files[0]))[0]  # 'FRM4SOC2_FICE22_NASA_20220715_120000_L1BQC'
         if (INST_TYPE.lower() == "seabird"
             and inputFileBase in to_skip[to_level]
             and not CLOBBER):

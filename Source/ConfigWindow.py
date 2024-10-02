@@ -589,7 +589,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2PlotLt"]) == 1:
             self.l2PlotLtCheckBox.setChecked(True)
 
-        l2UncertaintyBreakdownPlotsLabel = QtWidgets.QLabel("Uncertainty Breakdown Plots", self)
+        l2UncertaintyBreakdownPlotsLabel = QtWidgets.QLabel("Unc. Plots (class-based only)", self)
         # l2UncertaintyBreakdownPlotLabel = QtWidgets.QLabel(" ", self)
         self.l2UncertaintyBreakdownPlotCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL2UncertaintyBreakdownPlot"]) == 1:

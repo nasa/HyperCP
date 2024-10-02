@@ -138,7 +138,7 @@ class GetAnc_ecmwf:
             print(f'Nearest model found at {timeStamp}')
             # copy .cdsapirc into home directory, because needed by the cdapi
             homedir = os.path.expanduser( '~' )
-            shutil.copy(os.path.join(os.getcwd(),'.cdsapirc'), homedir)
+            shutil.copy(os.path.join(PACKAGE_DIR,'.cdsapirc'), homedir)
 
             year, month, day, hour, _, _ = GetAnc_ecmwf.timeStamp2yrMnthDayHrMinSec(timeStamp)
 
