@@ -220,7 +220,7 @@ class Instrument(ABC):
             # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
             # value
             stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-            if stations is not None:
+            if stations is not None and not all([np.isnan(s) for s in stations]):
                 cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
                         f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
             else:
@@ -353,7 +353,7 @@ class Instrument(ABC):
             # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
             # value
             stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-            if stations is not None:
+            if stations is not None and not all([np.isnan(s) for s in stations]):
                 cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
                         f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
             else:
@@ -837,7 +837,7 @@ class Instrument(ABC):
             # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
             # value
             stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-            if stations is not None:
+            if stations is not None and not all([np.isnan(s) for s in stations]):
                 cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
                         f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
             else:
@@ -1222,7 +1222,7 @@ class Instrument(ABC):
             # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
             # value
             stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-            if stations is not None:
+            if stations is not None and not all([np.isnan(s) for s in stations]):
                 cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
                         f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
             else:
