@@ -252,6 +252,8 @@ class Utilities:
 
     @staticmethod
     def errorWindow(winText,errorText):
+        if os.environ["HYPERINSPACE_CMD"].lower() == 'true':
+            return
         msgBox = QMessageBox()
         # msgBox.setIcon(QMessageBox.Information)
         msgBox.setIcon(QMessageBox.Critical)
@@ -260,20 +262,10 @@ class Utilities:
         msgBox.setStandardButtons(QMessageBox.Ok)
         msgBox.exec_()
 
-
-    @staticmethod
-    def waitWindow(winText,waitText):
-        msgBox = QMessageBox()
-        # msgBox.setIcon(QMessageBox.Information)
-        msgBox.setIcon(QMessageBox.Critical)
-        msgBox.setText(waitText)
-        msgBox.setWindowTitle(winText)
-        # msgBox.setStandardButtons(QMessageBox.Ok)
-        # msgBox.exec_()
-        return msgBox
-
     @staticmethod
     def YNWindow(winText,infoText):
+        if os.environ["HYPERINSPACE_CMD"].lower() == 'true':
+            return QMessageBox.Ok  # Assume positive answer to keep processing in command line mode (no X)
         msgBox = QMessageBox()
         msgBox.setIcon(QMessageBox.Information)
         msgBox.setText(infoText)
