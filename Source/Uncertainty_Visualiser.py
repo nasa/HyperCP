@@ -10,6 +10,7 @@ from punpy import MCPropagation
 
 from Source.Uncertainty_Analysis import Propagate
 from Source.MainConfig import MainConfig
+from Source.ConfigFile import ConfigFile
 
 
 # I think it may be best to put something in controller.py which then calls plotting from utilities or another file.
@@ -31,6 +32,10 @@ class UncertaintyGUI(ABC):
             os.makedirs(self.plot_folder)
 
     def pie_plot_class(self, mean_vals, uncs, wavelengths, cast, ancGrp):
+        if ConfigFile.settings['bL1bCal'] == 1:
+            regime = 'Factory'
+        else:
+            regime = 'Class'
         results, values = self._engine.breakdown_Class(mean_vals, uncs, False)
         labels = dict(
             ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
@@ -87,12 +92,16 @@ class UncertaintyGUI(ABC):
                     labels=labels[sensor],
                     autopct='%1.1f%%'
                 )
-                plt.title(f"{sensor} Class Based Uncertainty Components at {wvl_at_indx}nm")
-                fp = os.path.join(self.plot_folder,f"test_pie_plot_{sensor}_{cast}_{wvl_at_indx}.png")
+                plt.title(f"{sensor} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
+                fp = os.path.join(self.plot_folder,f"pie_{sensor}_{cast}_{wvl_at_indx}.png")
                 plt.savefig(fp)
                 plt.close(fig)
 
     def pie_plot_class_l2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast, ancGrp):
+        if ConfigFile.settings['bL1bCal'] == 1:
+            regime = 'Factory'
+        else:
+            regime = 'Class'
         # build table of anc data
         aod = ancGrp.datasets['AOD'].columns['AOD'][0]
         rel_az = ancGrp.datasets['REL_AZ'].columns['REL_AZ'][0]
@@ -143,8 +152,8 @@ class UncertaintyGUI(ABC):
 
                 ax.pie([self._engine.getpct(results[product][key], values[product])[indx] for key in labels[product]],
                        labels=labels[product], autopct='%1.1f%%')
-                plt.title(f"{product} Class Based Uncertainty Components at {wvl_at_indx}nm")
-                fp = os.path.join(self.plot_folder,f"test_pie_plot_{product}_{cast}_{wvl_at_indx}.png")
+                plt.title(f"{product} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
+                fp = os.path.join(self.plot_folder,f"pie_{product}_{cast}_{wvl_at_indx}.png")
                 plt.savefig(fp)
                 # todo: put different wavelengths in a subplot instead of making separate plots
                 # todo: make table of ancillary data to include with plots
@@ -172,7 +181,7 @@ class UncertaintyGUI(ABC):
             plt.grid()
             if isinstance(cast, list):
                 cast = cast[0]
-            fp = os.path.join(self.plot_folder,f"{sensor}_{cast}_class_breakdown.png")
+            fp = os.path.join(self.plot_folder,f"spectral_{sensor}_{cast}.png")
             plt.savefig(fp)
             plt.close(f"{sensor}_{cast}")
 
@@ -196,7 +205,7 @@ class UncertaintyGUI(ABC):
             plt.grid()
             if isinstance(cast, list):
                 cast = cast[0]
-            fp = os.path.join(self.plot_folder,f"{product}_{cast}_class_breakdown.png")
+            fp = os.path.join(self.plot_folder,f"spectral_{product}_{cast}.png")
             plt.savefig(fp)
             plt.close(f"{product}_{cast}")
 
