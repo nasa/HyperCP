@@ -39,7 +39,7 @@ elif platform.system() == 'Windows':
 version = None
 with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Main.py'), 'r') as f:
     for l in f:
-        if l.startswith('version'):
+        if l.startswith('VERSION'):
             version = l.split('=')[1].strip(" \n'")
             break
 
