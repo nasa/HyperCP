@@ -18,6 +18,7 @@ import scipy as sp
 import pandas as pd
 from pandas.plotting import register_matplotlib_converters
 
+from Source import PACKAGE_DIR as dirPath
 from Source.SB_support import readSB
 from Source.HDFRoot import HDFRoot
 from Source.ConfigFile import ConfigFile
@@ -66,7 +67,7 @@ class Utilities:
                 print(
                     "Failed to download core databases."
                     f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
-                    f" {os.getcwd()}/Data directory."
+                    f" {dirPath}/Data directory."
                 )
 
     @staticmethod
@@ -1007,9 +1008,9 @@ class Utilities:
         msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
-        # internal switch to trigger the reset of CAL & BACK 
+        # internal switch to trigger the reset of CAL & BACK
         # dataset that we have to delete to avoid conflict during filtering
-        do_reset = False 
+        do_reset = False
 
         if level != 'L1AQC':
             if group.id == "ANCILLARY":
@@ -1089,7 +1090,7 @@ class Utilities:
             for ds in group.datasets:
                 group.datasets[ds].datasetToColumns()
 
-        msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
+        msg = f'   Length of dataset after removal {originalLength-finalCount} long: {(100*finalCount/originalLength):.1f}% removed'
         print(msg)
         Utilities.writeLogFile(msg)
         return finalCount/originalLength
@@ -1100,7 +1101,6 @@ class Utilities:
         # refresh figure to ensure debug plots do not affect Rrs plotting
         plt.figure()
 
-        dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
 
         if os.path.abspath(outDir) == os.path.join(dirPath,'Data'):
@@ -1492,7 +1492,6 @@ class Utilities:
     def plotTimeInterp(xData, xTimer, newXData, yTimer, instr, fp):
         ''' Plot results of L1B time interpolation '''
 
-        dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
         # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
         # and build on that (HyperInSPACE/Plots/etc...)
@@ -1602,7 +1601,6 @@ class Utilities:
             import logging
             logging.getLogger('matplotlib.font_manager').disabled = True
 
-            dirPath = os.getcwd()
             outDir = MainConfig.settings["outDir"]
             # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
             # and build on that (HyperInSPACE/Plots/etc...)
@@ -1714,7 +1712,6 @@ class Utilities:
     @staticmethod
     def plotIOPs(root, filename, algorithm, iopType, plotDelta = False):
 
-        dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
         # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
         # and build on that (HyperInSPACE/Plots/etc...)
@@ -2064,7 +2061,6 @@ class Utilities:
 
         # date_axis_Dark = TimeAxisItem(orientation='bottom')
         # date_axis_Light = TimeAxisItem(orientation='bottom')
-        dirPath = os.getcwd()
         outDir = MainConfig.settings["outDir"]
         # If default output path (HyperInSPACE/Data) is used, choose the root HyperInSPACE path,
         # and build on that (HyperInSPACE/Plots/etc...)

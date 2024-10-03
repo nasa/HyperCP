@@ -5,6 +5,7 @@ import numpy as np
 import scipy as sp
 import pandas as pd
 import calendar
+from datetime import datetime
 import collections
 from decimal import Decimal
 from inspect import currentframe, getframeinfo
@@ -28,7 +29,7 @@ from Source.Weight_RSR import Weight_RSR
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 
-from Source.Uncertainty_Visualiser import Show_Uncertainties  # class for uncertainty visualisation plots
+from Source.Uncertainty_Visualiser import UncertaintyEngine, UncertaintyGUI # class for uncertainty visualisation plots
 
 
 class Instrument(ABC):
@@ -215,6 +216,42 @@ class Instrument(ABC):
                                             np.array(uncGrp.getDataset("LT_RADCAL_UNC").columns['wvl'], dtype=float),
                                             data_wvl)
 
+        # plot class based L1B uncertainties
+        if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+            acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
+            cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
+            # # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
+            # # value
+            # stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+            # if stations is not None:
+            #     cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
+            #             f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
+            # else:
+            #     cast = f"{type(self).__name__}_{node.attributes['CAST']}"
+
+            p_unc = UncertaintyGUI(PropagateL1B)
+            p_unc.pie_plot_class(
+                mean_values,
+                uncertainty,
+                dict(
+                    ES=waves,
+                    LI=waves,
+                    LT=waves
+                ),
+                cast,
+                node.getGroup("ANCILLARY")
+            )
+            p_unc.plot_class(
+                mean_values,
+                uncertainty,
+                dict(
+                    ES=waves,
+                    LI=waves,
+                    LT=waves
+                    ),
+                cast
+            )
+
         return dict(
             esUnc=es_Unc,
             liUnc=li_Unc,
@@ -314,9 +351,41 @@ class Instrument(ABC):
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
         # convert to relative uncertainty
 
+        # plot class based L1B uncertainties
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-            p_unc = Show_Uncertainties(PropagateL1B)
-            p_unc.plot_breakdown_Class(
+            # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
+            # value
+            #       NOTE: For continuous, autonomous acquisition (e.g. SolarTracker, pySAS, SoRad, DALEC), stations are 
+            #       only associated with specific spectra during times that intersect with station designation in the 
+            #       Ancillary file. If station extraction is performed in L2, then the resulting HDF will have only one 
+            #       unique station designation, though that may include multiple ensembles, depending on how long the ship
+            #       was on station. - DA
+            acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
+            cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
+            # if 'STATION' in node.getGroup("ANCILLARY").datasets:
+                # stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+            # else:
+            #     stations = None
+
+            # if stations is not None:
+            #     cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
+            #             f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
+            # else:
+            #     cast = f"{type(self).__name__}_{node.attributes['CAST']}"
+
+            p_unc = UncertaintyGUI(PropagateL1B)
+            p_unc.pie_plot_class(
+                mean_values,
+                uncertainty,
+                dict(
+                    ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
+                    LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
+                    LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
+                ),
+                cast,
+                node.getGroup("ANCILLARY")
+            )
+            p_unc.plot_class(
                 mean_values,
                 uncertainty,
                 dict(
@@ -324,8 +393,7 @@ class Instrument(ABC):
                     LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
                     LT=np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'])
                     ),
-                True,
-                type(self).__name__ + '_' + node.attributes["CAST"]
+                cast
             )
 
         with warnings.catch_warnings():
@@ -643,9 +711,10 @@ class Instrument(ABC):
 
         return output
 
-    def rrsHyperUNC(self, uncGrp: HDFGroup, rhoScalar: float, rhoVec: np.array, rhoDelta: np.array,
+    def rrsHyperUNC(self, node, uncGrp: HDFGroup, rhoScalar: float, rhoVec: np.array, rhoDelta: np.array,
                     waveSubset: np.array, xSlice: dict[str, np.array]) -> dict[str, np.array]:
         """
+        :param node: HDFRoot
         :param uncGrp: HDFGroup storing the uncertainty budget
         :param rhoScalar: rho input if Mobley99 or threeC rho is used
         :param rhoVec: rho input if Zhang17 rho is used
@@ -776,6 +845,42 @@ class Instrument(ABC):
 
         rrsAbsUnc = Propagate_L2.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
         rrs_vals = Propagate_L2.RRS(*rrs_means)
+
+        # Plot Class based L2 uncertainties
+        if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+            acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
+            cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
+            # # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
+            # # value
+            # if 'STATION' in node.getGroup("ANCILLARY").datasets:
+            #     stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+            # else:
+            #     stations = None
+            # if stations is not None:
+            #     cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
+            #             f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
+            # else:
+            #     cast = f"{type(self).__name__}_{node.attributes['CAST']}"
+
+            p_unc = UncertaintyGUI()
+            p_unc.pie_plot_class_l2(
+                rrs_means,
+                lw_means,
+                rrs_uncertainties,
+                lw_uncertainties,
+                np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),  # pass radcal wavelengths
+                cast,
+                node.getGroup("ANCILLARY")
+            )
+
+            p_unc.plot_class_L2(
+                rrs_means,
+                lw_means,
+                rrs_uncertainties,
+                lw_uncertainties,
+                np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float),
+                cast
+            )
 
         ## BAND CONVOLUTION
         # band convolution of uncertainties is done here to include uncertainty contribution of band convolution process
@@ -1130,6 +1235,38 @@ class Instrument(ABC):
         rrs_vals, _ = self.interp_common_wvls(rrs_vals,
                                              np.array(uncGrp.getDataset("ES_RADCAL_UNC").columns['wvl'], dtype=float),
                                              waveSubset)
+
+        # Plot Class based L2 uncertainties
+        if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+            acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
+            cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
+            # # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
+            # # value
+            # stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+            # if stations is not None:
+            #     cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
+            #             f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
+            # else:
+            #     cast = f"{type(self).__name__}_{node.attributes['CAST']}"
+
+            p_unc = UncertaintyGUI()
+            p_unc.pie_plot_class_l2(
+                rrs_means,
+                lw_means,
+                rrs_uncertainties,
+                lw_uncertainties,
+                np.array(waves),  # pass radcal wavelengths
+                cast,
+                node.getGroup("ANCILLARY")
+            )
+            p_unc.plot_class_L2(
+                rrs_means,
+                lw_means,
+                rrs_uncertainties,
+                lw_uncertainties,
+                np.array(waves),
+                cast
+            )
 
         ## Band Convolution of Uncertainties
         # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
@@ -1624,6 +1761,9 @@ class Instrument(ABC):
         # py6s_gp.getDataset("direct_ratio").datasetToColumns()
         res_py6s['solar_zenith'] = np.asarray(py6s_gp.getDataset('solar_zenith').columns['solar_zenith'])
         res_py6s['wavelengths'] = np.asarray(list(py6s_gp.getDataset('direct_ratio').columns.keys())[2:], dtype=float)
+        if 'timetag' in res_py6s['wavelengths']:
+            # because timetag2 was included for some data and caused a bug
+            res_py6s['wavelengths'] = res_py6s['wavelengths'][1:]
         res_py6s['direct_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("direct_ratio").data))
         res_py6s['diffuse_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("diffuse_ratio").data))
         node.removeGroup(py6s_gp)
@@ -1782,8 +1922,13 @@ class HyperOCR(Instrument):
             wvl = str(float(k))
 
             # apply normalisation to the standard deviations used in uncertainty calculations
-            std_Light.append(np.std(lightData[k])/pow(N, 0.5))  # = (sigma / sqrt(N))**2 or sigma**2
-            std_Dark.append(np.std(darkData[k])/pow(Nd, 0.5))  # sigma here is essentially sigma**2 so N must be rooted
+            if N > 25:  # normal case
+                std_Light.append(np.std(lightData[k])/np.sqrt(N))
+                std_Dark.append(np.std(darkData[k])/np.sqrt(Nd) )  # sigma here is essentially sigma**2 so N must sqrt
+            else:  # few scans, use different statistics
+                std_Light.append((N-1/N-3)*(lightData[k] / np.sqrt(N))**2)
+                std_Dark.append((Nd-1/Nd-3)*(darkData[k] / np.sqrt(Nd))**2)
+
             ave_Light.append(np.average(lightData[k]))
             ave_Dark.append(np.average(darkData[k]))
 
@@ -2087,7 +2232,7 @@ class HyperOCR(Instrument):
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
                 solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
                 direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
-                direct_ratio, _ = self.interp_common_wvls(direct_ratio, res_py6s['wavelengths'], radcal_wvl)
+                direct_ratio, _ = self.interp_common_wvls(np.array(direct_ratio, float), res_py6s['wavelengths'], radcal_wvl)
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
                                                     np.asarray([0.05 for i in range(np.size(solar_zenith))]),
@@ -2145,38 +2290,37 @@ class HyperOCR(Instrument):
             output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
 
-            if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-                # example uncertainty plotting - used to generate unc breakdown plots
-                p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
-                time = node.attributes['TIME-STAMP'].split(' ')[-2]  # for labelling
-                if sensortype.upper() == 'ES':
-                    p_unc.plot_unc_from_sample_1D(
-                        sample_data5, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
-                    )
-                else:
-                    p_unc.plot_unc_from_sample_1D(
-                        sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
-                    )
-                p_unc.plot_unc_from_sample_1D(
-                    sample_data4, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
-                )
-                p_unc.plot_unc_from_sample_1D(
-                    sample_data3, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
-                )
-                p_unc.plot_unc_from_sample_1D(
-                    sample_data2, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
-                )
-                p_unc.plot_unc_from_sample_1D(
-                    sample_data1, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
-                )
-                p_unc.plot_unc_from_sample_1D(
-                    sample_dark_corr_data, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
-                    save={
-                        "cal_type": node.attributes["CAL_TYPE"],
-                        "time": node.attributes['TIME-STAMP'],
-                        "instrument": "SeaBird"
-                    }
-                )
+            # if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+            #     p_unc = UncertaintyGUI(prop)  # initialise plotting obj - punpy MCP as arg
+            #     time = node.attributes['TIME-STAMP'].split(' ')[-2]  # for labelling
+            #     if sensortype.upper() == 'ES':
+            #         p_unc.plot_unc_from_sample_1D(
+            #             sample_data5, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
+            #         )
+            #     else:
+            #         p_unc.plot_unc_from_sample_1D(
+            #             sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
+            #         )
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_data4, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
+            #     )
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_data3, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
+            #     )
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_data2, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
+            #     )
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_data1, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
+            #     )
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_dark_corr_data, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
+            #         save={
+            #             "cal_type": node.attributes["CAL_TYPE"],
+            #             "time": node.attributes['TIME-STAMP'],
+            #             "instrument": "SeaBird"
+            #         }
+            #     )
 
         return output
 
@@ -2477,10 +2621,11 @@ class Trios(Instrument):
 
                 # PDF of full hemispherical cosine error uncertainty
                 sample_fhemi_coserr = cm.generate_sample(mDraws, full_hemi_coserror, fhemi_unc, "syst")
-                if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-                    p_unc = Show_Uncertainties(prop)
-                    p_unc.plot_unc_from_sample_1D(sample_zen_avg_coserror, radcal_wvl, "zen")
-                    p_unc.plot_unc_from_sample_1D(sample_fhemi_coserr, radcal_wvl, "fhemi")
+
+                # I was doing some debugging here, sorry that this ended up in the PR.
+                # p_unc = UncertaintyGUI(prop)
+                # p_unc.plot_unc_from_sample_1D(sample_zen_avg_coserror, radcal_wvl, "zen")
+                # p_unc.plot_unc_from_sample_1D(sample_fhemi_coserr, radcal_wvl, "fhemi")
             else:
                 PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['2'])
                 unc_PANEL = (np.asarray(
@@ -2609,37 +2754,37 @@ class Trios(Instrument):
             output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
 
-            if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-                p_unc = Show_Uncertainties(prop)  # initialise plotting obj - punpy MCP as arg
-                time = ' '.join(node.attributes['TIME-STAMP'][0:-1].split('T'))  # time string for labelling
-                if sensortype.upper() == 'ES':
-                    p_unc.plot_unc_from_sample_1D(
-                        sample_cos_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
-                    )
-                else:
-                    p_unc.plot_unc_from_sample_1D(
-                        sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
-                    )
-                p_unc.plot_unc_from_sample_1D(
-                    sample_thermal_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
-                )
-                p_unc.plot_unc_from_sample_1D(
-                    sample_calibrated_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
-                )
-                p_unc.plot_unc_from_sample_1D(
-                    sample_straylight_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
-                )
-                p_unc.plot_unc_from_sample_1D(
-                    sample_linear_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
-                )
-                p_unc.plot_unc_from_sample_1D(
-                    sample_offset_corrected_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
-                    save={
-                        "cal_type": node.attributes["CAL_TYPE"],
-                        "time": node.attributes['TIME-STAMP'],
-                        "instrument": "TriOS"
-                    }
-                )
+            # if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+            #     p_unc = UncertaintyGUI(prop)  # initialise plotting obj - punpy MCP as arg
+            #     time = ' '.join(node.attributes['TIME-STAMP'][0:-1].split('T'))  # time string for labelling
+            #     if sensortype.upper() == 'ES':
+            #         p_unc.plot_unc_from_sample_1D(
+            #             sample_cos_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
+            #         )
+            #     else:
+            #         p_unc.plot_unc_from_sample_1D(
+            #             sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
+            #         )
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_thermal_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
+            #     )
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_calibrated_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
+            #     )
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_straylight_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
+            #     )
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_linear_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
+            #     )
+            #     p_unc.plot_unc_from_sample_1D(
+            #         sample_offset_corrected_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
+            #         save={
+            #             "cal_type": node.attributes["CAL_TYPE"],
+            #             "time": node.attributes['TIME-STAMP'],
+            #             "instrument": "TriOS"
+            #         }
+            #     )
 
         return output  # return products as dictionary to be appended to xSlice
 
