@@ -44,9 +44,9 @@ class Propagate:
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -66,8 +66,8 @@ class Propagate:
         [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0],
@@ -87,9 +87,9 @@ class Propagate:
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -113,7 +113,9 @@ class Propagate:
     def propagate_Instrument_Uncertainty(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
         """
         :param mean_vals:  list (normally numpy array) of input means matching the arguments of
-        Source.Uncertainty_Analysis.Propagate.instruments() - [ESLIGHT, ESDARK, LILIGHT, LIDARK, LTLIGHT, LTDARK,
+        Source.Uncertainty_Analysis.Propagate.instruments() - [ESLIGHT, ESDARK, 
+                                                               LILIGHT, LIDARK, 
+                                                               LTLIGHT, LTDARK,
                                                                ESCal, LICal, LTCal,
                                                                ESStab, LIStab, LTStab,
                                                                ESLin, LILin, LTLin,
@@ -145,12 +147,12 @@ class Propagate:
         """
         :param mean_vals: list (normally numpy array) of input means matching the arguments of
         Source.Uncertainty_Analysis.Propagate.Lw() - [lt, rhoVec, li,
-                                                      c2, c3,
-                                                      clin2, clin3,
-                                                      cstab2, cstab3,
-                                                      cstray2, cstray3,
-                                                      cT2, cT3,
-                                                      cpol1, cpol2]
+                                                      c_lt, c_li,
+                                                      cstab_lt, cstab_li,
+                                                      clin_lt, clin_li,
+                                                      cstray_lt, cstray_li,
+                                                      cT_lt, cT_li,
+                                                      cpol_lt, cpol_li]
         :param uncertainties: list (normally numpy array) of input uncertainties matching the order of mean_vals
 
         :return: Lw uncertainty
@@ -170,12 +172,12 @@ class Propagate:
         """
         :param mean_vals: list (normally numpy array) of input means matching the arguments of
         Source.Uncertainty_Analysis.Propagate.Lw() - [lt, rhoVec, li,
-                                                      c2, c3,
-                                                      clin2, clin3,
-                                                      cstab2, cstab3,
-                                                      cstray2, cstray3,
-                                                      cT2, cT3,
-                                                      cpol1, cpol2]
+                                                      c_lt, c_li,
+                                                      cstab_lt, cstab_li,
+                                                      clin_lt, clin_li,
+                                                      cstray_lt, cstray_li,
+                                                      cT_lt, cT_li,
+                                                      cpol_lt, cpol_li]
         :param uncertainties: list (normally numpy array) of input uncertainties matching the order of mean_vals
         :param platform:
         :param wavebands:
@@ -432,17 +434,17 @@ class Propagate:
         return np.array([value[0] for value in rad_band.values()])
 
     @staticmethod
-    def Lw(lt, rhoVec, li, c2, c3, clin2, clin3, cstab2, cstab3, cstray2, cstray3, cT2, cT3, cpol1, cpol2):
+    def Lw(lt, rhoVec, li, c_li, c_lt, cstab_li, cstab_lt, clin_li, clin_lt, cstray_li, cstray_lt, cT_li, cT_lt, cpol_li, cpol_lt):
         """ Lw Class based branch measurment function """
-        li_signal = li * c2 * clin2 * cstab2 * cstray2 * cT2 * cpol1
-        lt_signal = lt * c3 * clin3 * cstab3 * cstray3 * cT3 * cpol2
+        li_signal = li * c_li * cstab_li * clin_li * cstray_li * cT_li * cpol_li
+        lt_signal = lt * c_lt * cstab_lt * clin_lt * cstray_lt * cT_lt * cpol_lt
 
         return lt_signal - (li_signal * rhoVec)
 
-    def Lw_Conv(self, lt, rhoVec, li, c2, c3, clin2, clin3, cstab2, cstab3, cstray2, cstray3, cT2, cT3, cpol1, cpol2):
+    def Lw_Conv(self, lt, rhoVec, li, c_li, c_lt, cstab_li, cstab_lt, clin_li, clin_lt, cstray_li, cstray_lt, cT_li, cT_lt, cpol_li, cpol_lt):
         """ Lw Class based branch measurment function """
-        li_signal = li * c2 * clin2 * cstab2 * cstray2 * cT2 * cpol1
-        lt_signal = lt * c3 * clin3 * cstab3 * cstray3 * cT3 * cpol2
+        li_signal = li * c_li * cstab_li * clin_li * cstray_li * cT_li * cpol_li
+        lt_signal = lt * c_lt * cstab_lt * clin_lt * cstray_lt * cT_lt * cpol_lt
 
         func = self.def_sensor_mfunc(self._platform)  # get mfunc per platform, saves us from making 8 mfuncs
 
@@ -453,23 +455,23 @@ class Propagate:
         return ltConv - (liConv * rhoConv)
 
     @staticmethod
-    def RRS(lt, rhoVec, li, es, c1, c2, c3, clin1, clin2, clin3, cstab1, cstab2, cstab3, cstray1, cstray2, cstray3,
-            cT1, cT2, cT3, cpol1, cpol2, ccos):
+    def RRS(lt, rhoVec, li, es, c_es, c_li, c_lt, cstab_es, cstab_li, cstab_lt, clin_es, clin_li, clin_lt, cstray_es, cstray_li, cstray_lt,
+            cT_es, cT_li, cT_lt, cpol_li, cpol_lt, ccos):
         """ Rrs Class based branch measurment function """
-        es_signal = es*c1*cstab1*clin1*cstray1*cT1*ccos
-        li_signal = li*c2*cstab2*clin2*cstray2*cT2*cpol1
-        lt_signal = lt*c3*clin3*cstab3*cstray3*cT3*cpol2
+        es_signal = es * c_es * cstab_es * clin_es * cstray_es * cT_es * ccos
+        li_signal = li * c_li * cstab_li * clin_li * cstray_li * cT_li * cpol_li
+        lt_signal = lt * c_lt * cstab_lt * clin_lt * cstray_lt * cT_lt * cpol_lt
 
         lw = lt_signal - (rhoVec*li_signal)
         lw[np.where(lw < 0)] = 0
         return lw/es_signal
 
-    def RRS_Conv(self, lt, rhoVec, li, es, c1, c2, c3, clin1, clin2, clin3, cstab1, cstab2, cstab3, cstray1, cstray2,
-                 cstray3, cT1, cT2, cT3, cpol1, cpol2, ccos):
+    def RRS_Conv(self, lt, rhoVec, li, es, c_es, c_li, c_lt, cstab_es, cstab_li, cstab_lt, clin_es, clin_li, clin_lt, cstray_es, cstray_li, cstray_lt,
+            cT_es, cT_li, cT_lt, cpol_li, cpol_lt, ccos):
         """ Rrs Class based branch measurment function """
-        es_signal = es*c1*cstab1*clin1*cstray1*cT1*ccos
-        li_signal = li*c2*cstab2*clin2*cstray2*cT2*cpol1
-        lt_signal = lt*c3*clin3*cstab3*cstray3*cT3*cpol2
+        es_signal = es * c_es * cstab_es * clin_es * cstray_es * cT_es * ccos
+        li_signal = li * c_li * cstab_li * clin_li * cstray_li * cT_li * cpol_li
+        lt_signal = lt * c_lt * cstab_lt * clin_lt * cstray_lt * cT_lt * cpol_lt
 
         func = self.def_sensor_mfunc(self._platform)  # get mfunc per platform, saves us from making 8 mfuncs
 

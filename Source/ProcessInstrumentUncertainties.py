@@ -15,12 +15,12 @@ import copy
 # NPL packages
 import punpy
 import comet_maths as cm
-import matplotlib.pyplot as plt
 
 # HCP files
 from Source import PATH_TO_CONFIG
 from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
+from typing import Union
 from Source.HDFRoot import HDFRoot  # for typing
 from Source.HDFGroup import HDFGroup  # for typing
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
@@ -29,7 +29,7 @@ from Source.Weight_RSR import Weight_RSR
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 
-from Source.Uncertainty_Visualiser import UncertaintyEngine, UncertaintyGUI # class for uncertainty visualisation plots
+from Source.Uncertainty_Visualiser import UncertaintyGUI # class for uncertainty visualisation plots
 
 
 class Instrument(ABC):
@@ -39,7 +39,7 @@ class Instrument(ABC):
         self.sl_method: str = 'ZONG'
 
     @abstractmethod
-    def lightDarkStats(self, grp: HDFGroup, slice: list, sensortype: str) -> dict[np.array]:
+    def lightDarkStats(self, grp: Union[HDFGroup, list], slice: list, sensortype: str) -> dict[np.array]:
         """
         :param grp: HDFGroup representing the sensor specific data
         :param slice: Sliced sensor data
@@ -51,7 +51,7 @@ class Instrument(ABC):
         pass
 
     def generateSensorStats(self, InstrumentType: str, rawData: dict, rawSlice: dict, newWaveBands: np.array)\
-            -> dict[np.array]:
+            -> dict[str: np.array]:
         """
         :return: dictionary of statistics used later in the processing pipeline. Keys are:
         [ave_Light, ave_Dark, std_Light, std_Dark, std_Signal]
@@ -75,15 +75,17 @@ class Instrument(ABC):
                 # std_Light: (array 1 x number of wavebands)
                 # std_Dark: (array 1 x number of wavebands)
                 # std_Signal: OrdDict by wavebands: sqrt( (std(Light)^2 + std(Dark)^2)/ave(Light)^2 )
-                output[sensortype] = self.lightDarkStats([rawData[sensortype]['LIGHT'],
-                                                          rawData[sensortype]['DARK']],
-                                                         [rawSlice[sensortype]['LIGHT'],
-                                                          rawSlice[sensortype]['DARK']],
-                                                         sensortype)
-        if not output[sensortype]:
-            msg = "Error in generating standard deviation and average of light and dark"
-            print(msg)
-            return False
+                output[sensortype] = self.lightDarkStats(
+                    [rawData[sensortype]['LIGHT'],
+                    rawData[sensortype]['DARK']],
+                    [rawSlice[sensortype]['LIGHT'],
+                    rawSlice[sensortype]['DARK']],
+                    sensortype
+                )
+            if not output[sensortype]:
+                msg = "Error in generating standard deviation and average of light and dark"
+                print(msg)
+                return False
 
         # interpolate std Signal to common wavebands for use in band convolution
         for stype in types:
@@ -176,7 +178,7 @@ class Instrument(ABC):
                        ones, ones, ones,
                        ones, ones, ones]
 
-        uncertainty = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
+        uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
                        stats['LI']['std_Light'], stats['LI']['std_Dark'],
                        stats['LT']['std_Light'], stats['LT']['std_Dark'],
                        Cal['ES']*Coeff['ES']/200, Cal['LI']*Coeff['LI']/200, Cal['LT']*Coeff['LT']/200,
@@ -187,7 +189,7 @@ class Instrument(ABC):
                        np.array(cPol['LI']), np.array(cPol['LT']), np.array(cPol['ES'])]
 
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
-        es_unc, li_unc, lt_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
+        es_unc, li_unc, lt_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainties)
         es, li, lt = PropagateL1B.instruments(*mean_values)  # signal generated from measurement function applied
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
         # convert to relative uncertainty
@@ -220,19 +222,11 @@ class Instrument(ABC):
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
             acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
             cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
-            # # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
-            # # value
-            # stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-            # if stations is not None:
-            #     cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
-            #             f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
-            # else:
-            #     cast = f"{type(self).__name__}_{node.attributes['CAST']}"
 
             p_unc = UncertaintyGUI(PropagateL1B)
             p_unc.pie_plot_class(
                 mean_values,
-                uncertainty,
+                uncertainties,
                 dict(
                     ES=waves,
                     LI=waves,
@@ -243,7 +237,7 @@ class Instrument(ABC):
             )
             p_unc.plot_class(
                 mean_values,
-                uncertainty,
+                uncertainties,
                 dict(
                     ES=waves,
                     LI=waves,
@@ -330,7 +324,7 @@ class Instrument(ABC):
                        ones, ones, ones
                        ]
 
-        uncertainty = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
+        uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
                        stats['LI']['std_Light'], stats['LI']['std_Dark'],
                        stats['LT']['std_Light'], stats['LT']['std_Dark'],
                        Cal['ES']*Coeff['ES']/200,
@@ -346,37 +340,25 @@ class Instrument(ABC):
                        ]
 
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
-        es_unc, li_unc, lt_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
+        es_unc, li_unc, lt_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainties)
         es, li, lt = PropagateL1B.instruments(*mean_values)  # signal generated from measurement function applied
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
         # convert to relative uncertainty
 
         # plot class based L1B uncertainties
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-            # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
-            # value
-            #       NOTE: For continuous, autonomous acquisition (e.g. SolarTracker, pySAS, SoRad, DALEC), stations are 
+            #       NOTE: For continuous, autonomous acquisition (e.g. SolarTracker, pySAS, SoRad, DALEC), stations are
             #       only associated with specific spectra during times that intersect with station designation in the 
             #       Ancillary file. If station extraction is performed in L2, then the resulting HDF will have only one 
             #       unique station designation, though that may include multiple ensembles, depending on how long the ship
             #       was on station. - DA
             acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
             cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
-            # if 'STATION' in node.getGroup("ANCILLARY").datasets:
-                # stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-            # else:
-            #     stations = None
-
-            # if stations is not None:
-            #     cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
-            #             f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
-            # else:
-            #     cast = f"{type(self).__name__}_{node.attributes['CAST']}"
 
             p_unc = UncertaintyGUI(PropagateL1B)
             p_unc.pie_plot_class(
                 mean_values,
-                uncertainty,
+                uncertainties,
                 dict(
                     ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
                     LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
@@ -387,7 +369,7 @@ class Instrument(ABC):
             )
             p_unc.plot_class(
                 mean_values,
-                uncertainty,
+                uncertainties,
                 dict(
                     ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
                     LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
@@ -414,18 +396,6 @@ class Instrument(ABC):
         _, lt_Unc = self.interp_common_wvls(LT_unc,
                                             np.array(uncGrp.getDataset("LT_RADCAL_CAL").columns['1'], dtype=float)[ind_rad_wvl],
                                             data_wvl)
-
-        # radcal_cal = pd.DataFrame(uncGrp.getDataset(sensor + "_RADCAL_CAL").data)['2']
-        #
-        # ind_zero = radcal_cal <= 0
-        # ind_nan = np.isnan(radcal_cal)
-        # ind_nocal = ind_nan | ind_zero
-        #
-        # for i, k in enumerate(es_Unc.keys()):
-        #     if ind_nocal[i]:
-        #         es_Unc[k] = [0.0]
-        #         li_Unc[k] = [0.0]
-        #         lt_Unc[k] = [0.0]
 
         return dict(
             esUnc=es_Unc,
@@ -850,17 +820,6 @@ class Instrument(ABC):
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
             acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
             cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
-            # # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
-            # # value
-            # if 'STATION' in node.getGroup("ANCILLARY").datasets:
-            #     stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-            # else:
-            #     stations = None
-            # if stations is not None:
-            #     cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
-            #             f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
-            # else:
-            #     cast = f"{type(self).__name__}_{node.attributes['CAST']}"
 
             p_unc = UncertaintyGUI()
             p_unc.pie_plot_class_l2(
@@ -887,9 +846,6 @@ class Instrument(ABC):
         Convolve = Propagate(M=100, cores=1)
         # these are absolute values! Dont get confused
         output = {}
-
-        # interpolate output uncertainties to the waveSubset (common wavebands of interpolated es, li, & lt)
-        # wvls = np.asarray(list(xSlice['es'].keys()), dtype=float)
 
         lwAbsUnc, _ = self.interp_common_wvls(lwAbsUnc,
                                               np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1'], dtype=float)[ind_rad_wvl],
@@ -1240,14 +1196,6 @@ class Instrument(ABC):
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
             acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
             cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
-            # # if I understand how the stations group in the L1BQC hdf works then this should always be a list with one
-            # # value
-            # stations = np.array(node.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-            # if stations is not None:
-            #     cast = (f"{type(self).__name__}_{node.attributes['CAST']}_"
-            #             f"{np.unique(stations[~np.isnan(stations)]).tolist()[0]}")
-            # else:
-            #     cast = f"{type(self).__name__}_{node.attributes['CAST']}"
 
             p_unc = UncertaintyGUI()
             p_unc.pie_plot_class_l2(
@@ -1761,11 +1709,12 @@ class Instrument(ABC):
         # py6s_gp.getDataset("direct_ratio").datasetToColumns()
         res_py6s['solar_zenith'] = np.asarray(py6s_gp.getDataset('solar_zenith').columns['solar_zenith'])
         res_py6s['wavelengths'] = np.asarray(list(py6s_gp.getDataset('direct_ratio').columns.keys())[2:], dtype=float)
-        if 'timetag' in res_py6s['wavelengths']:
-            # because timetag2 was included for some data and caused a bug
-            res_py6s['wavelengths'] = res_py6s['wavelengths'][1:]
         res_py6s['direct_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("direct_ratio").data))
         res_py6s['diffuse_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("diffuse_ratio").data))
+        # if 'timetag' in res_py6s['wavelengths']:
+        #     # because timetag2 was included for some data and caused a bug
+        #     # if any index is removed from wavelengths we must query if direct_ratio is the correct length
+        #     res_py6s['wavelengths'] = res_py6s['wavelengths'][1:]
         node.removeGroup(py6s_gp)
         return res_py6s
 
