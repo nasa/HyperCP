@@ -178,7 +178,7 @@ class Instrument(ABC):
                        ones, ones, ones,
                        ones, ones, ones]
 
-        uncertainty = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
+        uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
                        stats['LI']['std_Light'], stats['LI']['std_Dark'],
                        stats['LT']['std_Light'], stats['LT']['std_Dark'],
                        Cal['ES']*Coeff['ES']/200, Cal['LI']*Coeff['LI']/200, Cal['LT']*Coeff['LT']/200,
@@ -189,7 +189,7 @@ class Instrument(ABC):
                        np.array(cPol['LI']), np.array(cPol['LT']), np.array(cPol['ES'])]
 
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
-        es_unc, li_unc, lt_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
+        es_unc, li_unc, lt_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainties)
         es, li, lt = PropagateL1B.instruments(*mean_values)  # signal generated from measurement function applied
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
         # convert to relative uncertainty
@@ -226,7 +226,7 @@ class Instrument(ABC):
             p_unc = UncertaintyGUI(PropagateL1B)
             p_unc.pie_plot_class(
                 mean_values,
-                uncertainty,
+                uncertainties,
                 dict(
                     ES=waves,
                     LI=waves,
@@ -237,7 +237,7 @@ class Instrument(ABC):
             )
             p_unc.plot_class(
                 mean_values,
-                uncertainty,
+                uncertainties,
                 dict(
                     ES=waves,
                     LI=waves,
@@ -324,7 +324,7 @@ class Instrument(ABC):
                        ones, ones, ones
                        ]
 
-        uncertainty = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
+        uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
                        stats['LI']['std_Light'], stats['LI']['std_Dark'],
                        stats['LT']['std_Light'], stats['LT']['std_Dark'],
                        Cal['ES']*Coeff['ES']/200,
@@ -340,7 +340,7 @@ class Instrument(ABC):
                        ]
 
         # generate uncertainties using Monte Carlo Propagation (M=100, def line 27)
-        es_unc, li_unc, lt_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainty)
+        es_unc, li_unc, lt_unc = PropagateL1B.propagate_Instrument_Uncertainty(mean_values, uncertainties)
         es, li, lt = PropagateL1B.instruments(*mean_values)  # signal generated from measurement function applied
         # in punpy call, so uncertainties are now relative to what means are provided in mean_values
         # convert to relative uncertainty
@@ -358,7 +358,7 @@ class Instrument(ABC):
             p_unc = UncertaintyGUI(PropagateL1B)
             p_unc.pie_plot_class(
                 mean_values,
-                uncertainty,
+                uncertainties,
                 dict(
                     ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
                     LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
@@ -369,7 +369,7 @@ class Instrument(ABC):
             )
             p_unc.plot_class(
                 mean_values,
-                uncertainty,
+                uncertainties,
                 dict(
                     ES=np.array(uncGrp.getDataset("ES_RADCAL_CAL").columns['1']),
                     LI=np.array(uncGrp.getDataset("LI_RADCAL_CAL").columns['1']),
