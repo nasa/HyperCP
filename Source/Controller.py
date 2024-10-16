@@ -694,8 +694,11 @@ class Controller:
                         ancGroup.datasets[ds].datasetToColumns()
                     except Exception:
                         print('Error: Something wrong with root ANCILLARY')
-                stations = np.array(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-                stations = np.unique(stations[~np.isnan(stations)]).tolist()
+                if root.getGroup("ANCILLARY").getDataset("STATION") is not None:
+                    stations = np.array(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+                    stations = np.unique(stations[~np.isnan(stations)]).tolist()
+                else:
+                    stations = []
 
                 if len(stations) > 0:
 
