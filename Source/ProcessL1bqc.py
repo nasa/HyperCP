@@ -641,7 +641,9 @@ class ProcessL1bqc:
                 badTimes = badTimes2
 
             if badTimes is not None:
-                print('Removing records...')
+                msg = "Removing spectra from combined flags."
+                print(msg)
+                Utilities.writeLogFile(msg)
                 check = Utilities.filterData(referenceGroup, badTimes)
                 if check > 0.99:
                     msg = "Too few spectra remaining. Abort."
@@ -660,6 +662,9 @@ class ProcessL1bqc:
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False
+                
+                if py6sGroup is not None:
+                    Utilities.filterData(py6sGroup,badTimes)
 
                 # Filter L1AQC data for L1BQC criteria
                 if ConfigFile.settings['SensorType'].lower() == 'seabird':
@@ -678,9 +683,7 @@ class ProcessL1bqc:
                 elif ConfigFile.settings['SensorType'].lower() == 'trios':
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
-                if py6sGroup is not None:
-                    Utilities.filterData(py6sGroup,badTimes)
+                    Utilities.filterData(ltGroup,badTimes,'L1AQC')                
 
         # Next apply the Meteorological FLAGGING prior to slicing
         esData = referenceGroup.getDataset("ES")        

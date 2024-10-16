@@ -361,7 +361,8 @@ class TriosL1A:
 
                     if start is None:
                         return None, None
-                    root.attributes["TIME-STAMP"] = start
+                    acq_datetime = dt.datetime.strptime(start,"%Y%m%dT%H%M%SZ")
+                    root.attributes["TIME-STAMP"] = dt.datetime.strftime(acq_datetime,'%a %b %d %H:%M:%S %Y')
 
                 '''
                 File naming convention on TriOS TBD depending on convention used in MSDA_XE

@@ -1,4 +1,5 @@
 # docs and typing
+import os
 from abc import ABC
 from typing import Optional, Union
 
@@ -8,6 +9,7 @@ import numpy as np
 from punpy import MCPropagation
 
 from Source.Uncertainty_Analysis import Propagate
+from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
 
 
@@ -25,7 +27,15 @@ class UncertaintyGUI(ABC):
         self._engine = UncertaintyEngine(mcp)
         del mcp, _mcp  # free up memory
 
+        self.plot_folder = os.path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
+        if not os.path.exists(self.plot_folder):
+            os.makedirs(self.plot_folder)
+
     def pie_plot_class(self, mean_vals, uncs, wavelengths, cast, ancGrp):
+        if ConfigFile.settings['bL1bCal'] == 1:
+            regime = 'Factory'
+        else:
+            regime = 'Class'
         results, values = self._engine.breakdown_Class(mean_vals, uncs, False)
         labels = dict(
             ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
@@ -82,11 +92,16 @@ class UncertaintyGUI(ABC):
                     labels=labels[sensor],
                     autopct='%1.1f%%'
                 )
-                plt.title(f"{sensor} Class Based Uncertainty Components at {wvl_at_indx}nm")
-                plt.savefig(f"test_pie_plot_{sensor}_{cast}_{wvl_at_indx}.png")
+                plt.title(f"{sensor} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
+                fp = os.path.join(self.plot_folder,f"pie_{sensor}_{cast}_{wvl_at_indx}.png")
+                plt.savefig(fp)
                 plt.close(fig)
 
     def pie_plot_class_l2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast, ancGrp):
+        if ConfigFile.settings['bL1bCal'] == 1:
+            regime = 'Factory'
+        else:
+            regime = 'Class'
         # build table of anc data
         aod = ancGrp.datasets['AOD'].columns['AOD'][0]
         rel_az = ancGrp.datasets['REL_AZ'].columns['REL_AZ'][0]
@@ -115,8 +130,8 @@ class UncertaintyGUI(ABC):
 
         results, values = self._engine.breakdown_Class_L2(rrs_vals, lw_vals, rrs_uncs, lw_uncs, False)
         labels = dict(
-            Lw=["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
-            Rrs=["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
+            Lw=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
+            Rrs=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"]
         )
         for product in results.keys():
             indexes = [
@@ -137,8 +152,9 @@ class UncertaintyGUI(ABC):
 
                 ax.pie([self._engine.getpct(results[product][key], values[product])[indx] for key in labels[product]],
                        labels=labels[product], autopct='%1.1f%%')
-                plt.title(f"{product} Class Based Uncertainty Components at {wvl_at_indx}nm")
-                plt.savefig(f"test_pie_plot_{product}_{cast}_{wvl_at_indx}.png")
+                plt.title(f"{product} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
+                fp = os.path.join(self.plot_folder,f"pie_{product}_{cast}_{wvl_at_indx}.png")
+                plt.savefig(fp)
                 # todo: put different wavelengths in a subplot instead of making separate plots
                 # todo: make table of ancillary data to include with plots
                 plt.close(fig)
@@ -165,7 +181,8 @@ class UncertaintyGUI(ABC):
             plt.grid()
             if isinstance(cast, list):
                 cast = cast[0]
-            plt.savefig(f"{sensor}_{cast}_class_breakdown.png")
+            fp = os.path.join(self.plot_folder,f"spectral_{sensor}_{cast}.png")
+            plt.savefig(fp)
             plt.close(f"{sensor}_{cast}")
 
     def plot_class_L2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast=""):
@@ -188,7 +205,8 @@ class UncertaintyGUI(ABC):
             plt.grid()
             if isinstance(cast, list):
                 cast = cast[0]
-            plt.savefig(f"{product}_{cast}_class_breakdown.png")
+            fp = os.path.join(self.plot_folder,f"spectral_{product}_{cast}.png")
+            plt.savefig(fp)
             plt.close(f"{product}_{cast}")
 
     def plot_unc_from_sample_1D(
@@ -237,11 +255,14 @@ class UncertaintyGUI(ABC):
                 except IndexError:
                     plt.title(f"{fig_name.replace('_', ' ')} {save['instrument']}")
                 sp = f"{fig_name}_{save['cal_type']}_{save['time']}_{save['instrument']}_unc_in_pct.png"
-                plt.savefig(sp.replace(':', '-').replace(' ', '_'))
+                sp.replace(':', '-').replace(' ', '_')
+                fp = os.path.join(self.plot_folder,sp)
+                plt.savefig(fp)
                 plt.close(fig)
             else:
                 plt.title(f"{fig_name}")
-                plt.savefig(f"{fig_name}_unc_in_pct.png")
+                fp = os.path.join(self.plot_folder,f"{fig_name}_unc_in_pct.png")
+                plt.savefig(fp)
                 plt.close(fig)
 
     def plot_val_from_sample_1D(
@@ -287,7 +308,8 @@ class UncertaintyGUI(ABC):
         means_in_lim = np.max(means[np.argmin(np.abs(x - xmin)):np.argmin(np.abs(x - xmax))])
         ymax = np.max(means_in_lim)
         plt.ylim(0, ymax + (2*abs_unc_k1))
-        plt.savefig(f"{name}_mean_with_abs_unc.png")
+        fp = os.path.join(self.plot_folder,f"{name}_mean_with_abs_unc.png")
+        plt.savefig(fp)
         plt.close(fig)
 
         # for 2D samples
@@ -338,23 +360,23 @@ class UncertaintyEngine(ABC):
         Breakdown uncertainties for L2 products when running in class based mode
         """
 
-        keys = ["noise", "rho", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine"]
+        keys = ["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"]
+        keys_lw = ["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"]
         output = {"Lw": {}, "Rrs": {}}
         vals = {}
         uRrs = np.zeros(np.asarray(rrs_uncs).shape)
 
         # generate class based uncertaitnies from 0 and adding each contribution in turn
         vals['Rrs'] = self.punpy_MCP.RRS(*rrs_vals) # get values to make uncs relative
-
-        for indx, i in enumerate([0, 1, 4, 7, 10, 16, 13, 19, 21]):
+        for indx, i in enumerate([0, 4, 7, 10, 16, 13, 19, 21, 1]):
             if indx == 0:
                 uRrs[0:4] = rrs_uncs[0:4]
                 uRrs[1] = np.zeros(len(rrs_uncs[1]))
-            elif indx == 1:
-                uRrs[1] = rrs_uncs[1]  # add rho
-            elif indx == 7:
-                uRrs[i:i + 2] = rrs_uncs[i:i + 2]
             elif indx == 8:
+                uRrs[1] = rrs_uncs[1]  # add rho
+            elif indx == 6:
+                uRrs[i:i + 2] = rrs_uncs[i:i + 2]
+            elif indx == 7:
                 uRrs[i] = rrs_uncs[i]
             else:
                 uRrs[i:i+3] = rrs_uncs[i:i+3]
@@ -366,16 +388,16 @@ class UncertaintyEngine(ABC):
 
         vals['Lw'] = self.punpy_MCP.Lw(*lw_vals)
         uLw = np.zeros(np.asarray(lw_uncs).shape)
-        for indx, i in enumerate([0, 1, 3, 5, 7, 11, 9, 13]):
+        for indx, i in enumerate([0, 3, 5, 7, 11, 9, 13, 1]):
             if indx == 0:
                 uLw[0] = lw_uncs[0]
                 uLw[2] = lw_uncs[2]
-            elif indx == 1:
+            elif indx == 7:
                 uLw[1] = lw_uncs[1]  # add rho
             else:
                 uLw[i:i + 2] = lw_uncs[i:i + 2]
 
-            output['Lw'][keys[indx]] = self.punpy_MCP.Propagate_Lw_HYPER(lw_vals, uLw)
+            output['Lw'][keys_lw[indx]] = self.punpy_MCP.Propagate_Lw_HYPER(lw_vals, uLw)
             if not cumulative:
                 uLw = np.zeros(np.asarray(lw_uncs).shape)  # reset uncertaitnies
 
