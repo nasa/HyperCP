@@ -377,7 +377,7 @@ class ProcessL2:
         ltUNC = {}
 
         # Only Factory - Trios has no uncertainty here
-        if ConfigFile.settings['bL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird' :
+        if (ConfigFile.settings['bL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird'):
             esUNC = xUNC[f'esUNC_{sensor}']  # should already be convolved to hyperspec
             liUNC = xUNC[f'liUNC_{sensor}']  # added reference to HYPER as band convolved uncertainties will no longer
             ltUNC = xUNC[f'ltUNC_{sensor}']  # overwite normal instrument uncertainties during processing
@@ -1349,20 +1349,21 @@ class ProcessL2:
 
         # Process StdSlices for Band Convolution
         # Get common wavebands from esSlice to interp stats
-        instrument_WB = np.asarray(list(esSlice.keys()), dtype=float)
+        instrument_wb = np.asarray(list(esSlice.keys()), dtype=float)
 
+        # rawGroup required only for some group attributes, Group data not used as is not ensemble.
         if ConfigFile.settings['SensorType'].lower() == "trios":
-            instrument = Trios()
+            instrument = Trios()  # overwrites all Instrument class functions with TriOS specific ones
             stats = instrument.generateSensorStats("TriOS",
                         dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
                         dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
-                        instrument_WB)
+                        instrument_wb)
         elif ConfigFile.settings['SensorType'].lower() == "seabird":
-            instrument = HyperOCR()  # check sensor-type
+            instrument = HyperOCR()  # overwrites all Instrument class functions with HyperOCR specific ones
             stats = instrument.generateSensorStats("SeaBird",
                         dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
                         dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
-                        instrument_WB)
+                        instrument_wb)
             # after dark substitution is done, condense to only dark corrected data (LIGHT key)
             esRawGroup = esRawGroup['LIGHT']
             liRawGroup = liRawGroup['LIGHT']
@@ -1376,12 +1377,14 @@ class ProcessL2:
             return False
 
         if not stats:
+            msg = "statistics not generated"
+            print(msg)
             return False
 
         # make std into dictionaries (data are ODs, but should not matter)
-        esStdSlice = {k: [stats['ES']['std_Signal_Interpolated'][k][0]] for k in esSlice}  # *esSlice[k][0]
-        liStdSlice = {k: [stats['LI']['std_Signal_Interpolated'][k][0]] for k in liSlice}  # *liSlice[k][0]
-        ltStdSlice = {k: [stats['LT']['std_Signal_Interpolated'][k][0]] for k in ltSlice}  # *ltSlice[k][0]
+        esStdSlice = {k: [stats['ES']['std_Signal_Interpolated'][k][0]] for k in esSlice}
+        liStdSlice = {k: [stats['LI']['std_Signal_Interpolated'][k][0]] for k in liSlice}
+        ltStdSlice = {k: [stats['LT']['std_Signal_Interpolated'][k][0]] for k in ltSlice}
 
         # Convolve es/li/lt slices to satellite bands using RSRs
         if ConfigFile.settings['bL2WeightMODISA']:
@@ -1769,11 +1772,11 @@ class ProcessL2:
         xSlice['liMedian'] = liXmedian
         xSlice['ltMedian'] = ltXmedian
 
-        xSlice['esSTD'] = esStdSlice
+        xSlice['esSTD'] = esStdSlice  # standard deviation at common wavebands
         xSlice['liSTD'] = liStdSlice
         xSlice['ltSTD'] = ltStdSlice
 
-        xSlice['esSTD_RAW'] = stats['ES']['std_Signal']  # uninterpolated std for uncertainty calculation
+        xSlice['esSTD_RAW'] = stats['ES']['std_Signal']  # non-interpolated std for uncertainty calculation
         xSlice['liSTD_RAW'] = stats['LI']['std_Signal']
         xSlice['ltSTD_RAW'] = stats['LT']['std_Signal']
 
@@ -1784,30 +1787,39 @@ class ProcessL2:
 
         # NOTE: These ".update" object calls are what is triggering matrix_calculation.py:286: UserWarning:
         tic = time.process_time()
-        if ConfigFile.settings["bL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "seabird":
-            xSlice.update(instrument.Factory(node, uncGroup, stats))  # update the xSlice dict with uncertianties and samples
-            # NOTE: This is slow.
-            # convert uncertainties back into absolute form using the signals recorded from ProcessL2
-            xSlice['esUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
-            xSlice['liUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
-            xSlice['ltUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
+        if ConfigFile.settings["bL1bCal"] <= 2:  # and
+            L1B_UNC = instrument.ClassBased(node, uncGroup, stats)
+            if L1B_UNC:
+                xSlice.update(L1B_UNC)  # update the xSlice dict with uncertianties and samples
+                del L1B_UNC  # delete to save memory as no longer required
+                # convert uncertainties back into absolute form using the signals recorded from ProcessL2
+                xSlice['esUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
+                xSlice['liUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
+                xSlice['ltUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
 
-            xUNC.update(instrument.rrsHyperUNCFACTORY(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+                xUNC.update(instrument.ClassBasedL2(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+            elif ConfigFile.settings['SensorType'].lower() == "trios":
+                xUNC = None
+            else:
+                msg = "Instrument uncertainty processing failed: ProcessL2"
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
 
-        elif ConfigFile.settings["bL1bCal"] == 2:
-            # update the xSlice dict with uncertianties and samples
-            xSlice.update(instrument.Default(uncGroup, stats, node))
-            # convert uncertainties back into absolute form using the signals recorded from ProcessL2
-            xSlice['esUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
-            xSlice['liUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
-            xSlice['ltUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
+        # elif ConfigFile.settings["bL1bCal"] == 2:
+        #     # update the xSlice dict with uncertianties and samples
+        #     xSlice.update(instrument.Default(uncGroup, stats, node))
+        #     # convert uncertainties back into absolute form using the signals recorded from ProcessL2
+        #     xSlice['esUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
+        #     xSlice['liUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
+        #     xSlice['ltUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
 
             # validation of uncertainty methods
             # t1 = np.asarray(list(xSlice['esUnc'].values()), dtype=float)/xSlice['esTestUnc']
             # t2 = np.asarray(list(xSlice['liUnc'].values()), dtype=float)/xSlice['liTestUnc']
             # t3 = np.asarray(list(xSlice['ltUnc'].values()), dtype=float)/xSlice['ltTestUnc']
             # print(t1, t2, t3)
-            xUNC.update(instrument.rrsHyperUNC(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+            # xUNC.update(instrument.rrsHyperUNC(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
         elif ConfigFile.settings["bL1bCal"] == 3:
             xSlice.update(
@@ -1815,11 +1827,8 @@ class ProcessL2:
                                dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
                                dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
                                stats, np.array(waveSubset, float)))  # instrument_WB
-            xUNC.update(instrument.rrsHyperUNCFRM(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+            xUNC.update(instrument.FRM_L2(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
-        else:
-            xUNC = None
-            # TODO: This could still estimate STD for TRIOS-Factory regime instead of FRM unc.
         msg = f'Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s'
         print(msg)
         Utilities.writeLogFile(msg)
