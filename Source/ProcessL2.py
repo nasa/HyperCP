@@ -1798,7 +1798,7 @@ class ProcessL2:
                 xSlice['ltUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
 
                 xUNC.update(instrument.ClassBasedL2(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
-            elif ConfigFile.settings['SensorType'].lower() == "trios":
+            elif (ConfigFile.settings['SensorType'].lower() == "trios") and (ConfigFile.settings["bL1bCal"] == 1):
                 xUNC = None
             else:
                 msg = "Instrument uncertainty processing failed: ProcessL2"
