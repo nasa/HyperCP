@@ -543,8 +543,8 @@ class ProcessL1b_Interp:
             root.groups.append(node.getGroup("SOLARTRACKER_STATUS"))
         if node.getGroup("PYROMETER"):
             root.groups.append(node.getGroup("PYROMETER"))
-        if node.getGroup("PY6S_MODEL"):
-            root.groups.append(node.getGroup("PY6S_MODEL"))
+        if node.getGroup("SIXS_MODEL"):
+            root.groups.append(node.getGroup("SIXS_MODEL"))
 
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
@@ -699,8 +699,8 @@ class ProcessL1b_Interp:
                         ancGroup.datasets[ds].datasetToColumns()
             if gp.id == "SOLARTRACKER_STATUS":
                 satmsgGroup = gp
-            if gp.id == "PY6S_MODEL":
-                py6s_grp = gp
+            if gp.id == "SIXS_MODEL":
+                sixS_grp = gp
                 
         # New group scheme combines both radiance sensors in one group
         refGroup = root.addGroup("IRRADIANCE")
@@ -825,16 +825,16 @@ class ProcessL1b_Interp:
             pyrData = newPyrGroup.getDataset("T")
 
 
-        # convert datetime into py6s group
-        py6s_grp = node.getGroup("PY6S_MODEL")
-        if py6s_grp is not None:
-            py6s_grp_new = root.addGroup("PY6S_MODEL")
-            ProcessL1b_Interp.convertDataset(py6s_grp, "py6s_irradiance", py6s_grp_new, "py6s_irradiance")
-            ProcessL1b_Interp.convertDataset(py6s_grp, "direct_ratio", py6s_grp_new, "direct_ratio")
-            ProcessL1b_Interp.convertDataset(py6s_grp, "diffuse_ratio", py6s_grp_new, "diffuse_ratio")
-            ProcessL1b_Interp.convertDataset(py6s_grp, "solar_zenith", py6s_grp_new, "solar_zenith")
+        # convert datetime into sixS group
+        sixS_grp = node.getGroup("SIXS_MODEL")
+        if sixS_grp is not None:
+            sixS_grp_new = root.addGroup("SIXS_MODEL")
+            ProcessL1b_Interp.convertDataset(sixS_grp, "sixS_irradiance", sixS_grp_new, "sixS_irradiance")
+            ProcessL1b_Interp.convertDataset(sixS_grp, "direct_ratio", sixS_grp_new, "direct_ratio")
+            ProcessL1b_Interp.convertDataset(sixS_grp, "diffuse_ratio", sixS_grp_new, "diffuse_ratio")
+            ProcessL1b_Interp.convertDataset(sixS_grp, "solar_zenith", sixS_grp_new, "solar_zenith")
         else:
-            py6s_grp_new = None
+            sixS_grp_new = None
 
 
 
@@ -910,12 +910,12 @@ class ProcessL1b_Interp:
             ProcessL1b_Interp.interpolateData(pyrData, interpData, "T", fileName)
 
         # Py6S group interpolation
-        if py6s_grp_new is not None:
-            py6s_irradiance = py6s_grp_new.getDataset("py6s_irradiance")
-            direct_ratio = py6s_grp_new.getDataset("direct_ratio")
-            diffuse_ratio = py6s_grp_new.getDataset("diffuse_ratio")
-            solar_zenith = py6s_grp_new.getDataset("solar_zenith")
-            ProcessL1b_Interp.interpolateData(py6s_irradiance, interpData, "py6s_irradiance", fileName)
+        if sixS_grp_new is not None:
+            sixS_irradiance = sixS_grp_new.getDataset("sixS_irradiance")
+            direct_ratio = sixS_grp_new.getDataset("direct_ratio")
+            diffuse_ratio = sixS_grp_new.getDataset("diffuse_ratio")
+            solar_zenith = sixS_grp_new.getDataset("solar_zenith")
+            ProcessL1b_Interp.interpolateData(sixS_irradiance, interpData, "sixS_irradiance", fileName)
             ProcessL1b_Interp.interpolateData(direct_ratio, interpData, "direct_ratio", fileName)
             ProcessL1b_Interp.interpolateData(diffuse_ratio, interpData, "diffuse_ratio", fileName)
             ProcessL1b_Interp.interpolateData(solar_zenith, interpData, "solar_zenith", fileName)
@@ -936,11 +936,11 @@ class ProcessL1b_Interp:
         else:
             print('No RAW_UNCERTAINTIES found. Moving on...')
             
-        # # copy py6s_full
-        # py6s_full = node.getGroup('PY6S_MODEL_full')
-        # if py6s_full is not None:
-        #     p6sfullGroup = root.addGroup('PY6S_MODEL_full')
-        #     p6sfullGroup.copy(py6s_full)
+        # # copy sixS_full
+        # sixS_full = node.getGroup('SIXS_MODEL_full')
+        # if sixS_full is not None:
+        #     p6sfullGroup = root.addGroup('SIXS_MODEL_full')
+        #     p6sfullGroup.copy(sixS_full)
           
         # DATETIME is not supported in HDF5; remove from groups that still have it
         for gp in root.groups:

@@ -76,11 +76,11 @@ class ProcessL1b_FRMCal:
                         zip(datetag, timetag)]
             datetime = [pytz.utc.localize(dt) for dt in dtime]  # set to utc localisation
 
-        ## Py6S configuration
+        ## SIXS configuration
         n_mesure = len(datetime)
         nband = len(wvl)
 
-        # Py6S called over 3min bin
+        # SIXS called over 3min bin
         deltat = (datetime[-1]-datetime[0])/len(datetime)
         n_min = int(3*60//deltat.total_seconds())  # nb of mesures over a bin
         n_bin = len(datetime)//n_min  # nb of bin in a cast
@@ -280,33 +280,33 @@ class ProcessL1b_FRMCal:
                         direct[n,i0] = (direct[n,i0-1]+direct[n,i0+1])/2
 
         # if only 1 bin, repeat value for each timestamp over cast duration (<3min)
-        res_py6s = {}
+        res_sixS = {}
         if n_bin == 1:
             logging.warning("n_bin == 1, cast is probably too short")
-            res_py6s['solar_zenith'] = np.repeat(solar_zenith, n_mesure)
-            res_py6s['direct_ratio'] = np.repeat(direct, n_mesure, axis=0)
-            res_py6s['diffuse_ratio'] = np.repeat(diffuse, n_mesure, axis=0)
-            res_py6s['direct_irr'] = np.repeat(irr_direct, n_mesure, axis=0)
-            res_py6s['diffuse_irr'] = np.repeat(irr_diffuse, n_mesure, axis=0)
-            res_py6s['env_irr'] = np.repeat(irr_env, n_mesure, axis=0)
+            res_sixS['solar_zenith'] = np.repeat(solar_zenith, n_mesure)
+            res_sixS['direct_ratio'] = np.repeat(direct, n_mesure, axis=0)
+            res_sixS['diffuse_ratio'] = np.repeat(diffuse, n_mesure, axis=0)
+            res_sixS['direct_irr'] = np.repeat(irr_direct, n_mesure, axis=0)
+            res_sixS['diffuse_irr'] = np.repeat(irr_diffuse, n_mesure, axis=0)
+            res_sixS['env_irr'] = np.repeat(irr_env, n_mesure, axis=0)
         # if more than 1 bin, interpolate fo each timestamp
         else:
             x_bin  = [n*n_min for n in range(n_bin)]
             x_full = np.linspace(0, n_mesure, n_mesure)
             f =  interpolate.interp1d(x_bin, solar_zenith, fill_value='extrapolate')
-            res_py6s['solar_zenith'] = f(x_full)
+            res_sixS['solar_zenith'] = f(x_full)
             f =  interpolate.interp1d(x_bin, direct, fill_value='extrapolate', axis=0)
-            res_py6s['direct_ratio'] = f(x_full)
+            res_sixS['direct_ratio'] = f(x_full)
             f =  interpolate.interp1d(x_bin, diffuse, fill_value='extrapolate', axis=0)
-            res_py6s['diffuse_ratio'] = f(x_full)
+            res_sixS['diffuse_ratio'] = f(x_full)
             f =  interpolate.interp1d(x_bin, irr_direct, fill_value='extrapolate', axis=0)
-            res_py6s['direct_irr'] = f(x_full)
+            res_sixS['direct_irr'] = f(x_full)
             f =  interpolate.interp1d(x_bin, irr_diffuse, fill_value='extrapolate', axis=0)
-            res_py6s['diffuse_irr'] = f(x_full)
+            res_sixS['diffuse_irr'] = f(x_full)
             f =  interpolate.interp1d(x_bin, irr_env, fill_value='extrapolate', axis=0)
-            res_py6s['env_irr'] = f(x_full)
+            res_sixS['env_irr'] = f(x_full)
 
-        return res_py6s
+        return res_sixS
 
     @staticmethod
     def cosine_error_correction(node, sensorstring):
@@ -516,7 +516,7 @@ class ProcessL1b_FRMCal:
                 # Compute avg cosine error
                 avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMCal.cosine_error_correction(node, sensortype)
                 # Irradiance direct and diffuse ratio
-                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
+                res_sixS = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
             else:
                 PANEL = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_PANEL").data)['2'])
                 PANEL = np.pad(PANEL, (0, nband-len(PANEL)), mode='constant')
@@ -541,10 +541,10 @@ class ProcessL1b_FRMCal:
                 data = data * Ct
                 # Cosine correction
                 if sensortype == "ES":
-                    # retrive py6s variables for given wvl
-                    solar_zenith = res_py6s['solar_zenith'][n]
-                    direct_ratio = res_py6s['direct_ratio'][n,ind_raw_data]
-                    diffuse_ratio = res_py6s['diffuse_ratio'][n,ind_raw_data]
+                    # retrive sixS variables for given wvl
+                    solar_zenith = res_sixS['solar_zenith'][n]
+                    direct_ratio = res_sixS['direct_ratio'][n,ind_raw_data]
+                    diffuse_ratio = res_sixS['diffuse_ratio'][n,ind_raw_data]
                     ind_closest_zen = np.argmin(np.abs(zenith_ang-solar_zenith))
                     cos_corr = (1-avg_coserror[:,ind_closest_zen]/100)[ind_nocal==False]
                     Fhcorr = (1-full_hemi_coserror/100)[ind_nocal==False]
@@ -562,36 +562,36 @@ class ProcessL1b_FRMCal:
             rec_arr = np.rec.fromarrays(np.array(filtered_mesure).transpose(), dtype=ds_dt)
             grp.getDataset(sensortype).data = rec_arr
 
-            # Store Py6S results in new group
+            # Store SIXS results in new group
             if sensortype == "ES":
-                solar_zenith = res_py6s['solar_zenith']
-                direct_ratio = res_py6s['direct_ratio'][:,ind_raw_data]
-                diffuse_ratio = res_py6s['diffuse_ratio'][:,ind_raw_data]
-                # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
-                model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_raw_data]/10
+                solar_zenith = res_sixS['solar_zenith']
+                direct_ratio = res_sixS['direct_ratio'][:,ind_raw_data]
+                diffuse_ratio = res_sixS['diffuse_ratio'][:,ind_raw_data]
+                # SIXS model irradiance is in W/m^2/um, scale by 10 to match HCP units
+                model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_raw_data]/10
 
-                py6s_grp = node.addGroup("PY6S_MODEL")
+                sixS_grp = node.addGroup("SIXS_MODEL")
                 for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
                     # copy datetime dataset for interp process
-                    ds = py6s_grp.addDataset(dsname)
+                    ds = sixS_grp.addDataset(dsname)
                     ds.data = grp.getDataset(dsname).data
 
-                ds = py6s_grp.addDataset("py6s_irradiance")
+                ds = sixS_grp.addDataset("sixS_irradiance")
                 ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
                 rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
                 ds.data = rec_arr
 
-                ds = py6s_grp.addDataset("direct_ratio")
+                ds = sixS_grp.addDataset("direct_ratio")
                 ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
                 rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
                 ds.data = rec_arr
 
-                ds = py6s_grp.addDataset("diffuse_ratio")
+                ds = sixS_grp.addDataset("diffuse_ratio")
                 ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
                 rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
                 ds.data = rec_arr
 
-                ds = py6s_grp.addDataset("solar_zenith")
+                ds = sixS_grp.addDataset("solar_zenith")
                 ds.columns["solar_zenith"] = solar_zenith
                 ds.columnsToDataset()
 

@@ -69,7 +69,7 @@ class TriosL1B:
             # Compute avg cosine error (not done for the moment)
             avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMCal.cosine_error_correction(node, sensortype)
             # Irradiance direct and diffuse ratio
-            res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
+            res_sixS = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
         else:
             PANEL = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_PANEL").data)['2'])
             updated_radcal_gain = (np.pi*S12_sl_corr)/(LAMP*PANEL) * (int_time_t0/t1)
@@ -112,10 +112,10 @@ class TriosL1B:
 
             # Cosine correction : commented for the moment
             if sensortype == "ES":
-                # retrive py6s variables for given wvl
-                solar_zenith = res_py6s['solar_zenith'][n]
-                direct_ratio = res_py6s['direct_ratio'][n]
-                diffuse_ratio = res_py6s['diffuse_ratio'][n]
+                # retrive sixS variables for given wvl
+                solar_zenith = res_sixS['solar_zenith'][n]
+                direct_ratio = res_sixS['direct_ratio'][n]
+                diffuse_ratio = res_sixS['diffuse_ratio'][n]
                 ind_closest_zen = np.argmin(np.abs(zenith_ang-solar_zenith))
                 cos_corr = 1-avg_coserror[:,ind_closest_zen]/100
                 Fhcorr = 1-full_hemi_coserror/100
@@ -150,37 +150,37 @@ class TriosL1B:
                           'std_Light': np.array(light_std), 'std_Dark': np.array(back_std),
                           'std_Signal': stdevSignal, 'wvl':str_wvl}  # std_Signal stored as dict to help when interpolating wavebands
 
-        # Store Py6S results in new group
+        # Store SIXS results in new group
         if sensortype == "ES":
-            # retrive py6s variables for given wvl
-            solar_zenith = res_py6s['solar_zenith']
-            direct_ratio = res_py6s['direct_ratio'][:,ind_nocal==False]
-            diffuse_ratio = res_py6s['diffuse_ratio'][:,ind_nocal==False]
-            # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
-            model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_nocal==False]/10
+            # retrive sixS variables for given wvl
+            solar_zenith = res_sixS['solar_zenith']
+            direct_ratio = res_sixS['direct_ratio'][:,ind_nocal==False]
+            diffuse_ratio = res_sixS['diffuse_ratio'][:,ind_nocal==False]
+            # SIXS model irradiance is in W/m^2/um, scale by 10 to match HCP units
+            model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_nocal==False]/10
 
-            py6s_grp = node.addGroup("PY6S_MODEL")
+            sixS_grp = node.addGroup("SIXS_MODEL")
             for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
                 # copy datetime dataset for interp process
-                ds = py6s_grp.addDataset(dsname)
+                ds = sixS_grp.addDataset(dsname)
                 ds.data = grp.getDataset(dsname).data
 
-            ds = py6s_grp.addDataset("py6s_irradiance")
+            ds = sixS_grp.addDataset("sixS_irradiance")
             ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
             rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
             ds.data = rec_arr
 
-            ds = py6s_grp.addDataset("direct_ratio")
+            ds = sixS_grp.addDataset("direct_ratio")
             ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
             rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
             ds.data = rec_arr
 
-            ds = py6s_grp.addDataset("diffuse_ratio")
+            ds = sixS_grp.addDataset("diffuse_ratio")
             ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
             rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
             ds.data = rec_arr
 
-            ds = py6s_grp.addDataset("solar_zenith")
+            ds = sixS_grp.addDataset("solar_zenith")
             ds.columns["solar_zenith"] = solar_zenith
             ds.columnsToDataset()
 
@@ -403,31 +403,31 @@ class TriosL1B:
         if ConfigFile.settings["bL1bCal"] == 1 or ConfigFile.settings["bL1bCal"] == 2:
             # Calculate 6S model
             # Run elsewhere for FRM-regime
-            print('Running Py6S')
+            print('Running sixS')
 
             sensortype = "ES"
             # Irradiance direct and diffuse ratio
-            res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
+            res_sixS = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
 
-            # Store Py6S results in new group
+            # Store sixS results in new group
             grp = node.getGroup(sensortype)
-            solar_zenith = res_py6s['solar_zenith']
+            solar_zenith = res_sixS['solar_zenith']
             # ProcessL1b_FRMCal.get_direct_irradiance_ratio uses Es bands to run 6S and then works around bands that
             #  don't have values from Tartu for full FRM. Here, use all the Es bands.
-            direct_ratio = res_py6s['direct_ratio']
-            diffuse_ratio = res_py6s['diffuse_ratio']
-            # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
-            # model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_raw_data]/10
-            model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])/10
-            # model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_nocal==False]/10
+            direct_ratio = res_sixS['direct_ratio']
+            diffuse_ratio = res_sixS['diffuse_ratio']
+            # sixS model irradiance is in W/m^2/um, scale by 10 to match HCP units
+            # model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_raw_data]/10
+            model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])/10
+            # model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_nocal==False]/10
 
-            py6s_grp = node.addGroup("PY6S_MODEL")
+            sixS_grp = node.addGroup("SIXS_MODEL")
             for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
                 # copy datetime dataset for interp process
-                ds = py6s_grp.addDataset(dsname)
+                ds = sixS_grp.addDataset(dsname)
                 ds.data = grp.getDataset(dsname).data
 
-            ds = py6s_grp.addDataset("py6s_irradiance")
+            ds = sixS_grp.addDataset("sixS_irradiance")
 
             irr_grp = node.getGroup('ES_L1AQC')
             str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
@@ -435,17 +435,17 @@ class TriosL1B:
             rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
             ds.data = rec_arr
 
-            ds = py6s_grp.addDataset("direct_ratio")
+            ds = sixS_grp.addDataset("direct_ratio")
             ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
             rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
             ds.data = rec_arr
 
-            ds = py6s_grp.addDataset("diffuse_ratio")
+            ds = sixS_grp.addDataset("diffuse_ratio")
             ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
             rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
             ds.data = rec_arr
 
-            ds = py6s_grp.addDataset("solar_zenith")
+            ds = sixS_grp.addDataset("solar_zenith")
             ds.columns["solar_zenith"] = solar_zenith
             ds.columnsToDataset()
         

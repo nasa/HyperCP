@@ -1,4 +1,4 @@
-name: hypercp
+name: hypercp_new
 channels:
   - conda-forge
   - ocdb
