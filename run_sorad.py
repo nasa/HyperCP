@@ -73,10 +73,11 @@ if os.path.isdir(PATH_OUTPUT) is False:
     os.mkdir(PATH_OUTPUT)
 
 # Set these up in advance in the GUI. One config file for each REGIME, edited for each VERSION.
-if L1B_REGIME == "":
-    PATH_CFG = os.path.join(PATH_HCP, 'Config', f'{CRUISE}.cfg')
-else:
-    PATH_CFG = os.path.join(PATH_HCP, 'Config', f'{CRUISE}_{L1B_REGIME}.cfg')
+#if L1B_REGIME == "":
+ #   PATH_CFG = os.path.join(PATH_HCP, 'Config', f'{CRUISE}.cfg')
+#else:
+ #   PATH_CFG = os.path.join(PATH_HCP, 'Config', f'{CRUISE}_{L1B_REGIME}.cfg')
+PATH_CFG = os.path.join(PATH_HCP, 'Config', 'sample_TRIOS_sorad.cfg')
 
 # Tip: When running multiple FRM-pathways, move the RAW directory to where the input data directory needs to be.
 ################################################# END CUSTOM SET UP #################################################
