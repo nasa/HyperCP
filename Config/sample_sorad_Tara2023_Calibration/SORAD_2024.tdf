@@ -1,0 +1,57 @@
+#########################################################################################
+#    Telemetry Definition File:
+#
+#    Type: So-Rad (Solar-tracking Radiometry Platform) 
+#    Description: So-Rad telemetry metadata structured in tdf-like format for Hyper-CP 
+#    Date: September, 2024
+#    User: Plymouth Marine Laboratory
+#    Author/email: Tom Jordan, tjor@pml.ac.uk
+#    Version: 1.0
+#    Format: sorad, time, lat, lon, sample_uuid, platform_id, platform_uuid, 
+#            gps_speed, tilt_avg, tilt_std, rel_view_az	
+#    Notes: separator ', ' (comma-space) is used beteween fields
+# 
+#########################################################################################
+
+# Header
+VLF_INSTRUMENT sorad '' 5 AS 0 NONE
+
+# Time in ISO 8601:2004 format
+FIELD NONE ',' 1 AS 0 DELIMITER 
+ISO8601 NONE '' V AS 0 COUNT
+
+# Lat as float
+FIELD NONE ',' 1 AS 0 DELIMITER
+LAT SORAD 'degrees' V AF 0 COUNT
+
+# Lon as float
+FIELD NONE ',' 1 AS 0 DELIMITER
+LON SORAD 'degress' V AF 0 COUNT
+
+# Sample UUID as string
+FIELD NONE ',' 1 AS 0 DELIMITER
+SAMPLE UUID '' V AS 0 COUNT
+
+# Sample ID as string
+FIELD NONE ', ' 1 AS 0 DELIMITER
+SAMPLE UUID '' V AS 0 COUNT
+
+# Platform UUID as string
+FIELD NONE ',' 1 AS 0 DELIMITER
+PLATFORM UUID '' V AS 0 COUNT
+
+# GPS speed as float
+FIELD NONE ',' 1 AS 0 DELIMITER
+GPS SPEED 'meters/second' V AF 0 COUNT
+
+# Tilt average as float
+FIELD NONE ',' 1 AS 0 DELIMITER
+TILT 'degrees' V AF 0 COUNT
+
+# Tilt standard-dev as float
+FIELD NONE ',' 1 AS 0 DELIMITER
+TILT STD 'degrees' V AF 0 COUNT
+
+# Relative azimuth as float
+FIELD NONE ',' 1 AF 0 DELIMITER
+AZIMUTH RELATIVE 'degrees' V AF 0 COUNT
