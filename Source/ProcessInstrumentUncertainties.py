@@ -887,7 +887,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
     def alphafunc(S1, S12):
         t1 = [Decimal(S1[i]) - Decimal(S12[i]) for i in range(len(S1))]
         t2 = [pow(Decimal(S12[i]), 2) for i in range(len(S12))]
-        return np.asarray([float(t1[i]/t2[i]) for i in range(len(t1))])
+        # I added a conditional to check if any values in S12 are zero. One value of S12 was 0 which caused issue #253
+        return np.asarray([float(t1[i]/t2[i]) if t2[i] != 0 else 0 for i in range(len(t1))])
 
     @staticmethod
     def dark_Substitution(light, dark):
