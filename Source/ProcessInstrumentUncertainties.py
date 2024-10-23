@@ -87,6 +87,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             if InstrumentType.lower() == "trios":
                 # RawData is the full group - this is used to get a few attributes only
                 # rawSlice is the ensemble 'slice' of raw data currently to be evaluated
+                #  todo: check the shape and that there are no nans or infs
                 output[sensortype] = self.lightDarkStats(
                     copy.deepcopy(rawData[sensortype]), copy.deepcopy(rawSlice[sensortype]), sensortype
                 )  # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
@@ -100,6 +101,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 # std_Light: (array 1 x number of wavebands)
                 # std_Dark: (array 1 x number of wavebands)
                 # std_Signal: OrdDict by wavebands: sqrt( (std(Light)^2 + std(Dark)^2)/ave(Light)^2 )
+                #  todo: check the shape and that there are no nans or infs
                 output[sensortype] = self.lightDarkStats(
                     [rawData[sensortype]['LIGHT'],
                     rawData[sensortype]['DARK']],
@@ -223,15 +225,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ones = np.ones_like(cCal['ES'])  # array of ones with correct shape.
 
         means = [stats['ES']['ave_Light'], stats['ES']['ave_Dark'],
-                       stats['LI']['ave_Light'], stats['LI']['ave_Dark'],
-                       stats['LT']['ave_Light'], stats['LT']['ave_Dark'],
-                       cCoef['ES'], cCoef['LI'], cCoef['LT'],
-                       ones, ones, ones,
-                       ones, ones, ones,
-                       ones, ones, ones,
-                       ones, ones, ones,
-                       ones, ones, ones
-                       ]
+                 stats['LI']['ave_Light'], stats['LI']['ave_Dark'],
+                 stats['LT']['ave_Light'], stats['LT']['ave_Dark'],
+                 cCoef['ES'], cCoef['LI'], cCoef['LT'],
+                 ones, ones, ones,
+                 ones, ones, ones,
+                 ones, ones, ones,
+                 ones, ones, ones,
+                 ones, ones, ones
+                 ]
 
         uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
                          stats['LI']['std_Light'], stats['LI']['std_Dark'],
@@ -1976,7 +1978,7 @@ class Trios(BaseInstrument):
 
             # Data conversion
             mesure = raw_data/65535.0
-
+            # todo: issue #253 there is a nan in the raw data for the 4th ensemble! implement in L1AQC.
             back_mesure = np.array([B0 + B1*(int_time[n]/int_time_t0) for n in range(nmes)])
             back_corrected_mesure = mesure - back_mesure
             std_light = np.std(back_corrected_mesure, axis=0)/nmes
