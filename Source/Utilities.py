@@ -1008,9 +1008,9 @@ class Utilities:
         msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
-        # internal switch to trigger the reset of CAL & BACK 
+        # internal switch to trigger the reset of CAL & BACK
         # dataset that we have to delete to avoid conflict during filtering
-        do_reset = False 
+        do_reset = False
 
         if level != 'L1AQC':
             if group.id == "ANCILLARY":
@@ -1090,7 +1090,7 @@ class Utilities:
             for ds in group.datasets:
                 group.datasets[ds].datasetToColumns()
 
-        msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
+        msg = f'   Length of dataset after removal {originalLength-finalCount} long: {(100*finalCount/originalLength):.1f}% removed'
         print(msg)
         Utilities.writeLogFile(msg)
         return finalCount/originalLength
