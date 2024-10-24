@@ -188,6 +188,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         """
 
         :param node: HDFRoot containing all L1BQC data
+        :param uncGrp: HDFGroup containing raw uncertainties
         :param stats: output of PIU.py BaseInstrument.generateSensorStats
 
         :return: dictionary of instrument uncertainties [Es uncertainty, Li uncertainty, Lt uncertainty]
@@ -511,7 +512,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                             cPol['LI'], cPol['LI']]
 
         lwAbsUnc = Prop_L2_CB.Propagate_Lw_HYPER(lw_means, lw_uncertainties)
-        lw_vals = Prop_L2_CB.Lw(*lw_means)
 
         rrs_means = [lt, rho, li, es,
                      ones, ones, ones,
@@ -535,7 +535,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                              ]
 
         rrsAbsUnc = Prop_L2_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
-        rrs_vals = Prop_L2_CB.RRS(*rrs_means)
 
         # Plot Class based L2 uncertainties
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
@@ -576,25 +575,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             waveSubset,
             return_as_dict=False
         )
-        # lw_vals = self.interp_common_wvls(
-        #     lw_vals,
-        #     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[ind_rad_wvl],
-        #     waveSubset,
-        #     return_as_dict=False
-        # )
         rrsAbsUnc = self.interp_common_wvls(
             rrsAbsUnc,
             np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[ind_rad_wvl],
             waveSubset,
             return_as_dict=False
         )
-        # TODO: check where this was used before and if not delete
-        # rrs_vals = self.interp_common_wvls(
-        #     rrs_vals,
-        #     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[ind_rad_wvl],
-        #     waveSubset,
-        #     return_as_dict=False
-        # )
 
         ## Band Convolution of Uncertainties
         # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
@@ -1333,6 +1319,7 @@ class HyperOCR(BaseInstrument):
             mZ_unc = mZ_unc[ind_raw_wvl, :]
 
             sample_mZ = cm.generate_sample(mDraws, mZ, mZ_unc, "rand")
+            # pythonic error here, code does not think np.array and array.pyi are the same things
 
             Ct = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data
                                          )[f'{sensortype}_TEMPERATURE_COEFFICIENTS'][1:].tolist())
@@ -1384,12 +1371,12 @@ class HyperOCR(BaseInstrument):
             S12 = self.S12func(k, S1, S2)
             sample_S12 = prop.run_samples(self.S12func, [sample_k, sample_S1, sample_S2])
 
-            if self.sl_method.upper() == 'ZONG':
+            if self.sl_method.upper() == 'ZONG':  # zong is the default straylight correction
                 sample_n_IB = self.gen_n_IB_sample(mDraws)
                 sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
                                                  [sample_mZ, sample_n_IB])
                 sample_S12_sl_corr = prop.run_samples(self.Zong_SL_correction, [sample_S12, sample_C_zong])
-            else:  # slaper
+            else:  # slaper correction is used
                 sample_S12_sl_corr = self.get_Slaper_Sl_unc(
                     S12, sample_S12, mZ, sample_mZ, n_iter, sample_n_iter, prop, mDraws
                 )
