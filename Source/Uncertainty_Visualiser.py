@@ -407,7 +407,7 @@ class UncertaintyEngine(ABC):
     def getpct(val1, val2):
         pct = []
         for i in range(len(val1)):
-            if val1[i] != 0:  # ignore wavelengths where we do not have an output
+            if val2[i] != 0:  # ignore wavelengths where we do not have an output
                 pct.append(val1[i]/val2[i])
             else:
                 pct.append(0)  # put zero there instead of np.nan, it will be easy to avoid in plotting

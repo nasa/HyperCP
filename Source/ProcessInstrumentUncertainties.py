@@ -92,8 +92,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 #  todo: check the shape and that there are no nans or infs
                 output[sensortype] = self.lightDarkStats(
                     copy.deepcopy(rawData[sensortype]), copy.deepcopy(rawSlice[sensortype]), sensortype
-                )  # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
-            elif InstrumentType.lower() == "seabird":
+                )
+                # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
+           elif InstrumentType.lower() == "seabird":
                 # rawData here is the group, passed along only for the purpose of
                 # confirming "FrameTypes", i.e., ShutterLight or ShutterDark. Calculations
                 # are performed on the Slice.
@@ -116,7 +117,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     rawSlice[sensortype]['DARK']],
                     sensortype
                 )
-            if not output[sensortype]:
+           if not output[sensortype]:
                 msg = "Could not generate statistics for the ensemble"
                 print(msg)
                 return False
@@ -1266,8 +1267,8 @@ class HyperOCR(BaseInstrument):
                 std_Light.append(np.std(lightData[k])/np.sqrt(N))
                 std_Dark.append(np.std(darkData[k])/np.sqrt(Nd) )  # sigma here is essentially sigma**2 so N must sqrt
             else:  # few scans, use different statistics
-                std_Light.append((N-1/N-3)*(lightData[k] / np.sqrt(N))**2)
-                std_Dark.append((Nd-1/Nd-3)*(darkData[k] / np.sqrt(Nd))**2)
+                std_Light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
+                std_Dark.append(np.sqrt(((Nd-1)/(Nd-3))*(np.std(darkData[k]) / np.sqrt(Nd))**2))
 
             ave_Light.append(np.average(lightData[k]))
             ave_Dark.append(np.average(darkData[k]))
