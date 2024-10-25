@@ -84,17 +84,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         output = {}  # used tp store standard deviations and averages as a function return for generateSensorStats
         types = ['ES', 'LI', 'LT']
         for sensortype in types:
-            # filter nans
-            for wvl in rawSlice[sensortype]['data']:  # iterate over wavelengths
-                if any(np.isnan(rawSlice[sensortype]['data'][wvl])):  # if we encounter any NaN's
-                    for msk in np.where(np.isnan(rawSlice[sensortype]['data'][wvl]))[0]:  # mask may be multiple indexes
-                        for wl in rawSlice[sensortype]['data']:  # strip the scan
-                            rawSlice[sensortype]['data'][wl].pop(msk)  # remove the scan if nans are found anywhere
             # todo: test efficiency of nan mask and optimise if necessary.
             if InstrumentType.lower() == "trios":
+                # filter nans
+                self.apply_NaN_Mask(rawSlice[sensortype])
                 # RawData is the full group - this is used to get a few attributes only
                 # rawSlice is the ensemble 'slice' of raw data currently to be evaluated
-                #  todo: check the shape and that there are no nans or infs
                 output[sensortype] = self.lightDarkStats(
                     copy.deepcopy(rawData[sensortype]), copy.deepcopy(rawSlice[sensortype]), sensortype
                 )  # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
@@ -108,7 +103,9 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 # std_Light: (array 1 x number of wavebands)
                 # std_Dark: (array 1 x number of wavebands)
                 # std_Signal: OrdDict by wavebands: sqrt( (std(Light)^2 + std(Dark)^2)/ave(Light)^2 )
-                #  todo: check the shape and that there are no nans or infs
+
+                # filter nans
+                self.apply_NaN_Mask(rawSlice[sensortype]['data'])
                 output[sensortype] = self.lightDarkStats(
                     [rawData[sensortype]['LIGHT'],
                     rawData[sensortype]['DARK']],
@@ -754,6 +751,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             return Band_Convolved_UNC
         else:
             return {}
+
+    @staticmethod
+    def apply_NaN_Mask(rawSlice):
+        for wvl in rawSlice:  # iterate over wavelengths
+            if any(np.isnan(rawSlice[wvl])):  # if we encounter any NaN's
+                for msk in np.where(np.isnan(rawSlice[wvl]))[0]:  # mask may be multiple indexes
+                    for wl in rawSlice:  # strip the scan
+                        rawSlice[wl].pop(msk)  # remove the scan if nans are found anywhere
 
     @staticmethod
     def interp_common_wvls(columns, waves, newWaveBands, return_as_dict: bool =False) -> Union[np.array, OrderedDict]:
