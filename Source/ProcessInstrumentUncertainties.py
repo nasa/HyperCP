@@ -84,13 +84,17 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         output = {}  # used tp store standard deviations and averages as a function return for generateSensorStats
         types = ['ES', 'LI', 'LT']
         for sensortype in types:
-            if InstrumentType.lower() == "trios":
+           if InstrumentType.lower() == "trios":
+                # filter nans
+                self.apply_NaN_Mask(rawSlice[sensortype]['data'])
                 # RawData is the full group - this is used to get a few attributes only
                 # rawSlice is the ensemble 'slice' of raw data currently to be evaluated
+                #  todo: check the shape and that there are no nans or infs
                 output[sensortype] = self.lightDarkStats(
                     copy.deepcopy(rawData[sensortype]), copy.deepcopy(rawSlice[sensortype]), sensortype
-                )  # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
-            elif InstrumentType.lower() == "seabird":
+                )
+                # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
+           elif InstrumentType.lower() == "seabird":
                 # rawData here is the group, passed along only for the purpose of
                 # confirming "FrameTypes", i.e., ShutterLight or ShutterDark. Calculations
                 # are performed on the Slice.
@@ -100,6 +104,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 # std_Light: (array 1 x number of wavebands)
                 # std_Dark: (array 1 x number of wavebands)
                 # std_Signal: OrdDict by wavebands: sqrt( (std(Light)^2 + std(Dark)^2)/ave(Light)^2 )
+
+                # filter nans
+                # this should work because of the interpolation, however I cannot test this as I do not have seabird
+                # data with NaNs
+                # self.apply_NaN_Mask(rawSlice[sensortype]['LIGHT'])
+                # self.apply_NaN_Mask(rawSlice[sensortype]['DARK'])
                 output[sensortype] = self.lightDarkStats(
                     [rawData[sensortype]['LIGHT'],
                     rawData[sensortype]['DARK']],
@@ -107,7 +117,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     rawSlice[sensortype]['DARK']],
                     sensortype
                 )
-            if not output[sensortype]:
+           if not output[sensortype]:
                 msg = "Could not generate statistics for the ensemble"
                 print(msg)
                 return False
@@ -186,6 +196,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         """
 
         :param node: HDFRoot containing all L1BQC data
+        :param uncGrp: HDFGroup containing raw uncertainties
         :param stats: output of PIU.py BaseInstrument.generateSensorStats
 
         :return: dictionary of instrument uncertainties [Es uncertainty, Li uncertainty, Lt uncertainty]
@@ -223,15 +234,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ones = np.ones_like(cCal['ES'])  # array of ones with correct shape.
 
         means = [stats['ES']['ave_Light'], stats['ES']['ave_Dark'],
-                       stats['LI']['ave_Light'], stats['LI']['ave_Dark'],
-                       stats['LT']['ave_Light'], stats['LT']['ave_Dark'],
-                       cCoef['ES'], cCoef['LI'], cCoef['LT'],
-                       ones, ones, ones,
-                       ones, ones, ones,
-                       ones, ones, ones,
-                       ones, ones, ones,
-                       ones, ones, ones
-                       ]
+                 stats['LI']['ave_Light'], stats['LI']['ave_Dark'],
+                 stats['LT']['ave_Light'], stats['LT']['ave_Dark'],
+                 cCoef['ES'], cCoef['LI'], cCoef['LT'],
+                 ones, ones, ones,
+                 ones, ones, ones,
+                 ones, ones, ones,
+                 ones, ones, ones,
+                 ones, ones, ones
+                 ]
 
         uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
                          stats['LI']['std_Light'], stats['LI']['std_Dark'],
@@ -509,7 +520,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                             cPol['LI'], cPol['LI']]
 
         lwAbsUnc = Prop_L2_CB.Propagate_Lw_HYPER(lw_means, lw_uncertainties)
-        lw_vals = Prop_L2_CB.Lw(*lw_means)
 
         rrs_means = [lt, rho, li, es,
                      ones, ones, ones,
@@ -533,7 +543,6 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                              ]
 
         rrsAbsUnc = Prop_L2_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
-        rrs_vals = Prop_L2_CB.RRS(*rrs_means)
 
         # Plot Class based L2 uncertainties
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
@@ -574,25 +583,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             waveSubset,
             return_as_dict=False
         )
-        # lw_vals = self.interp_common_wvls(
-        #     lw_vals,
-        #     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[ind_rad_wvl],
-        #     waveSubset,
-        #     return_as_dict=False
-        # )
         rrsAbsUnc = self.interp_common_wvls(
             rrsAbsUnc,
             np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[ind_rad_wvl],
             waveSubset,
             return_as_dict=False
         )
-        # TODO: check where this was used before and if not delete
-        # rrs_vals = self.interp_common_wvls(
-        #     rrs_vals,
-        #     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[ind_rad_wvl],
-        #     waveSubset,
-        #     return_as_dict=False
-        # )
 
         ## Band Convolution of Uncertainties
         # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
@@ -759,6 +755,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             return Band_Convolved_UNC
         else:
             return {}
+
+    @staticmethod
+    def apply_NaN_Mask(rawSlice):
+        for wvl in rawSlice:  # iterate over wavelengths
+            if any(np.isnan(rawSlice[wvl])):  # if we encounter any NaN's
+                for msk in np.where(np.isnan(rawSlice[wvl]))[0]:  # mask may be multiple indexes
+                    for wl in rawSlice:  # strip the scan
+                        rawSlice[wl].pop(msk)  # remove the scan if nans are found anywhere
 
     @staticmethod
     def interp_common_wvls(columns, waves, newWaveBands, return_as_dict: bool =False) -> Union[np.array, OrderedDict]:
@@ -1263,8 +1267,8 @@ class HyperOCR(BaseInstrument):
                 std_Light.append(np.std(lightData[k])/np.sqrt(N))
                 std_Dark.append(np.std(darkData[k])/np.sqrt(Nd) )  # sigma here is essentially sigma**2 so N must sqrt
             else:  # few scans, use different statistics
-                std_Light.append((N-1/N-3)*(lightData[k] / np.sqrt(N))**2)
-                std_Dark.append((Nd-1/Nd-3)*(darkData[k] / np.sqrt(Nd))**2)
+                std_Light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
+                std_Dark.append(np.sqrt(((Nd-1)/(Nd-3))*(np.std(darkData[k]) / np.sqrt(Nd))**2))
 
             ave_Light.append(np.average(lightData[k]))
             ave_Dark.append(np.average(darkData[k]))
@@ -1331,6 +1335,7 @@ class HyperOCR(BaseInstrument):
             mZ_unc = mZ_unc[ind_raw_wvl, :]
 
             sample_mZ = cm.generate_sample(mDraws, mZ, mZ_unc, "rand")
+            # pythonic error here, code does not think np.array and array.pyi are the same things
 
             Ct = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data
                                          )[f'{sensortype}_TEMPERATURE_COEFFICIENTS'][1:].tolist())
@@ -1382,12 +1387,12 @@ class HyperOCR(BaseInstrument):
             S12 = self.S12func(k, S1, S2)
             sample_S12 = prop.run_samples(self.S12func, [sample_k, sample_S1, sample_S2])
 
-            if self.sl_method.upper() == 'ZONG':
+            if self.sl_method.upper() == 'ZONG':  # zong is the default straylight correction
                 sample_n_IB = self.gen_n_IB_sample(mDraws)
                 sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
                                                  [sample_mZ, sample_n_IB])
                 sample_S12_sl_corr = prop.run_samples(self.Zong_SL_correction, [sample_S12, sample_C_zong])
-            else:  # slaper
+            else:  # slaper correction is used
                 sample_S12_sl_corr = self.get_Slaper_Sl_unc(
                     S12, sample_S12, mZ, sample_mZ, n_iter, sample_n_iter, prop, mDraws
                 )
@@ -1976,7 +1981,7 @@ class Trios(BaseInstrument):
 
             # Data conversion
             mesure = raw_data/65535.0
-
+            # todo: issue #253 there is a nan in the raw data for the 4th ensemble! implement in L1AQC.
             back_mesure = np.array([B0 + B1*(int_time[n]/int_time_t0) for n in range(nmes)])
             back_corrected_mesure = mesure - back_mesure
             std_light = np.std(back_corrected_mesure, axis=0)/nmes

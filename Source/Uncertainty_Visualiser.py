@@ -150,8 +150,13 @@ class UncertaintyGUI(ABC):
                 #                       loc='best')
                 # plt.text(12, 3.4, 'Ancillary Data', size=8)
 
-                ax.pie([self._engine.getpct(results[product][key], values[product])[indx] for key in labels[product]],
-                       labels=labels[product], autopct='%1.1f%%')
+                try:
+                    ax.pie([self._engine.getpct(results[product][key], values[product])[indx] for key in labels[product]],
+                           labels=labels[product], autopct='%1.1f%%')
+                except ValueError:
+                    # todo discuss a better solution to issue #262 with programming team
+                    print("all zeros encountered, cannot plot pie chart")
+
                 plt.title(f"{product} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
                 fp = os.path.join(self.plot_folder,f"pie_{product}_{cast}_{wvl_at_indx}.png")
                 plt.savefig(fp)
@@ -401,13 +406,18 @@ class UncertaintyEngine(ABC):
             if not cumulative:
                 uLw = np.zeros(np.asarray(lw_uncs).shape)  # reset uncertaitnies
 
+        # screen negative values (they can result in negative relative uncertainties)
+        for s in ['Lw', 'Rrs']:
+            for i, val in enumerate(vals[s]):
+                if val < 0:
+                    vals[s][i] = 0
         return output, vals
 
     @staticmethod
     def getpct(val1, val2):
         pct = []
         for i in range(len(val1)):
-            if val1[i] != 0:  # ignore wavelengths where we do not have an output
+            if val2[i] != 0:  # ignore wavelengths where we do not have an output
                 pct.append(val1[i]/val2[i])
             else:
                 pct.append(0)  # put zero there instead of np.nan, it will be easy to avoid in plotting
