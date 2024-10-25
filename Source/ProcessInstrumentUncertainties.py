@@ -84,6 +84,13 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         output = {}  # used tp store standard deviations and averages as a function return for generateSensorStats
         types = ['ES', 'LI', 'LT']
         for sensortype in types:
+            # filter nans
+            for wvl in rawSlice[sensortype]['data']:  # iterate over wavelengths
+                if any(np.isnan(rawSlice[sensortype]['data'][wvl])):  # if we encounter any NaN's
+                    for msk in np.where(np.isnan(rawSlice[sensortype]['data'][wvl]))[0]:  # mask may be multiple indexes
+                        for wl in rawSlice[sensortype]['data']:  # strip the scan
+                            rawSlice[sensortype]['data'][wl].pop(msk)  # remove the scan if nans are found anywhere
+            # todo: test efficiency of nan mask and optimise if necessary.
             if InstrumentType.lower() == "trios":
                 # RawData is the full group - this is used to get a few attributes only
                 # rawSlice is the ensemble 'slice' of raw data currently to be evaluated
