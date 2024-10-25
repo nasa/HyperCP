@@ -84,12 +84,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         output = {}  # used tp store standard deviations and averages as a function return for generateSensorStats
         types = ['ES', 'LI', 'LT']
         for sensortype in types:
-            # todo: test efficiency of nan mask and optimise if necessary.
-            if InstrumentType.lower() == "trios":
+           if InstrumentType.lower() == "trios":
                 # filter nans
                 self.apply_NaN_Mask(rawSlice[sensortype]['data'])
                 # RawData is the full group - this is used to get a few attributes only
                 # rawSlice is the ensemble 'slice' of raw data currently to be evaluated
+                #  todo: check the shape and that there are no nans or infs
                 output[sensortype] = self.lightDarkStats(
                     copy.deepcopy(rawData[sensortype]), copy.deepcopy(rawSlice[sensortype]), sensortype
                 )  # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
