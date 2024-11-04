@@ -12,7 +12,7 @@ from Source.RawFileReader import RawFileReader
 from Source.ConfigFile import ConfigFile
 
 
-class ProcessL1a:
+class ProcessL1aSoRad:
     '''Process L1A'''
     @staticmethod
     def processL1a(fp, calibrationMap):
@@ -32,7 +32,6 @@ class ProcessL1a:
         root.attributes["LT_UNITS"] = "count"
         root.attributes["ES_UNITS"] = "count"
         root.attributes["SATPYR_UNITS"] = "count"
-        root.attributes["RAW_FILE_NAME"] = fileName
         root.attributes["PROCESSING_LEVEL"] = "1a"
 
         now = dt.datetime.now()
@@ -51,7 +50,7 @@ class ProcessL1a:
             gp = HDFGroup()
             gp.id = cf.instrumentType
             contextMap[cf.id] = gp
-
+        breakpoint()
         # print("contextMap:", list(contextMap.keys()))
         # print("calibrationMap:", list(calibrationMap.keys()))
         print('Reading in raw binary data may take a moment.')

@@ -10,6 +10,7 @@ from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
 from Source.ProcessL1a import ProcessL1a
 from Source.TriosL1A import TriosL1A
+from Source.ProcessL1aSoRad import ProcessL1aSoRad
 from Source.AncillaryReader import AncillaryReader
 from Source.ProcessL1aqc import ProcessL1aqc
 from Source.CalibrationFileReader import CalibrationFileReader
@@ -221,7 +222,7 @@ class Controller:
                     del calibrationMap[key]
             else:
                 del calibrationMap[key]
-                
+ 
         return calibrationMap
 
     @staticmethod
@@ -252,9 +253,8 @@ class Controller:
                     cf.measMode = "Surface"
                     cf.frameType = "Combined"
                     calibrationMap[key] = cf
-
             if ".tdf" in key:
-                with open(os.path.join(calPath, key), 'rb') as f:                    
+                with open(os.path.join(calPath, key), 'rb') as f:             
                     cf.read(f)
                     #print("id:", cf.id)
                     calibrationMap[key] = cf
@@ -294,9 +294,10 @@ class Controller:
             # Multiple collections may be present, each with a file per sensor, root will only be the last collection
             root, outFFPs = TriosL1A.triosL1A(inFilePath, outFilePath)
         else:
-            root = ProcessL1a.processL1a(inFilePath, calibrationMap)
+            # root = ProcessL1a.processL1a(inFilePath, calibrationMap)
+            root = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
             outFFPs = None
-
+       
         # Write output file
         # TriOS L1A are written out in TriosL1A.py
         if not flag_Trios:
@@ -556,12 +557,13 @@ class Controller:
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
 
         testExts = ['.raw','.mlb','.hdf','.txt']
-
+        
         if extension.lower() not in testExts:
+
             msg = "Unrecognized file type. Aborting."
             print(msg)
             Utilities.writeLogFile(msg)
-            return False#, None
+            return False #, None
 
         # If this is an HDF, assume it is not RAW, drop the level from fileName
         if extension=='.hdf':
