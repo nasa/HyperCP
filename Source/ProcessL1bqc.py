@@ -719,7 +719,9 @@ class ProcessL1bqc:
         gp.attributes["HEADING_UNITS"] = "degrees"
         gp.attributes["HUMIDITY_UNITS"] = "percent"
         gp.attributes["LATITUDE_UNITS"] = "dec. deg. N"
+        del node.attributes["LATITUDE_Units"]
         gp.attributes["LONGITUDE_UNITS"] = "dec. deg. E"
+        del node.attributes["LONGITUDE_Units"]
         gp.attributes["MET_FLAGS"] = "1: 6S Cloud, 2: Ruddick Cloud, 3: Es, 4: Dark,s 5: Rain"
         gp.attributes["PITCH_UNITS"] = "degrees"
         gp.attributes["POINTING_UNITS"] = "degrees"
