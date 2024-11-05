@@ -319,7 +319,7 @@ class ProcessL1aqc:
                 sasAzAnc = ancData.columns["SENSOR_AZ"][0]
 
             if not ConfigFile.settings["bL1aqcSolarTracker"] and not relAzAnc and not sasAzAnc:
-                msg = 'Required ancillary sensor geometries missing. Abort.'
+                msg = 'Required ancillary sensor geometries missing or incorrect ancillary file used. Abort.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
