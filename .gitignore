@@ -75,7 +75,7 @@ run_*.py
 
 # copernicus url and keys
 .cdsapirc
-# .ecmwf_api_config
+.ecmwf_api_config
 
 #ignore ".idea/" if working with pycharm:
 .idea/
