@@ -1,9 +1,9 @@
 # CDS: obtain url and key at: https://cds.climate.copernicus.eu/api-how-to
 [cds]
 cds_url: https://cds.climate.copernicus.eu/api/v2
-cds_key: 
+cds_key: 323944:12965887-9754-415d-a480-7d019087e914
 
 # ADS: obtain url and key at: https://ads.atmosphere.copernicus.eu/api-how-to
 [ads]
 ads_url: https://ads.atmosphere.copernicus.eu/api/v2
-ads_key: 
+ads_key: 20878:fb2e2880-af54-43e7-ad41-dc7204ce2f7a
