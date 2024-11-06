@@ -30,7 +30,7 @@ from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
 
-VERSION = "1.2.7"
+VERSION = "1.2.8"
 
 
 class Window(QtWidgets.QWidget):
@@ -440,14 +440,16 @@ class Window(QtWidgets.QWidget):
 
         if lvl == "L1A":
             inLevel = "raw"
-        if lvl == "L1AQC":
+        elif lvl == "L1AQC":
             inLevel = "L1A"
-        if lvl == "L1B":
+        elif lvl == "L1B":
             inLevel = "L1AQC"
-        if lvl == "L1BQC":
+        elif lvl == "L1BQC":
             inLevel = "L1B"
-        if lvl == "L2":
+        elif lvl == "L2":
             inLevel = "L1BQC"
+        else:
+            inLevel = None
 
         # Check for subdirectory associated with level chosen
         subInputDir = os.path.join(self.inputDirectory, inLevel)

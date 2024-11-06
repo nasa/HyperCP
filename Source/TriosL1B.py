@@ -61,7 +61,11 @@ class TriosL1B:
         S12 = (1+k)*S1 - k*S2
         # S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter) # slapper
         S12_sl_corr = np.matmul(C_zong, S12) # Zong SL corr
-        alpha = ((S1-S12)/(S12**2)).tolist()
+        # alpha = ((S1-S12)/(S12**2)).tolist()
+        # alpha reworked so any divide by 0s can be handled with a condition statement
+        f1 = np.array(S1 - S12)
+        f2 = np.array(np.power(S12, 2))
+        alpha = np.asarray([float(f1[i] / f2[i]) if f2[i] != 0 else 0 for i in range(len(f1))]).tolist()  # stops -inf if S12**2 = 0
 
         # Updated calibration gain
         if sensortype == "ES":

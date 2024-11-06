@@ -319,7 +319,7 @@ class ProcessL1aqc:
                 sasAzAnc = ancData.columns["SENSOR_AZ"][0]
 
             if not ConfigFile.settings["bL1aqcSolarTracker"] and not relAzAnc and not sasAzAnc:
-                msg = 'Required ancillary sensor geometries missing. Abort.'
+                msg = 'Required ancillary sensor geometries missing or incorrect ancillary file used. Abort.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
@@ -943,9 +943,9 @@ class ProcessL1aqc:
 
         # DATETIME is not supported in HDF5; remove
         if node is not None:
-            for gp in node.groups:
-                # if (gp.id == "SOLARTRACKER_STATUS") is False:
+            for gp in node.groups:                
                 if 'DATETIME' in gp.datasets:
+                # if (gp.id == "SOLARTRACKER_STATUS") is False:
                     del gp.datasets["DATETIME"]
                 if 'DATETIME_ADJUSTED' in gp.datasets:
                     del gp.datasets["DATETIME_ADJUSTED"]

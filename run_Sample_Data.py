@@ -29,16 +29,16 @@ from Main import Command
 
 ################################################### CUSTOM SET UP ###################################################
 # Batch options
-MULTI_TASK = False  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
-MULTI_LEVEL = True  # Process raw (L0) to Level-2 (L2)
+MULTI_TASK = True  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
+MULTI_LEVEL = False  # Process raw (L0) to Level-2 (L2)
 CLOBBER = True      # True overwrites existing files
-PROC_LEVEL = "L2"   # Process to this level: L1A, L1AQC, L1B, LBQC, L2 (ignored for MULTI_LEVEL)
+PROC_LEVEL = "L1A"   # Process to this level: L1A, L1AQC, L1B, LBQC, L2 (ignored for MULTI_LEVEL)
 
 # Dataset options
-PLATFORM = "pySAS"
-# PLATFORM = "Manual_TriOS"
-INST_TYPE = "SEABIRD"  # SEABIRD or TRIOS; defines raw file naming
-# INST_TYPE = "TRIOS"
+# PLATFORM = "pySAS"
+PLATFORM = "Manual_TriOS"
+# INST_TYPE = "SEABIRD"  # SEABIRD or TRIOS; defines raw file naming
+INST_TYPE = "TRIOS"
 CRUISE = "FICE22"
 # L1B_REGIME: Optional. [Default, Class, Full]
 #   Denote FRM processing regime and use appropriately named subdirectories.
@@ -56,9 +56,14 @@ PATH_HCP = os.path.dirname(os.path.abspath(__file__))  # Path to HyperCP reposit
 PATH_DATA = os.path.join(PATH_HCP,'Data','Sample_Data',PLATFORM)
 ##################################
 
-PATH_ANC = os.path.join(
-    PATH_DATA, f"{CRUISE}_{PLATFORM}_Ancillary.sb",
-)
+if PLATFORM.lower == "Manual_TriOS":
+    PATH_ANC = os.path.join(
+        PATH_DATA, f"{CRUISE}_TriOS_Ancillary.sb",
+    )
+else:
+    PATH_ANC = os.path.join(
+        PATH_DATA, f"{CRUISE}_{PLATFORM}_Ancillary.sb",
+    )
 
 if MULTI_LEVEL or PROC_LEVEL == "L1A":
     PATH_INPUT = PATH_DATA
