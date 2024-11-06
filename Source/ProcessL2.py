@@ -1787,47 +1787,33 @@ class ProcessL2:
 
         # NOTE: These ".update" object calls are what is triggering matrix_calculation.py:286: UserWarning:
         tic = time.process_time()
-        if ConfigFile.settings["bL1bCal"] <= 2:  # and
-            L1B_UNC = instrument.ClassBased(node, uncGroup, stats)
-            if L1B_UNC:
-                xSlice.update(L1B_UNC)  # update the xSlice dict with uncertianties and samples
-                del L1B_UNC  # delete to save memory as no longer required
-                # convert uncertainties back into absolute form using the signals recorded from ProcessL2
-                xSlice['esUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
-                xSlice['liUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
-                xSlice['ltUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
+        with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal
+            if ConfigFile.settings["bL1bCal"] <= 2:  # and
+                L1B_UNC = instrument.ClassBased(node, uncGroup, stats)
+                if L1B_UNC:
+                    xSlice.update(L1B_UNC)  # update the xSlice dict with uncertianties and samples
+                    del L1B_UNC  # delete to save memory as no longer required
+                    # convert uncertainties back into absolute form using the signals recorded from ProcessL2
+                    xSlice['esUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
+                    xSlice['liUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
+                    xSlice['ltUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
 
-                xUNC.update(instrument.ClassBasedL2(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
-            elif (ConfigFile.settings['SensorType'].lower() == "trios") and (ConfigFile.settings["bL1bCal"] == 1):
-                xUNC = None
-            else:
-                msg = "Instrument uncertainty processing failed: ProcessL2"
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return False
+                    xUNC.update(instrument.ClassBasedL2(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+                elif (ConfigFile.settings['SensorType'].lower() == "trios") and (ConfigFile.settings["bL1bCal"] == 1):
+                    xUNC = None
+                else:
+                    msg = "Instrument uncertainty processing failed: ProcessL2"
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
 
-        # elif ConfigFile.settings["bL1bCal"] == 2:
-        #     # update the xSlice dict with uncertianties and samples
-        #     xSlice.update(instrument.Default(uncGroup, stats, node))
-        #     # convert uncertainties back into absolute form using the signals recorded from ProcessL2
-        #     xSlice['esUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
-        #     xSlice['liUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
-        #     xSlice['ltUnc'] = {u[0]: [u[1][0] * np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
-
-            # validation of uncertainty methods
-            # t1 = np.asarray(list(xSlice['esUnc'].values()), dtype=float)/xSlice['esTestUnc']
-            # t2 = np.asarray(list(xSlice['liUnc'].values()), dtype=float)/xSlice['liTestUnc']
-            # t3 = np.asarray(list(xSlice['ltUnc'].values()), dtype=float)/xSlice['ltTestUnc']
-            # print(t1, t2, t3)
-            # xUNC.update(instrument.rrsHyperUNC(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
-
-        elif ConfigFile.settings["bL1bCal"] == 3:
-            xSlice.update(
-                instrument.FRM(node, uncGroup,
-                               dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
-                               dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
-                               stats, np.array(waveSubset, float)))  # instrument_WB
-            xUNC.update(instrument.FRM_L2(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
+            elif ConfigFile.settings["bL1bCal"] == 3:
+                xSlice.update(
+                    instrument.FRM(node, uncGroup,
+                                   dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                                   dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
+                                   stats, np.array(waveSubset, float)))  # instrument_WB
+                xUNC.update(instrument.FRM_L2(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
         msg = f'Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s'
         print(msg)
