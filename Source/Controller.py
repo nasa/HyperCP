@@ -8,16 +8,13 @@ from Source import PATH_TO_CONFIG, PACKAGE_DIR
 from Source.HDFRoot import HDFRoot
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
-<<<<<<< HEAD
 from Source.ProcessL1a import ProcessL1a
 from Source.TriosL1A import TriosL1A
-=======
 # from Source.ProcessL1a import ProcessL1a
 from Source.ProcessL1aSeaBird import ProcessL1aSeaBird
 from Source.ProcessL1aDALEC import ProcessL1aDALEC
 # from Source.TriosL1A import TriosL1A
 from Source.ProcessL1aTriOS import ProcessL1aTriOS
->>>>>>> 04c428c0d70d85f9ce05f0c5cd472c333578bd7b
 from Source.ProcessL1aSoRad import ProcessL1aSoRad
 from Source.AncillaryReader import AncillaryReader
 from Source.ProcessL1aqc import ProcessL1aqc
