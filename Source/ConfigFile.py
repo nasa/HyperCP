@@ -34,7 +34,7 @@ class ConfigFile:
         ConfigFile.filename = fileName
         ConfigFile.settings["CalibrationFiles"] = {}
         # ConfigFile.settings["AncFile"] = ''
-        ConfigFile.settings["SensorType"] = "SeaBird" # SeaBird TriOS
+        ConfigFile.settings["SensorType"] = "SeaBird" # SeaBird TriOS SoRad DALEC EsOnly (not case sensitive)
         ConfigFile.settings["fL1aUTCOffset"] = 0
         ConfigFile.settings["bL1aCleanSZA"] = 1
         ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,

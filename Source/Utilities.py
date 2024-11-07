@@ -71,7 +71,11 @@ class Utilities:
                 )
 
     @staticmethod
-    def checkInputFiles(inFilePath, flag_Trios, level="L1A+"):
+    def checkInputFiles(inFilePath, level="L1A+"):
+        if ConfigFile.settings['SensorType'].lower() == 'trios':
+            flag_Trios = True
+        else:
+            flag_Trios = False
         if flag_Trios and level == "L1A":
             for fp in inFilePath:
                 if not os.path.isfile(fp):
