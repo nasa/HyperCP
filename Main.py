@@ -421,23 +421,6 @@ class Window(QtWidgets.QWidget):
         ConfigFile.loadConfig(configFileName)
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-        InstrumentType = ConfigFile.settings["SensorType"]
-
-        # To check instrument type
-        if InstrumentType.lower() == "trios" or InstrumentType.lower() == "sorad":
-            flag_Trios = 1
-        elif InstrumentType.lower() == "seabird":
-            flag_Trios = 0
-  
-        else:
-            print("Error in configuration file: Sensor type not specified")
-            sys.exit()
-
-        # Select data files
-        # if not self.inputDirectory[0]:
-        #     print("Bad input parent directory.")
-        #     return
-
 
         if lvl == "L1A":
             inLevel = "raw"
@@ -472,9 +455,6 @@ class Window(QtWidgets.QWidget):
 
         print("Process Calibration Files")
         calFiles = ConfigFile.settings["CalibrationFiles"]
-
-        
-        if flag_Trios == 0:
 
         # if flag_Trios == 0:
         calibrationMap = None
@@ -568,8 +548,6 @@ class Window(QtWidgets.QWidget):
 
         calFiles = ConfigFile.settings["CalibrationFiles"]
         # To check instrument type
-        if InstrumentType.lower() == "trios" or InstrumentType.lower() == "sorad":  
-            flag_Trios = 1
         if ConfigFile.settings["SensorType"].lower() == "trios":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
@@ -661,12 +639,7 @@ class Command:
 
         calFiles = ConfigFile.settings["CalibrationFiles"]
 
-
-        if InstrumentType.lower() == "trios" or InstrumentType.lower() == "sorad": 
-            flag_Trios = 1
-
         if ConfigFile.settings["SensorType"].lower() == "trios":
-
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
             print("Process Calibration Files")
@@ -675,7 +648,7 @@ class Command:
         else:
             print(f'CalibrationConfig is not yet ready for {ConfigFile.settings["SensorType"]}')
             sys.exit()
-      
+
         # Update the SeaBASS .hdr file in case changes were made to the configuration without using the GUI
         SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings['seaBASSHeaderFileName'])
         SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config1')
@@ -689,12 +662,9 @@ class Command:
                 Controller.processFilesMultiLevel(
                     self.outputDirectory, [iFile], calibrationMap)
         else:
-         #   breakpoint()
             # processSingleLevel is only prepared for a singleton file at a time
             Controller.processSingleLevel(
-                self.outputDirectory, iFile, calibrationMap, to_level, flag_Trios
-            ) # Note - flag Trios is temporarily hard-coded as 0 for testing purposes
-        self.outputDirectory, iFile, calibrationMap, to_level)
+                self.outputDirectory, iFile, calibrationMap, to_level)
 
 
 if __name__ == "__main__":

@@ -8,8 +8,6 @@ from Source import PATH_TO_CONFIG, PACKAGE_DIR
 from Source.HDFRoot import HDFRoot
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
-from Source.ProcessL1a import ProcessL1a
-from Source.TriosL1A import TriosL1A
 # from Source.ProcessL1a import ProcessL1a
 from Source.ProcessL1aSeaBird import ProcessL1aSeaBird
 from Source.ProcessL1aDALEC import ProcessL1aDALEC
@@ -227,17 +225,11 @@ class Controller:
                     del calibrationMap[key]
             else:
                 del calibrationMap[key]
- 
         return calibrationMap
 
     @staticmethod
     def processCalibrationConfigTrios(calFiles):
-        ''' Write calibration/configuration map for TriOS'''
-
-        configFileName = ConfigFile.filename
-        calFolder = os.path.splitext(configFileName)[0] + "_Calibration"
-        calPath = os.path.join(PATH_TO_CONFIG, calFolder)
-        print("Read CalibrationFile ", calPath)
+        ''' Write pseudo calibration/configuration map for TriOS'''
 
         # print("processCalibrationConfig")
         calibrationMap = collections.OrderedDict()
@@ -257,11 +249,6 @@ class Controller:
                     cf.media = "Air"
                     cf.measMode = "Surface"
                     cf.frameType = "Combined"
-                    calibrationMap[key] = cf
-            if ".tdf" in key:
-                with open(os.path.join(calPath, key), 'rb') as f:             
-                    cf.read(f)
-                    #print("id:", cf.id)
                     calibrationMap[key] = cf
 
         return calibrationMap
@@ -310,27 +297,6 @@ class Controller:
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
             root = ProcessL1aDALEC.processL1a(inFilePath, calibrationMap)
         else:
-<<<<<<< HEAD
-            # root = ProcessL1a.processL1a(inFilePath, calibrationMap)
-            root = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
-            outFFPs = None
-       
-        # Write output file
-        # TriOS L1A are written out in TriosL1A.py
-        if not flag_Trios:
-            if root is not None:
-                try:
-                    root.writeHDF5(outFilePath)
-                except Exception:
-                    msg = 'Unable to write L1A file. It may be open in another program.'
-                    if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                        Utilities.errorWindow("File Error", msg)
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return None, None
-            else:
-                msg = "L1a processing failed. Nothing to output."
-=======
             root = None
 
         if root is not None:
@@ -340,7 +306,6 @@ class Controller:
                     root.writeHDF5(outFFPs)
             except Exception:
                 msg = 'Unable to write L1A file. It may be open in another program.'
->>>>>>> 04c428c0d70d85f9ce05f0c5cd472c333578bd7b
                 if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                     Utilities.errorWindow("File Error", msg)
                 print(msg)
@@ -594,13 +559,12 @@ class Controller:
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
 
         testExts = ['.raw','.mlb','.hdf','.txt']
-        
-        if extension.lower() not in testExts:
 
+        if extension.lower() not in testExts:
             msg = "Unrecognized file type. Aborting."
             print(msg)
             Utilities.writeLogFile(msg)
-            return False #, None
+            return False#, None
 
         # If this is an HDF, assume it is not RAW, drop the level from fileName
         if extension=='.hdf':
