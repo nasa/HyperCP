@@ -1,3 +1,4 @@
+''' Process L1AQC to L1B '''
 import os
 import datetime as dt
 import numpy as np
@@ -14,7 +15,8 @@ from Source.GetAnc_ecmwf import GetAnc_ecmwf
 from Source.FidradDB_api import FidradDB_api
 
 
-class TriosL1B:
+class ProcessL1bTriOS:
+    '''L1B strictly for TriOS'''
 
     @staticmethod
     def processDarkCorrection_FRM(node, sensortype, stats: dict):
@@ -61,7 +63,11 @@ class TriosL1B:
         S12 = (1+k)*S1 - k*S2
         # S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter) # slapper
         S12_sl_corr = np.matmul(C_zong, S12) # Zong SL corr
-        alpha = ((S1-S12)/(S12**2)).tolist()
+        # alpha = ((S1-S12)/(S12**2)).tolist()
+        # alpha reworked so any divide by 0s can be handled with a condition statement
+        f1 = np.array(S1 - S12)
+        f2 = np.array(np.power(S12, 2))
+        alpha = np.asarray([float(f1[i] / f2[i]) if f2[i] != 0 else 0 for i in range(len(f1))]).tolist()  # stops -inf if S12**2 = 0
 
         # Updated calibration gain
         if sensortype == "ES":
@@ -268,8 +274,6 @@ class TriosL1B:
 
         return True
 
-
-
     @staticmethod
     def processL1b(node, outFilePath):
         '''
@@ -290,7 +294,7 @@ class TriosL1B:
         elif ConfigFile.settings["bL1bCal"] == 3:
             node.attributes['CAL_TYPE'] = 'FRM-Full'
 
-        msg = f"TriosL1B.processL1b: {timestr}"
+        msg = f"ProcessL1bTriOS.processL1b: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)
 
@@ -448,7 +452,7 @@ class TriosL1B:
             ds = sixS_grp.addDataset("solar_zenith")
             ds.columns["solar_zenith"] = solar_zenith
             ds.columnsToDataset()
-        
+
         ## Dark Correction & Absolute Calibration
         stats = {}
         for instrument in ConfigFile.settings['CalibrationFiles'].keys():
@@ -461,19 +465,15 @@ class TriosL1B:
                 print(msg)
                 Utilities.writeLogFile(msg)
 
-                '''
-                Are Factory and Class-based approaches identical for TriOS?
-                Shouldn't Factory be based on factory cal file formats?
-                '''
                 if ConfigFile.settings["bL1bCal"] <= 2:
-                    if not TriosL1B.processDarkCorrection(node, sensortype, stats):
-                        msg = f'Error in TriosL1B.processDarkCorrection: {instrument_number} - {sensortype}'
+                    if not ProcessL1bTriOS.processDarkCorrection(node, sensortype, stats):
+                        msg = f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
                 elif ConfigFile.settings['bL1bCal'] == 3:
-                    if not TriosL1B.processDarkCorrection_FRM(node, sensortype, stats):
-                        msg = f'Error in TriosL1B.processDarkCorrection_FRM: {instrument_number} - {sensortype}'
+                    if not ProcessL1bTriOS.processDarkCorrection_FRM(node, sensortype, stats):
+                        msg = f'Error in ProcessL1bTriOS.processDarkCorrection_FRM: {instrument_number} - {sensortype}'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
@@ -485,8 +485,6 @@ class TriosL1B:
         # interpolate to the chosen spectral resolution. HyperSAS instruments operate on
         # different timestamps and wavebands, so interpolation is required.
         node = ProcessL1b_Interp.processL1b_Interp(node, outFilePath)
-        
-
 
         node.attributes["LI_UNITS"] = 'uW/cm^2/nm/sr'
         node.attributes["LT_UNITS"] = 'uW/cm^2/nm/sr'
