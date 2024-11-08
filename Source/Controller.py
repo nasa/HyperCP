@@ -4,18 +4,23 @@ import datetime
 import collections
 import numpy as np
 
-from Source import PATH_TO_CONFIG
+from Source import PATH_TO_CONFIG, PACKAGE_DIR
 from Source.HDFRoot import HDFRoot
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
-from Source.ProcessL1a import ProcessL1a
-from Source.TriosL1A import TriosL1A
+# from Source.ProcessL1a import ProcessL1a
+from Source.ProcessL1aSeaBird import ProcessL1aSeaBird
+from Source.ProcessL1aDALEC import ProcessL1aDALEC
+# from Source.TriosL1A import TriosL1A
+from Source.ProcessL1aTriOS import ProcessL1aTriOS
+from Source.ProcessL1aSoRad import ProcessL1aSoRad
 from Source.AncillaryReader import AncillaryReader
 from Source.ProcessL1aqc import ProcessL1aqc
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.CalibrationFile import CalibrationFile
 from Source.ProcessL1b import ProcessL1b
-from Source.TriosL1B import TriosL1B
+# from Source.TriosL1B import TriosL1B
+from Source.ProcessL1bTriOS import ProcessL1bTriOS
 from Source.ProcessL1bqc import ProcessL1bqc
 from Source.ProcessL2 import ProcessL2
 from Source.SeaBASSWriter import SeaBASSWriter
@@ -78,8 +83,7 @@ class Controller:
         reportPath = os.path.join(pathOut, 'Reports')
         if os.path.isdir(reportPath) is False:
             os.mkdir(reportPath)
-        dirPath = os.getcwd()
-        inLogPath = os.path.join(dirPath, 'Logs')
+        inLogPath = os.path.join(PACKAGE_DIR, 'Logs')
 
         inPlotPath = os.path.join(pathOut,'Plots')
         # The inPlotPath is going to be different for L1A-L1E than L2 for many cruises...
@@ -280,10 +284,11 @@ class Controller:
 
     @staticmethod
     # def processL1a(inFilePath, outFilePath, calibrationMap):
-    def processL1a(inFilePath, outFilePath, calibrationMap,flag_Trios):
+    def processL1a(inFilePath, outFilePath, calibrationMap):
         root = None
 
-        test = Utilities.checkInputFiles(inFilePath,flag_Trios, level="L1A")
+        # test = Utilities.checkInputFiles(inFilePath,flag_Trios, level="L1A")
+        test = Utilities.checkInputFiles(inFilePath,level="L1A")
         if test is False:
             return None, None
 
@@ -291,40 +296,48 @@ class Controller:
         print(msg)
 
         # Process the data
-        if flag_Trios == 1:
+        outFFPs = None
+        if ConfigFile.settings["SensorType"].lower() == "seabird":
+            root = ProcessL1aSeaBird.processL1a(inFilePath, calibrationMap)
+            outFFPs = outFilePath
+        elif ConfigFile.settings["SensorType"].lower() == "trios":
             # Multiple collections may be present, each with a file per sensor, root will only be the last collection
-            root, outFFPs = TriosL1A.triosL1A(inFilePath, outFilePath)
+            # root, outFFPs = TriosL1A.triosL1A(inFilePath, outFilePath)
+            root, outFFPs = ProcessL1aTriOS.processL1a(inFilePath, outFilePath)
+            # outFFPs = outFFPs[0]
+        elif ConfigFile.settings["SensorType"].lower() == "sorad":
+            root = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
+        elif ConfigFile.settings["SensorType"].lower() == "dalec":
+            root = ProcessL1aDALEC.processL1a(inFilePath, calibrationMap)
         else:
-            root = ProcessL1a.processL1a(inFilePath, calibrationMap)
-            outFFPs = None
+            root = None
 
-        # Write output file
-        # TriOS L1A are written out in TriosL1A.py
-        if not flag_Trios:
-            if root is not None:
-                try:
-                    root.writeHDF5(outFilePath)
-                except Exception:
-                    msg = 'Unable to write L1A file. It may be open in another program.'
-                    if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                        Utilities.errorWindow("File Error", msg)
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return None, None
-            else:
-                msg = "L1a processing failed. Nothing to output."
+        if root is not None:
+            try:
+                if ConfigFile.settings["SensorType"].lower() != "trios":
+                    # TriOS L1a files are written in ProcessL1aTriOS
+                    root.writeHDF5(outFFPs)
+            except Exception:
+                msg = 'Unable to write L1A file. It may be open in another program.'
                 if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                     Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None, None
+        else:
+            msg = "L1a processing failed. Nothing to output."
+            if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
+                Utilities.errorWindow("File Error", msg)
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None, None
 
         return root, outFFPs
 
     @staticmethod
-    def processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData,flag_Trios):
+    def processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData):
         root = None
-        test = Utilities.checkInputFiles(inFilePath,flag_Trios)
+        test = Utilities.checkInputFiles(inFilePath)
         if test is False:
             return None
 
@@ -365,7 +378,7 @@ class Controller:
         return root
 
     @staticmethod
-    def processL1b(inFilePath, outFilePath, flag_Trios):
+    def processL1b(inFilePath, outFilePath):
         root = None
         if not os.path.isfile(inFilePath):
             print('No such input file: ' + inFilePath)
@@ -384,13 +397,11 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None
 
-        if flag_Trios == 0:
-            root = ProcessL1b.processL1b(root, outFilePath)
-        elif flag_Trios == 1:
-            root = TriosL1B.processL1b(root, outFilePath)
+        if ConfigFile.settings["SensorType"].lower() == "trios":
+            # root = TriosL1B.processL1b(root, outFilePath)
+            root = ProcessL1bTriOS.processL1b(root, outFilePath)
         else:
-            print("ERROR: flag_trios not recognized,", flag_Trios)
-            exit()
+            root = ProcessL1b.processL1b(root, outFilePath)
 
         # Write output file
         if root is not None:
@@ -516,8 +527,8 @@ class Controller:
 
     # Process every file in a list of files 1 level
     @staticmethod
-    # def processSingleLevel(pathOut, inFilePath, calibrationMap, level, ancFile=None):
-    def processSingleLevel(pathOut, inFilePath, calibrationMap, level, flag_Trios):
+    # def processSingleLevel(pathOut, inFilePath, calibrationMap, level, flag_Trios):
+    def processSingleLevel(pathOut, inFilePath, calibrationMap, level):
         # Find the absolute path to the output directory
         pathOut = os.path.abspath(pathOut)
 
@@ -534,11 +545,16 @@ class Controller:
         if os.path.isdir(pathOutLevel) is False:
             os.mkdir(pathOutLevel)
 
+        # Redeploying flag_Trios here as it's the only SensorType/Platform that requires triplets at L1A so far
+        if ConfigFile.settings["SensorType"].lower() == "trios":
+            flag_Trios = True
+        else:
+            flag_Trios = False
+
         if flag_Trios and level == "L1A":
             # inFilePath is a list of filepath strings at L1A
             # Grab input name and extension of first file
-            inFileName = os.path.split(inFilePath[0])[1]
-            outFilePath = pathOutLevel # Just the path to first file; no files
+            inFileName = os.path.split(inFilePath[0])[1]            
         else:
             # inFilePath is a singleton filepath string
             inFilePath = os.path.abspath(inFilePath)
@@ -556,7 +572,9 @@ class Controller:
         print(msg)
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
 
-        if extension.lower() != '.raw' and extension.lower() != '.mlb' and extension.lower() != '.hdf':
+        testExts = ['.raw','.mlb','.hdf','.txt']
+
+        if extension.lower() not in testExts:
             msg = "Unrecognized file type. Aborting."
             print(msg)
             Utilities.writeLogFile(msg)
@@ -567,17 +585,21 @@ class Controller:
             fileName = fileName.rsplit('_',1)[0]
 
         if not flag_Trios or (flag_Trios and level != "L1A"):
-            # SeaBird contains filename here. TriOS does not.
+            # SeaBird contains filename here. TriOS does not at L1A.
             outFilePath = os.path.join(pathOutLevel,fileName + "_" + level + ".hdf")
+        else:
+            outFilePath = pathOutLevel # Just the path to first file; no files
 
         if level == "L1A" or level == "L1AQC" or level == "L1B" or level == "L1BQC":
 
             if level == "L1A":
-                root, outFFPs = Controller.processL1a(inFilePath, outFilePath, calibrationMap, flag_Trios)
+                # root, outFFPs = Controller.processL1a(inFilePath, outFilePath, calibrationMap, flag_Trios)
+                root, outFFPs = Controller.processL1a(inFilePath, outFilePath, calibrationMap)
                 if not flag_Trios:
                     # Checked in TriosL1A for TriOS
                     Utilities.checkOutputFiles(outFilePath)
                 else:
+                    # Set the class variable for use in moving on from L1A trios
                     Controller.trios_L1A_files = outFFPs
 
             elif level == "L1AQC":
@@ -627,12 +649,12 @@ class Controller:
                     msg = 'No deglitching will be performed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
-                root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData,flag_Trios)
+                root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
                 # BUG: The above throws 2 class TypeErrors between the return statement at the end of the method and here??
                 Utilities.checkOutputFiles(outFilePath)
 
             elif level == "L1B":
-                root = Controller.processL1b(inFilePath, outFilePath, flag_Trios)
+                root = Controller.processL1b(inFilePath, outFilePath)
                 Utilities.checkOutputFiles(outFilePath)
 
             elif level == "L1BQC":
@@ -811,53 +833,55 @@ class Controller:
 
     # Process every file in a list of files from L0 to L2
     @staticmethod
-    def processFilesMultiLevel(pathOut,inFiles, calibrationMap, flag_Trios):
+    def processFilesMultiLevel(pathOut,inFiles, calibrationMap):
         print("processFilesMultiLevel")
 
-        flag_L1 = 0
-        if flag_Trios:
-            if Controller.processSingleLevel(pathOut, inFiles, calibrationMap, 'L1A', flag_Trios):
-                flag_L1 = 1
+        L1A_complete = False
+        if ConfigFile.settings["SensorType"].lower() == "trios":
+            # TriOS Raw files are triplets. Process all to L1A and then continue normally
+            if Controller.processSingleLevel(pathOut, inFiles, calibrationMap, 'L1A'):
+                L1A_complete = True
                 inFiles = Controller.trios_L1A_files
 
         for fp in inFiles:
             print("Processing: " + fp)
 
-            if not flag_Trios:
-                flag_L1 = 0
-                if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A', flag_Trios):
-                    flag_L1 = 1
+            if not ConfigFile.settings["SensorType"].lower() == "trios":
+                # Process to L1A unless it's trios, which is handled above
+                L1A_complete = False
+                if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1A'):
+                    L1A_complete = True
 
-            if flag_L1:
+            if L1A_complete:
                 inFileName = os.path.split(fp)[1]
-                if flag_Trios:
+                if ConfigFile.settings["SensorType"].lower() == "trios":
                     # For TriOS, need to parse the L1A names, not L0
                     fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'.hdf')
                 else:
                     # Going from L0 to L1A, need to account for the underscore
                     fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'_L1A.hdf')
                 fp = os.path.join(os.path.abspath(pathOut),fileName)
-                if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1AQC', flag_Trios):
+                if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1AQC'):
 
                     inFileName = os.path.split(fp)[1]
                     fileName = os.path.join('L1AQC',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1AQC.hdf')
                     fp = os.path.join(os.path.abspath(pathOut),fileName)
-                    if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1B', flag_Trios):
+                    if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1B'):
                         inFileName = os.path.split(fp)[1]
                         fileName = os.path.join('L1B',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1B.hdf')
                         fp = os.path.join(os.path.abspath(pathOut),fileName)
-                        if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1BQC', flag_Trios):
+                        if Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L1BQC'):
                             inFileName = os.path.split(fp)[1]
                             fileName = os.path.join('L1BQC',f"{os.path.splitext(inFileName)[0].rsplit('_',1)[0]}"+'_L1BQC.hdf')
                             fp = os.path.join(os.path.abspath(pathOut),fileName)
-                            Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2', flag_Trios)
+                            Controller.processSingleLevel(pathOut, fp, calibrationMap, 'L2')
         print("processFilesMultiLevel - DONE")
 
 
     # Process every file in a list of files 1 level
     @staticmethod
-    def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level, flag_Trios):
-        # print("processFilesSingleLevel")
+    # def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level, flag_Trios):
+    def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level):
 
         if level == "L1A":
             srchStr = ['raw', 'mlb']
@@ -874,7 +898,7 @@ class Controller:
         #   the triplet for processing and end up with 1 L1A HDF file
         #   The way TriosL1A.py is written, it needs the whole list of files, not a single file
 
-        if flag_Trios and level == "L1A":
+        if ConfigFile.settings["SensorType"].lower() == "trios" and level == "L1A":
             for fp in inFiles:
                 # Check that the input file matches what is expected for this processing level
                 # Not case sensitive
@@ -888,7 +912,8 @@ class Controller:
 
             #Pass entire list L0 files
             # print("Processing: " + fp)
-            Controller.processSingleLevel(pathOut, inFiles, calibrationMap, level, flag_Trios)
+            # Controller.processSingleLevel(pathOut, inFiles, calibrationMap, level, flag_Trios)
+            Controller.processSingleLevel(pathOut, inFiles, calibrationMap, level)
             print("processFilesSingleLevel, all files - DONE")
 
         else:
@@ -905,6 +930,6 @@ class Controller:
 
                 print("Processing: " + fp)
                 # Pass singleton file
-                Controller.processSingleLevel(pathOut, fp, calibrationMap, level, flag_Trios)
+                Controller.processSingleLevel(pathOut, fp, calibrationMap, level)                
 
                 print("processFilesSingleLevel, single file - DONE")

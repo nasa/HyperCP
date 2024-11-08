@@ -1,3 +1,4 @@
+''' Process L1AQC to L1B '''
 import os
 import datetime as dt
 import numpy as np
@@ -14,7 +15,8 @@ from Source.GetAnc_ecmwf import GetAnc_ecmwf
 from Source.FidradDB_api import FidradDB_api
 
 
-class TriosL1B:
+class ProcessL1bTriOS:
+    '''L1B strictly for TriOS'''
 
     @staticmethod
     def processDarkCorrection_FRM(node, sensortype, stats: dict):
@@ -61,7 +63,11 @@ class TriosL1B:
         S12 = (1+k)*S1 - k*S2
         # S12_sl_corr = ProcessL1b_FRMCal.Slaper_SL_correction(S12, mZ, n_iter) # slapper
         S12_sl_corr = np.matmul(C_zong, S12) # Zong SL corr
-        alpha = ((S1-S12)/(S12**2)).tolist()
+        # alpha = ((S1-S12)/(S12**2)).tolist()
+        # alpha reworked so any divide by 0s can be handled with a condition statement
+        f1 = np.array(S1 - S12)
+        f2 = np.array(np.power(S12, 2))
+        alpha = np.asarray([float(f1[i] / f2[i]) if f2[i] != 0 else 0 for i in range(len(f1))]).tolist()  # stops -inf if S12**2 = 0
 
         # Updated calibration gain
         if sensortype == "ES":
@@ -265,9 +271,8 @@ class TriosL1B:
         stats[sensortype] = {'ave_Light': np.array(light_avg), 'ave_Dark': np.array(back_avg),
                           'std_Light': np.array(light_std), 'std_Dark': np.array(back_std),
                           'std_Signal': stdevSignal, 'wvl':raw_wvl}  # std_Signal stored as dict to help when interpolating wavebands
+
         return True
-
-
 
     @staticmethod
     def processL1b(node, outFilePath):
@@ -289,7 +294,7 @@ class TriosL1B:
         elif ConfigFile.settings["bL1bCal"] == 3:
             node.attributes['CAL_TYPE'] = 'FRM-Full'
 
-        msg = f"TriosL1B.processL1b: {timestr}"
+        msg = f"ProcessL1bTriOS.processL1b: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)
 
@@ -308,6 +313,8 @@ class TriosL1B:
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
+
+
         # classbased_dir needed for FRM whilst pol is handled in class-based way
         classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
                                       ConfigFile.settings['SensorType'] + "_initial")
@@ -397,6 +404,55 @@ class TriosL1B:
         # are culled from datasets in groups in L1B
         ProcessL1b.includeModelDefaults(ancGroup, modRoot)
 
+        if ConfigFile.settings["bL1bCal"] == 1 or ConfigFile.settings["bL1bCal"] == 2:
+            # Calculate 6S model
+            # Run elsewhere for FRM-regime
+            print('Running Py6S')
+
+            sensortype = "ES"
+            # Irradiance direct and diffuse ratio
+            res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
+
+            # Store Py6S results in new group
+            grp = node.getGroup(sensortype)
+            solar_zenith = res_py6s['solar_zenith']
+            # ProcessL1b_FRMCal.get_direct_irradiance_ratio uses Es bands to run 6S and then works around bands that
+            #  don't have values from Tartu for full FRM. Here, use all the Es bands.
+            direct_ratio = res_py6s['direct_ratio']
+            diffuse_ratio = res_py6s['diffuse_ratio']
+            # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
+            # model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_raw_data]/10
+            model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])/10
+            # model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_nocal==False]/10
+
+            py6s_grp = node.addGroup("PY6S_MODEL")
+            for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
+                # copy datetime dataset for interp process
+                ds = py6s_grp.addDataset(dsname)
+                ds.data = grp.getDataset(dsname).data
+
+            ds = py6s_grp.addDataset("py6s_irradiance")
+
+            irr_grp = node.getGroup('ES_L1AQC')
+            str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
+            ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
+            rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
+            ds.data = rec_arr
+
+            ds = py6s_grp.addDataset("direct_ratio")
+            ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
+            rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
+            ds.data = rec_arr
+
+            ds = py6s_grp.addDataset("diffuse_ratio")
+            ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
+            rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
+            ds.data = rec_arr
+
+            ds = py6s_grp.addDataset("solar_zenith")
+            ds.columns["solar_zenith"] = solar_zenith
+            ds.columnsToDataset()
+
         ## Dark Correction & Absolute Calibration
         stats = {}
         for instrument in ConfigFile.settings['CalibrationFiles'].keys():
@@ -409,19 +465,15 @@ class TriosL1B:
                 print(msg)
                 Utilities.writeLogFile(msg)
 
-                '''
-                Are Factory and Class-based approaches identical for TriOS?
-                Shouldn't Factory be based on factory cal file formats?
-                '''
                 if ConfigFile.settings["bL1bCal"] <= 2:
-                    if not TriosL1B.processDarkCorrection(node, sensortype, stats):
-                        msg = f'Error in TriosL1B.processDarkCorrection: {instrument_number} - {sensortype}'
+                    if not ProcessL1bTriOS.processDarkCorrection(node, sensortype, stats):
+                        msg = f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
                 elif ConfigFile.settings['bL1bCal'] == 3:
-                    if not TriosL1B.processDarkCorrection_FRM(node, sensortype, stats):
-                        msg = f'Error in TriosL1B.processDarkCorrection_FRM: {instrument_number} - {sensortype}'
+                    if not ProcessL1bTriOS.processDarkCorrection_FRM(node, sensortype, stats):
+                        msg = f'Error in ProcessL1bTriOS.processDarkCorrection_FRM: {instrument_number} - {sensortype}'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
@@ -433,8 +485,6 @@ class TriosL1B:
         # interpolate to the chosen spectral resolution. HyperSAS instruments operate on
         # different timestamps and wavebands, so interpolation is required.
         node = ProcessL1b_Interp.processL1b_Interp(node, outFilePath)
-        
-
 
         node.attributes["LI_UNITS"] = 'uW/cm^2/nm/sr'
         node.attributes["LT_UNITS"] = 'uW/cm^2/nm/sr'

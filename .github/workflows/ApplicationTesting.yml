@@ -36,4 +36,4 @@ jobs:
 
       - name: 🧪 Run Tests
         run: |
-          python run_Sample_Data.py
+          python -m unittest Tests.test_sample_data 

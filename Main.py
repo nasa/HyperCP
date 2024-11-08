@@ -20,7 +20,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # import requests
 # from tqdm import tqdm
 
-
+from Source import PACKAGE_DIR as CODE_HOME
 from Source.MainConfig import MainConfig
 from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
@@ -30,8 +30,7 @@ from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
 
-VERSION = "1.2.6"
-CODE_HOME = os.getcwd()
+VERSION = "1.2.9"
 
 
 class Window(QtWidgets.QWidget):
@@ -422,32 +421,19 @@ class Window(QtWidgets.QWidget):
         ConfigFile.loadConfig(configFileName)
         seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
         SeaBASSHeader.loadSeaBASSHeader(seaBASSHeaderFileName)
-        InstrumentType = ConfigFile.settings["SensorType"]
-
-        # To check instrument type
-        if InstrumentType.lower() == "trios":
-            flag_Trios = 1
-        elif InstrumentType.lower() == "seabird":
-            flag_Trios = 0
-        else:
-            print("Error in configuration file: Sensor type not specified")
-            sys.exit()
-
-        # Select data files
-        # if not self.inputDirectory[0]:
-        #     print("Bad input parent directory.")
-        #     return
 
         if lvl == "L1A":
             inLevel = "raw"
-        if lvl == "L1AQC":
+        elif lvl == "L1AQC":
             inLevel = "L1A"
-        if lvl == "L1B":
+        elif lvl == "L1B":
             inLevel = "L1AQC"
-        if lvl == "L1BQC":
+        elif lvl == "L1BQC":
             inLevel = "L1B"
-        if lvl == "L2":
+        elif lvl == "L2":
             inLevel = "L1BQC"
+        else:
+            inLevel = None
 
         # Check for subdirectory associated with level chosen
         subInputDir = os.path.join(self.inputDirectory, inLevel)
@@ -470,14 +456,17 @@ class Window(QtWidgets.QWidget):
         print("Process Calibration Files")
         calFiles = ConfigFile.settings["CalibrationFiles"]
 
-        if flag_Trios == 0:
+        # if flag_Trios == 0:
+        calibrationMap = None
+        if ConfigFile.settings["SensorType"].lower() == "seabird":
             calibrationMap = Controller.processCalibrationConfig(
                 configFileName, calFiles
             )
-        else:
+        # else:
+        elif ConfigFile.settings["SensorType"].lower() == "trios":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
-            # calibrationMap = 0
-        if not calibrationMap.keys():
+
+        if not calibrationMap:
             print(
                 "No calibration files found. "
                 "Check Config directory for your instrument files."
@@ -489,9 +478,11 @@ class Window(QtWidgets.QWidget):
             print("Bad output directory.")
             return
 
+        # Controller.processFilesSingleLevel(
+        #     self.outputDirectory, fileNames, calibrationMap, lvl, flag_Trios
+        # )
         Controller.processFilesSingleLevel(
-            self.outputDirectory, fileNames, calibrationMap, lvl, flag_Trios
-        )
+            self.outputDirectory, fileNames, calibrationMap, lvl)
         t1Single = time.time()
         print(f"Time elapsed: {str(round((t1Single-t0Single)/60))} minutes")
 
@@ -543,8 +534,7 @@ class Window(QtWidgets.QWidget):
             return
 
         openFileNames = QtWidgets.QFileDialog.getOpenFileNames(
-            self, "Open File", self.inputDirectory
-        )
+            self, "Open File", self.inputDirectory)
 
         print("Files:", openFileNames)
 
@@ -556,14 +546,11 @@ class Window(QtWidgets.QWidget):
         if not self.outputDirectory:
             return
 
-        InstrumentType = ConfigFile.settings["SensorType"]
         calFiles = ConfigFile.settings["CalibrationFiles"]
         # To check instrument type
-        if InstrumentType.lower() == "trios":
-            flag_Trios = 1
+        if ConfigFile.settings["SensorType"].lower() == "trios":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
-        elif InstrumentType.lower() == "seabird":
-            flag_Trios = 0
+        elif ConfigFile.settings["SensorType"].lower() == "seabird":
             print("Process Calibration Files")
             filename = ConfigFile.filename
             calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
@@ -572,8 +559,7 @@ class Window(QtWidgets.QWidget):
             sys.exit()
 
         Controller.processFilesMultiLevel(
-            self.outputDirectory, fileNames, calibrationMap, flag_Trios
-        )
+            self.outputDirectory, fileNames, calibrationMap)
         t1Multi = time.time()
         print(f"Time elapsed: {str(round((t1Multi-t0Multi)/60))} Minutes")
 
@@ -605,7 +591,7 @@ class Command:
         iFile,
         dataDirectory,
         to_level,
-        anc=None,
+        anc='',
         processMultiLevel=False,
     ):
 
@@ -651,19 +637,16 @@ class Command:
 
         ConfigFile.loadConfig(self.configFilename)
 
-        InstrumentType = ConfigFile.settings["SensorType"]
         calFiles = ConfigFile.settings["CalibrationFiles"]
 
-        if InstrumentType.lower() == "trios":
-            flag_Trios = 1
+        if ConfigFile.settings["SensorType"].lower() == "trios":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
-        elif InstrumentType.lower() == "seabird":
-            flag_Trios = 0
+        elif ConfigFile.settings["SensorType"].lower() == "seabird":
             print("Process Calibration Files")
             filename = ConfigFile.filename
             calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
         else:
-            print("Error in configuration file: Sensor type not specified")
+            print(f'CalibrationConfig is not yet ready for {ConfigFile.settings["SensorType"]}')
             sys.exit()
 
         # Update the SeaBASS .hdr file in case changes were made to the configuration without using the GUI
@@ -672,135 +655,133 @@ class Command:
         SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings['seaBASSHeaderFileName'])
 
         if processMultiLevel:
-            if InstrumentType.lower() == "trios" and to_level == "L1A":
+            if ConfigFile.settings["SensorType"].lower() == "trios" and to_level == "L1A":
                 Controller.processFilesMultiLevel(
-                    self.outputDirectory, iFile, calibrationMap, flag_Trios
-                )
+                    self.outputDirectory, iFile, calibrationMap)
             else:
                 Controller.processFilesMultiLevel(
-                    self.outputDirectory, [iFile], calibrationMap, flag_Trios
-                )
+                    self.outputDirectory, [iFile], calibrationMap)
         else:
             # processSingleLevel is only prepared for a singleton file at a time
             Controller.processSingleLevel(
-                self.outputDirectory, iFile, calibrationMap, to_level, flag_Trios
-            )
+                self.outputDirectory, iFile, calibrationMap, to_level)
 
-
-# Arguments declaration
-######## This section is not up to date. Scripted calls to Command are preferred. ##########
-parser = argparse.ArgumentParser(description="Arguments description")
-# Mandatory arguments
-required = parser.add_argument_group("Required arguments")
-required.add_argument(
-    "-cmd",
-    action="store_true",
-    dest="cmd",
-    help="To use for commandline mode. If not given, the GUI mode is run",
-    default=None,
-)
-required.add_argument(
-    "-c",
-    action="store",
-    dest="configFilePath",
-    help="Path of the configuration file",
-    default=None,
-    type=str,
-)
-required.add_argument(
-    "-i",
-    action="store",
-    dest="inputFile",
-    help="Path of the input file",
-    default=None,
-    type=str,
-)
-required.add_argument(
-    "-o",
-    action="store",
-    dest="outputDirectory",
-    help="Path of the output folder",
-    default=None,
-    type=str,
-)
-required.add_argument(
-    "-l",
-    action="store",
-    dest="level",
-    help="Level of the generated file. e.g.: Computing RAW to L1A means -l L1A",
-    choices=["L1A", "L1AQC", "L1B", "L1BQC", "L2"],
-    default=None,
-    type=str,
-)
-required.add_argument(
-    "-m",
-    action="store",
-    dest="multiLevel",
-    help="Single or multilevel processing (L0-L2): -m False",
-    choices=["True", "False"],
-    default="False",
-    type=str,
-)
-required.add_argument(
-    "-a",
-    action="store",
-    dest="ancFile",
-    help="Path of the ancillary file",
-    default=None,
-    type=str,
-)
-required.add_argument(
-    "-u",
-    action="store",
-    dest="username",
-    help="Username of the account on https://oceancolor.gsfc.nasa.gov/",
-    default=None,
-    type=str,
-)
-required.add_argument(
-    "-p",
-    action="store",
-    dest="password",
-    help="Password of the account on https://oceancolor.gsfc.nasa.gov/",
-    default=None,
-    type=str,
-)
-
-args = parser.parse_args()
-
-# If the commandline option is given, check if all needed information are given
-if args.cmd and (
-    args.configFilePath is None
-    or args.inputFile is None
-    or args.multiLevel is None
-    or args.outputDirectory is None
-    or args.level is None
-):
-    parser.error(
-        "-cmd requires -c config -i inputFile -m multiLevel -o outputDirectory -l processingLevel"
-    )
-# If the commandline option is given, check if all needed information are given
-if (
-    args.cmd
-    and args.level == "L1BQC"
-    and (args.username is None or args.password is None)
-):
-    parser.error(
-        "L1BQC processing requires username and password for https://oceancolor.gsfc.nasa.gov/"
-    )
-
-# We store all arguments in variables
-cmd = args.cmd
-configFilePath = args.configFilePath
-inputFile = args.inputFile
-outputDirectory = args.outputDirectory
-level = args.level
-ancFile = args.ancFile
-username = args.username
-password = args.password
-multiLevel = args.multiLevel
 
 if __name__ == "__main__":
+    # Arguments declaration
+    ######## This section is not up to date. Scripted calls to Command are preferred. ##########
+    parser = argparse.ArgumentParser(description="Arguments description")
+    # Mandatory arguments
+    required = parser.add_argument_group("Required arguments")
+    required.add_argument(
+        "-cmd",
+        action="store_true",
+        dest="cmd",
+        help="To use for commandline mode. If not given, the GUI mode is run",
+        default=None,
+    )
+    required.add_argument(
+        "-c",
+        action="store",
+        dest="configFilePath",
+        help="Path of the configuration file",
+        default=None,
+        type=str,
+    )
+    required.add_argument(
+        "-i",
+        action="store",
+        dest="inputFile",
+        help="Path of the input file",
+        default=None,
+        type=str,
+    )
+    required.add_argument(
+        "-o",
+        action="store",
+        dest="outputDirectory",
+        help="Path of the output folder",
+        default=None,
+        type=str,
+    )
+    required.add_argument(
+        "-l",
+        action="store",
+        dest="level",
+        help="Level of the generated file. e.g.: Computing RAW to L1A means -l L1A",
+        choices=["L1A", "L1AQC", "L1B", "L1BQC", "L2"],
+        default=None,
+        type=str,
+    )
+    required.add_argument(
+        "-m",
+        action="store",
+        dest="multiLevel",
+        help="Single or multilevel processing (L0-L2): -m False",
+        choices=["True", "False"],
+        default="False",
+        type=str,
+    )
+    required.add_argument(
+        "-a",
+        action="store",
+        dest="ancFile",
+        help="Path of the ancillary file",
+        default=None,
+        type=str,
+    )
+    required.add_argument(
+        "-u",
+        action="store",
+        dest="username",
+        help="Username of the account on https://oceancolor.gsfc.nasa.gov/",
+        default=None,
+        type=str,
+    )
+    required.add_argument(
+        "-p",
+        action="store",
+        dest="password",
+        help="Password of the account on https://oceancolor.gsfc.nasa.gov/",
+        default=None,
+        type=str,
+    )
+
+    args = parser.parse_args()
+
+    # If the commandline option is given, check if all needed information are given
+    if args.cmd and (
+        args.configFilePath is None
+        or args.inputFile is None
+        or args.multiLevel is None
+        or args.outputDirectory is None
+        or args.level is None
+    ):
+        parser.error(
+            "-cmd requires -c config -i inputFile -m multiLevel -o outputDirectory -l processingLevel"
+        )
+    # If the commandline option is given, check if all needed information are given
+    if (
+        args.cmd
+        and args.level == "L1BQC"
+        and (args.username is None or args.password is None)
+    ):
+        parser.error(
+            "L1BQC processing requires username and password for https://oceancolor.gsfc.nasa.gov/"
+        )
+
+    # We store all arguments in variables
+    cmd = args.cmd
+    configFilePath = args.configFilePath
+    inputFile = args.inputFile
+    outputDirectory = args.outputDirectory
+    level = args.level
+    ancFile = args.ancFile
+    username = args.username
+    password = args.password
+    multiLevel = args.multiLevel
+
+
     # Close splashscreen
     try:
         import platform

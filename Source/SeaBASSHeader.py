@@ -48,6 +48,7 @@ class SeaBASSHeader:
         print("wave_height", SeaBASSHeader.settings["wave_height"])
         print("secchi_depth", SeaBASSHeader.settings["secchi_depth"])
         print("wind_speed", SeaBASSHeader.settings["wind_speed"])
+        print("nadir", SeaBASSHeader.settings["nadir"])
 
         print("rho_correction", SeaBASSHeader.settings["rho_correction"])
         print("NIR_residual_correction", SeaBASSHeader.settings["NIR_residual_correction"])
@@ -101,6 +102,8 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["east_longitude"] = ''
         SeaBASSHeader.settings["west_longitude"] = ''
 
+        SeaBASSHeader.settings["nadir"] = '40'
+
         SeaBASSHeader.settings["rho_correction"] = ''
         SeaBASSHeader.settings["NIR_residual_correction"] = 'noBRDF'
         SeaBASSHeader.settings["BRDF_correction"] = ''
@@ -138,6 +141,8 @@ class SeaBASSHeader:
             FRMPath = 'FRM_Class-based'
         elif ConfigFile.settings['bL1bCal'] == 3:
             FRMPath = 'FRM-Full-Characterization'
+        else:
+            FRMPath = None
 
         if ConfigFile.settings["bL1bqcEnableSpecQualityCheck"]:
             specFilt = "On"
@@ -244,10 +249,11 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["missing"] = -9999
         SeaBASSHeader.settings["delimiter"] = 'comma'
 
-        if not name.endswith(".hdr"):
-            name = name + ".hdr"
-        SeaBASSHeader.filename = name
-        SeaBASSHeader.saveSeaBASSHeader(name)
+        if name != "temp":
+            if not name.endswith(".hdr"):
+                name = name + ".hdr"
+            SeaBASSHeader.filename = name
+            SeaBASSHeader.saveSeaBASSHeader(name)
 
 
     # Saves the hdr file
@@ -263,6 +269,11 @@ class SeaBASSHeader:
     # Loads the hdr file
     @staticmethod
     def loadSeaBASSHeader(filename):
+        # To accomodate new header fields with old headers, start with default.
+        #   Eliminate obsolete headers
+        SeaBASSHeader.createDefaultSeaBASSHeader("temp")
+        goodSettingsKeys = SeaBASSHeader.settings.keys()
+
         # print("SeaBASSHeader - Load seaBASSHeader")
         seaBASSHeaderPath = os.path.join(PATH_TO_CONFIG, filename)
         if os.path.isfile(seaBASSHeaderPath):
@@ -270,7 +281,11 @@ class SeaBASSHeader:
             text = ""
             with open(seaBASSHeaderPath, 'r', encoding="utf-8") as f:
                 text = f.read()
-                SeaBASSHeader.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
+                # SeaBASSHeader.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
+                fullCollection = json.loads(text, object_pairs_hook=collections.OrderedDict)
+                for key, value in fullCollection.items():
+                    if key in goodSettingsKeys:
+                        SeaBASSHeader.settings[key] = value
                 # SeaBASSHeader.createCalibrationFolder()
 
     # Deletes a seaBASSHeader
