@@ -84,7 +84,7 @@ class ProcessL1bTriOS:
         ind_zero = (updated_radcal_gain<=1e-2)
         ind_nan  = np.isnan(updated_radcal_gain)
         ind_nocal = ind_nan | ind_zero
-        updated_radcal_gain[ind_nocal is True] = 1 # set 1 instead of 0 to perform calibration (otherwise division per 0)
+        updated_radcal_gain[ind_nocal==True] = 1 # set 1 instead of 0 to perform calibration (otherwise division per 0)
 
         # Data conversion
         mesure = raw_data/65535.0
@@ -132,8 +132,8 @@ class ProcessL1bTriOS:
 
         # Remove wvl without calibration from the dataset
         # unit conversion from mW/m2 to uW/cm2 : divide per 10
-        filtered_mesure = FRM_mesure[:,ind_nocal is False]/10
-        filtered_wvl = str_wvl[ind_nocal is False]
+        filtered_mesure = FRM_mesure[:,ind_nocal==False]/10
+        filtered_wvl = str_wvl[ind_nocal==False]
 
         # Replace raw data with calibrated data in hdf root
         ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
@@ -160,10 +160,10 @@ class ProcessL1bTriOS:
         if sensortype == "ES":
             # retrive py6s variables for given wvl
             solar_zenith = res_py6s['solar_zenith']
-            direct_ratio = res_py6s['direct_ratio'][:,ind_nocal is False]
-            diffuse_ratio = res_py6s['diffuse_ratio'][:,ind_nocal is False]
+            direct_ratio = res_py6s['direct_ratio'][:,ind_nocal==False]
+            diffuse_ratio = res_py6s['diffuse_ratio'][:,ind_nocal==False]
             # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
-            model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_nocal is False]/10
+            model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_nocal==False]/10
 
             py6s_grp = node.addGroup("PY6S_MODEL")
             for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
@@ -223,7 +223,7 @@ class ProcessL1bTriOS:
         ind_zero = (raw_cal==0)
         ind_nan  = np.isnan(raw_cal)
         ind_nocal = ind_nan | ind_zero
-        raw_cal[ind_nocal is True] = 1 # set 1 instead of 0 to perform calibration (otherwise division per 0)
+        raw_cal[ind_nocal==True] = 1 # set 1 instead of 0 to perform calibration (otherwise division per 0)
 
         # Data conversion
         mesure = raw_data/65535.0
@@ -249,8 +249,8 @@ class ProcessL1bTriOS:
 
         # Remove wvl without calibration from the dataset
         # unit conversion from mW/m2 to uW/cm2 : divide per 10
-        filtered_mesure = calibrated_mesure[:,ind_nocal is False]/10
-        filtered_wvl = raw_wvl[ind_nocal is False]
+        filtered_mesure = calibrated_mesure[:,ind_nocal==False]/10
+        filtered_wvl = raw_wvl[ind_nocal==False]
 
         # replace raw data with calibrated data in hdf root
         ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
