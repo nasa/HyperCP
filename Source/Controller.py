@@ -19,7 +19,8 @@ from Source.ProcessL1aqc import ProcessL1aqc
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.CalibrationFile import CalibrationFile
 from Source.ProcessL1b import ProcessL1b
-from Source.TriosL1B import TriosL1B
+# from Source.TriosL1B import TriosL1B
+from Source.ProcessL1bTriOS import ProcessL1bTriOS
 from Source.ProcessL1bqc import ProcessL1bqc
 from Source.ProcessL2 import ProcessL2
 from Source.SeaBASSWriter import SeaBASSWriter
@@ -385,7 +386,8 @@ class Controller:
             return None
 
         if ConfigFile.settings["SensorType"].lower() == "trios":
-            root = TriosL1B.processL1b(root, outFilePath)
+            # root = TriosL1B.processL1b(root, outFilePath)
+            root = ProcessL1bTriOS.processL1b(root, outFilePath)
         else:
             root = ProcessL1b.processL1b(root, outFilePath)
 
