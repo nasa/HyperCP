@@ -75,6 +75,7 @@ run_*.py
 
 # copernicus url and keys
 .cdsapirc
+# gitignore only skips new files, not updates to existing files
 .ecmwf_api_config
 
 #ignore ".idea/" if working with pycharm:
