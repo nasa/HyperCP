@@ -1,3 +1,4 @@
+''' Process L1AQC to L1B '''
 import os
 import datetime as dt
 import numpy as np
@@ -14,7 +15,8 @@ from Source.GetAnc_ecmwf import GetAnc_ecmwf
 from Source.FidradDB_api import FidradDB_api
 
 
-class TriosL1B:
+class ProcessL1bTriOS:
+    '''L1B strictly for TriOS'''
 
     @staticmethod
     def processDarkCorrection_FRM(node, sensortype, stats: dict):
@@ -272,8 +274,6 @@ class TriosL1B:
 
         return True
 
-
-
     @staticmethod
     def processL1b(node, outFilePath):
         '''
@@ -294,7 +294,7 @@ class TriosL1B:
         elif ConfigFile.settings["bL1bCal"] == 3:
             node.attributes['CAL_TYPE'] = 'FRM-Full'
 
-        msg = f"TriosL1B.processL1b: {timestr}"
+        msg = f"ProcessL1bTriOS.processL1b: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)
 
@@ -452,7 +452,7 @@ class TriosL1B:
             ds = py6s_grp.addDataset("solar_zenith")
             ds.columns["solar_zenith"] = solar_zenith
             ds.columnsToDataset()
-        
+
         ## Dark Correction & Absolute Calibration
         stats = {}
         for instrument in ConfigFile.settings['CalibrationFiles'].keys():
@@ -465,19 +465,15 @@ class TriosL1B:
                 print(msg)
                 Utilities.writeLogFile(msg)
 
-                '''
-                Are Factory and Class-based approaches identical for TriOS?
-                Shouldn't Factory be based on factory cal file formats?
-                '''
                 if ConfigFile.settings["bL1bCal"] <= 2:
-                    if not TriosL1B.processDarkCorrection(node, sensortype, stats):
-                        msg = f'Error in TriosL1B.processDarkCorrection: {instrument_number} - {sensortype}'
+                    if not ProcessL1bTriOS.processDarkCorrection(node, sensortype, stats):
+                        msg = f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
                 elif ConfigFile.settings['bL1bCal'] == 3:
-                    if not TriosL1B.processDarkCorrection_FRM(node, sensortype, stats):
-                        msg = f'Error in TriosL1B.processDarkCorrection_FRM: {instrument_number} - {sensortype}'
+                    if not ProcessL1bTriOS.processDarkCorrection_FRM(node, sensortype, stats):
+                        msg = f'Error in ProcessL1bTriOS.processDarkCorrection_FRM: {instrument_number} - {sensortype}'
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return None
@@ -489,8 +485,6 @@ class TriosL1B:
         # interpolate to the chosen spectral resolution. HyperSAS instruments operate on
         # different timestamps and wavebands, so interpolation is required.
         node = ProcessL1b_Interp.processL1b_Interp(node, outFilePath)
-        
-
 
         node.attributes["LI_UNITS"] = 'uW/cm^2/nm/sr'
         node.attributes["LT_UNITS"] = 'uW/cm^2/nm/sr'

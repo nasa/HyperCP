@@ -1,11 +1,11 @@
-
-import datetime as dt
-import numpy as np
-import pandas as pd
+'''Process Raw (L0) data to L1A HDF5'''
 import os
 import json
 from datetime import timedelta, date
 import re
+import datetime as dt
+import numpy as np
+import pandas as pd
 import tables
 
 from Source.MainConfig import MainConfig
@@ -14,8 +14,141 @@ from Source.HDFGroup import HDFGroup
 from Source.Utilities import Utilities
 
 
-class TriosL1A:
+class ProcessL1aTriOS:
+    '''Process L1A for TriOS from MSDA-XE'''
+    @staticmethod
+    def processL1a(fp, outFilePath): 
+        # fp is a list of all triplets
+
+        configPath = MainConfig.settings['cfgPath']
+        cal_path = configPath[0:configPath.rfind('.')] + '_Calibration/'
+        # In case full path includes a '.'
+
+        if '.mlb' in fp[0]:   # Multi frame
+            # acq_time = []
+            acq_name = []
+            for file in fp:
+
+                # ## Test filename for different date formating
+                # match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
+                # match2 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
+                # if match1 is not None:
+                #     a_time = match1.group()
+                # elif match2 is not None:
+                #     a_time = match2.group()
+                # else:
+                #     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
+                #     print("  L0 filename should have a date to identify triplet instrument")
+                #     print("  either 'yyymmdd_hhmmss' or 'yyy-mm-dd_hh-mm-ss' ")
+                #     exit()
+
+                # acq_time.append(a_time)
+
+
+                ## Test filename for station/cast
+                match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
+                match2 = re.search(r'\d{4}S', file.split('/')[-1])
+                match3 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
+                if match1 is not None:
+                    a_name = match1.group()
+                elif match2 is not None:
+                    a_name = match2.group()
+                elif match3 is not None:
+                    a_name = match3.group()
+                else:
+                    print("  ERROR: no identifier recognized in TRIOS L0 file name" )
+                    print("  L0 filename should have a cast to identify triplet instrument")
+                    print("  ending in 4 digits before S.mlb ")
+                    return None,None
+
+                # acq_time.append(a_cast)
+                acq_name.append(a_name)
+
+            # acq_time = list(dict.fromkeys(acq_time)) # Returns unique timestamps
+            acq_name = list(dict.fromkeys(acq_name)) # Returns unique names
+            outFFP = []
+            # for a_time in acq_time:
+            for a_name in acq_name:
+                print("")
+                print("Generate the telemetric file...")
+                # print('Processing: ' +a_time)
+                print('Processing: ' +a_name)
+
+                # hdfout = a_time + '_.hdf'
+
+                tables.file._open_files.close_all()
+                # For each triplet, this creates an HDF
+                root = HDFRoot()
+                root.id = "/"
+                root.attributes["WAVELENGTH_UNITS"] = "nm"
+                root.attributes["LI_UNITS"] = "count"
+                root.attributes["LT_UNITS"] = "count"
+                root.attributes["ES_UNITS"] = "count"
+                root.attributes["SATPYR_UNITS"] = "count"
+                root.attributes["PROCESSING_LEVEL"] = "1a"
+
+                # ffp = [s for s in fp if a_time in s]
+                ffp = [s for s in fp if a_name in s]
+                root.attributes["RAW_FILE_NAME"] = str(ffp)
+                # root.attributes["TIME-STAMP"] = a_name
+                root.attributes["CAST"] = a_name
+                for file in ffp:
+                    if "SAM_" in file:
+                        name = file[file.index('SAM_')+4:file.index('SAM_')+8]
+                    else:
+                        print("ERROR : naming convention os not respected")
+                        name = None
+
+                    start,_ = ProcessL1aTriOS.formatting_instrument(name,cal_path,file,root,configPath)
+
+                    if start is None:
+                        return None, None
+                    acq_datetime = dt.datetime.strptime(start,"%Y%m%dT%H%M%SZ")
+                    root.attributes["TIME-STAMP"] = dt.datetime.strftime(acq_datetime,'%a %b %d %H:%M:%S %Y')
+
+                
+                # File naming convention on TriOS TBD depending on convention used in MSDA_XE
+                #The D-6 requirements to add the timestamp manually on every acquisition is impractical.
+                #Convert to using any unique name and append timestamp from data (start)
+                
+                try:
+                    new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
+                    if match2 is not None:
+                        new_name = new_name+'_'+str(start)
+                except IndexError as err:
+                    print(err)
+                    msg = "possibly an error in naming of Raw files"
+                    Utilities.writeLogFile(msg)
+                    new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_Spectrum_RAW_')[1]
+
+                # new_name = outFilePath + '/' + 'Trios_' + str(start) + '_' + str(stop) + '_L1A.hdf'
+                # outFFP.append(os.path.join(outFilePath,f'{new_name}_L1A.hdf'))
+                outFFP.append(os.path.join(outFilePath,f'{new_name}_L1A.hdf'))
+                root.attributes["L1A_FILENAME"] = outFFP[-1]
+
+                root = ProcessL1aTriOS.fixChronology(root)
+
+                try:
+                    # root.writeHDF5(new_name)
+                    root.writeHDF5(outFFP[-1])
+
+                except Exception:
+                    msg = 'Unable to write L1A file. It may be open in another program.'
+                    Utilities.errorWindow("File Error", msg)
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return None, None
+
+                Utilities.checkOutputFiles(outFFP[-1])
+
+            return root, outFFP
+        else:
+            print('Single Frame deprecated')
+
+        return None, None
+    
     # use namesList to define dtype for recarray
+    @staticmethod
     def reshape_data(NAME,N,data):
         ds_dt = np.dtype({'names':[NAME],'formats':[(float)] })
         tst = np.array(data).reshape((1,N))
@@ -30,6 +163,7 @@ class TriosL1A:
     #     return rec_arr2
 
     # Function for reading and formatting .dat data file
+    @staticmethod
     def read_dat(inputfile):
         file_dat = open(inputfile,'r')
         flag = 0
@@ -42,6 +176,7 @@ class TriosL1A:
                 break
         if flag == 0:
             print('PROBLEM WITH FILE .dat: Metadata not found')
+            end_meta = None
         else:
             end_meta = index
         file_dat.close()
@@ -50,15 +185,16 @@ class TriosL1A:
         data = pd.read_csv(inputfile, skiprows=end_meta+2, nrows=255, header=None, sep=r'\s+')[1]
         meta = meta.to_numpy(dtype=str)
         data = data.to_numpy(dtype=str)
-        date = dt.datetime.strptime(meta[1], " %Y-%m-%d %H:%M:%S")
+        date1 = dt.datetime.strptime(meta[1], " %Y-%m-%d %H:%M:%S")
         time = meta[1].split(' ')[2]
-        meta[0] = date
+        meta[0] = date1
         meta[1] = time
         return meta,data
 
     # Function for reading and formatting .mlb data file
+    @staticmethod
     def read_mlb(inputfile):
-        file_dat = open(inputfile,'r')
+        file_dat = open(inputfile,'r', encoding="utf-8")
         flag = 0
         index = 0
         for line in file_dat:
@@ -81,8 +217,9 @@ class TriosL1A:
         return meta,data,time
 
     # Function for reading cal files
+    @staticmethod
     def read_cal(inputfile):
-        file_dat = open(inputfile,'r')
+        file_dat = open(inputfile,'r', encoding="utf-8")
         flag_meta = 0
         flag_data = 0
         index = 0
@@ -108,26 +245,28 @@ class TriosL1A:
         metadata = metadata[~metadata[0].str.contains(r'\[')]
         metadata = metadata.reset_index(drop=True)
         data = pd.read_csv(inputfile, skiprows=flag_data+1, nrows=255, header=None, sep=r'\s+')
-        
+
         # NAN filtering, set to zero
         for col in data:
             indnan = data[col].astype(str).str.contains('nan', case=False)
             data.loc[indnan, col] = '0.0'
-        
+
         return metadata,data
 
     # Generic function for adding metadata from the ini file
+    @staticmethod
     def get_attr(metadata, gp):
         for irow,_ in enumerate(metadata.iterrows()):
             gp.attributes[metadata[0][irow].strip()]=str(metadata[1][irow].strip())
         return None
 
     # Function for reading and getting metadata for config .ini files
+    @staticmethod
     def attr_ini(ini_file, gp):
         ini = pd.read_csv(ini_file, skiprows=1, header=None, sep='=')
         ini = ini[~ini[0].str.contains(r'\[')]
         ini = ini.reset_index(drop=True)
-        TriosL1A.get_attr(ini,gp)
+        ProcessL1aTriOS.get_attr(ini,gp)
         return None
 
 
@@ -136,7 +275,7 @@ class TriosL1A:
     def formatting_instrument(name, cal_path, input_file, root, configPath):
         print('Formatting ' +name+ ' Data')
         # Extract measurement type from config file
-        with open(configPath, 'r') as fc:
+        with open(configPath, 'r', encoding="utf-8") as fc:
             text = fc.read()
             conf_json = json.loads(text)
         sensor = conf_json['CalibrationFiles']['SAM_'+name+'.ini']['frameType']
@@ -146,8 +285,6 @@ class TriosL1A:
             print('Error in config file. Check frame type for calibration files')
             # exit()
             return None,None
-        else:
-            None
 
         # A = f.create_group('SAM_'+name+'.dat')
         gp =  HDFGroup()
@@ -155,12 +292,12 @@ class TriosL1A:
         root.groups.append(gp)
 
         # Configuration file
-        TriosL1A.attr_ini(cal_path + 'SAM_'+name+'.ini',gp)
+        ProcessL1aTriOS.attr_ini(cal_path + 'SAM_'+name+'.ini',gp)
 
         # Formatting data
         data = pd.DataFrame()
         meta = pd.DataFrame()
-        meta,data,time = TriosL1A.read_mlb(input_file)
+        meta,data,time = ProcessL1aTriOS.read_mlb(input_file)
 
         ## if date is the first field "%yyy-mm-dd"
         if len(time[0].rsplit('_')[0]) == 11:
@@ -174,19 +311,19 @@ class TriosL1A:
             timetag = [float(i.rsplit('_')[2].replace('-','') + '000') for i in time]
 
         # Reshape data
-        rec_datetag  = TriosL1A.reshape_data('NONE',len(meta[0]),data=meta[0])
-        rec_datetag2  = TriosL1A.reshape_data('NONE',len(meta[0]),data=datetag)
-        rec_inttime  = TriosL1A.reshape_data(sensor,len(meta[3]),data=meta[3])
-        rec_check  = TriosL1A.reshape_data('SUM',len(meta[0]),data=np.zeros(len(meta)))
-        rec_darkave  = TriosL1A.reshape_data(sensor,len(meta[0]),data=np.zeros(len(meta)))
-        rec_darksamp  = TriosL1A.reshape_data(sensor,len(meta[0]),data=np.zeros(len(meta)))
-        rec_frame  = TriosL1A.reshape_data('COUNTER',len(meta[0]),data=np.zeros(len(meta)))
-        rec_posframe  = TriosL1A.reshape_data('COUNT',len(meta[0]),data=np.zeros(len(meta)))
-        rec_sample  = TriosL1A.reshape_data('DELAY',len(meta[0]),data=np.zeros(len(meta)))
-        rec_spectemp  = TriosL1A.reshape_data('NONE',len(meta[0]),data=np.zeros(len(meta)))
-        rec_thermalresp  = TriosL1A.reshape_data('NONE',len(meta[0]),data=np.zeros(len(meta)))
-        rec_time  = TriosL1A.reshape_data('NONE',len(meta[0]),data=np.zeros(len(meta)))
-        rec_timetag2  = TriosL1A.reshape_data('NONE',len(meta[0]),data=timetag)
+        rec_datetag  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=meta[0])
+        rec_datetag2  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=datetag)
+        rec_inttime  = ProcessL1aTriOS.reshape_data(sensor,len(meta[3]),data=meta[3])
+        rec_check  = ProcessL1aTriOS.reshape_data('SUM',len(meta[0]),data=np.zeros(len(meta)))
+        rec_darkave  = ProcessL1aTriOS.reshape_data(sensor,len(meta[0]),data=np.zeros(len(meta)))
+        rec_darksamp  = ProcessL1aTriOS.reshape_data(sensor,len(meta[0]),data=np.zeros(len(meta)))
+        rec_frame  = ProcessL1aTriOS.reshape_data('COUNTER',len(meta[0]),data=np.zeros(len(meta)))
+        rec_posframe  = ProcessL1aTriOS.reshape_data('COUNT',len(meta[0]),data=np.zeros(len(meta)))
+        rec_sample  = ProcessL1aTriOS.reshape_data('DELAY',len(meta[0]),data=np.zeros(len(meta)))
+        rec_spectemp  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=np.zeros(len(meta)))
+        rec_thermalresp  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=np.zeros(len(meta)))
+        rec_time  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=np.zeros(len(meta)))
+        rec_timetag2  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=timetag)
 
         # HDF5 Dataset creation
         gp.attributes['CalFileName'] = 'SAM_'+name+'.ini'
@@ -233,30 +370,27 @@ class TriosL1A:
 
 
         # Calibrations files
-        metacal,cal = TriosL1A.read_cal(cal_path + 'Cal_SAM_'+name+'.dat')
-        # B1 = gp.addDataset('CAL_'+sensor,data=cal[1].astype(np.float64))
+        metacal,cal = ProcessL1aTriOS.read_cal(cal_path + 'Cal_SAM_'+name+'.dat')
         B1 = gp.addDataset('CAL_'+sensor)
-        # B1.data = cal[1].astype(np.float64)
         B1.columns["0"] = cal.values[:,1].astype(np.float64)
         B1.columnsToDataset()
 
-        TriosL1A.get_attr(metacal,B1)
-        metaback,back = TriosL1A.read_cal(cal_path + 'Back_SAM_'+name+'.dat')
+        ProcessL1aTriOS.get_attr(metacal,B1)
+        metaback,back = ProcessL1aTriOS.read_cal(cal_path + 'Back_SAM_'+name+'.dat')
         # C1 = gp.addDataset('BACK_'+sensor,data=back[[1,2]].astype(np.float64))
         C1 = gp.addDataset('BACK_'+sensor)
         C1.columns["0"] = back.values[:,1]
         C1.columns["1"] = back.values[:,2]
         C1.columnsToDataset()
-        # C1.data = back[[1,2]].astype(np.float64)
-        # C1.data = np.array(back[[1,2]].astype(np.float64))
 
-        TriosL1A.get_attr(metaback,C1)
+        ProcessL1aTriOS.get_attr(metaback,C1)
         start_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[0][0]-2), "%Y%m%dT%H%M%SZ")
         stop_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[-1][0]-2), "%Y%m%dT%H%M%SZ")
 
         return start_time,stop_time
 
     # TriOS L0 exports are in reverse chronological order. Reorder all data fields
+    @staticmethod
     def fixChronology(node):
         print('Sorting all datasets chronologically')
         for gp in node.groups:
@@ -264,8 +398,8 @@ class TriosL1A:
             dateTagArray = gp.datasets['DATETAG'].data
             timeTagArray = gp.datasets['TIMETAG2'].data
             for i, dateTag in enumerate(dateTagArray):
-                dt = Utilities.dateTagToDateTime(dateTag[0])
-                dateTime.append(Utilities.timeTag2ToDateTime(dt,timeTagArray[i][0]))
+                dt1 = Utilities.dateTagToDateTime(dateTag[0])
+                dateTime.append(Utilities.timeTag2ToDateTime(dt1,timeTagArray[i][0]))
 
             for ds in gp.datasets:
 
@@ -276,132 +410,4 @@ class TriosL1A:
 
         return node
 
-
-    def triosL1A(fp, outFilePath): #, configPath, ancillaryData):
-
-        configPath = MainConfig.settings['cfgPath']
-        cal_path = configPath[0:configPath.rfind('.')] + '_Calibration/'
-        # my home directory name unfortunately includes a '.' which caused a bug here, solved with the change
-
-        if '.mlb' in fp[0]:   # Multi frame
-            # acq_time = []
-            acq_name = []
-            for file in fp:
-
-                # ## Test filename for different date formating
-                # match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
-                # match2 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
-                # if match1 is not None:
-                #     a_time = match1.group()
-                # elif match2 is not None:
-                #     a_time = match2.group()
-                # else:
-                #     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
-                #     print("  L0 filename should have a date to identify triplet instrument")
-                #     print("  either 'yyymmdd_hhmmss' or 'yyy-mm-dd_hh-mm-ss' ")
-                #     exit()
-
-                # acq_time.append(a_time)
-
-
-                ## Test filename for station/cast
-                match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
-                match2 = re.search(r'\d{4}S', file.split('/')[-1])
-                match3 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
-                if match1 is not None:
-                    a_name = match1.group()
-                elif match2 is not None:
-                    a_name = match2.group()
-                elif match3 is not None:
-                    a_name = match3.group()
-                else:
-                    print("  ERROR: no identifier recognized in TRIOS L0 file name" )
-                    print("  L0 filename should have a cast to identify triplet instrument")
-                    print("  ending in 4 digits before S.mlb ")
-                    exit()
-
-                # acq_time.append(a_cast)
-                acq_name.append(a_name)
-
-            # acq_time = list(dict.fromkeys(acq_time)) # Returns unique timestamps
-            acq_name = list(dict.fromkeys(acq_name)) # Returns unique names
-            outFFP = []
-            # for a_time in acq_time:
-            for a_name in acq_name:
-                print("")
-                print("Generate the telemetric file...")
-                # print('Processing: ' +a_time)
-                print('Processing: ' +a_name)
-
-                # hdfout = a_time + '_.hdf'
-
-                tables.file._open_files.close_all()
-                # For each triplet, this creates an HDF
-                root = HDFRoot()
-                root.id = "/"
-                root.attributes["WAVELENGTH_UNITS"] = "nm"
-                root.attributes["LI_UNITS"] = "count"
-                root.attributes["LT_UNITS"] = "count"
-                root.attributes["ES_UNITS"] = "count"
-                root.attributes["SATPYR_UNITS"] = "count"
-                root.attributes["PROCESSING_LEVEL"] = "1a"
-
-                # ffp = [s for s in fp if a_time in s]
-                ffp = [s for s in fp if a_name in s]
-                root.attributes["RAW_FILE_NAME"] = str(ffp)
-                # root.attributes["TIME-STAMP"] = a_name
-                root.attributes["CAST"] = a_name
-                for file in ffp:
-                    if "SAM_" in file:
-                        name = file[file.index('SAM_')+4:file.index('SAM_')+8]
-                    else:
-                        print("ERROR : naming convention os not respected")
-
-                    start,stop = TriosL1A.formatting_instrument(name,cal_path,file,root,configPath)
-
-                    if start is None:
-                        return None, None
-                    acq_datetime = dt.datetime.strptime(start,"%Y%m%dT%H%M%SZ")
-                    root.attributes["TIME-STAMP"] = dt.datetime.strftime(acq_datetime,'%a %b %d %H:%M:%S %Y')
-
-                '''
-                File naming convention on TriOS TBD depending on convention used in MSDA_XE
-
-                The D-6 requirements to add the timestamp manually on every acquisition is impractical.
-                Convert to using any unique name and append timestamp from data (start)
-                '''
-                try:
-                    new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
-                    if match2 is not None:
-                        new_name = new_name+'_'+str(start)
-                except IndexError as err:
-                    # print(err)
-                    msg = "possibly an error in naming of Raw files"
-                    Utilities.writeLogFile(msg)
-                    new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_Spectrum_RAW_')[1]
-
-                # new_name = outFilePath + '/' + 'Trios_' + str(start) + '_' + str(stop) + '_L1A.hdf'
-                outFFP.append(os.path.join(outFilePath,f'{new_name}_L1A.hdf'))
-                root.attributes["L1A_FILENAME"] = outFFP[-1]
-
-                root = TriosL1A.fixChronology(root)
-
-                try:
-                    # root.writeHDF5(new_name)
-                    root.writeHDF5(outFFP[-1])
-
-
-                except:
-                    msg = 'Unable to write L1A file. It may be open in another program.'
-                    Utilities.errorWindow("File Error", msg)
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return None, None
-
-                Utilities.checkOutputFiles(outFFP[-1])
-
-            return root, outFFP
-        else:
-            print('Single Frame deprecated')
-
-        return None, None
+    

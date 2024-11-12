@@ -1810,9 +1810,9 @@ class ProcessL2:
             elif ConfigFile.settings["bL1bCal"] == 3:
                 xSlice.update(
                     instrument.FRM(node, uncGroup,
-                                   dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
-                                   dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
-                                   stats, np.array(waveSubset, float)))  # instrument_WB
+                                dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                                dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
+                                stats, np.array(waveSubset, float)))  # instrument_WB
                 xUNC.update(instrument.FRM_L2(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
         msg = f'Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s'
