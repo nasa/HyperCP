@@ -190,7 +190,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             else:
                 cPol[s] = self.extract_unc_from_grp(grp=uncGrp, name=f"{s}_POLDATA_CAL", col_name='1')
 
-        return ind_rad_wvl
+            nan_mask = np.where((cStab[s] <= 0) | (cStray[s] <= 0) | (cLin[s] <= 0) | (cT[s] <= 0) |
+                                (self.extract_unc_from_grp(grp=uncGrp, name=f"{s}_POLDATA_CAL", col_name='1') <= 0))
+
+        return ind_rad_wvl, nan_mask
 
     def ClassBased(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict[str, np.array]) -> Union[dict[str, dict], bool]:
         """
@@ -216,7 +219,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         cPol = {}
         cCos = {}
 
-        ind_rad_wvl = self.read_uncertainties(
+        ind_rad_wvl, nan_mask = self.read_uncertainties(
             node,
             uncGrp,
             cCal=cCal,
@@ -334,6 +337,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             esUnc=es_Unc,
             liUnc=li_Unc,
             ltUnc=lt_Unc,
+            valid_pixels=nan_mask,
         )
 
     @abstractmethod
@@ -467,7 +471,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         cPol = {}
         cCos = {}
 
-        ind_rad_wvl = self.read_uncertainties(
+        ind_rad_wvl, nan_mask = self.read_uncertainties(
             node,
             uncGrp,
             cCal=cCal,
@@ -577,12 +581,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             waveSubset,
             return_as_dict=False
         )
+        lwAbsUnc[nan_mask] = np.nan
         lwAbsUnc = self.interp_common_wvls(
             lwAbsUnc,
             np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[ind_rad_wvl],
             waveSubset,
             return_as_dict=False
         )
+        rrsAbsUnc[nan_mask] = np.nan
         rrsAbsUnc = self.interp_common_wvls(
             rrsAbsUnc,
             np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[ind_rad_wvl],
