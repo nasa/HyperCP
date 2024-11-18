@@ -72,9 +72,9 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationEnabledCheckBox.setEnabled(False)
 
         # CurrentSensor = ConfigFile.settings["SensorType"]
+        calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
+        self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
         if CurrentSensor.lower() == "seabird":
-            calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
-            self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
             self.calibrationFrameTypeComboBox.addItem("ShutterLight")
             self.calibrationFrameTypeComboBox.addItem("ShutterDark")
             self.calibrationFrameTypeComboBox.addItem("Not Required")
@@ -83,8 +83,6 @@ class ConfigWindow(QtWidgets.QDialog):
             self.calibrationFrameTypeComboBox.setEnabled(False)
 
         elif CurrentSensor.lower() == "trios":
-            calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
-            self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
             self.calibrationFrameTypeComboBox.addItem("LI")
             self.calibrationFrameTypeComboBox.addItem("LT")
             self.calibrationFrameTypeComboBox.addItem("ES")
@@ -123,7 +121,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l1aqcSublabel = QtWidgets.QLabel(" Filter on pitch, roll, yaw, and azimuth", self)
 
         #   SolarTracker
-        self.l1aqcSolarTrackerLabel = QtWidgets.QLabel(" SolarTracker or pySAS", self)
+        self.l1aqcSolarTrackerLabel = QtWidgets.QLabel(" Sun Tracker Robot (pySAS,So-Rad,DALEC)", self)
         self.l1aqcSolarTrackerCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1aqcSolarTracker"]) == 1:
             self.l1aqcSolarTrackerCheckBox.setChecked(True)

@@ -76,7 +76,8 @@ class ProcessL1aTriOS:
 
                 # hdfout = a_time + '_.hdf'
 
-                tables.file._open_files.close_all()
+                tables.file._open_files.close_all() # Why is this necessary?
+
                 # For each triplet, this creates an HDF
                 root = HDFRoot()
                 root.id = "/"
@@ -106,11 +107,11 @@ class ProcessL1aTriOS:
                     acq_datetime = dt.datetime.strptime(start,"%Y%m%dT%H%M%SZ")
                     root.attributes["TIME-STAMP"] = dt.datetime.strftime(acq_datetime,'%a %b %d %H:%M:%S %Y')
 
-                
+
                 # File naming convention on TriOS TBD depending on convention used in MSDA_XE
                 #The D-6 requirements to add the timestamp manually on every acquisition is impractical.
                 #Convert to using any unique name and append timestamp from data (start)
-                
+
                 try:
                     new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
                     if match2 is not None:
