@@ -25,7 +25,7 @@ from Source.MainConfig import MainConfig
 from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
 from Source.ConfigWindow import ConfigWindow
-from Source.GetAnc import GetAnc
+import Source.GetAnc_credentials as credentials
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
@@ -730,22 +730,6 @@ if __name__ == "__main__":
         default=None,
         type=str,
     )
-    required.add_argument(
-        "-u",
-        action="store",
-        dest="username",
-        help="Username of the account on https://oceancolor.gsfc.nasa.gov/",
-        default=None,
-        type=str,
-    )
-    required.add_argument(
-        "-p",
-        action="store",
-        dest="password",
-        help="Password of the account on https://oceancolor.gsfc.nasa.gov/",
-        default=None,
-        type=str,
-    )
 
     args = parser.parse_args()
 
@@ -777,8 +761,6 @@ if __name__ == "__main__":
     outputDirectory = args.outputDirectory
     level = args.level
     ancFile = args.ancFile
-    username = args.username
-    password = args.password
     multiLevel = args.multiLevel
 
 
@@ -796,12 +778,15 @@ if __name__ == "__main__":
     # If the cmd argument is given, run the Command class without the GUI
     if cmd:
         os.environ["HYPERINSPACE_CMD"] = "TRUE" # Must be a string
-        if not (args.username is None or args.password is None):
-            # Only for L2 processing set credentials
-            GetAnc.userCreds(username, password)
+
+        # Pop up credential windows if credentials not stored...
+        credentials.credentialsWindow('NASA_Earth_Data')
+        credentials.credentialsWindow('ECMWF_ADS')
+
         Command(configFilePath, inputFile, multiLevel, outputDirectory, level, ancFile)
     else:
         os.environ["HYPERINSPACE_CMD"] = "FALSE" # Must be a string
+
         app = QtWidgets.QApplication(sys.argv)
         win = Window()
         sys.exit(app.exec_())
