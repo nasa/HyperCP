@@ -42,6 +42,7 @@ class AncillaryReader:
         lon = False
         wspd = False
         aot = False
+        wv = None
         wT = False
         S = False
         heading = False
@@ -53,6 +54,22 @@ class AncillaryReader:
         waveht = False
         pitch = False
         roll = False
+
+        staUnits = None
+        latUnits = None
+        lonUnits = None
+        windUnits = None
+        aotUnits = None
+        wTUnits = None
+        SUnits = None
+        headingUnits = None
+        relAzAngleUnits = None
+        sensorAzAngleUnits = None
+        cloudUnits = None
+        waveUnits = None
+        speedUnits = None
+        pitchUnits = None
+        rollUnits = None
 
         for ds in ancData.data:
             # Remember, all lower case...
@@ -173,53 +190,53 @@ class AncillaryReader:
         ancillaryData.appendColumn("DATETIME", ancDatetime)
         if station:
             ancillaryData.appendColumn("STATION", station)
-            ancillaryData.attributes["STATION_Units"]=staUnits
+            ancillaryData.attributes["STATION_UNITS"]=staUnits
         if lat:
             ancillaryData.appendColumn("LATITUDE", lat)
-            ancillaryData.attributes["LATITUDE_Units"]=latUnits
+            ancillaryData.attributes["LATITUDE_UNITS"]=latUnits
         if lon:
             ancillaryData.appendColumn("LONGITUDE", lon)
-            ancillaryData.attributes["LONGITUDE_Units"]=lonUnits
+            ancillaryData.attributes["LONGITUDE_UNITS"]=lonUnits
         if wspd:
             ancillaryData.appendColumn("WINDSPEED", wspd)
-            ancillaryData.attributes["WINDSPEED_Units"]=windUnits
+            ancillaryData.attributes["WINDSPEED_UNITS"]=windUnits
         if aot:
             ancillaryData.appendColumn("AOD", aot)
-            ancillaryData.attributes["AOD_Units"]=aotUnits
+            ancillaryData.attributes["AOD_UNITS"]=aotUnits
             ancillaryData.attributes["AOD_wavelength"] = wv
         if wT:
             ancillaryData.appendColumn("SST", wT)
-            ancillaryData.attributes["SST_Units"]=wTUnits
+            ancillaryData.attributes["SST_UNITS"]=wTUnits
         if S:
             ancillaryData.appendColumn("SALINITY", S)
-            ancillaryData.attributes["SALINITY_Units"]=SUnits
+            ancillaryData.attributes["SALINITY_UNITS"]=SUnits
         if heading:
             ancillaryData.appendColumn("HEADING", heading)
-            ancillaryData.attributes["HEADING_Units"]=headingUnits
+            ancillaryData.attributes["HEADING_UNITS"]=headingUnits
         # if homeAngle:
         #     ancillaryData.appendColumn("HOMEANGLE", homeAngle)
-        #     ancillaryData.attributes["HOMEANGLE_Units"]=homeAngleUnits
+        #     ancillaryData.attributes["HOMEANGLE_UNITS"]=homeAngleUnits
         if relAzAngle:
             ancillaryData.appendColumn("REL_AZ", relAzAngle)
-            ancillaryData.attributes["RELAZ_Units"]=relAzAngleUnits
+            ancillaryData.attributes["RELAZ_UNITS"]=relAzAngleUnits
         if sensorAzAngle:
             ancillaryData.appendColumn("SENSOR_AZ", sensorAzAngle)
-            ancillaryData.attributes["SENSORAZ_Units"]=sensorAzAngleUnits
+            ancillaryData.attributes["SENSORAZ_UNITS"]=sensorAzAngleUnits
         if cloud:
             ancillaryData.appendColumn("CLOUD", cloud)
-            ancillaryData.attributes["CLOUD_Units"]=cloudUnits
+            ancillaryData.attributes["CLOUD_UNITS"]=cloudUnits
         if waveht:
             ancillaryData.appendColumn("WAVE_HT", waveht)
-            ancillaryData.attributes["WAVE_Units"]=waveUnits
+            ancillaryData.attributes["WAVE_UNITS"]=waveUnits
         if speed_f_w:
             ancillaryData.appendColumn("SPEED_F_W", speed_f_w)
-            ancillaryData.attributes["SPEED_F_W_Units"]=speedUnits
+            ancillaryData.attributes["SPEED_F_W_UNITS"]=speedUnits
         if pitch:
             ancillaryData.appendColumn("PITCH", pitch)
-            ancillaryData.attributes["PITCH_Units"]=pitchUnits
+            ancillaryData.attributes["PITCH_UNITS"]=pitchUnits
         if roll:
             ancillaryData.appendColumn("ROLL", roll)
-            ancillaryData.attributes["ROLL_Units"]=rollUnits
+            ancillaryData.attributes["ROLL_UNITS"]=rollUnits
 
         ancillaryData.columnsToDataset()
 

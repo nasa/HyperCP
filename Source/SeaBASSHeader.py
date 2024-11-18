@@ -141,6 +141,8 @@ class SeaBASSHeader:
             FRMPath = 'FRM_Class-based'
         elif ConfigFile.settings['bL1bCal'] == 3:
             FRMPath = 'FRM-Full-Characterization'
+        else:
+            FRMPath = None
 
         if ConfigFile.settings["bL1bqcEnableSpecQualityCheck"]:
             specFilt = "On"

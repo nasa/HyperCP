@@ -725,15 +725,15 @@ class ProcessL1bqc:
         gp.attributes["POINTING_UNITS"] = "degrees"
         gp.attributes["REL_AZ_UNITS"] = "degrees"
         gp.attributes["ROLL_UNITS"] = "degrees"
-        gp.attributes["SAL_UNITS"] = "psu"
+        gp.attributes["SALINITY_UNITS"] = "psu"
         gp.attributes["SOLAR_AZ_UNITS"] = "degrees"
         gp.attributes["SPEED_UNITS"] = "m/s"
         gp.attributes["SST_UNITS"] = "degrees C"
-        gp.attributes["SST_IR_UNITS"] = node.attributes["SATPYR_UNITS"]
-        del node.attributes["SATPYR_UNITS"]
+        # gp.attributes["SST_IR_UNITS"] = node.attributes["SATPYR_UNITS"]
+        # del node.attributes["SATPYR_UNITS"]
         gp.attributes["STATION_UNITS"] = "unitless"
         gp.attributes["SZA_UNITS"] = "degrees"
-        gp.attributes["WIND_UNITS"] = "m/s"
+        gp.attributes["WINDSPEED_UNITS"] = "m/s"
 
         # Irradiance
         gp = node.getGroup("IRRADIANCE")

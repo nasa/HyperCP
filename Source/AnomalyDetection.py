@@ -456,8 +456,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             print(msg)
             return
 
-        # Process L1A to L1AQC with no deglitching
-        flag_Trios = 0
+        # Process L1A to L1AQC with no deglitching        
         fileName = os.path.basename(os.path.splitext(inFilePath[0])[0]).replace("_L1A","_L1AQC")+".hdf"
         calibrationMap = Controller.processCalibrationConfig(ConfigFile.filename, ConfigFile.settings['CalibrationFiles'])
         outputDirectory = MainConfig.settings['outDir']
@@ -468,7 +467,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             os.mkdir(pathOutLevel)
         temp = ConfigFile.settings['bL1aqcDeglitch']
         ConfigFile.settings['bL1aqcDeglitch'] = 0
-        root = Controller.processL1aqc(inFilePath[0], outFilePath, calibrationMap, self.ancillaryData,flag_Trios)
+        root = Controller.processL1aqc(inFilePath[0], outFilePath, calibrationMap, self.ancillaryData)
 
         if root is None:
             msg = "L1A file fails basic L1AQC."
@@ -1036,7 +1035,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         calPath = os.path.join(PATH_TO_CONFIG, calFolder)
         print("Read CalibrationFile ", calPath)
         calibrationMap = CalibrationFileReader.read(calPath)
-        root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, self.ancillaryData, flag_Trios=0)
+        root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, self.ancillaryData)
         # Restore full ancillary data
         self.ancillaryData = self.ancillaryDataComplete
 
