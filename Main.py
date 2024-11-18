@@ -16,6 +16,7 @@ import os
 import sys
 import time
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PIL import Image, ImageTk
 
 # import requests
 # from tqdm import tqdm
@@ -44,6 +45,13 @@ class Window(QtWidgets.QWidget):
         super().__init__(parent)
         # self.setStyleSheet("background-color: #e3e6e1;")
 
+        icon_path = os.path.join(os.path.dirname(__file__), 'Data', 'Img', 'logo.ico')
+        # load_icon = Image.open(icon_path)
+        # render = ImageTk.PhotoImage(load_icon)  # Loads the given icon
+        # app.iconphoto(False, render)
+
+        self.setWindowIcon(QtGui.QIcon(icon_path))
+
         # Create - if inexistent - directories Plots, Config and Logs
         hypercpDirs = ["Plots", "Config", "Logs"]
         for directory in hypercpDirs:
@@ -60,7 +68,6 @@ class Window(QtWidgets.QWidget):
 
     def initUI(self):
         """Initialize the user interface"""
-
         # Main window configuration restore
         MainConfig.loadConfig(
             MainConfig.fileName, VERSION
