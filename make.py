@@ -62,7 +62,6 @@ with open('version.txt', 'w') as f:
 linked_data = [
     f'--add-data={os.path.relpath("version.txt", root)}{add_data_sep}.',
     f'--add-data={os.path.relpath("Config", root)}{add_data_sep}Config',
-    f'--add-data={os.path.relpath(".ecmwf_api_config", root)}{add_data_sep}.',
 ]
 for f in sorted(glob.glob(os.path.join('Data', '*'))):
     if os.path.isdir(f) and os.path.basename(f) not in ['L1A', 'L1AQC', 'L1B', 'L1BQC', 'L2', 'Plots', 'Reports']:

@@ -4,6 +4,9 @@
 
 <center><img src="Data/Img/with_background_530x223.png" alt="Banner"></center>
 
+![Test](https://github.com/nasa/HyperCP/actions/workflows/ApplicationTesting.yml/badge.svg)
+![Bundle](https://github.com/nasa/HyperCP/actions/workflows/Pipeline.yml/badge.svg)
+
 Hyperspectral In situ Support for PACE (HyperInSPACE) Community Processor (HyperCP) is designed to provide hyperspectral support for the <a href='https://pace.gsfc.nasa.gov/'>PACE mission</a> but also multispectral missions such as
 [Sentinel-3](https://sentinels.copernicus.eu/web/sentinel/missions/sentinel-3) by processing automated and manual, above-water,
 hyperspectral ocean color radiometry data using state-of-the-art methods and protocols for quality assurance,
