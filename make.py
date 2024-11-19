@@ -40,7 +40,7 @@ version = None
 with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Main.py'), 'r') as f:
     for l in f:
         if l.startswith('VERSION'):
-            version = l.split('=')[1].strip(" \n'")
+            version = l.split('=')[1].strip(" \n'\"")
             break
 
 # Get git hash (without git package)
