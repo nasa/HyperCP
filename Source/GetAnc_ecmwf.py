@@ -15,7 +15,8 @@ from Source import PATH_TO_DATA, PACKAGE_DIR
 from Source.HDFRoot import HDFRoot
 # from HDFGroup import HDFGroup
 from Source.Utilities import Utilities
-from Source.GetAnc_credentials import read_user_credentials
+# from Source import OBPGSession
+
 
 class GetAnc_ecmwf:
 
@@ -36,6 +37,36 @@ class GetAnc_ecmwf:
         second = time.split(':')[2]
 
         return year,month,day,hour,minute,second
+
+
+    def write_cdsapirc_file(ecmwf_source):
+        '''
+        Automated definition of the ".cdsapirc file" required to run "cdsapi", according to the "ecmwf source" from where
+        the script is intending to obtain data.
+        This function assumes the existence of an ancillary file named ".ecmwf_api_config" located at user HOME dir
+        The file must have the following structure:
+
+        [ads]
+        ads_url: ADS_URL
+        ads_key: YOUR_ADS_KEY
+
+        Obtain the ADS_URL and YOUR_ADS_KEY at: https://ads.atmosphere.copernicus.eu/api-how-to
+        '''
+        ecmwf_api_config = os.path.join(PACKAGE_DIR, '.ecmwf_api_config')
+        if not os.path.exists(ecmwf_api_config):
+            raise IOError('file not found: %s!' % ecmwf_api_config)
+
+        if not os.path.exists(ecmwf_api_config):
+            raise FileNotFoundError(f'Unable to find: {ecmwf_api_config}')
+        config = configparser.ConfigParser()
+        config.read(ecmwf_api_config)
+
+        with open(os.path.join(PACKAGE_DIR, '.cdsapirc'), 'w') as f:
+            f.write('url: ' + config[ecmwf_source][ecmwf_source + '_url'])
+            f.write('\n')
+            f.write('key: ' + config[ecmwf_source][ecmwf_source + '_key'])
+            f.close()
+
 
     def ECMWF_latLonTimeTags(lat, lon, timeStamp, latRes, lonRes, timeResHours):
         '''
@@ -105,7 +136,9 @@ class GetAnc_ecmwf:
             pass
         else:
             print(f'Nearest model found at {timeStamp}')
-            url,key = read_user_credentials('ECMWF_ADS')
+            # copy .cdsapirc into home directory, because needed by the cdapi
+            homedir = os.path.expanduser( '~' )
+            shutil.copy(os.path.join(PACKAGE_DIR,'.cdsapirc'), homedir)
 
             year, month, day, hour, _, _ = GetAnc_ecmwf.timeStamp2yrMnthDayHrMinSec(timeStamp)
 
@@ -113,7 +146,7 @@ class GetAnc_ecmwf:
                 print('EAC4 dataset not available before 2003, skipping')
             else:
                 try:
-                    c = cdsapi.Client(timeout=5, url=url, key=key)
+                    c = cdsapi.Client(timeout=5)
                     c.retrieve(
                         'cams-global-atmospheric-composition-forecasts',
                         {
@@ -174,6 +207,9 @@ class GetAnc_ecmwf:
         latEff, lonEff, timeStampEff, latLonTag, dateTag = GetAnc_ecmwf.ECMWF_latLonTimeTags(lat, lon, timeStamp, latRes, lonRes, timeResHours)
 
         pathOut = os.path.join(pathEAC4, 'EAC4_%s_%s.nc' % (latLonTag, dateTag))
+
+        # Put the correct url and key in the ~/.cdsapirc file
+        GetAnc_ecmwf.write_cdsapirc_file('ads')
 
         GetAnc_ecmwf.EAC4_download_ensembles(latEff, lonEff, timeStampEff, EAC4_variables, pathOut)
 
