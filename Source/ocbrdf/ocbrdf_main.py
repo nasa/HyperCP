@@ -1,4 +1,3 @@
-import netCDF4
 import numpy as np
 import sys
 import xarray as xr
@@ -150,9 +149,9 @@ def brdf_uncertainty(ds, adf=None):
     ds['brdf_unc'] = xr.where(ds['brdf_unc_fail'], 0, ds['brdf_unc'])
 
     # Propagate to nrrs
-    Rwex_unc2 = ds['brdf_unc'] * ds['brdf_unc'] * ds['Rw'] * ds['Rw']
+    nrrs_unc2 = ds['brdf_unc'] * ds['brdf_unc'] * ds['Rw'] * ds['Rw']
     if 'Rw_unc' in ds:
-        Rwex_unc2 += ds['C_brdf'] * ds['C_brdf'] * ds['Rw_unc'] * ds['Rw_unc']
-    ds['nrrs_unc'] = np.sqrt(Rwex_unc2)/np.pi
+        nrrs_unc2 += ds['C_brdf'] * ds['C_brdf'] * ds['Rw_unc'] * ds['Rw_unc']
+    ds['nrrs_unc'] = np.sqrt(nrrs_unc2)
 
     return ds
