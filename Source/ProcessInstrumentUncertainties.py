@@ -124,12 +124,18 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         # interpolate std Signal to common wavebands - taken from L2 ES group: ProcessL2.py L1352
         for stype in types:
-            output[stype]['std_Signal_Interpolated'] = self.interp_common_wvls(
-                output[stype]['std_Signal'],
-                np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-                newWaveBands,
-                return_as_dict=True)
-                # this interpolation is giving an array back of a slightly different size in the new wave bands
+            try:
+                output[stype]['std_Signal_Interpolated'] = self.interp_common_wvls(
+                    output[stype]['std_Signal'],
+                    np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+                    newWaveBands,
+                    return_as_dict=True)
+                    # this interpolation is giving an array back of a slightly different size in the new wave bands
+            except IndexError as err:
+                msg = "Unable to parse statistics for the ensemble, possibly too few scans."
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
         return output
 
     def read_uncertainties(self, node, uncGrp, cCal, cCoef, cStab, cLin, cStray, cT, cPol, cCos) -> Optional[np.array]:
@@ -554,24 +560,28 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
 
             p_unc = UncertaintyGUI()
-            p_unc.pie_plot_class_l2(
-                rrs_means,
-                lw_means,
-                rrs_uncertainties,
-                lw_uncertainties,
-                np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float),  # pass radcal wavelengths
-                cast,
-                node.getGroup("ANCILLARY")
-            )
-
-            p_unc.plot_class_L2(
-                rrs_means,
-                lw_means,
-                rrs_uncertainties,
-                lw_uncertainties,
-                np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float),
-                cast
-            )
+            try:
+                p_unc.pie_plot_class_l2(
+                    rrs_means,
+                    lw_means,
+                    rrs_uncertainties,
+                    lw_uncertainties,
+                    np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float),  # pass radcal wavelengths
+                    cast,
+                    node.getGroup("ANCILLARY")
+                )
+                p_unc.plot_class_L2(
+                    rrs_means,
+                    lw_means,
+                    rrs_uncertainties,
+                    lw_uncertainties,
+                    np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float),
+                    cast
+                )
+            except ValueError as err:
+                msg = f"unable to run uncertainty breakdown plots for {cast}, with error: {err}"
+                print(msg)
+                Utilities.writeLogFile(msg)
 
         # these are absolute values!
         output = {}
@@ -1272,9 +1282,14 @@ class HyperOCR(BaseInstrument):
             if N > 25:  # normal case
                 std_Light.append(np.std(lightData[k])/np.sqrt(N))
                 std_Dark.append(np.std(darkData[k])/np.sqrt(Nd) )  # sigma here is essentially sigma**2 so N must sqrt
-            else:  # few scans, use different statistics
+            elif N > 3:  # few scans, use different statistics
                 std_Light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
                 std_Dark.append(np.sqrt(((Nd-1)/(Nd-3))*(np.std(darkData[k]) / np.sqrt(Nd))**2))
+            else:
+                msg = "too few scans to make meaningful statistics"
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
 
             ave_Light.append(np.average(lightData[k]))
             ave_Dark.append(np.average(darkData[k]))
@@ -1766,12 +1781,23 @@ class Trios(BaseInstrument):
 
         # get light and dark data before correction
         light_avg = np.mean(calibrated_light_measure, axis=0)  # [ind_nocal == False]
-        light_std = np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
-
+        if nmes > 25:
+            light_std = np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
+        elif nmes > 3:
+            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(calibrated_light_measure, axis=0) / np.sqrt(nmes))**2)
+        else:
+            msg = "too few scans to make meaningful statistics"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return False
         # ensure all TriOS outputs are length 255 to match SeaBird HyperOCR stats output
         ones = np.ones(nband)  # to provide array of 1s with the correct shape
         dark_avg = ones * offset
-        dark_std = ones * np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0) / pow(nmes, 0.5)
+        if nmes > 25:
+            dark_std = ones * np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0) / pow(nmes, 0.5)
+        else:  # already checked for light data so we knwo nmes > 3
+            dark_std = np.sqrt(((nmes-1)/(nmes-3))*(
+                    ones * np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0)/np.sqrt(nmes))**2)
         # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
 
         stdevSignal = {}
