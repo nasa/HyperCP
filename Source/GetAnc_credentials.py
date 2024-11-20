@@ -197,15 +197,15 @@ def create_popup(title, key_string, secret_string, credentials_filename, URL_str
     root = tk.Tk()
 
     # Set minimum size for the window
-    root.minsize(400, 200)
+    #root.minsize(400, 200)
     root.title(title)
-    root.geometry("450x180")
+    #root.geometry("450x180")
     root.option_add("*Font", "Helvetica 10")
     root.configure(bg='#f0f0f0')
-    root.option_add("*Button*background",'#f0f0f0')
-    root.option_add("*Entry*background",'#f0f0f0')
-    root.option_add("*Label*background",'#f0f0f0')
-    root.option_add("*Checkbutton*background",'#f0f0f0')
+    #root.option_add("*Button*background",'#f0f0f0')
+    #root.option_add("*Entry*background",'#f0f0f0')
+    #root.option_add("*Label*background",'#f0f0f0')
+    #root.option_add("*Checkbutton*background",'#f0f0f0')
 
     # Read icon (specific to ancillary source)
     icon_path = os.path.join(os.path.dirname(__file__),'..','Data','Img','%s_logo.png' % credentialsID)
