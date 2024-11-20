@@ -70,7 +70,7 @@ class ProcessL2:
         nirSlice = newNIRData.columns
         nirnLwSlice = newNIRnLwData.columns
 
-        # # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
+        # # Perform near-infrared residual correction to remove additional atmospheric and glint contamination
         # if ConfigFile.settings["bL2PerformNIRCorrection"]:
         if simpleNIRCorrection:
             # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
@@ -647,8 +647,8 @@ class ProcessL2:
                 Utilities.writeLogFile(msg)
             timeStamp = newTimeStamp.copy()
 
-        # if badTimes == []:
-        #     startLength = 1 # avoids div by zero below when finalCount is 0
+        if len(badTimes) == 0:
+            startLength = 1 # avoids div by zero below when finalCount is 0
 
         for ds in group.datasets:
             # if ds != "STATION":
