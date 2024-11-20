@@ -647,8 +647,8 @@ class ProcessL2:
                 Utilities.writeLogFile(msg)
             timeStamp = newTimeStamp.copy()
 
-        if badTimes == []:
-            startLength = 1 # avoids div by zero below when finalCount is 0
+        # if badTimes == []:
+        #     startLength = 1 # avoids div by zero below when finalCount is 0
 
         for ds in group.datasets:
             # if ds != "STATION":

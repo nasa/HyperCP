@@ -403,6 +403,7 @@ class UncertaintyEngine(ABC):
                 uLw[i:i + 2] = lw_uncs[i:i + 2]
 
             output['Lw'][keys_lw[indx]] = self.punpy_MCP.Propagate_Lw_HYPER(lw_vals, uLw)
+
             if not cumulative:
                 uLw = np.zeros(np.asarray(lw_uncs).shape)  # reset uncertaitnies
 

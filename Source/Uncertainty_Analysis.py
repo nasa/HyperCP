@@ -161,7 +161,7 @@ class Propagate:
         corr_list = ['rand', 'syst', 'rand', 'syst', 'syst', 'syst', 'syst', 'syst',
                      'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
 
-        return self.MCP.propagate_random(self.Lw,
+        return self.MCP.propagate_standard(self.Lw,
                                          mean_vals,
                                          uncertainties,
                                          corr_between=self.corr_matrix_Default_Lw,
