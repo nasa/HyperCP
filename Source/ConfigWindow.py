@@ -220,7 +220,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l1bSublabel6 = QtWidgets.QLabel("    Fallback values when no model available:", self)
         # l1bSublabel5.setOpenExternalLinks(True)
         self.l1bGetAncCheckBox1 = QtWidgets.QCheckBox("GMAO MERRA2", self)
-        self.l1bGetAncCheckBox2 = QtWidgets.QCheckBox("ECMWF ADS", self)
+        self.l1bGetAncCheckBox2 = QtWidgets.QCheckBox("ECMWF EAC4", self)
 
         # If clicked trigger l1bGetAncCheckBoxUpdate
         self.l1bGetAncCheckBox1.clicked.connect(lambda: self.l1bGetAncCheckBoxUpdate('NASA_Earth_Data'))
@@ -1662,6 +1662,7 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL1bGetAnc"] = 0
             self.l1bGetAncCheckBox1.setChecked(False)
+            self.l1bGetAncCheckBox2.setChecked(False)
 
 
     def l1bGetAncResetButtonUpdate(self):
@@ -1729,7 +1730,7 @@ class ConfigWindow(QtWidgets.QDialog):
             credentials.credentialsWindow('NASA_Earth_Data')
             self.l1bGetAncUntickIfNoCredentials('NASA_Earth_Data')
         elif self.l1bGetAncCheckBox2.isChecked():
-            print("ConfigWindow - l1bGetAncCheckBoxUpdate ECMWF ERA5")
+            print("ConfigWindow - l1bGetAncCheckBoxUpdate ECMWF EAC4")
             ConfigFile.settings["bL1bGetAnc"] = 2
             credentials.credentialsWindow('ECMWF_ADS')
             self.l1bGetAncUntickIfNoCredentials('ECMWF_ADS')
