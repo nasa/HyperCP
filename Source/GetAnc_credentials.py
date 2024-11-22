@@ -1,13 +1,66 @@
-import tkinter as tk
-from PIL import Image, ImageTk
-from tkinter import messagebox
 import json
 import os
 import re
 import numpy as np
-import webbrowser
 import platform
 import stat
+import webbrowser
+
+# Credentials specifications for the different ancillary sources
+def credentialsSpec(credentialsID):
+    '''
+    Define credentials specifications.
+
+    credentialsID: a string, 'NASA_Earth_Data', 'ECWMF_ADS' or 'ECMWF_CDS'
+
+    title: the title of the pop-up window
+    key_string: how the key is called (depends on credentials specs)
+    secret_string: how the secret is called (depends on credentials specs)
+    key: the key (aka the user or url)
+    secret: the secret (aka password)
+    credentialsFile: credentials filename (not full path)
+    credentials_filename: /full/path/to/credentialsFile
+    URL_string: the url to be stored in given netrc line ("https:://" or similar prefix is removed)
+
+
+    output: a dictionary with the specifications bounded to credentialsID
+    '''
+
+    out = {'credentialsID':credentialsID}
+
+    if credentialsID == 'NASA_Earth_Data':
+        if platform.system() == 'Windows':
+            out['credentials_filename'] = '_netrc'
+        else:
+            out['credentials_filename'] = '.netrc'
+        out['title'] = 'Login NASA Earth Data credentials - MERRA-2 Ancillary'
+        out['key_string'] = 'login'
+        out['secret_string'] = 'password'
+        out['URL_string'] = 'https://urs.earthdata.nasa.gov'
+    elif credentialsID == 'ECMWF_ADS':
+        out['credentials_filename'] = '.ecmwf_ads_credentials.json'
+        out['title'] = 'Login ECMWF ADS credentials - EAC-4 Ancillary'
+        out['key_string'] = 'url'
+        out['secret_string'] = 'key'
+        out['URL_string'] = 'https://ads.atmosphere.copernicus.eu/how-to-api'
+    elif credentialsID == 'ECMWF_CDS':
+        out['credentials_filename'] = '.ecmwf_cds_credentials.json'
+        out['title'] = 'Login ECMWF CDS credentials - ERA-5 Ancillary'
+        out['key_string'] = 'url'
+        out['secret_string'] = 'key'
+        out['URL_string'] = 'https://cds.climate.copernicus.eu/how-to-api'
+    elif credentialsID == 'EUMETSAT_Data_Store':
+        out['credentials_filename'] = '.eumdac_credentials.json'
+        out['title'] = 'Login EUMETSAT Data Store credentials (after EO Portal login)'
+        out['key_string'] = 'consumer_key'
+        out['secret_string'] = 'consumer_secret'
+        out['URL_string'] = 'https://api.eumetsat.int/api-key/'
+
+    out['credentialsFile'] = os.path.join(os.path.expanduser('~'), out['credentials_filename'])
+    out['obtainCredsString'] = 'Click here to obtain these credentials'
+    out['storeCredsString'] = "Store %s credentials in your home directory." % credentialsID.replace('_', ' ')
+
+    return out
 
 # Erase already existing user credentials
 def erase_user_credentials(credentialsID):
@@ -50,8 +103,10 @@ def credentials_stored(credentialsID):
 
     return: credentialsStored, a Boolean.
     '''
+
+    # Get credentials file
     specs = credentialsSpec(credentialsID)
-    credentialsFile = os.path.join(os.path.expanduser('~'), specs['credentials_filename'])
+    credentialsFile = specs['credentialsFile']
 
     # If JSON file exists, assume credentials are stored. If netrc check for specific line. (JSON or netrc according to "specs")
     if credentialsFile.endswith('json'):
@@ -75,8 +130,9 @@ def read_user_credentials(credentialsID):
     credentialsID: a string, 'NASA_Earth_Data', 'ECWMF_ADS' or 'ECMWF_CDS'
     '''
 
+    # Get credentials file
     specs = credentialsSpec(credentialsID)
-    credentialsFile = os.path.join(os.path.expanduser('~'), specs['credentials_filename'])
+    credentialsFile = specs['credentialsFile']
 
     # Error string
     missingCredentials = '%s: Credentials file missing or incomplete. Check %s' % (credentialsID.replace('_',' '),credentialsFile)
@@ -115,17 +171,20 @@ def read_user_credentials(credentialsID):
     return key,secret
 
 # Function to save user credentials
-def save_user_credentials(key_string, secret_string, key, secret, credentialsFile, URL_string):
+def save_user_credentials(specs,key,secret):
     '''
-    Save user credentials
+    specs: a dictionary with the specifications according to credentialsID (output of function credentialsSpec)
+    key: a string, the key/username/URL
+    secret: a string, the secret/password
 
-    key_string: a string, how the key is called (depends on credentials specs)
-    secret_string: a string, how the secret is called (depends on credentials specs)
-    key: a string, the key (aka the user or url)
-    secret: a string, the secret (aka password)
-    credentialsFile: a string, /full/path/to/credentials/file
-    URL_string: a string, the url to be stored in given netrc line ("https:://" or similar prefix is removed)
+    Save user credentials
     '''
+
+    # Unpack specs
+    key_string      = specs['key_string']
+    secret_string   = specs['secret_string']
+    credentialsFile = specs['credentialsFile']
+    URL_string      = specs['URL_string']
 
     # "strip" removes extra spaces in case password was copied-pasted with extra spaces on the sides.
     credentials = {
@@ -150,48 +209,142 @@ def save_user_credentials(key_string, secret_string, key, secret, credentialsFil
                 fo.write(credLine)
             fo.close()
 
+#
+def messageBox(title,text,boxType,PyQT_or_Tk='PyQT'):
+    '''
+    Message box after submit button is clicked
+
+    title: a string. The title of the message box
+    text: a string. the title of the message box
+    boxType: a string, the message box type, either 'Information' or 'Warning'.
+    PyQT_or_Tk: a string, either 'PyQT' or 'Tk' (default='PyQT')
+    '''
+
+    if PyQT_or_Tk == 'PyQT':
+        from PyQt5.QtWidgets import QMessageBox
+        msg_box = QMessageBox()
+        if boxType == 'Information':
+            msg_box.setIcon(QMessageBox.Information)
+            window_pop_up.deleteLater()
+        elif boxType == 'Warning':
+            msg_box.setIcon(QMessageBox.Warning)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(text)
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec()
+    elif PyQT_or_Tk == 'Tk':
+        from tkinter import messagebox
+        if boxType == 'Information':
+            messagebox.showinfo(title, text)
+            root.destroy()
+        elif boxType == 'Warning':
+            messagebox.showwarning(title, text)
+
 # Function to handle submission of key and secret
-def submit(key_string, secret_string, credentials_filename, URL_string):
+def submit(specs, key, secret, PyQT_or_Tk='PyQT'):
     '''
+    specs: a dictionary with the specifications according to credentialsID (output of function credentialsSpec)
+
     Action: either save or show error if either key or secret were not properly inputted in pop-up window
-
-    key_string: a string, how the key is called (depends on credentials specs)
-    secret_string: a string, how the secret is called (depends on credentials specs)
-    key: a string, the key (aka the user or url)
-    secret: a string, the secret (aka password)
-    credentialsFile: a string, credentials filename (not full path)
-    URL_string: a string, the url to be stored in given netrc line ("https:://" or similar prefix is removed)
     '''
-
-    credentialsFile = os.path.join(os.path.expanduser('~'), credentials_filename)
-    key = key_entry.get()
-    secret = secret_entry.get()
 
     if key and secret:
-        save_user_credentials(key_string, secret_string, key, secret, credentialsFile, URL_string)
-        messagebox.showinfo("Success", "Credentials and settings saved successfully!")
-        root.destroy()
+        save_user_credentials(specs,key,secret)
+        messageBox('Success', 'Credentials and settings saved successfully!','Information',PyQT_or_Tk=PyQT_or_Tk)
     else:
-        messagebox.showwarning("Input Error", "Please, don't leave empty fields!")
+        messageBox('Input Error', "Please, don't leave empty fields!",'Warning',PyQT_or_Tk=PyQT_or_Tk)
     return
 
-# Create the main popup window
-def create_popup(title, key_string, secret_string, credentials_filename, URL_string, credentialsID):
+
+def custom_close_event(event):
+    # Print a debug message
+    print("Custom close event triggered!")
+
+    # Schedule the window for deletion
+    window_pop_up.deleteLater()
+
+    # Accept the event (allow the window to close)
+    event.accept()
+
+# Pop-up window: PyQt implementation
+def create_popup_PyQT(specs):
     '''
+    specs: a dictionary with the specifications according to credentialsID (output of function credentialsSpec)
+
     Define the pop-up window to input credentials
-
-    title: a string, the title of the pop-up window
-    key_string: a string, how the key is called (depends on credentials specs)
-    secret_string: a string, how the secret is called (depends on credentials specs)
-    key: a string, the key (aka the user or url)
-    secret: a string, the secret (aka password)
-    credentialsFile: a string, credentials filename (not full path)
-    URL_string: a string, the url to be stored in given netrc line ("https:://" or similar prefix is removed)
-    credentialsID: a string, 'NASA_Earth_Data', 'ECWMF_ADS' or 'ECMWF_CDS'
     '''
 
+    from PyQt5 import QtWidgets, QtGui, QtCore
 
-    global root, key_entry, secret_entry
+    global app_pop_up, window_pop_up
+
+    # Unpack specs
+    title                = specs['title']
+    key_string           = specs['key_string']
+    secret_string        = specs['secret_string']
+    URL_string           = specs['URL_string']
+    icon_path            = specs['icon_path']
+    obtainCredsString    = specs['obtainCredsString']
+    storeCredsString     = specs['storeCredsString']
+
+    window_pop_up = QtWidgets.QDialog()
+    window_pop_up.setWindowTitle(title)
+    window_pop_up.resize(400, 200)
+
+    app_pop_up_icon = QtGui.QIcon(icon_path)
+    window_pop_up.setWindowIcon(app_pop_up_icon)
+    window_pop_up.closeEvent = custom_close_event
+
+    layout = QtWidgets.QVBoxLayout()
+
+    label = QtWidgets.QLabel(storeCredsString)
+    layout.addWidget(label)
+
+    key_label = QtWidgets.QLabel(key_string.title())
+    layout.addWidget(key_label)
+    key_entry = QtWidgets.QLineEdit()
+    layout.addWidget(key_entry)
+
+    secret_label = QtWidgets.QLabel(secret_string.title())
+    layout.addWidget(secret_label)
+    secret_entry = QtWidgets.QLineEdit()
+    secret_entry.setEchoMode(QtWidgets.QLineEdit.Password)
+    layout.addWidget(secret_entry)
+
+    link_button = QtWidgets.QLabel('<a href="%s">%s</a>' % (URL_string,obtainCredsString))
+    link_button.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+    link_button.setOpenExternalLinks(True)
+    link_button.linkActivated.connect(lambda: webbrowser.open(URL_string))
+    layout.addWidget(link_button)
+
+    submit_button = QtWidgets.QPushButton("Submit")
+    submit_button.clicked.connect(lambda: submit(specs, key_entry.text(), secret_entry.text(), PyQT_or_Tk='PyQT'))
+    layout.addWidget(submit_button)
+
+    window_pop_up.setLayout(layout)
+    window_pop_up.exec()
+
+# Pop-up window: Tk implementation
+def create_popup_Tk(specs):
+    '''
+    specs: a dictionary with the specifications according to credentialsID (output of function credentialsSpec)
+
+    Define the pop-up window to input credentials
+    '''
+
+    # Unpack specs
+    title                = specs['title']
+    key_string           = specs['key_string']
+    secret_string        = specs['secret_string']
+    URL_string           = specs['URL_string']
+    icon_path            = specs['icon_path']
+    obtainCredsString    = specs['obtainCredsString']
+    storeCredsString     = specs['storeCredsString']
+
+    global root
+
+    import tkinter as tk
+    from PIL import Image, ImageTk
 
     # Tkinter window initialization
     root = tk.Tk()
@@ -208,7 +361,6 @@ def create_popup(title, key_string, secret_string, credentials_filename, URL_str
     root.option_add("*Checkbutton*background",'#f0f0f0')
 
     # Read icon (specific to ancillary source)
-    icon_path = os.path.join(os.path.dirname(__file__),'..','Data','Img','%s_logo.png' % credentialsID)
     load_icon = Image.open(icon_path)
     render = ImageTk.PhotoImage(load_icon) # Loads the given icon
     root.iconphoto(False, render)
@@ -222,9 +374,7 @@ def create_popup(title, key_string, secret_string, credentials_filename, URL_str
     bold_font = ('Helvetica', 10, 'bold')
 
     # Create labels for normal and bold parts
-    label1 = tk.Label(frame, text="Store ", font=normal_font).pack(side="left")
-    label2 = tk.Label(frame, text=credentialsID.replace('_',' '), font=bold_font).pack(side="left")
-    label3 = tk.Label(frame, text=" credentials in your home directory.", font=normal_font).pack(side="left")
+    _ = tk.Label(frame, text=storeCredsString, font=normal_font).pack(side="left")
 
     # Key entry
     tk.Label(root, text=key_string.title()).grid(row=1, column=0, padx=10, pady=5)
@@ -237,12 +387,12 @@ def create_popup(title, key_string, secret_string, credentials_filename, URL_str
     secret_entry.grid(row=2, column=1, padx=10, pady=5)
 
     # Hyperlink to URL
-    link_label = tk.Label(root, text='Click here to obtain these credentials', fg="blue", cursor="hand2")
+    link_label = tk.Label(root, text=obtainCredsString, fg="blue", cursor="hand2")
     link_label.grid(row=4, columnspan=2, padx=10, pady=5)
     link_label.bind("<Button-1>", lambda event: webbrowser.open(URL_string))
 
     # Submit button
-    submit_button = tk.Button(root, text="Submit", command=lambda: submit(key_string, secret_string, credentials_filename, URL_string))
+    submit_button = tk.Button(root, text="Submit", command=lambda: submit(specs, key_entry.get(), secret_entry.get(), PyQT_or_Tk='Tk'))
     submit_button.grid(row=5, columnspan=2, padx=10, pady=5)
 
     # Run input credentials window
@@ -250,62 +400,25 @@ def create_popup(title, key_string, secret_string, credentials_filename, URL_str
 
     return
 
-# Credentials specifications for the different ancillary sources
-def credentialsSpec(credentialsID):
-    '''
-    Define credentials specifications.
-
-    credentialsID: a string, 'NASA_Earth_Data', 'ECWMF_ADS' or 'ECMWF_CDS'
-
-    output: a dictionary with the specifications bounded to credentialsID
-    '''
-
-    out = {}
-
-    if credentialsID == 'NASA_Earth_Data':
-        if platform.system() == 'Windows':
-            out['credentials_filename'] = '_netrc'
-        else:
-            out['credentials_filename'] = '.netrc'
-        out['title'] = 'Login NASA Earth Data credentials - MERRA-2 Ancillary'
-        out['key_string'] = 'login'
-        out['secret_string'] = 'password'
-        out['URL_string'] = 'https://urs.earthdata.nasa.gov'
-    elif credentialsID == 'ECMWF_ADS':
-        out['credentials_filename'] = '.ecmwf_ads_credentials.json'
-        out['title'] = 'Login ECMWF ADS credentials - EAC-4 Ancillary'
-        out['key_string'] = 'url'
-        out['secret_string'] = 'key'
-        out['URL_string'] = 'https://ads.atmosphere.copernicus.eu/how-to-api'
-    elif credentialsID == 'ECMWF_CDS':    # Not actually used in HyperCP, kept just in case...
-        out['credentials_filename'] = '.ecmwf_cds_credentials.json'
-        out['title'] = 'Login ECMWF CDS credentials - ERA-5 Ancillary'
-        out['key_string'] = 'url'
-        out['secret_string'] = 'key'
-        out['URL_string'] = 'https://cds.climate.copernicus.eu/how-to-api'
-
-    return out
-
 # Pop-up window to save credentials
-def credentialsWindow(credentialsID):
+def credentialsWindow(credentialsID,PyQT_or_Tk='PyQT'):
     '''
     Main credentials window function.
-    credentialsID: a string, 'NASA_Earth_Data', 'ECWMF_ADS' or 'ECMWF_CDS'
+    credentialsID: a string, 'EUMETSAT_Data_Store', 'NASA_Earth_Data', 'ECWMF_ADS' or 'ECMWF_CDS'
 
     Action: if credentials not stored, open pop-up window to input credentials.
     '''
-
-    # Specifications assigned from credentialsID
     specs = credentialsSpec(credentialsID)
-    credentialsFile = os.path.join(os.path.expanduser('~'), specs['credentials_filename'])
 
     # If credentials not stored, pop-up window.
     if not credentials_stored(credentialsID):
-        create_popup(specs['title'],
-                     specs['key_string'],
-                     specs['secret_string'],
-                     specs['credentials_filename'],
-                     specs['URL_string'],
-                     credentialsID)
+        if PyQT_or_Tk == 'PyQT':
+            # HyperCP
+            specs['icon_path'] = os.path.join(os.path.dirname(__file__), '..', 'Data', 'Img', '%s_logo.png' % credentialsID)
+            create_popup_PyQT(specs)
+        elif PyQT_or_Tk == 'Tk':
+            # ThoMaS
+            specs['icon_path'] = os.path.join(os.path.dirname(__file__), '%s_logo.png' % credentialsID)
+            create_popup_Tk(specs)
     else:
-        print("%s: Credentials already available at: %s" % (credentialsID,credentialsFile))
+        print("%s: Credentials already available at: %s" % (credentialsID,specs['credentialsFile']))
