@@ -289,10 +289,7 @@ class Controller:
             root = ProcessL1aSeaBird.processL1a(inFilePath, calibrationMap)
             outFFPs = outFilePath
         elif ConfigFile.settings["SensorType"].lower() == "trios":
-            # Multiple collections may be present, each with a file per sensor, root will only be the last collection
-            # root, outFFPs = TriosL1A.triosL1A(inFilePath, outFilePath)
             root, outFFPs = ProcessL1aTriOS.processL1a(inFilePath, outFilePath)
-            # outFFPs = outFFPs[0]
         elif ConfigFile.settings["SensorType"].lower() == "sorad":
             root = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
