@@ -37,9 +37,9 @@ def drop_unused_coords(var):
             var = var.drop(coord)
     return var
 
-def squeeze_trivial_dims(ds):
+def squeeze_trivial_dims(ds,dimOrderAccordingTo='Rw'):
     squeezedDims = {}
-    for d0,dim in enumerate(ds.dims):
+    for d0,dim in enumerate(ds[dimOrderAccordingTo].dims):
         if ds.sizes[dim] == 1:
             squeezedDims[dim] = d0
 

@@ -149,9 +149,9 @@ def brdf_uncertainty(ds, adf=None):
     ds['brdf_unc'] = xr.where(ds['brdf_unc_fail'], 0, ds['brdf_unc'])
 
     # Propagate to nrrs
-    nrrs_unc2 = ds['brdf_unc'] * ds['brdf_unc'] * ds['Rw'] * ds['Rw']
+    Rwex_unc2 = ds['brdf_unc'] * ds['brdf_unc'] * ds['Rw'] * ds['Rw']
     if 'Rw_unc' in ds:
-        nrrs_unc2 += ds['C_brdf'] * ds['C_brdf'] * ds['Rw_unc'] * ds['Rw_unc']
-    ds['nrrs_unc'] = np.sqrt(nrrs_unc2)
+        Rwex_unc2 += ds['C_brdf'] * ds['C_brdf'] * ds['Rw_unc'] * ds['Rw_unc']
+    ds['nrrs_unc'] = np.sqrt(Rwex_unc2)/np.pi
 
     return ds
