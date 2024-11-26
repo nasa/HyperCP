@@ -16,7 +16,7 @@ dependencies:
   - pandas=1.5
   - pysolar=0.10
   - xarray
-  - cdsapi=0.6
+  - cdsapi>=0.7.2
   - netcdf4=1.6
   - py6s=1.9
   - pytables=3.7
