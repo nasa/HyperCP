@@ -86,6 +86,8 @@ class GetAnc:
                     msg = f'Request error: {status}'
                     print(msg)
                     Utilities.writeLogFile(msg)
+                    if os.environ["HYPERINSPACE_CMD"].lower() == 'true':
+                        return
                     alert = QtWidgets.QMessageBox()
                     alert.setText(f'Request error: {status}\n \
                                     Check that server credentials have \n \
@@ -93,7 +95,7 @@ class GetAnc:
                                     MERRA2 model data are not available until \n \
                                     the third week of the following month.')
                     alert.exec_()
-                    return None
+                    return
 
                 # GMAO Atmospheric model data
                 node = HDFRoot.readHDF5(filePath1)

@@ -386,10 +386,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                                       xSlice['ltSample'][i].items() if float(key) in waveSubset}
                                      for i in range(len(xSlice['ltSample']))])
 
+        # Get rho from scalar or vector
         if rhoScalar is not None:  # make rho a constant array if scalar
             rho = np.ones(len(waveSubset))*rhoScalar  # convert rhoScalar to the same dims as other values/Uncertainties
         else:
             rho = np.asarray(list(rhoVec.values()), dtype=float)
+
+        # Get rhoDelta from scalar or vector
+        if not hasattr(rhoDelta, '__len__'):  # Not an array (e.g. list or np.array)
+            rhoDelta = np.ones(len(waveSubset)) * rhoDelta  # convert rhoDelta to the same dims as other values/Uncertainties
 
         # initialise punpy propagation object
         mdraws = esSampleXSlice.shape[0]  # keep no. of monte carlo draws consistent

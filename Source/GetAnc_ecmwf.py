@@ -223,11 +223,11 @@ class GetAnc_ecmwf:
             ancillary = GetAnc_ecmwf.get_ancillary_main(lat[index], lon[index], lat_timeStamp, ancPath)
 
             # position retrieval index has been confirmed manually in SeaDAS
-            uWind = ancillary['10m_u_component_of_wind']['value']
-            vWind = ancillary['10m_v_component_of_wind']['value']
+            uWind = ancillary['10m_u_component_of_wind']['value'][0]
+            vWind = ancillary['10m_v_component_of_wind']['value'][0]
             modWind.append(np.sqrt(uWind*uWind + vWind*vWind)) # direction not needed
             #ancAOD = aerGroup.getDataset("TOTEXTTAU")
-            modAOD.append(ancillary['total_aerosol_optical_depth_550nm']['value'])
+            modAOD.append(ancillary['total_aerosol_optical_depth_550nm']['value'][0])
 
         modData = HDFRoot()
         modGroup = modData.addGroup('ECMWF')
