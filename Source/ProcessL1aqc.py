@@ -319,7 +319,7 @@ class ProcessL1aqc:
                 sasAzAnc = ancData.columns["SENSOR_AZ"][0]
 
             if not ConfigFile.settings["bL1aqcSolarTracker"] and not relAzAnc and not sasAzAnc:
-                msg = 'Required ancillary sensor geometries missing. Abort.'
+                msg = 'Required ancillary sensor geometries missing or incorrect ancillary file used. Abort.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
@@ -365,9 +365,9 @@ class ProcessL1aqc:
             ancillaryData.appendColumn("DATETIME", gpsDateTime)
 
             ancillaryData.appendColumn("LATITUDE", latAnc)
-            ancillaryData.attributes["LATITUDE_Units"]='degrees'
+            ancillaryData.attributes["LATITUDE_UNITS"]='degrees'
             ancillaryData.appendColumn("LONGITUDE", lonAnc)
-            ancillaryData.attributes["LONGITUDE_Units"]='degrees'
+            ancillaryData.attributes["LONGITUDE_UNITS"]='degrees'
 
 
         if not ConfigFile.settings["bL1aqcSolarTracker"] and not ancillaryData:
@@ -745,13 +745,13 @@ class ProcessL1aqc:
         #... otherwise populate the ancGroup
             ancGroup.addDataset("REL_AZ")
             ancGroup.datasets["REL_AZ"].data = np.array(relAzAnc, dtype=[('NONE', '<f8')])
-            ancGroup.attributes["REL_AZ_Units"]='degrees'
+            ancGroup.attributes["REL_AZ_UNITS"]='degrees'
             ancGroup.addDataset("SOLAR_AZ")
-            ancGroup.attributes["SOLAR_AZ_Units"]='degrees'
+            ancGroup.attributes["SOLAR_AZ_UNITS"]='degrees'
             ancGroup.datasets["SOLAR_AZ"].data = np.array(sunAzimuthAnc, dtype=[('NONE', '<f8')])
             ancGroup.addDataset("SZA")
             ancGroup.datasets["SZA"].data = np.array(sunZenithAnc, dtype=[('NONE', '<f8')])
-            ancGroup.attributes["SZA_Units"]='degrees'
+            ancGroup.attributes["SZA_UNITS"]='degrees'
 
         # Now include the remaining ancillary data in ancGroup with or w/out SolarTracker
         ancGroup.addDataset("LATITUDE")

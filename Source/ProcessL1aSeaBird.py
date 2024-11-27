@@ -12,8 +12,8 @@ from Source.RawFileReader import RawFileReader
 from Source.ConfigFile import ConfigFile
 
 
-class ProcessL1a:
-    '''Process L1A'''
+class ProcessL1aSeaBird:
+    '''Process L1A for SeaBird'''
     @staticmethod
     def processL1a(fp, calibrationMap):
         (_, fileName) = os.path.split(fp)
@@ -110,7 +110,9 @@ class ProcessL1a:
             Utilities.writeLogFile(msg)
 
         # Update the GPS group to include a datasets for DATETAG and TIMETAG2
-        for gp in root.groups:
+        gpsGroup = None
+        esDateTag = None
+        for gp in root.groups:            
             if gp.id.startswith("GP"):
                 gpsGroup = gp
             # Need year-gang and sometimes Datetag from one of the sensors

@@ -13,7 +13,7 @@ retrieval. Data outputs are formatted to text files for submission to the [SeaBA
 Currently, HyperCP supports <a href='https://www.seabird.com/'>Sea-Bird Scientific</a> HyperSAS packages with and
 without SolarTracker or pySAS robotic platforms as well as [TriOS](https://www.trios.de/en/radiometers.html) used in manual configuration. If you are interested in integrating support for your platform, contact us at the email addresses below or in the Discussions tab of the GitHub repository.
 
-## Version 1.2.8
+## Version 1.2.9
 
 ```
 The MIT license
@@ -92,6 +92,11 @@ If environment problems are encountered after updating HyperCP (e.g, dependencie
 
 ```
 conda env update --file environment.yml --prune
+```
+**NOTE:** If you started with working with v1.2.8 or less and are now in v1.2.9 or higher, you may need to remove the old hypercp environment and reinstall the environment as described above.
+```
+prompt$ conda deactivate
+prompt$ conda remove -n hypercp --all
 ```
 
 To report a bug, please submit it [here](https://github.com/nasa/HyperCP/issues), the HyperCP Team will take
