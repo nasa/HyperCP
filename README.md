@@ -93,6 +93,11 @@ If environment problems are encountered after updating HyperCP (e.g, dependencie
 ```
 conda env update --file environment.yml --prune
 ```
+**NOTE:** If you started with working with v1.2.8 or less and are now in v1.2.9 or higher, you may need to remove the old hypercp environment and reinstall the environment as described above.
+```
+prompt$ conda deactivate
+prompt$ conda remove -n hypercp --all
+```
 
 To report a bug, please submit it [here](https://github.com/nasa/HyperCP/issues), the HyperCP Team will take
 care of it :). All other support inquiries should be directed to the Discussions board [here](https://github.com/nasa/HyperCP/discussions)
