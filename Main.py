@@ -16,6 +16,7 @@ import os
 import sys
 import time
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PIL import Image, ImageTk
 
 # import requests
 # from tqdm import tqdm
@@ -25,12 +26,12 @@ from Source.MainConfig import MainConfig
 from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
 from Source.ConfigWindow import ConfigWindow
-from Source.GetAnc import GetAnc
+import Source.GetAnc_credentials as credentials
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
 
-VERSION = "1.2.9"
+VERSION = "1.2.10"
 
 
 class Window(QtWidgets.QWidget):
@@ -43,6 +44,13 @@ class Window(QtWidgets.QWidget):
 
         super().__init__(parent)
         # self.setStyleSheet("background-color: #e3e6e1;")
+
+        icon_path = os.path.join(os.path.dirname(__file__), 'Data', 'Img', 'logo.ico')
+        # load_icon = Image.open(icon_path)
+        # render = ImageTk.PhotoImage(load_icon)  # Loads the given icon
+        # app.iconphoto(False, render)
+
+        self.setWindowIcon(QtGui.QIcon(icon_path))
 
         # Create - if inexistent - directories Plots, Config and Logs
         hypercpDirs = ["Plots", "Config", "Logs"]
@@ -60,7 +68,6 @@ class Window(QtWidgets.QWidget):
 
     def initUI(self):
         """Initialize the user interface"""
-
         # Main window configuration restore
         MainConfig.loadConfig(
             MainConfig.fileName, VERSION
@@ -730,22 +737,6 @@ if __name__ == "__main__":
         default=None,
         type=str,
     )
-    required.add_argument(
-        "-u",
-        action="store",
-        dest="username",
-        help="Username of the account on https://oceancolor.gsfc.nasa.gov/",
-        default=None,
-        type=str,
-    )
-    required.add_argument(
-        "-p",
-        action="store",
-        dest="password",
-        help="Password of the account on https://oceancolor.gsfc.nasa.gov/",
-        default=None,
-        type=str,
-    )
 
     args = parser.parse_args()
 
@@ -777,8 +768,6 @@ if __name__ == "__main__":
     outputDirectory = args.outputDirectory
     level = args.level
     ancFile = args.ancFile
-    username = args.username
-    password = args.password
     multiLevel = args.multiLevel
 
 
@@ -796,12 +785,15 @@ if __name__ == "__main__":
     # If the cmd argument is given, run the Command class without the GUI
     if cmd:
         os.environ["HYPERINSPACE_CMD"] = "TRUE" # Must be a string
-        if not (args.username is None or args.password is None):
-            # Only for L2 processing set credentials
-            GetAnc.userCreds(username, password)
+
+        # Pop up credential windows if credentials not stored...
+        credentials.credentialsWindow('NASA_Earth_Data')
+        credentials.credentialsWindow('ECMWF_ADS')
+
         Command(configFilePath, inputFile, multiLevel, outputDirectory, level, ancFile)
     else:
         os.environ["HYPERINSPACE_CMD"] = "FALSE" # Must be a string
+
         app = QtWidgets.QApplication(sys.argv)
         win = Window()
         sys.exit(app.exec_())

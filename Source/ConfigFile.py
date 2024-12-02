@@ -94,7 +94,6 @@ class ConfigFile:
         ConfigFile.settings["fL1aqcAnomalyStep"] = 20
 
         ConfigFile.settings["bL1bGetAnc"] = 0
-        ConfigFile.settings["bL1bObpgCreds"] = 0
         ConfigFile.settings["fL1bDefaultWindSpeed"] = 5.0
         ConfigFile.settings["fL1bDefaultAOD"] = 0.2
         ConfigFile.settings["fL1bDefaultSalt"] = 35.0
