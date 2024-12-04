@@ -39,7 +39,7 @@ def credentialsSpec(credentialsID):
         out['URL_string'] = 'https://urs.earthdata.nasa.gov'
     elif credentialsID == 'ECMWF_ADS':
         out['credentials_filename'] = '.ecmwf_ads_credentials.json'
-        out['title'] = 'Login ECMWF ADS credentials - EAC-4 Ancillary'
+        out['title'] = 'Login ECMWF ADS credentials - CAMS Ancillary'
         out['key_string'] = 'url'
         out['secret_string'] = 'key'
         out['URL_string'] = 'https://ads.atmosphere.copernicus.eu/how-to-api'
