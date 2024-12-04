@@ -30,9 +30,6 @@ class RawFileReader:
             str1 = hdr[sp1+1:sp2]
             str2 = hdr[sp2+2:end-1]
         else:
-            # str1 = hdr[sp1+1:sp2].decode('utf-8', 'ignore')
-            # str2 = hdr[sp2+2:end-1].decode('utf-8', 'ignore')
-
             try:
                 str1 = hdr[sp1 + 1:sp2].decode('utf-8')
                 str2 = hdr[sp2 + 2:end - 1].decode('utf-8')
