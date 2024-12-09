@@ -289,10 +289,7 @@ class Controller:
             root = ProcessL1aSeaBird.processL1a(inFilePath, calibrationMap)
             outFFPs = outFilePath
         elif ConfigFile.settings["SensorType"].lower() == "trios":
-            # Multiple collections may be present, each with a file per sensor, root will only be the last collection
-            # root, outFFPs = TriosL1A.triosL1A(inFilePath, outFilePath)
             root, outFFPs = ProcessL1aTriOS.processL1a(inFilePath, outFilePath)
-            # outFFPs = outFFPs[0]
         elif ConfigFile.settings["SensorType"].lower() == "sorad":
             root = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
@@ -715,8 +712,11 @@ class Controller:
                         ancGroup.datasets[ds].datasetToColumns()
                     except Exception:
                         print('Error: Something wrong with root ANCILLARY')
-                stations = np.array(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-                stations = np.unique(stations[~np.isnan(stations)]).tolist()
+                if root.getGroup("ANCILLARY").getDataset("STATION") is not None:
+                    stations = np.array(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+                    stations = np.unique(stations[~np.isnan(stations)]).tolist()
+                else:
+                    stations = []
 
                 if len(stations) > 0:
 

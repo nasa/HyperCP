@@ -70,7 +70,7 @@ class ProcessL2:
         nirSlice = newNIRData.columns
         nirnLwSlice = newNIRnLwData.columns
 
-        # # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
+        # # Perform near-infrared residual correction to remove additional atmospheric and glint contamination
         # if ConfigFile.settings["bL2PerformNIRCorrection"]:
         if simpleNIRCorrection:
             # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
@@ -157,7 +157,9 @@ class ProcessL2:
                     ρ720.append(ρSlice[k][-1]) # Using current element/slice [-1]
 
             # if not ρ720:
-                # QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+            #     print("Error: NIR wavebands unavailable")
+            #     if os.environ["HYPERINSPACE_CMD"].lower() == 'false':
+            #         QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
             ρ1 = sp.interpolate.interp1d(x,ρ720)(720)
             F01 = sp.interpolate.interp1d(wavelength,F0)(720)
             ρ780 = []
@@ -169,7 +171,9 @@ class ProcessL2:
                     x.append(float(k))
                     ρ780.append(ρSlice[k][-1])
             if not ρ780:
-                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+                print("Error: NIR wavebands unavailable")
+                if os.environ["HYPERINSPACE_CMD"].lower() == 'false':
+                    QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
             ρ2 = sp.interpolate.interp1d(x,ρ780)(780)
             F02 = sp.interpolate.interp1d(wavelength,F0)(780)
             ρ870 = []
@@ -647,7 +651,7 @@ class ProcessL2:
                 Utilities.writeLogFile(msg)
             timeStamp = newTimeStamp.copy()
 
-        if badTimes == []:
+        if len(badTimes) == 0:
             startLength = 1 # avoids div by zero below when finalCount is 0
 
         for ds in group.datasets:

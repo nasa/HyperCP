@@ -112,6 +112,15 @@ class M02SeaDAS:
         # Local renaming of bands
         b442, b490, b510, b560 = self.b442, self.b490, self.b510, self.b560
 
+        # Convert to scalar if np.array of 1 value to avoid issues
+        try:
+            b442=b442.item()
+            b490=b490.item()
+            b510=b510.item()
+            b560=b560.item()
+        except:
+            pass
+
         # Apply upper and lower limits to Rrs(665) #TODO check if not finite or missing?
         Rrs442 = Rrs.sel(bands=b442)
         Rrs490 = Rrs.sel(bands=b490)
