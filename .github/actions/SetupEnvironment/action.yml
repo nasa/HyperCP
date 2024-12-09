@@ -21,18 +21,33 @@ runs:
           conda-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('environment.yml') }}-${{ env.CACHE_NUMBER }}
       env:
         # Increase this value to reset cache if environment.yml has not changed
-        CACHE_NUMBER: 0
+        CACHE_NUMBER: 1
       id: cache
 
     - name: 🔄 Update Environment
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: runner.os != 'Windows' && steps.cache.outputs.cache-hit != 'true'
       shell: bash -el {0}
       run: |
         mamba env update -n hypercp -f environment.yml
         mamba install --channel=conda-forge pyinstaller==6.6
 
     - name: 📸 Capture Environment
+      if: runner.os != 'Windows'
       shell: bash -el {0}
+      run: |
+        mamba info
+        mamba list
+
+    - name: 🔄 Update Environment [Windows]
+      if: runner.os == 'Windows' && steps.cache.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        mamba env update -n hypercp -f environment.yml
+        mamba install --channel=conda-forge pyinstaller==6.6
+
+    - name: 📸 Capture Environment [Windows]
+      if: runner.os == 'Windows'
+      shell: pwsh
       run: |
         mamba info
         mamba list

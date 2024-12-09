@@ -161,7 +161,7 @@ class Propagate:
         corr_list = ['rand', 'syst', 'rand', 'syst', 'syst', 'syst', 'syst', 'syst',
                      'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
 
-        return self.MCP.propagate_random(self.Lw,
+        return self.MCP.propagate_standard(self.Lw,
                                          mean_vals,
                                          uncertainties,
                                          corr_between=self.corr_matrix_Default_Lw,
@@ -209,13 +209,6 @@ class Propagate:
             sys_unc,
             corr_between=self.corr_matrix_Default_Lw,
         )
-
-        # Old method of uncertainty propagation (v1.2.1)
-        # old = self.MCP.propagate_random(self.Lw_Conv,
-        #                                 mean_vals,
-        #                                 uncertainties,
-        #                                 corr_between=self.corr_matrix_Default_Lw,
-        #                                 corr_x=corr_list)
 
         return np.sqrt(random ** 2 + systematic ** 2)
 
@@ -309,6 +302,8 @@ class Propagate:
             func = self.band_Conv_Sensor_NOAA_J
         elif platform.upper() == "VIIRS-N" or platform.lower().rstrip().replace('-', '') == "noaa-N":
             func = self.band_Conv_Sensor_NOAA_N
+        elif platform.upper() == "HYPER":
+            func = self.no_Conv
         else:
             msg = "sensor not supported"
             print(msg)
@@ -432,6 +427,10 @@ class Propagate:
             hyperspec_as_dict, sensor='N'
         )
         return np.array([value[0] for value in rad_band.values()])
+
+    @staticmethod
+    def no_Conv(Hyperspec, *args, **kwargs) -> np.array:
+        return Hyperspec
 
     @staticmethod
     def Lw(lt, rhoVec, li, c_li, c_lt, cstab_li, cstab_lt, clin_li, clin_lt, cstray_li, cstray_lt, cT_li, cT_lt, cpol_li, cpol_lt):

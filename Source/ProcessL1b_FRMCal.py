@@ -88,11 +88,11 @@ class ProcessL1b_FRMCal:
             # +1 to account for last points that fall in the last bin (smaller than 3 min)
             n_bin += 1
 
-        direct = np.zeros((n_bin, nband))
-        diffuse = np.zeros((n_bin, nband))
-        irr_direct = np.zeros((n_bin, nband))
-        irr_diffuse = np.zeros((n_bin, nband))
-        irr_env = np.zeros((n_bin, nband))
+        percent_direct_solar_irradiance = np.zeros((n_bin, nband))
+        percent_diffuse_solar_irradiance = np.zeros((n_bin, nband))
+        direct_solar_irradiance = np.zeros((n_bin, nband))
+        diffuse_solar_irradiance = np.zeros((n_bin, nband))
+        environmental_irradiance = np.zeros((n_bin, nband))
         solar_zenith = np.zeros(n_bin)
 
         # Instanciate the class only once outside the loop
@@ -101,6 +101,8 @@ class ProcessL1b_FRMCal:
         for n in range(n_bin):
             # find ancillary point that match the 1st mesure of the 3min ensemble
             ind_anc = np.argmin(np.abs(np.array(anc_datetime)-datetime[n*n_min]))
+
+            solar_zenith[n] = sun_azimuth[ind_anc]
 
             s.geometry(
                 sun_zen=sun_zenith[ind_anc],
@@ -118,11 +120,11 @@ class ProcessL1b_FRMCal:
             s.to_be_implemented()
 
             # Create placeholder to contain the values
-            percent_direct_solar_irradiance = [0] * len(wvl)
-            percent_diffuse_solar_irradiance = [0] * len(wvl)
-            direct_solar_irradiance = [0] * len(wvl)
-            diffuse_solar_irradiance = [0] * len(wvl)
-            environmental_irradiance = [0] * len(wvl)
+            # percent_direct_solar_irradiance = [0] * len(wvl)
+            # percent_diffuse_solar_irradiance = [0] * len(wvl)
+            # direct_solar_irradiance = [0] * len(wvl)
+            # diffuse_solar_irradiance = [0] * len(wvl)
+            # environmental_irradiance = [0] * len(wvl)
 
             # Determine the number of workers to use
             num_workers = os.cpu_count()
@@ -132,6 +134,7 @@ class ProcessL1b_FRMCal:
 
             # Create the function for 6s that will be run by each worker
             def run_model_and_accumulate(
+                    n,
                     start,
                     end,
                     s,
@@ -153,19 +156,19 @@ class ProcessL1b_FRMCal:
 
                     # TODO: provide warning (with wavelength) if any of the values are NaN
 
-                    percent_direct_solar_irradiance[i] = float(
+                    percent_direct_solar_irradiance[n,i] = float(
                         temp["percent_of_direct_solar_irradiance_at_target"]
                     )
-                    percent_diffuse_solar_irradiance[i] = float(
+                    percent_diffuse_solar_irradiance[n,i] = float(
                         temp["percent_of_diffuse_atmospheric_irradiance_at_target"]
                     )
-                    direct_solar_irradiance[i] = float(
+                    direct_solar_irradiance[n,i] = float(
                         temp["direct_solar_irradiance_at_target_[W m-2 um-1]"]
                     )
-                    diffuse_solar_irradiance[i] = float(
+                    diffuse_solar_irradiance[n,i] = float(
                         temp["diffuse_atmospheric_irradiance_at_target_[W m-2 um-1]"]
                     )
-                    environmental_irradiance[i] = float(
+                    environmental_irradiance[n,i] = float(
                         temp["environement_irradiance_at_target_[W m-2 um-1]"]
                     )
 
@@ -186,6 +189,7 @@ class ProcessL1b_FRMCal:
                     futures.append(
                         executor.submit(
                             run_model_and_accumulate,
+                            n,
                             start,
                             end,
                             s,
@@ -201,109 +205,109 @@ class ProcessL1b_FRMCal:
             # Wait for all workers to finish
             concurrent.futures.wait(futures)
 
-            if np.isnan(direct).any():
-                logging.debug("direct contains NaN values at: %s", wvl[np.isnan(direct)[n]])
+            if np.isnan(percent_direct_solar_irradiance).any():
+                logging.debug("direct contains NaN values at: %s", wvl[np.isnan(percent_direct_solar_irradiance)[n]])
 
-            if np.isnan(diffuse).any():
-                logging.debug("diffuse contains NaN values at: %s", wvl[np.isnan(diffuse)[n]])
+            if np.isnan(percent_diffuse_solar_irradiance).any():
+                logging.debug("diffuse contains NaN values at: %s", wvl[np.isnan(percent_diffuse_solar_irradiance)[n]])
 
-            if np.isnan(irr_direct).any():
-                logging.debug("irr_direct contains NaN values at: %s", wvl[np.isnan(irr_direct)[n]])
+            if np.isnan(direct_solar_irradiance).any():
+                logging.debug("irr_direct contains NaN values at: %s", wvl[np.isnan(direct_solar_irradiance)[n]])
 
-            if np.isnan(irr_diffuse).any():
-                logging.debug("irr_diffuse contains NaN values at: %s", wvl[np.isnan(irr_diffuse)[n]])
+            if np.isnan(diffuse_solar_irradiance).any():
+                logging.debug("irr_diffuse contains NaN values at: %s", wvl[np.isnan(diffuse_solar_irradiance)[n]])
 
-            if np.isnan(irr_env).any():
-                logging.debug("irr_env contains NaN values at: %s", wvl[np.isnan(irr_env)[n]])
+            if np.isnan(environmental_irradiance).any():
+                logging.debug("irr_env contains NaN values at: %s", wvl[np.isnan(environmental_irradiance)[n]])
 
             if np.isnan(solar_zenith).any():
                 logging.debug("solar_zenith contains NaN values at: %s", wvl[np.isnan(solar_zenith)[n]])
 
             # Check for potential NaN values and interpolate them with neighbour
             # direct
-            ind0 = np.where(np.isnan(direct[n, :]))[0]
+            ind0 = np.where(np.isnan(percent_direct_solar_irradiance[n, :]))[0]
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
                         # End of array. Take left neighbor.
-                        direct[n,i0] = direct[n,i0-1]
+                        percent_direct_solar_irradiance[n,i0] = percent_direct_solar_irradiance[n,i0-1]
                     else:
-                        direct[n,i0] = (direct[n,i0-1]+direct[n,i0+1])/2
+                        percent_direct_solar_irradiance[n,i0] = (percent_direct_solar_irradiance[n,i0-1]+percent_direct_solar_irradiance[n,i0+1])/2
             # diffuse
-            ind0 = np.where(np.isnan(diffuse[n, :]))[0]
+            ind0 = np.where(np.isnan(percent_diffuse_solar_irradiance[n, :]))[0]
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
                         # End of array. Take left neighbor.
-                        diffuse[n,i0] = diffuse[n,i0-1]
+                        percent_diffuse_solar_irradiance[n,i0] = percent_diffuse_solar_irradiance[n,i0-1]
                     else:
-                        diffuse[n,i0] = (diffuse[n,i0-1]+diffuse[n,i0+1])/2
+                        percent_diffuse_solar_irradiance[n,i0] = (percent_diffuse_solar_irradiance[n,i0-1]+percent_diffuse_solar_irradiance[n,i0+1])/2
 
             # irr_direct
-            ind0 = np.where(np.isnan(irr_direct[n, :]))[0]
+            ind0 = np.where(np.isnan(direct_solar_irradiance[n, :]))[0]
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
                         # End of array. Take left neighbor.
-                        irr_direct[n,i0] = irr_direct[n,i0-1]
+                        direct_solar_irradiance[n,i0] = direct_solar_irradiance[n,i0-1]
                     else:
-                        irr_direct[n,i0] = (irr_direct[n,i0-1]+irr_direct[n,i0+1])/2
+                        direct_solar_irradiance[n,i0] = (direct_solar_irradiance[n,i0-1]+direct_solar_irradiance[n,i0+1])/2
 
             # irr_diffuse
-            ind0 = np.where(np.isnan(irr_diffuse[n, :]))[0]
+            ind0 = np.where(np.isnan(diffuse_solar_irradiance[n, :]))[0]
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
                         # End of array. Take left neighbor.
-                        irr_diffuse[n,i0] = irr_diffuse[n,i0-1]
+                        diffuse_solar_irradiance[n,i0] = diffuse_solar_irradiance[n,i0-1]
                     else:
-                        irr_diffuse[n,i0] = (irr_diffuse[n,i0-1]+irr_diffuse[n,i0+1])/2
+                        diffuse_solar_irradiance[n,i0] = (diffuse_solar_irradiance[n,i0-1]+diffuse_solar_irradiance[n,i0+1])/2
 
             # irr_env
-            ind0 = np.where(np.isnan(irr_env[n, :]))[0]
+            ind0 = np.where(np.isnan(environmental_irradiance[n, :]))[0]
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
                         # End of array. Take left neighbor.
-                        irr_env[n,i0] = irr_env[n,i0-1]
+                        environmental_irradiance[n,i0] = environmental_irradiance[n,i0-1]
                     else:
-                        irr_env[n,i0] = (irr_env[n,i0-1]+irr_env[n,i0+1])/2
+                        environmental_irradiance[n,i0] = (environmental_irradiance[n,i0-1]+environmental_irradiance[n,i0+1])/2
 
             # Check for potential zero values and interpolate them with neighbour
-            _, ind0 = np.where([direct[n,:]==0])
+            _, ind0 = np.where([percent_direct_solar_irradiance[n,:]==0])
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
                         # End of array. Take left neighbor.
-                        direct[n,i0] = direct[n,i0-1]
+                        percent_direct_solar_irradiance[n,i0] = percent_direct_solar_irradiance[n,i0-1]
                     else:
-                        direct[n,i0] = (direct[n,i0-1]+direct[n,i0+1])/2
+                        percent_direct_solar_irradiance[n,i0] = (percent_direct_solar_irradiance[n,i0-1]+percent_direct_solar_irradiance[n,i0+1])/2
 
         # if only 1 bin, repeat value for each timestamp over cast duration (<3min)
         res_sixS = {}
         if n_bin == 1:
             logging.warning("n_bin == 1, cast is probably too short")
             res_sixS['solar_zenith'] = np.repeat(solar_zenith, n_mesure)
-            res_sixS['direct_ratio'] = np.repeat(direct, n_mesure, axis=0)
-            res_sixS['diffuse_ratio'] = np.repeat(diffuse, n_mesure, axis=0)
-            res_sixS['direct_irr'] = np.repeat(irr_direct, n_mesure, axis=0)
-            res_sixS['diffuse_irr'] = np.repeat(irr_diffuse, n_mesure, axis=0)
-            res_sixS['env_irr'] = np.repeat(irr_env, n_mesure, axis=0)
+            res_sixS['direct_ratio'] = np.repeat(percent_direct_solar_irradiance, n_mesure, axis=0)
+            res_sixS['diffuse_ratio'] = np.repeat(percent_diffuse_solar_irradiance, n_mesure, axis=0)
+            res_sixS['direct_irr'] = np.repeat(direct_solar_irradiance, n_mesure, axis=0)
+            res_sixS['diffuse_irr'] = np.repeat(diffuse_solar_irradiance, n_mesure, axis=0)
+            res_sixS['env_irr'] = np.repeat(environmental_irradiance, n_mesure, axis=0)
         # if more than 1 bin, interpolate fo each timestamp
         else:
             x_bin  = [n*n_min for n in range(n_bin)]
             x_full = np.linspace(0, n_mesure, n_mesure)
             f =  interpolate.interp1d(x_bin, solar_zenith, fill_value='extrapolate')
             res_sixS['solar_zenith'] = f(x_full)
-            f =  interpolate.interp1d(x_bin, direct, fill_value='extrapolate', axis=0)
+            f =  interpolate.interp1d(x_bin, percent_direct_solar_irradiance, fill_value='extrapolate', axis=0)
             res_sixS['direct_ratio'] = f(x_full)
-            f =  interpolate.interp1d(x_bin, diffuse, fill_value='extrapolate', axis=0)
+            f =  interpolate.interp1d(x_bin, percent_diffuse_solar_irradiance, fill_value='extrapolate', axis=0)
             res_sixS['diffuse_ratio'] = f(x_full)
-            f =  interpolate.interp1d(x_bin, irr_direct, fill_value='extrapolate', axis=0)
+            f =  interpolate.interp1d(x_bin, direct_solar_irradiance, fill_value='extrapolate', axis=0)
             res_sixS['direct_irr'] = f(x_full)
-            f =  interpolate.interp1d(x_bin, irr_diffuse, fill_value='extrapolate', axis=0)
+            f =  interpolate.interp1d(x_bin, diffuse_solar_irradiance, fill_value='extrapolate', axis=0)
             res_sixS['diffuse_irr'] = f(x_full)
-            f =  interpolate.interp1d(x_bin, irr_env, fill_value='extrapolate', axis=0)
+            f =  interpolate.interp1d(x_bin, environmental_irradiance, fill_value='extrapolate', axis=0)
             res_sixS['env_irr'] = f(x_full)
 
         return res_sixS

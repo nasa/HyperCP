@@ -38,7 +38,7 @@ jobs:
           echo "BUNDLE_NAME=$(ls Bundled/dist | head -1 | xargs)" >> $GITHUB_ENV
 
       - name: 📥 Zip Bundle
-        uses: thedoctor0/zip-release@0.7.1
+        uses: thedoctor0/zip-release@0.7.6
         with:
           type: 'zip'
           directory: 'Bundled/dist/'
