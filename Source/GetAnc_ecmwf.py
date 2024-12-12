@@ -19,34 +19,18 @@ from Source.GetAnc_credentials import read_user_credentials
 
 class GetAnc_ecmwf:
 
-    def timeStamp2yrMnthDayHrMinSec(timestamp):
-        '''
-        Definition for timestamp managing
-        :param timeStamp: a string, the time in UTC with format yyyy-mm-ddThh:MM:ss
-        '''
-        date = timestamp.split('T')[0]
-        time = timestamp.split('T')[1]
-
-        year = date.split('-')[0]
-        month = date.split('-')[1]
-        day = date.split('-')[2]
-
-        hour = time.split(':')[0]
-        minute = time.split(':')[1]
-        second = time.split(':')[2]
-
-        return year,month,day,hour,minute,second
-
     def ECMWF_latLonTimeTags(lat, lon, timeStamp, latRes, lonRes, timeResHours):
         '''
         :param timeStamp: a string, the time in UTC with format yyyy-mm-ddThh:MM:ss
         :param lat: a float, the query latitude in degrees North
         :param lon: a float, the query longitude in degrees East
+        :param timeResHours: an integer, time resolution of the queried ECMWF dataset
         :return:
         latEff: a float, the effective latitude - i.e. to the closest resolution degree
         lonEff: a float, the effective latitude - i.e. to the closest resolution degree
         latLonTag: a string, a tag to indicate the effective lat/lon.
-        dateTag: a string, a tag to indicate time stamp, to the hour
+        dateTagEff: a string, a tag to indicate effective date (i.e. date in UTC rounded to closest hour)
+        timeStampEff: a string, a tag to indicate effective time (i.e. time in UTC rounded to closest hour)
         '''
 
         # Lat-Lon
@@ -63,31 +47,19 @@ class GetAnc_ecmwf:
                                     str(int(np.sign(latEff))).replace('-1', 'S').replace('1', 'N'),
                                     np.abs(latEff * (10 ** latSigFigures)))
 
-        # Time; choose 00:00 or 12:00 model
-        year, month, day, hour, minute, second = GetAnc_ecmwf.timeStamp2yrMnthDayHrMinSec(timeStamp)
-        dTtimeStamp = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second),tzinfo=datetime.timezone.utc)
-        dTtimeVec = [datetime.datetime(int(year), int(month), int(day), int(0), int(0), int(0),tzinfo=datetime.timezone.utc),\
-                     datetime.datetime(int(year), int(month), int(day), int(12), int(0), int(0),tzinfo=datetime.timezone.utc)]
-        timeEff = min(dTtimeVec, key=lambda x: abs(x - dTtimeStamp))
+        # Convert to a datetime object
+        epoch_time = datetime.datetime.strptime(':'.join(timeStamp.split(':')[:-2]), '%Y-%m-%dT%H:%M:%S').timestamp()
+        timeResHoursSecs = 3600 * timeResHours
+        rounded_epoch_time = round(epoch_time / timeResHoursSecs) * timeResHoursSecs
+        rounded_timestamp = datetime.datetime.fromtimestamp(rounded_epoch_time).strftime('%Y-%m-%dT%H:%M:%S')
+        dateTagEff, timeStampEff = rounded_timestamp.split('T')
 
-        # timeSec = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second),tzinfo=datetime.timezone.utc).timestamp()
-        # timeEffSec = np.round(timeSec / (3600 * timeResHours)) * (3600 * timeResHours) - 7200
-        # timeStampEff = str(pd.Timestamp(datetime.datetime.fromtimestamp(timeEffSec))).replace(' ','T')
-        timeStampEff = str(pd.Timestamp(timeEff)).replace(' ','T')
-
-        dateTag = timeStampEff.replace(':','').replace('-','').replace('T','')
-        # print(timeStamp)
-        # print(year, month, day, hour, minute, second)
-        # print(timeSec)
-        # print(timeEffSec)
-        # print(timeStampEff)
-
-        return latEff,lonEff,timeStampEff,latLonTag,dateTag
+        return latEff,lonEff,latLonTag,dateTagEff,timeStampEff
 
 
-    def EAC4_download_ensembles(lat, lon, timeStamp, EAC4_variables, pathOut):
+    def CAMS_download_ensembles(lat, lon, dateTag, timeTag, CAMS_variables, pathOut):
         '''
-        Performs CDSAPI command to download the required data from EAC4 (dataset "cams-global-atmospheric-composition-forecasts") in netCDF
+        Performs CDSAPI command to download the required data from CAMS (dataset "cams-global-atmospheric-composition-forecasts") in netCDF
         format. It will retrieve the variables in a single space-time point corresponding to
 
         For more information, please check: https://ads.atmosphere.copernicus.eu/cdsapp#!/dataset/cams-global-atmospheric-composition-forecasts?tab=overview
@@ -96,7 +68,7 @@ class GetAnc_ecmwf:
         :param lat: a float, the query latitude in degrees North
         :param lon: a float, the query longitude in degrees East
 
-        :param EAC4_variables: a list, with the variables of interest
+        :param CAMS_variables: a list, with the variables of interest
         :param pathOut: full path to output, a netCDF file with the requested variables.
         :return:
         '''
@@ -104,30 +76,34 @@ class GetAnc_ecmwf:
         if os.path.exists(pathOut):
             pass
         else:
-            print(f'Nearest model found at {timeStamp}')
             url,key = read_user_credentials('ECMWF_ADS')
 
-            year, month, day, hour, _, _ = GetAnc_ecmwf.timeStamp2yrMnthDayHrMinSec(timeStamp)
+            year = dateTag.split('-')[0]
+            hour = timeTag.split(':')[0]
 
-            if int(year) < 2003:
-                print('EAC4 dataset not available before 2003, skipping')
+            hourForecast = '%02d' % (int(hour) // 12)
+            leadtime     = str(int(hour) % 12)
+
+            if int(year) < 2015:
+                print('CAMS dataset not available before 2015, skipping')
             else:
                 try:
                     c = cdsapi.Client(timeout=5, url=url, key=key)
                     c.retrieve(
                         'cams-global-atmospheric-composition-forecasts',
                         {
-                            'format': 'netcdf',
                             'type' : 'forecast',
-                            'variable': list(EAC4_variables.keys()),
-                            'date': '%s-%s-%s/%s-%s-%s' % (year, month, day, year, month, day),
-                            'time': '%s:00' % (hour,),
+                            'variable': list(CAMS_variables.keys()),
+                            'date': '%s/%s' % (dateTag, dateTag),
                             'area': [lat, lon, lat, lon],
-                            'leadtime_hour': '0',
+                            'time': '%s:00' % hourForecast,
+                            'leadtime_hour': leadtime,
+                            'format': 'netcdf',
+                            'download_format': 'unarchived',
                         },
                         pathOut)
                 except:
-                    print('EAC4 atmospheric data could not be retrieved. Check inputs.')
+                    print('CAMS atmospheric data could not be retrieved. Check inputs.')
                     exit()
 
 
@@ -152,49 +128,49 @@ class GetAnc_ecmwf:
 
         ancillary = {}
 
-        #################### EAC4 ####################
-        pathEAC4 = pathAncillary
-        if not os.path.exists(pathEAC4):
-            os.mkdir(pathEAC4)
+        #################### CAMS ####################
+        pathCAMS = pathAncillary
+        if not os.path.exists(pathCAMS):
+            os.mkdir(pathCAMS)
 
-        EAC4_variables = {
+        CAMS_variables = {
         '10m_u_component_of_wind' :'u10',
         '10m_v_component_of_wind' :'v10',
         'total_aerosol_optical_depth_550nm' :'aod550'
         }
 
-        EAC4nc = {}
+        CAMSnc = {}
 
 
         # Check https://ads.atmosphere.copernicus.eu/cdsapp#!/dataset/cams-global-atmospheric-composition-forecasts?tab=overview
         latRes = 0.4
         lonRes = 0.4
-        timeResHours = 12
+        timeResHours = 1
 
-        latEff, lonEff, timeStampEff, latLonTag, dateTag = GetAnc_ecmwf.ECMWF_latLonTimeTags(lat, lon, timeStamp, latRes, lonRes, timeResHours)
+        latEff, lonEff, latLonTag, dateTagEff, timeStampEff = GetAnc_ecmwf.ECMWF_latLonTimeTags(lat, lon, timeStamp, latRes, lonRes, timeResHours)
 
-        pathOut = os.path.join(pathEAC4, 'EAC4_%s_%s.nc' % (latLonTag, dateTag))
+        pathOut = os.path.join(pathCAMS, 'CAMS_%s_%s_%s.nc' % (latLonTag, dateTagEff.replace('-',''), timeStampEff.replace(':','')))
 
-        GetAnc_ecmwf.EAC4_download_ensembles(latEff, lonEff, timeStampEff, EAC4_variables, pathOut)
+        GetAnc_ecmwf.CAMS_download_ensembles(latEff, lonEff, dateTagEff, timeStampEff, CAMS_variables, pathOut)
 
         try:
-            EAC4nc['reanalysis'] = xr.open_dataset(pathOut,engine='netcdf4')
-            EAC4_flag = True
+            CAMSnc['reanalysis'] = xr.open_dataset(pathOut,engine='netcdf4')
+            CAMS_flag = True
         except:
-            EAC4_flag = False
-            print('EAC4 data missing. Skipping...')
+            CAMS_flag = False
+            print('CAMS data missing. Skipping...')
 
-        if EAC4_flag:
+        if CAMS_flag:
             try:
-                for EAC4_variable, shortName in EAC4_variables.items():
-                    var = EAC4nc['reanalysis'][shortName]
-                    ancillary[EAC4_variable] = {}
-                    ancillary[EAC4_variable]['value']      = var.values[0][0][0]
-                    ancillary[EAC4_variable]['units']      = var.units
-                    ancillary[EAC4_variable]['long_name']  = var.long_name
-                    ancillary[EAC4_variable]['source']     = 'EAC4 (ECMWF). https://ads.atmosphere.copernicus.eu/cdsapp#!/dataset/cams-global-atmospheric-composition-forecasts?tab=overview'
+                for CAMS_variable, shortName in CAMS_variables.items():
+                    var = CAMSnc['reanalysis'][shortName]
+                    ancillary[CAMS_variable] = {}
+                    ancillary[CAMS_variable]['value']      = var.values[0][0][0][0]
+                    ancillary[CAMS_variable]['units']      = var.units
+                    ancillary[CAMS_variable]['long_name']  = var.long_name
+                    ancillary[CAMS_variable]['source']     = 'CAMS (ECMWF). https://ads.atmosphere.copernicus.eu/cdsapp#!/dataset/cams-global-atmospheric-composition-forecasts?tab=overview'
             except:
-                print('Problem processing EAC4 data. Skipping...')
+                print('Problem processing CAMS data. Skipping...')
 
         return ancillary
 
@@ -223,11 +199,11 @@ class GetAnc_ecmwf:
             ancillary = GetAnc_ecmwf.get_ancillary_main(lat[index], lon[index], lat_timeStamp, ancPath)
 
             # position retrieval index has been confirmed manually in SeaDAS
-            uWind = ancillary['10m_u_component_of_wind']['value'][0]
-            vWind = ancillary['10m_v_component_of_wind']['value'][0]
+            uWind = ancillary['10m_u_component_of_wind']['value']
+            vWind = ancillary['10m_v_component_of_wind']['value']
             modWind.append(np.sqrt(uWind*uWind + vWind*vWind)) # direction not needed
             #ancAOD = aerGroup.getDataset("TOTEXTTAU")
-            modAOD.append(ancillary['total_aerosol_optical_depth_550nm']['value'][0])
+            modAOD.append(ancillary['total_aerosol_optical_depth_550nm']['value'])
 
         modData = HDFRoot()
         modGroup = modData.addGroup('ECMWF')

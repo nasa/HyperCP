@@ -1,5 +1,6 @@
 """Read raw Sea-Bird file"""
 import sys
+import logging
 
 from Source.Utilities import Utilities
 
@@ -29,8 +30,15 @@ class RawFileReader:
             str1 = hdr[sp1+1:sp2]
             str2 = hdr[sp2+2:end-1]
         else:
-            str1 = hdr[sp1+1:sp2].decode('utf-8')
-            str2 = hdr[sp2+2:end-1].decode('utf-8')
+            try:
+                str1 = hdr[sp1 + 1:sp2].decode('utf-8')
+                str2 = hdr[sp2 + 2:end - 1].decode('utf-8')
+            except UnicodeDecodeError:
+                logging.debug("HOCR raw header contains non UTF-8 encoded character")
+                str1 = hdr[sp1 + 1:sp2].decode('utf-8', 'ignore')
+                str2 = hdr[sp2 + 2:end - 1].decode('utf-8', 'ignore')
+
+
         #print(str1, str2)
 
         if len(str1) == 0:
