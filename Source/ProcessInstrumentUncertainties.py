@@ -1435,7 +1435,7 @@ class HyperOCR(BaseInstrument):
             # Updated calibration gain
             if sensortype == "ES":
                 ## Irradiance direct and diffuse ratio
-                res_py6s = BaseInstrument.read_py6s_model(node)
+                res_py6s = BaseInstrument.read_sixS_model(node)
 
                 ## compute updated radiometric calibration (required step after applying straylight correction)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
@@ -1912,7 +1912,7 @@ class Trios(BaseInstrument):
             if sensortype == "ES":
                 # Irradiance direct and diffuse ratio
                 # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
-                res_py6s = BaseInstrument.read_py6s_model(node)
+                res_py6s = BaseInstrument.read_sixS_model(node)
 
                 # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
