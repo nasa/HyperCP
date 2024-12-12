@@ -1106,31 +1106,35 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
 
     @staticmethod
-    def read_py6s_model(node):
-        res_py6s = {}
+    def read_sixS_model(node):
+        res_sixS = {}
         
         # Create a temporary group to pop date time columns
         newGrp = node.addGroup('temp')
-        newGrp.copy(node.getGroup('PY6S_MODEL'))
+        newGrp.copy(node.getGroup('SIXS_MODEL'))
         for ds in newGrp.datasets:
             newGrp.datasets[ds].datasetToColumns()
-        py6s_gp = node.getGroup('temp')
+        sixS_gp = node.getGroup('temp')
         
-        py6s_gp.getDataset("direct_ratio").columns.pop('Datetime')
-        py6s_gp.getDataset("direct_ratio").columns.pop('Timetag2')
-        py6s_gp.getDataset("direct_ratio").columns.pop('Datetag')
-        py6s_gp.getDataset("direct_ratio").columnsToDataset()
-        py6s_gp.getDataset("diffuse_ratio").columns.pop('Datetime')
-        py6s_gp.getDataset("diffuse_ratio").columns.pop('Timetag2')
-        py6s_gp.getDataset("diffuse_ratio").columns.pop('Datetag')
-        py6s_gp.getDataset("diffuse_ratio").columnsToDataset()
+        sixS_gp.getDataset("direct_ratio").columns.pop('Datetime')
+        sixS_gp.getDataset("direct_ratio").columns.pop('Timetag2')
+        sixS_gp.getDataset("direct_ratio").columns.pop('Datetag')
+        sixS_gp.getDataset("direct_ratio").columnsToDataset()
+        sixS_gp.getDataset("diffuse_ratio").columns.pop('Datetime')
+        sixS_gp.getDataset("diffuse_ratio").columns.pop('Timetag2')
+        sixS_gp.getDataset("diffuse_ratio").columns.pop('Datetag')
+        sixS_gp.getDataset("diffuse_ratio").columnsToDataset()
 
-        res_py6s['solar_zenith'] = np.asarray(py6s_gp.getDataset('solar_zenith').columns['solar_zenith'])
-        res_py6s['wavelengths'] = np.asarray(list(py6s_gp.getDataset('direct_ratio').columns.keys())[2:], dtype=float)
-        res_py6s['direct_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("direct_ratio").data))
-        res_py6s['diffuse_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("diffuse_ratio").data))
-        node.removeGroup(py6s_gp)
-        return res_py6s
+        # sixS_gp.getDataset("direct_ratio").datasetToColumns()
+        res_sixS['solar_zenith'] = np.asarray(sixS_gp.getDataset('solar_zenith').columns['solar_zenith'])
+        res_sixS['wavelengths'] = np.asarray(list(sixS_gp.getDataset('direct_ratio').columns.keys())[2:], dtype=float)
+        if 'timetag' in res_sixS['wavelengths']:
+            # because timetag2 was included for some data and caused a bug
+            res_sixS['wavelengths'] = res_sixS['wavelengths'][1:]
+        res_sixS['direct_ratio'] = np.asarray(pd.DataFrame(sixS_gp.getDataset("direct_ratio").data))
+        res_sixS['diffuse_ratio'] = np.asarray(pd.DataFrame(sixS_gp.getDataset("diffuse_ratio").data))
+        node.removeGroup(sixS_gp)
+        return res_sixS
 
 
 class HyperOCR(BaseInstrument):
@@ -1585,13 +1589,12 @@ class HyperOCR(BaseInstrument):
             # Cosine correction
             if sensortype == "ES":
 
-                ## ADERU: Py6S results now match the length of input data
+                ## ADERU: SIXS results now match the length of input data
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
                 solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
                 direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
-                direct_ratio = self.interp_common_wvls(np.array(direct_ratio, float), res_py6s['wavelengths'],
-                                                       radcal_wvl, return_as_dict=False)
+                direct_ratio, _ = self.interp_common_wvls(np.array(direct_ratio, float), res_py6s['wavelengths'], radcal_wvl)
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
                                                     np.asarray([0.05 for i in range(np.size(solar_zenith))]),
@@ -2065,13 +2068,12 @@ class Trios(BaseInstrument):
             if sensortype.lower() == "es":
                 # get cosine correction attributes and samples from dictionary
 
-                ## ADERU: Py6S results now match the length of input data
+                ## ADERU: SIXS results now match the length of input data
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
                 solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
                 direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
-                direct_ratio = self.interp_common_wvls(direct_ratio, res_py6s['wavelengths'], radcal_wvl,
-                                                       return_as_dict=False)
+                direct_ratio, _ = self.interp_common_wvls(direct_ratio, res_py6s['wavelengths'], radcal_wvl)
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith, 0.05, "rand")
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
                 sample_cos_corr = prop.run_samples(

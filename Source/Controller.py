@@ -672,7 +672,7 @@ class Controller:
                 return False#None, outFilePath
 
             # Check for new 6S model group
-            test = root.getGroup('PY6S_MODEL')
+            test = root.getGroup('SIXS_MODEL')
             if test is None:
                 msg = "6S model not found, probably because lower level data was processed before v1.2.5. "
                 print(msg)
