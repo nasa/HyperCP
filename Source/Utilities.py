@@ -1015,7 +1015,7 @@ class Utilities:
                 timeStamp = group.getDataset("ES").data["Datetime"]
             if group.id == "RADIANCE":
                 timeStamp = group.getDataset("LI").data["Datetime"]
-            if group.id == "PY6S_MODEL":
+            if group.id == "SIXS_MODEL":
                 timeStamp = group.getDataset("solar_zenith").data["Datetime"]
         else:
             timeStamp = group.getDataset("Timestamp").data["Datetime"]
