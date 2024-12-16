@@ -17,9 +17,6 @@ import sys
 import time
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-# import requests
-# from tqdm import tqdm
-
 from Source import PACKAGE_DIR as CODE_HOME
 from Source.MainConfig import MainConfig
 from Source.Controller import Controller
