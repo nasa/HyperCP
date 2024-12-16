@@ -473,6 +473,12 @@ class Window(QtWidgets.QWidget):
         elif ConfigFile.settings["SensorType"].lower() == "trios":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
 
+         # else:
+        elif ConfigFile.settings["SensorType"].lower() == "dalec":
+            calibrationMap = Controller.processCalibrationConfigDalec(
+                configFileName, calFiles
+            )
+            
         if not calibrationMap:
             print(
                 "No calibration files found. "

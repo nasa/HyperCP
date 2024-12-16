@@ -36,7 +36,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # sensor type
         sensorTypeLabel = QtWidgets.QLabel("Sensor Type:", self)
         self.sensorTypeComboBox = QtWidgets.QComboBox(self)
-        self.sensorTypeComboBox.addItems(["Choose a sensor ...", "SeaBird", "TriOS"])
+        self.sensorTypeComboBox.addItems(["Choose a sensor ...", "SeaBird", "TriOS", "Dalec"])
         CurrentSensor = ConfigFile.settings["SensorType"]
         index = self.sensorTypeComboBox.findText(CurrentSensor,QtCore.Qt.MatchFixedString)
         self.sensorTypeComboBox.setCurrentIndex(index)
@@ -91,6 +91,13 @@ class ConfigWindow(QtWidgets.QDialog):
             self.calibrationFrameTypeComboBox.addItem("Not Required")
             self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
             self.calibrationFrameTypeComboBox.setEnabled(False)
+        
+        elif CurrentSensor.lower() == "dalec":
+            calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
+            self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
+            self.calibrationFrameTypeComboBox.addItem("Not Required")
+            self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
+            self.calibrationFrameTypeComboBox.setEnabled(True)
 
         # L1A
         l1aLabel = QtWidgets.QLabel("Level 1A Processing", self)
@@ -220,7 +227,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l1bSublabel6 = QtWidgets.QLabel("    Fallback values when no model available:", self)
         # l1bSublabel5.setOpenExternalLinks(True)
         self.l1bGetAncCheckBox1 = QtWidgets.QCheckBox("GMAO MERRA2", self)
-        self.l1bGetAncCheckBox2 = QtWidgets.QCheckBox("ECMWF EAC4", self)
+        self.l1bGetAncCheckBox2 = QtWidgets.QCheckBox("ECMWF CAMS", self)
 
         # If clicked trigger l1bGetAncCheckBoxUpdate
         self.l1bGetAncCheckBox1.clicked.connect(lambda: self.l1bGetAncCheckBoxUpdate('NASA_Earth_Data'))
@@ -1730,7 +1737,7 @@ class ConfigWindow(QtWidgets.QDialog):
             credentials.credentialsWindow('NASA_Earth_Data')
             self.l1bGetAncUntickIfNoCredentials('NASA_Earth_Data')
         elif self.l1bGetAncCheckBox2.isChecked():
-            print("ConfigWindow - l1bGetAncCheckBoxUpdate ECMWF EAC4")
+            print("ConfigWindow - l1bGetAncCheckBoxUpdate ECMWF CAMS")
             ConfigFile.settings["bL1bGetAnc"] = 2
             credentials.credentialsWindow('ECMWF_ADS')
             self.l1bGetAncUntickIfNoCredentials('ECMWF_ADS')

@@ -17,6 +17,8 @@ class CalibrationFileReader:
         for (dirpath, dirnames, filenames) in os.walk(fp):
             for name in filenames:
                 #print("infile:", name)
+                if name.lower().startswith("dalec"):
+                    continue
                 if os.path.splitext(name)[1].lower() == ".cal" or \
                    os.path.splitext(name)[1].lower() == ".tdf":
                     with open(os.path.join(dirpath, name), 'rb') as f:
