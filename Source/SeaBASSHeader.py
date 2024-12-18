@@ -62,7 +62,7 @@ class SeaBASSHeader:
     # Generates the default configuration
     @staticmethod
     def createDefaultSeaBASSHeader(name):
-        print("SeaBASSHeader - Create Default SeaBASSHeader")
+        # print("SeaBASSHeader - Create Default SeaBASSHeader")
 
         SeaBASSHeader.settings["version"] = 'R1'
         SeaBASSHeader.settings["investigators"] = ''
@@ -300,7 +300,7 @@ class SeaBASSHeader:
 
     @staticmethod
     def refreshCalibrationFiles():
-        print("SeaBASSHeader - refreshCalibrationFiles")
+        # print("SeaBASSHeader - refreshCalibrationFiles")
         calibrationPath = ConfigFile.getCalibrationDirectory()
         files = os.listdir(calibrationPath)
         if ConfigFile.settings['bL1bCal'] != 3:
