@@ -2636,10 +2636,11 @@ class Utilities:
 
             # intersect, ind1, valid = np.intersect1d(x_new, bands, return_indices=True)
             if len(bands[valid]) != len(x_new):
-                print("ERROR: band wavelentgh not found in calibration file")
+                print("ERROR: band wavelength not found in calibration file")
                 print(len(bands[valid]))
                 print(len(x_new))
-                exit()
+                # exit()
+                return False
 
             ## RADCAL_LAMP: Interpolate data to hyper-spectral pixels
             for data_type in ["_RADCAL_LAMP"]:

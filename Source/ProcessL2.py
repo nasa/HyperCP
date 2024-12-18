@@ -2357,7 +2357,7 @@ class ProcessL2:
                 newGrp = node.addGroup(grp.id)
                 newGrp.copy(grp)
                 for ds in newGrp.datasets:
-                    newGrp.datasets[ds].datasetToColumns()
+                    newGrp.datasets[ds].datasetToColumns()                    
 
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):

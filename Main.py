@@ -16,10 +16,6 @@ import os
 import sys
 import time
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PIL import Image, ImageTk
-
-# import requests
-# from tqdm import tqdm
 
 from Source import PACKAGE_DIR as CODE_HOME
 from Source.MainConfig import MainConfig
@@ -31,7 +27,7 @@ from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
 
-VERSION = "1.2.9"
+VERSION = "1.2.10"
 
 
 class Window(QtWidgets.QWidget):

@@ -162,7 +162,10 @@ class ProcessL1b:
         Utilities.RenameUncertainties_FullChar(root)
 
         # interpolate LAMP and PANEL to full wavelength range
-        Utilities.interpUncertainties_FullChar(root)
+        success = Utilities.interpUncertainties_FullChar(root)
+        if not success:
+            print('interpUncertainties_FullChar failed.')
+            return None
 
         # generate temperature coefficient
         Utilities.UncTempCorrection(root)
