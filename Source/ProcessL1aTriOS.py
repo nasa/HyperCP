@@ -360,6 +360,7 @@ class ProcessL1aTriOS:
         c3 = float(gp.attributes['c3s'])
         wl = []
         for i in range(1,256):
+        # for i in range(1,data.shape[1]+1):
             wl.append(str(round((c0 + c1*(i+1) + c2*(i+1)**2 + c3*(i+1)**3), 2)))
 
         #Create Data (LI,LT,ES) dataset
