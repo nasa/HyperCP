@@ -145,6 +145,21 @@ class ProcessL1aqc:
                     gp.id = "LI_LIGHT"
                 if cf.sensorType == "LT":
                     gp.id = "LT_LIGHT"
+
+        elif ConfigFile.settings['SensorType'].lower() == 'dalec':
+            if gp.id.endswith("CE"):
+                gp.id = "CAL_COEF"            
+            if gp.id.endswith("ES"):
+                gp.id = "ES"
+            if gp.id.endswith("LI"):
+                gp.id = "LI"
+            if gp.id.endswith("LT"):
+                gp.id = "LT"
+            if gp.id.endswith("GP"):
+                gp.id = "DALEC_GPS"
+            if gp.id.endswith("ST"):
+                gp.id = "SOLARTRACKER"
+
         else:
             gp.id = cf.sensorType
 
@@ -222,6 +237,13 @@ class ProcessL1aqc:
             elif gp.id.startswith('SATTHS'):
                 # Fluxgate on the THS:
                 compass = gp.getDataset('COMP')
+            elif gp.id.startswith('DALEC'):
+                gpsDateTime = gp.getDataset('DATETIME').data
+                latAnc=gp.getDataset('LAT').data
+                lonAnc=gp.getDataset('LON').data
+
+                ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
+                ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
 
         # Solar geometry from GPS alone; No Tracker, no Ancillary
         relAzAnc = []
@@ -721,6 +743,14 @@ class ProcessL1aqc:
                     # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
                     relAz[relAz>180] = relAz[relAz>180] - 360
                     relAz[relAz<-180] = relAz[relAz<-180] + 360
+
+                    noRelAz=True #defualt value (non-dalec)
+
+                elif gp.getDataset('REL_AZ'):
+                    noRelAz=False
+                    relAz=gp.getDataset('REL_AZ').data['REL_AZ']
+                    print(relAz)
+
                 else:
                     msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
                     print(msg)
@@ -739,8 +769,9 @@ class ProcessL1aqc:
         ancGroup = node.addGroup("ANCILLARY_METADATA")
         # If using a SolarTracker or pySAS, add RelAz to the SATNAV/SOLARTRACKER group...
         if ConfigFile.settings["bL1aqcSolarTracker"]:
-            newRelAzData.columns["REL_AZ"] = relAz
-            newRelAzData.columnsToDataset()
+            if noRelAz:
+                newRelAzData.columns["REL_AZ"] = relAz
+                newRelAzData.columnsToDataset()
         else:
         #... otherwise populate the ancGroup
             ancGroup.addDataset("REL_AZ")
@@ -896,7 +927,7 @@ class ProcessL1aqc:
 
                 # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
                 # Test: Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data
-                if gp.id != "SOLARTRACKER_STATUS" and gp.id != "ANCILLARY_METADATA":
+                if gp.id != "SOLARTRACKER_STATUS" and gp.id != "ANCILLARY_METADATA" and gp.id != "CAL_COEF":
                     fractionRemoved = ProcessL1aqc.filterData(gp, badTimes)
 
                     # Now test whether the overlap has eliminated all radiometric data
