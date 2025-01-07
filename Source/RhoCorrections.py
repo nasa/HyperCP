@@ -75,10 +75,11 @@ class RhoCorrections:
             # Wavebands clips the ends off of the spectra reducing the amount of values from 200 to 189 for
             # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
 
+            zhang_LUT = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, None)
+
             zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, newWaveBands)
             # this is the method to read zhang from the LUT. It is commented out pending the sensitivity study and
             # correction to the interpolation errors that have been noted.
-            # zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, None)
 
             # |M99 - Z17| is an estimation of model error, added to MC M99 uncertainty in quadrature to give combined
             # uncertainty
@@ -198,12 +199,12 @@ class RhoCorrections:
         db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_LUT.nc')
 
         with xr.open_dataset(db_path, engine='netcdf4') as LUT:
-            zhang_ws = LUT.interp({"wind": ws}, method='linear')
-            zhang_sza = zhang_ws.interp({"sza": sza}, method='linear')
-            zhang_aod = zhang_sza.interp({"aot": aod}, method='linear')
-            zhang_wt = zhang_aod.interp({"SST": wt}, method='linear')
-            zhang_sal = zhang_wt.interp({"sal": sal}, method='linear')
-            zhang_rel_az = zhang_sal.interp({"relAz": rel_az}, method='linear').Glint.values
+            zhang_ws = LUT.interp({"wind": ws}, method='cubic')
+            zhang_sza = zhang_ws.interp({"sza": sza}, method='cubic')
+            zhang_aod = zhang_sza.interp({"aot": aod}, method='cubic')
+            zhang_wt = zhang_aod.interp({"SST": wt}, method='cubic')
+            zhang_sal = zhang_wt.interp({"sal": sal}, method='cubic')
+            zhang_rel_az = zhang_sal.interp({"relAz": rel_az}, method='cubic').Glint.values
 
         # plotting commented here for use in testing phase
         # zhang_L = np.interp(nwb, LUT.wavelength.values, zhang_rel_az)

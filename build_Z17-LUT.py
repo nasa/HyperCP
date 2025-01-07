@@ -108,9 +108,9 @@ if __name__ == '__main__':
     )
 
     ds = da.to_dataset(name="Glint")
-    ds_out = xr.concat(ds, z17_lut)
-    ds.to_netcdf(os.path.join(PATH_TO_DATA, 'Z17_LUT_2.nc'))  # , 'w', 'NETCDF4')
+    ds_out = xr.concat([ds, z17_lut])
+    ds_out.to_netcdf(os.path.join(PATH_TO_DATA, 'Z17_LUT_2.nc'))  # , 'w', 'NETCDF4')
 
-    da_2 = xr.open_dataset(os.path.join(fp, 'Z17_LUT.nc'))
+    da_2 = xr.open_dataset(os.path.join(PATH_TO_DATA, 'Z17_LUT_2.nc'))
 
     print(da, da_2)

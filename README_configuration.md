@@ -413,13 +413,13 @@ $$
 Therefore, applying the LPU, uncertainty in $L_{w}$ can be stated as
 
 $$
-u(L_{w}) = \sqrt{u(L_{t})^{2} + L_{i}^2.u(\rho_{sky})^{2} + \rho_{sky}^{2}.u(L_{i})^{2}}
+u_{abs}(L_{w}) = \sqrt{u(L_{t})^{2} + L_{i}^2.u(\rho_{sky})^{2} + \rho_{sky}^{2}.u(L_{i})^{2}}
 $$
 
 then Rrs uncertainty as
 
 $$
-u(Rrs) = \sqrt{u(L_{w})^{2} + u(E_{s})^{2}}
+u_{rel}(Rrs) = \sqrt{u(L_{w})^{2} + u(E_{s})^{2}}
 $$
 
 Note that $L_{w}$ and $Rrs$ uncertainties are propagated separately, this is to avoid a more complicated formulation
