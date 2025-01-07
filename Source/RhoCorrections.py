@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 
-from Source import ZhangRho, PATH_TO_DATA
+from Source.ZhangRho import get_sky_sun_rho, PATH_TO_DATA
 from Source.ConfigFile import ConfigFile
 from Source.Utilities import Utilities
 from Source.HDFRoot import HDFRoot
@@ -183,7 +183,7 @@ class RhoCorrections:
         # todo: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
 
         tic = time.process_time()
-        rhoVector = ZhangRho.get_sky_sun_rho(env, sensor, round4cache=True)['rho']
+        rhoVector = get_sky_sun_rho(env, sensor, round4cache=True)['rho']
         msg = f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s'
         print(msg)
         Utilities.writeLogFile(msg)
@@ -240,6 +240,7 @@ class RhoCorrections:
                 ),
                 method=method,
             )
+
 
             plt.figure("LUT-Interp")
             plt.plot(nwb, zhang_L, label=f'scipy interpn {method}', linestyle='--', color='r')
