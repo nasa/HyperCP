@@ -68,7 +68,7 @@ class ProcessL1b:
                 ds.columns["unc"] = [2.3]
                 ds.columnsToDataset()
 
-        if ConfigFile.settings['SensorType'].lower() == "trios":
+        if ConfigFile.settings['SensorType'].lower() == "trios" and ConfigFile.settings['SensorType'].lower() == "dalec":
             for sensor in ['LI','LT','ES']:
                 dsname = sensor+'_RADCAL_UNC'
                 gp.addDataset(dsname)

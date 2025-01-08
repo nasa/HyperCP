@@ -512,7 +512,7 @@ class ProcessL2:
                     newRrsUNCData.columns[k].append(rrsUNC[k])
                     # newnLwUNCData.columns[k].append(nLwUNC)
                     newnLwUNCData.columns[k].append(nLwUNC[k])
-                    if ConfigFile.settings['bL1bCal']==1 and ConfigFile.settings['SensorType'].lower() == 'trios':
+                    if ConfigFile.settings['bL1bCal']==1 and (ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'dalec'):
                     # Specifique case for Factory-Trios
                         newESUNCData.columns[k].append(esUNC[k])
                         newLIUNCData.columns[k].append(liUNC[k])
@@ -1293,7 +1293,7 @@ class ProcessL2:
             print(msg)
         else:
             # slice L1AQC (aka "Raw" here) Data depending on SensorType
-            if ConfigFile.settings['SensorType'].lower() == "trios":
+            if ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "dalec"::
                 esRawSlice, liRawSlice, ltRawSlice = _sliceRawData(
                                     esRawGroup.datasets.values(),
                                     liRawGroup.datasets.values(),
@@ -1803,7 +1803,7 @@ class ProcessL2:
                     xSlice['ltUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
 
                     xUNC.update(instrument.ClassBasedL2(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
-                elif (ConfigFile.settings['SensorType'].lower() == "trios") and (ConfigFile.settings["bL1bCal"] == 1):
+                elif ((ConfigFile.settings['SensorType'].lower() == "trios") or (ConfigFile.settings['SensorType'].lower() == "dalec")) and (ConfigFile.settings["bL1bCal"] == 1):
                     xUNC = None
                 else:
                     msg = "Instrument uncertainty processing failed: ProcessL2"
@@ -2088,7 +2088,7 @@ class ProcessL2:
             liRawGroup = {"LIGHT": rootCopy.getGroup('LI_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('LI_DARK_L1AQC')}
             ltRawGroup = {"LIGHT": rootCopy.getGroup('LT_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('LT_DARK_L1AQC')}
 
-        elif ConfigFile.settings['SensorType'].lower() == 'trios':
+        elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'dalec':
             rootCopy.addGroup("ES_L1AQC")
             rootCopy.addGroup("LI_L1AQC")
             rootCopy.addGroup("LT_L1AQC")
