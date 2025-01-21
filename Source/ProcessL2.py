@@ -1669,30 +1669,37 @@ class ProcessL2:
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
             if AODXSlice >0.2:
-                msg = f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.2'
+                msg = f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.2. Expect larger, uncaptured errors.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 AODXSlice = 0.2
-            if SZAXSlice > 60:
-                # Zhang is stricter and limited to SZA <= 60
-                msg = f'SZA = {SZAXSlice:.2f}. Maximum Solar Zenith Exceeded. Aborting slice.'
+            if WINDSPEEDXSlice > 15:
+                msg = f'WIND = {WINDSPEEDXSlice:.1f}. Maximum Wind Speed Reached. Setting to 15.0. Expect larger, uncaptured errors.'
                 print(msg)
                 Utilities.writeLogFile(msg)
-                # Need to eliminate this slice from newAncGroup
-                badTimes = []
-                start = dateTime
-                stop = dateTime
-                badTimes.append([start, stop])
-                for dsName in newAncGroup.datasets:
-                    ds = newAncGroup.datasets[dsName]
-                    ds.columnsToDataset()
+                WINDSPEEDXSlice = 15
+            if SZAXSlice > 60:
+                # Zhang is stricter and limited to SZA <= 60
+                # msg = f'SZA = {SZAXSlice:.2f}. Maximum Solar Zenith Exceeded. Aborting slice.'
+                msg = f'SZA = {SZAXSlice:.1f}. Maximum Solar Zenith Exceeded. Setting to 60. Expect larger, uncaptured errors.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                SZAXSlice = 60
+                # # Need to eliminate this slice from newAncGroup
+                # badTimes = []
+                # start = dateTime
+                # stop = dateTime
+                # badTimes.append([start, stop])
+                # for dsName in newAncGroup.datasets:
+                #     ds = newAncGroup.datasets[dsName]
+                #     ds.columnsToDataset()
 
-                check = Utilities.filterData(newAncGroup,badTimes)
-                if check == 1.0:
-                    msg = "100% of Ancillary data removed. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
+                # check = Utilities.filterData(newAncGroup,badTimes)
+                # if check == 1.0:
+                #     msg = "100% of Ancillary data removed. Abort."
+                #     print(msg)
+                #     Utilities.writeLogFile(msg)
+                #     return False
             if min(wavelength) < 350 or max(wavelength) > 1000:
                 msg = 'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'
                 print(msg)
