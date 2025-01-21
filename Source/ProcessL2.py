@@ -1293,7 +1293,7 @@ class ProcessL2:
             print(msg)
         else:
             # slice L1AQC (aka "Raw" here) Data depending on SensorType
-            if ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "dalec"::
+            if ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "dalec":
                 esRawSlice, liRawSlice, ltRawSlice = _sliceRawData(
                                     esRawGroup.datasets.values(),
                                     liRawGroup.datasets.values(),
