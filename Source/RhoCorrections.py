@@ -1,16 +1,14 @@
+'''Calculate skylight reflectance factor'''
 import os
 import time
 
 import numpy as np
 import xarray as xr
-import matplotlib.pyplot as plt
 
 from Source.ZhangRho import get_sky_sun_rho, PATH_TO_DATA
 from Source.ConfigFile import ConfigFile
 from Source.Utilities import Utilities
 from Source.HDFRoot import HDFRoot
-from Source.Water_IOPs import water_iops
-
 
 class RhoCorrections:
 
@@ -66,10 +64,8 @@ class RhoCorrections:
             # AOD
             AOD = np.min([AOD,0.2])
             # SZA
-            if 60 < SZAMean < 70:
-                SZAMean = SZAMean
-            elif SZAMean >= 70:
-                raise ValueError('SZAMean is to high (%s), Zhang correction cannot be performed above SZA=70.')
+            if SZAMean >= 70:
+                raise ValueError('SZAMean is too high (%s), Zhang correction cannot be performed above SZA=70.')
             # wavelengths in range [350-1000] nm
             newWaveBands = [w for w in waveBands if w >= 350 and w <= 1000]
             # Wavebands clips the ends off of the spectra reducing the amount of values from 200 to 189 for
@@ -206,7 +202,7 @@ class RhoCorrections:
         # # define uncertainties and create variable list for punpy. Inputs cannot be ordered dictionaries
         varlist = [windSpeedMean, AOD, 0.0, sza, wTemp, sal, relAz, np.array(waveBands)]
         ulist = [2.0, 0.01, 0.0, 0.5, 2, 0.5, 3, None]
-        # todo: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
+        # TODO: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
 
         tic = time.process_time()
         rhoVector = get_sky_sun_rho(env, sensor, round4cache=True)['rho']
