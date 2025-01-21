@@ -145,9 +145,6 @@ class RhoCorrections:
     @staticmethod
     # def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
     def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands, Propagate = None):
-        ''' Requires xarray: http://xarray.pydata.org/en/stable/installing.html
-        Recommended installation using Anaconda:
-        $ conda install xarray dask netCDF4 bottleneck'''
 
         msg = 'Calculating Zhang glint correction.'
         print(msg)
