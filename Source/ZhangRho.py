@@ -451,7 +451,6 @@ def get_sky_sun_rho(env, sensor, round4cache=False):
     sensor['vec'] = my_sph2cart(sensor['pol'][1], sensor['pol'][0])  # sensor vector
     sensor['pol2'] = np.deg2rad(sensor['ang2'])  # skylight polar coordinate
     sensor['loc2'] = find_quads(sensor['pol2'][0], sensor['pol2'][1])
-
     # Set output
     rho = {}
 
@@ -469,6 +468,9 @@ def get_sky_sun_rho(env, sensor, round4cache=False):
     # xi = np.array(np.meshgrid(env['zen_sun'], env['od'], db_idx, sensor['wv'], copy=False)).T
     # skyrad = interpn((db['zen_sun'], db['od'], db_idx, db['wv']),
     #                  skyrad0, xi.reshape(-1, 4)).reshape(xi.shape[:-1]).T.squeeze()
+
+    #if(env['zen_sun'] > 60.0):
+    #    env['zen_sun']=59.9
     skyrad = interpn_chunked((db['zen_sun'], db['od'], db_idx, db['wv']), skyrad0,
                              (env['zen_sun'], env['od'], db_idx, sensor['wv']), chunked_axis=2).squeeze()
 

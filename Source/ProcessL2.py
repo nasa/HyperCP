@@ -19,7 +19,7 @@ from Source.Uncertainty_Analysis import Propagate
 from Source.Weight_RSR import Weight_RSR
 from Source.ProcessL2OCproducts import ProcessL2OCproducts
 from Source.ProcessL2BRDF import ProcessL2BRDF
-from Source.ProcessInstrumentUncertainties import Trios, HyperOCR
+from Source.ProcessInstrumentUncertainties import Trios, HyperOCR, Dalec
 
 
 class ProcessL2:
@@ -381,7 +381,8 @@ class ProcessL2:
         ltUNC = {}
 
         # Only Factory - Trios has no uncertainty here
-        if (ConfigFile.settings['bL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird'):
+        if (ConfigFile.settings['bL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird' \
+            or ConfigFile.settings['SensorType'].lower() == 'dalec'):
             esUNC = xUNC[f'esUNC_{sensor}']  # should already be convolved to hyperspec
             liUNC = xUNC[f'liUNC_{sensor}']  # added reference to HYPER as band convolved uncertainties will no longer
             ltUNC = xUNC[f'ltUNC_{sensor}']  # overwite normal instrument uncertainties during processing
@@ -397,6 +398,8 @@ class ProcessL2:
                     else:  # apply the sensor specific Lw and Rrs uncertainties
                         lwUNC[k] = xUNC[f'lwUNC_{sensor}'][i]
                         rrsUNC[k] = xUNC[f'rrsUNC_{sensor}'][i]
+            #print(sensor+" rrsUNC")
+            #print(rrsUNC)
         else:
             # factory case
             for wvl in waveSubset:
@@ -512,7 +515,9 @@ class ProcessL2:
                     newRrsUNCData.columns[k].append(rrsUNC[k])
                     # newnLwUNCData.columns[k].append(nLwUNC)
                     newnLwUNCData.columns[k].append(nLwUNC[k])
-                    if ConfigFile.settings['bL1bCal']==1 and (ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'dalec'):
+                    if ConfigFile.settings['bL1bCal']==1 and (ConfigFile.settings['SensorType'].lower() == 'trios' or \
+                                                              ConfigFile.settings['SensorType'].lower() == 'dalec'):
+                    #if ConfigFile.settings['bL1bCal']==1 and (ConfigFile.settings['SensorType'].lower() == 'trios'):
                     # Specifique case for Factory-Trios
                         newESUNCData.columns[k].append(esUNC[k])
                         newLIUNCData.columns[k].append(liUNC[k])
@@ -1283,6 +1288,13 @@ class ProcessL2:
                     li_slce["data"] = ProcessL2.columnToSlice(ds1.columns, start, end)
                 if ds2.id == "LT":
                     lt_slce["data"] = ProcessL2.columnToSlice(ds2.columns, start, end)
+                # Get Dalec Dark Counts
+                if ds.id == "DARK_CNT":
+                    es_slce["dc"] = ProcessL2.columnToSlice(ds.columns, start, end)
+                if ds1.id == "DARK_CNT":
+                    li_slce["dc"] = ProcessL2.columnToSlice(ds1.columns, start, end)
+                if ds2.id == "DARK_CNT":
+                    lt_slce["dc"] = ProcessL2.columnToSlice(ds2.columns, start, end)
             if all([es_slce, li_slce, lt_slce]):
                 return es_slce, li_slce, lt_slce
             else:
@@ -1293,7 +1305,8 @@ class ProcessL2:
             print(msg)
         else:
             # slice L1AQC (aka "Raw" here) Data depending on SensorType
-            if ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "dalec":
+            if ConfigFile.settings['SensorType'].lower() == "trios" \
+                or ConfigFile.settings['SensorType'].lower() == "dalec":
                 esRawSlice, liRawSlice, ltRawSlice = _sliceRawData(
                                     esRawGroup.datasets.values(),
                                     liRawGroup.datasets.values(),
@@ -1375,6 +1388,12 @@ class ProcessL2:
             esRawGroup.id = "ES_L1AQC"
             liRawGroup.id = "LI_L1AQC"
             ltRawGroup.id = "LT_L1AQC"
+        elif ConfigFile.settings['SensorType'].lower() == "dalec":
+            instrument = Dalec()  # overwrites all Instrument class functions with TriOS specific ones
+            stats = instrument.generateSensorStats("Dalec",
+                        dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                        dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
+                        instrument_wb)
         else:
             msg = "class type not recognised"
             print(msg)
@@ -1810,7 +1829,8 @@ class ProcessL2:
                     xSlice['ltUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
 
                     xUNC.update(instrument.ClassBasedL2(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
-                elif ((ConfigFile.settings['SensorType'].lower() == "trios") or (ConfigFile.settings['SensorType'].lower() == "dalec")) and (ConfigFile.settings["bL1bCal"] == 1):
+                elif ((ConfigFile.settings['SensorType'].lower() == "trios") or \
+                    (ConfigFile.settings['SensorType'].lower() == "dalec")) and (ConfigFile.settings["bL1bCal"] == 1):
                     xUNC = None
                 else:
                     msg = "Instrument uncertainty processing failed: ProcessL2"
@@ -2095,7 +2115,8 @@ class ProcessL2:
             liRawGroup = {"LIGHT": rootCopy.getGroup('LI_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('LI_DARK_L1AQC')}
             ltRawGroup = {"LIGHT": rootCopy.getGroup('LT_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('LT_DARK_L1AQC')}
 
-        elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'dalec':
+        elif ConfigFile.settings['SensorType'].lower() == 'trios' or \
+            ConfigFile.settings['SensorType'].lower() == 'dalec':
             rootCopy.addGroup("ES_L1AQC")
             rootCopy.addGroup("LI_L1AQC")
             rootCopy.addGroup("LT_L1AQC")
@@ -2116,7 +2137,8 @@ class ProcessL2:
         else:
             py6SGroup = None
 
-        if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
+        if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird' \
+            or ConfigFile.settings['SensorType'].lower() == 'dalec':
             rootCopy.addGroup("RAW_UNCERTAINTIES")
             rootCopy.getGroup('RAW_UNCERTAINTIES').copy(root.getGroup('RAW_UNCERTAINTIES'))
             uncGroup = rootCopy.getGroup("RAW_UNCERTAINTIES")

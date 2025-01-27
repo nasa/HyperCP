@@ -2156,7 +2156,7 @@ class Utilities:
         ThermUnc = []
 
         # Seabird case
-        if ConfigFile.settings['SensorType'].lower() == "seabird":
+        if ConfigFile.settings['SensorType'].lower() == "seabird" or ConfigFile.settings['SensorType'].lower() == "dalec":
             for i in range(len(therm_coeff)):
                 try:
                     ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp - refTemp)))
@@ -2206,6 +2206,23 @@ class Utilities:
                     TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("TEMP")
                 elif "SPECTEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
                     TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("SPECTEMP")
+                else:
+                    msg = "Thermal dataset not found"
+                    print(msg)
+                # internal temperature is the mean of all replicate
+                internalTemp = np.mean(np.array(TempDS.data.tolist()))
+                # ambiant temp is not needed for seabird as internal temp is measured, set to 0
+                ambTemp = 0
+                if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
+                    msg = "Failed to generate Thermal Coefficients"
+                    print(msg)
+
+            ### Dalec
+            elif ConfigFile.settings['SensorType'].lower() == "dalec":
+                if "TEMP" in node.getGroup(f'{sensor}').datasets:
+                    TempDS = node.getGroup(f'{sensor}').getDataset("TEMP")
+                elif "SPECTEMP" in node.getGroup(f'{sensor}').datasets:
+                    TempDS = node.getGroup(f'{sensor}').getDataset("SPECTEMP")
                 else:
                     msg = "Thermal dataset not found"
                     print(msg)
@@ -2411,7 +2428,7 @@ class Utilities:
             ## retrieve dataset from corresponding instrument
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios":
+            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "dalec":
                 data = node.getGroup(sensor).getDataset(sensor)
 
             # Retrieve hyper-spectral wavelengths from dataset

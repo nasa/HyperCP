@@ -52,7 +52,7 @@ class ProcessL1b:
         # https://ntrs.nasa.gov/citations/20020045342
         # For Trios uncertainties are set 0
 
-        if ConfigFile.settings['SensorType'].lower() == "seabird":
+        if ConfigFile.settings['SensorType'].lower() == "seabird" or ConfigFile.settings['SensorType'].lower() == "dalec":
             for sensor in ['LI','LT']:
                 dsname = sensor+'_RADCAL_UNC'
                 gp.addDataset(dsname)
@@ -68,7 +68,7 @@ class ProcessL1b:
                 ds.columns["unc"] = [2.3]
                 ds.columnsToDataset()
 
-        if ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "dalec":
+        if ConfigFile.settings['SensorType'].lower() == "trios":
             for sensor in ['LI','LT','ES']:
                 dsname = sensor+'_RADCAL_UNC'
                 gp.addDataset(dsname)
@@ -105,12 +105,10 @@ class ProcessL1b:
         for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
 
-
         for f in glob.glob(os.path.join(inpath, r'*class_LINEAR*')):
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
             Utilities.read_char(f, gp)
-
 
         # Read sensor-specific radiometric calibration
         for f in glob.glob(os.path.join(radcal_dir, r'*RADCAL*')):

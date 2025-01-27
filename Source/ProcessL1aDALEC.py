@@ -1,13 +1,9 @@
 '''Process Raw (L0) data to L1A HDF5'''
-import collections
 import os
-import json
-from datetime import timedelta, date,datetime
-import re
+from datetime import datetime
 import datetime as dt
 import numpy as np
 import pandas as pd
-import tables
 
 
 from Source.HDFRoot import HDFRoot
@@ -68,7 +64,7 @@ class ProcessL1aDALEC:
         root = HDFRoot()
         root.id = "/"
         #write global attributes
-        if os.environ['HYPERINSPACE_CMD'].lower == 'true': # os.environ must be string
+        if os.environ['HYPERINSPACE_CMD'].lower =='true': # os.environ must be string
             MainConfig.loadConfig('cmdline_main.config','version')
         else:
             MainConfig.loadConfig('main.config','version')
@@ -102,8 +98,9 @@ class ProcessL1aDALEC:
         dtime=[datetime.strptime(i.replace('Z','000'),dateFormat) for i in data_good['UTCtimestamp']]
         TimeTag2 = [Utilities.datetime2TimeTag2(i) for i in dtime]
         DateTag = [Utilities.datetime2DateTag(i) for i in dtime]
+        root.attributes["TIME-STAMP"] = dt.datetime.strftime(dtime[0],'%a %b %d %H:%M:%S %Y')
 
-       #add GPS group
+        #add GPS group
         gp =  HDFGroup()
         gp.id = calid+'.GP'
         root.groups.append(gp)
@@ -153,6 +150,8 @@ class ProcessL1aDALEC:
         gp.id = calid+'.CE'
         root.groups.append(gp)
         gp.attributes['CalFileName']=calid
+        for row in coefficients.itertuples():
+            gp.attributes[row[1].strip().replace(" ","_")]=str(row[2])
         for i in [0,1,2]:
             gp.addDataset('Cal_'+channelType[i])
             cal_par=cal_ch[i].columns.tolist()
@@ -169,8 +168,6 @@ class ProcessL1aDALEC:
             gp.attributes['CalFileName']=calid
             gp.attributes['FrameType']="Not Required"
             gp.attributes['SensorDataList']='Cal_'+channelType[i]+','+channelType[i]+',DATETAG,TIMETAG2,INTTIME,SPECTEMP'
-            for row in coefficients.itertuples():
-                gp.attributes[row[1].strip().replace(" ","_")]=str(row[2])
 
             #add channel data
             gp.addDataset(channelType[i]);

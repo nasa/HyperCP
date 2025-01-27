@@ -24,85 +24,18 @@ class ProcessL1bDALEC:
     '''L1B for DALEC'''
 
     @staticmethod
-    def read_unc_coefficient_factory(root, inpath):
-        ''' SeaBird or TriOS'''
-        # Read Uncertainties_new_char from provided files
-        gp = root.addGroup("RAW_UNCERTAINTIES")
-        gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
-
-        # Read uncertainty parameters from class-based calibration
-        for f in glob.glob(os.path.join(inpath, r'*class_POLAR*')):
-            Utilities.read_char(f, gp)
-        '''
-        for f in glob.glob(os.path.join(inpath, r'*class_STRAY*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*class_ANGULAR*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
-            Utilities.read_char(f, gp)
-        '''
-        for f in glob.glob(os.path.join(inpath, r'*class_LINEAR*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
-            Utilities.read_char(f, gp)
-
-        # Unc dataset renaming
-        Utilities.RenameUncertainties_Class(root)
-
-        # Creation of RADCAL class unc for Seabird, values are extracted from:
-        # The Seventh SeaWiFS Intercalibration Round-Robin Experiment (SIRREX-7), March 1999.
-        # NASA Technical Reports Server (NTRS)
-        # https://ntrs.nasa.gov/citations/20020045342
-        # For Trios uncertainties are set 0
-
-        if ConfigFile.settings['SensorType'].lower() == "seabird" and ConfigFile.settings['SensorType'].lower() == "dalec":
-            for sensor in ['LI','LT']:
-                dsname = sensor+'_RADCAL_UNC'
-                gp.addDataset(dsname)
-                ds = gp.getDataset(dsname)
-                ds.columns["wvl"] = [400]
-                ds.columns["unc"] = [2.7]
-                ds.columnsToDataset()
-            for sensor in ['ES']:
-                dsname = sensor+'_RADCAL_UNC'
-                gp.addDataset(dsname)
-                ds = gp.getDataset(dsname)
-                ds.columns["wvl"] = [400]
-                ds.columns["unc"] = [2.3]
-                ds.columnsToDataset()
-
-        if ConfigFile.settings['SensorType'].lower() == "trios":
-            for sensor in ['LI','LT','ES']:
-                dsname = sensor+'_RADCAL_UNC'
-                gp.addDataset(dsname)
-                ds = gp.getDataset(dsname)
-                ds.columns["wvl"] = [400]
-                ds.columns["unc"] = [0.0]
-                ds.columnsToDataset()
-
-        # interpolate unc to full wavelength range, depending on class based or full char
-        #Utilities.interpUncertainties_Factory(root)
-
-        # # generate temperature coefficient
-#        Utilities.UncTempCorrection(root)
-
-        return root
-
-
-    @staticmethod
     def processES(node):
         gp=node.getGroup('ES')
-        delta_t_ed=float(gp.attributes['Delta_T_Ed'])
-        tref=float(gp.attributes['Tref'])
-        d0=float(gp.attributes['d0'])
-        d1=float(gp.attributes['d1'])
+        gpc=node.getGroup('CAL_COEF')
+        delta_t_ed=float(gpc.attributes['Delta_T_Ed'])
+        tref=float(gpc.attributes['Tref'])
+        d0=float(gpc.attributes['d0'])
+        d1=float(gpc.attributes['d1'])
         ds=gp.datasets['ES']
-        #bands=ds.data
-        #print(bands[0][1])
         dc=gp.datasets['DARK_CNT'].data['ES'].tolist()
         inttime=gp.datasets['INTTIME'].data['ES'].tolist()
         temp=gp.datasets['SPECTEMP'].data['NONE'].tolist()
-        cd=node.getGroup('CAL_COEF').datasets['Cal_ES']
+        cd=gpc.datasets['Cal_ES']
         a0 = cd.data['a0'].tolist()
         tempco_ed=cd.data['Tempco_Ed'].tolist()
 
@@ -118,54 +51,41 @@ class ProcessL1bDALEC:
     @staticmethod
     def processLT(node):
         gp=node.getGroup('LT')
-        delta_t_lu=float(gp.attributes['Delta_T_Lu'])
-        tref=float(gp.attributes['Tref'])
-        e0=float(gp.attributes['e0'])
-        e1=float(gp.attributes['e1'])
+        gpc=node.getGroup('CAL_COEF')
+        delta_t_lu=float(gpc.attributes['Delta_T_Lu'])
+        tref=float(gpc.attributes['Tref'])
+        e0=float(gpc.attributes['e0'])
+        e1=float(gpc.attributes['e1'])
         ds=gp.datasets['LT']
         dc=gp.datasets['DARK_CNT'].data['LT'].tolist()
         inttime=gp.datasets['INTTIME'].data['LT'].tolist()
         temp=gp.datasets['SPECTEMP'].data['NONE'].tolist()
-        cd=node.getGroup('CAL_COEF').datasets['Cal_LT']
+        cd=gpc.datasets['Cal_LT']
         b0 = cd.data['b0'].tolist()
         tempco_lu=cd.data['Tempco_Lu'].tolist()
+
         # K2=e1*(V-DC)+e0
         # Lu=b0*((V-DC)/(Inttime+DeltaT_Lu)/K2)/(Tempco_Lu*(Temp-Tref)+1)
 
-        print("records:")
-        print(ds.data.shape[0])
-        print("bands:")
-        print(cd.data.shape[0])
         for i in range(ds.data.shape[0]):
             c1=inttime[i]+delta_t_lu
-            #print(c1)
             for j in range(cd.data.shape[0]):
-                if(i==10 and j==15):
-                    print("LT ds.data:")
-                    #print(b0[j])
-                    print(ds.data[i][j])
-                    #print(dc[i])
-                    print(c1)
-                    #print(tempco_lu[j])
-                    print(temp[i])
                 ds.data[i][j] = 100.0*b0[j]*((ds.data[i][j]-dc[i])/c1
                 /(e1*(ds.data[i][j]-dc[i])+e0))/(tempco_lu[j]*(temp[i]-tref)+1)
-                if(i==100 and j==15):
-                    print("LT result:")
-                    print(ds.data[i][j])
 
     @staticmethod
     def processLI(node):
         gp=node.getGroup('LI')
-        delta_t_lsky=float(gp.attributes['Delta_T_Lsky'])
-        tref=float(gp.attributes['Tref'])
-        f0=float(gp.attributes['f0'])
-        f1=float(gp.attributes['f1'])
+        gpc=node.getGroup('CAL_COEF')
+        delta_t_lsky=float(gpc.attributes['Delta_T_Lsky'])
+        tref=float(gpc.attributes['Tref'])
+        f0=float(gpc.attributes['f0'])
+        f1=float(gpc.attributes['f1'])
         ds=gp.datasets['LI']
         dc=gp.datasets['DARK_CNT'].data['LI'].tolist()
         inttime=gp.datasets['INTTIME'].data['LI'].tolist()
         temp=gp.datasets['SPECTEMP'].data['NONE'].tolist()
-        cd=node.getGroup('CAL_COEF').datasets['Cal_LI']
+        cd=gpc.datasets['Cal_LI']
         c0 = cd.data['c0'].tolist()
         tempco_lsky=cd.data['Tempco_Lsky'].tolist()
 
@@ -226,7 +146,7 @@ class ProcessL1bDALEC:
         if ConfigFile.settings['bL1bCal'] == 1:
             # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
-            node = ProcessL1bDALEC.read_unc_coefficient_factory(node, classbased_dir)
+            node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
             if node is None:
                 msg = 'Error running factory uncertainties.'
                 print(msg)
