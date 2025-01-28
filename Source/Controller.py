@@ -313,6 +313,7 @@ class Controller:
             root = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
             root = ProcessL1aDALEC.processL1a(inFilePath, calibrationMap)
+            outFFPs = outFilePath
         else:
             root = None
 
@@ -894,7 +895,7 @@ class Controller:
     def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level):
 
         if level == "L1A":
-            srchStr = ['raw', 'mlb']
+            srchStr = ['raw', 'mlb', 'txt']
         elif level == 'L1AQC':
             srchStr = ['L1A']
         elif level == 'L1B':

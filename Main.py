@@ -27,7 +27,7 @@ from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
 
-VERSION = "1.2.10"
+VERSION = "1.2.11"
 
 
 class Window(QtWidgets.QWidget):
@@ -468,13 +468,11 @@ class Window(QtWidgets.QWidget):
         # else:
         elif ConfigFile.settings["SensorType"].lower() == "trios":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
-
-         # else:
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
-            calibrationMap = Controller.processCalibrationConfigDalec(
+            calibrationMap = Controller.processCalibrationConfig(
                 configFileName, calFiles
             )
-            
+
         if not calibrationMap:
             print(
                 "No calibration files found. "
@@ -561,6 +559,9 @@ class Window(QtWidgets.QWidget):
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
             print("Process Calibration Files")
+            filename = ConfigFile.filename
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        elif ConfigFile.settings["SensorType"].lower() == "dalec":
             filename = ConfigFile.filename
             calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
         else:
