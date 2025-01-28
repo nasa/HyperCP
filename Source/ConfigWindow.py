@@ -71,20 +71,16 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationEnabledCheckBox.stateChanged.connect(self.calibrationEnabledStateChanged)
         self.calibrationEnabledCheckBox.setEnabled(False)
 
-        # CurrentSensor = ConfigFile.settings["SensorType"]
-        if CurrentSensor.lower() == "seabird":
-            calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
-            self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
+        calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
+        self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
+        if CurrentSensor.lower() == "seabird":            
             self.calibrationFrameTypeComboBox.addItem("ShutterLight")
             self.calibrationFrameTypeComboBox.addItem("ShutterDark")
             self.calibrationFrameTypeComboBox.addItem("Not Required")
-            # self.calibrationFrameTypeComboBox.addItem("LightAncCombined")
             self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
             self.calibrationFrameTypeComboBox.setEnabled(False)
 
         elif CurrentSensor.lower() == "trios":
-            calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
-            self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
             self.calibrationFrameTypeComboBox.addItem("LI")
             self.calibrationFrameTypeComboBox.addItem("LT")
             self.calibrationFrameTypeComboBox.addItem("ES")
@@ -210,8 +206,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
         l1bSublabel3 = QtWidgets.QLabel("   Ancillary data are required for Zhang glint correction and", self)
         l1bSublabel4 = QtWidgets.QLabel("   can fill in wind for M99 and QC. Select database download:", self)
-        # l1bSublabel5 = QtWidgets.QLabel("    (GMAO PROMPTS FOR EARTHDATA LOGIN: <a href=\"https://www.earthdata.nasa.gov/eosdis/science-system-description/eosdis-components/earthdata-login/\">register</a>)", self)
-        # self.l1bGetAncReset = QtWidgets.Button(root, text="Press Me", command=on_button_click)
 
         # Reset button for ancillary source credentials
         self.l1bGetAncResetButton = QtWidgets.QPushButton("Reset credentials (GMAO or ECMWF)", self)
@@ -243,25 +237,25 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bDefaultSSTLineEdit.setText(str(ConfigFile.settings["fL1bDefaultSST"]))
         self.l1bDefaultSSTLineEdit.setValidator(doubleValidator)
 
-        l1bCalLabel = QtWidgets.QLabel(" Select Calibration/Characterization/Correction Regime:", self)
+        l1bCalLabel = QtWidgets.QLabel(" Select Calibration-Characterization-Correction Regime:", self)
         self.DefaultCalRadioButton = QtWidgets.QRadioButton("Factory Calibration Only")
         self.DefaultCalRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL1bCal"]==1:
             self.DefaultCalRadioButton.setChecked(True)
         self.DefaultCalRadioButton.clicked.connect(self.l1bDefaultCalRadioButtonClicked)
-        self.DefaultCalRadioButtonTriOS = QtWidgets.QRadioButton("TriOS")
-        self.DefaultCalRadioButtonSeaBird = QtWidgets.QRadioButton("SeaBird (Non-FRM Class-based)")
-        if CurrentSensor.lower() == 'trios':
-            self.DefaultCalRadioButtonTriOS.setChecked(True)
-            self.DefaultCalRadioButtonSeaBird.setChecked(False)
-            self.DefaultCalRadioButtonSeaBird.setDisabled(True)
-        else:
-            self.DefaultCalRadioButtonSeaBird.setChecked(True)
-            self.DefaultCalRadioButtonTriOS.setChecked(False)
-            self.DefaultCalRadioButtonTriOS.setDisabled(True)
+        # self.DefaultCalRadioButtonTriOS = QtWidgets.QRadioButton("TriOS")
+        # self.DefaultCalRadioButtonSeaBird = QtWidgets.QRadioButton("SeaBird (Non-FRM Class-based)")
+        # if CurrentSensor.lower() == 'trios':
+        #     self.DefaultCalRadioButtonTriOS.setChecked(True)
+        #     self.DefaultCalRadioButtonSeaBird.setChecked(False)
+        #     self.DefaultCalRadioButtonSeaBird.setDisabled(True)
+        # else:
+        #     self.DefaultCalRadioButtonSeaBird.setChecked(True)
+        #     self.DefaultCalRadioButtonTriOS.setChecked(False)
+        #     self.DefaultCalRadioButtonTriOS.setDisabled(True)
 
 
-        self.ClassCalRadioButton = QtWidgets.QRadioButton("FRM Class-based (RadCal required)")
+        self.ClassCalRadioButton = QtWidgets.QRadioButton("FRM Class-specific (RadCal w/ unc. required)")
         self.ClassCalRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL1bCal"]==2:
             self.ClassCalRadioButton.setChecked(True)
@@ -271,7 +265,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.classFilesLineEdit = QtWidgets.QLineEdit(self)
         self.classFilesLineEdit.setDisabled(True)
 
-        self.FullCalRadioButton = QtWidgets.QRadioButton("FRM Full Characterization:")
+        self.FullCalRadioButton = QtWidgets.QRadioButton("FRM Sensor-Specific")
         self.FullCalRadioButton.setAutoExclusive(False)
         self.l1bFRMRadio1 = QtWidgets.QRadioButton("Local", self)
         self.addFullFilesButton = QtWidgets.QPushButton("Add Files:")
@@ -280,6 +274,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.fullFilesLineEdit.setDisabled(True)
 
         self.l1bFRMRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
+        l1bFidRadDBLabel = QtWidgets.QLabel("   Characterization files will be downloaded", self)
         if ConfigFile.settings['FidRadDB']:
             self.l1bFRMRadio1.setChecked(False)
             self.l1bFRMRadio2.setChecked(True)
@@ -296,6 +291,7 @@ class ConfigWindow(QtWidgets.QDialog):
                 self.l1bFRMRadio1.setChecked(False)
                 self.l1bFRMRadio2.setChecked(True)
         self.FullCalRadioButton.clicked.connect(self.l1bFullCalRadioButtonClicked)
+
 
         self.FullCalDir = ConfigFile.settings['FullCalDir']
         self.l1bFRMRadio1.clicked.connect(self.l1bFRMRadioUpdate1)
@@ -826,11 +822,11 @@ class ConfigWindow(QtWidgets.QDialog):
         # CalHBox2 = QtWidgets.QHBoxLayout()
         # CalHBox2.addWidget(self.DefaultCalRadioButton)
         VBox2.addWidget(self.DefaultCalRadioButton)
-        CalHBox2 = QtWidgets.QHBoxLayout()
-        CalHBox2.addStretch()
-        CalHBox2.addWidget(self.DefaultCalRadioButtonTriOS)
-        CalHBox2.addWidget(self.DefaultCalRadioButtonSeaBird)
-        VBox2.addLayout(CalHBox2)
+        # CalHBox2 = QtWidgets.QHBoxLayout()
+        # CalHBox2.addStretch()
+        # CalHBox2.addWidget(self.DefaultCalRadioButtonTriOS)
+        # CalHBox2.addWidget(self.DefaultCalRadioButtonSeaBird)
+        # VBox2.addLayout(CalHBox2)
 
         VBox2.addWidget(self.ClassCalRadioButton)
         CalHBox3 = QtWidgets.QHBoxLayout()
@@ -853,6 +849,7 @@ class ConfigWindow(QtWidgets.QDialog):
         CalHBox5 = QtWidgets.QHBoxLayout()
         CalHBox5.addStretch()
         CalHBox5.addWidget(self.l1bFRMRadio2)
+        CalHBox5.addWidget(l1bFidRadDBLabel)
         CalHBox5.addStretch()
         VBox2.addLayout(CalHBox5)
 
@@ -1225,19 +1222,17 @@ class ConfigWindow(QtWidgets.QDialog):
             comboList = ['ShutterLight','ShutterDark','Not Required']
             self.calibrationFrameTypeComboBox.clear()
             self.calibrationFrameTypeComboBox.addItems(comboList)
-            # self.calibrationFrameTypeComboBox.setEnabled(False)
-            self.DefaultCalRadioButtonSeaBird.setChecked(True)
-            self.DefaultCalRadioButtonTriOS.setChecked(False)
-            self.DefaultCalRadioButtonTriOS.setDisabled(True)
+            # self.DefaultCalRadioButtonSeaBird.setChecked(True)
+            # self.DefaultCalRadioButtonTriOS.setChecked(False)
+            # self.DefaultCalRadioButtonTriOS.setDisabled(True)
 
         elif CurrentSensor.lower() == "trios":
             comboList = ['LI','LT','ES']
             self.calibrationFrameTypeComboBox.clear()
             self.calibrationFrameTypeComboBox.addItems(comboList)
-            # self.calibrationFrameTypeComboBox.setEnabled(True)
-            self.DefaultCalRadioButtonTriOS.setChecked(True)
-            self.DefaultCalRadioButtonSeaBird.setChecked(False)
-            self.DefaultCalRadioButtonSeaBird.setDisabled(True)
+            # self.DefaultCalRadioButtonTriOS.setChecked(True)
+            # self.DefaultCalRadioButtonSeaBird.setChecked(False)
+            # self.DefaultCalRadioButtonSeaBird.setDisabled(True)
 
     def setCalibrationSettings(self):
         print("CalibrationEditWindow - setCalibrationSettings")
