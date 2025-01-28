@@ -80,3 +80,7 @@ run_*.py
 
 #ignore ".idea/" if working with pycharm:
 .idea/
+Config/sample_SEABIRD_pySAS.cfg
+Data/z17_RHO_LUT_no_nan_pchip.nc
+Data/Zhang_rho_db_expanded.mat
+Data/Zhang_rho_LUT.nc
