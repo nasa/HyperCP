@@ -50,8 +50,8 @@ class GetAnc_ecmwf:
         # Convert to a datetime object
         # NOTE: This expects a string that does not match the parameter description above, 
         # i.e., yyyy-mm-ddThh:MM:ss:HH where HH is the hours of UTC offset
-        # epoch_time = datetime.datetime.strptime(':'.join(timeStamp.split(':')[:-2]), '%Y-%m-%dT%H:%M:%S').timestamp()
-        epoch_time = datetime.datetime.strptime(timeStamp, '%Y-%m-%dT%H:%M:%S').timestamp()
+        epoch_time = datetime.datetime.strptime(':'.join(timeStamp.split(':')[:-2]), '%Y-%m-%dT%H:%M:%S').timestamp()
+        # epoch_time = datetime.datetime.strptime(timeStamp, '%Y-%m-%dT%H:%M:%S').timestamp()
         timeResHoursSecs = 3600 * timeResHours
         rounded_epoch_time = round(epoch_time / timeResHoursSecs) * timeResHoursSecs
         rounded_timestamp = datetime.datetime.fromtimestamp(rounded_epoch_time).strftime('%Y-%m-%dT%H:%M:%S')
