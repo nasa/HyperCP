@@ -48,7 +48,10 @@ class GetAnc_ecmwf:
                                     np.abs(latEff * (10 ** latSigFigures)))
 
         # Convert to a datetime object
+        # NOTE: This expects a string that does not match the parameter description above, 
+        # i.e., yyyy-mm-ddThh:MM:ss:HH where HH is the hours of UTC offset
         epoch_time = datetime.datetime.strptime(':'.join(timeStamp.split(':')[:-2]), '%Y-%m-%dT%H:%M:%S').timestamp()
+        # epoch_time = datetime.datetime.strptime(timeStamp, '%Y-%m-%dT%H:%M:%S').timestamp()
         timeResHoursSecs = 3600 * timeResHours
         rounded_epoch_time = round(epoch_time / timeResHoursSecs) * timeResHoursSecs
         rounded_timestamp = datetime.datetime.fromtimestamp(rounded_epoch_time).strftime('%Y-%m-%dT%H:%M:%S')
@@ -192,6 +195,7 @@ class GetAnc_ecmwf:
         # Loop through the input group and extract model data for each element
         for index, dateTag in enumerate(latDate):
             dateTagNew = Utilities.dateTagToDateTime(dateTag)
+            # NOTE: timeTag2DateTime returns a datetime object. Why convert to strings?
             lat_datetime = str(Utilities.timeTag2ToDateTime(dateTagNew,latTime[index])).split('.')[0]
             lat_timeStamp = lat_datetime.replace(' ','T')
             lat_timeStamp = lat_timeStamp.replace('+',':')
