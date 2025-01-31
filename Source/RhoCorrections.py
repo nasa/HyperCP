@@ -71,7 +71,8 @@ class RhoCorrections:
             # Wavebands clips the ends off of the spectra reducing the amount of values from 200 to 189 for
             # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
 
-            zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, newWaveBands)
+            SVA = ConfigFile.settings['fL2SVA']
+            zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
             # this is the method to read zhang from the LUT. It is commented out pending the sensitivity study and
             # correction to the interpolation errors that have been noted.
             # zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, None)
@@ -140,7 +141,7 @@ class RhoCorrections:
 
     @staticmethod
     # def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
-    def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands, Propagate = None):
+    def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, sva, waveBands, Propagate = None):
 
         msg = 'Calculating Zhang glint correction.'
         print(msg)
@@ -153,7 +154,7 @@ class RhoCorrections:
         # the zenith and azimuth angles of light that the sensor will see
         # 0 azimuth angle is where the sun located
         # positive z is upward
-        sensor = {'ang': np.array([40, 180 - relAz]), 'wv': np.array(waveBands)}
+        sensor = {'ang': np.array([sva, 180 - relAz]), 'wv': np.array(waveBands)}
 
         # # define uncertainties and create variable list for punpy. Inputs cannot be ordered dictionaries
         varlist = [windSpeedMean, AOD, 0.0, sza, wTemp, sal, relAz, np.array(waveBands)]
