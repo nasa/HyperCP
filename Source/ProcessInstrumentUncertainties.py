@@ -2074,7 +2074,7 @@ class Trios(BaseInstrument):
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
                 solar_zenith = np.mean(res_sixS['solar_zenith'], axis=0)
                 direct_ratio = np.mean(res_sixS['direct_ratio'][:, 2:], axis=0)
-                direct_ratio, _ = self.interp_common_wvls(direct_ratio, res_sixS['wavelengths'], radcal_wvl)
+                direct_ratio = self.interp_common_wvls(direct_ratio, res_sixS['wavelengths'], radcal_wvl)
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith, 0.05, "rand")
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
                 sample_cos_corr = prop.run_samples(

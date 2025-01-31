@@ -1,4 +1,4 @@
-name: hypercp_j6s
+name: hypercp
 channels:
   - defaults
   - conda-forge
