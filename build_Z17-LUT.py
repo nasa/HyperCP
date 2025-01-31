@@ -59,9 +59,9 @@ if __name__ == '__main__':
     # with xr.open_dataset(db_path, engine='netcdf4') as ds:
     #     print(ds)
 
-    windspeed = np.array([1])  # , 2, 3, 4])  # 7
+    windspeed = np.array([1, 2, 3, 4, 5, 7.5, 10, 12.5, 15])  # 7
     AOT = np.array([0, 0.05, 0.1, 0.2, 0.5])  # 5
-    SZA = np.arange(10, 55, 5)  # 12  # expanded database would go to 65
+    SZA = np.arange(10, 65, 5)  # 12  # expanded database would go to 65
     RELAZ = np.arange(80, 145, 5)  # 13
     SAL = np.arange(0, 45, 5)  # 10
     SST = np.arange(0, 35, 5)  # 8
