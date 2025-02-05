@@ -1,3 +1,4 @@
+'''Calculate skylight reflectance factor'''
 import os
 import time
 
@@ -9,8 +10,6 @@ from Source.ZhangRho import get_sky_sun_rho, PATH_TO_DATA
 from Source.ConfigFile import ConfigFile
 from Source.Utilities import Utilities
 from Source.HDFRoot import HDFRoot
-from Source.Water_IOPs import water_iops
-
 
 class RhoCorrections:
 
@@ -72,17 +71,9 @@ class RhoCorrections:
             newWaveBands = [w for w in waveBands if w >= 350 and w <= 1000]
             # Wavebands clips the ends off of the spectra reducing the amount of values from 200 to 189 for
             # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
-            from datetime import datetime as dt
-            start = dt.now()
-            zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, newWaveBands)
-            end = dt.now() - start
-            print(end)
 
-            start_lut = dt.now()
-            zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang, indx=f"ws={windSpeedMean}")
-            end_lut = dt.now() - start_lut
-            print(end_lut)
-
+            SVA = ConfigFile.settings['fL2SVA']
+            zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
             # zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang, indx=f"ws={windSpeedMean}")
             # this is the method to read zhang from the LUT. It is commented out pending the sensitivity study and
             # correction to the interpolation errors that have been noted.
@@ -209,10 +200,7 @@ class RhoCorrections:
 
     @staticmethod
     # def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
-    def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands, Propagate = None):
-        ''' Requires xarray: http://xarray.pydata.org/en/stable/installing.html
-        Recommended installation using Anaconda:
-        $ conda install xarray dask netCDF4 bottleneck'''
+    def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, sva, waveBands, Propagate = None):
 
         msg = 'Calculating Zhang glint correction.'
         print(msg)
@@ -225,12 +213,12 @@ class RhoCorrections:
         # the zenith and azimuth angles of light that the sensor will see
         # 0 azimuth angle is where the sun located
         # positive z is upward
-        sensor = {'ang': np.array([40, 180 - relAz]), 'wv': np.array(waveBands)}
+        sensor = {'ang': np.array([sva, 180 - relAz]), 'wv': np.array(waveBands)}
 
         # # define uncertainties and create variable list for punpy. Inputs cannot be ordered dictionaries
         varlist = [windSpeedMean, AOD, 0.0, sza, wTemp, sal, relAz, np.array(waveBands)]
         ulist = [2.0, 0.01, 0.0, 0.5, 2, 0.5, 3, None]
-        # todo: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
+        # TODO: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
 
         tic = time.process_time()
         rhoVector = get_sky_sun_rho(env, sensor, round4cache=True)['rho']

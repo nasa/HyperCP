@@ -662,9 +662,9 @@ class ProcessL1bqc:
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False
-
-                if py6sGroup is not None:
-                    Utilities.filterData(py6sGroup,badTimes)
+                  
+                if sixSGroup is not None:
+                    Utilities.filterData(sixSGroup,badTimes)
 
                 # Filter L1AQC data for L1BQC criteria
                 if ConfigFile.settings['SensorType'].lower() == 'seabird':
@@ -693,69 +693,6 @@ class ProcessL1bqc:
             print(msg)
             Utilities.writeLogFile(msg)
             badTimes = ProcessL1bqc.metQualityCheck(referenceGroup, sasGroup, sixSGroup, ancGroup)
-
-        # NOTE: This is not finalized and needs a ConfigFile.setting #########################################
-        ConfigFile.settings['bL2filterMetFlags'] = 0
-        if ConfigFile.settings['bL2filterMetFlags'] == 1:
-            # Placeholder to filter out based on Met Flags
-            metFlags = ancGroup.datasets['MET_FLAGS']
-            AncDatetime = metFlags.columns['Datetime']
-            Flag3 = metFlags.columns['Flag3']
-
-            badTimes = []
-            for indx, dateTime in enumerate(AncDatetime):
-                if Flag3[indx]:
-                    badTimes.append(dateTime)
-
-            badTimes = np.unique(badTimes)
-            # Duplicate each element to a list of two elements in a list
-            badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
-            # msg = f'{len(np.unique(badTimes))/len(AncDatetime)*100:.1f}% of spectra flagged'
-
-            if badTimes is not None:
-                msg = "Removing spectra from Met flags. ######################### Hard-coded override for Flag3"
-                print(msg)
-                Utilities.writeLogFile(msg)
-                check = Utilities.filterData(referenceGroup, badTimes)
-                if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
-                check = Utilities.filterData(sasGroup, badTimes)
-                if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
-                check = Utilities.filterData(ancGroup, badTimes)
-                if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
-
-                if py6sGroup is not None:
-                    Utilities.filterData(py6sGroup,badTimes)
-
-                # Filter L1AQC data for L1BQC criteria
-                if ConfigFile.settings['SensorType'].lower() == 'seabird':
-                    check = []
-                    check.append(Utilities.filterData(esDarkGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(esLightGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(liDarkGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(liLightGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(ltDarkGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(ltLightGroup,badTimes,'L1AQC'))
-                    if any(np.array(check) > 0.99):
-                        msg = "Too few spectra remaining. Abort."
-                        print(msg)
-                        Utilities.writeLogFile(msg)
-                        return False
-                elif ConfigFile.settings['SensorType'].lower() == 'trios':
-                    Utilities.filterData(esGroup,badTimes,'L1AQC')
-                    Utilities.filterData(liGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
 
         # NOTE: This is not finalized and needs a ConfigFile.setting #########################################
         ConfigFile.settings['bL2filterMetFlags'] = 0

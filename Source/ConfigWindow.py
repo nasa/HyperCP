@@ -73,7 +73,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
         calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
         self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
-        if CurrentSensor.lower() == "seabird":            
+        if CurrentSensor.lower() == "seabird":
             self.calibrationFrameTypeComboBox.addItem("ShutterLight")
             self.calibrationFrameTypeComboBox.addItem("ShutterDark")
             self.calibrationFrameTypeComboBox.addItem("Not Required")
@@ -165,7 +165,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcSolarTrackerCheckBoxUpdate()
         self.l1aqcRotatorAngleCheckBoxUpdate()
 
-        #   Relative SZA
+        #   Relative Solar Azimuth
         l1aqcCleanSunAngleLabel = QtWidgets.QLabel(" Relative Solar Azimuth Filter", self)
         self.l1aqcCleanSunAngleCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1aqcCleanSunAngle"]) == 1:
@@ -412,6 +412,20 @@ class ConfigWindow(QtWidgets.QDialog):
         l2Sublabel2 = QtWidgets.QLabel("  correction, residual correction, QC,", self)
         l2Sublabel3 = QtWidgets.QLabel("  satellite convolution, OC product generation,", self)
         l2Sublabel4 = QtWidgets.QLabel("  SeaBASS file output.", self)
+
+        # L2 Sensor Viewing Angle
+        l2SVALabel = QtWidgets.QLabel("Sensor Viewing Angle", self)
+        self.SVARadioButtonDefault = QtWidgets.QRadioButton("40°")
+        self.SVARadioButtonDefault.setAutoExclusive(False)
+        if ConfigFile.settings["fL2SVA"]==40:
+            self.SVARadioButtonDefault.setChecked(True)
+        self.SVARadioButtonDefault.clicked.connect(self.l2SVARadioButtonDefaultClicked)
+
+        self.SVARadioButton30 = QtWidgets.QRadioButton("30°")
+        self.SVARadioButton30.setAutoExclusive(False)
+        if ConfigFile.settings["fL2SVA"]==30:
+            self.SVARadioButton30.setChecked(True)
+        self.SVARadioButton30.clicked.connect(self.l2SVARadioButton30Clicked)
 
         #   L2 Ensembles
         l2ensLabel = QtWidgets.QLabel("L2 Ensembles", self)
@@ -750,7 +764,7 @@ class ConfigWindow(QtWidgets.QDialog):
         RotMaxHBox.addWidget(self.l1aqcRotatorAngleMaxLineEdit)
         VBox1.addLayout(RotMaxHBox)
 
-        #   L1AQC Relative SZA
+        #   L1AQC Relative Solar Azimuth
         CleanSunAngleHBox = QtWidgets.QHBoxLayout()
         CleanSunAngleHBox.addWidget(l1aqcCleanSunAngleLabel)
         CleanSunAngleHBox.addWidget(self.l1aqcCleanSunAngleCheckBox)
@@ -961,6 +975,13 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addWidget(l2Sublabel2)
         VBox3.addWidget(l2Sublabel3)
         VBox3.addWidget(l2Sublabel4)
+
+        # Lt SVA
+        SVAHBox = QtWidgets.QHBoxLayout()
+        SVAHBox.addWidget(l2SVALabel)
+        SVAHBox.addWidget(self.SVARadioButtonDefault)
+        SVAHBox.addWidget(self.SVARadioButton30)
+        VBox3.addLayout(SVAHBox)
 
         #   L2 Ensembles
         VBox3.addWidget(l2ensLabel)
@@ -1746,6 +1767,18 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2DefaultRho"] = 1
         else:
             self.l1bGetAncResetButton.setDisabled(False)
+
+    def l2SVARadioButtonDefaultClicked(self):
+        print("ConfigWindow - l2SVA set to 40")
+        self.SVARadioButtonDefault.setChecked(True)
+        self.SVARadioButton30.setChecked(False)
+        ConfigFile.settings["fL2SVA"] = 40
+    def l2SVARadioButton30Clicked(self):
+        print("ConfigWindow - l2SVA set to 30")
+        self.SVARadioButtonDefault.setChecked(False)
+        self.SVARadioButton30.setChecked(True)
+        ConfigFile.settings["fL2SVA"] = 30
+    
 
     def l2StationsCheckBoxUpdate(self):
         print("ConfigWindow - l2StationsCheckBoxUpdate")

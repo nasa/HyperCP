@@ -124,6 +124,7 @@ class ConfigFile:
         ConfigFile.settings["fL1bqcDawnDuskFlag"] = 1.0 # Wernand 2002
         ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain
 
+        ConfigFile.settings["fL2SVA"] = 40 # Sensor viewing angle. 30 or 40 deg.
         ConfigFile.settings["bL2Stations"] = 0
         ConfigFile.settings["fL2TimeInterval"] = 300
         ConfigFile.settings["bL2EnablePercentLt"] = 1

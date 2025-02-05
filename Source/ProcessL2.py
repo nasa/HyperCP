@@ -1712,8 +1712,9 @@ class ProcessL2:
 
             # rhoVector = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
             #                                             SalXSlice, RelAzXSlice, waveSubset)
+            SVA = ConfigFile.settings['fL2SVA']
             rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
-                                                            SalXSlice, RelAzXSlice, waveSubset, Rho_Uncertainty_Obj)
+                                                            SalXSlice, RelAzXSlice, SVA, waveSubset, Rho_Uncertainty_Obj)
 
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[i]
