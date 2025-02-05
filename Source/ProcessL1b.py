@@ -52,7 +52,7 @@ class ProcessL1b:
         # https://ntrs.nasa.gov/citations/20020045342
         # For Trios uncertainties are set 0
 
-        if ConfigFile.settings['SensorType'].lower() == "seabird" or ConfigFile.settings['SensorType'].lower() == "dalec":
+        if ConfigFile.settings['SensorType'].lower() == "seabird":
             for sensor in ['LI','LT']:
                 dsname = sensor+'_RADCAL_UNC'
                 gp.addDataset(dsname)
@@ -68,7 +68,7 @@ class ProcessL1b:
                 ds.columns["unc"] = [2.3]
                 ds.columnsToDataset()
 
-        if ConfigFile.settings['SensorType'].lower() == "trios":
+        if ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "dalec":
             for sensor in ['LI','LT','ES']:
                 dsname = sensor+'_RADCAL_UNC'
                 gp.addDataset(dsname)

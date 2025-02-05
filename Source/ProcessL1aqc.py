@@ -20,6 +20,7 @@ class ProcessL1aqc:
         msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
+        print(len(badTimes))
 
         timeStamp = group.getDataset("DATETIME").data
 
@@ -145,8 +146,7 @@ class ProcessL1aqc:
                     gp.id = "LI_LIGHT"
                 if cf.sensorType == "LT":
                     gp.id = "LT_LIGHT"
-
-        elif ConfigFile.settings['SensorType'].lower() == 'dalec':
+        elif ConfigFile.settings['SensorType'].lower() == 'dalec':            
             if gp.id.endswith("CE"):
                 gp.id = "CAL_COEF"            
             if gp.id.endswith("ES"):
@@ -158,8 +158,8 @@ class ProcessL1aqc:
             if gp.id.endswith("GP"):
                 gp.id = "DALEC_GPS"
             if gp.id.endswith("ST"):
-                gp.id = "SOLARTRACKER"
-
+                gp.id = "DALEC_TRACKER"
+            
         else:
             gp.id = cf.sensorType
 
@@ -237,14 +237,14 @@ class ProcessL1aqc:
             elif gp.id.startswith('SATTHS'):
                 # Fluxgate on the THS:
                 compass = gp.getDataset('COMP')
-            elif gp.id.startswith('DALEC'):
+            elif gp.id.startswith('DALEC_GP'):
                 gpsDateTime = gp.getDataset('DATETIME').data
                 latAnc=gp.getDataset('LAT').data
                 lonAnc=gp.getDataset('LON').data
 
                 ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
                 ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
-
+                
         # Solar geometry from GPS alone; No Tracker, no Ancillary
         relAzAnc = []
         if not ConfigFile.settings["bL1aqcSolarTracker"] and not ancillaryData:
@@ -493,7 +493,9 @@ class ProcessL1aqc:
             roll = None
             gp  = None
             for group in node.groups:
-                if group.id.startswith("SOLARTRACKER") and group.id != 'SOLARTRACKER_STATUS':
+#                if group.id.startswith("SOLARTRACKER") and group.id != 'SOLARTRACKER_STATUS':
+                if group.id.startswith("SOLARTRACKER") and group.id != 'SOLARTRACKER_STATUS' \
+                    or group.id.startswith("DALEC_TRACKER"):
                     gp = group
                     timeStamp = gp.getDataset("DATETIME").data
                     if "PITCH" in gp.datasets:
@@ -709,7 +711,7 @@ class ProcessL1aqc:
             # Otherwise resorts to ancillary data. Otherwise processing fails.
             gp = None
             for group in node.groups:
-                if group.id.startswith("SOLARTRACKER"):
+                if group.id.startswith("SOLARTRACKER") or group.id.startswith("DALEC_TRACKER"):
                     gp = group
 
             if gp is not None:
@@ -739,18 +741,16 @@ class ProcessL1aqc:
                     newRelAzData = gp.addDataset("REL_AZ")
 
                     relAz = sasAzimuth - sunAzimuth
-
                     # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
                     relAz[relAz>180] = relAz[relAz>180] - 360
                     relAz[relAz<-180] = relAz[relAz<-180] + 360
 
-                    noRelAz=True #defualt value (non-dalec)
-
+#added by H.Gu
+                    noRelAz=True
                 elif gp.getDataset('REL_AZ'):
                     noRelAz=False
                     relAz=gp.getDataset('REL_AZ').data['REL_AZ']
                     print(relAz)
-
                 else:
                     msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
                     print(msg)
@@ -878,7 +878,8 @@ class ProcessL1aqc:
             # relAz and timeStamp are 1:1, but could be TRACKER or ANCILLARY
             for index, relAzi in enumerate(relAz):
                 relAzimuthAngle = relAzi
-
+                #print(index)
+                #print(relAzi)
                 if abs(relAzimuthAngle) > relAzimuthMax or abs(relAzimuthAngle) < relAzimuthMin or math.isnan(relAzimuthAngle):
                     i += 1
                     if start == -1:
