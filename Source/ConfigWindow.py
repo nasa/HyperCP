@@ -11,7 +11,7 @@ from Source.CalibrationFileReader import CalibrationFileReader
 from Source.AnomalyDetection import AnomAnalWindow
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
-from Source import GetAnc_credentials as credentials
+from Source.GetAnc_credentials import GetAnc_credentials
 from Source.OCproductsWindow import OCproductsWindow
 
 
@@ -478,14 +478,14 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL1bGetAnc"]) == 1:
             self.l1bGetAncCheckBox1.setChecked(True)
             self.l1bGetAncCheckBox2.setChecked(False)
-            credentials.credentialsWindow('NASA_Earth_Data')
+            GetAnc_credentials.credentialsWindow('NASA_Earth_Data')
             self.l1bGetAncUntickIfNoCredentials('NASA_Earth_Data')
 
         # Case: ECMWF ADS (tick box before window pops up)
         if int(ConfigFile.settings["bL1bGetAnc"]) == 2:
             self.l1bGetAncCheckBox1.setChecked(False)
             self.l1bGetAncCheckBox2.setChecked(True)
-            credentials.credentialsWindow('ECMWF_ADS')
+            GetAnc_credentials.credentialsWindow('ECMWF_ADS')
             self.l1bGetAncUntickIfNoCredentials('ECMWF_ADS')
 
         # Case: NO ancillary selected (disable Zhang before config window pops-up)
@@ -1669,7 +1669,7 @@ class ConfigWindow(QtWidgets.QDialog):
         - If credentials are found set bL1bGetAnc corresp. to given ancillarySource and enable Zhang glint correction option
         - If not: set bL1bGetAnc = 0 (consequently, Zhang will be disabled after this function)
         '''
-        if credentials.credentials_stored(ancillarySource):
+        if GetAnc_credentials.credentials_stored(ancillarySource):
             if ancillarySource == 'NASA_Earth_Data':
                 ConfigFile.settings["bL1bGetAnc"] = 1
             elif ancillarySource == 'ECMWF_ADS':
@@ -1704,8 +1704,8 @@ class ConfigWindow(QtWidgets.QDialog):
         # Erase pre-existing credentials, open pop-up window and untick resp. options if credentials not set...
         if ancillarySource:
             print('Reset %s credentials' % ancillarySource.replace('_', ' '))
-            credentials.erase_user_credentials(ancillarySource)
-            credentials.credentialsWindow(ancillarySource)
+            GetAnc_credentials.erase_user_credentials(ancillarySource)
+            GetAnc_credentials.credentialsWindow(ancillarySource)
             self.l1bGetAncUntickIfNoCredentials(ancillarySource)
 
         # NB: This is not the same as an "if not ancillarySource": bL1bGetAnc = 0 is set after "l1bGetAncUntickIfNoCredentials" is triggered.
@@ -1743,12 +1743,12 @@ class ConfigWindow(QtWidgets.QDialog):
         if self.l1bGetAncCheckBox1.isChecked():
             print("ConfigWindow - l1bGetAncCheckBoxUpdate GMAO MERRA2")
             ConfigFile.settings["bL1bGetAnc"] = 1
-            credentials.credentialsWindow('NASA_Earth_Data')
+            GetAnc_credentials.credentialsWindow('NASA_Earth_Data')
             self.l1bGetAncUntickIfNoCredentials('NASA_Earth_Data')
         elif self.l1bGetAncCheckBox2.isChecked():
             print("ConfigWindow - l1bGetAncCheckBoxUpdate ECMWF CAMS")
             ConfigFile.settings["bL1bGetAnc"] = 2
-            credentials.credentialsWindow('ECMWF_ADS')
+            GetAnc_credentials.credentialsWindow('ECMWF_ADS')
             self.l1bGetAncUntickIfNoCredentials('ECMWF_ADS')
         else:
             ConfigFile.settings["bL1bGetAnc"] = 0
