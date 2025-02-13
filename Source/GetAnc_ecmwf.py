@@ -20,18 +20,18 @@ from Source.GetAnc_credentials import GetAnc_credentials
 class GetAnc_ecmwf:
 
     @staticmethod
-    def ECMWF_latLonTimeTags(lat: float, lon: float, timeStamp: str, latRes: float, lonRes: float, timeResHours: float) -> tuple[float,float,str,str,str]:
+    def ECMWF_latLonTimeTags(lat: float, lon: float, timeStamp: datetime.datetime, latRes: float, lonRes: float, timeResHours: float) -> tuple[float,float,str,str,str]:
         '''
         :param lat: a float, the query latitude in degrees North
         :param lon: a float, the query longitude in degrees East
-        :param timeStamp: a string, the time in UTC with format yyyy-mm-ddThh:MM:ss
+        :param timeStamp: a datetime.datetime, the time in UTC
         :param timeResHours: an integer, time resolution of the queried ECMWF dataset
         :return:
         latEff: a float, the effective latitude - i.e. to the closest resolution degree
         lonEff: a float, the effective latitude - i.e. to the closest resolution degree
         latLonTag: a string, a tag to indicate the effective lat/lon.
-        dateTagEff: a string, a tag to indicate effective date (i.e. date in UTC rounded to closest hour)
-        timeStampEff: a string, a tag to indicate effective time (i.e. time in UTC rounded to closest hour)
+        dateStrRounded: a string, a tag to indicate effective date (i.e. date in UTC rounded to closest hour)
+        timeStrRounded: a string, a tag to indicate effective time (i.e. time in UTC rounded to closest hour)
         '''
 
         # Lat-Lon
@@ -48,28 +48,26 @@ class GetAnc_ecmwf:
                                     str(int(np.sign(latEff))).replace('-1', 'S').replace('1', 'N'),
                                     np.abs(latEff * (10 ** latSigFigures)))
 
-        # Convert to a datetime object
-        # NOTE: This expects a string that does not match the parameter description above,
-        # i.e., yyyy-mm-ddThh:MM:ss:HH where HH is the hours of UTC offset
-        epoch_time = datetime.datetime.strptime(':'.join(timeStamp.split(':')[:3]), '%Y-%m-%dT%H:%M:%S').timestamp()
+        # Obtain rounded date and time considering the temporal resolution of the dataset)
+        epoch_time = timeStamp.timestamp()
         # epoch_time = datetime.datetime.strptime(timeStamp, '%Y-%m-%dT%H:%M:%S').timestamp()
         timeResSecs = 3600 * timeResHours
         rounded_epoch_time = round(epoch_time / timeResSecs) * timeResSecs
-        rounded_timestamp = datetime.datetime.fromtimestamp(rounded_epoch_time).strftime('%Y-%m-%dT%H:%M:%S')
-        dateTagEff, timeStampEff = rounded_timestamp.split('T')
+        rounded_timestamp = datetime.datetime.fromtimestamp(rounded_epoch_time)
+        dateStrRounded, timeStrRounded = rounded_timestamp.strftime('%Y-%m-%dT%H:%M:%S').split('T')
 
-        return latEff,lonEff,latLonTag,dateTagEff,timeStampEff
+        return latEff,lonEff,latLonTag,dateStrRounded,timeStrRounded
 
     @staticmethod
-    def CAMS_download_ensembles(lat: float, lon: float, dateTag: str, timeTag: str, CAMS_variables: list, pathOut: str) -> None:
+    def CAMS_download_ensembles(lat: float, lon: float, dateStrRounded: str, timeStrRounded: str, CAMS_variables: list, pathOut: str) -> None:
         '''
         Performs CDSAPI command to download the required data from CAMS (dataset "cams-global-atmospheric-composition-forecasts") in netCDF
         format. It will retrieve the variables in a single space-time point corresponding to
 
         For more information, please check: https://ads.atmosphere.copernicus.eu/cdsapp#!/dataset/cams-global-atmospheric-composition-forecasts?tab=overview
 
-        :param dateTag: a string, the date in UTC with format yyyy-mm-dd,
-        :param timeTag: a string, the time in UTC with format hh:MM:ss,
+        :param dateStrRounded: a string, the date in UTC with format yyyy-mm-dd,
+        :param timeStrRounded: a string, the time in UTC with format hh:MM:ss,
         :param lat: a float, the query latitude in degrees North
         :param lon: a float, the query longitude in degrees East
 
@@ -83,8 +81,8 @@ class GetAnc_ecmwf:
         else:
             url,key = GetAnc_credentials.read_user_credentials('ECMWF_ADS')
 
-            year = dateTag.split('-')[0]
-            hour = timeTag.split(':')[0]
+            year = dateStrRounded.split('-')[0]
+            hour = timeStrRounded.split(':')[0]
 
             hourForecast = '%02d' % (int(hour) // 12)
             leadtime     = str(int(hour) % 12)
@@ -99,7 +97,7 @@ class GetAnc_ecmwf:
                         {
                             'type' : 'forecast',
                             'variable': list(CAMS_variables.keys()),
-                            'date': '%s/%s' % (dateTag, dateTag),
+                            'date': '%s/%s' % (dateStrRounded, timeStrRounded),
                             'area': [lat, lon, lat, lon],
                             'time': '%s:00' % hourForecast,
                             'leadtime_hour': leadtime,
@@ -109,14 +107,15 @@ class GetAnc_ecmwf:
                 except:
                     print('CAMS atmospheric data could not be retrieved. Check inputs.')
                     exit()
+        return
 
     @staticmethod
-    def get_ancillary_main(lat: float, lon: float, timeStamp: str, pathAncillary: str, latRes: float = 0.4, lonRes: float = 0.4, timeResHours: float = 1) -> dict:
+    def get_ancillary_main(lat: float, lon: float, timeStamp: datetime.datetime, pathAncillary: str, latRes: float = 0.4, lonRes: float = 0.4, timeResHours: float = 1) -> dict:
         '''
         Retrieves ancillary
         :param lat: a float, the query latitude in degrees North
         :param lon: a float, the query longitude in degrees East
-        :param timeStamp: a string, the time in UTC with format yyyy-mm-ddThh:MM:ss
+        :param timeStamp: a datetime.datetime object, the time in UTC
         :param pathAncillary:a string, /full/path/to/where_you_wish_to_store_the_ECMWF_netcdfs
         :param latRes: a float, latitude resolution in degrees.
         :param lonRes: a float, longitude resolution in degrees.
@@ -151,11 +150,11 @@ class GetAnc_ecmwf:
         CAMSnc = {}
 
 
-        latEff, lonEff, latLonTag, dateTagEff, timeStampEff = GetAnc_ecmwf.ECMWF_latLonTimeTags(lat, lon, timeStamp, latRes=latRes, lonRes=lonRes, timeResHours=timeResHours)
+        latEff, lonEff, latLonTag, dateStrRounded, timeStrRounded = GetAnc_ecmwf.ECMWF_latLonTimeTags(lat, lon, timeStamp, latRes=latRes, lonRes=lonRes, timeResHours=timeResHours)
 
-        pathOut = os.path.join(pathCAMS, 'CAMS_%s_%s_%s.nc' % (latLonTag, dateTagEff.replace('-',''), timeStampEff.replace(':','')))
+        pathOut = os.path.join(pathCAMS, 'CAMS_%s_%s_%s.nc' % (latLonTag, dateStrRounded.replace('-',''), timeStrRounded.replace(':','')))
 
-        GetAnc_ecmwf.CAMS_download_ensembles(latEff, lonEff, dateTagEff, timeStampEff, CAMS_variables, pathOut)
+        GetAnc_ecmwf.CAMS_download_ensembles(latEff, lonEff, dateStrRounded, timeStrRounded, CAMS_variables, pathOut)
 
         try:
             CAMSnc['reanalysis'] = xr.open_dataset(pathOut,engine='netcdf4')
@@ -196,12 +195,9 @@ class GetAnc_ecmwf:
         # Loop through the input group and extract model data for each element
         for index, dateTag in enumerate(latDate):
             dateTagNew = Utilities.dateTagToDateTime(dateTag)
-            # NOTE: timeTag2DateTime returns a datetime object. Why convert to strings?
-            lat_datetime = str(Utilities.timeTag2ToDateTime(dateTagNew,latTime[index])).split('.')[0]
-            lat_timeStamp = lat_datetime.replace(' ','T')
-            lat_timeStamp = lat_timeStamp.replace('+',':')
+            timeStamp = Utilities.timeTag2ToDateTime(dateTagNew,latTime[index])
 
-            ancillary = GetAnc_ecmwf.get_ancillary_main(lat[index], lon[index], lat_timeStamp, ancPath)
+            ancillary = GetAnc_ecmwf.get_ancillary_main(lat[index], lon[index], timeStamp, ancPath)
 
             # position retrieval index has been confirmed manually in SeaDAS
             uWind = ancillary['10m_u_component_of_wind']['value']
