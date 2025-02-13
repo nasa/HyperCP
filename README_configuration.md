@@ -369,8 +369,10 @@ Remote sensing reflectance is then calculated as
 
 $$
 \displaystyle
-Rrs = \frac{L_{t} - \rho_{sky}.L_{i}}{E_{s}}
+Rrs = \frac{L_{t} - \rho_{sky}.L_{i}}{E_{s}} = \frac{L_{w}}{E_{s}},
 $$
+
+where $L_{w}$ is the water leaving radiance.
 
 (e.g. Mobley 1999, Mueller et al. 2003, Ruddick et al. 2006)).
 Normalized water leaving radiance (nLw) is calculated as $Rrs.F0$, where F0 is the top of atmosphere incident radiation
@@ -383,12 +385,28 @@ or full-file average if no ensembles are extracted. For the Mobley 1999 (M99) gl
 likely conditions for which it is held constant. Uncertainty in Rho_sky is otherwise estimated as +/- 0.003 from Ruddick
 et al. 2006 Appendix 2; intended for clear skies, though in the future variation in Rho_sky_Delta as a mutable function
 of sky and sea surface conditions should be better constrained when possible (i.e. further research is required).
-Uncertainty in Rrs (i.e. Rrs_unc) and nLw were estimated using sum of squares propagation of from Li_sd, Lt_sd, Es_sd,
-and Rho_sky_Delta assuming random, uncorrelated error. So, e.g.:
+Uncertainty in Rrs (i.e. Rrs_unc) and nLw were estimated from Li_sd, Lt_sd, Es_sd, and Rho_sky_Delta using the Law of 
+Propagation of Uncertainties (or LPU) and assuming random, uncorrelated error. The LPU defines combined standard 
+uncertainty, $u_{c}$ as:
 
 $$
-Rrs_{unc} = Rrs *  \sqrt{(\frac{L_{i,sd}}{L_{i}})^2 + (\frac{\rho_{sky}}{\rho_{sky}})^2 + (\frac{L_{t,sd}}{L_{t}})^2 + (\frac{E_{s,sd}}{E_{s}})^2}
+u^{2}_{c} = \Sigma_{i=0}^{N}[\frac{\partial f}{\partial x_{i}}]^2.u(x_{i})^{2}
 $$
+
+Therefore, applying the LPU, uncertainty in $L_{w}$ can be stated as
+
+$$
+u_{abs}(L_{w}) = \sqrt{u(L_{t})^{2} + L_{i}^2.u(\rho_{sky})^{2} + \rho_{sky}^{2}.u(L_{i})^{2}}
+$$
+
+then Rrs uncertainty as
+
+$$
+u_{rel}(Rrs) = \sqrt{u(L_{w})^{2} + u(E_{s})^{2}}
+$$
+
+Note that $L_{w}$ and $Rrs$ uncertainties are propagated separately, this is to avoid a more complicated formulation
+of the LPU.
 
 Since v1.2.0, uncertainties in L2 products include systematic and random sensor error in addition to uncertainties associated with the glint correction, environmental variability, BRDF correction (v1.2.2), and satellite band convolution. The full details of how HyperCP propagates these uncertainties can be found in
 [this report](https://frm4soc2.eumetsat.int/sites/default/files/inline-files/FRM4SOC-2_D-10_v2.4_210042023_NPL_EUMETSAT_signed.pdf).
