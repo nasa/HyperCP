@@ -396,6 +396,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # tz = pFormat[-5:] # clumsy hardcoding of TZ pFormat: Must be the last 5 characters
         # pFormat = pFormat[0:-5]
         self.photoFP = os.path.join(self.inputDirectory, 'Photos')
+        # print(self.photoFP)
         if os.path.isdir(self.photoFP) is False:
             os.mkdir(self.photoFP)
         # photoList, self.photoDT = FieldPhotos.photoSetup(self.photoFP, self.start, self.end, pFormat, tz)

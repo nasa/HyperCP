@@ -124,12 +124,18 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         # interpolate std Signal to common wavebands - taken from L2 ES group: ProcessL2.py L1352
         for stype in types:
-            output[stype]['std_Signal_Interpolated'] = self.interp_common_wvls(
-                output[stype]['std_Signal'],
-                np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
-                newWaveBands,
-                return_as_dict=True)
-                # this interpolation is giving an array back of a slightly different size in the new wave bands
+            try:
+                output[stype]['std_Signal_Interpolated'] = self.interp_common_wvls(
+                    output[stype]['std_Signal'],
+                    np.asarray(list(output[stype]['std_Signal'].keys()), dtype=float),
+                    newWaveBands,
+                    return_as_dict=True)
+                    # this interpolation is giving an array back of a slightly different size in the new wave bands
+            except IndexError as err:
+                msg = "Unable to parse statistics for the ensemble, possibly too few scans."
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
         return output
 
     def read_uncertainties(self, node, uncGrp, cCal, cCoef, cStab, cLin, cStray, cT, cPol, cCos) -> Optional[np.array]:
@@ -190,7 +196,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             else:
                 cPol[s] = self.extract_unc_from_grp(grp=uncGrp, name=f"{s}_POLDATA_CAL", col_name='1')
 
-        return ind_rad_wvl
+            nan_mask = np.where((cStab[s] <= 0) | (cStray[s] <= 0) | (cLin[s] <= 0) | (cT[s] <= 0) |
+                                (self.extract_unc_from_grp(grp=uncGrp, name=f"{s}_POLDATA_CAL", col_name='1') <= 0))
+
+        return ind_rad_wvl, nan_mask
 
     def ClassBased(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict[str, np.array]) -> Union[dict[str, dict], bool]:
         """
@@ -216,7 +225,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         cPol = {}
         cCos = {}
 
-        ind_rad_wvl = self.read_uncertainties(
+        ind_rad_wvl, nan_mask = self.read_uncertainties(
             node,
             uncGrp,
             cCal=cCal,
@@ -334,6 +343,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             esUnc=es_Unc,
             liUnc=li_Unc,
             ltUnc=lt_Unc,
+            valid_pixels=nan_mask,
         )
 
     @abstractmethod
@@ -376,10 +386,15 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                                       xSlice['ltSample'][i].items() if float(key) in waveSubset}
                                      for i in range(len(xSlice['ltSample']))])
 
+        # Get rho from scalar or vector
         if rhoScalar is not None:  # make rho a constant array if scalar
             rho = np.ones(len(waveSubset))*rhoScalar  # convert rhoScalar to the same dims as other values/Uncertainties
         else:
             rho = np.asarray(list(rhoVec.values()), dtype=float)
+
+        # Get rhoDelta from scalar or vector
+        if not hasattr(rhoDelta, '__len__'):  # Not an array (e.g. list or np.array)
+            rhoDelta = np.ones(len(waveSubset)) * rhoDelta  # convert rhoDelta to the same dims as other values/Uncertainties
 
         # initialise punpy propagation object
         mdraws = esSampleXSlice.shape[0]  # keep no. of monte carlo draws consistent
@@ -467,7 +482,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         cPol = {}
         cCos = {}
 
-        ind_rad_wvl = self.read_uncertainties(
+        ind_rad_wvl, nan_mask = self.read_uncertainties(
             node,
             uncGrp,
             cCal=cCal,
@@ -550,24 +565,28 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
 
             p_unc = UncertaintyGUI()
-            p_unc.pie_plot_class_l2(
-                rrs_means,
-                lw_means,
-                rrs_uncertainties,
-                lw_uncertainties,
-                np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float),  # pass radcal wavelengths
-                cast,
-                node.getGroup("ANCILLARY")
-            )
-
-            p_unc.plot_class_L2(
-                rrs_means,
-                lw_means,
-                rrs_uncertainties,
-                lw_uncertainties,
-                np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float),
-                cast
-            )
+            try:
+                p_unc.pie_plot_class_l2(
+                    rrs_means,
+                    lw_means,
+                    rrs_uncertainties,
+                    lw_uncertainties,
+                    np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float),  # pass radcal wavelengths
+                    cast,
+                    node.getGroup("ANCILLARY")
+                )
+                p_unc.plot_class_L2(
+                    rrs_means,
+                    lw_means,
+                    rrs_uncertainties,
+                    lw_uncertainties,
+                    np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float),
+                    cast
+                )
+            except ValueError as err:
+                msg = f"unable to run uncertainty breakdown plots for {cast}, with error: {err}"
+                print(msg)
+                Utilities.writeLogFile(msg)
 
         # these are absolute values!
         output = {}
@@ -577,12 +596,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             waveSubset,
             return_as_dict=False
         )
+        lwAbsUnc[nan_mask] = np.nan
         lwAbsUnc = self.interp_common_wvls(
             lwAbsUnc,
             np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[ind_rad_wvl],
             waveSubset,
             return_as_dict=False
         )
+        rrsAbsUnc[nan_mask] = np.nan
         rrsAbsUnc = self.interp_common_wvls(
             rrsAbsUnc,
             np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[ind_rad_wvl],
@@ -1085,31 +1106,35 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
 
     @staticmethod
-    def read_py6s_model(node):
-        res_py6s = {}
+    def read_sixS_model(node):
+        res_sixS = {}
         
         # Create a temporary group to pop date time columns
         newGrp = node.addGroup('temp')
-        newGrp.copy(node.getGroup('PY6S_MODEL'))
+        newGrp.copy(node.getGroup('SIXS_MODEL'))
         for ds in newGrp.datasets:
             newGrp.datasets[ds].datasetToColumns()
-        py6s_gp = node.getGroup('temp')
+        sixS_gp = node.getGroup('temp')
         
-        py6s_gp.getDataset("direct_ratio").columns.pop('Datetime')
-        py6s_gp.getDataset("direct_ratio").columns.pop('Timetag2')
-        py6s_gp.getDataset("direct_ratio").columns.pop('Datetag')
-        py6s_gp.getDataset("direct_ratio").columnsToDataset()
-        py6s_gp.getDataset("diffuse_ratio").columns.pop('Datetime')
-        py6s_gp.getDataset("diffuse_ratio").columns.pop('Timetag2')
-        py6s_gp.getDataset("diffuse_ratio").columns.pop('Datetag')
-        py6s_gp.getDataset("diffuse_ratio").columnsToDataset()
+        sixS_gp.getDataset("direct_ratio").columns.pop('Datetime')
+        sixS_gp.getDataset("direct_ratio").columns.pop('Timetag2')
+        sixS_gp.getDataset("direct_ratio").columns.pop('Datetag')
+        sixS_gp.getDataset("direct_ratio").columnsToDataset()
+        sixS_gp.getDataset("diffuse_ratio").columns.pop('Datetime')
+        sixS_gp.getDataset("diffuse_ratio").columns.pop('Timetag2')
+        sixS_gp.getDataset("diffuse_ratio").columns.pop('Datetag')
+        sixS_gp.getDataset("diffuse_ratio").columnsToDataset()
 
-        res_py6s['solar_zenith'] = np.asarray(py6s_gp.getDataset('solar_zenith').columns['solar_zenith'])
-        res_py6s['wavelengths'] = np.asarray(list(py6s_gp.getDataset('direct_ratio').columns.keys())[2:], dtype=float)
-        res_py6s['direct_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("direct_ratio").data))
-        res_py6s['diffuse_ratio'] = np.asarray(pd.DataFrame(py6s_gp.getDataset("diffuse_ratio").data))
-        node.removeGroup(py6s_gp)
-        return res_py6s
+        # sixS_gp.getDataset("direct_ratio").datasetToColumns()
+        res_sixS['solar_zenith'] = np.asarray(sixS_gp.getDataset('solar_zenith').columns['solar_zenith'])
+        res_sixS['wavelengths'] = np.asarray(list(sixS_gp.getDataset('direct_ratio').columns.keys())[2:], dtype=float)
+        if 'timetag' in res_sixS['wavelengths']:
+            # because timetag2 was included for some data and caused a bug
+            res_sixS['wavelengths'] = res_sixS['wavelengths'][1:]
+        res_sixS['direct_ratio'] = np.asarray(pd.DataFrame(sixS_gp.getDataset("direct_ratio").data))
+        res_sixS['diffuse_ratio'] = np.asarray(pd.DataFrame(sixS_gp.getDataset("diffuse_ratio").data))
+        node.removeGroup(sixS_gp)
+        return res_sixS
 
 
 class HyperOCR(BaseInstrument):
@@ -1266,9 +1291,14 @@ class HyperOCR(BaseInstrument):
             if N > 25:  # normal case
                 std_Light.append(np.std(lightData[k])/np.sqrt(N))
                 std_Dark.append(np.std(darkData[k])/np.sqrt(Nd) )  # sigma here is essentially sigma**2 so N must sqrt
-            else:  # few scans, use different statistics
+            elif N > 3:  # few scans, use different statistics
                 std_Light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
                 std_Dark.append(np.sqrt(((Nd-1)/(Nd-3))*(np.std(darkData[k]) / np.sqrt(Nd))**2))
+            else:
+                msg = "too few scans to make meaningful statistics"
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
 
             ave_Light.append(np.average(lightData[k]))
             ave_Dark.append(np.average(darkData[k]))
@@ -1405,7 +1435,7 @@ class HyperOCR(BaseInstrument):
             # Updated calibration gain
             if sensortype == "ES":
                 ## Irradiance direct and diffuse ratio
-                res_py6s = BaseInstrument.read_py6s_model(node)
+                res_sixS = BaseInstrument.read_sixS_model(node)
 
                 ## compute updated radiometric calibration (required step after applying straylight correction)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
@@ -1497,16 +1527,6 @@ class HyperOCR(BaseInstrument):
                                                                sample_cal_int,
                                                                sample_t1])
 
-            ## sensitivity factor : if gain==0 (or NaN), no calibration is performed and data is affected to 0
-            # ind_zero = radcal_cal <= 0
-            # ind_nan = np.isnan(radcal_cal)
-            # ind_nocal = ind_nan | ind_zero
-            # set 1 instead of 0 to perform calibration (otherwise division per 0)
-            # updated_radcal_gain[ind_nocal == True] = 1
-
-            # alpha = np.asarray(alpha)
-            # Ct = np.asarray(Ct)
-
             # Filter Raw Data
             # ind_raw_data = (radcal_cal[radcal_wvl > 0]) > 0
             # raw_filtered = np.asarray([raw_data[n][ind_raw_data] for n in range(nmes)])
@@ -1569,12 +1589,12 @@ class HyperOCR(BaseInstrument):
             # Cosine correction
             if sensortype == "ES":
 
-                ## ADERU: Py6S results now match the length of input data
+                ## ADERU: SIXS results now match the length of input data
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
-                solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
-                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
-                direct_ratio = self.interp_common_wvls(np.array(direct_ratio, float), res_py6s['wavelengths'],
+                solar_zenith = np.mean(res_sixS['solar_zenith'], axis=0)
+                direct_ratio = np.mean(res_sixS['direct_ratio'][:, 2:], axis=0)
+                direct_ratio = self.interp_common_wvls(np.array(direct_ratio, float), res_sixS['wavelengths'],
                                                        radcal_wvl, return_as_dict=False)
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
@@ -1760,12 +1780,23 @@ class Trios(BaseInstrument):
 
         # get light and dark data before correction
         light_avg = np.mean(calibrated_light_measure, axis=0)  # [ind_nocal == False]
-        light_std = np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
-
+        if nmes > 25:
+            light_std = np.std(calibrated_light_measure, axis=0) / pow(nmes, 0.5)  # [ind_nocal == False]
+        elif nmes > 3:
+            light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(calibrated_light_measure, axis=0) / np.sqrt(nmes))**2)
+        else:
+            msg = "too few scans to make meaningful statistics"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return False
         # ensure all TriOS outputs are length 255 to match SeaBird HyperOCR stats output
         ones = np.ones(nband)  # to provide array of 1s with the correct shape
         dark_avg = ones * offset
-        dark_std = ones * np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0) / pow(nmes, 0.5)
+        if nmes > 25:
+            dark_std = ones * np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0) / pow(nmes, 0.5)
+        else:  # already checked for light data so we knwo nmes > 3
+            dark_std = np.sqrt(((nmes-1)/(nmes-3))*(
+                    ones * np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0)/np.sqrt(nmes))**2)
         # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
 
         stdevSignal = {}
@@ -1881,8 +1912,8 @@ class Trios(BaseInstrument):
             # Updated calibration gain
             if sensortype == "ES":
                 # Irradiance direct and diffuse ratio
-                # res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
-                res_py6s = BaseInstrument.read_py6s_model(node)
+                # res_sixS = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype, called_L2=True)
+                res_sixS = BaseInstrument.read_sixS_model(node)
 
                 # updated_radcal_gain = self.update_cal_ES(S12_sl_corr, LAMP, int_time_t0, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_ES,
@@ -2038,13 +2069,12 @@ class Trios(BaseInstrument):
             if sensortype.lower() == "es":
                 # get cosine correction attributes and samples from dictionary
 
-                ## ADERU: Py6S results now match the length of input data
+                ## ADERU: SIXS results now match the length of input data
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
-                solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
-                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
-                direct_ratio = self.interp_common_wvls(direct_ratio, res_py6s['wavelengths'], radcal_wvl,
-                                                       return_as_dict=False)
+                solar_zenith = np.mean(res_sixS['solar_zenith'], axis=0)
+                direct_ratio = np.mean(res_sixS['direct_ratio'][:, 2:], axis=0)
+                direct_ratio = self.interp_common_wvls(direct_ratio, res_sixS['wavelengths'], radcal_wvl)
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith, 0.05, "rand")
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
                 sample_cos_corr = prop.run_samples(
@@ -2086,8 +2116,7 @@ class Trios(BaseInstrument):
 
             # Remove wvl without calibration from the dataset and make uncertainties relative
             output[f"{sensortype.lower()}Wvls"] = radcal_wvl[ind_nocal == False]
-            output[
-                f"{sensortype.lower()}Unc"] = unc[ind_nocal == False]  # dict(zip(str_wvl[self.ind_nocal==False], filtered_unc))  # unc in dict with wavelengths
+            output[f"{sensortype.lower()}Unc"] = unc[ind_nocal == False]
             output[f"{sensortype.lower()}Sample"] = sample[:, ind_nocal == False]  # samples keep raw
 
         for sensortype in ['ES', 'LI', 'LT']:

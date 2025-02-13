@@ -129,6 +129,15 @@ class M02:
         # Local renaming of bands
         b442, b490, b510, b560 = self.b442, self.b490, self.b510, self.b560
 
+        # Convert to scalar if np.array of 1 value to avoid issues
+        try:
+            b442=b442.item()
+            b490=b490.item()
+            b510=b510.item()
+            b560=b560.item()
+        except:
+            pass
+
         # Clip to f0 log10(CHL) values
         log10_chl_f0 = np.clip(ds['log10_chl'],
                            float(np.min(self.LUT['f0'].log_chl_f0)/np.log(10)),

@@ -1,4 +1,4 @@
-name: ApplicationTesting
+name: Application Testing
 
 on:
   push:
@@ -29,10 +29,17 @@ jobs:
       - name: 🔧 Setup Environment
         uses: ./.github/actions/SetupEnvironment
 
-      - name: 📑 Capture Environment
+      - name: 🔑 Get ECMWF CDS|ADS Credentials
+        env:
+          CDSAPIRC: ${{ secrets.ECMWF_ADS_CREDENTIALS }}
         run: |
-          mamba info
-          mamba list
+          echo "$CDSAPIRC" >> ~/.ecmwf_ads_credentials.json
+
+      - name: 🔑 Get GMAO MERRA2 Credentials
+        env:
+          NETRC: ${{ secrets.NETRC }}
+        run: |
+          echo "$NETRC" >> ~/.netrc
 
       - name: 🧪 Run Tests
         run: |

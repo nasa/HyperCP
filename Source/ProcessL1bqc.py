@@ -133,7 +133,7 @@ class ProcessL1bqc:
         return badTimes
 
     @staticmethod
-    def metQualityCheck(refGroup, sasGroup, py6sGroup, ancGroup):
+    def metQualityCheck(refGroup, sasGroup, sixSGroup, ancGroup):
         ''' Perform meteorological quality control '''
 
         esFlag = float(ConfigFile.settings["fL1bqcSignificantEsFlag"])
@@ -181,7 +181,7 @@ class ProcessL1bqc:
         for indx, dateTime in enumerate(esTime):
             # Flag spectra affected by clouds (Compare with 6S Es). Placeholder while under development
             # Need to propagate 6S even in Default and Class for this to work
-            if py6sGroup is not None:
+            if sixSGroup is not None:
                 if li750[indx]/es750[indx] >= cloudFLAG:
                     badTimes.append(dateTime)
                     flags1[indx] = True
@@ -248,7 +248,7 @@ class ProcessL1bqc:
         satnavGroup = None
         ancGroup = None
         pyrGroup = None
-        py6sGroup = None
+        sixSGroup = None
         for gp in node.groups:
             if gp.id.startswith("SOLARTRACKER"):
                 if gp.id != "SOLARTRACKER_STATUS":
@@ -258,8 +258,8 @@ class ProcessL1bqc:
                 ancGroup.id = "ANCILLARY" # shift back from ANCILLARY_METADATA
             if gp.id.startswith("PYROMETER"):
                 pyrGroup = gp
-            if gp.id.startswith("PY6S"):
-                py6sGroup = gp
+            if gp.id.startswith("SIXS"):
+                sixSGroup = gp
 
 
         # # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
@@ -454,8 +454,8 @@ class ProcessL1bqc:
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
                     Utilities.filterData(ltGroup,badTimes,'L1AQC')
 
-                if py6sGroup is not None:
-                    Utilities.filterData(py6sGroup,badTimes)
+                if sixSGroup is not None:
+                    Utilities.filterData(sixSGroup,badTimes)
 
 
         # Filter low SZAs and high winds after interpolating model/ancillary data
@@ -535,8 +535,8 @@ class ProcessL1bqc:
                 Utilities.filterData(esGroup,badTimes,'L1AQC')
                 Utilities.filterData(liGroup,badTimes,'L1AQC')
                 Utilities.filterData(ltGroup,badTimes,'L1AQC')
-            if py6sGroup is not None:
-                Utilities.filterData(py6sGroup,badTimes)
+            if sixSGroup is not None:
+                Utilities.filterData(sixSGroup,badTimes)
 
 
         # Filter SZAs
@@ -620,8 +620,8 @@ class ProcessL1bqc:
                 Utilities.filterData(esGroup,badTimes,'L1AQC')
                 Utilities.filterData(liGroup,badTimes,'L1AQC')
                 Utilities.filterData(ltGroup,badTimes,'L1AQC')
-            if py6sGroup is not None:
-                    Utilities.filterData(py6sGroup,badTimes)
+            if sixSGroup is not None:
+                    Utilities.filterData(sixSGroup,badTimes)
 
        # Spectral Outlier Filter
         enableSpecQualityCheck = ConfigFile.settings['bL1bqcEnableSpecQualityCheck']
@@ -662,7 +662,79 @@ class ProcessL1bqc:
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False
-                
+                  
+                if sixSGroup is not None:
+                    Utilities.filterData(sixSGroup,badTimes)
+
+                # Filter L1AQC data for L1BQC criteria
+                if ConfigFile.settings['SensorType'].lower() == 'seabird':
+                    check = []
+                    check.append(Utilities.filterData(esDarkGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(esLightGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(liDarkGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(liLightGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(ltDarkGroup,badTimes,'L1AQC'))
+                    check.append(Utilities.filterData(ltLightGroup,badTimes,'L1AQC'))
+                    if any(np.array(check) > 0.99):
+                        msg = "Too few spectra remaining. Abort."
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        return False
+                elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                    Utilities.filterData(esGroup,badTimes,'L1AQC')
+                    Utilities.filterData(liGroup,badTimes,'L1AQC')
+                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
+
+        # Next apply the Meteorological FLAGGING prior to slicing
+        # esData = referenceGroup.getDataset("ES")
+        if enableMetQualityCheck:
+            # msg = "Applying meteorological filtering to eliminate spectra."
+            msg = "Applying meteorological flags. Met flags are NOT used to eliminate spectra."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            badTimes = ProcessL1bqc.metQualityCheck(referenceGroup, sasGroup, sixSGroup, ancGroup)
+
+        # NOTE: This is not finalized and needs a ConfigFile.setting #########################################
+        ConfigFile.settings['bL2filterMetFlags'] = 0
+        if ConfigFile.settings['bL2filterMetFlags'] == 1:
+            # Placeholder to filter out based on Met Flags
+            metFlags = ancGroup.datasets['MET_FLAGS']
+            AncDatetime = metFlags.columns['Datetime']
+            Flag3 = metFlags.columns['Flag3']
+
+            badTimes = []
+            for indx, dateTime in enumerate(AncDatetime):
+                if Flag3[indx]:
+                    badTimes.append(dateTime)
+
+            badTimes = np.unique(badTimes)
+            # Duplicate each element to a list of two elements in a list
+            badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
+            # msg = f'{len(np.unique(badTimes))/len(AncDatetime)*100:.1f}% of spectra flagged'
+
+            if badTimes is not None:
+                msg = "Removing spectra from Met flags. ######################### Hard-coded override for Flag3"
+                print(msg)
+                Utilities.writeLogFile(msg)
+                check = Utilities.filterData(referenceGroup, badTimes)
+                if check > 0.99:
+                    msg = "Too few spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
+                check = Utilities.filterData(sasGroup, badTimes)
+                if check > 0.99:
+                    msg = "Too few spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
+                check = Utilities.filterData(ancGroup, badTimes)
+                if check > 0.99:
+                    msg = "Too few spectra remaining. Abort."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
+
                 if py6sGroup is not None:
                     Utilities.filterData(py6sGroup,badTimes)
 
@@ -683,16 +755,7 @@ class ProcessL1bqc:
                 elif ConfigFile.settings['SensorType'].lower() == 'trios':
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltGroup,badTimes,'L1AQC')                
-
-        # Next apply the Meteorological FLAGGING prior to slicing
-        esData = referenceGroup.getDataset("ES")        
-        if enableMetQualityCheck:
-            # msg = "Applying meteorological filtering to eliminate spectra."
-            msg = "Applying meteorological flags. Met flags are NOT used to eliminate spectra."
-            print(msg)
-            Utilities.writeLogFile(msg)
-            badTimes = ProcessL1bqc.metQualityCheck(referenceGroup, sasGroup, py6sGroup, ancGroup)
+                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
 
         return True
 
@@ -793,13 +856,13 @@ class ProcessL1bqc:
             gp.attributes['LI_MIN_DARK'] = node.attributes['LI_MIN_DARK']
             gp.attributes['LI_MIN_LIGHT'] = node.attributes['LI_MIN_LIGHT']
 
-        # Py6S model
-        py6sGroup = None
+        # SIXS model
+        sixSGroup = None
         for gp in node.groups:
-            if gp.id.startswith("PY6S"):
-                py6sGroup = gp
-        if py6sGroup is not None:
-            gp = node.getGroup('PY6S_MODEL')
+            if gp.id.startswith("SIXS"):
+                sixSGroup = gp
+        if sixSGroup is not None:
+            gp = node.getGroup('SIXS_MODEL')
             gp.attributes['Irradiance Units'] = 'W/m^2/um' # See ProcessL1b
             gp.attributes['direct_ratio'] = 'percent_direct_solar_irradiance'
             gp.attributes['diffuse_ratio'] = 'percent_diffuse_solar_irradiance'

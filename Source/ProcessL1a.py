@@ -21,7 +21,7 @@ class ProcessL1a:
         # Generate root attributes
         root = HDFRoot()
         root.id = "/"
-        if os.environ['HYPERINSPACE_CMD'].lower == 'true': # os.environ must be string
+        if os.environ['HYPERINSPACE_CMD'].lower() == 'true': # os.environ must be string
             MainConfig.loadConfig('cmdline_main.config','version')
         else:
             MainConfig.loadConfig('main.config','version')
