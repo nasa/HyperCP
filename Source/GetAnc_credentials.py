@@ -37,31 +37,37 @@ class GetAnc_credentials:
             else:
                 out['credentials_filename'] = '.netrc'
             out['title'] = 'Login NASA Earth Data credentials - MERRA-2 Ancillary'
+            out['storeCredsString'] = 'Store %s credentials in your home directory.' % credentialsID.replace('_', ' ')
             out['key_string'] = 'login'
             out['secret_string'] = 'password'
             out['URL_string'] = 'https://urs.earthdata.nasa.gov'
+            out['obtainCredsString'] = 'Click here to obtain these credentials'
         elif credentialsID == 'ECMWF_ADS':
             out['credentials_filename'] = '.ecmwf_ads_credentials.json'
-            out['title'] = 'Login ECMWF ADS credentials - CAMS Ancillary'
+            out['title'] = 'Login ECMWF ADS API credentials - CAMS Ancillary'
+            out['storeCredsString'] = 'Store %s credentials in your home directory.\nNB: These are NOT the ECMWF login credentials' % credentialsID.replace('_', ' ')
             out['key_string'] = 'url'
             out['secret_string'] = 'key'
             out['URL_string'] = 'https://ads.atmosphere.copernicus.eu/how-to-api'
+            out['obtainCredsString'] = 'Click here to obtain API credentials (log in to ECMWF first and accept "Terms of Use", see README!)'
         elif credentialsID == 'ECMWF_CDS':
             out['credentials_filename'] = '.ecmwf_cds_credentials.json'
-            out['title'] = 'Login ECMWF CDS credentials - ERA-5 Ancillary'
+            out['title'] = 'Login ECMWF CDS API credentials - ERA-5 Ancillary'
+            out['storeCredsString'] = 'Store %s credentials in your home directory.\nNB: These are NOT the ECMWF login credentials' % credentialsID.replace('_', ' ')
             out['key_string'] = 'url'
             out['secret_string'] = 'key'
             out['URL_string'] = 'https://cds.climate.copernicus.eu/how-to-api'
+            out['obtainCredsString'] = 'Click here to obtain API credentials (log in to ECMWF first and accept "Terms of Use", see README!)'
         elif credentialsID == 'EUMETSAT_Data_Store':
             out['credentials_filename'] = '.eumdac_credentials.json'
-            out['title'] = 'Login EUMETSAT Data Store credentials (after EO Portal login)'
+            out['title'] = 'Login EUMETSAT Data Store credentials'
+            out['storeCredsString'] = 'Store %s credentials in your home directory.\nNB: These are NOT the EO Portal login credentials' % credentialsID.replace('_', ' ')
             out['key_string'] = 'consumer_key'
             out['secret_string'] = 'consumer_secret'
             out['URL_string'] = 'https://api.eumetsat.int/api-key/'
+            out['obtainCredsString'] = 'Click here to obtain API credentials (log in to EO Portal first!)'
 
         out['credentialsFile'] = os.path.join(os.path.expanduser('~'), out['credentials_filename'])
-        out['obtainCredsString'] = 'Click here to obtain these credentials'
-        out['storeCredsString'] = "Store %s credentials in your home directory." % credentialsID.replace('_', ' ')
 
         return out
 
