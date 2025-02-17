@@ -26,5 +26,7 @@ class ProcessL1aSoRad:
        
         root = HDFRoot.readHDF5(fp)
         print('Reading hdf file' + str(fp))
+       
+        outFFPs = fp # output filepath == input (for now)
         
-        return root
+        return root, outFFPs

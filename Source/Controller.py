@@ -282,7 +282,7 @@ class Controller:
 
         msg = "ProcessL1a"
         print(msg)
-
+        
         # Process the data
         outFFPs = None
         if ConfigFile.settings["SensorType"].lower() == "seabird":
@@ -291,16 +291,16 @@ class Controller:
         elif ConfigFile.settings["SensorType"].lower() == "trios":
             root, outFFPs = ProcessL1aTriOS.processL1a(inFilePath, outFilePath)
         elif ConfigFile.settings["SensorType"].lower() == "sorad":
-            root = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
+            root, outFFPs = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
             root = ProcessL1aDALEC.processL1a(inFilePath, calibrationMap)
         else:
             root = None
-
+  
         if root is not None:
             try:
-                if ConfigFile.settings["SensorType"].lower() != "trios":
-                    # TriOS L1a files are written in ProcessL1aTriOS
+                if ConfigFile.settings["SensorType"].lower() != "trios": #
+                    # TriOS L1a files are written in ProcessL1aTriOS. So-Rad L1a are already provided as input - we overwrite them here to minimise chanegs
                     root.writeHDF5(outFFPs)
             except Exception:
                 msg = 'Unable to write L1A file. It may be open in another program.'
@@ -317,6 +317,7 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None, None
 
+        
         return root, outFFPs
 
     @staticmethod
@@ -547,7 +548,7 @@ class Controller:
 
         # Grab input name and extension
         fileName,extension = os.path.splitext(inFileName)
-
+    
         # Initialize the Utility logger, overwriting it if necessary
         if ConfigFile.settings["bL2Stations"] == 1 and level == 'L2':
             os.environ["LOGFILE"] = f'Stations_{fileName}_{level}.log'
@@ -556,7 +557,8 @@ class Controller:
         msg = "Process Single Level"
         print(msg)
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
-
+        
+        print(extension.lower())
         testExts = ['.raw','.mlb','.hdf','.txt']
 
         if extension.lower() not in testExts:
@@ -564,7 +566,7 @@ class Controller:
             print(msg)
             Utilities.writeLogFile(msg)
             return False#, None
-
+      
         # If this is an HDF, assume it is not RAW, drop the level from fileName
         if extension=='.hdf':
             fileName = fileName.rsplit('_',1)[0]
@@ -576,7 +578,7 @@ class Controller:
             outFilePath = pathOutLevel # Just the path to first file; no files
 
         if level == "L1A" or level == "L1AQC" or level == "L1B" or level == "L1BQC":
-
+   
             if level == "L1A":
                 # root, outFFPs = Controller.processL1a(inFilePath, outFilePath, calibrationMap, flag_Trios)
                 root, outFFPs = Controller.processL1a(inFilePath, outFilePath, calibrationMap)
@@ -586,10 +588,11 @@ class Controller:
                 else:
                     # Set the class variable for use in moving on from L1A trios
                     Controller.trios_L1A_files = outFFPs
-
+      
             elif level == "L1AQC":
+          
                 ancillaryData = Controller.processAncData(MainConfig.settings["ancFile"])
-                # If called locally from Controller and not AnomalyDetection.py, then
+                #   If called locally from Controller and not AnomalyDetection.py, then
                 #   try to load the parameter file for this cruise/configuration and update
                 #   ConfigFile.settings to reflect the appropriate parameterizations for this
                 #   particular file. If no parameter file exists, or this SAS file is not in it,
@@ -634,6 +637,7 @@ class Controller:
                     msg = 'No deglitching will be performed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
+        
                 root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
                 # BUG: The above throws 2 class TypeErrors between the return statement at the end of the method and here??
                 Utilities.checkOutputFiles(outFilePath)
@@ -842,7 +846,7 @@ class Controller:
 
             if L1A_complete:
                 inFileName = os.path.split(fp)[1]
-                if ConfigFile.settings["SensorType"].lower() == "trios":
+                if ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad": 
                     # For TriOS, need to parse the L1A names, not L0
                     fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'.hdf')
                 else:

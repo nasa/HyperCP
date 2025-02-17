@@ -560,7 +560,7 @@ class Window(QtWidgets.QWidget):
         else:
             print("Error in configuration file: Sensor type not specified")
             sys.exit()
-
+        breakpoint()
         Controller.processFilesMultiLevel(
             self.outputDirectory, fileNames, calibrationMap)
         t1Multi = time.time()
@@ -637,12 +637,15 @@ class Command:
         MainConfig.settings["popQuery"] = 1 # 1 suppresses popup
         MainConfig.saveConfig(MainConfig.fileName)
         print("MainConfig - Config updated with cmd line arguments")
-
+        
         ConfigFile.loadConfig(self.configFilename)
 
         calFiles = ConfigFile.settings["CalibrationFiles"]
-
-        if ConfigFile.settings["SensorType"].lower() == "trios":
+        
+        ConfigFile.settings["SensorType"].lower() 
+ 
+ 
+        if ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
             print("Process Calibration Files")
@@ -651,7 +654,7 @@ class Command:
         else:
             print(f'CalibrationConfig is not yet ready for {ConfigFile.settings["SensorType"]}')
             sys.exit()
-
+    
         # Update the SeaBASS .hdr file in case changes were made to the configuration without using the GUI
         SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings['seaBASSHeaderFileName'])
         SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config1')

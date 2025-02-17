@@ -153,7 +153,7 @@ class ProcessL1aqc:
         '''
         Filters data for tilt, yaw, rotator, and azimuth. Deglitching
         '''
-
+        breakpoint()
         node.attributes["PROCESSING_LEVEL"] = "1aqc"
         now = datetime.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
