@@ -399,14 +399,17 @@ Uncertainties in $L_{i}$, $L_{t}$, $E_{s}$ ($u(L_{i})$, $u(L_{t})$, $u(E_{s})$) 
 Combined absolute standard uncertainty ($u_{c}$) in $L_{w}$ ($u_{c}(L_{w})$) is estimated from $u(L_{i})$, $u(L_{t})$, and $u(\rho_{sky})$ with the Law of Propagation of Uncertainties (LPU) assuming random, uncorrelated error. LPU defines combined standard uncertainty, $u_{c}$ as:
 
 $$
+\displaystyle
 u^{2}_{c} = \Sigma_{i=0}^{N}[\frac{\partial f}{\partial x_{i}}]^2\cdot u(x_{i})^{2},
 $$
 where $\frac{\partial f}{\partial x_{i}}$ represents the sensitivity coefficients for the derived parameter $f$ as a function of the measurands $x_{i}$ used to calculate it. Water leaving radiance, $L_{w}$, is calculated as:
 $$
+\displaystyle
 L_{w} = L_{t} - \rho_{sky}\cdot L_{i}.
 $$
 The sensitivity coeficients in the equation above for $L_{w}$ are expressed as:
 $$
+\displaystyle
 \frac{\partial L_{w}}{\partial L_{t}} = 1
 , 
 \frac{\partial  L_{w}}{\partial \rho_{sky}} = -L_{i}
@@ -415,14 +418,17 @@ $$
 $$
 Therefore, applying the LPU, uncertainty in $L_{w}$ can be stated as:
 $$
+\displaystyle
 u_{c}(L_{w}) = \sqrt{u(L_{t})^{2} + L_{i}^2\cdot u(\rho_{sky})^{2} + \rho_{sky}^{2}\cdot u(L_{i})^{2}}.
 $$
 $R_{rs}$ is defined as:
 $$
+\displaystyle
 R_{rs} = \frac{L_{w}}{E_{s}},
 $$
 so uncertainty in $R_{rs}$ is calculated as:
 $$
+\displaystyle
 u_{c}(R_{rs}) = \sqrt{u_{c}(L_{w})^{2} + u(E_{s})^{2}}.
 $$
 
