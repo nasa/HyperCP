@@ -209,7 +209,192 @@ configuration (i.e. it is only necessary to re-enter the password if it has chan
 
 *Note: Global MERRA2 hourly ancillary model data are not available until the calendar month following the model date.* 
 This may lead to a 401 error if you are trying to acquire MERRA2 data within the month being processed. In this situation
-the user should switch to using the ECMWF model or the default fall-back values based on best estimatesUncertainties in $L_{i}$, $L_{t}$, $E_{s}$ ($u(L_{i})$, $u(L_{t})$, $u(E_{s})$) are derived as the quadrature sum of uncertainties associated with standard error (i.e., variability among samples) and instrument uncertainties based on laboratory characterization of a specific instrument or class of instruments. Uncertainty in the skylight reflectance factor, $u(\rho_{sky})$, was historically estimated as +/- 0.003 from Ruddick et al. 2006 Appendix 2 (intended for clear skies), but in HyperCP v1.2+ is estimated using Monte Carlo iterations perturbing the input solar-sensor geometries and environmental conditions over normal distributions around the current measurement in addition to differences between multiple models for $\rho_{sky}$ (i.e., Mobley 1999 and Zhang et al. 2017).
+the user should switch to using the ECMWF model or the default fall-back values based on best estimates.
+
+These ancillary data from models will be incorporated if field data are not available in the Ancillary file provided
+in the Main window. If field data and model data are both inaccessible for any reason, the system will use the Default
+values (i.e., Wind Speed, AOD, Salinity, and SST) provided in the L1BQC Configuration setup here.
+
+Three calibration/characterization regimes are available:
+
+**Factory:**
+This regime performes the radiometric calibration using the radiometric gains provided within the factory configuration
+files. For both SeaBird and TriOS the calibration process follow their respective manufacturer recommendation.
+Although no uncertainty values associated to the radiometric factors are available in the factory configuration files,
+for SeaBird, uncertainty can be computed following the class-based processing with generic values for the radiometric
+factor uncertainty, taken from "The Seventh SeaWiFS Intercalibration Round-Robin Experiment (SIRREX-7), March 1999"
+(API: https://ntrs.nasa.gov/citations/20020045342). The uncertainties produced at level 2 date will not be FRM compliant
+but remains an interesting first step to characterize the data. Unfortunately, there is no equivalent for TriOS and no
+uncertainties values will be outputted with this regime for TriOS.
+
+**FRM Class-Based:**
+This regimes performes the radiometric calibration using the radiometric characterisation completed by external laboratories.
+The radiometric characterization includes both the radiometric gains and their uncertainties for each sensor. The results
+are saved in the so called "RADCAL" file, with one file per sensor. The calibration process is identical to the factory regime
+and follow the manufacturer guidelines. In addition the Class-Based regime also computes FRM uncertainties using the absolute
+radiometric characterization and class-based values for all other contributors. The contributors included in the uncertainty
+propagation are: the straylight impact, the temperature sensitivity, the polarisation sensitivity (for radiance only), the cosine
+response (for irradiance only), the detector non-linearity and the calibration stability (see D10).
+
+**FRM Full-Characterization:**
+This regime performes the complete correction of the radiometry using the full characterization of each sensor by external
+laboratories. For both SeaBird and TriOS the radiometric calibration process is performed with additional corrections. The
+corrections are possible only thanks to the full characterization of the sensors provided in the matching files. The process
+performes the non-linearity correction, the straylight correction, the polarisation correction (for radiance only), the cosine
+response correction (for irradiance only) and the temperature correction (see D10). The process also provides FRM compliant
+uncertainties accounting for the residuals effects of each contributors, meaning the correction residuals are used as uncertainty
+contributor instead of global class-based contribution, leading to smaller uncertainty values.
+
+Once instrument calibration has been applied, data are interpolated to common timestamps and wavebands, optionally
+generating temporal plots of Li, Lt, and Es, and ancillary data to show how data were interpolated.
+
+Each HyperOCR collects data at unique and adaptive integration intervals and requires interpolation for inter-instrument
+ comparison. Satlantic ProSoft 7.7 software interpolates radiometric data between radiometers using the OCR with the
+ fastest sampling rate (Sea-Bird 2017), but here we use the timestamp of the slowest-sampling radiometer (typically Lt)
+ to minimize perterbations in interpolated data (i.e. interpolated data in HyperCP are always closer in time to actual
+ sampled data). (Brewin et al. 2016, Vandenberg 2017).
+
+Each HyperOCR radiometer collects data in a unique set of wavebands nominally at 3.3 nm resolution. For merging, they
+must be interpolated to common wavebands. Interpolating to a different (i.e. lower) spectral resolution is also an
+option. No extrapolation is calculated (i.e. interpolation is between the global minimum and maximum spectral range for
+*all* HyperOCRs). Spectral interpolation is by univariate spline with a smoothing factor of 3, but can be manually
+changed to liner (see ProcessL1B_Interp.interpolateWavelength).
+**(API: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.UnivariateSpline.html)**
+
+In the case of TriOS, each radiometers have its own waveband definition, specify through a polynomial function available
+in the SAM_xxxx.ini file. TriOS resolution is usually really close to 3.3 nm but can slightly vary depending of this
+polynomial. The same interpolation scheme describes above for HyperOCR is used on TriOS data.
+
+*Note: only the datasets specified in ```ProcessL1B.py``` in each group will be interpolated and carried forward. For
+radiometers, this means that ancillary instrument data such as SPEC_TEMP and THERMAL_RESP will be dropped at L1B and
+beyond. See ```ProcessL1b_Interp.py``` at Perform Time Intepolation comment.*
+
+Optional plots of Es, Li, and Lt of L1B data can be generated which show the temporal interpolation for each parameter
+and each waveband to the slowest sampling radiometer timestamp. They are saved in [output_directory]/Plots/L1B_Interp.
+Plotting is time and memory intensive, and can also add significant time to PDF report production.
+
+*{To Do: Allow provision for above water radiometers that operate simultaneously, sequentially and/or in the same wavebands.}*
+
+## Level 1BQC Processing
+
+Further quality control filters are applied to data prior to L2 ensemble binning and reflectance
+calculation.
+
+Individual spectra may be filtered out for:
+
+- **Lt(NIR)>Lt(UV)**: Spectra with Lt higher in the UV (average from 780-850) than the UV (350-400) are eliminated.
+*{Unable to find citation for the Lt(NIR)> Lt(UV) filter...}*
+
+- **Maximum Wind Speed**: Defaults:
+    - 7 m/s (IOCCG Draft Protocols 2019; D'Alimonte pers.comm 2019)
+    - 10 m/s Mueller et al. 2003 (NASA Protocols)
+    - 15 m/s (Zibordi et al. 2009)
+
+- **Solar Zenith Angle**: may be filtered for minimum and maximum values.
+    - Default Min: 20 deg (Zhang et al 2017); Default Max: 60 deg (Brewin et al. 2016)
+
+- **Spectral Outlier Filter**: may be applied to remove noisy data prior to binning. This simple filter examines only
+    the spectra of Es, Li, and Lt from 400 - 700 nm, above which the data are noisy in both devices. Using the standard
+    deviation of the normalized spectra for the entire sample ensemble, together with a multiplier to establish an
+    "envelope" of acceptable values, spectra with data outside the envelop in any band are rejected. Currently, the
+    arbitrary filter factors are 5.0 for Es, 8.0 for Li, and 3.0 for Lt. Results of spectral filtering are saved as
+    spectral plots in [output_directory]/Plots/L1BQC_Spectral_Filter. The filter can be optimized by studying these
+    plots for various parameterizations of the filter.
+
+- **Meteorological flags**: based on **(Ruddick et al. 2006, Mobley, 1999, Wernand et al. 2002, Garaba et al. 2012,
+    Vandenberg 2017)** can be optionally applied to screen for undesirable data. Specifically, data are filtered for:
+
+    - **Cloud cover**:  Unusually high sky radiance to downelling irradiance ratio. Threshold in Ruddick et al. 2006 based
+        on M99 models is <0.05 for clear sky where O(0.3) represents fully overcast.
+        Default: $\frac{L_{i}(750)}{E_{s}(750)} \geq 1.0$
+
+    - **Too hazy atmosphere**: Unusually low Es at 480 nm.
+        Default: $E_{s}(480)[uW.cm^{-2}.nm^{-1}] < 2.0$
+
+    - **Proximity to dawn/dusk**: Unusually low ratio of downwelling irradiance at 470 and 680 nm.
+        Default: $E_{s}(470)/E_{s}(680) < 1.0$
+
+    - Acquisition with high relative humidity or rain: unusually low ratio of downwelling irradiances at 720 and 370 nm.
+        Default: $E_{s}(720)/E_{s}(370) < 1.095$
+
+    - Note: Cloud screening ($L_{i}(750)/E_{s}(750) \geq 0.05$) is optional and not well parameterized. Clear skies are
+    approximately 0.02 (Mobley 1999) and fully overcast are of order 0.3 (Ruddick et al. 2006). Further investigation with automated sky
+    photography for cloud cover is warranted.
+
+    - Note: Please also refer to
+    [this](https://frm4soc2.eumetsat.int/sites/default/files/inline-files/FRM4SOC-2_D-06_MeasurementProcedure_v3.1_24032023_RBINS_EUMETSAT_signed.pdf)
+    document to see recommended QC screening in the frame of [FRM4SOC-2](https://frm4soc2.eumetsat.int/).
+
+
+## L2 Processing
+
+Data are averaged within optional time interval ensembles prior to calculating the remote sensing
+reflectance within each ensemble. A typical field collection file for the HyperSAS SolarTracker is one hour, and the
+optimal ensemble periods within that hour will depend on how rapidly conditions and water-types are changing, as well as
+ the instrument sampling rate. While the use of ensembles is optional (set to 0 to avoid averaging), it is highly
+ recommended, as it allows for the statistical analysis required for Percent Lt calculation (radiance acceptance
+ fraction; see below) within each ensemble, rather than %Lt across an entire (e.g. one hour) collection, and it also
+ improves radiometric uncertainty estimation.
+
+### L2 Ensembles
+
+- **Extract Cruise Stations** can be selected if station information is provided in the ancillary data file identified
+    in the Main window. If selected, only data collected on station will be processed, and the output data/plot files
+    will have the station number appended to their names. At current writing, stations must be numeric, not string-type.
+    If this option is deselected, all automated data (underway and on station) will be included in the ensemble processing.
+    Ancillary file should include lines for both the start and stop times of the station for proper interpolation in L1B.
+
+- **Ensemble Interval** can be set to the user's requirements depending on sampling conditions and instrument rate
+    (**default 300 sec**). Setting this to zero avoids temporal bin-averaging, preserving the common timestamps
+    established in L1B. Processing the data without ensenble averages can be very slow, as the reflectances are
+    calculated for each spectrum collected (i.e. nominally every 3.3 seconds of data for HyperSAS). The ensemble period
+    is used to process the spectra within the lowest percentile of Lt(780) as defined/set below. The ensemble average
+    spectra for Es, Li, and Lt is calculated, as well as variability in spectra within the ensemble, which is used to
+    help estimate sample uncertainty.
+
+- **Percent Lt Calculation** Data are optionally limited to the darkest percentile of Lt data at 780 nm within the
+    sampling interval (if binning is performed; otherwise across the entire file) to minimize the effects of surface
+    glitter from capillary waves. The percentile chosen is sensitive to the sampling rate. The 5% default recommended in
+    Hooker et al. 2002 was devised for a multispectral system with rapid sampling rate.
+    - **Default**: 5 % (Hooker et al. 2002, Zibordi et al. 2002, Hooker and Morel 2003); <10% (IOCCG Draft Protocols).
+    TODO can this be made compatible with Kevin Ruddick's recommendation of chosing the first 5 scans?
+
+### L2 Sky/Sunglint Correction (rho) and NIR correction
+
+The value for (**Rho_sky**, sometimes called the Fresnel factor) can be estimated using various approaches in order
+to correct for glint **(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**. It is adjusted for wind speed and
+solar-senzor geometries. The default wind speed (U) should be set by the user depending on in situ conditions, for
+instances when the ancillary data and models are not available (see L1BQC above, and further explanation below). The
+Mobley 1999 correction does not account for the spectral dependence **(Lee et al. 2010, Gilerson et al. 2018)** or
+polarization sensitivity **(Harmel et al. 2012, Mobley 2015, Hieronymi 2016, D'Alimonte and Kajiyama 2016,
+Foster and Gilerson 2016, Gilerson et al. 2018)** in Rho_sky. The tabulated LUT used for the Mobley 1999 glint correction derived from
+**Mobley, 1999, Appl Opt 38, page 7445, Eq. 4** and can be found in the /Data directory as text or HDF5 data.
+*{TODO: Uncertainty estimates for rho in M99 are no longer current (vastly overestimated) since the incorporation of the
+ full LUT 2021-11-17.)}*
+
+The **Zhang et al. 2017** model explicitly accounts for spectral dependence in rho, separates the glint contribution
+from the sky and the sun, and accounts for polarization in the skylight term. This approach requires knowledge of
+environmental conditions during sampling including: wind speed, aerosol optical depth, solar and sensor azimuth and
+zenith angles, water temperature and salinity. To accomodate these parameters, HyperCP uses either the ancillary data
+file provided in the main window, GMAO models, or the default values set in the Configuration window as follows: field
+data ancillary files are screened for wind, water temperature, and salinity. These are each associated with the nearest
+timestamps of the radiometer suite to within one hour. Radiometer timestamps still lacking wind and aerosol data will
+extract it from the GMAO models, if available. Otherwise, the default values set in the Configuration window will be
+used as a last resort.
+
+Remote sensing reflectance is then calculated as
+
+$$
+\displaystyle
+Rrs = \frac{L_{t} - \rho_{sky}.L_{i}}{E_{s}}
+$$
+
+(e.g. Mobley 1999, Mueller et al. 2003, Ruddick et al. 2006)).
+Normalized water leaving radiance (nLw) is calculated as $Rrs.F0$, where F0 is the top of atmosphere incident radiation
+adjusted for the Earth-Sun distance on the day sampled. This is now estimated using the Coddington et al. (2021) TSIS-1
+hybrid model.
+
+Uncertainties in $L_{i}$, $L_{t}$, $E_{s}$ ($u(L_{i})$, $u(L_{t})$, $u(E_{s})$) are derived as the quadrature sum of uncertainties associated with standard error (i.e., variability among samples) and instrument uncertainties based on laboratory characterization of a specific instrument or class of instruments. Uncertainty in the skylight reflectance factor, $u(\rho_{sky})$, was historically estimated as +/- 0.003 from Ruddick et al. 2006 Appendix 2 (intended for clear skies), but in HyperCP v1.2+ is estimated using Monte Carlo iterations perturbing the input solar-sensor geometries and environmental conditions over normal distributions around the current measurement in addition to differences between multiple models for $\rho_{sky}$ (i.e., Mobley 1999 and Zhang et al. 2017).
 
 Combined absolute standard uncertainty ($u_{c}$) in $L_{w}$ ($u_{c}(L_{w})$) is estimated from $u(L_{i})$, $u(L_{t})$, and $u(\rho_{sky})$ with the Law of Propagation of Uncertainties (LPU) assuming random, uncorrelated error. LPU defines combined standard uncertainty, $u_{c}$ as:
 
