@@ -119,9 +119,10 @@ class ProcessL1aqc:
     @staticmethod
     def renameGroup(gp, cf):
         ''' Rename the groups to more generic ids rather than the names of the cal files '''
-
+      
         if gp.id.startswith("GPRMC") or gp.id.startswith("GPGAA"):
             gp.id = "GPS"
+            
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
             if gp.id.startswith("UMTWR"):
                 gp.id = "SOLARTRACKER_pySAS"
@@ -145,7 +146,12 @@ class ProcessL1aqc:
                     gp.id = "LI_LIGHT"
                 if cf.sensorType == "LT":
                     gp.id = "LT_LIGHT"
-        else:
+        
+        if ConfigFile.settings['SensorType'].lower() ==" sorad":
+            if str(gp.id)[0:3] == 'SAM':
+                gp.id = cf.sensorType
+        
+        else: #
             gp.id = cf.sensorType
 
     @staticmethod
@@ -153,7 +159,7 @@ class ProcessL1aqc:
         '''
         Filters data for tilt, yaw, rotator, and azimuth. Deglitching
         '''
-        breakpoint()
+      
         node.attributes["PROCESSING_LEVEL"] = "1aqc"
         now = datetime.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
@@ -181,9 +187,10 @@ class ProcessL1aqc:
         # Reorganize groups in with new names
         # if ConfigFile.settings['SensorType'].lower() == 'seabird':
         for gp in node.groups:
+            print(gp)
             cf = calibrationMap[gp.attributes["CalFileName"]]
             ProcessL1aqc.renameGroup(gp,cf)
-
+     
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
@@ -225,157 +232,217 @@ class ProcessL1aqc:
 
         # Solar geometry from GPS alone; No Tracker, no Ancillary
         relAzAnc = []
-        if not ConfigFile.settings["bL1aqcSolarTracker"] and not ancillaryData:
-            # Only proceed if GPS is present
-            if 'gpsDateTime' in locals():
+        if ConfigFile.settings["SensorType"].lower() != "sorad": 
+            if not ConfigFile.settings["bL1aqcSolarTracker"] and not ancillaryData:
+                # Only proceed if GPS is present
+                if 'gpsDateTime' in locals():
+                    # Solar geometry is preferentially acquired from SolarTracker or pySAS
+                    # Otherwise resorts to ancillary data. Otherwise processing fails.
+                    # Run Pysolar to obtain solar geometry.
+                    sunAzimuthAnc = []
+                    sunZenithAnc = []
+                    for i, dt_utc in enumerate(gpsDateTime):
+                        sunAzimuthAnc.append(get_azimuth(latAnc[i],lonAnc[i],dt_utc,0)) # latAnc lonAnc from GPS, not ancillary file
+                        sunZenithAnc.append(90 - get_altitude(latAnc[i],lonAnc[i],dt_utc,0))
+    
+                    # SATTHS fluxgate compass on SAS
+                    if compass is None:
+                        msg = 'Required ancillary data for sensor offset missing. Abort.'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        return None
+                    else:
+                        relAzAnc = compass - sunAzimuthAnc
+                else:
+                    msg = 'Required GPS data is missing. Check tdf files and ancillary data. Abort.'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return None
+                
+      
+        if ConfigFile.settings["SensorType"].lower() != "sorad": 
+            # For non-sorad systems, if ancillary file is provided, use it. Otherwise fill in what you can using the datetime, lat, lon from GPS
+            if ancillaryData is not None:
+       
+                # Remove all ancillary data that does not intersect GPS data
+                # Change this to ES to work around set-ups with no GPS
+                ancData = HDFDataset()
+                ancData.attributes = copy.deepcopy(ancillaryData.attributes)#.copy()
+                ancData.data = copy.deepcopy(ancillaryData.data)#.copy()
+                # ancData.data = np.copy(ancillaryData.data)
+                ancData.datasetToColumns()
+                ancData.id = 'AncillaryData'
+            
+                ancDateTime = ancData.columns["DATETIME"][0].copy()
+    
+                print('Removing non-pertinent ancillary data.')
+                # lower = bisect.bisect_left(ancDateTime, min(esDateTime))
+                # First ancillary element during radiometry
+                # lower = np.abs([d-min(esDateTime) for d in ancDateTime]).argmin()
+                lower = Utilities.find_nearest(ancDateTime,min(esDateTime))
+                lower = list(range(0,lower-1)) # keep one before that
+                # upper = bisect.bisect_right(ancDateTime, max(esDateTime))+1
+                # Last ancillary element during radiometry
+                # upper = np.abs([d-max(esDateTime) for d in ancDateTime]).argmin()
+                upper = Utilities.find_nearest(ancDateTime,max(esDateTime))
+                upper = list(range(upper+2,len(ancDateTime))) # keep one after that
+                ancData.colDeleteRow(upper)
+                ancData.colDeleteRow(lower)
+    
+                # Test if any data is left
+                if not ancData.columns["DATETIME"][0]:
+                    msg = "No coincident ancillary data found. Check ancillary file. Aborting"
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return None
+    
+                # Reinitialize with new, smaller dataset
+                # NOTE: Essential ancillary data for non-SolarTracker file includes
+                #    lat, lon, datetime, ship heading and offset between bow and
+                #    SAS instrument from which SAS azimuth is calculated.
+                #    Alternatively, can use the azimuth of the SAS from fluxgate
+                #    compass (e.g., SATTHS) as a last resort
+    
+                timeStamp = ancData.columns["DATETIME"][0]
+                ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
+                ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]
+                latAnc = ancData.columns["LATITUDE"][0]
+                lonAnc = ancData.columns["LONGITUDE"][0]
+             
                 # Solar geometry is preferentially acquired from SolarTracker or pySAS
                 # Otherwise resorts to ancillary data. Otherwise processing fails.
                 # Run Pysolar to obtain solar geometry.
                 sunAzimuthAnc = []
                 sunZenithAnc = []
-                for i, dt_utc in enumerate(gpsDateTime):
-                    sunAzimuthAnc.append(get_azimuth(latAnc[i],lonAnc[i],dt_utc,0)) # latAnc lonAnc from GPS, not ancillary file
+                for i, dt_utc in enumerate(timeStamp):
+                    sunAzimuthAnc.append(get_azimuth(latAnc[i],lonAnc[i],dt_utc,0))
                     sunZenithAnc.append(90 - get_altitude(latAnc[i],lonAnc[i],dt_utc,0))
-
-                # SATTHS fluxgate compass on SAS
-                if compass is None:
-                    msg = 'Required ancillary data for sensor offset missing. Abort.'
+    
+                # relAzAnc either from ancillary relZz, ancillary sensorAz, (or THS compass above ^^)
+                relAzAnc = []
+                if "REL_AZ" in ancData.columns:
+                    relAzAnc = ancData.columns["REL_AZ"][0]
+    
+                sasAzAnc = []
+                # This is a new SeaBASS field
+                if "SENSOR_AZ" in ancData.columns:
+                    sasAzAnc = ancData.columns["SENSOR_AZ"][0]
+    
+                if not ConfigFile.settings["bL1aqcSolarTracker"] and not relAzAnc and not sasAzAnc:
+                    msg = 'Required ancillary sensor geometries missing or incorrect ancillary file used. Abort.'
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return None
-                else:
-                    relAzAnc = compass - sunAzimuthAnc
+                elif not ConfigFile.settings["bL1aqcSolarTracker"] and not relAzAnc:
+                    # Corrected below for +/- solar-sensor orientation
+                    relAzAnc = []
+                    for i, sasAz in enumerate(sasAzAnc):
+                        relAzAnc.append(sasAz - sunAzimuthAnc[i])
+    
+                if "HEADING" in ancData.columns:
+                    # HEADING/shipAzimuth comes from ancillary data file here (not GPS or SATNAV)
+                    shipAzimuth = ancData.columns["HEADING"][0]
+    
+                if "STATION" in ancData.columns:
+                    station = ancData.columns["STATION"][0]
+                if "SALINITY" in ancData.columns:
+                    salt = ancData.columns["SALINITY"][0]
+                if "SST" in ancData.columns:
+                    sst = ancData.columns["SST"][0]
+                if "WINDSPEED" in ancData.columns:
+                    wind = ancData.columns["WINDSPEED"][0]
+                if "AOD" in ancData.columns:
+                    aod = ancData.columns["AOD"][0]
+                if "CLOUD" in ancData.columns:
+                    cloud = ancData.columns["CLOUD"][0]
+                if "WAVE_HT" in ancData.columns:
+                    wave = ancData.columns["WAVE_HT"][0]
+                if "SPEED_F_W" in ancData.columns:
+                    speed_f_w = ancData.columns["SPEED_F_W"][0]
+                if "PITCH" in ancData.columns:
+                    pitch = ancData.columns["PITCH"][0]
+                if "ROLL" in ancData.columns:
+                    roll = ancData.columns["ROLL"][0]
+    
             else:
-                msg = 'Required GPS data is missing. Check tdf files and ancillary data. Abort.'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return None
+                # If no ancillary file is provided, create an ancillary group from GPS
+                # Generate HDFDataset
+                ancData = None
+                ancillaryData = HDFDataset()
+                ancillaryData.id = "AncillaryData"
+    
+                timeStamp = gpsDateTime
+                ancillaryData.appendColumn("DATETIME", gpsDateTime)
+    
+                ancillaryData.appendColumn("LATITUDE", latAnc)
+                ancillaryData.attributes["LATITUDE_UNITS"]='degrees'
+                ancillaryData.appendColumn("LONGITUDE", lonAnc)
+                ancillaryData.attributes["LONGITUDE_UNITS"]='degrees'
+                
+        elif  ConfigFile.settings["SensorType"].lower() =="sorad":
+            
+                ###############################################################
+                # (i) For Sorad, we first use `Sorad tdf fields' (HDF group) to intitialze ancillary dataset 
+                # (HDF data) following identical structuring of how this is done for SeaBASS ancillary)
+                #
+                # (ii) We then use the the SeaBASS ancillary data to fill in aditional (optional) fields.
+                # This requires an interpolation step at an earlier point (L1AQC versus L1B). 
+                # However it can be justifed for So-Rad as the `Sorad tdf fields' have same time stamps as the
+                # sorad L0 data
+                # #############################################################
+                
+                sorad_group = node.groups[-1] # sorad group is always last node in L1A hdf
+                n_samples = len(sorad_group.datasets["TIMETAG2"].data) # no of sorad samples in L1 Ahdf
+              
+                # initialize ancillary dataset" with `Sorad tdf fields' (HDF group)
+                ancData = HDFDataset() # mimics syntax of
+                ancData.id = 'AncillaryData'
+                
+                ancData.appendColumn("TIMETAG2", [sorad_group.datasets["TIMETAG2"].data[index][0] for index in range(n_samples)])
+                ancData.appendColumn("DATETAG",  [sorad_group.datasets["DATETAG"].data[index][0] for index in range(n_samples)])
+      
+                ancData.appendColumn("LATITUDE",  [sorad_group.datasets["LATITUDE"].data[index][0] for index in range(n_samples)])
+                ancData.attributes["LATITUDE_UNITS"]= sorad_group.attributes["LATITUDE_UNITS"]
+                
+                ancData.appendColumn("LONGITUDE", [sorad_group.datasets["LONGITUDE"].data[index][0] for index in range(n_samples)])
+                ancData.attributes["LONGITUDE_UNITS"] = sorad_group.attributes["LONGITUDE_UNITS"]
+                
+                ancData.appendColumn("REL_AZ",  [sorad_group.datasets["REL_AZ"].data[index][0] for index in range(n_samples)])
+                ancData.attributes["REL_AZ_UNITS"] = sorad_group.attributes["REL_AZ_UNITS"]
 
-        # If ancillary file is provided, use it. Otherwise fill in what you can using the datetime, lat, lon from GPS
-        if ancillaryData is not None:
-
-            # Remove all ancillary data that does not intersect GPS data
-            # Change this to ES to work around set-ups with no GPS
-            ancData = HDFDataset()
-            ancData.attributes = copy.deepcopy(ancillaryData.attributes)#.copy()
-            ancData.data = copy.deepcopy(ancillaryData.data)#.copy()
-            # ancData.data = np.copy(ancillaryData.data)
-            ancData.datasetToColumns()
-            ancData.id = 'AncillaryData'
-
-            ancDateTime = ancData.columns["DATETIME"][0].copy()
-
-            print('Removing non-pertinent ancillary data.')
-            # lower = bisect.bisect_left(ancDateTime, min(esDateTime))
-            # First ancillary element during radiometry
-            # lower = np.abs([d-min(esDateTime) for d in ancDateTime]).argmin()
-            lower = Utilities.find_nearest(ancDateTime,min(esDateTime))
-            lower = list(range(0,lower-1)) # keep one before that
-            # upper = bisect.bisect_right(ancDateTime, max(esDateTime))+1
-            # Last ancillary element during radiometry
-            # upper = np.abs([d-max(esDateTime) for d in ancDateTime]).argmin()
-            upper = Utilities.find_nearest(ancDateTime,max(esDateTime))
-            upper = list(range(upper+2,len(ancDateTime))) # keep one after that
-            ancData.colDeleteRow(upper)
-            ancData.colDeleteRow(lower)
-
-            # Test if any data is left
-            if not ancData.columns["DATETIME"][0]:
-                msg = "No coincident ancillary data found. Check ancillary file. Aborting"
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return None
-
-            # Reinitialize with new, smaller dataset
-            # NOTE: Essential ancillary data for non-SolarTracker file includes
-            #    lat, lon, datetime, ship heading and offset between bow and
-            #    SAS instrument from which SAS azimuth is calculated.
-            #    Alternatively, can use the azimuth of the SAS from fluxgate
-            #    compass (e.g., SATTHS) as a last resort
-
-            timeStamp = ancData.columns["DATETIME"][0]
-            ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
-            ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]
-            latAnc = ancData.columns["LATITUDE"][0]
-            lonAnc = ancData.columns["LONGITUDE"][0]
-
-            # Solar geometry is preferentially acquired from SolarTracker or pySAS
-            # Otherwise resorts to ancillary data. Otherwise processing fails.
-            # Run Pysolar to obtain solar geometry.
-            sunAzimuthAnc = []
-            sunZenithAnc = []
-            for i, dt_utc in enumerate(timeStamp):
-                sunAzimuthAnc.append(get_azimuth(latAnc[i],lonAnc[i],dt_utc,0))
-                sunZenithAnc.append(90 - get_altitude(latAnc[i],lonAnc[i],dt_utc,0))
-
-            # relAzAnc either from ancillary relZz, ancillary sensorAz, (or THS compass above ^^)
-            relAzAnc = []
-            if "REL_AZ" in ancData.columns:
+                ancData.appendColumn("TILT", [sorad_group.datasets["TILT"].data[index][0] for index in range(n_samples)])
+                ancData.attributes["TILT_UNITS"] = sorad_group.attributes["TILT_UNITS"]
+              
+                ancData.datasetToColumns()
+    
+                # extract data used in L1AQC as arrays
+                latAnc = ancData.columns["LATITUDE"][0]
+                lonAnc = ancData.columns["LONGITUDE"][0]
+                ancTimeTag2 = ancData.columns["TIMETAG2"][0]
+                ancDateTag = ancData.columns["DATETAG"][0]
                 relAzAnc = ancData.columns["REL_AZ"][0]
+                
+            
+                date = [Utilities.dateTagToDateTime(ancDateTag[index]) for index in range(len(ancDateTag))]
+                timeStamp = [Utilities.timeTag2ToDateTime(date[index], ancTimeTag2[index]) for index in range(len(ancDateTag))]
 
-            sasAzAnc = []
-            # This is a new SeaBASS field
-            if "SENSOR_AZ" in ancData.columns:
-                sasAzAnc = ancData.columns["SENSOR_AZ"][0]
+                sunAzimuthAnc = []
+                sunZenithAnc = []
+                for i, dt_utc in enumerate(timeStamp):
+                    sunAzimuthAnc.append(get_azimuth(latAnc[i],lonAnc[i],dt_utc,0))
+                    sunZenithAnc.append(90 - get_altitude(latAnc[i],lonAnc[i],dt_utc,0))
+                
+              
+                # SeaBASS ancillary data will be added to ancData struture here
 
-            if not ConfigFile.settings["bL1aqcSolarTracker"] and not relAzAnc and not sasAzAnc:
-                msg = 'Required ancillary sensor geometries missing or incorrect ancillary file used. Abort.'
+      
+        if ConfigFile.settings["SensorType"].lower() != "sorad": 
+            if not ConfigFile.settings["bL1aqcSolarTracker"] and not ancillaryData:  
+                msg = 'Required ancillary metadata for sensor offset missing. Abort.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-            elif not ConfigFile.settings["bL1aqcSolarTracker"] and not relAzAnc:
-                # Corrected below for +/- solar-sensor orientation
-                relAzAnc = []
-                for i, sasAz in enumerate(sasAzAnc):
-                    relAzAnc.append(sasAz - sunAzimuthAnc[i])
-
-            if "HEADING" in ancData.columns:
-                # HEADING/shipAzimuth comes from ancillary data file here (not GPS or SATNAV)
-                shipAzimuth = ancData.columns["HEADING"][0]
-
-            if "STATION" in ancData.columns:
-                station = ancData.columns["STATION"][0]
-            if "SALINITY" in ancData.columns:
-                salt = ancData.columns["SALINITY"][0]
-            if "SST" in ancData.columns:
-                sst = ancData.columns["SST"][0]
-            if "WINDSPEED" in ancData.columns:
-                wind = ancData.columns["WINDSPEED"][0]
-            if "AOD" in ancData.columns:
-                aod = ancData.columns["AOD"][0]
-            if "CLOUD" in ancData.columns:
-                cloud = ancData.columns["CLOUD"][0]
-            if "WAVE_HT" in ancData.columns:
-                wave = ancData.columns["WAVE_HT"][0]
-            if "SPEED_F_W" in ancData.columns:
-                speed_f_w = ancData.columns["SPEED_F_W"][0]
-            if "PITCH" in ancData.columns:
-                pitch = ancData.columns["PITCH"][0]
-            if "ROLL" in ancData.columns:
-                roll = ancData.columns["ROLL"][0]
-
-        else:
-            # If no ancillary file is provided, create an ancillary group from GPS
-            # Generate HDFDataset
-            ancData = None
-            ancillaryData = HDFDataset()
-            ancillaryData.id = "AncillaryData"
-
-            timeStamp = gpsDateTime
-            ancillaryData.appendColumn("DATETIME", gpsDateTime)
-
-            ancillaryData.appendColumn("LATITUDE", latAnc)
-            ancillaryData.attributes["LATITUDE_UNITS"]='degrees'
-            ancillaryData.appendColumn("LONGITUDE", lonAnc)
-            ancillaryData.attributes["LONGITUDE_UNITS"]='degrees'
-
-
-        if not ConfigFile.settings["bL1aqcSolarTracker"] and not ancillaryData:
-            msg = 'Required ancillary metadata for sensor offset missing. Abort.'
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return None
-
+        
         if relAzAnc:
             # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
             relAzAnc = np.array(relAzAnc)
@@ -734,7 +801,7 @@ class ProcessL1aqc:
         # SOLARTRACKER or SOLARTRACKER_pySAS group, otherwise in the ANCILLARY group.
         # REL_AZ will be pulled from SOLARTRACKER(_pySAS) if available, otherwise from ANCILLARY
         # in ProcessL1bqc.
-
+    
         # Initialize a new group to host the unconventional ancillary data
         ancGroup = node.addGroup("ANCILLARY_METADATA")
         # If using a SolarTracker or pySAS, add RelAz to the SATNAV/SOLARTRACKER group...
@@ -913,13 +980,13 @@ class ProcessL1aqc:
                     msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
                     print(msg)
                     Utilities.writeLogFile(msg)
-
+                    breakpoint()
                     if gp.attributes['FrameType'] == 'ShutterDark':
                         fractionRemoved = ProcessL1aqc.filterData_ADJUSTED(gp, badTimes)
 
                         # Now test whether the overlap has eliminated all radiometric data
                         if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
-                            msg = "Radiometric data >98'%' eliminated. Aborting."
+                            msg = "Radiometric data > 98'%' eliminated. Aborting."
                             print(msg)
                             Utilities.writeLogFile(msg)
                             return None
@@ -949,5 +1016,5 @@ class ProcessL1aqc:
                     del gp.datasets["DATETIME"]
                 if 'DATETIME_ADJUSTED' in gp.datasets:
                     del gp.datasets["DATETIME_ADJUSTED"]
-
+        breakpoint()
         return node

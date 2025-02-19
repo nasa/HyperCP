@@ -464,11 +464,11 @@ class Window(QtWidgets.QWidget):
         if ConfigFile.settings["SensorType"].lower() == "seabird":
             calibrationMap = Controller.processCalibrationConfig(
                 configFileName, calFiles
-            )
-        # else:
-        elif ConfigFile.settings["SensorType"].lower() == "trios":
+            )   
+        elif ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
-
+   
+       
         if not calibrationMap:
             print(
                 "No calibration files found. "
@@ -548,10 +548,10 @@ class Window(QtWidgets.QWidget):
         print("Output Directory:", self.outputDirectory)
         if not self.outputDirectory:
             return
-
+       
         calFiles = ConfigFile.settings["CalibrationFiles"]
         # To check instrument type
-        if ConfigFile.settings["SensorType"].lower() == "trios":
+        if ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
             print("Process Calibration Files")
@@ -560,7 +560,7 @@ class Window(QtWidgets.QWidget):
         else:
             print("Error in configuration file: Sensor type not specified")
             sys.exit()
-        breakpoint()
+
         Controller.processFilesMultiLevel(
             self.outputDirectory, fileNames, calibrationMap)
         t1Multi = time.time()

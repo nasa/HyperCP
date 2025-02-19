@@ -226,6 +226,7 @@ class Controller:
                     del calibrationMap[key]
             else:
                 del calibrationMap[key]
+   
         return calibrationMap
 
     @staticmethod
@@ -251,7 +252,13 @@ class Controller:
                     cf.measMode = "Surface"
                     cf.frameType = "Combined"
                     calibrationMap[key] = cf
-
+                               
+            elif '.tdf' in key:
+                if calFiles[key]["enabled"]:
+                    cf.id = key
+                    cf.name = key
+                    calibrationMap[key] = cf
+           
         return calibrationMap
 
     @staticmethod
@@ -285,6 +292,7 @@ class Controller:
         
         # Process the data
         outFFPs = None
+      
         if ConfigFile.settings["SensorType"].lower() == "seabird":
             root = ProcessL1aSeaBird.processL1a(inFilePath, calibrationMap)
             outFFPs = outFilePath
