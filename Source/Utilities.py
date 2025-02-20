@@ -2616,7 +2616,6 @@ class Utilities:
         # sensorId = Utilities.get_sensor_dict(node)
         sensorList = ['ES', 'LI', 'LT']
         for sensor in sensorList:
-            breakpoint()
             ds = grp.getDataset(sensor+"_RADCAL_CAL")
             ds.datasetToColumns()
             # indx = ds.attributes["INDEX"]
