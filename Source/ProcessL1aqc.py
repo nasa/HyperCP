@@ -958,7 +958,6 @@ class ProcessL1aqc:
             msg = "Eliminate combined filtered data from datasets.*****************************"
             print(msg)
             Utilities.writeLogFile(msg)
-
             for gp in node.groups:
 
                 # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
@@ -980,7 +979,6 @@ class ProcessL1aqc:
                     msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
                     print(msg)
                     Utilities.writeLogFile(msg)
-                    breakpoint()
                     if gp.attributes['FrameType'] == 'ShutterDark':
                         fractionRemoved = ProcessL1aqc.filterData_ADJUSTED(gp, badTimes)
 
@@ -1016,5 +1014,5 @@ class ProcessL1aqc:
                     del gp.datasets["DATETIME"]
                 if 'DATETIME_ADJUSTED' in gp.datasets:
                     del gp.datasets["DATETIME_ADJUSTED"]
-        breakpoint()
+  
         return node

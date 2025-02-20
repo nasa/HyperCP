@@ -247,6 +247,7 @@ class Controller:
                     if calFiles[key]["frameType"] == 'ES':
                         cf.instrumentType = "Reference"
                     else:
+                        
                         cf.instrumentType = "TriOS"
                     cf.media = "Air"
                     cf.measMode = "Surface"
@@ -299,7 +300,7 @@ class Controller:
         elif ConfigFile.settings["SensorType"].lower() == "trios":
             root, outFFPs = ProcessL1aTriOS.processL1a(inFilePath, outFilePath)
         elif ConfigFile.settings["SensorType"].lower() == "sorad":
-            root, outFFPs = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
+            root, outFFPs = ProcessL1aSoRad.processL1a(inFilePath, outFilePath, calibrationMap)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
             root = ProcessL1aDALEC.processL1a(inFilePath, calibrationMap)
         else:
@@ -347,7 +348,7 @@ class Controller:
             return None
 
         # At this stage the Anomanal parameterizations are current in ConfigFile.settings,
-        #   regardless of who called this method.  This method will promote them to root.attributes.
+        # regardless of who called this method.  This method will promote them to root.attributes.
         root = ProcessL1aqc.processL1aqc(root, calibrationMap, ancillaryData)
 
         # Write output file
@@ -391,7 +392,7 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None
 
-        if ConfigFile.settings["SensorType"].lower() == "trios":
+        if ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad":
             # root = TriosL1B.processL1b(root, outFilePath)
             root = ProcessL1bTriOS.processL1b(root, outFilePath)
         else:
@@ -598,8 +599,9 @@ class Controller:
                     Controller.trios_L1A_files = outFFPs
       
             elif level == "L1AQC":
-          
+        
                 ancillaryData = Controller.processAncData(MainConfig.settings["ancFile"])
+        
                 #   If called locally from Controller and not AnomalyDetection.py, then
                 #   try to load the parameter file for this cruise/configuration and update
                 #   ConfigFile.settings to reflect the appropriate parameterizations for this
