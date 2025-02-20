@@ -2259,7 +2259,7 @@ class Utilities:
                     sensorID[sensorCode] = "LT"
 
             # elif "IDDevice" in grp.attributes:
-            elif ConfigFile.settings['SensorType'].lower() == 'trios':
+            elif ConfigFile.settings['SensorType'].lower() == 'trios' or  ConfigFile.settings['SensorType'].lower() == 'sorad':
                 if "ES" in grp.datasets:
                     sensorID[grp.attributes["IDDevice"][4:8]] = "ES"
                 if "LI" in grp.datasets:
@@ -2321,7 +2321,7 @@ class Utilities:
                 new_ds.datasetToColumns()
                 unc_group.removeDataset(ds.id) # remove dataset
 
-            if "_RADCAL_" in name:
+            if "_RADCAL_" in name: 
                 # RADCAL are always sensor specific
                 for sensor in sensorID:
                     if sensor in ds.id:
@@ -2492,20 +2492,22 @@ class Utilities:
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
         sensorList = ['ES', 'LI', 'LT']
+        
         for sensor in sensorList:
 
             ## retrieve dataset from corresponding instrument
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios":
+            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
                 data = node.getGroup(sensor).getDataset(sensor)
 
             # Retrieve hyper-spectral wavelengths from dataset
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
 
-
+           # breakpoint()
             # RADCAL data do not need interpolation, just removing the first line
             for data_type in ["_RADCAL_CAL"]:
+           #     breakpoint()
                 ds = grp.getDataset(sensor+data_type)
                 ds.datasetToColumns()
                 for indx in range(len(ds.columns)):
@@ -2614,7 +2616,7 @@ class Utilities:
         # sensorId = Utilities.get_sensor_dict(node)
         sensorList = ['ES', 'LI', 'LT']
         for sensor in sensorList:
-
+            breakpoint()
             ds = grp.getDataset(sensor+"_RADCAL_CAL")
             ds.datasetToColumns()
             # indx = ds.attributes["INDEX"]
