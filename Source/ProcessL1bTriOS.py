@@ -316,8 +316,13 @@ class ProcessL1bTriOS:
 
 
         # classbased_dir needed for FRM whilst pol is handled in class-based way
-        classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
-                                      ConfigFile.settings['SensorType'] + "_initial")
+        if ConfigFile.settings["SensorType"].lower() == "seabird" or  ConfigFile.settings["SensorType"].lower() == "trios": 
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', #
+                                     ConfigFile.settings['SensorType']+"_initial")
+        elif ConfigFile.settings["SensorType"].lower() == "sorad":
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', # Hard-coded solution for sorad
+                                     'TriOS' +"_initial")
+            
 
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
