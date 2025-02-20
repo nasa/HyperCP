@@ -22,11 +22,9 @@ class ProcessL1aSoRad:
         
     '''
     @staticmethod
-    def processL1a(fp, calibrationMap):
+    def processL1a(input_path, output_path, calibrationMap):
        
-        root = HDFRoot.readHDF5(fp)
-        print('Reading hdf file' + str(fp))
-       
-        outFFPs = fp # output filepath == input (for now)
-        
-        return root, outFFPs
+        root = HDFRoot.readHDF5(input_path)
+        print('Reading hdf file' + str(input_path))
+
+        return root, output_path
