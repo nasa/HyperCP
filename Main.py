@@ -22,7 +22,7 @@ from Source.MainConfig import MainConfig
 from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
 from Source.ConfigWindow import ConfigWindow
-import Source.GetAnc_credentials as credentials
+from Source.GetAnc_credentials import GetAnc_credentials
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
@@ -783,8 +783,8 @@ if __name__ == "__main__":
         os.environ["HYPERINSPACE_CMD"] = "TRUE" # Must be a string
 
         # Pop up credential windows if credentials not stored...
-        credentials.credentialsWindow('NASA_Earth_Data')
-        credentials.credentialsWindow('ECMWF_ADS')
+        GetAnc_credentials.credentialsWindow('NASA_Earth_Data')
+        GetAnc_credentials.credentialsWindow('ECMWF_ADS')
 
         Command(configFilePath, inputFile, multiLevel, outputDirectory, level, ancFile)
     else:

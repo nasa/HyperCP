@@ -108,6 +108,7 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
     # Flag BRDF where NaN and set to 1 (no correction applied).
     ds['C_brdf_fail'] = np.isnan(ds['C_brdf'])
     ds['C_brdf'] = xr.where(ds['C_brdf_fail'], 1, ds['C_brdf'])
+    ds['nrrs'] = xr.where(ds['C_brdf_fail'], ds['Rw'] / np.pi, ds['nrrs'])
 
     # If QAA_fail is raised, raise C_brdf_fail (but still apply C_brdf).
     if 'QAA_fail' in ds:
