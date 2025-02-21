@@ -24,6 +24,32 @@ class ProcessL1bDALEC:
     '''L1B for DALEC'''
 
     @staticmethod
+    def read_unc_coefficient_factory(root):
+        ''' SeaBird or TriOS'''
+        # Read Uncertainties_new_char from provided files
+        gp = root.addGroup("RAW_UNCERTAINTIES")
+        gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
+
+        # Unc dataset renaming
+        Utilities.RenameUncertainties_Class(root)
+
+        for sensor in ['LI','LT','ES']:
+            dsname = sensor+'_RADCAL_UNC'
+            gp.addDataset(dsname)
+            ds = gp.getDataset(dsname)
+            ds.columns["wvl"] = [400]
+            ds.columns["unc"] = [0.0]
+            ds.columnsToDataset()
+
+        # interpolate unc to full wavelength range, depending on class based or full char
+        Utilities.interpUncertainties_Factory(root)
+
+        # # generate temperature coefficient
+       #Utilities.UncTempCorrection(root)
+
+        return root
+
+    @staticmethod
     def processES(node):
         gp=node.getGroup('ES')
         gpc=node.getGroup('CAL_COEF')
@@ -141,18 +167,20 @@ class ProcessL1bDALEC:
                 ltGroup.copy(gp)
 
         # Add class-based files (RAW_UNCERTAINTIES)
+        '''
         classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
                                       ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
         if ConfigFile.settings['bL1bCal'] == 1:
-            # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
-            print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
-            node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
+            print("Dalec Factory Regime")
+            #node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
+            #node = ProcessL1bDALEC.read_unc_coefficient_factory(node)
+    
             if node is None:
                 msg = 'Error running factory uncertainties.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-
+        '''
         # Interpolate only the Ancillary group, and then fold in model data
         # This is run ahead of the other groups for all processing pathways. Anc group
         # exists regardless of Ancillary file being provided
@@ -197,31 +225,31 @@ class ProcessL1bDALEC:
         if ConfigFile.settings["bL1bCal"] == 1 or ConfigFile.settings["bL1bCal"] == 2:
             # Calculate 6S model
             # Run elsewhere for FRM-regime
-            print('Running Py6S')
+            print('Running sixS')
 
             sensortype = "ES"
             # Irradiance direct and diffuse ratio
-            res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
+            res_sixS = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
 
-            # Store Py6S results in new group
+            # Store sixS results in new group
             grp = node.getGroup(sensortype)
-            solar_zenith = res_py6s['solar_zenith']
+            solar_zenith = res_sixS['solar_zenith']
             # ProcessL1b_FRMCal.get_direct_irradiance_ratio uses Es bands to run 6S and then works around bands that
             #  don't have values from Tartu for full FRM. Here, use all the Es bands.
-            direct_ratio = res_py6s['direct_ratio']
-            diffuse_ratio = res_py6s['diffuse_ratio']
-            # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
-            # model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_raw_data]/10
-            model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])/10
-            # model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_nocal==False]/10
+            direct_ratio = res_sixS['direct_ratio']
+            diffuse_ratio = res_sixS['diffuse_ratio']
+            # sixS model irradiance is in W/m^2/um, scale by 10 to match HCP units
+            # model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_raw_data]/10
+            model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])/10
+            # model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_nocal==False]/10
 
-            py6s_grp = node.addGroup("PY6S_MODEL")
+            sixS_grp = node.addGroup("SIXS_MODEL")
             for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
                 # copy datetime dataset for interp process
-                ds = py6s_grp.addDataset(dsname)
+                ds = sixS_grp.addDataset(dsname)
                 ds.data = grp.getDataset(dsname).data
 
-            ds = py6s_grp.addDataset("py6s_irradiance")
+            ds = sixS_grp.addDataset("sixS_irradiance")
 
             irr_grp = node.getGroup('ES_L1AQC')
             str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
@@ -229,17 +257,17 @@ class ProcessL1bDALEC:
             rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
             ds.data = rec_arr
 
-            ds = py6s_grp.addDataset("direct_ratio")
+            ds = sixS_grp.addDataset("direct_ratio")
             ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
             rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
             ds.data = rec_arr
 
-            ds = py6s_grp.addDataset("diffuse_ratio")
+            ds = sixS_grp.addDataset("diffuse_ratio")
             ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
             rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
             ds.data = rec_arr
 
-            ds = py6s_grp.addDataset("solar_zenith")
+            ds = sixS_grp.addDataset("solar_zenith")
             ds.columns["solar_zenith"] = solar_zenith
             ds.columnsToDataset()
 

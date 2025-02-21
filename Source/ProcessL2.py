@@ -382,8 +382,8 @@ class ProcessL2:
         ltUNC = {}
 
         # Only Factory - Trios has no uncertainty here
-        if (ConfigFile.settings['bL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird' \
-            or ConfigFile.settings['SensorType'].lower() == 'dalec'):
+        if ConfigFile.settings['bL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
+            #or ConfigFile.settings['SensorType'].lower() == 'dalec':
             esUNC = xUNC[f'esUNC_{sensor}']  # should already be convolved to hyperspec
             liUNC = xUNC[f'liUNC_{sensor}']  # added reference to HYPER as band convolved uncertainties will no longer
             ltUNC = xUNC[f'ltUNC_{sensor}']  # overwite normal instrument uncertainties during processing
@@ -2139,8 +2139,8 @@ class ProcessL2:
         else:
             sixSGroup = None
 
-        if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird' \
-            or ConfigFile.settings['SensorType'].lower() == 'dalec':
+        if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
+            #or ConfigFile.settings['SensorType'].lower() == 'dalec':
             rootCopy.addGroup("RAW_UNCERTAINTIES")
             rootCopy.getGroup('RAW_UNCERTAINTIES').copy(root.getGroup('RAW_UNCERTAINTIES'))
             uncGroup = rootCopy.getGroup("RAW_UNCERTAINTIES")

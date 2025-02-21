@@ -49,7 +49,9 @@ class ProcessL1aDALEC:
         #mask = data.notna()
         data1=data[mask]
         mask=data1['SolarAzimuth'].notna()
-        data_good=data1[mask]
+        data2=data1[mask]
+        mask=data2['RelAz'].notna()
+        data_good=data2[mask]
         
         mask = data_good['ChannelType'].isin(['Ed'])
         data_ch.append(data_good[mask])
@@ -270,7 +272,3 @@ class ProcessL1aDALEC:
         data = pd.read_csv(inputfile, skiprows=flag_data+2, names=data_hdr,on_bad_lines='warn')
 
         return metadata,data
-
-
-
-

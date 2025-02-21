@@ -38,7 +38,7 @@ class ProcessL1b_Interp:
                 liGroup = gp
             if gp.id.startswith("LT"):
                 ltGroup = gp
-            if gp.id.startswith("SOLARTRACKER") and gp.id != "SOLARTRACKER_STATUS":
+            if gp.id.startswith("SOLARTRACKER") and gp.id != "SOLARTRACKER_STATUS" or gp.id.startswith("DALEC_TRACKER"):
                 STGroup = gp
 
         # Conversion of datasets within groups to move date/timestamps into
@@ -541,6 +541,8 @@ class ProcessL1b_Interp:
             root.groups.append(node.getGroup("ANCILLARY_METADATA"))
         if node.getGroup("SOLARTRACKER"):
             root.groups.append(node.getGroup("SOLARTRACKER"))
+        if node.getGroup("DALEC_TRACKER"):
+            root.groups.append(node.getGroup("DALEC_TRACKER"))
         if node.getGroup("SOLARTRACKER_STATUS"):
             root.groups.append(node.getGroup("SOLARTRACKER_STATUS"))
         if node.getGroup("PYROMETER"):

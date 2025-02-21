@@ -184,17 +184,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
                 self.extract_factory_cal(node, radcal, s, cCal, cCoef)  # populates dicts with calibration
 
-            elif ConfigFile.settings["bL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "dalec":
-                radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_UNC")
-                ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
-                # read cal start and cal stop for shaping stray-light class based uncertainties
-                #cal_start = int(node.attributes['CAL_START'])
-                #cal_stop = int(node.attributes['CAL_STOP'])
-                #cCal[s] = np.asarray(list(radcal.columns['unc']))
-                #cCoef[s] = np.ones_like(cCal[s])  # array of ones with correct shape. 
-
-                self.extract_factory_cal(node, radcal, s, cCal, cCoef)  # populates dicts with calibration
-
+                        
+            #elif ConfigFile.settings["bL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "dalec":
+            #    radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_UNC")
+            #    ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
+            #    self.extract_factory_cal(node, radcal, s, cCal, cCoef)  # populates dicts with calibration
+            
             elif ConfigFile.settings["bL1bCal"] == 2:  # class-Based
                 radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_CAL")
                 ind_rad_wvl = (np.array(radcal.columns['1']) > 0)  # where radcal wvls are available
@@ -208,7 +203,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 cCal[s] = np.asarray(list(radcal.columns['3']))[ind_rad_wvl]
 
             else:
-                msg = "TriOS factory uncertainties not implemented"
+                msg = "TriOS/Dalec factory uncertainties not implemented"
                 Utilities.writeLogFile(msg)
                 print(msg)
                 return False,False
