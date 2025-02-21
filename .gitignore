@@ -13,6 +13,8 @@
 .gitignore
 /Bundled/
 Data/Zhang_rho_db.mat
+Data/Zhang_rho_db_expanded.mat
+Data/z17_RHO_LUT_no_nan_pchip.nc
 Data/Anc/
 Data/L*/
 Data/Reports/

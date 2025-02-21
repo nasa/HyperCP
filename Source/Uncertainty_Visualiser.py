@@ -329,7 +329,7 @@ class UncertaintyEngine(ABC):
         """
         super().__init__()
         self.punpy_MCP = punpy_prop_obj
-
+    # add absolute to LW/Rrs to make sure we propagate uncertainty for cases where we have negative values 
     def breakdown_Class(self, mean_values: list, uncertainty: list, cumulative: bool = True):
         """
 

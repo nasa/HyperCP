@@ -550,16 +550,8 @@ class Propagate:
         sensor['ang'] = [40, 180 - abs(relAz)]  # relAz should vary from about 90-135
         sensor['wv'] = waveBands
 
-        # msg = (f"Uncertainty_Analysis.zhangWrapper. Wind: {env['wind']:.1f} AOT: {env['od']:.2f} Cloud: {env['C']:.1f} SZA: {env['zen_sun']:.1f} "
-        #      f"SST: {env['wtem']:.1f} SSS: {env['sal']:.1f} VZA: {sensor['ang'][0]:.1f} RelAz: {relAz:.1f}")
-        # Utilities.writeLogFile(msg)
-        # print(msg)
-
-        # tic = time.process_time()
         rho = ZhangRho.get_sky_sun_rho(env, sensor)['rho']
-        # msg = f'zhangWrapper Z17 Elapsed Time: {time.process_time() - tic:.1f} s'
-        # print(msg)
-        # Utilities.writeLogFile(msg)
+
         return rho
 
 
