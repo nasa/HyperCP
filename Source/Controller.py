@@ -301,10 +301,7 @@ class Controller:
             root = ProcessL1aSeaBird.processL1a(inFilePath, calibrationMap)
             outFFPs = outFilePath
         elif ConfigFile.settings["SensorType"].lower() == "trios":
-            # Multiple collections may be present, each with a file per sensor, root will only be the last collection
-            # root, outFFPs = TriosL1A.triosL1A(inFilePath, outFilePath)
             root, outFFPs = ProcessL1aTriOS.processL1a(inFilePath, outFilePath)
-            # outFFPs = outFFPs[0]
         elif ConfigFile.settings["SensorType"].lower() == "sorad":
             root = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
@@ -687,7 +684,7 @@ class Controller:
                 return False#None, outFilePath
 
             # Check for new 6S model group
-            test = root.getGroup('PY6S_MODEL')
+            test = root.getGroup('SIXS_MODEL')
             if test is None:
                 msg = "6S model not found, probably because lower level data was processed before v1.2.5. "
                 print(msg)
@@ -727,8 +724,11 @@ class Controller:
                         ancGroup.datasets[ds].datasetToColumns()
                     except Exception:
                         print('Error: Something wrong with root ANCILLARY')
-                stations = np.array(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
-                stations = np.unique(stations[~np.isnan(stations)]).tolist()
+                if root.getGroup("ANCILLARY").getDataset("STATION") is not None:
+                    stations = np.array(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
+                    stations = np.unique(stations[~np.isnan(stations)]).tolist()
+                else:
+                    stations = []
 
                 if len(stations) > 0:
 

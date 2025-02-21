@@ -1,4 +1,6 @@
 import os
+
+
 import stat
 # import urllib.request as ur
 # import requests
@@ -12,43 +14,6 @@ from Source import OBPGSession, PATH_TO_DATA
 
 
 class GetAnc:
-
-    @staticmethod
-    def userCreds(usr,pwd):
-        ''' Saves user credentials '''
-        home = os.path.expanduser('~')
-        if platform.system() == 'Windows':
-            netrcFile = os.path.join(home,'_netrc')
-        else:
-            netrcFile = os.path.join(home,'.netrc')
-        if os.path.exists(netrcFile):
-            os.chmod(netrcFile, stat.S_IRUSR | stat.S_IWUSR)
-
-        if not os.path.exists(netrcFile):
-            with open(netrcFile, 'w') as fo:
-                fo.write(f'machine urs.earthdata.nasa.gov login {usr} password {pwd}\n')
-            os.chmod(netrcFile, stat.S_IRUSR | stat.S_IWUSR)
-        else:
-            # print('netrc found')
-            fo = open(netrcFile)
-            lines = fo.readlines()
-            fo.close()
-            # This will find and replace or add the Earthdata server
-            foundED = False
-            for i, line in enumerate(lines):
-                if 'machine urs.earthdata.nasa.gov login' in line:
-                    foundED = True
-                    lineIndx = i
-
-            if foundED is True:
-                lines[lineIndx] = f'machine urs.earthdata.nasa.gov login {usr} password {pwd}\n'
-            else:
-                lines = lines + [f'\nmachine urs.earthdata.nasa.gov login {usr} password {pwd}\n']
-
-            # with open(netrcFile, "w") as fo:
-            fo = open(netrcFile,"w")
-            fo.writelines(lines)
-            fo.close()
 
     @staticmethod
     def getAnc(inputGroup):
@@ -121,6 +86,8 @@ class GetAnc:
                     msg = f'Request error: {status}'
                     print(msg)
                     Utilities.writeLogFile(msg)
+                    if os.environ["HYPERINSPACE_CMD"].lower() == 'true':
+                        return
                     alert = QtWidgets.QMessageBox()
                     alert.setText(f'Request error: {status}\n \
                                     Check that server credentials have \n \
@@ -128,7 +95,7 @@ class GetAnc:
                                     MERRA2 model data are not available until \n \
                                     the third week of the following month.')
                     alert.exec_()
-                    return None
+                    return
 
                 # GMAO Atmospheric model data
                 node = HDFRoot.readHDF5(filePath1)
@@ -213,4 +180,3 @@ class GetAnc:
         print('GetAnc: Model data retrieved')
 
         return modData
-

@@ -1,4 +1,5 @@
 ''' Process L1BQC to L2 '''
+import os
 import collections
 import warnings
 import time
@@ -70,7 +71,7 @@ class ProcessL2:
         nirSlice = newNIRData.columns
         nirnLwSlice = newNIRnLwData.columns
 
-        # # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination
+        # # Perform near-infrared residual correction to remove additional atmospheric and glint contamination
         # if ConfigFile.settings["bL2PerformNIRCorrection"]:
         if simpleNIRCorrection:
             # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
@@ -157,7 +158,9 @@ class ProcessL2:
                     ρ720.append(ρSlice[k][-1]) # Using current element/slice [-1]
 
             # if not ρ720:
-                # QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+            #     print("Error: NIR wavebands unavailable")
+            #     if os.environ["HYPERINSPACE_CMD"].lower() == 'false':
+            #         QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
             ρ1 = sp.interpolate.interp1d(x,ρ720)(720)
             F01 = sp.interpolate.interp1d(wavelength,F0)(720)
             ρ780 = []
@@ -169,7 +172,9 @@ class ProcessL2:
                     x.append(float(k))
                     ρ780.append(ρSlice[k][-1])
             if not ρ780:
-                QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
+                print("Error: NIR wavebands unavailable")
+                if os.environ["HYPERINSPACE_CMD"].lower() == 'false':
+                    QtWidgets.QMessageBox.critical("Error", "NIR wavebands unavailable")
             ρ2 = sp.interpolate.interp1d(x,ρ780)(780)
             F02 = sp.interpolate.interp1d(wavelength,F0)(780)
             ρ870 = []
@@ -599,7 +604,7 @@ class ProcessL2:
                 timeStamp = group.getDataset("ES").data["Datetime"]
             if group.id == "RADIANCE":
                 timeStamp = group.getDataset("LI").data["Datetime"]
-            if group.id == "PY6S_MODEL":
+            if group.id == "SIXS_MODEL":
                 timeStamp = group.getDataset("direct_ratio").data["Datetime"]
         else:
             if group.id == "IRRADIANCE":
@@ -647,7 +652,7 @@ class ProcessL2:
                 Utilities.writeLogFile(msg)
             timeStamp = newTimeStamp.copy()
 
-        if badTimes == []:
+        if len(badTimes) == 0:
             startLength = 1 # avoids div by zero below when finalCount is 0
 
         for ds in group.datasets:
@@ -1137,7 +1142,7 @@ class ProcessL2:
 
 
     @staticmethod
-    def sliceAveOther(node, start, end, y, ancGroup, py6SGroup):
+    def sliceAveOther(node, start, end, y, ancGroup, sixSGroup):
         ''' Take the slice AND the mean averages of ancillary and 6S data with X% '''        
 
         def _sliceAveOther(node, start, end, y, group):
@@ -1202,12 +1207,12 @@ class ProcessL2:
                 newDS.columnsToDataset()
 
         _sliceAveOther(node, start, end, y, ancGroup)        
-        _sliceAveOther(node, start, end, y, py6SGroup)
+        _sliceAveOther(node, start, end, y, sixSGroup)
 
     @staticmethod
     def ensemblesReflectance(node, sasGroup, refGroup, ancGroup, uncGroup,
                              esRawGroup, liRawGroup, ltRawGroup,
-                             py6SGroup, start, end):
+                             sixSGroup, start, end):
         '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for
         meteorological quality flags. Perform glint corrections. Calculate the Rrs. Correct for NIR
         residuals.'''
@@ -1237,23 +1242,23 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)
             return False
-        #Py6S
-        if py6SGroup is not None:
-            diffuseData = py6SGroup.getDataset("diffuse_ratio")
-            directData = py6SGroup.getDataset("direct_ratio")
-            py6SesData = py6SGroup.getDataset("py6s_irradiance")
+        #SIXS
+        if sixSGroup is not None:
+            diffuseData = sixSGroup.getDataset("diffuse_ratio")
+            directData = sixSGroup.getDataset("direct_ratio")
+            sixSesData = sixSGroup.getDataset("sixS_irradiance")
             # no need to retain SZA
             # Copy datasets to dictionary
             diffuseData.datasetToColumns()
             diffuseColumns = diffuseData.columns
             directData.datasetToColumns()
             directColumns = directData.columns
-            py6SesData.datasetToColumns()
-            py6SesColumns = py6SesData.columns
+            sixSesData.datasetToColumns()
+            sixSesColumns = sixSesData.columns
 
             # diffuseSlice = ProcessL2.columnToSlice(diffuseColumns,start, end)
             # directSlice = ProcessL2.columnToSlice(directColumns,start, end)
-            # py6SesSlice = ProcessL2.columnToSlice(py6SesColumns,start, end)
+            # sixSesSlice = ProcessL2.columnToSlice(sixSesColumns,start, end)
 
         # process raw groups for generating standard deviations
         def _sliceRawData(ES_raw, LI_raw, LT_raw):
@@ -1343,9 +1348,9 @@ class ProcessL2:
         # diffuseSlice.pop("Timetag2")
         # diffuseSlice.pop("Datetime")
 
-        # py6SesSlice.pop("Datetag")
-        # py6SesSlice.pop("Timetag2")
-        # py6SesSlice.pop("Datetime")
+        # sixSesSlice.pop("Datetag")
+        # sixSesSlice.pop("Timetag2")
+        # sixSesSlice.pop("Datetime")
 
         # Process StdSlices for Band Convolution
         # Get common wavebands from esSlice to interp stats
@@ -1564,7 +1569,7 @@ class ProcessL2:
         # (Combines Slice and XSlice -- as above -- into one method)
         # node.groups.append(ancGroup)
 
-        ProcessL2.sliceAveOther(node, start, end, y, ancGroup, py6SGroup)
+        ProcessL2.sliceAveOther(node, start, end, y, ancGroup, sixSGroup)
         newAncGroup = node.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
 
@@ -1664,30 +1669,37 @@ class ProcessL2:
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
             if AODXSlice >0.2:
-                msg = f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.2'
+                msg = f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.2. Expect larger, uncaptured errors.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 AODXSlice = 0.2
-            if SZAXSlice > 60:
-                # Zhang is stricter and limited to SZA <= 60
-                msg = f'SZA = {SZAXSlice:.2f}. Maximum Solar Zenith Exceeded. Aborting slice.'
+            if WINDSPEEDXSlice > 15:
+                msg = f'WIND = {WINDSPEEDXSlice:.1f}. Maximum Wind Speed Reached. Setting to 15.0. Expect larger, uncaptured errors.'
                 print(msg)
                 Utilities.writeLogFile(msg)
-                # Need to eliminate this slice from newAncGroup
-                badTimes = []
-                start = dateTime
-                stop = dateTime
-                badTimes.append([start, stop])
-                for dsName in newAncGroup.datasets:
-                    ds = newAncGroup.datasets[dsName]
-                    ds.columnsToDataset()
+                WINDSPEEDXSlice = 15
+            if SZAXSlice > 60:
+                # Zhang is stricter and limited to SZA <= 60
+                # msg = f'SZA = {SZAXSlice:.2f}. Maximum Solar Zenith Exceeded. Aborting slice.'
+                msg = f'SZA = {SZAXSlice:.1f}. Maximum Solar Zenith Exceeded. Setting to 60. Expect larger, uncaptured errors.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                SZAXSlice = 60
+                # # Need to eliminate this slice from newAncGroup
+                # badTimes = []
+                # start = dateTime
+                # stop = dateTime
+                # badTimes.append([start, stop])
+                # for dsName in newAncGroup.datasets:
+                #     ds = newAncGroup.datasets[dsName]
+                #     ds.columnsToDataset()
 
-                check = Utilities.filterData(newAncGroup,badTimes)
-                if check == 1.0:
-                    msg = "100% of Ancillary data removed. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
+                # check = Utilities.filterData(newAncGroup,badTimes)
+                # if check == 1.0:
+                #     msg = "100% of Ancillary data removed. Abort."
+                #     print(msg)
+                #     Utilities.writeLogFile(msg)
+                #     return False
             if min(wavelength) < 350 or max(wavelength) > 1000:
                 msg = 'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'
                 print(msg)
@@ -1700,8 +1712,9 @@ class ProcessL2:
 
             # rhoVector = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
             #                                             SalXSlice, RelAzXSlice, waveSubset)
+            SVA = ConfigFile.settings['fL2SVA']
             rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
-                                                            SalXSlice, RelAzXSlice, waveSubset, Rho_Uncertainty_Obj)
+                                                            SalXSlice, RelAzXSlice, SVA, waveSubset, Rho_Uncertainty_Obj)
 
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[i]
@@ -2053,17 +2066,17 @@ class ProcessL2:
         rootCopy.addGroup("ANCILLARY")
         rootCopy.addGroup("IRRADIANCE")
         rootCopy.addGroup("RADIANCE")
-        rootCopy.addGroup('PY6S_MODEL')
+        rootCopy.addGroup('SIXS_MODEL')
 
         rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
 
-        py6s_available = False
+        sixS_available = False
         for gp in root.groups:
-            if gp.id == 'PY6S_MODEL':
-                py6s_available = True
-                rootCopy.getGroup('PY6S_MODEL').copy(root.getGroup('PY6S_MODEL'))
+            if gp.id == 'SIXS_MODEL':
+                sixS_available = True
+                rootCopy.getGroup('SIXS_MODEL').copy(root.getGroup('SIXS_MODEL'))
                 break
 
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
@@ -2100,10 +2113,10 @@ class ProcessL2:
         referenceGroup = rootCopy.getGroup("IRRADIANCE")
         sasGroup = rootCopy.getGroup("RADIANCE")
         ancGroup = rootCopy.getGroup("ANCILLARY")
-        if py6s_available:
-            py6SGroup = rootCopy.getGroup("PY6S_MODEL")
+        if sixS_available:
+            sixSGroup = rootCopy.getGroup("SIXS_MODEL")
         else:
-            py6SGroup = None
+            sixSGroup = None
 
         if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("RAW_UNCERTAINTIES")
@@ -2168,8 +2181,8 @@ class ProcessL2:
                     return False
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
-                if py6s_available:
-                    ProcessL2.filterData(py6SGroup, badTimes)
+                if sixS_available:
+                    ProcessL2.filterData(sixSGroup, badTimes)
 
         #####################################################################
         #
@@ -2203,7 +2216,7 @@ class ProcessL2:
 
                 if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                            py6SGroup, start, end):
+                                                            sixSGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance unsliced failed. Abort.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -2231,7 +2244,7 @@ class ProcessL2:
                         end = len(timeStamp)-1 # File shorter than interval; include all spectra
                         if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                            py6SGroup, start, end):
+                                                            sixSGroup, start, end):
                             msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                             print(msg)
                             Utilities.writeLogFile(msg)
@@ -2247,7 +2260,7 @@ class ProcessL2:
 
                     if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                            py6SGroup, start, end):
+                                                            sixSGroup, start, end):
                         msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                         print(msg)
                         Utilities.writeLogFile(msg)
@@ -2265,7 +2278,7 @@ class ProcessL2:
                 end = i+1 # i is the index of end of record; plus one to include i due to -1 list slicing
                 if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                            py6SGroup, start, end):
+                                                            sixSGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance ender clause failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -2318,8 +2331,8 @@ class ProcessL2:
                 ProcessL2.filterData(node.getGroup("IRRADIANCE"), badTimes, sensor = "HYPER")
                 ProcessL2.filterData(node.getGroup("RADIANCE"), badTimes, sensor = "HYPER")
                 ProcessL2.filterData(node.getGroup("ANCILLARY"), badTimes)
-                if py6s_available:
-                    ProcessL2.filterData(node.getGroup("PY6S_MODEL"), badTimes)
+                if sixS_available:
+                    ProcessL2.filterData(node.getGroup("SIXS_MODEL"), badTimes)
 
         return True
 
@@ -2335,7 +2348,7 @@ class ProcessL2:
         node.addGroup("REFLECTANCE")
         node.addGroup("IRRADIANCE")
         node.addGroup("RADIANCE")
-        node.addGroup("PY6S_MODEL")
+        node.addGroup("SIXS_MODEL")
         node.copyAttributes(root)
         node.attributes["PROCESSING_LEVEL"] = "2"
         # Remaining attributes managed below...
@@ -2349,11 +2362,11 @@ class ProcessL2:
                 grp.datasets[ds].datasetToColumns()
 
             # Carry over L1AQC data for use in uncertainty budgets
-            if grp.id.endswith('_L1AQC'): #or grp.id.startswith('PY6S_MODEL'):
+            if grp.id.endswith('_L1AQC'): #or grp.id.startswith('SIXS_MODEL'):
                 newGrp = node.addGroup(grp.id)
                 newGrp.copy(grp)
                 for ds in newGrp.datasets:
-                    newGrp.datasets[ds].datasetToColumns()
+                    newGrp.datasets[ds].datasetToColumns()                    
 
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):

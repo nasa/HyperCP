@@ -4,6 +4,9 @@
 
 <center><img src="Data/Img/with_background_530x223.png" alt="Banner"></center>
 
+![Test](https://github.com/nasa/HyperCP/actions/workflows/ApplicationTesting.yml/badge.svg)
+![Bundle](https://github.com/nasa/HyperCP/actions/workflows/Pipeline.yml/badge.svg)
+
 Hyperspectral In situ Support for PACE (HyperInSPACE) Community Processor (HyperCP) is designed to provide hyperspectral support for the <a href='https://pace.gsfc.nasa.gov/'>PACE mission</a> but also multispectral missions such as
 [Sentinel-3](https://sentinels.copernicus.eu/web/sentinel/missions/sentinel-3) by processing automated and manual, above-water,
 hyperspectral ocean color radiometry data using state-of-the-art methods and protocols for quality assurance,
@@ -13,7 +16,7 @@ retrieval. Data outputs are formatted to text files for submission to the [SeaBA
 Currently, HyperCP supports <a href='https://www.seabird.com/'>Sea-Bird Scientific</a> HyperSAS packages with and
 without SolarTracker or pySAS robotic platforms as well as [TriOS](https://www.trios.de/en/radiometers.html) used in manual configuration. If you are interested in integrating support for your platform, contact us at the email addresses below or in the Discussions tab of the GitHub repository.
 
-## Version 1.2.9
+## Version 1.2.10
 
 ```
 The MIT license
@@ -92,6 +95,11 @@ If environment problems are encountered after updating HyperCP (e.g, dependencie
 
 ```
 conda env update --file environment.yml --prune
+```
+**NOTE:** If you started with working with v1.2.8 or less and are now in v1.2.9 or higher, you may need to remove the old hypercp environment and reinstall the environment as described above.
+```
+prompt$ conda deactivate
+prompt$ conda remove -n hypercp --all
 ```
 
 To report a bug, please submit it [here](https://github.com/nasa/HyperCP/issues), the HyperCP Team will take

@@ -161,7 +161,7 @@ class Propagate:
         corr_list = ['rand', 'syst', 'rand', 'syst', 'syst', 'syst', 'syst', 'syst',
                      'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
 
-        return self.MCP.propagate_random(self.Lw,
+        return self.MCP.propagate_standard(self.Lw,
                                          mean_vals,
                                          uncertainties,
                                          corr_between=self.corr_matrix_Default_Lw,
@@ -209,13 +209,6 @@ class Propagate:
             sys_unc,
             corr_between=self.corr_matrix_Default_Lw,
         )
-
-        # Old method of uncertainty propagation (v1.2.1)
-        # old = self.MCP.propagate_random(self.Lw_Conv,
-        #                                 mean_vals,
-        #                                 uncertainties,
-        #                                 corr_between=self.corr_matrix_Default_Lw,
-        #                                 corr_x=corr_list)
 
         return np.sqrt(random ** 2 + systematic ** 2)
 
@@ -309,6 +302,8 @@ class Propagate:
             func = self.band_Conv_Sensor_NOAA_J
         elif platform.upper() == "VIIRS-N" or platform.lower().rstrip().replace('-', '') == "noaa-N":
             func = self.band_Conv_Sensor_NOAA_N
+        elif platform.upper() == "HYPER":
+            func = self.no_Conv
         else:
             msg = "sensor not supported"
             print(msg)
@@ -434,6 +429,10 @@ class Propagate:
         return np.array([value[0] for value in rad_band.values()])
 
     @staticmethod
+    def no_Conv(Hyperspec, *args, **kwargs) -> np.array:
+        return Hyperspec
+
+    @staticmethod
     def Lw(lt, rhoVec, li, c_li, c_lt, cstab_li, cstab_lt, clin_li, clin_lt, cstray_li, cstray_lt, cT_li, cT_lt, cpol_li, cpol_lt):
         """ Lw Class based branch measurment function """
         li_signal = li * c_li * cstab_li * clin_li * cstray_li * cT_li * cpol_li
@@ -551,16 +550,8 @@ class Propagate:
         sensor['ang'] = [40, 180 - abs(relAz)]  # relAz should vary from about 90-135
         sensor['wv'] = waveBands
 
-        # msg = (f"Uncertainty_Analysis.zhangWrapper. Wind: {env['wind']:.1f} AOT: {env['od']:.2f} Cloud: {env['C']:.1f} SZA: {env['zen_sun']:.1f} "
-        #      f"SST: {env['wtem']:.1f} SSS: {env['sal']:.1f} VZA: {sensor['ang'][0]:.1f} RelAz: {relAz:.1f}")
-        # Utilities.writeLogFile(msg)
-        # print(msg)
-
-        # tic = time.process_time()
         rho = ZhangRho.get_sky_sun_rho(env, sensor)['rho']
-        # msg = f'zhangWrapper Z17 Elapsed Time: {time.process_time() - tic:.1f} s'
-        # print(msg)
-        # Utilities.writeLogFile(msg)
+
         return rho
 
 

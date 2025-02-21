@@ -256,6 +256,8 @@ class Utilities:
 
     @staticmethod
     def errorWindow(winText,errorText):
+        if os.environ["HYPERINSPACE_CMD"].lower() == 'true':
+            return
         msgBox = QMessageBox()
         # msgBox.setIcon(QMessageBox.Information)
         msgBox.setIcon(QMessageBox.Critical)
@@ -264,20 +266,10 @@ class Utilities:
         msgBox.setStandardButtons(QMessageBox.Ok)
         msgBox.exec_()
 
-
-    @staticmethod
-    def waitWindow(winText,waitText):
-        msgBox = QMessageBox()
-        # msgBox.setIcon(QMessageBox.Information)
-        msgBox.setIcon(QMessageBox.Critical)
-        msgBox.setText(waitText)
-        msgBox.setWindowTitle(winText)
-        # msgBox.setStandardButtons(QMessageBox.Ok)
-        # msgBox.exec_()
-        return msgBox
-
     @staticmethod
     def YNWindow(winText,infoText):
+        if os.environ["HYPERINSPACE_CMD"].lower() == 'true':
+            return QMessageBox.Ok  # Assume positive answer to keep processing in command line mode (no X)
         msgBox = QMessageBox()
         msgBox.setIcon(QMessageBox.Information)
         msgBox.setText(infoText)
@@ -1023,7 +1015,7 @@ class Utilities:
                 timeStamp = group.getDataset("ES").data["Datetime"]
             if group.id == "RADIANCE":
                 timeStamp = group.getDataset("LI").data["Datetime"]
-            if group.id == "PY6S_MODEL":
+            if group.id == "SIXS_MODEL":
                 timeStamp = group.getDataset("solar_zenith").data["Datetime"]
         else:
             timeStamp = group.getDataset("Timestamp").data["Datetime"]
@@ -2644,10 +2636,11 @@ class Utilities:
 
             # intersect, ind1, valid = np.intersect1d(x_new, bands, return_indices=True)
             if len(bands[valid]) != len(x_new):
-                print("ERROR: band wavelentgh not found in calibration file")
+                print("ERROR: band wavelength not found in calibration file")
                 print(len(bands[valid]))
                 print(len(x_new))
-                exit()
+                # exit()
+                return False
 
             ## RADCAL_LAMP: Interpolate data to hyper-spectral pixels
             for data_type in ["_RADCAL_LAMP"]:
