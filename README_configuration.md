@@ -394,18 +394,50 @@ Normalized water leaving radiance (nLw) is calculated as $Rrs.F0$, where F0 is t
 adjusted for the Earth-Sun distance on the day sampled. This is now estimated using the Coddington et al. (2021) TSIS-1
 hybrid model.
 
-Prior to version v1.2, uncertainties in Li, Lt, and Es were estimated using the standard deviation of spectra within each ensemble (e.g. Li_sd)
-or full-file average if no ensembles are extracted. For the Mobley 1999 (M99) glint correction, uncertainty in Rho_sky
-(Rho_sky_Delta) is estimated as +/- 0.01 based on the range of model estimates for Rho_sky cited in M99 for the range of
-likely conditions for which it is held constant. Uncertainty in Rho_sky is otherwise estimated as +/- 0.003 from Ruddick
-et al. 2006 Appendix 2; intended for clear skies, though in the future variation in Rho_sky_Delta as a mutable function
-of sky and sea surface conditions should be better constrained when possible (i.e. further research is required).
-Uncertainty in Rrs (i.e. Rrs_unc) and nLw were estimated using sum of squares propagation of from Li_sd, Lt_sd, Es_sd,
-and Rho_sky_Delta assuming random, uncorrelated error. So, e.g.:
+Uncertainties in $L_{i}$, $L_{t}$, $E_{s}$ ($u(L_{i})$, $u(L_{t})$, $u(E_{s})$ ) are derived as the quadrature sum of uncertainties associated with standard error (i.e., variability among samples) and instrument uncertainties based on laboratory characterization of a specific instrument or class of instruments. Uncertainty in the skylight reflectance factor, $u(\rho_{sky})$, was historically estimated as +/- 0.003 from Ruddick et al. 2006 Appendix 2 (intended for clear skies), but in HyperCP v1.2+ is estimated using Monte Carlo iterations perturbing the input solar-sensor geometries and environmental conditions over normal distributions around the current measurement in addition to differences between multiple models for $\rho_{sky}$ (i.e., Mobley 1999 and Zhang et al. 2017).
+
+Combined absolute standard uncertainty ( $u_{c}$) in $L_{w}$ ($u_{c}(L_{w})$ ) is estimated from $u(L_{i})$, $u(L_{t})$, and $u(\rho_{sky})$ with the Law of Propagation of Uncertainties (LPU) assuming random, uncorrelated error. LPU defines combined standard uncertainty, $u_{c}$ as:
 
 $$
-Rrs_{unc} = Rrs *  \sqrt{(\frac{L_{i,sd}}{L_{i}})^2 + (\frac{\rho_{sky}}{\rho_{sky}})^2 + (\frac{L_{t,sd}}{L_{t}})^2 + (\frac{E_{s,sd}}{E_{s}})^2}
+u^2_{c} = \Sigma_{i=0}^{N}[\frac{\partial f}{\partial x_{i}}]^2\cdot u(x_{i})^{2},
 $$
+
+where $\frac{\partial f}{\partial x_{i}}$ represents the sensitivity coefficients for the derived parameter $f$ as a function of the measurands $x_{i}$ used to calculate it. Water leaving radiance, $L_{w}$, is calculated as:
+
+$$
+L_{w} = L_{t} - \rho_{sky}\cdot L_{i}.
+$$
+
+The sensitivity coeficients in the equation above for $L_{w}$ are expressed as:
+
+$$
+\frac{\partial L_{w}}{\partial L_{t}} = 1
+, 
+\frac{\partial  L_{w}}{\partial \rho_{sky}} = -L_{i}
+, 
+\frac{\partial L_{w}}{\partial L_{i}} = -\rho_{sky}.
+$$
+
+Therefore, applying the LPU, uncertainty in $L_{w}$ can be stated as:
+
+$$
+u_{c}(L_{w}) = \sqrt{u(L_{t})^{2} + L_{i}^2\cdot u(\rho_{sky})^{2} + \rho_{sky}^{2}\cdot u(L_{i})^{2}}.
+$$
+
+$R_{rs}$ is defined as:
+
+$$
+R_{rs} = \frac{L_{w}}{E_{s}},
+$$
+
+so uncertainty in $R_{rs}$ is calculated as:
+
+$$
+u_{c}(R_{rs}) = \sqrt{u_{c}(L_{w})^{2} + u(E_{s})^{2}}.
+$$
+
+(Note that $L_{w}$ and $R_{rs}$ uncertainties are propagated separately to avoid a more complicated formulation
+of the LPU.)
 
 Since v1.2.0, uncertainties in L2 products include systematic and random sensor error in addition to uncertainties associated with the glint correction, environmental variability, BRDF correction (v1.2.2), and satellite band convolution. The full details of how HyperCP propagates these uncertainties can be found in
 [this report](https://frm4soc2.eumetsat.int/sites/default/files/inline-files/FRM4SOC-2_D-10_v2.4_210042023_NPL_EUMETSAT_signed.pdf).
