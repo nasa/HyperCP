@@ -50,8 +50,9 @@ class GetAnc_ecmwf:
         # Convert to a datetime object
         # NOTE: This expects a string that does not match the parameter description above, 
         # i.e., yyyy-mm-ddThh:MM:ss:HH where HH is the hours of UTC offset
-        epoch_time = datetime.datetime.strptime(':'.join(timeStamp.split(':')[:-2]), '%Y-%m-%dT%H:%M:%S').timestamp()
-        # epoch_time = datetime.datetime.strptime(timeStamp, '%Y-%m-%dT%H:%M:%S').timestamp()
+   
+        #epoch_time = datetime.datetime.strptime(':'.join(timeStamp.split(':')[:-2]), '%Y-%m-%dT%H:%M:%S').timestamp()
+        epoch_time = datetime.datetime.strptime(timeStamp, '%Y-%m-%dT%H:%M:%S').timestamp() # to get this to work for so-rad timstamps, I uncommented this line (and removed previous)
         timeResHoursSecs = 3600 * timeResHours
         rounded_epoch_time = round(epoch_time / timeResHoursSecs) * timeResHoursSecs
         rounded_timestamp = datetime.datetime.fromtimestamp(rounded_epoch_time).strftime('%Y-%m-%dT%H:%M:%S')
@@ -150,12 +151,13 @@ class GetAnc_ecmwf:
         lonRes = 0.4
         timeResHours = 1
 
+        
         latEff, lonEff, latLonTag, dateTagEff, timeStampEff = GetAnc_ecmwf.ECMWF_latLonTimeTags(lat, lon, timeStamp, latRes, lonRes, timeResHours)
 
         pathOut = os.path.join(pathCAMS, 'CAMS_%s_%s_%s.nc' % (latLonTag, dateTagEff.replace('-',''), timeStampEff.replace(':','')))
 
         GetAnc_ecmwf.CAMS_download_ensembles(latEff, lonEff, dateTagEff, timeStampEff, CAMS_variables, pathOut)
-
+       
         try:
             CAMSnc['reanalysis'] = xr.open_dataset(pathOut,engine='netcdf4')
             CAMS_flag = True
