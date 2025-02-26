@@ -1112,7 +1112,9 @@ class Utilities:
         dataDelta = None
         # Note: If only one spectrum is left in a given ensemble, STD will
         #be zero for Es, Li, and Lt.'''
-        if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+        #if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+        if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
+             ConfigFile.settings['SensorType'].lower() == 'dalec') and ConfigFile.settings['bL1bCal'] == 1:
             suffix = 'sd'
         else:
             suffix = 'unc'
