@@ -97,7 +97,7 @@ class GetAnc_ecmwf:
                         {
                             'type' : 'forecast',
                             'variable': list(CAMS_variables.keys()),
-                            'date': '%s/%s' % (dateStrRounded, timeStrRounded),
+                            'date': '%s/%s' % (dateStrRounded, dateStrRounded),
                             'area': [lat, lon, lat, lon],
                             'time': '%s:00' % hourForecast,
                             'leadtime_hour': leadtime,
