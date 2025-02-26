@@ -518,8 +518,7 @@ class ProcessL2:
                     newnLwUNCData.columns[k].append(nLwUNC[k])
                     if ConfigFile.settings['bL1bCal']==1 and (ConfigFile.settings['SensorType'].lower() == 'trios' or \
                                                               ConfigFile.settings['SensorType'].lower() == 'dalec'):
-                    #if ConfigFile.settings['bL1bCal']==1 and (ConfigFile.settings['SensorType'].lower() == 'trios'):
-                    # Specifique case for Factory-Trios
+                    # Specifique case for Factory-Trios and Dalec
                         newESUNCData.columns[k].append(esUNC[k])
                         newLIUNCData.columns[k].append(liUNC[k])
                         newLTUNCData.columns[k].append(ltUNC[k])
@@ -1390,7 +1389,7 @@ class ProcessL2:
             liRawGroup.id = "LI_L1AQC"
             ltRawGroup.id = "LT_L1AQC"
         elif ConfigFile.settings['SensorType'].lower() == "dalec":
-            instrument = Dalec()  # overwrites all Instrument class functions with TriOS specific ones
+            instrument = Dalec()  # overwrites all Instrument class functions with Dalec specific ones
             stats = instrument.generateSensorStats("Dalec",
                         dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
                         dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
@@ -2458,7 +2457,8 @@ class ProcessL2:
                 node.removeGroup(gp)
 
         # In the case of TriOS Factory, strip out uncertainty datasets
-        if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+        if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
+             ConfigFile.settings['SensorType'].lower() == 'dalec') and ConfigFile.settings['bL1bCal'] == 1:
             for gp in node.groups:
                 if gp.id in ('IRRADIANCE', 'RADIANCE', 'REFLECTANCE'):
                     removeList = []

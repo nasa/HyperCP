@@ -482,7 +482,9 @@ class Controller:
         _, filename = os.path.split(outFilePath)
         if node is not None:
 
-            if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+            #if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+            if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
+                 ConfigFile.settings['SensorType'].lower() == 'dalec') and ConfigFile.settings['bL1bCal'] == 1:
                 plotDeltaBool = False
             else:
                 plotDeltaBool = True
