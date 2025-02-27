@@ -25,7 +25,11 @@ if __name__ == '__main__':
     # i.e. running - python3 HCP/Source/RhoCorrections.py
 
     # read in current LUT. Figure out it's bounds, then append extra nodes to it!
+<<<<<<< HEAD
     z17_lut = xr.open_dataset(os.path.join(PATH_TO_DATA, "Z17_LUT.nc"), engine='netcdf4')
+=======
+    pre = xr.open_dataset(os.path.join(PATH_TO_DATA, "Z17_LUT.nc"), engine='netcdf4')
+>>>>>>> 1c2c075 (Implemented Z17 LUT to Z17 montecarlo unc propagation, improved build LUT code)
     # z17_lut.coords()
 
 
@@ -63,14 +67,23 @@ if __name__ == '__main__':
     AOT = np.array([0, 0.05, 0.1, 0.2, 0.5])  # 5
     SZA = np.arange(10, 65, 5)  # 12  # expanded database would go to 65
     RELAZ = np.arange(80, 145, 5)  # 13
+<<<<<<< HEAD
     SAL = np.arange(0, 45, 5)  # 10
     SST = np.arange(0, 35, 5)  # 8
     data = np.zeros((len(windspeed), len(AOT), len(SZA), len(RELAZ), len(SAL), len(SST), len(waveBands)))
     uncs = np.zeros((len(windspeed), len(AOT), len(SZA), len(RELAZ), len(SAL), len(SST), len(waveBands)))
+=======
+    VZEN = np.array([30, 35, 40]) # 2
+    SAL = np.arange(0, 70, 10)  # 5
+    SST = np.arange(-40, 60, 20)  # 4
+    data = np.zeros((len(windspeed), len(AOT), len(SZA), len(RELAZ), len(VZEN), len(SAL), len(SST), len(waveBands)))
+    # uncs = np.zeros((len(windspeed), len(AOT), len(SZA), len(RELAZ), len(VZEN), len(SAL), len(SST), len(waveBands)))
+>>>>>>> 1c2c075 (Implemented Z17 LUT to Z17 montecarlo unc propagation, improved build LUT code)
     for i_windspeed, windSpeedMean in enumerate(windspeed):
         for i_aot, aot in enumerate(AOT):
             for i_sza, sza in enumerate(SZA):
                 for i_relaz, relAz in enumerate(RELAZ):
+<<<<<<< HEAD
                     for i_sal, sal in enumerate(SAL):
                         for i_wtemp, wtemp in enumerate(SST):
                             # data[i_windspeed, i_aot, i_sza, i_relaz, i_sal, i_wtemp] = [rand.randint(0, 100) for i in range(len(waveBands))]
@@ -88,6 +101,31 @@ if __name__ == '__main__':
                             )
                             data[i_windspeed, i_aot, i_sza, i_relaz, i_sal, i_wtemp] = rho
                             uncs[i_windspeed, i_aot, i_sza, i_relaz, i_sal, i_wtemp] = unc
+=======
+                    for i_vzen, vzen in enumerate(VZEN):
+                        for i_sal, sal in enumerate(SAL):
+                            for i_wtemp, wtemp in enumerate(SST):
+                                if (windSpeedMean in pre.wind) and (aot in pre.aot) and (sza in pre.sza) and (relAz in pre.relAz) \
+                                and (vzen in pre.vzen) and (sal in pre.sal) and (wtemp in pre.SST):
+                                    data[i_windspeed, i_aot, i_sza, i_relaz, i_vzen, i_sal, i_wtemp] = pre.Glint.isel(
+                                        wind=i_windspeed, aot=i_aot, sza=i_sza, relAz=i_relaz, vzen=i_vzen, sal=i_sal, SST=i_wtemp
+                                        ).values
+                                else:
+                                    rho, unc = RhoCorrections.ZhangCorr(
+                                        windSpeedMean,
+                                        aot,
+                                        cloud,
+                                        sza,
+                                        wtemp,
+                                        sal,
+                                        relAz,
+                                        vzen,
+                                        waveBands,
+                                        # Propagate=Prop_Obj
+                                    )
+                                    data[i_windspeed, i_aot, i_sza, i_relaz, i_vzen, i_sal, i_wtemp] = rho
+                                    # uncs[i_windspeed, i_aot, i_sza, i_relaz, i_vzen, i_sal, i_wtemp] = unc
+>>>>>>> 1c2c075 (Implemented Z17 LUT to Z17 montecarlo unc propagation, improved build LUT code)
 
     da = xr.DataArray(
         data,

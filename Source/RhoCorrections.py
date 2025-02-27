@@ -243,22 +243,17 @@ class RhoCorrections:
         return rhoVector, rhoDelta
 
     @staticmethod
-    def read_Z17_LUT(ws, aod, sza, wt, sal, rel_az, nwb, zhang=None, indx="") -> np.array:
+    def read_Z17_LUT(ws, aod, sza, wt, sal, rel_az, sva, nwb) -> np.array:
         """
         windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang
 
         """
-        db_path = os.path.join(PATH_TO_DATA, 'z17_RHO_LUT_no_nan_pchip.nc')
-        # db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_LUT.nc')
 
-        db_path = os.path.join(PATH_TO_DATA, 'z17_RHO_LUT_no_nan_pchip.nc')
-        # db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_LUT.nc')
+        db_path = os.path.join(PATH_TO_DATA, 'Z17_LUT.nc')
 
         z17_lut = xr.open_dataset(db_path, engine='netcdf4')
 
         import scipy.interpolate as spin
-        # import time
-        # timings = []
 
         if ws < 0:
             ws = 0  # make sure negatives are not passed to interp - working to add option to comet maths
@@ -271,9 +266,6 @@ class RhoCorrections:
 
         LUT = z17_lut.sel(vzen=sva, method='nearest')
         LUT = LUT.interp(wind=[0, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15], kwargs={"fill_value": "extrapolate"})
-
-        # for i, method in enumerate(['pchip', 'cubic']]):
-            # t0 = time.time()
 
         try:
             zhang_interp = spin.interpn(
@@ -297,33 +289,9 @@ class RhoCorrections:
                     wt,
                     nwb
                 ),
-                method="cubic",  # "pchip",
-                fill_value=True,  # None should extrapolate according to scipy docs
+                method="cubic",
             )
         except ValueError as err:
             print(err)
-            # timings.append(time.time()-t0)
 
-            plt.figure("LUT-Interp")
-            plt.plot(nwb, zhang_L, label=f'scipy interpn {method}', linestyle='--')  # color='r'
-            if i == 0 and (zhang is not None):
-                plt.plot(nwb, zhang_L, label=f'scipy interpn {method}', linestyle='--')  # color='r'
-            if i == 0 and (zhang is not None):
-                plt.plot(nwb, zhang, label='Calculated', linestyle='--', color='k')
-
-            plt.legend()
-            plt.xlabel("Wavelength (nm)")
-            plt.ylabel(r"$\rho$")
-            plt.ylabel(r"$\rho$")
-            plt.grid()
-            plt.title(f"Interpolation methods compared with Calculated Zhang Rho: {indx}")
-            plt.title(f"Interpolation methods compared with Calculated Zhang Rho: {indx}")
-            plt.show()
-
-        plt.savefig(f"Z17_LUT_interp_compare_{indx}.png")
-
-        plt.close("LUT-Interp")  # close the figure so it cannot interact with others (good encapsulation)
-
-        # using numpy interp in the end for wavelength as per Tom's suggestion. Not important since wavebands
-        # match LUT in test case (I used Pysas wavebands to generate LUT).
         return zhang_interp
