@@ -296,7 +296,7 @@ class ProcessL2:
 
             # No average (mean or median) or standard deviation values associated with Lw or reflectances,
             #   because these are calculated from the means of Lt, Li, Es
-
+      
             newESUNCData = newIrradianceGroup.addDataset(f"ES_{sensor}_unc")
             newLIUNCData = newRadianceGroup.addDataset(f"LI_{sensor}_unc")
             newLTUNCData = newRadianceGroup.addDataset(f"LT_{sensor}_unc")
@@ -332,7 +332,7 @@ class ProcessL2:
 
             # No average (mean or median) or standard deviation values associated with Lw or reflectances,
             #   because these are calculated from the means of Lt, Li, Es
-
+      
             newESUNCData = newIrradianceGroup.getDataset(f"ES_{sensor}_unc")
             newLIUNCData = newRadianceGroup.getDataset(f"LI_{sensor}_unc")
             newLTUNCData = newRadianceGroup.getDataset(f"LT_{sensor}_unc")
@@ -517,7 +517,7 @@ class ProcessL2:
                         newESUNCData.columns[k].append(esUNC[k])
                         newLIUNCData.columns[k].append(liUNC[k])
                         newLTUNCData.columns[k].append(ltUNC[k])
-                    else:
+                    elif ConfigFile.settings['bL1bCal']==1 and ConfigFile.settings['SensorType'].lower() == 'sorad':
                         newESUNCData.columns[k].append(esUNC[k][0])
                         newLIUNCData.columns[k].append(liUNC[k][0])
                         newLTUNCData.columns[k].append(ltUNC[k][0])
@@ -1293,7 +1293,7 @@ class ProcessL2:
             print(msg)
         else:
             # slice L1AQC (aka "Raw" here) Data depending on SensorType
-            if ConfigFile.settings['SensorType'].lower() == "trios":
+            if ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
                 esRawSlice, liRawSlice, ltRawSlice = _sliceRawData(
                                     esRawGroup.datasets.values(),
                                     liRawGroup.datasets.values(),
@@ -1356,7 +1356,7 @@ class ProcessL2:
         instrument_wb = np.asarray(list(esSlice.keys()), dtype=float)
 
         # rawGroup required only for some group attributes, Group data not used as is not ensemble.
-        if ConfigFile.settings['SensorType'].lower() == "trios":
+        if ConfigFile.settings['SensorType'].lower() == "trios" or  ConfigFile.settings['SensorType'].lower() == "sorad":
             instrument = Trios()  # overwrites all Instrument class functions with TriOS specific ones
             stats = instrument.generateSensorStats("TriOS",
                         dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
@@ -2096,7 +2096,7 @@ class ProcessL2:
             liRawGroup = {"LIGHT": rootCopy.getGroup('LI_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('LI_DARK_L1AQC')}
             ltRawGroup = {"LIGHT": rootCopy.getGroup('LT_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('LT_DARK_L1AQC')}
 
-        elif ConfigFile.settings['SensorType'].lower() == 'trios':
+        elif ConfigFile.settings['SensorType'].lower() == 'trios' or  ConfigFile.settings['SensorType'].lower() == 'sorad':
             rootCopy.addGroup("ES_L1AQC")
             rootCopy.addGroup("LI_L1AQC")
             rootCopy.addGroup("LT_L1AQC")
@@ -2256,7 +2256,7 @@ class ProcessL2:
                     if endTime > endFileTime:
                         endTime = endFileTime
                         EndOfFileFlag = True
-
+             
                     if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
                                                             sixSGroup, start, end):
@@ -2436,6 +2436,17 @@ class ProcessL2:
 
         # In the case of TriOS Factory, strip out uncertainty datasets
         if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+            for gp in node.groups:
+                if gp.id in ('IRRADIANCE', 'RADIANCE', 'REFLECTANCE'):
+                    removeList = []
+                    for dsName in reversed(gp.datasets):
+                        if dsName.endswith('_unc'):
+                            removeList.append(dsName)
+                    for dsName in removeList:
+                        gp.removeDataset(dsName)
+
+        # In the case of TriOS Factory, strip out uncertainty datasets (duplication of trios text for sorad)
+        if ConfigFile.settings['SensorType'].lower() == 'sorad' and ConfigFile.settings['bL1bCal'] == 1:
             for gp in node.groups:
                 if gp.id in ('IRRADIANCE', 'RADIANCE', 'REFLECTANCE'):
                     removeList = []
