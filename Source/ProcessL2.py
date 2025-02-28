@@ -2335,6 +2335,7 @@ class ProcessL2:
                             msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                             print(msg)
                             Utilities.writeLogFile(msg)
+                            break # End of file reached. Safe to break
 
                         break # End of file reached. Safe to break
                     else:
