@@ -1916,8 +1916,6 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2BRDF_fQ"] = 0
             self.l2BRDF_fQCheckBox.setChecked(False)
 
-
-
     def l2OCproductsButtonPressed(self):
         print("OC Products Dialogue")
 
@@ -1928,7 +1926,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
         if int(ConfigFile.settings["bL2WeightMODISA"]) == 1:
             self.l2WeightMODISACheckBox.setChecked(True)
-
 
     def l2SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")
@@ -2072,7 +2069,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.checkForChlor()
 
-
     def saveAsButtonPressed(self):
         print("ConfigWindow - Save As Pressed")
         self.newName, ok = QtWidgets.QInputDialog.getText(self, 'Save As Config File', 'Enter File Name')
@@ -2109,7 +2105,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
             self.setWindowTitle(ConfigFile.filename)
 
-
     def cancelButtonPressed(self):
         print("ConfigWindow - Cancel Pressed")
         self.checkForChlor()
@@ -2128,4 +2123,3 @@ class ConfigWindow(QtWidgets.QDialog):
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
             self.l2WeightMODISACheckBox.setChecked(True)
-
