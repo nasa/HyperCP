@@ -2336,7 +2336,7 @@ class ProcessL2:
                             print(msg)
                             Utilities.writeLogFile(msg)
 
-                            break # End of file reached. Safe to break
+                        break # End of file reached. Safe to break
                     else:
                         endTime = timei + datetime.timedelta(0,interval) # increment for the next bin loop
                         end = i # end of the slice is up to and not including...so -1 is not needed
