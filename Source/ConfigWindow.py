@@ -89,8 +89,6 @@ class ConfigWindow(QtWidgets.QDialog):
             self.calibrationFrameTypeComboBox.setEnabled(False)
         
         elif CurrentSensor.lower() == "dalec":
-            calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
-            self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
             self.calibrationFrameTypeComboBox.addItem("Not Required")
             self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
             self.calibrationFrameTypeComboBox.setEnabled(True)
@@ -126,7 +124,7 @@ class ConfigWindow(QtWidgets.QDialog):
         l1aqcSublabel = QtWidgets.QLabel(" Filter on pitch, roll, yaw, and azimuth", self)
 
         #   SolarTracker
-        self.l1aqcSolarTrackerLabel = QtWidgets.QLabel(" SolarTracker or pySAS", self)
+        self.l1aqcSolarTrackerLabel = QtWidgets.QLabel(" Azimuth Robot (pySAS, SolarTracker, DALEC, SoRAD)", self)
         self.l1aqcSolarTrackerCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1aqcSolarTracker"]) == 1:
             self.l1aqcSolarTrackerCheckBox.setChecked(True)
@@ -1249,18 +1247,17 @@ class ConfigWindow(QtWidgets.QDialog):
         if CurrentSensor.lower() == "seabird":
             comboList = ['ShutterLight','ShutterDark','Not Required']
             self.calibrationFrameTypeComboBox.clear()
-            self.calibrationFrameTypeComboBox.addItems(comboList)
-            # self.DefaultCalRadioButtonSeaBird.setChecked(True)
-            # self.DefaultCalRadioButtonTriOS.setChecked(False)
-            # self.DefaultCalRadioButtonTriOS.setDisabled(True)
+            self.calibrationFrameTypeComboBox.addItems(comboList)            
 
         elif CurrentSensor.lower() == "trios":
             comboList = ['LI','LT','ES']
             self.calibrationFrameTypeComboBox.clear()
             self.calibrationFrameTypeComboBox.addItems(comboList)
-            # self.DefaultCalRadioButtonTriOS.setChecked(True)
-            # self.DefaultCalRadioButtonSeaBird.setChecked(False)
-            # self.DefaultCalRadioButtonSeaBird.setDisabled(True)
+            
+        elif CurrentSensor.lower() == "dalec":
+            comboList = ['not required']
+            self.calibrationFrameTypeComboBox.clear()
+            self.calibrationFrameTypeComboBox.addItems(comboList)
 
     def setCalibrationSettings(self):
         print("CalibrationEditWindow - setCalibrationSettings")
@@ -1382,7 +1379,7 @@ class ConfigWindow(QtWidgets.QDialog):
         sensor = self.sensorTypeComboBox.currentText()
         ConfigFile.settings["SensorType"] = sensor
 
-        if sensor.lower() == 'trios':
+        if sensor.lower() == 'trios' or sensor.lower() == 'dalec':
             self.l1aqcDeglitchCheckBox.setChecked(False)
             self.l1aqcDeglitchCheckBox.setEnabled(False)
             self.l1aqcDeglitchLabel.setEnabled(False)
