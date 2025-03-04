@@ -258,10 +258,10 @@ class Controller:
                     cf.frameType = "Combined"
                     calibrationMap[key] = cf
 
-            if ".tdf" in key:
-                with open(os.path.join(calPath, key), 'rb') as f:                    
-                    cf.read(f)
-                    #print("id:", cf.id)
+            elif '.tdf' in key:
+                if calFiles[key]["enabled"]:
+                    cf.id = key
+                    cf.name = key
                     calibrationMap[key] = cf
 
         return calibrationMap
