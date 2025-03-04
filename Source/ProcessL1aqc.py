@@ -16,7 +16,7 @@ class ProcessL1aqc:
     @staticmethod
     def filterData(group, badTimes):
         ''' Delete flagged records '''
-
+  
         msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
@@ -27,22 +27,21 @@ class ProcessL1aqc:
         msg = f'   Length of dataset prior to removal {startLength} long'
         print(msg)
         Utilities.writeLogFile(msg)
-
         # Delete the records in badTime ranges from each dataset in the group
         finalCount = 0
         originalLength = len(timeStamp)
         for dateTime in badTimes:
             # Need to reinitialize for each loop
+            
             startLength = len(timeStamp)
             newTimeStamp = []
-
             start = dateTime[0]
             stop = dateTime[1]
 
             # msg = f'Eliminate data between: {dateTime}'
             # print(msg)
             # Utilities.writeLogFile(msg)
-
+         
             if startLength > 0:
                 rowsToDelete = []
                 for i in range(startLength):
@@ -57,6 +56,7 @@ class ProcessL1aqc:
                 print(msg)
                 Utilities.writeLogFile(msg)
             timeStamp = newTimeStamp.copy()
+ 
 
         msg = f'   Length of records removed from dataset: {finalCount}'
         print(msg)
@@ -193,7 +193,7 @@ class ProcessL1aqc:
      
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
-
+      
         # 2021-04-09: Include ANCILLARY_METADATA in all datasets, regardless of whether they are SOLARTRACKER or not
         # or if they have an ancillary file or not
         compass = None
@@ -829,7 +829,7 @@ class ProcessL1aqc:
         ancGroup.datasets["TIMETAG2"].data = np.array(ancTimeTag2, dtype=[('NONE', '<f8')])
         ancGroup.addDataset("DATETAG")
         ancGroup.datasets["DATETAG"].data = np.array(ancDateTag, dtype=[('NONE', '<f8')])
-
+       
         # Add datetime to Anc group
         dateTime = ancGroup.addDataset("DATETIME")
         timeData = ancGroup.getDataset("TIMETAG2").data["NONE"].tolist()
@@ -951,9 +951,10 @@ class ProcessL1aqc:
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-
+   
         # For each dataset in each group, find the badTimes to remove and delete those rows
         # Test: Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data
+      #  breakpoint()
         if len(badTimes) > 0:
             msg = "Eliminate combined filtered data from datasets.*****************************"
             print(msg)
@@ -964,7 +965,7 @@ class ProcessL1aqc:
                 # Test: Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data
                 if gp.id != "SOLARTRACKER_STATUS" and gp.id != "ANCILLARY_METADATA":
                     fractionRemoved = ProcessL1aqc.filterData(gp, badTimes)
-
+        
                     # Now test whether the overlap has eliminated all radiometric data
                     if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
                         msg = "Radiometric data >98'%' eliminated. Aborting."
@@ -1014,5 +1015,5 @@ class ProcessL1aqc:
                     del gp.datasets["DATETIME"]
                 if 'DATETIME_ADJUSTED' in gp.datasets:
                     del gp.datasets["DATETIME_ADJUSTED"]
-  
+    
         return node
