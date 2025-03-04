@@ -486,6 +486,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         ltXstd = xSlice['ltSTD_RAW']
 
         if rhoScalar is not None:  # make rho a constant array if scalar
+            breakpoint()
             rho = np.ones(len(list(esXstd.keys()))) * rhoScalar
             rhoUNC = self.interp_common_wvls(np.array(rhoDelta, dtype=float),
                                              waveSubset,

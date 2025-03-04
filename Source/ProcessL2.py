@@ -2477,6 +2477,7 @@ class ProcessL2:
             gp.attributes['GLINT_CORR'] = 'Mobley 1999'
         if ConfigFile.settings['bL2PerformNIRCorrection']:
             if ConfigFile.settings['bL2SimpleNIRCorrection']:
+                
                 gp.attributes['NIR_RESID_CORR'] = 'Mueller and Austin 1995'
             if ConfigFile.settings['bL2SimSpecNIRCorrection']:
                 gp.attributes['NIR_RESID_CORR'] = 'Ruddick et al. 2005/2006'
