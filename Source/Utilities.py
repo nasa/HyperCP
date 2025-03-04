@@ -2502,7 +2502,7 @@ class Utilities:
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
                 data = node.getGroup(sensor).getDataset(sensor)
-
+            print(sensor)
             # Retrieve hyper-spectral wavelengths from dataset
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
 
