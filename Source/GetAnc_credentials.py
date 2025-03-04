@@ -59,7 +59,7 @@ def credentialsSpec(credentialsID):
     out['credentialsFile'] = os.path.join(os.path.expanduser('~'), out['credentials_filename'])
     out['obtainCredsString'] = 'Click here to obtain these credentials'
     out['storeCredsString'] = "Store %s credentials in your home directory." % credentialsID.replace('_', ' ')
-
+    
     return out
 
 # Erase already existing user credentials

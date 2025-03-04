@@ -79,7 +79,7 @@ class GetAnc_ecmwf:
         :param pathOut: full path to output, a netCDF file with the requested variables.
         :return:
         '''
-
+        
         if os.path.exists(pathOut):
             pass
         else:
@@ -95,6 +95,7 @@ class GetAnc_ecmwf:
                 print('CAMS dataset not available before 2015, skipping')
             else:
                 try:
+                   
                     c = cdsapi.Client(timeout=5, url=url, key=key)
                     c.retrieve(
                         'cams-global-atmospheric-composition-forecasts',
@@ -158,7 +159,7 @@ class GetAnc_ecmwf:
         latEff, lonEff, latLonTag, dateTagEff, timeStampEff = GetAnc_ecmwf.ECMWF_latLonTimeTags(lat, lon, timeStamp, latRes, lonRes, timeResHours)
 
         pathOut = os.path.join(pathCAMS, 'CAMS_%s_%s_%s.nc' % (latLonTag, dateTagEff.replace('-',''), timeStampEff.replace(':','')))
-
+  
         GetAnc_ecmwf.CAMS_download_ensembles(latEff, lonEff, dateTagEff, timeStampEff, CAMS_variables, pathOut)
        
         try:
