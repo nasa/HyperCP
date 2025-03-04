@@ -29,7 +29,7 @@ def load():
     logger.debug('Load constants')
     global db, quads, skyrad0, sunrad0, sdb, vdb, rad_boa_sca, rad_boa_vec
 
-    db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_db.mat')
+    db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_db_expanded.mat')
     with xr.open_dataset(db_path, engine='netcdf4') as ds:
         skyrad0 = ds['skyrad0'].to_numpy().T
         sunrad0 = ds['sunrad0'].to_numpy().T

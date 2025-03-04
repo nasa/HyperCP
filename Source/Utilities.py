@@ -17,6 +17,7 @@ from scipy.interpolate import splev, splrep
 import scipy as sp
 import pandas as pd
 from pandas.plotting import register_matplotlib_converters
+import hashlib
 
 from Source import PACKAGE_DIR as dirPath
 from Source.SB_support import readSB
@@ -34,13 +35,63 @@ class Utilities:
     """A catchall class for HyperCP utilities"""
 
     @staticmethod
-    def downloadZhangDB(fpfZhang, force=False):
-        infoText = "  NEW INSTALLATION\nGlint database required.\nClick OK to download.\n\nWARNING: THIS IS A 2.5 GB DOWNLOAD.\n\n\
+    def downloadZhangLUT(fpfZhangLUT, force=False):
+        infoText = "  NEW INSTALLATION\nGlint LUT required.\nClick OK to download.\n\nTHIS IS A 129 MB DOWNLOAD.\n\n\
         If canceled, Zhang et al. (2017) glint correction will fail. If download fails, a link and instructions will be provided in the terminal."
         YNReply = True if force else Utilities.YNWindow("Database Download", infoText) == QMessageBox.Ok
         if YNReply:
 
-            url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db.mat"
+            url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_LUT.nc"
+            download_session = requests.Session()
+            try:
+                file_size = int(
+                    download_session.head(url).headers["Content-length"]
+                )
+                file_size_read = round(int(file_size) / (1024**3), 2)
+                print(
+                    f"##### Downloading {file_size_read}GB data file. ##### "
+                )
+                download_file = download_session.get(url, stream=True)
+                download_file.raise_for_status()
+            except requests.exceptions.HTTPError as err:
+                print("Error in download_file:", err)
+            if download_file.ok:
+                progress_bar = tqdm(
+                    total=file_size, unit="iB", unit_scale=True, unit_divisor=1024
+                )
+                with open(fpfZhangLUT, "wb") as f:
+                    for chunk in download_file.iter_content(chunk_size=1024):
+                        progress_bar.update(len(chunk))
+                        f.write(chunk)
+                progress_bar.close()
+
+                # Check the hash of the file
+                print('Checking file...')
+                thisHash = Utilities.md5(fpfZhangLUT)
+                if thisHash == '1a33ed647d9c7359b0800915bd0229c7':
+                    print('File checks out.')
+                else:
+                    print(f'Error in downloaded file {fpfZhangLUT}. Recommend you delete the downloaded file and try again.')
+                    print(
+                    f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
+                    f" {dirPath}/Data directory."
+                )
+
+            else:
+                print(
+                    "Failed to download core databases."
+                    f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
+                    f" {dirPath}/Data directory."
+                )
+
+    @staticmethod
+    def downloadZhangDB(fpfZhang, force=False):
+        infoText = "  NEW INSTALLATION\nGlint database required.\nClick OK to download.\n\nWARNING: THIS IS A 2.8 GB DOWNLOAD.\n\n\
+        If canceled, Zhang et al. (2017) glint correction will fail. If download fails, a link and instructions will be provided in the terminal."
+        YNReply = True if force else Utilities.YNWindow("Database Download", infoText) == QMessageBox.Ok
+        if YNReply:
+
+            url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_db_expanded.mat"
             download_session = requests.Session()
             try:
                 file_size = int(
@@ -63,12 +114,33 @@ class Utilities:
                         progress_bar.update(len(chunk))
                         f.write(chunk)
                 progress_bar.close()
+
+                # Check the hash of the file
+                print('Checking file...')
+                thisHash = Utilities.md5(fpfZhang)
+                if thisHash == 'e4c155f8ce92dcfa012a450a56b64e28':
+                    print('File checks out.')
+                else:
+                    print(f'Error in downloaded file {fpfZhang}. Recommend you delete the downloaded file and try again.')
+                    print(
+                    f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
+                    f" {dirPath}/Data directory."
+                )
+
             else:
                 print(
                     "Failed to download core databases."
                     f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
                     f" {dirPath}/Data directory."
                 )
+    
+    @staticmethod
+    def md5(fname):
+        hash_md5 = hashlib.md5()
+        with open(fname, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return hash_md5.hexdigest()                
 
     @staticmethod
     def checkInputFiles(inFilePath, level="L1A+"):
