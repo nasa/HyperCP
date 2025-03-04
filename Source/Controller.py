@@ -854,7 +854,7 @@ class Controller:
 
             if L1A_complete:
                 inFileName = os.path.split(fp)[1]
-                if ConfigFile.settings["SensorType"].lower() == "trios":
+                if ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad": 
                     # For TriOS, need to parse the L1A names, not L0
                     fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'.hdf')
                 else:
