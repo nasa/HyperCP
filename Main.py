@@ -661,9 +661,9 @@ class Command:
             sys.exit()
     
         # Update the SeaBASS .hdr file in case changes were made to the configuration without using the GUI
-        SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings['seaBASSHeaderFileName'])
-        SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config1')
-        SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings['seaBASSHeaderFileName'])
+        SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
+        SeaBASSHeaderWindow.configUpdateButtonPressed(self, "config1")
+        SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
 
         if processMultiLevel:
             if ConfigFile.settings["SensorType"].lower() == "trios" and to_level == "L1A":
