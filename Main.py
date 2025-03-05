@@ -56,9 +56,14 @@ class Window(QtWidgets.QWidget):
                 os.makedirs(dirPath)
 
         # Confirm that core data files are in place. Download if necessary.
-        fpfZhang = os.path.join(CODE_HOME, "Data", "Zhang_rho_db.mat")
+        fpfZhang = os.path.join(CODE_HOME, "Data", "Zhang_rho_db_expanded.mat")
         if not os.path.exists(fpfZhang):
             Utilities.downloadZhangDB(fpfZhang)
+
+        # Confirm that core data files are in place. Download if necessary.
+        fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Zhang_rho_LUT.nc")
+        if not os.path.exists(fpfZhangLUT):
+            Utilities.downloadZhangLUT(fpfZhangLUT)
 
         self.initUI()
 
