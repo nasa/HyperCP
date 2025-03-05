@@ -473,18 +473,18 @@ class ProcessL1aqc:
             for group in node.groups:
                 if group.id.startswith("SOLARTRACKER") and group.id != 'SOLARTRACKER_STATUS':
                     gp = group
-                    timeStamp = gp.getDataset("DATETIME").data
-                    if "PITCH" in gp.datasets:
+                    if "PITCH" in gp.datasets and "ROLL" in gp.datasets:
+                        timeStamp = gp.getDataset("DATETIME").data
                         pitch = gp.getDataset("PITCH").data["SAS"]
-                    if "ROLL" in gp.datasets:
                         roll = gp.getDataset("ROLL").data["SAS"]
+                        break
                 if group.id.startswith('SATTHS'): # For SATTHS without SolarTracker (i.e. with pySAS)
                     gp = group
-                    timeStamp = gp.getDataset("DATETIME").data
-                    if "PITCH" in gp.datasets:
+                    if "PITCH" in gp.datasets and "ROLL" in gp.datasets:
+                        timeStamp = gp.getDataset("DATETIME").data
                         pitch = gp.getDataset("PITCH").data["NONE"]
-                    if "ROLL" in gp.datasets:
                         roll = gp.getDataset("ROLL").data["NONE"]
+                        break
             # ...and failing that, try to pull from ancillary data
             if pitch is None or roll is None:
                 if "PITCH" in ancData.columns:
