@@ -8,6 +8,7 @@ from Source.Weight_RSR import Weight_RSR
 # zhangWrapper
 import collections
 from Source import ZhangRho, PATH_TO_DATA
+from Source.RhoCorrections import RhoCorrections
 
 # M99 Rho
 from Source.HDFRoot import HDFRoot
@@ -353,7 +354,7 @@ class Propagate:
 
         :return: Zhang17 method rho uncertainty
         """
-        return self.MCP.propagate_random(self.zhangWrapper,
+        return self.MCP.propagate_random(RhoCorrections.read_Z17_LUT, self.zhangWrapper,
                                          mean_vals,
                                          uncertainties
                                          )
