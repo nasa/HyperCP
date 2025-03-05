@@ -1662,10 +1662,9 @@ class HyperOCR(BaseInstrument):
                 ## ADERU: SIXS results now match the length of input data
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
-                solar_zenith = np.mean(res_sixS['solar_zenith'], axis=0)
-                direct_ratio = np.mean(res_sixS['direct_ratio'][:, 2:], axis=0)
-                direct_ratio = self.interp_common_wvls(np.array(direct_ratio, float), res_sixS['wavelengths'],
-                                                       radcal_wvl, return_as_dict=False)
+                solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
+                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
+                direct_ratio = self.interp_common_wvls(np.array(direct_ratio, float), res_py6s['wavelengths'], radcal_wvl)
 
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith,
                                                     np.asarray([0.05 for i in range(np.size(solar_zenith))]),
@@ -2152,9 +2151,9 @@ class Trios(BaseInstrument):
                 ## ADERU: SIXS results now match the length of input data
                 ## I arbitrary select the first value here (index 0). If I understand correctly
                 ## this will need to read the stored value in the py6S group instead of recomputing it.
-                solar_zenith = np.mean(res_sixS['solar_zenith'], axis=0)
-                direct_ratio = np.mean(res_sixS['direct_ratio'][:, 2:], axis=0)
-                direct_ratio = self.interp_common_wvls(direct_ratio, res_sixS['wavelengths'], radcal_wvl)
+                solar_zenith = np.mean(res_py6s['solar_zenith'], axis=0)
+                direct_ratio = np.mean(res_py6s['direct_ratio'][:, 2:], axis=0)
+                direct_ratio = self.interp_common_wvls(direct_ratio, res_py6s['wavelengths'], radcal_wvl)
                 sample_sol_zen = cm.generate_sample(mDraws, solar_zenith, 0.05, "rand")
                 sample_dir_rat = cm.generate_sample(mDraws, direct_ratio, 0.08*direct_ratio, "syst")
                 sample_cos_corr = prop.run_samples(
