@@ -527,28 +527,14 @@ class Propagate:
         return rhoScalar
 
     @staticmethod
-    def zhangWrapper(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
+    def zhangWrapper(windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, waveBands):
         """ Wrapper for Zhang17 rho calculation to be called by punpy """
         # === environmental conditions during experiment ===
-        env = collections.OrderedDict()
-        # Build in guardrails limiting to database bounds (DAA 2023-11-24)
-        env['wind'] = windSpeedMean if windSpeedMean <= 15 else 15
-        env['wind'] = env['wind'] if env['wind'] >= 0 else 0
-        # clip AOD to 0.2 to ensure no error in Z17, potential underestimation of uncertainty however
-        env['od'] = AOD if AOD <= 0.2 else 0.2
-        env['od'] = env['od'] if env['od'] >= 0 else 0
-        env['C'] = cloud  # Not used
-        env['zen_sun'] = sza if sza <= 60 else 60
-        env['zen_sun'] = env['zen_sun'] if env['zen_sun'] >= 0 else 0
-        # Appears these are only use for Fresnel and are analytical and not inherently limited
-        env['wtem'] = wTemp
-        env['sal'] = sal
+        env = {'wind': windSpeedMean, 'od': AOD, 'C': None, 'zen_sun': sza, 'wtem': wTemp, 'sal': sal}
 
         # === The sensor ===
-        sensor = collections.OrderedDict()
         # Current database is not limited near these values
-        sensor['ang'] = [40, 180 - abs(relAz)]  # relAz should vary from about 90-135
-        sensor['wv'] = waveBands
+        sensor = {'ang': np.array([sva, 180 - relAz]), 'wv': np.array(waveBands)}
 
         rho = ZhangRho.get_sky_sun_rho(env, sensor)['rho']
 

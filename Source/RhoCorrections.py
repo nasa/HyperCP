@@ -74,7 +74,7 @@ class RhoCorrections:
 
             SVA = ConfigFile.settings['fL2SVA']
             # zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
-            zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang, indx=f"ws={windSpeedMean}")
+            zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
             # this is the method to read zhang from the LUT. It is commented out pending the sensitivity study and
             # correction to the interpolation errors that have been noted.
             # zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang, indx=1)
@@ -216,9 +216,9 @@ class RhoCorrections:
         sensor = {'ang': np.array([sva, 180 - relAz]), 'wv': np.array(waveBands)}
 
         # # define uncertainties and create variable list for punpy. Inputs cannot be ordered dictionaries
-        varlist = [windSpeedMean, AOD, 0.0, sza, wTemp, sal, relAz, np.array(waveBands)]
-        ulist = [2.0, 0.01, 0.0, 0.5, 2, 0.5, 3, None]
-        # TODO: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
+        varlist = [windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, np.array(waveBands)]
+        ulist = [2.0, 0.01, 0.5, 2, 0.5, 3, 0.0, None]
+        # todo: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
 
         tic = time.process_time()
         rhoVector = get_sky_sun_rho(env, sensor, round4cache=True)['rho']
@@ -257,54 +257,36 @@ class RhoCorrections:
         z17_lut = xr.open_dataset(db_path, engine='netcdf4')
 
         import scipy.interpolate as spin
+        # import time
+        # timings = []
 
-        # used to test: z17_lut.Glint.values[np.isnan(z17_lut.Glint.values)]
+        if ws < 0:
+            ws = 0  # make sure negatives are not passed to interp - working to add option to comet maths
+        if aod < 0:
+            aod = 0
+        if wt > 20:
+            wt = 20
+        if rel_az > 140:
+            rel_az = 140
 
-        # interp missing vals out of LUT.
-        # Glint = z17_lut.Glint.interpolate_na(dim="wind", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="aot", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="sza", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="relAz", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="sal", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="SST", method='cubic', fill_value='extrapolate')
-        # z17_lut.Glint.values = Glint.values
-        # z17_lut.to_netcdf(os.path.join("z17_lut_no_nan_cubic.nc"))
+        LUT = z17_lut.sel(vzen=sva, method='nearest')
+        LUT = LUT.interp(wind=[0, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15], kwargs={"fill_value": "extrapolate"})
 
-        # work out the speeds!
-        import time
+        # for i, method in enumerate(['pchip', 'cubic']]):
+            # t0 = time.time()
 
-        t0 = time.time()
-        methods = ['cubic', 'linear', 'slinear', 'pchip']
-        # used to test: z17_lut.Glint.values[np.isnan(z17_lut.Glint.values)]
-
-        # interp missing vals out of LUT.
-        # Glint = z17_lut.Glint.interpolate_na(dim="wind", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="aot", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="sza", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="relAz", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="sal", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="SST", method='cubic', fill_value='extrapolate')
-        # z17_lut.Glint.values = Glint.values
-        # z17_lut.to_netcdf(os.path.join("z17_lut_no_nan_cubic.nc"))
-
-        # work out the speeds!
-        import time
-
-        t0 = time.time()
-        methods = ['cubic', 'linear', 'slinear', 'pchip']
-        for i, method in enumerate(methods):
-            zhang_L = spin.interpn(
+        try:
+            zhang_interp = spin.interpn(
                 points=(
-                    z17_lut.wind.values,
-                    z17_lut.aot.values,
-                    z17_lut.aot.values,
-                    z17_lut.sza.values,
-                    z17_lut.relAz.values,
-                    z17_lut.sal.values,
-                    z17_lut.SST.values,
-                    z17_lut.wavelength.values
+                    LUT.wind.values,
+                    LUT.aot.values,
+                    LUT.sza.values,
+                    LUT.relAz.values,
+                    LUT.sal.values,
+                    LUT.SST.values,
+                    LUT.wavelength.values
                 ),
-                values=z17_lut.Glint.values,
+                values=LUT.Glint.values,
                 xi=(
                     ws,
                     aod,
@@ -315,12 +297,12 @@ class RhoCorrections:
                     wt,
                     nwb
                 ),
-                method=method,
+                method="cubic",  # "pchip",
+                fill_value=True,  # None should extrapolate according to scipy docs
             )
-
-            print(time.time()-t0)
-
-            print(time.time()-t0)
+        except ValueError as err:
+            print(err)
+            # timings.append(time.time()-t0)
 
             plt.figure("LUT-Interp")
             plt.plot(nwb, zhang_L, label=f'scipy interpn {method}', linestyle='--')  # color='r'
@@ -344,4 +326,4 @@ class RhoCorrections:
 
         # using numpy interp in the end for wavelength as per Tom's suggestion. Not important since wavebands
         # match LUT in test case (I used Pysas wavebands to generate LUT).
-        return zhang_L
+        return zhang_interp
