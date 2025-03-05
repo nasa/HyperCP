@@ -48,15 +48,28 @@ class GetAnc_ecmwf:
                                     str(int(np.sign(latEff))).replace('-1', 'S').replace('1', 'N'),
                                     np.abs(latEff * (10 ** latSigFigures)))
 
-        # Obtain rounded date and time considering the temporal resolution of the dataset)
-        epoch_time = timeStamp.timestamp()
-        # epoch_time = datetime.datetime.strptime(timeStamp, '%Y-%m-%dT%H:%M:%S').timestamp()
+        # Convert to a datetime object
+        # NOTE: This expects a string that does not match the parameter description above, 
+        # i.e., yyyy-mm-ddThh:MM:ss:HH where HH is the hours of UTC offset
+        # epoch_time = datetime.datetime.strptime(':'.join(timeStamp.split(':')[:-2]), '%Y-%m-%dT%H:%M:%S').timestamp()
+        try:
+            epoch_time = datetime.datetime.strptime(timeStamp, '%Y-%m-%dT%H:%M:%S').timestamp()
+        except ValueError as err:
+            # ask for forgiveness not permission
+            if len(err.args) > 0 and err.args[0].startswith('unconverted data remains: '):
+                # since the error message includes the extra chatacters we can use it's length to determine how much to remove from timestamp
+                line = timeStamp[:-(len(err.args[0]) - 26)]
+                epoch_time = datetime.datetime.strptime(line, '%Y-%m-%dT%H:%M:%S')
+            else:
+                print(err)
+                raise
+
         timeResSecs = 3600 * timeResHours
         rounded_epoch_time = round(epoch_time / timeResSecs) * timeResSecs
-        rounded_timestamp = datetime.datetime.fromtimestamp(rounded_epoch_time)
-        dateStrRounded, timeStrRounded = rounded_timestamp.strftime('%Y-%m-%dT%H:%M:%S').split('T')
+        rounded_timestamp = datetime.datetime.fromtimestamp(rounded_epoch_time).strftime('%Y-%m-%dT%H:%M:%S')
+        dateTagEff, timeStampEff = rounded_timestamp.split('T')
 
-        return latEff,lonEff,latLonTag,dateStrRounded,timeStrRounded
+        return latEff,lonEff,latLonTag,dateTagEff,timeStampEff
 
     @staticmethod
     def CAMS_download_ensembles(lat: float, lon: float, dateStrRounded: str, timeStrRounded: str, CAMS_variables: list, pathOut: str) -> None:
@@ -197,7 +210,7 @@ class GetAnc_ecmwf:
             dateTagNew = Utilities.dateTagToDateTime(dateTag)
             timeStamp = Utilities.timeTag2ToDateTime(dateTagNew,latTime[index])
 
-            ancillary = GetAnc_ecmwf.get_ancillary_main(lat[index], lon[index], timeStamp, ancPath)
+            ancillary = GetAnc_ecmwf.get_ancillary_main(lat[index], lon[index], lat_timeStamp, ancPath)
 
             # position retrieval index has been confirmed manually in SeaDAS
             uWind = ancillary['10m_u_component_of_wind']['value']
