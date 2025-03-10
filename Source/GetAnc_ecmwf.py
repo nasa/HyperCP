@@ -84,7 +84,7 @@ class GetAnc_ecmwf:
             year = dateStrRounded.split('-')[0]
             hour = timeStrRounded.split(':')[0]
 
-            hourForecast = '%02d' % (int(hour) // 12)
+            hourForecast = '%02d' % ((int(hour) // 12) * 12)
             leadtime     = str(int(hour) % 12)
 
             if int(year) < 2015:
