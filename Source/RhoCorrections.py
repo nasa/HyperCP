@@ -73,68 +73,11 @@ class RhoCorrections:
             # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
 
             SVA = ConfigFile.settings['fL2SVA']
+            # OLD ZHANG METHOD FOR TESTING/REFERENCE
             # zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
             zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
             # this is the method to read zhang from the LUT. It is commented out pending the sensitivity study and
             # correction to the interpolation errors that have been noted.
-            # zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang, indx=1)
-            # zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang, indx=1)
-
-            # wind speed was set to 1 for the aot test
-            # 1, 0.1, None, 40, wTemp, sal, 105, newWaveBands
-
-            # windspeed = np.array([1])  # , 2, 3, 4])  # 7
-            # AOT = np.array([0, 0.05, 0.1, 0.2, 0.5])  # 5
-            # SZA = np.arange(10, 55, 5)  # 12  # expanded database would go to 65
-            # RELAZ = np.arange(80, 145, 5)  # 13
-            # SAL = np.arange(0, 45, 5)  # 10
-            # SST = np.arange(0, 35, 5)  # 8
-
-            # for wtemp in [10, 12, 15, 17.5, 20.2, 25.6, 28, 32.1, 35]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, 0.1, cloud, 40, wtemp, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, 0.1, 40, wtemp, 35, 105, newWaveBands, z, indx=f"water_temp={wtemp}")
-            # wind speed was set to 1 for the aot test
-            # 1, 0.1, None, 40, wTemp, sal, 105, newWaveBands
-
-            # windspeed = np.array([1])  # , 2, 3, 4])  # 7
-            # AOT = np.array([0, 0.05, 0.1, 0.2, 0.5])  # 5
-            # SZA = np.arange(10, 55, 5)  # 12  # expanded database would go to 65
-            # RELAZ = np.arange(80, 145, 5)  # 13
-            # SAL = np.arange(0, 45, 5)  # 10
-            # SST = np.arange(0, 35, 5)  # 8
-
-            # for wtemp in [10, 12, 15, 17.5, 20.2, 25.6, 28, 32.1, 35]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, 0.1, cloud, 40, wtemp, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, 0.1, 40, wtemp, 35, 105, newWaveBands, z, indx=f"water_temp={wtemp}")
-
-            # for salt in [0, 5, 12.5, 17, 26, 30, 32.5, 38.7, 40, 42.25, 45]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, 0.1, cloud, 40, 26, salt, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, 0.1, 40, 26, salt, 105, newWaveBands, z, indx=f"salinity={salt}")
-            # for salt in [0, 5, 12.5, 17, 26, 30, 32.5, 38.7, 40, 42.25, 45]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, 0.1, cloud, 40, 26, salt, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, 0.1, 40, 26, salt, 105, newWaveBands, z, indx=f"salinity={salt}")
-
-            # for wind in [1, 2, 3, 4, 5, 6, 7, 8 ,9, 10]:
-            #     z, _ = RhoCorrections.ZhangCorr(wind, 0.1, cloud, 40, 26, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(wind, 0.1, 40, 26, 35, 105, newWaveBands, z, indx=f"wind={wind}")
-            # for wind in [1, 2, 3, 4, 5, 6, 7, 8 ,9, 10]:
-            #     z, _ = RhoCorrections.ZhangCorr(wind, 0.1, cloud, 40, 26, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(wind, 0.1, 40, 26, 35, 105, newWaveBands, z, indx=f"wind={wind}")
-
-            # for a in [0, 0.025, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, a, cloud, 40, 26, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, a, 40, 26, 35, 105, newWaveBands, z, indx=f"aot={a}")
-            # for a in [0, 0.025, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, a, cloud, 40, 26, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, a, 40, 26, 35, 105, newWaveBands, z, indx=f"aot={a}")
-
-            # for rel in [90, 107, 112, 117, 121, 126, 133, 137, 140]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, 0.1, cloud, 40, 26, 35, rel, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, 0.1, 40, 26, 35, rel, newWaveBands, z, indx=f"relaz={rel}")
-
-            # for s in [41, 45, 47, 50, 52, 55]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, 0.1, cloud, s, 26, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, 0.1, s, 26, 35, 105, newWaveBands, z, indx=f"sza={s}")
 
             # |M99 - Z17| is an estimation of model error, added to MC M99 uncertainty in quadrature to give combined
             # uncertainty
@@ -227,6 +170,7 @@ class RhoCorrections:
         Utilities.writeLogFile(msg)
 
         # Presumably obsolete (Ashley)? -DAA
+        # No I'm only changing how the zhang uncertainties work - this all happes in uncertianty_analysis.py - Ashley
         # It will be once the LUT  is finished, right now the Z17 without a propagate object is important for the
         # Monte Carlo runs
         if Propagate is None:
@@ -292,6 +236,6 @@ class RhoCorrections:
                 method="cubic",
             )
         except ValueError as err:
-            print(err)
+            print(err)  # will implement better error handling, in place until Z17 LUT is updated with all indexes
 
         return zhang_interp

@@ -354,7 +354,8 @@ class Propagate:
 
         :return: Zhang17 method rho uncertainty
         """
-        return self.MCP.propagate_random(RhoCorrections.read_Z17_LUT, self.zhangWrapper,
+        # it's quite amusing how small a change is required to completely revolutionise the Zhang uncertainty code isn't it? - Ashley
+        return self.MCP.propagate_random(RhoCorrections.read_Z17_LUT, # self.zhangWrapper,
                                          mean_vals,
                                          uncertainties
                                          )
