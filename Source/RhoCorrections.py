@@ -193,7 +193,7 @@ class RhoCorrections:
 
         """
 
-        db_path = os.path.join(PATH_TO_DATA, 'Z17_LUT.nc')
+        db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_LUT.nc')
 
         z17_lut = xr.open_dataset(db_path, engine='netcdf4')
 
@@ -226,7 +226,6 @@ class RhoCorrections:
                 xi=(
                     ws,
                     aod,
-                    aod,
                     sza,
                     rel_az,
                     sal,
@@ -237,5 +236,6 @@ class RhoCorrections:
             )
         except ValueError as err:
             print(err)  # will implement better error handling, in place until Z17 LUT is updated with all indexes
-
-        return zhang_interp
+            return 0
+        else:
+            return zhang_interp
