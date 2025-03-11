@@ -1048,19 +1048,19 @@ class Utilities:
         timeTagNew = darkGroup.addDataset('TIMETAG2_ADJUSTED')
         dateTimeNew = darkGroup.addDataset('DATETIME_ADJUSTED')
 
-        dateTag = []
-        timeTag = []
-        dateTime = []
-        for darkTime in darkDatetime:
-            iLight = Utilities.find_nearest(lightDatetime,darkTime)                 
+        is_sorted = lambda x: np.all(x[:-1] <= x[1:])
+        if is_sorted(lightDatetime) and is_sorted(darkDatetime):
+            iLight = np.searchsorted(lightDatetime, darkDatetime, side="left")
+            iLight[iLight == len(lightDatetime)] = len(lightDatetime) - 1  # Edge case
+        else:
+            iLight = np.empty(len(darkDatetime), dtype=int)
+            lightDatetimeArray = np.asarray(lightDatetime)
+            for i, darkTime in enumerate(darkDatetime):
+                iLight[i] = (np.abs(lightDatetimeArray - darkTime)).argmin()
 
-            dateTag.append(lightGroup.datasets['DATETAG'].data[iLight])
-            timeTag.append(lightGroup.datasets['TIMETAG2'].data[iLight])
-            dateTime.append(lightGroup.datasets['DATETIME'].data[iLight])
-
-        dateTagNew.data = dateTag
-        timeTagNew.data = timeTag
-        dateTimeNew.data = dateTime
+        dateTagNew.data = lightGroup.datasets['DATETAG'].data[iLight]
+        timeTagNew.data = lightGroup.datasets['TIMETAG2'].data[iLight]
+        dateTimeNew.data = np.array(lightGroup.datasets['DATETIME'].data)[iLight]
 
         return darkGroup
 

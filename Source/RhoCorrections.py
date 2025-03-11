@@ -74,68 +74,11 @@ class RhoCorrections:
             # TriOS_NOTRACKER. We need to add these specra back into rhoDelta to prevent broadcasting errors later
 
             SVA = ConfigFile.settings['fL2SVA']
+            # OLD ZHANG METHOD FOR TESTING/REFERENCE
             # zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
-            zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang, indx=f"ws={windSpeedMean}")
+            zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
             # this is the method to read zhang from the LUT. It is commented out pending the sensitivity study and
             # correction to the interpolation errors that have been noted.
-            # zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang, indx=1)
-            # zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang, indx=1)
-
-            # wind speed was set to 1 for the aot test
-            # 1, 0.1, None, 40, wTemp, sal, 105, newWaveBands
-
-            # windspeed = np.array([1])  # , 2, 3, 4])  # 7
-            # AOT = np.array([0, 0.05, 0.1, 0.2, 0.5])  # 5
-            # SZA = np.arange(10, 55, 5)  # 12  # expanded database would go to 65
-            # RELAZ = np.arange(80, 145, 5)  # 13
-            # SAL = np.arange(0, 45, 5)  # 10
-            # SST = np.arange(0, 35, 5)  # 8
-
-            # for wtemp in [10, 12, 15, 17.5, 20.2, 25.6, 28, 32.1, 35]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, 0.1, cloud, 40, wtemp, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, 0.1, 40, wtemp, 35, 105, newWaveBands, z, indx=f"water_temp={wtemp}")
-            # wind speed was set to 1 for the aot test
-            # 1, 0.1, None, 40, wTemp, sal, 105, newWaveBands
-
-            # windspeed = np.array([1])  # , 2, 3, 4])  # 7
-            # AOT = np.array([0, 0.05, 0.1, 0.2, 0.5])  # 5
-            # SZA = np.arange(10, 55, 5)  # 12  # expanded database would go to 65
-            # RELAZ = np.arange(80, 145, 5)  # 13
-            # SAL = np.arange(0, 45, 5)  # 10
-            # SST = np.arange(0, 35, 5)  # 8
-
-            # for wtemp in [10, 12, 15, 17.5, 20.2, 25.6, 28, 32.1, 35]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, 0.1, cloud, 40, wtemp, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, 0.1, 40, wtemp, 35, 105, newWaveBands, z, indx=f"water_temp={wtemp}")
-
-            # for salt in [0, 5, 12.5, 17, 26, 30, 32.5, 38.7, 40, 42.25, 45]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, 0.1, cloud, 40, 26, salt, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, 0.1, 40, 26, salt, 105, newWaveBands, z, indx=f"salinity={salt}")
-            # for salt in [0, 5, 12.5, 17, 26, 30, 32.5, 38.7, 40, 42.25, 45]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, 0.1, cloud, 40, 26, salt, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, 0.1, 40, 26, salt, 105, newWaveBands, z, indx=f"salinity={salt}")
-
-            # for wind in [1, 2, 3, 4, 5, 6, 7, 8 ,9, 10]:
-            #     z, _ = RhoCorrections.ZhangCorr(wind, 0.1, cloud, 40, 26, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(wind, 0.1, 40, 26, 35, 105, newWaveBands, z, indx=f"wind={wind}")
-            # for wind in [1, 2, 3, 4, 5, 6, 7, 8 ,9, 10]:
-            #     z, _ = RhoCorrections.ZhangCorr(wind, 0.1, cloud, 40, 26, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(wind, 0.1, 40, 26, 35, 105, newWaveBands, z, indx=f"wind={wind}")
-
-            # for a in [0, 0.025, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, a, cloud, 40, 26, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, a, 40, 26, 35, 105, newWaveBands, z, indx=f"aot={a}")
-            # for a in [0, 0.025, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, a, cloud, 40, 26, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, a, 40, 26, 35, 105, newWaveBands, z, indx=f"aot={a}")
-
-            # for rel in [90, 107, 112, 117, 121, 126, 133, 137, 140]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, 0.1, cloud, 40, 26, 35, rel, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, 0.1, 40, 26, 35, rel, newWaveBands, z, indx=f"relaz={rel}")
-
-            # for s in [41, 45, 47, 50, 52, 55]:
-            #     z, _ = RhoCorrections.ZhangCorr(1, 0.1, cloud, s, 26, 35, 105, newWaveBands)
-            #     RhoCorrections.read_Z17_LUT(1, 0.1, s, 26, 35, 105, newWaveBands, z, indx=f"sza={s}")
 
             # |M99 - Z17| is an estimation of model error, added to MC M99 uncertainty in quadrature to give combined
             # uncertainty
@@ -217,9 +160,9 @@ class RhoCorrections:
         sensor = {'ang': np.array([sva, 180 - relAz]), 'wv': np.array(waveBands)}
 
         # # define uncertainties and create variable list for punpy. Inputs cannot be ordered dictionaries
-        varlist = [windSpeedMean, AOD, 0.0, sza, wTemp, sal, relAz, np.array(waveBands)]
-        ulist = [2.0, 0.01, 0.0, 0.5, 2, 0.5, 3, None]
-        # TODO: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
+        varlist = [windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, np.array(waveBands)]
+        ulist = [2.0, 0.01, 0.5, 2, 0.5, 3, 0.0, None]
+        # todo: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
 
         tic = time.process_time()
         rhoVector = get_sky_sun_rho(env, sensor, round4cache=True)['rho']
@@ -228,6 +171,7 @@ class RhoCorrections:
         Utilities.writeLogFile(msg)
 
         # Presumably obsolete (Ashley)? -DAA
+        # No I'm only changing how the zhang uncertainties work - this all happes in uncertianty_analysis.py - Ashley
         # It will be once the LUT  is finished, right now the Z17 without a propagate object is important for the
         # Monte Carlo runs
         if Propagate is None:
@@ -244,71 +188,44 @@ class RhoCorrections:
         return rhoVector, rhoDelta
 
     @staticmethod
-    def read_Z17_LUT(ws, aod, sza, wt, sal, rel_az, nwb, zhang=None, indx="") -> np.array:
+    def read_Z17_LUT(ws, aod, sza, wt, sal, rel_az, sva, nwb) -> np.array:
         """
         windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang
 
         """
-        db_path = os.path.join(PATH_TO_DATA, 'z17_RHO_LUT_no_nan_pchip.nc')
-        # db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_LUT.nc')
 
-        db_path = os.path.join(PATH_TO_DATA, 'z17_RHO_LUT_no_nan_pchip.nc')
-        # db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_LUT.nc')
+        db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_LUT.nc')
 
         z17_lut = xr.open_dataset(db_path, engine='netcdf4')
 
         import scipy.interpolate as spin
 
-        # used to test: z17_lut.Glint.values[np.isnan(z17_lut.Glint.values)]
+        if ws < 0:
+            ws = 0  # make sure negatives are not passed to interp - working to add option to comet maths
+        if aod < 0:
+            aod = 0
+        if wt > 20:
+            wt = 20
+        if rel_az > 140:
+            rel_az = 140
 
-        # interp missing vals out of LUT.
-        # Glint = z17_lut.Glint.interpolate_na(dim="wind", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="aot", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="sza", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="relAz", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="sal", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="SST", method='cubic', fill_value='extrapolate')
-        # z17_lut.Glint.values = Glint.values
-        # z17_lut.to_netcdf(os.path.join("z17_lut_no_nan_cubic.nc"))
+        LUT = z17_lut.sel(vzen=sva, method='nearest')
+        LUT = LUT.interp(wind=[0, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15], kwargs={"fill_value": "extrapolate"})
 
-        # work out the speeds!
-        import time
-
-        t0 = time.time()
-        methods = ['cubic', 'linear', 'slinear', 'pchip']
-        # used to test: z17_lut.Glint.values[np.isnan(z17_lut.Glint.values)]
-
-        # interp missing vals out of LUT.
-        # Glint = z17_lut.Glint.interpolate_na(dim="wind", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="aot", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="sza", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="relAz", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="sal", method='cubic', fill_value='extrapolate')
-        # Glint = Glint.interpolate_na(dim="SST", method='cubic', fill_value='extrapolate')
-        # z17_lut.Glint.values = Glint.values
-        # z17_lut.to_netcdf(os.path.join("z17_lut_no_nan_cubic.nc"))
-
-        # work out the speeds!
-        import time
-
-        t0 = time.time()
-        methods = ['cubic', 'linear', 'slinear', 'pchip']
-        for i, method in enumerate(methods):
-            zhang_L = spin.interpn(
+        try:
+            zhang_interp = spin.interpn(
                 points=(
-                    z17_lut.wind.values,
-                    z17_lut.aot.values,
-                    z17_lut.aot.values,
-                    z17_lut.sza.values,
-                    z17_lut.relAz.values,
-                    z17_lut.sal.values,
-                    z17_lut.SST.values,
-                    z17_lut.wavelength.values
+                    LUT.wind.values,
+                    LUT.aot.values,
+                    LUT.sza.values,
+                    LUT.relAz.values,
+                    LUT.sal.values,
+                    LUT.SST.values,
+                    LUT.wavelength.values
                 ),
-                values=z17_lut.Glint.values,
+                values=LUT.Glint.values,
                 xi=(
                     ws,
-                    aod,
                     aod,
                     sza,
                     rel_az,
@@ -316,33 +233,10 @@ class RhoCorrections:
                     wt,
                     nwb
                 ),
-                method=method,
+                method="cubic",
             )
-
-            print(time.time()-t0)
-
-            print(time.time()-t0)
-
-            plt.figure("LUT-Interp")
-            plt.plot(nwb, zhang_L, label=f'scipy interpn {method}', linestyle='--')  # color='r'
-            if i == 0 and (zhang is not None):
-                plt.plot(nwb, zhang_L, label=f'scipy interpn {method}', linestyle='--')  # color='r'
-            if i == 0 and (zhang is not None):
-                plt.plot(nwb, zhang, label='Calculated', linestyle='--', color='k')
-
-            plt.legend()
-            plt.xlabel("Wavelength (nm)")
-            plt.ylabel(r"$\rho$")
-            plt.ylabel(r"$\rho$")
-            plt.grid()
-            plt.title(f"Interpolation methods compared with Calculated Zhang Rho: {indx}")
-            plt.title(f"Interpolation methods compared with Calculated Zhang Rho: {indx}")
-            plt.show()
-
-        plt.savefig(f"Z17_LUT_interp_compare_{indx}.png")
-
-        plt.close("LUT-Interp")  # close the figure so it cannot interact with others (good encapsulation)
-
-        # using numpy interp in the end for wavelength as per Tom's suggestion. Not important since wavebands
-        # match LUT in test case (I used Pysas wavebands to generate LUT).
-        return zhang_L
+        except ValueError as err:
+            print(err)  # will implement better error handling, in place until Z17 LUT is updated with all indexes
+            return 0
+        else:
+            return zhang_interp
