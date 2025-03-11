@@ -713,7 +713,7 @@ class ProcessL1b_Interp:
         ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
         ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
                 
-        if ConfigFile.settings['SensorType'].lower() == 'trios':
+        if ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
             esL1AQCGroup = root.addGroup('ES_L1AQC')
             esL1AQCGroup.copy(esL1AQC)
             liL1AQCGroup = root.addGroup('LI_L1AQC')

@@ -94,7 +94,7 @@ class ProcessL1b:
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
-
+     
         # Read uncertainty parameters from class-based calibration
         for f in glob.glob(os.path.join(inpath, r'*class_POLAR*')):
             Utilities.read_char(f, gp)
@@ -115,16 +115,16 @@ class ProcessL1b:
         # Read sensor-specific radiometric calibration
         for f in glob.glob(os.path.join(radcal_dir, r'*RADCAL*')):
             Utilities.read_char(f, gp)
-
+       
         # Unc dataset renaming
         Utilities.RenameUncertainties_Class(root)
-
+        
         # interpolate unc to full wavelength range, depending on class based or full char
         Utilities.interpUncertainties_Class(root)
 
         # # generate temperature coefficient
         Utilities.UncTempCorrection(root)
-
+       
         return root
 
 
@@ -581,8 +581,16 @@ class ProcessL1b:
 
 
         # Add class-based files (RAW_UNCERTAINTIES)
-        classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
-                                      ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
+        # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', # Needs to be revised for sorad
+        #                             ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
+        if ConfigFile.settings["SensorType"].lower() == "seabird" or  ConfigFile.settings["SensorType"].lower() == "trios": 
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', #
+                                     ConfigFile.settings['SensorType']+"_initial")
+        elif ConfigFile.settings["SensorType"].lower() == "sorad":
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', # Hard-coded solution for sorad
+                                     'TriOS' +"_initial")
+        
+    
         if ConfigFile.settings['bL1bCal'] == 1:
             # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
@@ -599,6 +607,7 @@ class ProcessL1b:
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
             print('RADCAL:', radcal_dir)
+            
             node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir, radcal_dir)
             if node is None:
                 msg = 'Error running class based uncertainties.'

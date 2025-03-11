@@ -22,11 +22,14 @@ class HDFGroup:
         for k,v in gp.attributes.items():
             self.attributes[k] = v
 
-    def datasetDeleteRow(self, i):
+    def datasetDeleteRow(self, i):  
         for k in self.datasets:
             ds = self.datasets[k]
-            ds.data = np.delete(ds.data, (i), axis=0)
-
+            if ds.id.split('_')[0] == 'BACK' or ds.id.split('_')[0] == 'CAL': # prevents calibration-file fields from being deleted in bad time mask
+                print('Field is from cal file (BACK or CAL): do not delete Row')
+            else:       
+                ds.data = np.delete(ds.data, (i), axis=0)
+       
     def removeDataset(self, name):
         if len(name) == 0:
             print("Name is 0")

@@ -1093,7 +1093,7 @@ class Utilities:
             timeStamp = group.getDataset("Timestamp").data["Datetime"]
             # TRIOS: copy CAL & BACK before filetering, and delete them 
             # to avoid conflict when filtering more row than 255
-            if ConfigFile.settings['SensorType'].lower() == 'trios':
+            if ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == "sorad":
                 do_reset = True
                 raw_cal  = group.getDataset("CAL_"+group.id[0:2]).data
                 raw_back = group.getDataset("BACK_"+group.id[0:2]).data
@@ -1142,7 +1142,7 @@ class Utilities:
                 break
             timeStamp = newTimeStamp.copy()
 
-        if ConfigFile.settings['SensorType'].lower() == 'trios':
+        if ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == "sorad":
             # TRIOS: reset CAL and BACK as before filtering
             if do_reset:
                 group.addDataset("CAL_"+group.id[0:2])
@@ -1185,6 +1185,8 @@ class Utilities:
         # Note: If only one spectrum is left in a given ensemble, STD will
         #be zero for Es, Li, and Lt.'''
         if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+            suffix = 'sd'
+        elif ConfigFile.settings['SensorType'].lower() == 'sorad' and ConfigFile.settings['bL1bCal'] == 1:
             suffix = 'sd'
         else:
             suffix = 'unc'
@@ -2242,7 +2244,7 @@ class Utilities:
                     ThermUnc.append(0)
 
         # TRIOS case: no temperature available
-        elif ConfigFile.settings['SensorType'].lower() == "trios":
+        elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
             # For Trios the radiometer InternalTemp is a place holder filled with 0.
             # We use ambiant_temp+2.5° instead to estimate internal temp
             for i in range(len(therm_coeff)):
@@ -2290,7 +2292,7 @@ class Utilities:
                     print(msg)
 
             ### Trios
-            elif ConfigFile.settings['SensorType'].lower() == "trios":
+            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
                 # No internal temperature available for Trios, set to 0.
                 internalTemp = 0
                 # Ambiant temperature is needed to estimate internal temperature instead.
@@ -2331,7 +2333,7 @@ class Utilities:
                     sensorID[sensorCode] = "LT"
 
             # elif "IDDevice" in grp.attributes:
-            elif ConfigFile.settings['SensorType'].lower() == 'trios':
+            elif ConfigFile.settings['SensorType'].lower() == 'trios' or  ConfigFile.settings['SensorType'].lower() == 'sorad':
                 if "ES" in grp.datasets:
                     sensorID[grp.attributes["IDDevice"][4:8]] = "ES"
                 if "LI" in grp.datasets:
@@ -2393,7 +2395,7 @@ class Utilities:
                 new_ds.datasetToColumns()
                 unc_group.removeDataset(ds.id) # remove dataset
 
-            if "_RADCAL_" in name:
+            if "_RADCAL_" in name: 
                 # RADCAL are always sensor specific
                 for sensor in sensorID:
                     if sensor in ds.id:
@@ -2483,7 +2485,7 @@ class Utilities:
             ## retrieve dataset from corresponding instrument
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios":
+            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
                 data = node.getGroup(sensor).getDataset(sensor)
 
             # Retrieve hyper-spectral wavelengths from dataset
@@ -2564,20 +2566,22 @@ class Utilities:
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
         sensorList = ['ES', 'LI', 'LT']
+        
         for sensor in sensorList:
 
             ## retrieve dataset from corresponding instrument
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios":
+            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
                 data = node.getGroup(sensor).getDataset(sensor)
-
+            print(sensor)
             # Retrieve hyper-spectral wavelengths from dataset
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
 
-
+           # breakpoint()
             # RADCAL data do not need interpolation, just removing the first line
             for data_type in ["_RADCAL_CAL"]:
+           #     breakpoint()
                 ds = grp.getDataset(sensor+data_type)
                 ds.datasetToColumns()
                 for indx in range(len(ds.columns)):
@@ -2686,7 +2690,6 @@ class Utilities:
         # sensorId = Utilities.get_sensor_dict(node)
         sensorList = ['ES', 'LI', 'LT']
         for sensor in sensorList:
-
             ds = grp.getDataset(sensor+"_RADCAL_CAL")
             ds.datasetToColumns()
             # indx = ds.attributes["INDEX"]
@@ -2699,7 +2702,7 @@ class Utilities:
             ## retrieve hyper-spectral wavelengths from corresponding instrument
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios":
+            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
                 # inv_dict = {v: k for k, v in sensorId.items()}
                 # data = node.getGroup('SAM_'+inv_dict[sensor]+'.dat').getDataset(sensor)
                 data = node.getGroup(sensor).getDataset(sensor)

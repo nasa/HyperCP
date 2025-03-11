@@ -200,6 +200,7 @@ class ProcessL1bTriOS:
 
         # Read HDF file inputs
         # grp = node.getGroup(instrument_number+'.dat')
+        print(sensortype)
         grp = node.getGroup(sensortype)
         grp.getDataset("CAL_"+sensortype).datasetToColumns()
         raw_cal = np.array(grp.getDataset("CAL_"+sensortype).columns['0'])
@@ -211,7 +212,7 @@ class ProcessL1bTriOS:
         DarkPixelStart = int(grp.attributes["DarkPixelStart"])
         DarkPixelStop  = int(grp.attributes["DarkPixelStop"])
         int_time_t0 = int(grp.getDataset("BACK_"+sensortype).attributes["IntegrationTime"])
-
+        
         # check size of data
         nband = len(raw_back[:,0])
         nmes = len(raw_data)
@@ -300,6 +301,7 @@ class ProcessL1bTriOS:
 
         # Retain L1BQC data for L2 instrument uncertainty analysis
         for gp in node.groups:
+            print(gp.id)
             if gp.id == 'ES' or gp.id == 'LI' or gp.id == 'LT':
                 newGroup = node.addGroup(gp.id+'_L1AQC')
                 newGroup.copy(gp)
@@ -310,19 +312,24 @@ class ProcessL1bTriOS:
                         continue
                     else:
                         newGroup.datasets[ds].datasetToColumns()
-
+   
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
 
         # classbased_dir needed for FRM whilst pol is handled in class-based way
-        classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
-                                      ConfigFile.settings['SensorType'] + "_initial")
+        if ConfigFile.settings["SensorType"].lower() == "seabird" or  ConfigFile.settings["SensorType"].lower() == "trios": 
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', #
+                                     ConfigFile.settings['SensorType']+"_initial")
+        elif ConfigFile.settings["SensorType"].lower() == "sorad":
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', # Hard-coded solution for sorad
+                                     'TriOS' +"_initial")
+            
 
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
             print("Factory TriOS RAMSES - no uncertainty computation")
-
+            bre
         # Add Class-based characterization files + RADCAL files
         elif ConfigFile.settings['bL1bCal'] == 2:
             radcal_dir = ConfigFile.settings['RadCalDir']
@@ -457,27 +464,28 @@ class ProcessL1bTriOS:
         stats = {}
         for instrument in ConfigFile.settings['CalibrationFiles'].keys():
             # get instrument serial number and sensor type
+          
             instrument_number = os.path.splitext(instrument)[0]
             sensortype = ConfigFile.settings['CalibrationFiles'][instrument]['frameType']
-            enabled = ConfigFile.settings['CalibrationFiles'][instrument]['enabled']
-            if enabled:
-                msg = f'Dark Correction: {instrument_number} - {sensortype}'
-                print(msg)
-                Utilities.writeLogFile(msg)
-
-                if ConfigFile.settings["bL1bCal"] <= 2:
-                    if not ProcessL1bTriOS.processDarkCorrection(node, sensortype, stats):
-                        msg = f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
-                        return None
-                elif ConfigFile.settings['bL1bCal'] == 3:
-                    if not ProcessL1bTriOS.processDarkCorrection_FRM(node, sensortype, stats):
-                        msg = f'Error in ProcessL1bTriOS.processDarkCorrection_FRM: {instrument_number} - {sensortype}'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
-                        return None
-
+            if sensortype == 'ES' or sensortype == 'LI' or sensortype == 'LT':
+                enabled = ConfigFile.settings['CalibrationFiles'][instrument]['enabled']
+                if enabled:
+                    msg = f'Dark Correction: {instrument_number} - {sensortype}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+    
+                    if ConfigFile.settings["bL1bCal"] <= 2:
+                        if not ProcessL1bTriOS.processDarkCorrection(node, sensortype, stats):
+                            msg = f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}'
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+                            return None
+                    elif ConfigFile.settings['bL1bCal'] == 3:
+                        if not ProcessL1bTriOS.processDarkCorrection_FRM(node, sensortype, stats):
+                            msg = f'Error in ProcessL1bTriOS.processDarkCorrection_FRM: {instrument_number} - {sensortype}'
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+                            return None
 
 
         ## Interpolation

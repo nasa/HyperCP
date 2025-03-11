@@ -469,11 +469,11 @@ class Window(QtWidgets.QWidget):
         if ConfigFile.settings["SensorType"].lower() == "seabird":
             calibrationMap = Controller.processCalibrationConfig(
                 configFileName, calFiles
-            )
-        # else:
-        elif ConfigFile.settings["SensorType"].lower() == "trios":
+            )   
+        elif ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
-
+   
+       
         if not calibrationMap:
             print(
                 "No calibration files found. "
@@ -553,10 +553,10 @@ class Window(QtWidgets.QWidget):
         print("Output Directory:", self.outputDirectory)
         if not self.outputDirectory:
             return
-
+       
         calFiles = ConfigFile.settings["CalibrationFiles"]
         # To check instrument type
-        if ConfigFile.settings["SensorType"].lower() == "trios":
+        if ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
             print("Process Calibration Files")
@@ -642,12 +642,15 @@ class Command:
         MainConfig.settings["popQuery"] = 1 # 1 suppresses popup
         MainConfig.saveConfig(MainConfig.fileName)
         print("MainConfig - Config updated with cmd line arguments")
-
+        
         ConfigFile.loadConfig(self.configFilename)
 
         calFiles = ConfigFile.settings["CalibrationFiles"]
-
-        if ConfigFile.settings["SensorType"].lower() == "trios":
+        
+        ConfigFile.settings["SensorType"].lower() 
+ 
+ 
+        if ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
             print("Process Calibration Files")
@@ -656,11 +659,11 @@ class Command:
         else:
             print(f'CalibrationConfig is not yet ready for {ConfigFile.settings["SensorType"]}')
             sys.exit()
-
+    
         # Update the SeaBASS .hdr file in case changes were made to the configuration without using the GUI
-        SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings['seaBASSHeaderFileName'])
-        SeaBASSHeaderWindow.configUpdateButtonPressed(self, 'config1')
-        SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings['seaBASSHeaderFileName'])
+        SeaBASSHeader.loadSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
+        SeaBASSHeaderWindow.configUpdateButtonPressed(self, "config1")
+        SeaBASSHeader.saveSeaBASSHeader(ConfigFile.settings["seaBASSHeaderFileName"])
 
         if processMultiLevel:
             if ConfigFile.settings["SensorType"].lower() == "trios" and to_level == "L1A":

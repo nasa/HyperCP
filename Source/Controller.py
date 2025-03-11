@@ -258,10 +258,10 @@ class Controller:
                     cf.frameType = "Combined"
                     calibrationMap[key] = cf
 
-            if ".tdf" in key:
-                with open(os.path.join(calPath, key), 'rb') as f:                    
-                    cf.read(f)
-                    #print("id:", cf.id)
+            elif '.tdf' in key:
+                if calFiles[key]["enabled"]:
+                    cf.id = key
+                    cf.name = key
                     calibrationMap[key] = cf
 
         return calibrationMap
@@ -303,7 +303,7 @@ class Controller:
         elif ConfigFile.settings["SensorType"].lower() == "trios":
             root, outFFPs = ProcessL1aTriOS.processL1a(inFilePath, outFilePath)
         elif ConfigFile.settings["SensorType"].lower() == "sorad":
-            root = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
+            root, outFFPs = ProcessL1aSoRad.processL1a(inFilePath, outFilePath, calibrationMap)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
             root = ProcessL1aDALEC.processL1a(inFilePath, calibrationMap)
         else:
@@ -394,7 +394,7 @@ class Controller:
             Utilities.writeLogFile(msg)
             return None
 
-        if ConfigFile.settings["SensorType"].lower() == "trios":
+        if ConfigFile.settings["SensorType"].lower() == "trios" or  ConfigFile.settings["SensorType"].lower() == "sorad":
             # root = TriosL1B.processL1b(root, outFilePath)
             root = ProcessL1bTriOS.processL1b(root, outFilePath)
         else:
@@ -854,7 +854,7 @@ class Controller:
 
             if L1A_complete:
                 inFileName = os.path.split(fp)[1]
-                if ConfigFile.settings["SensorType"].lower() == "trios":
+                if ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad": 
                     # For TriOS, need to parse the L1A names, not L0
                     fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'.hdf')
                 else:
@@ -909,6 +909,18 @@ class Controller:
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return #-1
+                
+        if ConfigFile.settings["SensorType"].lower() == "sorad" and level == "L1A":
+          for fp in inFiles:
+            # Check that the input file matches what is expected for this processing level
+            # Not case sensitive
+            fileName = str.lower(os.path.split(fp)[1])
+
+            if np.sum([fileName.find(str.lower(s)) for s in srchStr] ) < 0 :
+                msg = f'{fileName} does not match expected input level for outputing {level}'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return #-1
 
             #Pass entire list L0 files
             # print("Processing: " + fp)
