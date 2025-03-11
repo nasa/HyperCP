@@ -239,6 +239,42 @@ class ProcessL1aDALEC:
 
         return meta_instrument,coefficients,data
 
+    def validate_line(line):
+        """
+        Validates a CSV line with the following rules:
+        1. The first element must be the string "DALEC".
+        2. The second and third elements must be strings.
+        3. The fourth element must be a date string in the format "YYYY-MM-DDTHH:MM:SS.sssZ".
+        4. The remaining elements must be numbers.
+    
+        Returns True if valid, otherwise False.
+        """
+        if len(line) != 212:  # Ensure there are enough elements
+            return False
+    
+        # 1. First element must be "DALEC"
+        if line[0] != "DALEC":
+            return False
+    
+        # 2. Second and third elements must be strings (implicitly true since they are parsed as strings)
+        if not isinstance(line[1], str) or not isinstance(line[2], str):
+            return False
+    
+        # 3. Fourth element must be a valid date string in the format "YYYY-MM-DDTHH:MM:SS.sssZ"
+        try:
+            dt.datetime.strptime(line[3], "%Y-%m-%dT%H:%M:%S.%fZ")
+        except ValueError:
+            return False
+    
+        # 4. The remaining elements must be numbers (float or int)
+        try:
+            for item in line[4:]:
+                float(item)  # Convert to float, raises an exception if not a number
+        except ValueError:
+            return False
+    
+        return True  # If all checks pass
+
     def read_data(inputfile):
         file_dat = open(inputfile,'r', encoding="utf-8")
         flag_config = 0
@@ -247,28 +283,49 @@ class ProcessL1aDALEC:
         data_hdr=['DeviceID','SerialNumber','ChannelType','UTCtimestamp','Lat','Lon','SatelliteCompassHeading',
         'SolarAzimuth','SolarZenith','GearPos','DALECazimuth','RelAz','Pitch','Roll','Voltage','Humidity','DetectorTemp',
         'Qflag','Inttime','Signal_percent','DarkCounts','MaxCounts']
+        data_type={'Lat':np.float64,'Lon':np.float64,'SatelliteCompassHeading':np.float64,'SolarAzimuth':np.float64,
+                   'SolarZenith':np.float64,'GearPos':np.float64,'DALECazimuth':np.float64,'RelAz':np.float64,
+                   'Pitch':np.float64,'Roll':np.float64,'Voltage':np.float64,'Humidity':np.float64,
+                   'DetectorTemp':np.float64,'Qflag':np.float64,'Inttime':np.float64,
+                   'Signal_percent':np.float64,'DarkCounts':np.float64,'MaxCounts':np.float64}
         for i in range(190):
             data_hdr.append('spec'+str(i))
 
         index = 0
         for line in file_dat:
             index = index + 1
-            # checking end of attributes
             if '-CONFIGURATION' in line:
                 flag_config = index
-            if '-END CONFIGURATION' in line:
+            elif '-END CONFIGURATION' in line:
                 flag_end_config = index
-            if '-OUTPUT FORMAT' in line:
+            elif '-OUTPUT FORMAT' in line:
                 flag_data = index
                 break
-
+                    
         if flag_data == 0:
             print('PROBLEM WITH Data FILE: data not found')
             exit()
+        skiprows=list(range(flag_data+1))
+
+        index = index + 1
+        if not file_dat.readline():  # Stop if there are fewer than 1 lines to skip
+            print('PROBLEM WITH Data FILE: data not found')
+            exit()
+
+        for line in file_dat:
+            if(not ProcessL1aDALEC.validate_line(line.split(","))):
+                    skiprows.append(index)
+                    print("Bad data line: "+str(index))
+                    print(line)            
+            index = index + 1
 
         file_dat.close()
-
+          
+        def toDatetime(dt):
+            #dateFormat='%Y-%m-%dT%H:%M:%S.%f'
+            return np.datetime64(dt.replace('Z', '000'))
+        
         metadata = pd.read_csv(inputfile, skiprows=flag_config, nrows=flag_end_config-flag_config-1,header=None, comment=';',sep='=')
-        data = pd.read_csv(inputfile, skiprows=flag_data+2, names=data_hdr,on_bad_lines='warn')
+        data = pd.read_csv(inputfile, skiprows=skiprows, names=data_hdr, on_bad_lines='warn')
 
         return metadata,data

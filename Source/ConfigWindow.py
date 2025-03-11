@@ -93,6 +93,11 @@ class ConfigWindow(QtWidgets.QDialog):
             self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
             self.calibrationFrameTypeComboBox.setEnabled(True)
 
+        elif CurrentSensor.lower() == "dalec":
+            self.calibrationFrameTypeComboBox.addItem("Not Required")
+            self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
+            self.calibrationFrameTypeComboBox.setEnabled(True)
+
         # L1A
         l1aLabel = QtWidgets.QLabel("Level 1A Processing", self)
         l1aLabel_font = l1aLabel.font()
