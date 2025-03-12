@@ -78,7 +78,9 @@ class RhoCorrections:
             zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
             # this is the method to read zhang from the LUT. It is commented out pending the sensitivity study and
             # correction to the interpolation errors that have been noted.
-
+            if isinstance(zhang, float):
+                raise ValueError("Interpolation of zhnag lookup table failed")
+            
             # |M99 - Z17| is an estimation of model error, added to MC M99 uncertainty in quadrature to give combined
             # uncertainty
             pct_diff = (np.abs(rhoScalar - zhang) / rhoScalar)  # relative units
@@ -193,7 +195,15 @@ class RhoCorrections:
 
         """
 
-        db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_LUT.nc')
+        db_paths = [d.name for d in os.scandir(PATH_TO_DATA) if "LUT" in d.name]
+        
+        # I think this will prove to be a temporary solution. 
+        if len(db_paths) > 1:
+            db_path = os.path.join(PATH_TO_DATA, 'Z17_LUT_v2.nc')  # look for latest LUT if multiple found
+        elif len(db_paths) > 0:
+            db_path = os.path.join(PATH_TO_DATA, db_paths[0])  # use what we have if only one found
+        else:
+            return 0  # what should I do if we don't have a LUT downloaded? - Ashley
 
         z17_lut = xr.open_dataset(db_path, engine='netcdf4')
 
@@ -208,7 +218,13 @@ class RhoCorrections:
         if rel_az > 140:
             rel_az = 140
 
-        LUT = z17_lut.sel(vzen=sva, method='nearest')
+        if "vzen" in z17_lut.coords:
+            LUT = z17_lut.sel(vzen=sva, method='nearest')
+        else:
+            LUT = z17_lut
+            
+        del(z17_lut)  # delete unused var to save memory
+
         LUT = LUT.interp(wind=[0, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15], kwargs={"fill_value": "extrapolate"})
 
         try:
