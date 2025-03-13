@@ -276,6 +276,11 @@ class AnomAnalWindow(QtWidgets.QDialog):
             WL = 13
             SD = 3.2
             SL = 2.7
+        else:
+            WD = None
+            WL = None
+            SD = None
+            SL = None
 
         self.WindowDarkLabel.setText(f'Window (odd;{WD})')
         self.WindowLightLabel.setText(f'Window (odd;{WL})')
@@ -534,6 +539,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Add an information bar based on metadata
         self.start = None
         self.end = None
+        ancGroup = None
         for group in root.groups:
             if group.id == 'ANCILLARY_METADATA':
                 ancGroup = group
@@ -541,8 +547,9 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 gpsGroup = group
                 self.start = gpsGroup.datasets['DATETIME'].data[0]
                 self.end = gpsGroup.datasets['DATETIME'].data[-1]
-            if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
+            if group.id.startswith("SunTracker"):
                 trackerGroup = group
+                break
 
         # For case of no GPS
         if self.start is None:
@@ -665,6 +672,11 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 WL = 13
                 SD = 3.2
                 SL = 2.7
+            else:
+                WD = None
+                WL = None
+                SD = None
+                SL = None
 
             self.WindowDarkLabel.setText(f'Window (odd;{WD})')
             self.WindowLightLabel.setText(f'Window (odd;{WL})')
@@ -714,6 +726,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         darkData = None
         lightData = None
+        darkDateTime = None
+        lightDateTime = None
         # Extract Light & Dark datasets from the sensor group
         for gp in self.root.groups:
             if "FrameType" not in gp.attributes:
@@ -908,7 +922,11 @@ class AnomAnalWindow(QtWidgets.QDialog):
             print(sensorType)
             darkData = None
             lightData = None
-
+            darkDateTime = None
+            lightDateTime = None
+            globBad = None
+            globBad2 = None
+            globBad3 = None
             for gp in self.root.groups:
                 if "FrameType" not in gp.attributes:
                     continue
