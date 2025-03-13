@@ -367,6 +367,15 @@ class ProcessL1aTriOS:
         ds_dt = np.dtype({'names': wl,'formats': [np.float64]*len(wl)})
         my_arr = np.array(data).transpose()
         rec_arr = np.rec.fromarrays(my_arr, dtype=ds_dt)
+
+        try:
+            rec_arr = np.rec.fromarrays(my_arr, dtype=ds_dt)
+        except ValueError as err:
+            if len(err.args) > 0 and err.args[0].startswith("mismatch between the number of fields "):
+                rec_arr = np.rec.fromarrays(my_arr[1:], dtype=ds_dt)
+            else:
+                raise
+
         gp.addDataset(sensor)
         gp.datasets[sensor].data=np.array(rec_arr, dtype=ds_dt)
 
