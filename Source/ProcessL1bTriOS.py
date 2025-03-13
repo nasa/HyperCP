@@ -314,7 +314,6 @@ class ProcessL1bTriOS:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
-
         # classbased_dir needed for FRM whilst pol is handled in class-based way
         classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
                                       ConfigFile.settings['SensorType'] + "_initial")

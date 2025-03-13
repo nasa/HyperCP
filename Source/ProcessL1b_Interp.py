@@ -88,6 +88,7 @@ class ProcessL1b_Interp:
         else:
             # These are from the ancillary file; place in GPS
             #   Ignore COURSE and SOG
+            # TODO: If GPS is part of the SunTracker group, and gpsGroup was not yet established, pull Lat/Lon from Suntracker Group
             ProcessL1b_Interp.convertDataset(ancGroup, "LATITUDE", newGPSGroup, "LATITUDE")
             ProcessL1b_Interp.convertDataset(ancGroup, "LONGITUDE", newGPSGroup, "LONGITUDE")
             latData = newGPSGroup.getDataset("LATITUDE")
@@ -97,8 +98,9 @@ class ProcessL1b_Interp:
 
 
         if STGroup is not None:
-            newSTGroup = node.addGroup('ST_TEMP')
+            newSTGroup = node.addGroup('ST_TEMP') # temporary
             for ds in STGroup.datasets:
+                # NOTE: New platforms should confirm their SunTracker robots have the proper datasets added here.
                 if ds == 'REL_AZ':
                     ProcessL1b_Interp.convertDataset(STGroup, "REL_AZ", newSTGroup, "REL_AZ")
                     relAzData = newSTGroup.datasets['REL_AZ']
@@ -304,10 +306,9 @@ class ProcessL1b_Interp:
 
         # List of datasets requiring angular interpolation (i.e. through 0 degrees)
         angList = ['AZIMUTH', 'POINTING', 'HEADING']
-        '''
-            NOTE: SOLAR_AZ and SZA are now recalculated for new timestamps rather than interpolated
-                REL_AZ is +/- 90-135 and should not be interpolated using interAngular
-        '''
+        # NOTE: SOLAR_AZ and SZA are now recalculated for new timestamps rather than interpolated
+        #        REL_AZ is +/- 90-135 and should not be interpolated using interAngular
+        #
 
         # List of datasets requiring fill instead of interpolation
         fillList = ['STATION']
