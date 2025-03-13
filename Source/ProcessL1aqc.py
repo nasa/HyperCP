@@ -192,6 +192,8 @@ class ProcessL1aqc:
         compass = None
         esDateTime = None
         gpsStatus = None
+        ancTimeTag2 = None
+        ancDateTag = None
         for gp in node.groups:
             if gp.id.startswith('GP'):
 
@@ -260,6 +262,17 @@ class ProcessL1aqc:
                 Utilities.writeLogFile(msg)
                 return None
 
+        shipAzimuth = None
+        station = None
+        salt = None
+        sst = None
+        wind = None
+        aod = None
+        cloud = None
+        wave = None
+        speed_f_w = None
+        pitch = None
+        roll = None
         # If ancillary file is provided, use it. Otherwise fill in what you can using the datetime, lat, lon from GPS
         if ancillaryData is not None:
 
@@ -340,8 +353,7 @@ class ProcessL1aqc:
 
             if "HEADING" in ancData.columns:
                 # HEADING/shipAzimuth comes from ancillary data file here (not GPS or SATNAV)
-                shipAzimuth = ancData.columns["HEADING"][0]
-
+                shipAzimuth = ancData.columns["HEADING"][0]                
             if "STATION" in ancData.columns:
                 station = ancData.columns["STATION"][0]
             if "SALINITY" in ancData.columns:
@@ -486,7 +498,7 @@ class ProcessL1aqc:
             roll = None
             gp  = None
             for group in node.groups:
-                # NOTE: SOLARTRACKER and DALEC use SUNTRACKER group for PITCH/ROLL
+                # NOTE: SOLARTRACKER (not pySAS) and DALEC use SUNTRACKER group for PITCH/ROLL
                 if group.id.startswith("SOLARTRACKER") and group.id != 'SOLARTRACKER_STATUS':
                     gp = group
                     if "PITCH" in gp.datasets and "ROLL" in gp.datasets:
@@ -494,7 +506,8 @@ class ProcessL1aqc:
                         pitch = gp.getDataset("PITCH").data["SAS"]
                         roll = gp.getDataset("ROLL").data["SAS"]
                         break
-                if group.id.startswith('SATTHS'): # For SATTHS without SunTracker (i.e. with pySAS)
+                 # For SATTHS without SunTracker (i.e. with pySAS)
+                if group.id.startswith('SATTHS'):
                     gp = group
                     if "PITCH" in gp.datasets and "ROLL" in gp.datasets:
                         timeStamp = gp.getDataset("DATETIME").data
@@ -569,8 +582,11 @@ class ProcessL1aqc:
         if node is not None and ConfigFile.settings["bL1aqcRotatorDelay"] and ConfigFile.settings["bL1aqcSolarTracker"]:
             gp = None
             for group in node.groups:
+                # NOTE: SOLARTRACKER and pySAS using POINTING dataset to get rotator movements
+                #   NOTE: DALEC also uses POINTING. SoRad has no POINTING and is slower acquisition; maybe exclude rotator delay for SoRad.
                 if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
                     gp = group
+                    break
 
             if gp is not None:
                 if gp.getDataset("POINTING"):
@@ -642,6 +658,8 @@ class ProcessL1aqc:
             i = 0
             gp = None
             for group in node.groups:
+                # NOTE: SOLARTRACKER and pySAS using POINTING dataset to get rotator movements
+                #   NOTE: DALEC also uses POINTING. SoRad has no POINTING but should still have option to filter here, or?
                 if group.id == "SOLARTRACKER" or group.id == "SOLARTRACKER_pySAS":
                     gp = group
 
@@ -703,10 +721,15 @@ class ProcessL1aqc:
             # Otherwise resorts to ancillary data. Otherwise processing fails.
             gp = None
             for group in node.groups:
+                # NOTE: SOLARTRACKER and pySAS carry azimuth information in the SUNTRACKER group, but not RelAz
+                #   NOTE: DALEC has RelAz in the SOLARTRACKER* group
+                #       NOTE: SoRad has RelAz in the sorad group
                 if group.id.startswith("SOLARTRACKER"):
                     gp = group
+                    break
 
             if gp is not None:
+                # TODO: Update datasets for DALEC/SoRAD to capture relAz
                 if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):
                     timeStamp = gp.getDataset("DATETIME").data
                     # Rotator Home Angle Offset is generally set in the .sat file when setting up the SunTracker
@@ -730,6 +753,9 @@ class ProcessL1aqc:
                         sasAzimuth = gp.getDataset("HEADING").data["SAS_TRUE"]
                     elif gp.id == "SOLARTRACKER_pySAS":
                         sasAzimuth = gp.getDataset("HEADING").data["SAS"]
+                    else:
+                        sasAzimuth = None
+
                     newRelAzData = gp.addDataset("REL_AZ")
 
                     relAz = sasAzimuth - sunAzimuth
