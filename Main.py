@@ -61,7 +61,8 @@ class Window(QtWidgets.QWidget):
             Utilities.downloadZhangDB(fpfZhang)
 
         # Confirm that core data files are in place. Download if necessary.
-        fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Zhang_rho_LUT.nc")
+        # fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Zhang_rho_LUT.nc")
+        fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Z17_LUT_v2.nc")
         if not os.path.exists(fpfZhangLUT):
             Utilities.downloadZhangLUT(fpfZhangLUT)
 

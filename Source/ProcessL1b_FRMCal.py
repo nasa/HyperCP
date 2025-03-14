@@ -21,11 +21,11 @@ class ProcessL1b_FRMCal:
     def get_direct_irradiance_ratio(node: object, sensortype: object, called_L2: bool = False) -> object:
         ''' Used for both SeaBird and TriOS L1b
 
-            SolarTracker geometries, when available, have already been
+            SunTracker geometries, when available, have already been
             flipped into Ancillary and interpolated.
         '''
 
-        ## Reading ancilliary data and SolarTracker, if necessary
+        ## Reading ancilliary data and SunTracker, if necessary
         if called_L2:
             # keys change depending on if the process is called at L1B or L2, store correct keys in dictionary
             if ConfigFile.settings['SensorType'].lower() == "seabird":
@@ -54,7 +54,7 @@ class ProcessL1b_FRMCal:
 
         anc_grp = node.getGroup(keys['anc'])
 
-        if ConfigFile.settings['bL1aqcSolarTracker'] == 1:
+        if ConfigFile.settings['bL1aqcSunTracker'] == 1:
             rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns["REL_AZ"])
         else:
             rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns[keys['rel']])

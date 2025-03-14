@@ -36,12 +36,13 @@ class Utilities:
 
     @staticmethod
     def downloadZhangLUT(fpfZhangLUT, force=False):
-        infoText = "  NEW INSTALLATION\nGlint LUT required.\nClick OK to download.\n\nTHIS IS A 129 MB DOWNLOAD.\n\n\
+        infoText = "  NEW INSTALLATION\nGlint LUT required.\nClick OK to download.\n\nTHIS IS A 258 MB DOWNLOAD.\n\n\
         If canceled, Zhang et al. (2017) glint correction will fail. If download fails, a link and instructions will be provided in the terminal."
         YNReply = True if force else Utilities.YNWindow("Database Download", infoText) == QMessageBox.Ok
         if YNReply:
 
-            url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_LUT.nc"
+            # url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_LUT.nc"
+            url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Z17_LUT_v2.nc"
             download_session = requests.Session()
             try:
                 file_size = int(

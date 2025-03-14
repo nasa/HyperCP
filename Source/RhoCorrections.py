@@ -194,7 +194,8 @@ class RhoCorrections:
 
         """
 
-        db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_LUT.nc')
+        # db_path = os.path.join(PATH_TO_DATA, 'Zhang_rho_LUT.nc')
+        db_path = os.path.join(PATH_TO_DATA, 'Z17_LUT_v2.nc')
 
         z17_lut = xr.open_dataset(db_path, engine='netcdf4')
 

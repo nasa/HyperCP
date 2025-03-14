@@ -314,7 +314,6 @@ class ProcessL1bTriOS:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
-
         # classbased_dir needed for FRM whilst pol is handled in class-based way
         classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
                                       ConfigFile.settings['SensorType'] + "_initial")
@@ -391,7 +390,7 @@ class ProcessL1bTriOS:
             modRoot = None
 
         # if modRoot is not None:
-        # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
+        # Regardless of whether SunTracker is used, Ancillary data will have been already been
         # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
         # to have model data and/or default values incorporated.
 
