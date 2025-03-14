@@ -245,14 +245,13 @@ class ProcessL1bqc:
             liGroup = node.getGroup('LI_L1AQC')
             ltGroup = node.getGroup('LT_L1AQC')        
 
-        satnavGroup = None
+        robotGroup = None
         ancGroup = None
         pyrGroup = None
         sixSGroup = None
         for gp in node.groups:
-            if gp.id.startswith("SOLARTRACKER"):
-                if gp.id != "SOLARTRACKER_STATUS":
-                    satnavGroup = gp
+            if gp.id.startswith("SunTracker"):
+                robotGroup = gp
             if gp.id.startswith("ANCILLARY"):
                 ancGroup = gp
                 ancGroup.id = "ANCILLARY" # shift back from ANCILLARY_METADATA
@@ -262,7 +261,7 @@ class ProcessL1bqc:
                 sixSGroup = gp
 
 
-        # # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
+        # # Regardless of whether SunTracker is used, Ancillary data will have been already been
         # # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
         # # to have model data and/or default values incorporated.
 
@@ -306,45 +305,45 @@ class ProcessL1bqc:
         if 'SPEED_F_W' in ancGroup.datasets:
             ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')
 
-        if satnavGroup is not None:
+        if robotGroup is not None:
             # Take REL_AZ, SZA, SOLAR_AZ, HEADING, POINTING, HUMIDITY, PITCH and ROLL
             #  preferentially from tracker data. Some of these might change as
-            #  new instruments are added that don't fit the SolarTracker/pySAS
+            #  new instruments are added that don't fit the SunTracker/pySAS
             #  robot model.
             #
             # Keep in mind these may overwrite ancillary data from outside sources.
             ancGroup.addDataset('SZA')
-            ancGroup.datasets['SZA'] = satnavGroup.getDataset('SZA')
+            ancGroup.datasets['SZA'] = robotGroup.getDataset('SZA')
             ancGroup.datasets['SZA'].changeColName('NONE','SZA')
             ancGroup.addDataset('SOLAR_AZ')
-            ancGroup.datasets['SOLAR_AZ'] = satnavGroup.getDataset('SOLAR_AZ')
+            ancGroup.datasets['SOLAR_AZ'] = robotGroup.getDataset('SOLAR_AZ')
             ancGroup.datasets['SOLAR_AZ'].changeColName('NONE','SOLAR_AZ')
             ancGroup.addDataset('REL_AZ')
-            ancGroup.datasets['REL_AZ'] = satnavGroup.getDataset('REL_AZ')
+            ancGroup.datasets['REL_AZ'] = robotGroup.getDataset('REL_AZ')
             ancGroup.datasets['REL_AZ'].changeColName('NONE','REL_AZ')
             # ancGroup.datasets['REL_AZ'].datasetToColumns()
-            if 'HEADING' in satnavGroup.datasets:
+            if 'HEADING' in robotGroup.datasets:
                 ancGroup.addDataset('HEADING')
-                ancGroup.datasets['HEADING'] = satnavGroup.getDataset('HEADING')
-            if 'POINTING' in satnavGroup.datasets:
+                ancGroup.datasets['HEADING'] = robotGroup.getDataset('HEADING')
+            if 'POINTING' in robotGroup.datasets:
                 ancGroup.addDataset('POINTING')
-                ancGroup.datasets['POINTING'] = satnavGroup.getDataset('POINTING')
+                ancGroup.datasets['POINTING'] = robotGroup.getDataset('POINTING')
                 ancGroup.datasets['POINTING'].changeColName('ROTATOR','POINTING')
-            if 'HUMIDITY' in satnavGroup.datasets:
+            if 'HUMIDITY' in robotGroup.datasets:
                 ancGroup.addDataset('HUMIDITY')
-                ancGroup.datasets['HUMIDITY'] = satnavGroup.getDataset('HUMIDITY')
-            if 'PITCH' in satnavGroup.datasets:
+                ancGroup.datasets['HUMIDITY'] = robotGroup.getDataset('HUMIDITY')
+            if 'PITCH' in robotGroup.datasets:
                 ancGroup.addDataset('PITCH')
-                ancGroup.datasets['PITCH'] = satnavGroup.getDataset('PITCH')
+                ancGroup.datasets['PITCH'] = robotGroup.getDataset('PITCH')
                 ancGroup.datasets['PITCH'].changeColName('SAS','PITCH')
-            if 'ROLL' in satnavGroup.datasets:
+            if 'ROLL' in robotGroup.datasets:
                 ancGroup.addDataset('ROLL')
-                ancGroup.datasets['ROLL'] = satnavGroup.getDataset('ROLL')
+                ancGroup.datasets['ROLL'] = robotGroup.getDataset('ROLL')
                 ancGroup.datasets['ROLL'].changeColName('SAS','ROLL')
 
-            # Finished with SOLARTRACKER/pySAS group. Delete
+            # Finished with SunTracker/pySAS group. Delete
             for gp in node.groups:
-                if gp.id == satnavGroup.id:
+                if gp.id == robotGroup.id:
                     node.removeGroup(gp)
 
         # ancGroup.datasets['SZA'].changeColName('NONE','SZA') # In case SZA was ancillary
@@ -735,8 +734,8 @@ class ProcessL1bqc:
                     Utilities.writeLogFile(msg)
                     return False
 
-                if py6sGroup is not None:
-                    Utilities.filterData(py6sGroup,badTimes)
+                if sixSGroup is not None:
+                    Utilities.filterData(sixSGroup,badTimes)
 
                 # Filter L1AQC data for L1BQC criteria
                 if ConfigFile.settings['SensorType'].lower() == 'seabird':
@@ -883,7 +882,7 @@ class ProcessL1bqc:
             del(node.attributes["CLOUD_PERCENT"])
         if "DEPTH_RESOLUTION" in node.attributes.keys():
             del(node.attributes["DEPTH_RESOLUTION"])
-        if ConfigFile.settings["bL1aqcSolarTracker"]:
+        if ConfigFile.settings["bL1aqcSunTracker"]:
             if "SAS SERIAL NUMBER" in node.attributes.keys():
                 node.attributes["SOLARTRACKER_SERIAL_NUMBER"] = node.attributes["SAS SERIAL NUMBER"]
                 del(node.attributes["SAS SERIAL NUMBER"])

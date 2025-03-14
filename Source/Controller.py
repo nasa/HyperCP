@@ -139,7 +139,7 @@ class Controller:
         try:
             pdf.output(outPDF, 'F')
         except Exception:
-            msg = 'Unable to write the PDF file. It may be open in another program.'
+            msg = '**********************Unable to write the PDF file. It may be open in another program.**********************'
             Utilities.errorWindow("File Error", msg)
             print(msg)
             Utilities.writeLogFile(msg)
@@ -315,7 +315,7 @@ class Controller:
                     # TriOS L1a files are written in ProcessL1aTriOS
                     root.writeHDF5(outFFPs)
             except Exception:
-                msg = 'Unable to write L1A file. It may be open in another program.'
+                msg = '**********************Unable to write L1A file. It may be open in another program.**********************'
                 if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                     Utilities.errorWindow("File Error", msg)
                 print(msg)
@@ -405,7 +405,7 @@ class Controller:
             try:
                 root.writeHDF5(outFilePath)
             except Exception:
-                msg = "Controller.ProcessL1b: Unable to write file. May be open in another application."
+                msg = "**********************Controller.ProcessL1b: Unable to write file. May be open in another application.**********************"
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -447,7 +447,7 @@ class Controller:
             try:
                 root.writeHDF5(outFilePath)
             except Exception:
-                msg = "Unable to write file. May be open in another application."
+                msg = "**********************Unable to write file. May be open in another application.**********************"
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -509,7 +509,7 @@ class Controller:
                 node.writeHDF5(outFilePath)
                 return node
             except Exception:
-                msg = "Unable to write file. May be open in another application."
+                msg = "**********************Unable to write file. May be open in another application.**********************"
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)

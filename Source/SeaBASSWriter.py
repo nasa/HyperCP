@@ -43,12 +43,8 @@ class SeaBASSWriter:
         referenceGroup = node.getGroup("IRRADIANCE")
 
         if level == '2':
-            # referenceGroup = node.getGroup("IRRADIANCE")
             esData = referenceGroup.getDataset("ES_HYPER")
-            # if ConfigFile.settings["bL1cSolarTracker"]:
             ancillaryGroup = node.getGroup("ANCILLARY")
-            # else:
-            #     ancillaryGroup = node.getGroup("ANCILLARY_METADATA")
             wind = ancillaryGroup.getDataset("WINDSPEED")
             wind.datasetToColumns()
             winCol = wind.columns["WINDSPEED"]

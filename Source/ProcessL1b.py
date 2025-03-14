@@ -707,7 +707,7 @@ class ProcessL1b:
             modRoot = None
 
         # if modRoot is not None:
-        # Regardless of whether SolarTracker/pySAS is used, Ancillary data will have been already been
+        # Regardless of whether SunTracker is used, Ancillary data will have been already been
         # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
         # to have model data and/or default values incorporated.
 
