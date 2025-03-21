@@ -39,7 +39,7 @@ class ConfigFile:
         ConfigFile.settings["bL1aCleanSZA"] = 1
         ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,
 
-        ConfigFile.settings["bL1aqcSolarTracker"] = 1
+        ConfigFile.settings["bL1aqcSunTracker"] = 1
         ConfigFile.settings["bL1aqcCleanPitchRoll"] = 1
         ConfigFile.settings["fL1aqcPitchRollPitch"] = 5 # 2-5 deg. IOCCG Draft Protocols
         ConfigFile.settings["fL1aqcPitchRollRoll"] = 5 # 2-5 deg. IOCCG Draft Protocols
