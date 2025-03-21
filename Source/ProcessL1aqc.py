@@ -147,12 +147,13 @@ class ProcessL1aqc:
                     gp.id = "LI_LIGHT"
                 if cf.sensorType == "LT":
                     gp.id = "LT_LIGHT"
-        
-        if ConfigFile.settings['SensorType'].lower() ==" sorad":
-            if str(gp.id)[0:3] == 'SAM':
+    
+        if ConfigFile.settings['SensorType'].lower() == 'sorad':
+            if  gp.id.startswith("sorad"):
+                gp.id = "SunTracker_sorad"
+            else:
                 gp.id = cf.sensorType
-        
-        else: #
+        else: 
             gp.id = cf.sensorType
 
     @staticmethod
