@@ -254,8 +254,8 @@ class ProcessL1aqc:
                 latAnc = []
                 lonAnc = []
                 for i in range(gpsLat.data.shape[0]):
-                    latAnc.append(gpsLat)
-                    lonAnc.append(gpsLon)
+                    latAnc.append(gpsLat[i])
+                    lonAnc.append(gpsLon[i])
 
         # Solar geometry from GPS alone; No Tracker, no Ancillary
         relAzAnc = []
@@ -511,6 +511,13 @@ class ProcessL1aqc:
         # This has to record the time interval (in datetime) for the bad angles in order to remove these time intervals
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
+        
+        # Notes for So-Rad
+        # My understanding is that the attitide QC threshold should be placed in terms of a single max tilt (i.e. angle to vertical),
+        # rather than 2 separate roll and pitch filters. For the existing suntracker systems, I recommend caculating tilt via 
+        # the small angle approximation `tilt = sqrt(roll^2 + pitch^2)' and redesigining the config with a single max tilt value filter.
+        # As a work-around, I have read so-rad tilt data and pretended it is pitch and roll (this still achives the desired result of
+        # filtering out tilt values > 5 deg)
 
         if node is not None and int(ConfigFile.settings["bL1aqcCleanPitchRoll"]) == 1:
             msg = "Filtering file for high pitch and roll"
@@ -530,6 +537,11 @@ class ProcessL1aqc:
                         pitch = gp.getDataset("PITCH").data["SAS"]
                         roll = gp.getDataset("ROLL").data["SAS"]
                         break
+                    elif "TILT" in gp.datasets: # this condition finds So-Rad tilt
+                        timeStamp = gp.getDataset("DATETIME").data
+                        tilt = np.array(gp.getDataset("TILT").data.tolist()).ravel()
+                        roll = tilt  # now I have pretended tilt and pitch = roll (see comments on line 515)
+                        pitch = tilt     
                  # For SATTHS without SunTracker (i.e. with pySAS)
                 if group.id.startswith('SATTHS'):
                     gp = group
@@ -560,7 +572,7 @@ class ProcessL1aqc:
 
             pitchMax = float(ConfigFile.settings["fL1aqcPitchRollPitch"])
             rollMax = float(ConfigFile.settings["fL1aqcPitchRollRoll"])
-
+            
             i = 0
             start = -1
             stop =[]
@@ -755,7 +767,6 @@ class ProcessL1aqc:
 
             if gp is not None:
                 # TODO: Update datasets for DALEC/SoRAD to capture relAz
-                print(gp.id)
                 if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):
                     timeStamp = gp.getDataset("DATETIME").data
                     # Rotator Home Angle Offset is generally set in the .sat file when setting up the SunTracker
