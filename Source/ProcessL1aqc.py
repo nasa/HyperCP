@@ -207,7 +207,7 @@ class ProcessL1aqc:
             if gp.id.startswith('GP'):
 
                 # NOTE: Do So-Rad and DALEC use a group in L1A called GP*, like GPS or GPRMC?
-                #   NOTE: If not, make changes here to pick up GPS data from the appropriate group.
+                #   NOTE: If not, make changes here to pick up GPS data from the appropriate group
 
                 gpsDateTime = gp.getDataset('DATETIME').data
                 gpsLat = gp.getDataset('LATPOS')
@@ -241,6 +241,21 @@ class ProcessL1aqc:
             elif gp.id.startswith('SATTHS'):
                 # Fluxgate on the THS:
                 compass = gp.getDataset('COMP')
+            
+            elif gp.id.startswith("SunTracker_sorad"):
+                # Note - So-Rad Lat, Lon are already in decimal format 
+                gpsDateTime = gp.getDataset('DATETIME').data
+                gpsLat = gp.getDataset('LATITUDE')
+                gpsLon = gp.getDataset('LONGITUDE')
+
+                ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
+                ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
+
+                latAnc = []
+                lonAnc = []
+                for i in range(gpsLat.data.shape[0]):
+                    latAnc.append(gpsLat)
+                    lonAnc.append(gpsLon)
 
         # Solar geometry from GPS alone; No Tracker, no Ancillary
         relAzAnc = []
