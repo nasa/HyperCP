@@ -245,8 +245,8 @@ class ProcessL1aqc:
             elif gp.id.startswith("SunTracker_sorad"):
                 # Note - So-Rad Lat, Lon are already in decimal format 
                 gpsDateTime = gp.getDataset('DATETIME').data
-                gpsLat = gp.getDataset('LATITUDE')
-                gpsLon = gp.getDataset('LONGITUDE')
+                gpsLat = np.array(gp.getDataset('LATITUDE').data.tolist()).ravel()
+                gpsLon = np.array(gp.getDataset('LONGITUDE').data.tolist()).ravel()
 
                 ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
                 ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
@@ -755,6 +755,7 @@ class ProcessL1aqc:
 
             if gp is not None:
                 # TODO: Update datasets for DALEC/SoRAD to capture relAz
+                print(gp.id)
                 if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):
                     timeStamp = gp.getDataset("DATETIME").data
                     # Rotator Home Angle Offset is generally set in the .sat file when setting up the SunTracker
@@ -788,10 +789,36 @@ class ProcessL1aqc:
                     # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
                     relAz[relAz>180] = relAz[relAz>180] - 360
                     relAz[relAz<-180] = relAz[relAz<-180] + 360
+                    
+                elif gp.id == 'SunTracker_sorad':
+   
+                    # I have added solar azimuth and solar zenith angle to 'SunTracker_sorad' group
+                    # We can re use gps Lat and Lon fields as they are on same time grid
+                    sunAzimuth = []
+                    sunZenith = []
+                    for i, dt_utc in enumerate(gpsDateTime):
+                        sunAzimuth.append(get_azimuth(gpsLat.data[i],gpsLon.data[i],dt_utc,0))
+                        sunZenith.append(90 - get_altitude(gpsLat.data[i],gpsLon.data[i],dt_utc,0))
+                  
+                    gp.addDataset("SOLAR_AZ")
+                    gp.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])  
+                    gp.addDataset("SZA")
+                    gp.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
+                
+                    # So-Rad relative azimuth has been pre-computed
+                    newRelAzData = gp.getDataset('REL_AZ')
+                    relAz = np.array(gp.getDataset('REL_AZ').data.tolist()).ravel()
+
+                    
+                    # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
+                    relAz[relAz>180] = relAz[relAz>180] - 360
+                    relAz[relAz<-180] = relAz[relAz<-180] + 360
+  
                 else:
                     msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
                     print(msg)
                     Utilities.writeLogFile(msg)
+                    
         else:
             relAz = relAzAnc
 
