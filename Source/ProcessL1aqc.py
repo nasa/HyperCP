@@ -696,6 +696,7 @@ class ProcessL1aqc:
             for group in node.groups:
                 # NOTE: SOLARTRACKER and pySAS using POINTING dataset to get rotator movements
                 #   NOTE: DALEC also uses POINTING. SoRad has no POINTING but should still have option to filter here, or?
+                #  I think for So-rad we should assume that this step has already been done (we already set the allowed angular range at time of data aquisition)
                 if group.id.startswith("SunTracker"):
                     gp = group
                     break
