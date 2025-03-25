@@ -1726,7 +1726,7 @@ class ProcessL2:
             # Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.
 
             # reduce number of draws because of how computationally intensive the Zhang method is
-            Rho_Uncertainty_Obj = Propagate(M=10, cores=1)
+            Rho_Uncertainty_Obj = Propagate(M=100, cores=1)
 
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
@@ -1774,10 +1774,14 @@ class ProcessL2:
                 waveSubset = wave_array[:,1].tolist()
 
             # rhoVector = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
-            #                                             SalXSlice, RelAzXSlice, waveSubset)
+            #                            
+          
             SVA = ConfigFile.settings['fL2SVA']
-            rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
-                                                            SalXSlice, RelAzXSlice, SVA, waveSubset, Rho_Uncertainty_Obj)
+
+            rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice, SalXSlice, RelAzXSlice, 
+                                                          SVA, waveSubset, Rho_Uncertainty_Obj) 
+        
+
 
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[i]

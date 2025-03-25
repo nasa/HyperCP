@@ -211,7 +211,7 @@ class RhoCorrections:
 
         LUT = z17_lut.sel(vzen=sva, method='nearest')
         LUT = LUT.interp(wind=[0, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15], kwargs={"fill_value": "extrapolate"})
-
+        
         try:
             zhang_interp = spin.interpn(
                 points=(
@@ -223,6 +223,7 @@ class RhoCorrections:
                     LUT.SST.values,
                     LUT.wavelength.values
                 ),
+
                 values=LUT.Glint.values,
                 xi=(
                     ws,
@@ -233,10 +234,11 @@ class RhoCorrections:
                     wt,
                     nwb
                 ),
-                method="cubic",
+                method="linear", # I had memory issues using cubic interpolation, so have used linear as a temp fix
             )
         except ValueError as err:
             print(err)  # will implement better error handling, in place until Z17 LUT is updated with all indexes
             return 0
         else:
             return zhang_interp
+
