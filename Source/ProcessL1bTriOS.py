@@ -328,7 +328,7 @@ class ProcessL1bTriOS:
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
             print("Factory TriOS RAMSES - no uncertainty computation")
-            bre
+
         # Add Class-based characterization files + RADCAL files
         elif ConfigFile.settings['bL1bCal'] == 2:
             radcal_dir = ConfigFile.settings['RadCalDir']

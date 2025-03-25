@@ -240,7 +240,7 @@ class ProcessL1bqc:
             ltLightGroup = node.getGroup('LT_LIGHT_L1AQC')
             liDarkGroup = node.getGroup('LI_DARK_L1AQC')
             liLightGroup = node.getGroup('LI_LIGHT_L1AQC')
-        elif ConfigFile.settings['SensorType'].lower() == 'trios':
+        elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
             esGroup = node.getGroup('ES_L1AQC')
             liGroup = node.getGroup('LI_L1AQC')
             ltGroup = node.getGroup('LT_L1AQC')        
@@ -448,7 +448,7 @@ class ProcessL1bqc:
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return False
-                elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                elif ConfigFile.settings['SensorType'].lower() == 'trios' or  ConfigFile.settings['SensorType'].lower() == 'sorad':
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
                     Utilities.filterData(ltGroup,badTimes,'L1AQC')
@@ -530,7 +530,7 @@ class ProcessL1bqc:
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False
-            elif ConfigFile.settings['SensorType'].lower() == 'trios':
+            elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
                 Utilities.filterData(esGroup,badTimes,'L1AQC')
                 Utilities.filterData(liGroup,badTimes,'L1AQC')
                 Utilities.filterData(ltGroup,badTimes,'L1AQC')
@@ -615,7 +615,7 @@ class ProcessL1bqc:
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False
-            elif ConfigFile.settings['SensorType'].lower() == 'trios':
+            elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
                 Utilities.filterData(esGroup,badTimes,'L1AQC')
                 Utilities.filterData(liGroup,badTimes,'L1AQC')
                 Utilities.filterData(ltGroup,badTimes,'L1AQC')
@@ -679,7 +679,7 @@ class ProcessL1bqc:
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return False
-                elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
                     Utilities.filterData(ltGroup,badTimes,'L1AQC')
@@ -751,7 +751,7 @@ class ProcessL1bqc:
                         print(msg)
                         Utilities.writeLogFile(msg)
                         return False
-                elif ConfigFile.settings['SensorType'].lower() == 'trios':
+                elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
                     Utilities.filterData(ltGroup,badTimes,'L1AQC')
