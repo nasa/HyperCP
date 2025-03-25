@@ -260,7 +260,6 @@ class ProcessL1bqc:
             if gp.id.startswith("SIXS"):
                 sixSGroup = gp
 
-
         # # Regardless of whether SunTracker is used, Ancillary data will have been already been
         # # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
         # # to have model data and/or default values incorporated.
@@ -306,6 +305,7 @@ class ProcessL1bqc:
             ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')
 
         if robotGroup is not None:
+            breakpoint()
             # Take REL_AZ, SZA, SOLAR_AZ, HEADING, POINTING, HUMIDITY, PITCH and ROLL
             #  preferentially from tracker data. Some of these might change as
             #  new instruments are added that don't fit the SunTracker/pySAS
@@ -340,6 +340,10 @@ class ProcessL1bqc:
                 ancGroup.addDataset('ROLL')
                 ancGroup.datasets['ROLL'] = robotGroup.getDataset('ROLL')
                 ancGroup.datasets['ROLL'].changeColName('SAS','ROLL')
+            if 'TILT' in robotGroup.datasets:
+                ancGroup.addDataset('TILT')
+                ancGroup.datasets['TILT'] = robotGroup.getDataset('TILT')
+                ancGroup.datasets['TILT'].changeColName('SAS','TILT')
 
             # Finished with SunTracker/pySAS group. Delete
             for gp in node.groups:
@@ -772,7 +776,7 @@ class ProcessL1bqc:
         # Need to either create a new ancData object, or populate the nans in the current one with the model data
         if not ProcessL1bqc.QC(node):
             return None
-
+        breakpoint()
         node.attributes["PROCESSING_LEVEL"] = "1BQC"
         # Clean up units and push into relevant groups attributes
         # Ancillary
