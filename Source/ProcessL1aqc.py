@@ -159,7 +159,8 @@ class ProcessL1aqc:
             if gp.id.endswith("GP"):
                 gp.id = "DALEC_GPS"
             if gp.id.endswith("ST"):
-                gp.id = "DALEC_TRACKER"
+                #gp.id = "DALEC_TRACKER"
+                gp.id = "SunTracker_DALEC"
             
         else:
             gp.id = cf.sensorType
@@ -811,8 +812,9 @@ class ProcessL1aqc:
         ancGroup = node.addGroup("ANCILLARY_METADATA")
         # If using a SunTracker, add RelAz to the SunTracker group...
         if ConfigFile.settings["bL1aqcSunTracker"]:
-            newRelAzData.columns["REL_AZ"] = relAz
-            newRelAzData.columnsToDataset()
+            if noRelAz:
+                newRelAzData.columns["REL_AZ"] = relAz
+                newRelAzData.columnsToDataset()
         else:
         #... otherwise populate the ancGroup
             ancGroup.addDataset("REL_AZ")
@@ -1023,3 +1025,4 @@ class ProcessL1aqc:
                     del gp.datasets["DATETIME_ADJUSTED"]
 
         return node
+
