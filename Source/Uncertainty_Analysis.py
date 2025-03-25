@@ -355,10 +355,22 @@ class Propagate:
         :return: Zhang17 method rho uncertainty
         """
         # it's quite amusing how small a change is required to completely revolutionise the Zhang uncertainty code isn't it? - Ashley
-        return self.MCP.propagate_random(RhoCorrections.read_Z17_LUT, # self.zhangWrapper,
+        return self.MCP.propagate_random(self.temporary_zhangWrapper, 
+                                         # RhoCorrections.read_Z17_LUT, 
+                                         # # self.zhangWrapper,
                                          mean_vals,
                                          uncertainties
                                          )
+    
+    @staticmethod
+    def temporary_zhangWrapper(windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, waveBands):
+        from Source.RhoCorrections import InterpolationError
+        try:
+            zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, waveBands)
+        except InterpolationError as err:
+            zhang = Propagate.zhangWrapper(windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, waveBands)
+        
+        return zhang
 
     # Measurement Functions
     @staticmethod
