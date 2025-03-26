@@ -106,8 +106,7 @@ class GetAnc_ecmwf:
                         },
                         pathOut)
                 except:
-                    print('CAMS atmospheric data could not be retrieved. Check inputs.')
-                    exit()
+                    raise Exception('CAMS atmospheric data could not be retrieved. Check inputs.')
         return
 
     @staticmethod
