@@ -30,9 +30,10 @@ class ProcessL1aqc:
         # Delete the records in badTime ranges from each dataset in the group
         finalCount = 0
         originalLength = len(timeStamp)
+     
         for dateTime in badTimes:
             # Need to reinitialize for each loop
-            
+    
             startLength = len(timeStamp)
             newTimeStamp = []
             start = dateTime[0]
@@ -206,7 +207,7 @@ class ProcessL1aqc:
         for gp in node.groups:
             if gp.id.startswith('GP'):
 
-                # NOTE: Do So-Rad and DALEC use a group in L1A called GP*, like GPS or GPRMC?
+                # NOTE: Do So-Rad and DALEC use a group in L1A called GP*, like GPS or GPRMC? 
                 #   NOTE: If not, make changes here to pick up GPS data from the appropriate group
 
                 gpsDateTime = gp.getDataset('DATETIME').data
@@ -242,7 +243,7 @@ class ProcessL1aqc:
                 # Fluxgate on the THS:
                 compass = gp.getDataset('COMP')
             
-            elif gp.id.startswith("SunTracker_sorad"):
+            elif gp.id.startswith("SunTracker_sorad"): # So-rad GPS
                 # Note - So-Rad Lat, Lon are already in decimal format 
                 gpsDateTime = gp.getDataset('DATETIME').data
                 gpsLat = np.array(gp.getDataset('LATITUDE').data.tolist()).ravel()
@@ -513,7 +514,7 @@ class ProcessL1aqc:
         # Interpolating them first would introduce error.
         
         # Notes for So-Rad
-        # My understanding is that the attitide QC threshold should be placed in terms of a single max tilt (i.e. angle to vertical),
+        # My understanding is that the attitide QC threshold should be placed in terms of a single max tilt value (i.e. angle to vertical),
         # rather than 2 separate roll and pitch filters. For the existing suntracker systems, I recommend caculating tilt via 
         # the small angle approximation `tilt = sqrt(roll^2 + pitch^2)' and redesigining the config with a single max tilt value filter.
         # As a work-around, I have read so-rad tilt data and pretended it is pitch and roll (this still achives the desired result of
@@ -957,7 +958,7 @@ class ProcessL1aqc:
                 if abs(relAzimuthAngle) > relAzimuthMax or abs(relAzimuthAngle) < relAzimuthMin or math.isnan(relAzimuthAngle):
                     i += 1
                     if start == -1:
-                        # print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle,2)))
+                        print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle,2)))
                         start = index
                     stop = index
                 else:
@@ -993,8 +994,8 @@ class ProcessL1aqc:
    
         # For each dataset in each group, find the badTimes to remove and delete those rows
         # Test: Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data
-      #  breakpoint()
         if len(badTimes) > 0:
+        
             msg = "Eliminate combined filtered data from datasets.*****************************"
             print(msg)
             Utilities.writeLogFile(msg)

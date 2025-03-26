@@ -1158,7 +1158,7 @@ class Utilities:
         else:
             for ds in group.datasets:
                 group.datasets[ds].datasetToColumns()
-
+    
         msg = f'   Length of dataset after removal {originalLength-finalCount} long: {(100*finalCount/originalLength):.1f}% removed'
         print(msg)
         Utilities.writeLogFile(msg)
@@ -2575,14 +2575,14 @@ class Utilities:
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
                 data = node.getGroup(sensor).getDataset(sensor)
-            print(sensor)
+        
             # Retrieve hyper-spectral wavelengths from dataset
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
 
-           # breakpoint()
+
             # RADCAL data do not need interpolation, just removing the first line
             for data_type in ["_RADCAL_CAL"]:
-           #     breakpoint()
+
                 ds = grp.getDataset(sensor+data_type)
                 ds.datasetToColumns()
                 for indx in range(len(ds.columns)):

@@ -305,7 +305,6 @@ class ProcessL1bqc:
             ancGroup.datasets['SPEED_F_W'].changeColName('NONE','SPEED_F_W')
 
         if robotGroup is not None:
-            breakpoint()
             # Take REL_AZ, SZA, SOLAR_AZ, HEADING, POINTING, HUMIDITY, PITCH and ROLL
             #  preferentially from tracker data. Some of these might change as
             #  new instruments are added that don't fit the SunTracker/pySAS
@@ -684,6 +683,7 @@ class ProcessL1bqc:
                         Utilities.writeLogFile(msg)
                         return False
                 elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
+                    
                     Utilities.filterData(esGroup,badTimes,'L1AQC')
                     Utilities.filterData(liGroup,badTimes,'L1AQC')
                     Utilities.filterData(ltGroup,badTimes,'L1AQC')
@@ -773,10 +773,11 @@ class ProcessL1bqc:
                 # print (grp.id, ds)
                 grp.datasets[ds].datasetToColumns()
 
+       
         # Need to either create a new ancData object, or populate the nans in the current one with the model data
         if not ProcessL1bqc.QC(node):
             return None
-        breakpoint()
+     #   breakpoint()
         node.attributes["PROCESSING_LEVEL"] = "1BQC"
         # Clean up units and push into relevant groups attributes
         # Ancillary

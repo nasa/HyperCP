@@ -230,6 +230,7 @@ class ProcessL1bTriOS:
         mesure = raw_data/65535.0
         calibrated_mesure = np.zeros((nmes, nband))
         back_mesure = np.zeros((nmes, nband))
+
         for n in range(nmes):
             # Background correction : B0 and B1 read from "back data"
             back_mesure[n,:] = raw_back[:,0] +  raw_back[:,1]*(int_time[n]/int_time_t0)
