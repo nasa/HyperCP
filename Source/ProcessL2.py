@@ -1218,6 +1218,11 @@ class ProcessL2:
                 else:
                     newDS = newGroup.addDataset(dsID)
                 ds = group.getDataset(dsID)
+                
+                # Set relAz to abs(relAz) prior to averaging
+                if dsID == 'REL_AZ':
+                    ds.columns['REL_AZ'] = np.abs(ds.columns['REL_AZ']).tolist()
+
                 ds.datasetToColumns()
                 dsSlice = ProcessL2.columnToSlice(ds.columns,start, end)
                 dsXSlice = None
@@ -1629,7 +1634,6 @@ class ProcessL2:
         # Take the mean of the lowest X% for the ancillary group in the slice
         # (Combines Slice and XSlice -- as above -- into one method)
         # node.groups.append(ancGroup)
-
         ProcessL2.sliceAveOther(node, start, end, y, ancGroup, sixSGroup)
         newAncGroup = node.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
@@ -1658,7 +1662,7 @@ class ProcessL2:
         if isinstance(RelAzXSlice, list):
             RelAzXSlice = RelAzXSlice[0]
 
-        RelAzXSlice = abs(RelAzXSlice)
+        # RelAzXSlice = abs(RelAzXSlice)
 
         # Only required in Zhang17 currently
         try:
