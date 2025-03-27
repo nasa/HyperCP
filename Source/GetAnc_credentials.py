@@ -73,11 +73,12 @@ class GetAnc_credentials:
 
     # Erase already existing user credentials
     @staticmethod
-    def erase_user_credentials(credentialsID: str) -> None:
+    def erase_user_credentials(credentialsID: str, PyQT_or_Tk='PyQT') -> None:
         '''
         Erase credentials line in file (netrc case) or full credentials file (json case)
 
         credentialsID: a string, 'NASA_Earth_Data', 'ECWMF_ADS' or 'ECMWF_CDS'
+        PyQT_or_Tk: a string, either 'PyQT' or 'Tk' (default='PyQT')
         '''
 
         # Determine case
@@ -86,6 +87,12 @@ class GetAnc_credentials:
 
         # If file does not even exist, return.
         if not os.path.exists(credentialsFile):
+            return
+
+        erase = GetAnc_credentials.messageBox('Erase credentials?', 'This action will erase and replace your currently stored %s credentials, continue?' % credentialsID,'Warning',cancelButton=True, PyQT_or_Tk=PyQT_or_Tk)
+
+        # Skip if reset was canceled...
+        if not erase:
             return
 
         # If JSON file, remove file. If netrc, remove specific line. (JSON or netrc according to "specs")
@@ -233,13 +240,14 @@ class GetAnc_credentials:
 
     #
     @staticmethod
-    def messageBox(title: str,text: str,boxType: str,PyQT_or_Tk: str = 'PyQT') -> None:
+    def messageBox(title: str,text: str,boxType: str, cancelButton: bool = False, PyQT_or_Tk: str = 'PyQT') -> None:
         '''
         Message box after submit button is clicked
 
         title: a string. The title of the message box
         text: a string. the title of the message box
         boxType: a string, the message box type, either 'Information' or 'Warning'.
+        cancelButton: a boolean, if True add a Cancel button (default=False)
         PyQT_or_Tk: a string, either 'PyQT' or 'Tk' (default='PyQT')
         '''
 
@@ -253,16 +261,26 @@ class GetAnc_credentials:
                 msg_box.setIcon(QMessageBox.Warning)
             msg_box.setWindowTitle(title)
             msg_box.setText(text)
-            msg_box.setStandardButtons(QMessageBox.Ok)
-            msg_box.exec()
+            if cancelButton:
+                msg_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                result = msg_box.exec() == QMessageBox.Ok
+            else:
+                msg_box.setStandardButtons(QMessageBox.Ok)
+                result = True
+                msg_box.exec()
         elif PyQT_or_Tk == 'Tk':
             from tkinter import messagebox
             if boxType == 'Information':
                 messagebox.showinfo(title, text)
+                result = True
                 root.destroy()
             elif boxType == 'Warning':
-                messagebox.showwarning(title, text)
-        return
+                if cancelButton:
+                    result = messagebox.askokcancel(title, text, icon="warning")
+                else:
+                    messagebox.showwarning(title, text)
+                    result = True
+        return result
 
     # Function to handle submission of key and secret
     @staticmethod
@@ -275,16 +293,13 @@ class GetAnc_credentials:
 
         if key and secret:
             GetAnc_credentials.save_user_credentials(specs,key,secret)
-            GetAnc_credentials.messageBox('Success', 'Credentials and settings saved successfully!','Information',PyQT_or_Tk=PyQT_or_Tk)
+            _ = GetAnc_credentials.messageBox('Success', 'Credentials and settings saved successfully!','Information',PyQT_or_Tk=PyQT_or_Tk)
         else:
-            GetAnc_credentials.messageBox('Input Error', "Please, don't leave empty fields!",'Warning',PyQT_or_Tk=PyQT_or_Tk)
+            _ = GetAnc_credentials.messageBox('Input Error', "Please, don't leave empty fields!",'Warning',PyQT_or_Tk=PyQT_or_Tk)
         return
 
     @staticmethod
     def custom_close_event(event) -> None:
-        # Print a debug message
-        print("Custom close event triggered!")
-
         # Schedule the window for deletion
         window_pop_up.deleteLater()
 
