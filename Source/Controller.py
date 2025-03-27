@@ -243,7 +243,6 @@ class Controller:
 
         for key in list(calFiles.keys()):
             cf = CalibrationFile()
-            print(key)
             if '.ini' in key:
                 if calFiles[key]["enabled"]:
                     cf.id = key
@@ -471,13 +470,14 @@ class Controller:
         _, filename = os.path.split(outFilePath)
         if node is not None:
 
-            if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+            if (ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad') and ConfigFile.settings['bL1bCal'] == 1:
                 plotDeltaBool = False
             else:
                 plotDeltaBool = True
 
             # Create Plots
             # Radiometry
+         #   breakpoint()
             if ConfigFile.settings['bL2PlotRrs']==1:
                 Utilities.plotRadiometry(node, filename, rType='Rrs', plotDelta = plotDeltaBool)
             if ConfigFile.settings['bL2PlotnLw']==1:
@@ -909,18 +909,6 @@ class Controller:
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return #-1
-                
-        if ConfigFile.settings["SensorType"].lower() == "sorad" and level == "L1A":
-          for fp in inFiles:
-            # Check that the input file matches what is expected for this processing level
-            # Not case sensitive
-            fileName = str.lower(os.path.split(fp)[1])
-
-            if np.sum([fileName.find(str.lower(s)) for s in srchStr] ) < 0 :
-                msg = f'{fileName} does not match expected input level for outputing {level}'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return #-1
 
             #Pass entire list L0 files
             # print("Processing: " + fp)
