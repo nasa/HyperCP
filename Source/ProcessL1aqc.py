@@ -190,7 +190,6 @@ class ProcessL1aqc:
         # Reorganize groups in with new names
         # if ConfigFile.settings['SensorType'].lower() == 'seabird':
         for gp in node.groups:
-            print(gp)
             cf = calibrationMap[gp.attributes["CalFileName"]]
             ProcessL1aqc.renameGroup(gp,cf)
      

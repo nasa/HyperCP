@@ -200,7 +200,6 @@ class ProcessL1bTriOS:
 
         # Read HDF file inputs
         # grp = node.getGroup(instrument_number+'.dat')
-        print(sensortype)
         grp = node.getGroup(sensortype)
         grp.getDataset("CAL_"+sensortype).datasetToColumns()
         raw_cal = np.array(grp.getDataset("CAL_"+sensortype).columns['0'])
@@ -302,7 +301,6 @@ class ProcessL1bTriOS:
 
         # Retain L1BQC data for L2 instrument uncertainty analysis
         for gp in node.groups:
-            print(gp.id)
             if gp.id == 'ES' or gp.id == 'LI' or gp.id == 'LT':
                 newGroup = node.addGroup(gp.id+'_L1AQC')
                 newGroup.copy(gp)

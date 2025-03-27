@@ -777,7 +777,7 @@ class ProcessL1bqc:
         # Need to either create a new ancData object, or populate the nans in the current one with the model data
         if not ProcessL1bqc.QC(node):
             return None
-     #   breakpoint()
+
         node.attributes["PROCESSING_LEVEL"] = "1BQC"
         # Clean up units and push into relevant groups attributes
         # Ancillary
