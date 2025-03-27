@@ -561,13 +561,8 @@ class ProcessL2:
                     newRrsUNCData.columns[k].append(rrsUNC[k])
                     # newnLwUNCData.columns[k].append(nLwUNC)
                     newnLwUNCData.columns[k].append(nLwUNC[k])
-                    if ConfigFile.settings['bL1bCal']==1 and ConfigFile.settings['SensorType'].lower() == 'trios':
+                    if ConfigFile.settings['bL1bCal']==1 and (ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad'):
                     # Specifique case for Factory-Trios
-                        newESUNCData.columns[k].append(esUNC[k])
-                        newLIUNCData.columns[k].append(liUNC[k])
-                        newLTUNCData.columns[k].append(ltUNC[k])
-                    elif ConfigFile.settings['bL1bCal']==1 and ConfigFile.settings['SensorType'].lower() == 'sorad':
-                        # Specifique case for Factory-Trios (which will also apply to sorad)
                         newESUNCData.columns[k].append(esUNC[k])
                         newLIUNCData.columns[k].append(liUNC[k])
                         newLTUNCData.columns[k].append(ltUNC[k])
