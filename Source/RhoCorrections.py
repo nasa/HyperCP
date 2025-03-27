@@ -255,7 +255,7 @@ class RhoCorrections:
                     wt,
                     nwb
                 ),
-                method="cubic",
+                method="linear", # should be cubic - temporary fix due to memory issues
             )
         except ValueError as err:
             # will implement better error handling, in place until Z17 LUT is updated with all indexes
