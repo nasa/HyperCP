@@ -119,44 +119,47 @@ class ProcessL1aqc:
 
     @staticmethod
     def renameGroup(gp, cf):
-        ''' Rename the groups to more generic ids rather than the names of the cal files '''
-
-        #NOTE: Attn. DALEC and SoRAD, you can update your group names here.
-        if gp.id.startswith("GPRMC") or gp.id.startswith("GPGAA"):
-            gp.id = "GPS"
-            
-        if ConfigFile.settings['SensorType'].lower() == 'seabird':
-            if gp.id.startswith("UMTWR"):
-                gp.id = "SunTracker_pySAS"
-            if gp.id.startswith("SATNAV"):
-                gp.id = "SunTracker_SOLARTRACKER"
-            if gp.id.startswith("SATMSG"):
-                gp.id = "SOLARTRACKER_STATUS"
-            if gp.id.startswith("SATPYR"):
-                gp.id = "PYROMETER"
-            if gp.id.startswith("HED"):
-                gp.id = "ES_DARK"
-            if gp.id.startswith("HSE"):
-                gp.id = "ES_LIGHT"
-            if gp.id.startswith("HLD"):
-                if cf.sensorType == "LI":
-                    gp.id = "LI_DARK"
-                if cf.sensorType == "LT":
-                    gp.id = "LT_DARK"
-            if gp.id.startswith("HSL"):
-                if cf.sensorType == "LI":
-                    gp.id = "LI_LIGHT"
-                if cf.sensorType == "LT":
-                    gp.id = "LT_LIGHT"
-    
-        if ConfigFile.settings['SensorType'].lower() == 'sorad':
-            if  gp.id.startswith("sorad"):
-                gp.id = "SunTracker_sorad"
-            else:
+       ''' Rename the groups to more generic ids rather than the names of the cal files '''
+       print(gp.id)
+       #NOTE: Attn. DALEC and SoRAD, you can update your group names here.
+       if gp.id.startswith("GPRMC") or gp.id.startswith("GPGAA"):
+           gp.id = "GPS"
+           
+       if ConfigFile.settings['SensorType'].lower() == 'seabird':
+           if gp.id.startswith("UMTWR"):
+               gp.id = "SunTracker_pySAS"
+           if gp.id.startswith("SATNAV"):
+               gp.id = "SunTracker_SOLARTRACKER"
+           if gp.id.startswith("SATMSG"):
+               gp.id = "SOLARTRACKER_STATUS"
+           if gp.id.startswith("SATPYR"):
+               gp.id = "PYROMETER"
+           if gp.id.startswith("HED"):
+               gp.id = "ES_DARK"
+           if gp.id.startswith("HSE"):
+               gp.id = "ES_LIGHT"
+           if gp.id.startswith("HLD"):
+               if cf.sensorType == "LI":
+                   gp.id = "LI_DARK"
+               if cf.sensorType == "LT":
+                   gp.id = "LT_DARK"
+           if gp.id.startswith("HSL"):
+               if cf.sensorType == "LI":
+                   gp.id = "LI_LIGHT"
+               if cf.sensorType == "LT":
+                   gp.id = "LT_LIGHT"
+      
+       elif ConfigFile.settings['SensorType'].lower() == 'trios':
                 gp.id = cf.sensorType
-        else: 
-            gp.id = cf.sensorType
-
+       
+       elif ConfigFile.settings['SensorType'].lower() == 'sorad':
+           if  gp.id.startswith("sorad"):
+               gp.id = "SunTracker_sorad"
+           else:
+               gp.id = cf.sensorType
+   
+       print(gp.id)
+                
     @staticmethod
     def processL1aqc(node, calibrationMap, ancillaryData=None):
         '''
@@ -529,6 +532,7 @@ class ProcessL1aqc:
             roll = None
             gp  = None
             for group in node.groups:
+                print(group.id)
                 # NOTE: SOLARTRACKER (not pySAS) and DALEC use SunTracker group for PITCH/ROLL
                 if group.id.startswith("SunTracker"):
                     gp = group
@@ -542,6 +546,7 @@ class ProcessL1aqc:
                         tilt = np.array(gp.getDataset("TILT").data.tolist()).ravel()
                         roll = tilt  # now I have pretended tilt and pitch = roll (see comments on line 515)
                         pitch = tilt     
+                        break
                  # For SATTHS without SunTracker (i.e. with pySAS)
                 if group.id.startswith('SATTHS'):
                     gp = group
