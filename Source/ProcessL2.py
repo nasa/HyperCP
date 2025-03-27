@@ -2529,7 +2529,7 @@ class ProcessL2:
                 node.removeGroup(gp)
 
         # In the case of TriOS Factory, strip out uncertainty datasets
-        if ConfigFile.settings['SensorType'].lower() == 'trios' or  ConfigFile.settings['SensorType'].lower() == 'sorad' and ConfigFile.settings['bL1bCal'] == 1:
+        if (ConfigFile.settings['SensorType'].lower() == 'trios' or  ConfigFile.settings['SensorType'].lower() == 'sorad') and ConfigFile.settings['bL1bCal'] == 1:
             for gp in node.groups:
                 if gp.id in ('IRRADIANCE', 'RADIANCE', 'REFLECTANCE'):
                     removeList = []

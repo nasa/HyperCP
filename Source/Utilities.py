@@ -1185,9 +1185,7 @@ class Utilities:
         dataDelta = None
         # Note: If only one spectrum is left in a given ensemble, STD will
         #be zero for Es, Li, and Lt.'''
-        if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
-            suffix = 'sd'
-        elif ConfigFile.settings['SensorType'].lower() == 'sorad' and ConfigFile.settings['bL1bCal'] == 1:
+        if (ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad' )and ConfigFile.settings['bL1bCal'] == 1:
             suffix = 'sd'
         else:
             suffix = 'unc'
@@ -1204,7 +1202,7 @@ class Utilities:
             Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_HYPER_unc').data.copy()
-
+       
             plotRange = [340, 800]
             if ConfigFile.settings['bL2WeightMODISA']:
                 Data_MODISA = group.getDataset(f'{rType}_MODISA')
