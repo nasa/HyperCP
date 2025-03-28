@@ -30,7 +30,7 @@ class ProcessL1b_FRMCal:
             # keys change depending on if the process is called at L1B or L2, store correct keys in dictionary
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 irad_key = f'{sensortype}_LIGHT_L1AQC'
-            elif ConfigFile.settings['SensorType'].lower() == 'trios':
+            elif ConfigFile.settings['SensorType'].lower() == 'trios' or  ConfigFile.settings['SensorType'].lower() == 'sorad':
                 irad_key = f'{sensortype}_L1AQC'
             else:
                 return False
@@ -89,7 +89,8 @@ class ProcessL1b_FRMCal:
         if len(datetime) % n_min != 0:
             # +1 to account for last points that fall in the last bin (smaller than 3 min)
             n_bin += 1
-     
+  
+        
         percent_direct_solar_irradiance = np.zeros((n_bin, nband))
         percent_diffuse_solar_irradiance = np.zeros((n_bin, nband))
         direct_solar_irradiance = np.zeros((n_bin, nband))
