@@ -2489,7 +2489,8 @@ class ProcessL2:
         node.attributes['ENSEMBLE_DURATION'] = str(ConfigFile.settings['fL2TimeInterval']) + ' sec'
 
         # Check to insure at least some data survived quality checks
-        if node.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None:
+        #if node.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None: - code breaks as data does not exist
+        if node.getGroup("REFLECTANCE").getDataset("Rrs_HYPER") is None:
             msg = "All data appear to have been eliminated from the file. Aborting."
             print(msg)
             Utilities.writeLogFile(msg)
