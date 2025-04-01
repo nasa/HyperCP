@@ -222,7 +222,6 @@ class ProcessL1aqc:
                     latAnc.append(latDD)
                     lonAnc.append(lonDD)
 
-                
                 if gp.attributes['CalFileName'].startswith('GPRMC'):
                     gpsStatus = gp.getDataset('STATUS')
                 else:
