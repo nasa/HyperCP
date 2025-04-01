@@ -1158,7 +1158,7 @@ class Utilities:
         else:
             for ds in group.datasets:
                 group.datasets[ds].datasetToColumns()
-
+    
         msg = f'   Length of dataset after removal {originalLength-finalCount} long: {(100*finalCount/originalLength):.1f}% removed'
         print(msg)
         Utilities.writeLogFile(msg)
@@ -1185,9 +1185,7 @@ class Utilities:
         dataDelta = None
         # Note: If only one spectrum is left in a given ensemble, STD will
         #be zero for Es, Li, and Lt.'''
-        if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
-            suffix = 'sd'
-        elif ConfigFile.settings['SensorType'].lower() == 'sorad' and ConfigFile.settings['bL1bCal'] == 1:
+        if (ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad' )and ConfigFile.settings['bL1bCal'] == 1:
             suffix = 'sd'
         else:
             suffix = 'unc'
@@ -1204,7 +1202,7 @@ class Utilities:
             Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_HYPER_unc').data.copy()
-
+       
             plotRange = [340, 800]
             if ConfigFile.settings['bL2WeightMODISA']:
                 Data_MODISA = group.getDataset(f'{rType}_MODISA')
@@ -2575,14 +2573,14 @@ class Utilities:
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
                 data = node.getGroup(sensor).getDataset(sensor)
-            print(sensor)
+        
             # Retrieve hyper-spectral wavelengths from dataset
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
 
-           # breakpoint()
+
             # RADCAL data do not need interpolation, just removing the first line
             for data_type in ["_RADCAL_CAL"]:
-           #     breakpoint()
+
                 ds = grp.getDataset(sensor+data_type)
                 ds.datasetToColumns()
                 for indx in range(len(ds.columns)):

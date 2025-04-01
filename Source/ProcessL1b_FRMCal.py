@@ -82,12 +82,14 @@ class ProcessL1b_FRMCal:
 
         # SIXS called over 3min bin
         deltat = (datetime[-1]-datetime[0])/len(datetime)
-        n_min = int(3*60//deltat.total_seconds())  # nb of mesures over a bin
-        n_bin = len(datetime)//n_min  # nb of bin in a cast
+        n_min = int(3*60/deltat.total_seconds())  # nb of mesures over a bin
+        if n_min == 0:  #TJ - this if statement was extra code that I added to avoid division by zero (I have no idea if it is a sound thing to do!)
+            n_min = n_min + 1
+        n_bin = len(datetime)//(n_min)  # nb of bin in a cast
         if len(datetime) % n_min != 0:
             # +1 to account for last points that fall in the last bin (smaller than 3 min)
             n_bin += 1
-
+     
         percent_direct_solar_irradiance = np.zeros((n_bin, nband))
         percent_diffuse_solar_irradiance = np.zeros((n_bin, nband))
         direct_solar_irradiance = np.zeros((n_bin, nband))

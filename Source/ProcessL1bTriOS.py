@@ -200,7 +200,6 @@ class ProcessL1bTriOS:
 
         # Read HDF file inputs
         # grp = node.getGroup(instrument_number+'.dat')
-        print(sensortype)
         grp = node.getGroup(sensortype)
         grp.getDataset("CAL_"+sensortype).datasetToColumns()
         raw_cal = np.array(grp.getDataset("CAL_"+sensortype).columns['0'])
@@ -230,6 +229,7 @@ class ProcessL1bTriOS:
         mesure = raw_data/65535.0
         calibrated_mesure = np.zeros((nmes, nband))
         back_mesure = np.zeros((nmes, nband))
+
         for n in range(nmes):
             # Background correction : B0 and B1 read from "back data"
             back_mesure[n,:] = raw_back[:,0] +  raw_back[:,1]*(int_time[n]/int_time_t0)
@@ -301,7 +301,6 @@ class ProcessL1bTriOS:
 
         # Retain L1BQC data for L2 instrument uncertainty analysis
         for gp in node.groups:
-            print(gp.id)
             if gp.id == 'ES' or gp.id == 'LI' or gp.id == 'LT':
                 newGroup = node.addGroup(gp.id+'_L1AQC')
                 newGroup.copy(gp)
@@ -328,7 +327,7 @@ class ProcessL1bTriOS:
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['bL1bCal'] == 1:
             print("Factory TriOS RAMSES - no uncertainty computation")
-            bre
+
         # Add Class-based characterization files + RADCAL files
         elif ConfigFile.settings['bL1bCal'] == 2:
             radcal_dir = ConfigFile.settings['RadCalDir']

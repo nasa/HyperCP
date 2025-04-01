@@ -30,9 +30,10 @@ class ProcessL1aqc:
         # Delete the records in badTime ranges from each dataset in the group
         finalCount = 0
         originalLength = len(timeStamp)
+     
         for dateTime in badTimes:
             # Need to reinitialize for each loop
-            
+    
             startLength = len(timeStamp)
             newTimeStamp = []
             start = dateTime[0]
@@ -118,43 +119,47 @@ class ProcessL1aqc:
 
     @staticmethod
     def renameGroup(gp, cf):
-        ''' Rename the groups to more generic ids rather than the names of the cal files '''
-
-        #NOTE: Attn. DALEC and SoRAD, you can update your group names here.
-        if gp.id.startswith("GPRMC") or gp.id.startswith("GPGAA"):
-            gp.id = "GPS"
-            
-        if ConfigFile.settings['SensorType'].lower() == 'seabird':
-            if gp.id.startswith("UMTWR"):
-                gp.id = "SunTracker_pySAS"
-            if gp.id.startswith("SATNAV"):
-                gp.id = "SunTracker_SOLARTRACKER"
-            if gp.id.startswith("SATMSG"):
-                gp.id = "SOLARTRACKER_STATUS"
-            if gp.id.startswith("SATPYR"):
-                gp.id = "PYROMETER"
-            if gp.id.startswith("HED"):
-                gp.id = "ES_DARK"
-            if gp.id.startswith("HSE"):
-                gp.id = "ES_LIGHT"
-            if gp.id.startswith("HLD"):
-                if cf.sensorType == "LI":
-                    gp.id = "LI_DARK"
-                if cf.sensorType == "LT":
-                    gp.id = "LT_DARK"
-            if gp.id.startswith("HSL"):
-                if cf.sensorType == "LI":
-                    gp.id = "LI_LIGHT"
-                if cf.sensorType == "LT":
-                    gp.id = "LT_LIGHT"
-        
-        if ConfigFile.settings['SensorType'].lower() ==" sorad":
-            if str(gp.id)[0:3] == 'SAM':
+       ''' Rename the groups to more generic ids rather than the names of the cal files '''
+       print(gp.id)
+       #NOTE: Attn. DALEC and SoRAD, you can update your group names here.
+       if gp.id.startswith("GPRMC") or gp.id.startswith("GPGAA"):
+           gp.id = "GPS"
+           
+       if ConfigFile.settings['SensorType'].lower() == 'seabird':
+           if gp.id.startswith("UMTWR"):
+               gp.id = "SunTracker_pySAS"
+           if gp.id.startswith("SATNAV"):
+               gp.id = "SunTracker_SOLARTRACKER"
+           if gp.id.startswith("SATMSG"):
+               gp.id = "SOLARTRACKER_STATUS"
+           if gp.id.startswith("SATPYR"):
+               gp.id = "PYROMETER"
+           if gp.id.startswith("HED"):
+               gp.id = "ES_DARK"
+           if gp.id.startswith("HSE"):
+               gp.id = "ES_LIGHT"
+           if gp.id.startswith("HLD"):
+               if cf.sensorType == "LI":
+                   gp.id = "LI_DARK"
+               if cf.sensorType == "LT":
+                   gp.id = "LT_DARK"
+           if gp.id.startswith("HSL"):
+               if cf.sensorType == "LI":
+                   gp.id = "LI_LIGHT"
+               if cf.sensorType == "LT":
+                   gp.id = "LT_LIGHT"
+      
+       elif ConfigFile.settings['SensorType'].lower() == 'trios':
                 gp.id = cf.sensorType
-        
-        else: #
-            gp.id = cf.sensorType
-
+       
+       elif ConfigFile.settings['SensorType'].lower() == 'sorad':
+           if  gp.id.startswith("sorad"):
+               gp.id = "SunTracker_sorad"
+           else:
+               gp.id = cf.sensorType
+   
+       print(gp.id)
+                
     @staticmethod
     def processL1aqc(node, calibrationMap, ancillaryData=None):
         '''
@@ -188,7 +193,6 @@ class ProcessL1aqc:
         # Reorganize groups in with new names
         # if ConfigFile.settings['SensorType'].lower() == 'seabird':
         for gp in node.groups:
-            print(gp)
             cf = calibrationMap[gp.attributes["CalFileName"]]
             ProcessL1aqc.renameGroup(gp,cf)
      
@@ -205,8 +209,8 @@ class ProcessL1aqc:
         for gp in node.groups:
             if gp.id.startswith('GP'):
 
-                # NOTE: Do So-Rad and DALEC use a group in L1A called GP*, like GPS or GPRMC?
-                #   NOTE: If not, make changes here to pick up GPS data from the appropriate group.
+                # NOTE: Do So-Rad and DALEC use a group in L1A called GP*, like GPS or GPRMC? 
+                #   NOTE: If not, make changes here to pick up GPS data from the appropriate group
 
                 gpsDateTime = gp.getDataset('DATETIME').data
                 gpsLat = gp.getDataset('LATPOS')
@@ -240,6 +244,21 @@ class ProcessL1aqc:
             elif gp.id.startswith('SATTHS'):
                 # Fluxgate on the THS:
                 compass = gp.getDataset('COMP')
+            
+            elif gp.id.startswith("SunTracker_sorad"): # So-rad GPS
+                # Note - So-Rad Lat, Lon are already in decimal format 
+                gpsDateTime = gp.getDataset('DATETIME').data
+                gpsLat = np.array(gp.getDataset('LATITUDE').data.tolist()).ravel()
+                gpsLon = np.array(gp.getDataset('LONGITUDE').data.tolist()).ravel()
+
+                ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
+                ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
+
+                latAnc = []
+                lonAnc = []
+                for i in range(gpsLat.data.shape[0]):
+                    latAnc.append(gpsLat[i])
+                    lonAnc.append(gpsLon[i])
 
         # Solar geometry from GPS alone; No Tracker, no Ancillary
         relAzAnc = []
@@ -495,6 +514,13 @@ class ProcessL1aqc:
         # This has to record the time interval (in datetime) for the bad angles in order to remove these time intervals
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
+        
+        # Notes for So-Rad
+        # My understanding is that the attitide QC threshold should be placed in terms of a single max tilt value (i.e. angle to vertical),
+        # rather than 2 separate roll and pitch filters. For the existing suntracker systems, I recommend caculating tilt via 
+        # the small angle approximation `tilt = sqrt(roll^2 + pitch^2)' and redesigining the config with a single max tilt value filter.
+        # As a work-around, I have read so-rad tilt data and pretended it is pitch and roll (this still achives the desired result of
+        # filtering out tilt values > 5 deg)
 
         if node is not None and int(ConfigFile.settings["bL1aqcCleanPitchRoll"]) == 1:
             msg = "Filtering file for high pitch and roll"
@@ -506,6 +532,7 @@ class ProcessL1aqc:
             roll = None
             gp  = None
             for group in node.groups:
+                print(group.id)
                 # NOTE: SOLARTRACKER (not pySAS) and DALEC use SunTracker group for PITCH/ROLL
                 if group.id.startswith("SunTracker"):
                     gp = group
@@ -513,6 +540,12 @@ class ProcessL1aqc:
                         timeStamp = gp.getDataset("DATETIME").data
                         pitch = gp.getDataset("PITCH").data["SAS"]
                         roll = gp.getDataset("ROLL").data["SAS"]
+                        break
+                    elif "TILT" in gp.datasets: # this condition finds So-Rad tilt
+                        timeStamp = gp.getDataset("DATETIME").data
+                        tilt = np.array(gp.getDataset("TILT").data.tolist()).ravel()
+                        roll = tilt  # now I have pretended tilt and pitch = roll (see comments on line 515)
+                        pitch = tilt     
                         break
                  # For SATTHS without SunTracker (i.e. with pySAS)
                 if group.id.startswith('SATTHS'):
@@ -544,7 +577,7 @@ class ProcessL1aqc:
 
             pitchMax = float(ConfigFile.settings["fL1aqcPitchRollPitch"])
             rollMax = float(ConfigFile.settings["fL1aqcPitchRollRoll"])
-
+            
             i = 0
             start = -1
             stop =[]
@@ -668,6 +701,7 @@ class ProcessL1aqc:
             for group in node.groups:
                 # NOTE: SOLARTRACKER and pySAS using POINTING dataset to get rotator movements
                 #   NOTE: DALEC also uses POINTING. SoRad has no POINTING but should still have option to filter here, or?
+                #  I think for So-rad we should assume that this step has already been done (we already set the allowed angular range at time of data aquisition)
                 if group.id.startswith("SunTracker"):
                     gp = group
                     break
@@ -772,10 +806,36 @@ class ProcessL1aqc:
                     # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
                     relAz[relAz>180] = relAz[relAz>180] - 360
                     relAz[relAz<-180] = relAz[relAz<-180] + 360
+                    
+                elif gp.id == 'SunTracker_sorad':
+   
+                    # I have added solar azimuth and solar zenith angle to 'SunTracker_sorad' group
+                    # We can re use gps Lat and Lon fields as they are on same time grid
+                    sunAzimuth = []
+                    sunZenith = []
+                    for i, dt_utc in enumerate(gpsDateTime):
+                        sunAzimuth.append(get_azimuth(gpsLat.data[i],gpsLon.data[i],dt_utc,0))
+                        sunZenith.append(90 - get_altitude(gpsLat.data[i],gpsLon.data[i],dt_utc,0))
+                  
+                    gp.addDataset("SOLAR_AZ")
+                    gp.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])  
+                    gp.addDataset("SZA")
+                    gp.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
+                
+                    # So-Rad relative azimuth has been pre-computed
+                    newRelAzData = gp.getDataset('REL_AZ')
+                    relAz = np.array(gp.getDataset('REL_AZ').data.tolist()).ravel()
+
+                    
+                    # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
+                    relAz[relAz>180] = relAz[relAz>180] - 360
+                    relAz[relAz<-180] = relAz[relAz<-180] + 360
+  
                 else:
                     msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
                     print(msg)
                     Utilities.writeLogFile(msg)
+                    
         else:
             relAz = relAzAnc
 
@@ -902,7 +962,7 @@ class ProcessL1aqc:
                 if abs(relAzimuthAngle) > relAzimuthMax or abs(relAzimuthAngle) < relAzimuthMin or math.isnan(relAzimuthAngle):
                     i += 1
                     if start == -1:
-                        # print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle,2)))
+                        print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle,2)))
                         start = index
                     stop = index
                 else:
@@ -938,8 +998,8 @@ class ProcessL1aqc:
    
         # For each dataset in each group, find the badTimes to remove and delete those rows
         # Test: Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data
-      #  breakpoint()
         if len(badTimes) > 0:
+        
             msg = "Eliminate combined filtered data from datasets.*****************************"
             print(msg)
             Utilities.writeLogFile(msg)

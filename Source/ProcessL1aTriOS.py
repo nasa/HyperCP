@@ -366,6 +366,8 @@ class ProcessL1aTriOS:
         #Create Data (LI,LT,ES) dataset
         ds_dt = np.dtype({'names': wl,'formats': [np.float64]*len(wl)})
         my_arr = np.array(data).transpose()
+        rec_arr = np.rec.fromarrays(my_arr, dtype=ds_dt)
+
         try:
             rec_arr = np.rec.fromarrays(my_arr, dtype=ds_dt)
         except ValueError as err:
@@ -373,6 +375,7 @@ class ProcessL1aTriOS:
                 rec_arr = np.rec.fromarrays(my_arr[1:], dtype=ds_dt)
             else:
                 raise
+
         gp.addDataset(sensor)
         gp.datasets[sensor].data=np.array(rec_arr, dtype=ds_dt)
 

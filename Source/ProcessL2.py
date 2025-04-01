@@ -561,13 +561,8 @@ class ProcessL2:
                     newRrsUNCData.columns[k].append(rrsUNC[k])
                     # newnLwUNCData.columns[k].append(nLwUNC)
                     newnLwUNCData.columns[k].append(nLwUNC[k])
-                    if ConfigFile.settings['bL1bCal']==1 and ConfigFile.settings['SensorType'].lower() == 'trios':
+                    if ConfigFile.settings['bL1bCal']==1 and (ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad'):
                     # Specifique case for Factory-Trios
-                        newESUNCData.columns[k].append(esUNC[k])
-                        newLIUNCData.columns[k].append(liUNC[k])
-                        newLTUNCData.columns[k].append(ltUNC[k])
-                    elif ConfigFile.settings['bL1bCal']==1 and ConfigFile.settings['SensorType'].lower() == 'sorad':
-                        # Specifique case for Factory-Trios (which will also apply to sorad)
                         newESUNCData.columns[k].append(esUNC[k])
                         newLIUNCData.columns[k].append(liUNC[k])
                         newLTUNCData.columns[k].append(ltUNC[k])
@@ -1730,7 +1725,7 @@ class ProcessL2:
             # Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.
 
             # reduce number of draws because of how computationally intensive the Zhang method is
-            Rho_Uncertainty_Obj = Propagate(M=10, cores=1)
+            Rho_Uncertainty_Obj = Propagate(M=100, cores=1)
 
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
@@ -1778,10 +1773,14 @@ class ProcessL2:
                 waveSubset = wave_array[:,1].tolist()
 
             # rhoVector = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
-            #                                             SalXSlice, RelAzXSlice, waveSubset)
+            #                            
+          
             SVA = ConfigFile.settings['fL2SVA']
-            rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
-                                                            SalXSlice, RelAzXSlice, SVA, waveSubset, Rho_Uncertainty_Obj)
+
+            rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice, SalXSlice, RelAzXSlice, 
+                                                          SVA, waveSubset, Rho_Uncertainty_Obj) 
+        
+
 
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[i]
@@ -2534,18 +2533,7 @@ class ProcessL2:
                 node.removeGroup(gp)
 
         # In the case of TriOS Factory, strip out uncertainty datasets
-        if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
-            for gp in node.groups:
-                if gp.id in ('IRRADIANCE', 'RADIANCE', 'REFLECTANCE'):
-                    removeList = []
-                    for dsName in reversed(gp.datasets):
-                        if dsName.endswith('_unc'):
-                            removeList.append(dsName)
-                    for dsName in removeList:
-                        gp.removeDataset(dsName)
-
-        # In the case of TriOS Factory, strip out uncertainty datasets (duplication of trios text for sorad)
-        if ConfigFile.settings['SensorType'].lower() == 'sorad' and ConfigFile.settings['bL1bCal'] == 1:
+        if (ConfigFile.settings['SensorType'].lower() == 'trios' or  ConfigFile.settings['SensorType'].lower() == 'sorad') and ConfigFile.settings['bL1bCal'] == 1:
             for gp in node.groups:
                 if gp.id in ('IRRADIANCE', 'RADIANCE', 'REFLECTANCE'):
                     removeList = []
