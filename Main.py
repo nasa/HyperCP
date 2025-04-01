@@ -661,6 +661,10 @@ class Command:
             print("Process Calibration Files")
             filename = ConfigFile.filename
             calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        elif ConfigFile.settings["SensorType"].lower() == "dalec":
+            print("Process Calibration Files")
+            filename = ConfigFile.filename
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
         else:
             print(f'CalibrationConfig is not yet ready for {ConfigFile.settings["SensorType"]}')
             sys.exit()

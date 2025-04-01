@@ -788,8 +788,6 @@ class ProcessL1aqc:
                     relAz[relAz>180] = relAz[relAz>180] - 360
                     relAz[relAz<-180] = relAz[relAz<-180] + 360
 
-#added by H.Gu
-                    noRelAz=True
                 elif gp.getDataset('REL_AZ'):
                     noRelAz=False
                     relAz=gp.getDataset('REL_AZ').data['REL_AZ']
@@ -811,8 +809,9 @@ class ProcessL1aqc:
         # Initialize a new group to host the unconventional ancillary data
         ancGroup = node.addGroup("ANCILLARY_METADATA")
         # If using a SunTracker, add RelAz to the SunTracker group...
+        #NOTE: for Dalec relAz is already read directly from Raw data file,so do nothing
         if ConfigFile.settings["bL1aqcSunTracker"]:
-            if noRelAz:
+            if ConfigFile.settings['SensorType'].lower() != 'dalec':
                 newRelAzData.columns["REL_AZ"] = relAz
                 newRelAzData.columnsToDataset()
         else:
