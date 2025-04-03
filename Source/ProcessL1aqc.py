@@ -433,7 +433,7 @@ class ProcessL1aqc:
         badTimes = []
 
         # Apply GPS Status Filter
-        # NOTE: I believe this is for an old dataset with GPGGA GPS with spotty reception. 
+        # NOTE: I believe this is for an old dataset with GPGGA GPS with spotty reception.
         #   Does not appear to apply to current instruments (i.e., no gp.id=="GPS")
         gps = False
         for gp in node.groups:
@@ -448,7 +448,7 @@ class ProcessL1aqc:
 
             i = 0
             start = -1
-            stop =[]
+            stop = None            
             for index, status in enumerate(gpsStatus.data["NONE"]):
                 # "V" for GPRMC, "0" for GPGGA
                 if status == b'V' or status == 0:
@@ -459,27 +459,23 @@ class ProcessL1aqc:
                 else:
                     if start != -1:
                         startstop = [timeStamp[start],timeStamp[stop]]
-                        msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+                        msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
                         # print(msg)
                         Utilities.writeLogFile(msg)
                         badTimes.append(startstop)
                         start = -1
-                endex = index
             msg = f'Percentage of data failed on GPS Status: {round(100*i/len(timeStamp))} %'
             print(msg)
             Utilities.writeLogFile(msg)
 
-            if start != -1 and stop == endex: # Records from a mid-point to the end are bad
+            if start != -1 and stop == index: # Records from a mid-point to the end are bad
                 startstop = [timeStamp[start],timeStamp[stop]]
-                msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
+                badTimes.append(startstop)
+                msg = f'   Flag additional data from {startstop[0]} to {startstop[1]} (included in percentage above)'
                 # print(msg)
-                Utilities.writeLogFile(msg)
-                if badTimes is None: # only one set of records
-                    badTimes = [startstop]
-                else:
-                    badTimes.append(startstop)
-
-            if start==0 and stop==endex: # All records are bad
+                Utilities.writeLogFile(msg)                
+                
+            if start==0 and stop==index: # All records are bad
                 return None
 
 
@@ -539,7 +535,7 @@ class ProcessL1aqc:
 
             i = 0
             start = -1
-            stop =[]
+            stop = None
             for index, pitchi in enumerate(pitch):
                 if abs(pitchi) > pitchMax or abs(roll[index]) > rollMax:
                     i += 1
@@ -551,7 +547,7 @@ class ProcessL1aqc:
                     if start != -1:
                         # print('Pitch or roll angle passed. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
                         startstop = [timeStamp[start],timeStamp[stop]]
-                        msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+                        msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
                         # print(msg)
                         Utilities.writeLogFile(msg)
                         badTimes.append(startstop)
@@ -562,15 +558,12 @@ class ProcessL1aqc:
 
             if start != -1 and stop == index: # Records from a mid-point to the end are bad
                 startstop = [timeStamp[start],timeStamp[stop]]
-                msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
+                badTimes.append(startstop)
+                msg = f'   Flag data from {startstop[0]} to {startstop[1]} '
                 # print(msg)
                 Utilities.writeLogFile(msg)
-                if badTimes is None: # only one set of records
-                    badTimes = [startstop]
-                else:
-                    badTimes.append(startstop)
 
-            if start==0 and stop==index: # All records are badJM
+            if start==0 and stop==index: # All records are bad
                 return None
 
 
@@ -603,17 +596,22 @@ class ProcessL1aqc:
                     Utilities.writeLogFile(msg)
 
                     kickout = 0
+                    time = None
+                    start = None
+                    startIndex = None
                     i = 0
                     for index, rotatori in enumerate(rotator):
                         if index == 0:
                             lastAngle = rotatori
                         else:
-                            if rotatori > (lastAngle + 0.05) or rotatori < (lastAngle - 0.05):
+                            # if rotatori > (lastAngle + 0.05) or rotatori < (lastAngle - 0.05):
+                            if rotatori > (lastAngle + 1.0) or rotatori < (lastAngle - 1.0):
                                 i += 1
                                 # Detect angle changed
-                                start = timeStamp[index]
+                                start = timeStamp[index] # Should restart with every rotator change
                                 # print('Rotator delay kick-out. ' + str(timeInt) )
-                                startIndex = index
+                                if kickout == 0:    
+                                    startIndex = index # Should only change for new delay interval
                                 lastAngle = rotatori
                                 kickout = 1
 
@@ -623,11 +621,12 @@ class ProcessL1aqc:
                                 if kickout==1 and time > (start + datetime.timedelta(0,delay)):
                                     # startstop = [timeStampTuple[startIndex],timeStampTuple[index-1]]
                                     startstop = [timeStamp[startIndex],timeStamp[index-1]]
-                                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+                                    msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
                                     # print(msg)
                                     Utilities.writeLogFile(msg)
                                     badTimes.append(startstop)
                                     kickout = 0
+                                    startIndex = None
                                 elif kickout ==1:
                                     i += 1
 
@@ -639,6 +638,7 @@ class ProcessL1aqc:
                     msg = 'No POINTING data found. Filtering on rotator delay failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
+                    return None
             else:
                 msg = 'No solar tracker data found. Filtering on rotator delay failed.'
                 print(msg)
@@ -689,7 +689,7 @@ class ProcessL1aqc:
                             if start != -1:
                                 # print('Absolute rotator angle passed: ' + str(round(rotatori + home)))
                                 startstop = [timeStamp[start],timeStamp[stop]]
-                                msg = ('   Flag data from TT2: ' + str(startstop[0]) + ' to ' + str(startstop[1]))
+                                msg = ('   Flag data from ' + str(startstop[0]) + ' to ' + str(startstop[1]))
                                 # print(msg)
                                 Utilities.writeLogFile(msg)
 
@@ -701,7 +701,7 @@ class ProcessL1aqc:
 
                     if start != -1 and stop == index: # Records from a mid-point to the end are bad
                         startstop = [timeStamp[start],timeStamp[stop]]
-                        msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+                        msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
                         # print(msg)
                         Utilities.writeLogFile(msg)
                         if badTimes is None: # only one set of records
@@ -715,6 +715,7 @@ class ProcessL1aqc:
                     msg = 'No rotator data found. Filtering on absolute rotator angle failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
+                    return None
 
         # General setup for ancillary or SunTracker data prior to Relative Solar Azimuth option
         if ConfigFile.settings["bL1aqcSunTracker"]:
@@ -896,9 +897,11 @@ class ProcessL1aqc:
                     if start == -1:
                         # print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle,2)))
                         start = index
-                    stop = index
+                    stop = index # start is fixed and stop progresses until good data found. 
                 else:
+                    # good data found
                     if start != -1:
+                        # good data follows bad data
                         # print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle,2)))
                         startstop = [timeStamp[start],timeStamp[stop]]
                         msg = f'   Flag data from: {startstop[0]}  to {startstop[1]}'
@@ -914,7 +917,7 @@ class ProcessL1aqc:
 
             if start != -1 and stop == index: # Records from a mid-point to the end are bad
                 startstop = [timeStamp[start],timeStamp[stop]]
-                msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]} (HHMMSSMSS)'
+                msg = f'   Flag data from {startstop[0]} to {startstop[1]} '
                 # print(msg)
                 Utilities.writeLogFile(msg)
                 if badTimes is None: # only one set of records
