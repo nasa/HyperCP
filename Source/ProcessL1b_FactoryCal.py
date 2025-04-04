@@ -184,7 +184,7 @@ class ProcessL1b_FactoryCal:
         coefs = {}
         indx = {}
         for k, var in calibrationMap.items():
-            # filer for cal names to take out cals such as shutter dark and GPS/Tilt.
+            # filter for cal names to take out cals such as shutter dark and GPS/Tilt.
             if re.search(cal_name_pattern, k) and k.endswith('.cal'):  # any(['HSE' in k, 'HSL' in k]):
             # var.frameType == "shutterlight":  # ideal solution for this section, but frameType not populated in cal data
                 coefs[k] = []

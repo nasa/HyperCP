@@ -890,6 +890,25 @@ class ProcessL1b_Interp:
             Utilities.writeLogFile(msg)
             interpData = ltData
 
+        # Confirm that datasets are overlapping in time
+        minInterpDT = min(interpData.columns['Datetime'])
+        maxInterpDT = max(interpData.columns['Datetime'])
+        if min(esData.columns['Datetime']) > maxInterpDT or max(esData.columns['Datetime']) < minInterpDT:
+            msg = "ES data does not overlap interpolation dataset"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+        if min(liData.columns['Datetime']) > maxInterpDT or max(liData.columns['Datetime']) < minInterpDT:
+            msg = "LI data does not overlap interpolation dataset"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+        if min(ltData.columns['Datetime']) > maxInterpDT or max(ltData.columns['Datetime']) < minInterpDT:
+            msg = "LT data does not overlap interpolation dataset"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+
         # Perform time interpolation
 
         # Note that only the specified datasets in each group will be interpolated and
