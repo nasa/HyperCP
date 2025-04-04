@@ -1675,7 +1675,7 @@ class ProcessL2:
         if isinstance(RelAzXSlice, list):
             RelAzXSlice = RelAzXSlice[0]
 
-        # RelAzXSlice = abs(RelAzXSlice)
+        RelAzXSlice = abs(RelAzXSlice)
 
         # Only required in Zhang17 currently
         try:
