@@ -1,4 +1,5 @@
 ''' Process L1BQC to L2 '''
+import os
 import collections
 import warnings
 import time
@@ -252,14 +253,17 @@ class ProcessL2:
     @staticmethod
     def spectralReflectance(node, sensor, timeObj, xSlice, F0, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC):
         ''' The slices, stds, F0, rhoVec here are sensor-waveband specific '''
-        esXSlice = xSlice['es']
+        esXSlice = xSlice['es'] # mean
         esXmedian = xSlice['esMedian']
+        esXRemaining = xSlice['esRemaining']
         esXstd = xSlice['esSTD']
         liXSlice = xSlice['li']
         liXmedian = xSlice['liMedian']
+        liXRemaining = xSlice['liRemaining']
         liXstd = xSlice['liSTD']
         ltXSlice = xSlice['lt']
         ltXmedian = xSlice['ltMedian']
+        ltXRemaining = xSlice['ltRemaining']
         ltXstd = xSlice['ltSTD']
         dateTime = timeObj['dateTime']
         dateTag = timeObj['dateTag']
@@ -304,6 +308,11 @@ class ProcessL2:
             newRrsUNCData = newReflectanceGroup.addDataset(f"Rrs_{sensor}_unc")
             newnLwUNCData = newReflectanceGroup.addDataset(f"nLw_{sensor}_unc")
 
+            # Add standard deviation datasets for comparison
+            newLWSTDData = newRadianceGroup.addDataset(f"LW_{sensor}_sd")
+            newRrsSTDData = newReflectanceGroup.addDataset(f"Rrs_{sensor}_sd")
+            newnLwSTDData = newReflectanceGroup.addDataset(f"nLw_{sensor}_sd")
+
             # For CV, use CV = STD/n
 
             if sensor == 'HYPER':
@@ -339,6 +348,10 @@ class ProcessL2:
             newLWUNCData = newRadianceGroup.getDataset(f"LW_{sensor}_unc")
             newRrsUNCData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_unc")
             newnLwUNCData = newReflectanceGroup.getDataset(f"nLw_{sensor}_unc")
+
+            newLWSTDData = newRadianceGroup.getDataset(f"LW_{sensor}_sd")
+            newRrsSTDData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_sd")
+            newnLwSTDData = newReflectanceGroup.getDataset(f"nLw_{sensor}_sd")
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
@@ -443,6 +456,10 @@ class ProcessL2:
                     newRrsUNCData.columns[k] = []
                     newnLwUNCData.columns[k] = []
 
+                    newLWSTDData.columns[k] = []
+                    newRrsSTDData.columns[k] = []
+                    newnLwSTDData.columns[k] = []
+
                     if sensor == 'HYPER':
                         newRhoHyper.columns[k] = []
                         newRhoUNCHyper.columns[k] = []
@@ -454,6 +471,9 @@ class ProcessL2:
                 es = esXSlice[k][0] # Always the zeroth element; i.e. XSlice data are independent of past slices and node
                 li = liXSlice[k][0]
                 lt = ltXSlice[k][0]
+                esRemaining = np.asarray(esXRemaining[k]) # array of remaining ensemble values in this band
+                liRemaining = np.asarray(liXRemaining[k])
+                ltRemaining = np.asarray(ltXRemaining[k])
                 f0 = F0[k]
                 f0UNC = F0_unc[k]
 
@@ -467,22 +487,47 @@ class ProcessL2:
 
                 # Calculate the remote sensing reflectance
                 nLwUNC = {}
+                lwRemainingSD = 0
+                rrsRemainingSD = 0
+                nLwRemainingSD = 0
                 if threeCRho:
                     lw = lt - (rhoScalar * li)
                     rrs = lw / es
+                    nLw = rrs*f0
+
+                    # Now calculate the std for lw, rrs
+                    lwRemaining = ltRemaining - (rhoScalar * liRemaining)
+                    rrsRemaining = lwRemaining / esRemaining
+                    lwRemainingSD = np.std(lwRemaining)
+                    rrsRemainingSD = np.std(rrsRemaining)
+                    nLwRemainingSD = np.std(rrsRemaining*f0)
 
                 elif ZhangRho:
                     # Only populate the valid wavelengths
                     if float(k) in waveSubset:
                         lw = lt - (rhoVec[k] * li)
                         rrs = lw / es
+                        nLw = rrs*f0
+
+                        # Now calculate the std for lw, rrs
+                        lwRemaining = ltRemaining - (rhoVec[k] * liRemaining)
+                        rrsRemaining = lwRemaining / esRemaining
+                        lwRemainingSD = np.std(lwRemaining)
+                        rrsRemainingSD = np.std(rrsRemaining)
+                        nLwRemainingSD = np.std(rrsRemaining*f0)
 
                 else:
                     lw = lt - (rhoScalar * li)
                     rrs = lw / es
+                    nLw = rrs*f0
 
-                #Calculate the normalized water leaving radiance
-                nLw = rrs*f0  # need to chop the keys to match Z17 output
+                    # Now calculate the std for lw, rrs
+                    lwRemaining = ltRemaining - (rhoScalar * liRemaining)
+                    rrsRemaining = lwRemaining / esRemaining
+                    lwRemainingSD = np.std(lwRemaining)
+                    rrsRemainingSD = np.std(rrsRemaining)
+                    nLwRemainingSD = np.std(rrsRemaining*f0)
+                
 
                 # nLw uncertainty;
                 nLwUNC[k] = np.power((rrsUNC[k]**2)*(f0**2) + (rrs**2)*(f0UNC**2), 0.5)
@@ -496,6 +541,10 @@ class ProcessL2:
                 newESSTDData.columns[k].append(esSTD)
                 newLISTDData.columns[k].append(liSTD)
                 newLTSTDData.columns[k].append(ltSTD)
+
+                newLWSTDData.columns[k].append(lwRemainingSD)
+                newRrsSTDData.columns[k].append(rrsRemainingSD)
+                newnLwSTDData.columns[k].append(nLwRemainingSD)
 
                 newESDataMedian.columns[k].append(esMedian)
                 newLIDataMedian.columns[k].append(liMedian)
@@ -574,6 +623,9 @@ class ProcessL2:
         newESSTDData.columnsToDataset()
         newLISTDData.columnsToDataset()
         newLTSTDData.columnsToDataset()
+        newLWSTDData.columnsToDataset()
+        newRrsSTDData.columnsToDataset()
+        newnLwSTDData.columnsToDataset()
         newESUNCData.columnsToDataset()
         newLIUNCData.columnsToDataset()
         newLTUNCData.columnsToDataset()
@@ -603,7 +655,7 @@ class ProcessL2:
                 timeStamp = group.getDataset("ES").data["Datetime"]
             if group.id == "RADIANCE":
                 timeStamp = group.getDataset("LI").data["Datetime"]
-            if group.id == "PY6S_MODEL":
+            if group.id == "SIXS_MODEL":
                 timeStamp = group.getDataset("direct_ratio").data["Datetime"]
         else:
             if group.id == "IRRADIANCE":
@@ -1124,6 +1176,7 @@ class ProcessL2:
     def sliceAveHyper(y, hyperSlice):
         ''' Take the slice mean of the lowest X% of hyperspectral slices '''
         xSlice = collections.OrderedDict()
+        xSliceRemaining = collections.OrderedDict()
         xMedian = collections.OrderedDict()
         hasNan = False
         # Ignore runtime warnings when array is all NaNs
@@ -1137,11 +1190,15 @@ class ProcessL2:
                 xMedian[k] = [median]
                 if np.isnan(mean):
                     hasNan = True
-        return hasNan, xSlice, xMedian
+
+                # Retain remaining spectra for use in calculating Rrs_sd
+                xSliceRemaining[k] = v
+
+        return hasNan, xSlice, xMedian, xSliceRemaining
 
 
     @staticmethod
-    def sliceAveOther(node, start, end, y, ancGroup, py6SGroup):
+    def sliceAveOther(node, start, end, y, ancGroup, sixSGroup):
         ''' Take the slice AND the mean averages of ancillary and 6S data with X% '''        
 
         def _sliceAveOther(node, start, end, y, group):
@@ -1156,6 +1213,11 @@ class ProcessL2:
                 else:
                     newDS = newGroup.addDataset(dsID)
                 ds = group.getDataset(dsID)
+                
+                # Set relAz to abs(relAz) prior to averaging
+                if dsID == 'REL_AZ':
+                    ds.columns['REL_AZ'] = np.abs(ds.columns['REL_AZ']).tolist()
+
                 ds.datasetToColumns()
                 dsSlice = ProcessL2.columnToSlice(ds.columns,start, end)
                 dsXSlice = None
@@ -1206,12 +1268,12 @@ class ProcessL2:
                 newDS.columnsToDataset()
 
         _sliceAveOther(node, start, end, y, ancGroup)        
-        _sliceAveOther(node, start, end, y, py6SGroup)
+        _sliceAveOther(node, start, end, y, sixSGroup)
 
     @staticmethod
     def ensemblesReflectance(node, sasGroup, refGroup, ancGroup, uncGroup,
                              esRawGroup, liRawGroup, ltRawGroup,
-                             py6SGroup, start, end):
+                             sixSGroup, start, end):
         '''Calculate the lowest X% Lt(780). Check for Nans in Li, Lt, Es, or wind. Send out for
         meteorological quality flags. Perform glint corrections. Calculate the Rrs. Correct for NIR
         residuals.'''
@@ -1241,23 +1303,23 @@ class ProcessL2:
             print(msg)
             Utilities.writeLogFile(msg)
             return False
-        #Py6S
-        if py6SGroup is not None:
-            diffuseData = py6SGroup.getDataset("diffuse_ratio")
-            directData = py6SGroup.getDataset("direct_ratio")
-            py6SesData = py6SGroup.getDataset("py6s_irradiance")
+        #SIXS
+        if sixSGroup is not None:
+            diffuseData = sixSGroup.getDataset("diffuse_ratio")
+            directData = sixSGroup.getDataset("direct_ratio")
+            sixSesData = sixSGroup.getDataset("sixS_irradiance")
             # no need to retain SZA
             # Copy datasets to dictionary
             diffuseData.datasetToColumns()
             diffuseColumns = diffuseData.columns
             directData.datasetToColumns()
             directColumns = directData.columns
-            py6SesData.datasetToColumns()
-            py6SesColumns = py6SesData.columns
+            sixSesData.datasetToColumns()
+            sixSesColumns = sixSesData.columns
 
             # diffuseSlice = ProcessL2.columnToSlice(diffuseColumns,start, end)
             # directSlice = ProcessL2.columnToSlice(directColumns,start, end)
-            # py6SesSlice = ProcessL2.columnToSlice(py6SesColumns,start, end)
+            # sixSesSlice = ProcessL2.columnToSlice(sixSesColumns,start, end)
 
         # process raw groups for generating standard deviations
         def _sliceRawData(ES_raw, LI_raw, LT_raw):
@@ -1347,9 +1409,9 @@ class ProcessL2:
         # diffuseSlice.pop("Timetag2")
         # diffuseSlice.pop("Datetime")
 
-        # py6SesSlice.pop("Datetag")
-        # py6SesSlice.pop("Timetag2")
-        # py6SesSlice.pop("Datetime")
+        # sixSesSlice.pop("Datetag")
+        # sixSesSlice.pop("Timetag2")
+        # sixSesSlice.pop("Datetime")
 
         # Process StdSlices for Band Convolution
         # Get common wavebands from esSlice to interp stats
@@ -1503,58 +1565,58 @@ class ProcessL2:
 
         # Take the mean of the lowest X% in the slice
         sliceAveFlag = []
-        flag,esXSlice,esXmedian = ProcessL2.sliceAveHyper(y, esSlice)
+        flag,esXSlice,esXmedian,esXRemaining = ProcessL2.sliceAveHyper(y, esSlice)
         sliceAveFlag.append(flag)
-        flag, liXSlice, liXmedian = ProcessL2.sliceAveHyper(y, liSlice)
+        flag, liXSlice, liXmedian, liXRemaining = ProcessL2.sliceAveHyper(y, liSlice)
         sliceAveFlag.append(flag)
-        flag, ltXSlice, ltXmedian = ProcessL2.sliceAveHyper(y, ltSlice)
+        flag, ltXSlice, ltXmedian, ltXRemaining = ProcessL2.sliceAveHyper(y, ltSlice)
         sliceAveFlag.append(flag)
 
         # Take the mean of the lowest X% for satellite weighted (ir)radiances in the slice
         # y indexes are from the hyperspectral data
         if ConfigFile.settings['bL2WeightMODISA']:
-            flag, esXSliceMODISA, esXmedianMODISA = ProcessL2.sliceAveHyper(y, esSliceMODISA)
+            flag, esXSliceMODISA, esXmedianMODISA, esXRemainingMODISA = ProcessL2.sliceAveHyper(y, esSliceMODISA)
             sliceAveFlag.append(flag)
-            flag, liXSliceMODISA, liXmedianMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
+            flag, liXSliceMODISA, liXmedianMODISA, liXRemainingMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
             sliceAveFlag.append(flag)
-            flag, liXSliceMODISA, liXmedianMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
-            sliceAveFlag.append(flag)
-            flag, ltXSliceMODISA, ltXmedianMODISA = ProcessL2.sliceAveHyper(y, ltSliceMODISA)
+            # flag, liXSliceMODISA, liXmedianMODISA = ProcessL2.sliceAveHyper(y, liSliceMODISA)
+            # sliceAveFlag.append(flag)
+            flag, ltXSliceMODISA, ltXmedianMODISA, ltXRemainingMODISA = ProcessL2.sliceAveHyper(y, ltSliceMODISA)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightMODIST']:
-            flag, esXSliceMODIST, esXmedianMODIST = ProcessL2.sliceAveHyper(y, esSliceMODIST)
+            flag, esXSliceMODIST, esXmedianMODIST, esXRemainingMODIST = ProcessL2.sliceAveHyper(y, esSliceMODIST)
             sliceAveFlag.append(flag)
-            flag, liXSliceMODIST, liXmedianMODIST = ProcessL2.sliceAveHyper(y, liSliceMODIST)
+            flag, liXSliceMODIST, liXmedianMODIST, liXRemainingMODIST = ProcessL2.sliceAveHyper(y, liSliceMODIST)
             sliceAveFlag.append(flag)
-            flag, ltXSliceMODIST, ltXmedianMODIST = ProcessL2.sliceAveHyper(y, ltSliceMODIST)
+            flag, ltXSliceMODIST, ltXmedianMODIST, ltXRemainingMODIST = ProcessL2.sliceAveHyper(y, ltSliceMODIST)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightVIIRSN']:
-            flag, esXSliceVIIRSN, esXmedianVIIRSN = ProcessL2.sliceAveHyper(y, esSliceVIIRSN)
+            flag, esXSliceVIIRSN, esXmedianVIIRSN, esXRemainingVIIRSN = ProcessL2.sliceAveHyper(y, esSliceVIIRSN)
             sliceAveFlag.append(flag)
-            flag, liXSliceVIIRSN, liXmedianVIIRSN = ProcessL2.sliceAveHyper(y, liSliceVIIRSN)
+            flag, liXSliceVIIRSN, liXmedianVIIRSN, liXRemainingVIIRSN = ProcessL2.sliceAveHyper(y, liSliceVIIRSN)
             sliceAveFlag.append(flag)
-            flag, ltXSliceVIIRSN, ltXmedianVIIRSN = ProcessL2.sliceAveHyper(y, ltSliceVIIRSN)
+            flag, ltXSliceVIIRSN, ltXmedianVIIRSN, ltXRemainingVIIRSN = ProcessL2.sliceAveHyper(y, ltSliceVIIRSN)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightVIIRSJ']:
-            flag, esXSliceVIIRSJ, esXmedianVIIRSJ = ProcessL2.sliceAveHyper(y, esSliceVIIRSJ)
+            flag, esXSliceVIIRSJ, esXmedianVIIRSJ, esXRemainingVIIRSJ = ProcessL2.sliceAveHyper(y, esSliceVIIRSJ)
             sliceAveFlag.append(flag)
-            flag, liXSliceVIIRSJ, liXmedianVIIRSJ = ProcessL2.sliceAveHyper(y, liSliceVIIRSJ)
+            flag, liXSliceVIIRSJ, liXmedianVIIRSJ, liXRemainingVIIRSJ = ProcessL2.sliceAveHyper(y, liSliceVIIRSJ)
             sliceAveFlag.append(flag)
-            flag, ltXSliceVIIRSJ, ltXmedianVIIRSJ = ProcessL2.sliceAveHyper(y, ltSliceVIIRSJ)
+            flag, ltXSliceVIIRSJ, ltXmedianVIIRSJ, ltXRemainingVIIRSJ = ProcessL2.sliceAveHyper(y, ltSliceVIIRSJ)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightSentinel3A']:
-            flag, esXSliceSentinel3A, esXmedianSentinel3A = ProcessL2.sliceAveHyper(y, esSliceSentinel3A)
+            flag, esXSliceSentinel3A, esXmedianSentinel3A, esXRemainingSentinel3A = ProcessL2.sliceAveHyper(y, esSliceSentinel3A)
             sliceAveFlag.append(flag)
-            flag, liXSliceSentinel3A, liXmedianSentinel3A = ProcessL2.sliceAveHyper(y, liSliceSentinel3A)
+            flag, liXSliceSentinel3A, liXmedianSentinel3A, liXRemainingSentinel3A = ProcessL2.sliceAveHyper(y, liSliceSentinel3A)
             sliceAveFlag.append(flag)
-            flag, ltXSliceSentinel3A, ltXmedianSentinel3A = ProcessL2.sliceAveHyper(y, ltSliceSentinel3A)
+            flag, ltXSliceSentinel3A, ltXmedianSentinel3A, ltXRemainingSentinel3A = ProcessL2.sliceAveHyper(y, ltSliceSentinel3A)
             sliceAveFlag.append(flag)
         if ConfigFile.settings['bL2WeightSentinel3B']:
-            flag, esXSliceSentinel3B, esXmedianSentinel3B = ProcessL2.sliceAveHyper(y, esSliceSentinel3B)
+            flag, esXSliceSentinel3B, esXmedianSentinel3B, esXRemainingSentinel3B = ProcessL2.sliceAveHyper(y, esSliceSentinel3B)
             sliceAveFlag.append(flag)
-            flag, liXSliceSentinel3B, liXmedianSentinel3B = ProcessL2.sliceAveHyper(y, liSliceSentinel3B)
+            flag, liXSliceSentinel3B, liXmedianSentinel3B, liXRemainingSentinel3B = ProcessL2.sliceAveHyper(y, liSliceSentinel3B)
             sliceAveFlag.append(flag)
-            flag, ltXSliceSentinel3B, ltXmedianSentinel3B= ProcessL2.sliceAveHyper(y, ltSliceSentinel3B)
+            flag, ltXSliceSentinel3B, ltXmedianSentinel3B, ltXRemainingSentinel3B= ProcessL2.sliceAveHyper(y, ltSliceSentinel3B)
             sliceAveFlag.append(flag)
 
         # Make sure the XSlice averaging didn't bomb
@@ -1567,8 +1629,7 @@ class ProcessL2:
         # Take the mean of the lowest X% for the ancillary group in the slice
         # (Combines Slice and XSlice -- as above -- into one method)
         # node.groups.append(ancGroup)
-
-        ProcessL2.sliceAveOther(node, start, end, y, ancGroup, py6SGroup)
+        ProcessL2.sliceAveOther(node, start, end, y, ancGroup, sixSGroup)
         newAncGroup = node.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
 
@@ -1596,7 +1657,7 @@ class ProcessL2:
         if isinstance(RelAzXSlice, list):
             RelAzXSlice = RelAzXSlice[0]
 
-        RelAzXSlice = abs(RelAzXSlice)
+        # RelAzXSlice = abs(RelAzXSlice)
 
         # Only required in Zhang17 currently
         try:
@@ -1645,6 +1706,7 @@ class ProcessL2:
 
         Rho_Uncertainty_Obj = Propagate(M=100, cores=1)
 
+        # Rho will be the same across the entire ensemble slice based on input averages
         if threeCRho:
             # NOTE: Placeholder for Groetsch et al. 2017
 
@@ -1667,31 +1729,39 @@ class ProcessL2:
 
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
+            # NOTE: Need to update to 0.5 for new database
             if AODXSlice >0.2:
-                msg = f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.2'
+                msg = f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.2. Expect larger, uncaptured errors.'
                 print(msg)
                 Utilities.writeLogFile(msg)
                 AODXSlice = 0.2
-            if SZAXSlice > 60:
-                # Zhang is stricter and limited to SZA <= 60
-                msg = f'SZA = {SZAXSlice:.2f}. Maximum Solar Zenith Exceeded. Aborting slice.'
+            if WINDSPEEDXSlice > 15:
+                msg = f'WIND = {WINDSPEEDXSlice:.1f}. Maximum Wind Speed Reached. Setting to 15.0. Expect larger, uncaptured errors.'
                 print(msg)
                 Utilities.writeLogFile(msg)
-                # Need to eliminate this slice from newAncGroup
-                badTimes = []
-                start = dateTime
-                stop = dateTime
-                badTimes.append([start, stop])
-                for dsName in newAncGroup.datasets:
-                    ds = newAncGroup.datasets[dsName]
-                    ds.columnsToDataset()
+                WINDSPEEDXSlice = 15
+            if SZAXSlice > 60:
+                # Zhang is stricter and limited to SZA <= 60
+                # msg = f'SZA = {SZAXSlice:.2f}. Maximum Solar Zenith Exceeded. Aborting slice.'
+                msg = f'SZA = {SZAXSlice:.1f}. Maximum Solar Zenith Exceeded. Setting to 60. Expect larger, uncaptured errors.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                SZAXSlice = 60
+                # # Need to eliminate this slice from newAncGroup
+                # badTimes = []
+                # start = dateTime
+                # stop = dateTime
+                # badTimes.append([start, stop])
+                # for dsName in newAncGroup.datasets:
+                #     ds = newAncGroup.datasets[dsName]
+                #     ds.columnsToDataset()
 
-                check = Utilities.filterData(newAncGroup,badTimes)
-                if check == 1.0:
-                    msg = "100% of Ancillary data removed. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return False
+                # check = Utilities.filterData(newAncGroup,badTimes)
+                # if check == 1.0:
+                #     msg = "100% of Ancillary data removed. Abort."
+                #     print(msg)
+                #     Utilities.writeLogFile(msg)
+                #     return False
             if min(wavelength) < 350 or max(wavelength) > 1000:
                 msg = 'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'
                 print(msg)
@@ -1704,8 +1774,9 @@ class ProcessL2:
 
             # rhoVector = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
             #                                             SalXSlice, RelAzXSlice, waveSubset)
+            SVA = ConfigFile.settings['fL2SVA']
             rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
-                                                            SalXSlice, RelAzXSlice, waveSubset, Rho_Uncertainty_Obj)
+                                                            SalXSlice, RelAzXSlice, SVA, waveSubset, Rho_Uncertainty_Obj)
 
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[i]
@@ -1768,10 +1839,11 @@ class ProcessL2:
         xSlice = {}
         # Full hyperspectral
         sensor = 'HYPER'
+        # Means:
         xSlice['es'] = esXSlice  # this sometimes has negative values because of instrument noise, we should take the absolute
         xSlice['li'] = liXSlice
         xSlice['lt'] = ltXSlice
-
+        # Medians:
         xSlice['esMedian'] = esXmedian
         xSlice['liMedian'] = liXmedian
         xSlice['ltMedian'] = ltXmedian
@@ -1783,6 +1855,10 @@ class ProcessL2:
         xSlice['esSTD_RAW'] = stats['ES']['std_Signal']  # non-interpolated std for uncertainty calculation
         xSlice['liSTD_RAW'] = stats['LI']['std_Signal']
         xSlice['ltSTD_RAW'] = stats['LT']['std_Signal']
+
+        xSlice['esRemaining'] = esXRemaining
+        xSlice['liRemaining'] = liXRemaining
+        xSlice['ltRemaining'] = ltXRemaining
 
         # F0 = F0_hyper
 
@@ -1861,6 +1937,10 @@ class ProcessL2:
                 xSlice['li'] = liXSliceMODISA
                 xSlice['lt'] = ltXSliceMODISA
 
+                xSlice['esRemaining'] = esXRemainingMODISA
+                xSlice['liRemaining'] = liXRemainingMODISA
+                xSlice['ltRemaining'] = ltXRemainingMODISA
+
                 xSlice['esMedian'] = esXmedianMODISA
                 xSlice['liMedian'] = liXmedianMODISA
                 xSlice['ltMedian'] = ltXmedianMODISA
@@ -1894,6 +1974,10 @@ class ProcessL2:
                 xSlice['es'] = esXSliceMODIST
                 xSlice['li'] = liXSliceMODIST
                 xSlice['lt'] = ltXSliceMODIST
+
+                xSlice['esRemaining'] = esXRemainingMODIST
+                xSlice['liRemaining'] = liXRemainingMODIST
+                xSlice['ltRemaining'] = ltXRemainingMODIST
 
                 xSlice['esMedian'] = esXmedianMODIST
                 xSlice['liMedian'] = liXmedianMODIST
@@ -1929,6 +2013,10 @@ class ProcessL2:
                 xSlice['li'] = liXSliceVIIRSN
                 xSlice['lt'] = ltXSliceVIIRSN
 
+                xSlice['esRemaining'] = esXRemainingVIIRSN
+                xSlice['liRemaining'] = liXRemainingVIIRSN
+                xSlice['ltRemaining'] = ltXRemainingVIIRSN
+
                 xSlice['esMedian'] = esXmedianVIIRSN
                 xSlice['liMedian'] = liXmedianVIIRSN
                 xSlice['ltMedian'] = ltXmedianVIIRSN
@@ -1958,6 +2046,10 @@ class ProcessL2:
                 xSlice['es'] = esXSliceVIIRSJ
                 xSlice['li'] = liXSliceVIIRSJ
                 xSlice['lt'] = ltXSliceVIIRSJ
+
+                xSlice['esRemaining'] = esXRemainingVIIRSJ
+                xSlice['liRemaining'] = liXRemainingVIIRSJ
+                xSlice['ltRemaining'] = ltXRemainingVIIRSJ
 
                 xSlice['esMedian'] = esXmedianVIIRSJ
                 xSlice['liMedian'] = liXmedianVIIRSJ
@@ -1993,6 +2085,10 @@ class ProcessL2:
                 xSlice['li'] = liXSliceSentinel3A
                 xSlice['lt'] = ltXSliceSentinel3A
 
+                xSlice['esRemaining'] = esXRemainingSentinel3A
+                xSlice['liRemaining'] = liXRemainingSentinel3A
+                xSlice['ltRemaining'] = ltXRemainingSentinel3A
+
                 xSlice['esMedian'] = esXmedianSentinel3A
                 xSlice['liMedian'] = liXmedianSentinel3A
                 xSlice['ltMedian'] = ltXmedianSentinel3A
@@ -2022,6 +2118,10 @@ class ProcessL2:
                 xSlice['es'] = esXSliceSentinel3B
                 xSlice['li'] = liXSliceSentinel3B
                 xSlice['lt'] = ltXSliceSentinel3B
+
+                xSlice['esRemaining'] = esXRemainingSentinel3B
+                xSlice['liRemaining'] = liXRemainingSentinel3B
+                xSlice['ltRemaining'] = ltXRemainingSentinel3B
 
                 xSlice['esMedian'] = esXmedianSentinel3B
                 xSlice['liMedian'] = liXmedianSentinel3B
@@ -2057,17 +2157,17 @@ class ProcessL2:
         rootCopy.addGroup("ANCILLARY")
         rootCopy.addGroup("IRRADIANCE")
         rootCopy.addGroup("RADIANCE")
-        rootCopy.addGroup('PY6S_MODEL')
+        rootCopy.addGroup('SIXS_MODEL')
 
         rootCopy.getGroup('ANCILLARY').copy(root.getGroup('ANCILLARY'))
         rootCopy.getGroup('IRRADIANCE').copy(root.getGroup('IRRADIANCE'))
         rootCopy.getGroup('RADIANCE').copy(root.getGroup('RADIANCE'))
 
-        py6s_available = False
+        sixS_available = False
         for gp in root.groups:
-            if gp.id == 'PY6S_MODEL':
-                py6s_available = True
-                rootCopy.getGroup('PY6S_MODEL').copy(root.getGroup('PY6S_MODEL'))
+            if gp.id == 'SIXS_MODEL':
+                sixS_available = True
+                rootCopy.getGroup('SIXS_MODEL').copy(root.getGroup('SIXS_MODEL'))
                 break
 
         if ConfigFile.settings['SensorType'].lower() == 'seabird':
@@ -2104,10 +2204,10 @@ class ProcessL2:
         referenceGroup = rootCopy.getGroup("IRRADIANCE")
         sasGroup = rootCopy.getGroup("RADIANCE")
         ancGroup = rootCopy.getGroup("ANCILLARY")
-        if py6s_available:
-            py6SGroup = rootCopy.getGroup("PY6S_MODEL")
+        if sixS_available:
+            sixSGroup = rootCopy.getGroup("SIXS_MODEL")
         else:
-            py6SGroup = None
+            sixSGroup = None
 
         if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
             rootCopy.addGroup("RAW_UNCERTAINTIES")
@@ -2172,8 +2272,8 @@ class ProcessL2:
                     return False
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
-                if py6s_available:
-                    ProcessL2.filterData(py6SGroup, badTimes)
+                if sixS_available:
+                    ProcessL2.filterData(sixSGroup, badTimes)
 
         #####################################################################
         #
@@ -2207,7 +2307,7 @@ class ProcessL2:
 
                 if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                            py6SGroup, start, end):
+                                                            sixSGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance unsliced failed. Abort.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -2235,12 +2335,13 @@ class ProcessL2:
                         end = len(timeStamp)-1 # File shorter than interval; include all spectra
                         if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                            py6SGroup, start, end):
+                                                            sixSGroup, start, end):
                             msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                             print(msg)
                             Utilities.writeLogFile(msg)
-
                             break # End of file reached. Safe to break
+
+                        break # End of file reached. Safe to break
                     else:
                         endTime = timei + datetime.timedelta(0,interval) # increment for the next bin loop
                         end = i # end of the slice is up to and not including...so -1 is not needed
@@ -2251,7 +2352,7 @@ class ProcessL2:
 
                     if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                            py6SGroup, start, end):
+                                                            sixSGroup, start, end):
                         msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
                         print(msg)
                         Utilities.writeLogFile(msg)
@@ -2269,7 +2370,7 @@ class ProcessL2:
                 end = i+1 # i is the index of end of record; plus one to include i due to -1 list slicing
                 if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                            py6SGroup, start, end):
+                                                            sixSGroup, start, end):
                     msg = 'ProcessL2.ensemblesReflectance ender clause failed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
@@ -2322,8 +2423,8 @@ class ProcessL2:
                 ProcessL2.filterData(node.getGroup("IRRADIANCE"), badTimes, sensor = "HYPER")
                 ProcessL2.filterData(node.getGroup("RADIANCE"), badTimes, sensor = "HYPER")
                 ProcessL2.filterData(node.getGroup("ANCILLARY"), badTimes)
-                if py6s_available:
-                    ProcessL2.filterData(node.getGroup("PY6S_MODEL"), badTimes)
+                if sixS_available:
+                    ProcessL2.filterData(node.getGroup("SIXS_MODEL"), badTimes)
 
         return True
 
@@ -2339,7 +2440,7 @@ class ProcessL2:
         node.addGroup("REFLECTANCE")
         node.addGroup("IRRADIANCE")
         node.addGroup("RADIANCE")
-        node.addGroup("PY6S_MODEL")
+        node.addGroup("SIXS_MODEL")
         node.copyAttributes(root)
         node.attributes["PROCESSING_LEVEL"] = "2"
         # Remaining attributes managed below...
@@ -2353,7 +2454,7 @@ class ProcessL2:
                 grp.datasets[ds].datasetToColumns()
 
             # Carry over L1AQC data for use in uncertainty budgets
-            if grp.id.endswith('_L1AQC'): #or grp.id.startswith('PY6S_MODEL'):
+            if grp.id.endswith('_L1AQC'): #or grp.id.startswith('SIXS_MODEL'):
                 newGrp = node.addGroup(grp.id)
                 newGrp.copy(grp)
                 for ds in newGrp.datasets:

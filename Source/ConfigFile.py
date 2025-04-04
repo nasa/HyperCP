@@ -39,7 +39,7 @@ class ConfigFile:
         ConfigFile.settings["bL1aCleanSZA"] = 1
         ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,
 
-        ConfigFile.settings["bL1aqcSolarTracker"] = 1
+        ConfigFile.settings["bL1aqcSunTracker"] = 1
         ConfigFile.settings["bL1aqcCleanPitchRoll"] = 1
         ConfigFile.settings["fL1aqcPitchRollPitch"] = 5 # 2-5 deg. IOCCG Draft Protocols
         ConfigFile.settings["fL1aqcPitchRollRoll"] = 5 # 2-5 deg. IOCCG Draft Protocols
@@ -124,6 +124,7 @@ class ConfigFile:
         ConfigFile.settings["fL1bqcDawnDuskFlag"] = 1.0 # Wernand 2002
         ConfigFile.settings["fL1bqcRainfallHumidityFlag"] = 1.095  # ?? Wang? # Wernand 2002 uses Es(940/370), with >0.25 dry, 0.2-0.25 humid, <=0.25 rain
 
+        ConfigFile.settings["fL2SVA"] = 40 # Sensor viewing angle. 30 or 40 deg.
         ConfigFile.settings["bL2Stations"] = 0
         ConfigFile.settings["fL2TimeInterval"] = 300
         ConfigFile.settings["bL2EnablePercentLt"] = 1

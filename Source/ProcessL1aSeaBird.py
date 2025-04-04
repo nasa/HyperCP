@@ -200,7 +200,7 @@ class ProcessL1aSeaBird:
             # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
             root = Utilities.SASUTCOffset(root)
 
-        # Apply SZA filter; Currently only works with SolarTracker data at L1A (again possible in L2)
+        # Apply SZA filter; Currently only works with SunTracker data at L1A (again possible in L2 for all types)
         if ConfigFile.settings["bL1aCleanSZA"]:
             root.attributes['SZA_FILTER_L1A'] = ConfigFile.settings["fL1aCleanSZAMax"]
             for gp in root.groups:

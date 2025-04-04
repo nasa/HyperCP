@@ -22,12 +22,12 @@ from Source.MainConfig import MainConfig
 from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
 from Source.ConfigWindow import ConfigWindow
-import Source.GetAnc_credentials as credentials
+from Source.GetAnc_credentials import GetAnc_credentials
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
 
-VERSION = "1.2.10"
+VERSION = "1.2.11"
 
 
 class Window(QtWidgets.QWidget):
@@ -56,9 +56,15 @@ class Window(QtWidgets.QWidget):
                 os.makedirs(dirPath)
 
         # Confirm that core data files are in place. Download if necessary.
-        fpfZhang = os.path.join(CODE_HOME, "Data", "Zhang_rho_db.mat")
+        fpfZhang = os.path.join(CODE_HOME, "Data", "Zhang_rho_db_expanded.mat")
         if not os.path.exists(fpfZhang):
             Utilities.downloadZhangDB(fpfZhang)
+
+        # Confirm that core data files are in place. Download if necessary.
+        # fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Zhang_rho_LUT.nc")
+        fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Z17_LUT_v2.nc")
+        if not os.path.exists(fpfZhangLUT):
+            Utilities.downloadZhangLUT(fpfZhangLUT)
 
         self.initUI()
 
@@ -783,8 +789,8 @@ if __name__ == "__main__":
         os.environ["HYPERINSPACE_CMD"] = "TRUE" # Must be a string
 
         # Pop up credential windows if credentials not stored...
-        credentials.credentialsWindow('NASA_Earth_Data')
-        credentials.credentialsWindow('ECMWF_ADS')
+        GetAnc_credentials.credentialsWindow('NASA_Earth_Data')
+        GetAnc_credentials.credentialsWindow('ECMWF_ADS')
 
         Command(configFilePath, inputFile, multiLevel, outputDirectory, level, ancFile)
     else:

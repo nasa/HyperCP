@@ -19,11 +19,15 @@ class ProcessL1b_Interp:
     def interp_Anc(node, fileName):
         '''
         Time interpolation of Ancillary group only to be run prior to model fill and FRM cal/corrections
-            Required fields relAz, sza, solarAz must be in Ancillary already, or be obtained from SolarTrackers
+            Required fields relAz, sza, solarAz must be in Ancillary already, or be obtained from SunTrackers
         '''
         print('Interpolating Ancillary data to radiometry timestamps')
         gpsGroup = None
         STGroup = None
+        esGroup = None
+        liGroup = None
+        ltGroup = None
+        ancGroup = None
         for gp in node.groups:
             if gp.id.startswith("GP"):
                 gpsGroup = gp
@@ -38,7 +42,7 @@ class ProcessL1b_Interp:
                 liGroup = gp
             if gp.id.startswith("LT"):
                 ltGroup = gp
-            if gp.id.startswith("SOLARTRACKER") and gp.id != "SOLARTRACKER_STATUS":
+            if gp.id.startswith("SunTracker"):
                 STGroup = gp
 
         # Conversion of datasets within groups to move date/timestamps into
@@ -59,7 +63,7 @@ class ProcessL1b_Interp:
         sogData = None
 
         # Required for non-Tracker:
-        #   May be acquired from Ancillary or SolarTracker (preferred)
+        #   May be acquired from Ancillary or SunTracker (preferred)
         relAzData = None
         szaData = None
         solAzData = None
@@ -71,7 +75,7 @@ class ProcessL1b_Interp:
             ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
             latData = newGPSGroup.getDataset("LATITUDE")
             lonData = newGPSGroup.getDataset("LONGITUDE")
-            # Only if the right NMEA data are provided (e.g. with SolarTracker)
+            # Only if the right NMEA data are provided (e.g. with SunTracker)
             if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
                 ProcessL1b_Interp.convertDataset(gpsGroup, "COURSE", newGPSGroup, "COURSE")
                 ProcessL1b_Interp.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")
@@ -84,6 +88,7 @@ class ProcessL1b_Interp:
         else:
             # These are from the ancillary file; place in GPS
             #   Ignore COURSE and SOG
+            # TODO: If GPS is part of the SunTracker group, and gpsGroup was not yet established, pull Lat/Lon from Suntracker Group
             ProcessL1b_Interp.convertDataset(ancGroup, "LATITUDE", newGPSGroup, "LATITUDE")
             ProcessL1b_Interp.convertDataset(ancGroup, "LONGITUDE", newGPSGroup, "LONGITUDE")
             latData = newGPSGroup.getDataset("LATITUDE")
@@ -93,8 +98,9 @@ class ProcessL1b_Interp:
 
 
         if STGroup is not None:
-            newSTGroup = node.addGroup('ST_TEMP')
+            newSTGroup = node.addGroup('ST_TEMP') # temporary
             for ds in STGroup.datasets:
+                # NOTE: New platforms should confirm their SunTracker robots have the proper datasets added here.
                 if ds == 'REL_AZ':
                     ProcessL1b_Interp.convertDataset(STGroup, "REL_AZ", newSTGroup, "REL_AZ")
                     relAzData = newSTGroup.datasets['REL_AZ']
@@ -118,13 +124,13 @@ class ProcessL1b_Interp:
 
 
         # Required
-        # Preferentially from SolarTracker over Ancillary file
+        # Preferentially from SunTracker over Ancillary file
         if not relAzData:
-            # Here from Ancillary file, not SolarTracker
+            # Here from Ancillary file, not SunTracker
             if "REL_AZ" in newAncGroup.datasets:
                 relAzData = newAncGroup.getDataset("REL_AZ")
         else:
-            # Here from SolarTracker; different timestamp from other Ancillary; interpolated below
+            # Here from SunTracker; different timestamp from other Ancillary; interpolated below
             ProcessL1b_Interp.convertDataset(STGroup,"REL_AZ", newAncGroup,"REL_AZ")
         if not solAzData:
             if "SOLAR_AZ" in newAncGroup.datasets:
@@ -145,7 +151,7 @@ class ProcessL1b_Interp:
         cloudData = None
         waveData = None
         speedData = None
-        # Optional and may reside in SolarTracker or SATTHS group
+        # Optional and may reside in SunTracker or SATTHS group
         pitchAncData = None
         rollAncData = None
         # Optional, assured with MERRA2 models when selected
@@ -177,7 +183,7 @@ class ProcessL1b_Interp:
             waveData = newAncGroup.getDataset("WAVE_HT")
         if "SPEED_F_W" in newAncGroup.datasets:
             speedData = newAncGroup.getDataset("SPEED_F_W")
-        # Allow for the unlikely option that pitch/roll data are included in both the SolarTracker/pySAS and Ancillary datasets
+        # Allow for the unlikely option that pitch/roll data are included in both the SunTracker/pySAS and Ancillary datasets
         if "PITCH" in newAncGroup.datasets:
             pitchAncData = newAncGroup.getDataset("PITCH")
         if "ROLL" in newAncGroup.datasets:
@@ -300,10 +306,9 @@ class ProcessL1b_Interp:
 
         # List of datasets requiring angular interpolation (i.e. through 0 degrees)
         angList = ['AZIMUTH', 'POINTING', 'HEADING']
-        '''
-            NOTE: SOLAR_AZ and SZA are now recalculated for new timestamps rather than interpolated
-                REL_AZ is +/- 90-135 and should not be interpolated using interAngular
-        '''
+        # NOTE: SOLAR_AZ and SZA are now recalculated for new timestamps rather than interpolated
+        #        REL_AZ is +/- 90-135 and should not be interpolated using interAngular
+        #
 
         # List of datasets requiring fill instead of interpolation
         fillList = ['STATION']
@@ -532,19 +537,25 @@ class ProcessL1b_Interp:
 
         interval = float(ConfigFile.settings["fL1bInterpInterval"])
 
+        sunTrackers = ['SunTracker_SOLARTRACKER','SunTracker_pySAS','SunTracker_DALEC','SunTracker_SoRad']
+
         newReferenceGroup = root.addGroup("IRRADIANCE")
         newSASGroup = root.addGroup("RADIANCE")
         root.groups.append(node.getGroup("GPS"))
         if node.getGroup("ANCILLARY_METADATA"):
             root.groups.append(node.getGroup("ANCILLARY_METADATA"))
-        if node.getGroup("SOLARTRACKER"):
-            root.groups.append(node.getGroup("SOLARTRACKER"))
-        if node.getGroup("SOLARTRACKER_STATUS"):
-            root.groups.append(node.getGroup("SOLARTRACKER_STATUS"))
+
+        for robot in sunTrackers:
+            if node.getGroup(robot):
+                root.groups.append(node.getGroup(robot))
+        # if node.getGroup("SOLARTRACKER"):
+        #     root.groups.append(node.getGroup("SOLARTRACKER"))
+        # if node.getGroup("SOLARTRACKER_STATUS"):
+        #     root.groups.append(node.getGroup("SOLARTRACKER_STATUS"))
         if node.getGroup("PYROMETER"):
             root.groups.append(node.getGroup("PYROMETER"))
-        if node.getGroup("PY6S_MODEL"):
-            root.groups.append(node.getGroup("PY6S_MODEL"))
+        if node.getGroup("SIXS_MODEL"):
+            root.groups.append(node.getGroup("SIXS_MODEL"))
 
         referenceGroup = node.getGroup("IRRADIANCE")
         sasGroup = node.getGroup("RADIANCE")
@@ -654,9 +665,18 @@ class ProcessL1b_Interp:
         esGroup = None
         liGroup = None
         ltGroup = None
-        satnavGroup = None
-        ancGroup = None # For non-SolarTracker deployments
+        robotGroup = None
+        ancGroup = None # For non-SunTracker deployments
         satmsgGroup = None
+        esL1AQCDark = None
+        esL1AQCLight = None
+        esL1AQC = None
+        liL1AQCDark = None
+        liL1AQCLight = None
+        liL1AQC = None
+        ltL1AQCDark = None
+        ltL1AQCLight = None
+        ltL1AQC = None
         for gp in node.groups:
             if gp.id.startswith("GP"):
                 gpsGroup = gp
@@ -689,8 +709,8 @@ class ProcessL1b_Interp:
                     ltL1AQC = gp
                 else:
                     ltGroup = gp           
-            if gp.id == "SOLARTRACKER" or gp.id =="SOLARTRACKER_pySAS":
-                satnavGroup = gp
+            if gp.id.startswith("SunTracker"):
+                robotGroup = gp
             if gp.id == ("ANCILLARY_METADATA"):
                 ancGroup = root.addGroup('ANCILLARY_METADATA')
                 ancGroup.copy(gp)
@@ -699,8 +719,8 @@ class ProcessL1b_Interp:
                         ancGroup.datasets[ds].datasetToColumns()
             if gp.id == "SOLARTRACKER_STATUS":
                 satmsgGroup = gp
-            if gp.id == "PY6S_MODEL":
-                py6s_grp = gp
+            if gp.id == "SIXS_MODEL":
+                sixS_grp = gp
                 
         # New group scheme combines both radiance sensors in one group
         refGroup = root.addGroup("IRRADIANCE")
@@ -749,7 +769,7 @@ class ProcessL1b_Interp:
                 ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
                 latData = newGPSGroup.getDataset("LATITUDE")
                 lonData = newGPSGroup.getDataset("LONGITUDE")
-                # Only if the right NMEA data are provided (e.g. with SolarTracker)
+                # Only if the right NMEA data are provided (e.g. with SunTracker)
                 if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
                     ProcessL1b_Interp.convertDataset(gpsGroup, "COURSE", newGPSGroup, "COURSE")
                     ProcessL1b_Interp.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")
@@ -764,7 +784,7 @@ class ProcessL1b_Interp:
                 lonData = newGPSGroup.getDataset("LONGITUDE")
                 latData.datasetToColumns()
                 lonData.datasetToColumns()
-                # Only if the right NMEA data are provided (e.g. with SolarTracker)
+                # Only if the right NMEA data are provided (e.g. with SunTracker)
                 if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
                     courseData = newGPSGroup.getDataset("COURSE")
                     courseData.datasetToColumns()
@@ -777,32 +797,32 @@ class ProcessL1b_Interp:
             lonData = ancGroup.getDataset("LONGITUDE")
 
 
-        if satnavGroup is not None:
-            newSTGroup = root.addGroup("SOLARTRACKER")
+        if robotGroup is not None:
+            newSTGroup = root.addGroup("SunTracker")
             # Required
-            ProcessL1b_Interp.convertDataset(satnavGroup, "SOLAR_AZ", newSTGroup, "SOLAR_AZ")
+            ProcessL1b_Interp.convertDataset(robotGroup, "SOLAR_AZ", newSTGroup, "SOLAR_AZ")
             solAzData = newSTGroup.getDataset("SOLAR_AZ")
-            ProcessL1b_Interp.convertDataset(satnavGroup, "SZA", newSTGroup, "SZA")
+            ProcessL1b_Interp.convertDataset(robotGroup, "SZA", newSTGroup, "SZA")
             szaData = newSTGroup.getDataset("SZA")
-            ProcessL1b_Interp.convertDataset(satnavGroup, "REL_AZ", newSTGroup, "REL_AZ")
+            ProcessL1b_Interp.convertDataset(robotGroup, "REL_AZ", newSTGroup, "REL_AZ")
             relAzData = newSTGroup.getDataset("REL_AZ")
-            ProcessL1b_Interp.convertDataset(satnavGroup, "POINTING", newSTGroup, "POINTING")
+            ProcessL1b_Interp.convertDataset(robotGroup, "POINTING", newSTGroup, "POINTING")
             pointingData = newSTGroup.getDataset("POINTING")
 
             # Optional
-            # ProcessL1b_Interp.convertDataset(satnavGroup, "HEADING", newSTGroup, "HEADING") # Use SATNAV Heading if available (not GPS COURSE)
-            if "HUMIDITY" in satnavGroup.datasets:
-                ProcessL1b_Interp.convertDataset(satnavGroup, "HUMIDITY", newSTGroup, "HUMIDITY")
+            # ProcessL1b_Interp.convertDataset(robotGroup, "HEADING", newSTGroup, "HEADING") # Use SATNAV Heading if available (not GPS COURSE)
+            if "HUMIDITY" in robotGroup.datasets:
+                ProcessL1b_Interp.convertDataset(robotGroup, "HUMIDITY", newSTGroup, "HUMIDITY")
                 humidityData = newSTGroup.getDataset("HUMIDITY")
-            if "PITCH" in satnavGroup.datasets:
-                ProcessL1b_Interp.convertDataset(satnavGroup, "PITCH", newSTGroup, "PITCH")
+            if "PITCH" in robotGroup.datasets:
+                ProcessL1b_Interp.convertDataset(robotGroup, "PITCH", newSTGroup, "PITCH")
                 pitchData = newSTGroup.getDataset("PITCH")
-            if "ROLL" in satnavGroup.datasets:
-                ProcessL1b_Interp.convertDataset(satnavGroup, "ROLL", newSTGroup, "ROLL")
+            if "ROLL" in robotGroup.datasets:
+                ProcessL1b_Interp.convertDataset(robotGroup, "ROLL", newSTGroup, "ROLL")
                 rollData = newSTGroup.getDataset("ROLL")
             headingData = None
-            if "HEADING" in satnavGroup.datasets:
-                ProcessL1b_Interp.convertDataset(satnavGroup, "HEADING", newSTGroup, "HEADING")
+            if "HEADING" in robotGroup.datasets:
+                ProcessL1b_Interp.convertDataset(robotGroup, "HEADING", newSTGroup, "HEADING")
                 headingData = newSTGroup.getDataset("HEADING")
 
         if satmsgGroup is not None:
@@ -825,16 +845,16 @@ class ProcessL1b_Interp:
             pyrData = newPyrGroup.getDataset("T")
 
 
-        # convert datetime into py6s group
-        py6s_grp = node.getGroup("PY6S_MODEL")
-        if py6s_grp is not None:
-            py6s_grp_new = root.addGroup("PY6S_MODEL")
-            ProcessL1b_Interp.convertDataset(py6s_grp, "py6s_irradiance", py6s_grp_new, "py6s_irradiance")
-            ProcessL1b_Interp.convertDataset(py6s_grp, "direct_ratio", py6s_grp_new, "direct_ratio")
-            ProcessL1b_Interp.convertDataset(py6s_grp, "diffuse_ratio", py6s_grp_new, "diffuse_ratio")
-            ProcessL1b_Interp.convertDataset(py6s_grp, "solar_zenith", py6s_grp_new, "solar_zenith")
+        # convert datetime into sixS group
+        sixS_grp = node.getGroup("SIXS_MODEL")
+        if sixS_grp is not None:
+            sixS_grp_new = root.addGroup("SIXS_MODEL")
+            ProcessL1b_Interp.convertDataset(sixS_grp, "sixS_irradiance", sixS_grp_new, "sixS_irradiance")
+            ProcessL1b_Interp.convertDataset(sixS_grp, "direct_ratio", sixS_grp_new, "direct_ratio")
+            ProcessL1b_Interp.convertDataset(sixS_grp, "diffuse_ratio", sixS_grp_new, "diffuse_ratio")
+            ProcessL1b_Interp.convertDataset(sixS_grp, "solar_zenith", sixS_grp_new, "solar_zenith")
         else:
-            py6s_grp_new = None
+            sixS_grp_new = None
 
 
 
@@ -869,6 +889,25 @@ class ProcessL1b_Interp:
             Utilities.writeLogFile(msg)
             interpData = ltData
 
+        # Confirm that datasets are overlapping in time
+        minInterpDT = min(interpData.columns['Datetime'])
+        maxInterpDT = max(interpData.columns['Datetime'])
+        if min(esData.columns['Datetime']) > maxInterpDT or max(esData.columns['Datetime']) < minInterpDT:
+            msg = "ES data does not overlap interpolation dataset"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+        if min(liData.columns['Datetime']) > maxInterpDT or max(liData.columns['Datetime']) < minInterpDT:
+            msg = "LI data does not overlap interpolation dataset"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+        if min(ltData.columns['Datetime']) > maxInterpDT or max(ltData.columns['Datetime']) < minInterpDT:
+            msg = "LT data does not overlap interpolation dataset"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+
         # Perform time interpolation
 
         # Note that only the specified datasets in each group will be interpolated and
@@ -883,7 +922,7 @@ class ProcessL1b_Interp:
             return None
 
 
-        if satnavGroup is not None:
+        if robotGroup is not None:
             # Because of the fact that geometries have already been flipped into Ancillary and
             # interpolated prior to applying cal/corrections, some of this is redundant
             # Required:
@@ -896,13 +935,13 @@ class ProcessL1b_Interp:
             ProcessL1b_Interp.interpolateData(pointingData, interpData, "POINTING", fileName)
 
             # Optional
-            if "HUMIDITY" in satnavGroup.datasets:
+            if "HUMIDITY" in robotGroup.datasets:
                 ProcessL1b_Interp.interpolateData(humidityData, interpData, "HUMIDITY", fileName)
-            if "PITCH" in satnavGroup.datasets:
+            if "PITCH" in robotGroup.datasets:
                 ProcessL1b_Interp.interpolateData(pitchData, interpData, "PITCH", fileName)
-            if "ROLL" in satnavGroup.datasets:
+            if "ROLL" in robotGroup.datasets:
                 ProcessL1b_Interp.interpolateData(rollData, interpData, "ROLL", fileName)
-            if "HEADING" in satnavGroup.datasets:
+            if "HEADING" in robotGroup.datasets:
                 ProcessL1b_Interp.interpolateData(headingData, interpData, "HEADING", fileName)
 
         if pyrGroup is not None:
@@ -910,12 +949,12 @@ class ProcessL1b_Interp:
             ProcessL1b_Interp.interpolateData(pyrData, interpData, "T", fileName)
 
         # Py6S group interpolation
-        if py6s_grp_new is not None:
-            py6s_irradiance = py6s_grp_new.getDataset("py6s_irradiance")
-            direct_ratio = py6s_grp_new.getDataset("direct_ratio")
-            diffuse_ratio = py6s_grp_new.getDataset("diffuse_ratio")
-            solar_zenith = py6s_grp_new.getDataset("solar_zenith")
-            ProcessL1b_Interp.interpolateData(py6s_irradiance, interpData, "py6s_irradiance", fileName)
+        if sixS_grp_new is not None:
+            sixS_irradiance = sixS_grp_new.getDataset("sixS_irradiance")
+            direct_ratio = sixS_grp_new.getDataset("direct_ratio")
+            diffuse_ratio = sixS_grp_new.getDataset("diffuse_ratio")
+            solar_zenith = sixS_grp_new.getDataset("solar_zenith")
+            ProcessL1b_Interp.interpolateData(sixS_irradiance, interpData, "sixS_irradiance", fileName)
             ProcessL1b_Interp.interpolateData(direct_ratio, interpData, "direct_ratio", fileName)
             ProcessL1b_Interp.interpolateData(diffuse_ratio, interpData, "diffuse_ratio", fileName)
             ProcessL1b_Interp.interpolateData(solar_zenith, interpData, "solar_zenith", fileName)
@@ -936,11 +975,11 @@ class ProcessL1b_Interp:
         else:
             print('No RAW_UNCERTAINTIES found. Moving on...')
             
-        # # copy py6s_full
-        # py6s_full = node.getGroup('PY6S_MODEL_full')
-        # if py6s_full is not None:
-        #     p6sfullGroup = root.addGroup('PY6S_MODEL_full')
-        #     p6sfullGroup.copy(py6s_full)
+        # # copy sixS_full
+        # sixS_full = node.getGroup('SIXS_MODEL_full')
+        # if sixS_full is not None:
+        #     p6sfullGroup = root.addGroup('SIXS_MODEL_full')
+        #     p6sfullGroup.copy(sixS_full)
           
         # DATETIME is not supported in HDF5; remove from groups that still have it
         for gp in root.groups:

@@ -11,7 +11,7 @@ from Source.CalibrationFileReader import CalibrationFileReader
 from Source.AnomalyDetection import AnomAnalWindow
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
-from Source import GetAnc_credentials as credentials
+from Source.GetAnc_credentials import GetAnc_credentials
 from Source.OCproductsWindow import OCproductsWindow
 
 
@@ -71,20 +71,16 @@ class ConfigWindow(QtWidgets.QDialog):
         self.calibrationEnabledCheckBox.stateChanged.connect(self.calibrationEnabledStateChanged)
         self.calibrationEnabledCheckBox.setEnabled(False)
 
-        # CurrentSensor = ConfigFile.settings["SensorType"]
+        calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
+        self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
         if CurrentSensor.lower() == "seabird":
-            calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
-            self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
             self.calibrationFrameTypeComboBox.addItem("ShutterLight")
             self.calibrationFrameTypeComboBox.addItem("ShutterDark")
             self.calibrationFrameTypeComboBox.addItem("Not Required")
-            # self.calibrationFrameTypeComboBox.addItem("LightAncCombined")
             self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
             self.calibrationFrameTypeComboBox.setEnabled(False)
 
         elif CurrentSensor.lower() == "trios":
-            calibrationFrameTypeLabel = QtWidgets.QLabel("Frame Type:", self)
-            self.calibrationFrameTypeComboBox = QtWidgets.QComboBox(self)
             self.calibrationFrameTypeComboBox.addItem("LI")
             self.calibrationFrameTypeComboBox.addItem("LT")
             self.calibrationFrameTypeComboBox.addItem("ES")
@@ -122,11 +118,11 @@ class ConfigWindow(QtWidgets.QDialog):
         l1aqcLabel.setFont(l1aLabel_font)
         l1aqcSublabel = QtWidgets.QLabel(" Filter on pitch, roll, yaw, and azimuth", self)
 
-        #   SolarTracker
-        self.l1aqcSolarTrackerLabel = QtWidgets.QLabel(" SolarTracker or pySAS", self)
-        self.l1aqcSolarTrackerCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL1aqcSolarTracker"]) == 1:
-            self.l1aqcSolarTrackerCheckBox.setChecked(True)
+        #   SunTracker
+        self.l1aqcSunTrackerLabel = QtWidgets.QLabel(" Autonomous Sun Tracker", self)
+        self.l1aqcSunTrackerCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL1aqcSunTracker"]) == 1:
+            self.l1aqcSunTrackerCheckBox.setChecked(True)
 
         #   Rotator
         self.l1aqcRotatorHomeAngleLabel = QtWidgets.QLabel(" Rotator Home Angle Offset", self)
@@ -166,10 +162,10 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcRotatorAngleMaxLineEdit = QtWidgets.QLineEdit(self)
         self.l1aqcRotatorAngleMaxLineEdit.setText(str(ConfigFile.settings["fL1aqcRotatorAngleMax"]))
         self.l1aqcRotatorAngleMaxLineEdit.setValidator(doubleValidator)
-        self.l1aqcSolarTrackerCheckBoxUpdate()
+        self.l1aqcSunTrackerCheckBoxUpdate()
         self.l1aqcRotatorAngleCheckBoxUpdate()
 
-        #   Relative SZA
+        #   Relative Solar Azimuth
         l1aqcCleanSunAngleLabel = QtWidgets.QLabel(" Relative Solar Azimuth Filter", self)
         self.l1aqcCleanSunAngleCheckBox = QtWidgets.QCheckBox("", self)
         if int(ConfigFile.settings["bL1aqcCleanSunAngle"]) == 1:
@@ -184,7 +180,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcSunAngleMaxLineEdit.setValidator(doubleValidator)
         self.l1aqcCleanSunAngleCheckBoxUpdate()
 
-        self.l1aqcSolarTrackerCheckBox.clicked.connect(self.l1aqcSolarTrackerCheckBoxUpdate)
+        self.l1aqcSunTrackerCheckBox.clicked.connect(self.l1aqcSunTrackerCheckBoxUpdate)
         self.l1aqcRotatorDelayCheckBox.clicked.connect(self.l1aqcRotatorDelayCheckBoxUpdate)
         self.l1aqcCleanPitchRollCheckBox.clicked.connect(self.l1aqcCleanPitchRollCheckBoxUpdate)
         self.l1aqcRotatorAngleCheckBox.clicked.connect(self.l1aqcRotatorAngleCheckBoxUpdate)
@@ -210,8 +206,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
         l1bSublabel3 = QtWidgets.QLabel("   Ancillary data are required for Zhang glint correction and", self)
         l1bSublabel4 = QtWidgets.QLabel("   can fill in wind for M99 and QC. Select database download:", self)
-        # l1bSublabel5 = QtWidgets.QLabel("    (GMAO PROMPTS FOR EARTHDATA LOGIN: <a href=\"https://www.earthdata.nasa.gov/eosdis/science-system-description/eosdis-components/earthdata-login/\">register</a>)", self)
-        # self.l1bGetAncReset = QtWidgets.Button(root, text="Press Me", command=on_button_click)
 
         # Reset button for ancillary source credentials
         self.l1bGetAncResetButton = QtWidgets.QPushButton("Reset credentials (GMAO or ECMWF)", self)
@@ -243,25 +237,25 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bDefaultSSTLineEdit.setText(str(ConfigFile.settings["fL1bDefaultSST"]))
         self.l1bDefaultSSTLineEdit.setValidator(doubleValidator)
 
-        l1bCalLabel = QtWidgets.QLabel(" Select Calibration/Characterization/Correction Regime:", self)
+        l1bCalLabel = QtWidgets.QLabel(" Select Calibration-Characterization-Correction Regime:", self)
         self.DefaultCalRadioButton = QtWidgets.QRadioButton("Factory Calibration Only")
         self.DefaultCalRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL1bCal"]==1:
             self.DefaultCalRadioButton.setChecked(True)
         self.DefaultCalRadioButton.clicked.connect(self.l1bDefaultCalRadioButtonClicked)
-        self.DefaultCalRadioButtonTriOS = QtWidgets.QRadioButton("TriOS")
-        self.DefaultCalRadioButtonSeaBird = QtWidgets.QRadioButton("SeaBird (Non-FRM Class-based)")
-        if CurrentSensor.lower() == 'trios':
-            self.DefaultCalRadioButtonTriOS.setChecked(True)
-            self.DefaultCalRadioButtonSeaBird.setChecked(False)
-            self.DefaultCalRadioButtonSeaBird.setDisabled(True)
-        else:
-            self.DefaultCalRadioButtonSeaBird.setChecked(True)
-            self.DefaultCalRadioButtonTriOS.setChecked(False)
-            self.DefaultCalRadioButtonTriOS.setDisabled(True)
+        # self.DefaultCalRadioButtonTriOS = QtWidgets.QRadioButton("TriOS")
+        # self.DefaultCalRadioButtonSeaBird = QtWidgets.QRadioButton("SeaBird (Non-FRM Class-based)")
+        # if CurrentSensor.lower() == 'trios':
+        #     self.DefaultCalRadioButtonTriOS.setChecked(True)
+        #     self.DefaultCalRadioButtonSeaBird.setChecked(False)
+        #     self.DefaultCalRadioButtonSeaBird.setDisabled(True)
+        # else:
+        #     self.DefaultCalRadioButtonSeaBird.setChecked(True)
+        #     self.DefaultCalRadioButtonTriOS.setChecked(False)
+        #     self.DefaultCalRadioButtonTriOS.setDisabled(True)
 
 
-        self.ClassCalRadioButton = QtWidgets.QRadioButton("FRM Class-based (RadCal required)")
+        self.ClassCalRadioButton = QtWidgets.QRadioButton("FRM Class-specific (RadCal w/ unc. required)")
         self.ClassCalRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL1bCal"]==2:
             self.ClassCalRadioButton.setChecked(True)
@@ -271,7 +265,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.classFilesLineEdit = QtWidgets.QLineEdit(self)
         self.classFilesLineEdit.setDisabled(True)
 
-        self.FullCalRadioButton = QtWidgets.QRadioButton("FRM Full Characterization:")
+        self.FullCalRadioButton = QtWidgets.QRadioButton("FRM Sensor-Specific")
         self.FullCalRadioButton.setAutoExclusive(False)
         self.l1bFRMRadio1 = QtWidgets.QRadioButton("Local", self)
         self.addFullFilesButton = QtWidgets.QPushButton("Add Files:")
@@ -280,6 +274,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.fullFilesLineEdit.setDisabled(True)
 
         self.l1bFRMRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
+        l1bFidRadDBLabel = QtWidgets.QLabel("   Characterization files will be downloaded", self)
         if ConfigFile.settings['FidRadDB']:
             self.l1bFRMRadio1.setChecked(False)
             self.l1bFRMRadio2.setChecked(True)
@@ -296,6 +291,7 @@ class ConfigWindow(QtWidgets.QDialog):
                 self.l1bFRMRadio1.setChecked(False)
                 self.l1bFRMRadio2.setChecked(True)
         self.FullCalRadioButton.clicked.connect(self.l1bFullCalRadioButtonClicked)
+
 
         self.FullCalDir = ConfigFile.settings['FullCalDir']
         self.l1bFRMRadio1.clicked.connect(self.l1bFRMRadioUpdate1)
@@ -417,6 +413,20 @@ class ConfigWindow(QtWidgets.QDialog):
         l2Sublabel3 = QtWidgets.QLabel("  satellite convolution, OC product generation,", self)
         l2Sublabel4 = QtWidgets.QLabel("  SeaBASS file output.", self)
 
+        # L2 Sensor Viewing Angle
+        l2SVALabel = QtWidgets.QLabel("Sensor Viewing Angle", self)
+        self.SVARadioButtonDefault = QtWidgets.QRadioButton("40°")
+        self.SVARadioButtonDefault.setAutoExclusive(False)
+        if ConfigFile.settings["fL2SVA"]==40:
+            self.SVARadioButtonDefault.setChecked(True)
+        self.SVARadioButtonDefault.clicked.connect(self.l2SVARadioButtonDefaultClicked)
+
+        self.SVARadioButton30 = QtWidgets.QRadioButton("30°")
+        self.SVARadioButton30.setAutoExclusive(False)
+        if ConfigFile.settings["fL2SVA"]==30:
+            self.SVARadioButton30.setChecked(True)
+        self.SVARadioButton30.clicked.connect(self.l2SVARadioButton30Clicked)
+
         #   L2 Ensembles
         l2ensLabel = QtWidgets.QLabel("L2 Ensembles", self)
         l2ensLabel.setFont(l1aLabel_font)
@@ -468,14 +478,14 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL1bGetAnc"]) == 1:
             self.l1bGetAncCheckBox1.setChecked(True)
             self.l1bGetAncCheckBox2.setChecked(False)
-            credentials.credentialsWindow('NASA_Earth_Data')
+            GetAnc_credentials.credentialsWindow('NASA_Earth_Data')
             self.l1bGetAncUntickIfNoCredentials('NASA_Earth_Data')
 
         # Case: ECMWF ADS (tick box before window pops up)
         if int(ConfigFile.settings["bL1bGetAnc"]) == 2:
             self.l1bGetAncCheckBox1.setChecked(False)
             self.l1bGetAncCheckBox2.setChecked(True)
-            credentials.credentialsWindow('ECMWF_ADS')
+            GetAnc_credentials.credentialsWindow('ECMWF_ADS')
             self.l1bGetAncUntickIfNoCredentials('ECMWF_ADS')
 
         # Case: NO ancillary selected (disable Zhang before config window pops-up)
@@ -723,11 +733,11 @@ class ConfigWindow(QtWidgets.QDialog):
         PitchRollHBox2.addWidget(self.l1aqcPitchRollPitchLineEdit)
         VBox1.addLayout(PitchRollHBox2)
 
-        #   SolarTracker
-        SolarTrackerHBox = QtWidgets.QHBoxLayout()
-        SolarTrackerHBox.addWidget(self.l1aqcSolarTrackerLabel)
-        SolarTrackerHBox.addWidget(self.l1aqcSolarTrackerCheckBox)
-        VBox1.addLayout(SolarTrackerHBox)
+        #   SunTracker
+        SunTrackerHBox = QtWidgets.QHBoxLayout()
+        SunTrackerHBox.addWidget(self.l1aqcSunTrackerLabel)
+        SunTrackerHBox.addWidget(self.l1aqcSunTrackerCheckBox)
+        VBox1.addLayout(SunTrackerHBox)
 
         #   L1AQC Rotator Home
         RotHomeAngleHBox = QtWidgets.QHBoxLayout()
@@ -754,7 +764,7 @@ class ConfigWindow(QtWidgets.QDialog):
         RotMaxHBox.addWidget(self.l1aqcRotatorAngleMaxLineEdit)
         VBox1.addLayout(RotMaxHBox)
 
-        #   L1AQC Relative SZA
+        #   L1AQC Relative Solar Azimuth
         CleanSunAngleHBox = QtWidgets.QHBoxLayout()
         CleanSunAngleHBox.addWidget(l1aqcCleanSunAngleLabel)
         CleanSunAngleHBox.addWidget(self.l1aqcCleanSunAngleCheckBox)
@@ -826,11 +836,11 @@ class ConfigWindow(QtWidgets.QDialog):
         # CalHBox2 = QtWidgets.QHBoxLayout()
         # CalHBox2.addWidget(self.DefaultCalRadioButton)
         VBox2.addWidget(self.DefaultCalRadioButton)
-        CalHBox2 = QtWidgets.QHBoxLayout()
-        CalHBox2.addStretch()
-        CalHBox2.addWidget(self.DefaultCalRadioButtonTriOS)
-        CalHBox2.addWidget(self.DefaultCalRadioButtonSeaBird)
-        VBox2.addLayout(CalHBox2)
+        # CalHBox2 = QtWidgets.QHBoxLayout()
+        # CalHBox2.addStretch()
+        # CalHBox2.addWidget(self.DefaultCalRadioButtonTriOS)
+        # CalHBox2.addWidget(self.DefaultCalRadioButtonSeaBird)
+        # VBox2.addLayout(CalHBox2)
 
         VBox2.addWidget(self.ClassCalRadioButton)
         CalHBox3 = QtWidgets.QHBoxLayout()
@@ -853,6 +863,7 @@ class ConfigWindow(QtWidgets.QDialog):
         CalHBox5 = QtWidgets.QHBoxLayout()
         CalHBox5.addStretch()
         CalHBox5.addWidget(self.l1bFRMRadio2)
+        CalHBox5.addWidget(l1bFidRadDBLabel)
         CalHBox5.addStretch()
         VBox2.addLayout(CalHBox5)
 
@@ -964,6 +975,13 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox3.addWidget(l2Sublabel2)
         VBox3.addWidget(l2Sublabel3)
         VBox3.addWidget(l2Sublabel4)
+
+        # Lt SVA
+        SVAHBox = QtWidgets.QHBoxLayout()
+        SVAHBox.addWidget(l2SVALabel)
+        SVAHBox.addWidget(self.SVARadioButtonDefault)
+        SVAHBox.addWidget(self.SVARadioButton30)
+        VBox3.addLayout(SVAHBox)
 
         #   L2 Ensembles
         VBox3.addWidget(l2ensLabel)
@@ -1225,19 +1243,17 @@ class ConfigWindow(QtWidgets.QDialog):
             comboList = ['ShutterLight','ShutterDark','Not Required']
             self.calibrationFrameTypeComboBox.clear()
             self.calibrationFrameTypeComboBox.addItems(comboList)
-            # self.calibrationFrameTypeComboBox.setEnabled(False)
-            self.DefaultCalRadioButtonSeaBird.setChecked(True)
-            self.DefaultCalRadioButtonTriOS.setChecked(False)
-            self.DefaultCalRadioButtonTriOS.setDisabled(True)
+            # self.DefaultCalRadioButtonSeaBird.setChecked(True)
+            # self.DefaultCalRadioButtonTriOS.setChecked(False)
+            # self.DefaultCalRadioButtonTriOS.setDisabled(True)
 
         elif CurrentSensor.lower() == "trios":
             comboList = ['LI','LT','ES']
             self.calibrationFrameTypeComboBox.clear()
             self.calibrationFrameTypeComboBox.addItems(comboList)
-            # self.calibrationFrameTypeComboBox.setEnabled(True)
-            self.DefaultCalRadioButtonTriOS.setChecked(True)
-            self.DefaultCalRadioButtonSeaBird.setChecked(False)
-            self.DefaultCalRadioButtonSeaBird.setDisabled(True)
+            # self.DefaultCalRadioButtonTriOS.setChecked(True)
+            # self.DefaultCalRadioButtonSeaBird.setChecked(False)
+            # self.DefaultCalRadioButtonSeaBird.setDisabled(True)
 
     def setCalibrationSettings(self):
         print("CalibrationEditWindow - setCalibrationSettings")
@@ -1280,10 +1296,10 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL1aCleanSZA"] = 1
 
-    def l1aqcSolarTrackerCheckBoxUpdate(self):
-        print("ConfigWindow - l1aqcSolarTrackerCheckBoxUpdate")
+    def l1aqcSunTrackerCheckBoxUpdate(self):
+        print("ConfigWindow - l1aqcSunTrackerCheckBoxUpdate")
 
-        disabled = (not self.l1aqcSolarTrackerCheckBox.isChecked())
+        disabled = (not self.l1aqcSunTrackerCheckBox.isChecked())
         self.l1aCleanSZAMaxLabel.setDisabled(disabled)
         self.l1aCleanSZACheckBox.setDisabled(disabled)
         self.l1aCleanSZAMaxLineEdit.setDisabled(disabled)
@@ -1298,12 +1314,12 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aqcRotatorAngleMaxLineEdit.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["fL1aCleanSZAMax"] = 90
-            ConfigFile.settings["bL1aqcSolarTracker"] = 0
+            ConfigFile.settings["bL1aqcSunTracker"] = 0
             ConfigFile.settings["bL1aqcRotatorDelay"] = 0
             self.l1aqcRotatorDelayCheckBox.setChecked(False)
             self.l1aqcRotatorAngleCheckBox.setChecked(False)
         else:
-            ConfigFile.settings["bL1aqcSolarTracker"] = 1
+            ConfigFile.settings["bL1aqcSunTracker"] = 1
 
     def l1aqcRotatorDelayCheckBoxUpdate(self):
         print("ConfigWindow - l1aqcRotatorDelayCheckBoxUpdate")
@@ -1653,7 +1669,7 @@ class ConfigWindow(QtWidgets.QDialog):
         - If credentials are found set bL1bGetAnc corresp. to given ancillarySource and enable Zhang glint correction option
         - If not: set bL1bGetAnc = 0 (consequently, Zhang will be disabled after this function)
         '''
-        if credentials.credentials_stored(ancillarySource):
+        if GetAnc_credentials.credentials_stored(ancillarySource):
             if ancillarySource == 'NASA_Earth_Data':
                 ConfigFile.settings["bL1bGetAnc"] = 1
             elif ancillarySource == 'ECMWF_ADS':
@@ -1688,8 +1704,8 @@ class ConfigWindow(QtWidgets.QDialog):
         # Erase pre-existing credentials, open pop-up window and untick resp. options if credentials not set...
         if ancillarySource:
             print('Reset %s credentials' % ancillarySource.replace('_', ' '))
-            credentials.erase_user_credentials(ancillarySource)
-            credentials.credentialsWindow(ancillarySource)
+            GetAnc_credentials.erase_user_credentials(ancillarySource)
+            GetAnc_credentials.credentialsWindow(ancillarySource)
             self.l1bGetAncUntickIfNoCredentials(ancillarySource)
 
         # NB: This is not the same as an "if not ancillarySource": bL1bGetAnc = 0 is set after "l1bGetAncUntickIfNoCredentials" is triggered.
@@ -1727,12 +1743,12 @@ class ConfigWindow(QtWidgets.QDialog):
         if self.l1bGetAncCheckBox1.isChecked():
             print("ConfigWindow - l1bGetAncCheckBoxUpdate GMAO MERRA2")
             ConfigFile.settings["bL1bGetAnc"] = 1
-            credentials.credentialsWindow('NASA_Earth_Data')
+            GetAnc_credentials.credentialsWindow('NASA_Earth_Data')
             self.l1bGetAncUntickIfNoCredentials('NASA_Earth_Data')
         elif self.l1bGetAncCheckBox2.isChecked():
             print("ConfigWindow - l1bGetAncCheckBoxUpdate ECMWF CAMS")
             ConfigFile.settings["bL1bGetAnc"] = 2
-            credentials.credentialsWindow('ECMWF_ADS')
+            GetAnc_credentials.credentialsWindow('ECMWF_ADS')
             self.l1bGetAncUntickIfNoCredentials('ECMWF_ADS')
         else:
             ConfigFile.settings["bL1bGetAnc"] = 0
@@ -1751,6 +1767,18 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2DefaultRho"] = 1
         else:
             self.l1bGetAncResetButton.setDisabled(False)
+
+    def l2SVARadioButtonDefaultClicked(self):
+        print("ConfigWindow - l2SVA set to 40")
+        self.SVARadioButtonDefault.setChecked(True)
+        self.SVARadioButton30.setChecked(False)
+        ConfigFile.settings["fL2SVA"] = 40
+    def l2SVARadioButton30Clicked(self):
+        print("ConfigWindow - l2SVA set to 30")
+        self.SVARadioButtonDefault.setChecked(False)
+        self.SVARadioButton30.setChecked(True)
+        ConfigFile.settings["fL2SVA"] = 30
+    
 
     def l2StationsCheckBoxUpdate(self):
         print("ConfigWindow - l2StationsCheckBoxUpdate")
@@ -1888,8 +1916,6 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2BRDF_fQ"] = 0
             self.l2BRDF_fQCheckBox.setChecked(False)
 
-
-
     def l2OCproductsButtonPressed(self):
         print("OC Products Dialogue")
 
@@ -1900,7 +1926,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
         if int(ConfigFile.settings["bL2WeightMODISA"]) == 1:
             self.l2WeightMODISACheckBox.setChecked(True)
-
 
     def l2SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")
@@ -1959,7 +1984,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL1aCleanSZA"] = int(self.l1aCleanSZACheckBox.isChecked())
         ConfigFile.settings["fL1aCleanSZAMax"] = float(self.l1aCleanSZAMaxLineEdit.text())
 
-        ConfigFile.settings["bL1aqcSolarTracker"] = int(self.l1aqcSolarTrackerCheckBox.isChecked())
+        ConfigFile.settings["bL1aqcSunTracker"] = int(self.l1aqcSunTrackerCheckBox.isChecked())
         ConfigFile.settings["fL1aqcRotatorHomeAngle"] = float(self.l1aqcRotatorHomeAngleLineEdit.text())
         ConfigFile.settings["bL1aqcRotatorDelay"] = int(self.l1aqcRotatorDelayCheckBox.isChecked())
         ConfigFile.settings["fL1aqcRotatorDelay"] = float(self.l1aqcRotatorDelayLineEdit.text())
@@ -2044,7 +2069,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.checkForChlor()
 
-
     def saveAsButtonPressed(self):
         print("ConfigWindow - Save As Pressed")
         self.newName, ok = QtWidgets.QInputDialog.getText(self, 'Save As Config File', 'Enter File Name')
@@ -2081,7 +2105,6 @@ class ConfigWindow(QtWidgets.QDialog):
 
             self.setWindowTitle(ConfigFile.filename)
 
-
     def cancelButtonPressed(self):
         print("ConfigWindow - Cancel Pressed")
         self.checkForChlor()
@@ -2100,4 +2123,3 @@ class ConfigWindow(QtWidgets.QDialog):
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
             self.l2WeightMODISACheckBox.setChecked(True)
-

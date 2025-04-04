@@ -4,9 +4,11 @@ import os
 from datetime import datetime as dt
 import numpy as np
 import pandas as pd
-import Py6S
 import pytz
 from scipy import interpolate
+import concurrent.futures
+
+from j6s import SixS
 
 # internal files
 from Source.ConfigFile import ConfigFile
@@ -19,11 +21,11 @@ class ProcessL1b_FRMCal:
     def get_direct_irradiance_ratio(node: object, sensortype: object, called_L2: bool = False) -> object:
         ''' Used for both SeaBird and TriOS L1b
 
-            SolarTracker geometries, when available, have already been
+            SunTracker geometries, when available, have already been
             flipped into Ancillary and interpolated.
         '''
 
-        ## Reading ancilliary data and SolarTracker, if necessary
+        ## Reading ancilliary data and SunTracker, if necessary
         if called_L2:
             # keys change depending on if the process is called at L1B or L2, store correct keys in dictionary
             if ConfigFile.settings['SensorType'].lower() == "seabird":
@@ -52,7 +54,7 @@ class ProcessL1b_FRMCal:
 
         anc_grp = node.getGroup(keys['anc'])
 
-        if ConfigFile.settings['bL1aqcSolarTracker'] == 1:
+        if ConfigFile.settings['bL1aqcSunTracker'] == 1:
             rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns["REL_AZ"])
         else:
             rel_az = np.asarray(anc_grp.datasets['REL_AZ'].columns[keys['rel']])
@@ -74,11 +76,11 @@ class ProcessL1b_FRMCal:
                         zip(datetag, timetag)]
             datetime = [pytz.utc.localize(dt) for dt in dtime]  # set to utc localisation
 
-        ## Py6S configuration
+        ## SIXS configuration
         n_mesure = len(datetime)
         nband = len(wvl)
 
-        # Py6S called over 3min bin
+        # SIXS called over 3min bin
         deltat = (datetime[-1]-datetime[0])/len(datetime)
         n_min = int(3*60//deltat.total_seconds())  # nb of mesures over a bin
         n_bin = len(datetime)//n_min  # nb of bin in a cast
@@ -86,151 +88,229 @@ class ProcessL1b_FRMCal:
             # +1 to account for last points that fall in the last bin (smaller than 3 min)
             n_bin += 1
 
-        direct = np.zeros((n_bin, nband))
-        diffuse = np.zeros((n_bin, nband))
-        irr_direct = np.zeros((n_bin, nband))
-        irr_diffuse = np.zeros((n_bin, nband))
-        irr_env = np.zeros((n_bin, nband))
+        percent_direct_solar_irradiance = np.zeros((n_bin, nband))
+        percent_diffuse_solar_irradiance = np.zeros((n_bin, nband))
+        direct_solar_irradiance = np.zeros((n_bin, nband))
+        diffuse_solar_irradiance = np.zeros((n_bin, nband))
+        environmental_irradiance = np.zeros((n_bin, nband))
         solar_zenith = np.zeros(n_bin)
+
+        # Instanciate the class only once outside the loop
+        s = SixS()
 
         for n in range(n_bin):
             # find ancillary point that match the 1st mesure of the 3min ensemble
             ind_anc = np.argmin(np.abs(np.array(anc_datetime)-datetime[n*n_min]))
-            s = Py6S.SixS()
-            s.atmos_profile = Py6S.AtmosProfile.PredefinedType(Py6S.AtmosProfile.MidlatitudeSummer)
-            s.aero_profile  = Py6S.AeroProfile.PredefinedType(Py6S.AeroProfile.Maritime)
-            s.month = datetime[ind_anc].month
-            s.day = datetime[ind_anc].day
-            s.geometry.solar_z = sun_zenith[ind_anc]
-            s.geometry.solar_a = sun_azimuth[ind_anc]
-            s.geometry.view_a = rel_az[ind_anc]
-            s.geometry.view_z = 180
-            s.altitudes = Py6S.Altitudes()
-            s.altitudes.set_target_sea_level()
-            s.altitudes.set_sensor_sea_level()
-            s.aot550 = aod[ind_anc]
-            n_cores = None
-            if os.name == 'nt':  # if system is windows do not do parallel processing to avoid potential error
-                n_cores = 1
-            _, res = Py6S.SixSHelpers.Wavelengths.run_wavelengths(s, 1e-3*wvl, n=n_cores)
 
-            # extract value from Py6s
-            # total_gaseous_transmittance[n,:] = np.array([res[x].values['total_gaseous_transmittance'] for x in range(nband)])
-            # env[n,:]  = np.array([res[x].values['percent_environmental_irradiance'] for x in range(nband)])
-            direct[n,:]  = np.array([res[x].values['percent_direct_solar_irradiance'] for x in range(nband)])
-            diffuse[n,:]  = np.array([res[x].values['percent_diffuse_solar_irradiance'] for x in range(nband)])
-            irr_direct[n,:]  = np.array([res[x].values['direct_solar_irradiance'] for x in range(nband)])
-            irr_diffuse[n,:]  = np.array([res[x].values['diffuse_solar_irradiance'] for x in range(nband)])
-            irr_env[n,:]  = np.array([res[x].values['environmental_irradiance'] for x in range(nband)])
-            solar_zenith[n] = sun_zenith[ind_anc]
+            solar_zenith[n] = sun_azimuth[ind_anc]
 
+            s.geometry(
+                sun_zen=sun_zenith[ind_anc],
+                sun_azi=sun_azimuth[ind_anc],
+                view_zen=180,
+                view_azi=rel_az[ind_anc],
+                month=datetime[ind_anc].month,
+                day=datetime[ind_anc].day
+            )
+            s.gas()
+            s.aerosol(aot_550=aod[ind_anc])
+            s.target_altitude()
+            s.sensor_altitude()
 
-            if np.isnan(direct).any():
-                logging.debug("direct contains NaN values at: %s", wvl[np.isnan(direct)[n]])
+            s.to_be_implemented()
 
-            if np.isnan(diffuse).any():
-                logging.debug("diffuse contains NaN values at: %s", wvl[np.isnan(diffuse)[n]])
+            # Create placeholder to contain the values
+            # percent_direct_solar_irradiance = [0] * len(wvl)
+            # percent_diffuse_solar_irradiance = [0] * len(wvl)
+            # direct_solar_irradiance = [0] * len(wvl)
+            # diffuse_solar_irradiance = [0] * len(wvl)
+            # environmental_irradiance = [0] * len(wvl)
 
-            if np.isnan(irr_direct).any():
-                logging.debug("irr_direct contains NaN values at: %s", wvl[np.isnan(irr_direct)[n]])
+            # Determine the number of workers to use
+            num_workers = os.cpu_count()
+            logging.info(f"Running on {num_workers} threads")
+            iterations_per_worker = len(wvl) // num_workers
+            logging.info(f"{iterations_per_worker} iteration per threads")
 
-            if np.isnan(irr_diffuse).any():
-                logging.debug("irr_diffuse contains NaN values at: %s", wvl[np.isnan(irr_diffuse)[n]])
+            # Create the function for 6s that will be run by each worker
+            def run_model_and_accumulate(
+                    n,
+                    start,
+                    end,
+                    s,
+                    wvl,
+                    percent_direct_solar_irradiance,
+                    percent_diffuse_solar_irradiance,
+                    direct_solar_irradiance,
+                    diffuse_solar_irradiance,
+                    environmental_irradiance
+            ):
+                for i in range(start, end):
+                    wavelength = wvl[i]
+                    s.wavelength(wavelength)
 
-            if np.isnan(irr_env).any():
-                logging.debug("irr_env contains NaN values at: %s", wvl[np.isnan(irr_env)[n]])
+                    temp = s.run()
+
+                    # if math.isnan(float(temp["atmospheric_reflectance_at_sensor"])):
+                    #     print("atmospheric_path_radiance is NaN ...")
+
+                    # TODO: provide warning (with wavelength) if any of the values are NaN
+
+                    percent_direct_solar_irradiance[n,i] = float(
+                        temp["percent_of_direct_solar_irradiance_at_target"]
+                    )
+                    percent_diffuse_solar_irradiance[n,i] = float(
+                        temp["percent_of_diffuse_atmospheric_irradiance_at_target"]
+                    )
+                    direct_solar_irradiance[n,i] = float(
+                        temp["direct_solar_irradiance_at_target_[W m-2 um-1]"]
+                    )
+                    diffuse_solar_irradiance[n,i] = float(
+                        temp["diffuse_atmospheric_irradiance_at_target_[W m-2 um-1]"]
+                    )
+                    environmental_irradiance[n,i] = float(
+                        temp["environement_irradiance_at_target_[W m-2 um-1]"]
+                    )
+
+                return
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+                futures = []
+                for i in range(num_workers):
+                    # Calculate the start and end indices for this worker
+                    start = i * iterations_per_worker
+                    end = (
+                        start + iterations_per_worker
+                        if i != num_workers - 1
+                        else len(wvl)
+                    )
+
+                    # Start the worker
+                    futures.append(
+                        executor.submit(
+                            run_model_and_accumulate,
+                            n,
+                            start,
+                            end,
+                            s,
+                            wvl,
+                            percent_direct_solar_irradiance,
+                            percent_diffuse_solar_irradiance,
+                            direct_solar_irradiance,
+                            diffuse_solar_irradiance,
+                            environmental_irradiance
+                        )
+                    )
+
+            # Wait for all workers to finish
+            concurrent.futures.wait(futures)
+
+            if np.isnan(percent_direct_solar_irradiance).any():
+                logging.debug("direct contains NaN values at: %s", wvl[np.isnan(percent_direct_solar_irradiance)[n]])
+
+            if np.isnan(percent_diffuse_solar_irradiance).any():
+                logging.debug("diffuse contains NaN values at: %s", wvl[np.isnan(percent_diffuse_solar_irradiance)[n]])
+
+            if np.isnan(direct_solar_irradiance).any():
+                logging.debug("irr_direct contains NaN values at: %s", wvl[np.isnan(direct_solar_irradiance)[n]])
+
+            if np.isnan(diffuse_solar_irradiance).any():
+                logging.debug("irr_diffuse contains NaN values at: %s", wvl[np.isnan(diffuse_solar_irradiance)[n]])
+
+            if np.isnan(environmental_irradiance).any():
+                logging.debug("irr_env contains NaN values at: %s", wvl[np.isnan(environmental_irradiance)[n]])
 
             if np.isnan(solar_zenith).any():
                 logging.debug("solar_zenith contains NaN values at: %s", wvl[np.isnan(solar_zenith)[n]])
 
             # Check for potential NaN values and interpolate them with neighbour
             # direct
-            ind0 = np.where(np.isnan(direct[n, :]))[0]
+            ind0 = np.where(np.isnan(percent_direct_solar_irradiance[n, :]))[0]
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
                         # End of array. Take left neighbor.
-                        direct[n,i0] = direct[n,i0-1]
+                        percent_direct_solar_irradiance[n,i0] = percent_direct_solar_irradiance[n,i0-1]
                     else:
-                        direct[n,i0] = (direct[n,i0-1]+direct[n,i0+1])/2
+                        percent_direct_solar_irradiance[n,i0] = (percent_direct_solar_irradiance[n,i0-1]+percent_direct_solar_irradiance[n,i0+1])/2
             # diffuse
-            ind0 = np.where(np.isnan(diffuse[n, :]))[0]
+            ind0 = np.where(np.isnan(percent_diffuse_solar_irradiance[n, :]))[0]
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
                         # End of array. Take left neighbor.
-                        diffuse[n,i0] = diffuse[n,i0-1]
+                        percent_diffuse_solar_irradiance[n,i0] = percent_diffuse_solar_irradiance[n,i0-1]
                     else:
-                        diffuse[n,i0] = (diffuse[n,i0-1]+diffuse[n,i0+1])/2
+                        percent_diffuse_solar_irradiance[n,i0] = (percent_diffuse_solar_irradiance[n,i0-1]+percent_diffuse_solar_irradiance[n,i0+1])/2
 
             # irr_direct
-            ind0 = np.where(np.isnan(irr_direct[n, :]))[0]
+            ind0 = np.where(np.isnan(direct_solar_irradiance[n, :]))[0]
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
                         # End of array. Take left neighbor.
-                        irr_direct[n,i0] = irr_direct[n,i0-1]
+                        direct_solar_irradiance[n,i0] = direct_solar_irradiance[n,i0-1]
                     else:
-                        irr_direct[n,i0] = (irr_direct[n,i0-1]+irr_direct[n,i0+1])/2
+                        direct_solar_irradiance[n,i0] = (direct_solar_irradiance[n,i0-1]+direct_solar_irradiance[n,i0+1])/2
 
             # irr_diffuse
-            ind0 = np.where(np.isnan(irr_diffuse[n, :]))[0]
+            ind0 = np.where(np.isnan(diffuse_solar_irradiance[n, :]))[0]
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
                         # End of array. Take left neighbor.
-                        irr_diffuse[n,i0] = irr_diffuse[n,i0-1]
+                        diffuse_solar_irradiance[n,i0] = diffuse_solar_irradiance[n,i0-1]
                     else:
-                        irr_diffuse[n,i0] = (irr_diffuse[n,i0-1]+irr_diffuse[n,i0+1])/2
+                        diffuse_solar_irradiance[n,i0] = (diffuse_solar_irradiance[n,i0-1]+diffuse_solar_irradiance[n,i0+1])/2
 
             # irr_env
-            ind0 = np.where(np.isnan(irr_env[n, :]))[0]
+            ind0 = np.where(np.isnan(environmental_irradiance[n, :]))[0]
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
                         # End of array. Take left neighbor.
-                        irr_env[n,i0] = irr_env[n,i0-1]
+                        environmental_irradiance[n,i0] = environmental_irradiance[n,i0-1]
                     else:
-                        irr_env[n,i0] = (irr_env[n,i0-1]+irr_env[n,i0+1])/2
+                        environmental_irradiance[n,i0] = (environmental_irradiance[n,i0-1]+environmental_irradiance[n,i0+1])/2
 
             # Check for potential zero values and interpolate them with neighbour
-            _, ind0 = np.where([direct[n,:]==0])
+            _, ind0 = np.where([percent_direct_solar_irradiance[n,:]==0])
             if len(ind0)>0:
                 for i0 in ind0:
                     if i0==ind0[-1]:
                         # End of array. Take left neighbor.
-                        direct[n,i0] = direct[n,i0-1]
+                        percent_direct_solar_irradiance[n,i0] = percent_direct_solar_irradiance[n,i0-1]
                     else:
-                        direct[n,i0] = (direct[n,i0-1]+direct[n,i0+1])/2
+                        percent_direct_solar_irradiance[n,i0] = (percent_direct_solar_irradiance[n,i0-1]+percent_direct_solar_irradiance[n,i0+1])/2
 
         # if only 1 bin, repeat value for each timestamp over cast duration (<3min)
-        res_py6s = {}
+        res_sixS = {}
         if n_bin == 1:
             logging.warning("n_bin == 1, cast is probably too short")
-            res_py6s['solar_zenith'] = np.repeat(solar_zenith, n_mesure)
-            res_py6s['direct_ratio'] = np.repeat(direct, n_mesure, axis=0)
-            res_py6s['diffuse_ratio'] = np.repeat(diffuse, n_mesure, axis=0)
-            res_py6s['direct_irr'] = np.repeat(irr_direct, n_mesure, axis=0)
-            res_py6s['diffuse_irr'] = np.repeat(irr_diffuse, n_mesure, axis=0)
-            res_py6s['env_irr'] = np.repeat(irr_env, n_mesure, axis=0)
+            res_sixS['solar_zenith'] = np.repeat(solar_zenith, n_mesure)
+            res_sixS['direct_ratio'] = np.repeat(percent_direct_solar_irradiance, n_mesure, axis=0)
+            res_sixS['diffuse_ratio'] = np.repeat(percent_diffuse_solar_irradiance, n_mesure, axis=0)
+            res_sixS['direct_irr'] = np.repeat(direct_solar_irradiance, n_mesure, axis=0)
+            res_sixS['diffuse_irr'] = np.repeat(diffuse_solar_irradiance, n_mesure, axis=0)
+            res_sixS['env_irr'] = np.repeat(environmental_irradiance, n_mesure, axis=0)
         # if more than 1 bin, interpolate fo each timestamp
         else:
             x_bin  = [n*n_min for n in range(n_bin)]
             x_full = np.linspace(0, n_mesure, n_mesure)
             f =  interpolate.interp1d(x_bin, solar_zenith, fill_value='extrapolate')
-            res_py6s['solar_zenith'] = f(x_full)
-            f =  interpolate.interp1d(x_bin, direct, fill_value='extrapolate', axis=0)
-            res_py6s['direct_ratio'] = f(x_full)
-            f =  interpolate.interp1d(x_bin, diffuse, fill_value='extrapolate', axis=0)
-            res_py6s['diffuse_ratio'] = f(x_full)
-            f =  interpolate.interp1d(x_bin, irr_direct, fill_value='extrapolate', axis=0)
-            res_py6s['direct_irr'] = f(x_full)
-            f =  interpolate.interp1d(x_bin, irr_diffuse, fill_value='extrapolate', axis=0)
-            res_py6s['diffuse_irr'] = f(x_full)
-            f =  interpolate.interp1d(x_bin, irr_env, fill_value='extrapolate', axis=0)
-            res_py6s['env_irr'] = f(x_full)
+            res_sixS['solar_zenith'] = f(x_full)
+            f =  interpolate.interp1d(x_bin, percent_direct_solar_irradiance, fill_value='extrapolate', axis=0)
+            res_sixS['direct_ratio'] = f(x_full)
+            f =  interpolate.interp1d(x_bin, percent_diffuse_solar_irradiance, fill_value='extrapolate', axis=0)
+            res_sixS['diffuse_ratio'] = f(x_full)
+            f =  interpolate.interp1d(x_bin, direct_solar_irradiance, fill_value='extrapolate', axis=0)
+            res_sixS['direct_irr'] = f(x_full)
+            f =  interpolate.interp1d(x_bin, diffuse_solar_irradiance, fill_value='extrapolate', axis=0)
+            res_sixS['diffuse_irr'] = f(x_full)
+            f =  interpolate.interp1d(x_bin, environmental_irradiance, fill_value='extrapolate', axis=0)
+            res_sixS['env_irr'] = f(x_full)
 
-        return res_py6s
+        return res_sixS
 
     @staticmethod
     def cosine_error_correction(node, sensorstring):
@@ -440,7 +520,7 @@ class ProcessL1b_FRMCal:
                 # Compute avg cosine error
                 avg_coserror, full_hemi_coserror, zenith_ang = ProcessL1b_FRMCal.cosine_error_correction(node, sensortype)
                 # Irradiance direct and diffuse ratio
-                res_py6s = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
+                res_sixS = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
             else:
                 PANEL = np.asarray(pd.DataFrame(unc_grp.getDataset(sensortype+"_RADCAL_PANEL").data)['2'])
                 PANEL = np.pad(PANEL, (0, nband-len(PANEL)), mode='constant')
@@ -465,10 +545,10 @@ class ProcessL1b_FRMCal:
                 data = data * Ct
                 # Cosine correction
                 if sensortype == "ES":
-                    # retrive py6s variables for given wvl
-                    solar_zenith = res_py6s['solar_zenith'][n]
-                    direct_ratio = res_py6s['direct_ratio'][n,ind_raw_data]
-                    diffuse_ratio = res_py6s['diffuse_ratio'][n,ind_raw_data]
+                    # retrive sixS variables for given wvl
+                    solar_zenith = res_sixS['solar_zenith'][n]
+                    direct_ratio = res_sixS['direct_ratio'][n,ind_raw_data]
+                    diffuse_ratio = res_sixS['diffuse_ratio'][n,ind_raw_data]
                     ind_closest_zen = np.argmin(np.abs(zenith_ang-solar_zenith))
                     cos_corr = (1-avg_coserror[:,ind_closest_zen]/100)[ind_nocal==False]
                     Fhcorr = (1-full_hemi_coserror/100)[ind_nocal==False]
@@ -486,36 +566,36 @@ class ProcessL1b_FRMCal:
             rec_arr = np.rec.fromarrays(np.array(filtered_mesure).transpose(), dtype=ds_dt)
             grp.getDataset(sensortype).data = rec_arr
 
-            # Store Py6S results in new group
+            # Store SIXS results in new group
             if sensortype == "ES":
-                solar_zenith = res_py6s['solar_zenith']
-                direct_ratio = res_py6s['direct_ratio'][:,ind_raw_data]
-                diffuse_ratio = res_py6s['diffuse_ratio'][:,ind_raw_data]
-                # Py6S model irradiance is in W/m^2/um, scale by 10 to match HCP units
-                model_irr = (res_py6s['direct_irr']+res_py6s['diffuse_irr']+res_py6s['env_irr'])[:,ind_raw_data]/10
+                solar_zenith = res_sixS['solar_zenith']
+                direct_ratio = res_sixS['direct_ratio'][:,ind_raw_data]
+                diffuse_ratio = res_sixS['diffuse_ratio'][:,ind_raw_data]
+                # SIXS model irradiance is in W/m^2/um, scale by 10 to match HCP units
+                model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_raw_data]/10
 
-                py6s_grp = node.addGroup("PY6S_MODEL")
+                sixS_grp = node.addGroup("SIXS_MODEL")
                 for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
                     # copy datetime dataset for interp process
-                    ds = py6s_grp.addDataset(dsname)
+                    ds = sixS_grp.addDataset(dsname)
                     ds.data = grp.getDataset(dsname).data
 
-                ds = py6s_grp.addDataset("py6s_irradiance")
+                ds = sixS_grp.addDataset("sixS_irradiance")
                 ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
                 rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
                 ds.data = rec_arr
 
-                ds = py6s_grp.addDataset("direct_ratio")
+                ds = sixS_grp.addDataset("direct_ratio")
                 ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
                 rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
                 ds.data = rec_arr
 
-                ds = py6s_grp.addDataset("diffuse_ratio")
+                ds = sixS_grp.addDataset("diffuse_ratio")
                 ds_dt = np.dtype({'names': filtered_wvl,'formats': [np.float64]*len(filtered_wvl)})
                 rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
                 ds.data = rec_arr
 
-                ds = py6s_grp.addDataset("solar_zenith")
+                ds = sixS_grp.addDataset("solar_zenith")
                 ds.columns["solar_zenith"] = solar_zenith
                 ds.columnsToDataset()
 

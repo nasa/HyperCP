@@ -30,6 +30,7 @@ class PDF(FPDF):
 
     def format_intro(self, level, headerBlock, commentsDict, root):
         # Intros
+        intro = None
         if level == "L1A":
             intro = 'Raw binary to HDF5 and filter data on SZA.\n'
 
@@ -161,7 +162,7 @@ class PDF(FPDF):
             else:
                 # Failed run, use values from Config
                 metaData += f'Rotator Home Angle: {ConfigFile.settings["fL1aqcRotatorHomeAngle"]}\n'
-                if ConfigFile.settings['bL1aqcSolarTracker']:
+                if ConfigFile.settings['bL1aqcSunTracker']:
                     if ConfigFile.settings['bL1aqcRotatorDelay']:
                         metaData += f'Rotator Delay: {ConfigFile.settings["fL1aqcRotatorDelay"]}\n'
                     if ConfigFile.settings['bL1aqcCleanPitchRoll']:
