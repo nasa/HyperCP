@@ -411,7 +411,7 @@ class ProcessL1aqc:
         #############################################################################################
 
         # For QC with badTimes when badTimes has only one record per interval (rather than a time span),
-        #   L1AQC dark timestamps for Sea-Bird will not be captured by the exact badTimes. Therefore, set each dark 
+        #   L1AQC dark timestamps for Sea-Bird will not be captured by the exact badTimes. Therefore, set each dark
         #   sample timestamp to the nearest light sample.
         if ConfigFile.settings["SensorType"].lower() == "seabird":
             groupDict = {}
@@ -655,7 +655,7 @@ class ProcessL1aqc:
             print(msg)
             Utilities.writeLogFile(msg)
 
-            i = 0
+            
             gp = None
             for group in node.groups:
                 # NOTE: SOLARTRACKER and pySAS using POINTING dataset to get rotator movements
@@ -676,8 +676,9 @@ class ProcessL1aqc:
                     absRotatorMin = float(ConfigFile.settings["fL1aqcRotatorAngleMin"])
                     absRotatorMax = float(ConfigFile.settings["fL1aqcRotatorAngleMax"])
 
+                    i = 0
                     start = -1
-                    stop = []
+                    stop = None
                     for index, rotatori in enumerate(rotator):
                         if rotatori + home > absRotatorMax or rotatori + home < absRotatorMin or math.isnan(rotatori):
                             i += 1
@@ -703,11 +704,8 @@ class ProcessL1aqc:
                         startstop = [timeStamp[start],timeStamp[stop]]
                         msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
                         # print(msg)
-                        Utilities.writeLogFile(msg)
-                        if badTimes is None: # only one set of records
-                            badTimes = [startstop]
-                        else:
-                            badTimes.append(startstop)
+                        Utilities.writeLogFile(msg)                        
+                        badTimes.append(startstop)
 
                     if start==0 and stop==index: # All records are bad
                         return None
@@ -879,13 +877,13 @@ class ProcessL1aqc:
             msg = "Filtering file for bad Relative Solar Azimuth"
             print(msg)
             Utilities.writeLogFile(msg)
-
-            i = 0
+            
             relAzimuthMin = float(ConfigFile.settings["fL1aqcSunAngleMin"])
             relAzimuthMax = float(ConfigFile.settings["fL1aqcSunAngleMax"])
 
+            i = 0
             start = -1
-            stop = []
+            stop = None
             # The length of relAz (and therefore the value of i) depends on whether ancillary
             #  data are used or SunTracker data
             # relAz and timeStamp are 1:1, but could be TRACKER or ANCILLARY
@@ -907,7 +905,6 @@ class ProcessL1aqc:
                         msg = f'   Flag data from: {startstop[0]}  to {startstop[1]}'
                         # print(msg)
                         Utilities.writeLogFile(msg)
-
                         badTimes.append(startstop)
                         start = -1
 
@@ -920,10 +917,7 @@ class ProcessL1aqc:
                 msg = f'   Flag data from {startstop[0]} to {startstop[1]} '
                 # print(msg)
                 Utilities.writeLogFile(msg)
-                if badTimes is None: # only one set of records
-                    badTimes = [startstop]
-                else:
-                    badTimes.append(startstop)
+                badTimes.append(startstop)
 
             if start==0 and stop==index: # All records are bad
                 msg = "All records out of bounds. Aborting."
@@ -977,6 +971,32 @@ class ProcessL1aqc:
                         msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
                         print(msg)
                         Utilities.writeLogFile(msg)
+
+        # Confirm that radiometry still overlaps in time (SeaBird)        
+        groupDict = {}
+        for iGp, gp in enumerate(node.groups):
+            groupDict[gp.id] = iGp
+
+        esDateTime = None
+        if ConfigFile.settings["SensorType"].lower() == "seabird":
+            esDateTime = node.groups[groupDict["ES_LIGHT"]].datasets['DATETIME'].data
+            liDateTime = node.groups[groupDict["LI_LIGHT"]].datasets['DATETIME'].data
+            ltDateTime = node.groups[groupDict["LT_LIGHT"]].datasets['DATETIME'].data
+        else:
+            # Confirm for trios, sorad, dalec
+            esDateTime = node.groups[groupDict["ES"]].datasets['DATETIME'].data
+            liDateTime = node.groups[groupDict["LI"]].datasets['DATETIME'].data
+            ltDateTime = node.groups[groupDict["LT"]].datasets['DATETIME'].data
+
+        if (min(esDateTime) > max(liDateTime) or min(esDateTime) > max(ltDateTime) or
+            max(esDateTime) < min(liDateTime) or max(esDateTime) < min(ltDateTime) or
+            min(liDateTime) > max(ltDateTime) or min(liDateTime) > max(ltDateTime) or
+            min(ltDateTime) > max(liDateTime) or min(ltDateTime) > max(liDateTime)):
+
+            msg = 'Radiometry groups no longer overlap in time. Abort.'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
 
 
         ###########################################################################
