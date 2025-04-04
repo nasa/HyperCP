@@ -14,6 +14,56 @@ class ProcessL1aqc:
     ''' Process L1A to L1AQC '''
 
     @staticmethod
+    def filterBadTimes(node,badTimes):
+        ''' For each dataset in each group, find the badTimes to remove and delete those rows
+         Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data '''
+        if len(badTimes) > 0:
+            msg = "Eliminate combined filtered data from datasets.*****************************"
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+            for gp in node.groups:
+
+                # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
+                # Test: Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data
+                if gp.id != "SOLARTRACKER_STATUS" and gp.id != "ANCILLARY_METADATA":
+                    fractionRemoved = ProcessL1aqc.filterData(gp, badTimes)
+
+                    # Now test whether the overlap has eliminated all radiometric data
+                    if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
+                        msg = "Radiometric data >98'%' eliminated. Aborting."
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                        return None
+
+                    gpTimeset  = gp.getDataset("TIMETAG2")
+
+                    gpTime = gpTimeset.data["NONE"]
+                    lenGpTime = len(gpTime)
+                    msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+
+                    if gp.attributes['FrameType'] == 'ShutterDark':
+                        fractionRemoved = ProcessL1aqc.filterData_ADJUSTED(gp, badTimes)
+
+                        # Now test whether the overlap has eliminated all radiometric data
+                        if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
+                            msg = "Radiometric data >98'%' eliminated. Aborting."
+                            print(msg)
+                            Utilities.writeLogFile(msg)
+                            return None
+
+                        gpTimeset  = gp.getDataset("TIMETAG2")
+
+                        gpTime = gpTimeset.data["NONE"]
+                        lenGpTime = len(gpTime)
+                        msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+        return node
+
+    @staticmethod
     def filterData(group, badTimes):
         ''' Delete flagged records '''
 
@@ -353,7 +403,7 @@ class ProcessL1aqc:
 
             if "HEADING" in ancData.columns:
                 # HEADING/shipAzimuth comes from ancillary data file here (not GPS or SATNAV)
-                shipAzimuth = ancData.columns["HEADING"][0]                
+                shipAzimuth = ancData.columns["HEADING"][0]
             if "STATION" in ancData.columns:
                 station = ancData.columns["STATION"][0]
             if "SALINITY" in ancData.columns:
@@ -430,7 +480,67 @@ class ProcessL1aqc:
 
                     gp = Utilities.fixDarkTimes(gp,lightGroup)
 
+        # Aggregate all bad times prior to removal (Restart badTimes after first filter,
+        #       Suntracker-Es overlap, which uses a different datetime reference (Es instead of Ancillary))
         badTimes = []
+
+        # Apply Filter for lack of Suntracker data while Es is collecting
+        if node is not None and ConfigFile.settings["bL1aqcSunTracker"]:
+            sunTrackerDateTime = None
+            esDateTime = None
+            for group in node.groups:
+                if group.id.startswith("SunTracker"):
+                    sunTrackerDateTime = group.datasets['DATETIME'].data
+                if group.id.startswith("ES"):
+                    esDateTime = group.datasets['DATETIME'].data
+
+            msg = "Filtering file for Suntracker data outages"
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+            i = 0
+            start = -1
+            stop = None
+            index = None
+            for index, esTimeI in enumerate(esDateTime):
+                # Threshold for an Es datetime distance from a Suntracker datetime:
+                tThreshold = datetime.timedelta(seconds=30)
+
+                tDiff = [x - esTimeI for x in sunTrackerDateTime]
+                if min(tDiff) > tThreshold:
+                    i += 1
+                    if start == -1:
+                        start = index
+                    stop = index
+                else:
+                    if start != -1:
+                        startstop = [esDateTime[start],esDateTime[stop]]
+                        msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
+                        # print(msg)
+                        Utilities.writeLogFile(msg)
+                        badTimes.append(startstop)
+                        start = -1
+
+            if start != -1 and stop == index: # Records from a mid-point to the end are bad
+                startstop = [esDateTime[start],esDateTime[stop]]
+                badTimes.append(startstop)
+                msg = f'   Flag additional data from {startstop[0]} to {startstop[1]}'
+                # print(msg)
+                Utilities.writeLogFile(msg)
+
+            msg = f'Percentage of data failed on Suntracker outage: {round(100*i/len(esDateTime))} %'
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+            if start==0 and stop==index: # All records are bad
+                return None
+
+        node = ProcessL1aqc.filterBadTimes(node,badTimes)
+        if node is None:
+            return None
+
+        badTimes = []
+        startstop = None
 
         # Apply GPS Status Filter
         # NOTE: I believe this is for an old dataset with GPGGA GPS with spotty reception.
@@ -448,7 +558,8 @@ class ProcessL1aqc:
 
             i = 0
             start = -1
-            stop = None            
+            stop = None
+            index = None
             for index, status in enumerate(gpsStatus.data["NONE"]):
                 # "V" for GPRMC, "0" for GPGGA
                 if status == b'V' or status == 0:
@@ -464,17 +575,17 @@ class ProcessL1aqc:
                         Utilities.writeLogFile(msg)
                         badTimes.append(startstop)
                         start = -1
-            msg = f'Percentage of data failed on GPS Status: {round(100*i/len(timeStamp))} %'
-            print(msg)
-            Utilities.writeLogFile(msg)
 
             if start != -1 and stop == index: # Records from a mid-point to the end are bad
                 startstop = [timeStamp[start],timeStamp[stop]]
                 badTimes.append(startstop)
-                msg = f'   Flag additional data from {startstop[0]} to {startstop[1]} (included in percentage above)'
+                msg = f'   Flag additional data from {startstop[0]} to {startstop[1]}'
                 # print(msg)
-                Utilities.writeLogFile(msg)                
-                
+                Utilities.writeLogFile(msg)
+            msg = f'Percentage of data failed on GPS Status: {round(100*i/len(timeStamp))} %'
+            print(msg)
+            Utilities.writeLogFile(msg)
+
             if start==0 and stop==index: # All records are bad
                 return None
 
@@ -552,9 +663,6 @@ class ProcessL1aqc:
                         Utilities.writeLogFile(msg)
                         badTimes.append(startstop)
                         start = -1
-            msg = f'Percentage of data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %'
-            print(msg)
-            Utilities.writeLogFile(msg)
 
             if start != -1 and stop == index: # Records from a mid-point to the end are bad
                 startstop = [timeStamp[start],timeStamp[stop]]
@@ -562,6 +670,10 @@ class ProcessL1aqc:
                 msg = f'   Flag data from {startstop[0]} to {startstop[1]} '
                 # print(msg)
                 Utilities.writeLogFile(msg)
+
+            msg = f'Percentage of data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %'
+            print(msg)
+            Utilities.writeLogFile(msg)
 
             if start==0 and stop==index: # All records are bad
                 return None
@@ -610,7 +722,7 @@ class ProcessL1aqc:
                                 # Detect angle changed
                                 start = timeStamp[index] # Should restart with every rotator change
                                 # print('Rotator delay kick-out. ' + str(timeInt) )
-                                if kickout == 0:    
+                                if kickout == 0:
                                     startIndex = index # Should only change for new delay interval
                                 lastAngle = rotatori
                                 kickout = 1
@@ -655,7 +767,6 @@ class ProcessL1aqc:
             print(msg)
             Utilities.writeLogFile(msg)
 
-            
             gp = None
             for group in node.groups:
                 # NOTE: SOLARTRACKER and pySAS using POINTING dataset to get rotator movements
@@ -696,16 +807,17 @@ class ProcessL1aqc:
 
                                 badTimes.append(startstop)
                                 start = -1
-                    msg = f'Percentage of Tracker data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
 
                     if start != -1 and stop == index: # Records from a mid-point to the end are bad
                         startstop = [timeStamp[start],timeStamp[stop]]
                         msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
                         # print(msg)
-                        Utilities.writeLogFile(msg)                        
+                        Utilities.writeLogFile(msg)
                         badTimes.append(startstop)
+
+                    msg = f'Percentage of Tracker data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
 
                     if start==0 and stop==index: # All records are bad
                         return None
@@ -877,7 +989,7 @@ class ProcessL1aqc:
             msg = "Filtering file for bad Relative Solar Azimuth"
             print(msg)
             Utilities.writeLogFile(msg)
-            
+
             relAzimuthMin = float(ConfigFile.settings["fL1aqcSunAngleMin"])
             relAzimuthMax = float(ConfigFile.settings["fL1aqcSunAngleMax"])
 
@@ -895,7 +1007,7 @@ class ProcessL1aqc:
                     if start == -1:
                         # print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle,2)))
                         start = index
-                    stop = index # start is fixed and stop progresses until good data found. 
+                    stop = index # start is fixed and stop progresses until good data found.
                 else:
                     # good data found
                     if start != -1:
@@ -908,10 +1020,6 @@ class ProcessL1aqc:
                         badTimes.append(startstop)
                         start = -1
 
-            msg = f'Percentage of data out of Relative Solar Azimuth bounds: {round(100*i/len(relAz))} %'
-            print(msg)
-            Utilities.writeLogFile(msg)
-
             if start != -1 and stop == index: # Records from a mid-point to the end are bad
                 startstop = [timeStamp[start],timeStamp[stop]]
                 msg = f'   Flag data from {startstop[0]} to {startstop[1]} '
@@ -919,60 +1027,21 @@ class ProcessL1aqc:
                 Utilities.writeLogFile(msg)
                 badTimes.append(startstop)
 
+            msg = f'Percentage of data out of Relative Solar Azimuth bounds: {round(100*i/len(relAz))} %'
+            print(msg)
+            Utilities.writeLogFile(msg)
+
             if start==0 and stop==index: # All records are bad
                 msg = "All records out of bounds. Aborting."
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
 
-        # For each dataset in each group, find the badTimes to remove and delete those rows
-        # Test: Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data
-        if len(badTimes) > 0:
-            msg = "Eliminate combined filtered data from datasets.*****************************"
-            print(msg)
-            Utilities.writeLogFile(msg)
+        node = ProcessL1aqc.filterBadTimes(node,badTimes)
+        if node is None:
+            return None
 
-            for gp in node.groups:
-
-                # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
-                # Test: Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data
-                if gp.id != "SOLARTRACKER_STATUS" and gp.id != "ANCILLARY_METADATA":
-                    fractionRemoved = ProcessL1aqc.filterData(gp, badTimes)
-
-                    # Now test whether the overlap has eliminated all radiometric data
-                    if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
-                        msg = "Radiometric data >98'%' eliminated. Aborting."
-                        print(msg)
-                        Utilities.writeLogFile(msg)
-                        return None
-
-                    gpTimeset  = gp.getDataset("TIMETAG2")
-
-                    gpTime = gpTimeset.data["NONE"]
-                    lenGpTime = len(gpTime)
-                    msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-
-                    if gp.attributes['FrameType'] == 'ShutterDark':
-                        fractionRemoved = ProcessL1aqc.filterData_ADJUSTED(gp, badTimes)
-
-                        # Now test whether the overlap has eliminated all radiometric data
-                        if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
-                            msg = "Radiometric data >98'%' eliminated. Aborting."
-                            print(msg)
-                            Utilities.writeLogFile(msg)
-                            return None
-
-                        gpTimeset  = gp.getDataset("TIMETAG2")
-
-                        gpTime = gpTimeset.data["NONE"]
-                        lenGpTime = len(gpTime)
-                        msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
-
-        # Confirm that radiometry still overlaps in time (SeaBird)        
+        # Confirm that radiometry still overlaps in time
         groupDict = {}
         for iGp, gp in enumerate(node.groups):
             groupDict[gp.id] = iGp
@@ -1009,8 +1078,8 @@ class ProcessL1aqc:
 
         # DATETIME is not supported in HDF5; remove
         if node is not None:
-            for gp in node.groups:                
-                if 'DATETIME' in gp.datasets:               
+            for gp in node.groups:
+                if 'DATETIME' in gp.datasets:
                     del gp.datasets["DATETIME"]
                 if 'DATETIME_ADJUSTED' in gp.datasets:
                     del gp.datasets["DATETIME_ADJUSTED"]
