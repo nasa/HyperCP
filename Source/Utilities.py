@@ -1592,11 +1592,14 @@ class Utilities:
             'size': 16,
             }
 
+        progressBar = None
         # Steps in wavebands used for plots
         # This happens prior to waveband interpolation, so each interval is ~3.3 nm
         step = ConfigFile.settings['fL1bPlotInterval']
 
-        if instr == 'ES' or instr == 'LI' or instr == 'LT':
+        intervalList = ['ES','LI','LT','sixS_irradiance','direct_ratio','diffuse_ratio']
+        # if instr == 'ES' or instr == 'LI' or instr == 'LT':
+        if instr in intervalList:
             l = round((len(xData.data.dtype.names)-3)/step) # skip date and time and datetime
             index = l
         else:
