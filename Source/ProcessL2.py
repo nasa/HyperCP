@@ -1704,7 +1704,7 @@ class ProcessL2:
         waveSubset = wavelength  # Only used for Zhang; No subsetting for threeC or Mobley corrections
         rhoVec = {}
 
-        Rho_Uncertainty_Obj = Propagate(M=100, cores=1)
+        Rho_Uncertainty_Obj = Propagate(M=10, cores=1)
 
         # Rho will be the same across the entire ensemble slice based on input averages
         if threeCRho:
@@ -1725,7 +1725,7 @@ class ProcessL2:
             # Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.
 
             # reduce number of draws because of how computationally intensive the Zhang method is
-            Rho_Uncertainty_Obj = Propagate(M=100, cores=1)
+            Rho_Uncertainty_Obj = Propagate(M=10, cores=1)
 
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
