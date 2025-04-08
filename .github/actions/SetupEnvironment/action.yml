@@ -29,7 +29,7 @@ runs:
       shell: bash -el {0}
       run: |
         mamba env update -n hypercp -f environment.yml
-        mamba install --channel=conda-forge pyinstaller==6.6
+        mamba install --channel=conda-forge pyinstaller==6.12
 
     - name: 📸 Capture Environment
       if: runner.os != 'Windows'

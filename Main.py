@@ -614,9 +614,15 @@ class Command:
         super().__init__()
 
         # Confirm that core data files are in place. Download if necessary.
-        fpfZhang = os.path.join(CODE_HOME, "Data", "Zhang_rho_db.mat")
+        fpfZhang = os.path.join(CODE_HOME, "Data", "Zhang_rho_db_expanded.mat")
         if not os.path.exists(fpfZhang):
             Utilities.downloadZhangDB(fpfZhang, force=True)
+
+        # Confirm that core data files are in place. Download if necessary.
+        # fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Zhang_rho_LUT.nc")
+        fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Z17_LUT_v2.nc")
+        if not os.path.exists(fpfZhangLUT):
+            Utilities.downloadZhangLUT(fpfZhangLUT, force=True)
 
         # Create a default main config to be filled with cmd argument
         # to avoid reading the one generated with the GUI
