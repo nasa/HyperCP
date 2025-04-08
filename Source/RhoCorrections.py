@@ -255,8 +255,9 @@ class RhoCorrections:
                     wt,
                     nwb
                 ),
-                method="linear", # should be cubic - temporary fix due to memory issues
+                method="pchip", # should be cubic - temporary fix due to memory issues
             )
+            print('Interpolating ZLUT using pchip (3rd order Hermitian Polynomial) method')
         except ValueError as err:
             # will implement better error handling, in place until Z17 LUT is updated with all indexes
             raise InterpolationError(f"Interpolation of Z17 LUT failed with {err}")
