@@ -46,7 +46,7 @@ class TestSeabirdSolarTracker(unittest.TestCase):
         self.cfg_filename = os.path.join(root, "Config", "sample_SEABIRD_SOLARTRACKER.cfg")
         self.files = sorted(glob.glob(os.path.join(self.path_to_data, 'RAW', f'*.RAW')))
 
-    def test_pysas(self):
+    def test_seabird_solar_tracker(self):
         from Main import Command
         os.chdir(root)  # Need to switch to root as path in Config files are relative
         for file in self.files:
