@@ -339,6 +339,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             ES_unc = es_unc / es
             LI_unc = li_unc / li
             LT_unc = lt_unc / lt
+            # if any(ES_unc < 0):
+            #     print('halt and catch fire')
 
         # interpolation step - bringing uncertainties to common wavebands from radiometric calibration wavebands.
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()),
