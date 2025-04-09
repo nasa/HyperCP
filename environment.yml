@@ -1,4 +1,4 @@
-name: hypercp-test
+name: hypercp
 channels:
   - defaults
   - conda-forge
