@@ -235,29 +235,55 @@ class RhoCorrections:
         LUT = LUT.interp(wind=[0, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15], kwargs={"fill_value": "extrapolate"})
 
         try:
-            zhang_interp = spin.interpn(
-                points=(
-                    LUT.wind.values,
-                    LUT.aot.values,
-                    LUT.sza.values,
-                    LUT.relAz.values,
-                    LUT.sal.values,
-                    LUT.SST.values,
-                    LUT.wavelength.values
-                ),
-                values=LUT.Glint.values,
-                xi=(
-                    ws,
-                    aod,
-                    sza,
-                    rel_az,
-                    sal,
-                    wt,
-                    nwb
-                ),
-                method="pchip", # should be cubic - temporary fix due to memory issues
-            )
-            print('Interpolating ZLUT using pchip (3rd order Hermitian Polynomial) method')
+            if ConfigFile.settings['SensorType'].lower() == "sorad":
+                zhang_interp = spin.interpn(
+                    points=(
+                        LUT.wind.values,
+                        LUT.aot.values,
+                        LUT.sza.values,
+                        LUT.relAz.values,
+                        LUT.sal.values,
+                        LUT.SST.values,
+                        LUT.wavelength.values
+                    ),
+                    values=LUT.Glint.values,
+                    xi=(
+                        ws,
+                        aod,
+                        sza,
+                        rel_az,
+                        sal,
+                        wt,
+                        nwb
+                    ),
+                    method="pchip", # should be cubic - temporary fix due to memory issues
+                )
+                print('Interpolating Z17 LUT using pchip (3rd order Hermitian Polynomial) method')
+            else:
+                zhang_interp = spin.interpn(
+                    points=(
+                        LUT.wind.values,
+                        LUT.aot.values,
+                        LUT.sza.values,
+                        LUT.relAz.values,
+                        LUT.sal.values,
+                        LUT.SST.values,
+                        LUT.wavelength.values
+                    ),
+                    values=LUT.Glint.values,
+                    xi=(
+                        ws,
+                        aod,
+                        sza,
+                        rel_az,
+                        sal,
+                        wt,
+                        nwb
+                    ),
+                    method="cubic", 
+                )
+                print('Interpolating Z17 LUT using cubic method')
+            
         except ValueError as err:
             # will implement better error handling, in place until Z17 LUT is updated with all indexes
             raise InterpolationError(f"Interpolation of Z17 LUT failed with {err}")
