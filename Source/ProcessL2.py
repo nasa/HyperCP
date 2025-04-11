@@ -1311,11 +1311,11 @@ class ProcessL2:
             # no need to retain SZA
             # Copy datasets to dictionary
             diffuseData.datasetToColumns()
-            diffuseColumns = diffuseData.columns
+            # diffuseColumns = diffuseData.columns
             directData.datasetToColumns()
-            directColumns = directData.columns
+            # directColumns = directData.columns
             sixSesData.datasetToColumns()
-            sixSesColumns = sixSesData.columns
+            # sixSesColumns = sixSesData.columns
 
             # diffuseSlice = ProcessL2.columnToSlice(diffuseColumns,start, end)
             # directSlice = ProcessL2.columnToSlice(directColumns,start, end)
@@ -2328,7 +2328,6 @@ class ProcessL2:
                 EndOfFileFlag = True # In case the whole file is shorter than the selected interval
 
             for i in range(0, esLength):
-                # time = Utilities.timeTag2ToSec(tt2[i])
                 timei = timeStamp[i]
                 if (timei > endTime) or EndOfFileFlag: # end of increment reached
                     if EndOfFileFlag:
