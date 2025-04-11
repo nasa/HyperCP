@@ -412,11 +412,10 @@ class ProcessL1bTriOS:
         if ConfigFile.settings["bL1bCal"] == 1 or ConfigFile.settings["bL1bCal"] == 2:
             # Calculate 6S model
             # Run elsewhere for FRM-regime
-            print('Running sixS')
-
             sensortype = "ES"
-            if len(node.groups[0].datasets['ES'].data) > 2: # TJ - This condition has been added, as I noted 
-            #at least 3 measuremenst are needed for the 6S binning.
+            if len(node.groups[0].datasets['ES'].data) > 2: # TJ - This condition has been added, as I noted at least 3 measurements are needed for 6S
+                print('Running sixS')
+     
                 res_sixS = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
     
                 # Store sixS results in new group

@@ -81,9 +81,22 @@ class ProcessL1b_FRMCal:
         nband = len(wvl)
 
         # SIXS called over 3min bin
+        ## SIXS configuration
+        n_mesure = len(datetime)
+        nband = len(wvl)
+        
+        # SIXS called over 3min bin  - original code section in HyperCP Dev
+        # deltat = (datetime[-1]-datetime[0])/len(datetime)
+        # n_min = int(3*60//deltat.total_seconds())  # nb of mesures over a bin
+        # n_bin = len(datetime)//n_min  # nb of bin in a cast
+        # if len(datetime) % n_min != 0:
+            # +1 to account for last points that fall in the last bin (smaller than 3 min)
+         #   n_bin += 1
+        
+        # code section for, So-rad where I had issues with division by zero 
         deltat = (datetime[-1]-datetime[0])/len(datetime)
         n_min = int(3*60/deltat.total_seconds())  # nb of mesures over a bin
-        if n_min == 0:  #TJ - this if statement was extra code that I added to avoid division by zero (I have no idea if it is a sound thing to do!)
+        if n_min == 0:  
             n_min = n_min + 1
         n_bin = len(datetime)//(n_min)  # nb of bin in a cast
         if len(datetime) % n_min != 0:
