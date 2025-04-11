@@ -336,14 +336,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
             # convert to relative in order to avoid a complex unit conversion process in ProcessL2.
-            ES_unc = es_unc / es
-            LI_unc = li_unc / li
-            LT_unc = lt_unc / lt
-            if any(ES_unc < 0) or any(LI_unc < 0) or any(LT_unc < 0):
-                print('############ WARNING ###########')
-                msg = 'Negatives encountered in uncertainties likely deriving from (ir)radiance normalization and bad QC.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+
+            ES_unc = es_unc / np.abs(es)
+            LI_unc = li_unc / np.abs(li)
+            LT_unc = lt_unc / np.abs(lt)
 
 
         # interpolation step - bringing uncertainties to common wavebands from radiometric calibration wavebands.
