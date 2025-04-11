@@ -502,11 +502,12 @@ class ProcessL1aqc:
             start = -1
             stop = None
             index = None
-            for index, esTimeI in enumerate(esDateTime):
-                # Threshold for an Es datetime distance from a Suntracker datetime:
-                tThreshold = datetime.timedelta(seconds=30)
+            # Threshold for an Es datetime distance from a Suntracker datetime:
+            tThreshold = datetime.timedelta(seconds=30)
 
-                tDiff = [x - esTimeI for x in sunTrackerDateTime]
+            for index, esTimeI in enumerate(esDateTime):
+
+                tDiff = [abs(x - esTimeI) for x in sunTrackerDateTime]
                 if min(tDiff) > tThreshold:
                     i += 1
                     if start == -1:
@@ -516,7 +517,7 @@ class ProcessL1aqc:
                     if start != -1:
                         startstop = [esDateTime[start],esDateTime[stop]]
                         msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
-                        # print(msg)
+                        print(msg)
                         Utilities.writeLogFile(msg)
                         badTimes.append(startstop)
                         start = -1
