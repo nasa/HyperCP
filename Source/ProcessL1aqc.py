@@ -642,14 +642,15 @@ class ProcessL1aqc:
                     Utilities.writeLogFile(msg)
                     return None
 
-            pitchMax = float(ConfigFile.settings["fL1aqcPitchRollPitch"])
-            rollMax = float(ConfigFile.settings["fL1aqcPitchRollRoll"])
+            tiltMax = float(ConfigFile.settings["fL1aqcPitchRollPitch"]) # Same as PitchRollRoll...
 
             i = 0
             start = -1
             stop = None
             for index, pitchi in enumerate(pitch):
-                if abs(pitchi) > pitchMax or abs(roll[index]) > rollMax:
+
+                tilt = np.arctan(np.sqrt( np.tan(roll[index]*np.pi/180)**2 + np.tan(pitchi*np.pi/180)**2 )) *180/np.pi
+                if tilt > tiltMax:
                     i += 1
                     if start == -1:
                         # print('Pitch or roll angle outside bounds. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
