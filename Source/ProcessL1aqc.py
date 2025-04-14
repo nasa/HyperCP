@@ -494,6 +494,12 @@ class ProcessL1aqc:
                 if group.id.startswith("ES"):
                     esDateTime = group.datasets['DATETIME'].data
 
+            if sunTrackerDateTime is None:
+                msg = '  No SunTracker group found'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
+            
             msg = "Filtering file for Suntracker data outages"
             print(msg)
             Utilities.writeLogFile(msg)
