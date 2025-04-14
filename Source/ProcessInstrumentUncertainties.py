@@ -352,15 +352,16 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
             # convert to relative in order to avoid a complex unit conversion process in ProcessL2.
-            ES_unc = es_unc / es
-            LI_unc = li_unc / li
-            LT_unc = lt_unc / lt
-            # if any(ES_unc < 0):
-            #     print('halt and catch fire')
+
+            ES_unc = es_unc / np.abs(es)
+            LI_unc = li_unc / np.abs(li)
+            LT_unc = lt_unc / np.abs(lt)
+
 
         # interpolation step - bringing uncertainties to common wavebands from radiometric calibration wavebands.
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()),
                               dtype=float)
+    
         es_Unc = self.interp_common_wvls(ES_unc,
                                          np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
                                                      dtype=float)[ind_rad_wvl],
@@ -379,7 +380,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                                          data_wvl,
                                          return_as_dict=True
                                          )
-
+        
         # return uncertainties to ProcessL2 as dictionary - will update xUnc dict with new uncs propagated to L1B
         return dict(
             esUnc=es_Unc,

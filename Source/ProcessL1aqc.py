@@ -517,6 +517,12 @@ class ProcessL1aqc:
                 if group.id.startswith("ES"):
                     esDateTime = group.datasets['DATETIME'].data
 
+            if sunTrackerDateTime is None:
+                msg = '  No SunTracker group found'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
+            
             msg = "Filtering file for Suntracker data outages"
             print(msg)
             Utilities.writeLogFile(msg)
@@ -525,11 +531,12 @@ class ProcessL1aqc:
             start = -1
             stop = None
             index = None
-            for index, esTimeI in enumerate(esDateTime):
-                # Threshold for an Es datetime distance from a Suntracker datetime:
-                tThreshold = datetime.timedelta(seconds=30)
+            # Threshold for an Es datetime distance from a Suntracker datetime:
+            tThreshold = datetime.timedelta(seconds=30)
 
-                tDiff = [x - esTimeI for x in sunTrackerDateTime]
+            for index, esTimeI in enumerate(esDateTime):
+
+                tDiff = [abs(x - esTimeI) for x in sunTrackerDateTime]
                 if min(tDiff) > tThreshold:
                     i += 1
                     if start == -1:
@@ -539,7 +546,7 @@ class ProcessL1aqc:
                     if start != -1:
                         startstop = [esDateTime[start],esDateTime[stop]]
                         msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
-                        # print(msg)
+                        print(msg)
                         Utilities.writeLogFile(msg)
                         badTimes.append(startstop)
                         start = -1
@@ -664,14 +671,15 @@ class ProcessL1aqc:
                     Utilities.writeLogFile(msg)
                     return None
 
-            pitchMax = float(ConfigFile.settings["fL1aqcPitchRollPitch"])
-            rollMax = float(ConfigFile.settings["fL1aqcPitchRollRoll"])
+            tiltMax = float(ConfigFile.settings["fL1aqcPitchRollPitch"]) # Same as PitchRollRoll...
 
             i = 0
             start = -1
             stop = None
             for index, pitchi in enumerate(pitch):
-                if abs(pitchi) > pitchMax or abs(roll[index]) > rollMax:
+
+                tilt = np.arctan(np.sqrt( np.tan(roll[index]*np.pi/180)**2 + np.tan(pitchi*np.pi/180)**2 )) *180/np.pi
+                if tilt > tiltMax:
                     i += 1
                     if start == -1:
                         # print('Pitch or roll angle outside bounds. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))

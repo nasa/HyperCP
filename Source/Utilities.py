@@ -227,7 +227,7 @@ class Utilities:
             fp = 'Data/hybrid_reference_spectrum_p1nm_resolution_c2020-09-21_with_unc.nc'
             # fp = 'Data/Thuillier_F0.sb'
             # print("SB_support.readSB: " + fp)
-            print("Reading : " + fp)
+            # print("Reading : " + fp)
             if not HDFRoot.readHDF5(fp):
                 msg = "Unable to read TSIS-1 netcdf file."
                 print(msg)
