@@ -549,7 +549,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 self.end = gpsGroup.datasets['DATETIME'].data[-1]
             if group.id.startswith("SunTracker"):
                 trackerGroup = group
-                break
 
         # For case of no GPS
         if self.start is None:
