@@ -294,6 +294,17 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         # generate uncertainties using Monte Carlo Propagation object
         es_unc, li_unc, lt_unc = Prop_Instrument_CB.propagate_Instrument_Uncertainty(means, uncertainties)
+
+        # NOTE: Debugging check
+        is_negative = np.any([ x < 0 for x in means])
+        if is_negative:
+            print('WARNING: Negative uncertainty potential')
+        is_negative = np.any([ x < 0 for x in uncertainties])
+        if is_negative:
+            print('WARNING: Negative uncertainty potential')
+        if any(es_unc < 0) or any(li_unc < 0) or any(lt_unc < 0):
+            print('WARNING: Negative uncertainty potential')
+
         es, li, lt = Prop_Instrument_CB.instruments(*means)
 
         # plot class based L1B uncertainties

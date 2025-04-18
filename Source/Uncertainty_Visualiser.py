@@ -32,11 +32,21 @@ class UncertaintyGUI(ABC):
             os.makedirs(self.plot_folder)
 
     def pie_plot_class(self, mean_vals, uncs, wavelengths, cast, ancGrp):
+        is_negative = np.any([ x < 0 for x in mean_vals])
+        if is_negative:
+            print('WARNING: Negative uncertainty potential')
+
         if ConfigFile.settings['bL1bCal'] == 1:
             regime = 'Factory'
         else:
             regime = 'Class'
         results, values = self._engine.breakdown_Class(mean_vals, uncs, False)
+        if np.any(values['ES'] < 0):
+            print('WARNING: Negative uncertainty potential')
+        if np.any(values['LI'] < 0):
+            print('WARNING: Negative uncertainty potential')
+        if np.any(values['LT'] < 0):
+            print('WARNING: Negative uncertainty potential')
         labels = dict(
             ES=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "cosine"],
             LI=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol"],
@@ -344,7 +354,24 @@ class UncertaintyEngine(ABC):
         # nul = np.zeroes(len(uncertainty[0]))
         uncs = np.zeros(np.asarray(uncertainty).shape)
         # generate class based uncertaitnies from 0 and adding each contribution in turn
+        is_negative = np.any([ x < 0 for x in uncertainty])
+        if is_negative:
+            print('WARNING: Negative uncertainty potential')
+        is_negative = np.any([ x < 0 for x in mean_values])
+        if is_negative:
+            print('WARNING: Negative uncertainty potential')
         vals['ES'], vals['LI'], vals['LT'] = self.punpy_MCP.instruments(*mean_values) # get values to make uncs relative
+        if np.any(vals['ES'] < 0):
+            print('WARNING: Negative uncertainty potential')
+        if np.any(vals['LI'] < 0):
+            # NOTE: This is where negatives are found in my data. Is this LI, or LI_unc?
+            # If LI, is this only used in convertion to relative LI_unc?
+            # If LI, is it measurement data or MC distributions around measurements? 
+            #   If LI and MC distributions, set to zero. If not, set to absolute value IFF outside of critical bands,
+            #       else dump the ensemble. Could check for this earlier in the process.            
+            print('WARNING: Negative uncertainty potential')
+        if np.any(vals['LT'] < 0):
+            print('WARNING: Negative uncertainty potential')
         for indx, i in enumerate([0, 6, 9, 12, 18, 15, 21]):
             if indx == 0:
                 uncs[0:6] = uncertainty[0:6]
