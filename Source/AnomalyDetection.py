@@ -72,10 +72,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Set up the User Interface
         self.initUI()
 
-    def paint(self, p, *args):
-        p.setPen(pg.mkPen(0, 0, 0, 100))
-        p.setBrush(pg.mkBrush(255, 255, 255, 50))
-        p.viewRect()
+    # def paint(self, p, *args):
+    #     p.setPen(pg.mkPen(0, 0, 0, 100))
+    #     p.setBrush(pg.mkBrush(255, 255, 255, 50))
+    #     p.viewRect()
 
     def initUI(self):
 
@@ -451,8 +451,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 Utilities.errorWindow("File Error", msg)
                 print(msg)
                 return
-        except Exception:
-            print('No file returned')
+        except Exception as err:
+            print(f'No file returned: {err}')
             return
 
         root = HDFRoot.readHDF5(inFilePath[0])
@@ -514,16 +514,14 @@ class AnomAnalWindow(QtWidgets.QDialog):
             self.commentLineEdit.setText(self.params[self.fileName][31])
             if getattr(self,'Threshold') == 1:
                 self.ThresholdCheckBox.setChecked(True)
-                # if getattr(self,f'{self.sensor}MinMaxBandDark'):
-                #     self.waveBand = getattr(self,f'{self.sensor}MinMaxBandDark')
-                #     self.slider.setValue(self.waveBand)
-                # if getattr(self,f'{self.sensor}MinMaxBandLight'):
-                #     self.waveBand = getattr(self,f'{self.sensor}MinMaxBandLight')
-                #     self.slider.setValue(self.waveBand)
             else:
                 self.ThresholdCheckBox.setChecked(False)
             self.ThresholdCheckBoxUpdate()
         else:
+            # NOTE: This falls back on whatever was last used for this configuration as saved in the
+            #   ConfigFile. This makes it possible to run many files in a cruise and stop when
+            #   the parameterizations converge and stop changing. Not ideal, because unscreened
+            #   files may have additional, uncaptured anomalies atypical of the cruise configuration.
             print(f'{self.fileName} not found in {self.anomAnalFileName}. Falling back to Config settings')
 
         # Set the GUI parameters for the current sensor from the local object
@@ -539,7 +537,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Add an information bar based on metadata
         self.start = None
         self.end = None
-        ancGroup = None
+        ancGroup, gpsGroup, trackerGroup = None, None, None
         for group in root.groups:
             if group.id == 'ANCILLARY_METADATA':
                 ancGroup = group
@@ -1046,7 +1044,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         # Jumpstart the logger:
         msg = "Process Single Level from Anomaly Analysis"
-        os.environ["LOGFILE"] = (fileBaseName + '_L1A_L1AQC.log')
+        os.environ["LOGFILE"] = fileBaseName + '_L1A_L1AQC.log'
         Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
 
         calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
@@ -1072,7 +1070,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
     def ThresholdCheckBoxUpdate(self):
         print("ThresholdCheckBoxUpdate")
 
-        disabled = (not self.ThresholdCheckBox.isChecked())
+        disabled = not self.ThresholdCheckBox.isChecked()
         self.MinDarkLineEdit.setDisabled(disabled)
         self.MaxDarkLineEdit.setDisabled(disabled)
         self.MinLightLineEdit.setDisabled(disabled)
@@ -1224,4 +1222,3 @@ class AnomAnalWindow(QtWidgets.QDialog):
         except Exception:
             e = sys.exc_info()[0]
             print(f"Error: {e}")
-

@@ -1,3 +1,4 @@
+''' Establish and process configuration settings. '''
 import collections
 import json
 import os
@@ -7,6 +8,7 @@ from Source import PATH_TO_CONFIG, PACKAGE_DIR
 
 
 class ConfigFile:
+    ''' An object to establish and process the configuration settings and file. '''
     filename = ''
     settings = collections.OrderedDict()
     products = collections.OrderedDict()
@@ -308,4 +310,4 @@ class ConfigFile:
         print("ConfigFile - getCalibrationConfig")
         calibrationFiles = ConfigFile.settings["CalibrationFiles"]
         return calibrationFiles[calFileName]
-
+    
