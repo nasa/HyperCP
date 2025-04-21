@@ -2311,7 +2311,8 @@ class ProcessL2:
         if ConfigFile.settings['SensorType'].lower() == "seabird":
             # in seabird case interpolate dark data to light timer before breaking into stations
             instrument = HyperOCR()
-            if not any([instrument.darkToLightTimer(esRawGroup, 'ES'),
+            # if not any([instrument.darkToLightTimer(esRawGroup, 'ES'),
+            if not all([instrument.darkToLightTimer(esRawGroup, 'ES'),
                         instrument.darkToLightTimer(liRawGroup, 'LI'),
                         instrument.darkToLightTimer(ltRawGroup, 'LT')]):
                 msg = "failed to interpolate dark data to light data timer"

@@ -1401,7 +1401,14 @@ class HyperOCR(BaseInstrument):
             ave_Dark.append(np.average(darkData[k]))
 
             for x in range(N):
-                lightData[k][x] -= darkData[k][x]
+                try:
+                    lightData[k][x] -= darkData[k][x]
+                except IndexError as err:
+                    msg = f"Light/Dark indexing error PIU.HypperOCR: {err}"
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
+            
 
             signalAve = np.average(lightData[k])
 
