@@ -70,7 +70,6 @@ class ProcessL1aqc:
         msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
-        print(len(badTimes))
 
         timeStamp = group.getDataset("DATETIME").data
 
