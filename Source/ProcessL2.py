@@ -1311,11 +1311,11 @@ class ProcessL2:
             # no need to retain SZA
             # Copy datasets to dictionary
             diffuseData.datasetToColumns()
-            diffuseColumns = diffuseData.columns
+            # diffuseColumns = diffuseData.columns
             directData.datasetToColumns()
-            directColumns = directData.columns
+            # directColumns = directData.columns
             sixSesData.datasetToColumns()
-            sixSesColumns = sixSesData.columns
+            # sixSesColumns = sixSesData.columns
 
             # diffuseSlice = ProcessL2.columnToSlice(diffuseColumns,start, end)
             # directSlice = ProcessL2.columnToSlice(directColumns,start, end)
@@ -2294,7 +2294,8 @@ class ProcessL2:
         if ConfigFile.settings['SensorType'].lower() == "seabird":
             # in seabird case interpolate dark data to light timer before breaking into stations
             instrument = HyperOCR()
-            if not any([instrument.darkToLightTimer(esRawGroup, 'ES'),
+            # if not any([instrument.darkToLightTimer(esRawGroup, 'ES'),
+            if not all([instrument.darkToLightTimer(esRawGroup, 'ES'),
                         instrument.darkToLightTimer(liRawGroup, 'LI'),
                         instrument.darkToLightTimer(ltRawGroup, 'LT')]):
                 msg = "failed to interpolate dark data to light data timer"
@@ -2332,7 +2333,6 @@ class ProcessL2:
                 EndOfFileFlag = True # In case the whole file is shorter than the selected interval
 
             for i in range(0, esLength):
-                # time = Utilities.timeTag2ToSec(tt2[i])
                 timei = timeStamp[i]
                 if (timei > endTime) or EndOfFileFlag: # end of increment reached
                     if EndOfFileFlag:

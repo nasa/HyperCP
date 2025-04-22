@@ -46,20 +46,48 @@ class ProcessL1aTriOS:
 
 
                 ## Test filename for station/cast
-                match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
-                match2 = re.search(r'\d{4}S', file.split('/')[-1])
-                match3 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
-                if match1 is not None:
-                    a_name = match1.group()
-                elif match2 is not None:
-                    a_name = match2.group()
-                elif match3 is not None:
-                    a_name = match3.group()
-                else:
+
+                def parse_filename(data):
+                    dates = []
+                    for pattern in [
+                        r'\d{8}.\d{6}', 
+                        r'\d{4}.\d{2}.\d{2}.\d{2}.\d{2}.\d{2}',
+                        r'\d{8}.\d{2}.\d{2}.\d{2}',
+                        r'\d{4}.\d{2}.\d{2}.\d{6}',
+                        r'\d{4}S', 
+                    ]:
+                        match = re.search(pattern, data)
+                        if match is not None:
+                            dates.append(match.group(0))
+                    
+                    if len(dates) == 0:
+                        raise IndexError
+                    
+                    return dates[0]
+                
+                try:
+                    a_name = parse_filename(file.split('/')[-1])
+                except IndexError:
                     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
                     print("  L0 filename should have a cast to identify triplet instrument")
                     print("  ending in 4 digits before S.mlb ")
                     return None,None
+
+                # match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
+                # match2 = re.search(r'\d{4}S', file.split('/')[-1])
+                # match3 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
+                # # string except for serial number will be the same for a triplet
+                # if match1 is not None:
+                #     a_name = match1.group()
+                # elif match2 is not None:
+                #     a_name = match2.group()
+                # elif match3 is not None:
+                #     a_name = match3.group()
+                # else:
+                #     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
+                #     print("  L0 filename should have a cast to identify triplet instrument")
+                #     print("  ending in 4 digits before S.mlb ")
+                #     return None,None
 
                 # acq_time.append(a_cast)
                 acq_name.append(a_name)
@@ -114,8 +142,8 @@ class ProcessL1aTriOS:
 
                 try:
                     new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
-                    if match2 is not None:
-                        new_name = new_name+'_'+str(start)
+                    if re.search(r'\d{4}S', file.split('/')[-1]) is not None:
+                        new_name = new_name+'_'+str(start)  # I'm not sure what match2 was supposed to find in ACRI's code - AR
                 except IndexError as err:
                     print(err)
                     msg = "possibly an error in naming of Raw files"

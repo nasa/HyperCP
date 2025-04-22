@@ -113,9 +113,34 @@ class ProcessL1b:
 
 
         # Read sensor-specific radiometric calibration
+        import re
+        
+        cal_dates = []
+        for s in ['ES', 'LI', 'LT']:
+            save_delta = None
+            if ConfigFile.settings["SensorType"].lower() == "trios":
+                s_tag = root.getGroup(f"{s}").attributes['IDDevice'][-4:]
+            else:
+                s_tag = root.getGroup(f"{s}_LIGHT").attributes['FrameTag'][-4:]
+
+            for f in glob.glob(os.path.join(radcal_dir, f'*{s_tag}_RADCAL*')):
+                cal_date = datetime.strptime(re.search(r'\d{14}', f.split('/')[-1]).group(), "%Y%m%d%H%M%S")
+                meas_date = root.getGroup("ANCILLARY_METADATA").getDataset("DATETIME").data[0]
+                t_delta = cal_date - meas_date.replace(tzinfo=None)
+                
+                if save_delta is None and t_delta.total_seconds() < 0:
+                    save_delta = abs(t_delta.total_seconds())
+                
+                if t_delta.total_seconds() < 0 and abs(t_delta.total_seconds()) <= save_delta:
+                    save_cal_date = cal_date
+                    save_delta = abs(t_delta.total_seconds())
+            
+            cal_dates.append(save_cal_date)
+
         for f in glob.glob(os.path.join(radcal_dir, r'*RADCAL*')):
-            Utilities.read_char(f, gp)
-       
+            if datetime.strptime(re.search(r'\d{14}', f.split('/')[-1]).group(), "%Y%m%d%H%M%S") in cal_dates:
+                Utilities.read_char(f, gp)
+
         # Unc dataset renaming
         Utilities.RenameUncertainties_Class(root)
         

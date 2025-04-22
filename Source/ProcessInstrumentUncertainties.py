@@ -294,6 +294,17 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         # generate uncertainties using Monte Carlo Propagation object
         es_unc, li_unc, lt_unc = Prop_Instrument_CB.propagate_Instrument_Uncertainty(means, uncertainties)
+
+        # NOTE: Debugging check
+        is_negative = np.any([ x < 0 for x in means])
+        if is_negative:
+            print('WARNING: Negative uncertainty potential')
+        is_negative = np.any([ x < 0 for x in uncertainties])
+        if is_negative:
+            print('WARNING: Negative uncertainty potential')
+        if any(es_unc < 0) or any(li_unc < 0) or any(lt_unc < 0):
+            print('WARNING: Negative uncertainty potential')
+
         es, li, lt = Prop_Instrument_CB.instruments(*means)
 
         # plot class based L1B uncertainties
@@ -336,13 +347,16 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
             # convert to relative in order to avoid a complex unit conversion process in ProcessL2.
-            ES_unc = es_unc / es
-            LI_unc = li_unc / li
-            LT_unc = lt_unc / lt
+
+            ES_unc = es_unc / np.abs(es)
+            LI_unc = li_unc / np.abs(li)
+            LT_unc = lt_unc / np.abs(lt)
+
 
         # interpolation step - bringing uncertainties to common wavebands from radiometric calibration wavebands.
         data_wvl = np.asarray(list(stats['ES']['std_Signal_Interpolated'].keys()),
                               dtype=float)
+    
         es_Unc = self.interp_common_wvls(ES_unc,
                                          np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
                                                      dtype=float)[ind_rad_wvl],
@@ -361,7 +375,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                                          data_wvl,
                                          return_as_dict=True
                                          )
-
+        
         # return uncertainties to ProcessL2 as dictionary - will update xUnc dict with new uncs propagated to L1B
         return dict(
             esUnc=es_Unc,
@@ -1364,7 +1378,14 @@ class HyperOCR(BaseInstrument):
             ave_Dark.append(np.average(darkData[k]))
 
             for x in range(N):
-                lightData[k][x] -= darkData[k][x]
+                try:
+                    lightData[k][x] -= darkData[k][x]
+                except IndexError as err:
+                    msg = f"Light/Dark indexing error PIU.HypperOCR: {err}"
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    return False
+            
 
             signalAve = np.average(lightData[k])
 
