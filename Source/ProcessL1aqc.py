@@ -26,7 +26,7 @@ class ProcessL1aqc:
 
                 # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
                 # Test: Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data
-                if gp.id != "SOLARTRACKER_STATUS" and gp.id != "ANCILLARY_METADATA":
+                if gp.id != "SOLARTRACKER_STATUS" and gp.id != "ANCILLARY_METADATA" and gp.id != "CAL_COEF":
                     fractionRemoved = ProcessL1aqc.filterData(gp, badTimes)
 
                     # Now test whether the overlap has eliminated all radiometric data
