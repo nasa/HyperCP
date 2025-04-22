@@ -1581,7 +1581,7 @@ class Utilities:
         dfy['x'] = pd.to_datetime(dfy['x'].astype(str))
 
         [_,fileName] = os.path.split(fp)
-        fileBaseName,_ = fileName.split('.')
+        fileBaseName,_ = fileName.rsplit('.',1)
         register_matplotlib_converters()
 
         font = {'family': 'serif',
