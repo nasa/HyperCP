@@ -482,7 +482,8 @@ class ProcessL1b:
             msg = f'found NaN {frameinfo.lineno}'
             print(msg)
             Utilities.writeLogFile(msg)
-            exit()
+            # exit()
+            return False
 
         # Correct light data by subtracting interpolated dark data from light data
         for k in lightData.data.dtype.fields.keys():
@@ -494,7 +495,8 @@ class ProcessL1b:
             msg = f'found NaN {frameinfo.lineno}'
             print(msg)
             Utilities.writeLogFile(msg)
-            exit()
+            # exit()
+            return False
 
         return True
 

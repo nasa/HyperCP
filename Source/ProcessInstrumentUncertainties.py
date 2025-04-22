@@ -1339,7 +1339,7 @@ class HyperOCR(BaseInstrument):
             msg = f'found NaN {frameinfo.lineno}'
             print(msg)
             Utilities.writeLogFile(msg)
-            exit()
+            return False
 
         return newDarkData
 
