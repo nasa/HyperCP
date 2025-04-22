@@ -29,24 +29,7 @@ class ProcessL1aTriOS:
             acq_name = []
             for file in fp:
 
-                # ## Test filename for different date formating
-                # match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
-                # match2 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
-                # if match1 is not None:
-                #     a_time = match1.group()
-                # elif match2 is not None:
-                #     a_time = match2.group()
-                # else:
-                #     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
-                #     print("  L0 filename should have a date to identify triplet instrument")
-                #     print("  either 'yyymmdd_hhmmss' or 'yyy-mm-dd_hh-mm-ss' ")
-                #     exit()
-
-                # acq_time.append(a_time)
-
-
                 ## Test filename for station/cast
-
                 def parse_filename(data):
                     dates = []
                     for pattern in [
@@ -59,12 +42,12 @@ class ProcessL1aTriOS:
                         match = re.search(pattern, data)
                         if match is not None:
                             dates.append(match.group(0))
-                    
+
                     if len(dates) == 0:
                         raise IndexError
-                    
+
                     return dates[0]
-                
+
                 try:
                     a_name = parse_filename(file.split('/')[-1])
                 except IndexError:
@@ -175,7 +158,7 @@ class ProcessL1aTriOS:
             print('Single Frame deprecated')
 
         return None, None
-    
+
     # use namesList to define dtype for recarray
     @staticmethod
     def reshape_data(NAME,N,data):
@@ -234,7 +217,7 @@ class ProcessL1aTriOS:
                 break
         if flag == 0:
             print('PROBLEM WITH FILE .mlb: Metadata not found')
-            exit()
+            return None, None, None
         else:
             end_meta = index
         file_dat.close()
@@ -263,10 +246,12 @@ class ProcessL1aTriOS:
 
         if flag_meta == 0:
             print('PROBLEM WITH CAL FILE: Metadata not found')
-            exit()
+            # exit()
+            return None, None
         if flag_data == 0:
             print('PROBLEM WITH CAL FILE: data not found')
-            exit()
+            # exit()
+            return None, None
 
         file_dat.close()
 
@@ -327,6 +312,12 @@ class ProcessL1aTriOS:
         data = pd.DataFrame()
         meta = pd.DataFrame()
         meta,data,time = ProcessL1aTriOS.read_mlb(input_file)
+
+        if meta is None:
+            msg = "Error reading mlb file"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None,None
 
         ## if date is the first field "%yyy-mm-dd"
         if len(time[0].rsplit('_')[0]) == 11:
@@ -410,12 +401,22 @@ class ProcessL1aTriOS:
 
         # Calibrations files
         metacal,cal = ProcessL1aTriOS.read_cal(cal_path + 'Cal_SAM_'+name+'.dat')
+        if metacal is None:
+            msg = "Error reading calibration file"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None,None
         B1 = gp.addDataset('CAL_'+sensor)
         B1.columns["0"] = cal.values[:,1].astype(np.float64)
         B1.columnsToDataset()
 
         ProcessL1aTriOS.get_attr(metacal,B1)
         metaback,back = ProcessL1aTriOS.read_cal(cal_path + 'Back_SAM_'+name+'.dat')
+        if metacal is None:
+            msg = "Error reading calibration file"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None,None
         # C1 = gp.addDataset('BACK_'+sensor,data=back[[1,2]].astype(np.float64))
         C1 = gp.addDataset('BACK_'+sensor)
         C1.columns["0"] = back.values[:,1]

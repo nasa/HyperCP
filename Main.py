@@ -565,7 +565,8 @@ class Window(QtWidgets.QWidget):
             calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
         else:
             print("Error in configuration file: Sensor type not specified")
-            sys.exit()
+            # sys.exit()
+            return
 
         Controller.processFilesMultiLevel(
             self.outputDirectory, fileNames, calibrationMap)
