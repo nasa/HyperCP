@@ -506,7 +506,7 @@ class Utilities:
 
         for gp in node.groups:
             # print(gp.id)
-            if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
+            if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf" and gp.id != "CAL_COEF": # No valid timestamps in STATUS
                 timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
                 dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
                 timeStamp = []
@@ -1074,12 +1074,18 @@ class Utilities:
             
             filterData for L1AQC is contained within ProcessL1aqc.py'''
 
+        # NOTE: This is still very slow on long files with many badTimes, despite badTimes being filtered for 
+        #   unique pairs.
+
+
         msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
         # internal switch to trigger the reset of CAL & BACK
         # dataset that we have to delete to avoid conflict during filtering
         do_reset = False
+        timeStamp = None
+        raw_cal, raw_back, raw_back_att, raw_cal_att = None,None,None,None,
 
         if level != 'L1AQC':
             if group.id == "ANCILLARY":
@@ -1092,7 +1098,7 @@ class Utilities:
                 timeStamp = group.getDataset("solar_zenith").data["Datetime"]
         else:
             timeStamp = group.getDataset("Timestamp").data["Datetime"]
-            # TRIOS: copy CAL & BACK before filetering, and delete them 
+            # TRIOS: copy CAL & BACK before filetering, and delete them
             # to avoid conflict when filtering more row than 255
             if ConfigFile.settings['SensorType'].lower() == 'trios':
                 do_reset = True
@@ -1185,7 +1191,9 @@ class Utilities:
         dataDelta = None
         # Note: If only one spectrum is left in a given ensemble, STD will
         #be zero for Es, Li, and Lt.'''
-        if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+        #if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+        if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
+             ConfigFile.settings['SensorType'].lower() == 'dalec') and ConfigFile.settings['bL1bCal'] == 1:
             suffix = 'sd'
         else:
             suffix = 'unc'
@@ -2232,7 +2240,7 @@ class Utilities:
         ThermUnc = []
 
         # Seabird case
-        if ConfigFile.settings['SensorType'].lower() == "seabird":
+        if ConfigFile.settings['SensorType'].lower() == "seabird" or ConfigFile.settings['SensorType'].lower() == "dalec":
             for i in range(len(therm_coeff)):
                 try:
                     ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp - refTemp)))
@@ -2282,6 +2290,23 @@ class Utilities:
                     TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("TEMP")
                 elif "SPECTEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
                     TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("SPECTEMP")
+                else:
+                    msg = "Thermal dataset not found"
+                    print(msg)
+                # internal temperature is the mean of all replicate
+                internalTemp = np.mean(np.array(TempDS.data.tolist()))
+                # ambiant temp is not needed for seabird as internal temp is measured, set to 0
+                ambTemp = 0
+                if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
+                    msg = "Failed to generate Thermal Coefficients"
+                    print(msg)
+
+            ### Dalec
+            elif ConfigFile.settings['SensorType'].lower() == "dalec":
+                if "TEMP" in node.getGroup(f'{sensor}').datasets:
+                    TempDS = node.getGroup(f'{sensor}').getDataset("TEMP")
+                elif "SPECTEMP" in node.getGroup(f'{sensor}').datasets:
+                    TempDS = node.getGroup(f'{sensor}').getDataset("SPECTEMP")
                 else:
                     msg = "Thermal dataset not found"
                     print(msg)
@@ -2487,7 +2512,7 @@ class Utilities:
             ## retrieve dataset from corresponding instrument
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios":
+            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "dalec":
                 data = node.getGroup(sensor).getDataset(sensor)
 
             # Retrieve hyper-spectral wavelengths from dataset
@@ -2947,4 +2972,37 @@ class Utilities:
                     inputArray[ens][i] = 0.0
         return inputArray
 
-   
+    @staticmethod
+    def uniquePairs(pairList):
+        '''Eliminate redundant pairs of badTimes 
+            Must be list, not np array'''
+
+        if not isinstance(pairList, list):
+            pairList = pairList.tolist()
+        if len(pairList) > 1:
+            newPairs = []
+            for pair in pairList:
+                if pair not in newPairs:
+                    newPairs.append(pair)
+        else:
+            newPairs = pairList
+        return newPairs
+
+    @staticmethod
+    def catConsecutiveBadTimes(badTimes, dateTime):
+        '''Test for the existence of consecutive, singleton records that could be 
+            concatonated into a time span'''
+        newBadTimes = []
+        for iBT, badTime in enumerate(badTimes):
+            if iBT == 0:
+                newBadTimes.append(badTime)
+            else:
+                iDT = dateTime.index(newBadTimes[-1][1])# end time of last window
+                iDT2 = dateTime.index(badTime[0])
+                if iDT2 == iDT +1:
+                    # Consecutive
+                    newBadTimes[-1][1] = badTime[1]
+                else:
+                    newBadTimes.append(badTime)
+
+        return newBadTimes

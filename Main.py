@@ -474,6 +474,10 @@ class Window(QtWidgets.QWidget):
         # else:
         elif ConfigFile.settings["SensorType"].lower() == "trios":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
+        elif ConfigFile.settings["SensorType"].lower() == "dalec":
+            calibrationMap = Controller.processCalibrationConfig(
+                configFileName, calFiles
+            )
 
         if not calibrationMap:
             print(
@@ -561,6 +565,9 @@ class Window(QtWidgets.QWidget):
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
             print("Process Calibration Files")
+            filename = ConfigFile.filename
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        elif ConfigFile.settings["SensorType"].lower() == "dalec":
             filename = ConfigFile.filename
             calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
         else:
@@ -658,6 +665,10 @@ class Command:
         if ConfigFile.settings["SensorType"].lower() == "trios":
             calibrationMap = Controller.processCalibrationConfigTrios(calFiles)
         elif ConfigFile.settings["SensorType"].lower() == "seabird":
+            print("Process Calibration Files")
+            filename = ConfigFile.filename
+            calibrationMap = Controller.processCalibrationConfig(filename, calFiles)
+        elif ConfigFile.settings["SensorType"].lower() == "dalec":
             print("Process Calibration Files")
             filename = ConfigFile.filename
             calibrationMap = Controller.processCalibrationConfig(filename, calFiles)

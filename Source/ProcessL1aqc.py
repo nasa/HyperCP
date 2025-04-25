@@ -196,6 +196,21 @@ class ProcessL1aqc:
                     gp.id = "LI_LIGHT"
                 if cf.sensorType == "LT":
                     gp.id = "LT_LIGHT"
+        elif ConfigFile.settings['SensorType'].lower() == 'dalec':            
+            if gp.id.endswith("CE"):
+                gp.id = "CAL_COEF"            
+            if gp.id.endswith("ES"):
+                gp.id = "ES"
+            if gp.id.endswith("LI"):
+                gp.id = "LI"
+            if gp.id.endswith("LT"):
+                gp.id = "LT"
+            if gp.id.endswith("GP"):
+                gp.id = "DALEC_GPS"
+            if gp.id.endswith("ST"):
+                #gp.id = "DALEC_TRACKER"
+                gp.id = "SunTracker_DALEC"
+            
         else:
             gp.id = cf.sensorType
 
@@ -282,7 +297,14 @@ class ProcessL1aqc:
             elif gp.id.startswith('SATTHS'):
                 # Fluxgate on the THS:
                 compass = gp.getDataset('COMP')
+            elif gp.id.startswith('DALEC_GP'):
+                gpsDateTime = gp.getDataset('DATETIME').data
+                latAnc=gp.getDataset('LAT').data
+                lonAnc=gp.getDataset('LON').data
 
+                ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
+                ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
+                
         # Solar geometry from GPS alone; No Tracker, no Ancillary
         relAzAnc = []
         if not ConfigFile.settings["bL1aqcSunTracker"] and not ancillaryData:
@@ -879,10 +901,14 @@ class ProcessL1aqc:
                     newRelAzData = gp.addDataset("REL_AZ")
 
                     relAz = sasAzimuth - sunAzimuth
-
                     # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
                     relAz[relAz>180] = relAz[relAz>180] - 360
                     relAz[relAz<-180] = relAz[relAz<-180] + 360
+
+                elif gp.getDataset('REL_AZ'):
+                    noRelAz=False
+                    relAz=gp.getDataset('REL_AZ').data['REL_AZ']
+                    print(relAz)
                 else:
                     msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
                     print(msg)
@@ -900,9 +926,11 @@ class ProcessL1aqc:
         # Initialize a new group to host the unconventional ancillary data
         ancGroup = node.addGroup("ANCILLARY_METADATA")
         # If using a SunTracker, add RelAz to the SunTracker group...
+        #NOTE: for Dalec relAz is already read directly from Raw data file,so do nothing
         if ConfigFile.settings["bL1aqcSunTracker"]:
-            newRelAzData.columns["REL_AZ"] = relAz
-            newRelAzData.columnsToDataset()
+            if ConfigFile.settings['SensorType'].lower() != 'dalec':
+                newRelAzData.columns["REL_AZ"] = relAz
+                newRelAzData.columnsToDataset()
         else:
         #... otherwise populate the ancGroup
             ancGroup.addDataset("REL_AZ")
@@ -1009,7 +1037,8 @@ class ProcessL1aqc:
             # relAz and timeStamp are 1:1, but could be TRACKER or ANCILLARY
             for index, relAzi in enumerate(relAz):
                 relAzimuthAngle = relAzi
-
+                #print(index)
+                #print(relAzi)
                 if abs(relAzimuthAngle) > relAzimuthMax or abs(relAzimuthAngle) < relAzimuthMin or math.isnan(relAzimuthAngle):
                     i += 1
                     if start == -1:
@@ -1093,3 +1122,4 @@ class ProcessL1aqc:
                     del gp.datasets["DATETIME_ADJUSTED"]
 
         return node
+
