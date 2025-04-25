@@ -1074,12 +1074,18 @@ class Utilities:
             
             filterData for L1AQC is contained within ProcessL1aqc.py'''
 
+        # NOTE: This is still very slow on long files with many badTimes, despite badTimes being filtered for 
+        #   unique pairs.
+
+
         msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
         # internal switch to trigger the reset of CAL & BACK
         # dataset that we have to delete to avoid conflict during filtering
         do_reset = False
+        timeStamp = None
+        raw_cal, raw_back, raw_back_att, raw_cal_att = None,None,None,None,
 
         if level != 'L1AQC':
             if group.id == "ANCILLARY":
@@ -1092,7 +1098,7 @@ class Utilities:
                 timeStamp = group.getDataset("solar_zenith").data["Datetime"]
         else:
             timeStamp = group.getDataset("Timestamp").data["Datetime"]
-            # TRIOS: copy CAL & BACK before filetering, and delete them 
+            # TRIOS: copy CAL & BACK before filetering, and delete them
             # to avoid conflict when filtering more row than 255
             if ConfigFile.settings['SensorType'].lower() == 'trios':
                 do_reset = True
@@ -2967,4 +2973,37 @@ class Utilities:
                     inputArray[ens][i] = 0.0
         return inputArray
 
-   
+    @staticmethod
+    def uniquePairs(pairList):
+        '''Eliminate redundant pairs of badTimes 
+            Must be list, not np array'''
+
+        if not isinstance(pairList, list):
+            pairList = pairList.tolist()
+        if len(pairList) > 1:
+            newPairs = []
+            for pair in pairList:
+                if pair not in newPairs:
+                    newPairs.append(pair)
+        else:
+            newPairs = pairList
+        return newPairs
+
+    @staticmethod
+    def catConsecutiveBadTimes(badTimes, dateTime):
+        '''Test for the existence of consecutive, singleton records that could be 
+            concatonated into a time span'''
+        newBadTimes = []
+        for iBT, badTime in enumerate(badTimes):
+            if iBT == 0:
+                newBadTimes.append(badTime)
+            else:
+                iDT = dateTime.index(newBadTimes[-1][1])# end time of last window
+                iDT2 = dateTime.index(badTime[0])
+                if iDT2 == iDT +1:
+                    # Consecutive
+                    newBadTimes[-1][1] = badTime[1]
+                else:
+                    newBadTimes.append(badTime)
+
+        return newBadTimes
