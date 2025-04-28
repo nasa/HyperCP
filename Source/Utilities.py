@@ -1,6 +1,6 @@
 """ A cornucopia of addition methods """
 import os
-import datetime
+from datetime import datetime, timedelta, timezone
 import collections
 from collections import Counter
 import csv
@@ -175,7 +175,7 @@ class Utilities:
     def checkOutputFiles(outFilePath):
         if os.path.isfile(outFilePath):
             modTime = os.path.getmtime(outFilePath)
-            nowTime = datetime.datetime.now()
+            nowTime = datetime.now()
             if nowTime.timestamp() - modTime < 60: # If the file exists and was created in the last minute...
                 # msg = f'{level} file produced: \n {outFilePath}'
                 # print(msg)
@@ -403,12 +403,12 @@ class Utilities:
         m = int(t[2:4])
         s = int(t[4:6])
         us = 10000*int(dec) # i.e. 0.55 s = 550,000 us
-        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=datetime.timezone.utc)
+        return datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=timezone.utc)
 
     # Converts datetag (YYYYDDD) to date string
     @staticmethod
     def dateTagToDate(dateTag):
-        dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
+        dt = datetime.strptime(str(int(dateTag)), '%Y%j')
         timezone = pytz.utc
         dt = timezone.localize(dt)
         return dt.strftime('%Y%m%d')
@@ -416,7 +416,7 @@ class Utilities:
     # Converts datetag (YYYYDDD) to datetime
     @staticmethod
     def dateTagToDateTime(dateTag):
-        dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
+        dt = datetime.strptime(str(int(dateTag)), '%Y%j')
         timezone = pytz.utc
         dt = timezone.localize(dt)
         return dt
@@ -459,7 +459,7 @@ class Utilities:
         us = 1000*int(t[6:])
         # print(h, m, s, us)
         # print(tt2)
-        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=datetime.timezone.utc)
+        return datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=timezone.utc)
 
     # Converts datetime to Timetag2 (HHMMSSmmm)
     @staticmethod
@@ -495,7 +495,7 @@ class Utilities:
         date = str(gpsDate).zfill(6)
         day = int(date[:2])
         mon = int(date[2:4])
-        return datetime.datetime(year,mon,day,0,0,0,0,tzinfo=datetime.timezone.utc)
+        return datetime(year,mon,day,0,0,0,0,tzinfo=timezone.utc)
 
 
     @staticmethod
@@ -2137,7 +2137,7 @@ class Utilities:
         # #   https://stackoverflow.com/questions/49046931/how-can-i-use-dateaxisitem-of-pyqtgraph
         # class TimeAxisItem(pg.AxisItem):
         #     def tickStrings(self, values, scale, spacing):
-        #         return [datetime.datetime.fromtimestamp(value, pytz.timezone("UTC")) for value in values]
+        #         return [datetime.fromtimestamp(value, pytz.timezone("UTC")) for value in values]
 
         # date_axis_Dark = TimeAxisItem(orientation='bottom')
         # date_axis_Light = TimeAxisItem(orientation='bottom')
@@ -3006,3 +3006,57 @@ class Utilities:
                     newBadTimes.append(badTime)
 
         return newBadTimes
+
+    @staticmethod
+    def findGaps_dateTime(DT1,DT2,threshold):
+        ''' Test whether one DT2 datetime has a gap > threshold [seconds] 
+            relative to DT1. '''
+        bTs = []
+        start = -1
+        i, index, stop = 0,0,0
+        tThreshold = timedelta(seconds=threshold)
+
+        # See below for faster conversions
+        np_dTT = np.array(DT2, dtype=np.datetime64)
+        np_dTT.sort()
+
+        np_dTM = np.array(DT1, dtype=np.datetime64)
+        pos = np.searchsorted(np_dTT, np_dTM, side='right')
+
+        # Consider the 3 items close the the position found.
+        # We can probably only consider 2 of them but this is simpler and less bug-prone.
+        pos1 = np.maximum(pos-1, 0)
+        pos2 = np.minimum(pos, np_dTT.size-1)
+        pos3 = np.minimum(pos+1, np_dTT.size-1)
+        tDiff1 = np.abs(np_dTT[pos1] - np_dTM)
+        tDiff2 = np.abs(np_dTT[pos2] - np_dTM)
+        tDiff3 = np.abs(np_dTT[pos3] - np_dTM)
+        tMin = np.minimum(tDiff1, tDiff2, tDiff3)
+
+        for index in range(len(np_dTM)):
+            if tMin[index] > tThreshold:
+                i += 1
+                if start == -1:
+                    start = index
+                stop = index
+            else:
+                if start != -1:
+                    startstop = [DT1[start],DT1[stop]]
+                    msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    bTs.append(startstop)
+                    start = -1
+
+        if start != -1 and stop == index: # Records from a mid-point to the end are bad
+            startstop = [DT1[start],DT1[stop]]
+            bTs.append(startstop)
+            msg = f'   Flag additional data from {startstop[0]} to {startstop[1]}'
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+        if start==0 and stop==index: # All records are bad
+            return False
+
+        return bTs
+    

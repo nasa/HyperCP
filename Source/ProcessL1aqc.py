@@ -78,18 +78,24 @@ class ProcessL1aqc:
         print(msg)
         Utilities.writeLogFile(msg)
 
+        badTimes = Utilities.uniquePairs(badTimes)
+
+        # Couple of problems with this: 1) timestamps are not yet uniformly consecutive, 2) timestamps differ 
+        #   between instruments, so badTimes may have entries not found in timeStamp.
+        # badTimes = Utilities.catConsecutiveBadTimes(badTimes, timeStamp)#.tolist())
+
         # Delete the records in badTime ranges from each dataset in the group
         finalCount = 0
         originalLength = len(timeStamp)
-        for dateTime in badTimes:
+        for badTime in badTimes:
             # Need to reinitialize for each loop
             startLength = len(timeStamp)
             newTimeStamp = []
 
-            start = dateTime[0]
-            stop = dateTime[1]
+            start = badTime[0]
+            stop = badTime[1]
 
-            # msg = f'Eliminate data between: {dateTime}'
+            # msg = f'Eliminate data between: {badTime}'
             # print(msg)
             # Utilities.writeLogFile(msg)
 
@@ -210,7 +216,6 @@ class ProcessL1aqc:
             if gp.id.endswith("ST"):
                 #gp.id = "DALEC_TRACKER"
                 gp.id = "SunTracker_DALEC"
-            
         else:
             gp.id = cf.sensorType
 
@@ -304,7 +309,7 @@ class ProcessL1aqc:
 
                 ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
                 ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
-                
+
         # Solar geometry from GPS alone; No Tracker, no Ancillary
         relAzAnc = []
         if not ConfigFile.settings["bL1aqcSunTracker"] and not ancillaryData:
@@ -334,20 +339,11 @@ class ProcessL1aqc:
                 Utilities.writeLogFile(msg)
                 return None
 
-        shipAzimuth = None
-        station = None
-        salt = None
-        sst = None
-        wind = None
-        aod = None
-        cloud = None
-        wave = None
-        speed_f_w = None
-        pitch = None
-        roll = None
-        # If ancillary file is provided, use it. Otherwise fill in what you can using the datetime, lat, lon from GPS
-        if ancillaryData is not None:
 
+        # If ancillary file is provided, use it. Otherwise fill in what you can using the datetime, lat, lon from GPS
+        shipAzimuth, station, salt, sst, wind, aod, cloud, wave, speed_f_w, pitch, roll = \
+            None, None, None, None, None, None, None, None, None, None, None
+        if ancillaryData is not None:
             # Remove all ancillary data that does not intersect GPS data
             # Change this to ES to work around set-ups with no GPS
             ancData = HDFDataset()
@@ -502,10 +498,6 @@ class ProcessL1aqc:
 
                     gp = Utilities.fixDarkTimes(gp,lightGroup)
 
-        # Aggregate all bad times prior to removal (Restart badTimes after first filter,
-        #       Suntracker-Es overlap, which uses a different datetime reference (Es instead of Ancillary))
-        badTimes = []
-
         # Apply Filter for lack of Suntracker data while Es is collecting
         if node is not None and ConfigFile.settings["bL1aqcSunTracker"]:
             sunTrackerDateTime = None
@@ -521,55 +513,58 @@ class ProcessL1aqc:
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return None
-            
+
             msg = "Filtering file for Suntracker data outages"
             print(msg)
             Utilities.writeLogFile(msg)
 
-            i = 0
-            start = -1
-            stop = None
-            index = None
-            # Threshold for an Es datetime distance from a Suntracker datetime:
-            tThreshold = datetime.timedelta(seconds=30)
+            tThreshold = 30 # seconds gap between datasets
+            badTimes = Utilities.findGaps_dateTime(esDateTime,sunTrackerDateTime,tThreshold)
+            # i, stop, index = 0,0,0
+            # start = -1
+            # # Threshold for an Es datetime distance from a Suntracker datetime:
+            # tThreshold = datetime.timedelta(seconds=30)
 
-            for index, esTimeI in enumerate(esDateTime):
+            # for index, esTimeI in enumerate(esDateTime):
 
-                tDiff = [abs(x - esTimeI) for x in sunTrackerDateTime]
-                if min(tDiff) > tThreshold:
-                    i += 1
-                    if start == -1:
-                        start = index
-                    stop = index
-                else:
-                    if start != -1:
-                        startstop = [esDateTime[start],esDateTime[stop]]
-                        msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
-                        badTimes.append(startstop)
-                        start = -1
+            #     tDiff = [abs(x - esTimeI) for x in sunTrackerDateTime]
+            #     if min(tDiff) > tThreshold:
+            #         i += 1
+            #         if start == -1:
+            #             start = index
+            #         stop = index
+            #     else:
+            #         if start != -1:
+            #             startstop = [esDateTime[start],esDateTime[stop]]
+            #             msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
+            #             print(msg)
+            #             Utilities.writeLogFile(msg)
+            #             badTimes.append(startstop)
+            #             start = -1
 
-            if start != -1 and stop == index: # Records from a mid-point to the end are bad
-                startstop = [esDateTime[start],esDateTime[stop]]
-                badTimes.append(startstop)
-                msg = f'   Flag additional data from {startstop[0]} to {startstop[1]}'
-                # print(msg)
-                Utilities.writeLogFile(msg)
+            # if start != -1 and stop == index: # Records from a mid-point to the end are bad
+            #     startstop = [esDateTime[start],esDateTime[stop]]
+            #     badTimes.append(startstop)
+            #     msg = f'   Flag additional data from {startstop[0]} to {startstop[1]}'
+            #     # print(msg)
+            #     Utilities.writeLogFile(msg)
 
             msg = f'Percentage of data failed on Suntracker outage: {round(100*i/len(esDateTime))} %'
             print(msg)
             Utilities.writeLogFile(msg)
 
-            if start==0 and stop==index: # All records are bad
+            # if start==0 and stop==index: # All records are bad
+            if badTimes is False:
                 return None
 
         node = ProcessL1aqc.filterBadTimes(node,badTimes)
         if node is None:
+            # All data removed
             return None
 
+        #############################################################
+        # Start over with badTimes and aggregate for remaining filters
         badTimes = []
-        startstop = None
 
         # Apply GPS Status Filter
         # NOTE: I believe this is for an old dataset with GPGGA GPS with spotty reception.
@@ -587,8 +582,7 @@ class ProcessL1aqc:
 
             i = 0
             start = -1
-            stop = None
-            index = None
+            stop, startstop, index = None, None, None            
             for index, status in enumerate(gpsStatus.data["NONE"]):
                 # "V" for GPRMC, "0" for GPGGA
                 if status == b'V' or status == 0:
@@ -630,9 +624,7 @@ class ProcessL1aqc:
             Utilities.writeLogFile(msg)
 
             # Preferentially read PITCH and ROLL from SunTracker/pySAS THS sensor...
-            pitch = None
-            roll = None
-            gp  = None
+            pitch, roll, gp = None, None, None            
             for group in node.groups:
                 # NOTE: SOLARTRACKER (not pySAS) and DALEC use SunTracker group for PITCH/ROLL
                 if group.id.startswith("SunTracker"):
@@ -674,7 +666,7 @@ class ProcessL1aqc:
 
             i = 0
             start = -1
-            stop = None
+            stop, startstop = None, None            
             for index, pitchi in enumerate(pitch):
 
                 tilt = np.arctan(np.sqrt( np.tan(roll[index]*np.pi/180)**2 + np.tan(pitchi*np.pi/180)**2 )) *180/np.pi
@@ -738,9 +730,7 @@ class ProcessL1aqc:
                     Utilities.writeLogFile(msg)
 
                     kickout = 0
-                    time = None
-                    start = None
-                    startIndex = None
+                    start, startstop, time = None, None, None
                     i = 0
                     for index, rotatori in enumerate(rotator):
                         if index == 0:
@@ -819,7 +809,7 @@ class ProcessL1aqc:
 
                     i = 0
                     start = -1
-                    stop = None
+                    stop, startstop = None, None
                     for index, rotatori in enumerate(rotator):
                         if rotatori + home > absRotatorMax or rotatori + home < absRotatorMin or math.isnan(rotatori):
                             i += 1
@@ -871,7 +861,7 @@ class ProcessL1aqc:
                     break
 
             if gp is not None:
-                # TODO: Update datasets for DALEC/SoRAD to capture relAz
+                # TODO: Update datasets for SoRAD to capture relAz
                 if gp.getDataset("AZIMUTH") and gp.getDataset("HEADING") and gp.getDataset("POINTING"):
                     timeStamp = gp.getDataset("DATETIME").data
                     # Rotator Home Angle Offset is generally set in the .sat file when setting up the SunTracker
@@ -906,9 +896,7 @@ class ProcessL1aqc:
                     relAz[relAz<-180] = relAz[relAz<-180] + 360
 
                 elif gp.getDataset('REL_AZ'):
-                    noRelAz=False
                     relAz=gp.getDataset('REL_AZ').data['REL_AZ']
-                    print(relAz)
                 else:
                     msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
                     print(msg)
@@ -1031,7 +1019,7 @@ class ProcessL1aqc:
 
             i = 0
             start = -1
-            stop = None
+            stop, startstop = None, None
             # The length of relAz (and therefore the value of i) depends on whether ancillary
             #  data are used or SunTracker data
             # relAz and timeStamp are 1:1, but could be TRACKER or ANCILLARY
