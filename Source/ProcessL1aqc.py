@@ -3,6 +3,7 @@ import math
 import datetime
 import copy
 import numpy as np
+import bisect
 from pysolar.solar import get_azimuth, get_altitude
 
 from Source.HDFDataset import HDFDataset
@@ -80,45 +81,59 @@ class ProcessL1aqc:
 
         badTimes = Utilities.uniquePairs(badTimes)
 
+        rowsToDelete = []
+        for badTime in badTimes:
+            # find the index of the first and last elements within the date range
+            start_index = bisect.bisect_left(timeStamp, badTime[0])
+            end_index = bisect.bisect_right(timeStamp, badTime[1])
+
+            if end_index - start_index > 0:
+                # end_index is non-inclusive
+                newList = list(range(start_index,end_index))
+                [rowsToDelete.append(x) for x in newList]
+
+        finalCount = len(rowsToDelete)
+
+    # return rowsToDelete, finalCount
+
         # Couple of problems with this: 1) timestamps are not yet uniformly consecutive, 2) timestamps differ 
         #   between instruments, so badTimes may have entries not found in timeStamp.
         # badTimes = Utilities.catConsecutiveBadTimes(badTimes, timeStamp)#.tolist())
 
-        # Delete the records in badTime ranges from each dataset in the group
-        finalCount = 0
-        originalLength = len(timeStamp)
-        for badTime in badTimes:
-            # Need to reinitialize for each loop
-            startLength = len(timeStamp)
-            newTimeStamp = []
+        # # Delete the records in badTime ranges from each dataset in the group
+        # finalCount = 0
+        # originalLength = len(timeStamp)
+        # for badTime in badTimes:
+        #     # Need to reinitialize for each loop
+        #     startLength = len(timeStamp)
+        #     newTimeStamp = []
 
-            start = badTime[0]
-            stop = badTime[1]
+        #     start = badTime[0]
+        #     stop = badTime[1]
 
-            # msg = f'Eliminate data between: {badTime}'
-            # print(msg)
-            # Utilities.writeLogFile(msg)
+        #     # msg = f'Eliminate data between: {badTime}'
+        #     # print(msg)
+        #     # Utilities.writeLogFile(msg)
 
-            if startLength > 0:
-                rowsToDelete = []
-                for i in range(startLength):
-                    if start <= timeStamp[i] and stop >= timeStamp[i]:
-                        rowsToDelete.append(i)
-                        finalCount += 1
-                    else:
-                        newTimeStamp.append(timeStamp[i])
-                group.datasetDeleteRow(rowsToDelete)
-            else:
-                msg = 'Data group is empty. Continuing.'
-                print(msg)
-                Utilities.writeLogFile(msg)
-            timeStamp = newTimeStamp.copy()
-
+        #     if startLength > 0:
+        #         rowsToDelete = []
+        #         for i in range(startLength):
+        #             if start <= timeStamp[i] and stop >= timeStamp[i]:
+        #                 rowsToDelete.append(i)
+        #                 finalCount += 1
+        #             else:
+        #                 newTimeStamp.append(timeStamp[i])
+        #         group.datasetDeleteRow(rowsToDelete)
+        #     else:
+        #         msg = 'Data group is empty. Continuing.'
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #     timeStamp = newTimeStamp.copy()
         msg = f'   Length of records removed from dataset: {finalCount}'
         print(msg)
         Utilities.writeLogFile(msg)
 
-        return finalCount/originalLength
+        return finalCount/startLength
 
     @staticmethod
     def filterData_ADJUSTED(group, badTimes):
@@ -475,6 +490,13 @@ class ProcessL1aqc:
             relAzAnc.tolist()
 
         #############################################################################################
+        # Sort groups chronologically
+        #############################################################################################
+        print('Sorting all datasets chronologically')
+        for gp in node.groups:
+            Utilities.fixDateTime2(gp)
+
+        #############################################################################################
         # Begin Filtering
         #############################################################################################
 
@@ -520,34 +542,6 @@ class ProcessL1aqc:
 
             tThreshold = 30 # seconds gap between datasets
             badTimes = Utilities.findGaps_dateTime(esDateTime,sunTrackerDateTime,tThreshold)
-            # i, stop, index = 0,0,0
-            # start = -1
-            # # Threshold for an Es datetime distance from a Suntracker datetime:
-            # tThreshold = datetime.timedelta(seconds=30)
-
-            # for index, esTimeI in enumerate(esDateTime):
-
-            #     tDiff = [abs(x - esTimeI) for x in sunTrackerDateTime]
-            #     if min(tDiff) > tThreshold:
-            #         i += 1
-            #         if start == -1:
-            #             start = index
-            #         stop = index
-            #     else:
-            #         if start != -1:
-            #             startstop = [esDateTime[start],esDateTime[stop]]
-            #             msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
-            #             print(msg)
-            #             Utilities.writeLogFile(msg)
-            #             badTimes.append(startstop)
-            #             start = -1
-
-            # if start != -1 and stop == index: # Records from a mid-point to the end are bad
-            #     startstop = [esDateTime[start],esDateTime[stop]]
-            #     badTimes.append(startstop)
-            #     msg = f'   Flag additional data from {startstop[0]} to {startstop[1]}'
-            #     # print(msg)
-            #     Utilities.writeLogFile(msg)
 
             msg = f'Percentage of data failed on Suntracker outage: {round(100*i/len(esDateTime))} %'
             print(msg)

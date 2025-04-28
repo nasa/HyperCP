@@ -3059,4 +3059,24 @@ class Utilities:
             return False
 
         return bTs
-    
+
+    @staticmethod
+    def fixDateTime2(group):
+        ''' Sort all data in group chronologically based on datetime '''
+
+        if group.id != "SOLARTRACKER_STATUS" and group.id != "CAL_COEF":
+            timeStamp = group.getDataset("DATETIME").data
+            np_dT = np.array(timeStamp, dtype=np.datetime64)
+            sortIndex = np.argsort(np_dT)
+            np_dT_sorted = np_dT[sortIndex]
+            datetime_list = [datetime.utcfromtimestamp(ts.astype('datetime64[s]').astype('int')) for ts in np_dT_sorted]
+            for ds in group.datasets:
+                if len(group.datasets[ds].data) == len(np_dT):
+                    try:
+                        if ds == 'DATETIME':
+                            group.datasets[ds].data = datetime_list
+                        else:
+                            group.datasets[ds].data = group.datasets[ds].data[sortIndex]
+                    except:
+                        print('error')
+
