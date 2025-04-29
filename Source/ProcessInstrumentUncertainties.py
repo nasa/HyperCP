@@ -101,6 +101,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     copy.deepcopy(rawData[sensortype]), copy.deepcopy(rawSlice[sensortype]), sensortype
                 )
                 # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
+           elif InstrumentType.lower() == "dalec":
+                # RawData is the full group - this is used to get a few attributes only
+                # rawSlice is the ensemble 'slice' of raw data currently to be evaluated
+                #  todo: check the shape and that there are no nans or infs
+                output[sensortype] = self.lightDarkStats(
+                    copy.deepcopy(rawData[sensortype]), copy.deepcopy(rawSlice[sensortype]), sensortype
+                )
+                # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
            elif InstrumentType.lower() == "seabird":
                 # rawData here is the group, passed along only for the purpose of
                 # confirming "FrameTypes", i.e., ShutterLight or ShutterDark. Calculations
@@ -143,6 +151,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
+        #print("generateSensorStats: output(stats)")
+        #print(output)
         return output
 
     def read_uncertainties(self, node, uncGrp, cCal, cCoef, cStab, cLin, cStray, cT, cPol, cCos) -> Optional[np.array]:
@@ -174,6 +184,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
                 self.extract_factory_cal(node, radcal, s, cCal, cCoef)  # populates dicts with calibration
 
+                        
+            #elif ConfigFile.settings["bL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "dalec":
+            #    radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_UNC")
+            #    ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
+            #    self.extract_factory_cal(node, radcal, s, cCal, cCoef)  # populates dicts with calibration
+            
             elif ConfigFile.settings["bL1bCal"] == 2:  # class-Based
                 radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_CAL")
                 ind_rad_wvl = (np.array(radcal.columns['1']) > 0)  # where radcal wvls are available
@@ -187,10 +203,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 cCal[s] = np.asarray(list(radcal.columns['3']))[ind_rad_wvl]
 
             else:
-                msg = "TriOS factory uncertainties not implemented"
+                msg = "TriOS/Dalec factory uncertainties not implemented"
                 Utilities.writeLogFile(msg)
                 print(msg)
-                return False
+                return False,False
 
             cStab[s] = self.extract_unc_from_grp(uncGrp, f"{s}_STABDATA_CAL", '1')
 
@@ -203,7 +219,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 # to cover for potential coding errors, should not be hit in normal use
                 msg = "cannot mask straylight"
                 print(msg)
-                return False
+                return False,False
 
             cLin[s] = self.extract_unc_from_grp(grp=uncGrp, name=f"{s}_NLDATA_CAL", col_name='1')
 
@@ -601,6 +617,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                              ]
 
         rrsAbsUnc = Prop_L2_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
+        #print("rrsAbsUnc")
+        #print(rrsAbsUnc)
 
         # Plot Class based L2 uncertainties
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
@@ -653,6 +671,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             waveSubset,
             return_as_dict=False
         )
+        #print("rrsAbsUnc")
+        #print(rrsAbsUnc)
 
         ## Band Convolution of Uncertainties
         # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
@@ -718,7 +738,11 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
         calPath = os.path.join(PATH_TO_CONFIG, calFolder)
         calibrationMap = CalibrationFileReader.read(calPath)
-        waves, cCoef[s] = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, s)
+
+        if ConfigFile.settings['SensorType'].lower() == "dalec":
+            waves, cCoef[s] = ProcessL1b_FactoryCal.extract_calibration_coeff_dalec(calibrationMap, s)
+        else:    
+            waves, cCoef[s] = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, s)
 
     def get_band_outputs(self, sensor_key: str, rho, lw_means, lw_uncertainties, rrs_means, rrs_uncertainties,
                          esUNC, liUNC, ltUNC, rhoUNC, waveSubset, xSlice) -> dict:
@@ -1357,7 +1381,6 @@ class HyperOCR(BaseInstrument):
         # number of replicates for light and dark readings
         N = np.asarray(list(lightData.values())).shape[1]
         Nd = np.asarray(list(darkData.values())).shape[1]
-
         for i, k in enumerate(lightData.keys()):
             wvl = str(float(k))
 
@@ -1394,6 +1417,10 @@ class HyperOCR(BaseInstrument):
                 stdevSignal[wvl] = pow((pow(std_Light[i], 2) + pow(std_Dark[i], 2))/pow(signalAve, 2), 0.5)
             else:
                 stdevSignal[wvl] = 0.0
+
+        #print("std_Light/Dark")
+        #print(std_Light)
+        #print(stdevSignal)
 
         return dict(
             ave_Light=np.array(ave_Light),
@@ -2291,3 +2318,87 @@ class Trios(BaseInstrument):
         updated_radcal_gain[
             ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
         return updated_radcal_gain
+
+class Dalec(BaseInstrument):
+
+    warnings.filterwarnings("ignore", message="One of the provided covariance matrix is not positivedefinite. It has been slightly changed")
+
+    def __init__(self):
+        super().__init__()  # call to instrument __init__
+        self.instrument = "Dalec"
+
+    def lightDarkStats(self, grp, slice, sensortype):
+        # Dalec
+        lightSlice = copy.deepcopy(slice)  # copy to prevent changing of Raw data
+    
+        lightData = lightSlice['data']  # lightGrp.getDataset(sensortype)
+        darkData = lightSlice['dc']
+        if  grp is None:
+            msg = f'No radiometry found for {sensortype}'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return False
+        
+        # Correct light data by subtracting interpolated dark data from light data
+        std_Light = []
+        std_Dark = []
+        ave_Light = []
+        ave_Dark = []
+        stdevSignal = {}
+
+        # number of replicates for light and dark readings
+        N = np.asarray(list(lightData.values())).shape[1]
+
+        if N > 25:  # normal case
+            std_Dark0=np.std(darkData[sensortype])/np.sqrt(N)
+        elif N >3:
+            std_Dark0=np.sqrt(((N-1)/(N-3))*(np.std(darkData[sensortype]) / np.sqrt(N))**2)
+
+        ave_Dark0=np.average(darkData[sensortype])
+        #print("std_Dark0")
+        #print(std_Dark0)
+        for i, k in enumerate(lightData.keys()):
+            wvl = str(float(k))
+
+            # apply normalisation to the standard deviations used in uncertainty calculations
+            if N > 25:  # normal case
+                std_Light.append(np.std(lightData[k])/np.sqrt(N))
+                std_Dark.append(std_Dark0)  # sigma here is essentially sigma**2 so N must sqrt
+            elif N > 3:  # few scans, use different statistics
+                std_Light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
+                std_Dark.append(std_Dark0)
+            else:
+                msg = "too few scans to make meaningful statistics"
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
+
+            ave_Light.append(np.average(lightData[k]))
+            ave_Dark.append(ave_Dark0)
+
+            for x in range(N):
+                lightData[k][x] -= darkData[sensortype][x]
+
+            signalAve = np.average(lightData[k])
+
+            # Normalised signal standard deviation =
+            if signalAve:
+                stdevSignal[wvl] = pow((pow(std_Light[i], 2) + pow(std_Dark[i], 2))/pow(signalAve, 2), 0.5)
+            else:
+                stdevSignal[wvl] = 0.0
+
+        #print("std_Light/Dark")
+        #print(std_Light)
+        #print(stdevSignal)
+        return dict(
+            ave_Light=np.array(ave_Light),
+            ave_Dark=np.array(ave_Dark),
+            std_Light=np.array(std_Light),
+            std_Dark=np.array(std_Dark),
+            std_Signal=stdevSignal,
+            )
+
+    def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
+        # calibration of HyperOCR following the FRM processing of FRM4SOC2
+        output = {}
+        return output

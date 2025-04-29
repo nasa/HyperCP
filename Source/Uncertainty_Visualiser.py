@@ -368,7 +368,10 @@ class UncertaintyEngine(ABC):
             # If LI, is this only used in convertion to relative LI_unc?
             # If LI, is it measurement data or MC distributions around measurements? 
             #   If LI and MC distributions, set to zero. If not, set to absolute value IFF outside of critical bands,
-            #       else dump the ensemble. Could check for this earlier in the process.            
+            #       else dump the ensemble. Could check for this earlier in the process.   
+            # 
+            # NOTE: Update: These are (ir)radiances but they are model outputs from MC runs.
+            #  i.e., taking an abs value (in sensible bands) is harmless         
             print('WARNING: Negative uncertainty potential')
         if np.any(vals['LT'] < 0):
             print('WARNING: Negative uncertainty potential')

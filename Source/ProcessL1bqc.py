@@ -86,7 +86,7 @@ class ProcessL1bqc:
 
         if len(badTimes) == 0:
             badTimes = None
-        return badTimes
+        return badTimes, timeStamp
 
 
     @staticmethod
@@ -99,38 +99,96 @@ class ProcessL1bqc:
         # These get popped off the columns, but restored when filterData runs datasetToColumns
         ltColumns.pop('Datetag')
         ltColumns.pop('Timetag2')
-        ltDatetime = ltColumns.pop('Datetime')
+        timeStamp = ltColumns.pop('Datetime')
 
-        badTimes = []
-        for indx, dateTime in enumerate(ltDatetime):
-            # If the Lt spectrum in the NIR is brighter than in the UVA, something is very wrong
-            UVA = [350,400]
-            NIR = [780,850]
+         # If the Lt spectrum in the NIR is brighter than in the UVA, something is very wrong
+        UVA = [350,400]
+        NIR = [780,850]
+        badTimes = None
+        i=0
+        start = -1
+        stop = []
+        for index, _ in enumerate(timeStamp):
             ltUVA = []
             ltNIR = []
             for wave in ltColumns:
                 if float(wave) > UVA[0] and float(wave) < UVA[1]:
-                    ltUVA.append(ltColumns[wave][indx])
+                    ltUVA.append(ltColumns[wave][index])
                 elif float(wave) > NIR[0] and float(wave) < NIR[1]:
-                    ltNIR.append(ltColumns[wave][indx])
+                    ltNIR.append(ltColumns[wave][index])
 
             if np.nanmean(ltUVA) < np.nanmean(ltNIR):
-                badTimes.append(dateTime)
-
-        badTimes = np.unique(badTimes)
-        # Duplicate each element to a list of two elements in a list
-        # BUG: This is not optimal as it creates one badTimes record for each bad
-        #    timestamp, rather than span of timestamps from badtimes[i][0] to badtimes[i][1]
-        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
-        msg = f'{len(np.unique(badTimes))/len(ltDatetime)*100:.1f}% of spectra flagged'
+                # badTimes.append(dateTime)
+            # if wind[index] > maxWind:
+                i += 1
+                if start == -1:
+                    msg =f'Bad Lt(UV) < Lt(NIR): {np.nanmean(ltUVA)}, {np.nanmean(ltNIR)}'
+                    Utilities.writeLogFile(msg)
+                    start = index
+                stop = index
+                if badTimes is None:
+                    badTimes = []
+            else:
+                if start != -1:
+                    msg = f'Passed. Lt(UV) >= Lt(NIR): {np.nanmean(ltUVA)}, {np.nanmean(ltNIR)}'
+                    # print(msg)
+                    Utilities.writeLogFile(msg)
+                    startstop = [timeStamp[start],timeStamp[stop]]
+                    msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+                    # print(msg)
+                    Utilities.writeLogFile(msg)
+                    badTimes.append(startstop)
+                    start = -1
+            end_index = index
+        msg = f'Percentage of data out of Lt limits: {round(100*i/len(timeStamp))} %'
         print(msg)
         Utilities.writeLogFile(msg)
 
-        if len(badTimes) == 0:
-            badTimes = None
-            # In case filterData does not need to be run:
-            ltData.datasetToColumns()
-        return badTimes
+        if start != -1 and stop == end_index: # Records from a mid-point to the end are bad
+            startstop = [timeStamp[start],timeStamp[stop]]
+            msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
+            # print(msg)
+            Utilities.writeLogFile(msg)
+            if badTimes is None: # only one set of records
+                badTimes = [startstop]
+            else:
+                badTimes.append(startstop)
+
+        if start==0 and stop==end_index: # All records are bad
+            return False
+
+        return badTimes, timeStamp
+
+        # badTimes = []
+        # for indx, dateTime in enumerate(ltDatetime):
+        #     # If the Lt spectrum in the NIR is brighter than in the UVA, something is very wrong
+        #     UVA = [350,400]
+        #     NIR = [780,850]
+        #     ltUVA = []
+        #     ltNIR = []
+        #     for wave in ltColumns:
+        #         if float(wave) > UVA[0] and float(wave) < UVA[1]:
+        #             ltUVA.append(ltColumns[wave][indx])
+        #         elif float(wave) > NIR[0] and float(wave) < NIR[1]:
+        #             ltNIR.append(ltColumns[wave][indx])
+
+        #     if np.nanmean(ltUVA) < np.nanmean(ltNIR):
+        #         badTimes.append(dateTime)
+
+        # badTimes = np.unique(badTimes)
+        # # Duplicate each element to a list of two elements in a list
+        # # BUG: This is not optimal as it creates one badTimes record for each bad
+        # #    timestamp, rather than span of timestamps from badtimes[i][0] to badtimes[i][1]
+        # badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
+        # msg = f'{len(np.unique(badTimes))/len(ltDatetime)*100:.1f}% of spectra flagged'
+        # print(msg)
+        # Utilities.writeLogFile(msg)
+
+        # if len(badTimes) == 0:
+        #     badTimes = None
+        #     # In case filterData does not need to be run:
+        #     ltData.datasetToColumns()
+        # return badTimes
 
     @staticmethod
     def metQualityCheck(refGroup, sasGroup, sixSGroup, ancGroup):
@@ -243,7 +301,7 @@ class ProcessL1bqc:
         elif ConfigFile.settings['SensorType'].lower() == 'trios':
             esGroup = node.getGroup('ES_L1AQC')
             liGroup = node.getGroup('LI_L1AQC')
-            ltGroup = node.getGroup('LT_L1AQC')        
+            ltGroup = node.getGroup('LT_L1AQC')
 
         robotGroup = None
         ancGroup = None
@@ -394,6 +452,8 @@ class ProcessL1bqc:
             ancGroup.datasets['MET_FLAGS'].columns['Flag3'] = [False for i in range(lenAnc)]
             ancGroup.datasets['MET_FLAGS'].columns['Flag4'] = [False for i in range(lenAnc)]
             ancGroup.datasets['MET_FLAGS'].columns['Flag5'] = [False for i in range(lenAnc)]
+            
+            ancGroup.datasets['MET_FLAGS'].columnsToDataset()
 
 
         # At this stage, all datasets in all groups of node have Timetag2
@@ -414,12 +474,13 @@ class ProcessL1bqc:
             print(msg)
             Utilities.writeLogFile(msg)
             # This is not well optimized for large files...
-            badTimes = ProcessL1bqc.ltQuality(sasGroup)
-
-            # NOTE: There is a problem for individual timestamps in badTimes that will not match Darks from L1AQC data
-            #   Need to convert singleton start-stop records in badTimes to ranges of time to capture Darks in L1AQC data
+            badTimes, dateTime = ProcessL1bqc.ltQuality(sasGroup)
+            if badTimes is False:
+                return False
 
             if badTimes is not None:
+                badTimes = Utilities.uniquePairs(badTimes)
+                badTimes = Utilities.catConsecutiveBadTimes(badTimes, dateTime)              
                 print('Removing records... Can be slow for large files')
                 check = Utilities.filterData(referenceGroup, badTimes)
                 # check is now fraction removed
@@ -507,6 +568,8 @@ class ProcessL1bqc:
             return False
 
         if badTimes is not None and len(badTimes) != 0:
+            badTimes = Utilities.uniquePairs(badTimes)
+            badTimes = Utilities.catConsecutiveBadTimes(badTimes, timeStamp)
             print('Removing records...')
             check = Utilities.filterData(referenceGroup, badTimes)
             if check > 0.99:
@@ -591,7 +654,10 @@ class ProcessL1bqc:
         if start==0 and stop==end_index: # All records are bad
             return False
 
+
         if badTimes is not None and len(badTimes) != 0:
+            badTimes = Utilities.uniquePairs(badTimes)
+            badTimes = Utilities.catConsecutiveBadTimes(badTimes, timeStamp)
             print('Removing records...')
             check = Utilities.filterData(referenceGroup, badTimes)
             if check > 0.99:
@@ -620,7 +686,7 @@ class ProcessL1bqc:
                 Utilities.filterData(liGroup,badTimes,'L1AQC')
                 Utilities.filterData(ltGroup,badTimes,'L1AQC')
             if sixSGroup is not None:
-                    Utilities.filterData(sixSGroup,badTimes)
+                Utilities.filterData(sixSGroup,badTimes)
 
        # Spectral Outlier Filter
         enableSpecQualityCheck = ConfigFile.settings['bL1bqcEnableSpecQualityCheck']
@@ -630,16 +696,20 @@ class ProcessL1bqc:
             print(msg)
             Utilities.writeLogFile(msg)
             inFilePath = node.attributes['In_Filepath']
-            badTimes1 = ProcessL1bqc.specQualityCheck(referenceGroup, inFilePath)
-            badTimes2 = ProcessL1bqc.specQualityCheck(sasGroup, inFilePath)
+            badTimes1,_ = ProcessL1bqc.specQualityCheck(referenceGroup, inFilePath)
+            badTimes2,timeStamp = ProcessL1bqc.specQualityCheck(sasGroup, inFilePath)
             if badTimes1 is not None and badTimes2 is not None:
                 badTimes = np.append(badTimes1,badTimes2, axis=0)
             elif badTimes1 is not None:
                 badTimes = badTimes1
             elif badTimes2 is not None:
                 badTimes = badTimes2
+            # badTimes = badTimes.tolist()            
 
             if badTimes is not None:
+                # These contain many consecutive single-timestamp records that need to be concatonated.
+                badTimes = Utilities.uniquePairs(badTimes)
+                badTimes = Utilities.catConsecutiveBadTimes(badTimes, timeStamp.tolist())
                 msg = "Removing spectra from combined flags."
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -661,7 +731,7 @@ class ProcessL1bqc:
                     print(msg)
                     Utilities.writeLogFile(msg)
                     return False
-                  
+
                 if sixSGroup is not None:
                     Utilities.filterData(sixSGroup,badTimes)
 
@@ -696,10 +766,11 @@ class ProcessL1bqc:
         # NOTE: This is not finalized and needs a ConfigFile.setting #########################################
         ConfigFile.settings['bL2filterMetFlags'] = 0
         if ConfigFile.settings['bL2filterMetFlags'] == 1:
-            # Placeholder to filter out based on Met Flags
+
+            # NOTE: Placeholder to filter out based on Met Flags
             metFlags = ancGroup.datasets['MET_FLAGS']
             AncDatetime = metFlags.columns['Datetime']
-            Flag3 = metFlags.columns['Flag3']
+            Flag3 = metFlags.columns['Flag3']  # <- placeholder to delete Flag3 records
 
             badTimes = []
             for indx, dateTime in enumerate(AncDatetime):
@@ -712,6 +783,8 @@ class ProcessL1bqc:
             # msg = f'{len(np.unique(badTimes))/len(AncDatetime)*100:.1f}% of spectra flagged'
 
             if badTimes is not None:
+                badTimes = Utilities.uniquePairs(badTimes)
+                badTimes = Utilities.catConsecutiveBadTimes(badTimes, dateTime)
                 msg = "Removing spectra from Met flags. ######################### Hard-coded override for Flag3"
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -823,9 +896,9 @@ class ProcessL1bqc:
         # Radiance
         gp = node.getGroup("RADIANCE")
         gp.attributes["LI_UNITS"] = node.attributes["LI_UNITS"]
-        del(node.attributes["LI_UNITS"])
+        del node.attributes["LI_UNITS"]
         gp.attributes["LT_UNITS"] = node.attributes["LT_UNITS"]
-        del(node.attributes["LT_UNITS"])
+        del node.attributes["LT_UNITS"]
         if ConfigFile.settings['bL1bqcEnableSpecQualityCheck']:
             gp.attributes['LI_SPEC_FILTER'] = str(ConfigFile.settings['fL1bqcSpecFilterLi'])
             gp.attributes['LT_SPEC_FILTER'] = str(ConfigFile.settings['fL1bqcSpecFilterLt'])
@@ -873,19 +946,19 @@ class ProcessL1bqc:
         node.attributes["TIMETAG2_UNITS"] = "HHMMSSmmm"
 
         if "DATETAG" in node.attributes.keys():
-            del(node.attributes["DATETAG"])
+            del node.attributes["DATETAG"]
         if "TIMETAG2" in node.attributes.keys():
-            del(node.attributes["TIMETAG2"])
+            del node.attributes["TIMETAG2"]
         if "COMMENT" in node.attributes.keys():
-            del(node.attributes["COMMENT"])
+            del node.attributes["COMMENT"]
         if "CLOUD_PERCENT" in node.attributes.keys():
-            del(node.attributes["CLOUD_PERCENT"])
+            del node.attributes["CLOUD_PERCENT"]
         if "DEPTH_RESOLUTION" in node.attributes.keys():
-            del(node.attributes["DEPTH_RESOLUTION"])
+            del node.attributes["DEPTH_RESOLUTION"]
         if ConfigFile.settings["bL1aqcSunTracker"]:
             if "SAS SERIAL NUMBER" in node.attributes.keys():
                 node.attributes["SOLARTRACKER_SERIAL_NUMBER"] = node.attributes["SAS SERIAL NUMBER"]
-                del(node.attributes["SAS SERIAL NUMBER"])
+                del node.attributes["SAS SERIAL NUMBER"]
         if ConfigFile.settings['bL1bqcLtUVNIR']:
             node.attributes['LT_UV_NIR_FILTER'] = 'ON'
         node.attributes['WIND_MAX'] = str(ConfigFile.settings['fL1bqcMaxWind'])
@@ -900,39 +973,39 @@ class ProcessL1bqc:
         # Clean up
         if node.attributes['L1AQC_DEGLITCH'] == 'ON':
             # Moved into group attributes above
-            del(node.attributes['ES_WINDOW_DARK'])
-            del(node.attributes['ES_WINDOW_LIGHT'])
-            del(node.attributes['ES_SIGMA_DARK'])
-            del(node.attributes['ES_SIGMA_LIGHT'])
-            del(node.attributes['LT_WINDOW_DARK'])
-            del(node.attributes['LT_WINDOW_LIGHT'])
-            del(node.attributes['LT_SIGMA_DARK'])
-            del(node.attributes['LT_SIGMA_LIGHT'])
-            del(node.attributes['LI_WINDOW_DARK'])
-            del(node.attributes['LI_WINDOW_LIGHT'])
-            del(node.attributes['LI_SIGMA_DARK'])
-            del(node.attributes['LI_SIGMA_LIGHT'])
+            del node.attributes['ES_WINDOW_DARK']
+            del node.attributes['ES_WINDOW_LIGHT']
+            del node.attributes['ES_SIGMA_DARK']
+            del node.attributes['ES_SIGMA_LIGHT']
+            del node.attributes['LT_WINDOW_DARK']
+            del node.attributes['LT_WINDOW_LIGHT']
+            del node.attributes['LT_SIGMA_DARK']
+            del node.attributes['LT_SIGMA_LIGHT']
+            del node.attributes['LI_WINDOW_DARK']
+            del node.attributes['LI_WINDOW_LIGHT']
+            del node.attributes['LI_SIGMA_DARK']
+            del node.attributes['LI_SIGMA_LIGHT']
 
-            del(node.attributes['ES_MAX_DARK'])
-            del(node.attributes['ES_MAX_LIGHT'])
-            del(node.attributes['ES_MINMAX_BAND_DARK'])
-            del(node.attributes['ES_MINMAX_BAND_LIGHT'])
-            del(node.attributes['ES_MIN_DARK'])
-            del(node.attributes['ES_MIN_LIGHT'])
+            del node.attributes['ES_MAX_DARK']
+            del node.attributes['ES_MAX_LIGHT']
+            del node.attributes['ES_MINMAX_BAND_DARK']
+            del node.attributes['ES_MINMAX_BAND_LIGHT']
+            del node.attributes['ES_MIN_DARK']
+            del node.attributes['ES_MIN_LIGHT']
 
-            del(node.attributes['LT_MAX_DARK'])
-            del(node.attributes['LT_MAX_LIGHT'])
-            del(node.attributes['LT_MINMAX_BAND_DARK'])
-            del(node.attributes['LT_MINMAX_BAND_LIGHT'])
-            del(node.attributes['LT_MIN_DARK'])
-            del(node.attributes['LT_MIN_LIGHT'])
+            del node.attributes['LT_MAX_DARK']
+            del node.attributes['LT_MAX_LIGHT']
+            del node.attributes['LT_MINMAX_BAND_DARK']
+            del node.attributes['LT_MINMAX_BAND_LIGHT']
+            del node.attributes['LT_MIN_DARK']
+            del node.attributes['LT_MIN_LIGHT']
 
-            del(node.attributes['LI_MAX_DARK'])
-            del(node.attributes['LI_MAX_LIGHT'])
-            del(node.attributes['LI_MINMAX_BAND_DARK'])
-            del(node.attributes['LI_MINMAX_BAND_LIGHT'])
-            del(node.attributes['LI_MIN_DARK'])
-            del(node.attributes['LI_MIN_LIGHT'])
+            del node.attributes['LI_MAX_DARK']
+            del node.attributes['LI_MAX_LIGHT']
+            del node.attributes['LI_MINMAX_BAND_DARK']
+            del node.attributes['LI_MINMAX_BAND_LIGHT']
+            del node.attributes['LI_MIN_DARK']
+            del node.attributes['LI_MIN_LIGHT']
 
         # Check to insure at least some data survived quality checks
         if node.getGroup("RADIANCE").getDataset("LT").data is None:

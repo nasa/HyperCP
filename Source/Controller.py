@@ -21,6 +21,7 @@ from Source.CalibrationFile import CalibrationFile
 from Source.ProcessL1b import ProcessL1b
 # from Source.TriosL1B import TriosL1B
 from Source.ProcessL1bTriOS import ProcessL1bTriOS
+from Source.ProcessL1bDALEC import ProcessL1bDALEC
 from Source.ProcessL1bqc import ProcessL1bqc
 from Source.ProcessL2 import ProcessL2
 from Source.SeaBASSWriter import SeaBASSWriter
@@ -255,6 +256,24 @@ class Controller:
         return calibrationMap
 
     @staticmethod
+    def processCalibrationConfigDalec(configFileName, calFiles):
+        ''' Write pseudo calibration/configuration map for Dalec'''
+        calFolder = os.path.splitext(configFileName)[0] + "_Calibration"
+        calPath = os.path.join(PATH_TO_CONFIG, calFolder)
+
+        # print("processCalibrationConfig")
+        calibrationMap = collections.OrderedDict()
+
+        for key in list(calFiles.keys()):
+            cf = CalibrationFile()
+            cf.id=key
+            cf.name=os.path.join(calPath,key)
+            cf.instrumentType = "Dalec"
+            calibrationMap[key] = cf
+
+        return calibrationMap
+
+    @staticmethod
     def processAncData(fp):
         ''' Read in the ancillary field data file '''
 
@@ -294,6 +313,7 @@ class Controller:
             root = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
             root = ProcessL1aDALEC.processL1a(inFilePath, calibrationMap)
+            outFFPs = outFilePath
         else:
             root = None
 
@@ -384,6 +404,9 @@ class Controller:
 
         if ConfigFile.settings["SensorType"].lower() == "trios":
             root = ProcessL1bTriOS.processL1b(root, outFilePath)
+        elif ConfigFile.settings["SensorType"].lower() == "dalec":
+            # root = TriosL1B.processL1b(root, outFilePath)
+            root = ProcessL1bDALEC.processL1b(root, outFilePath)
         else:
             root = ProcessL1b.processL1b(root, outFilePath)
 
@@ -458,7 +481,9 @@ class Controller:
         _, filename = os.path.split(outFilePath)
         if node is not None:
 
-            if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+            #if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+            if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
+                 ConfigFile.settings['SensorType'].lower() == 'dalec') and ConfigFile.settings['bL1bCal'] == 1:
                 plotDeltaBool = False
             else:
                 plotDeltaBool = True
@@ -871,7 +896,7 @@ class Controller:
     def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level):
 
         if level == "L1A":
-            srchStr = ['raw', 'mlb']
+            srchStr = ['raw', 'mlb', 'txt']
         elif level == 'L1AQC':
             srchStr = ['L1A']
         elif level == 'L1B':

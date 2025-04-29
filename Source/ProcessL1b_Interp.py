@@ -431,10 +431,12 @@ class ProcessL1b_Interp:
 
             if dataName == 'REL_AZ':
                 # Replace nans by interpolating over them if necessary
-                y = np.array(xData.columns['NONE'])
+#                y = np.array(xData.columns['NONE'])
+                y = np.array(xData.columns['REL_AZ'])
                 nans, x= Utilities.nan_helper(y) # x is a lambda function
                 y[nans]= np.interp(x(nans), x(~nans), y[~nans])
-                xData.columns['NONE'] = y.tolist()
+#                xData.columns['NONE'] = y.tolist()
+                xData.columns['REL_AZ'] = y.tolist()
                 xData.columnsToDataset()
                 
                 msg = f'Replaced NaNs in {dataName}'
@@ -733,7 +735,7 @@ class ProcessL1b_Interp:
         ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
         ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
                 
-        if ConfigFile.settings['SensorType'].lower() == 'trios':
+        if ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'dalec':
             esL1AQCGroup = root.addGroup('ES_L1AQC')
             esL1AQCGroup.copy(esL1AQC)
             liL1AQCGroup = root.addGroup('LI_L1AQC')

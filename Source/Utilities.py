@@ -1,6 +1,6 @@
 """ A cornucopia of addition methods """
 import os
-import datetime
+from datetime import datetime, timedelta, timezone
 import collections
 from collections import Counter
 import csv
@@ -175,7 +175,7 @@ class Utilities:
     def checkOutputFiles(outFilePath):
         if os.path.isfile(outFilePath):
             modTime = os.path.getmtime(outFilePath)
-            nowTime = datetime.datetime.now()
+            nowTime = datetime.now()
             if nowTime.timestamp() - modTime < 60: # If the file exists and was created in the last minute...
                 # msg = f'{level} file produced: \n {outFilePath}'
                 # print(msg)
@@ -403,12 +403,12 @@ class Utilities:
         m = int(t[2:4])
         s = int(t[4:6])
         us = 10000*int(dec) # i.e. 0.55 s = 550,000 us
-        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=datetime.timezone.utc)
+        return datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=timezone.utc)
 
     # Converts datetag (YYYYDDD) to date string
     @staticmethod
     def dateTagToDate(dateTag):
-        dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
+        dt = datetime.strptime(str(int(dateTag)), '%Y%j')
         timezone = pytz.utc
         dt = timezone.localize(dt)
         return dt.strftime('%Y%m%d')
@@ -416,7 +416,7 @@ class Utilities:
     # Converts datetag (YYYYDDD) to datetime
     @staticmethod
     def dateTagToDateTime(dateTag):
-        dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
+        dt = datetime.strptime(str(int(dateTag)), '%Y%j')
         timezone = pytz.utc
         dt = timezone.localize(dt)
         return dt
@@ -459,7 +459,7 @@ class Utilities:
         us = 1000*int(t[6:])
         # print(h, m, s, us)
         # print(tt2)
-        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=datetime.timezone.utc)
+        return datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=timezone.utc)
 
     # Converts datetime to Timetag2 (HHMMSSmmm)
     @staticmethod
@@ -495,7 +495,7 @@ class Utilities:
         date = str(gpsDate).zfill(6)
         day = int(date[:2])
         mon = int(date[2:4])
-        return datetime.datetime(year,mon,day,0,0,0,0,tzinfo=datetime.timezone.utc)
+        return datetime(year,mon,day,0,0,0,0,tzinfo=timezone.utc)
 
 
     @staticmethod
@@ -506,7 +506,7 @@ class Utilities:
 
         for gp in node.groups:
             # print(gp.id)
-            if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
+            if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf" and gp.id != "CAL_COEF": # No valid timestamps in STATUS
                 timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
                 dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
                 timeStamp = []
@@ -1074,12 +1074,18 @@ class Utilities:
             
             filterData for L1AQC is contained within ProcessL1aqc.py'''
 
+        # NOTE: This is still very slow on long files with many badTimes, despite badTimes being filtered for 
+        #   unique pairs.
+
+
         msg = f'Remove {group.id} Data'
         print(msg)
         Utilities.writeLogFile(msg)
         # internal switch to trigger the reset of CAL & BACK
         # dataset that we have to delete to avoid conflict during filtering
         do_reset = False
+        timeStamp = None
+        raw_cal, raw_back, raw_back_att, raw_cal_att = None,None,None,None,
 
         if level != 'L1AQC':
             if group.id == "ANCILLARY":
@@ -1092,7 +1098,7 @@ class Utilities:
                 timeStamp = group.getDataset("solar_zenith").data["Datetime"]
         else:
             timeStamp = group.getDataset("Timestamp").data["Datetime"]
-            # TRIOS: copy CAL & BACK before filetering, and delete them 
+            # TRIOS: copy CAL & BACK before filetering, and delete them
             # to avoid conflict when filtering more row than 255
             if ConfigFile.settings['SensorType'].lower() == 'trios':
                 do_reset = True
@@ -1185,7 +1191,9 @@ class Utilities:
         dataDelta = None
         # Note: If only one spectrum is left in a given ensemble, STD will
         #be zero for Es, Li, and Lt.'''
-        if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+        #if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+        if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
+             ConfigFile.settings['SensorType'].lower() == 'dalec') and ConfigFile.settings['bL1bCal'] == 1:
             suffix = 'sd'
         else:
             suffix = 'unc'
@@ -2129,7 +2137,7 @@ class Utilities:
         # #   https://stackoverflow.com/questions/49046931/how-can-i-use-dateaxisitem-of-pyqtgraph
         # class TimeAxisItem(pg.AxisItem):
         #     def tickStrings(self, values, scale, spacing):
-        #         return [datetime.datetime.fromtimestamp(value, pytz.timezone("UTC")) for value in values]
+        #         return [datetime.fromtimestamp(value, pytz.timezone("UTC")) for value in values]
 
         # date_axis_Dark = TimeAxisItem(orientation='bottom')
         # date_axis_Light = TimeAxisItem(orientation='bottom')
@@ -2232,7 +2240,7 @@ class Utilities:
         ThermUnc = []
 
         # Seabird case
-        if ConfigFile.settings['SensorType'].lower() == "seabird":
+        if ConfigFile.settings['SensorType'].lower() == "seabird" or ConfigFile.settings['SensorType'].lower() == "dalec":
             for i in range(len(therm_coeff)):
                 try:
                     ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp - refTemp)))
@@ -2282,6 +2290,23 @@ class Utilities:
                     TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("TEMP")
                 elif "SPECTEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
                     TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("SPECTEMP")
+                else:
+                    msg = "Thermal dataset not found"
+                    print(msg)
+                # internal temperature is the mean of all replicate
+                internalTemp = np.mean(np.array(TempDS.data.tolist()))
+                # ambiant temp is not needed for seabird as internal temp is measured, set to 0
+                ambTemp = 0
+                if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
+                    msg = "Failed to generate Thermal Coefficients"
+                    print(msg)
+
+            ### Dalec
+            elif ConfigFile.settings['SensorType'].lower() == "dalec":
+                if "TEMP" in node.getGroup(f'{sensor}').datasets:
+                    TempDS = node.getGroup(f'{sensor}').getDataset("TEMP")
+                elif "SPECTEMP" in node.getGroup(f'{sensor}').datasets:
+                    TempDS = node.getGroup(f'{sensor}').getDataset("SPECTEMP")
                 else:
                     msg = "Thermal dataset not found"
                     print(msg)
@@ -2487,7 +2512,7 @@ class Utilities:
             ## retrieve dataset from corresponding instrument
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios":
+            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "dalec":
                 data = node.getGroup(sensor).getDataset(sensor)
 
             # Retrieve hyper-spectral wavelengths from dataset
@@ -2947,4 +2972,111 @@ class Utilities:
                     inputArray[ens][i] = 0.0
         return inputArray
 
-   
+    @staticmethod
+    def uniquePairs(pairList):
+        '''Eliminate redundant pairs of badTimes 
+            Must be list, not np array'''
+
+        if not isinstance(pairList, list):
+            pairList = pairList.tolist()
+        if len(pairList) > 1:
+            newPairs = []
+            for pair in pairList:
+                if pair not in newPairs:
+                    newPairs.append(pair)
+        else:
+            newPairs = pairList
+        return newPairs
+
+    @staticmethod
+    def catConsecutiveBadTimes(badTimes, dateTime):
+        '''Test for the existence of consecutive, singleton records that could be 
+            concatonated into a time span'''
+        newBadTimes = []
+        for iBT, badTime in enumerate(badTimes):
+            if iBT == 0:
+                newBadTimes.append(badTime)
+            else:
+                iDT = dateTime.index(newBadTimes[-1][1])# end time of last window
+                iDT2 = dateTime.index(badTime[0])
+                if iDT2 == iDT +1:
+                    # Consecutive
+                    newBadTimes[-1][1] = badTime[1]
+                else:
+                    newBadTimes.append(badTime)
+
+        return newBadTimes
+
+    @staticmethod
+    def findGaps_dateTime(DT1,DT2,threshold):
+        ''' Test whether one DT2 datetime has a gap > threshold [seconds] 
+            relative to DT1. '''
+        bTs = []
+        start = -1
+        i, index, stop = 0,0,0
+        tThreshold = timedelta(seconds=threshold)
+
+        # See below for faster conversions
+        np_dTT = np.array(DT2, dtype=np.datetime64)
+        np_dTT.sort()
+
+        np_dTM = np.array(DT1, dtype=np.datetime64)
+        pos = np.searchsorted(np_dTT, np_dTM, side='right')
+
+        # Consider the 3 items close the the position found.
+        # We can probably only consider 2 of them but this is simpler and less bug-prone.
+        pos1 = np.maximum(pos-1, 0)
+        pos2 = np.minimum(pos, np_dTT.size-1)
+        pos3 = np.minimum(pos+1, np_dTT.size-1)
+        tDiff1 = np.abs(np_dTT[pos1] - np_dTM)
+        tDiff2 = np.abs(np_dTT[pos2] - np_dTM)
+        tDiff3 = np.abs(np_dTT[pos3] - np_dTM)
+        tMin = np.minimum(tDiff1, tDiff2, tDiff3)
+
+        for index in range(len(np_dTM)):
+            if tMin[index] > tThreshold:
+                i += 1
+                if start == -1:
+                    start = index
+                stop = index
+            else:
+                if start != -1:
+                    startstop = [DT1[start],DT1[stop]]
+                    msg = f'   Flag data from {startstop[0]} to {startstop[1]}'
+                    print(msg)
+                    Utilities.writeLogFile(msg)
+                    bTs.append(startstop)
+                    start = -1
+
+        if start != -1 and stop == index: # Records from a mid-point to the end are bad
+            startstop = [DT1[start],DT1[stop]]
+            bTs.append(startstop)
+            msg = f'   Flag additional data from {startstop[0]} to {startstop[1]}'
+            print(msg)
+            Utilities.writeLogFile(msg)
+
+        if start==0 and stop==index: # All records are bad
+            return False
+
+        return bTs
+
+    @staticmethod
+    def fixDateTime2(group):
+        ''' Sort all data in group chronologically based on datetime '''
+
+        if group.id != "SOLARTRACKER_STATUS" and group.id != "CAL_COEF":
+            timeStamp = group.getDataset("DATETIME").data
+            np_dT = np.array(timeStamp, dtype=np.datetime64)
+            sortIndex = np.argsort(np_dT)
+            np_dT_sorted = np_dT[sortIndex]
+            datetime_list = [datetime.utcfromtimestamp(ts.astype('datetime64[s]').astype('int')) for ts in np_dT_sorted]
+            for ds in group.datasets:
+                if len(group.datasets[ds].data) == len(np_dT):
+                    try:
+                        if ds == 'DATETIME':
+                            group.datasets[ds].data = datetime_list
+                        else:
+                            group.datasets[ds].data = group.datasets[ds].data[sortIndex]
+                    except:
+                        print('error')
+
