@@ -51,13 +51,13 @@ if __name__ == '__main__':
          935.,  940.,  945.,  950.,  955.,  960.,  965.,  970.,  975.,
          980.,  985.,  990.,  995., 1000.], dtype=float)  # waveband values already act as nodes for interpolation
 
-    windspeed = np.array([0, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15])  # 9
+    windspeed = np.array([0, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15])  # 10
     AOT = np.array([0, 0.05, 0.1, 0.2, 0.5])  # 5
-    SZA = np.arange(10, 65, 5)  # 12  # expanded database would go to 65
+    SZA = np.arange(10, 65, 5)  # 11  # expanded database would go to 65
     RELAZ = np.arange(80, 145, 5)  # 13
     VZEN = np.array([30, 40]) # 2
-    SAL = np.arange(0, 70, 10)  # 5
-    SST = np.arange(-40, 60, 20)  # 4
+    SAL = np.arange(0, 70, 10)  # 7
+    SST = np.arange(-40, 60, 20)  # 5
     data = np.zeros((len(windspeed), len(AOT), len(SZA), len(RELAZ), len(SAL), len(SST), len(waveBands)))
     # uncs = np.zeros((len(windspeed), len(AOT), len(SZA), len(RELAZ), len(VZEN), len(SAL), len(SST), len(waveBands)))
     da = {}
@@ -77,19 +77,19 @@ if __name__ == '__main__':
                                 #         wind=i_windspeed, aot=i_aot, sza=i_sza, relAz=i_relaz, vzen=i_vzen, sal=i_sal, SST=i_wtemp
                                 #         ).values
                                 # else:
-                                    # rho, unc = RhoCorrections.ZhangCorr(
-                                    #     windSpeedMean,
-                                    #     aot,
-                                    #     cloud,
-                                    #     sza,
-                                    #     wtemp,
-                                    #     sal,
-                                    #     relAz,
-                                    #     vzen,
-                                    #     waveBands,
-                                    #     # Propagate=Prop_Obj
-                                    # )
-                                    data[i_windspeed, i_aot, i_sza, i_relaz, i_sal, i_wtemp] = waveBands  # rho
+                                rho, unc = RhoCorrections.ZhangCorr(
+                                    windSpeedMean,
+                                    aot,
+                                    cloud,
+                                    sza,
+                                    wtemp,
+                                    sal,
+                                    relAz,
+                                    vzen,
+                                    waveBands,
+                                    # Propagate=Prop_Obj
+                                )
+                                data[i_windspeed, i_aot, i_sza, i_relaz, i_sal, i_wtemp] = rho
 
         da[vzen] = xr.DataArray(
             data,

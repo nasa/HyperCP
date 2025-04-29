@@ -203,35 +203,27 @@ class RhoCorrections:
 
         """
 
-        db_paths = [d.name for d in os.scandir(PATH_TO_DATA) if "LUT" in d.name]
-        
-        # I think this will prove to be a temporary solution. 
-        if len(db_paths) > 1:
-            db_path = os.path.join(PATH_TO_DATA, 'Z17_LUT_v2.nc')  # look for latest LUT if multiple found
-        elif len(db_paths) > 0:
-            db_path = os.path.join(PATH_TO_DATA, db_paths[0])  # use what we have if only one found
+        if sva == 30:
+            db_path = "Z17_LUT_30.nc"
+            msg = f"instrument viewing zenith of 30 selected"
         else:
-            return 0  # what should I do if we don't have a LUT downloaded? - Ashley
+            msg = f"instrument viewing zenith of 40 selected"
+            db_path = "Z17_LUT_40.nc"
 
-        z17_lut = xr.open_dataset(db_path, engine='netcdf4')
+        print(msg)
+        Utilities.writeLogFile(msg)
 
+        try:
+            LUT = xr.open_dataset(os.path.join(PATH_TO_DATA, db_path), engine='netcdf4')
+        except FileNotFoundError:
+            raise InterpolationError(f"cannot find LUT netcdf file {db_path} at {PATH_TO_DATA}")
+        
         import scipy.interpolate as spin
 
-        if ws < 0:
-            ws = 0  # make sure negatives are not passed to interp - working to add option to comet maths
-        if aod < 0:
-            aod = 0
         if wt > 20:
             wt = 20
         if rel_az > 140:
             rel_az = 140
-
-        if "vzen" in z17_lut.coords:
-            LUT = z17_lut.sel(vzen=sva, method='nearest')
-        else:
-            LUT = z17_lut
-            
-        del(z17_lut)  # delete unused var to save memory
 
         LUT = LUT.interp(wind=[0, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15], kwargs={"fill_value": "extrapolate"})
 
