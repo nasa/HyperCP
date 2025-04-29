@@ -718,7 +718,7 @@ class Utilities:
                         print(msg)
                         Utilities.writeLogFile(msg)
                     else:
-                        msg = f'WARNING: Out of order row deleted at {i}; this should not happen after fixDateTime2'
+                        msg = f'WARNING: Out of order row deleted at {i}; this should not happen after sortDateTime'
                         print(msg)
                         Utilities.writeLogFile(msg)
 
@@ -3075,18 +3075,27 @@ class Utilities:
 
         if group.id != "SOLARTRACKER_STATUS" and group.id != "CAL_COEF":
             timeStamp = group.getDataset("DATETIME").data
+            tz = pytz.timezone('UTC')
             np_dT = np.array(timeStamp, dtype=np.datetime64)
             sortIndex = np.argsort(np_dT)
             np_dT_sorted = np_dT[sortIndex]
-            # datetime_list = [datetime.utcfromtimestamp(ts.astype('datetime64[s]').astype('int')) for ts in np_dT_sorted]
             datetime_list = np_dT_sorted.astype('datetime64[us]').tolist()
+            datetime_list = [tz.localize(x) for x in datetime_list]
             for ds in group.datasets:
                 if len(group.datasets[ds].data) == len(np_dT):
-                    try:
-                        if ds == 'DATETIME':
-                            group.datasets[ds].data = datetime_list
-                        else:
-                            group.datasets[ds].data = group.datasets[ds].data[sortIndex]
-                    except:
-                        print('error')
+                    if ds == 'DATETIME':
+                        group.datasets[ds].data = datetime_list
+                    else:
+                        group.datasets[ds].data = group.datasets[ds].data[sortIndex]
+
+            msg = f'Screening {group.id} for clean timestamps.'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            if not Utilities.fixDateTime(group):
+                msg = f'***********Too few records in {group.id} to continue after timestamp correction. Exiting.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
+
+        return group
 

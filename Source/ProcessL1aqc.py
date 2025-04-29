@@ -275,14 +275,16 @@ class ProcessL1aqc:
         node  = Utilities.rootAddDateTime(node)
 
         #############################################################################################
-        # Sort groups chronologically
+        # Sort groups chronologically and removes duplicate timestamps
         #############################################################################################
         print('Sorting all datasets chronologically')
         for gp in node.groups:
-            Utilities.sortDateTime(gp)
+            gp = Utilities.sortDateTime(gp)
+            if not gp:
+                return None
 
-        # 2021-04-09: Include ANCILLARY_METADATA in all datasets, regardless of whether they are SunTracker or not
-        # or if they have an ancillary file or not
+        # Include ANCILLARY_METADATA in all datasets, regardless of whether they are SunTracker or not
+        #   or if they have an ancillary file or not
         compass = None
         esDateTime = None
         gpsStatus = None
