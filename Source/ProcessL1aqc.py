@@ -237,7 +237,8 @@ class ProcessL1aqc:
     @staticmethod
     def processL1aqc(node, calibrationMap, ancillaryData=None):
         '''
-        Filters data for tilt, yaw, rotator, and azimuth. Deglitching
+        Order datasets chronologically. Screen for SunTracker data dropouts.
+        Filter data for tilt, yaw, rotator, and azimuth. Deglitch (SeaBird).
         '''
 
         node.attributes["PROCESSING_LEVEL"] = "1aqc"
@@ -272,6 +273,13 @@ class ProcessL1aqc:
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
+
+        #############################################################################################
+        # Sort groups chronologically
+        #############################################################################################
+        print('Sorting all datasets chronologically')
+        for gp in node.groups:
+            Utilities.sortDateTime(gp)
 
         # 2021-04-09: Include ANCILLARY_METADATA in all datasets, regardless of whether they are SunTracker or not
         # or if they have an ancillary file or not
@@ -489,12 +497,12 @@ class ProcessL1aqc:
             relAzAnc[relAzAnc<-180] = relAzAnc[relAzAnc<-180] + 360
             relAzAnc.tolist()
 
-        #############################################################################################
-        # Sort groups chronologically
-        #############################################################################################
-        print('Sorting all datasets chronologically')
-        for gp in node.groups:
-            Utilities.fixDateTime2(gp)
+        # #############################################################################################
+        # # Sort groups chronologically
+        # #############################################################################################
+        # print('Sorting all datasets chronologically')
+        # for gp in node.groups:
+        #     Utilities.fixDateTime2(gp)
 
         #############################################################################################
         # Begin Filtering

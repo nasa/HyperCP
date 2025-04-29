@@ -260,13 +260,9 @@ class ProcessL1b_Interp:
         if headingDataAnc:
             ProcessL1b_Interp.interpolateData(headingDataAnc, interpData, "HEADING", fileName)
         if latDataAnc:
-            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0 # Reserve lat/lon plots for actual GPS, not ancillary file
             ProcessL1b_Interp.interpolateData(latDataAnc, interpData, "LATITUDE", fileName)
-            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
         if lonDataAnc:
-            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0
             ProcessL1b_Interp.interpolateData(lonDataAnc, interpData, "LONGITUDE", fileName)
-            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
         if saltData:
             ProcessL1b_Interp.interpolateData(saltData, interpData, "SALINITY", fileName)
         if sstData:

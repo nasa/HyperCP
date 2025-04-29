@@ -457,8 +457,6 @@ class Utilities:
         m = int(t[2:4])
         s = int(t[4:6])
         us = 1000*int(t[6:])
-        # print(h, m, s, us)
-        # print(tt2)
         return datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=timezone.utc)
 
     # Converts datetime to Timetag2 (HHMMSSmmm)
@@ -711,20 +709,24 @@ class Utilities:
 
             i = 1
             while i < total:
-
                 if dateTime[i] <= dateTime[i-1]:
-
-                    # BUG?:Same values of consecutive TT2s are shockingly common. Confirmed
-                    #   that 1) they exist from L1A, and 2) sensor data changes while TT2 stays the same
-                    #
+                    if dateTime[i] == dateTime[i-1]:
+                        # BUG?:Same values of consecutive TT2s are shockingly common. Confirmed
+                        #   that 1) they exist from L1A, and 2) sensor data changes while TT2 stays the same
+                        #
+                        msg = f'Duplicate row deleted at {i}'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                    else:
+                        msg = f'WARNING: Out of order row deleted at {i}; this should not happen after fixDateTime2'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
 
                     gp.datasetDeleteRow(i)
                     # del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
                     dateTime = gp.getDataset("DATETIME").data
                     total = total - 1
-                    msg = f'Out of order TIMETAG2 row deleted at {i}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+
                     continue # goto while test skipping i incrementation. dateTime[i] is now the next value.
                 i += 1
         else:
@@ -1200,6 +1202,10 @@ class Utilities:
 
         # In the case of reflectances, only use _unc. There are no _std, because reflectances are calculated
         # from the average Lw and Es values within the ensembles
+        Data, lwData, Data_MODISA, Data_MODIST = None, None, None, None
+        Data_Sentinel3A, Data_Sentinel3B, Data_VIIRSJ,Data_VIIRSN = None, None, None, None
+        dataDelta, dataDelta_MODISA, dataDelta_MODIST, dataDelta_Sentinel3A = None, None, None, None
+        dataDelta_Sentinel3B, dataDelta_VIIRSJ, dataDelta_VIIRSN, units = None, None, None, None
         if rType=='Rrs' or rType=='nLw':
             print('Plotting Rrs or nLw')
             group = root.getGroup("REFLECTANCE")
@@ -2510,6 +2516,7 @@ class Utilities:
         for sensor in sensorList:
 
             ## retrieve dataset from corresponding instrument
+            data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "dalec":
@@ -2596,6 +2603,7 @@ class Utilities:
         for sensor in sensorList:
 
             ## retrieve dataset from corresponding instrument
+            data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios":
@@ -2726,6 +2734,7 @@ class Utilities:
             # x_new2 = bands[valid]
 
             ## retrieve hyper-spectral wavelengths from corresponding instrument
+            data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios":
@@ -2911,7 +2920,7 @@ class Utilities:
         Azimuth_angle = None
 
         with open(filepath, 'r', encoding="utf-8") as f:  # open file
-            key = None
+            key, ds, name = None, None, None
             while True:  # start loop
                 line = Utilities.getline(f, '\n')  # reads the file until a '\n' character is reached
                 if not line:  # breaks out of loop if three empty lines in a row
@@ -3061,7 +3070,7 @@ class Utilities:
         return bTs
 
     @staticmethod
-    def fixDateTime2(group):
+    def sortDateTime(group):
         ''' Sort all data in group chronologically based on datetime '''
 
         if group.id != "SOLARTRACKER_STATUS" and group.id != "CAL_COEF":
@@ -3069,7 +3078,8 @@ class Utilities:
             np_dT = np.array(timeStamp, dtype=np.datetime64)
             sortIndex = np.argsort(np_dT)
             np_dT_sorted = np_dT[sortIndex]
-            datetime_list = [datetime.utcfromtimestamp(ts.astype('datetime64[s]').astype('int')) for ts in np_dT_sorted]
+            # datetime_list = [datetime.utcfromtimestamp(ts.astype('datetime64[s]').astype('int')) for ts in np_dT_sorted]
+            datetime_list = np_dT_sorted.astype('datetime64[us]').tolist()
             for ds in group.datasets:
                 if len(group.datasets[ds].data) == len(np_dT):
                     try:
