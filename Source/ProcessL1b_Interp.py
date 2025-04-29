@@ -1,6 +1,7 @@
 
 import collections
 import datetime as dt
+import time
 import calendar
 from inspect import currentframe, getframeinfo
 from pysolar.solar import get_azimuth, get_altitude
@@ -319,8 +320,14 @@ class ProcessL1b_Interp:
 
             # Because x is now a list of datetime tuples, they'll need to be
             # converted to Unix timestamp values
-            xTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in x]
-            newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
+            # # BUG: This conversion gets the wrong result:
+            # xTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in x]
+            # newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
+            xTS = [time.mktime(xDT.timetuple()) for xDT in x]
+            newXTS = [time.mktime(xDT.timetuple()) for xDT in new_x]
+            # # Test conversion reversal
+            # from datetime import datetime
+            # datetime_object = [datetime.fromtimestamp(x) for x in xTS]
 
             if dataName in angList:
 
@@ -434,11 +441,11 @@ class ProcessL1b_Interp:
 #                xData.columns['NONE'] = y.tolist()
                 xData.columns['REL_AZ'] = y.tolist()
                 xData.columnsToDataset()
-                
+
                 msg = f'Replaced NaNs in {dataName}'
                 print(msg)
                 Utilities.writeLogFile(msg)
-        
+
         # xData will be interpolated to yDatetimes
         xData.columns["Datetag"] = yData.data["Datetag"].tolist()
         xData.columns["Timetag2"] = yData.data["Timetag2"].tolist()

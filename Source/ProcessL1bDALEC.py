@@ -167,20 +167,20 @@ class ProcessL1bDALEC:
                 ltGroup.copy(gp)
 
         # Add class-based files (RAW_UNCERTAINTIES)
-        '''
-        classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
-                                      ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
-        if ConfigFile.settings['bL1bCal'] == 1:
-            print("Dalec Factory Regime")
-            #node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
-            #node = ProcessL1bDALEC.read_unc_coefficient_factory(node)
+        # '''
+        # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
+        #                               ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
+        # if ConfigFile.settings['bL1bCal'] == 1:
+        #     print("Dalec Factory Regime")
+        #     #node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
+        #     #node = ProcessL1bDALEC.read_unc_coefficient_factory(node)
     
-            if node is None:
-                msg = 'Error running factory uncertainties.'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return None
-        '''
+        #     if node is None:
+        #         msg = 'Error running factory uncertainties.'
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #         return None
+        # '''
         # Interpolate only the Ancillary group, and then fold in model data
         # This is run ahead of the other groups for all processing pathways. Anc group
         # exists regardless of Ancillary file being provided

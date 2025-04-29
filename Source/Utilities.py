@@ -1031,8 +1031,18 @@ class Utilities:
             newYList.append(fillValue)
 
         for value in yUnique:
+            # NOTE: If only one timestamp is found, it is highly unlikely to pass the test below.
             minX = min(x[y==value])
             maxX = max(x[y==value])
+
+            # # Test conversion reversal
+            # datetime_object = datetime.fromtimestamp(maxX)
+
+            if minX == maxX:
+                # NOTE: Workaround: buffer the start and stop times of the station by some amount of time
+                # Unix time: Number of seconds that have elapsed since January 1, 1970, at 00:00:00 Coordinated Universal Time (UTC)
+                minX -= 120
+                maxX += 120
 
             for i, newX in enumerate(newXList):
                 if (newX >= minX) and (newX <= maxX):
