@@ -561,10 +561,10 @@ class ProcessL1aqc:
             if badTimes is False:
                 return None
 
-        node = ProcessL1aqc.filterBadTimes(node,badTimes)
-        if node is None:
-            # All data removed
-            return None
+            node = ProcessL1aqc.filterBadTimes(node,badTimes)
+            if node is None:
+                # All data removed
+                return None
 
         #############################################################
         # Start over with badTimes and aggregate for remaining filters
