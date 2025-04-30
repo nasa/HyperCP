@@ -36,7 +36,7 @@ class Window(QtWidgets.QWidget):
     def __init__(self, parent=None):
         self.inputDirectory = ""
         self.outputDirectory = ""
-        self.ancFileDirectory = ""
+        self.ancFileDir = ""
 
         super().__init__(parent)
         # self.setStyleSheet("background-color: #e3e6e1;")
@@ -134,7 +134,7 @@ class Window(QtWidgets.QWidget):
         )
         self.ancFileLineEdit = QtWidgets.QLineEdit()
         self.ancFileLineEdit.setText(str(MainConfig.settings["ancFile"]))
-        self.ancFileDirectory = MainConfig.settings["ancFileDir"]
+        self.ancFileDir = MainConfig.settings["ancFileDir"]
         self.ancAddButton = QtWidgets.QPushButton("Add", self)
         self.ancRemoveButton = QtWidgets.QPushButton("Remove", self)
 
@@ -276,10 +276,16 @@ class Window(QtWidgets.QWidget):
                 MainConfig.settings["outDir"] = ConfigFile.settings['outDir']
                 MainConfig.settings["ancFileDir"] = ConfigFile.settings['ancFileDir']
                 MainConfig.settings["ancFile"] = ConfigFile.settings['ancFile']
+                self.inputDirectory = ConfigFile.settings['inDir']
+                self.outputDirectory = ConfigFile.settings['outDir']
+                self.ancFileDir = ConfigFile.settings['ancFileDir']
+                # self.anc = ConfigFile.settings['ancFile']
                 self.inDirButton.setText(MainConfig.settings["inDir"])
                 self.outDirButton.setText(MainConfig.settings["outDir"])                
                 self.ancFileLineEdit.setText(
-                    os.path.join(ConfigFile.settings['ancFileDir'],MainConfig.settings["ancFile"]))
+                    os.path.join(MainConfig.settings['ancFileDir'],MainConfig.settings["ancFile"]))
+        # ConfigFile.saveConfig(ConfigFile.filename)
+        # MainConfig.saveConfig(MainConfig.fileName)
 
     def configNewButtonPressed(self):
         print("New Config Dialogue")
@@ -315,7 +321,7 @@ class Window(QtWidgets.QWidget):
                 seaBASSHeaderFileName = ConfigFile.settings["seaBASSHeaderFileName"]
                 print("Creating New SeaBASSHeader File: ", seaBASSHeaderFileName)
                 SeaBASSHeader.createDefaultSeaBASSHeader(seaBASSHeaderFileName)
-            MainConfig.saveConfig(MainConfig.fileName)
+            # MainConfig.saveConfig(MainConfig.fileName)
 
     def configEditButtonPressed(self):
         print("Edit Config Dialogue")
@@ -369,7 +375,7 @@ class Window(QtWidgets.QWidget):
         self.inDirButton.setText(self.inputDirectory)
         MainConfig.settings["inDir"] = self.inputDirectory
         ConfigFile.settings["inDir"] = self.inputDirectory
-        MainConfig.saveConfig(MainConfig.fileName)
+        # MainConfig.saveConfig(MainConfig.fileName)
         return self.inputDirectory
 
     def outDirButtonPressed(self):
@@ -389,7 +395,8 @@ class Window(QtWidgets.QWidget):
         self.outDirButton.setText(self.outputDirectory)
         MainConfig.settings["outDir"] = self.outputDirectory
         ConfigFile.settings["outDir"] = self.outputDirectory
-        MainConfig.saveConfig(MainConfig.fileName)
+        # MainConfig.saveConfig(MainConfig.fileName)
+        # ConfigFile.saveConfig(ConfigFile.filename)
         return self.outputDirectory
 
     def outInDirButtonPressed(self):
@@ -400,21 +407,25 @@ class Window(QtWidgets.QWidget):
         self.outDirButton.setText(self.outputDirectory)
         MainConfig.settings["outDir"] = self.outputDirectory
         ConfigFile.settings["outDir"] = self.outputDirectory
-        MainConfig.saveConfig(MainConfig.fileName)
+        # MainConfig.saveConfig(MainConfig.fileName)
+        # ConfigFile.saveConfig(ConfigFile.filename)
         return self.outputDirectory
 
     def ancAddButtonPressed(self):
         print("Ancillary File Add Dialogue")
-        if self.ancFileDirectory == "":
-            self.ancFileDirectory = (
+        if self.ancFileDir == "":
+            self.ancFileDir = (
                 self.inputDirectory
             )  # Reverts to Input directory first
-            if self.ancFileDirectory == "":
-                self.ancFileDirectory = os.path.join(
+            if self.ancFileDir == "":
+                self.ancFileDir = os.path.join(
                     CODE_HOME, "Data", "Sample_Data"
                 )  # Falls back to ./Data/Sample_Data
+        MainConfig.settings["ancFileDir"] = self.ancFileDir
+        ConfigFile.settings["ancFileDir"] = self.ancFileDir
+
         fnames = QtWidgets.QFileDialog.getOpenFileNames(
-            self, "Select Ancillary Data File", self.ancFileDirectory
+            self, "Select Ancillary Data File", self.ancFileDir
         )
         if any(fnames):
             print(fnames)
@@ -422,14 +433,19 @@ class Window(QtWidgets.QWidget):
                 self.ancFileLineEdit.setText(fnames[0][0])
             MainConfig.settings["ancFile"] = fnames[0][0]  # unclear why this sometimes does not "take" the first time
             ConfigFile.settings["ancFile"] = fnames[0][0]
-        MainConfig.saveConfig(MainConfig.fileName)
+        # MainConfig.saveConfig(MainConfig.fileName)
+        # ConfigFile.saveConfig(ConfigFile.filename)
 
     def ancRemoveButtonPressed(self):
         print("Wind File Remove Dialogue")
         self.ancFileLineEdit.setText("")
         MainConfig.settings["ancFile"] = ""
-        self.ancFileDirectory = ""
-        MainConfig.saveConfig(MainConfig.fileName)
+        ConfigFile.settings["ancFile"] = ""
+        self.ancFileDir = ""
+        MainConfig.settings["ancFileDir"] = ""
+        ConfigFile.settings["ancFileDir"] = ""
+        # MainConfig.saveConfig(MainConfig.fileName)
+        # ConfigFile.saveConfig(ConfigFile.filename)
 
     def processSingle(self, lvl):
         print("Process Single-Level")
