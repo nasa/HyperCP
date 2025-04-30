@@ -2,8 +2,10 @@
 import os
 import collections
 import json
+import time
 
 from Source import PATH_TO_CONFIG
+from Source.ConfigFile import ConfigFile
 
 class MainConfig:
     '''Class to hold Main window configurations'''
@@ -20,6 +22,7 @@ class MainConfig:
         with open(fp, 'w', encoding="utf-8") as f:
             json.dump(MainConfig.settings,f,indent=4)
             # f.write(jsn)
+        ConfigFile.saveConfig(ConfigFile.filename)
 
     # Loads the cfg file
     @staticmethod
@@ -52,6 +55,5 @@ class MainConfig:
         MainConfig.settings["inDir"] = './Data'
         MainConfig.settings["outDir"] = './Data'
         MainConfig.settings["ancFileDir"] = './Data/Sample_Data'
-        # MainConfig.settings["metFile"] = ""
         MainConfig.settings["ancFile"] = ""
         MainConfig.settings["popQuery"] = 0

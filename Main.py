@@ -177,7 +177,7 @@ class Window(QtWidgets.QWidget):
         self.popQueryCheckBox = QtWidgets.QCheckBox("", self)
         if int(MainConfig.settings["popQuery"]) == 1:
             self.popQueryCheckBox.setChecked(True)
-        self.popQueryCheckBoxUpdate()
+        # self.popQueryCheckBoxUpdate() ##### BUG: <----- For some reason this breaks ConfigFile.saveConfig
         self.popQueryCheckBox.clicked.connect(self.popQueryCheckBoxUpdate)
 
         ########################################################################################
@@ -267,6 +267,19 @@ class Window(QtWidgets.QWidget):
         self.configComboBox.setCurrentIndex(index)
         print("MainConfig: Configuration file changed to: ", value)
         # MainConfig.saveConfig(MainConfig.fileName)
+        configFileName = self.configComboBox.currentText()
+        configPath = os.path.join(CODE_HOME, "Config", configFileName)
+        if os.path.isfile(configPath):
+            ConfigFile.loadConfig(configFileName)
+            if 'inDir' in ConfigFile.settings:
+                MainConfig.settings["inDir"] = ConfigFile.settings['inDir']
+                MainConfig.settings["outDir"] = ConfigFile.settings['outDir']
+                MainConfig.settings["ancFileDir"] = ConfigFile.settings['ancFileDir']
+                MainConfig.settings["ancFile"] = ConfigFile.settings['ancFile']
+                self.inDirButton.setText(MainConfig.settings["inDir"])
+                self.outDirButton.setText(MainConfig.settings["outDir"])                
+                self.ancFileLineEdit.setText(
+                    os.path.join(ConfigFile.settings['ancFileDir'],MainConfig.settings["ancFile"]))
 
     def configNewButtonPressed(self):
         print("New Config Dialogue")
@@ -355,6 +368,7 @@ class Window(QtWidgets.QWidget):
         print("Data input directory changed: ", self.inputDirectory)
         self.inDirButton.setText(self.inputDirectory)
         MainConfig.settings["inDir"] = self.inputDirectory
+        ConfigFile.settings["inDir"] = self.inputDirectory
         MainConfig.saveConfig(MainConfig.fileName)
         return self.inputDirectory
 
@@ -374,6 +388,7 @@ class Window(QtWidgets.QWidget):
         print("      automatically, unless they already exist.")
         self.outDirButton.setText(self.outputDirectory)
         MainConfig.settings["outDir"] = self.outputDirectory
+        ConfigFile.settings["outDir"] = self.outputDirectory
         MainConfig.saveConfig(MainConfig.fileName)
         return self.outputDirectory
 
@@ -384,6 +399,7 @@ class Window(QtWidgets.QWidget):
         print("      automatically, unless they already exist.")
         self.outDirButton.setText(self.outputDirectory)
         MainConfig.settings["outDir"] = self.outputDirectory
+        ConfigFile.settings["outDir"] = self.outputDirectory
         MainConfig.saveConfig(MainConfig.fileName)
         return self.outputDirectory
 
@@ -405,6 +421,7 @@ class Window(QtWidgets.QWidget):
             if len(fnames[0]) == 1:
                 self.ancFileLineEdit.setText(fnames[0][0])
             MainConfig.settings["ancFile"] = fnames[0][0]  # unclear why this sometimes does not "take" the first time
+            ConfigFile.settings["ancFile"] = fnames[0][0]
         MainConfig.saveConfig(MainConfig.fileName)
 
     def ancRemoveButtonPressed(self):
