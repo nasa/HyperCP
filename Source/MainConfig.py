@@ -38,8 +38,8 @@ class MainConfig:
 
                 for key, value in fullCollection.items():
                     MainConfig.settings[key] = value
-        else:
-            MainConfig.createDefaultConfig(fileName, version)
+        # else:
+        #     MainConfig.createDefaultConfig(fileName, version)
 
     # Generates the default configuration
     @staticmethod

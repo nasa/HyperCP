@@ -341,7 +341,7 @@ class Window(QtWidgets.QWidget):
         else:
             message = "Not a Config File: " + configFileName
             QtWidgets.QMessageBox.critical(self, "Error", message)
-        MainConfig.saveConfig(MainConfig.fileName)
+        # MainConfig.saveConfig(MainConfig.fileName)
 
     def inDirButtonPressed(self):
         temp = self.inputDirectory

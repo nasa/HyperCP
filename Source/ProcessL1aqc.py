@@ -2,8 +2,8 @@
 import math
 import datetime
 import copy
-import numpy as np
 import bisect
+import numpy as np
 from pysolar.solar import get_azimuth, get_altitude
 
 from Source.HDFDataset import HDFDataset
@@ -27,7 +27,7 @@ class ProcessL1aqc:
 
                 # SATMSG has an ambiguous timer POSFRAME.COUNT, cannot filter
                 # Test: Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data
-                if gp.id != "SOLARTRACKER_STATUS" and gp.id != "ANCILLARY_METADATA" and gp.id != "CAL_COEF":
+                if gp.id not in ("SOLARTRACKER_STATUS", "ANCILLARY_METADATA", "CAL_COEF"):
                     fractionRemoved = ProcessL1aqc.filterData(gp, badTimes)
 
                     # Now test whether the overlap has eliminated all radiometric data
@@ -80,6 +80,9 @@ class ProcessL1aqc:
         Utilities.writeLogFile(msg)
 
         badTimes = Utilities.uniquePairs(badTimes)
+        # Couple of problems with this: 1) timestamps are not yet uniformly consecutive, 2) timestamps differ 
+        #   between instruments, so badTimes may have entries not found in timeStamp.
+        # badTimes = Utilities.catConsecutiveBadTimes(badTimes, timeStamp)#.tolist())
 
         rowsToDelete = []
         for badTime in badTimes:
@@ -93,42 +96,8 @@ class ProcessL1aqc:
                 [rowsToDelete.append(x) for x in newList]
 
         finalCount = len(rowsToDelete)
+        group.datasetDeleteRow(rowsToDelete)
 
-    # return rowsToDelete, finalCount
-
-        # Couple of problems with this: 1) timestamps are not yet uniformly consecutive, 2) timestamps differ 
-        #   between instruments, so badTimes may have entries not found in timeStamp.
-        # badTimes = Utilities.catConsecutiveBadTimes(badTimes, timeStamp)#.tolist())
-
-        # # Delete the records in badTime ranges from each dataset in the group
-        # finalCount = 0
-        # originalLength = len(timeStamp)
-        # for badTime in badTimes:
-        #     # Need to reinitialize for each loop
-        #     startLength = len(timeStamp)
-        #     newTimeStamp = []
-
-        #     start = badTime[0]
-        #     stop = badTime[1]
-
-        #     # msg = f'Eliminate data between: {badTime}'
-        #     # print(msg)
-        #     # Utilities.writeLogFile(msg)
-
-        #     if startLength > 0:
-        #         rowsToDelete = []
-        #         for i in range(startLength):
-        #             if start <= timeStamp[i] and stop >= timeStamp[i]:
-        #                 rowsToDelete.append(i)
-        #                 finalCount += 1
-        #             else:
-        #                 newTimeStamp.append(timeStamp[i])
-        #         group.datasetDeleteRow(rowsToDelete)
-        #     else:
-        #         msg = 'Data group is empty. Continuing.'
-        #         print(msg)
-        #         Utilities.writeLogFile(msg)
-        #     timeStamp = newTimeStamp.copy()
         msg = f'   Length of records removed from dataset: {finalCount}'
         print(msg)
         Utilities.writeLogFile(msg)
@@ -713,8 +682,8 @@ class ProcessL1aqc:
         if node is not None and ConfigFile.settings["bL1aqcRotatorDelay"] and ConfigFile.settings["bL1aqcSunTracker"]:
             gp = None
             for group in node.groups:
-                # NOTE: SOLARTRACKER and pySAS using POINTING dataset to get rotator movements
-                #   NOTE: DALEC also uses POINTING. SoRad has no POINTING and is slower acquisition; maybe exclude rotator delay for SoRad.
+                # NOTE: SOLARTRACKER, pySAS, and DALEC using POINTING dataset to get rotator movements
+                #   NOTE: SoRad has no POINTING and is slower acquisition; maybe exclude rotator delay for SoRad.
                 if group.id.startswith("SunTracker"):
                     gp = group
                     break
@@ -793,8 +762,8 @@ class ProcessL1aqc:
 
             gp = None
             for group in node.groups:
-                # NOTE: SOLARTRACKER and pySAS using POINTING dataset to get rotator movements
-                #   NOTE: DALEC also uses POINTING. SoRad has no POINTING but should still have option to filter here, or?
+                # NOTE: SOLARTRACKER, pySAS, DALEC using POINTING dataset to get rotator movements
+                #   NOTE: SoRad has no POINTING but should still have option to filter here, or?
                 if group.id.startswith("SunTracker"):
                     gp = group
                     break

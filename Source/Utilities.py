@@ -5,6 +5,7 @@ import collections
 from collections import Counter
 import csv
 import re
+import hashlib
 from tqdm import tqdm
 import requests
 from PyQt5.QtWidgets import QMessageBox
@@ -17,7 +18,6 @@ from scipy.interpolate import splev, splrep
 import scipy as sp
 import pandas as pd
 from pandas.plotting import register_matplotlib_converters
-import hashlib
 
 from Source import PACKAGE_DIR as dirPath
 from Source.SB_support import readSB
@@ -134,7 +134,7 @@ class Utilities:
                     f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
                     f" {dirPath}/Data directory."
                 )
-    
+
     @staticmethod
     def md5(fname):
         hash_md5 = hashlib.md5()
@@ -504,7 +504,9 @@ class Utilities:
 
         for gp in node.groups:
             # print(gp.id)
-            if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf" and gp.id != "CAL_COEF": # No valid timestamps in STATUS
+            # Don't add to the following:
+            noAddList = ("SOLARTRACKER_STATUS","SATMSG.tdf","CAL_COEF")
+            if gp.id not in noAddList and "UNCERT" not in gp.id and ".cal.CE" not in gp.id:
                 timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
                 dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
                 timeStamp = []
@@ -2789,9 +2791,6 @@ class Utilities:
 
         return True
 
-
-
-
     @staticmethod
     def getline(sstream, delimiter: str = '\n') -> str:
         """replicates C++ getline functionality - reads a string until delimiter character is found
@@ -3010,7 +3009,7 @@ class Utilities:
     @staticmethod
     def catConsecutiveBadTimes(badTimes, dateTime):
         '''Test for the existence of consecutive, singleton records that could be 
-            concatonated into a time span'''
+            concatonated into a time span. This can only work after L1B cross-sensor time interpolation.'''
         newBadTimes = []
         for iBT, badTime in enumerate(badTimes):
             if iBT == 0:

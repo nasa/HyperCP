@@ -320,7 +320,7 @@ class ProcessL1b_Interp:
 
             # Because x is now a list of datetime tuples, they'll need to be
             # converted to Unix timestamp values
-            # # BUG: This conversion gets the wrong result:
+            # # BUG: This conversion got the wrong result pre v1.2.13:
             # xTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in x]
             # newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
             xTS = [time.mktime(xDT.timetuple()) for xDT in x]
@@ -353,7 +353,6 @@ class ProcessL1b_Interp:
         if ConfigFile.settings["bL1bPlotTimeInterp"] == 1 and dataName != 'T':
             print('Plotting time interpolations ' +dataName)
             # Plots the interpolated data in /Plots/
-            ''' TO DO: This is still broken on Mac. See the hack to fix it here: https://github.com/pandas-dev/pandas/issues/22859'''
             Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, dataName, fileName)
 
     @staticmethod

@@ -588,7 +588,7 @@ class ProcessL2:
                             newRhoHyper.columns[k].append(rhoScalar)
                             if xUNC is not None:  # perhaps there is a better check for TriOS Factory branch?
                                 try:
-                                    # todo: explore why rho UNC is 1 index smaller than everything else
+                                    # TODO: explore why rho UNC is 1 index smaller than everything else
                                     # last wvl is missing
                                     newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
                                 except KeyError:
@@ -699,8 +699,8 @@ class ProcessL2:
                         try:
                             rowsToDelete.append(i)
                             finalCount += 1
-                        except Exception:
-                            print('error')
+                        except Exception as err:
+                            print(err)
                     else:
                         newTimeStamp.append(timeStamp[i])
                 group.datasetDeleteRow(rowsToDelete)
@@ -717,8 +717,8 @@ class ProcessL2:
             # if ds != "STATION":
             try:
                 group.datasets[ds].datasetToColumns()
-            except Exception:
-                print('error')
+            except Exception as err:
+                print(err)
 
         msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
         print(msg)
@@ -885,7 +885,7 @@ class ProcessL2:
 
                 ds.datasetToColumns()
                 dsSlice = ProcessL2.columnToSlice(ds.columns,start, end)
-                dsXSlice, date, sliceTime = None, None, None
+                dsXSlice, date, sliceTime, subDScol = None, None, None, None
 
                 for subDScol in dsSlice: # each dataset contains columns (including date, time, data, and possibly flags)
                     if subDScol == 'Datetime':

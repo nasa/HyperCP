@@ -480,7 +480,7 @@ class ProcessL1bqc:
 
             if badTimes is not None:
                 badTimes = Utilities.uniquePairs(badTimes)
-                badTimes = Utilities.catConsecutiveBadTimes(badTimes, dateTime)              
+                badTimes = Utilities.catConsecutiveBadTimes(badTimes, dateTime)
                 print('Removing records... Can be slow for large files')
                 check = Utilities.filterData(referenceGroup, badTimes)
                 # check is now fraction removed
