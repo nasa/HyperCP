@@ -194,7 +194,14 @@ class ProcessL1aSeaBird:
                         Utilities.writeLogFile(msg)
                         return None
 
-        root  = Utilities.rootAddDateTime(root)
+        try:
+            root  = Utilities.rootAddDateTime(root)
+        except AttributeError as err:
+            msg = f"ProcessL1a.processL1a: Cannot add datetime to a group dataset: {err}. Aborting."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+
         # Adjust to UTC if necessary
         if ConfigFile.settings["fL1aUTCOffset"] != 0:
             # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG

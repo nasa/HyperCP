@@ -217,7 +217,8 @@ class ProcessL1bTriOS:
         nmes = len(raw_data)
         if nband != len(raw_data[0]):
             print("ERROR: different number of pixel between dat and back")
-            exit()
+            # exit()
+            return False
 
         # sensitivity factor : if raw_cal==0 (or NaN), no calibration is performed and data is affected to 0
         ind_zero = (raw_cal==0)

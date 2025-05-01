@@ -1,3 +1,4 @@
+''' Establish and process configuration settings. '''
 import collections
 import json
 import os
@@ -7,6 +8,7 @@ from Source import PATH_TO_CONFIG, PACKAGE_DIR
 
 
 class ConfigFile:
+    ''' An object to establish and process the configuration settings and file. '''
     filename = ''
     settings = collections.OrderedDict()
     products = collections.OrderedDict()
@@ -32,6 +34,10 @@ class ConfigFile:
         if not fileName.endswith(".cfg"):
             fileName = fileName + ".cfg"
         ConfigFile.filename = fileName
+        ConfigFile.settings["inDir"] = './Data'
+        ConfigFile.settings["outDir"] = './Data'
+        ConfigFile.settings["ancFileDir"] = './Data/Sample_Data'
+        ConfigFile.settings["ancFile"] = ""
         ConfigFile.settings["CalibrationFiles"] = {}
         # ConfigFile.settings["AncFile"] = ''
         ConfigFile.settings["SensorType"] = "SeaBird" # SeaBird TriOS SoRad DALEC EsOnly (not case sensitive)
@@ -204,7 +210,16 @@ class ConfigFile:
     # Saves the cfg file
     @staticmethod
     def saveConfig(filename):
-        print("ConfigFile - Save Config")
+        # if filename =='':
+        #     # This is insane. Why is it not getting filename, even with this catch??
+        #     import time
+        #     print(f'{ConfigFile.filename}')
+        #     print('sleep')
+        #     time.sleep(8)
+        #     print(f'{ConfigFile.filename}')
+        #     filename = ConfigFile.filename
+
+        print(f"ConfigFile - Save Config: {filename}")
         ConfigFile.filename = filename
         params = dict(ConfigFile.settings, **ConfigFile.products)
         params['FullCalDir'] = os.path.relpath(params['FullCalDir'])
@@ -308,4 +323,4 @@ class ConfigFile:
         print("ConfigFile - getCalibrationConfig")
         calibrationFiles = ConfigFile.settings["CalibrationFiles"]
         return calibrationFiles[calFileName]
-
+    

@@ -68,7 +68,7 @@ class ProcessL1b:
                 ds.columns["unc"] = [2.3]
                 ds.columnsToDataset()
 
-        if ConfigFile.settings['SensorType'].lower() == "trios":
+        if ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "dalec":
             for sensor in ['LI','LT','ES']:
                 dsname = sensor+'_RADCAL_UNC'
                 gp.addDataset(dsname)
@@ -105,12 +105,10 @@ class ProcessL1b:
         for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
 
-
         for f in glob.glob(os.path.join(inpath, r'*class_LINEAR*')):
             Utilities.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
             Utilities.read_char(f, gp)
-
 
         # Read sensor-specific radiometric calibration
         import re
@@ -484,7 +482,8 @@ class ProcessL1b:
             msg = f'found NaN {frameinfo.lineno}'
             print(msg)
             Utilities.writeLogFile(msg)
-            exit()
+            # exit()
+            return False
 
         # Correct light data by subtracting interpolated dark data from light data
         for k in lightData.data.dtype.fields.keys():
@@ -496,7 +495,8 @@ class ProcessL1b:
             msg = f'found NaN {frameinfo.lineno}'
             print(msg)
             Utilities.writeLogFile(msg)
-            exit()
+            # exit()
+            return False
 
         return True
 
