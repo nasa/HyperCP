@@ -14,7 +14,7 @@ uncertainty estimation/propagation, sky/sunglint correction, convolution to sate
 retrieval. Data outputs are formatted to text files for submission to the [SeaBASS](https://seabass.gsfc.nasa.gov/) and [OCDB](https://ocdb.eumetsat.int/) databases and saved as comprehensive HDF5 records with automated processing reports. The package is designed to facilitate rigorous, flexible, and transparent data processing for the ocean color remote sensing community. Radiometry processed in HyperCP is used for water optical characterization, ocean color product retrieval algorithm development, and orbital platform validation.
 
 Currently, HyperCP supports <a href='https://www.seabird.com/'>Sea-Bird Scientific</a> HyperSAS packages with and
-without SolarTracker or pySAS robotic platforms as well as [TriOS](https://www.trios.de/en/radiometers.html) used in manual configuration. If you are interested in integrating support for your platform, contact us at the email addresses below or in the Discussions tab of the GitHub repository.
+without SolarTracker or pySAS robotic platforms as well as [TriOS](https://www.trios.de/en/radiometers.html) used in manual configuration and IMO [DALEC](https://insitumarineoptics.com/dalec/). Support of Monocle/PML [So-Rad](https://monocle-h2020.eu/Sensors_and_platforms/Solar_tracking_radiometry_platform_en.html) is pending. If you are interested in integrating support for your platform, contact us at the email addresses below or in the Discussions tab of the GitHub repository.
 
 ## Version 1.2.13
 
@@ -34,9 +34,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 **Main author**: Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>
 
-**Co-authors**: Nathan Vandenberg @ UVictoria (in the frame of [PySciDON](https://ieeexplore.ieee.org/abstract/document/8121926)), Ashley Ramsay @ NPL, Juan Ignacio Gossn @ EUMETSAT, Nils Haentjens @ UMaine, Agnieszka Bialek @ NPL, Alexis Deru @ ACRI-ST, Heng Gu @ NOAA, Mohamed Abdelmegid @ NOAA, Raphael Mabit @ UQuebec, Maycira Costa @ UVictoria, Marine Bretagnon @ ACRI-ST, Gabriele Bai @ ACRI-ST
+**Co-authors**: Nathan Vandenberg @ UVictoria (in the frame of [PySciDON](https://ieeexplore.ieee.org/abstract/document/8121926)), Juan Ignacio Gossn @ EUMETSAT, Ashley Ramsay @ NPL, Nils Haentjens @ UMaine, Agnieszka Bialek @ NPL, Alexis Deru @ ACRI-ST, Heng Gu @ NOAA, Mohamed Abdelmegid @ NOAA, Raphael Mabit @ UQuebec, Maycira Costa @ UVictoria, Marine Bretagnon @ ACRI-ST, Gabriele Bai @ ACRI-ST
 
-**Contact**: Discussions tab in GitHub, or Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>, and Juan Ignacio Gossn @ EUMETSAT <JuanIgnacio.Gossn@eumetsat.int>
+**Contact**: Discussions or Issues tab in GitHub, or Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>, and Juan Ignacio Gossn @ EUMETSAT <JuanIgnacio.Gossn@eumetsat.int>
 
 ## Contents:
 ### [Requirements and Installation](#requirements-and-installation)
@@ -96,7 +96,7 @@ If environment problems are encountered after updating HyperCP (e.g, dependencie
 ```
 conda env update --file environment.yml --prune
 ```
-**NOTE:** If you started with working with v1.2.8 or less and are now in v1.2.9 or higher, you may need to remove the old hypercp environment and reinstall the environment as described above.
+**NOTE:** If you started working with v1.2.8 or lower and are now updating to v1.2.9 or higher, you may need to remove the old hypercp environment and reinstall the environment as described above.
 ```
 prompt$ conda deactivate
 prompt$ conda remove -n hypercp --all
@@ -141,9 +141,8 @@ into them as described below. No system files will be changed.
 
 - **Zhang skyglint correction database**: This (~ 2.3 GB) database will be optionally used for the glint correction
 based on the method of [Zhang et al., 2017, OE, 25(4)](https://opg.optica.org/oe/fulltext.cfm?uri=oe-25-4-A1&id=357012)).
-It will stored at ```/Data/Zhang_rho_db.mat```.
-If this download should fail for any reason, further instructions will be given
-at the command line terminal where Main.py was launched.
+It will stored at ```/Data/Zhang_rho_db.mat``` (or similar). If this download should fail for any reason, further instructions will be given
+at the command line terminal where Main.py was launched. We are currently working to improve efficiency with LUTs for Z17, so there will also be smaller (~129 MB) LUTs downloaded to ./Data.
 
 ## Usage
 
@@ -209,6 +208,8 @@ calibration directories.
 
  After creating a new configuration file, select it from the drop-down menu, and select 'Edit' to launch the
  **Configuration module** GUI.
+
+ Changes to Input/Output directories and ancillary file in the Main window should link to each configuration.
 
 #### 2. Input/Output Directories
 
@@ -278,7 +279,7 @@ discussion [here](README_configuration.md) regarding processing.
 
 - Level 1A Processing: Process data from raw binary (Satlantic HyperSAS '.RAW' collections) to L1A (Hierarchical Data Format 5 '.hdf').
 Calibration files and the RawFileReader.py script allow for interpretation of raw data fields, which are read into HDF
-objects.
+objects. HyperCP is optimized for hour-long raw files when using automated data collections (e.g., pySAS, DALEC, So-Rad).
 - Level 1AQC Processing: Data are filtered for vessel attitude (pitch, roll, and yaw when available), viewing
 and solar geometry.
 - Level 1B Processing: Dark current corrections are applied followed by instrument calibrations and then matching of timestamps and wavebands
@@ -290,9 +291,9 @@ reflectance within each ensemble.
 
 ### Executing HyperCP from the command line
 
-There are a couple of way HyperCP can be run without the GUI. The first is to make a scripted call to the Command class in the Main.py file. This is demonstrated with the [run_Sample_Data.py](run_Sample_Data.py) script provided in the top level of the repository. By copying this file and customizing it for your data (e.g., changing file paths to make your directories), and editing the processing configuration (either in the GUI or manually editting the relevant ./Config/your_Configuration.cfg file) you can use a direct python call to the script to run HyperCP. As demonstrated in the sample script, it can be run for multiple levels and can use multiple core threads to speed up processing.
+There are a couple of way HyperCP can be run without the GUI. The first (recommended) way is to make a scripted call to the Command class in the Main.py file. This is demonstrated with the [run_Sample_Data.py](run_Sample_Data.py) script provided in the top level of the repository. By copying this file and customizing it for your data (e.g., changing file paths to make your directories), and editing the processing configuration (either in the GUI or manually editting the relevant ./Config/your_Configuration.cfg file) you can use a direct python call to the script to run HyperCP. As demonstrated in the sample script, it can be run for multiple levels and can use multiple core threads to speed up processing.
 
-There is also a command line option for batching a single level which can be triggered by adding the ```-cmd``` argument:
+[NOTE: command line option is currently obsolete pending updates] There is also a command line option for batching a single level which can be triggered by adding the ```-cmd``` argument:
 
 ```
 (hypercp) prompt$ python Main.py -c config -i inputFile -o outputDirectory -l processingLevel
