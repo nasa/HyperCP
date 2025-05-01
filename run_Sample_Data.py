@@ -21,7 +21,7 @@ from Main import Command
 #       have been provided in the HyperCP repository. The configuration file (./Config/[sample].cfg) can
 #       also be edited by hand.
 # NOTE: Multithreading is available to run multiple files simulataneously.
-#       BUG: Multithreading not yet available for manually acquired TriOS (.mlb) raw files (e.g., multi-level)
+#       Multithreading for manually acquired TriOS (.mlb) raw files (e.g., multi-level) is now supported
 # NOTE: This script cannot be run on the same repository simultaneously with alternate configurations.
 # NOTE: By default this processes all files in the PROC_LEVEL -1 level directory to PROC_LEVEL directory.
 #
@@ -29,16 +29,16 @@ from Main import Command
 
 ################################################### CUSTOM SET UP ###################################################
 # Batch options
-MULTI_TASK = False  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
+MULTI_TASK = True  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
 MULTI_LEVEL = False  # Process raw (L0) to Level-2 (L2)
 CLOBBER = True      # True overwrites existing files
 PROC_LEVEL = "L1A"   # Process to this level: L1A, L1AQC, L1B, LBQC, L2 (ignored for MULTI_LEVEL)
 
 # Dataset options
-PLATFORM = "pySAS"
-# PLATFORM = "Manual_TriOS"
-INST_TYPE = "SEABIRD"  # SEABIRD or TRIOS; defines raw file naming
-# INST_TYPE = "TRIOS"
+# PLATFORM = "pySAS"
+PLATFORM = "Manual_TriOS"
+# INST_TYPE = "SEABIRD"  # SEABIRD or TRIOS; defines raw file naming
+INST_TYPE = "TRIOS"
 CRUISE = "FICE22"
 # L1B_REGIME: Optional. [Default, Class, Full]
 #   Denote FRM processing regime and use appropriately named subdirectories.
@@ -56,7 +56,7 @@ PATH_HCP = os.path.dirname(os.path.abspath(__file__))  # Path to HyperCP reposit
 PATH_DATA = os.path.join(PATH_HCP,'Data','Sample_Data',PLATFORM)
 ##################################
 
-if PLATFORM.lower == "Manual_TriOS":
+if PLATFORM.lower() == "manual_trios":
     PATH_ANC = os.path.join(
         PATH_DATA, f"{CRUISE}_TriOS_Ancillary.sb",
     )
@@ -67,7 +67,7 @@ else:
 
 if MULTI_LEVEL or PROC_LEVEL == "L1A":
     PATH_INPUT = PATH_DATA
-else:    
+else:
     PATH_INPUT = os.path.join(PATH_DATA, L1B_REGIME)
 
 # PATH_OUTPUT does not require folder names of data levels. HyperCP will automate that.
@@ -125,22 +125,21 @@ def run_Command(fp_input_files):
         # One or more files. (fp_input_files is a list of one or more files)
         from_level = FROM_LEVELS[0]
         to_level = "L1A"
-        inputFileBase = fp_input_files  # Full-path file
+        # inputFileBase = fp_input_files  # Full-path file list of all in L1A
         test = [
-            os.path.exists(inputFileBase[i])
+            os.path.exists(fp_input_files[i])
             for i, x in enumerate(fp_input_files)
             if os.path.exists(x)
         ]
         if not test:
             print("***********************************")
-            print(f"*** [{inputFileBase}] STOPPED PROCESSING ***")
+            print(f"*** [{fp_input_files}] STOPPED PROCESSING ***")
             print(f"Bad input path: {fp_input_files}")
             print("***********************************")
             return
-        inputFileBase = os.path.splitext(os.path.basename(fp_input_files[0]))[0]  # 'FRM4SOC2_FICE22_NASA_20220715_120000_L1BQC'
-        if (INST_TYPE.lower() == "seabird"
-            and inputFileBase in to_skip[to_level]
-            and not CLOBBER):
+        inputFileBase = os.path.splitext(os.path.basename(fp_input_files[0]))[0]  # single file no path
+        test = [v for v in to_skip[to_level] if v in inputFileBase]
+        if (test and not CLOBBER):
             print("************************************************")
             print(f"*** [{inputFileBase}] ALREADY PROCESSED TO {to_level} ***")
             print("************************************************")
@@ -162,15 +161,24 @@ def run_Command(fp_input_files):
     else:
         # One file at a time with or without multithread. (fp_input_files is a string of one file)
         for from_level, to_level, ext in zip(FROM_LEVELS, TO_LEVELS, FILE_EXT):
-            inputFileBase = os.path.splitext(os.path.basename(fp_input_files))[0]
-            test = os.path.exists(fp_input_files)
+            if from_level == 'RAW' and INST_TYPE.lower() == 'trios':
+                inputFileBase = os.path.splitext(os.path.basename(fp_input_files[0]))[0]  # single file no path
+                test = [
+                    os.path.exists(fp_input_files[i])
+                    for i, x in enumerate(fp_input_files)
+                    if os.path.exists(x)
+                    ]
+            else:
+                inputFileBase = os.path.splitext(os.path.basename(fp_input_files))[0]
+                test = os.path.exists(fp_input_files)
             if not test:
                 print("***********************************")
                 print(f"*** [{inputFileBase}] STOPPED PROCESSING ***")
                 print(f"Bad input path: {fp_input_files}")
                 print("***********************************")
                 break
-            if inputFileBase in to_skip[to_level] and not CLOBBER:
+            test = [v for v in to_skip[to_level] if v in inputFileBase]
+            if test and not CLOBBER:
                 print("************************************************")
                 print(f"*** [{inputFileBase}] ALREADY PROCESSED TO {to_level} ***")
                 print("************************************************")
@@ -193,7 +201,7 @@ def run_Command(fp_input_files):
 def worker(fp_input_files):
     # fp_input_files is a list unless multitasking, in which case it's a string, unless it's TriOS RAW
     if isinstance(fp_input_files, list):
-        if INST_TYPE.lower() == "trios" and MULTI_LEVEL:
+        if INST_TYPE.lower() == "trios" and (MULTI_LEVEL or 'RAW' in FROM_LEVELS):
             print(f"### Processing {fp_input_files} ...")
             run_Command(fp_input_files)
         else:
@@ -225,8 +233,21 @@ if __name__ == "__main__":
             #   memory is used (~3GB) for each process so you may not be able to
             #   use all cores of the system with problems.
             with multiprocessing.Pool(4) as pool:
-                # One file (string) at a time to worker
-                pool.map(worker, fpf_input)
+                if INST_TYPE.lower() == 'trios' and FROM_LEVELS[0] == 'RAW':
+                    # Here we need a list of three files for each raw collection, or maybe a list of list triplets
+                    fpf_input_triplets = []
+                    for item in fpf_input:
+                        inputFileBase = os.path.splitext(os.path.basename(item))[0]
+                        timeStamp = inputFileBase[len(inputFileBase)-15:-1] # Subject to string error for non-compliant filenames
+                        index = [i for i,x in enumerate(fpf_input) if timeStamp in x]
+                        fpf_input_triplet = [fpf_input[x] for x in index]
+                        fpf_input_triplets.append(fpf_input_triplet)
+
+                    unique_fpf_input_triplets = [list(x) for x in set(tuple(x) for x in fpf_input_triplets)]
+                    pool.map(worker, unique_fpf_input_triplets)
+                else:
+                    # One file (string) at a time to worker
+                    pool.map(worker, fpf_input)
         else:
             # List of one or more files
             worker(fpf_input)
