@@ -29,16 +29,16 @@ from Main import Command
 
 ################################################### CUSTOM SET UP ###################################################
 # Batch options
-MULTI_TASK = True  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
+MULTI_TASK = False  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
 MULTI_LEVEL = False  # Process raw (L0) to Level-2 (L2)
 CLOBBER = True      # True overwrites existing files
 PROC_LEVEL = "L1A"   # Process to this level: L1A, L1AQC, L1B, LBQC, L2 (ignored for MULTI_LEVEL)
 
 # Dataset options
-# PLATFORM = "pySAS"
-PLATFORM = "Manual_TriOS"
-# INST_TYPE = "SEABIRD"  # SEABIRD or TRIOS; defines raw file naming
-INST_TYPE = "TRIOS"
+PLATFORM = "pySAS"
+# PLATFORM = "Manual_TriOS"
+INST_TYPE = "SEABIRD"  # SEABIRD or TRIOS; defines raw file naming
+# INST_TYPE = "TRIOS"
 CRUISE = "FICE22"
 # L1B_REGIME: Optional. [Default, Class, Full]
 #   Denote FRM processing regime and use appropriately named subdirectories.

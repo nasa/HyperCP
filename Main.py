@@ -686,12 +686,14 @@ class Command:
         # Now make it a list as it is expected to be
         # inputFile = [inputFile]
 
+        ConfigFile.loadConfig(self.configFilename)
+        
         # No GUI used: error message are display in prompt and not in graphical window
         MainConfig.settings["popQuery"] = 1 # 1 suppresses popup
         MainConfig.saveConfig(MainConfig.fileName)
         print("MainConfig - Config updated with cmd line arguments")
 
-        ConfigFile.loadConfig(self.configFilename)
+        
 
         calFiles = ConfigFile.settings["CalibrationFiles"]
 

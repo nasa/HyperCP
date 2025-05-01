@@ -34,7 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 **Main author**: Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>
 
-**Co-authors**: Nathan Vandenberg @ UVictoria, Maycira Costa @ UVictoria (in the frame of [PySciDON](https://ieeexplore.ieee.org/abstract/document/8121926)), Alexis Deru @ ACRI-ST, Ashley Ramsay @ NPL, Agnieszka Bialek @ NPL, Marine Bretagnon @ ACRI-ST (in the frame of Copernicus' [FRM4SOC-2](https://frm4soc2.eumetsat.int/)), Gabriele Bai @ ACRI-ST, Juan Ignacio Gossn @ EUMETSAT, Nils Haentjens @ UMaine
+**Co-authors**: Nathan Vandenberg @ UVictoria (in the frame of [PySciDON](https://ieeexplore.ieee.org/abstract/document/8121926)), Ashley Ramsay @ NPL, Juan Ignacio Gossn @ EUMETSAT, Nils Haentjens @ UMaine, Agnieszka Bialek @ NPL, Alexis Deru @ ACRI-ST, Heng Gu @ NOAA, Mohamed Abdelmegid @ NOAA, Raphael Mabit @ UQuebec, Maycira Costa @ UVictoria, Marine Bretagnon @ ACRI-ST, Gabriele Bai @ ACRI-ST
 
 **Contact**: Discussions tab in GitHub, or Dirk Aurin, MSU @ NASA Goddard Space Flight Center <dirk.a.aurin@nasa.gov>, and Juan Ignacio Gossn @ EUMETSAT <JuanIgnacio.Gossn@eumetsat.int>
 
