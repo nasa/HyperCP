@@ -331,6 +331,31 @@ class UncertaintyGUI(ABC):
         # means = xr.DataArray(data=means, dims=("x", "y"), coords={"x": x})
         # u_rel = xr.DataArray(data=rel_unc, dims=("x", "y"), coords={"x": x})
 
+    def plot_FRM(
+            self, 
+            node, 
+            uncGrp, 
+            raw_grps, 
+            raw_slices, 
+            stats,  
+            rhoScalar, 
+            rhoVec, 
+            rhoUNC, 
+            waveSubset
+        ):
+
+        L1B, L2 = self._engine.breakdown_FRM_HyperOCR( 
+            node, 
+            uncGrp, 
+            raw_grps, 
+            raw_slices, 
+            stats, 
+            rhoScalar, 
+            rhoVec, 
+            rhoUNC, 
+            waveSubset
+        )
+
 
 class UncertaintyEngine(ABC):
     def __init__(self, punpy_prop_obj):
@@ -453,6 +478,49 @@ class UncertaintyEngine(ABC):
             else:
                 pct.append(0)  # put zero there instead of np.nan, it will be easy to avoid in plotting
         return np.array(pct) * 100  # convert to np array so we can use numpy broadcasting
+
+
+    def breakdown_FRM_HyperOCR(
+            self, 
+            node, 
+            uncGrp, 
+            raw_grps, 
+            raw_slices, 
+            stats,  
+            rhoScalar, 
+            rhoVec, 
+            rhoUNC, 
+            waveSubset
+        ):
+        """
+        
+        """
+        from Source.ProcessInstrumentUncertainties import HyperOCR
+        instrument = HyperOCR()
+        L1B = {}; L2 = {}
+
+        for comp in ['Noise', 'Cal', 'Nlin', 'Stray', 'Stability', 'Temp', 'Pol', 'Cos']:
+            # adjust uncertainties
+            uncGrp_adjusted = uncGrp # HDFGroup
+
+            L1B[comp] = instrument.FRM(node, uncGrp_adjusted, raw_grps, raw_slices, stats, np.array(waveSubset, float))
+            # for cumulative add in quadrature at the end
+            
+            L2[comp] = instrument.FRM_L2(rhoScalar, rhoVec, rhoUNC, waveSubset, L1B[comp])
+        
+        return L1B, L2
+
+    def breakdown_FRM_TriOS(self, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
+        """
+        """
+        from Source.ProcessInstrumentUncertainties import Trios
+        instrument = Trios()
+
+    def breakdown_FRM_DALEC(self, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
+        """
+        """
+        from Source.ProcessInstrumentUncertainties import Dalec
+        instrument = Dalec()
 
 # this is my Pie-Chart widget that I made for another project. It would introduce a pyqtchart dependency.
 # pyqtchart must have the same version as pyqt5

@@ -1914,6 +1914,22 @@ class ProcessL2:
                                 stats, np.array(waveSubset, float)))  # instrument_WB
                 xUNC.update(instrument.FRM_L2(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
+                # TODO: check if uncertainty breakdowns selected
+                from Source.Uncertainty_Visualiser import UncertaintyGUI
+                gui = UncertaintyGUI()
+                gui.plot_FRM(
+                    node, 
+                    uncGroup,
+                    dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
+                    dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice), 
+                    stats,
+                    rhoScalar, 
+                    rhoVec, 
+                    rhoUNC, 
+                    waveSubset
+                )
+
+
         msg = f'Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s'
         print(msg)
         Utilities.writeLogFile(msg)
