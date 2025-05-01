@@ -1,16 +1,16 @@
 ''' Process L1AQC to L1B '''
 import os
 import datetime as dt
-import calendar
-from inspect import currentframe, getframeinfo
-import glob
-from datetime import datetime
+# import calendar
+# from inspect import currentframe, getframeinfo
+# import glob
+# from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from Source import PATH_TO_CONFIG, PATH_TO_DATA
+from Source import PATH_TO_CONFIG
 from Source.ProcessL1b import ProcessL1b
-from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
+# from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
@@ -18,7 +18,7 @@ from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
-from Source.FidradDB_api import FidradDB_api
+# from Source.FidradDB_api import FidradDB_api
 
 class ProcessL1bDALEC:
     '''L1B for DALEC'''
@@ -152,7 +152,7 @@ class ProcessL1bDALEC:
         node  = Utilities.rootAddDateTime(node)
 
         # Introduce a new group for carrying L1AQC data forward. Groups keep consistent timestamps across all datasets,
-        #    so it has to be a new group to avoid conflict with interpolated timestamps. 
+        #    so it has to be a new group to avoid conflict with interpolated timestamps.
 
         esGroup = node.addGroup('ES_L1AQC')
         liGroup = node.addGroup('LI_L1AQC')
@@ -167,20 +167,20 @@ class ProcessL1bDALEC:
                 ltGroup.copy(gp)
 
         # Add class-based files (RAW_UNCERTAINTIES)
-        '''
-        classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
-                                      ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
-        if ConfigFile.settings['bL1bCal'] == 1:
-            print("Dalec Factory Regime")
-            #node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
-            #node = ProcessL1bDALEC.read_unc_coefficient_factory(node)
-    
-            if node is None:
-                msg = 'Error running factory uncertainties.'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                return None
-        '''
+        # '''
+        # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
+        #                               ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
+        # if ConfigFile.settings['bL1bCal'] == 1:
+        #     print("Dalec Factory Regime")
+        #     #node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
+        #     #node = ProcessL1bDALEC.read_unc_coefficient_factory(node)
+
+        #     if node is None:
+        #         msg = 'Error running factory uncertainties.'
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #         return None
+        # '''
         # Interpolate only the Ancillary group, and then fold in model data
         # This is run ahead of the other groups for all processing pathways. Anc group
         # exists regardless of Ancillary file being provided
@@ -280,17 +280,17 @@ class ProcessL1bDALEC:
             # Results may differs due to updated calibration files but the two
             # process are the same. The class-based characterisation will be used
             # in the uncertainty computation.
-            '''
-            calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-            calPath = os.path.join(PATH_TO_CONFIG, calFolder)
-            print("Read CalibrationFile ", calPath)
-            calibrationMap = CalibrationFileReader.read(calPath)
-            ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
-            '''
+            # '''
+            # calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
+            # calPath = os.path.join(PATH_TO_CONFIG, calFolder)
+            # print("Read CalibrationFile ", calPath)
+            # calibrationMap = CalibrationFileReader.read(calPath)
+            # ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
+            # '''
             ProcessL1bDALEC.processES(node)
             ProcessL1bDALEC.processLT(node)
             ProcessL1bDALEC.processLI(node)
-            
+
         elif ConfigFile.settings['bL1bCal'] == 3:
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join(PATH_TO_CONFIG, calFolder)

@@ -354,18 +354,18 @@ class ProcessL1aqc_deglitch:
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         # root  = Utilities.rootAddDateTime(root)
 
-        # Fix in case time doesn't increase from one sample to the next
-        # or there are fewer than 2 two stamps remaining.
-        for gp in root.groups:
-            if gp.id != "SOLARTRACKER_STATUS":
-                msg = f'Screening {gp.id} for clean timestamps.'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                if not Utilities.fixDateTime(gp):
-                    msg = f'***********Too few records in {gp.id} to continue after timestamp correction. Exiting.'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return None
+        # # Fix in case time doesn't increase from one sample to the next
+        # # or there are fewer than 2 two stamps remaining.
+        # for gp in root.groups:
+        #     if gp.id != "SOLARTRACKER_STATUS":
+        #         msg = f'Screening {gp.id} for clean timestamps.'
+        #         print(msg)
+        #         Utilities.writeLogFile(msg)
+        #         if not Utilities.fixDateTime(gp):
+        #             msg = f'***********Too few records in {gp.id} to continue after timestamp correction. Exiting.'
+        #             print(msg)
+        #             Utilities.writeLogFile(msg)
+        #             return None
 
         if int(ConfigFile.settings["bL1aqcDeglitch"]) == 1:
             flagES = ProcessL1aqc_deglitch.processDataDeglitching(root, "ES")

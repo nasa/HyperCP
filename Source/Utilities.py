@@ -5,6 +5,7 @@ import collections
 from collections import Counter
 import csv
 import re
+import hashlib
 from tqdm import tqdm
 import requests
 from PyQt5.QtWidgets import QMessageBox
@@ -17,7 +18,6 @@ from scipy.interpolate import splev, splrep
 import scipy as sp
 import pandas as pd
 from pandas.plotting import register_matplotlib_converters
-import hashlib
 
 from Source import PACKAGE_DIR as dirPath
 from Source.SB_support import readSB
@@ -134,7 +134,7 @@ class Utilities:
                     f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
                     f" {dirPath}/Data directory."
                 )
-    
+
     @staticmethod
     def md5(fname):
         hash_md5 = hashlib.md5()
@@ -457,8 +457,6 @@ class Utilities:
         m = int(t[2:4])
         s = int(t[4:6])
         us = 1000*int(t[6:])
-        # print(h, m, s, us)
-        # print(tt2)
         return datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=timezone.utc)
 
     # Converts datetime to Timetag2 (HHMMSSmmm)
@@ -506,7 +504,9 @@ class Utilities:
 
         for gp in node.groups:
             # print(gp.id)
-            if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf" and gp.id != "CAL_COEF": # No valid timestamps in STATUS
+            # Don't add to the following:
+            noAddList = ("SOLARTRACKER_STATUS","SATMSG.tdf","CAL_COEF")
+            if gp.id not in noAddList and "UNCERT" not in gp.id and ".cal.CE" not in gp.id:
                 timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
                 dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
                 timeStamp = []
@@ -711,20 +711,24 @@ class Utilities:
 
             i = 1
             while i < total:
-
                 if dateTime[i] <= dateTime[i-1]:
-
-                    # BUG?:Same values of consecutive TT2s are shockingly common. Confirmed
-                    #   that 1) they exist from L1A, and 2) sensor data changes while TT2 stays the same
-                    #
+                    if dateTime[i] == dateTime[i-1]:
+                        # BUG?:Same values of consecutive TT2s are shockingly common. Confirmed
+                        #   that 1) they exist from L1A, and 2) sensor data changes while TT2 stays the same
+                        #
+                        msg = f'Duplicate row deleted at {i}'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
+                    else:
+                        msg = f'WARNING: Out of order row deleted at {i}; this should not happen after sortDateTime'
+                        print(msg)
+                        Utilities.writeLogFile(msg)
 
                     gp.datasetDeleteRow(i)
                     # del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
                     dateTime = gp.getDataset("DATETIME").data
                     total = total - 1
-                    msg = f'Out of order TIMETAG2 row deleted at {i}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+
                     continue # goto while test skipping i incrementation. dateTime[i] is now the next value.
                 i += 1
         else:
@@ -1029,8 +1033,18 @@ class Utilities:
             newYList.append(fillValue)
 
         for value in yUnique:
+            # NOTE: If only one timestamp is found, it is highly unlikely to pass the test below.
             minX = min(x[y==value])
             maxX = max(x[y==value])
+
+            # # Test conversion reversal
+            # datetime_object = datetime.fromtimestamp(maxX)
+
+            if minX == maxX:
+                # NOTE: Workaround: buffer the start and stop times of the station by some amount of time
+                # Unix time: Number of seconds that have elapsed since January 1, 1970, at 00:00:00 Coordinated Universal Time (UTC)
+                minX -= 120
+                maxX += 120
 
             for i, newX in enumerate(newXList):
                 if (newX >= minX) and (newX <= maxX):
@@ -1200,6 +1214,10 @@ class Utilities:
 
         # In the case of reflectances, only use _unc. There are no _std, because reflectances are calculated
         # from the average Lw and Es values within the ensembles
+        Data, lwData, Data_MODISA, Data_MODIST = None, None, None, None
+        Data_Sentinel3A, Data_Sentinel3B, Data_VIIRSJ,Data_VIIRSN = None, None, None, None
+        dataDelta, dataDelta_MODISA, dataDelta_MODIST, dataDelta_Sentinel3A = None, None, None, None
+        dataDelta_Sentinel3B, dataDelta_VIIRSJ, dataDelta_VIIRSN, units = None, None, None, None
         if rType=='Rrs' or rType=='nLw':
             print('Plotting Rrs or nLw')
             group = root.getGroup("REFLECTANCE")
@@ -2510,6 +2528,7 @@ class Utilities:
         for sensor in sensorList:
 
             ## retrieve dataset from corresponding instrument
+            data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "dalec":
@@ -2596,6 +2615,7 @@ class Utilities:
         for sensor in sensorList:
 
             ## retrieve dataset from corresponding instrument
+            data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios":
@@ -2726,6 +2746,7 @@ class Utilities:
             # x_new2 = bands[valid]
 
             ## retrieve hyper-spectral wavelengths from corresponding instrument
+            data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios":
@@ -2769,9 +2790,6 @@ class Utilities:
                     ds.columnsToDataset()
 
         return True
-
-
-
 
     @staticmethod
     def getline(sstream, delimiter: str = '\n') -> str:
@@ -2911,7 +2929,7 @@ class Utilities:
         Azimuth_angle = None
 
         with open(filepath, 'r', encoding="utf-8") as f:  # open file
-            key = None
+            key, ds, name = None, None, None
             while True:  # start loop
                 line = Utilities.getline(f, '\n')  # reads the file until a '\n' character is reached
                 if not line:  # breaks out of loop if three empty lines in a row
@@ -2991,7 +3009,7 @@ class Utilities:
     @staticmethod
     def catConsecutiveBadTimes(badTimes, dateTime):
         '''Test for the existence of consecutive, singleton records that could be 
-            concatonated into a time span'''
+            concatonated into a time span. This can only work after L1B cross-sensor time interpolation.'''
         newBadTimes = []
         for iBT, badTime in enumerate(badTimes):
             if iBT == 0:
@@ -3061,22 +3079,32 @@ class Utilities:
         return bTs
 
     @staticmethod
-    def fixDateTime2(group):
+    def sortDateTime(group):
         ''' Sort all data in group chronologically based on datetime '''
 
         if group.id != "SOLARTRACKER_STATUS" and group.id != "CAL_COEF":
             timeStamp = group.getDataset("DATETIME").data
+            tz = pytz.timezone('UTC')
             np_dT = np.array(timeStamp, dtype=np.datetime64)
             sortIndex = np.argsort(np_dT)
             np_dT_sorted = np_dT[sortIndex]
-            datetime_list = [datetime.utcfromtimestamp(ts.astype('datetime64[s]').astype('int')) for ts in np_dT_sorted]
+            datetime_list = np_dT_sorted.astype('datetime64[us]').tolist()
+            datetime_list = [tz.localize(x) for x in datetime_list]
             for ds in group.datasets:
                 if len(group.datasets[ds].data) == len(np_dT):
-                    try:
-                        if ds == 'DATETIME':
-                            group.datasets[ds].data = datetime_list
-                        else:
-                            group.datasets[ds].data = group.datasets[ds].data[sortIndex]
-                    except:
-                        print('error')
+                    if ds == 'DATETIME':
+                        group.datasets[ds].data = datetime_list
+                    else:
+                        group.datasets[ds].data = group.datasets[ds].data[sortIndex]
+
+            msg = f'Screening {group.id} for clean timestamps.'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            if not Utilities.fixDateTime(group):
+                msg = f'***********Too few records in {group.id} to continue after timestamp correction. Exiting.'
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return None
+
+        return group
 

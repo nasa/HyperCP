@@ -10,7 +10,6 @@ from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 from Source.MainConfig import MainConfig
 from Source.Utilities import Utilities
-from Source.RawFileReader import RawFileReader
 from Source.ConfigFile import ConfigFile
 
 
@@ -23,26 +22,26 @@ class ProcessL1aDALEC:
         calMap=list(calibrationMap.values())
         calfile=calMap[0].name
         calid=calMap[0].id
-    
+
         #read cal data
         meta_instrument,coefficients,cal_data=ProcessL1aDALEC.read_cal(calfile)
-        #cal dataframes for all 3 channels 
+        #cal dataframes for all 3 channels
         cal_ch=[]
         cal_ch.append(cal_data.iloc[:,2:4])
         cal_ch.append(cal_data.iloc[:,5:7])
         cal_ch.append(cal_data.iloc[:,8:10])
         #print(cal_ch[0].columns.tolist())
-        
-        #wavelength all 3 channels 
+
+        #wavelength all 3 channels
         wl=[]
         wl.append(cal_data['Lambda_Ed'].tolist())
         wl.append(cal_data['Lambda_Lu'].tolist())
         wl.append(cal_data['Lambda_Lsky'].tolist())
         #print(wl[0])
-        
+
         #read raw data
         metadata,data=ProcessL1aDALEC.read_data(fp)
-        #define cal dataframes for all 3 channels 
+        #define cal dataframes for all 3 channels
         data_ch=[]
         #filter out each channel (Es-Ed,Li-Lsky,Lt-Lu)
         mask = data['Lat'].notna()
@@ -52,7 +51,7 @@ class ProcessL1aDALEC:
         data2=data1[mask]
         mask=data2['RelAz'].notna()
         data_good=data2[mask]
-        
+
         mask = data_good['ChannelType'].isin(['Ed'])
         data_ch.append(data_good[mask])
         mask = data_good['ChannelType'].isin(['Lu'])
@@ -61,7 +60,7 @@ class ProcessL1aDALEC:
         data_ch.append(data_good[mask])
         #print(data_ch[0].dtypes)
         #print(data_ch[1].columns.tolist())
-        
+
         # creates an HDF
         root = HDFRoot()
         root.id = "/"
@@ -86,7 +85,7 @@ class ProcessL1aDALEC:
         msg = f"ProcessL1a.processL1a: {timestr}"
         print(msg)
         Utilities.writeLogFile(msg)
-    
+
         #add global attributes from calfile
         for row in meta_instrument.itertuples():
             root.attributes[row[1].strip().replace(" ","_")]=str(row[2])
@@ -139,7 +138,7 @@ class ProcessL1aDALEC:
         gp.datasets["ROLL"].data = np.array(data_good['Roll'].tolist(), dtype=[('SAS', '<f8')])
         gp.addDataset("REL_AZ")
         gp.datasets["REL_AZ"].data = np.array(np.abs(data_good['RelAz']).tolist(), dtype=[('REL_AZ', '<f8')])
-    
+
         # Apply SZA filter; Currently only works with SunTracker data at L1A (again possible in L2 for all types)
         if ConfigFile.settings["bL1aCleanSZA"]:
             root.attributes['SZA_FILTER_L1A'] = ConfigFile.settings["fL1aCleanSZAMax"]
@@ -154,7 +153,7 @@ class ProcessL1aDALEC:
             msg = f'SZA passed filter: {round(szaMin)}'
             print(msg)
             Utilities.writeLogFile(msg)
-            
+
         gp.addDataset("SZA")
         gp.datasets["SZA"].data = np.array(data_good['SolarZenith'].tolist(), dtype=[('NONE', '<f8')])
         gp.addDataset("SOLAR_AZ")
@@ -188,7 +187,7 @@ class ProcessL1aDALEC:
             gp.attributes['SensorDataList']='Cal_'+channelType[i]+','+channelType[i]+',DATETAG,TIMETAG2,INTTIME,SPECTEMP'
 
             #add channel data
-            gp.addDataset(channelType[i]);
+            gp.addDataset(channelType[i])
             wl_str=[str(x) for x in wl[i]]
             ds_dt = np.dtype({'names': wl_str,'formats': [np.float64]*len(wl_str)})
             #print(data_ch[i].iloc[:,22:])
@@ -202,7 +201,7 @@ class ProcessL1aDALEC:
             TimeTag2 = [Utilities.datetime2TimeTag2(i) for i in dtime]
             DateTag = [Utilities.datetime2DateTag(i) for i in dtime]
             #print(TimeTag2)
-            
+
             gp.addDataset("DATETAG")
             gp.addDataset("TIMETAG2")            
             gp.datasets["DATETAG"].data = np.array(DateTag, dtype=[('NONE', '<f8')])
@@ -215,7 +214,26 @@ class ProcessL1aDALEC:
             gp.datasets["SPECTEMP"].data = np.array(data_ch[i]['DetectorTemp'].tolist(), dtype=[('NONE', '<f8')])
             gp.addDataset("QFLAG")
             gp.datasets["QFLAG"].data = np.array(data_ch[i]['Qflag'].tolist(), dtype=[(channelType[i], '<f8')])
-            
+
+            # Correct for UTC offset
+        try:
+            root  = Utilities.rootAddDateTime(root)
+        except AttributeError as err:
+            msg = f"ProcessL1a.processL1a: Cannot add datetime to a group dataset: {err}. Aborting."
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return None
+
+        # Adjust to UTC if necessary
+        if ConfigFile.settings["fL1aUTCOffset"] != 0:
+            # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
+            root = Utilities.SASUTCOffset(root)
+
+        # DATETIME is not supported in HDF5; remove
+        for gp in root.groups:
+            if ".cal.CE" not in gp.id:
+                del gp.datasets["DATETIME"]
+
         return root
         #return None, None
 
@@ -223,7 +241,7 @@ class ProcessL1aDALEC:
     @staticmethod
     def read_cal(inputfile):
         file_dat = open(inputfile,'r', encoding="utf-8")
-        flag_instrument = 0
+        # flag_instrument = 0
         flag_coefficients = 0
         flag_data = 0
         data_hdr=[]
@@ -231,8 +249,8 @@ class ProcessL1aDALEC:
         for line in file_dat:
             index = index + 1
             # checking end of attributes
-            if 'Variable list' in line:
-                flag_instrument = index
+            # if 'Variable list' in line:
+                # flag_instrument = index
             if 'Spectrometer' in line:
                 flag_coefficients = index
             if 'Pixel' in line:
@@ -255,6 +273,7 @@ class ProcessL1aDALEC:
 
         return meta_instrument,coefficients,data
 
+    @staticmethod
     def validate_line(line):
         """
         Validates a CSV line with the following rules:
@@ -267,30 +286,31 @@ class ProcessL1aDALEC:
         """
         if len(line) != 212:  # Ensure there are enough elements
             return False
-    
+
         # 1. First element must be "DALEC"
         if line[0] != "DALEC":
             return False
-    
+
         # 2. Second and third elements must be strings (implicitly true since they are parsed as strings)
         if not isinstance(line[1], str) or not isinstance(line[2], str):
             return False
-    
+
         # 3. Fourth element must be a valid date string in the format "YYYY-MM-DDTHH:MM:SS.sssZ"
         try:
             dt.datetime.strptime(line[3], "%Y-%m-%dT%H:%M:%S.%fZ")
         except ValueError:
             return False
-    
+
         # 4. The remaining elements must be numbers (float or int)
         try:
             for item in line[4:]:
                 float(item)  # Convert to float, raises an exception if not a number
         except ValueError:
             return False
-    
+
         return True  # If all checks pass
 
+    @staticmethod
     def read_data(inputfile):
         file_dat = open(inputfile,'r', encoding="utf-8")
         flag_config = 0
@@ -299,11 +319,11 @@ class ProcessL1aDALEC:
         data_hdr=['DeviceID','SerialNumber','ChannelType','UTCtimestamp','Lat','Lon','SatelliteCompassHeading',
         'SolarAzimuth','SolarZenith','GearPos','DALECazimuth','RelAz','Pitch','Roll','Voltage','Humidity','DetectorTemp',
         'Qflag','Inttime','Signal_percent','DarkCounts','MaxCounts']
-        data_type={'Lat':np.float64,'Lon':np.float64,'SatelliteCompassHeading':np.float64,'SolarAzimuth':np.float64,
-                   'SolarZenith':np.float64,'GearPos':np.float64,'DALECazimuth':np.float64,'RelAz':np.float64,
-                   'Pitch':np.float64,'Roll':np.float64,'Voltage':np.float64,'Humidity':np.float64,
-                   'DetectorTemp':np.float64,'Qflag':np.float64,'Inttime':np.float64,
-                   'Signal_percent':np.float64,'DarkCounts':np.float64,'MaxCounts':np.float64}
+        # data_type={'Lat':np.float64,'Lon':np.float64,'SatelliteCompassHeading':np.float64,'SolarAzimuth':np.float64,
+        #            'SolarZenith':np.float64,'GearPos':np.float64,'DALECazimuth':np.float64,'RelAz':np.float64,
+        #            'Pitch':np.float64,'Roll':np.float64,'Voltage':np.float64,'Humidity':np.float64,
+        #            'DetectorTemp':np.float64,'Qflag':np.float64,'Inttime':np.float64,
+        #            'Signal_percent':np.float64,'DarkCounts':np.float64,'MaxCounts':np.float64}
         for i in range(190):
             data_hdr.append('spec'+str(i))
 
@@ -317,7 +337,7 @@ class ProcessL1aDALEC:
             elif '-OUTPUT FORMAT' in line:
                 flag_data = index
                 break
-                    
+
         if flag_data == 0:
             print('PROBLEM WITH Data FILE: data not found')
             exit()
@@ -329,18 +349,18 @@ class ProcessL1aDALEC:
             exit()
 
         for line in file_dat:
-            if(not ProcessL1aDALEC.validate_line(line.split(","))):
-                    skiprows.append(index)
-                    print("Bad data line: "+str(index))
-                    print(line)            
+            if not ProcessL1aDALEC.validate_line(line.split(",")):
+                skiprows.append(index)
+                print("Bad data line: "+str(index))
+                print(line)
             index = index + 1
 
         file_dat.close()
-          
-        def toDatetime(dt):
-            #dateFormat='%Y-%m-%dT%H:%M:%S.%f'
-            return np.datetime64(dt.replace('Z', '000'))
-        
+
+        # def toDatetime(dt):
+        #     #dateFormat='%Y-%m-%dT%H:%M:%S.%f'
+        #     return np.datetime64(dt.replace('Z', '000'))
+
         metadata = pd.read_csv(inputfile, skiprows=flag_config, nrows=flag_end_config-flag_config-1,header=None, comment=';',sep='=')
         data = pd.read_csv(inputfile, skiprows=skiprows, names=data_hdr, on_bad_lines='warn')
 

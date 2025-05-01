@@ -1,6 +1,7 @@
 
 import collections
 import datetime as dt
+import time
 import calendar
 from inspect import currentframe, getframeinfo
 from pysolar.solar import get_azimuth, get_altitude
@@ -260,13 +261,9 @@ class ProcessL1b_Interp:
         if headingDataAnc:
             ProcessL1b_Interp.interpolateData(headingDataAnc, interpData, "HEADING", fileName)
         if latDataAnc:
-            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0 # Reserve lat/lon plots for actual GPS, not ancillary file
             ProcessL1b_Interp.interpolateData(latDataAnc, interpData, "LATITUDE", fileName)
-            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
         if lonDataAnc:
-            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 0
             ProcessL1b_Interp.interpolateData(lonDataAnc, interpData, "LONGITUDE", fileName)
-            ConfigFile.settings["bL1b_InterpPlotTimeInterp"] = 1
         if saltData:
             ProcessL1b_Interp.interpolateData(saltData, interpData, "SALINITY", fileName)
         if sstData:
@@ -323,8 +320,14 @@ class ProcessL1b_Interp:
 
             # Because x is now a list of datetime tuples, they'll need to be
             # converted to Unix timestamp values
-            xTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in x]
-            newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
+            # # BUG: This conversion got the wrong result pre v1.2.13:
+            # xTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in x]
+            # newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
+            xTS = [time.mktime(xDT.timetuple()) for xDT in x]
+            newXTS = [time.mktime(xDT.timetuple()) for xDT in new_x]
+            # # Test conversion reversal
+            # from datetime import datetime
+            # datetime_object = [datetime.fromtimestamp(x) for x in xTS]
 
             if dataName in angList:
 
@@ -350,7 +353,6 @@ class ProcessL1b_Interp:
         if ConfigFile.settings["bL1bPlotTimeInterp"] == 1 and dataName != 'T':
             print('Plotting time interpolations ' +dataName)
             # Plots the interpolated data in /Plots/
-            ''' TO DO: This is still broken on Mac. See the hack to fix it here: https://github.com/pandas-dev/pandas/issues/22859'''
             Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, dataName, fileName)
 
     @staticmethod
@@ -438,11 +440,11 @@ class ProcessL1b_Interp:
 #                xData.columns['NONE'] = y.tolist()
                 xData.columns['REL_AZ'] = y.tolist()
                 xData.columnsToDataset()
-                
+
                 msg = f'Replaced NaNs in {dataName}'
                 print(msg)
                 Utilities.writeLogFile(msg)
-        
+
         # xData will be interpolated to yDatetimes
         xData.columns["Datetag"] = yData.data["Datetag"].tolist()
         xData.columns["Timetag2"] = yData.data["Timetag2"].tolist()

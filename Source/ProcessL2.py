@@ -277,6 +277,8 @@ class ProcessL2:
         newRadianceGroup = node.getGroup("RADIANCE")
         newIrradianceGroup = node.getGroup("IRRADIANCE")
 
+        newRhoHyper, newRhoUNCHyper, newNIRnLwData, newNIRData, nLw = None, None, None, None, None
+
         # If this is the first ensemble spectrum, set up the new datasets
         if not f'Rrs_{sensor}' in newReflectanceGroup.datasets:
             newESData = newIrradianceGroup.addDataset(f"ES_{sensor}")
@@ -586,7 +588,7 @@ class ProcessL2:
                             newRhoHyper.columns[k].append(rhoScalar)
                             if xUNC is not None:  # perhaps there is a better check for TriOS Factory branch?
                                 try:
-                                    # todo: explore why rho UNC is 1 index smaller than everything else
+                                    # TODO: explore why rho UNC is 1 index smaller than everything else
                                     # last wvl is missing
                                     newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
                                 except KeyError:
@@ -652,6 +654,7 @@ class ProcessL2:
         print(msg)
         Utilities.writeLogFile(msg)
 
+        timeStamp = None
         if sensor is None:
             if group.id == "ANCILLARY":
                 timeStamp = group.getDataset("LATITUDE").data["Datetime"]
@@ -696,8 +699,8 @@ class ProcessL2:
                         try:
                             rowsToDelete.append(i)
                             finalCount += 1
-                        except Exception:
-                            print('error')
+                        except Exception as err:
+                            print(err)
                     else:
                         newTimeStamp.append(timeStamp[i])
                 group.datasetDeleteRow(rowsToDelete)
@@ -714,8 +717,8 @@ class ProcessL2:
             # if ds != "STATION":
             try:
                 group.datasets[ds].datasetToColumns()
-            except Exception:
-                print('error')
+            except Exception as err:
+                print(err)
 
         msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
         print(msg)
@@ -755,92 +758,6 @@ class ProcessL2:
             return_y.append(new_y[0])
 
         return return_y
-
-
-    @staticmethod
-    def specQualityCheck(group, inFilePath, station=None):
-        ''' Perform spectral filtering
-        Calculate the STD of the normalized (at some max value) average ensemble.
-        Then test each normalized spectrum against the ensemble average and STD and negatives (within the spectral range).
-        Plot results'''
-
-        # This is the range upon which the spectral filter is applied (and plotted)
-        # It goes up to 900 to include bands used in NIR correction
-        fRange = [350, 900]
-
-        badTimes = []
-        if group.id == 'IRRADIANCE':
-            Data = group.getDataset("ES")
-            timeStamp = group.getDataset("ES").data["Datetime"]
-            badTimes = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
-                filterFactor=ConfigFile.settings["fL2SpecFilterEs"], rType='Es')
-            msg = f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of Es data flagged'
-            print(msg)
-            Utilities.writeLogFile(msg)
-        else:
-            Data = group.getDataset("LI")
-            timeStamp = group.getDataset("LI").data["Datetime"]
-            badTimes1 = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
-                filterFactor=ConfigFile.settings["fL2SpecFilterLi"], rType='Li')
-            msg = f'{len(np.unique(badTimes1))/len(timeStamp)*100:.1f}% of Li data flagged'
-            print(msg)
-            Utilities.writeLogFile(msg)
-
-            Data = group.getDataset("LT")
-            timeStamp = group.getDataset("LT").data["Datetime"]
-            badTimes2 = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
-                filterFactor=ConfigFile.settings["fL2SpecFilterLt"], rType='Lt')
-            msg = f'{len(np.unique(badTimes2))/len(timeStamp)*100:.1f}% of Lt data flagged'
-            print(msg)
-            Utilities.writeLogFile(msg)
-
-            badTimes = np.append(badTimes1,badTimes2, axis=0)
-
-        if len(badTimes) == 0:
-            badTimes = None
-        return badTimes
-
-
-    @staticmethod
-    def ltQuality(sasGroup):
-        ''' Perform Lt Quality checking '''
-
-        ltData = sasGroup.getDataset("LT")
-        ltData.datasetToColumns()
-        ltColumns = ltData.columns
-        # These get popped off the columns, but restored when filterData runs datasetToColumns
-        ltColumns.pop('Datetag')
-        ltColumns.pop('Timetag2')
-        ltDatetime = ltColumns.pop('Datetime')
-
-        badTimes = []
-        for indx, dateTime in enumerate(ltDatetime):
-            # If the Lt spectrum in the NIR is brighter than in the UVA, something is very wrong
-            UVA = [350,400]
-            NIR = [780,850]
-            ltUVA = []
-            ltNIR = []
-            for wave in ltColumns:
-                if float(wave) > UVA[0] and float(wave) < UVA[1]:
-                    ltUVA.append(ltColumns[wave][indx])
-                elif float(wave) > NIR[0] and float(wave) < NIR[1]:
-                    ltNIR.append(ltColumns[wave][indx])
-
-            if np.nanmean(ltUVA) < np.nanmean(ltNIR):
-                badTimes.append(dateTime)
-
-        badTimes = np.unique(badTimes)
-        # Duplicate each element to a list of two elements in a list
-        # BUG: This is not optimal as it creates one badTimes record for each bad
-        #   timestamp, rather than span of timestamps from badtimes[i][0] to badtimes[i][1]
-        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3)
-        msg = f'{len(np.unique(badTimes))/len(ltDatetime)*100:.1f}% of spectra flagged'
-        print(msg)
-        Utilities.writeLogFile(msg)
-
-        if len(badTimes) == 0:
-            badTimes = None
-        return badTimes
 
 
     @staticmethod
@@ -906,96 +823,6 @@ class ProcessL2:
 
 
     @staticmethod
-    def metQualityCheck(refGroup, sasGroup):
-        ''' Perform meteorological quality control '''
-
-        esFlag = float(ConfigFile.settings["fL2SignificantEsFlag"])
-        dawnDuskFlag = float(ConfigFile.settings["fL2DawnDuskFlag"])
-        humidityFlag = float(ConfigFile.settings["fL2RainfallHumidityFlag"])
-        cloudFLAG = float(ConfigFile.settings["fL2CloudFlag"]) # Not to be confused with cloudFlag...
-
-        esData = refGroup.getDataset("ES")
-        esData.datasetToColumns()
-        esColumns = esData.columns
-
-        esColumns.pop('Datetag')
-        esColumns.pop('Timetag2')
-        esTime = esColumns.pop('Datetime')
-
-        liData = sasGroup.getDataset("LI")
-        liData.datasetToColumns()
-        liColumns = liData.columns
-        liColumns.pop('Datetag')
-        liColumns.pop('Timetag2')
-        liColumns.pop('Datetime')
-
-        ltData = sasGroup.getDataset("LT")
-        ltData.datasetToColumns()
-        ltColumns = ltData.columns
-        ltColumns.pop('Datetag')
-        ltColumns.pop('Timetag2')
-        ltColumns.pop('Datetime')
-
-        li750 = ProcessL2.interpolateColumn(liColumns, 750.0)
-        es370 = ProcessL2.interpolateColumn(esColumns, 370.0)
-        es470 = ProcessL2.interpolateColumn(esColumns, 470.0)
-        es480 = ProcessL2.interpolateColumn(esColumns, 480.0)
-        es680 = ProcessL2.interpolateColumn(esColumns, 680.0)
-        es720 = ProcessL2.interpolateColumn(esColumns, 720.0)
-        es750 = ProcessL2.interpolateColumn(esColumns, 750.0)
-        badTimes = []
-        for indx, dateTime in enumerate(esTime):
-            # Masking spectra affected by clouds (Ruddick 2006, IOCCG Protocols).
-            # The alternative to masking is to process them differently (e.g. See Ruddick_Rho)
-            # Therefore, set this very high if you don't want it triggered (e.g. 1.0, see Readme)
-            if li750[indx]/es750[indx] >= cloudFLAG:
-                msg = f"Quality Check: Li(750)/Es(750) >= cloudFLAG:{cloudFLAG}"
-                print(msg)
-                Utilities.writeLogFile(msg)
-                badTimes.append(dateTime)
-
-            # Threshold for significant es
-            # Wernand 2002
-            if es480[indx] < esFlag:
-                msg = f"Quality Check: es(480) < esFlag:{esFlag}"
-                print(msg)
-                Utilities.writeLogFile(msg)
-                badTimes.append(dateTime)
-
-            # Masking spectra affected by dawn/dusk radiation
-            # Wernand 2002
-            #v = esXSlice["470.0"][0] / esXSlice["610.0"][0] # Fix 610 -> 680
-            if es470[indx]/es680[indx] < dawnDuskFlag:
-                msg = f'Quality Check: ES(470.0)/ES(680.0) < dawnDuskFlag:{dawnDuskFlag}'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                badTimes.append(dateTime)
-
-            # Masking spectra affected by rainfall and high humidity
-            # Wernand 2002 (940/370), Garaba et al. 2012 also uses Es(940/370), presumably 720 was developed by Wang...???
-            # TODO: Follow up on the source of this flag
-            if es720[indx]/es370[indx] < humidityFlag:
-                msg = f'Quality Check: ES(720.0)/ES(370.0) < humidityFlag:{humidityFlag}'
-                print(msg)
-                Utilities.writeLogFile(msg)
-                badTimes.append(dateTime)
-
-        badTimes = np.unique(badTimes)
-        badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
-        msg = f'{len(np.unique(badTimes))/len(esTime)*100:.1f}% of spectra flagged'
-        print(msg)
-        Utilities.writeLogFile(msg)
-
-        if len(badTimes) == 0:
-            # Restore timestamps to columns (since it's not going to filterData, where it otherwise happens)
-            esData.datasetToColumns()
-            liData.datasetToColumns()
-            ltData.datasetToColumns()
-            badTimes = None
-        return badTimes
-
-
-    @staticmethod
     def columnToSlice(columns, start, end):
         ''' Take a slice of a dataset stored in columns '''
 
@@ -1009,172 +836,6 @@ class ProcessL2:
                 newSlice[col] = columns[col][start:end] # up to not including end...next slice will pick it up
         return newSlice
 
-
-    @staticmethod
-    # def interpAncillary(node, ancData, modRoot, radData):
-    def includeModelDefaults(ancGroup, modRoot):
-        ''' Include model data or defaults for blank ancillary fields '''
-        print('Filling blank ancillary data with models or defaults from Configuration')
-
-        epoch = datetime.datetime(1970, 1, 1,tzinfo=datetime.timezone.utc)
-        # radData = referenceGroup.getDataset("ES") # From node, the input file
-
-        # Convert ancillary date time
-        if ancGroup is not None:
-            ancGroup.datasets['LATITUDE'].datasetToColumns()
-            ancTime = ancGroup.datasets['LATITUDE'].columns['Timetag2']
-            ancSeconds = []
-            ancDatetime = []
-            for i, ancDate in enumerate(ancGroup.datasets['LATITUDE'].columns['Datetag']):
-                ancDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(ancDate),ancTime[i]))
-                ancSeconds.append((ancDatetime[i]-epoch).total_seconds())
-        # Convert model data date and time to datetime and then to seconds for interpolation
-        if modRoot is not None:
-            modTime = modRoot.groups[0].datasets["Timetag2"].tolist()
-            modSeconds = []
-            modDatetime = []
-            for i, modDate in enumerate(modRoot.groups[0].datasets["Datetag"].tolist()):
-                modDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(modDate),modTime[i]))
-                modSeconds.append((modDatetime[i]-epoch).total_seconds())
-
-        # Model or default fills
-        if 'WINDSPEED' in ancGroup.datasets:
-            ancGroup.datasets['WINDSPEED'].datasetToColumns()
-            windDataset = ancGroup.datasets['WINDSPEED']
-            wind = windDataset.columns['NONE']
-        else:
-            windDataset = ancGroup.addDataset('WINDSPEED')
-            wind = np.empty((1,len(ancSeconds)))
-            wind[:] = np.nan
-            wind = wind[0].tolist()
-        if 'AOD' in ancGroup.datasets:
-            ancGroup.datasets['AOD'].datasetToColumns()
-            aodDataset = ancGroup.datasets['AOD']
-            aod = aodDataset.columns['NONE']
-        else:
-            aodDataset = ancGroup.addDataset('AOD')
-            aod = np.empty((1,len(ancSeconds)))
-            aod[:] = np.nan
-            aod = aod[0].tolist()
-        # Default fills
-        if 'SALINITY' in ancGroup.datasets:
-            ancGroup.datasets['SALINITY'].datasetToColumns()
-            saltDataset = ancGroup.datasets['SALINITY']
-            salt = saltDataset.columns['NONE']
-        else:
-            saltDataset = ancGroup.addDataset('SALINITY')
-            salt = np.empty((1,len(ancSeconds)))
-            salt[:] = np.nan
-            salt = salt[0].tolist()
-        if 'SST' in ancGroup.datasets:
-            ancGroup.datasets['SST'].datasetToColumns()
-            sstDataset = ancGroup.datasets['SST']
-            sst = sstDataset.columns['NONE']
-        else:
-            sstDataset = ancGroup.addDataset('SST')
-            sst = np.empty((1,len(ancSeconds)))
-            sst[:] = np.nan
-            sst = sst[0].tolist()
-
-        # Initialize flags
-        windFlag = []
-        aodFlag = []
-        for i,ancSec in enumerate(ancSeconds):
-            if np.isnan(wind[i]):
-                windFlag.append('undetermined')
-            else:
-                windFlag.append('field')
-            if np.isnan(aod[i]):
-                aodFlag.append('undetermined')
-            else:
-                aodFlag.append('field')
-
-        # Replace Wind, AOD NaNs with modeled data where possible.
-        # These will be within one hour of the field data.
-        if modRoot is not None:
-            msg = 'Filling in field data with model data where needed.'
-            print(msg)
-            Utilities.writeLogFile(msg)
-
-            for i,ancSec in enumerate(ancSeconds):
-
-                if np.isnan(wind[i]):
-                    # msg = 'Replacing wind with model data'
-                    # print(msg)
-                    # Utilities.writeLogFile(msg)
-                    idx = Utilities.find_nearest(modSeconds,ancSec)
-                    wind[i] = modRoot.groups[0].datasets['Wind'][idx]
-                    windFlag[i] = 'model'
-                if np.isnan(aod[i]):
-                    # msg = 'Replacing AOD with model data'
-                    # print(msg)
-                    # Utilities.writeLogFile(msg)
-                    idx = Utilities.find_nearest(modSeconds,ancSec)
-                    aod[i] = modRoot.groups[0].datasets['AOD'][idx]
-                    aodFlag[i] = 'model'
-
-        # Replace Wind, AOD, SST, and Sal with defaults where still nan
-        msg = 'Filling in ancillary data with default values where still needed.'
-        print(msg)
-        Utilities.writeLogFile(msg)
-
-        saltFlag = []
-        sstFlag = []
-        for i, value in enumerate(wind):
-            if np.isnan(value):
-                wind[i] = ConfigFile.settings["fL2DefaultWindSpeed"]
-                windFlag[i] = 'default'
-        for i, value in enumerate(aod):
-            if np.isnan(value):
-                aod[i] = ConfigFile.settings["fL2DefaultAOD"]
-                aodFlag[i] = 'default'
-        for i, value in enumerate(salt):
-            if np.isnan(value):
-                salt[i] = ConfigFile.settings["fL2DefaultSalt"]
-                saltFlag.append('default')
-            else:
-                saltFlag.append('field')
-        for i, value in enumerate(sst):
-            if np.isnan(value):
-                sst[i] = ConfigFile.settings["fL2DefaultSST"]
-                sstFlag.append('default')
-            else:
-                sstFlag.append('field')
-
-        # Populate the datasets and flags with the InRad variables
-        windDataset.columns["NONE"] = wind
-        windDataset.columns["WINDFLAG"] = windFlag
-        windDataset.columnsToDataset()
-        aodDataset.columns["AOD"] = aod
-        aodDataset.columns["AODFLAG"] = aodFlag
-        aodDataset.columnsToDataset()
-        saltDataset.columns["NONE"] = salt
-        saltDataset.columns["SALTFLAG"] = saltFlag
-        saltDataset.columnsToDataset()
-        sstDataset.columns["NONE"] = sst
-        sstDataset.columns["SSTFLAG"] = sstFlag
-        sstDataset.columnsToDataset()
-
-        # Convert ancillary seconds back to date/timetags ...
-        ancDateTag = []
-        ancTimeTag2 = []
-        ancDT = []
-        for i, sec in enumerate(ancSeconds):
-            ancDT.append(datetime.datetime.utcfromtimestamp(sec).replace(tzinfo=datetime.timezone.utc))
-            ancDateTag.append(float(f'{int(ancDT[i].timetuple()[0]):04}{int(ancDT[i].timetuple()[7]):03}'))
-            ancTimeTag2.append(float( \
-                f'{int(ancDT[i].timetuple()[3]):02}{int(ancDT[i].timetuple()[4]):02}{int(ancDT[i].timetuple()[5]):02}{int(ancDT[i].microsecond/1000):03}'))
-
-        # Move the Timetag2 and Datetag into the arrays and remove the datasets
-        for ds in ancGroup.datasets:
-            ancGroup.datasets[ds].columns["Datetag"] = ancDateTag
-            ancGroup.datasets[ds].columns["Timetag2"] = ancTimeTag2
-            ancGroup.datasets[ds].columns["Datetime"] = ancDT
-            ancGroup.datasets[ds].columns.move_to_end('Timetag2', last=False)
-            ancGroup.datasets[ds].columns.move_to_end('Datetag', last=False)
-            ancGroup.datasets[ds].columns.move_to_end('Datetime', last=False)
-
-            ancGroup.datasets[ds].columnsToDataset()
 
     @staticmethod
     def sliceAveHyper(y, hyperSlice):
@@ -1217,14 +878,14 @@ class ProcessL2:
                 else:
                     newDS = newGroup.addDataset(dsID)
                 ds = group.getDataset(dsID)
-                
+
                 # Set relAz to abs(relAz) prior to averaging
                 if dsID == 'REL_AZ':
                     ds.columns['REL_AZ'] = np.abs(ds.columns['REL_AZ']).tolist()
 
                 ds.datasetToColumns()
                 dsSlice = ProcessL2.columnToSlice(ds.columns,start, end)
-                dsXSlice = None
+                dsXSlice, date, sliceTime, subDScol = None, None, None, None
 
                 for subDScol in dsSlice: # each dataset contains columns (including date, time, data, and possibly flags)
                     if subDScol == 'Datetime':
@@ -1412,18 +1073,6 @@ class ProcessL2:
         ltSlice.pop("Datetag")
         ltSlice.pop("Timetag2")
         ltSlice.pop("Datetime")
-
-        # directSlice.pop("Datetag")
-        # directSlice.pop("Timetag2")
-        # directSlice.pop("Datetime")
-
-        # diffuseSlice.pop("Datetag")
-        # diffuseSlice.pop("Timetag2")
-        # diffuseSlice.pop("Datetime")
-
-        # sixSesSlice.pop("Datetag")
-        # sixSesSlice.pop("Timetag2")
-        # sixSesSlice.pop("Datetime")
 
         # Process StdSlices for Band Convolution
         # Get common wavebands from esSlice to interp stats
@@ -1878,12 +1527,9 @@ class ProcessL2:
         xSlice['liRemaining'] = liXRemaining
         xSlice['ltRemaining'] = ltXRemaining
 
-        # F0 = F0_hyper
-
         # insert Uncertainties into analysis
         xUNC = {}
 
-        # NOTE: These ".update" object calls are what is triggering matrix_calculation.py:286: UserWarning:
         tic = time.process_time()
         with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal
             if ConfigFile.settings["bL1bCal"] <= 2:  # and
@@ -2412,7 +2058,7 @@ class ProcessL2:
                     print(msg)
                     Utilities.writeLogFile(msg)
 
-
+        #####################################
         #
         # Reflectance calculations complete
         #
