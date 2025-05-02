@@ -27,7 +27,7 @@ from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
 
-VERSION = "1.2.13"
+VERSION = "1.2.14"
 
 
 class Window(QtWidgets.QWidget):
@@ -686,12 +686,14 @@ class Command:
         # Now make it a list as it is expected to be
         # inputFile = [inputFile]
 
+        ConfigFile.loadConfig(self.configFilename)
+        
         # No GUI used: error message are display in prompt and not in graphical window
         MainConfig.settings["popQuery"] = 1 # 1 suppresses popup
         MainConfig.saveConfig(MainConfig.fileName)
         print("MainConfig - Config updated with cmd line arguments")
 
-        ConfigFile.loadConfig(self.configFilename)
+        
 
         calFiles = ConfigFile.settings["CalibrationFiles"]
 
