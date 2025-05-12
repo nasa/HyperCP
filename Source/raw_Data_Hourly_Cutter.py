@@ -79,10 +79,14 @@ def split_csv_hourly(input_file, output_prefix):
             
             parts = line.split(",")
             if len(parts) > 1: #Skips over empty rows
-                timestamp = pd.to_datetime(parts[3])
-                hour_group = timestamp.floor('H')  # round down to the hour
-                date_group = timestamp.date()
-                data.append((date_group, hour_group, line.strip()))
+                try:
+                    timestamp = pd.to_datetime(parts[3])
+                    hour_group = timestamp.floor('h')  # round down to the hour
+                    date_group = timestamp.date()
+                    data.append((date_group, hour_group, line.strip()))
+                except ValueError as err:
+                    print(f'Bad datetime data in raw file row {counter}: {err}')
+        
         
         #Using the counter to skip over header/Configuration Info
         counter+=1
