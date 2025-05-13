@@ -36,6 +36,8 @@ In the case of TriOS, 3 files are required per radiometer to provide all the cal
 for the device number "xxxx", Cal_xxxx.dat and Back_xxxx_dat, respectively contain the raw calibration factors and
 the background levels, while SAM_xxxx.ini provides initialisation information to the processor.
 
+DALECs have one .cal file for all three radiometers.
+
 Adding new files will automatically copy these files from the directory you identify on your machine when prompted by
  pressing ```Add Cals``` into the HyperCP directory structure. You should not need to edit the contents of the
  ```HyperInSPACE/Config``` directory manually.
@@ -65,9 +67,9 @@ where xxx is the serial number of the SeaBird instrument, followed (where approp
 
 ‡ **Note**: Use of built-in flux-gate compass is inadvisable on a steel ship or platform. Best practice is to use
 externally supplied heading data from the ship's NMEA datastream or from a seperate, external dual antenna GPS
-incorporated into the SolarTracker. DO NOT USE COURSE DATA FROM SINGLE GPS SYSTEMS FOR SENSOR ORIENTATION.
+incorporated into the SunTracker. DO NOT USE COURSE DATA FROM SINGLE GPS SYSTEMS FOR SENSOR ORIENTATION.
 
-For **TriOS RAMSES** device, you will need to associate each radiometers number to its type of acquisition (Li, Lt or Es), for example :
+For **TriOS RAMSES** device, you will need to associate each radiometer number to its type of acquisition (Li, Lt or Es), for example :
 
 - **SAM_8166.ini**: Li
 - **SAM_8329.ini**: Es
@@ -80,7 +82,7 @@ Selections:
 - Add Calibration Files - Allows loading calibration/instrument files into HyperCP. Once loaded, the drop-down box can
 be used to select the file to enable the instrument and set the frame type.
 - Enabled checkbox - Used to enable/disable loading the file in HyperCP.
-- Frame Type
+- Frame Type (these are now resolved for you automatically)
      - [Seabird] ShutterLight/ShutterDark/Not Required can be selected. This is used to specify shutter frame type:
             ShutterLight/ShutterDark for light/dark correction or "Not Required" for all other data.
      - [TriOS] Li/Lt/Es can be selected. This is used to specify the target of each radiometers.
@@ -108,9 +110,10 @@ Click 'Save/Close' or 'Save As' to save the configuration file. SeaBASS headers 
 
  ## Level 1A Processing
 
-Process data from raw binary (Satlantic HyperSAS '.RAW' collections) to L1A (Hierarchical Data Format 5 '.hdf').
-Calibration files and the RawFileReader.py script allow for interpretation of raw data fields, which are read into HDF
-objects.
+***NOTE:*** HyperCP is optimized for hour-long raw files when using automated data collections (e.g., pySAS, DALEC, So-Rad).
+
+Process data from raw binary to L1A (Hierarchical Data Format 5 '.hdf'). Raw data files expected are .raw (or .RAW), .mlb, or .TXT for Sea-Bird, TriOS, or DALEC, respectively. It is helpful to keep them in the directory that the Main configuration points to, but directory can be named anything (e.g., "RAW").
+
 
 **Solar Zenith Angle Filter**: prescreens data for high SZA (low solar elevation) to exclude files which may have been
 collected post-dusk or pre-dawn from further processing.
@@ -130,26 +133,23 @@ Unlike other approaches, HyperCP eliminates data flagged for problematic pitch/r
 non-environmental anomalies.
 
 
-- **SolarTracker**: Select when using the Satlantic SolarTracker package. In this case sensor and solor geometry data will
- come from the SolarTracker (i.e. SATNAV**.tdf). If deselected, solar geometries will be calculated from GPS time and
+- **SunTracker**: Select when using an autonomous platform such as SolarTracker, pySAS, DALEC, or So-Rad. In this case sensor and solor geometry data will come from the robot. If deselected, solar geometries will be calculated from GPS time and
  position with Pysolar, while sensor azimuth (i.e. ship heading and sensor offset) must either be provided in the
- ancillary data or (eventually) from other data inputs. Currently, if SolarTracker is unchecked, the Ancillary file
+ ancillary data or (eventually) from other data inputs. Currently, if SunTracker is unchecked, the Ancillary file
  chosen in the Main Window will be read in, subset for the relevant dates/times, held in the ANCILLARY_NOTRACKER group
- object, and carried forward to subsequent levels (i.e. the file will not need to be read in again at L2). If the
- ancillary data file is very large (e.g. for a whole cruise at high temporal resolution), this process of reading in the
- text file and subsetting it to the radiometry file can be slow.
+ object, and carried forward to subsequent levels. If the ancillary data file is very large (e.g. for a whole cruise at high temporal resolution), this process of reading in the text file and subsetting it to the radiometry file can be slow.
 
 - **Rotator Home Angle Offset**: Generally 0. This is the offset between the neutral position of the radiometer suite and
 the bow of the ship. This *should* be zero if the SAS Home Direction was set at the time of data collection in the
-SolarTracker as per Satlantic SAT-DN-635. If no SolarTracker was used, the offset can be set here if stable (e.g.
-pointing angle on a fixed tower), or in the ancillary data file if changeable in time. Without SolarTracker, L1C
+SunTracker as per Satlantic SAT-DN-635. If no SunTracker was used, the offset can be set here if stable (e.g.
+pointing angle on a fixed tower), or in the ancillary data file if changeable in time. Without SunTracker, L1C
 processing will require at a minimum ship heading data in the ancillary file. Then the offset can be given in the
 ancillary file (dynamic) or set here in the GUI (static). *Note: as SeaBASS does not have a field for this angle between
 the instrument and the bow of the ship, the field "relaz" (normally reserved for the relative azimuth between the
 instrument and the sun) is utilized for the angle between the ship heading (NOT COG) and the sensor.*
 
-- **Rotator Delay**: Seconds of data discarded after a SolarTracker rotation is detected. Set to 0 to ignore.
-Not an option without SolarTracker. **Default: 60 seconds (Vandenberg 2017)**
+- **Rotator Delay**: Seconds of data discarded after a SunTracker rotation is detected. Set to 0 to ignore.
+Not an option without SunTracker. **Default: 60 seconds (Vandenberg 2017)**
 
 - **Pitch & Roll Filter** (optional): Data outside these thresholds are discarded if this is enabled in the checkbox.
 These data may be supplied by a tilt-heading sensor incorporated in the raw data stream accompanied by a telmetry
@@ -157,9 +157,9 @@ definition file (.tdf) as per above, or can be ingested from the Ancillary file 
 in /Data).
     **Default**: 5 degrees (IOCCG Draft Protocols; Zibordi et al. 2019; 2 deg "ideal" to 5 deg "upper limit").
 
-- **Absolute Rotator Angle Filter** (optional): Angles relative to the SolarTracker neutral angle beyond which data will
-be excluded due to obstructions blocking the field of view. These are generally set in the SolarTracker or pySAS
-software when initialized for a given platform. Not an option without SolarTracker or pySAS.
+- **Absolute Rotator Angle Filter** (optional): Angles relative to the SunTracker neutral angle beyond which data will
+be excluded due to obstructions blocking the field of view. These are generally set in the SunTracker
+software when initialized for a given platform. Not an option without SunTracker.
     **Default**: -40 to +40 (arbitrary)
 
 - **Relative Solar Azimuth Filter** (optional): Relative azimuth angle in degrees between the viewing Li/Lt and the sun.
@@ -312,9 +312,9 @@ Individual spectra may be filtered out for:
 ## L2 Processing
 
 Data are averaged within optional time interval ensembles prior to calculating the remote sensing
-reflectance within each ensemble. A typical field collection file for the HyperSAS SolarTracker is one hour, and the
+reflectance within each ensemble. A typical field collection file for the SunTracker is one hour, and the
 optimal ensemble periods within that hour will depend on how rapidly conditions and water-types are changing, as well as
- the instrument sampling rate. While the use of ensembles is optional (set to 0 to avoid averaging), it is highly
+ the instrument sampling rate. While the use of ensembles is optional (set this to 0 to avoid averaging), it is highly
  recommended, as it allows for the statistical analysis required for Percent Lt calculation (radiance acceptance
  fraction; see below) within each ensemble, rather than %Lt across an entire (e.g. one hour) collection, and it also
  improves radiometric uncertainty estimation.

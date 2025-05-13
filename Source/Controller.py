@@ -8,10 +8,8 @@ from Source import PATH_TO_CONFIG, PACKAGE_DIR
 from Source.HDFRoot import HDFRoot
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
-# from Source.ProcessL1a import ProcessL1a
 from Source.ProcessL1aSeaBird import ProcessL1aSeaBird
 from Source.ProcessL1aDALEC import ProcessL1aDALEC
-# from Source.TriosL1A import TriosL1A
 from Source.ProcessL1aTriOS import ProcessL1aTriOS
 from Source.ProcessL1aSoRad import ProcessL1aSoRad
 from Source.AncillaryReader import AncillaryReader
@@ -19,7 +17,6 @@ from Source.ProcessL1aqc import ProcessL1aqc
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.CalibrationFile import CalibrationFile
 from Source.ProcessL1b import ProcessL1b
-# from Source.TriosL1B import TriosL1B
 from Source.ProcessL1bTriOS import ProcessL1bTriOS
 from Source.ProcessL1bDALEC import ProcessL1bDALEC
 from Source.ProcessL1bqc import ProcessL1bqc
@@ -563,7 +560,7 @@ class Controller:
         if flag_Trios and level == "L1A":
             # inFilePath is a list of filepath strings at L1A
             # Grab input name and extension of first file
-            inFileName = os.path.split(inFilePath[0])[1]            
+            inFileName = os.path.split(inFilePath[0])[1]
         else:
             # inFilePath is a singleton filepath string
             inFilePath = os.path.abspath(inFilePath)
