@@ -385,9 +385,9 @@ class Propagate:
     def temporary_zhangWrapper(windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, waveBands):
         from Source.RhoCorrections import InterpolationError
         try:
-            zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, waveBands)
+            zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
         except InterpolationError as err:
-            zhang = Propagate.zhangWrapper(windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, waveBands)
+            zhang = Propagate.zhangWrapper(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
         
         return zhang
 
