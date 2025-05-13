@@ -496,12 +496,20 @@ class UncertaintyEngine(ABC):
         
         """
         from Source.ProcessInstrumentUncertainties import HyperOCR
+        from Source.HDFGroup import HDFGroup
+
         instrument = HyperOCR()
         L1B = {}; L2 = {}
 
         for comp in ['Noise', 'Cal', 'Nlin', 'Stray', 'Stability', 'Temp', 'Pol', 'Cos']:
             # adjust uncertainties
-            uncGrp_adjusted = uncGrp # HDFGroup
+            uncGrp_adjusted = HDFGroup()
+            uncGrp_adjusted.copy(uncGrp)
+
+            for k, ds in uncGrp.datasets.items():
+                ds.data = np.zeros(len(ds.data))
+
+            
 
             L1B[comp] = instrument.FRM(node, uncGrp_adjusted, raw_grps, raw_slices, stats, np.array(waveSubset, float))
             # for cumulative add in quadrature at the end
