@@ -169,7 +169,7 @@ class RhoCorrections:
         sensor = {'ang': np.array([sva, 180 - relAz]), 'wv': np.array(waveBands)}
 
         # # define uncertainties and create variable list for punpy. Inputs cannot be ordered dictionaries
-        varlist = [windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, np.array(waveBands)]
+        varlist = [windSpeedMean, AOD, sza, wTemp + 273.15, sal, relAz, sva, np.array(waveBands)]  # convert to kelvin
         ulist = [2.0, 0.01, 0.5, 2, 0.5, 3, 0.0, None]
         # todo: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
 
@@ -202,13 +202,15 @@ class RhoCorrections:
         windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang
 
         """
+        
+        # convert wt to kelvin so we can't have negative values
 
         if sva == 30:
-            db_path = "Z17_LUT_30.nc"
+            db_path = "Z17_LUT_30_old.nc"
             msg = f"instrument viewing zenith of 30 selected"
         else:
             msg = f"instrument viewing zenith of 40 selected"
-            db_path = "Z17_LUT_40.nc"
+            db_path = "Z17_LUT_40_old.nc"
 
         print(msg)
         Utilities.writeLogFile(msg)
@@ -220,8 +222,10 @@ class RhoCorrections:
         
         import scipy.interpolate as spin
 
+        # if wt > 273.15:
+        #     wt = wt - 273.15  # convert from kelvin if required
         if wt > 20:
-            wt = 20
+            wt =20
         if rel_az > 140:
             rel_az = 140
 
