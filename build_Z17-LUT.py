@@ -84,12 +84,14 @@ class build_LUT():
         for i_vzen, vzen in enumerate(self.VZEN):
             for i_windspeed, windSpeedMean in enumerate(self.windspeed):
                 threads[i_windspeed] = Thread(target=self.run_for_ws, args=(i_windspeed, windSpeedMean, vzen))
+                print(vzen, windSpeedMean)
                 # self.run_for_ws(i_windspeed, windSpeedMean, vzen)
-            for t in threads.values():
-                t.start()
+        
+        for t in threads.values():
+            t.start()
 
-            for t in threads.values():
-                t.join()
+        for t in threads.values():
+            t.join()
             
             da = {}
             ds = {}
