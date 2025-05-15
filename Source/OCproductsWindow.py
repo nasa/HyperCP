@@ -19,7 +19,14 @@ class OCproductsWindow(QtWidgets.QDialog):
             "Algorithms requiring satellite bands will activate MODIS Aqua waveband convolution" \
                 " processing in L2")
 
-        biochemLabel = QtWidgets.QLabel("Expirical Algorithms")
+        plotLabel = QtWidgets.QLabel('Plot Derived Products',self)
+        self.plotCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.products["bL2PlotProd"]) == 1:
+            self.plotCheckBox.setChecked(True)
+        self.plotCheckBoxUpdate()
+        self.plotCheckBox.clicked.connect(self.plotCheckBoxUpdate)
+
+        biochemLabel = QtWidgets.QLabel("Empirical Algorithms")
         biochemLabel_font = biochemLabel.font()
         biochemLabel_font.setPointSize(12)
         biochemLabel_font.setBold(True)
@@ -201,6 +208,12 @@ class OCproductsWindow(QtWidgets.QDialog):
         VBox = QtWidgets.QVBoxLayout()
         VBox.addWidget(linkOCWebLabel)
         VBox.addWidget(satNoteLabel)
+
+        # Plot query box
+        plotHBox = QtWidgets.QHBoxLayout()
+        plotHBox.addWidget(plotLabel)
+        plotHBox.addWidget(self.plotCheckBox)
+        VBox.addLayout(plotHBox)
 
         # Left Box
         VBox1 = QtWidgets.QVBoxLayout()
@@ -419,6 +432,17 @@ class OCproductsWindow(QtWidgets.QDialog):
         self.setWindowTitle('Derived L2 Geophysical and Inherent Optical Properties')
 
     ######
+    def plotCheckBoxUpdate(self):
+        print("OCproductsWindow - plotCheckBoxUpdate")
+
+        disabled = not self.plotCheckBox.isChecked()
+        
+        if disabled:
+            self.plotCheckBox.setChecked(False)
+            ConfigFile.products["bL2PlotProd"] = 0
+        else:
+            ConfigFile.products["bL2PlotProd"] = 1
+
     def avwCheckBoxUpdate(self):
         print("OCproductsWindow - avwCheckBoxUpdate")
 
@@ -569,6 +593,7 @@ class OCproductsWindow(QtWidgets.QDialog):
 
             ConfigFile.settings["bL2WeightMODISA"] = 1
 
+        ConfigFile.saveConfig(ConfigFile.filename)
         self.close()
 
     def cancelButtonPressed(self):

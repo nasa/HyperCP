@@ -522,7 +522,7 @@ class ProcessL1aqc:
             tThreshold = 30 # seconds gap between datasets
             badTimes = Utilities.findGaps_dateTime(esDateTime,sunTrackerDateTime,tThreshold)
 
-            msg = f'Percentage of data failed on Suntracker outage: {round(100*i/len(esDateTime))} %'
+            msg = f'Percentage of data failed on Suntracker outage: {round(100*len(badTimes)/len(esDateTime))} %'
             print(msg)
             Utilities.writeLogFile(msg)
 

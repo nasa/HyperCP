@@ -500,17 +500,19 @@ class Controller:
 
             # IOPs
             # These three should plot GIOP and QAA together (eventually, once GIOP is complete)
-            if ConfigFile.products["bL2ProdadgQaa"]:
-                Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
-            if ConfigFile.products["bL2ProdaphQaa"]:
-                Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
-            if ConfigFile.products["bL2ProdbbpQaa"]:
-                Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
+            if ConfigFile.products["bL2PlotProd"]==1:
+                print('Plotting L2 Derived Products')
+                if ConfigFile.products["bL2ProdadgQaa"]:
+                    Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
+                if ConfigFile.products["bL2ProdaphQaa"]:
+                    Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
+                if ConfigFile.products["bL2ProdbbpQaa"]:
+                    Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
 
-            # This puts ag, Sg, and DOC on the same plot
-            if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products["bL2ProdSg"] \
-                 and ConfigFile.products["bL2Prodag"] and ConfigFile.products["bL2ProdDOC"]:
-                Utilities.plotIOPs(node, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
+                # This puts ag, Sg, and DOC on the same plot
+                if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products["bL2ProdSg"] \
+                    and ConfigFile.products["bL2Prodag"] and ConfigFile.products["bL2ProdDOC"]:
+                    Utilities.plotIOPs(node, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
 
         # Write output file
         if node is not None:
