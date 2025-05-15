@@ -1396,12 +1396,11 @@ class ProcessL2:
 
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
-            # NOTE: Need to update to 0.5 for new database
-            if AODXSlice >0.2:
-                msg = f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.2. Expect larger, uncaptured errors.'
+            if AODXSlice >0.5:
+                msg = f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.5. Expect larger, uncaptured errors.'
                 print(msg)
                 Utilities.writeLogFile(msg)
-                AODXSlice = 0.2
+                AODXSlice = 0.5
             if WINDSPEEDXSlice > 15:
                 msg = f'WIND = {WINDSPEEDXSlice:.1f}. Maximum Wind Speed Reached. Setting to 15.0. Expect larger, uncaptured errors.'
                 print(msg)
