@@ -1952,7 +1952,6 @@ class ProcessL2:
         interval = float(ConfigFile.settings["fL2TimeInterval"])
 
         # interpolate Light/Dark data for Raw groups if HyperOCR data is being processed
-        # NOTE: Why is this necessary? Aren't we interested in the variability of darks at native acquisition frequency? -DA
         if ConfigFile.settings['SensorType'].lower() == "seabird":
             # in seabird case interpolate dark data to light timer before breaking into stations
             instrument = HyperOCR()
