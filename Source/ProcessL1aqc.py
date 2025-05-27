@@ -45,23 +45,24 @@ class ProcessL1aqc:
                     print(msg)
                     Utilities.writeLogFile(msg)
 
-                    if gp.attributes['FrameType'] == 'ShutterDark':
-                        fractionRemoved = ProcessL1aqc.filterData_ADJUSTED(gp, badTimes)
+                    if 'FrameType' in gp.attributes:
+                        if gp.attributes['FrameType'] == 'ShutterDark':
+                            fractionRemoved = ProcessL1aqc.filterData_ADJUSTED(gp, badTimes)
 
-                        # Now test whether the overlap has eliminated all radiometric data
-                        if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
-                            msg = "Radiometric data >98'%' eliminated. Aborting."
+                            # Now test whether the overlap has eliminated all radiometric data
+                            if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
+                                msg = "Radiometric data >98'%' eliminated. Aborting."
+                                print(msg)
+                                Utilities.writeLogFile(msg)
+                                return None
+
+                            gpTimeset  = gp.getDataset("TIMETAG2")
+
+                            gpTime = gpTimeset.data["NONE"]
+                            lenGpTime = len(gpTime)
+                            msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
                             print(msg)
                             Utilities.writeLogFile(msg)
-                            return None
-
-                        gpTimeset  = gp.getDataset("TIMETAG2")
-
-                        gpTime = gpTimeset.data["NONE"]
-                        lenGpTime = len(gpTime)
-                        msg = f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
         return node
 
     @staticmethod
