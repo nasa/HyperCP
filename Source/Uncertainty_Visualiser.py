@@ -495,26 +495,56 @@ class UncertaintyEngine(ABC):
         """
         
         """
-        from Source.ProcessInstrumentUncertainties import HyperOCR
+        from Source.ProcessInstrumentUncertainties import HyperOCR, Trios
         from Source.HDFGroup import HDFGroup
+        
+        if ConfigFile.settings['SensorType'].lower() == "trios":
+            instrument = Trios()
+        elif ConfigFile.settings['SensorType'].lower() == "seabird":
+            instrument = HyperOCR()
 
-        instrument = HyperOCR()
         L1B = {}; L2 = {}
-
-        for comp in ['Noise', 'Cal', 'Nlin', 'Stray', 'Stability', 'Temp', 'Pol', 'Cos']:
+        for i, comp in enumerate([
+                ('Noise', 0), 
+                ('RADCAL_CAL', ''),  
+                ('RADCAL_LAMP', ''),  # data[3] updated radcal gain
+                ('RADCAL_PANEL', ''),  # data[3] updated radcal gain
+                ('Nlin', ['6', '8']), # RADCAL_CAL data 7 & 9 S1, S2
+                ('STRAYDATA_UNCERTAINTY', 0), 
+                ('Stability', 0), 
+                ('TEMPDATA', ['ES_TEMPERATURE_UNCERTAINTIES',
+                              'LI_TEMPERATURE_UNCERTAINTIES',
+                              'LT_TEMPERATURE_UNCERTAINTIES'
+                              ]), # TEMPDATA_CAL needs to not include class based
+                ('POLDATA_CAL', 0), 
+                ('ANGDATA_UNCERTAINTY', 0),
+                ('Glint', 0),
+            ]):  # breakdown of corrections also
             # adjust uncertainties
             uncGrp_adjusted = HDFGroup()
-            uncGrp_adjusted.copy(uncGrp)
+            uncGrp_adjusted.copy(uncGrp)  # make a copy of the uncertainty group
 
+            if comp == 'no_unc':  # 'Noise':
+                adj_stats = stats
+            elif comp == 'Glint':
+                rhoUNC_adj = rhoUNC
+            else:
+                adj_stats = {k: {sk: np.zeros(len(v)) for sk, v in stats[k].items()} for k in stats.keys()}
+                rhoUNC_adj = np.zeros(len(rhoUNC))
+        
             for k, ds in uncGrp.datasets.items():
-                ds.data = np.zeros(len(ds.data))
+                # if 'CLASS' not in k.upper():
+                if comp in k.upper():
+                    uncGrp_adjusted.datasets[k].copy(ds)
+                else:
+                    for wvl, col in uncGrp_adjusted.datasets[k].columns.items():
+                        uncGrp_adjusted.datasets[k].columns[wvl] = np.zeros(len(col))
+                    uncGrp_adjusted.datasets[k].columnsToDataset()
 
-            
-
-            L1B[comp] = instrument.FRM(node, uncGrp_adjusted, raw_grps, raw_slices, stats, np.array(waveSubset, float))
+            L1B[comp] = instrument.FRM(node, uncGrp_adjusted, raw_grps, raw_slices, adj_stats, np.array(waveSubset, float))
             # for cumulative add in quadrature at the end
             
-            L2[comp] = instrument.FRM_L2(rhoScalar, rhoVec, rhoUNC, waveSubset, L1B[comp])
+            L2[comp] = instrument.FRM_L2(rhoScalar, rhoVec, rhoUNC_adj, waveSubset, L1B[comp])
         
         return L1B, L2
 
