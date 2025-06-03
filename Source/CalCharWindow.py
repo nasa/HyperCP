@@ -6,6 +6,7 @@ import glob
 import shutil
 from pathlib import Path
 from Source import PATH_TO_CONFIG
+from ocdb.api.OCDBApi import new_api, OCDBApi
 
 class CalCharWindow(QtWidgets.QDialog):
     def __init__(self, name, parent=None):
@@ -44,26 +45,26 @@ class CalCharWindow(QtWidgets.QDialog):
         #     self.DefaultCalRadioButtonTriOS.setChecked(False)
         #     self.DefaultCalRadioButtonTriOS.setDisabled(True)
 
-        self.ClassCalRadioButton = QtWidgets.QRadioButton("FRM standard: Class-specific characterisations (calibrations with unceratinties required)")
+        self.ClassCalRadioButton = QtWidgets.QRadioButton("FRM standard: Class-specific characterisations (calibrations with uncertainties required)")
         self.ClassCalRadioButton.setAutoExclusive(False)
         if ConfigFile.settings["bL1bCal"] == 2:
             self.ClassCalRadioButton.setChecked(True)
         self.ClassCalRadioButton.clicked.connect(self.l1bClassCalRadioButtonClicked)
-        self.addClassFilesButton = QtWidgets.QPushButton("Add RadCals:")
+        self.addClassFilesButton = QtWidgets.QPushButton("Add cal. files:")
         self.addClassFilesButton.clicked.connect(self.addClassFilesButtonClicked)
         self.classFilesLineEdit = QtWidgets.QLineEdit(self)
         self.classFilesLineEdit.setDisabled(True)
 
-        self.FullCalRadioButton = QtWidgets.QRadioButton("FRM highest quality: Sensor-specific characterisation (cal/char with unceratinties required)")
+        self.FullCalRadioButton = QtWidgets.QRadioButton("FRM highest quality: Sensor-specific characterisation (cal./char. with uncertainties required)")
         self.FullCalRadioButton.setAutoExclusive(False)
         self.l1bFRMRadio1 = QtWidgets.QRadioButton("Local", self)
-        self.addFullFilesButton = QtWidgets.QPushButton("Add Files:")
+        self.addFullFilesButton = QtWidgets.QPushButton("Add cal./char. files:")
         self.addFullFilesButton.clicked.connect(self.addFullFilesButtonClicked)
         self.fullFilesLineEdit = QtWidgets.QLineEdit(self)
         self.fullFilesLineEdit.setDisabled(True)
 
         self.l1bFRMRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
-        l1bFidRadDBLabel = QtWidgets.QLabel("Char. files will be downloaded", self)
+        l1bFidRadDBLabel = QtWidgets.QLabel("Cal./char. files will be downloaded", self)
         if ConfigFile.settings['FidRadDB']:
             self.l1bFRMRadio1.setChecked(False)
             self.l1bFRMRadio2.setChecked(True)
@@ -93,11 +94,11 @@ class CalCharWindow(QtWidgets.QDialog):
         l1bCalLabel2_font.setBold(True)
         l1bCalLabel2.setFont(l1bCalLabel2_font)
 
-        self.calFileMostRecent = QtWidgets.QRadioButton("Use most recent calibration since acquisition time (default)")
+        self.calFileMostRecent = QtWidgets.QRadioButton("Use most recent calibration prior to acquisition time (default)")
         self.calFileMostRecent.setAutoExclusive(False)
         self.calFileMostRecent.clicked.connect(lambda: self.l1bMultiCalOptions('most_recent'))
 
-        self.calFilePrePost = QtWidgets.QRadioButton("Use acquisition-time-weighted mean of pre- and post- calibrations")
+        self.calFilePrePost = QtWidgets.QRadioButton("Use mean of pre- and post- calibrations")
         self.calFilePrePost.setAutoExclusive(False)
         self.calFilePrePost.clicked.connect(lambda: self.l1bMultiCalOptions('pre_post'))
 
@@ -211,7 +212,7 @@ class CalCharWindow(QtWidgets.QDialog):
 
         self.setGeometry(100, 100, 0, 0)
 
-        self.setWindowTitle('Cal/Char options')
+        self.setWindowTitle('Cal./char. options')
 
     def l1bCalStatusUpdate(self):
         # Enable/disable features based on regime selected
@@ -425,6 +426,7 @@ class CalCharWindow(QtWidgets.QDialog):
             self.l1bFRMRadio1.setChecked(False)
             ConfigFile.settings['FidRadDB'] = 1
 
+
     def FullCalDirButtonPressed(self):
         if not ConfigFile.settings['FullCalDir'].startswith('Choose'):
             srcDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory',
@@ -472,17 +474,17 @@ class CalCharWindow(QtWidgets.QDialog):
     def l1bChooseCalFiles(self,option_multical_file):
 
         if option_multical_file == 'pre_cal':
-            calFileStr = " pre-"
+            calFileStr = "pre-"
         elif option_multical_file == 'post_cal':
-            calFileStr = " post-"
+            calFileStr = "post-"
         elif option_multical_file == 'choose_cal':
-            calFileStr = " "
+            calFileStr = ""
 
         correctSelection = False
         while not correctSelection:
             file_paths, _ = QtWidgets.QFileDialog.getOpenFileNames(
                 self,  # parent window
-                "Select 3%scalibration files" % calFileStr,  # dialog title
+                "Select 3 %scalibration files" % calFileStr,  # dialog title
                 ConfigFile.settings['FullCalDir'],  # starting directory (empty string means current dir)
                 "RADCAL text files (*RADCAL*.txt);;All Files (*)",  # file filter
                 options=QtWidgets.QFileDialog.Options())
