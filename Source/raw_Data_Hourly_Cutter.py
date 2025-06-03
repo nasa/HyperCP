@@ -10,9 +10,9 @@
     *** NOTE : Currently only works with DALEC Raw data file! ***
 """
 
-
-import pandas as pd
 import argparse
+import pandas as pd
+
 
 def find_line_number(file_path):
     """
@@ -27,7 +27,7 @@ def find_line_number(file_path):
     """
     try:
         header = ""
-        with open(file_path, 'r') as file:
+        with open(file_path, 'r', encoding="utf-8") as file:
             for line_number, line in enumerate(file, 1):
                 header += line
                 if "---------OUTPUT FORMAT---------" in line:
@@ -49,7 +49,7 @@ def split_csv_hourly(input_file, output_prefix):
 
     #step 0: Initialization
     print("---- Initializing Data...")
-    output_prefix += f"/{input_file.split('/')[-1][0:8]}" 
+    output_prefix += f"/{input_file.split('/')[-1][0:8]}"
     csv_data_line_number, header = find_line_number(input_file)
     if csv_data_line_number is None:
         return
@@ -57,7 +57,7 @@ def split_csv_hourly(input_file, output_prefix):
 
     # Step 1: Read original file as raw text lines
     print("---- Reading Input File...")
-    with open(input_file, "r") as f:
+    with open(input_file, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
 
@@ -67,44 +67,50 @@ def split_csv_hourly(input_file, output_prefix):
     counter = 0
     percent = 0
     total_lines = len(lines) // 20
-    
+
     for line in lines:
         if counter > csv_data_line_number:
 
             ##Progress Bar
-            if counter % total_lines == 0: 
+            if counter % total_lines == 0:
                 print(f"... {percent}%")
                 percent += 5
             ##
-            
+
             parts = line.split(",")
             if len(parts) > 1: #Skips over empty rows
-                timestamp = pd.to_datetime(parts[3])
-                hour_group = timestamp.floor('H')  # round down to the hour
-                date_group = timestamp.date()
-                data.append((date_group, hour_group, line.strip()))
-        
+                try:
+                    timestamp = pd.to_datetime(parts[3])
+                    hour_group = timestamp.floor('h')  # round down to the hour
+                    if hour_group.tz is None:
+                        print(f'Timezone naive timestamp found at {timestamp}. Converting to UTC.')
+                        hour_group = timestamp.floor('h').tz_localize(tz='UTC')
+                    date_group = timestamp.date()
+                    data.append((date_group, hour_group, line.strip()))
+                except ValueError as err:
+                    print(f'Bad datetime data in raw file row {counter}: {err}')
+
         #Using the counter to skip over header/Configuration Info
         counter+=1
 
-    print(f"Procesing: 100%") ##Progress Bar
+    print("Procesing: 100%") ##Progress Bar
 
     # Step 3: Load into DataFrame for grouping
     df = pd.DataFrame(data, columns=["date_group", "hour_group", "original_line"])
 
     # Step 4: Group by date and hour, and write to separate CSV files
     print("---- Writing Data to new files...")
-    for (date, hour), group in df.groupby(["date_group", "hour_group"]):
+    for (_, hour), group in df.groupby(["date_group", "hour_group"]):
         # Format filenames: one for date and one for hour
-        date_str = date.strftime("%Y-%m-%d")
+        # date_str = date.strftime("%Y-%m-%d")
         hour_str = hour.strftime("%Y-%m-%d_%H00")
         filename = f"{output_prefix}_{hour_str}.TXT"
-    
-        with open(filename, "w") as f:
+
+        with open(filename, "w", encoding="utf-8") as f:
             f.write(header)
             for line in group["original_line"]:
                 f.write(line + "\n")
-        
+
         print(f"Created: {filename}")
 
 
@@ -114,7 +120,7 @@ def setupParser():
 
     parser.add_argument('-f', '--file', required=True, help='File you want to Parse into hourly files')
     parser.add_argument('-o', '--output', required=True, help='Output Directory for hourly files')
-    
+
     return parser
 
 
