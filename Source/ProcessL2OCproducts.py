@@ -18,8 +18,8 @@ from Source.L2qwip import L2qwip
 
 
 class ProcessL2OCproducts():
-    # Most product algorithms can be found at https://oceancolor.gsfc.nasa.gov/atbd/
-    # To Do: Uncertainty propagation
+    ''' Most product algorithms can be found at https://oceancolor.gsfc.nasa.gov/atbd/
+    TODO: Uncertainty propagation'''
 
     @staticmethod
     def procProds(root):
@@ -49,6 +49,7 @@ class ProcessL2OCproducts():
         RrsHYPER = Reflectance.datasets["Rrs_HYPER"]
 
         Ancillary = root.getGroup("ANCILLARY")
+        DerProd = None
 
         if not root.getGroup("DERIVED_PRODUCTS"):
             DerProd = root.addGroup("DERIVED_PRODUCTS")
@@ -154,10 +155,10 @@ class ProcessL2OCproducts():
             iparDS.columnsToDataset()
 
         # Spectral QA
-        ''' Wei, Lee, and Shang (2016).
-             A system to measure the data quality of spectral remote sensing
-             reflectance of aquatic environments. Journal of Geophysical Research,
-             121, doi:10.1002/2016JC012126'''
+        # ''' Wei, Lee, and Shang (2016).
+        #      A system to measure the data quality of spectral remote sensing
+        #      reflectance of aquatic environments. Journal of Geophysical Research,
+        #      121, doi:10.1002/2016JC012126'''
 
         if ConfigFile.products["bL2ProdweiQA"]:
             msg = "Processing Wei QA"
@@ -189,8 +190,8 @@ class ProcessL2OCproducts():
             weiQADS.columnsToDataset()
 
         # avw
-        ''' Average Visible Wavelength
-            Vandermuelen et al. 2020'''
+        # ''' Average Visible Wavelength
+        #     Vandermuelen et al. 2020'''
 
         if ConfigFile.products["bL2Prodavw"]:
             msg = "Processing avw"
@@ -220,8 +221,8 @@ class ProcessL2OCproducts():
             avwDS.columnsToDataset()
 
         # qwip
-        ''' Quantitative Water Index Polynomial
-            Dierssen et al. 2022'''
+        # ''' Quantitative Water Index Polynomial
+        #     Dierssen et al. 2022'''
 
         if ConfigFile.products["bL2Prodqwip"]:
             msg = "Processing QWIP"
@@ -241,8 +242,8 @@ class ProcessL2OCproducts():
             qwipDS.columnsToDataset()
 
         # CDOM (GOCAD)
-        ''' Global Ocean Carbon Algorithm Database
-            Aurin et al. 2018 MLRs for global dataset (GOCAD) '''
+        # ''' Global Ocean Carbon Algorithm Database
+        #     Aurin et al. 2018 MLRs for global dataset (GOCAD) '''
 
         if ConfigFile.products["bL2Prodgocad"]:
             msg = "Processing CDOM, Sg, DOC"
@@ -288,14 +289,14 @@ class ProcessL2OCproducts():
 
 
         # GIOP
-        ''' Generalized ocean color inversion model for Inherent Optical Properties
-            Werdell et al. 2013
-            Not yet implemented'''
+        # ''' Generalized ocean color inversion model for Inherent Optical Properties
+        #     Werdell et al. 2013
+        #     Not yet implemented'''
 
 
         # QAA
-        ''' Quasi-Analytcal Algorithm
-            Lee et al. 2002, updated to QAAv6 for MODIS bands'''
+        # ''' Quasi-Analytcal Algorithm
+        #     Lee et al. 2002, updated to QAAv6 for MODIS bands'''
 
         if ConfigFile.products["bL2Prodqaa"]:
             msg = "Processing qaa"
@@ -403,10 +404,4 @@ class ProcessL2OCproducts():
                 c = dict(zip(waveStr,c.tolist()))
                 for key, value in c.items(): cDS.columns[key] = value
                 cDS.columnsToDataset()
-
-
-
-
-
-
 
