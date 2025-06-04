@@ -642,7 +642,7 @@ class ProcessL1b:
                 sensorIDs = Utilities.get_sensor_dict(node)
                 acq_datetime = datetime.strptime(node.attributes["TIME-STAMP"], "%a %b %d %H:%M:%S %Y")
                 acq_time = acq_datetime.strftime('%Y%m%d%H%M%S')
-                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB_characterization', "SeaBird")
+                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB', "SeaBird")
                 print('FidRadDB Char dir:', inpath)
 
                 # FidRad DB connection and download of calibration files by api

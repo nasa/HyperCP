@@ -347,8 +347,8 @@ class ProcessL1bTriOS:
             elif ConfigFile.settings['FidRadDB'] == 1:
                 sensorIDs = Utilities.get_sensor_dict(node)
                 acq_time = node.attributes["TIME-STAMP"].replace('_','')
-                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB_characterization', "TriOS")
-                print('FidRadDB Char dir:', inpath)
+                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB', "TriOS")
+                print('FidRadDB Cal./Char. dir:', inpath)
 
                 # FidRad DB connection and download of calibration files by api
                 cal_char_types = ['STRAY','RADCAL','POLAR','THERMAL','ANGULAR']
