@@ -657,8 +657,7 @@ class Controller:
                     msg = 'No deglitching will be performed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
-                root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
-                # BUG: The above throws 2 class TypeErrors between the return statement at the end of the method and here??
+                root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)                
                 Utilities.checkOutputFiles(outFilePath)
 
             elif level == "L1B":
