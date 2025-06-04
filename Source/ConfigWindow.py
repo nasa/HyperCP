@@ -47,9 +47,9 @@ class ConfigWindow(QtWidgets.QDialog):
         self.sensorTypeComboBox.currentIndexChanged.connect(self.sensorTypeChanged)
         # self.setSensorSettings()
         # Calibration Config Settings
-        self.addCalibrationFileButton = QtWidgets.QPushButton("Add Cals")
+        self.addCalibrationFileButton = QtWidgets.QPushButton("Add Factory Cals")
         self.addCalibrationFileButton.clicked.connect(self.addCalibrationFileButtonPressed)
-        self.deleteCalibrationFileButton = QtWidgets.QPushButton("Remove Cals")
+        self.deleteCalibrationFileButton = QtWidgets.QPushButton("Remove F. Cals")
         self.deleteCalibrationFileButton.clicked.connect(self.deleteCalibrationFileButtonPressed)
 
         calFiles = ConfigFile.settings["CalibrationFiles"]
