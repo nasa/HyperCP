@@ -262,35 +262,35 @@ class ProcessL1aqc:
         ancDateTag = None
         for gp in node.groups:
             if gp.id.startswith('GP'):
-
-                # NOTE: Do So-Rad and DALEC use a group in L1A called GP*, like GPS or GPRMC?
-                #   NOTE: If not, make changes here to pick up GPS data from the appropriate group.
-
+                ancLat = []
+                ancLon = []
                 gpsDateTime = gp.getDataset('DATETIME').data
-                gpsLat = gp.getDataset('LATPOS')
-                latHemiData = gp.getDataset('LATHEMI')
-                gpsLon = gp.getDataset('LONPOS')
-                lonHemiData = gp.getDataset('LONHEMI')
-
                 ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
                 ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
-
-                latAnc = []
-                lonAnc = []
-                for i in range(gpsLat.data.shape[0]):
-                    latDM = gpsLat.data["NONE"][i]
-                    latDirection = latHemiData.data["NONE"][i]
-                    latDD = Utilities.dmToDd(latDM, latDirection)
-                    lonDM = gpsLon.data["NONE"][i]
-                    lonDirection = lonHemiData.data["NONE"][i]
-                    lonDD = Utilities.dmToDd(lonDM, lonDirection)
-                    latAnc.append(latDD)
-                    lonAnc.append(lonDD)
-
-                if gp.attributes['CalFileName'].startswith('GPRMC'):
-                    gpsStatus = gp.getDataset('STATUS')
+                if ConfigFile.settings['SensorType'].lower() == 'trios':
+                    # Rarely(?) used lat/lon in MSDA acquisition. 
+                    ancLat = gp.getDataset('LATITUDE') # These will be replaced by ancillary file, if present
+                    ancLon = gp.getDataset('LONGITUDE')
                 else:
-                    gpsStatus = gp.getDataset('FIXQUAL')
+                    gpsLat = gp.getDataset('LATPOS')
+                    latHemiData = gp.getDataset('LATHEMI')
+                    gpsLon = gp.getDataset('LONPOS')
+                    lonHemiData = gp.getDataset('LONHEMI')
+                    
+                    for i in range(gpsLat.data.shape[0]):
+                        latDM = gpsLat.data["NONE"][i]
+                        latDirection = latHemiData.data["NONE"][i]
+                        latDD = Utilities.dmToDd(latDM, latDirection)
+                        lonDM = gpsLon.data["NONE"][i]
+                        lonDirection = lonHemiData.data["NONE"][i]
+                        lonDD = Utilities.dmToDd(lonDM, lonDirection)
+                        ancLat.append(latDD)
+                        ancLon.append(lonDD)
+
+                    if gp.attributes['CalFileName'].startswith('GPRMC'):
+                        gpsStatus = gp.getDataset('STATUS')
+                    else:
+                        gpsStatus = gp.getDataset('FIXQUAL')
 
             elif gp.id.startswith('ES'):
                 esDateTime = gp.getDataset('DATETIME').data
@@ -299,8 +299,8 @@ class ProcessL1aqc:
                 compass = gp.getDataset('COMP')
             elif gp.id.startswith('DALEC_GP'):
                 gpsDateTime = gp.getDataset('DATETIME').data
-                latAnc=gp.getDataset('LAT').data
-                lonAnc=gp.getDataset('LON').data
+                ancLat=gp.getDataset('LAT').data
+                ancLon=gp.getDataset('LON').data
 
                 ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
                 ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
@@ -316,8 +316,8 @@ class ProcessL1aqc:
                 sunAzimuthAnc = []
                 sunZenithAnc = []
                 for i, dt_utc in enumerate(gpsDateTime):
-                    sunAzimuthAnc.append(get_azimuth(latAnc[i],lonAnc[i],dt_utc,0)) # latAnc lonAnc from GPS, not ancillary file
-                    sunZenithAnc.append(90 - get_altitude(latAnc[i],lonAnc[i],dt_utc,0))
+                    sunAzimuthAnc.append(get_azimuth(ancLat[i],ancLon[i],dt_utc,0)) # ancLat ancLon from GPS, not ancillary file
+                    sunZenithAnc.append(90 - get_altitude(ancLat[i],ancLon[i],dt_utc,0))
 
                 # SATTHS fluxgate compass on SAS
                 if compass is None:
@@ -381,8 +381,8 @@ class ProcessL1aqc:
             timeStamp = ancData.columns["DATETIME"][0]
             ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
             ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]
-            latAnc = ancData.columns["LATITUDE"][0]
-            lonAnc = ancData.columns["LONGITUDE"][0]
+            ancLat = ancData.columns["LATITUDE"][0]
+            ancLon = ancData.columns["LONGITUDE"][0]
 
             # Solar geometry is preferentially acquired from SunTracker or pySAS
             # Otherwise resorts to ancillary data. Otherwise processing fails.
@@ -390,8 +390,8 @@ class ProcessL1aqc:
             sunAzimuthAnc = []
             sunZenithAnc = []
             for i, dt_utc in enumerate(timeStamp):
-                sunAzimuthAnc.append(get_azimuth(latAnc[i],lonAnc[i],dt_utc,0))
-                sunZenithAnc.append(90 - get_altitude(latAnc[i],lonAnc[i],dt_utc,0))
+                sunAzimuthAnc.append(get_azimuth(ancLat[i],ancLon[i],dt_utc,0))
+                sunZenithAnc.append(90 - get_altitude(ancLat[i],ancLon[i],dt_utc,0))
 
             # relAzAnc either from ancillary relZz, ancillary sensorAz, (or THS compass above ^^)
             relAzAnc = []
@@ -450,9 +450,9 @@ class ProcessL1aqc:
             timeStamp = gpsDateTime
             ancillaryData.appendColumn("DATETIME", gpsDateTime)
 
-            ancillaryData.appendColumn("LATITUDE", latAnc)
+            ancillaryData.appendColumn("LATITUDE", ancLat)
             ancillaryData.attributes["LATITUDE_UNITS"]='degrees'
-            ancillaryData.appendColumn("LONGITUDE", lonAnc)
+            ancillaryData.appendColumn("LONGITUDE", ancLon)
             ancillaryData.attributes["LONGITUDE_UNITS"]='degrees'
 
 
@@ -907,9 +907,9 @@ class ProcessL1aqc:
 
         # Now include the remaining ancillary data in ancGroup with or w/out SunTracker
         ancGroup.addDataset("LATITUDE")
-        ancGroup.datasets["LATITUDE"].data = np.array(latAnc, dtype=[('NONE', '<f8')])
+        ancGroup.datasets["LATITUDE"].data = np.array(ancLat, dtype=[('NONE', '<f8')])
         ancGroup.addDataset("LONGITUDE")
-        ancGroup.datasets["LONGITUDE"].data = np.array(lonAnc, dtype=[('NONE', '<f8')])
+        ancGroup.datasets["LONGITUDE"].data = np.array(ancLon, dtype=[('NONE', '<f8')])
         ancGroup.addDataset("TIMETAG2")
         ancGroup.datasets["TIMETAG2"].data = np.array(ancTimeTag2, dtype=[('NONE', '<f8')])
         ancGroup.addDataset("DATETAG")

@@ -112,7 +112,7 @@ class ProcessL1b:
 
         # Read sensor-specific radiometric calibration
         import re
-        
+
         cal_dates = []
         for s in ['ES', 'LI', 'LT']:
             save_delta = None
@@ -125,14 +125,14 @@ class ProcessL1b:
                 cal_date = datetime.strptime(re.search(r'\d{14}', f.split('/')[-1]).group(), "%Y%m%d%H%M%S")
                 meas_date = root.getGroup("ANCILLARY_METADATA").getDataset("DATETIME").data[0]
                 t_delta = cal_date - meas_date.replace(tzinfo=None)
-                
+
                 if save_delta is None and t_delta.total_seconds() < 0:
                     save_delta = abs(t_delta.total_seconds())
-                
+
                 if t_delta.total_seconds() < 0 and abs(t_delta.total_seconds()) <= save_delta:
                     save_cal_date = cal_date
                     save_delta = abs(t_delta.total_seconds())
-            
+
             cal_dates.append(save_cal_date)
 
         for f in glob.glob(os.path.join(radcal_dir, r'*RADCAL*')):
@@ -581,9 +581,8 @@ class ProcessL1b:
         node  = Utilities.rootAddDateTime(node)
 
         # Introduce a new group for carrying L1AQC data forward. Groups keep consistent timestamps across all datasets,
-        #    so it has to be a new group to avoid conflict with interpolated timestamps. 
-
-        # Due to the way light/dark sampling works with OCRs, each will need its own group
+        #    so it has to be a new group to avoid conflict with interpolated timestamps.
+        #       Due to the way light/dark sampling works with OCRs, each will need its own group
         esDarkGroup = node.addGroup('ES_DARK_L1AQC')
         esLightGroup = node.addGroup('ES_LIGHT_L1AQC')
         liDarkGroup = node.addGroup('LI_DARK_L1AQC')

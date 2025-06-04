@@ -111,12 +111,14 @@ class ProcessL1aTriOS:
                         print("ERROR : naming convention os not respected")
                         name = None
 
-                    start,_ = ProcessL1aTriOS.formatting_instrument(name,cal_path,file,root,configPath)
+                    start,stop = ProcessL1aTriOS.formatting_instrument(name,cal_path,file,root,configPath)
 
                     if start is None:
                         return None, None
                     acq_datetime = dt.datetime.strptime(start,"%Y%m%dT%H%M%SZ")
                     root.attributes["TIME-STAMP"] = dt.datetime.strftime(acq_datetime,'%a %b %d %H:%M:%S %Y')
+                    acq_datetime = dt.datetime.strptime(stop,"%Y%m%dT%H%M%SZ")
+                    root.attributes["TIME_COVERAGE_END"] = dt.datetime.strftime(acq_datetime,'%a %b %d %H:%M:%S %Y')
 
 
                 # File naming convention on TriOS TBD depending on convention used in MSDA_XE
@@ -139,6 +141,28 @@ class ProcessL1aTriOS:
                 root.attributes["L1A_FILENAME"] = outFFP[-1]
 
                 root = ProcessL1aTriOS.fixChronology(root)
+
+                # If Lat/Lon from MSDA file is valid, create a GPS group
+                for gp in root.groups:
+                    for ds in gp.datasets:
+                        if ds == 'ES':
+                            lat = gp.datasets['LATITUDE']
+                            lon = gp.datasets['LONGITUDE']
+                            dateTag = gp.datasets['DATETAG']
+                            timeTag2 = gp.datasets['TIMETAG2']
+
+                            if not (all(lat.data) == 0 and all(lon.data) == 0):
+                                # Initialize a new group for MSDA GPS data
+                                gpsGroup = root.addGroup("GPS_MSDA")
+                                gpsGroup.addDataset("LATITUDE")
+                                gpsGroup.datasets["LATITUDE"].data = np.array(lat, dtype=[('NONE', '<f8')])
+                                gpsGroup.addDataset("LONGITUDE")
+                                gpsGroup.datasets["LONGITUDE"].data = np.array(lat, dtype=[('NONE', '<f8')])
+                                gpsGroup.addDataset("TIMETAG2")
+                                gpsGroup.datasets["TIMETAG2"].data = np.array(timeTag2, dtype=[('NONE', '<f8')])
+                                gpsGroup.addDataset("DATETAG")
+                                gpsGroup.datasets["DATETAG"].data = np.array(dateTag, dtype=[('NONE', '<f8')])
+
 
                 try:
                     # root.writeHDF5(new_name)
@@ -221,10 +245,17 @@ class ProcessL1aTriOS:
         else:
             end_meta = index
         file_dat.close()
-        data_temp = pd.read_csv(inputfile, skiprows=end_meta+1, header=None, sep=r'\s+')
+
+        # NOTE: This may differ from G1 to G2. G2 should have some column for internal thermistor
+        # Datetime PositionLatitude PositionLongitude IntegrationTime c001-c255 Comment(filename-like) IDData(unknown)
+        #   Sample dataset has an extra line after the headers with NaNs for metadata, 1-255, and no Comment or IDData
+        skip = 1 # 1 skips the headers plus the dummy line with NaN Datetime before data begins
+        data_temp = pd.read_csv(inputfile, skiprows=end_meta+skip, header=None, sep=r'\s+')
+        # Datetime PositionLatitude PositionLongitude IntegrationTime
         meta = pd.concat([data_temp[0],data_temp[1],data_temp[2],data_temp[3]], axis=1, ignore_index=True)
         data_temp = data_temp.drop(columns=[0,1,2,3])
-        time = data_temp.iloc[:,-1]
+        time = data_temp.iloc[:,-1] # <---- This is from IDData?? Why not from Datetime?
+        # c001 - c255        
         data = data_temp.iloc[:,:-2]
         return meta,data,time
 
@@ -318,8 +349,10 @@ class ProcessL1aTriOS:
             print(msg)
             Utilities.writeLogFile(msg)
             return None,None
+        # meta contains Datetime, PositionLat, PositionLon, and IntegrationTime
 
         ## if date is the first field "%yyy-mm-dd"
+        #   This derives date/time from IDData, not Datetime column of .mlb file
         if len(time[0].rsplit('_')[0]) == 11:
             dates = [i.rsplit('_')[0][1:] for i in time]
             datetag = [float(i.rsplit('-')[0] + str(date(int(i.rsplit('-')[0]), int(i.rsplit('-')[1]), int(i.rsplit('-')[2])).timetuple().tm_yday)) for i in dates]
@@ -330,25 +363,34 @@ class ProcessL1aTriOS:
             datetag = [float(i.rsplit('-')[0] + str(date(int(i.rsplit('-')[0]), int(i.rsplit('-')[1]), int(i.rsplit('-')[2])).timetuple().tm_yday)) for i in dates]
             timetag = [float(i.rsplit('_')[2].replace('-','') + '000') for i in time]
 
+        # NOTE: Placeholder for extracting thermistor temp from G2 RAMSES:
+        # if G2: ...
+
         # Reshape data
-        rec_datetag  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=meta[0])
-        rec_datetag2  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=datetag)
+        rec_datetag  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=meta[0]) # <- From Datetime
+        rec_datetag2  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=datetag) # <- From Comments
+        rec_timetag2  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=timetag) # <- From Comments
+        rec_latitude  = ProcessL1aTriOS.reshape_data(sensor,len(meta[1]),data=meta[1])
+        rec_longitude  = ProcessL1aTriOS.reshape_data(sensor,len(meta[2]),data=meta[2])
         rec_inttime  = ProcessL1aTriOS.reshape_data(sensor,len(meta[3]),data=meta[3])
+
+        # Placeholders, zero-buffered
         rec_check  = ProcessL1aTriOS.reshape_data('SUM',len(meta[0]),data=np.zeros(len(meta)))
         rec_darkave  = ProcessL1aTriOS.reshape_data(sensor,len(meta[0]),data=np.zeros(len(meta)))
         rec_darksamp  = ProcessL1aTriOS.reshape_data(sensor,len(meta[0]),data=np.zeros(len(meta)))
         rec_frame  = ProcessL1aTriOS.reshape_data('COUNTER',len(meta[0]),data=np.zeros(len(meta)))
         rec_posframe  = ProcessL1aTriOS.reshape_data('COUNT',len(meta[0]),data=np.zeros(len(meta)))
         rec_sample  = ProcessL1aTriOS.reshape_data('DELAY',len(meta[0]),data=np.zeros(len(meta)))
-        rec_spectemp  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=np.zeros(len(meta)))
+        # NOTE: Placeholder for translating thermistor temp from G2 RAMSES:
+        # if G2: ... else
+        rec_spectemp  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=np.zeros(len(meta)))        
         rec_thermalresp  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=np.zeros(len(meta)))
         rec_time  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=np.zeros(len(meta)))
-        rec_timetag2  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=timetag)
 
         # HDF5 Dataset creation
         gp.attributes['CalFileName'] = 'SAM_'+name+'.ini'
         gp.addDataset('DATETAG')
-        gp.datasets['DATETAG'].data=np.array(rec_datetag2, dtype=[('NONE', '<f8')])
+        gp.datasets['DATETAG'].data=np.array(rec_datetag2, dtype=[('NONE', '<f8')])# <- From Comments
         gp.addDataset('INTTIME')
         gp.datasets['INTTIME'].data=np.array(rec_inttime, dtype=[('NONE', '<f8')])
         gp.addDataset('CHECK')
@@ -370,7 +412,11 @@ class ProcessL1aTriOS:
         gp.addDataset('TIMER')
         gp.datasets['TIMER'].data=np.array(rec_time, dtype=[('NONE', '<f8')])
         gp.addDataset('TIMETAG2')
-        gp.datasets['TIMETAG2'].data=np.array(rec_timetag2, dtype=[('NONE', '<f8')])
+        gp.datasets['TIMETAG2'].data=np.array(rec_timetag2, dtype=[('NONE', '<f8')])# <- From Comments
+        gp.addDataset('LATITUDE')
+        gp.datasets['LATITUDE'].data=np.array(rec_latitude, dtype=[('NONE', '<f8')])
+        gp.addDataset('LONGITUDE')
+        gp.datasets['LONGITUDE'].data=np.array(rec_longitude, dtype=[('NONE', '<f8')])
 
         # Computing wavelengths
         c0 = float(gp.attributes['c0s'])
@@ -378,13 +424,15 @@ class ProcessL1aTriOS:
         c2 = float(gp.attributes['c2s'])
         c3 = float(gp.attributes['c3s'])
         wl = []
+
+        # NOTE: Hardcoded assumption of 256 pixels in .mlb file
         for i in range(1,256):
         # for i in range(1,data.shape[1]+1):
             wl.append(str(round((c0 + c1*(i+1) + c2*(i+1)**2 + c3*(i+1)**3), 2)))
 
         #Create Data (LI,LT,ES) dataset
         ds_dt = np.dtype({'names': wl,'formats': [np.float64]*len(wl)})
-        my_arr = np.array(data).transpose()
+        my_arr = np.array(data).transpose() # 255 x N array of pixel data
         try:
             rec_arr = np.rec.fromarrays(my_arr, dtype=ds_dt)
         except ValueError as err:
@@ -421,8 +469,8 @@ class ProcessL1aTriOS:
         C1.columnsToDataset()
 
         ProcessL1aTriOS.get_attr(metaback,C1)
-        start_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[0][0]-2), "%Y%m%dT%H%M%SZ")
-        stop_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[-1][0]-2), "%Y%m%dT%H%M%SZ")
+        start_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[0][0]-2), "%Y%m%dT%H%M%SZ")# <- From Datetime
+        stop_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[-1][0]-2), "%Y%m%dT%H%M%SZ")# <- From Datetime
 
         return start_time,stop_time
 

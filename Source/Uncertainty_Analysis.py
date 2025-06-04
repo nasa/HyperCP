@@ -137,7 +137,10 @@ class Propagate:
                                         uncertainties,
                                         corr_between=self.corr_matrix_Default_Instruments,
                                         corr_x=corr_list,
-                                        output_vars=3)
+                                        output_vars=3,
+                                        # pdf_shape="truncated_gaussian",
+                                        # pdf_params={"min": 0},
+                                        )
 
         # separate uncertainties and sensor values from their lists - for clarity
         Es_unc, Li_unc, Lt_unc = [unc[i] for i in range(len(unc))]
@@ -202,6 +205,8 @@ class Propagate:
             mean_vals,
             rnd_unc,
             corr_between=self.corr_matrix_Default_Lw,
+            # pdf_shape="truncated_gaussian",
+            # pdf_params={"min": 0},
         )
 
         systematic = self.MCP.propagate_systematic(
@@ -209,6 +214,8 @@ class Propagate:
             mean_vals,
             sys_unc,
             corr_between=self.corr_matrix_Default_Lw,
+            # pdf_shape="truncated_gaussian",
+            # pdf_params={"min": 0},
         )
 
         return np.sqrt(random ** 2 + systematic ** 2)
@@ -233,11 +240,15 @@ class Propagate:
         corr_list = ['rand', 'syst', 'rand', 'rand', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst',
                      'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst', 'syst']
 
-        return self.MCP.propagate_standard(self.RRS,
-                                           mean_vals,
-                                           uncertainties,
-                                           corr_between=self.corr_matrix_Default_RRS,
-                                           corr_x=corr_list)
+        return self.MCP.propagate_standard(
+            self.RRS,
+            mean_vals,
+            uncertainties,
+            corr_between=self.corr_matrix_Default_RRS,
+            corr_x=corr_list,
+            # pdf_shape="truncated_gaussian",
+            # pdf_params={"min": 0},
+        )
 
     def Propagate_RRS_Convolved(self, mean_vals: list[np.array], uncertainties: list[np.array], platform: str,
                                 wavebands: np.array) -> np.array:
@@ -276,6 +287,8 @@ class Propagate:
             mean_vals,
             rnd_unc,
             corr_between=self.corr_matrix_Default_RRS,
+            # pdf_shape="truncated_gaussian",
+            # pdf_params={"min": 0},
         )
 
         systematic = self.MCP.propagate_systematic(
@@ -283,6 +296,8 @@ class Propagate:
             mean_vals,
             sys_unc,
             corr_between=self.corr_matrix_Default_RRS,
+            # pdf_shape="truncated_gaussian",
+            # pdf_params={"min": 0},
         )
 
         return np.sqrt(random ** 2 + systematic ** 2)
@@ -341,7 +356,9 @@ class Propagate:
         return self.MCP.propagate_random(self.rhoM99,
                                          mean_vals,
                                          uncertainties,
-                                         corr_x=["rand", "rand", "rand"]
+                                         corr_x=["rand", "rand", "rand"],
+                                        #  pdf_shape="truncated_gaussian",
+                                        #  pdf_params={"min": 0},
                                          )
 
     def Zhang_Rho_Uncertainty(self, mean_vals: list[np.array], uncertainties: list[np.array]) -> np.array:
@@ -359,7 +376,9 @@ class Propagate:
                                          # RhoCorrections.read_Z17_LUT, 
                                          # # self.zhangWrapper,
                                          mean_vals,
-                                         uncertainties
+                                         uncertainties,
+                                         pdf_shape="truncated_gaussian",
+                                         pdf_params={"min": 0},
                                          )
     
     @staticmethod
@@ -377,9 +396,9 @@ class Propagate:
 
         from Source.RhoCorrections import InterpolationError
         try:
-            zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, waveBands)
+            zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
         except InterpolationError as err:
-            zhang = Propagate.zhangWrapper(windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, waveBands)
+            zhang = Propagate.zhangWrapper(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
         
         return zhang
 

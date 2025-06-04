@@ -2321,9 +2321,7 @@ class Utilities:
 
             ### Dalec
             elif ConfigFile.settings['SensorType'].lower() == "dalec":
-                if "TEMP" in node.getGroup(f'{sensor}').datasets:
-                    TempDS = node.getGroup(f'{sensor}').getDataset("TEMP")
-                elif "SPECTEMP" in node.getGroup(f'{sensor}').datasets:
+                if "SPECTEMP" in node.getGroup(f'{sensor}').datasets:
                     TempDS = node.getGroup(f'{sensor}').getDataset("SPECTEMP")
                 else:
                     msg = "Thermal dataset not found"
