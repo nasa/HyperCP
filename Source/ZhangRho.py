@@ -50,6 +50,19 @@ def load():
            for k in ['wind', 'od', 'zen_sun', 'zen_view', 'azm_view', 'wv']}
 
 
+def assign(DB):
+    global db, quads, skyrad0, sunrad0, sdb, vdb, rad_boa_sca, rad_boa_vec
+
+    db = DB["db"]
+    quads = DB["quads"]
+    sdb = DB["sdb"]
+    vdb = DB["vdb"]
+    skyrad0 = DB["skyrad0"]
+    sunrad0 = DB["sunrad0"]
+    rad_boa_sca = DB["rad_boa_sca"]
+    rad_boa_vec = DB["rad_boa_vec"]
+
+
 def clear_memory():
     """
     Remove look up tables from memory (~2.5Gb).
@@ -415,7 +428,7 @@ def interpn_chunked(x, y, xi, chunked_axis=2, cache_size=(16 * 10 ** 6) / 4):
         return interpn(x, y, vxi.reshape(-1, ndim)).reshape(vxi.shape[:-1]).T
 
 
-def get_sky_sun_rho(env, sensor, round4cache=False):
+def get_sky_sun_rho(env, sensor, round4cache=False, DB=None):
     """
     Computes sea surface reflectance of skylight.
     Based on: Zhang, X., S. He, A. Shabani, P.-W. Zhai, and K. Du. 2017. Spectral sea
@@ -439,8 +452,12 @@ def get_sky_sun_rho(env, sensor, round4cache=False):
     """
     # Load constants
     # global db, quads, skyrad0, sunrad0, sdb, vdb, radiance_boa_sca, radiance_boa_vec
-    if db is None:
-        load()
+    if DB is None:
+        if db is None:
+            load()
+    else:
+        assign(DB)
+
         # with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Data/zhang_rho_db.pickle'), 'rb') as f:
         #     db, quads, skyrad0, sunrad0, sdb, vdb, radiance_boa_sca, radiance_boa_vec = pickle.load(f)
 

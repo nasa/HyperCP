@@ -4,6 +4,9 @@
 # vscode
 .vscode/
 
+# conda
+.conda/
+
 # Backup stores
 ~*
 *.py~
@@ -15,11 +18,12 @@
 Data/Zhang_rho_db.mat
 Data/Zhang_rho_db_expanded.mat
 Data/Zhang_rho_LUT.nc
-Data/Z17_LUT_v2.nc
+Data/Z17_LUT_*.nc
 Data/Anc/
 Data/L*/
 Data/Reports/
 Data/Photos/
+zong_plots/
 # The /* is required if you later want to unignore subsets (i.e., to keep the directory itself)
 Data/Sample_Data/DALEC/*
 !Data/Sample_Data/DALEC/RAW
@@ -83,3 +87,9 @@ run_*.py
 
 #ignore ".idea/" if working with pycharm:
 .idea/
+
+# if directly changing sample configs
+# Config/sample_SEABIRD_pySAS.cfg
+# Config/sample_SEABIRD_pySAS.hdr
+# Config/sample_TRIOS_NOTRACKER_FULL.cfg
+# Config/sample_TRIOS_NOTRACKER_FULL.hdr
