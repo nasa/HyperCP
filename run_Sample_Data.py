@@ -28,6 +28,13 @@ from Main import Command
 # D. Aurin NASA/GSFC Aug 2024
 
 ################################################### CUSTOM SET UP ###################################################
+# Block use of screen for QT if necessary
+# NOTE: if you get the following error, read on...
+#       qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found
+# NOTE: The following needs to be run in the parent shell, so cannot be spawned from here. Prior to running this script,
+# run the following in the shell:
+#       export QT_QPA_PLATFORM=offscreen
+
 # Batch options
 MULTI_TASK = True  # Multiple threads for HyperSAS (any level) or TriOS (only L1A and up)
 MULTI_LEVEL = False  # Process raw (L0) to Level-2 (L2)

@@ -383,6 +383,17 @@ class Propagate:
     
     @staticmethod
     def temporary_zhangWrapper(windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, waveBands):
+
+        # Guardrails on Z17 inputs from MC
+        if windSpeedMean < 0:
+            windSpeedMean = 0
+        if windSpeedMean > 15:
+            windSpeedMean = 15
+        if AOD > 0.5:
+            AOD = 0.5
+        if sza > 60:
+            sza = 60
+
         from Source.RhoCorrections import InterpolationError
         try:
             zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)

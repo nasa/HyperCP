@@ -545,6 +545,8 @@ class OCproductsWindow(QtWidgets.QDialog):
     def saveButtonPressed(self):
         print("L2 Products - Save/Close Pressed")
 
+        # Many of these are redundant checks
+        ConfigFile.products["bL2PlotProd"] = int(self.plotCheckBox.isChecked())
         ConfigFile.products["bL2Prodoc3m"] = int(self.oc3mCheckBox.isChecked())
         # ConfigFile.products["bL2Prodaot"] = int(self.aotCheckBox.isChecked())
         ConfigFile.products["bL2Prodkd490"] = int(self.kd490CheckBox.isChecked())
@@ -594,6 +596,7 @@ class OCproductsWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2WeightMODISA"] = 1
 
         ConfigFile.saveConfig(ConfigFile.filename)
+        print(f'ConfigFile.products["bL2PlotProd"] = {ConfigFile.products["bL2PlotProd"]}')
         self.close()
 
     def cancelButtonPressed(self):

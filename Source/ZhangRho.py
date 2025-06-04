@@ -416,7 +416,11 @@ def interpn_chunked(x, y, xi, chunked_axis=2, cache_size=(16 * 10 ** 6) / 4):
         for cy, s, e in zip(ys, indices[:-1], indices[1:]):
             cx = [v[s:e] if i == chunked_axis else v for i, v in enumerate(x)]
             cxi = np.array(np.meshgrid(*[v[s:e] if i == chunked_axis else v for i, v in enumerate(xi)], copy=False)).T
-            cyi[:, :, s:e, :] = interpn(cx, cy, cxi.reshape(-1, ndim)).reshape(cxi.shape[:-1]).T
+            try:
+                cyi[:, :, s:e, :] = interpn(cx, cy, cxi.reshape(-1, ndim)).reshape(cxi.shape[:-1]).T
+            except ValueError as err:
+                print(err)
+
         return cyi
     else:
         # One shot

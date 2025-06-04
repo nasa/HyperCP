@@ -1200,11 +1200,10 @@ class ProcessL2:
         if n <= 5 or x == 0:
             x = n  # if only 5 or fewer records retained, use them all...
 
-        # Find the indexes for the lowest X%
-        lt780 = ProcessL2.interpolateColumn(ltSlice, 780.0)
-        index = np.argsort(lt780)  # gives indexes if values were to be sorted
-
         if enablePercentLt and x > 1:
+            # Find the indexes for the lowest X%
+            lt780 = ProcessL2.interpolateColumn(ltSlice, 780.0)
+            index = np.argsort(lt780)  # gives indexes if values were to be sorted
             # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest X% of unsorted lt780
             y = index[0:x]
             msg = f'{len(y)} spectra remaining in slice to average after filtering to lowest {percentLt}%.'
@@ -1213,7 +1212,9 @@ class ProcessL2:
         else:
             # If Percent Lt is turned off, this will average the whole slice, and if
             # ensemble is off (set to 0), just the one spectrum will be used.
-            y = index
+            first_band = next(iter(ltSlice))
+            first_band_values = ltSlice[first_band]
+            y=list(range(0,len(first_band_values)))
 
         EnsembleN = len(y) # After taking lowest X%
         if 'Ensemble_N' not in node.getGroup('REFLECTANCE').datasets:
@@ -1396,12 +1397,11 @@ class ProcessL2:
 
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
-            # NOTE: Need to update to 0.5 for new database
-            if AODXSlice >0.2:
-                msg = f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.2. Expect larger, uncaptured errors.'
+            if AODXSlice >0.5:
+                msg = f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.5. Expect larger, uncaptured errors.'
                 print(msg)
                 Utilities.writeLogFile(msg)
-                AODXSlice = 0.2
+                AODXSlice = 0.5
             if WINDSPEEDXSlice > 15:
                 msg = f'WIND = {WINDSPEEDXSlice:.1f}. Maximum Wind Speed Reached. Setting to 15.0. Expect larger, uncaptured errors.'
                 print(msg)
@@ -1968,7 +1968,6 @@ class ProcessL2:
         interval = float(ConfigFile.settings["fL2TimeInterval"])
 
         # interpolate Light/Dark data for Raw groups if HyperOCR data is being processed
-        # NOTE: Why is this necessary? Aren't we interested in the variability of darks at native acquisition frequency? -DA
         if ConfigFile.settings['SensorType'].lower() == "seabird":
             # in seabird case interpolate dark data to light timer before breaking into stations
             instrument = HyperOCR()

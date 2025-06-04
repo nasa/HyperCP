@@ -22,7 +22,9 @@ class ConfigWindow(QtWidgets.QDialog):
         # self.setStyleSheet("background-color: #e3e6e1;")
         self.setModal(True)
         self.name = name
+        self.newName = ''
         self.inputDirectory = inputDir
+        self.FullCalDir = ''
         self.initUI()
 
 
@@ -1258,7 +1260,7 @@ class ConfigWindow(QtWidgets.QDialog):
             comboList = ['LI','LT','ES']
             self.calibrationFrameTypeComboBox.clear()
             self.calibrationFrameTypeComboBox.addItems(comboList)
-            
+
         elif CurrentSensor.lower() == "dalec":
             comboList = ['not required']
             self.calibrationFrameTypeComboBox.clear()
@@ -1929,12 +1931,13 @@ class ConfigWindow(QtWidgets.QDialog):
         print("OC Products Dialogue")
 
         ConfigWindow.refreshConfig(self)
+        # print(f'ConfigFile.products["bL2PlotProd"] = {ConfigFile.products["bL2PlotProd"]}')
         OCproductsDialog = OCproductsWindow(self)
-        # OCproductsDialog.exec()
         OCproductsDialog.show()
 
         if int(ConfigFile.settings["bL2WeightMODISA"]) == 1:
             self.l2WeightMODISACheckBox.setChecked(True)
+        # print(f'ConfigFile.products["bL2PlotProd"] = {ConfigFile.products["bL2PlotProd"]}')
 
     def l2SaveSeaBASSCheckBoxUpdate(self):
         print("ConfigWindow - l2SaveSeaBASSCheckBoxUpdate")
