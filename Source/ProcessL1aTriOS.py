@@ -30,6 +30,7 @@ class ProcessL1aTriOS:
             for file in fp:
 
                 ## Test filename for station/cast
+                # XXXXS for light, XXXXD for caps-on dark
                 def parse_filename(data):
                     dates = []
                     for pattern in [
@@ -54,7 +55,7 @@ class ProcessL1aTriOS:
                 except IndexError:
                     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
                     print("  L0 filename should have a cast to identify triplet instrument")
-                    print("  ending in 4 digits before S.mlb ")
+                    print("  ending in 4 digits before S.mlb (light) or D.mlb for caps-on dark. ")
                     return None,None
 
                 # match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
@@ -87,13 +88,13 @@ class ProcessL1aTriOS:
                 root.attributes["RAW_FILE_NAME"] = str(ffp)
                 root.attributes["CAST"] = a_name
                 match = re.search(r"\dD$", a_name)
+                outFilePathDark = os.path.join(outFilePath+'/DARK')
                 if match is not None:
                     print(f'Caps-on dark file recognized {a_name}.')
                     cod = True
                     root.attributes["FRAME_TYPE"] = 'caps-on dark'
-                    outFilePath = os.path.join(outFilePath+'/DARK')
-                    if os.path.isdir(outFilePath) is False:
-                        os.mkdir(outFilePath)
+                    if os.path.isdir(outFilePathDark) is False:
+                        os.mkdir(outFilePathDark)
                 else:
                     cod = False
                     root.attributes["FRAME_TYPE"] = 'light'
@@ -119,20 +120,23 @@ class ProcessL1aTriOS:
                 # File naming convention on TriOS TBD depending on convention used in MSDA_XE
                 #The D-6 requirements to add the timestamp manually on every acquisition is impractical.
                 #Convert to using any unique name and append timestamp from data (start)
-
                 try:
-                    new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
-                    if re.search(r'\d{4}S', file.split('/')[-1]) is not None:
-                        new_name = new_name+'_'+str(start)  # I'm not sure what match2 was supposed to find in ACRI's code - AR
+                    new_name = a_name #acq_name[0]
+                    # new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
+                    # NOTE: For caps-on darks, we require a 4-digit station number plus 'S' or 'D' for light or dark, respectively
+                    if re.search(r'\d{4}[DS]', file.split('/')[-1]) is not None:
+                        new_name = str(start)+'_'+new_name
                 except IndexError as err:
                     print(err)
                     msg = "possibly an error in naming of Raw files"
                     Utilities.writeLogFile(msg)
-                    new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_Spectrum_RAW_')[1]
+                    return None, None
+                    # new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_Spectrum_RAW_')[1]
 
-                # new_name = outFilePath + '/' + 'Trios_' + str(start) + '_' + str(stop) + '_L1A.hdf'
-                # outFFP.append(os.path.join(outFilePath,f'{new_name}_L1A.hdf'))
-                outFFP.append(os.path.join(outFilePath,f'{new_name}_L1A.hdf'))
+                if cod:
+                    outFFP.append(os.path.join(outFilePathDark,f'{new_name}_L1A.hdf'))
+                else:
+                    outFFP.append(os.path.join(outFilePath,f'{new_name}_L1A.hdf'))
                 root.attributes["L1A_FILENAME"] = outFFP[-1]
 
                 root = ProcessL1aTriOS.fixChronology(root)
@@ -157,21 +161,40 @@ class ProcessL1aTriOS:
                                 gpsGroup.datasets["TIMETAG2"].data = np.array(timeTag2.data, dtype=[('NONE', '<f8')])
                                 gpsGroup.addDataset("DATETAG")
                                 gpsGroup.datasets["DATETAG"].data = np.array(dateTag.data, dtype=[('NONE', '<f8')])
-                
+
                 # For Caps-On Dark measurements
-                if cod:                    
-                    for gp in root.groups:
-                        if gp.id.startswith('SAM'):
+                if cod:
+                    for gpDark in root.groups:
+                        if gpDark.id.startswith('SAM'):
                             # NOTE: Placeholder to calculate T and dT from DN.
-                            print(f'Running caps-on dark algorithm to estimate internal temp:{gp.id}')
-                            # Use the SPECTEMP dataset, and add columns for T and dT (NONE reserved for G2 RAMSES)
-                            ds = gp.datasets['SPECTEMP']
-                            T = np.empty((1,len(ds.data)))*np.nan
-                            dsT = ds.appendColumn('T',T.tolist()[0])
-
-
-
-
+                            # T = -Tc + S * ln(DN-DNc)
+                            # RAMSES class coefficients
+                            # Tc = -16.4
+                            # S = 6.147
+                            # DNc = 1438
+                            print(f'Running caps-on dark algorithm to estimate internal temp:{gpDark.id}')
+                            # Add dataset INTERNALTEMP for T and sigmaT columns. SPECTEMP reserved for internal thermistor temp (G2 and others)
+                            T = gpDark.addDataset('INTERNALTEMP')
+                            # Dummy values
+                            T.appendColumn('T',float(31))                      # Placeholder for average internal T from DN
+                            T.appendColumn('sigmaT',float(3))                      # Placeholder for standard devation of DN
+                            # NOTE: Not clear how long of a record to average, or how to (whether to) average the DNs across all bands.
+                            T.columnsToDataset()
+                elif re.search(r'\d{4}[S]', a_name):
+                    darkFile = None
+                    if os.path.isdir(outFilePathDark):
+                        darkList = os.listdir(outFilePathDark)
+                        testFile = a_name.replace('S','D')
+                        darkFile = [y for y in darkList if y.__contains__(testFile) ]
+                    if darkFile:
+                        rootDark = HDFRoot.readHDF5(os.path.join(outFilePathDark,darkFile[0]))
+                        for gpDark in rootDark.groups:
+                            if gpDark.id.startswith('SAM'):
+                                for gp in root.groups:
+                                    if gp.id == gpDark.id:
+                                        T = gp.addDataset('INTERNALTEMP')
+                                        T.copy(gpDark.datasets['INTERNALTEMP'])
+                                        T.datasetToColumns()
 
                 try:
                     # root.writeHDF5(new_name)

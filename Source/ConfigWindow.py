@@ -90,7 +90,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.calibrationFrameTypeComboBox.addItem("Not Required")
             self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
             self.calibrationFrameTypeComboBox.setEnabled(False)
-        
+
         elif CurrentSensor.lower() == "dalec":
             self.calibrationFrameTypeComboBox.addItem("Not Required")
             self.calibrationFrameTypeComboBox.currentIndexChanged.connect(self.calibrationFrameTypeChanged)
@@ -128,10 +128,10 @@ class ConfigWindow(QtWidgets.QDialog):
 
         self.l1aCODLabel = QtWidgets.QLabel("     Caps-on darks only (TriOS)", self)
         self.l1aCODCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL1aCOD"]) == 1:
+        if ConfigFile.settings["bL1aCOD"]:
             self.l1aCODCheckBox.setChecked(True)
-        self.l1aCODCheckBoxUpdate()
-        self.l1aCleanSZACheckBox.clicked.connect(self.l1aCODCheckBoxUpdate)
+        # self.l1aCODCheckBoxUpdate()
+        self.l1aCODCheckBox.clicked.connect(self.l1aCODCheckBoxUpdate)
 
         # L1AQC
         l1aqcLabel = QtWidgets.QLabel("Level 1AQC Processing", self)
@@ -141,7 +141,7 @@ class ConfigWindow(QtWidgets.QDialog):
         #   SunTracker
         self.l1aqcSunTrackerLabel = QtWidgets.QLabel(" Autonomous Sun Tracker", self)
         self.l1aqcSunTrackerCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL1aqcSunTracker"]) == 1:
+        if ConfigFile.settings["bL1aqcSunTracker"]:
             self.l1aqcSunTrackerCheckBox.setChecked(True)
 
         #   Rotator
@@ -172,7 +172,7 @@ class ConfigWindow(QtWidgets.QDialog):
          #  Rotator
         self.l1aqcRotatorAngleLabel = QtWidgets.QLabel(" Absolute Rotator Angle Filter", self)
         self.l1aqcRotatorAngleCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL1aqcRotatorAngle"]) == 1:
+        if ConfigFile.settings["bL1aqcRotatorAngle"]:
             self.l1aqcRotatorAngleCheckBox.setChecked(True)
         self.l1aqcRotatorAngleMinLabel = QtWidgets.QLabel("       Rotator Angle Min", self)
         self.l1aqcRotatorAngleMinLineEdit = QtWidgets.QLineEdit(self)
@@ -270,7 +270,7 @@ class ConfigWindow(QtWidgets.QDialog):
         # l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Plots ({os.path.split(MainConfig.settings['outDir'])[-1]}/Plots/L1B_Interp/)", self)
         l1bPlotTimeInterpLabel = QtWidgets.QLabel("    Generate Interpolation Plots", self)
         self.l1bPlotTimeInterpCheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL1bPlotTimeInterp"]) == 1:
+        if ConfigFile.settings["bL1bPlotTimeInterp"]:
             self.l1bPlotTimeInterpCheckBox.setChecked(True)
         self.l1bPlotTimeInterpCheckBox.clicked.connect(self.l1bPlotTimeInterpCheckBoxUpdate)
 
@@ -731,8 +731,6 @@ class ConfigWindow(QtWidgets.QDialog):
         RotMaxHBox.addWidget(self.l1aqcRotatorAngleMaxLabel)
         RotMaxHBox.addWidget(self.l1aqcRotatorAngleMaxLineEdit)
         VBox1.addLayout(RotMaxHBox)
-
-        
 
         VBox1.addStretch()
 
