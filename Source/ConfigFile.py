@@ -44,6 +44,7 @@ class ConfigFile:
         ConfigFile.settings["fL1aUTCOffset"] = 0
         ConfigFile.settings["bL1aCleanSZA"] = 1
         ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,
+        ConfigFile.settings["bL1aCOD"] = 0 # Caps-on darks; TriOS only
 
         ConfigFile.settings["bL1aqcSunTracker"] = 1
         ConfigFile.settings["bL1aqcCleanPitchRoll"] = 1

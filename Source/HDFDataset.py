@@ -71,6 +71,7 @@ class HDFDataset:
             self.columns[name] = [val]
         else:
             self.columns[name].append(val)
+        return self.columns[name]
 
     def datasetToColumns(self):
         ''' Converts numpy array into columns (stored as a dictionary) '''

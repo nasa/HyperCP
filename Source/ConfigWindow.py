@@ -126,6 +126,13 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aCleanSZACheckBoxUpdate()
         self.l1aCleanSZACheckBox.clicked.connect(self.l1aCleanSZACheckBoxUpdate)
 
+        self.l1aCODLabel = QtWidgets.QLabel("     Caps-on darks only (TriOS)", self)
+        self.l1aCODCheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL1aCOD"]) == 1:
+            self.l1aCODCheckBox.setChecked(True)
+        self.l1aCODCheckBoxUpdate()
+        self.l1aCleanSZACheckBox.clicked.connect(self.l1aCODCheckBoxUpdate)
+
         # L1AQC
         l1aqcLabel = QtWidgets.QLabel("Level 1AQC Processing", self)
         l1aqcLabel.setFont(l1aLabel_font)
@@ -674,6 +681,12 @@ class ConfigWindow(QtWidgets.QDialog):
         szaHBox.addWidget(self.l1aCleanSZAMaxLineEdit)
         VBox1.addLayout(szaHBox)
 
+        # Caps-on darks option
+        codHBox = QtWidgets.QHBoxLayout()
+        codHBox.addWidget(self.l1aCODLabel)
+        codHBox.addWidget(self.l1aCODCheckBox)
+        VBox1.addLayout(codHBox)
+
         # L1AQC
         VBox1.addWidget(l1aqcLabel)
         VBox1.addWidget(l1aqcSublabel)
@@ -719,35 +732,37 @@ class ConfigWindow(QtWidgets.QDialog):
         RotMaxHBox.addWidget(self.l1aqcRotatorAngleMaxLineEdit)
         VBox1.addLayout(RotMaxHBox)
 
-        #   L1AQC Relative Solar Azimuth
-        CleanSunAngleHBox = QtWidgets.QHBoxLayout()
-        CleanSunAngleHBox.addWidget(l1aqcCleanSunAngleLabel)
-        CleanSunAngleHBox.addWidget(self.l1aqcCleanSunAngleCheckBox)
-        VBox1.addLayout(CleanSunAngleHBox)
-        SunAngleMinHBox = QtWidgets.QHBoxLayout()
-        SunAngleMinHBox.addWidget(self.l1aqcSunAngleMinLabel)
-        SunAngleMinHBox.addWidget(self.l1aqcSunAngleMinLineEdit)
-        VBox1.addLayout(SunAngleMinHBox)
-        SunAngleMaxHBox = QtWidgets.QHBoxLayout()
-        SunAngleMaxHBox.addWidget(self.l1aqcSunAngleMaxLabel)
-        SunAngleMaxHBox.addWidget(self.l1aqcSunAngleMaxLineEdit)
-        VBox1.addLayout(SunAngleMaxHBox)
-
-        #   L1AQC Deglitcher
-        deglitchHBox = QtWidgets.QHBoxLayout()
-        deglitchHBox.addWidget(self.l1aqcDeglitchLabel)
-        deglitchHBox.addWidget(self.l1aqcDeglitchCheckBox)
-        VBox1.addLayout(deglitchHBox)
-        #       L1AQC Anomaly Launcher
-        # VBox1.addWidget(l1aqcAnomalySublabel1)
-        # VBox1.addWidget(l1aqcAnomalySublabel2)
-        VBox1.addWidget(self.l1aqcAnomalyButton)
+        
 
         VBox1.addStretch()
 
         # Second Vertical Box
         VBox2 = QtWidgets.QVBoxLayout()
         # VBox2.setAlignment(QtCore.Qt.AlignBottom)
+
+        #   L1AQC Relative Solar Azimuth
+        CleanSunAngleHBox = QtWidgets.QHBoxLayout()
+        CleanSunAngleHBox.addWidget(l1aqcCleanSunAngleLabel)
+        CleanSunAngleHBox.addWidget(self.l1aqcCleanSunAngleCheckBox)
+        VBox2.addLayout(CleanSunAngleHBox)
+        SunAngleMinHBox = QtWidgets.QHBoxLayout()
+        SunAngleMinHBox.addWidget(self.l1aqcSunAngleMinLabel)
+        SunAngleMinHBox.addWidget(self.l1aqcSunAngleMinLineEdit)
+        VBox2.addLayout(SunAngleMinHBox)
+        SunAngleMaxHBox = QtWidgets.QHBoxLayout()
+        SunAngleMaxHBox.addWidget(self.l1aqcSunAngleMaxLabel)
+        SunAngleMaxHBox.addWidget(self.l1aqcSunAngleMaxLineEdit)
+        VBox2.addLayout(SunAngleMaxHBox)
+
+        #   L1AQC Deglitcher
+        deglitchHBox = QtWidgets.QHBoxLayout()
+        deglitchHBox.addWidget(self.l1aqcDeglitchLabel)
+        deglitchHBox.addWidget(self.l1aqcDeglitchCheckBox)
+        VBox2.addLayout(deglitchHBox)
+        #       L1AQC Anomaly Launcher
+        # VBox2.addWidget(l1aqcAnomalySublabel1)
+        # VBox2.addWidget(l1aqcAnomalySublabel2)
+        VBox2.addWidget(self.l1aqcAnomalyButton)
 
         # L1B
         VBox2.addWidget(l1bLabel)
@@ -1208,17 +1223,35 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1aCleanSZACheckBoxUpdate(self):
         print("ConfigWindow - l1aCleanSZAAngleCheckBoxUpdate")
 
-        disabled = (not self.l1aCleanSZACheckBox.isChecked())
+        disabled = not self.l1aCleanSZACheckBox.isChecked()
         self.l1aCleanSZAMaxLineEdit.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL1aCleanSZA"] = 0
         else:
             ConfigFile.settings["bL1aCleanSZA"] = 1
 
+    def l1aCODCheckBoxUpdate(self):
+        print("ConfigWindow - l1aCODAngleCheckBoxUpdate")
+
+        sensor = self.sensorTypeComboBox.currentText()
+        if sensor.lower() == 'trios':
+            # self.l1aCODCheckBox.setChecked(False)
+            self.l1aCODCheckBox.setEnabled(True)
+            self.l1aCODLabel.setEnabled(True)
+        else:
+            self.l1aCODCheckBox.setEnabled(False)
+            self.l1aCODLabel.setEnabled(False)
+
+        disabled = not self.l1aCODCheckBox.isChecked()
+        if disabled:
+            ConfigFile.settings["bL1aCOD"] = 0
+        else:
+            ConfigFile.settings["bL1aCOD"] = 1
+
     def l1aqcSunTrackerCheckBoxUpdate(self):
         print("ConfigWindow - l1aqcSunTrackerCheckBoxUpdate")
 
-        disabled = (not self.l1aqcSunTrackerCheckBox.isChecked())
+        disabled = not self.l1aqcSunTrackerCheckBox.isChecked()
         self.l1aCleanSZAMaxLabel.setDisabled(disabled)
         self.l1aCleanSZACheckBox.setDisabled(disabled)
         self.l1aCleanSZAMaxLineEdit.setDisabled(disabled)
@@ -1243,7 +1276,7 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1aqcRotatorDelayCheckBoxUpdate(self):
         print("ConfigWindow - l1aqcRotatorDelayCheckBoxUpdate")
 
-        disabled = (not self.l1aqcRotatorDelayCheckBox.isChecked())
+        disabled = not self.l1aqcRotatorDelayCheckBox.isChecked()
         self.l1aqcRotatorDelayLineEdit.setDisabled(disabled)
         if disabled:
             ConfigFile.settings["bL1aqcRotatorDelay"] = 0
@@ -1253,7 +1286,7 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1aqcCleanPitchRollCheckBoxUpdate(self):
         print("ConfigWindow - l1aqcCleanPitchRollCheckBoxUpdate")
 
-        disabled = (not self.l1aqcCleanPitchRollCheckBox.isChecked())
+        disabled = not self.l1aqcCleanPitchRollCheckBox.isChecked()
         self.l1aqcPitchRollPitchLabel.setDisabled(disabled)
         self.l1aqcPitchRollPitchLineEdit.setDisabled(disabled)
         if disabled:
@@ -1264,7 +1297,7 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1aqcRotatorAngleCheckBoxUpdate(self):
         print("ConfigWindow - l1aqcRotatorAngleCheckBoxUpdate")
 
-        disabled = (not self.l1aqcRotatorAngleCheckBox.isChecked())
+        disabled = not self.l1aqcRotatorAngleCheckBox.isChecked()
         self.l1aqcRotatorAngleMinLabel.setDisabled(disabled)
         self.l1aqcRotatorAngleMinLineEdit.setDisabled(disabled)
         self.l1aqcRotatorAngleMaxLabel.setDisabled(disabled)
@@ -1277,7 +1310,7 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1aqcCleanSunAngleCheckBoxUpdate(self):
         print("ConfigWindow - l1aqcCleanSunAngleCheckBoxUpdate")
 
-        disabled = (not self.l1aqcCleanSunAngleCheckBox.isChecked())
+        disabled = not self.l1aqcCleanSunAngleCheckBox.isChecked()
         self.l1aqcSunAngleMinLabel.setDisabled(disabled)
         self.l1aqcSunAngleMinLineEdit.setDisabled(disabled)
         self.l1aqcSunAngleMaxLabel.setDisabled(disabled)
@@ -1304,7 +1337,7 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1aqcDeglitchLabel.setEnabled(True)
             self.l1aqcAnomalyButton.setEnabled(True)
 
-        disabled = (not self.l1aqcDeglitchCheckBox.isChecked())
+        disabled = not self.l1aqcDeglitchCheckBox.isChecked()
         if disabled:
             ConfigFile.settings["bL1aqcDeglitch"] = 0
         else:
@@ -1334,7 +1367,7 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1bqcSpecQualityCheckBoxUpdate(self):
         print("ConfigWindow - l1bqcSpecQualityCheckBoxUpdate")
 
-        disabled = (not self.l1bqcSpecQualityCheckBox.isChecked())
+        disabled = not self.l1bqcSpecQualityCheckBox.isChecked()
         self.l1bqcSpecFilterLiLabel.setDisabled(disabled)
         self.l1bqcSpecFilterLiLineEdit.setDisabled(disabled)
         self.l1bqcSpecFilterLtLabel.setDisabled(disabled)
@@ -1354,7 +1387,7 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1bqcSpecQualityCheckPlotBoxUpdate(self):
         print("ConfigWindow - l1bqcSpecQualityCheckPlotBoxUpdate")
 
-        disabled = (not self.l1bqcSpecQualityCheckPlotBox.isChecked())
+        disabled = not self.l1bqcSpecQualityCheckPlotBox.isChecked()
         if disabled:
             ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 0
         else:
@@ -1363,7 +1396,7 @@ class ConfigWindow(QtWidgets.QDialog):
     def l1bqcQualityFlagCheckBoxUpdate(self):
         print("ConfigWindow - l1bqcQualityFlagCheckBoxUpdate")
 
-        disabled = (not self.l1bqcQualityFlagCheckBox.isChecked())
+        disabled = not self.l1bqcQualityFlagCheckBox.isChecked()
         self.l1bqcCloudFlagLabel.setDisabled(disabled)
         self.l1bqcCloudFlagLineEdit.setDisabled(disabled)
         self.l1bqcEsFlagLabel.setDisabled(disabled)

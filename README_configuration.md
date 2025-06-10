@@ -114,7 +114,7 @@ Click 'Save/Close' or 'Save As' to save the configuration file. SeaBASS headers 
 
 Process data from raw binary to L1A (Hierarchical Data Format 5 '.hdf'). Raw data files expected are .raw (or .RAW), .mlb, or .TXT for Sea-Bird, TriOS, or DALEC, respectively. It is helpful to keep them in the directory that the Main configuration points to, but directory can be named anything (e.g., "RAW").
 
-***NOTE:*** Since TriOS instruments use a triplet of raw data (.mlb) files it is necessary to provide information on the measurement date. This is done by adding the date to the name of the raw data file in one of the following formats: yyyymmdd-hhmmss or yyyy-mm-dd-hh:mm:ss.
+***NOTE:*** Since TriOS instruments use a triplet of raw data (.mlb) files it is necessary to provide information on the measurement date. This is done by adding the date to the name of the raw data file in one of the following formats: yyyymmdd-hhmmss or yyyy-mm-dd-hh:mm:ss. Alternatively, station data filenames can end in a 4-digit station number followed by "S" for regular acquisition or "D" for caps-on dark measurements.
 
 **Solar Zenith Angle Filter**: prescreens data for high SZA (low solar elevation) to exclude files which may have been
 collected post-dusk or pre-dawn from further processing.

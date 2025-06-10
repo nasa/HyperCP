@@ -115,7 +115,7 @@ class ProcessL1b:
 
         cal_dates = []
         for s in ['ES', 'LI', 'LT']:
-            save_delta = None
+            save_delta,save_cal_date = None, None
             if ConfigFile.settings["SensorType"].lower() == "trios":
                 s_tag = root.getGroup(f"{s}").attributes['IDDevice'][-4:]
             else:

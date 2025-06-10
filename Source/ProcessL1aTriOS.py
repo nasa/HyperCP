@@ -17,7 +17,7 @@ from Source.Utilities import Utilities
 class ProcessL1aTriOS:
     '''Process L1A for TriOS from MSDA-XE'''
     @staticmethod
-    def processL1a(fp, outFilePath): 
+    def processL1a(fp, outFilePath):
         # fp is a list of all triplets
 
         configPath = MainConfig.settings['cfgPath']
@@ -38,6 +38,7 @@ class ProcessL1aTriOS:
                         r'\d{8}.\d{2}.\d{2}.\d{2}',
                         r'\d{4}.\d{2}.\d{2}.\d{6}',
                         r'\d{4}S', 
+                        r'\d{4}D',
                     ]:
                         match = re.search(pattern, data)
                         if match is not None:
@@ -59,33 +60,16 @@ class ProcessL1aTriOS:
                 # match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
                 # match2 = re.search(r'\d{4}S', file.split('/')[-1])
                 # match3 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
-                # # string except for serial number will be the same for a triplet
-                # if match1 is not None:
-                #     a_name = match1.group()
-                # elif match2 is not None:
-                #     a_name = match2.group()
-                # elif match3 is not None:
-                #     a_name = match3.group()
-                # else:
-                #     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
-                #     print("  L0 filename should have a cast to identify triplet instrument")
-                #     print("  ending in 4 digits before S.mlb ")
-                #     return None,None
-
-                # acq_time.append(a_cast)
                 acq_name.append(a_name)
 
             # acq_time = list(dict.fromkeys(acq_time)) # Returns unique timestamps
             acq_name = list(dict.fromkeys(acq_name)) # Returns unique names
-            outFFP = []
-            # for a_time in acq_time:
+            
+            outFFP = []            
             for a_name in acq_name:
                 print("")
                 print("Generate the telemetric file...")
-                # print('Processing: ' +a_time)
                 print('Processing: ' +a_name)
-
-                # hdfout = a_time + '_.hdf'
 
                 tables.file._open_files.close_all() # Why is this necessary?
 
@@ -99,11 +83,20 @@ class ProcessL1aTriOS:
                 root.attributes["SATPYR_UNITS"] = "count"
                 root.attributes["PROCESSING_LEVEL"] = "1a"
 
-                # ffp = [s for s in fp if a_time in s]
                 ffp = [s for s in fp if a_name in s]
                 root.attributes["RAW_FILE_NAME"] = str(ffp)
-                # root.attributes["TIME-STAMP"] = a_name
                 root.attributes["CAST"] = a_name
+                match = re.search(r"\dD$", a_name)
+                if match is not None:
+                    print(f'Caps-on dark file recognized {a_name}.')
+                    cod = True
+                    root.attributes["FRAME_TYPE"] = 'caps-on dark'
+                    outFilePath = os.path.join(outFilePath+'/DARK')
+                    if os.path.isdir(outFilePath) is False:
+                        os.mkdir(outFilePath)
+                else:
+                    cod = False
+                    root.attributes["FRAME_TYPE"] = 'light'
                 for file in ffp:
                     if "SAM_" in file:
                         name = file[file.index('SAM_')+4:file.index('SAM_')+8]
@@ -117,6 +110,8 @@ class ProcessL1aTriOS:
                         return None, None
                     acq_datetime = dt.datetime.strptime(start,"%Y%m%dT%H%M%SZ")
                     root.attributes["TIME-STAMP"] = dt.datetime.strftime(acq_datetime,'%a %b %d %H:%M:%S %Y')
+                    # Update to something like "YYYY-MM-DDTHH:MM:SS UTC"
+                    root.attributes["TIME_COVERAGE_START"] = dt.datetime.strftime(acq_datetime,'%a %b %d %H:%M:%S %Y')
                     acq_datetime = dt.datetime.strptime(stop,"%Y%m%dT%H%M%SZ")
                     root.attributes["TIME_COVERAGE_END"] = dt.datetime.strftime(acq_datetime,'%a %b %d %H:%M:%S %Y')
 
@@ -155,13 +150,27 @@ class ProcessL1aTriOS:
                                 # Initialize a new group for MSDA GPS data
                                 gpsGroup = root.addGroup("GPS_MSDA")
                                 gpsGroup.addDataset("LATITUDE")
-                                gpsGroup.datasets["LATITUDE"].data = np.array(lat, dtype=[('NONE', '<f8')])
+                                gpsGroup.datasets["LATITUDE"].data = np.array(lat.data, dtype=[('NONE', '<f8')])
                                 gpsGroup.addDataset("LONGITUDE")
-                                gpsGroup.datasets["LONGITUDE"].data = np.array(lat, dtype=[('NONE', '<f8')])
+                                gpsGroup.datasets["LONGITUDE"].data = np.array(lon.data, dtype=[('NONE', '<f8')])
                                 gpsGroup.addDataset("TIMETAG2")
-                                gpsGroup.datasets["TIMETAG2"].data = np.array(timeTag2, dtype=[('NONE', '<f8')])
+                                gpsGroup.datasets["TIMETAG2"].data = np.array(timeTag2.data, dtype=[('NONE', '<f8')])
                                 gpsGroup.addDataset("DATETAG")
-                                gpsGroup.datasets["DATETAG"].data = np.array(dateTag, dtype=[('NONE', '<f8')])
+                                gpsGroup.datasets["DATETAG"].data = np.array(dateTag.data, dtype=[('NONE', '<f8')])
+                
+                # For Caps-On Dark measurements
+                if cod:                    
+                    for gp in root.groups:
+                        if gp.id.startswith('SAM'):
+                            # NOTE: Placeholder to calculate T and dT from DN.
+                            print(f'Running caps-on dark algorithm to estimate internal temp:{gp.id}')
+                            # Use the SPECTEMP dataset, and add columns for T and dT (NONE reserved for G2 RAMSES)
+                            ds = gp.datasets['SPECTEMP']
+                            T = np.empty((1,len(ds.data)))*np.nan
+                            dsT = ds.appendColumn('T',T.tolist()[0])
+
+
+
 
 
                 try:
@@ -344,12 +353,12 @@ class ProcessL1aTriOS:
         meta = pd.DataFrame()
         meta,data,time = ProcessL1aTriOS.read_mlb(input_file)
 
+        # meta contains Datetime, PositionLat, PositionLon, and IntegrationTime
         if meta is None:
             msg = "Error reading mlb file"
             print(msg)
             Utilities.writeLogFile(msg)
-            return None,None
-        # meta contains Datetime, PositionLat, PositionLon, and IntegrationTime
+            return None,None        
 
         ## if date is the first field "%yyy-mm-dd"
         #   This derives date/time from IDData, not Datetime column of .mlb file
@@ -364,7 +373,7 @@ class ProcessL1aTriOS:
             timetag = [float(i.rsplit('_')[2].replace('-','') + '000') for i in time]
 
         # NOTE: Placeholder for extracting thermistor temp from G2 RAMSES:
-        # if G2: ...
+        # if G2: ... should have a group attribute for generation RAMSES
 
         # Reshape data
         rec_datetag  = ProcessL1aTriOS.reshape_data('NONE',len(meta[0]),data=meta[0]) # <- From Datetime
@@ -469,8 +478,13 @@ class ProcessL1aTriOS:
         C1.columnsToDataset()
 
         ProcessL1aTriOS.get_attr(metaback,C1)
-        start_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[0][0]-2), "%Y%m%dT%H%M%SZ")# <- From Datetime
-        stop_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[-1][0]-2), "%Y%m%dT%H%M%SZ")# <- From Datetime
+
+        # NOTE: Caution! These are not chronological.
+        # start_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[0][0]-2), "%Y%m%dT%H%M%SZ")# <- From Datetime
+        # stop_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=rec_datetag[-1][0]-2), "%Y%m%dT%H%M%SZ")# <- From Datetime
+        arr_datetag = rec_datetag.tolist()
+        start_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=min(arr_datetag)[0]-2), "%Y%m%dT%H%M%SZ")# <- From Datetime
+        stop_time = dt.datetime.strftime(dt.datetime(1900,1,1) + timedelta(days=max(arr_datetag)[0]-2), "%Y%m%dT%H%M%SZ")# <- From Datetime
 
         return start_time,stop_time
 

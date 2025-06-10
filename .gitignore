@@ -13,8 +13,9 @@
 .DS_Store
 
 # HyperCP
-.gitignore
+# .gitignore
 /Bundled/
+Data/FidRadDB/
 Data/Zhang_rho_db.mat
 Data/Zhang_rho_db_expanded.mat
 Data/Zhang_rho_LUT.nc
@@ -23,7 +24,7 @@ Data/Anc/
 Data/L*/
 Data/Reports/
 Data/Photos/
-zong_plots/
+# zong_plots/
 # The /* is required if you later want to unignore subsets (i.e., to keep the directory itself)
 Data/Sample_Data/DALEC/*
 !Data/Sample_Data/DALEC/RAW
@@ -63,8 +64,6 @@ Config/*
 # !Config/sample_*.cfg
 # !Config/sample_*.hdr
 # !Config/sample_*.csv
-Plots/
-Logs/
 
 ## To allow local changes to a file on remote, but not have those tracked:
 # git update-index --skip-worktree Config/sample_SEABIRD_pySAS.cfg
@@ -72,11 +71,12 @@ Logs/
 #   See aliases in .bashrc
 #   Will cause conflict changing branches if local files are different across branches
 
-Data/FidRadDB_characterization/
+Plots/
+Logs/
+
 .pylintrc
 *.pyc
 *.log
-runtest.py
 run_*.py
 !run_Sample_Data.py
 
@@ -88,8 +88,3 @@ run_*.py
 #ignore ".idea/" if working with pycharm:
 .idea/
 
-# if directly changing sample configs
-# Config/sample_SEABIRD_pySAS.cfg
-# Config/sample_SEABIRD_pySAS.hdr
-# Config/sample_TRIOS_NOTRACKER_FULL.cfg
-# Config/sample_TRIOS_NOTRACKER_FULL.hdr
