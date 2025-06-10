@@ -184,8 +184,8 @@ class ProcessL1aTriOS:
                     darkFile = None
                     if os.path.isdir(outFilePathDark):
                         darkList = os.listdir(outFilePathDark)
-                        testFile = a_name.replace('S','D')
-                        darkFile = [y for y in darkList if y.__contains__(testFile) ]
+                        pattern = f'{a_name[:2]}'+'\\d{2}'+'D'
+                        darkFile = [y for y in darkList if re.search(pattern,y) ]
                     if darkFile:
                         rootDark = HDFRoot.readHDF5(os.path.join(outFilePathDark,darkFile[0]))
                         for gpDark in rootDark.groups:
