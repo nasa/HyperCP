@@ -37,7 +37,7 @@ class AncillaryReader:
         ancillaryData = HDFDataset()
         ancillaryData.id = "AncillaryData"
         ancillaryData.appendColumn("DATETIME", ancDatetime)
-        
+
         dsTranslation = {'station':['STATION','STATION_UNITS'],
                          'lat':['LATITUDE','LATITUDE_UNITS'],
                          'lon':['LONGITUDE','LONGITUDE_UNITS'],
@@ -66,6 +66,7 @@ class AncillaryReader:
                         wv = '550'
                     else:
                         wv = ds[4:]
+                    ancillaryData.attributes["AOD_wavelength"] = wv
 
         ancillaryData.columnsToDataset()
 

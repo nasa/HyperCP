@@ -353,9 +353,10 @@ class Utilities:
         return returnValue
 
     @staticmethod
-    def writeLogFileAndPrint(logText, mode='a'):
+    def writeLogFileAndPrint(logText, andPrint=True, mode='a'):
         Utilities.writeLogFile(logText, mode)
-        print(logText)
+        if andPrint:
+            print(logText)
 
     @staticmethod
     def writeLogFile(logText, mode='a'):
