@@ -5,6 +5,7 @@ import collections
 from collections import Counter
 import csv
 import re
+import logging
 import hashlib
 from tqdm import tqdm
 import requests
@@ -352,9 +353,13 @@ class Utilities:
         return returnValue
 
     @staticmethod
+    def writeLogFileAndPrint(logText, mode='a'):
+        Utilities.writeLogFile(logText, mode)
+        print(logText)
+
+    @staticmethod
     def writeLogFile(logText, mode='a'):
         if not os.path.exists('Logs'):
-            import logging
             logging.getLogger().warning('Made directory: Logs/')
             os.mkdir('Logs')
         with open('Logs/' + os.environ["LOGFILE"], mode, encoding="utf-8") as logFile:
