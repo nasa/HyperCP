@@ -187,6 +187,7 @@ class ProcessL1aqc:
         now = datetime.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
+        Utilities.writeLogFileAndPrint(f"ProcessL1aqc.processL1aqc: {timestr}")
 
         # Add configuration parameters (L1C) to root/node attributes
         if ConfigFile.settings['bL1aqcSunTracker']:
@@ -203,10 +204,7 @@ class ProcessL1aqc:
             node.attributes['RELATIVE_AZIMUTH_MIN'] = ConfigFile.settings['fL1aqcSunAngleMin']
             node.attributes['RELATIVE_AZIMUTH_MAX'] = ConfigFile.settings['fL1aqcSunAngleMax']
 
-        Utilities.writeLogFileAndPrint(f"ProcessL1aqc.processL1aqc: {timestr}")
-
-        # Reorganize groups in with new names
-        # if ConfigFile.settings['SensorType'].lower() == 'seabird':
+        # Reorganize groups with new names
         for gp in node.groups:
             cf = calibrationMap[gp.attributes["CalFileName"]]
             ProcessL1aqc.renameGroup(gp,cf)
@@ -301,8 +299,14 @@ class ProcessL1aqc:
                 return None
 
         # If ancillary file is provided, use it. Otherwise fill in what you can using the datetime, lat, lon from GPS
-        shipAzimuth, station, salt, sst, wind, aod, cloud, wave, speed_f_w, pitch, roll = \
-            None, None, None, None, None, None, None, None, None, None, None
+
+        #   Certain ancillary datasets do not get used in PL1aqc other than to be folded into the new HDF. These include:
+        #       shipAzimuth,station,salt,sst,wind,aod,airTemp,cloud,wave, and speed_f_w
+        passThruData = ['HEADING','STATION','SALINITY','SST','WINDSPEED','AOD','AIRTEMP','CLOUD','WAVE_HT','SPEED_F_W']
+        # shipAzimuth, station, salt, sst, wind, aod, cloud, wave, speed_f_w, pitch, roll = \
+        # None, None, None, None, None, None, None, None, None, None, None
+        pitch, roll = None,None
+            
         if ancillaryData is not None:
             # Reinitialize with new, smaller ancillary dataset trimmed to match sensor data
             # NOTE: Essential ancillary data for non-SunTracker file includes
@@ -337,7 +341,7 @@ class ProcessL1aqc:
             ancLat = ancData.columns["LATITUDE"][0]
             ancLon = ancData.columns["LONGITUDE"][0]
 
-            # Solar geometry is preferentially acquired from SunTracker or pySAS
+            # Solar geometry is preferentially acquired from SunTracker
             # Otherwise resorts to ancillary data. Otherwise processing fails.
             # Run Pysolar to obtain solar geometry.
             sunAzimuthAnc = []
@@ -347,11 +351,10 @@ class ProcessL1aqc:
                 sunZenithAnc.append(90 - get_altitude(ancLat[i],ancLon[i],dt_utc,0))
 
             # relAzAnc either from ancillary relZz, ancillary sensorAz, (or THS compass above ^^)
-            relAzAnc = []
+            relAzAnc,sasAzAnc  = None,None
             if "REL_AZ" in ancData.columns:
                 relAzAnc = ancData.columns["REL_AZ"][0]
 
-            sasAzAnc = []
             # This is a new SeaBASS field
             if "SENSOR_AZ" in ancData.columns:
                 sasAzAnc = ancData.columns["SENSOR_AZ"][0]
@@ -361,29 +364,28 @@ class ProcessL1aqc:
                 return None
             elif not ConfigFile.settings["bL1aqcSunTracker"] and not relAzAnc:
                 # Corrected below for +/- solar-sensor orientation
-                relAzAnc = []
                 for i, sasAz in enumerate(sasAzAnc):
                     relAzAnc.append(sasAz - sunAzimuthAnc[i])
 
-            if "HEADING" in ancData.columns:
-                # HEADING/shipAzimuth comes from ancillary data file here (not GPS or SunTracker)
-                shipAzimuth = ancData.columns["HEADING"][0]
-            if "STATION" in ancData.columns:
-                station = ancData.columns["STATION"][0]
-            if "SALINITY" in ancData.columns:
-                salt = ancData.columns["SALINITY"][0]
-            if "SST" in ancData.columns:
-                sst = ancData.columns["SST"][0]
-            if "WINDSPEED" in ancData.columns:
-                wind = ancData.columns["WINDSPEED"][0]
-            if "AOD" in ancData.columns:
-                aod = ancData.columns["AOD"][0]
-            if "CLOUD" in ancData.columns:
-                cloud = ancData.columns["CLOUD"][0]
-            if "WAVE_HT" in ancData.columns:
-                wave = ancData.columns["WAVE_HT"][0]
-            if "SPEED_F_W" in ancData.columns:
-                speed_f_w = ancData.columns["SPEED_F_W"][0]
+            # if "HEADING" in ancData.columns:
+            #     # HEADING/shipAzimuth comes from ancillary data file here (not GPS or SunTracker)
+            #     shipAzimuth = ancData.columns["HEADING"][0]
+            # if "STATION" in ancData.columns:
+            #     station = ancData.columns["STATION"][0]
+            # if "SALINITY" in ancData.columns:
+            #     salt = ancData.columns["SALINITY"][0]
+            # if "SST" in ancData.columns:
+            #     sst = ancData.columns["SST"][0]
+            # if "WINDSPEED" in ancData.columns:
+            #     wind = ancData.columns["WINDSPEED"][0]
+            # if "AOD" in ancData.columns:
+            #     aod = ancData.columns["AOD"][0]
+            # if "CLOUD" in ancData.columns:
+            #     cloud = ancData.columns["CLOUD"][0]
+            # if "WAVE_HT" in ancData.columns:
+            #     wave = ancData.columns["WAVE_HT"][0]
+            # if "SPEED_F_W" in ancData.columns:
+            #     speed_f_w = ancData.columns["SPEED_F_W"][0]
             if "PITCH" in ancData.columns:
                 pitch = ancData.columns["PITCH"][0]
             if "ROLL" in ancData.columns:
@@ -567,7 +569,6 @@ class ProcessL1aqc:
             start = -1
             stop, startstop = None, None
             for index, pitchi in enumerate(pitch):
-
                 tilt = np.arctan(np.sqrt( np.tan(roll[index]*np.pi/180)**2 + np.tan(pitchi*np.pi/180)**2 )) *180/np.pi
                 if tilt > tiltMax:
                     i += 1
@@ -779,7 +780,7 @@ class ProcessL1aqc:
         # REL_AZ will be pulled from SunTracker if available, otherwise from ANCILLARY
         # in ProcessL1bqc.
 
-        # Initialize a new group to host the unconventional ancillary data
+        # Initialize a new group to host the ancillary data
         ancGroup = node.addGroup("ANCILLARY_METADATA")
         # If using a SunTracker, add RelAz to the SunTracker group...
         #NOTE: for Dalec relAz is already read directly from Raw data file,so do nothing
@@ -834,39 +835,46 @@ class ProcessL1aqc:
         # if ancillaryData is not None:
         if ancData is not None:
             ancGroup.attributes = ancData.attributes.copy()
-            if "HEADING" in ancData.columns:
-                ancGroup.addDataset("HEADING")
-                ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')])
-            if "STATION" in ancData.columns:
-                ancGroup.addDataset("STATION")
-                ancGroup.datasets["STATION"].data = np.array(station, dtype=[('NONE', '<f8')])
-            if "SALINITY" in ancData.columns:
-                ancGroup.addDataset("SALINITY")
-                ancGroup.datasets["SALINITY"].data = np.array(salt, dtype=[('NONE', '<f8')])
-            if "SST" in ancData.columns:
-                ancGroup.addDataset("SST")
-                ancGroup.datasets["SST"].data = np.array(sst, dtype=[('NONE', '<f8')])
-            if "WINDSPEED" in ancData.columns:
-                ancGroup.addDataset("WINDSPEED")
-                ancGroup.datasets["WINDSPEED"].data = np.array(wind, dtype=[('NONE', '<f8')])
-            if "AOD" in ancData.columns:
-                ancGroup.addDataset("AOD")
-                ancGroup.datasets["AOD"].data = np.array(aod, dtype=[('NONE', '<f8')])
-            if "CLOUD" in ancData.columns:
-                ancGroup.addDataset("CLOUD")
-                ancGroup.datasets["CLOUD"].data = np.array(cloud, dtype=[('NONE', '<f8')])
-            if "WAVE_HT" in ancData.columns:
-                ancGroup.addDataset("WAVE_HT")
-                ancGroup.datasets["WAVE_HT"].data = np.array(wave, dtype=[('NONE', '<f8')])
-            if "SPEED_F_W" in ancData.columns:
-                ancGroup.addDataset("SPEED_F_W")
-                ancGroup.datasets["SPEED_F_W"].data = np.array(speed_f_w, dtype=[('NONE', '<f8')])
-            if "PITCH" in ancData.columns:
-                ancGroup.addDataset("PITCH")
-                ancGroup.datasets["PITCH"].data = np.array(ancData.columns["PITCH"][0], dtype=[('NONE', '<f8')])
-            if "ROLL" in ancData.columns:
-                ancGroup.addDataset("ROLL")
-                ancGroup.datasets["ROLL"].data = np.array(ancData.columns["ROLL"][0], dtype=[('NONE', '<f8')])
+
+            for col in ancData.columns:
+                if col in passThruData:
+                    ancGroup.addDataset(col)
+                    ancGroup.datasets[col].data = np.array(ancData.columns[col][0], dtype=[('NONE', '<f8')])
+
+
+            # if "HEADING" in ancData.columns:
+            #     ancGroup.addDataset("HEADING")
+            #     ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')]) #ancData.columns["HEADING"][0]
+            # if "STATION" in ancData.columns:
+            #     ancGroup.addDataset("STATION")
+            #     ancGroup.datasets["STATION"].data = np.array(station, dtype=[('NONE', '<f8')])
+            # if "SALINITY" in ancData.columns:
+            #     ancGroup.addDataset("SALINITY")
+            #     ancGroup.datasets["SALINITY"].data = np.array(salt, dtype=[('NONE', '<f8')])
+            # if "SST" in ancData.columns:
+            #     ancGroup.addDataset("SST")
+            #     ancGroup.datasets["SST"].data = np.array(sst, dtype=[('NONE', '<f8')])
+            # if "WINDSPEED" in ancData.columns:
+            #     ancGroup.addDataset("WINDSPEED")
+            #     ancGroup.datasets["WINDSPEED"].data = np.array(wind, dtype=[('NONE', '<f8')])
+            # if "AOD" in ancData.columns:
+            #     ancGroup.addDataset("AOD")
+            #     ancGroup.datasets["AOD"].data = np.array(aod, dtype=[('NONE', '<f8')])
+            # if "CLOUD" in ancData.columns:
+            #     ancGroup.addDataset("CLOUD")
+            #     ancGroup.datasets["CLOUD"].data = np.array(cloud, dtype=[('NONE', '<f8')])
+            # if "WAVE_HT" in ancData.columns:
+            #     ancGroup.addDataset("WAVE_HT")
+            #     ancGroup.datasets["WAVE_HT"].data = np.array(wave, dtype=[('NONE', '<f8')])
+            # if "SPEED_F_W" in ancData.columns:
+            #     ancGroup.addDataset("SPEED_F_W")
+            #     ancGroup.datasets["SPEED_F_W"].data = np.array(speed_f_w, dtype=[('NONE', '<f8')])
+            # if "PITCH" in ancData.columns:
+            #     ancGroup.addDataset("PITCH")
+            #     ancGroup.datasets["PITCH"].data = np.array(ancData.columns["PITCH"][0], dtype=[('NONE', '<f8')])
+            # if "ROLL" in ancData.columns:
+            #     ancGroup.addDataset("ROLL")
+            #     ancGroup.datasets["ROLL"].data = np.array(ancData.columns["ROLL"][0], dtype=[('NONE', '<f8')])
         ancGroup.attributes["FrameType"] = "Not Required"
         ######################################################################################################
 
