@@ -103,6 +103,7 @@ class ConfigFile:
         ConfigFile.settings["bL1bGetAnc"] = 0
         ConfigFile.settings["fL1bDefaultWindSpeed"] = 5.0
         ConfigFile.settings["fL1bDefaultAOD"] = 0.2
+        ConfigFile.settings["fL1bDefaultAirT"] = 26.0
         ConfigFile.settings["fL1bDefaultSalt"] = 35.0
         ConfigFile.settings["fL1bDefaultSST"] = 26.0
         ConfigFile.settings["bL1bCal"] = 1  # 1 for Factory, 2 for Class, 3 for Instrument Full

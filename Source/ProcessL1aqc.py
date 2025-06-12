@@ -303,10 +303,7 @@ class ProcessL1aqc:
         #   Certain ancillary datasets do not get used in PL1aqc other than to be folded into the new HDF. These include:
         #       shipAzimuth,station,salt,sst,wind,aod,airTemp,cloud,wave, and speed_f_w
         passThruData = ['HEADING','STATION','SALINITY','SST','WINDSPEED','AOD','AIRTEMP','CLOUD','WAVE_HT','SPEED_F_W']
-        # shipAzimuth, station, salt, sst, wind, aod, cloud, wave, speed_f_w, pitch, roll = \
-        # None, None, None, None, None, None, None, None, None, None, None
         pitch, roll = None,None
-            
         if ancillaryData is not None:
             # Reinitialize with new, smaller ancillary dataset trimmed to match sensor data
             # NOTE: Essential ancillary data for non-SunTracker file includes
@@ -367,25 +364,6 @@ class ProcessL1aqc:
                 for i, sasAz in enumerate(sasAzAnc):
                     relAzAnc.append(sasAz - sunAzimuthAnc[i])
 
-            # if "HEADING" in ancData.columns:
-            #     # HEADING/shipAzimuth comes from ancillary data file here (not GPS or SunTracker)
-            #     shipAzimuth = ancData.columns["HEADING"][0]
-            # if "STATION" in ancData.columns:
-            #     station = ancData.columns["STATION"][0]
-            # if "SALINITY" in ancData.columns:
-            #     salt = ancData.columns["SALINITY"][0]
-            # if "SST" in ancData.columns:
-            #     sst = ancData.columns["SST"][0]
-            # if "WINDSPEED" in ancData.columns:
-            #     wind = ancData.columns["WINDSPEED"][0]
-            # if "AOD" in ancData.columns:
-            #     aod = ancData.columns["AOD"][0]
-            # if "CLOUD" in ancData.columns:
-            #     cloud = ancData.columns["CLOUD"][0]
-            # if "WAVE_HT" in ancData.columns:
-            #     wave = ancData.columns["WAVE_HT"][0]
-            # if "SPEED_F_W" in ancData.columns:
-            #     speed_f_w = ancData.columns["SPEED_F_W"][0]
             if "PITCH" in ancData.columns:
                 pitch = ancData.columns["PITCH"][0]
             if "ROLL" in ancData.columns:
@@ -417,13 +395,6 @@ class ProcessL1aqc:
             relAzAnc[relAzAnc>180] = relAzAnc[relAzAnc>180] - 360
             relAzAnc[relAzAnc<-180] = relAzAnc[relAzAnc<-180] + 360
             relAzAnc.tolist()
-
-        # #############################################################################################
-        # # Sort groups chronologically
-        # #############################################################################################
-        # print('Sorting all datasets chronologically')
-        # for gp in node.groups:
-        #     Utilities.fixDateTime2(gp)
 
         #############################################################################################
         # Begin Filtering
@@ -840,41 +811,6 @@ class ProcessL1aqc:
                 if col in passThruData:
                     ancGroup.addDataset(col)
                     ancGroup.datasets[col].data = np.array(ancData.columns[col][0], dtype=[('NONE', '<f8')])
-
-
-            # if "HEADING" in ancData.columns:
-            #     ancGroup.addDataset("HEADING")
-            #     ancGroup.datasets["HEADING"].data = np.array(shipAzimuth, dtype=[('NONE', '<f8')]) #ancData.columns["HEADING"][0]
-            # if "STATION" in ancData.columns:
-            #     ancGroup.addDataset("STATION")
-            #     ancGroup.datasets["STATION"].data = np.array(station, dtype=[('NONE', '<f8')])
-            # if "SALINITY" in ancData.columns:
-            #     ancGroup.addDataset("SALINITY")
-            #     ancGroup.datasets["SALINITY"].data = np.array(salt, dtype=[('NONE', '<f8')])
-            # if "SST" in ancData.columns:
-            #     ancGroup.addDataset("SST")
-            #     ancGroup.datasets["SST"].data = np.array(sst, dtype=[('NONE', '<f8')])
-            # if "WINDSPEED" in ancData.columns:
-            #     ancGroup.addDataset("WINDSPEED")
-            #     ancGroup.datasets["WINDSPEED"].data = np.array(wind, dtype=[('NONE', '<f8')])
-            # if "AOD" in ancData.columns:
-            #     ancGroup.addDataset("AOD")
-            #     ancGroup.datasets["AOD"].data = np.array(aod, dtype=[('NONE', '<f8')])
-            # if "CLOUD" in ancData.columns:
-            #     ancGroup.addDataset("CLOUD")
-            #     ancGroup.datasets["CLOUD"].data = np.array(cloud, dtype=[('NONE', '<f8')])
-            # if "WAVE_HT" in ancData.columns:
-            #     ancGroup.addDataset("WAVE_HT")
-            #     ancGroup.datasets["WAVE_HT"].data = np.array(wave, dtype=[('NONE', '<f8')])
-            # if "SPEED_F_W" in ancData.columns:
-            #     ancGroup.addDataset("SPEED_F_W")
-            #     ancGroup.datasets["SPEED_F_W"].data = np.array(speed_f_w, dtype=[('NONE', '<f8')])
-            # if "PITCH" in ancData.columns:
-            #     ancGroup.addDataset("PITCH")
-            #     ancGroup.datasets["PITCH"].data = np.array(ancData.columns["PITCH"][0], dtype=[('NONE', '<f8')])
-            # if "ROLL" in ancData.columns:
-            #     ancGroup.addDataset("ROLL")
-            #     ancGroup.datasets["ROLL"].data = np.array(ancData.columns["ROLL"][0], dtype=[('NONE', '<f8')])
         ancGroup.attributes["FrameType"] = "Not Required"
         ######################################################################################################
 

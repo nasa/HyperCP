@@ -1,11 +1,9 @@
+'''GUI to set up processing configuration'''
 import os
-import shutil, glob
+import shutil
 from PyQt5 import QtCore, QtGui, QtWidgets
-from pathlib import Path
 
 from Source import PATH_TO_CONFIG
-# from Source.MainConfig import MainConfig
-# from Source.Controller import Controller
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.AnomalyDetection import AnomAnalWindow
@@ -14,7 +12,6 @@ from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.GetAnc_credentials import GetAnc_credentials
 from Source.OCproductsWindow import OCproductsWindow
 from Source.CalCharWindow import CalCharWindow
-
 
 class ConfigWindow(QtWidgets.QDialog):
     ''' Configuration window object '''
@@ -231,7 +228,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bGetAncResetButton = QtWidgets.QPushButton("Reset credentials (GMAO or ECMWF)", self)
         self.l1bGetAncResetButton.clicked.connect(self.l1bGetAncResetButtonUpdate)
 
-        l1bSublabel6 = QtWidgets.QLabel("    Fallback values when no model available:", self)
+        l1bSublabel6 = QtWidgets.QLabel("    Fallback values when no ancillary or model data available:", self)
         # l1bSublabel5.setOpenExternalLinks(True)
         self.l1bGetAncCheckBox1 = QtWidgets.QCheckBox("GMAO MERRA2", self)
         self.l1bGetAncCheckBox2 = QtWidgets.QCheckBox("ECMWF CAMS", self)
@@ -240,19 +237,23 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bGetAncCheckBox1.clicked.connect(lambda: self.l1bGetAncCheckBoxUpdate('NASA_Earth_Data'))
         self.l1bGetAncCheckBox2.clicked.connect(lambda: self.l1bGetAncCheckBoxUpdate('ECMWF_ADS'))
 
-        self.l1bDefaultWindSpeedLabel = QtWidgets.QLabel("          Default Wind Speed (m/s)", self)
+        self.l1bDefaultWindSpeedLabel = QtWidgets.QLabel("          Wind (m/s)", self)
         self.l1bDefaultWindSpeedLineEdit = QtWidgets.QLineEdit(self)
         self.l1bDefaultWindSpeedLineEdit.setText(str(ConfigFile.settings["fL1bDefaultWindSpeed"]))
         self.l1bDefaultWindSpeedLineEdit.setValidator(doubleValidator)
-        self.l1bDefaultAODLabel = QtWidgets.QLabel("          Default AOD(550)", self)
+        self.l1bDefaultAODLabel = QtWidgets.QLabel("          AOD(550)", self)
         self.l1bDefaultAODLineEdit = QtWidgets.QLineEdit(self)
         self.l1bDefaultAODLineEdit.setText(str(ConfigFile.settings["fL1bDefaultAOD"]))
         self.l1bDefaultAODLineEdit.setValidator(doubleValidator)
-        self.l1bDefaultSaltLabel = QtWidgets.QLabel("          Default Salinity (psu)", self)
+        self.l1bDefaultAirTLabel = QtWidgets.QLabel("          AirT[C]", self)
+        self.l1bDefaultAirTLineEdit = QtWidgets.QLineEdit(self)
+        self.l1bDefaultAirTLineEdit.setText(str(ConfigFile.settings["fL1bDefaultAirT"]))
+        self.l1bDefaultAirTLineEdit.setValidator(doubleValidator)        
+        self.l1bDefaultSaltLabel = QtWidgets.QLabel("          Salt[psu]", self)
         self.l1bDefaultSaltLineEdit = QtWidgets.QLineEdit(self)
         self.l1bDefaultSaltLineEdit.setText(str(ConfigFile.settings["fL1bDefaultSalt"]))
         self.l1bDefaultSaltLineEdit.setValidator(doubleValidator)
-        self.l1bDefaultSSTLabel = QtWidgets.QLabel("          Default SST (C)", self)
+        self.l1bDefaultSSTLabel = QtWidgets.QLabel("          SST[C]", self)
         self.l1bDefaultSSTLineEdit = QtWidgets.QLineEdit(self)
         self.l1bDefaultSSTLineEdit.setText(str(ConfigFile.settings["fL1bDefaultSST"]))
         self.l1bDefaultSSTLineEdit.setValidator(doubleValidator)
@@ -757,9 +758,6 @@ class ConfigWindow(QtWidgets.QDialog):
         deglitchHBox.addWidget(self.l1aqcDeglitchLabel)
         deglitchHBox.addWidget(self.l1aqcDeglitchCheckBox)
         VBox2.addLayout(deglitchHBox)
-        #       L1AQC Anomaly Launcher
-        # VBox2.addWidget(l1aqcAnomalySublabel1)
-        # VBox2.addWidget(l1aqcAnomalySublabel2)
         VBox2.addWidget(self.l1aqcAnomalyButton)
 
         # L1B
@@ -779,25 +777,26 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addWidget(l1bSublabel6)
 
         #   Default Wind
-        WindSpeedHBox2 = QtWidgets.QHBoxLayout()
-        WindSpeedHBox2.addWidget(self.l1bDefaultWindSpeedLabel)
-        WindSpeedHBox2.addWidget(self.l1bDefaultWindSpeedLineEdit)
-        VBox2.addLayout(WindSpeedHBox2)
+        WindSpeedHBox = QtWidgets.QHBoxLayout()
+        WindSpeedHBox.addWidget(self.l1bDefaultWindSpeedLabel)
+        WindSpeedHBox.addWidget(self.l1bDefaultWindSpeedLineEdit)
+        VBox2.addLayout(WindSpeedHBox)
         #   Default AOD
-        AODHBox2 = QtWidgets.QHBoxLayout()
-        AODHBox2.addWidget(self.l1bDefaultAODLabel)
-        AODHBox2.addWidget(self.l1bDefaultAODLineEdit)
-        VBox2.addLayout(AODHBox2)
+        AirHBox = QtWidgets.QHBoxLayout()
+        AirHBox.addWidget(self.l1bDefaultAODLabel)
+        AirHBox.addWidget(self.l1bDefaultAODLineEdit)
+        #   Default AirT
+        AirHBox.addWidget(self.l1bDefaultAirTLabel)
+        AirHBox.addWidget(self.l1bDefaultAirTLineEdit)
+        VBox2.addLayout(AirHBox)
         #   Default Salt
-        SaltHBox2 = QtWidgets.QHBoxLayout()
-        SaltHBox2.addWidget(self.l1bDefaultSaltLabel)
-        SaltHBox2.addWidget(self.l1bDefaultSaltLineEdit)
-        VBox2.addLayout(SaltHBox2)
+        SeaHBox = QtWidgets.QHBoxLayout()
+        SeaHBox.addWidget(self.l1bDefaultSaltLabel)
+        SeaHBox.addWidget(self.l1bDefaultSaltLineEdit)
         #   Default SST
-        SSTHBox2 = QtWidgets.QHBoxLayout()
-        SSTHBox2.addWidget(self.l1bDefaultSSTLabel)
-        SSTHBox2.addWidget(self.l1bDefaultSSTLineEdit)
-        VBox2.addLayout(SSTHBox2)
+        SeaHBox.addWidget(self.l1bDefaultSSTLabel)
+        SeaHBox.addWidget(self.l1bDefaultSSTLineEdit)
+        VBox2.addLayout(SeaHBox)        
 
         VBox2.addWidget(self.l1bCalCharButton)
 

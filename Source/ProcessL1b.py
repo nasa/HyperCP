@@ -1,6 +1,7 @@
 ''' Process L1AQC to L1B '''
 import os
 import datetime as dt
+import re
 import calendar
 from inspect import currentframe, getframeinfo
 import glob
@@ -51,7 +52,6 @@ class ProcessL1b:
         # NASA Technical Reports Server (NTRS)
         # https://ntrs.nasa.gov/citations/20020045342
         # For Trios uncertainties are set 0
-
         if ConfigFile.settings['SensorType'].lower() == "seabird":
             for sensor in ['LI','LT']:
                 dsname = sensor+'_RADCAL_UNC'
@@ -86,7 +86,6 @@ class ProcessL1b:
         return root
 
 
-
     @staticmethod
     def read_unc_coefficient_class(root, inpath, radcal_dir):
         ''' SeaBird or TriOS'''
@@ -111,8 +110,6 @@ class ProcessL1b:
             Utilities.read_char(f, gp)
 
         # Read sensor-specific radiometric calibration
-        import re
-
         cal_dates = []
         for s in ['ES', 'LI', 'LT']:
             save_delta,save_cal_date = None, None
@@ -152,7 +149,6 @@ class ProcessL1b:
 
 
     @staticmethod
-
     def read_unc_coefficient_frm(root, inpath, classbased_dir):
         ''' SeaBird or TriOS'''
         # Read Uncertainties_new_char from provided files
@@ -194,7 +190,6 @@ class ProcessL1b:
         Utilities.UncTempCorrection(root)
 
         return root
-
 
 
     @staticmethod
