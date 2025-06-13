@@ -144,11 +144,8 @@ class GetAnc:
 
             oldFile = file1
 
-            # Locate the relevant cell
-            try:
-                latInd = Utilities.find_nearest(ancLat,lat[index])
-            except:
-                print('hi')
+            # Locate the relevant cell            
+            latInd = Utilities.find_nearest(ancLat,lat[index])
             lonInd = Utilities.find_nearest(ancLon,lon[index])
 
             # position retrieval index has been confirmed manually in SeaDAS

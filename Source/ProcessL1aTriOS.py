@@ -173,8 +173,8 @@ class ProcessL1aTriOS:
                             # S = 6.147
                             # DNc = 1438
                             print(f'Running caps-on dark algorithm to estimate internal temp:{gpDark.id}')
-                            # Add dataset INTERNALTEMP for T and sigmaT columns. SPECTEMP reserved for internal thermistor temp (G2 and others)
-                            T = gpDark.addDataset('INTERNALTEMP')
+                            # Add dataset CAPSONTEMP for T and sigmaT columns. SPECTEMP reserved for internal thermistor temp (G2 and others)
+                            T = gpDark.addDataset('CAPSONTEMP')
                             # Dummy values
                             T.appendColumn('T',float(31))                      # Placeholder for average internal T from DN
                             T.appendColumn('sigmaT',float(3))                      # Placeholder for standard devation of DN
@@ -192,8 +192,8 @@ class ProcessL1aTriOS:
                             if gpDark.id.startswith('SAM'):
                                 for gp in root.groups:
                                     if gp.id == gpDark.id:
-                                        T = gp.addDataset('INTERNALTEMP')
-                                        T.copy(gpDark.datasets['INTERNALTEMP'])
+                                        T = gp.addDataset('CAPSONTEMP')
+                                        T.copy(gpDark.datasets['CAPSONTEMP'])
                                         T.datasetToColumns()
 
                 try:

@@ -23,12 +23,7 @@ class ProcessL1b_Interp:
             Required fields relAz, sza, solarAz must be in Ancillary already, or be obtained from SunTrackers
         '''
         print('Interpolating Ancillary data to radiometry timestamps')
-        gpsGroup = None
-        STGroup = None
-        esGroup = None
-        liGroup = None
-        ltGroup = None
-        ancGroup = None
+        gpsGroup,STGroup,esGroup,liGroup,ltGroup,ancGroup = None,None,None,None,None,None
         for gp in node.groups:
             if gp.id.startswith("GP"):
                 gpsGroup = gp
@@ -60,15 +55,10 @@ class ProcessL1b_Interp:
         ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
 
         newGPSGroup = node.addGroup("GPS_TEMP")
-        courseData = None
-        sogData = None
-
+        courseData,sogData = None,None
         # Required for non-Tracker:
         #   May be acquired from Ancillary or SunTracker (preferred)
-        relAzData = None
-        szaData = None
-        solAzData = None
-
+        relAzData,szaData,solAzData = None,None,None
         if gpsGroup is not None:
             newGPSGroup.attributes = gpsGroup.attributes.copy()
             # These are from the raw data, not to be confused with those in the ancillary file
@@ -97,7 +87,6 @@ class ProcessL1b_Interp:
             newGPSGroup.attributes["SOURCE"] = 'ANCILLARY'
             newGPSGroup.attributes["CalFileName"] = 'ANCILLARY'
 
-
         if STGroup is not None:
             newSTGroup = node.addGroup('ST_TEMP') # temporary
             for ds in STGroup.datasets:
@@ -112,7 +101,6 @@ class ProcessL1b_Interp:
                     ProcessL1b_Interp.convertDataset(STGroup, "SZA", newSTGroup, "SZA")
                     szaData = newSTGroup.datasets['SZA']
 
-
         newAncGroup = node.addGroup("ANCILLARY_TEMP")
         newAncGroup.attributes = ancGroup.attributes.copy()
 
@@ -122,7 +110,6 @@ class ProcessL1b_Interp:
             if ds != "DATETAG" and ds != "TIMETAG2" and ds != "DATETIME":
                 ProcessL1b_Interp.convertDataset(ancGroup, ds, newAncGroup, ds)
         ####################################################################################
-
 
         # Required
         # Preferentially from SunTracker over Ancillary file
@@ -146,21 +133,12 @@ class ProcessL1b_Interp:
             ProcessL1b_Interp.convertDataset(STGroup,"SZA", newAncGroup,"SZA")
 
         # Optional Data:
-        stationData = None
-        headingDataAnc = None
-        latDataAnc = None
-        lonDataAnc = None
-        cloudData = None
-        waveData = None
-        speedData = None
+        stationData,headingDataAnc,latDataAnc,lonDataAnc,cloudData,waveData,speedData = \
+            None,None,None,None,None,None,None,
         # Optional and may reside in SunTracker or SATTHS group
-        pitchAncData = None
-        rollAncData = None
+        pitchAncData,rollAncData = None,None
         # Optional, assured with MERRA2 models when selected
-        saltData = None
-        sstData = None
-        windData = None
-        aodData = None
+        saltData,sstData,windData,aodData,airData = None,None,None,None,None
 
         # Optional (already converted):
         if "STATION" in newAncGroup.datasets:
@@ -177,6 +155,8 @@ class ProcessL1b_Interp:
             sstData = newAncGroup.getDataset("SST")
         if "WINDSPEED" in newAncGroup.datasets:
             windData = newAncGroup.getDataset("WINDSPEED")
+        if "AIRTEMP" in newAncGroup.datasets:
+            airData = newAncGroup.getDataset("AIRTEMP") 
         if "AOD" in newAncGroup.datasets:
             aodData = newAncGroup.getDataset("AOD")
         if "CLOUD" in newAncGroup.datasets:
@@ -190,7 +170,6 @@ class ProcessL1b_Interp:
             pitchAncData = newAncGroup.getDataset("PITCH")
         if "ROLL" in newAncGroup.datasets:
             rollAncData = newAncGroup.getDataset("ROLL")
-
 
         # PysciDON interpolated to the SLOWEST sampling rate and ProSoft
         # interpolates to the FASTEST. Not much in the literature on this, although
@@ -207,19 +186,13 @@ class ProcessL1b_Interp:
 
         interpData = None
         if esLength < liLength and esLength < ltLength:
-            msg = f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
             interpData = esData
         elif liLength < ltLength:
-            msg = f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
             interpData = liData
         else:
-            msg = f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
             interpData = ltData
 
         # latData, lonData need to correspond to interpData.
@@ -237,20 +210,14 @@ class ProcessL1b_Interp:
 
         # Required:
         if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['REL_AZ'], interpData, "REL_AZ", fileName):
-            msg = "Error: REL_AZ missing from Ancillary data, and no Tracker group"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("Error: REL_AZ missing from Ancillary data, and no Tracker group")
             return None
         # Solar geometries are not interpolated, but re-calculated, so need latData, lonData
         if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['SOLAR_AZ'], interpData, "SOLAR_AZ", fileName, latData, lonData):
-            msg = "Error: SOLAR_AZ missing from Ancillary data, and no Tracker group"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("Error: SOLAR_AZ missing from Ancillary data, and no Tracker group")
             return None
         if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['SZA'], interpData, "SZA", fileName, latData, lonData):
-            msg = "Error: SZA missing from Ancillary data, and no Tracker group"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("Error: SZA missing from Ancillary data, and no Tracker group")
             return None
 
         # Optional:
@@ -271,6 +238,8 @@ class ProcessL1b_Interp:
             ProcessL1b_Interp.interpolateData(sstData, interpData, "SST", fileName)
         if windData:
             ProcessL1b_Interp.interpolateData(windData, interpData, "WINDSPEED", fileName)
+        if airData:
+            ProcessL1b_Interp.interpolateData(airData, interpData, "AIRTEMP", fileName)
         if cloudData:
             ProcessL1b_Interp.interpolateData(cloudData, interpData, "CLOUD", fileName)
         if waveData:
@@ -292,8 +261,6 @@ class ProcessL1b_Interp:
         newAncGroup.id = 'ANCILLARY_METADATA'
 
         return True
-
-
 
     @staticmethod
     def interpolateL1b_Interp(xData, xTimer, yTimer, newXData, dataName, kind='linear', fileName='default'):
@@ -411,9 +378,7 @@ class ProcessL1b_Interp:
 
         # Interpolating to itself
         if xData is yData:
-            msg = 'Skip. Other instruments are being interpolated to this one.'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('Skip. Other instruments are being interpolated to this one.')
             return True
 
         xDatetime = xData.data["Datetime"].tolist()
@@ -650,27 +615,12 @@ class ProcessL1b_Interp:
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         root.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
-        msg = f"ProcessL1b_Interp.processL1b_Interp: {timestr}"
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f"ProcessL1b_Interp.processL1b_Interp: {timestr}")
 
-        gpsGroup = None
-        pyrGroup = None
-        esGroup = None
-        liGroup = None
-        ltGroup = None
-        robotGroup = None
-        ancGroup = None # For non-SunTracker deployments
-        satmsgGroup = None
-        esL1AQCDark = None
-        esL1AQCLight = None
-        esL1AQC = None
-        liL1AQCDark = None
-        liL1AQCLight = None
-        liL1AQC = None
-        ltL1AQCDark = None
-        ltL1AQCLight = None
-        ltL1AQC = None
+        gpsGroup,pyrGroup,esGroup,liGroup,ltGroup,robotGroup,ancGroup,satmsgGroup,esL1AQCDark=\
+            None,None,None,None,None,None,None,None,None
+        esL1AQCLight,esL1AQC,liL1AQCDark,liL1AQCLight,liL1AQC,ltL1AQCDark,ltL1AQCLight,ltL1AQC = \
+            None,None,None,None,None,None,None,None
         for gp in node.groups:
             if gp.id.startswith("GP"):
                 gpsGroup = gp
@@ -715,7 +665,7 @@ class ProcessL1b_Interp:
                 satmsgGroup = gp
             if gp.id == "SIXS_MODEL":
                 sixS_grp = gp
-                
+
         # New group scheme combines both radiance sensors in one group
         refGroup = root.addGroup("IRRADIANCE")
         sasGroup = root.addGroup("RADIANCE")
@@ -726,7 +676,7 @@ class ProcessL1b_Interp:
         ProcessL1b_Interp.convertDataset(esGroup, "ES", refGroup, "ES")
         ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
         ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
-                
+
         if ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'dalec':
             esL1AQCGroup = root.addGroup('ES_L1AQC')
             esL1AQCGroup.copy(esL1AQC)
@@ -747,8 +697,7 @@ class ProcessL1b_Interp:
             ltDarkGroup.copy(ltL1AQCDark)
             ltLightGroup = root.addGroup('LT_LIGHT_L1AQC')
             ltLightGroup.copy(ltL1AQCLight)
-         
-            
+
         newGPSGroup = root.addGroup("GPS")
         if gpsGroup is not None:
             # If Ancillary data have already been interpolated, this group must exist,
@@ -864,38 +813,26 @@ class ProcessL1b_Interp:
 
         interpData = None
         if esLength < liLength and esLength < ltLength:
-            msg = f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
             interpData = esData
         elif liLength < ltLength:
-            msg = f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
             interpData = liData
         else:
-            msg = f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
             interpData = ltData
 
         # Confirm that datasets are overlapping in time
         minInterpDT = min(interpData.columns['Datetime'])
         maxInterpDT = max(interpData.columns['Datetime'])
         if min(esData.columns['Datetime']) > maxInterpDT or max(esData.columns['Datetime']) < minInterpDT:
-            msg = "ES data does not overlap interpolation dataset"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("ES data does not overlap interpolation dataset")
             return None
         if min(liData.columns['Datetime']) > maxInterpDT or max(liData.columns['Datetime']) < minInterpDT:
-            msg = "LI data does not overlap interpolation dataset"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("LI data does not overlap interpolation dataset")
             return None
         if min(ltData.columns['Datetime']) > maxInterpDT or max(ltData.columns['Datetime']) < minInterpDT:
-            msg = "LT data does not overlap interpolation dataset"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("LT data does not overlap interpolation dataset")
             return None
 
         # Perform time interpolation
@@ -910,7 +847,6 @@ class ProcessL1b_Interp:
             return None
         if not ProcessL1b_Interp.interpolateData(ltData, interpData, "LT", fileName):
             return None
-
 
         if robotGroup is not None:
             # Because of the fact that geometries have already been flipped into Ancillary and

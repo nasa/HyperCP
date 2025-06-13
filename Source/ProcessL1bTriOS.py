@@ -81,7 +81,7 @@ class ProcessL1bTriOS:
             updated_radcal_gain = (np.pi*S12_sl_corr)/(LAMP*PANEL) * (int_time_t0/t1)
 
         # sensitivity factor : if gain==0 (or NaN), no calibration is performed and data is affected to 0
-        ind_zero = (updated_radcal_gain<=1e-2)
+        ind_zero = updated_radcal_gain<=1e-2
         ind_nan  = np.isnan(updated_radcal_gain)
         ind_nocal = ind_nan | ind_zero
         updated_radcal_gain[ind_nocal==True] = 1 # set 1 instead of 0 to perform calibration (otherwise division per 0)
@@ -221,7 +221,7 @@ class ProcessL1bTriOS:
             return False
 
         # sensitivity factor : if raw_cal==0 (or NaN), no calibration is performed and data is affected to 0
-        ind_zero = (raw_cal==0)
+        ind_zero = raw_cal==0
         ind_nan  = np.isnan(raw_cal)
         ind_nocal = ind_nan | ind_zero
         raw_cal[ind_nocal==True] = 1 # set 1 instead of 0 to perform calibration (otherwise division per 0)
@@ -295,9 +295,7 @@ class ProcessL1bTriOS:
         elif ConfigFile.settings["bL1bCal"] == 3:
             node.attributes['CAL_TYPE'] = 'FRM-Full'
 
-        msg = f"ProcessL1bTriOS.processL1b: {timestr}"
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f"ProcessL1bTriOS.processL1b: {timestr}")
 
         # Retain L1BQC data for L2 instrument uncertainty analysis
         for gp in node.groups:
@@ -331,9 +329,7 @@ class ProcessL1bTriOS:
             print('RADCAL:', radcal_dir)
             node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir, radcal_dir)
             if node is None:
-                msg = 'Error running class based uncertainties.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('Error running class based uncertainties.')
                 return None
 
         # Or add Full characterization files (RAW_UNCERTAINTIES)
@@ -361,31 +357,23 @@ class ProcessL1bTriOS:
 
             node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
             if node is None:
-                msg = 'Error loading FRM characterization files. Check directory.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
                 return None
 
         # Interpolate only the Ancillary group, and then fold in model data
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
-            msg = 'Error interpolating ancillary data'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('Error interpolating ancillary data')
             return None
 
         # Need to fill in with model data here. This had previously been run on the GPS group, but now shifted to Ancillary group
         ancGroup = node.getGroup("ANCILLARY_METADATA")
         # Retrieve MERRA2 model ancillary data
         if ConfigFile.settings["bL1bGetAnc"] ==1:
-            msg = 'MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...')
             modRoot = GetAnc.getAnc(ancGroup)
         # Retrieve ECMWF model ancillary data
         elif ConfigFile.settings["bL1bGetAnc"] == 2:
-            msg = 'ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...')
             modRoot = GetAnc_ecmwf.getAnc_ecmwf(ancGroup)
         else:
             modRoot = None
@@ -461,24 +449,16 @@ class ProcessL1bTriOS:
             sensortype = ConfigFile.settings['CalibrationFiles'][instrument]['frameType']
             enabled = ConfigFile.settings['CalibrationFiles'][instrument]['enabled']
             if enabled:
-                msg = f'Dark Correction: {instrument_number} - {sensortype}'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint(f'Dark Correction: {instrument_number} - {sensortype}')
 
                 if ConfigFile.settings["bL1bCal"] <= 2:
                     if not ProcessL1bTriOS.processDarkCorrection(node, sensortype, stats):
-                        msg = f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
+                        Utilities.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}')
                         return None
                 elif ConfigFile.settings['bL1bCal'] == 3:
                     if not ProcessL1bTriOS.processDarkCorrection_FRM(node, sensortype, stats):
-                        msg = f'Error in ProcessL1bTriOS.processDarkCorrection_FRM: {instrument_number} - {sensortype}'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
+                        Utilities.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection_FRM: {instrument_number} - {sensortype}')
                         return None
-
-
 
         ## Interpolation
         # Match instruments to a common timestamp (slowest shutter, should be Lt) and

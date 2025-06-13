@@ -85,7 +85,6 @@ class ProcessL1b:
 
         return root
 
-
     @staticmethod
     def read_unc_coefficient_class(root, inpath, radcal_dir):
         ''' SeaBird or TriOS'''
@@ -256,10 +255,20 @@ class ProcessL1b:
             sst = np.empty((1,len(ancSeconds)))
             sst[:] = np.nan
             sst = sst[0].tolist()
+        if 'AIRTEMP' in ancGroup.datasets:
+            ancGroup.datasets['AIRTEMP'].datasetToColumns()
+            airDataset = ancGroup.datasets['AIRTEMP']
+            air = airDataset.columns['NONE']
+        else:
+            airDataset = ancGroup.addDataset('AIRTEMP')
+            air = np.empty((1,len(ancSeconds)))
+            air[:] = np.nan
+            air = air[0].tolist()
 
         # Initialize flags
         windFlag = []
         aodFlag = []
+        airFlag = []
         for i,ancSec in enumerate(ancSeconds):
             if np.isnan(wind[i]):
                 windFlag.append('undetermined')
@@ -270,42 +279,36 @@ class ProcessL1b:
             else:
                 aodFlag.append('field')
 
-        # Replace Wind, AOD NaNs with modeled data where possible.
+        # Replace Wind, AOD, and AirTemp NaNs with modeled data where possible.
         # These will be within one hour of the field data.
         if modRoot is not None:
-            msg = 'Filling in field data with model data where needed.'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('Filling in field data with model data where needed.')
 
             for i,ancSec in enumerate(ancSeconds):
 
                 if np.isnan(wind[i]):
-                    # msg = 'Replacing wind with model data'
-                    # print(msg)
-                    # Utilities.writeLogFile(msg)
                     idx = Utilities.find_nearest(modSeconds,ancSec)
                     wind[i] = modRoot.groups[0].datasets['Wind'][idx]
                     windFlag[i] = 'model'
                     if i==0:
                         ancGroup.attributes['Model Wind units'] = modRoot.groups[0].attributes['Wind units']
                 if np.isnan(aod[i]):
-                    # msg = 'Replacing AOD with model data'
-                    # print(msg)
-                    # Utilities.writeLogFile(msg)
                     idx = Utilities.find_nearest(modSeconds,ancSec)
                     aod[i] = modRoot.groups[0].datasets['AOD'][idx]
                     aodFlag[i] = 'model'
                     if i==0:
-                        # aodDataset.attributes['Model AOD wavelength'] = modRoot.groups[0].attributes['AOD wavelength']
                         ancGroup.attributes['Model AOD wavelength'] = modRoot.groups[0].attributes['AOD wavelength']
+                if np.isnan(air[i]):
+                    idx = Utilities.find_nearest(modSeconds,ancSec)
+                    air[i] = modRoot.groups[0].datasets['AirTemp'][idx]
+                    airFlag[i] = 'model'
+                    if i==0:
+                        ancGroup.attributes['Model AIRTEMP units'] = modRoot.groups[0].attributes['AIRTEMP units']
 
-        # Replace Wind, AOD, SST, and Sal with defaults where still nan
-        msg = 'Filling in ancillary data with default values where still needed.'
-        print(msg)
-        Utilities.writeLogFile(msg)
-
+        # Replace Wind, AOD, SST, Sal, and AirTemp with defaults where still nan
+        Utilities.writeLogFileAndPrint('Filling in ancillary data with default values where still needed.')
         saltFlag = []
-        sstFlag = []
+        sstFlag = []        
         for i, value in enumerate(wind):
             if np.isnan(value):
                 wind[i] = ConfigFile.settings["fL1bDefaultWindSpeed"]
@@ -326,6 +329,12 @@ class ProcessL1b:
                 sstFlag.append('default')
             else:
                 sstFlag.append('field')
+        for i, value in enumerate(air):
+            if np.isnan(value):
+                air[i] = ConfigFile.settings["fL1bDefaultSST"]
+                airFlag.append('default')
+            else:
+                airFlag.append('field')
 
         # Populate the datasets and flags with the InRad variables
         windDataset.columns["NONE"] = wind
@@ -422,11 +431,11 @@ class ProcessL1b:
 
         if Utilities.hasNan(lightData):
             frameinfo = getframeinfo(currentframe())
-            msg = f'found NaN {frameinfo.lineno}'
+            # msg = f'found NaN {frameinfo.lineno}'
 
         if Utilities.hasNan(darkData):
             frameinfo = getframeinfo(currentframe())
-            msg = f'found NaN {frameinfo.lineno}'
+            # msg = f'found NaN {frameinfo.lineno}'
 
         # Interpolate Dark Dataset to match number of elements as Light Dataset
         newDarkData = np.copy(lightData.data)
@@ -436,20 +445,14 @@ class ProcessL1b:
             new_x = lightTimer.data  # lighttimer
 
             if len(x) < 3 or len(y) < 3 or len(new_x) < 3:
-                msg = "**************Cannot do cubic spline interpolation, length of datasets < 3"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint("**************Cannot do cubic spline interpolation, length of datasets < 3")
                 return False
 
             if not Utilities.isIncreasing(x):
-                msg = "**************darkTimer does not contain strictly increasing values"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint("**************darkTimer does not contain strictly increasing values")
                 return False
             if not Utilities.isIncreasing(new_x):
-                msg = "**************lightTimer does not contain strictly increasing values"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint("**************lightTimer does not contain strictly increasing values")
                 return False
 
             if len(x) >= 3:
@@ -463,21 +466,16 @@ class ProcessL1b:
                 for val in newDarkData[k]:
                     if np.isnan(val):
                         frameinfo = getframeinfo(currentframe())
-                        msg = f'found NaN {frameinfo.lineno}'
+                        # msg = f'found NaN {frameinfo.lineno}'
             else:
-                msg = '**************Record too small for splining. Exiting.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('**************Record too small for splining. Exiting.')
                 return False
 
         darkData.data = newDarkData
 
         if Utilities.hasNan(darkData):
             frameinfo = getframeinfo(currentframe())
-            msg = f'found NaN {frameinfo.lineno}'
-            print(msg)
-            Utilities.writeLogFile(msg)
-            # exit()
+            Utilities.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
             return False
 
         # Correct light data by subtracting interpolated dark data from light data
@@ -487,10 +485,7 @@ class ProcessL1b:
 
         if Utilities.hasNan(lightData):
             frameinfo = getframeinfo(currentframe())
-            msg = f'found NaN {frameinfo.lineno}'
-            print(msg)
-            Utilities.writeLogFile(msg)
-            # exit()
+            Utilities.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
             return False
 
         return True
@@ -498,15 +493,9 @@ class ProcessL1b:
 
     @staticmethod
     def processDarkCorrection(node, sensorType):
-        msg = f'Dark Correction: {sensorType}'
-        print(msg)
-        Utilities.writeLogFile(msg)
-        darkGroup = None
-        darkData = None
-        darkDateTime = None
-        lightGroup = None
-        lightData = None
-        lightDateTime = None
+        Utilities.writeLogFileAndPrint(f'Dark Correction: {sensorType}')
+        darkGroup,darkData,darkDateTime,lightGroup,lightData,lightDateTime = \
+            None,None,None,None,None,None
 
         for gp in node.groups:
             if not gp.id.endswith('_L1AQC') and 'FrameType' in gp.attributes:
@@ -521,17 +510,13 @@ class ProcessL1b:
                     lightDateTime = gp.getDataset("DATETIME")
 
         if darkGroup is None or lightGroup is None:
-            msg = f'No radiometry found for {sensorType}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f'No radiometry found for {sensorType}')
             return False
 
         # Instead of using TT2 or seconds, use python datetimes to avoid problems crossing
         # UTC midnight.
         if not ProcessL1b.darkCorrection(darkData, darkDateTime, lightData, lightDateTime):
-            msg = f'ProcessL1b.darkCorrection failed  for {sensorType}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f'ProcessL1b.darkCorrection failed  for {sensorType}')
             return False
 
         # Now that the dark correction is done, we can strip the dark shutter data from the
@@ -567,10 +552,7 @@ class ProcessL1b:
             node.attributes['CAL_TYPE'] = 'FRM-Full'
         node.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
-
-        msg = f"ProcessL1b.processL1b: {timestr}"
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f"ProcessL1b.processL1b: {timestr}")
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
@@ -598,7 +580,6 @@ class ProcessL1b:
             elif gp.id == 'LT_LIGHT':
                 ltLightGroup.copy(gp)
 
-
         # Add class-based files (RAW_UNCERTAINTIES)
         classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
                                       ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
@@ -607,9 +588,7 @@ class ProcessL1b:
             print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
             node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
             if node is None:
-                msg = 'Error running factory uncertainties.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('Error running factory uncertainties.')
                 return None
 
         # Add class-based files + RADCAL file
@@ -620,14 +599,11 @@ class ProcessL1b:
             print('RADCAL:', radcal_dir)
             node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir, radcal_dir)
             if node is None:
-                msg = 'Error running class based uncertainties.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('Error running class based uncertainties.')
                 return None
 
         # Add full characterization files
         elif ConfigFile.settings['bL1bCal'] == 3:
-
             if ConfigFile.settings['FidRadDB'] == 0:
                 inpath = ConfigFile.settings['FullCalDir']
                 print("Full-Char - uncertainty computed from full characterization")
@@ -652,27 +628,18 @@ class ProcessL1b:
             node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
 
             if node is None:
-                msg = 'Error loading FRM characterization files. Check directory.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
                 return None
-
 
         # Dark Correction
         if not ProcessL1b.processDarkCorrection(node, "ES"):
-            msg = 'Error dark correcting ES'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('Error dark correcting ES')
             return None
         if not ProcessL1b.processDarkCorrection(node, "LI"):
-            msg = 'Error dark correcting LI'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('Error dark correcting LI')
             return None
         if not ProcessL1b.processDarkCorrection(node, "LT"):
-            msg = 'Error dark correcting LT'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('Error dark correcting LT')
             return None
 
         # For SeaBird (shutter darks), now that dark correction is complete, change the dark timestamps to their
@@ -685,7 +652,6 @@ class ProcessL1b:
                 gp.datasets['TIMETAG2'] = gp.datasets['TIMETAG2_ADJUSTED']
                 gp.datasets['TIMETAG2'].id = 'TIMETAG2'
                 gp.removeDataset('TIMETAG2_ADJUSTED')
-
                 gp.removeDataset('DATETIME')
                 gp = Utilities.groupAddDateTime(gp)
 
@@ -693,24 +659,18 @@ class ProcessL1b:
         # This is run ahead of the other groups for all processing pathways. Anc group
         # exists regardless of Ancillary file being provided
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
-            msg = 'Error interpolating ancillary data'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('Error interpolating ancillary data')
             return None
 
         # Need to fill in with model data here. This had previously been run on the GPS group, but now shifted to Ancillary group
         ancGroup = node.getGroup("ANCILLARY_METADATA")
         # Retrieve MERRA2 model ancillary data
         if ConfigFile.settings["bL1bGetAnc"] ==1:
-            msg = 'MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...')
             modRoot = GetAnc.getAnc(ancGroup)
         # Retrieve ECMWF model ancillary data
         elif ConfigFile.settings["bL1bGetAnc"] == 2:
-            msg = 'ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...')
             modRoot = GetAnc_ecmwf.getAnc_ecmwf(ancGroup)
         else:
             modRoot = None
@@ -749,9 +709,7 @@ class ProcessL1b:
             print("Read CalibrationFile ", calPath)
             calibrationMap = CalibrationFileReader.read(calPath)
             if not ProcessL1b_FRMCal.processL1b_SeaBird(node, calibrationMap):
-                msg = 'Error in ProcessL1b.process_FRM_calibration'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('Error in ProcessL1b.process_FRM_calibration')
                 return None
 
         # Interpolation
