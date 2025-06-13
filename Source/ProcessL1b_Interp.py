@@ -129,6 +129,7 @@ class ProcessL1b_Interp:
         if not relAzData:
             # Here from Ancillary file, not SunTracker
             if "REL_AZ" in newAncGroup.datasets:
+                # ProcessL1b_Interp.convertDataset(newAncGroup, "REL_AZ", newSTGroup, "REL_AZ")
                 relAzData = newAncGroup.getDataset("REL_AZ")
         else:
             # Here from SunTracker; different timestamp from other Ancillary; interpolated below
@@ -406,9 +407,7 @@ class ProcessL1b_Interp:
         ''' Preforms time interpolation to match xData to yData. xData is the dataset to be
         interpolated, yData is the reference dataset with the times to be interpolated to.'''
 
-        msg = f'Interpolate Data {dataName}'
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f'Interpolate Data {dataName}')
 
         # Interpolating to itself
         if xData is yData:
@@ -427,23 +426,23 @@ class ProcessL1b_Interp:
         if Utilities.hasNan(xData):
             frameinfo = getframeinfo(currentframe())
             # print(frameinfo.filename, frameinfo.lineno)
-            msg = f'found NaN {frameinfo.lineno}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
 
             if dataName == 'REL_AZ':
                 # Replace nans by interpolating over them if necessary
-#                y = np.array(xData.columns['NONE'])
-                y = np.array(xData.columns['REL_AZ'])
+                if 'REL_AZ' in xData.columns:
+                    y = np.array(xData.columns['REL_AZ'])   # <- Robot file
+                else:
+                    y = np.array(xData.columns['NONE'])     # <- Ancillary file
                 nans, x= Utilities.nan_helper(y) # x is a lambda function
                 y[nans]= np.interp(x(nans), x(~nans), y[~nans])
-#                xData.columns['NONE'] = y.tolist()
-                xData.columns['REL_AZ'] = y.tolist()
+                if 'REL_AZ' in xData.columns:
+                    xData.columns['REL_AZ'] = y.tolist()
+                else:
+                    xData.columns['NONE'] = y.tolist()
                 xData.columnsToDataset()
 
-                msg = f'Replaced NaNs in {dataName}'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint(f'Replaced NaNs in {dataName}')
 
         # xData will be interpolated to yDatetimes
         xData.columns["Datetag"] = yData.data["Datetag"].tolist()
@@ -475,9 +474,7 @@ class ProcessL1b_Interp:
 
         if Utilities.hasNan(xData):
             frameinfo = getframeinfo(currentframe())
-            msg = f'found NaN {frameinfo.lineno}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
         return True
 
     @staticmethod
@@ -552,10 +549,6 @@ class ProcessL1b_Interp:
         for robot in sunTrackers:
             if node.getGroup(robot):
                 root.groups.append(node.getGroup(robot))
-        # if node.getGroup("SOLARTRACKER"):
-        #     root.groups.append(node.getGroup("SOLARTRACKER"))
-        # if node.getGroup("SOLARTRACKER_STATUS"):
-        #     root.groups.append(node.getGroup("SOLARTRACKER_STATUS"))
         if node.getGroup("PYROMETER"):
             root.groups.append(node.getGroup("PYROMETER"))
         if node.getGroup("SIXS_MODEL"):
@@ -571,7 +564,7 @@ class ProcessL1b_Interp:
                 newGroup.copy(gp)
                 for ds in newGroup.datasets:
                     if ds == 'DATETIME':
-                        del(gp.datasets[ds])
+                        del gp.datasets[ds]
                     elif ds.startswith('BACK_') or ds.startswith('CAL_'):
                         continue
                     else:
@@ -587,7 +580,6 @@ class ProcessL1b_Interp:
 
         # Es dataset to dictionary
         esData.datasetToColumns()
-        # esRaw.datasetToColumns()
         columns = esData.columns
         columns.pop("Datetag")
         columns.pop("Timetag2")
@@ -602,7 +594,6 @@ class ProcessL1b_Interp:
 
         # Li dataset to dictionary
         liData.datasetToColumns()
-        # liRaw.datasetToColumns()
         columns = liData.columns
         columns.pop("Datetag")
         columns.pop("Timetag2")
@@ -617,7 +608,6 @@ class ProcessL1b_Interp:
 
         # Lt dataset to dictionary
         ltData.datasetToColumns()
-        # ltRaw.datasetToColumns()
         columns = ltData.columns
         columns.pop("Datetag")
         columns.pop("Timetag2")
@@ -848,7 +838,6 @@ class ProcessL1b_Interp:
             ProcessL1b_Interp.convertDataset(pyrGroup, "T", newPyrGroup, "T")
             pyrData = newPyrGroup.getDataset("T")
 
-
         # convert datetime into sixS group
         sixS_grp = node.getGroup("SIXS_MODEL")
         if sixS_grp is not None:
@@ -859,9 +848,6 @@ class ProcessL1b_Interp:
             ProcessL1b_Interp.convertDataset(sixS_grp, "solar_zenith", sixS_grp_new, "solar_zenith")
         else:
             sixS_grp_new = None
-
-
-
 
         # PysciDON interpolated to the SLOWEST sampling rate and ProSoft
         # interpolates to the FASTEST. Not much in the literature on this, although
@@ -978,18 +964,12 @@ class ProcessL1b_Interp:
                 new_unc.datasets[ds].datasetToColumns()
         else:
             print('No RAW_UNCERTAINTIES found. Moving on...')
-            
-        # # copy sixS_full
-        # sixS_full = node.getGroup('SIXS_MODEL_full')
-        # if sixS_full is not None:
-        #     p6sfullGroup = root.addGroup('SIXS_MODEL_full')
-        #     p6sfullGroup.copy(sixS_full)
-          
+
         # DATETIME is not supported in HDF5; remove from groups that still have it
         for gp in root.groups:
             for dsName in gp.datasets:
                 if dsName == 'DATETIME':
-                    del(gp.datasets[dsName])
+                    del gp.datasets[dsName]
                 elif dsName.startswith('BACK_') or dsName.startswith('CAL_'):
                     continue
                 else:

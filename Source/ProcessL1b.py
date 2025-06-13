@@ -692,7 +692,6 @@ class ProcessL1b:
         # Interpolate only the Ancillary group, and then fold in model data
         # This is run ahead of the other groups for all processing pathways. Anc group
         # exists regardless of Ancillary file being provided
-
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
             msg = 'Error interpolating ancillary data'
             print(msg)
@@ -716,8 +715,7 @@ class ProcessL1b:
         else:
             modRoot = None
 
-        # if modRoot is not None:
-        # Regardless of whether SunTracker is used, Ancillary data will have been already been
+        # Regardless of whether SunTracker is used, Ancillary data will have already been
         # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
         # to have model data and/or default values incorporated.
 
