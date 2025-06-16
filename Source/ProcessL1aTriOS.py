@@ -153,6 +153,7 @@ class ProcessL1aTriOS:
                             if not (all(lat.data) == 0 and all(lon.data) == 0):
                                 # Initialize a new group for MSDA GPS data
                                 gpsGroup = root.addGroup("GPS_MSDA")
+                                gpsGroup.attributes['CalFileName'] = 'GPS_MSDA'
                                 gpsGroup.addDataset("LATITUDE")
                                 gpsGroup.datasets["LATITUDE"].data = np.array(lat.data, dtype=[('NONE', '<f8')])
                                 gpsGroup.addDataset("LONGITUDE")
@@ -176,8 +177,8 @@ class ProcessL1aTriOS:
                             # Add dataset CAPSONTEMP for T and sigmaT columns. SPECTEMP reserved for internal thermistor temp (G2 and others)
                             T = gpDark.addDataset('CAPSONTEMP')
                             # Dummy values
-                            T.appendColumn('T',float(31))                      # Placeholder for average internal T from DN
-                            T.appendColumn('sigmaT',float(3))                      # Placeholder for standard devation of DN
+                            T.appendColumn('T',float(31))                          # NOTE: Placeholder for average internal T from DN
+                            T.appendColumn('sigmaT',float(3))                      # NOTE: Placeholder for standard devation of DN
                             # NOTE: Not clear how long of a record to average, or how to (whether to) average the DNs across all bands.
                             T.columnsToDataset()
                 elif re.search(r'\d{4}[S]', a_name):

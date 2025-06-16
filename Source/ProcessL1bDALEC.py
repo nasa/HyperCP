@@ -136,11 +136,11 @@ class ProcessL1bDALEC:
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
-        if ConfigFile.settings["bL1bCal"] == 1:
+        if ConfigFile.settings["fL1bCal"] == 1:
             node.attributes['CAL_TYPE'] = 'Factory'
-        elif ConfigFile.settings["bL1bCal"] == 2:
+        elif ConfigFile.settings["fL1bCal"] == 2:
             node.attributes['CAL_TYPE'] = 'FRM-Class'
-        elif ConfigFile.settings["bL1bCal"] == 3:
+        elif ConfigFile.settings["fL1bCal"] == 3:
             node.attributes['CAL_TYPE'] = 'FRM-Full'
         node.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
@@ -170,7 +170,7 @@ class ProcessL1bDALEC:
         # '''
         # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
         #                               ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
-        # if ConfigFile.settings['bL1bCal'] == 1:
+        # if ConfigFile.settings['fL1bCal'] == 1:
         #     print("Dalec Factory Regime")
         #     #node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
         #     #node = ProcessL1bDALEC.read_unc_coefficient_factory(node)
@@ -222,7 +222,7 @@ class ProcessL1bDALEC:
         # are culled from datasets in groups in L1B
         ProcessL1b.includeModelDefaults(ancGroup, modRoot)
 
-        if ConfigFile.settings["bL1bCal"] == 1 or ConfigFile.settings["bL1bCal"] == 2:
+        if ConfigFile.settings["fL1bCal"] == 1 or ConfigFile.settings["fL1bCal"] == 2:
             # Calculate 6S model
             # Run elsewhere for FRM-regime
             print('Running sixS')
@@ -275,7 +275,7 @@ class ProcessL1bDALEC:
         # Depending on the Configuration, process either the factory
         # calibration, class-based characterization, or the complete
         # instrument characterizations
-        if ConfigFile.settings['bL1bCal'] == 1 or ConfigFile.settings['bL1bCal'] == 2:
+        if ConfigFile.settings['fL1bCal'] == 1 or ConfigFile.settings['fL1bCal'] == 2:
             # Class-based radiometric processing is identical to factory processing
             # Results may differs due to updated calibration files but the two
             # process are the same. The class-based characterisation will be used
@@ -291,7 +291,7 @@ class ProcessL1bDALEC:
             ProcessL1bDALEC.processLT(node)
             ProcessL1bDALEC.processLI(node)
 
-        elif ConfigFile.settings['bL1bCal'] == 3:
+        elif ConfigFile.settings['fL1bCal'] == 3:
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join(PATH_TO_CONFIG, calFolder)
             print("Read CalibrationFile ", calPath)

@@ -43,6 +43,8 @@ class ProcessL1b_FactoryCal:
             pass
         elif cd.fitType == "NONE":
             pass
+        elif cd.fitType == "THERMAL_RESP":
+            pass
         else:
             msg = f'ProcessL1b_FactoryCal.processDataset: Unknown Fit Type: {cd.fitType}'
             print(msg)

@@ -288,11 +288,11 @@ class ProcessL1bTriOS:
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
         node.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
-        if ConfigFile.settings["bL1bCal"] == 1:
+        if ConfigFile.settings["fL1bCal"] == 1:
             node.attributes['CAL_TYPE'] = 'Factory'
-        elif ConfigFile.settings["bL1bCal"] == 2:
+        elif ConfigFile.settings["fL1bCal"] == 2:
             node.attributes['CAL_TYPE'] = 'FRM-Class'
-        elif ConfigFile.settings["bL1bCal"] == 3:
+        elif ConfigFile.settings["fL1bCal"] == 3:
             node.attributes['CAL_TYPE'] = 'FRM-Full'
 
         Utilities.writeLogFileAndPrint(f"ProcessL1bTriOS.processL1b: {timestr}")
@@ -312,53 +312,6 @@ class ProcessL1bTriOS:
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
-
-        # classbased_dir needed for FRM whilst pol is handled in class-based way
-        classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
-                                      ConfigFile.settings['SensorType'] + "_initial")
-
-        # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
-        if ConfigFile.settings['bL1bCal'] == 1:
-            print("Factory TriOS RAMSES - no uncertainty computation")
-
-        # Add Class-based characterization files + RADCAL files
-        elif ConfigFile.settings['bL1bCal'] == 2:
-            radcal_dir = ConfigFile.settings['RadCalDir']
-            print("Class-Based - uncertainty computed from class-based and RADCAL")
-            print('Class-Based:', classbased_dir)
-            print('RADCAL:', radcal_dir)
-            node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir, radcal_dir)
-            if node is None:
-                Utilities.writeLogFileAndPrint('Error running class based uncertainties.')
-                return None
-
-        # Or add Full characterization files (RAW_UNCERTAINTIES)
-        elif ConfigFile.settings['bL1bCal'] == 3:
-
-            if ConfigFile.settings['FidRadDB'] == 0:
-                inpath = ConfigFile.settings['FullCalDir']
-                print("Full-Char - uncertainty computed from full characterization")
-                print('Full-Char dir:', inpath)
-
-            elif ConfigFile.settings['FidRadDB'] == 1:
-                sensorIDs = Utilities.get_sensor_dict(node)
-                acq_time = node.attributes["TIME-STAMP"].replace('_','')
-                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB', "TriOS")
-                print('FidRadDB Cal./Char. dir:', inpath)
-
-                # FidRad DB connection and download of calibration files by api
-                cal_char_types = ['STRAY','RADCAL','POLAR','THERMAL','ANGULAR']
-                for sensorID in sensorIDs:
-                    for cal_char_type in cal_char_types:
-                        # Exceptions due to non-existing cal/char files now handled directly in FidradDB_api function
-                        # If cal/char file missing entails an error, this should be handled while performing the particular
-                        # correction, not here.
-                        FidradDB_api(sensorID + '_' + cal_char_type, acq_time, inpath)
-
-            node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
-            if node is None:
-                Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
-                return None
 
         # Interpolate only the Ancillary group, and then fold in model data
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
@@ -392,7 +345,54 @@ class ProcessL1bTriOS:
         # are culled from datasets in groups in L1B
         ProcessL1b.includeModelDefaults(ancGroup, modRoot)
 
-        if ConfigFile.settings["bL1bCal"] == 1 or ConfigFile.settings["bL1bCal"] == 2:
+        # classbased_dir needed for FRM whilst pol is handled in class-based way
+        classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
+                                      ConfigFile.settings['SensorType'] + "_initial")
+
+        # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
+        if ConfigFile.settings['fL1bCal'] == 1:
+            print("Factory TriOS RAMSES - no uncertainty computation")
+
+        # Add Class-based characterization files + RADCAL files
+        elif ConfigFile.settings['fL1bCal'] == 2:
+            radcal_dir = ConfigFile.settings['RadCalDir']
+            print("Class-Based - uncertainty computed from class-based and RADCAL")
+            print('Class-Based:', classbased_dir)
+            print('RADCAL:', radcal_dir)
+            node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir, radcal_dir)
+            if node is None:
+                Utilities.writeLogFileAndPrint('Error running class based uncertainties.')
+                return None
+
+        # Or add Full characterization files (RAW_UNCERTAINTIES)
+        elif ConfigFile.settings['fL1bCal'] == 3:
+
+            if ConfigFile.settings['FidRadDB'] == 0:
+                inpath = ConfigFile.settings['FullCalDir']
+                print("Full-Char - uncertainty computed from full characterization")
+                print('Full-Char dir:', inpath)
+
+            elif ConfigFile.settings['FidRadDB'] == 1:
+                sensorIDs = Utilities.get_sensor_dict(node)
+                acq_time = node.attributes["TIME-STAMP"].replace('_','')
+                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB', "TriOS")
+                print('FidRadDB Cal./Char. dir:', inpath)
+
+                # FidRad DB connection and download of calibration files by api
+                cal_char_types = ['STRAY','RADCAL','POLAR','THERMAL','ANGULAR']
+                for sensorID in sensorIDs:
+                    for cal_char_type in cal_char_types:
+                        # Exceptions due to non-existing cal/char files now handled directly in FidradDB_api function
+                        # If cal/char file missing entails an error, this should be handled while performing the particular
+                        # correction, not here.
+                        FidradDB_api(sensorID + '_' + cal_char_type, acq_time, inpath)
+
+            node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
+            if node is None:
+                Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
+                return None        
+
+        if ConfigFile.settings["fL1bCal"] == 1 or ConfigFile.settings["fL1bCal"] == 2:
             # Calculate 6S model
             # Run elsewhere for FRM-regime
             print('Running sixS')
@@ -451,11 +451,11 @@ class ProcessL1bTriOS:
             if enabled:
                 Utilities.writeLogFileAndPrint(f'Dark Correction: {instrument_number} - {sensortype}')
 
-                if ConfigFile.settings["bL1bCal"] <= 2:
+                if ConfigFile.settings["fL1bCal"] <= 2:
                     if not ProcessL1bTriOS.processDarkCorrection(node, sensortype, stats):
                         Utilities.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}')
                         return None
-                elif ConfigFile.settings['bL1bCal'] == 3:
+                elif ConfigFile.settings['fL1bCal'] == 3:
                     if not ProcessL1bTriOS.processDarkCorrection_FRM(node, sensortype, stats):
                         Utilities.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection_FRM: {instrument_number} - {sensortype}')
                         return None

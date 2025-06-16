@@ -175,7 +175,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         for s in ["ES", "LI", "LT"]:  # s for sensor type
             cal_start = None
             cal_stop = None
-            if ConfigFile.settings["bL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "seabird":
+            if ConfigFile.settings["fL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "seabird":
                 radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_UNC")
                 ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
                 # read cal start and cal stop for shaping stray-light class based uncertainties
@@ -185,12 +185,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 self.extract_factory_cal(node, radcal, s, cCal, cCoef)  # populates dicts with calibration
 
                         
-            #elif ConfigFile.settings["bL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "dalec":
+            #elif ConfigFile.settings["fL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "dalec":
             #    radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_UNC")
             #    ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
             #    self.extract_factory_cal(node, radcal, s, cCal, cCoef)  # populates dicts with calibration
             
-            elif ConfigFile.settings["bL1bCal"] == 2:  # class-Based
+            elif ConfigFile.settings["fL1bCal"] == 2:  # class-Based
                 radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_CAL")
                 ind_rad_wvl = (np.array(radcal.columns['1']) > 0)  # where radcal wvls are available
 

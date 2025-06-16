@@ -43,7 +43,7 @@ class GetAnc:
             hr = int(Utilities.timeTag2ToSec(latTime[index])/60/60)
 
             file1 = f"GMAO_MERRA2.{year}{month:02.0f}{day:02.0f}T{hr:02.0f}0000.MET.nc"
-            
+
             if oldFile != file1:
                 ancPath = os.path.join(PATH_TO_DATA, 'Anc')
                 filePath1 = os.path.join(PATH_TO_DATA, 'Anc', file1)
@@ -169,6 +169,8 @@ class GetAnc:
         modGroup.addDataset('Timetag2')
         modGroup.addDataset('AOD')
         modGroup.addDataset('Wind')
+        modGroup.addDataset('AirTemp')
+
         # NOTE: This is an unconventional use of Dataset, i.e., overides object with .data and .column.
         #    Keeping for continuity of application
         modGroup.datasets['Datetag'] = latDate

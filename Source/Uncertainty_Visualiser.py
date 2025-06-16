@@ -36,7 +36,7 @@ class UncertaintyGUI(ABC):
         if is_negative:
             print('WARNING: Negative uncertainty potential')
 
-        if ConfigFile.settings['bL1bCal'] == 1:
+        if ConfigFile.settings['fL1bCal'] == 1:
             regime = 'Factory'
         else:
             regime = 'Class'
@@ -108,7 +108,7 @@ class UncertaintyGUI(ABC):
                 plt.close(fig)
 
     def pie_plot_class_l2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast, ancGrp):
-        if ConfigFile.settings['bL1bCal'] == 1:
+        if ConfigFile.settings['fL1bCal'] == 1:
             regime = 'Factory'
         else:
             regime = 'Class'

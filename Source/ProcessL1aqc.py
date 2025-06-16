@@ -206,8 +206,9 @@ class ProcessL1aqc:
 
         # Reorganize groups with new names
         for gp in node.groups:
-            cf = calibrationMap[gp.attributes["CalFileName"]]
-            ProcessL1aqc.renameGroup(gp,cf)
+            if not gp.id.startswith('GPS'):
+                cf = calibrationMap[gp.attributes["CalFileName"]]
+                ProcessL1aqc.renameGroup(gp,cf)
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)

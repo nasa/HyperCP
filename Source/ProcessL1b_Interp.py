@@ -62,19 +62,23 @@ class ProcessL1b_Interp:
         if gpsGroup is not None:
             newGPSGroup.attributes = gpsGroup.attributes.copy()
             # These are from the raw data, not to be confused with those in the ancillary file
-            ProcessL1b_Interp.convertDataset(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
-            ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
-            latData = newGPSGroup.getDataset("LATITUDE")
-            lonData = newGPSGroup.getDataset("LONGITUDE")
+
             # Only if the right NMEA data are provided (e.g. with SunTracker)
-            if gpsGroup.attributes["CalFileName"].startswith("GPRMC"):
-                ProcessL1b_Interp.convertDataset(gpsGroup, "COURSE", newGPSGroup, "COURSE")
-                ProcessL1b_Interp.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")
-                courseData = newGPSGroup.getDataset("COURSE")
-                courseData.datasetToColumns()
-                sogData = newGPSGroup.getDataset("SPEED")
-                sogData.datasetToColumns()
-                newGPSGroup.datasets['SPEED'].id="SOG"
+            if 'CalFileName' in gpsGroup.attributes:
+                if gpsGroup.attributes["CalFileName"].startswith("GPRMC"): #pySAS, SolarTracker with GPS TDF input
+                    ProcessL1b_Interp.convertDataset(gpsGroup, "LATPOS", newGPSGroup, "LATITUDE")
+                    ProcessL1b_Interp.convertDataset(gpsGroup, "LONPOS", newGPSGroup, "LONGITUDE")
+                    ProcessL1b_Interp.convertDataset(gpsGroup, "COURSE", newGPSGroup, "COURSE")
+                    ProcessL1b_Interp.convertDataset(gpsGroup, "SPEED", newGPSGroup, "SPEED")
+                    courseData = newGPSGroup.getDataset("COURSE")
+                    courseData.datasetToColumns()
+                    sogData = newGPSGroup.getDataset("SPEED")
+                    sogData.datasetToColumns()
+                    newGPSGroup.datasets['SPEED'].id="SOG"
+                elif gpsGroup.attributes["CalFileName"] == 'GPS_MSDA': # MSDA_XE merged GPS
+                    ProcessL1b_Interp.convertDataset(gpsGroup, "LATITUDE", newGPSGroup, "LATITUDE")
+                    ProcessL1b_Interp.convertDataset(gpsGroup, "LONGITUDE", newGPSGroup, "LONGITUDE")
+
             newGPSGroup.attributes["SOURCE"] = 'GPS'
         else:
             # These are from the ancillary file; place in GPS
@@ -82,10 +86,11 @@ class ProcessL1b_Interp:
             # TODO: If GPS is part of the SunTracker group, and gpsGroup was not yet established, pull Lat/Lon from Suntracker Group
             ProcessL1b_Interp.convertDataset(ancGroup, "LATITUDE", newGPSGroup, "LATITUDE")
             ProcessL1b_Interp.convertDataset(ancGroup, "LONGITUDE", newGPSGroup, "LONGITUDE")
-            latData = newGPSGroup.getDataset("LATITUDE")
-            lonData = newGPSGroup.getDataset("LONGITUDE")
             newGPSGroup.attributes["SOURCE"] = 'ANCILLARY'
             newGPSGroup.attributes["CalFileName"] = 'ANCILLARY'
+
+        latData = newGPSGroup.getDataset("LATITUDE")
+        lonData = newGPSGroup.getDataset("LONGITUDE")
 
         if STGroup is not None:
             newSTGroup = node.addGroup('ST_TEMP') # temporary
@@ -339,22 +344,30 @@ class ProcessL1b_Interp:
 
         # Convert degrees minutes to decimal degrees format; only for GPS, not ANCILLARY_METADATA
         if group.id.startswith("GP"):
-            if newDatasetName == "LATITUDE":
-                latPosData = group.getDataset("LATPOS")
-                latHemiData = group.getDataset("LATHEMI")
-                for i in range(dataset.data.shape[0]):
-                    latDM = latPosData.data["NONE"][i]
-                    latDirection = latHemiData.data["NONE"][i]
-                    latDD = Utilities.dmToDd(latDM, latDirection)
-                    latPosData.data["NONE"][i] = latDD
-            if newDatasetName == "LONGITUDE":
-                lonPosData = group.getDataset("LONPOS")
-                lonHemiData = group.getDataset("LONHEMI")
-                for i in range(dataset.data.shape[0]):
-                    lonDM = lonPosData.data["NONE"][i]
-                    lonDirection = lonHemiData.data["NONE"][i]
-                    lonDD = Utilities.dmToDd(lonDM, lonDirection)
-                    lonPosData.data["NONE"][i] = lonDD
+            if group.id == "GPS_MSDA":
+                if newDatasetName == "LATITUDE":
+                    # for i in range(dataset.data.shape[0]):
+                    latPosData = group.getDataset("LATITUDE")
+                if newDatasetName == "LONGITUDE":
+                    # for i in range(dataset.data.shape[0]):
+                    latPosData = group.getDataset("LONGITUDE")
+            else:
+                if newDatasetName == "LATITUDE":
+                    latPosData = group.getDataset("LATPOS")
+                    latHemiData = group.getDataset("LATHEMI")
+                    for i in range(dataset.data.shape[0]):
+                        latDM = latPosData.data["NONE"][i]
+                        latDirection = latHemiData.data["NONE"][i]
+                        latDD = Utilities.dmToDd(latDM, latDirection)
+                        latPosData.data["NONE"][i] = latDD
+                if newDatasetName == "LONGITUDE":
+                    lonPosData = group.getDataset("LONPOS")
+                    lonHemiData = group.getDataset("LONHEMI")
+                    for i in range(dataset.data.shape[0]):
+                        lonDM = lonPosData.data["NONE"][i]
+                        lonDirection = lonHemiData.data["NONE"][i]
+                        lonDD = Utilities.dmToDd(lonDM, lonDirection)
+                        lonPosData.data["NONE"][i] = lonDD
 
         newSensorData = newGroup.addDataset(newDatasetName)
 

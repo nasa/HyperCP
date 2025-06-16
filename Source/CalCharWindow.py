@@ -1,14 +1,18 @@
-from PyQt5 import QtWidgets
-
-from Source.ConfigFile import ConfigFile
+''' GUI for the selection of L1B calibration and characterization configuration. '''
 import os
 import glob
 import shutil
 from pathlib import Path
-from Source import PATH_TO_CONFIG
+from PyQt5 import QtWidgets
+
 from ocdb.api.OCDBApi import new_api, OCDBApi
 
+from Source.ConfigFile import ConfigFile
+from Source import PATH_TO_CONFIG
+
+
 class CalCharWindow(QtWidgets.QDialog):
+    ''' Object for calibration/characterization configuration GUI '''
     def __init__(self, name, parent=None):
         super().__init__(parent)
         self.name = name
@@ -16,113 +20,118 @@ class CalCharWindow(QtWidgets.QDialog):
         self.initUI()
 
     def initUI(self):
-
+        ''' Initialize the GUI '''
         calibrationDir = os.path.splitext(self.name)[0] + "_Calibration"
         self.calibrationPath = os.path.join(PATH_TO_CONFIG, calibrationDir)
 
-        ''' Initialize the GUIs '''
+        # Thermal source selection
+        ThermalLabel = QtWidgets.QLabel(" Select source of internal sensor working temperature:", self)
+        ThermalLabel_font = ThermalLabel.font()
+        ThermalLabel_font.setPointSize(12)
+        ThermalLabel_font.setBold(True)
+        ThermalLabel.setFont(ThermalLabel_font)
 
-        l1bCalLabel = QtWidgets.QLabel(" Select Calibration-Characterization Regime:", self)
+        self.ThermistorRadioButton = QtWidgets.QRadioButton("Internal Thermistor (SeaBird, DALEC, TriOS-G2)")
+        # self.ThermistorRadioButton.setAutoExclusive(False)
+        self.ThermistorRadioButton.clicked.connect(self.ThermistorRadioButtonClicked)
+        self.AirTempRadioButton = QtWidgets.QRadioButton("Air Temperature + 5 deg. C")
+        self.AirTempRadioButton.clicked.connect(self.AirTempRadioButtonClicked)
+        self.CapsOnFileRadioButton = QtWidgets.QRadioButton("Caps-on Dark File (T > 30 deg. C)")
+        self.CapsOnFileRadioButton.clicked.connect(self.CapsOnFileRadioButtonClicked)
 
-        l1bCalLabel_font = l1bCalLabel.font()
-        l1bCalLabel_font.setPointSize(12)
-        l1bCalLabel_font.setBold(True)
-        l1bCalLabel.setFont(l1bCalLabel_font)
+        self.ThermalStatusUpdate()
+        
+        # Cal/Char selection
+        CalLabel = QtWidgets.QLabel(" Select Calibration-Characterization Regime:", self)
+        CalLabel_font = CalLabel.font()
+        CalLabel_font.setPointSize(12)
+        CalLabel_font.setBold(True)
+        CalLabel.setFont(CalLabel_font)
 
-
-        self.DefaultCalRadioButton = QtWidgets.QRadioButton("non-FRM: Factory calibration only (no uncertainties)")
+        # Factory
+        self.DefaultCalRadioButton = QtWidgets.QRadioButton("Non-FRM, factory calibration only (no uncertainties except with SeaBird)")
         self.DefaultCalRadioButton.setAutoExclusive(False)
+        self.DefaultCalRadioButton.clicked.connect(self.DefaultCalRadioButtonClicked)
 
-        self.DefaultCalRadioButton.clicked.connect(self.l1bDefaultCalRadioButtonClicked)
-
-
-        self.ClassCalRadioButton = QtWidgets.QRadioButton("FRM standard: Class-specific characterisation coefficients will be used (available in /Data/Class_Based_Characterizations/%s)"
-                                                          "\n NB: Sensor-specific calibrations with uncertainties in the FidRadDB format required" % ConfigFile.settings['SensorType'])
+        # Class
+        self.ClassCalRadioButton = QtWidgets.QRadioButton(f"FRM Class-Specific characterisation coefficients will be used (available in /Data/Class_Based_Characterizations/{ConfigFile.settings['SensorType']})"
+                                                          "\n NB: Sensor-specific calibrations with uncertainties in the FidRadDB format required" )
         self.ClassCalRadioButton.setAutoExclusive(False)
-
-        self.l1bClassRadio1 = QtWidgets.QRadioButton("Local", self)
+        self.ClassRadio1 = QtWidgets.QRadioButton("Local", self)
         self.addClassFilesButton = QtWidgets.QPushButton("Add calibration files:")
-        # self.addClassFilesButton.clicked.connect(self.l1bChooseCalFiles('only_cal'))
         self.classFilesLineEdit = QtWidgets.QLineEdit(self)
         self.classFilesLineEdit.setDisabled(True)
-        self.l1bClassRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
-        l1bClassFidRadDBLabel = QtWidgets.QLabel("Calibration files will be downloaded into /Data/FidRadDB/%s" % ConfigFile.settings['SensorType'], self)
+        self.ClassRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
+        ClassFidRadDBLabel = QtWidgets.QLabel(f"Calibration files will be downloaded into /Data/FidRadDB/{ConfigFile.settings['SensorType']}", self)
+        self.ClassCalRadioButton.clicked.connect(self.ClassCalRadioButtonClicked)
+        self.ClassRadio1.clicked.connect(self.RadioUpdate1)
+        self.ClassRadio2.clicked.connect(self.RadioUpdate2)
 
-        self.ClassCalRadioButton.clicked.connect(self.l1bClassCalRadioButtonClicked)
-
-        self.l1bClassRadio1.clicked.connect(self.l1bRadioUpdate1)
-        self.l1bClassRadio2.clicked.connect(self.l1bRadioUpdate2)
-
-
-        self.FullCalRadioButton = QtWidgets.QRadioButton("FRM highest quality: Sensor-specific characterisation coefficients will be used "
+        # Full
+        self.FullCalRadioButton = QtWidgets.QRadioButton("FRM Sensor-Specific characterisation coefficients will be used (highest quality)"
                                                          "\n NB: Sensor-specific calibrations with uncertainties and characterizations in the FidRadDB format required")
         self.FullCalRadioButton.setAutoExclusive(False)
-        self.l1bFRMRadio1 = QtWidgets.QRadioButton("Local", self)
-        self.addFullFilesButton = QtWidgets.QPushButton("Add cal./char. files:")
-        # self.addFullFilesButton.clicked.connect(self.l1bChooseCalFiles('cal_char'))
+        self.FRMRadio1 = QtWidgets.QRadioButton("Local", self)
+        self.addFullFilesButton = QtWidgets.QPushButton("Add Cal/Char files:")
+        # self.addFullFilesButton.clicked.connect(self.ChooseCalFiles('cal_char'))
         self.fullFilesLineEdit = QtWidgets.QLineEdit(self)
         self.fullFilesLineEdit.setDisabled(True)
-
-        self.l1bFRMRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
-        l1bFidRadDBLabel = QtWidgets.QLabel("Cal./char. files will be downloaded into /Data/FidRadDB/%s" % ConfigFile.settings['SensorType'], self)
-
-        self.FullCalRadioButton.clicked.connect(self.l1bFullCalRadioButtonClicked)
-
+        self.FRMRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
+        FidRadDBLabel = QtWidgets.QLabel(f"Cal/Char files will be downloaded into /Data/FidRadDB/{ConfigFile.settings['SensorType']}", self)
+        self.FullCalRadioButton.clicked.connect(self.FullCalRadioButtonClicked)
         self.FullCalDir = ConfigFile.settings['FullCalDir']
-        self.l1bFRMRadio1.clicked.connect(self.l1bRadioUpdate1)
-        self.l1bFRMRadio2.clicked.connect(self.l1bRadioUpdate2)
+        self.FRMRadio1.clicked.connect(self.RadioUpdate1)
+        self.FRMRadio2.clicked.connect(self.RadioUpdate2)
 
-
-        if ConfigFile.settings["bL1bCal"] == 1:
+        if ConfigFile.settings["fL1bCal"] == 1:
             self.DefaultCalRadioButton.setChecked(True)
-        elif ConfigFile.settings["bL1bCal"] == 2:
+        elif ConfigFile.settings["fL1bCal"] == 2:
             self.ClassCalRadioButton.setChecked(True)
-        elif ConfigFile.settings["bL1bCal"] == 3:
+        elif ConfigFile.settings["fL1bCal"] == 3:
             self.FullCalRadioButton.setChecked(True)
 
         if ConfigFile.settings['FidRadDB']:
-            self.l1bFRMRadio1.setChecked(False)
-            self.l1bClassRadio1.setChecked(False)
-            self.l1bFRMRadio2.setChecked(True)
-            self.l1bClassRadio2.setChecked(True)
+            self.FRMRadio1.setChecked(False)
+            self.ClassRadio1.setChecked(False)
+            self.FRMRadio2.setChecked(True)
+            self.ClassRadio2.setChecked(True)
         else:
-            self.l1bFRMRadio1.setChecked(True)
-            self.l1bClassRadio1.setChecked(True)
-            self.l1bFRMRadio2.setChecked(False)
-            self.l1bClassRadio2.setChecked(False)
+            self.FRMRadio1.setChecked(True)
+            self.ClassRadio1.setChecked(True)
+            self.FRMRadio2.setChecked(False)
+            self.ClassRadio2.setChecked(False)
 
+        CalLabel2 = QtWidgets.QLabel("Multiple calibrations for each sensor (FRM regimes only)? Select option:", self)
 
-        l1bCalLabel2 = QtWidgets.QLabel("Multiple calibrations for each sensor? Select option:", self)
-
-        l1bCalLabel2_font = l1bCalLabel2.font()
-        l1bCalLabel2_font.setPointSize(12)
-        l1bCalLabel2_font.setBold(True)
-        l1bCalLabel2.setFont(l1bCalLabel2_font)
+        CalLabel2_font = CalLabel2.font()
+        CalLabel2_font.setPointSize(12)
+        CalLabel2_font.setBold(True)
+        CalLabel2.setFont(CalLabel2_font)
 
         self.calFileMostRecent = QtWidgets.QRadioButton("Use most recent calibration prior to acquisition time (default)")
         self.calFileMostRecent.setAutoExclusive(False)
-        self.calFileMostRecent.clicked.connect(lambda: self.l1bMultiCalOptions('most_recent'))
+        self.calFileMostRecent.clicked.connect(lambda: self.MultiCalOptions('most_recent'))
 
-        self.calFilePrePost = QtWidgets.QRadioButton("Use mean of pre- and post- calibrations")
+        self.calFilePrePost = QtWidgets.QRadioButton("Use mean of pre- and post- calibrations (1 each for DALEC, 3 for TriOS, 6 for SeaBird)")
         self.calFilePrePost.setAutoExclusive(False)
-        self.calFilePrePost.clicked.connect(lambda: self.l1bMultiCalOptions('pre_post'))
+        self.calFilePrePost.clicked.connect(lambda: self.MultiCalOptions('pre_post'))
 
-        self.addPreCalButton = QtWidgets.QPushButton("Choose (3) pre-cal files:")
-        self.addPreCalButton.clicked.connect(lambda: self.l1bChooseCalFiles('pre_cal'))
+        self.addPreCalButton = QtWidgets.QPushButton("Choose pre-cal files:")
+        self.addPreCalButton.clicked.connect(lambda: self.ChooseCalFiles('pre_cal'))
         self.PreCalLineEdit = QtWidgets.QLineEdit(self)
         self.PreCalLineEdit.setDisabled(True)
 
-        self.addPostCalButton = QtWidgets.QPushButton("Choose (3) post-cal files:")
-        self.addPostCalButton.clicked.connect(lambda: self.l1bChooseCalFiles('post_cal'))
+        self.addPostCalButton = QtWidgets.QPushButton("Choose post-cal files:")
+        self.addPostCalButton.clicked.connect(lambda: self.ChooseCalFiles('post_cal'))
         self.PostCalLineEdit = QtWidgets.QLineEdit(self)
         self.PostCalLineEdit.setDisabled(True)
 
         self.calFileChoose = QtWidgets.QRadioButton("Use specific calibration files")
         self.calFileChoose.setAutoExclusive(False)
-        self.calFileChoose.clicked.connect(lambda: self.l1bMultiCalOptions('choose'))
+        self.calFileChoose.clicked.connect(lambda: self.MultiCalOptions('choose'))
 
         self.addChooseCalButton = QtWidgets.QPushButton("Choose (3) cal files:")
-        self.addChooseCalButton.clicked.connect(lambda: self.l1bChooseCalFiles('choose_cal'))
+        self.addChooseCalButton.clicked.connect(lambda: self.ChooseCalFiles('choose_cal'))
         self.ChooseCalLineEdit = QtWidgets.QLineEdit(self)
         self.ChooseCalLineEdit.setDisabled(True)
 
@@ -131,83 +140,87 @@ class CalCharWindow(QtWidgets.QDialog):
         self.saveButton.clicked.connect(self.saveButtonPressed)
         self.cancelButton.clicked.connect(self.cancelButtonPressed)
 
-        self.l1bCalStatusUpdate()
-        self.l1bMultiCalOptions('most_recent')
-
+        self.CalStatusUpdate()
+        self.MultiCalOptions('most_recent')
 
         #####################################################################################
 
         VBox = QtWidgets.QVBoxLayout()
 
-        VBox2 = QtWidgets.QVBoxLayout()
+        # Thermal Source
+        VBox.addWidget(ThermalLabel)
+        ThermalHBox = QtWidgets.QHBoxLayout()
+        ThermalHBox.addStretch()
+        ThermalHBox.addWidget(self.ThermistorRadioButton)
+        ThermalHBox.addWidget(self.AirTempRadioButton)
+        ThermalHBox.addWidget(self.CapsOnFileRadioButton)
+        VBox.addLayout(ThermalHBox)
 
-        #   Instrument/Cal Files
-        VBox2.addWidget(l1bCalLabel)
-        # CalHBox2 = QtWidgets.QHBoxLayout()
-        # CalHBox2.addWidget(self.DefaultCalRadioButton)
-        VBox2.addWidget(self.DefaultCalRadioButton)
-        # CalHBox2 = QtWidgets.QHBoxLayout()
-        # CalHBox2.addStretch()
-        # CalHBox2.addWidget(self.DefaultCalRadioButtonTriOS)
-        # CalHBox2.addWidget(self.DefaultCalRadioButtonSeaBird)
-        # VBox2.addLayout(CalHBox2)
+        # Instrument/Cal Files
+        VBox.addWidget(CalLabel)
 
-        VBox2.addWidget(self.ClassCalRadioButton)
+        #   Factory
+        VBox.addWidget(self.DefaultCalRadioButton)
+
+        #   Class
+        VBox.addWidget(self.ClassCalRadioButton)
+        CalHBox1 = QtWidgets.QHBoxLayout()
+        CalHBox1.addStretch()
+        CalHBox1.addWidget(self.ClassRadio1)
+        CalHBox1.addWidget(self.addClassFilesButton)
+        CalHBox1.addWidget(self.classFilesLineEdit)
+        CalHBox1.addStretch()
+        VBox.addLayout(CalHBox1)
+
+        CalHBox2 = QtWidgets.QHBoxLayout()
+        CalHBox2.addStretch()
+        CalHBox2.addWidget(self.ClassRadio2)
+        CalHBox2.addWidget(ClassFidRadDBLabel)
+        CalHBox2.addStretch()
+        VBox.addLayout(CalHBox2)
+
+        #   Full
+        VBox.addWidget(self.FullCalRadioButton)
         CalHBox3 = QtWidgets.QHBoxLayout()
         CalHBox3.addStretch()
-        CalHBox3.addWidget(self.l1bClassRadio1)
-        CalHBox3.addWidget(self.addClassFilesButton)
-        CalHBox3.addWidget(self.classFilesLineEdit)
+        CalHBox3.addWidget(self.FRMRadio1)
+        CalHBox3.addWidget(self.addFullFilesButton)
+        CalHBox3.addWidget(self.fullFilesLineEdit)
         CalHBox3.addStretch()
-        # CalHBox5.addStretch(1)
-        VBox2.addLayout(CalHBox3)
+        VBox.addLayout(CalHBox3)
 
         CalHBox4 = QtWidgets.QHBoxLayout()
         CalHBox4.addStretch()
-        CalHBox4.addWidget(self.l1bClassRadio2)
-        CalHBox4.addWidget(l1bClassFidRadDBLabel)
+        CalHBox4.addWidget(self.FRMRadio2)
+        CalHBox4.addWidget(FidRadDBLabel)
         CalHBox4.addStretch()
-        VBox2.addLayout(CalHBox4)
+        VBox.addLayout(CalHBox4)
 
-        VBox2.addWidget(self.FullCalRadioButton)
+        # Multiple calibration files
+        VBox.addWidget(CalLabel2)
+
+        #   Most recent
+        VBox.addWidget(self.calFileMostRecent)
+
+        #   Pre- Post-
+        VBox.addWidget(self.calFilePrePost)
         CalHBox5 = QtWidgets.QHBoxLayout()
         CalHBox5.addStretch()
-        CalHBox5.addWidget(self.l1bFRMRadio1)
-        CalHBox5.addWidget(self.addFullFilesButton)
-        CalHBox5.addWidget(self.fullFilesLineEdit)
+        CalHBox5.addWidget(self.addPreCalButton)
+        CalHBox5.addWidget(self.PreCalLineEdit)
+        CalHBox5.addWidget(self.addPostCalButton)
+        CalHBox5.addWidget(self.PostCalLineEdit)
         CalHBox5.addStretch()
-        # CalHBox5.addStretch(1)
-        VBox2.addLayout(CalHBox5)
+        VBox.addLayout(CalHBox5)
 
-
+        #   Choose other
+        VBox.addWidget(self.calFileChoose)
         CalHBox6 = QtWidgets.QHBoxLayout()
         CalHBox6.addStretch()
-        CalHBox6.addWidget(self.l1bFRMRadio2)
-        CalHBox6.addWidget(l1bFidRadDBLabel)
+        CalHBox6.addWidget(self.addChooseCalButton)
+        CalHBox6.addWidget(self.ChooseCalLineEdit)
         CalHBox6.addStretch()
-        VBox2.addLayout(CalHBox6)
-
-        VBox2.addWidget(l1bCalLabel2)
-
-        VBox2.addWidget(self.calFileMostRecent)
-
-        VBox2.addWidget(self.calFilePrePost)
-        CalHBox7 = QtWidgets.QHBoxLayout()
-        CalHBox7.addStretch()
-        CalHBox7.addWidget(self.addPreCalButton)
-        CalHBox7.addWidget(self.PreCalLineEdit)
-        CalHBox7.addWidget(self.addPostCalButton)
-        CalHBox7.addWidget(self.PostCalLineEdit)
-        CalHBox7.addStretch()
-        VBox2.addLayout(CalHBox7)
-
-        VBox2.addWidget(self.calFileChoose)
-        CalHBox8 = QtWidgets.QHBoxLayout()
-        CalHBox8.addStretch()
-        CalHBox8.addWidget(self.addChooseCalButton)
-        CalHBox8.addWidget(self.ChooseCalLineEdit)
-        CalHBox8.addStretch()
-        VBox2.addLayout(CalHBox8)
+        VBox.addLayout(CalHBox6)
 
         # Save/Cancel
         saveHBox = QtWidgets.QHBoxLayout()
@@ -216,31 +229,62 @@ class CalCharWindow(QtWidgets.QDialog):
         saveHBox.addWidget(self.cancelButton)
 
         # Adds hBox and saveHBox to primary VBox
-        VBox2.addLayout(saveHBox)
+        VBox.addLayout(saveHBox)
 
-        # Add 3 Vertical Boxes to Horizontal Box hBox
-        hBox = QtWidgets.QHBoxLayout()
-        hBox.addLayout(VBox2)
-
-        VBox.addLayout(hBox)
         self.setLayout(VBox)
-
         self.setGeometry(100, 100, 0, 0)
-
-        self.setWindowTitle('Cal./char. options')
+        self.setWindowTitle('Calibration/Characterization options')
 
     #####################################################################################
 
-    def l1bChooseCalFiles(self,option_cal_char_file):
+    def ThermalStatusUpdate(self):
+        if ConfigFile.settings['SensorType'].lower() == 'trios': # G1
+            self.ThermistorRadioButton.setDisabled(True)
+            self.AirTempRadioButton.setDisabled(False)
+            self.CapsOnFileRadioButton.setDisabled(False)
+        else:
+            self.ThermistorRadioButton.setDisabled(False)
+            self.AirTempRadioButton.setDisabled(True)
+            self.CapsOnFileRadioButton.setDisabled(True)
+        if ConfigFile.settings["fL1bThermal"] == 1:
+            self.ThermistorRadioButton.setChecked(True)
+            self.AirTempRadioButton.setChecked(False)
+            self.CapsOnFileRadioButton.setChecked(False)
 
+        elif ConfigFile.settings["fL1bThermal"] == 2:
+            self.ThermistorRadioButton.setChecked(False)
+            self.AirTempRadioButton.setChecked(True)
+            self.CapsOnFileRadioButton.setChecked(False)
+
+        elif ConfigFile.settings["fL1bThermal"] == 3:
+            self.ThermistorRadioButton.setChecked(False)
+            self.AirTempRadioButton.setChecked(False)
+            self.CapsOnFileRadioButton.setChecked(True)
+
+    def ThermistorRadioButtonClicked(self):
+        # NOTE: Once we can dynamically recognize TriOS G1 compared to G2, this radio should be deactivated for G1
+        print("ConfigWindow - L1b Thermal source set to internal thermistor")
+        ConfigFile.settings["fL1bThermal"] = 1
+        self.ThermalStatusUpdate()
+    def AirTempRadioButtonClicked(self):
+        print("ConfigWindow - L1b Thermal source set to air-temperature-based")
+        ConfigFile.settings["fL1bThermal"] = 2
+        self.ThermalStatusUpdate()
+    def CapsOnFileRadioButtonClicked(self):
+        print("ConfigWindow - L1b Thermal source set to caps-on dark file")
+        ConfigFile.settings["fL1bThermal"] = 3
+        self.ThermalStatusUpdate()
+
+    def ChooseCalFiles(self,option_cal_char_file):
         print("ConfigWindow - Add/update cal/char files")
 
         self.RadCalDir = self.calibrationPath
         print('Radiometric characterization directory changed: ', self.RadCalDir)
 
         ConfigFile.settings['RadCalDir'] = self.RadCalDir
-        # self.l1bCalStatusUpdate()
+        # self.CalStatusUpdate()
 
+        calFileStr = None
         if option_cal_char_file == 'pre_cal':
             calFileStr = "3 pre-calibration"
         elif option_cal_char_file == 'post_cal':
@@ -250,12 +294,11 @@ class CalCharWindow(QtWidgets.QDialog):
         elif option_cal_char_file == 'cal_char':
             calFileStr = "3 calibration and 9 characterisation"
 
-
         correctSelection = False
         while not correctSelection:
             file_paths, _ = QtWidgets.QFileDialog.getOpenFileNames(
                 self,  # parent window
-                "Select %s files" % calFileStr,  # dialog title
+                f"Select {calFileStr} files",  # dialog title
                 ConfigFile.settings['FullCalDir'],  # starting directory (empty string means current dir)
                 "RADCAL text files (*RADCAL*.txt);;All Files (*)",  # file filter
                 options=QtWidgets.QFileDialog.Options())
@@ -278,18 +321,18 @@ class CalCharWindow(QtWidgets.QDialog):
                 print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
                 shutil.copy(file, dest)
 
-    def l1bCalStatusUpdate(self):
+    def CalStatusUpdate(self):
         # Enable/disable features based on regime selected
-        if ConfigFile.settings["bL1bCal"] == 1:
+        if ConfigFile.settings["fL1bCal"] == 1:
             self.DefaultCalRadioButton.setChecked(True)
             self.ClassCalRadioButton.setChecked(False)
             self.FullCalRadioButton.setChecked(False)
 
             self.addClassFilesButton.setDisabled(True)
-            self.l1bFRMRadio1.setDisabled(True)
-            self.l1bClassRadio1.setDisabled(True)
-            self.l1bFRMRadio2.setDisabled(True)
-            self.l1bClassRadio2.setDisabled(True)
+            self.FRMRadio1.setDisabled(True)
+            self.ClassRadio1.setDisabled(True)
+            self.FRMRadio2.setDisabled(True)
+            self.ClassRadio2.setDisabled(True)
             self.addFullFilesButton.setDisabled(True)
 
             self.calFileMostRecent.setDisabled(True)
@@ -300,16 +343,16 @@ class CalCharWindow(QtWidgets.QDialog):
             self.addPostCalButton.setDisabled(True)
             self.addChooseCalButton.setDisabled(True)
 
-        elif ConfigFile.settings["bL1bCal"] == 2:
+        elif ConfigFile.settings["fL1bCal"] == 2:
             self.DefaultCalRadioButton.setChecked(False)
             self.ClassCalRadioButton.setChecked(True)
             self.FullCalRadioButton.setChecked(False)
 
             self.addClassFilesButton.setDisabled(False)
-            self.l1bFRMRadio1.setDisabled(True)
-            self.l1bClassRadio1.setDisabled(False)
-            self.l1bFRMRadio2.setDisabled(True)
-            self.l1bClassRadio2.setDisabled(False)
+            self.FRMRadio1.setDisabled(True)
+            self.ClassRadio1.setDisabled(False)
+            self.FRMRadio2.setDisabled(True)
+            self.ClassRadio2.setDisabled(False)
             self.addFullFilesButton.setDisabled(True)
 
             self.calFileMostRecent.setDisabled(False)
@@ -320,16 +363,16 @@ class CalCharWindow(QtWidgets.QDialog):
             self.addPostCalButton.setDisabled(False)
             self.addChooseCalButton.setDisabled(False)
 
-        elif ConfigFile.settings["bL1bCal"] == 3:
+        elif ConfigFile.settings["fL1bCal"] == 3:
             self.DefaultCalRadioButton.setChecked(False)
             self.ClassCalRadioButton.setChecked(False)
             self.FullCalRadioButton.setChecked(True)
 
             self.addClassFilesButton.setDisabled(True)
-            self.l1bFRMRadio1.setDisabled(False)
-            self.l1bClassRadio1.setDisabled(True)
-            self.l1bFRMRadio2.setDisabled(False)
-            self.l1bClassRadio2.setDisabled(True)
+            self.FRMRadio1.setDisabled(False)
+            self.ClassRadio1.setDisabled(True)
+            self.FRMRadio2.setDisabled(False)
+            self.ClassRadio2.setDisabled(True)
             self.addFullFilesButton.setDisabled(False)
 
             self.calFileMostRecent.setDisabled(False)
@@ -368,25 +411,25 @@ class CalCharWindow(QtWidgets.QDialog):
             self.fullFilesLineEdit.setText("Files found")
             ConfigFile.settings['FullCalDir'] = self.calibrationPath
 
-    def l1bDefaultCalRadioButtonClicked(self):
+    def DefaultCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Factory")
-        ConfigFile.settings["bL1bCal"] = 1
-        self.l1bCalStatusUpdate()
+        ConfigFile.settings["fL1bCal"] = 1
+        self.CalStatusUpdate()
 
-    def l1bClassCalRadioButtonClicked(self):
+    def ClassCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Class-based")
-        ConfigFile.settings["bL1bCal"] = 2
-        self.l1bCalStatusUpdate()
+        ConfigFile.settings["fL1bCal"] = 2
+        self.CalStatusUpdate()
 
-    def l1bFullCalRadioButtonClicked(self):
+    def FullCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Instrument-specific FRM")
-        ConfigFile.settings["bL1bCal"] = 3
-        self.l1bCalStatusUpdate()
+        ConfigFile.settings["fL1bCal"] = 3
+        self.CalStatusUpdate()
 
-    def l1bRadioUpdate1(self):
-        print("ConfigWindow - l1bFRMRadioUpdate local files")
-        if self.l1bFRMRadio1.isChecked():
-            self.l1bFRMRadio2.setChecked(False)
+    def RadioUpdate1(self):
+        print("ConfigWindow - FRMRadioUpdate local files")
+        if self.FRMRadio1.isChecked():
+            self.FRMRadio2.setChecked(False)
             ConfigFile.settings['FidRadDB'] = 0
 
     def addFullFilesButtonClicked(self):
@@ -471,10 +514,10 @@ class CalCharWindow(QtWidgets.QDialog):
         print('Full characterization directory changed: ', self.FullCalDir)
         ConfigFile.settings['FullCalDir'] = self.FullCalDir
 
-    def l1bRadioUpdate2(self):
-        print("ConfigWindow - l1bFRMRadioUpdate FidRadDB")
-        if self.l1bFRMRadio2.isChecked():
-            self.l1bFRMRadio1.setChecked(False)
+    def RadioUpdate2(self):
+        print("ConfigWindow - FRMRadioUpdate FidRadDB")
+        if self.FRMRadio2.isChecked():
+            self.FRMRadio1.setChecked(False)
             ConfigFile.settings['FidRadDB'] = 1
             api = new_api(server_url='https://ocdb.eumetsat.int')
 
@@ -484,16 +527,16 @@ class CalCharWindow(QtWidgets.QDialog):
             elif ConfigFile.settings['SensorType'] == 'SeaBird':
                 serialNumbers = ['SAT' + sn[3:7] for sn in ConfigFile.settings['CalibrationFiles'].keys() if sn.endswith('.cal')]
             else:
-                ValueError('Only implemented for TriOS... and SeaBird')
+                print('Only implemented for TriOS... and SeaBird')
 
             for sn in serialNumbers:
                 cal_char_files = OCDBApi.fidrad_list_files(api, sn)
                 for cal_char_file in cal_char_files:
                     try:
                         OCDBApi.fidrad_download_file(api, cal_char_file, '/tcenas/home/gossn')
-                    except:
+                    except Exception as exc:
                         raise ConnectionError('Unable to download file from FidRadDB. Check your internet connection. '
-                                              'If problem persists, provide cal/char file manually.')
+                                              'If problem persists, provide cal/char file manually.') from exc
 
     def FullCalDirButtonPressed(self):
         if not ConfigFile.settings['FullCalDir'].startswith('Choose'):
@@ -511,9 +554,9 @@ class CalCharWindow(QtWidgets.QDialog):
                 shutil.copy(file, dest)
 
         ConfigFile.settings['FullCalDir'] = self.calibrationPath
-        self.l1bCalStatusUpdate()
+        self.CalStatusUpdate()
 
-    def l1bMultiCalOptions(self,option_multical):
+    def MultiCalOptions(self,option_multical):
 
         if option_multical == 'most_recent':
             self.calFileMostRecent.setChecked(True)

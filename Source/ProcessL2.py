@@ -396,7 +396,7 @@ class ProcessL2:
         ltUNC = {}
 
         # Only Factory - Trios has no uncertainty here
-        if ConfigFile.settings['bL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
+        if ConfigFile.settings['fL1bCal'] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
             #or ConfigFile.settings['SensorType'].lower() == 'dalec':
             esUNC = xUNC[f'esUNC_{sensor}']  # should already be convolved to hyperspec
             liUNC = xUNC[f'liUNC_{sensor}']  # added reference to HYPER as band convolved uncertainties will no longer
@@ -566,7 +566,7 @@ class ProcessL2:
                     newRrsUNCData.columns[k].append(rrsUNC[k])
                     # newnLwUNCData.columns[k].append(nLwUNC)
                     newnLwUNCData.columns[k].append(nLwUNC[k])
-                    if ConfigFile.settings['bL1bCal']==1 and (ConfigFile.settings['SensorType'].lower() == 'trios' or \
+                    if ConfigFile.settings['fL1bCal']==1 and (ConfigFile.settings['SensorType'].lower() == 'trios' or \
                                                               ConfigFile.settings['SensorType'].lower() == 'dalec'):
                     # Specifique case for Factory-Trios and Dalec
                         newESUNCData.columns[k].append(esUNC[k])
@@ -1532,7 +1532,7 @@ class ProcessL2:
 
         tic = time.process_time()
         with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal
-            if ConfigFile.settings["bL1bCal"] <= 2:  # and
+            if ConfigFile.settings["fL1bCal"] <= 2:  # and
                 L1B_UNC = instrument.ClassBased(node, uncGroup, stats)
                 if L1B_UNC:
                     xSlice.update(L1B_UNC)  # update the xSlice dict with uncertianties and samples
@@ -1544,7 +1544,7 @@ class ProcessL2:
 
                     xUNC.update(instrument.ClassBasedL2(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
                 elif ((ConfigFile.settings['SensorType'].lower() == "trios") or \
-                    (ConfigFile.settings['SensorType'].lower() == "dalec")) and (ConfigFile.settings["bL1bCal"] == 1):
+                    (ConfigFile.settings['SensorType'].lower() == "dalec")) and (ConfigFile.settings["fL1bCal"] == 1):
                     xUNC = None
                 else:
                     msg = "Instrument uncertainty processing failed: ProcessL2"
@@ -1552,7 +1552,7 @@ class ProcessL2:
                     Utilities.writeLogFile(msg)
                     return False
 
-            elif ConfigFile.settings["bL1bCal"] == 3:
+            elif ConfigFile.settings["fL1bCal"] == 3:
                 xSlice.update(
                     instrument.FRM(node, uncGroup,
                                 dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
@@ -1890,7 +1890,7 @@ class ProcessL2:
         else:
             sixSGroup = None
 
-        if ConfigFile.settings["bL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
+        if ConfigFile.settings["fL1bCal"] >= 2 or ConfigFile.settings['SensorType'].lower() == 'seabird':
             #or ConfigFile.settings['SensorType'].lower() == 'dalec':
             rootCopy.addGroup("RAW_UNCERTAINTIES")
             rootCopy.getGroup('RAW_UNCERTAINTIES').copy(root.getGroup('RAW_UNCERTAINTIES'))
@@ -2210,7 +2210,7 @@ class ProcessL2:
 
         # In the case of TriOS Factory, strip out uncertainty datasets
         if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
-             ConfigFile.settings['SensorType'].lower() == 'dalec') and ConfigFile.settings['bL1bCal'] == 1:
+             ConfigFile.settings['SensorType'].lower() == 'dalec') and ConfigFile.settings['fL1bCal'] == 1:
             for gp in node.groups:
                 if gp.id in ('IRRADIANCE', 'RADIANCE', 'REFLECTANCE'):
                     removeList = []

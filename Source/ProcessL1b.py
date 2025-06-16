@@ -25,7 +25,7 @@ class ProcessL1b:
 
     @staticmethod
     def read_unc_coefficient_factory(root, inpath):
-        ''' SeaBird or TriOS'''
+        ''' SeaBird only.'''
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
@@ -87,7 +87,7 @@ class ProcessL1b:
 
     @staticmethod
     def read_unc_coefficient_class(root, inpath, radcal_dir):
-        ''' SeaBird or TriOS'''
+        ''' SeaBird or TriOS. ProcessL1bTriOS also redirects here.'''
 
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
@@ -149,7 +149,7 @@ class ProcessL1b:
 
     @staticmethod
     def read_unc_coefficient_frm(root, inpath, classbased_dir):
-        ''' SeaBird or TriOS'''
+        ''' SeaBird or TriOS.  ProcessL1bTriOS also redirects here. '''
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
@@ -193,7 +193,7 @@ class ProcessL1b:
 
     @staticmethod
     def includeModelDefaults(ancGroup, modRoot):
-        ''' Include model data or defaults for blank ancillary fields '''
+        ''' Include model data or defaults for blank ancillary fields.  ProcessL1bTriOS and ProcessL1bDALEC also redirect here. '''
         print('Filling blank ancillary data with models or defaults from Configuration')
 
         epoch = dt.datetime(1970, 1, 1,tzinfo=dt.timezone.utc)
@@ -278,6 +278,10 @@ class ProcessL1b:
                 aodFlag.append('undetermined')
             else:
                 aodFlag.append('field')
+            if np.isnan(air[i]):
+                airFlag.append('undetermined')
+            else:
+                airFlag.append('field')
 
         # Replace Wind, AOD, and AirTemp NaNs with modeled data where possible.
         # These will be within one hour of the field data.
@@ -303,12 +307,13 @@ class ProcessL1b:
                     air[i] = modRoot.groups[0].datasets['AirTemp'][idx]
                     airFlag[i] = 'model'
                     if i==0:
-                        ancGroup.attributes['Model AIRTEMP units'] = modRoot.groups[0].attributes['AIRTEMP units']
+                        ancGroup.attributes['Model AIRTEMP units'] = modRoot.groups[0].attributes['Air Temp. units']
 
         # Replace Wind, AOD, SST, Sal, and AirTemp with defaults where still nan
         Utilities.writeLogFileAndPrint('Filling in ancillary data with default values where still needed.')
+        # Salt and SST do not have model fallbacks.
         saltFlag = []
-        sstFlag = []        
+        sstFlag = []  
         for i, value in enumerate(wind):
             if np.isnan(value):
                 wind[i] = ConfigFile.settings["fL1bDefaultWindSpeed"]
@@ -341,8 +346,11 @@ class ProcessL1b:
         windDataset.columns["WINDFLAG"] = windFlag
         windDataset.columnsToDataset()
         aodDataset.columns["AOD"] = aod
-        aodDataset.columns["AODFLAG"] = aodFlag
+        aodDataset.columns["AODFLAG"] = aodFlag        
         aodDataset.columnsToDataset()
+        airDataset.columns["AIRTEMP"] = air
+        airDataset.columns["AIRFLAG"] = airFlag        
+        airDataset.columnsToDataset()
         saltDataset.columns["NONE"] = salt
         saltDataset.columns["SALTFLAG"] = saltFlag
         saltDataset.columnsToDataset()
@@ -544,11 +552,11 @@ class ProcessL1b:
         now = dt.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
-        if ConfigFile.settings["bL1bCal"] == 1:
+        if ConfigFile.settings["fL1bCal"] == 1:
             node.attributes['CAL_TYPE'] = 'Factory'
-        elif ConfigFile.settings["bL1bCal"] == 2:
+        elif ConfigFile.settings["fL1bCal"] == 2:
             node.attributes['CAL_TYPE'] = 'FRM-Class'
-        elif ConfigFile.settings["bL1bCal"] == 3:
+        elif ConfigFile.settings["fL1bCal"] == 3:
             node.attributes['CAL_TYPE'] = 'FRM-Full'
         node.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
@@ -580,11 +588,44 @@ class ProcessL1b:
             elif gp.id == 'LT_LIGHT':
                 ltLightGroup.copy(gp)
 
+        # Interpolate only the Ancillary group, and then fold in model data
+        # This is run ahead of the other groups for all processing pathways. Anc group
+        # exists regardless of Ancillary file being provided
+        if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
+            Utilities.writeLogFileAndPrint('Error interpolating ancillary data')
+            return None
+
+        # Need to fill in with model and fallback values before running ProcessL1b.read_unc_coefficient_class in order to get proper thermal data
+        ancGroup = node.getGroup("ANCILLARY_METADATA")
+
+        # Retrieve MERRA2 model ancillary data
+        if ConfigFile.settings["bL1bGetAnc"] ==1:
+            Utilities.writeLogFileAndPrint('MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...')
+            modRoot = GetAnc.getAnc(ancGroup)
+        # Retrieve ECMWF model ancillary data
+        elif ConfigFile.settings["bL1bGetAnc"] == 2:
+            Utilities.writeLogFileAndPrint('ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...')
+            modRoot = GetAnc_ecmwf.getAnc_ecmwf(ancGroup)
+        else:
+            modRoot = None
+
+        # Regardless of whether SunTracker is used, Ancillary data will have already been
+        # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
+        # to have model data and/or default values incorporated.
+
+        # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
+        # is provided in Main Window, then use the model data to fill in gaps in the field
+        # record. Otherwise, use the selected default values from ConfigWindow
+
+        # This step is only necessary for the ancillary datasets that REQUIRE
+        # either field or GMAO or GUI default values. The remaining ancillary data
+        # are culled from datasets in groups in L1B
+        ProcessL1b.includeModelDefaults(ancGroup, modRoot)
+
         # Add class-based files (RAW_UNCERTAINTIES)
         classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
                                       ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
-        if ConfigFile.settings['bL1bCal'] == 1:
-            # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
+        if ConfigFile.settings['fL1bCal'] == 1:
             print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
             node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
             if node is None:
@@ -592,7 +633,7 @@ class ProcessL1b:
                 return None
 
         # Add class-based files + RADCAL file
-        elif ConfigFile.settings['bL1bCal'] == 2:
+        elif ConfigFile.settings['fL1bCal'] == 2:
             radcal_dir = ConfigFile.settings['RadCalDir']
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
@@ -603,7 +644,7 @@ class ProcessL1b:
                 return None
 
         # Add full characterization files
-        elif ConfigFile.settings['bL1bCal'] == 3:
+        elif ConfigFile.settings['fL1bCal'] == 3:
             if ConfigFile.settings['FidRadDB'] == 0:
                 inpath = ConfigFile.settings['FullCalDir']
                 print("Full-Char - uncertainty computed from full characterization")
@@ -624,7 +665,7 @@ class ProcessL1b:
                         # If cal/char file missing entails an error, this should be handled while performing the particular
                         # correction, not here.
                         FidradDB_api(sensorID+'_'+cal_char_type, acq_time, inpath)
-
+            # NOTE: Does this method lead to to corrections being applied in addition to uncertainty estimates?s
             node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
 
             if node is None:
@@ -655,44 +696,44 @@ class ProcessL1b:
                 gp.removeDataset('DATETIME')
                 gp = Utilities.groupAddDateTime(gp)
 
-        # Interpolate only the Ancillary group, and then fold in model data
-        # This is run ahead of the other groups for all processing pathways. Anc group
-        # exists regardless of Ancillary file being provided
-        if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
-            Utilities.writeLogFileAndPrint('Error interpolating ancillary data')
-            return None
+        # # Interpolate only the Ancillary group, and then fold in model data
+        # # This is run ahead of the other groups for all processing pathways. Anc group
+        # # exists regardless of Ancillary file being provided
+        # if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
+        #     Utilities.writeLogFileAndPrint('Error interpolating ancillary data')
+        #     return None
 
-        # Need to fill in with model data here. This had previously been run on the GPS group, but now shifted to Ancillary group
-        ancGroup = node.getGroup("ANCILLARY_METADATA")
-        # Retrieve MERRA2 model ancillary data
-        if ConfigFile.settings["bL1bGetAnc"] ==1:
-            Utilities.writeLogFileAndPrint('MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...')
-            modRoot = GetAnc.getAnc(ancGroup)
-        # Retrieve ECMWF model ancillary data
-        elif ConfigFile.settings["bL1bGetAnc"] == 2:
-            Utilities.writeLogFileAndPrint('ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...')
-            modRoot = GetAnc_ecmwf.getAnc_ecmwf(ancGroup)
-        else:
-            modRoot = None
+        # # Need to fill in with model data here. This had previously been run on the GPS group, but now shifted to Ancillary group
+        # ancGroup = node.getGroup("ANCILLARY_METADATA")
+        # # Retrieve MERRA2 model ancillary data
+        # if ConfigFile.settings["bL1bGetAnc"] ==1:
+        #     Utilities.writeLogFileAndPrint('MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...')
+        #     modRoot = GetAnc.getAnc(ancGroup)
+        # # Retrieve ECMWF model ancillary data
+        # elif ConfigFile.settings["bL1bGetAnc"] == 2:
+        #     Utilities.writeLogFileAndPrint('ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...')
+        #     modRoot = GetAnc_ecmwf.getAnc_ecmwf(ancGroup)
+        # else:
+        #     modRoot = None
 
-        # Regardless of whether SunTracker is used, Ancillary data will have already been
-        # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
-        # to have model data and/or default values incorporated.
+        # # Regardless of whether SunTracker is used, Ancillary data will have already been
+        # # interpolated in L1B as long as the ancillary file was read in at L1AQC. Regardless, these need
+        # # to have model data and/or default values incorporated.
 
-        # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
-        # is provided in Main Window, then use the model data to fill in gaps in the field
-        # record. Otherwise, use the selected default values from ConfigWindow
+        # # If GMAO modeled data is selected in ConfigWindow, and an ancillary field data file
+        # # is provided in Main Window, then use the model data to fill in gaps in the field
+        # # record. Otherwise, use the selected default values from ConfigWindow
 
-        # This step is only necessary for the ancillary datasets that REQUIRE
-        # either field or GMAO or GUI default values. The remaining ancillary data
-        # are culled from datasets in groups in L1B
-        ProcessL1b.includeModelDefaults(ancGroup, modRoot)
+        # # This step is only necessary for the ancillary datasets that REQUIRE
+        # # either field or GMAO or GUI default values. The remaining ancillary data
+        # # are culled from datasets in groups in L1B
+        # ProcessL1b.includeModelDefaults(ancGroup, modRoot)
 
         # Calibration
         # Depending on the Configuration, process either the factory
         # calibration, class-based characterization, or the complete
         # instrument characterizations
-        if ConfigFile.settings['bL1bCal'] == 1 or ConfigFile.settings['bL1bCal'] == 2:
+        if ConfigFile.settings['fL1bCal'] == 1 or ConfigFile.settings['fL1bCal'] == 2:
             # Class-based radiometric processing is identical to factory processing
             # Results may differs due to updated calibration files but the two
             # process are the same. The class-based characterisation will be used
@@ -703,7 +744,7 @@ class ProcessL1b:
             calibrationMap = CalibrationFileReader.read(calPath)
             ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
 
-        elif ConfigFile.settings['bL1bCal'] == 3:
+        elif ConfigFile.settings['fL1bCal'] == 3:
             calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
             calPath = os.path.join(PATH_TO_CONFIG, calFolder)
             print("Read CalibrationFile ", calPath)

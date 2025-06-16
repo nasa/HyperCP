@@ -387,17 +387,15 @@ class Controller:
             return None
 
         # Process the data
-        msg = "ProcessL1b: " + inFilePath
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f"ProcessL1b: {inFilePath}")
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except Exception:
             msg = "Controller.processL1b: Unable to open HDF file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(msg)
             return None
+
 
         if ConfigFile.settings["SensorType"].lower() == "trios":
             root = ProcessL1bTriOS.processL1b(root, outFilePath)
@@ -414,15 +412,13 @@ class Controller:
             except Exception:
                 msg = "**********************Controller.ProcessL1b: Unable to write file. May be open in another application.**********************"
                 Utilities.errorWindow("File Error", msg)
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint(msg)
                 return None
         else:
             msg = "L1b processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                 Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(msg)
             return None
 
         return root
@@ -478,9 +474,9 @@ class Controller:
         _, filename = os.path.split(outFilePath)
         if node is not None:
 
-            #if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['bL1bCal'] == 1:
+            #if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['fL1bCal'] == 1:
             if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
-                 ConfigFile.settings['SensorType'].lower() == 'dalec') and ConfigFile.settings['bL1bCal'] == 1:
+                 ConfigFile.settings['SensorType'].lower() == 'dalec') and ConfigFile.settings['fL1bCal'] == 1:
                 plotDeltaBool = False
             else:
                 plotDeltaBool = True
@@ -657,7 +653,7 @@ class Controller:
                     msg = 'No deglitching will be performed.'
                     print(msg)
                     Utilities.writeLogFile(msg)
-                root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)                
+                root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
                 Utilities.checkOutputFiles(outFilePath)
 
             elif level == "L1B":
@@ -703,23 +699,23 @@ class Controller:
 
             # Check L2 file for low-level uncertainty processing matching the uncertainty processing
             # called here (i.e., don't let Factory-Only files get processed for FRM-Class or FRM-Full)
-            if ConfigFile.settings["bL1bCal"] == 3 and 'FRM-Full' not in root.attributes['CAL_TYPE']:
+            if ConfigFile.settings["fL1bCal"] == 3 and 'FRM-Full' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
+                    f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}."
                 # Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
-            if ConfigFile.settings["bL1bCal"] == 2 and 'FRM-Class' not in root.attributes['CAL_TYPE']:
+            if ConfigFile.settings["fL1bCal"] == 2 and 'FRM-Class' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
+                    f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}."
                 # Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
-            if ConfigFile.settings["bL1bCal"] == 1 and 'Factory' not in root.attributes['CAL_TYPE']:
+            if ConfigFile.settings["fL1bCal"] == 1 and 'Factory' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
+                    f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}."
                 # Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)

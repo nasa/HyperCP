@@ -60,7 +60,7 @@ class RhoCorrections:
         # TODO: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
         # TODO: Model error estimation, requires ancillary data to be switched on. This could create a conflict.
         if not any([AOD is None, wTemp is None, sal is None, waveBands is None]) and \
-                ((ConfigFile.settings["bL1bCal"] > 1) or (ConfigFile.settings['SensorType'].lower() == "seabird") \
+                ((ConfigFile.settings["fL1bCal"] > 1) or (ConfigFile.settings['SensorType'].lower() == "seabird") \
                  or (ConfigFile.settings['SensorType'].lower() == "dalec")):
             # Fix: Truncate input parameters to stay within Zhang ranges:
             # AOD

@@ -259,7 +259,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bDefaultSSTLineEdit.setValidator(doubleValidator)
 
         # Reset button for ancillary source credentials
-        self.l1bCalCharButton = QtWidgets.QPushButton("Select cal/char options", self)
+        self.l1bCalCharButton = QtWidgets.QPushButton("Select Cal/Char options", self)
         self.l1bCalCharButton.clicked.connect(self.l1bCalCharButtonPressed)
 
         l1bInterpIntervalLabel = QtWidgets.QLabel("    Interpolation Interval (nm)", self)

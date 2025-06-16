@@ -106,7 +106,8 @@ class ConfigFile:
         ConfigFile.settings["fL1bDefaultAirT"] = 26.0
         ConfigFile.settings["fL1bDefaultSalt"] = 35.0
         ConfigFile.settings["fL1bDefaultSST"] = 26.0
-        ConfigFile.settings["bL1bCal"] = 1  # 1 for Factory, 2 for Class, 3 for Instrument Full
+        ConfigFile.settings["fL1bCal"] = 1  # 1 for Factory, 2 for Class, 3 for Instrument Full
+        ConfigFile.settings["fL1bThermal"] = 1  # 1 for internal thermistor, 2 for airTemp-based, 3 for caps-on darks
         ConfigFile.settings["FullCalDir"] = PACKAGE_DIR
         ConfigFile.settings['RadCalDir'] = PACKAGE_DIR
         ConfigFile.settings['FidRadDB'] = 0
