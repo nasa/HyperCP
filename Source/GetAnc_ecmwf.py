@@ -50,9 +50,10 @@ class GetAnc_ecmwf:
 
         # Obtain rounded date and time considering the temporal resolution of the dataset)
         epoch_time = timeStamp.timestamp()
+  
         # epoch_time = datetime.datetime.strptime(timeStamp, '%Y-%m-%dT%H:%M:%S').timestamp()
         timeResSecs = 3600 * timeResHours
-        rounded_epoch_time = round(epoch_time / timeResSecs) * timeResSecs
+        rounded_epoch_time = np.floor(epoch_time / timeResSecs) * timeResSecs # changed from round to np.floor (I think it was is downloading data with a 1 hr offset?)
         rounded_timestamp = datetime.datetime.fromtimestamp(rounded_epoch_time)
         dateStrRounded, timeStrRounded = rounded_timestamp.strftime('%Y-%m-%dT%H:%M:%S').split('T')
 
@@ -92,6 +93,7 @@ class GetAnc_ecmwf:
                 print('CAMS dataset not available before 2015, skipping')
             else:
                 try:
+                 
                     c = cdsapi.Client(timeout=5, url=url, key=key)
                     c.retrieve(
                         'cams-global-atmospheric-composition-forecasts',
@@ -223,4 +225,3 @@ class GetAnc_ecmwf:
         print('GetAnc_ecmwf: Model data retrieved')
 
         return modData
-

@@ -174,6 +174,9 @@ class ProcessL1aqc:
             if gp.id.endswith("ST"):
                 #gp.id = "DALEC_TRACKER"
                 gp.id = "SunTracker_DALEC"
+        elif ConfigFile.settings['SensorType'].lower() == 'sorad':
+           if  gp.id.startswith("sorad"):
+               gp.id = "SunTracker_sorad"
         else:
             gp.id = cf.sensorType
 
@@ -183,7 +186,7 @@ class ProcessL1aqc:
         Order datasets chronologically. Screen for SunTracker data dropouts.
         Filter data for tilt, yaw, rotator, and azimuth. Deglitch (SeaBird).
         '''
-
+      
         node.attributes["PROCESSING_LEVEL"] = "1aqc"
         now = datetime.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
@@ -274,6 +277,20 @@ class ProcessL1aqc:
 
                 ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
                 ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
+            elif gp.id.startswith("SunTracker_sorad"): # So-rad GPS
+                # Note - So-Rad Lat, Lon are already in decimal format 
+                gpsDateTime = gp.getDataset('DATETIME').data
+                gpsLat = np.array(gp.getDataset('LATITUDE').data.tolist()).ravel()
+                gpsLon = np.array(gp.getDataset('LONGITUDE').data.tolist()).ravel()
+
+                ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
+                ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
+
+                latAnc = []
+                lonAnc = []
+                for i in range(gpsLat.data.shape[0]):
+                    latAnc.append(gpsLat[i])
+                    lonAnc.append(gpsLon[i])
 
         # Solar geometry from GPS alone; No Tracker, no Ancillary
         relAzAnc = []
@@ -497,6 +514,13 @@ class ProcessL1aqc:
         # This has to record the time interval (in datetime) for the bad angles in order to remove these time intervals
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
+        
+        # Notes for So-Rad
+        # My understanding is that the attitide QC threshold should be placed in terms of a single max tilt value (i.e. angle to vertical),
+        # rather than 2 separate roll and pitch filters. For the existing suntracker systems, I recommend caculating tilt via 
+        # the small angle approximation `tilt = sqrt(roll^2 + pitch^2)' and redesigining the config with a single max tilt value filter.
+        # As a work-around, I have read so-rad tilt data and pretended it is pitch and roll (this still achives the desired result of
+        # filtering out tilt values > 5 deg)
 
         if node is not None and int(ConfigFile.settings["bL1aqcCleanPitchRoll"]) == 1:
             Utilities.writeLogFileAndPrint("Filtering file for high pitch and roll")
@@ -504,6 +528,7 @@ class ProcessL1aqc:
             # Preferentially read PITCH and ROLL from SunTracker/pySAS THS sensor...
             pitch, roll, gp = None, None, None
             for group in node.groups:
+                print(group.id)
                 # NOTE: SOLARTRACKER (not pySAS) and DALEC use SunTracker group for PITCH/ROLL
                 if group.id.startswith("SunTracker"):
                     gp = group
@@ -511,6 +536,12 @@ class ProcessL1aqc:
                         timeStamp = gp.getDataset("DATETIME").data
                         pitch = gp.getDataset("PITCH").data["SAS"]
                         roll = gp.getDataset("ROLL").data["SAS"]
+                        break
+                    elif "TILT" in gp.datasets: # this condition finds So-Rad tilt
+                        timeStamp = gp.getDataset("DATETIME").data
+                        tilt = np.array(gp.getDataset("TILT").data.tolist()).ravel()
+                        roll = tilt  # now I have pretended tilt and pitch = roll (see comments on line 515)
+                        pitch = tilt     
                         break
                  # For SATTHS without SunTracker (i.e. with pySAS)
                 if group.id.startswith('SATTHS'):
@@ -740,12 +771,37 @@ class ProcessL1aqc:
                     relAz[relAz<-180] = relAz[relAz<-180] + 360
 
                     relAzSource = 'SunTracker'
+                elif gp.id == 'SunTracker_sorad':
+   
+                    # I have added solar azimuth and solar zenith angle to 'SunTracker_sorad' group
+                    # We can re use gps Lat and Lon fields as they are on same time grid
+                    sunAzimuth = []
+                    sunZenith = []
+                    for i, dt_utc in enumerate(gpsDateTime):
+                        sunAzimuth.append(get_azimuth(gpsLat.data[i],gpsLon.data[i],dt_utc,0))
+                        sunZenith.append(90 - get_altitude(gpsLat.data[i],gpsLon.data[i],dt_utc,0))
+                  
+                    gp.addDataset("SOLAR_AZ")
+                    gp.datasets["SOLAR_AZ"].data = np.array(sunAzimuth, dtype=[('NONE', '<f8')])  
+                    gp.addDataset("SZA")
+                    gp.datasets["SZA"].data = np.array(sunZenith, dtype=[('NONE', '<f8')])
+                
+                    # So-Rad relative azimuth has been pre-computed
+                    newRelAzData = gp.getDataset('REL_AZ')
+                    relAz = np.array(gp.getDataset('REL_AZ').data.tolist()).ravel()
 
+                    
+                    # Correct relAzAnc to reflect an angle from the sun to the sensor, positive (+) clockwise
+                    relAz[relAz>180] = relAz[relAz>180] - 360
+                    relAz[relAz<-180] = relAz[relAz<-180] + 360
+                    relAzSource = 'SunTracker'
                 elif gp.getDataset('REL_AZ'):
                     relAz=gp.getDataset('REL_AZ').data['REL_AZ']
                     relAzSource = 'SunTracker'
                 else:
-                    Utilities.writeLogFileAndPrint("No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added.")
+                    msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
+                    print(msg)
+                    Utilities.writeLogFile(msg)
         else:
             relAz = relAzAnc
             relAzSource = 'Ancillary'
@@ -786,7 +842,7 @@ class ProcessL1aqc:
         ancGroup.datasets["TIMETAG2"].data = np.array(ancTimeTag2, dtype=[('NONE', '<f8')])
         ancGroup.addDataset("DATETAG")
         ancGroup.datasets["DATETAG"].data = np.array(ancDateTag, dtype=[('NONE', '<f8')])
-
+       
         # Add datetime to Anc group
         dateTime = ancGroup.addDataset("DATETIME")
         timeData = ancGroup.getDataset("TIMETAG2").data["NONE"].tolist()
@@ -844,7 +900,7 @@ class ProcessL1aqc:
                 if abs(relAzimuthAngle) > relAzimuthMax or abs(relAzimuthAngle) < relAzimuthMin or math.isnan(relAzimuthAngle):
                     i += 1
                     if start == -1:
-                        # print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle,2)))
+                        print('Relative solar azimuth angle outside bounds. ' + str(round(relAzimuthAngle,2)))
                         start = index
                     stop = index # start is fixed and stop progresses until good data found.
                 else:
@@ -912,5 +968,5 @@ class ProcessL1aqc:
                     del gp.datasets["DATETIME"]
                 if 'DATETIME_ADJUSTED' in gp.datasets:
                     del gp.datasets["DATETIME_ADJUSTED"]
-
+    
         return node

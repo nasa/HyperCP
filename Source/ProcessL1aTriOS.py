@@ -473,6 +473,7 @@ class ProcessL1aTriOS:
                 rec_arr = np.rec.fromarrays(my_arr[1:], dtype=ds_dt)
             else:
                 raise
+
         gp.addDataset(sensor)
         gp.datasets[sensor].data=np.array(rec_arr, dtype=ds_dt)
 

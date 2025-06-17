@@ -25,7 +25,7 @@ class ProcessL1b_Interp:
         print('Interpolating Ancillary data to radiometry timestamps')
         gpsGroup,STGroup,esGroup,liGroup,ltGroup,ancGroup = None,None,None,None,None,None
         for gp in node.groups:
-            if gp.id.startswith("GP"):
+            if gp.id.startswith("GP"): 
                 gpsGroup = gp
                 for ds in gpsGroup.datasets:
                     if ds != 'DATETIME':
@@ -695,7 +695,9 @@ class ProcessL1b_Interp:
         ProcessL1b_Interp.convertDataset(liGroup, "LI", sasGroup, "LI")
         ProcessL1b_Interp.convertDataset(ltGroup, "LT", sasGroup, "LT")
 
-        if ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'dalec':
+        if ConfigFile.settings['SensorType'].lower() == 'trios' or\
+              ConfigFile.settings['SensorType'].lower() == 'dalec' or\
+                  ConfigFile.settings['SensorType'].lower() == 'sorad':
             esL1AQCGroup = root.addGroup('ES_L1AQC')
             esL1AQCGroup.copy(esL1AQC)
             liL1AQCGroup = root.addGroup('LI_L1AQC')
@@ -767,8 +769,9 @@ class ProcessL1b_Interp:
             szaData = newSTGroup.getDataset("SZA")
             ProcessL1b_Interp.convertDataset(robotGroup, "REL_AZ", newSTGroup, "REL_AZ")
             relAzData = newSTGroup.getDataset("REL_AZ")
-            ProcessL1b_Interp.convertDataset(robotGroup, "POINTING", newSTGroup, "POINTING")
-            pointingData = newSTGroup.getDataset("POINTING")
+            if robotGroup.id != "SunTracker_sorad":
+                ProcessL1b_Interp.convertDataset(robotGroup, "POINTING", newSTGroup, "POINTING")
+                pointingData = newSTGroup.getDataset("POINTING")
 
             # Optional
             # ProcessL1b_Interp.convertDataset(robotGroup, "HEADING", newSTGroup, "HEADING") # Use SATNAV Heading if available (not GPS COURSE)
@@ -876,7 +879,8 @@ class ProcessL1b_Interp:
                 return None
             # Optional, but should all be there with the SOLAR TRACKER or pySAS
             ProcessL1b_Interp.interpolateData(solAzData, interpData, "SOLAR_AZ", fileName, latData, lonData)
-            ProcessL1b_Interp.interpolateData(pointingData, interpData, "POINTING", fileName)
+            if robotGroup.id != "SunTracker_sorad":
+                ProcessL1b_Interp.interpolateData(pointingData, interpData, "POINTING", fileName)
 
             # Optional
             if "HUMIDITY" in robotGroup.datasets:

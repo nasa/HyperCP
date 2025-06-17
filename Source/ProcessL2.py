@@ -286,7 +286,7 @@ class ProcessL2:
 
             # No average (mean or median) or standard deviation values associated with Lw or reflectances,
             #   because these are calculated from the means of Lt, Li, Es
-
+      
             newESUNCData = newIrradianceGroup.addDataset(f"ES_{sensor}_unc")
             newLIUNCData = newRadianceGroup.addDataset(f"LI_{sensor}_unc")
             newLTUNCData = newRadianceGroup.addDataset(f"LT_{sensor}_unc")
@@ -327,7 +327,7 @@ class ProcessL2:
 
             # No average (mean or median) or standard deviation values associated with Lw or reflectances,
             #   because these are calculated from the means of Lt, Li, Es
-
+      
             newESUNCData = newIrradianceGroup.getDataset(f"ES_{sensor}_unc")
             newLIUNCData = newRadianceGroup.getDataset(f"LI_{sensor}_unc")
             newLTUNCData = newRadianceGroup.getDataset(f"LT_{sensor}_unc")
@@ -549,7 +549,8 @@ class ProcessL2:
                     newRrsUNCData.columns[k].append(rrsUNC[k])
                     # newnLwUNCData.columns[k].append(nLwUNC)
                     newnLwUNCData.columns[k].append(nLwUNC[k])
-                    if ConfigFile.settings['fL1bCal']==1 and (ConfigFile.settings['SensorType'].lower() == 'trios' or \
+                    if ConfigFile.settings['fL1bCal']==1 and ((ConfigFile.settings['SensorType'].lower() == 'trios' or\
+                                                                ConfigFile.settings['SensorType'].lower() == 'sorad') or \
                                                               ConfigFile.settings['SensorType'].lower() == 'dalec'):
                     # Specifique case for Factory-Trios and Dalec
                         newESUNCData.columns[k].append(esUNC[k])
@@ -997,7 +998,8 @@ class ProcessL2:
         else:
             # slice L1AQC (aka "Raw" here) Data depending on SensorType
             if ConfigFile.settings['SensorType'].lower() == "trios" \
-                or ConfigFile.settings['SensorType'].lower() == "dalec":
+                or ConfigFile.settings['SensorType'].lower() == "dalec" or\
+                      ConfigFile.settings['SensorType'].lower() == "sorad":
                 esRawSlice, liRawSlice, ltRawSlice = _sliceRawData(
                                     esRawGroup.datasets.values(),
                                     liRawGroup.datasets.values(),
@@ -1047,7 +1049,7 @@ class ProcessL2:
         instrument_wb = np.asarray(list(esSlice.keys()), dtype=float)
 
         # rawGroup required only for some group attributes, Group data not used as is not ensemble.
-        if ConfigFile.settings['SensorType'].lower() == "trios":
+        if ConfigFile.settings['SensorType'].lower() == "trios" or  ConfigFile.settings['SensorType'].lower() == "sorad":
             instrument = Trios()  # overwrites all Instrument class functions with TriOS specific ones
             stats = instrument.generateSensorStats("TriOS",
                         dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
@@ -1329,7 +1331,7 @@ class ProcessL2:
         waveSubset = wavelength  # Only used for Zhang; No subsetting for threeC or Mobley corrections
         rhoVec = {}
 
-        Rho_Uncertainty_Obj = Propagate(M=100, cores=1)
+        Rho_Uncertainty_Obj = Propagate(M=10, cores=1)
 
         # Rho will be the same across the entire ensemble slice based on input averages
         if threeCRho:
@@ -1374,8 +1376,11 @@ class ProcessL2:
                 waveSubset = wave_array[:,1].tolist()
 
             SVA = ConfigFile.settings['fL2SVA']
-            rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
-                                                            SalXSlice, RelAzXSlice, SVA, waveSubset, Rho_Uncertainty_Obj)
+
+            rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice, SalXSlice, RelAzXSlice, 
+                                                          SVA, waveSubset, Rho_Uncertainty_Obj) 
+        
+
 
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[i]
@@ -1803,7 +1808,8 @@ class ProcessL2:
             ltRawGroup = {"LIGHT": rootCopy.getGroup('LT_LIGHT_L1AQC'), "DARK": rootCopy.getGroup('LT_DARK_L1AQC')}
 
         elif ConfigFile.settings['SensorType'].lower() == 'trios' or \
-            ConfigFile.settings['SensorType'].lower() == 'dalec':
+            ConfigFile.settings['SensorType'].lower() == 'dalec' or  \
+                ConfigFile.settings['SensorType'].lower() == 'sorad':
             rootCopy.addGroup("ES_L1AQC")
             rootCopy.addGroup("LI_L1AQC")
             rootCopy.addGroup("LT_L1AQC")
@@ -1950,7 +1956,7 @@ class ProcessL2:
                     if endTime > endFileTime:
                         endTime = endFileTime
                         EndOfFileFlag = True
-
+             
                     if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
                                                             sixSGroup, start, end):
@@ -2067,6 +2073,7 @@ class ProcessL2:
             gp.attributes['GLINT_CORR'] = 'Mobley 1999'
         if ConfigFile.settings['bL2PerformNIRCorrection']:
             if ConfigFile.settings['bL2SimpleNIRCorrection']:
+                
                 gp.attributes['NIR_RESID_CORR'] = 'Mueller and Austin 1995'
             if ConfigFile.settings['bL2SimSpecNIRCorrection']:
                 gp.attributes['NIR_RESID_CORR'] = 'Ruddick et al. 2005/2006'
@@ -2080,7 +2087,9 @@ class ProcessL2:
 
         # Check to insure at least some data survived quality checks
         if node.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None:
-            Utilities.writeLogFileAndPrint("All data appear to have been eliminated from the file. Aborting.")
+            msg = "All data appear to have been eliminated from the file. Aborting."
+            print(msg)
+            Utilities.writeLogFile(msg)
             return None
 
         # If requested, proceed to calculation of derived geophysical and
@@ -2111,8 +2120,9 @@ class ProcessL2:
                 node.removeGroup(gp)
 
         # In the case of TriOS Factory, strip out uncertainty datasets
-        if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
-             ConfigFile.settings['SensorType'].lower() == 'dalec') and ConfigFile.settings['fL1bCal'] == 1:
+        if  ((ConfigFile.settings['SensorType'].lower() == 'trios' or \
+             ConfigFile.settings['SensorType'].lower() == 'dalec') or  \
+                ConfigFile.settings['SensorType'].lower() == 'sorad') and ConfigFile.settings['fL1bCal'] == 1:
             for gp in node.groups:
                 if gp.id in ('IRRADIANCE', 'RADIANCE', 'REFLECTANCE'):
                     removeList = []

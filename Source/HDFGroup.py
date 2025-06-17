@@ -22,7 +22,7 @@ class HDFGroup:
         for k,v in gp.attributes.items():
             self.attributes[k] = v
 
-    def datasetDeleteRow(self, i):
+    def datasetDeleteRow(self, i):  
         for k in self.datasets:
             # Avoid non-temporal datasets. Should cover TriOS and DALEC
             skipList = ['back_es','cal_es','back_li','cal_li','back_lt','cal_lt','capsontemp']

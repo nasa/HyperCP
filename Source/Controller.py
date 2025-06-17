@@ -222,18 +222,23 @@ class Controller:
                     del calibrationMap[key]
             else:
                 del calibrationMap[key]
+                
         return calibrationMap
 
     @staticmethod
     def processCalibrationConfigTrios(calFiles):
-        ''' Write pseudo calibration/configuration map for TriOS'''
+        ''' Write calibration/configuration map for TriOS'''
+
+        configFileName = ConfigFile.filename
+        calFolder = os.path.splitext(configFileName)[0] + "_Calibration"
+        calPath = os.path.join(PATH_TO_CONFIG, calFolder)
+        print("Read CalibrationFile ", calPath)
 
         # print("processCalibrationConfig")
         calibrationMap = collections.OrderedDict()
 
         for key in list(calFiles.keys()):
             cf = CalibrationFile()
-            print(key)
             if '.ini' in key:
                 if calFiles[key]["enabled"]:
                     cf.id = key
@@ -265,6 +270,12 @@ class Controller:
             cf.name=os.path.join(calPath,key)
             cf.instrumentType = "Dalec"
             calibrationMap[key] = cf
+
+            elif '.tdf' in key:
+                if calFiles[key]["enabled"]:
+                    cf.id = key
+                    cf.name = key
+                    calibrationMap[key] = cf
 
         return calibrationMap
 
@@ -301,7 +312,7 @@ class Controller:
         elif ConfigFile.settings["SensorType"].lower() == "trios":
             root, outFFPs = ProcessL1aTriOS.processL1a(inFilePath, outFilePath)
         elif ConfigFile.settings["SensorType"].lower() == "sorad":
-            root = ProcessL1aSoRad.processL1a(inFilePath, calibrationMap)
+            root, outFFPs = ProcessL1aSoRad.processL1a(inFilePath, outFilePath, calibrationMap)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
             root = ProcessL1aDALEC.processL1a(inFilePath, calibrationMap)
             outFFPs = outFilePath
@@ -390,8 +401,8 @@ class Controller:
             Utilities.writeLogFileAndPrint(msg)
             return None
 
-
-        if ConfigFile.settings["SensorType"].lower() == "trios":
+        if ConfigFile.settings["SensorType"].lower() == "trios" or  ConfigFile.settings["SensorType"].lower() == "sorad":
+            # root = TriosL1B.processL1b(root, outFilePath)
             root = ProcessL1bTriOS.processL1b(root, outFilePath)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
             # root = TriosL1B.processL1b(root, outFilePath)
@@ -468,15 +479,17 @@ class Controller:
         _, filename = os.path.split(outFilePath)
         if node is not None:
 
-            #if ConfigFile.settings['SensorType'].lower() == 'trios' and ConfigFile.settings['fL1bCal'] == 1:
+            #if (ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad') and ConfigFile.settings['fL1bCal'] == 1:
             if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
-                 ConfigFile.settings['SensorType'].lower() == 'dalec') and ConfigFile.settings['fL1bCal'] == 1:
+                 ConfigFile.settings['SensorType'].lower() == 'dalec' or \
+                 ConfigFile.settings['SensorType'].lower() == 'sorad') and ConfigFile.settings['fL1bCal'] == 1:
                 plotDeltaBool = False
             else:
                 plotDeltaBool = True
 
             # Create Plots
             # Radiometry
+         #   breakpoint()
             if ConfigFile.settings['bL2PlotRrs']==1:
                 Utilities.plotRadiometry(node, filename, rType='Rrs', plotDelta = plotDeltaBool)
             if ConfigFile.settings['bL2PlotnLw']==1:
@@ -854,7 +867,7 @@ class Controller:
 
             if L1A_complete:
                 inFileName = os.path.split(fp)[1]
-                if ConfigFile.settings["SensorType"].lower() == "trios":
+                if ConfigFile.settings["SensorType"].lower() == "trios" or ConfigFile.settings["SensorType"].lower() == "sorad": 
                     # For TriOS, need to parse the L1A names, not L0
                     fileName = os.path.join('L1A',f'{os.path.splitext(inFileName)[0]}'+'.hdf')
                 else:

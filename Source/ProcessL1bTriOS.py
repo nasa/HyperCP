@@ -211,7 +211,7 @@ class ProcessL1bTriOS:
         DarkPixelStart = int(grp.attributes["DarkPixelStart"])
         DarkPixelStop  = int(grp.attributes["DarkPixelStop"])
         int_time_t0 = int(grp.getDataset("BACK_"+sensortype).attributes["IntegrationTime"])
-
+        
         # check size of data
         nband = len(raw_back[:,0])
         nmes = len(raw_data)
@@ -230,6 +230,7 @@ class ProcessL1bTriOS:
         mesure = raw_data/65535.0
         calibrated_mesure = np.zeros((nmes, nband))
         back_mesure = np.zeros((nmes, nband))
+
         for n in range(nmes):
             # Background correction : B0 and B1 read from "back data"
             back_mesure[n,:] = raw_back[:,0] +  raw_back[:,1]*(int_time[n]/int_time_t0)
@@ -309,7 +310,7 @@ class ProcessL1bTriOS:
                         continue
                     else:
                         newGroup.datasets[ds].datasetToColumns()
-
+   
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
         node  = Utilities.rootAddDateTime(node)
 
@@ -346,8 +347,13 @@ class ProcessL1bTriOS:
         ProcessL1b.includeModelDefaults(ancGroup, modRoot)
 
         # classbased_dir needed for FRM whilst pol is handled in class-based way
-        classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
-                                      ConfigFile.settings['SensorType'] + "_initial")
+        if ConfigFile.settings["SensorType"].lower() == "seabird" or  ConfigFile.settings["SensorType"].lower() == "trios": 
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', #
+                                     ConfigFile.settings['SensorType']+"_initial")
+        elif ConfigFile.settings["SensorType"].lower() == "sorad":
+            classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', # Hard-coded solution for sorad
+                                     'TriOS' +"_initial")
+            
 
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['fL1bCal'] == 1:
@@ -395,56 +401,58 @@ class ProcessL1bTriOS:
         if ConfigFile.settings["fL1bCal"] == 1 or ConfigFile.settings["fL1bCal"] == 2:
             # Calculate 6S model
             # Run elsewhere for FRM-regime
-            print('Running sixS')
-
             sensortype = "ES"
-            # Irradiance direct and diffuse ratio
-            res_sixS = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
-
-            # Store sixS results in new group
-            grp = node.getGroup(sensortype)
-            solar_zenith = res_sixS['solar_zenith']
-            # ProcessL1b_FRMCal.get_direct_irradiance_ratio uses Es bands to run 6S and then works around bands that
-            #  don't have values from Tartu for full FRM. Here, use all the Es bands.
-            direct_ratio = res_sixS['direct_ratio']
-            diffuse_ratio = res_sixS['diffuse_ratio']
-            # sixS model irradiance is in W/m^2/um, scale by 10 to match HCP units
-            # model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_raw_data]/10
-            model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])/10
-            # model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_nocal==False]/10
-
-            sixS_grp = node.addGroup("SIXS_MODEL")
-            for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
-                # copy datetime dataset for interp process
-                ds = sixS_grp.addDataset(dsname)
-                ds.data = grp.getDataset(dsname).data
-
-            ds = sixS_grp.addDataset("sixS_irradiance")
-
-            irr_grp = node.getGroup('ES_L1AQC')
-            str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
-            ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
-            rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
-            ds.data = rec_arr
-
-            ds = sixS_grp.addDataset("direct_ratio")
-            ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
-            rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
-            ds.data = rec_arr
-
-            ds = sixS_grp.addDataset("diffuse_ratio")
-            ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
-            rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
-            ds.data = rec_arr
-
-            ds = sixS_grp.addDataset("solar_zenith")
-            ds.columns["solar_zenith"] = solar_zenith
-            ds.columnsToDataset()
+            if len(node.groups[0].datasets['ES'].data) > 2: # TJ - This condition has been added, as I noted at least 3 measurements are needed for 6S
+                print('Running sixS')
+     
+                res_sixS = ProcessL1b_FRMCal.get_direct_irradiance_ratio(node, sensortype)
+    
+                # Store sixS results in new group
+                grp = node.getGroup(sensortype)
+                solar_zenith = res_sixS['solar_zenith']
+                # ProcessL1b_FRMCal.get_direct_irradiance_ratio uses Es bands to run 6S and then works around bands that
+                #  don't have values from Tartu for full FRM. Here, use all the Es bands.
+                direct_ratio = res_sixS['direct_ratio']
+                diffuse_ratio = res_sixS['diffuse_ratio']
+                # sixS model irradiance is in W/m^2/um, scale by 10 to match HCP units
+                # model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_raw_data]/10
+                model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])/10
+                # model_irr = (res_sixS['direct_irr']+res_sixS['diffuse_irr']+res_sixS['env_irr'])[:,ind_nocal==False]/10
+    
+                sixS_grp = node.addGroup("SIXS_MODEL")
+                for dsname in ["DATETAG", "TIMETAG2", "DATETIME"]:
+                    # copy datetime dataset for interp process
+                    ds = sixS_grp.addDataset(dsname)
+                    ds.data = grp.getDataset(dsname).data
+    
+                ds = sixS_grp.addDataset("sixS_irradiance")
+    
+                irr_grp = node.getGroup('ES_L1AQC')
+                str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
+                ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
+                rec_arr = np.rec.fromarrays(np.array(model_irr).transpose(), dtype=ds_dt)
+                ds.data = rec_arr
+    
+                ds = sixS_grp.addDataset("direct_ratio")
+                ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
+                rec_arr = np.rec.fromarrays(np.array(direct_ratio).transpose(), dtype=ds_dt)
+                ds.data = rec_arr
+    
+                ds = sixS_grp.addDataset("diffuse_ratio")
+                ds_dt = np.dtype({'names': str_wvl,'formats': [np.float64]*len(str_wvl)})
+                rec_arr = np.rec.fromarrays(np.array(diffuse_ratio).transpose(), dtype=ds_dt)
+                ds.data = rec_arr
+    
+                ds = sixS_grp.addDataset("solar_zenith")
+                ds.columns["solar_zenith"] = solar_zenith
+                ds.columnsToDataset()
+            
 
         ## Dark Correction & Absolute Calibration
         stats = {}
         for instrument in ConfigFile.settings['CalibrationFiles'].keys():
             # get instrument serial number and sensor type
+          
             instrument_number = os.path.splitext(instrument)[0]
             sensortype = ConfigFile.settings['CalibrationFiles'][instrument]['frameType']
             enabled = ConfigFile.settings['CalibrationFiles'][instrument]['enabled']

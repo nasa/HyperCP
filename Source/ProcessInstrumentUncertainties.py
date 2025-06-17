@@ -91,7 +91,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         output = {}  # used tp store standard deviations and averages as a function return for generateSensorStats
         types = ['ES', 'LI', 'LT']
         for sensortype in types:
-           if InstrumentType.lower() == "trios":
+           if InstrumentType.lower() == "trios" or InstrumentType.lower() == "sorad":
                 # filter nans
                 self.apply_NaN_Mask(rawSlice[sensortype]['data'])
                 # RawData is the full group - this is used to get a few attributes only
@@ -195,7 +195,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 ind_rad_wvl = (np.array(radcal.columns['1']) > 0)  # where radcal wvls are available
 
                 # ensure correct units are used for uncertainty calculation
-                if ConfigFile.settings['SensorType'].lower() == "trios":
+                if ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
                     # Convert TriOS mW/m2/nm to uW/cm^2/nm
                     cCoef[s] = np.asarray(list(radcal.columns['2']))[ind_rad_wvl] / 10
                 elif ConfigFile.settings['SensorType'].lower() == "seabird":
