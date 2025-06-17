@@ -739,12 +739,16 @@ class ProcessL1aqc:
                     relAz[relAz>180] = relAz[relAz>180] - 360
                     relAz[relAz<-180] = relAz[relAz<-180] + 360
 
+                    relAzSource = 'SunTracker'
+
                 elif gp.getDataset('REL_AZ'):
                     relAz=gp.getDataset('REL_AZ').data['REL_AZ']
+                    relAzSource = 'SunTracker'
                 else:
                     Utilities.writeLogFileAndPrint("No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added.")
         else:
             relAz = relAzAnc
+            relAzSource = 'Ancillary'
 
         # In case there is no SunTracker to provide sun/sensor geometries, Pysolar was used
         # to estimate sun zenith and azimuth using GPS position and time, and sensor azimuth will
@@ -755,7 +759,7 @@ class ProcessL1aqc:
 
         # Initialize a new group to host the ancillary data
         ancGroup = node.addGroup("ANCILLARY_METADATA")
-        # If using a SunTracker, add RelAz to the SunTracker group...
+        # If using a non-DALEC SunTracker, add RelAz to the SunTracker group...
         #NOTE: for Dalec relAz is already read directly from Raw data file,so do nothing
         if ConfigFile.settings["bL1aqcSunTracker"]:
             if ConfigFile.settings['SensorType'].lower() != 'dalec':
@@ -822,6 +826,7 @@ class ProcessL1aqc:
         # Interpolating them first would introduce error.
         if node is not None and int(ConfigFile.settings["bL1aqcCleanSunAngle"]) == 1:
             Utilities.writeLogFileAndPrint("Filtering file for bad Relative Solar Azimuth")
+            Utilities.writeLogFileAndPrint(f"    Source of Relative Solar Azimuth data: {relAzSource}")
 
             relAzimuthMin = float(ConfigFile.settings["fL1aqcSunAngleMin"])
             relAzimuthMax = float(ConfigFile.settings["fL1aqcSunAngleMax"])

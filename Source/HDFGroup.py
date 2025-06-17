@@ -24,8 +24,11 @@ class HDFGroup:
 
     def datasetDeleteRow(self, i):
         for k in self.datasets:
-            ds = self.datasets[k]
-            ds.data = np.delete(ds.data, (i), axis=0)
+            # Avoid non-temporal datasets. Should cover TriOS and DALEC
+            skipList = ['back_es','cal_es','back_li','cal_li','back_lt','cal_lt','capsontemp']
+            if k.lower() not in skipList:
+                ds = self.datasets[k]
+                ds.data = np.delete(ds.data, (i), axis=0)
 
     def removeDataset(self, name):
         if len(name) == 0:
