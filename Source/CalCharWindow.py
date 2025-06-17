@@ -112,7 +112,7 @@ class CalCharWindow(QtWidgets.QDialog):
         self.calFileMostRecent.setAutoExclusive(False)
         self.calFileMostRecent.clicked.connect(lambda: self.MultiCalOptions('most_recent'))
 
-        self.calFilePrePost = QtWidgets.QRadioButton("Use mean of pre- and post- calibrations (1 each for DALEC, 3 for TriOS, 6 for SeaBird)")
+        self.calFilePrePost = QtWidgets.QRadioButton("Use mean of pre- and post- calibrations") 
         self.calFilePrePost.setAutoExclusive(False)
         self.calFilePrePost.clicked.connect(lambda: self.MultiCalOptions('pre_post'))
 

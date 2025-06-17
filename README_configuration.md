@@ -61,7 +61,7 @@ For **HyperOCR**:
 - **HLDxxxA.cal**: Lt (Frame Type: Dark)
 - **HSLxxxA.cal**: Lt (Frame Type: Light)
 
-where xxx is the serial number of the SeaBird instrument, followed (where appropriate) by factory calibration codes
+where xxx is the serial number of the Sea-Bird instrument, followed (where appropriate) by factory calibration codes
 (usually A, B, C, etc. associated with the date of calibration). Note that if you have a robotic platform, you only need one .tdf file for the tracker: SATNAV for Sea-Bird Solar Tracker or UMTWR for UMaine Solar tracker (pySAS).
 ***Be sure to choose the factory calibration files appropriate to the date of data collection.***
 
@@ -119,10 +119,7 @@ Process data from raw binary to L1A (Hierarchical Data Format 5 '.hdf'). Raw dat
 **Solar Zenith Angle Filter**: prescreens data for high SZA (low solar elevation) to exclude files which may have been
 collected post-dusk or pre-dawn from further processing.
 
-*Triggering the SZA threshold will skip the entire file, not
-just samples within the file, so do not be overly conservative with this selection, particularly for files collected
-over a long period.* Further screening for SZA min/max at a sample level is available in L1BQC processing.
-**Default: 60 degrees (e.g. Brewin et al., 2016)**
+*Triggering the SZA threshold will skip the entire file, not just samples within the file, so do not be overly conservative with this selection, particularly for files collected over a long period.* Further screening for SZA min/max at a sample level is available in L1BQC processing. **Default: 60 degrees (e.g. Brewin et al., 2016)**
 
 ## Level 1AQC Processing
 
@@ -205,37 +202,47 @@ Fallback values for wind speed, AOD, air temperature, SST, and salinity can be p
 
 ### L1B: Calibration/Characterization options
 
-The internal working temperature of each sensor is critical for thermal correction of the signal and/or uncertainty associated with thermal response. This temperature can be derived in several ways. For Sea-Bird, DALEC, and TriOS G2 sensors, an internal thermistor provides the working temperature. For TriOS G1, which has no thermistor, there are two options to derive working temperature: 1) Air temperature + 5°C (best for temperatures below 30°C) 2) Caps-on dark measurements (best for temperatures above 30°C)
+The internal working temperature of each sensor is critical for thermal correction of the signal and/or uncertainty associated with thermal response. This temperature can be derived in several ways. For Sea-Bird, DALEC, and TriOS G2 sensors, an internal thermistor provides the working temperature. For TriOS G1, which has no thermistor, there are two options to derive working temperature: 1) Air temperature + 5°C (best for temperatures below 30°C) 2) Caps-on dark measurements (best for temperatures above 30°C) (Zibordi & Talone, 2025 in prep.) See note in Level 1A Processing [above](#configuration).
 
 Three calibration/characterization regimes are available:
 
-**Factory:**
-This regime performes the radiometric calibration using the radiometric gains provided within the factory configuration
-files. For both SeaBird and TriOS the calibration process follow their respective manufacturer recommendation.
-Although no uncertainty values associated to the radiometric factors are available in the factory configuration files,
-for SeaBird, uncertainty can be computed following the class-based processing with generic values for the radiometric
+**Non-FRM Factory:**
+This regime performs the radiometric calibration using the radiometric gains provided within the factory configuration
+files. For Sea-Bird, TriOS, and DALEC, the calibration process follow their respective manufacturer recommendation.
+Although no uncertainty values associated to the radiometric factors are currently available in the factory configuration files,
+for Sea-Bird, uncertainty can be computed following the class-based processing with generic values for the radiometric
 factor uncertainty, taken from "The Seventh SeaWiFS Intercalibration Round-Robin Experiment (SIRREX-7), March 1999"
 (API: https://ntrs.nasa.gov/citations/20020045342). The uncertainties produced at level 2 date will not be FRM compliant
-but remains an interesting first step to characterize the data. Unfortunately, there is no equivalent for TriOS and no
-uncertainties values will be outputted with this regime for TriOS.
+but remains an interesting first step to characterize the data. Unfortunately, there is no equivalent for TriOS or DALEC and no
+uncertainties values will be outputted with this regime for TriOS or DALEC.
 
-**FRM Class-Based:**
-This regimes performes the radiometric calibration using the radiometric characterisation completed by external laboratories.
+**FRM Class-Specific:**
+This regimes performs the radiometric calibration using the radiometric characterization completed by external laboratories.
 The radiometric characterization includes both the radiometric gains and their uncertainties for each sensor. The results
 are saved in the so called "RADCAL" file, with one file per sensor. The calibration process is identical to the factory regime
-and follow the manufacturer guidelines. In addition the Class-Based regime also computes FRM uncertainties using the absolute
+and follow the manufacturer guidelines. In addition the Class-Specific regime also computes FRM uncertainties using the absolute
 radiometric characterization and class-based values for all other contributors. The contributors included in the uncertainty
 propagation are: the straylight impact, the temperature sensitivity, the polarisation sensitivity (for radiance only), the cosine
-response (for irradiance only), the detector non-linearity and the calibration stability (see D10).
+response (for irradiance only), the detector non-linearity and the calibration stability (see D10). Currently, the only classes 
+characterized are Sea-Bird and TriOS.
 
-**FRM Full-Characterization:**
-This regime performes the complete correction of the radiometry using the full characterization of each sensor by external
-laboratories. For both SeaBird and TriOS the radiometric calibration process is performed with additional corrections. The
+**FRM Sensor-Specific (Full-Characterization; Highest Quality):**
+This regime performs the complete correction of the radiometry using the full characterization of each sensor by external
+laboratories. For both Sea-Bird and TriOS the radiometric calibration process is performed with additional corrections (DALEC in development). The
 corrections are possible only thanks to the full characterization of the sensors provided in the matching files. The process
-performes the non-linearity correction, the straylight correction, the polarisation correction (for radiance only), the cosine
+performs the non-linearity correction, the straylight correction, the polarisation correction (for radiance only), the cosine
 response correction (for irradiance only) and the temperature correction (see D10). The process also provides FRM compliant
 uncertainties accounting for the residuals effects of each contributors, meaning the correction residuals are used as uncertainty
 contributor instead of global class-based contribution, leading to smaller uncertainty values.
+
+There are three options for deciding which calibration files are applied when using FidRadDB RADCAL files:
+
+**Most recent (default)**
+
+**Pre- and Post- deployment average**
+
+**User specified**
+
 
 Once instrument calibration has been applied, data are interpolated to common timestamps and wavebands, optionally
 generating temporal plots of Li, Lt, and Es, and ancillary data to show how data were interpolated.
