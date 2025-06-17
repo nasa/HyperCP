@@ -2277,6 +2277,7 @@ class Utilities:
 
     @staticmethod
     def UncTempCorrection(node):
+        ''' Called by ProcessL1b.read_unc_coefficient_factory, .read_unc_coefficient_class, .read_unc_coefficient_frm '''
         unc_grp = node.getGroup("RAW_UNCERTAINTIES")
         # sensorID = Utilities.get_sensor_dict(node)
         # inv_ID = {v: k for k, v in sensorID.items()}
@@ -2286,8 +2287,10 @@ class Utilities:
             meanSPECTEMP,meanAIRTEMP,meanCAPSONTEMP = None,None,None
             airTempMargin = 5 # 5 degrees above air temp per Zibordi Talone (in prep 2025)
             # SPECTEMP should be present for all platform/sensors (SeaBird,TriOS,DALEC),
-            #   but only populated with non-zeroes where an internal thermistor is available.            
-            if ConfigFile.settings['SensorType'].lower() == "seabird":
+            #   but only populated with non-zeroes where an internal thermistor is available.
+            # CAPSONTEMP only available for TriOS.
+            if ConfigFile.settings['SensorType'].lower() == "seabird" or \
+                ConfigFile.settings['SensorType'].lower() == "dalec":
                 sensorGroup = node.getGroup(f'{sensor}_LIGHT')
                 if "SPECTEMP" in sensorGroup.datasets:
                     specTEMP = sensorGroup.getDataset("SPECTEMP")
@@ -2296,7 +2299,8 @@ class Utilities:
                     Utilities.writeLogFileAndPrint("Internal temperature dataset not found")
                 if "CAPSONTEMP" in sensorGroup.datasets:
                     capsonTEMP = sensorGroup.getDataset("CAPSONTEMP")
-                    meanCAPSONTEMP = np.mean(np.array(capsonTEMP.data.tolist()))
+                    capsonTEMP.datasetToColumns()
+                    meanCAPSONTEMP = capsonTEMP.columns['T'][0]
                 # else:
                 #     Utilities.writeLogFileAndPrint("Caps-on temperature dataset not found")
             else:
@@ -2308,7 +2312,8 @@ class Utilities:
                     Utilities.writeLogFileAndPrint("Internal temperature dataset not found")
                 if "CAPSONTEMP" in sensorGroup.datasets:
                     capsonTEMP = sensorGroup.getDataset("CAPSONTEMP")
-                    meanCAPSONTEMP = np.mean(np.array(capsonTEMP.data.tolist()))
+                    capsonTEMP.datasetToColumns()
+                    meanCAPSONTEMP = capsonTEMP.columns['T'][0]
 
                 if "AIRTEMP" in node.getGroup('ANCILLARY_METADATA').datasets:
                     airTEMP = node.getGroup('ANCILLARY_METADATA').getDataset("AIRTEMP").columns['AIRTEMP']
@@ -2317,7 +2322,6 @@ class Utilities:
                     Utilities.writeLogFileAndPrint("Air temperature dataset not found")
 
             #Now make the decision which value to use as the internal working temperature of the sensor.
-            # NOTE: use ConfigFile.settings
             # NOTE: Currently, only TriOS L1A processing matches dark files to extract CAPSONTEMP
             if meanSPECTEMP != 0.0:
                 # NOTE: G2 thermistor acquisition is still under development
@@ -2331,7 +2335,7 @@ class Utilities:
                         internalTemp = meanAIRTEMP + airTempMargin
                         internalTempSource = 'AirTemp+5C'
                     else:
-                        Utilities.writeLogFileAndPrint(f"{sensor}: meanAIRTEMP + airTempMargin >= 30. Using caps-on dark algorithm for sensor working temperature")
+                        Utilities.writeLogFileAndPrint(f"{sensor}: (meanAIRTEMP + airTempMargin) and/or COD >= 30. Using caps-on dark algorithm for sensor working temperature")
                         internalTemp = meanCAPSONTEMP
                         internalTempSource = 'CapsOnDark'
                 else:
@@ -2622,7 +2626,7 @@ class Utilities:
 
         grp = node.getGroup("RAW_UNCERTAINTIES")
         sensorList = ['ES', 'LI', 'LT']
-        
+
         for sensor in sensorList:
 
             ## retrieve dataset from corresponding instrument
@@ -2631,7 +2635,7 @@ class Utilities:
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
                 data = node.getGroup(sensor).getDataset(sensor)
-        
+
             # Retrieve hyper-spectral wavelengths from dataset
             x_new = np.array(pd.DataFrame(data.data).columns, dtype=float)
 
