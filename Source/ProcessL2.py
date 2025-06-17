@@ -76,9 +76,7 @@ class ProcessL2:
         if simpleNIRCorrection:
             # Data show a minimum near 725; using an average from above 750 leads to negative reflectances
             # Find the minimum between 700 and 800, and subtract it from spectrum (spectrally flat)
-            msg = "Perform simple residual NIR subtraction."
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("Perform simple residual NIR subtraction.")
 
             # rrs correction
             NIRRRs = []
@@ -93,9 +91,7 @@ class ProcessL2:
                 #   This is most likely in blue, non-turbid waters not intended for NIR offset correction.
                 #   Revert to NIR correction of 0 when this happens. No good way to update the L2 attribute
                 #   metadata because it may only be on some ensembles within a file.
-                msg = 'Bad NIR Correction. Revert to No NIR correction.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('Bad NIR Correction. Revert to No NIR correction.')
                 rrsNIRCorr = 0
             # Subtract average from each waveband
             for k in rrsSlice:
@@ -125,9 +121,7 @@ class ProcessL2:
         elif simSpecNIRCorrection:
             # From Ruddick 2005, Ruddick 2006 use NIR normalized similarity spectrum
             # (spectrally flat)
-            msg = "Perform similarity spectrum residual NIR subtraction."
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("Perform similarity spectrum residual NIR subtraction.")
 
             # For simplicity, follow calculation in rho (surface reflectance), then covert to rrs
             ρSlice = copy.deepcopy(rrsSlice)
@@ -186,9 +180,7 @@ class ProcessL2:
                     x.append(float(k))
                     ρ870.append(ρSlice[k][-1])
             if not ρ870:
-                msg = 'No data found at 870 nm'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('No data found at 870 nm')
                 ρ3 = None
                 F03 = None
             else:
@@ -199,18 +191,12 @@ class ProcessL2:
             if ρ1 < threshold or not ρ870:
                 ε = (α1*ρ2 - ρ1)/(α1-1)
                 εnLw = (α1*ρ2*F02 - ρ1*F01)/(α1-1)
-                msg = f'offset(rrs) = {ε}; offset(nLw) = {εnLw}'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint(f'offset(rrs) = {ε}; offset(nLw) = {εnLw}')
             else:
-                msg = "SimSpec threshold tripped. Using 780/870 instead."
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint("SimSpec threshold tripped. Using 780/870 instead.")
                 ε = (α2*ρ3 - ρ2)/(α2-1)
                 εnLw = (α2*ρ3*F03 - ρ2*F02)/(α2-1)
-                msg = f'offset(rrs) = {ε}; offset(nLw) = {εnLw}'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint(f'offset(rrs) = {ε}; offset(nLw) = {εnLw}')
 
             rrsNIRCorr = ε/np.pi
             nLwNIRCorr = εnLw/np.pi
@@ -222,9 +208,7 @@ class ProcessL2:
             #   Revert to NIR correction of 0 when this happens. No good way to update the L2 attribute
             #   metadata because it may only be on some ensembles within a file.
             if rrsNIRCorr < 0:
-                msg = 'Bad NIR Correction. Revert to No NIR correction.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('Bad NIR Correction. Revert to No NIR correction.')
                 rrsNIRCorr = 0
                 nLwNIRCorr = 0
                 # L2 metadata will be updated
@@ -532,7 +516,6 @@ class ProcessL2:
                     lwRemainingSD = np.std(lwRemaining)
                     rrsRemainingSD = np.std(rrsRemaining)
                     nLwRemainingSD = np.std(rrsRemaining*f0)
-                
 
                 # nLw uncertainty;
                 nLwUNC[k] = np.power((rrsUNC[k]**2)*(f0**2) + (rrs**2)*(f0UNC**2), 0.5)
@@ -650,10 +633,7 @@ class ProcessL2:
         ''' Delete flagged records. Sensor is only specified to get the timestamp.
             All data in the group (including satellite sensors) will be deleted. '''
 
-        msg = f'Remove {group.id} Data'
-        print(msg)
-        Utilities.writeLogFile(msg)
-
+        Utilities.writeLogFileAndPrint(f'Remove {group.id} Data')
         timeStamp = None
         if sensor is None:
             if group.id == "ANCILLARY":
@@ -673,9 +653,7 @@ class ProcessL2:
                 timeStamp = group.getDataset(f"Rrs_{sensor}").data["Datetime"]
 
         startLength = len(timeStamp)
-        msg = f'   Length of dataset prior to removal {startLength} long'
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f'   Length of dataset prior to removal {startLength} long')
 
         # Delete the records in badTime ranges from each dataset in the group
         finalCount = 0
@@ -685,9 +663,9 @@ class ProcessL2:
             startLength = len(timeStamp)
             newTimeStamp = []
 
-            # msg = f'Eliminate data between: {dateTime}'
-            # print(msg)
-            # Utilities.writeLogFile(msg)
+            # Utilities.writeLogFileAndPrint(f'Eliminate data between: {dateTime}'
+            # 
+            # 
 
             start = dateTime[0]
             stop = dateTime[1]
@@ -705,9 +683,7 @@ class ProcessL2:
                         newTimeStamp.append(timeStamp[i])
                 group.datasetDeleteRow(rowsToDelete)
             else:
-                msg = 'Data group is empty. Continuing.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('Data group is empty. Continuing.')
             timeStamp = newTimeStamp.copy()
 
         if len(badTimes) == 0:
@@ -720,9 +696,7 @@ class ProcessL2:
             except Exception as err:
                 print(err)
 
-        msg = f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed'
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f'   Length of dataset after removal {originalLength-finalCount} long: {round(100*finalCount/originalLength)}% removed')
         return finalCount/originalLength
 
 
@@ -803,9 +777,7 @@ class ProcessL2:
 
         badTimes = np.unique(badTimes)
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements (start, stop)
-        msg = f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of {field} spectra flagged'
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of {field} spectra flagged')
 
         # # Need to add these at the beginning of the ODict
         reflColumns['Timetag2'] = reflTime
@@ -964,9 +936,7 @@ class ProcessL2:
         esStartTime = esSlice['Datetime'][0]
         esStopTime = esSlice['Datetime'][-1]
         if (esStopTime - esStartTime) < datetime.timedelta(seconds=60):
-            msg = 'ProcessL2.ensemblesReflectance ensemble is less than 1 minute. Skipping.'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('ProcessL2.ensemblesReflectance ensemble is less than 1 minute. Skipping.')
             return False
         #SIXS
         if sixSGroup is not None:
@@ -1023,8 +993,7 @@ class ProcessL2:
                 return False
 
         if not any([esRawGroup, liRawGroup, ltRawGroup]):
-            msg = "No L1AQC groups found"
-            print(msg)
+            Utilities.writeLogFileAndPrint("No L1AQC groups found")
         else:
             # slice L1AQC (aka "Raw" here) Data depending on SensorType
             if ConfigFile.settings['SensorType'].lower() == "trios" \
@@ -1052,8 +1021,7 @@ class ProcessL2:
                                   ltRawGroup['DARK'].datasets.values(),
                                   )
             else:
-                msg = "unrecognisable sensor type"
-                print(msg)
+                Utilities.writeLogFileAndPrint("unrecognisable sensor type")
                 return False
 
         rhoDefault = float(ConfigFile.settings["fL2RhoSky"])
@@ -1105,13 +1073,11 @@ class ProcessL2:
                         dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
                         instrument_wb)
         else:
-            msg = "class type not recognised"
-            print(msg)
+            Utilities.writeLogFileAndPrint("class type not recognised")
             return False
 
         if not stats:
-            msg = "statistics not generated"
-            print(msg)
+            Utilities.writeLogFileAndPrint("statistics not generated")
             return False
 
         # make std into dictionaries (data are ODs, but should not matter)
@@ -1191,9 +1157,7 @@ class ProcessL2:
         # within the threshold and calculate Rrs, or to calculate the Rrs within the threshold, and then average, however IOCCG
         # Protocols pretty clearly state to average the ir/radiances first, then calculate the Rrs...as done here.
         x = round(n*percentLt/100) # number of retained values
-        msg = f'{n} spectra in slice (ensemble).'
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f'{n} spectra in slice (ensemble).')
 
         # There are sometimes only a small number of spectra in the slice,
         #  so the percent Lt estimation becomes highly questionable and is overridden here.
@@ -1206,9 +1170,7 @@ class ProcessL2:
             index = np.argsort(lt780)  # gives indexes if values were to be sorted
             # returns indexes of the first x values (if values were sorted); i.e. the indexes of the lowest X% of unsorted lt780
             y = index[0:x]
-            msg = f'{len(y)} spectra remaining in slice to average after filtering to lowest {percentLt}%.'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f'{len(y)} spectra remaining in slice to average after filtering to lowest {percentLt}%.')
         else:
             # If Percent Lt is turned off, this will average the whole slice, and if
             # ensemble is off (set to 0), just the one spectrum will be used.
@@ -1289,14 +1251,11 @@ class ProcessL2:
 
         # Make sure the XSlice averaging didn't bomb
         if np.isnan(sliceAveFlag).any():
-            msg = 'ProcessL2.ensemblesReflectance: Slice X"%" average error: Dataset all NaNs.'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('ProcessL2.ensemblesReflectance: Slice X"%" average error: Dataset all NaNs.')
             return False
 
         # Take the mean of the lowest X% for the ancillary group in the slice
         # (Combines Slice and XSlice -- as above -- into one method)
-        # node.groups.append(ancGroup)
         ProcessL2.sliceAveOther(node, start, end, y, ancGroup, sixSGroup)
         newAncGroup = node.getGroup("ANCILLARY") # Just populated above
         newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
@@ -1334,9 +1293,7 @@ class ProcessL2:
                 AODXSlice = AODXSlice[0]
         except Exception:
             if ZhangRho:
-                msg = 'ProcessL2.ensemblesReflectance: No AOD data present in Ancillary. Activate model acquisition in L1B.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('ProcessL2.ensemblesReflectance: No AOD data present in Ancillary. Activate model acquisition in L1B.')
                 return False
 
         # These are optional; in fact, there is no implementation of incorporating CLOUD or WAVEs into
@@ -1347,18 +1304,18 @@ class ProcessL2:
                 CloudXSlice = CloudXSlice[0]
         else:
             CloudXSlice = None
-        if "WAVE_HT" in newAncGroup.datasets:
-            WaveXSlice = newAncGroup.getDataset('WAVE_HT').data['WAVE_HT'].copy()
-            if isinstance(WaveXSlice, list):
-                WaveXSlice = WaveXSlice[0]
-        else:
-            WaveXSlice = None
-        if "STATION" in newAncGroup.datasets:
-            StationSlice = newAncGroup.getDataset('STATION').data['STATION'].copy()
-            if isinstance(StationSlice, list):
-                StationSlice = StationSlice[0]
-        else:
-            StationSlice = None
+        # if "WAVE_HT" in newAncGroup.datasets:
+        #     WaveXSlice = newAncGroup.getDataset('WAVE_HT').data['WAVE_HT'].copy()
+        #     if isinstance(WaveXSlice, list):
+        #         WaveXSlice = WaveXSlice[0]
+        # else:
+        #     WaveXSlice = None
+        # if "STATION" in newAncGroup.datasets:
+        #     StationSlice = newAncGroup.getDataset('STATION').data['STATION'].copy()
+        #     if isinstance(StationSlice, list):
+        #         StationSlice = StationSlice[0]
+        # else:
+        #     StationSlice = None
 
         ########################################################################
         # Calculate Rho_sky
@@ -1398,49 +1355,24 @@ class ProcessL2:
             # Need to limit the input for the model limitations. This will also mean cutting out Li, Lt, and Es
             # from non-valid wavebands.
             if AODXSlice >0.5:
-                msg = f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.5. Expect larger, uncaptured errors.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint(f'AOD = {AODXSlice:.3f}. Maximum Aerosol Optical Depth Reached. Setting to 0.5. Expect larger, uncaptured errors.')
                 AODXSlice = 0.5
             if WINDSPEEDXSlice > 15:
-                msg = f'WIND = {WINDSPEEDXSlice:.1f}. Maximum Wind Speed Reached. Setting to 15.0. Expect larger, uncaptured errors.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint(f'WIND = {WINDSPEEDXSlice:.1f}. Maximum Wind Speed Reached. Setting to 15.0. Expect larger, uncaptured errors.')
                 WINDSPEEDXSlice = 15
             if SZAXSlice > 60:
                 # Zhang is stricter and limited to SZA <= 60
-                # msg = f'SZA = {SZAXSlice:.2f}. Maximum Solar Zenith Exceeded. Aborting slice.'
-                msg = f'SZA = {SZAXSlice:.1f}. Maximum Solar Zenith Exceeded. Setting to 60. Expect larger, uncaptured errors.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                # Utilities.writeLogFileAndPrint(f'SZA = {SZAXSlice:.2f}. Maximum Solar Zenith Exceeded. Aborting slice.'
+                Utilities.writeLogFileAndPrint(f'SZA = {SZAXSlice:.1f}. Maximum Solar Zenith Exceeded. Setting to 60. Expect larger, uncaptured errors.')
                 SZAXSlice = 60
-                # # Need to eliminate this slice from newAncGroup
-                # badTimes = []
-                # start = dateTime
-                # stop = dateTime
-                # badTimes.append([start, stop])
-                # for dsName in newAncGroup.datasets:
-                #     ds = newAncGroup.datasets[dsName]
-                #     ds.columnsToDataset()
-
-                # check = Utilities.filterData(newAncGroup,badTimes)
-                # if check == 1.0:
-                #     msg = "100% of Ancillary data removed. Abort."
-                #     print(msg)
-                #     Utilities.writeLogFile(msg)
-                #     return False
             if min(wavelength) < 350 or max(wavelength) > 1000:
-                msg = 'Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('Wavelengths extend beyond model limits. Truncating to 350 - 1000 nm.')
                 wave_old = wavelength.copy()
                 wave_list = [(i, band) for i, band in enumerate(wave_old) if (band >=350) and (band <= 1000)]
                 wave_array = np.array(wave_list)
                 # wavelength is now truncated to only valid wavebands for use in Zhang models
                 waveSubset = wave_array[:,1].tolist()
 
-            # rhoVector = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
-            #                                             SalXSlice, RelAzXSlice, waveSubset)
             SVA = ConfigFile.settings['fL2SVA']
             rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice,
                                                             SalXSlice, RelAzXSlice, SVA, waveSubset, Rho_Uncertainty_Obj)
@@ -1470,9 +1402,7 @@ class ProcessL2:
         # Recycling _raw in TSIS_1 calls below prevents the dataset having to be reread
 
         if F0_hyper is None:
-            msg = "No hyperspectral TSIS-1 F0. Aborting."
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("No hyperspectral TSIS-1 F0. Aborting.")
             return False
 
         # Calculate TSIS-1 for each of the satellite bandsets
@@ -1547,9 +1477,7 @@ class ProcessL2:
                     (ConfigFile.settings['SensorType'].lower() == "dalec")) and (ConfigFile.settings["fL1bCal"] == 1):
                     xUNC = None
                 else:
-                    msg = "Instrument uncertainty processing failed: ProcessL2"
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    Utilities.writeLogFileAndPrint("Instrument uncertainty processing failed: ProcessL2")
                     return False
 
             elif ConfigFile.settings["fL1bCal"] == 3:
@@ -1575,9 +1503,7 @@ class ProcessL2:
                         waveSubset
                     )
 
-        msg = f'Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s'
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f'Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s')
 
         # move uncertainties from xSlice to xUNC
         if xUNC is not None:
@@ -1822,6 +1748,14 @@ class ProcessL2:
                     # Can't apply good NIR corrs at satellite bands, so use the correction factors from the hyperspectral instead.
                     ProcessL2.nirCorrectionSatellite(node, sensor, rrsNIRCorr, nLwNIRCorr)
 
+        # Transfer attributes from L1BQC to L2 for sensors (place in [sensor]_HYPER datasets)
+        for gp in node.groups:
+            if gp.id == 'IRRADIANCE':
+                gp.datasets['ES_HYPER'].attributes = refGroup.datasets['ES'].attributes.copy()
+            if gp.id == 'RADIANCE':
+                gp.datasets['LT_HYPER'].attributes = sasGroup.datasets['LT'].attributes.copy()
+                gp.datasets['LI_HYPER'].attributes = sasGroup.datasets['LI'].attributes.copy()
+
         return True
 
 
@@ -1910,18 +1844,14 @@ class ProcessL2:
         #   data will be discarded here prior to any further filtering or processing.
 
         if ConfigFile.settings["bL2Stations"]:
-            msg = "Extracting station data only. All other records will be discarded."
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("Extracting station data only. All other records will be discarded.")
 
             # If we are here, the station was already chosen in Controller
             try:
                 stations = ancGroup.getDataset("STATION").columns["STATION"]
                 dateTime = ancGroup.getDataset("STATION").columns["Datetime"]
             except Exception:
-                msg = "No station data found in ancGroup. Aborting."
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint("No station data found in ancGroup. Aborting.")
                 return False
 
             badTimes = []
@@ -1948,9 +1878,7 @@ class ProcessL2:
                 print('Removing records...')
                 check = ProcessL2.filterData(referenceGroup, badTimes)
                 if check == 1.0:
-                    msg = "100% of irradiance data removed. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    Utilities.writeLogFileAndPrint("100% of irradiance data removed. Abort.")
                     return False
                 ProcessL2.filterData(sasGroup, badTimes)
                 ProcessL2.filterData(ancGroup, badTimes)
@@ -1975,9 +1903,7 @@ class ProcessL2:
             if not all([instrument.darkToLightTimer(esRawGroup, 'ES'),
                         instrument.darkToLightTimer(liRawGroup, 'LI'),
                         instrument.darkToLightTimer(ltRawGroup, 'LT')]):
-                msg = "failed to interpolate dark data to light data timer"
-                print(msg)
-
+                Utilities.writeLogFileAndPrint("failed to interpolate dark data to light data timer")
         if interval == 0:
             # Here, take the complete time series
             print("No time binning. This can take a moment.")
@@ -1987,17 +1913,13 @@ class ProcessL2:
                 start = i
                 end = i+1
 
-                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
-                                                            uncGroup, esRawGroup,liRawGroup, ltRawGroup,
-                                                            sixSGroup, start, end):
-                    msg = 'ProcessL2.ensemblesReflectance unsliced failed. Abort.'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup,
+                                                    uncGroup, esRawGroup,liRawGroup, ltRawGroup,
+                                                    sixSGroup, start, end):
+                    Utilities.writeLogFileAndPrint('ProcessL2.ensemblesReflectance unsliced failed. Abort.')
                     continue
         else:
-            msg = 'Binning datasets to ensemble time interval.'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint('Binning datasets to ensemble time interval.')
 
             # Iterate over the time ensembles
             start = 0
@@ -2017,9 +1939,7 @@ class ProcessL2:
                         if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
                                                             sixSGroup, start, end):
-                            msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
-                            print(msg)
-                            Utilities.writeLogFile(msg)
+                            Utilities.writeLogFileAndPrint('ProcessL2.ensemblesReflectance with slices failed. Continue.')
                             break # End of file reached. Safe to break
 
                         break # End of file reached. Safe to break
@@ -2034,9 +1954,7 @@ class ProcessL2:
                     if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
                                                             sixSGroup, start, end):
-                        msg = 'ProcessL2.ensemblesReflectance with slices failed. Continue.'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
+                        Utilities.writeLogFileAndPrint('ProcessL2.ensemblesReflectance with slices failed. Continue.')
 
                         start = i
                         continue # End of ensemble reached. Continue.
@@ -2052,9 +1970,7 @@ class ProcessL2:
                 if not ProcessL2.ensemblesReflectance(node, sasGroup, referenceGroup, ancGroup, 
                                                             uncGroup, esRawGroup,liRawGroup, ltRawGroup,
                                                             sixSGroup, start, end):
-                    msg = 'ProcessL2.ensemblesReflectance ender clause failed.'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    Utilities.writeLogFileAndPrint('ProcessL2.ensemblesReflectance ender clause failed.')
 
         #####################################
         #
@@ -2068,15 +1984,11 @@ class ProcessL2:
 
         if ConfigFile.settings["bL2NegativeSpec"]:
             fRange = [400, 680]
-            msg = "Filtering reflectance spectra for negative values."
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("Filtering reflectance spectra for negative values.")
             # newReflectanceGroup = node.groups[0]
             newReflectanceGroup = node.getGroup("REFLECTANCE")
             if not newReflectanceGroup.datasets:
-                msg = "Ensemble is empty. Aborting."
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint("Ensemble is empty. Aborting.")
                 return False
 
             badTimes1 = ProcessL2.negReflectance(newReflectanceGroup, 'Rrs_HYPER', VIS = fRange)
@@ -2097,9 +2009,7 @@ class ProcessL2:
                 # including satellite data, will be removed.
                 check = ProcessL2.filterData(newReflectanceGroup, badTimes, sensor = "HYPER")
                 if check > 0.99:
-                    msg = "Too few spectra remaining. Abort."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    Utilities.writeLogFileAndPrint("Too few spectra remaining. Abort.")
                     return False
                 ProcessL2.filterData(node.getGroup("IRRADIANCE"), badTimes, sensor = "HYPER")
                 ProcessL2.filterData(node.getGroup("RADIANCE"), badTimes, sensor = "HYPER")
@@ -2139,7 +2049,7 @@ class ProcessL2:
                 newGrp = node.addGroup(grp.id)
                 newGrp.copy(grp)
                 for ds in newGrp.datasets:
-                    newGrp.datasets[ds].datasetToColumns()                    
+                    newGrp.datasets[ds].datasetToColumns()
 
         # Process stations, ensembles to reflectances, OC prods, etc.
         if not ProcessL2.stationsEnsemblesReflectance(node, root,station):
@@ -2163,16 +2073,14 @@ class ProcessL2:
         if ConfigFile.settings['bL2NegativeSpec']:
             gp.attributes['NEGATIVE_VALUE_FILTER'] = 'ON'
 
-        # Root
+        # Stations and Ensembles
         if ConfigFile.settings['bL2Stations']:
             node.attributes['STATION_EXTRACTION'] = 'ON'
         node.attributes['ENSEMBLE_DURATION'] = str(ConfigFile.settings['fL2TimeInterval']) + ' sec'
 
         # Check to insure at least some data survived quality checks
         if node.getGroup("REFLECTANCE").getDataset("Rrs_HYPER").data is None:
-            msg = "All data appear to have been eliminated from the file. Aborting."
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("All data appear to have been eliminated from the file. Aborting.")
             return None
 
         # If requested, proceed to calculation of derived geophysical and
@@ -2185,21 +2093,15 @@ class ProcessL2:
         if ConfigFile.settings["bL2BRDF"]:
 
             if ConfigFile.settings['bL2BRDF_fQ']:
-                msg = "Applying iterative Morel et al. 2002 BRDF correction to Rrs and nLw"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint("Applying iterative Morel et al. 2002 BRDF correction to Rrs and nLw")
                 ProcessL2BRDF.procBRDF(node, BRDF_option='M02')
 
             if ConfigFile.settings['bL2BRDF_IOP']:
-                msg = "Applying Lee et al. 2011 BRDF correction to Rrs and nLw"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint("Applying Lee et al. 2011 BRDF correction to Rrs and nLw")
                 ProcessL2BRDF.procBRDF(node, BRDF_option='L11')
 
             # if ConfigFile.settings['bL2BRDF_OXX']:
-            #     msg = "Applying OXX BRDF correction to Rrs and nLw"
-            #     print(msg)
-            #     Utilities.writeLogFile(msg)
+            #     Utilities.writeLogFileAndPrint("Applying OXX BRDF correction to Rrs and nLw"
             #     ProcessL2BRDF.procBRDF(node, BRDF_option='OXX')
 
 
