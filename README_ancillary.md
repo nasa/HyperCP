@@ -19,7 +19,8 @@ two possible sources (to be selected by the user):
  /Data/Anc. Global ancillary data files from GMAO will be reused, so it is not recommended to clear this directory unless 
  updated models are being released by GMAO. 
  
-        Note: MERRA2 files are not released until ~1 month after the date in question.
+        Note: MERRA2 files are not released until some days to weeks after the date in question. Link below for current status.
+[MERRA2 processing status](https://gmao.gsfc.nasa.gov/operations/status.php)
 
         Note: MERRA2 files downloaded prior to March 15, 2022 can be deleted as the file name format has changed
 - ECMWF [CAMS global atmospheric composition forecasts](https://ads.atmosphere.copernicus.eu/datasets/cams-global-atmospheric-composition-forecasts?tab=overview)

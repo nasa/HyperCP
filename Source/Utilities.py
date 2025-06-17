@@ -2286,26 +2286,28 @@ class Utilities:
             meanSPECTEMP,meanAIRTEMP,meanCAPSONTEMP = None,None,None
             airTempMargin = 5 # 5 degrees above air temp per Zibordi Talone (in prep 2025)
             # SPECTEMP should be present for all platform/sensors (SeaBird,TriOS,DALEC),
-            #   but only populated with non-zeroes where an internal thermistor is available.
+            #   but only populated with non-zeroes where an internal thermistor is available.            
             if ConfigFile.settings['SensorType'].lower() == "seabird":
-                if "SPECTEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
-                    specTEMP = node.getGroup(f'{sensor}_LIGHT').getDataset("SPECTEMP")
+                sensorGroup = node.getGroup(f'{sensor}_LIGHT')
+                if "SPECTEMP" in sensorGroup.datasets:
+                    specTEMP = sensorGroup.getDataset("SPECTEMP")
                     meanSPECTEMP = np.mean(np.array(specTEMP.data.tolist()))
                 else:
                     Utilities.writeLogFileAndPrint("Internal temperature dataset not found")
-                if "CAPSONTEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
-                    capsonTEMP = node.getGroup(f'{sensor}_LIGHT').getDataset("CAPSONTEMP")
+                if "CAPSONTEMP" in sensorGroup.datasets:
+                    capsonTEMP = sensorGroup.getDataset("CAPSONTEMP")
                     meanCAPSONTEMP = np.mean(np.array(capsonTEMP.data.tolist()))
                 # else:
                 #     Utilities.writeLogFileAndPrint("Caps-on temperature dataset not found")
             else:
-                if "SPECTEMP" in node.getGroup(f'{sensor}').datasets:
-                    specTEMP = node.getGroup(f'{sensor}').getDataset("SPECTEMP")
+                sensorGroup = node.getGroup(f'{sensor}')
+                if "SPECTEMP" in sensorGroup.datasets:
+                    specTEMP = sensorGroup.getDataset("SPECTEMP")
                     meanSPECTEMP = np.mean(np.array(specTEMP.data.tolist()))
                 else:
                     Utilities.writeLogFileAndPrint("Internal temperature dataset not found")
-                if "CAPSONTEMP" in node.getGroup(f'{sensor}').datasets:
-                    capsonTEMP = node.getGroup(f'{sensor}').getDataset("CAPSONTEMP")
+                if "CAPSONTEMP" in sensorGroup.datasets:
+                    capsonTEMP = sensorGroup.getDataset("CAPSONTEMP")
                     meanCAPSONTEMP = np.mean(np.array(capsonTEMP.data.tolist()))
 
                 if "AIRTEMP" in node.getGroup('ANCILLARY_METADATA').datasets:
@@ -2321,26 +2323,35 @@ class Utilities:
                 # NOTE: G2 thermistor acquisition is still under development
                 Utilities.writeLogFileAndPrint(f"{sensor}: Using internal thermistor for sensor working temperature")
                 internalTemp = meanSPECTEMP     # SeaBird, DALEC, and TriOS G2 should always follow this path
+                internalTempSource = 'InternalThermistor'
             elif meanCAPSONTEMP and ConfigFile.settings['fL1bThermal'] == 3:
                 if meanAIRTEMP:
-                    if meanAIRTEMP + airTempMargin < 30:
+                    if (meanAIRTEMP + airTempMargin < 30) and (meanCAPSONTEMP < 30): # Both conditions must be met
                         Utilities.writeLogFileAndPrint(f"{sensor}: meanAIRTEMP + airTempMargin < 30. Using air temp with margin for sensor working temperature")
                         internalTemp = meanAIRTEMP + airTempMargin
+                        internalTempSource = 'AirTemp+5C'
                     else:
                         Utilities.writeLogFileAndPrint(f"{sensor}: meanAIRTEMP + airTempMargin >= 30. Using caps-on dark algorithm for sensor working temperature")
                         internalTemp = meanCAPSONTEMP
+                        internalTempSource = 'CapsOnDark'
                 else:
                     # Emergency fallback where no other source is available. Least accurate.
                     Utilities.writeLogFileAndPrint(f"{sensor}:WARNING: No air temperature provided. Caps-on dark temp used despite temps < 30 C.")
                     internalTemp = meanCAPSONTEMP
+                    internalTempSource = 'CapsOnDark'
             else:
                 if meanAIRTEMP:
                     Utilities.writeLogFileAndPrint(f"{sensor}:Using air temp with margin for sensor working temperature")
                     internalTemp = meanAIRTEMP + airTempMargin
+                    internalTempSource = 'AirTemp+5C'
                 else:
                     # Considering fallbacks for air temperature, this should never be reached.
                     Utilities.writeLogFileAndPrint(f"{sensor}:WARNING: No source of information available for sensor working temperature!")
                     return False
+
+            # add internalTempSource to attributes
+            sensorGroup.attributes['InternalTempSource'] = internalTempSource
+            sensorGroup.attributes['InternalTemp'] = f'{internalTemp:.1f}'
 
             # if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
             if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, sensor):

@@ -382,6 +382,8 @@ class ProcessL1b_Interp:
             newSensorData.columns[k] = dataset.data[k].tolist()
         newSensorData.columnsToDataset()
 
+        newSensorData.attributes = group.attributes.copy()
+
     @staticmethod
     def interpolateData(xData, yData, dataName, fileName, latData=None, lonData=None):
         ''' Preforms time interpolation to match xData to yData. xData is the dataset to be
@@ -553,8 +555,11 @@ class ProcessL1b_Interp:
         ltData = sasGroup.getDataset("LT")
 
         newESData = newReferenceGroup.addDataset("ES")
+        newESData.attributes = esData.attributes.copy()
         newLIData = newSASGroup.addDataset("LI")
+        newLIData.attributes = esData.attributes.copy()
         newLTData = newSASGroup.addDataset("LT")
+        newLTData.attributes = esData.attributes.copy()
 
         # Es dataset to dictionary
         esData.datasetToColumns()
