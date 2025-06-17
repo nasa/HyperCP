@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
+from Source.ProcessL1aDALEC import ProcessL1aDALEC
 from Source.Utilities import Utilities
 
 class ProcessL1b_FactoryCal:
@@ -41,6 +42,8 @@ class ProcessL1b_FactoryCal:
         elif cd.fitType == "COUNT":
             pass
         elif cd.fitType == "NONE":
+            pass
+        elif cd.fitType == "THERMAL_RESP":
             pass
         else:
             msg = f'ProcessL1b_FactoryCal.processDataset: Unknown Fit Type: {cd.fitType}'
@@ -335,6 +338,24 @@ class ProcessL1b_FactoryCal:
                     if cd.fitType == "OPTIC3":
                         coeff.append(float(cd.coefficients[1]))
                         wvl.append(float(cd.id))
+        return np.array(wvl), np.array(coeff)
+
+    @staticmethod
+    def extract_calibration_coeff_dalec(calibrationMap, sensor):
+        '''
+        extract spectral calibration coeff as array
+        '''
+        sensorCoeff={'ES':'a0','LT':'b0','LI':'c0'}
+        sensorType={'ES':'Lambda_Ed','LT':'Lambda_Lu','LI':'Lambda_Lsky'}
+        calMap=list(calibrationMap.values())
+        calfile=calMap[0].name
+        #print(calfile)
+        #read cal data
+        meta_instrument,coefficients,cal_data=ProcessL1aDALEC.read_cal(calfile)
+        #print(cal_data)
+        coeff = cal_data[sensorCoeff[sensor]]
+        wvl = cal_data[sensorType[sensor]]
+         
         return np.array(wvl), np.array(coeff)
 
 

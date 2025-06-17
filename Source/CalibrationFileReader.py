@@ -17,7 +17,13 @@ class CalibrationFileReader:
         for (dirpath, dirnames, filenames) in os.walk(fp):
             for name in filenames:
                 #print("infile:", name)
-                if os.path.splitext(name)[1].lower() == ".cal" or \
+                if name.lower().startswith("dalec"):
+                    cf = CalibrationFile()
+                    cf.id=name
+                    cf.name=os.path.join(dirpath,name)
+                    cf.instrumentType = "Dalec"
+                    calibrationMap[name] = cf
+                elif os.path.splitext(name)[1].lower() == ".cal" or \
                    os.path.splitext(name)[1].lower() == ".tdf":
                     with open(os.path.join(dirpath, name), 'rb') as f:
                         cf = CalibrationFile()

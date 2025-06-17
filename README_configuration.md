@@ -36,6 +36,8 @@ In the case of TriOS, 3 files are required per radiometer to provide all the cal
 for the device number "xxxx", Cal_xxxx.dat and Back_xxxx_dat, respectively contain the raw calibration factors and
 the background levels, while SAM_xxxx.ini provides initialisation information to the processor.
 
+DALECs have one .cal file for all three radiometers.
+
 Adding new files will automatically copy these files from the directory you identify on your machine when prompted by
  pressing ```Add Cals``` into the HyperCP directory structure. You should not need to edit the contents of the
  ```HyperInSPACE/Config``` directory manually.
@@ -59,15 +61,15 @@ For **HyperOCR**:
 - **HLDxxxA.cal**: Lt (Frame Type: Dark)
 - **HSLxxxA.cal**: Lt (Frame Type: Light)
 
-where xxx is the serial number of the SeaBird instrument, followed (where appropriate) by factory calibration codes
+where xxx is the serial number of the Sea-Bird instrument, followed (where appropriate) by factory calibration codes
 (usually A, B, C, etc. associated with the date of calibration). Note that if you have a robotic platform, you only need one .tdf file for the tracker: SATNAV for Sea-Bird Solar Tracker or UMTWR for UMaine Solar tracker (pySAS).
 ***Be sure to choose the factory calibration files appropriate to the date of data collection.***
 
 ‡ **Note**: Use of built-in flux-gate compass is inadvisable on a steel ship or platform. Best practice is to use
 externally supplied heading data from the ship's NMEA datastream or from a seperate, external dual antenna GPS
-incorporated into the SolarTracker. DO NOT USE COURSE DATA FROM SINGLE GPS SYSTEMS FOR SENSOR ORIENTATION.
+incorporated into the SunTracker. DO NOT USE COURSE DATA FROM SINGLE GPS SYSTEMS FOR SENSOR ORIENTATION.
 
-For **TriOS RAMSES** device, you will need to associate each radiometers number to its type of acquisition (Li, Lt or Es), for example :
+For **TriOS RAMSES** device, you will need to associate each radiometer number to its type of acquisition (Li, Lt or Es), for example :
 
 - **SAM_8166.ini**: Li
 - **SAM_8329.ini**: Es
@@ -80,7 +82,7 @@ Selections:
 - Add Calibration Files - Allows loading calibration/instrument files into HyperCP. Once loaded, the drop-down box can
 be used to select the file to enable the instrument and set the frame type.
 - Enabled checkbox - Used to enable/disable loading the file in HyperCP.
-- Frame Type
+- Frame Type (these are now resolved for you automatically)
      - [Seabird] ShutterLight/ShutterDark/Not Required can be selected. This is used to specify shutter frame type:
             ShutterLight/ShutterDark for light/dark correction or "Not Required" for all other data.
      - [TriOS] Li/Lt/Es can be selected. This is used to specify the target of each radiometers.
@@ -108,21 +110,20 @@ Click 'Save/Close' or 'Save As' to save the configuration file. SeaBASS headers 
 
  ## Level 1A Processing
 
-Process data from raw binary (Satlantic HyperSAS '.RAW' collections) to L1A (Hierarchical Data Format 5 '.hdf').
-Calibration files and the RawFileReader.py script allow for interpretation of raw data fields, which are read into HDF
-objects.
+***NOTE:*** HyperCP is optimized for hour-long raw files when using automated data collections (e.g., pySAS, DALEC, So-Rad).
+
+Process data from raw binary to L1A (Hierarchical Data Format 5 '.hdf'). Raw data files expected are .raw (or .RAW), .mlb, or .TXT for Sea-Bird, TriOS, or DALEC, respectively. It is helpful to keep them in the directory that the Main configuration points to, but directory can be named anything (e.g., "RAW").
+
+***NOTE:*** Since TriOS instruments use a triplet of raw data (.mlb) files it is necessary to provide information on the measurement date. This is done by adding the date to the name of the raw data file in one of the following formats: yyyymmdd-hhmmss or yyyy-mm-dd-hh:mm:ss. Additionally, station/cast can be designated using a 2-digit station number followed by a 2-digit cast number followed by "S" for regular acquisition or "D" for caps-on dark measurements. Caps-on dark measurements are made to help estimate the internal noise of the instrument as a function of temperature, and by inversion can be applied to extract the temperature of the instrument during a station collection and apply that temperature in the processing of normal "S" data aquisition. When selected in L1B (see below), filenames containing "XXYYS" (where XX is station and YY is cast) can use the internal temperature derived in the "XXYYD" file for each radiometer (where only XX-station needs to match, not YY-cast). For example, a caps-on dark processed to L1A using the option **Caps-on darks only** with filename containing "20250617-100300_0101D" to find the internal working temperature of each sensor can have that temperature applied to files with filenames containing "20250617-100800_0101S", "20250617-101300_0102S", and "20250617-101800_0103S".
 
 **Solar Zenith Angle Filter**: prescreens data for high SZA (low solar elevation) to exclude files which may have been
 collected post-dusk or pre-dawn from further processing.
 
-*Triggering the SZA threshold will skip the entire file, not
-just samples within the file, so do not be overly conservative with this selection, particularly for files collected
-over a long period.* Further screening for SZA min/max at a sample level is available in L1BQC processing.
-**Default: 60 degrees (e.g. Brewin et al., 2016)**
+*Triggering the SZA threshold will skip the entire file, not just samples within the file, so do not be overly conservative with this selection, particularly for files collected over a long period.* Further screening for SZA min/max at a sample level is available in L1BQC processing. **Default: 60 degrees (e.g. Brewin et al., 2016)**
 
 ## Level 1AQC Processing
 
-Process data from L1A to L1AQC. Data are filtered for vessel attitude (pitch, roll, and yaw when available), viewing
+Process data from L1A to L1AQC. Ancillary data from the file provided in the Main Window (see [Main Window; Ancillary Data](README.md#3-ancillary-input-files)) are read into the data file. Data are filtered for vessel attitude (pitch, roll, and yaw when available), viewing
 and solar geometry. *It should be noted that viewing geometry should conform to total radiance (Lt) measured at about 40
 degrees from nadir, and sky radiance (Li) at about 40 degrees from zenith* **(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**.
 Unlike other approaches, HyperCP eliminates data flagged for problematic pitch/roll, yaw, and solar/sensor geometries
@@ -130,26 +131,23 @@ Unlike other approaches, HyperCP eliminates data flagged for problematic pitch/r
 non-environmental anomalies.
 
 
-- **SolarTracker**: Select when using the Satlantic SolarTracker package. In this case sensor and solor geometry data will
- come from the SolarTracker (i.e. SATNAV**.tdf). If deselected, solar geometries will be calculated from GPS time and
+- **SunTracker**: Select when using an autonomous platform such as SolarTracker, pySAS, DALEC, or So-Rad. In this case sensor and solor geometry data will come from the robot. If deselected, solar geometries will be calculated from GPS time and
  position with Pysolar, while sensor azimuth (i.e. ship heading and sensor offset) must either be provided in the
- ancillary data or (eventually) from other data inputs. Currently, if SolarTracker is unchecked, the Ancillary file
+ ancillary data or (eventually) from other data inputs. Currently, if SunTracker is unchecked, the Ancillary file
  chosen in the Main Window will be read in, subset for the relevant dates/times, held in the ANCILLARY_NOTRACKER group
- object, and carried forward to subsequent levels (i.e. the file will not need to be read in again at L2). If the
- ancillary data file is very large (e.g. for a whole cruise at high temporal resolution), this process of reading in the
- text file and subsetting it to the radiometry file can be slow.
+ object, and carried forward to subsequent levels. If the ancillary data file is very large (e.g. for a whole cruise at high temporal resolution), this process of reading in the text file and subsetting it to the radiometry file can be slow.
 
 - **Rotator Home Angle Offset**: Generally 0. This is the offset between the neutral position of the radiometer suite and
 the bow of the ship. This *should* be zero if the SAS Home Direction was set at the time of data collection in the
-SolarTracker as per Satlantic SAT-DN-635. If no SolarTracker was used, the offset can be set here if stable (e.g.
-pointing angle on a fixed tower), or in the ancillary data file if changeable in time. Without SolarTracker, L1C
+SunTracker as per Satlantic SAT-DN-635. If no SunTracker was used, the offset can be set here if stable (e.g.
+pointing angle on a fixed tower), or in the ancillary data file if changeable in time. Without SunTracker, L1C
 processing will require at a minimum ship heading data in the ancillary file. Then the offset can be given in the
 ancillary file (dynamic) or set here in the GUI (static). *Note: as SeaBASS does not have a field for this angle between
 the instrument and the bow of the ship, the field "relaz" (normally reserved for the relative azimuth between the
 instrument and the sun) is utilized for the angle between the ship heading (NOT COG) and the sensor.*
 
-- **Rotator Delay**: Seconds of data discarded after a SolarTracker rotation is detected. Set to 0 to ignore.
-Not an option without SolarTracker. **Default: 60 seconds (Vandenberg 2017)**
+- **Rotator Delay**: Seconds of data discarded after a SunTracker rotation is detected. Set to 0 to ignore.
+Not an option without SunTracker. **Default: 60 seconds (Vandenberg 2017)**
 
 - **Pitch & Roll Filter** (optional): Data outside these thresholds are discarded if this is enabled in the checkbox.
 These data may be supplied by a tilt-heading sensor incorporated in the raw data stream accompanied by a telmetry
@@ -157,9 +155,9 @@ definition file (.tdf) as per above, or can be ingested from the Ancillary file 
 in /Data).
     **Default**: 5 degrees (IOCCG Draft Protocols; Zibordi et al. 2019; 2 deg "ideal" to 5 deg "upper limit").
 
-- **Absolute Rotator Angle Filter** (optional): Angles relative to the SolarTracker neutral angle beyond which data will
-be excluded due to obstructions blocking the field of view. These are generally set in the SolarTracker or pySAS
-software when initialized for a given platform. Not an option without SolarTracker or pySAS.
+- **Absolute Rotator Angle Filter** (optional): Angles relative to the SunTracker neutral angle beyond which data will
+be excluded due to obstructions blocking the field of view. These are generally set in the SunTracker
+software when initialized for a given platform. Not an option without SunTracker.
     **Default**: -40 to +40 (arbitrary)
 
 - **Relative Solar Azimuth Filter** (optional): Relative azimuth angle in degrees between the viewing Li/Lt and the sun.
@@ -183,50 +181,68 @@ See [this](README_deglitching.md) page for more detail.
 Dark current corrections are applied followed by instrument calibrations and then matching of timestamps and wavebands
 for all radiometers in the suite.
 
-Unlike legacy processing for Satlantic/Sea-Bird HyperSAS data in ProSoft, data here are dark current corrected prior to
-application of the calibration factors. This allows for the option of applying factory calibrations or full
+Sea-Bird instruments intermittently collect dark current data in all pixels (wavebands) between light data collection with the use of an automatic shutter. Unlike legacy processing for Satlantic/Sea-Bird HyperSAS data in ProSoft, data here are dark-current-corrected prior to
+application of the calibration factors. This allows the option of applying factory calibrations or full
 instrument characterization in conjunction with low-level radiometric uncertainty estimation. It should be noted that
 when applying calibration to the dark current corrected radiometry, the offsets (a0) cancel
 (see ProSoftUserManual7.7 11.1.1.5 Eqns 5-6) presuming light and dark factory cals are equivalent (which they
 historically have been from Satlantic/Sea-Bird).
 
+TriOS and DALEC collect dark current data simultaneously with light data acquisition by reading from blackened pixels enumerated 
+in their respective calibration files under the assumption that the dark current noise is similar across all pixels in the array.
+
 ### L1B: Ingestion of ancillary information for posterior processing
 
-At Level 1B, ancillary information will be queried from either [GMAO's MERRA](https://gmao.gsfc.nasa.gov/reanalysis/merra-2/)
+At Level 1B, critical ancillary information (wind speed, AOD, air temperature) that is not already provided in the Ancillary File (see [Main Window; Ancillary Data](README.md#3-ancillary-input-files)) will be queried from either [GMAO's MERRA](https://gmao.gsfc.nasa.gov/reanalysis/merra-2/)
 or [ECMWF's CAMS GACF](https://ads.atmosphere.copernicus.eu/) reanalysis/forecast model databases and used in
 posterior processing. To know more about these sources, how they are used in HyperCP and how to obtain the required
-access credentials, read [here](README_ancillary.md).
+access credentials, read [here](README_ancillary.md). 
 
-### L1B: Calibration regimes
+Fallback values for wind speed, AOD, air temperature, SST, and salinity can be provided in case neither ancillary file data nor model data are available.
+
+### L1B: Calibration/Characterization options
+
+The internal working temperature of each sensor is critical for thermal correction of the signal and/or uncertainty associated with thermal response. This temperature can be derived in several ways. For Sea-Bird, DALEC, and TriOS G2 sensors, an internal thermistor provides the working temperature. For TriOS G1, which has no thermistor, there are two options to derive working temperature: 1) Air temperature + 5°C (best for temperatures below 30°C) 2) Caps-on dark measurements (best for temperatures above 30°C) (Zibordi & Talone, 2025 in prep.) See note in Level 1A Processing [above](#configuration).
+
 Three calibration/characterization regimes are available:
 
-**Factory:**
-This regime performes the radiometric calibration using the radiometric gains provided within the factory configuration
-files. For both SeaBird and TriOS the calibration process follow their respective manufacturer recommendation.
-Although no uncertainty values associated to the radiometric factors are available in the factory configuration files,
-for SeaBird, uncertainty can be computed following the class-based processing with generic values for the radiometric
+**Non-FRM Factory:**
+This regime performs the radiometric calibration using the radiometric gains provided within the factory configuration
+files. For Sea-Bird, TriOS, and DALEC, the calibration process follow their respective manufacturer recommendation.
+Although no uncertainty values associated to the radiometric factors are currently available in the factory configuration files,
+for Sea-Bird, uncertainty can be computed following the class-based processing with generic values for the radiometric
 factor uncertainty, taken from "The Seventh SeaWiFS Intercalibration Round-Robin Experiment (SIRREX-7), March 1999"
 (API: https://ntrs.nasa.gov/citations/20020045342). The uncertainties produced at level 2 date will not be FRM compliant
-but remains an interesting first step to characterize the data. Unfortunately, there is no equivalent for TriOS and no
-uncertainties values will be outputted with this regime for TriOS.
+but remains an interesting first step to characterize the data. Unfortunately, there is no equivalent for TriOS or DALEC and no
+uncertainties values will be outputted with this regime for TriOS or DALEC.
 
-**FRM Class-Based:**
-This regimes performes the radiometric calibration using the radiometric characterisation completed by external laboratories.
+**FRM Class-Specific:**
+This regimes performs the radiometric calibration using the radiometric characterization completed by external laboratories.
 The radiometric characterization includes both the radiometric gains and their uncertainties for each sensor. The results
 are saved in the so called "RADCAL" file, with one file per sensor. The calibration process is identical to the factory regime
-and follow the manufacturer guidelines. In addition the Class-Based regime also computes FRM uncertainties using the absolute
+and follow the manufacturer guidelines. In addition the Class-Specific regime also computes FRM uncertainties using the absolute
 radiometric characterization and class-based values for all other contributors. The contributors included in the uncertainty
 propagation are: the straylight impact, the temperature sensitivity, the polarisation sensitivity (for radiance only), the cosine
-response (for irradiance only), the detector non-linearity and the calibration stability (see D10).
+response (for irradiance only), the detector non-linearity and the calibration stability (see D10). Currently, the only classes 
+characterized are Sea-Bird and TriOS.
 
-**FRM Full-Characterization:**
-This regime performes the complete correction of the radiometry using the full characterization of each sensor by external
-laboratories. For both SeaBird and TriOS the radiometric calibration process is performed with additional corrections. The
+**FRM Sensor-Specific (Full-Characterization; Highest Quality):**
+This regime performs the complete correction of the radiometry using the full characterization of each sensor by external
+laboratories. For both Sea-Bird and TriOS the radiometric calibration process is performed with additional corrections (DALEC in development). The
 corrections are possible only thanks to the full characterization of the sensors provided in the matching files. The process
-performes the non-linearity correction, the straylight correction, the polarisation correction (for radiance only), the cosine
+performs the non-linearity correction, the straylight correction, the polarisation correction (for radiance only), the cosine
 response correction (for irradiance only) and the temperature correction (see D10). The process also provides FRM compliant
 uncertainties accounting for the residuals effects of each contributors, meaning the correction residuals are used as uncertainty
 contributor instead of global class-based contribution, leading to smaller uncertainty values.
+
+There are three options for deciding which calibration files are applied when using FidRadDB RADCAL files:
+
+**Most recent (default)**
+
+**Pre- and Post- deployment average**
+
+**User specified**
+
 
 Once instrument calibration has been applied, data are interpolated to common timestamps and wavebands, optionally
 generating temporal plots of Li, Lt, and Es, and ancillary data to show how data were interpolated.
@@ -312,9 +328,9 @@ Individual spectra may be filtered out for:
 ## L2 Processing
 
 Data are averaged within optional time interval ensembles prior to calculating the remote sensing
-reflectance within each ensemble. A typical field collection file for the HyperSAS SolarTracker is one hour, and the
+reflectance within each ensemble. A typical field collection file for the SunTracker is one hour, and the
 optimal ensemble periods within that hour will depend on how rapidly conditions and water-types are changing, as well as
- the instrument sampling rate. While the use of ensembles is optional (set to 0 to avoid averaging), it is highly
+ the instrument sampling rate. While the use of ensembles is optional (set this to 0 to avoid averaging), it is highly
  recommended, as it allows for the statistical analysis required for Percent Lt calculation (radiance acceptance
  fraction; see below) within each ensemble, rather than %Lt across an entire (e.g. one hour) collection, and it also
  improves radiometric uncertainty estimation.

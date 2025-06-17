@@ -1,10 +1,5 @@
+''' API to retrieve atmospheric MERRA2 model data'''
 import os
-
-
-import stat
-# import urllib.request as ur
-# import requests
-import platform
 import numpy as np
 from PyQt5 import QtWidgets
 
@@ -12,8 +7,8 @@ from Source.HDFRoot import HDFRoot
 from Source.Utilities import Utilities
 from Source import OBPGSession, PATH_TO_DATA
 
-
 class GetAnc:
+    '''API object for retrieving MERRA2'''
 
     @staticmethod
     def getAnc(inputGroup):
@@ -31,10 +26,11 @@ class GetAnc:
         lon = inputGroup.getDataset('LONGITUDE').data["NONE"]
 
         modWind = []
+        modAirT = []
         modAOD = []
 
         # Loop through the input group and extract model data for each element
-        oldFile = None
+        oldFile,ancLat,ancLon,ancUwind,ancVwind,ancLatAer,ancLonAer,ancAirT = None,None,None,None,None,None,None,None
         for index, dateTag in enumerate(latDate):
             dateTagNew = Utilities.dateTagToDate(dateTag)
             year = int(str(int(dateTagNew))[0:4])
@@ -47,6 +43,7 @@ class GetAnc:
             hr = int(Utilities.timeTag2ToSec(latTime[index])/60/60)
 
             file1 = f"GMAO_MERRA2.{year}{month:02.0f}{day:02.0f}T{hr:02.0f}0000.MET.nc"
+
             if oldFile != file1:
                 ancPath = os.path.join(PATH_TO_DATA, 'Anc')
                 filePath1 = os.path.join(PATH_TO_DATA, 'Anc', file1)
@@ -115,8 +112,8 @@ class GetAnc:
                 ancLat = np.array(gmaoGroup.getDataset("lat").data.tolist())
                 ancLon = np.array(gmaoGroup.getDataset("lon").data.tolist())
 
-                # Humidity
-                # not needed
+                # AirTemp
+                ancAirT = gmaoGroup.getDataset("T10M") # Air temp at 10 m [K]
 
                 # Wind
                 ancUwind = gmaoGroup.getDataset("U10M") # Eastward at 10m [m/s]
@@ -147,7 +144,7 @@ class GetAnc:
 
             oldFile = file1
 
-            # Locate the relevant cell
+            # Locate the relevant cell            
             latInd = Utilities.find_nearest(ancLat,lat[index])
             lonInd = Utilities.find_nearest(ancLon,lon[index])
 
@@ -155,6 +152,9 @@ class GetAnc:
             uWind = ancUwind.data["None"][latInd][lonInd]
             vWind = ancVwind.data["None"][latInd][lonInd]
             modWind.append(np.sqrt(uWind*uWind + vWind*vWind)) # direction not needed
+
+            aTemp = ancAirT.data["None"][latInd][lonInd]
+            modAirT.append(aTemp - 273.15) # [C]
 
             # Locate the relevant cell
             latInd = Utilities.find_nearest(ancLatAer,lat[index])
@@ -169,13 +169,17 @@ class GetAnc:
         modGroup.addDataset('Timetag2')
         modGroup.addDataset('AOD')
         modGroup.addDataset('Wind')
-        '''NOTE: This is an unconventional use of Dataset, i.e., overides object with .data and .column.
-            Keeping for continuity of application'''
+        modGroup.addDataset('AirTemp')
+
+        # NOTE: This is an unconventional use of Dataset, i.e., overides object with .data and .column.
+        #    Keeping for continuity of application
         modGroup.datasets['Datetag'] = latDate
         modGroup.datasets['Timetag2'] = latTime
         modGroup.datasets['AOD'] = modAOD
         modGroup.datasets['Wind'] = modWind
+        modGroup.datasets['AirTemp'] = modAirT
         modGroup.attributes['Wind units'] = ancUwind.attributes['units']
+        modGroup.attributes['Air Temp. units'] = 'C'
         modGroup.attributes['AOD wavelength'] = ancTExt.attributes['wavelength']
         print('GetAnc: Model data retrieved')
 

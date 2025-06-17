@@ -10,7 +10,7 @@ from datetime import datetime
 from collections import OrderedDict
 from decimal import Decimal
 from abc import ABC, abstractmethod
-from typing import Union, Optional
+from typing import Union, Optional, Any
 from inspect import currentframe, getframeinfo
 
 # NPL packages
@@ -101,6 +101,14 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     copy.deepcopy(rawData[sensortype]), copy.deepcopy(rawSlice[sensortype]), sensortype
                 )
                 # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
+           elif InstrumentType.lower() == "dalec":
+                # RawData is the full group - this is used to get a few attributes only
+                # rawSlice is the ensemble 'slice' of raw data currently to be evaluated
+                #  todo: check the shape and that there are no nans or infs
+                output[sensortype] = self.lightDarkStats(
+                    copy.deepcopy(rawData[sensortype]), copy.deepcopy(rawSlice[sensortype]), sensortype
+                )
+                # copy.deepcopy ensures RAW data is unchanged for FRM uncertainty generation.
            elif InstrumentType.lower() == "seabird":
                 # rawData here is the group, passed along only for the purpose of
                 # confirming "FrameTypes", i.e., ShutterLight or ShutterDark. Calculations
@@ -143,6 +151,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
+        #print("generateSensorStats: output(stats)")
+        #print(output)
         return output
 
     def read_uncertainties(self, node, uncGrp, cCal, cCoef, cStab, cLin, cStray, cT, cPol, cCos) -> Optional[np.array]:
@@ -165,7 +175,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         for s in ["ES", "LI", "LT"]:  # s for sensor type
             cal_start = None
             cal_stop = None
-            if ConfigFile.settings["bL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "seabird":
+            if ConfigFile.settings["fL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "seabird":
                 radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_UNC")
                 ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
                 # read cal start and cal stop for shaping stray-light class based uncertainties
@@ -174,7 +184,13 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
                 self.extract_factory_cal(node, radcal, s, cCal, cCoef)  # populates dicts with calibration
 
-            elif ConfigFile.settings["bL1bCal"] == 2:  # class-Based
+                        
+            #elif ConfigFile.settings["fL1bCal"] == 1 and ConfigFile.settings['SensorType'].lower() == "dalec":
+            #    radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_UNC")
+            #    ind_rad_wvl = (np.array(radcal.columns['wvl']) > 0)  # all radcal wvls should be available from sirrex
+            #    self.extract_factory_cal(node, radcal, s, cCal, cCoef)  # populates dicts with calibration
+            
+            elif ConfigFile.settings["fL1bCal"] == 2:  # class-Based
                 radcal = self.extract_unc_from_grp(uncGrp, f"{s}_RADCAL_CAL")
                 ind_rad_wvl = (np.array(radcal.columns['1']) > 0)  # where radcal wvls are available
 
@@ -187,10 +203,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 cCal[s] = np.asarray(list(radcal.columns['3']))[ind_rad_wvl]
 
             else:
-                msg = "TriOS factory uncertainties not implemented"
+                msg = "TriOS/Dalec factory uncertainties not implemented"
                 Utilities.writeLogFile(msg)
                 print(msg)
-                return False
+                return False,False
 
             cStab[s] = self.extract_unc_from_grp(uncGrp, f"{s}_STABDATA_CAL", '1')
 
@@ -203,7 +219,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                 # to cover for potential coding errors, should not be hit in normal use
                 msg = "cannot mask straylight"
                 print(msg)
-                return False
+                return False,False
 
             cLin[s] = self.extract_unc_from_grp(grp=uncGrp, name=f"{s}_NLDATA_CAL", col_name='1')
 
@@ -601,6 +617,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                              ]
 
         rrsAbsUnc = Prop_L2_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
+        #print("rrsAbsUnc")
+        #print(rrsAbsUnc)
 
         # Plot Class based L2 uncertainties
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
@@ -653,6 +671,8 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             waveSubset,
             return_as_dict=False
         )
+        #print("rrsAbsUnc")
+        #print(rrsAbsUnc)
 
         ## Band Convolution of Uncertainties
         # get unc values at common wavebands (from ProcessL2) and convert any NaNs to 0 to not create issues with punpy
@@ -718,7 +738,11 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
         calPath = os.path.join(PATH_TO_CONFIG, calFolder)
         calibrationMap = CalibrationFileReader.read(calPath)
-        waves, cCoef[s] = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, s)
+
+        if ConfigFile.settings['SensorType'].lower() == "dalec":
+            waves, cCoef[s] = ProcessL1b_FactoryCal.extract_calibration_coeff_dalec(calibrationMap, s)
+        else:    
+            waves, cCoef[s] = ProcessL1b_FactoryCal.extract_calibration_coeff(node, calibrationMap, s)
 
     def get_band_outputs(self, sensor_key: str, rho, lw_means, lw_uncertainties, rrs_means, rrs_uncertainties,
                          esUNC, liUNC, ltUNC, rhoUNC, waveSubset, xSlice) -> dict:
@@ -1357,7 +1381,6 @@ class HyperOCR(BaseInstrument):
         # number of replicates for light and dark readings
         N = np.asarray(list(lightData.values())).shape[1]
         Nd = np.asarray(list(darkData.values())).shape[1]
-
         for i, k in enumerate(lightData.keys()):
             wvl = str(float(k))
 
@@ -1394,6 +1417,10 @@ class HyperOCR(BaseInstrument):
                 stdevSignal[wvl] = pow((pow(std_Light[i], 2) + pow(std_Dark[i], 2))/pow(signalAve, 2), 0.5)
             else:
                 stdevSignal[wvl] = 0.0
+
+        #print("std_Light/Dark")
+        #print(std_Light)
+        #print(stdevSignal)
 
         return dict(
             ave_Light=np.array(ave_Light),
@@ -1865,8 +1892,8 @@ class Trios(BaseInstrument):
             normalised_light_measure = back_corrected_mesure*int_time_t0/int_time[n]  # do not do the dark substitution as we need light data
 
             # Sensitivity calibration
-            calibrated_mesure[n, :] = normalized_mesure  # /raw_cal
-            calibrated_light_measure[n, :] = normalised_light_measure  # /raw_cal
+            calibrated_mesure[n, :] = normalized_mesure/raw_cal  # uncommented /raw_cal L1985-6
+            calibrated_light_measure[n, :] = normalised_light_measure/raw_cal
 
         # get light and dark data before correction
         light_avg = np.mean(calibrated_light_measure, axis=0)  # [ind_nocal == False]
@@ -1884,7 +1911,7 @@ class Trios(BaseInstrument):
         dark_avg = ones * offset
         if nmes > 25:
             dark_std = ones * np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0) / pow(nmes, 0.5)
-        else:  # already checked for light data so we knwo nmes > 3
+        else:  # already checked for light data so we know nmes > 3
             dark_std = np.sqrt(((nmes-1)/(nmes-3))*(
                     ones * np.std(back_corrected_mesure[DarkPixelStart:DarkPixelStop], axis=0)/np.sqrt(nmes))**2)
         # adjusting the dark_ave and dark_std shapes will remove sensor specific behaviour in Default and Factory
@@ -1904,6 +1931,54 @@ class Trios(BaseInstrument):
 
     def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
         """
+        """
+        unc_dict = {}
+        for sensortype in ['ES', 'LI', 'LT']:
+
+            # straylight
+            unc_dict[f"mZ_unc_{sensortype}"] = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_STRAYDATA_UNCERTAINTY").data))
+            # temperature
+            unc_dict[f"Ct_unc_{sensortype}"] = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data[1:].transpose().tolist())[5])
+            # Radcal Cal S1/S2
+            unc_dict[f'S1_unc_{sensortype}'] = (pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['7'])[1:]
+            unc_dict[f'S2_unc_{sensortype}'] = (pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['9'])[1:]
+            # Stability
+            # unc_dict[f'stab_{sensortype}'] = self.extract_unc_from_grp(uncGrp, f"{sensortype}_STABDATA_CAL", '1')  # class based method
+            # Nlin
+            # if I remove uncertainties in S1/S2 then I necessarily remove the Nlin unc!
+
+            # Lamp_cal - part of radcal corr
+            LAMP = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['2']) / 10  # div by 10
+            unc_dict[f'lamp_{sensortype}'] = (np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['3'])/100)*LAMP
+            
+            if sensortype == 'ES':
+                # Cosine
+                coserror = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR").data))[1:, 2:]
+                coserror_90 = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR_AZ90").data))[1:, 2:]
+                unc_dict['cos_unc'] = (np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY").data))[1:, 2:] / 100) * np.abs(coserror)
+                unc_dict['cos90_unc'] = (np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY_AZ90").data))[1:, 2:] / 100) * np.abs(coserror_90)
+            else:
+                # Polarisation
+                # read pol uncertainties and interpolate to radcal wavebands
+                radcal_wvl = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['1'][1:].tolist())
+                pol = uncGrp.getDataset(f"CLASS_RAMSES_{sensortype}_POLDATA_CAL")
+                pol.datasetToColumns()
+                x = pol.columns['0']
+                y = pol.columns['1']
+                y_new = np.interp(radcal_wvl, x, y)
+                pol.columns['0'] = radcal_wvl
+                pol.columns['1'] = y_new
+                unc_dict[f'pol_unc_{sensortype}'] = np.asarray(list(pol.columns['1']))
+                
+                # Panel - part of radcal corr
+                PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['2'])
+                unc_dict[f'unc_PANEL_{sensortype}'] = (np.asarray(
+                    pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['3'])/100)*PANEL
+
+        return self._FRM(node, uncGrp, unc_dict, raw_grps, raw_slices, stats, newWaveBands)
+
+    def _FRM(self, node, uncGrp, uncDict, raw_grps, raw_slices, stats, newWaveBands) -> dict[str, Any]:
+        """
         FRM regime propagation instrument uncertainties, see D10 section 5.3.2 for more information.
         :param node: HDFRoot containing entire HDF file
         :param uncGrp: HDFGroup containing uncertainties from HDF file
@@ -1915,7 +1990,7 @@ class Trios(BaseInstrument):
         
         # TriOS specific
         output = {}
-        stats = None  # stats is unused in this method, but required as an input because of Seabird
+        # stats = None  # stats is unused in this method, but required as an input because of Seabird
         for sensortype in ['ES', 'LI', 'LT']:
 
             ### Read HDF file inputs
@@ -1943,16 +2018,16 @@ class Trios(BaseInstrument):
             S1 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['6']
             S2 = pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['8']
             mZ = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_STRAYDATA_LSF").data))
-            mZ_unc = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_STRAYDATA_UNCERTAINTY").data))
+            mZ_unc = uncDict[f"mZ_unc_{sensortype}"]
             mZ = mZ[1:, 1:]  # remove 1st line and column, we work on 255 pixel not 256.
             mZ_unc = mZ_unc[1:, 1:]  # remove 1st line and column, we work on 255 pixel not 256.
             Ct = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data[1:].transpose().tolist())[4])
-            Ct_unc = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_TEMPDATA_CAL").data[1:].transpose().tolist())[5])
+            Ct_unc = uncDict[f"Ct_unc_{sensortype}"]
 
             # Convert TriOS mW/m2/nm to uW/cm^2/nm
             LAMP = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['2']) / 10  # div by 10
             # corrects LAMP and LAMP_unc
-            LAMP_unc = (np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_LAMP").data)['3'])/100)*LAMP
+            LAMP_unc = uncDict[f'lamp_{sensortype}']
 
             # Defined constants
             nband = len(B0)
@@ -1985,8 +2060,8 @@ class Trios(BaseInstrument):
             k = t1/(t2 - t1)
             sample_k = cm.generate_sample(mDraws, k, None, None)
 
-            S1_unc = (pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['7'])[1:]
-            S2_unc = (pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_CAL").data)['9'])[1:]
+            S1_unc = uncDict[f'S1_unc_{sensortype}']
+            S2_unc = uncDict[f'S2_unc_{sensortype}']
             S1_unc = np.asarray(S1_unc/65535.0, dtype=float)
             S2_unc = np.asarray(S2_unc/65535.0, dtype=float)  # put in the same units as S1/S2
 
@@ -2029,12 +2104,10 @@ class Trios(BaseInstrument):
 
                 # Note: uncGrp already in scope
                 coserror = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR").data))[1:, 2:]
-                cos_unc = (np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY").data))[1:,
-                           2:] / 100) * np.abs(coserror)
+                cos_unc = uncDict['cos_unc']
                 coserror_90 = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_COSERROR_AZ90").data))[
                               1:, 2:]
-                cos90_unc = (np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_ANGDATA_UNCERTAINTY_AZ90").data))[
-                             1:, 2:] / 100) * np.abs(coserror_90)
+                cos90_unc = uncDict['cos90_unc']
 
                 # get indexes for first and last radiometric calibration wavelengths in range [300-1000]
                 i1 = np.argmin(np.abs(radcal_wvl - 300))
@@ -2102,8 +2175,7 @@ class Trios(BaseInstrument):
                 # p_unc.plot_unc_from_sample_1D(sample_fhemi_coserr, radcal_wvl, "fhemi")
             else:
                 PANEL = np.asarray(pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['2'])
-                unc_PANEL = (np.asarray(
-                    pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['3'])/100)*PANEL
+                unc_PANEL = uncDict[f'unc_PANEL_{sensortype}']
                 sample_PANEL = cm.generate_sample(mDraws, PANEL, unc_PANEL, "syst")
                 # updated_radcal_gain = self.update_cal_rad(PANEL, S12_sl_corr, LAMP, int_time_t0, t1)
                 sample_updated_radcal_gain = prop.run_samples(self.update_cal_rad,
@@ -2116,8 +2188,7 @@ class Trios(BaseInstrument):
             back_mesure = np.array([B0 + B1*(int_time[n]/int_time_t0) for n in range(nmes)])
             back_corrected_mesure = mesure - back_mesure
             std_light = np.std(back_corrected_mesure, axis=0)/nmes
-            sample_back_corrected_mesure = cm.generate_sample(mDraws, np.mean(back_corrected_mesure, axis=0), std_light,
-                                                              "rand")
+            sample_back_corrected_mesure = cm.generate_sample(mDraws, np.mean(back_corrected_mesure, axis=0), std_light, "rand")
 
             # Offset substraction : dark index read from attribute
             offset = np.mean(back_corrected_mesure[:, DarkPixelStart:DarkPixelStop], axis=1)
@@ -2192,18 +2263,8 @@ class Trios(BaseInstrument):
                 sample = sample_cos_corr_mesure
                 unc = prop.process_samples(None, sample_cos_corr_mesure)
             else:
-                # read pol uncertainties and interpolate to radcal wavebands
-                pol = uncGrp.getDataset(f"CLASS_RAMSES_{sensortype}_POLDATA_CAL")
-                pol.datasetToColumns()
-                x = pol.columns['0']
-                y = pol.columns['1']
-                y_new = np.interp(radcal_wvl, x, y)
-                pol.columns['0'] = radcal_wvl
-                pol.columns['1'] = y_new
-
-                pol_unc = np.asarray(list(pol.columns['1']))
+                pol_unc = uncDict[f'pol_unc_{sensortype}']
                 sample_pol = cm.generate_sample(mDraws, np.ones(len(pol_unc)), pol_unc, "syst")
-
                 sample_pol_mesure = prop.run_samples(self.CPOL_MF, [sample_thermal_corr_mesure, sample_pol])
 
                 sample = sample_pol_mesure
@@ -2226,38 +2287,6 @@ class Trios(BaseInstrument):
                 output[f"{sensortype.lower()}Unc"], wvls, newWaveBands, return_as_dict=True)
             output[f"{sensortype.lower()}Sample"] = self.interpolateSamples(
                 output[f"{sensortype.lower()}Sample"], wvls, newWaveBands)
-
-            # if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
-            #     p_unc = UncertaintyGUI(prop)  # initialise plotting obj - punpy MCP as arg
-            #     time = ' '.join(node.attributes['TIME-STAMP'][0:-1].split('T'))  # time string for labelling
-            #     if sensortype.upper() == 'ES':
-            #         p_unc.plot_unc_from_sample_1D(
-            #             sample_cos_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Cosine", xlim=(400, 800)
-            #         )
-            #     else:
-            #         p_unc.plot_unc_from_sample_1D(
-            #             sample_pol_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name="Polarisation", xlim=(400, 800)
-            #         )
-            #     p_unc.plot_unc_from_sample_1D(
-            #         sample_thermal_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Thermal", xlim=(400, 800)
-            #     )
-            #     p_unc.plot_unc_from_sample_1D(
-            #         sample_calibrated_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Calibration", xlim=(400, 800)
-            #     )
-            #     p_unc.plot_unc_from_sample_1D(
-            #         sample_straylight_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Straylight", xlim=(400, 800)
-            #     )
-            #     p_unc.plot_unc_from_sample_1D(
-            #         sample_linear_corr_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Nlin", xlim=(400, 800)
-            #     )
-            #     p_unc.plot_unc_from_sample_1D(
-            #         sample_offset_corrected_mesure, radcal_wvl, fig_name=f"breakdown_{sensortype}_{time}", name=f"Dark_Corrected", xlim=(400, 800),
-            #         save={
-            #             "cal_type": node.attributes["CAL_TYPE"],
-            #             "time": node.attributes['TIME-STAMP'],
-            #             "instrument": "TriOS"
-            #         }
-            #     )
 
         return output  # return products as dictionary to be appended to xSlice
 
@@ -2291,3 +2320,87 @@ class Trios(BaseInstrument):
         updated_radcal_gain[
             ind_nocal == True] = 1  # set 1 instead of 0 to perform calibration (otherwise division per 0)
         return updated_radcal_gain
+
+class Dalec(BaseInstrument):
+
+    warnings.filterwarnings("ignore", message="One of the provided covariance matrix is not positivedefinite. It has been slightly changed")
+
+    def __init__(self):
+        super().__init__()  # call to instrument __init__
+        self.instrument = "Dalec"
+
+    def lightDarkStats(self, grp, slice, sensortype):
+        # Dalec
+        lightSlice = copy.deepcopy(slice)  # copy to prevent changing of Raw data
+    
+        lightData = lightSlice['data']  # lightGrp.getDataset(sensortype)
+        darkData = lightSlice['dc']
+        if  grp is None:
+            msg = f'No radiometry found for {sensortype}'
+            print(msg)
+            Utilities.writeLogFile(msg)
+            return False
+        
+        # Correct light data by subtracting interpolated dark data from light data
+        std_Light = []
+        std_Dark = []
+        ave_Light = []
+        ave_Dark = []
+        stdevSignal = {}
+
+        # number of replicates for light and dark readings
+        N = np.asarray(list(lightData.values())).shape[1]
+
+        if N > 25:  # normal case
+            std_Dark0=np.std(darkData[sensortype])/np.sqrt(N)
+        elif N > 3:
+            std_Dark0=np.sqrt(((N-1)/(N-3))*(np.std(darkData[sensortype]) / np.sqrt(N))**2)
+
+        ave_Dark0=np.average(darkData[sensortype])
+        #print("std_Dark0")
+        #print(std_Dark0)
+        for i, k in enumerate(lightData.keys()):
+            wvl = str(float(k))
+
+            # apply normalisation to the standard deviations used in uncertainty calculations
+            if N > 25:  # normal case
+                std_Light.append(np.std(lightData[k])/np.sqrt(N))
+                std_Dark.append(std_Dark0)  # sigma here is essentially sigma**2 so N must sqrt
+            elif N > 3:  # few scans, use different statistics
+                std_Light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
+                std_Dark.append(std_Dark0)
+            else:
+                msg = "too few scans to make meaningful statistics"
+                print(msg)
+                Utilities.writeLogFile(msg)
+                return False
+
+            ave_Light.append(np.average(lightData[k]))
+            ave_Dark.append(ave_Dark0)
+
+            for x in range(N):
+                lightData[k][x] -= darkData[sensortype][x]
+
+            signalAve = np.average(lightData[k])
+
+            # Normalised signal standard deviation =
+            if signalAve:
+                stdevSignal[wvl] = pow((pow(std_Light[i], 2) + pow(std_Dark[i], 2))/pow(signalAve, 2), 0.5)
+            else:
+                stdevSignal[wvl] = 0.0
+
+        #print("std_Light/Dark")
+        #print(std_Light)
+        #print(stdevSignal)
+        return dict(
+            ave_Light=np.array(ave_Light),
+            ave_Dark=np.array(ave_Dark),
+            std_Light=np.array(std_Light),
+            std_Dark=np.array(std_Dark),
+            std_Signal=stdevSignal,
+            )
+
+    def FRM(self, node, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
+        # calibration of HyperOCR following the FRM processing of FRM4SOC2
+        output = {}
+        return output

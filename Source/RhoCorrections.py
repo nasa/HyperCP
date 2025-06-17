@@ -60,7 +60,8 @@ class RhoCorrections:
         # TODO: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
         # TODO: Model error estimation, requires ancillary data to be switched on. This could create a conflict.
         if not any([AOD is None, wTemp is None, sal is None, waveBands is None]) and \
-                ((ConfigFile.settings["bL1bCal"] > 1) or (ConfigFile.settings['SensorType'].lower() == "seabird")):
+                ((ConfigFile.settings["fL1bCal"] > 1) or (ConfigFile.settings['SensorType'].lower() == "seabird") \
+                 or (ConfigFile.settings['SensorType'].lower() == "dalec")):
             # Fix: Truncate input parameters to stay within Zhang ranges:
             # AOD
             AOD = np.min([AOD,0.2])
@@ -76,7 +77,7 @@ class RhoCorrections:
             # OLD ZHANG METHOD FOR TESTING/REFERENCE
             try:
                 zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
-            except InterpolationError as err:
+            except (InterpolationError, NotImplementedError) as err:
                 msg = f"RhoCorrections: {err}"
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -152,7 +153,7 @@ class RhoCorrections:
 
     @staticmethod
     # def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
-    def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, sva, waveBands, Propagate = None):
+    def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, sva, waveBands, Propagate = None, db = None):
 
         msg = 'Calculating Zhang glint correction.'
         print(msg)
@@ -168,12 +169,12 @@ class RhoCorrections:
         sensor = {'ang': np.array([sva, 180 - relAz]), 'wv': np.array(waveBands)}
 
         # # define uncertainties and create variable list for punpy. Inputs cannot be ordered dictionaries
-        varlist = [windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, np.array(waveBands)]
+        varlist = [windSpeedMean, AOD, sza, wTemp + 273.15, sal, relAz, sva, np.array(waveBands)]  # convert wtemp to kelvin
         ulist = [2.0, 0.01, 0.5, 2, 0.5, 3, 0.0, None]
         # todo: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
 
         tic = time.process_time()
-        rhoVector = get_sky_sun_rho(env, sensor, round4cache=True)['rho']
+        rhoVector = get_sky_sun_rho(env, sensor, round4cache=True, DB=db)['rho']
         msg = f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s'
         print(msg)
         Utilities.writeLogFile(msg)
@@ -201,38 +202,26 @@ class RhoCorrections:
         windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang
 
         """
-
-        db_paths = [d.name for d in os.scandir(PATH_TO_DATA) if "LUT" in d.name]
         
-        # I think this will prove to be a temporary solution. 
-        if len(db_paths) > 1:
-            db_path = os.path.join(PATH_TO_DATA, 'Z17_LUT_v2.nc')  # look for latest LUT if multiple found
-        elif len(db_paths) > 0:
-            db_path = os.path.join(PATH_TO_DATA, db_paths[0])  # use what we have if only one found
+        # convert wt to kelvin so we can't have negative values
+
+        if sva == 30:
+            # raise not implemented error until LUT is complete for VZA 30 (should take a couple days) - Ashley
+            raise NotImplementedError("LUT for VZA of 30 is still under development")
+            db_path = "Z17_LUT_30_old.nc"
+            msg = f"running Z17 interpolation for instrument viewing zenith of 30"
         else:
-            return 0  # what should I do if we don't have a LUT downloaded? - Ashley
+            db_path = "Z17_LUT_40.nc"
+            msg = f"running Z17 interpolation for instrument viewing zenith of 40"
 
-        z17_lut = xr.open_dataset(db_path, engine='netcdf4')
+        Utilities.writeLogFile(msg)
 
+        try:
+            LUT = xr.open_dataset(os.path.join(PATH_TO_DATA, db_path), engine='netcdf4')
+        except FileNotFoundError:
+            raise InterpolationError(f"cannot find LUT netcdf file {db_path} at {PATH_TO_DATA}")
+        
         import scipy.interpolate as spin
-
-        if ws < 0:
-            ws = 0  # make sure negatives are not passed to interp - working to add option to comet maths
-        if aod < 0:
-            aod = 0
-        if wt > 20:
-            wt = 20
-        if rel_az > 140:
-            rel_az = 140
-
-        if "vzen" in z17_lut.coords:
-            LUT = z17_lut.sel(vzen=sva, method='nearest')
-        else:
-            LUT = z17_lut
-            
-        del(z17_lut)  # delete unused var to save memory
-
-        LUT = LUT.interp(wind=[0, 1, 2, 3, 4, 5, 7.5, 10, 12.5, 15], kwargs={"fill_value": "extrapolate"})
 
         try:
             if ConfigFile.settings['SensorType'].lower() == "sorad":
@@ -285,7 +274,6 @@ class RhoCorrections:
                 print('Interpolating Z17 LUT using cubic method')
             
         except ValueError as err:
-            # will implement better error handling, in place until Z17 LUT is updated with all indexes
             raise InterpolationError(f"Interpolation of Z17 LUT failed with {err}")
         else:
             return zhang_interp
@@ -294,4 +282,3 @@ class RhoCorrections:
 class InterpolationError(Exception):
     def __init__(self, msg):
         super().__init__(msg)
-        # print(msg)

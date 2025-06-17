@@ -50,6 +50,19 @@ def load():
            for k in ['wind', 'od', 'zen_sun', 'zen_view', 'azm_view', 'wv']}
 
 
+def assign(DB):
+    global db, quads, skyrad0, sunrad0, sdb, vdb, rad_boa_sca, rad_boa_vec
+
+    db = DB["db"]
+    quads = DB["quads"]
+    sdb = DB["sdb"]
+    vdb = DB["vdb"]
+    skyrad0 = DB["skyrad0"]
+    sunrad0 = DB["sunrad0"]
+    rad_boa_sca = DB["rad_boa_sca"]
+    rad_boa_vec = DB["rad_boa_vec"]
+
+
 def clear_memory():
     """
     Remove look up tables from memory (~2.5Gb).
@@ -403,7 +416,11 @@ def interpn_chunked(x, y, xi, chunked_axis=2, cache_size=(16 * 10 ** 6) / 4):
         for cy, s, e in zip(ys, indices[:-1], indices[1:]):
             cx = [v[s:e] if i == chunked_axis else v for i, v in enumerate(x)]
             cxi = np.array(np.meshgrid(*[v[s:e] if i == chunked_axis else v for i, v in enumerate(xi)], copy=False)).T
-            cyi[:, :, s:e, :] = interpn(cx, cy, cxi.reshape(-1, ndim)).reshape(cxi.shape[:-1]).T
+            try:
+                cyi[:, :, s:e, :] = interpn(cx, cy, cxi.reshape(-1, ndim)).reshape(cxi.shape[:-1]).T
+            except ValueError as err:
+                print(err)
+
         return cyi
     else:
         # One shot
@@ -411,7 +428,7 @@ def interpn_chunked(x, y, xi, chunked_axis=2, cache_size=(16 * 10 ** 6) / 4):
         return interpn(x, y, vxi.reshape(-1, ndim)).reshape(vxi.shape[:-1]).T
 
 
-def get_sky_sun_rho(env, sensor, round4cache=False):
+def get_sky_sun_rho(env, sensor, round4cache=False, DB=None):
     """
     Computes sea surface reflectance of skylight.
     Based on: Zhang, X., S. He, A. Shabani, P.-W. Zhai, and K. Du. 2017. Spectral sea
@@ -435,8 +452,12 @@ def get_sky_sun_rho(env, sensor, round4cache=False):
     """
     # Load constants
     # global db, quads, skyrad0, sunrad0, sdb, vdb, radiance_boa_sca, radiance_boa_vec
-    if db is None:
-        load()
+    if DB is None:
+        if db is None:
+            load()
+    else:
+        assign(DB)
+
         # with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Data/zhang_rho_db.pickle'), 'rb') as f:
         #     db, quads, skyrad0, sunrad0, sdb, vdb, radiance_boa_sca, radiance_boa_vec = pickle.load(f)
 
@@ -451,7 +472,6 @@ def get_sky_sun_rho(env, sensor, round4cache=False):
     sensor['vec'] = my_sph2cart(sensor['pol'][1], sensor['pol'][0])  # sensor vector
     sensor['pol2'] = np.deg2rad(sensor['ang2'])  # skylight polar coordinate
     sensor['loc2'] = find_quads(sensor['pol2'][0], sensor['pol2'][1])
-
     # Set output
     rho = {}
 
@@ -469,6 +489,9 @@ def get_sky_sun_rho(env, sensor, round4cache=False):
     # xi = np.array(np.meshgrid(env['zen_sun'], env['od'], db_idx, sensor['wv'], copy=False)).T
     # skyrad = interpn((db['zen_sun'], db['od'], db_idx, db['wv']),
     #                  skyrad0, xi.reshape(-1, 4)).reshape(xi.shape[:-1]).T.squeeze()
+
+    #if(env['zen_sun'] > 60.0):
+    #    env['zen_sun']=59.9
     skyrad = interpn_chunked((db['zen_sun'], db['od'], db_idx, db['wv']), skyrad0,
                              (env['zen_sun'], env['od'], db_idx, sensor['wv']), chunked_axis=2).squeeze()
 

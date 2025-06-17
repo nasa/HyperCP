@@ -34,12 +34,17 @@ class ConfigFile:
         if not fileName.endswith(".cfg"):
             fileName = fileName + ".cfg"
         ConfigFile.filename = fileName
+        ConfigFile.settings["inDir"] = './Data'
+        ConfigFile.settings["outDir"] = './Data'
+        ConfigFile.settings["ancFileDir"] = './Data/Sample_Data'
+        ConfigFile.settings["ancFile"] = ""
         ConfigFile.settings["CalibrationFiles"] = {}
         # ConfigFile.settings["AncFile"] = ''
         ConfigFile.settings["SensorType"] = "SeaBird" # SeaBird TriOS SoRad DALEC EsOnly (not case sensitive)
         ConfigFile.settings["fL1aUTCOffset"] = 0
         ConfigFile.settings["bL1aCleanSZA"] = 1
         ConfigFile.settings["fL1aCleanSZAMax"] = 70.0 # e.g. 60:Brewin 2016,
+        ConfigFile.settings["bL1aCOD"] = 0 # Caps-on darks; TriOS only
 
         ConfigFile.settings["bL1aqcSunTracker"] = 1
         ConfigFile.settings["bL1aqcCleanPitchRoll"] = 1
@@ -98,9 +103,11 @@ class ConfigFile:
         ConfigFile.settings["bL1bGetAnc"] = 0
         ConfigFile.settings["fL1bDefaultWindSpeed"] = 5.0
         ConfigFile.settings["fL1bDefaultAOD"] = 0.2
+        ConfigFile.settings["fL1bDefaultAirT"] = 26.0
         ConfigFile.settings["fL1bDefaultSalt"] = 35.0
         ConfigFile.settings["fL1bDefaultSST"] = 26.0
-        ConfigFile.settings["bL1bCal"] = 1  # 1 for Factory, 2 for Class, 3 for Instrument Full
+        ConfigFile.settings["fL1bCal"] = 1  # 1 for Factory, 2 for Class, 3 for Instrument Full
+        ConfigFile.settings["fL1bThermal"] = 1  # 1 for internal thermistor, 2 for airTemp-based, 3 for caps-on darks
         ConfigFile.settings["FullCalDir"] = PACKAGE_DIR
         ConfigFile.settings['RadCalDir'] = PACKAGE_DIR
         ConfigFile.settings['FidRadDB'] = 0
@@ -162,6 +169,7 @@ class ConfigFile:
 
         ConfigFile.settings["bL2UncertaintyBreakdownPlot"] = 0
 
+        ConfigFile.products["bL2PlotProd"] = 0
         ConfigFile.products["bL2Prodoc3m"] = 0
         ConfigFile.products["bL2Prodkd490"] = 0
         ConfigFile.products["bL2Prodpic"] = 0
@@ -206,7 +214,16 @@ class ConfigFile:
     # Saves the cfg file
     @staticmethod
     def saveConfig(filename):
-        print("ConfigFile - Save Config")
+        # if filename =='':
+        #     # This is insane. Why is it not getting filename, even with this catch??
+        #     import time
+        #     print(f'{ConfigFile.filename}')
+        #     print('sleep')
+        #     time.sleep(8)
+        #     print(f'{ConfigFile.filename}')
+        #     filename = ConfigFile.filename
+
+        print(f"ConfigFile - Save Config: {filename}")
         ConfigFile.filename = filename
         params = dict(ConfigFile.settings, **ConfigFile.products)
         params['FullCalDir'] = os.path.relpath(params['FullCalDir'])

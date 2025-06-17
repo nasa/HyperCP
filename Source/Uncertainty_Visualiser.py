@@ -36,7 +36,7 @@ class UncertaintyGUI(ABC):
         if is_negative:
             print('WARNING: Negative uncertainty potential')
 
-        if ConfigFile.settings['bL1bCal'] == 1:
+        if ConfigFile.settings['fL1bCal'] == 1:
             regime = 'Factory'
         else:
             regime = 'Class'
@@ -108,7 +108,7 @@ class UncertaintyGUI(ABC):
                 plt.close(fig)
 
     def pie_plot_class_l2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast, ancGrp):
-        if ConfigFile.settings['bL1bCal'] == 1:
+        if ConfigFile.settings['fL1bCal'] == 1:
             regime = 'Factory'
         else:
             regime = 'Class'
@@ -331,6 +331,31 @@ class UncertaintyGUI(ABC):
         # means = xr.DataArray(data=means, dims=("x", "y"), coords={"x": x})
         # u_rel = xr.DataArray(data=rel_unc, dims=("x", "y"), coords={"x": x})
 
+    def plot_FRM(
+            self, 
+            node, 
+            uncGrp, 
+            raw_grps, 
+            raw_slices, 
+            stats,  
+            rhoScalar, 
+            rhoVec, 
+            rhoUNC, 
+            waveSubset
+        ):
+
+        L1B, L2 = self._engine.breakdown_FRM_HyperOCR( 
+            node, 
+            uncGrp, 
+            raw_grps, 
+            raw_slices, 
+            stats, 
+            rhoScalar, 
+            rhoVec, 
+            rhoUNC, 
+            waveSubset
+        )
+
 
 class UncertaintyEngine(ABC):
     def __init__(self, punpy_prop_obj):
@@ -368,7 +393,10 @@ class UncertaintyEngine(ABC):
             # If LI, is this only used in convertion to relative LI_unc?
             # If LI, is it measurement data or MC distributions around measurements? 
             #   If LI and MC distributions, set to zero. If not, set to absolute value IFF outside of critical bands,
-            #       else dump the ensemble. Could check for this earlier in the process.            
+            #       else dump the ensemble. Could check for this earlier in the process.   
+            # 
+            # NOTE: Update: These are (ir)radiances but they are model outputs from MC runs.
+            #  i.e., taking an abs value (in sensible bands) is harmless         
             print('WARNING: Negative uncertainty potential')
         if np.any(vals['LT'] < 0):
             print('WARNING: Negative uncertainty potential')
@@ -450,6 +478,87 @@ class UncertaintyEngine(ABC):
             else:
                 pct.append(0)  # put zero there instead of np.nan, it will be easy to avoid in plotting
         return np.array(pct) * 100  # convert to np array so we can use numpy broadcasting
+
+
+    def breakdown_FRM_HyperOCR(
+            self, 
+            node, 
+            uncGrp, 
+            raw_grps, 
+            raw_slices, 
+            stats,  
+            rhoScalar, 
+            rhoVec, 
+            rhoUNC, 
+            waveSubset
+        ):
+        """
+        
+        """
+        from Source.ProcessInstrumentUncertainties import HyperOCR, Trios
+        from Source.HDFGroup import HDFGroup
+        
+        if ConfigFile.settings['SensorType'].lower() == "trios":
+            instrument = Trios()
+        elif ConfigFile.settings['SensorType'].lower() == "seabird":
+            instrument = HyperOCR()
+
+        L1B = {}; L2 = {}
+        for i, comp in enumerate([
+                ('Noise', 0), 
+                ('RADCAL_CAL', ''),  
+                ('RADCAL_LAMP', ''),  # data[3] updated radcal gain
+                ('RADCAL_PANEL', ''),  # data[3] updated radcal gain
+                ('Nlin', ['6', '8']), # RADCAL_CAL data 7 & 9 S1, S2
+                ('STRAYDATA_UNCERTAINTY', 0), 
+                ('Stability', 0), 
+                ('TEMPDATA', ['ES_TEMPERATURE_UNCERTAINTIES',
+                              'LI_TEMPERATURE_UNCERTAINTIES',
+                              'LT_TEMPERATURE_UNCERTAINTIES'
+                              ]), # TEMPDATA_CAL needs to not include class based
+                ('POLDATA_CAL', 0), 
+                ('ANGDATA_UNCERTAINTY', 0),
+                ('Glint', 0),
+            ]):  # breakdown of corrections also
+            # adjust uncertainties
+            uncGrp_adjusted = HDFGroup()
+            uncGrp_adjusted.copy(uncGrp)  # make a copy of the uncertainty group
+
+            if comp == 'no_unc':  # 'Noise':
+                adj_stats = stats
+            elif comp == 'Glint':
+                rhoUNC_adj = rhoUNC
+            else:
+                adj_stats = {k: {sk: np.zeros(len(v)) for sk, v in stats[k].items()} for k in stats.keys()}
+                rhoUNC_adj = np.zeros(len(rhoUNC))
+        
+            for k, ds in uncGrp.datasets.items():
+                # if 'CLASS' not in k.upper():
+                if comp in k.upper():
+                    uncGrp_adjusted.datasets[k].copy(ds)
+                else:
+                    for wvl, col in uncGrp_adjusted.datasets[k].columns.items():
+                        uncGrp_adjusted.datasets[k].columns[wvl] = np.zeros(len(col))
+                    uncGrp_adjusted.datasets[k].columnsToDataset()
+
+            L1B[comp] = instrument.FRM(node, uncGrp_adjusted, raw_grps, raw_slices, adj_stats, np.array(waveSubset, float))
+            # for cumulative add in quadrature at the end
+            
+            L2[comp] = instrument.FRM_L2(rhoScalar, rhoVec, rhoUNC_adj, waveSubset, L1B[comp])
+        
+        return L1B, L2
+
+    def breakdown_FRM_TriOS(self, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
+        """
+        """
+        from Source.ProcessInstrumentUncertainties import Trios
+        instrument = Trios()
+
+    def breakdown_FRM_DALEC(self, uncGrp, raw_grps, raw_slices, stats, newWaveBands):
+        """
+        """
+        from Source.ProcessInstrumentUncertainties import Dalec
+        instrument = Dalec()
 
 # this is my Pie-Chart widget that I made for another project. It would introduce a pyqtchart dependency.
 # pyqtchart must have the same version as pyqt5

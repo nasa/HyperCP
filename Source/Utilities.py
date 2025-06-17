@@ -1,10 +1,12 @@
 """ A cornucopia of addition methods """
 import os
-import datetime
+from datetime import datetime, timedelta, timezone
 import collections
 from collections import Counter
 import csv
 import re
+import logging
+import hashlib
 from tqdm import tqdm
 import requests
 from PyQt5.QtWidgets import QMessageBox
@@ -17,7 +19,6 @@ from scipy.interpolate import splev, splrep
 import scipy as sp
 import pandas as pd
 from pandas.plotting import register_matplotlib_converters
-import hashlib
 
 from Source import PACKAGE_DIR as dirPath
 from Source.SB_support import readSB
@@ -134,7 +135,7 @@ class Utilities:
                     f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
                     f" {dirPath}/Data directory."
                 )
-    
+
     @staticmethod
     def md5(fname):
         hash_md5 = hashlib.md5()
@@ -155,8 +156,7 @@ class Utilities:
                     msg = 'No such file...'
                     if not MainConfig.settings['popQuery']:
                         Utilities.errorWindow("File Error", msg)
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    Utilities.writeLogFileAndPrint(msg)
                     return False
                 else:
                     return True
@@ -175,22 +175,16 @@ class Utilities:
     def checkOutputFiles(outFilePath):
         if os.path.isfile(outFilePath):
             modTime = os.path.getmtime(outFilePath)
-            nowTime = datetime.datetime.now()
+            nowTime = datetime.now()
             if nowTime.timestamp() - modTime < 60: # If the file exists and was created in the last minute...
-                # msg = f'{level} file produced: \n {outFilePath}'
+                # Utilities.writeLogFileAndPrint(f'{level} file produced: \n {outFilePath}'
                 # print(msg)
                 # Utilities.writeLogFile(msg)
-                msg = f'Process Single Level: {outFilePath} - SUCCESSFUL'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint(f'Process Single Level: {outFilePath} - SUCCESSFUL')
             else:
-                msg = f'Process Single Level: {outFilePath} - NOT SUCCESSFUL'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint(f'Process Single Level: {outFilePath} - NOT SUCCESSFUL')
         else:
-            msg = f'Process Single Level: {outFilePath} - NOT SUCCESSFUL'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f'Process Single Level: {outFilePath} - NOT SUCCESSFUL')
 
 
     @staticmethod
@@ -229,9 +223,7 @@ class Utilities:
             # print("SB_support.readSB: " + fp)
             # print("Reading : " + fp)
             if not HDFRoot.readHDF5(fp):
-                msg = "Unable to read TSIS-1 netcdf file."
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint("Unable to read TSIS-1 netcdf file.")
                 return None
             else:
                 F0_hybrid = HDFRoot.readHDF5(fp)
@@ -289,9 +281,7 @@ class Utilities:
         fp = 'Data/Thuillier_F0.sb'
         print("SB_support.readSB: " + fp)
         if not readSB(fp, no_warn=True):
-            msg = "Unable to read Thuillier file. Make sure it is in SeaBASS format."
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("Unable to read Thuillier file. Make sure it is in SeaBASS format.")
             return None
         else:
             Thuillier = readSB(fp, no_warn=True)
@@ -352,9 +342,14 @@ class Utilities:
         return returnValue
 
     @staticmethod
+    def writeLogFileAndPrint(logText, andPrint=True, mode='a'):
+        Utilities.writeLogFile(logText, mode)
+        if andPrint:
+            print(logText)
+
+    @staticmethod
     def writeLogFile(logText, mode='a'):
         if not os.path.exists('Logs'):
-            import logging
             logging.getLogger().warning('Made directory: Logs/')
             os.mkdir('Logs')
         with open('Logs/' + os.environ["LOGFILE"], mode, encoding="utf-8") as logFile:
@@ -403,12 +398,12 @@ class Utilities:
         m = int(t[2:4])
         s = int(t[4:6])
         us = 10000*int(dec) # i.e. 0.55 s = 550,000 us
-        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=datetime.timezone.utc)
+        return datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=timezone.utc)
 
     # Converts datetag (YYYYDDD) to date string
     @staticmethod
     def dateTagToDate(dateTag):
-        dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
+        dt = datetime.strptime(str(int(dateTag)), '%Y%j')
         timezone = pytz.utc
         dt = timezone.localize(dt)
         return dt.strftime('%Y%m%d')
@@ -416,7 +411,7 @@ class Utilities:
     # Converts datetag (YYYYDDD) to datetime
     @staticmethod
     def dateTagToDateTime(dateTag):
-        dt = datetime.datetime.strptime(str(int(dateTag)), '%Y%j')
+        dt = datetime.strptime(str(int(dateTag)), '%Y%j')
         timezone = pytz.utc
         dt = timezone.localize(dt)
         return dt
@@ -457,9 +452,7 @@ class Utilities:
         m = int(t[2:4])
         s = int(t[4:6])
         us = 1000*int(t[6:])
-        # print(h, m, s, us)
-        # print(tt2)
-        return datetime.datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=datetime.timezone.utc)
+        return datetime(dt.year,dt.month,dt.day,h,m,s,us,tzinfo=timezone.utc)
 
     # Converts datetime to Timetag2 (HHMMSSmmm)
     @staticmethod
@@ -495,7 +488,7 @@ class Utilities:
         date = str(gpsDate).zfill(6)
         day = int(date[:2])
         mon = int(date[2:4])
-        return datetime.datetime(year,mon,day,0,0,0,0,tzinfo=datetime.timezone.utc)
+        return datetime(year,mon,day,0,0,0,0,tzinfo=timezone.utc)
 
 
     @staticmethod
@@ -506,7 +499,9 @@ class Utilities:
 
         for gp in node.groups:
             # print(gp.id)
-            if gp.id != "SOLARTRACKER_STATUS" and "UNCERT" not in gp.id and gp.id != "SATMSG.tdf": # No valid timestamps in STATUS
+            # Don't add to the following:
+            noAddList = ("SOLARTRACKER_STATUS","SATMSG.tdf","CAL_COEF")
+            if gp.id not in noAddList and "UNCERT" not in gp.id and ".cal.CE" not in gp.id:
                 timeData = gp.getDataset("TIMETAG2").data["NONE"].tolist()
                 dateTag = gp.getDataset("DATETAG").data["NONE"].tolist()
                 timeStamp = []
@@ -525,9 +520,7 @@ class Utilities:
                         dt = Utilities.dateTagToDateTime(dateTag[i])
                         timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
                     else:
-                        msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
-                        print(msg)
-                        Utilities.writeLogFile(msg)
+                        Utilities.writeLogFileAndPrint(f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}")
                         gp.datasetDeleteRow(i)
 
                 dateTime = gp.addDataset("DATETIME")
@@ -562,9 +555,7 @@ class Utilities:
                     dt = Utilities.dateTagToDateTime(dateTag[i])
                     timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
                 else:
-                    msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    Utilities.writeLogFileAndPrint(f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}")
                     gp.datasetDeleteRow(i)
 
             dateTime = gp.addDataset("DATETIME")
@@ -604,9 +595,7 @@ class Utilities:
                                         timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
                                     else:
                                         gp.datasetDeleteRow(i)
-                                        msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
-                                        print(msg)
-                                        Utilities.writeLogFile(msg)
+                                        Utilities.writeLogFileAndPrint(f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}")
                                 gp.datasets[ds].columns["Datetime"] = timeStamp
                                 gp.datasets[ds].columns.move_to_end('Datetime', last=False)
                                 gp.datasets[ds].columnsToDataset()
@@ -636,9 +625,7 @@ class Utilities:
                             timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
                         else:
                             gp.datasetDeleteRow(i) # L1AQC datasets all have the same i
-                            msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
-                            print(msg)
-                            Utilities.writeLogFile(msg)
+                            Utilities.writeLogFileAndPrint(f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}")
                     # This will be the only dataset structure like a higher level with time/date columns
                     gp.datasets['Timestamp'].columns["Datetime"] = timeStamp
                     gp.datasets['Timestamp'].columns.move_to_end('Datetime', last=False)
@@ -671,9 +658,7 @@ class Utilities:
                         dt = Utilities.dateTagToDateTime(dateTag[i])
                         timeStamp.append(Utilities.timeTag2ToDateTime(dt, timei))
                     else:
-                        msg = f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}"
-                        print(msg)
-                        Utilities.writeLogFile(msg)
+                        Utilities.writeLogFileAndPrint(f"Bad Datetag or Timetag2 found. Eliminating record. {i} DT: {dateTag[i]} TT2: {timei}")
                         gp.datasetDeleteRow(i)
 
                 dateTime = gp.addDataset("DATETIME")
@@ -698,44 +683,36 @@ class Utilities:
                 # del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
                 dateTime = gp.getDataset("DATETIME").data
                 total = total - 1
-                msg = f'Out of order timestamp deleted at {i}'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint(f'Out of order timestamp deleted at {i}')
 
                 #In case we went from 2 to 1 element on the first element,
                 if total == 1:
-                    msg = f'************Too few records ({total}) to test for ascending timestamps. Exiting.'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    Utilities.writeLogFileAndPrint(f'************Too few records ({total}) to test for ascending timestamps. Exiting.')
                     return False
 
             i = 1
             while i < total:
-
                 if dateTime[i] <= dateTime[i-1]:
-
-                    # BUG?:Same values of consecutive TT2s are shockingly common. Confirmed
-                    #   that 1) they exist from L1A, and 2) sensor data changes while TT2 stays the same
-                    #
+                    if dateTime[i] == dateTime[i-1]:
+                        # BUG?:Same values of consecutive TT2s are shockingly common. Confirmed
+                        #   that 1) they exist from L1A, and 2) sensor data changes while TT2 stays the same
+                        #
+                        Utilities.writeLogFileAndPrint(f'Duplicate row deleted at {i}')
+                    else:
+                        Utilities.writeLogFileAndPrint(f'WARNING: Out of order row deleted at {i}; this should not happen after sortDateTime')
 
                     gp.datasetDeleteRow(i)
                     # del dateTime[i] # I'm fuzzy on why this is necessary; not a pointer?
                     dateTime = gp.getDataset("DATETIME").data
                     total = total - 1
-                    msg = f'Out of order TIMETAG2 row deleted at {i}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+
                     continue # goto while test skipping i incrementation. dateTime[i] is now the next value.
                 i += 1
         else:
-            msg = f'************Too few records ({total}) to test for ascending timestamps. Exiting.'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f'************Too few records ({total}) to test for ascending timestamps. Exiting.')
             return False
         if (globalTotal - total) > 0:
-            msg = f'Data eliminated for non-increasing timestamps: {100*(globalTotal - total)/globalTotal:3.1f}%'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(f'Data eliminated for non-increasing timestamps: {100*(globalTotal - total)/globalTotal:3.1f}%')
 
         return True
 
@@ -910,7 +887,7 @@ class Utilities:
         n1 = len(new_x)-1
         if new_x[n1] > x[n0]:
             #print(new_x[n], x[n])
-            # msg = '********** Warning: extrapolating to beyond end of data record ********'
+            # Utilities.writeLogFileAndPrint('********** Warning: extrapolating to beyond end of data record ********'
             # print(msg)
             # Utilities.writeLogFile(msg)
 
@@ -920,7 +897,7 @@ class Utilities:
         # then add that lesser value to the beginning of values to interp from
         if new_x[0] < x[0]:
             #print(new_x[0], x[0])
-            # msg = '********** Warning: extrapolating to before beginning of data record ******'
+            # Utilities.writeLogFileAndPrint('********** Warning: extrapolating to before beginning of data record ******'
             # print(msg)
             # Utilities.writeLogFile(msg)
 
@@ -965,7 +942,7 @@ class Utilities:
                 n1 = len(new_x)-1
                 if new_x[n1] > x[n0]:
                     #print(new_x[n], x[n])
-                    # msg = '********** Warning: extrapolating to beyond end of data record ********'
+                    # Utilities.writeLogFileAndPrint('********** Warning: extrapolating to beyond end of data record ********'
                     # print(msg)
                     # Utilities.writeLogFile(msg)
 
@@ -976,7 +953,7 @@ class Utilities:
                 # then add that lesser value to the beginning of values to interp from
                 if new_x[0] < x[0]:
                     #print(new_x[0], x[0])
-                    # msg = '********** Warning: extrapolating to before beginning of data record ******'
+                    # Utilities.writeLogFileAndPrint('********** Warning: extrapolating to before beginning of data record ******'
                     # print(msg)
                     # Utilities.writeLogFile(msg)
 
@@ -1029,8 +1006,18 @@ class Utilities:
             newYList.append(fillValue)
 
         for value in yUnique:
+            # NOTE: If only one timestamp is found, it is highly unlikely to pass the test below.
             minX = min(x[y==value])
             maxX = max(x[y==value])
+
+            # # Test conversion reversal
+            # datetime_object = datetime.fromtimestamp(maxX)
+
+            if minX == maxX:
+                # NOTE: Workaround: buffer the start and stop times of the station by some amount of time
+                # Unix time: Number of seconds that have elapsed since January 1, 1970, at 00:00:00 Coordinated Universal Time (UTC)
+                minX -= 120
+                maxX += 120
 
             for i, newX in enumerate(newXList):
                 if (newX >= minX) and (newX <= maxX):
@@ -1074,12 +1061,15 @@ class Utilities:
             
             filterData for L1AQC is contained within ProcessL1aqc.py'''
 
-        msg = f'Remove {group.id} Data'
-        print(msg)
-        Utilities.writeLogFile(msg)
+        # NOTE: This is still very slow on long files with many badTimes, despite badTimes being filtered for 
+        #   unique pairs.
+
+        Utilities.writeLogFileAndPrint(f'Remove {group.id} Data')
         # internal switch to trigger the reset of CAL & BACK
         # dataset that we have to delete to avoid conflict during filtering
         do_reset = False
+        timeStamp = None
+        raw_cal, raw_back, raw_back_att, raw_cal_att = None,None,None,None,
 
         if level != 'L1AQC':
             if group.id == "ANCILLARY":
@@ -1092,7 +1082,7 @@ class Utilities:
                 timeStamp = group.getDataset("solar_zenith").data["Datetime"]
         else:
             timeStamp = group.getDataset("Timestamp").data["Datetime"]
-            # TRIOS: copy CAL & BACK before filetering, and delete them 
+            # TRIOS: copy CAL & BACK before filetering, and delete them
             # to avoid conflict when filtering more row than 255
             if ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == "sorad":
                 do_reset = True
@@ -1105,9 +1095,7 @@ class Utilities:
 
 
         startLength = len(timeStamp)
-        msg = f'   Length of dataset prior to removal {startLength} long'
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f'   Length of dataset prior to removal {startLength} long')
 
         # Delete the records in badTime ranges from each dataset in the group
         finalCount = 0
@@ -1117,7 +1105,7 @@ class Utilities:
             startLength = len(timeStamp)
             newTimeStamp = []
 
-            # msg = f'Eliminate data between: {dateTime}'
+            # Utilities.writeLogFileAndPrint(f'Eliminate data between: {dateTime}'
             # print(msg)
             # Utilities.writeLogFile(msg)
 
@@ -1137,9 +1125,7 @@ class Utilities:
                         newTimeStamp.append(timeStamp[i])
                 group.datasetDeleteRow(rowsToDelete)
             else:
-                msg = 'Data group is empty. Continuing.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint('Data group is empty. Continuing.')
                 break
             timeStamp = newTimeStamp.copy()
 
@@ -1158,10 +1144,8 @@ class Utilities:
         else:
             for ds in group.datasets:
                 group.datasets[ds].datasetToColumns()
-    
-        msg = f'   Length of dataset after removal {originalLength-finalCount} long: {(100*finalCount/originalLength):.1f}% removed'
-        print(msg)
-        Utilities.writeLogFile(msg)
+
+        Utilities.writeLogFileAndPrint(f'   Length of dataset after removal {originalLength-finalCount} long: {(100*finalCount/originalLength):.1f}% removed')
         return finalCount/originalLength
 
 
@@ -1185,13 +1169,19 @@ class Utilities:
         dataDelta = None
         # Note: If only one spectrum is left in a given ensemble, STD will
         #be zero for Es, Li, and Lt.'''
-        if (ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad' )and ConfigFile.settings['bL1bCal'] == 1:
+        if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
+             ConfigFile.settings['SensorType'].lower() == 'dalec' or\
+            ConfigFile.settings['SensorType'].lower() == 'sorad') and ConfigFile.settings['fL1bCal'] == 1:
             suffix = 'sd'
         else:
             suffix = 'unc'
 
         # In the case of reflectances, only use _unc. There are no _std, because reflectances are calculated
         # from the average Lw and Es values within the ensembles
+        Data, lwData, Data_MODISA, Data_MODIST = None, None, None, None
+        Data_Sentinel3A, Data_Sentinel3B, Data_VIIRSJ,Data_VIIRSN = None, None, None, None
+        dataDelta, dataDelta_MODISA, dataDelta_MODIST, dataDelta_Sentinel3A = None, None, None, None
+        dataDelta_Sentinel3B, dataDelta_VIIRSJ, dataDelta_VIIRSN, units = None, None, None, None
         if rType=='Rrs' or rType=='nLw':
             print('Plotting Rrs or nLw')
             group = root.getGroup("REFLECTANCE")
@@ -1581,7 +1571,7 @@ class Utilities:
         dfy['x'] = pd.to_datetime(dfy['x'].astype(str))
 
         [_,fileName] = os.path.split(fp)
-        fileBaseName,_ = fileName.split('.')
+        fileBaseName,_ = fileName.rsplit('.',1)
         register_matplotlib_converters()
 
         font = {'family': 'serif',
@@ -2129,7 +2119,7 @@ class Utilities:
         # #   https://stackoverflow.com/questions/49046931/how-can-i-use-dateaxisitem-of-pyqtgraph
         # class TimeAxisItem(pg.AxisItem):
         #     def tickStrings(self, values, scale, spacing):
-        #         return [datetime.datetime.fromtimestamp(value, pytz.timezone("UTC")) for value in values]
+        #         return [datetime.fromtimestamp(value, pytz.timezone("UTC")) for value in values]
 
         # date_axis_Dark = TimeAxisItem(orientation='bottom')
         # date_axis_Light = TimeAxisItem(orientation='bottom')
@@ -2214,7 +2204,10 @@ class Utilities:
 
         return dateTime
     @staticmethod
-    def generateTempCoeffs(InternalTemp, uncDS, ambTemp, sensor):
+    # def generateTempCoeffs(InternalTemp, uncDS, ambTemp, sensor):
+    def generateTempCoeffs(InternalTemp, uncDS, sensor):        
+        # InternalTemp can come from 1) internal thermistor, 2) caps-on dark, 3) airTemp + 5 C
+        #   2) Only for airTemp +5C > 30 C, otherwise 1) or 3).
 
         # Get the reference temperature
         if 'REFERENCE_TEMP' in uncDS.attributes:
@@ -2231,35 +2224,49 @@ class Utilities:
         ThermCorr = []
         ThermUnc = []
 
-        # Seabird case
-        if ConfigFile.settings['SensorType'].lower() == "seabird":
-            for i in range(len(therm_coeff)):
-                try:
-                    ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp - refTemp)))
-                    if ConfigFile.settings["bL1bCal"] == 3:
-                        ThermUnc.append(np.abs(therm_unc[i] * (InternalTemp - refTemp)) / 2)
-                        # div by 2 because uncertainty is k=2
-                    else:
-                        ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp - refTemp)))
-                except IndexError:
-                    ThermCorr.append(1.0)
-                    ThermUnc.append(0)
+        for i,therm_coeffi in enumerate(therm_coeff):
+            try:
+                ThermCorr.append(1 + (therm_coeffi * (InternalTemp - refTemp)))
+                if ConfigFile.settings["fL1bCal"] == 3:
+                    ThermUnc.append(np.abs(therm_unc[i] * (InternalTemp - refTemp)) / 2)
+                    # div by 2 because uncertainty is k=2
+                else:
+                    ThermUnc.append(np.abs(therm_coeffi * (InternalTemp - refTemp)))
+            except IndexError as err:
+                print(f'{err} in Utilities.generateTempCoeffs')
+                ThermCorr.append(1.0)
+                ThermUnc.append(0)
 
+        # BUG: This ACRI code was wrong from the start due to confusion about ambient temperature.
+        #   ambTemp, as originally written, came from the calibration lab, not the field.
+        # # Seabird case
+        # if ConfigFile.settings['SensorType'].lower() == "seabird" or ConfigFile.settings['SensorType'].lower() == "dalec":
+            # for i in range(len(therm_coeff)):
+            #     try:
+            #         ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp - refTemp)))
+            #         if ConfigFile.settings["fL1bCal"] == 3:
+            #             ThermUnc.append(np.abs(therm_unc[i] * (InternalTemp - refTemp)) / 2)
+            #             # div by 2 because uncertainty is k=2
+            #         else:
+            #             ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp - refTemp)))
+            #     except IndexError:
+            #         ThermCorr.append(1.0)
+            #         ThermUnc.append(0)
         # TRIOS case: no temperature available
-        elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
-            # For Trios the radiometer InternalTemp is a place holder filled with 0.
-            # We use ambiant_temp+2.5° instead to estimate internal temp
-            for i in range(len(therm_coeff)):
-                try:
-                    ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))
-                    if ConfigFile.settings["bL1bCal"] == 3:
-                        ThermUnc.append(np.abs(therm_unc[i]*(InternalTemp+ambTemp+5 - refTemp)) / 2)
-                        # uncertainty is k=2 from char file
-                    else:
-                        ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))
-                except IndexError:
-                    ThermCorr.append(1.0)
-                    ThermUnc.append(0)
+        # elif ConfigFile.settings['SensorType'].lower() == "trios":
+        #     # For Trios the radiometer InternalTemp is a place holder filled with 0.
+        #     # We use ambiant_temp+2.5° instead to estimate internal temp
+        #     for i in range(len(therm_coeff)):
+        #         try:
+        #             ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))
+        #             if ConfigFile.settings["fL1bCal"] == 3:
+        #                 ThermUnc.append(np.abs(therm_unc[i]*(InternalTemp+ambTemp+5 - refTemp)) / 2)
+        #                 # uncertainty is k=2 from char file
+        #             else:
+        #                 ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))
+        #         except IndexError:
+        #             ThermCorr.append(1.0)
+        #             ThermUnc.append(0)
 
         # Change thermal general coefficients into ones specific for processed data
         uncDS.columns[f"{sensor}_TEMPERATURE_COEFFICIENTS"] = ThermCorr
@@ -2271,43 +2278,133 @@ class Utilities:
     @staticmethod
     def UncTempCorrection(node):
         unc_grp = node.getGroup("RAW_UNCERTAINTIES")
-        sensorID = Utilities.get_sensor_dict(node)
+        # sensorID = Utilities.get_sensor_dict(node)
         # inv_ID = {v: k for k, v in sensorID.items()}
         for sensor in ["LI", "LT", "ES"]:
             TempCoeffDS = unc_grp.getDataset(sensor+"_TEMPDATA_CAL")
 
-            ### Seabird
+            meanSPECTEMP,meanAIRTEMP,meanCAPSONTEMP = None,None,None
+            airTempMargin = 5 # 5 degrees above air temp per Zibordi Talone (in prep 2025)
+            # SPECTEMP should be present for all platform/sensors (SeaBird,TriOS,DALEC),
+            #   but only populated with non-zeroes where an internal thermistor is available.            
             if ConfigFile.settings['SensorType'].lower() == "seabird":
-                if "TEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
-                    TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("TEMP")
-                elif "SPECTEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
-                    TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("SPECTEMP")
+                sensorGroup = node.getGroup(f'{sensor}_LIGHT')
+                if "SPECTEMP" in sensorGroup.datasets:
+                    specTEMP = sensorGroup.getDataset("SPECTEMP")
+                    meanSPECTEMP = np.mean(np.array(specTEMP.data.tolist()))
                 else:
-                    msg = "Thermal dataset not found"
-                    print(msg)
-                # internal temperature is the mean of all replicate
-                internalTemp = np.mean(np.array(TempDS.data.tolist()))
-                # ambiant temp is not needed for seabird as internal temp is measured, set to 0
-                ambTemp = 0
-                if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
-                    msg = "Failed to generate Thermal Coefficients"
-                    print(msg)
+                    Utilities.writeLogFileAndPrint("Internal temperature dataset not found")
+                if "CAPSONTEMP" in sensorGroup.datasets:
+                    capsonTEMP = sensorGroup.getDataset("CAPSONTEMP")
+                    meanCAPSONTEMP = np.mean(np.array(capsonTEMP.data.tolist()))
+                # else:
+                #     Utilities.writeLogFileAndPrint("Caps-on temperature dataset not found")
+            else:
+                sensorGroup = node.getGroup(f'{sensor}')
+                if "SPECTEMP" in sensorGroup.datasets:
+                    specTEMP = sensorGroup.getDataset("SPECTEMP")
+                    meanSPECTEMP = np.mean(np.array(specTEMP.data.tolist()))
+                else:
+                    Utilities.writeLogFileAndPrint("Internal temperature dataset not found")
+                if "CAPSONTEMP" in sensorGroup.datasets:
+                    capsonTEMP = sensorGroup.getDataset("CAPSONTEMP")
+                    meanCAPSONTEMP = np.mean(np.array(capsonTEMP.data.tolist()))
 
-            ### Trios
-            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
-                # No internal temperature available for Trios, set to 0.
-                internalTemp = 0
-                # Ambiant temperature is needed to estimate internal temperature instead.
-                RadcalDS = unc_grp.getDataset(sensor+"_RADCAL_CAL")
-                if 'AMBIENT_TEMP' in RadcalDS.attributes:
-                    ambTemp = float(RadcalDS.attributes["AMBIENT_TEMP"])
+                if "AIRTEMP" in node.getGroup('ANCILLARY_METADATA').datasets:
+                    airTEMP = node.getGroup('ANCILLARY_METADATA').getDataset("AIRTEMP").columns['AIRTEMP']
+                    meanAIRTEMP = np.mean(np.array(airTEMP))
                 else:
-                    print("Ambient temperature not found")
-                    print("Aborting ...")
-                    return None
-                if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
-                    msg = "Failed to generate Thermal Coefficients"
-                    print(msg)
+                    Utilities.writeLogFileAndPrint("Air temperature dataset not found")
+
+            #Now make the decision which value to use as the internal working temperature of the sensor.
+            # NOTE: use ConfigFile.settings
+            # NOTE: Currently, only TriOS L1A processing matches dark files to extract CAPSONTEMP
+            if meanSPECTEMP != 0.0:
+                # NOTE: G2 thermistor acquisition is still under development
+                Utilities.writeLogFileAndPrint(f"{sensor}: Using internal thermistor for sensor working temperature")
+                internalTemp = meanSPECTEMP     # SeaBird, DALEC, and TriOS G2 should always follow this path
+                internalTempSource = 'InternalThermistor'
+            elif meanCAPSONTEMP and ConfigFile.settings['fL1bThermal'] == 3:
+                if meanAIRTEMP:
+                    if (meanAIRTEMP + airTempMargin < 30) and (meanCAPSONTEMP < 30): # Both conditions must be met
+                        Utilities.writeLogFileAndPrint(f"{sensor}: meanAIRTEMP + airTempMargin < 30. Using air temp with margin for sensor working temperature")
+                        internalTemp = meanAIRTEMP + airTempMargin
+                        internalTempSource = 'AirTemp+5C'
+                    else:
+                        Utilities.writeLogFileAndPrint(f"{sensor}: meanAIRTEMP + airTempMargin >= 30. Using caps-on dark algorithm for sensor working temperature")
+                        internalTemp = meanCAPSONTEMP
+                        internalTempSource = 'CapsOnDark'
+                else:
+                    # Emergency fallback where no other source is available. Least accurate.
+                    Utilities.writeLogFileAndPrint(f"{sensor}:WARNING: No air temperature provided. Caps-on dark temp used despite temps < 30 C.")
+                    internalTemp = meanCAPSONTEMP
+                    internalTempSource = 'CapsOnDark'
+            else:
+                if meanAIRTEMP:
+                    Utilities.writeLogFileAndPrint(f"{sensor}:Using air temp with margin for sensor working temperature")
+                    internalTemp = meanAIRTEMP + airTempMargin
+                    internalTempSource = 'AirTemp+5C'
+                else:
+                    # Considering fallbacks for air temperature, this should never be reached.
+                    Utilities.writeLogFileAndPrint(f"{sensor}:WARNING: No source of information available for sensor working temperature!")
+                    return False
+
+            # add internalTempSource to attributes
+            sensorGroup.attributes['InternalTempSource'] = internalTempSource
+            sensorGroup.attributes['InternalTemp'] = f'{internalTemp:.1f}'
+
+            # if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
+            if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, sensor):
+                Utilities.writeLogFileAndPrint("Failed to generate Thermal Coefficients")
+
+            # ### Seabird
+            # if ConfigFile.settings['SensorType'].lower() == "seabird":
+            #     if "TEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
+            #         TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("TEMP")
+            #     elif "SPECTEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
+            #         TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("SPECTEMP")
+            #     else:
+            #         Utilities.writeLogFileAndPrint("Thermal dataset not found")
+            #     # internal temperature is the mean of all replicate
+            #     internalTemp = np.mean(np.array(TempDS.data.tolist()))
+            #     # ambiant temp is not needed for seabird as internal temp is measured, set to 0
+            #     ambTemp = 0
+            #     # if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
+            #     if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, sensor):
+            #         Utilities.writeLogFileAndPrint("Failed to generate Thermal Coefficients")
+
+            # ### Dalec
+            # elif ConfigFile.settings['SensorType'].lower() == "dalec":
+            #     if "SPECTEMP" in node.getGroup(f'{sensor}').datasets:
+            #         TempDS = node.getGroup(f'{sensor}').getDataset("SPECTEMP")
+            #     else:
+            #         Utilities.writeLogFileAndPrint("Thermal dataset not found")
+            #     # internal temperature is the mean of all replicate
+            #     internalTemp = np.mean(np.array(TempDS.data.tolist()))
+            #     # ambiant temp is not needed for seabird as internal temp is measured, set to 0
+            #     ambTemp = 0
+            #     # if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
+            #     if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, sensor):
+            #         Utilities.writeLogFileAndPrint("Failed to generate Thermal Coefficients")
+
+            # ### Trios
+            # elif ConfigFile.settings['SensorType'].lower() == "trios":
+            #     # G1 has no internal temp, but G2 should. I don't know where...
+            #     # For G1, use either air temp + 5C or caps-on darks for case of airTemp+5C > 30C
+
+            #     # NOTE: This ACRI approach was wrong from the very beginning. RADCAL_CAL ambient temperature is 
+            #     #   from the calibration lab, and has nothing to do with sensor temp in the field.
+            #     internalTemp = 0
+            #     # Ambiant temperature is needed to estimate internal temperature instead.
+            #     RadcalDS = unc_grp.getDataset(sensor+"_RADCAL_CAL")
+            #     if 'AMBIENT_TEMP' in RadcalDS.attributes:
+            #         ambTemp = float(RadcalDS.attributes["AMBIENT_TEMP"])
+            #     else:
+            #         print("Ambient temperature not found")
+            #         print("Aborting ...")
+            #         return None
+            #     if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
+            #         Utilities.writeLogFileAndPrint("Failed to generate Thermal Coefficients")
 
         return True
 
@@ -2410,52 +2507,6 @@ class Utilities:
         return True
 
 
-    # @staticmethod
-    # def RenameUncertainties_Class(node):
-    #     """
-    #     Rename unc dataset from generic class-based id to sensor type
-    #     """
-    #     unc_group = node.getGroup("RAW_UNCERTAINTIES")
-    #     sensorID = Utilities.get_sensor_dict(node) # should result in OD{[Instr#:ES, Instr#:LI, Instr#:LT]}
-    #     print("sensors type", sensorID)
-    #     names = [i for i in unc_group.datasets]  # get names in advance, mutation of iteration object breaks for loop
-    #     for name in names:
-    #         ds = unc_group.getDataset(name)
-
-    #         if "_RADIANCE_" in name:
-    #             # Class-based radiance coefficient are the same for both Li and Lt
-    #             new_LI_name = ''.join(["LI", name.split("RADIANCE")[-1]])
-    #             new_LI_ds = unc_group.addDataset(new_LI_name)
-    #             new_LI_ds.copy(ds)
-    #             new_LI_ds.datasetToColumns()
-
-    #             new_LT_name = ''.join(["LT", name.split("RADIANCE")[-1]])
-    #             new_LT_ds = unc_group.addDataset(new_LT_name)
-    #             new_LT_ds.copy(ds)
-    #             new_LT_ds.datasetToColumns()
-    #             unc_group.removeDataset(ds.id) # remove dataset
-
-    #         if "_IRRADIANCE_" in name:
-    #             # Class-based irradiance coefficient are unique for Es
-    #             new_ES_name = ''.join(["ES", name.split("IRRADIANCE")[-1]])
-    #             new_ES_ds = unc_group.addDataset(new_ES_name)
-    #             new_ES_ds.copy(ds)
-    #             new_ES_ds.datasetToColumns()
-    #             unc_group.removeDataset(ds.id) # remove dataset
-
-    #         if "_RADCAL_" in name:
-    #             # RADCAL are always sensor specific
-    #             for sensor in sensorID:
-    #                 if sensor in ds.id:
-    #                     new_ds_name = ''.join([sensorID[sensor], ds.id.split(sensor)[-1]])
-    #                     new_ds = unc_group.addDataset(new_ds_name)
-    #                     new_ds.copy(ds)
-    #                     new_ds.datasetToColumns()
-    #                     unc_group.removeDataset(ds.id)  # remove dataset
-
-    #     return True
-
-
     @staticmethod
     def RenameUncertainties_FullChar(node):
         """
@@ -2485,9 +2536,12 @@ class Utilities:
         for sensor in sensorList:
 
             ## retrieve dataset from corresponding instrument
+            data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
-            elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
+            elif ConfigFile.settings['SensorType'].lower() == "trios" or \
+                ConfigFile.settings['SensorType'].lower() == "dalec" or \
+                ConfigFile.settings['SensorType'].lower() == "sorad":
                 data = node.getGroup(sensor).getDataset(sensor)
 
             # Retrieve hyper-spectral wavelengths from dataset
@@ -2572,6 +2626,7 @@ class Utilities:
         for sensor in sensorList:
 
             ## retrieve dataset from corresponding instrument
+            data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
@@ -2702,6 +2757,7 @@ class Utilities:
             # x_new2 = bands[valid]
 
             ## retrieve hyper-spectral wavelengths from corresponding instrument
+            data = None
             if ConfigFile.settings['SensorType'].lower() == "seabird":
                 data = node.getGroup(sensor+'_LIGHT').getDataset(sensor)
             elif ConfigFile.settings['SensorType'].lower() == "trios" or ConfigFile.settings['SensorType'].lower() == "sorad":
@@ -2745,9 +2801,6 @@ class Utilities:
                     ds.columnsToDataset()
 
         return True
-
-
-
 
     @staticmethod
     def getline(sstream, delimiter: str = '\n') -> str:
@@ -2887,7 +2940,7 @@ class Utilities:
         Azimuth_angle = None
 
         with open(filepath, 'r', encoding="utf-8") as f:  # open file
-            key = None
+            key, ds, name = None, None, None
             while True:  # start loop
                 line = Utilities.getline(f, '\n')  # reads the file until a '\n' character is reached
                 if not line:  # breaks out of loop if three empty lines in a row
@@ -2920,8 +2973,7 @@ class Utilities:
                                     ds = gp.addDataset(f"{name}_{attrs['DATA_TYPE']}_AZ{Azimuth_angle}")
                                     Azimuth_angle = None
                                 else:
-                                    msg = f"dataset could not be contructed, Utilties.read_char(file-path, HDFGroup) in {gp.attributes['CHARACTERISATION_FILE_TYPE']}"
-                                    print(msg)
+                                    Utilities.writeLogFileAndPrint(f"dataset could not be contructed, Utilties.read_char(file-path, HDFGroup) in {gp.attributes['CHARACTERISATION_FILE_TYPE']}")
                                     raise KeyError
                             # populate ds attributes with header data
                             for k, v in attrs.items():
@@ -2948,4 +3000,113 @@ class Utilities:
                     inputArray[ens][i] = 0.0
         return inputArray
 
-   
+    @staticmethod
+    def uniquePairs(pairList):
+        '''Eliminate redundant pairs of badTimes 
+            Must be list, not np array'''
+
+        if not isinstance(pairList, list):
+            pairList = pairList.tolist()
+        if len(pairList) > 1:
+            newPairs = []
+            for pair in pairList:
+                if pair not in newPairs:
+                    newPairs.append(pair)
+        else:
+            newPairs = pairList
+        return newPairs
+
+    @staticmethod
+    def catConsecutiveBadTimes(badTimes, dateTime):
+        '''Test for the existence of consecutive, singleton records that could be 
+            concatonated into a time span. This can only work after L1B cross-sensor time interpolation.'''
+        newBadTimes = []
+        for iBT, badTime in enumerate(badTimes):
+            if iBT == 0:
+                newBadTimes.append(badTime)
+            else:
+                iDT = dateTime.index(newBadTimes[-1][1])# end time of last window
+                iDT2 = dateTime.index(badTime[0])
+                if iDT2 == iDT +1:
+                    # Consecutive
+                    newBadTimes[-1][1] = badTime[1]
+                else:
+                    newBadTimes.append(badTime)
+
+        return newBadTimes
+
+    @staticmethod
+    def findGaps_dateTime(DT1,DT2,threshold):
+        ''' Test whether one DT2 datetime has a gap > threshold [seconds] 
+            relative to DT1. '''
+        bTs = []
+        start = -1
+        i, index, stop = 0,0,0
+        tThreshold = timedelta(seconds=threshold)
+
+        # See below for faster conversions
+        np_dTT = np.array(DT2, dtype=np.datetime64)
+        np_dTT.sort()
+
+        np_dTM = np.array(DT1, dtype=np.datetime64)
+        pos = np.searchsorted(np_dTT, np_dTM, side='right')
+
+        # Consider the 3 items close the the position found.
+        # We can probably only consider 2 of them but this is simpler and less bug-prone.
+        pos1 = np.maximum(pos-1, 0)
+        pos2 = np.minimum(pos, np_dTT.size-1)
+        pos3 = np.minimum(pos+1, np_dTT.size-1)
+        tDiff1 = np.abs(np_dTT[pos1] - np_dTM)
+        tDiff2 = np.abs(np_dTT[pos2] - np_dTM)
+        tDiff3 = np.abs(np_dTT[pos3] - np_dTM)
+        tMin = np.minimum(tDiff1, tDiff2, tDiff3)
+
+        for index in range(len(np_dTM)):
+            if tMin[index] > tThreshold:
+                i += 1
+                if start == -1:
+                    start = index
+                stop = index
+            else:
+                if start != -1:
+                    startstop = [DT1[start],DT1[stop]]
+                    Utilities.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}')
+                    bTs.append(startstop)
+                    start = -1
+
+        if start != -1 and stop == index: # Records from a mid-point to the end are bad
+            startstop = [DT1[start],DT1[stop]]
+            bTs.append(startstop)
+            Utilities.writeLogFileAndPrint(f'   Flag additional data from {startstop[0]} to {startstop[1]}')
+
+        if start==0 and stop==index: # All records are bad
+            return False
+
+        return bTs
+
+    @staticmethod
+    def sortDateTime(group):
+        ''' Sort all data in group chronologically based on datetime '''
+
+        if group.id != "SOLARTRACKER_STATUS" and group.id != "CAL_COEF":
+            timeStamp = group.getDataset("DATETIME").data
+            tz = pytz.timezone('UTC')
+            np_dT = np.array(timeStamp, dtype=np.datetime64)
+            sortIndex = np.argsort(np_dT)
+            np_dT_sorted = np_dT[sortIndex]
+            datetime_list = np_dT_sorted.astype('datetime64[us]').tolist()
+            datetime_list = [tz.localize(x) for x in datetime_list]
+            for ds in group.datasets:
+                if len(group.datasets[ds].data) == len(np_dT):
+                    if ds == 'DATETIME':
+                        group.datasets[ds].data = datetime_list
+                    else:
+                        group.datasets[ds].data = group.datasets[ds].data[sortIndex]
+
+            Utilities.writeLogFileAndPrint(f'Screening {group.id} for clean timestamps.')
+            if not Utilities.fixDateTime(group):
+                Utilities.writeLogFileAndPrint(f'***********Too few records in {group.id} to continue after timestamp correction. Exiting.')
+                return None
+
+        return group
+

@@ -8,10 +8,8 @@ from Source import PATH_TO_CONFIG, PACKAGE_DIR
 from Source.HDFRoot import HDFRoot
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
-# from Source.ProcessL1a import ProcessL1a
 from Source.ProcessL1aSeaBird import ProcessL1aSeaBird
 from Source.ProcessL1aDALEC import ProcessL1aDALEC
-# from Source.TriosL1A import TriosL1A
 from Source.ProcessL1aTriOS import ProcessL1aTriOS
 from Source.ProcessL1aSoRad import ProcessL1aSoRad
 from Source.AncillaryReader import AncillaryReader
@@ -19,8 +17,8 @@ from Source.ProcessL1aqc import ProcessL1aqc
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.CalibrationFile import CalibrationFile
 from Source.ProcessL1b import ProcessL1b
-# from Source.TriosL1B import TriosL1B
 from Source.ProcessL1bTriOS import ProcessL1bTriOS
+from Source.ProcessL1bDALEC import ProcessL1bDALEC
 from Source.ProcessL1bqc import ProcessL1bqc
 from Source.ProcessL2 import ProcessL2
 from Source.SeaBASSWriter import SeaBASSWriter
@@ -257,6 +255,24 @@ class Controller:
                     cf.frameType = "Combined"
                     calibrationMap[key] = cf
 
+        return calibrationMap
+
+    @staticmethod
+    def processCalibrationConfigDalec(configFileName, calFiles):
+        ''' Write pseudo calibration/configuration map for Dalec'''
+        calFolder = os.path.splitext(configFileName)[0] + "_Calibration"
+        calPath = os.path.join(PATH_TO_CONFIG, calFolder)
+
+        # print("processCalibrationConfig")
+        calibrationMap = collections.OrderedDict()
+
+        for key in list(calFiles.keys()):
+            cf = CalibrationFile()
+            cf.id=key
+            cf.name=os.path.join(calPath,key)
+            cf.instrumentType = "Dalec"
+            calibrationMap[key] = cf
+
             elif '.tdf' in key:
                 if calFiles[key]["enabled"]:
                     cf.id = key
@@ -305,6 +321,7 @@ class Controller:
             root, outFFPs = ProcessL1aSoRad.processL1a(inFilePath, outFilePath, calibrationMap)
         elif ConfigFile.settings["SensorType"].lower() == "dalec":
             root = ProcessL1aDALEC.processL1a(inFilePath, calibrationMap)
+            outFFPs = outFilePath
         else:
             root = None
 
@@ -381,21 +398,21 @@ class Controller:
             return None
 
         # Process the data
-        msg = "ProcessL1b: " + inFilePath
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f"ProcessL1b: {inFilePath}")
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except Exception:
             msg = "Controller.processL1b: Unable to open HDF file. May be open in another application."
             Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(msg)
             return None
 
         if ConfigFile.settings["SensorType"].lower() == "trios" or  ConfigFile.settings["SensorType"].lower() == "sorad":
             # root = TriosL1B.processL1b(root, outFilePath)
             root = ProcessL1bTriOS.processL1b(root, outFilePath)
+        elif ConfigFile.settings["SensorType"].lower() == "dalec":
+            # root = TriosL1B.processL1b(root, outFilePath)
+            root = ProcessL1bDALEC.processL1b(root, outFilePath)
         else:
             root = ProcessL1b.processL1b(root, outFilePath)
 
@@ -406,15 +423,13 @@ class Controller:
             except Exception:
                 msg = "**********************Controller.ProcessL1b: Unable to write file. May be open in another application.**********************"
                 Utilities.errorWindow("File Error", msg)
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint(msg)
                 return None
         else:
             msg = "L1b processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                 Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint(msg)
             return None
 
         return root
@@ -470,7 +485,10 @@ class Controller:
         _, filename = os.path.split(outFilePath)
         if node is not None:
 
-            if (ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad') and ConfigFile.settings['bL1bCal'] == 1:
+            #if (ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad') and ConfigFile.settings['fL1bCal'] == 1:
+            if  (ConfigFile.settings['SensorType'].lower() == 'trios' or \
+                 ConfigFile.settings['SensorType'].lower() == 'dalec' or \
+                 ConfigFile.settings['SensorType'].lower() == 'sorad') and ConfigFile.settings['fL1bCal'] == 1:
                 plotDeltaBool = False
             else:
                 plotDeltaBool = True
@@ -491,17 +509,19 @@ class Controller:
 
             # IOPs
             # These three should plot GIOP and QAA together (eventually, once GIOP is complete)
-            if ConfigFile.products["bL2ProdadgQaa"]:
-                Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
-            if ConfigFile.products["bL2ProdaphQaa"]:
-                Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
-            if ConfigFile.products["bL2ProdbbpQaa"]:
-                Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
+            if ConfigFile.products["bL2PlotProd"]==1:
+                print('Plotting L2 Derived Products')
+                if ConfigFile.products["bL2ProdadgQaa"]:
+                    Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
+                if ConfigFile.products["bL2ProdaphQaa"]:
+                    Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
+                if ConfigFile.products["bL2ProdbbpQaa"]:
+                    Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
 
-            # This puts ag, Sg, and DOC on the same plot
-            if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products["bL2ProdSg"] \
-                 and ConfigFile.products["bL2Prodag"] and ConfigFile.products["bL2ProdDOC"]:
-                Utilities.plotIOPs(node, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
+                # This puts ag, Sg, and DOC on the same plot
+                if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products["bL2ProdSg"] \
+                    and ConfigFile.products["bL2Prodag"] and ConfigFile.products["bL2ProdDOC"]:
+                    Utilities.plotIOPs(node, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
 
         # Write output file
         if node is not None:
@@ -551,7 +571,7 @@ class Controller:
         if flag_Trios and level == "L1A":
             # inFilePath is a list of filepath strings at L1A
             # Grab input name and extension of first file
-            inFileName = os.path.split(inFilePath[0])[1]            
+            inFileName = os.path.split(inFilePath[0])[1]
         else:
             # inFilePath is a singleton filepath string
             inFilePath = os.path.abspath(inFilePath)
@@ -647,7 +667,6 @@ class Controller:
                     print(msg)
                     Utilities.writeLogFile(msg)
                 root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
-                # BUG: The above throws 2 class TypeErrors between the return statement at the end of the method and here??
                 Utilities.checkOutputFiles(outFilePath)
 
             elif level == "L1B":
@@ -693,23 +712,23 @@ class Controller:
 
             # Check L2 file for low-level uncertainty processing matching the uncertainty processing
             # called here (i.e., don't let Factory-Only files get processed for FRM-Class or FRM-Full)
-            if ConfigFile.settings["bL1bCal"] == 3 and 'FRM-Full' not in root.attributes['CAL_TYPE']:
+            if ConfigFile.settings["fL1bCal"] == 3 and 'FRM-Full' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
+                    f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}."
                 # Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
-            if ConfigFile.settings["bL1bCal"] == 2 and 'FRM-Class' not in root.attributes['CAL_TYPE']:
+            if ConfigFile.settings["fL1bCal"] == 2 and 'FRM-Class' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
+                    f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}."
                 # Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
                 return False
-            if ConfigFile.settings["bL1bCal"] == 1 and 'Factory' not in root.attributes['CAL_TYPE']:
+            if ConfigFile.settings["fL1bCal"] == 1 and 'Factory' not in root.attributes['CAL_TYPE']:
                 msg = f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
-                    f"uncertainty pathway in configuration. (ConfigFile.settings['bL1bCal'] ==) {ConfigFile.settings['bL1bCal']}."
+                    f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}."
                 # Utilities.errorWindow("File Error", msg)
                 print(msg)
                 Utilities.writeLogFile(msg)
@@ -884,7 +903,7 @@ class Controller:
     def processFilesSingleLevel(pathOut, inFiles, calibrationMap, level):
 
         if level == "L1A":
-            srchStr = ['raw', 'mlb']
+            srchStr = ['raw', 'mlb', 'txt']
         elif level == 'L1AQC':
             srchStr = ['L1A']
         elif level == 'L1B':

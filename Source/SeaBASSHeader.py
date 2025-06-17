@@ -132,17 +132,26 @@ class SeaBASSHeader:
         else:
             deglitchFilt = "Off"
 
-        if ConfigFile.settings['bL1bCal'] == 1:
+        if ConfigFile.settings['fL1bCal'] == 1:
             if ConfigFile.settings['SensorType'].lower() == 'seabird':
-                FRMPath = 'Non-FRM_Class-based'
+                FRMRegime = 'Non-FRM_Class-based'
             else:
-                FRMPath = 'Factory_Calibration'
-        elif ConfigFile.settings['bL1bCal'] == 2:
-            FRMPath = 'FRM_Class-based'
-        elif ConfigFile.settings['bL1bCal'] == 3:
-            FRMPath = 'FRM-Full-Characterization'
+                FRMRegime = 'Factory_Calibration'
+        elif ConfigFile.settings['fL1bCal'] == 2:
+            FRMRegime = 'FRM_Class-based'
+        elif ConfigFile.settings['fL1bCal'] == 3:
+            FRMRegime = 'FRM-Full-Characterization'
         else:
-            FRMPath = None
+            FRMRegime = None
+
+        if ConfigFile.settings['fL1bThermal'] == 1:
+            ThermalSource = 'Internal_Thermistor'
+        elif ConfigFile.settings['fL1bThermal'] == 2:
+            ThermalSource = 'Air_Termperature'
+        elif ConfigFile.settings['fL1bThermal'] == 3:
+            ThermalSource = 'Caps_On_Dark_File'
+        else:
+            ThermalSource = None
 
         if ConfigFile.settings["bL1bqcEnableSpecQualityCheck"]:
             specFilt = "On"
@@ -220,9 +229,13 @@ class SeaBASSHeader:
             f'! LT Light Window = {ConfigFile.settings["fL1aqcLTWindowLight"]}\n'+\
             f'! LT Dark Sigma = {ConfigFile.settings["fL1aqcLTSigmaDark"]}\n'+\
             f'! LT Light Sigma = {ConfigFile.settings["fL1aqcLTSigmaLight"]}\n'+\
-            f'! FRM Pathway = {FRMPath}\n'+\
+            f'! FRM Regime = {FRMRegime}\n'+\
+            f'! Thermal Source = {ThermalSource}\n'+\
             f'! Default Salt = {ConfigFile.settings["fL1bDefaultSalt"]}\n'+\
             f'! Default SST = {ConfigFile.settings["fL1bDefaultSST"]}\n'+\
+            f'! Default AOD = {ConfigFile.settings["fL1bDefaultAOD"]}\n'+\
+            f'! Default Wind = {ConfigFile.settings["fL1bDefaultWindSpeed"]}\n'+\
+            f'! Default AirTemp = {ConfigFile.settings["fL1bDefaultAirT"]}\n'+\
             f'! Wavelength Interp Int = {ConfigFile.settings["fL1bInterpInterval"]}\n'+\
             f'! Max Wind = {ConfigFile.settings["fL1bqcMaxWind"]}\n'+\
             f'! Min SZA = {ConfigFile.settings["fL1bqcSZAMin"]}\n'+\
@@ -303,7 +316,7 @@ class SeaBASSHeader:
         # print("SeaBASSHeader - refreshCalibrationFiles")
         calibrationPath = ConfigFile.getCalibrationDirectory()
         files = os.listdir(calibrationPath)
-        if ConfigFile.settings['bL1bCal'] != 3:
+        if ConfigFile.settings['fL1bCal'] != 3:
             # Only keep the full characterization files if running Full FRM
             files = [item for item in files if not item.startswith('CP')]
 

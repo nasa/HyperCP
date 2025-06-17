@@ -24,12 +24,12 @@ class HDFGroup:
 
     def datasetDeleteRow(self, i):  
         for k in self.datasets:
-            ds = self.datasets[k]
-            if ds.id.split('_')[0] == 'BACK' or ds.id.split('_')[0] == 'CAL': # prevents calibration-file fields from being deleted in bad time mask
-                print('Field is from cal file (BACK or CAL): do not delete Row')
-            else:       
+            # Avoid non-temporal datasets. Should cover TriOS and DALEC
+            skipList = ['back_es','cal_es','back_li','cal_li','back_lt','cal_lt','capsontemp']
+            if k.lower() not in skipList:
+                ds = self.datasets[k]
                 ds.data = np.delete(ds.data, (i), axis=0)
-       
+
     def removeDataset(self, name):
         if len(name) == 0:
             print("Name is 0")
