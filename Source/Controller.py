@@ -271,12 +271,6 @@ class Controller:
             cf.instrumentType = "Dalec"
             calibrationMap[key] = cf
 
-            elif '.tdf' in key:
-                if calFiles[key]["enabled"]:
-                    cf.id = key
-                    cf.name = key
-                    calibrationMap[key] = cf
-
         return calibrationMap
 
     @staticmethod
