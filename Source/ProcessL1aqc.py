@@ -83,7 +83,8 @@ class ProcessL1aqc:
                 [rowsToDelete.append(x) for x in newList]
 
         finalCount = len(rowsToDelete)
-        group.datasetDeleteRow(rowsToDelete)
+        if rowsToDelete:
+            group.datasetDeleteRow(rowsToDelete)
 
         Utilities.writeLogFileAndPrint(f'   Length of records removed from dataset: {finalCount}')
 

@@ -114,7 +114,7 @@ Click 'Save/Close' or 'Save As' to save the configuration file. SeaBASS headers 
 
 Process data from raw binary to L1A (Hierarchical Data Format 5 '.hdf'). Raw data files expected are .raw (or .RAW), .mlb, or .TXT for Sea-Bird, TriOS, or DALEC, respectively. It is helpful to keep them in the directory that the Main configuration points to, but directory can be named anything (e.g., "RAW").
 
-***NOTE:*** Since TriOS instruments use a triplet of raw data (.mlb) files it is necessary to provide information on the measurement date. This is done by adding the date to the name of the raw data file in one of the following formats: yyyymmdd-hhmmss or yyyy-mm-dd-hh:mm:ss. Alternatively, station data filenames can end in a 4-digit station number followed by "S" for regular acquisition or "D" for caps-on dark measurements.
+***NOTE:*** Since TriOS instruments use a triplet of raw data (.mlb) files it is necessary to provide information on the measurement date. This is done by adding the date to the name of the raw data file in one of the following formats: yyyymmdd-hhmmss or yyyy-mm-dd-hh:mm:ss. Additionally, station/cast can be designated using a 2-digit station number followed by a 2-digit cast number followed by "S" for regular acquisition or "D" for caps-on dark measurements. Caps-on dark measurements are made to help estimate the internal noise of the instrument as a function of temperature, and by inversion can be applied to extract the temperature of the instrument during a station collection and apply that temperature in the processing of normal "S" data aquisition. When selected in L1B (see below), filenames containing "XXYYS" (where XX is station and YY is cast) can use the internal temperature derived in the "XXYYD" file for each radiometer (where only XX-station needs to match, not YY-cast). For example, a caps-on dark processed to L1A using the option **Caps-on darks only** with filename containing "20250617-100300_0101D" to find the internal working temperature of each sensor can have that temperature applied to files with filenames containing "20250617-100800_0101S", "20250617-101300_0102S", and "20250617-101800_0103S".
 
 **Solar Zenith Angle Filter**: prescreens data for high SZA (low solar elevation) to exclude files which may have been
 collected post-dusk or pre-dawn from further processing.
@@ -126,7 +126,7 @@ over a long period.* Further screening for SZA min/max at a sample level is avai
 
 ## Level 1AQC Processing
 
-Process data from L1A to L1AQC. Data are filtered for vessel attitude (pitch, roll, and yaw when available), viewing
+Process data from L1A to L1AQC. Ancillary data from the file provided in the Main Window (see [Main Window; Ancillary Data](README.md#3-ancillary-input-files)) are read into the data file. Data are filtered for vessel attitude (pitch, roll, and yaw when available), viewing
 and solar geometry. *It should be noted that viewing geometry should conform to total radiance (Lt) measured at about 40
 degrees from nadir, and sky radiance (Li) at about 40 degrees from zenith* **(Mobley 1999, Mueller et al. 2003 (NASA Protocols))**.
 Unlike other approaches, HyperCP eliminates data flagged for problematic pitch/roll, yaw, and solar/sensor geometries
@@ -184,21 +184,29 @@ See [this](README_deglitching.md) page for more detail.
 Dark current corrections are applied followed by instrument calibrations and then matching of timestamps and wavebands
 for all radiometers in the suite.
 
-Unlike legacy processing for Satlantic/Sea-Bird HyperSAS data in ProSoft, data here are dark current corrected prior to
-application of the calibration factors. This allows for the option of applying factory calibrations or full
+Sea-Bird instruments intermittently collect dark current data in all pixels (wavebands) between light data collection with the use of an automatic shutter. Unlike legacy processing for Satlantic/Sea-Bird HyperSAS data in ProSoft, data here are dark-current-corrected prior to
+application of the calibration factors. This allows the option of applying factory calibrations or full
 instrument characterization in conjunction with low-level radiometric uncertainty estimation. It should be noted that
 when applying calibration to the dark current corrected radiometry, the offsets (a0) cancel
 (see ProSoftUserManual7.7 11.1.1.5 Eqns 5-6) presuming light and dark factory cals are equivalent (which they
 historically have been from Satlantic/Sea-Bird).
 
+TriOS and DALEC collect dark current data simultaneously with light data acquisition by reading from blackened pixels enumerated 
+in their respective calibration files under the assumption that the dark current noise is similar across all pixels in the array.
+
 ### L1B: Ingestion of ancillary information for posterior processing
 
-At Level 1B, ancillary information will be queried from either [GMAO's MERRA](https://gmao.gsfc.nasa.gov/reanalysis/merra-2/)
+At Level 1B, critical ancillary information (wind speed, AOD, air temperature) that is not already provided in the Ancillary File (see [Main Window; Ancillary Data](README.md#3-ancillary-input-files)) will be queried from either [GMAO's MERRA](https://gmao.gsfc.nasa.gov/reanalysis/merra-2/)
 or [ECMWF's CAMS GACF](https://ads.atmosphere.copernicus.eu/) reanalysis/forecast model databases and used in
 posterior processing. To know more about these sources, how they are used in HyperCP and how to obtain the required
-access credentials, read [here](README_ancillary.md).
+access credentials, read [here](README_ancillary.md). 
 
-### L1B: Calibration regimes
+Fallback values for wind speed, AOD, air temperature, SST, and salinity can be provided in case neither ancillary file data nor model data are available.
+
+### L1B: Calibration/Characterization options
+
+The internal working temperature of each sensor is critical for thermal correction of the signal and/or uncertainty associated with thermal response. This temperature can be derived in several ways. For Sea-Bird, DALEC, and TriOS G2 sensors, an internal thermistor provides the working temperature. For TriOS G1, which has no thermistor, there are two options to derive working temperature: 1) Air temperature + 5°C (best for temperatures below 30°C) 2) Caps-on dark measurements (best for temperatures above 30°C)
+
 Three calibration/characterization regimes are available:
 
 **Factory:**

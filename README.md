@@ -168,11 +168,6 @@ However you launch the GUI, *watch for important feedback at the command line te
 Batching multiple files across single or multiple processing levels is also possible
 as described below.
 
-<!-- To see an example of a complete workflow of the processing from raw data to the final HDF and SeaBASS/OCDB L2 outputs,
-both for TriOS and HyperSAS,
-please see [here](https://gitlab.eumetsat.int/OC/External/frm4soc-cp/-/blob/master/Command_line_example.cmd) <- firewalled -->
-
-
 The Main window appears once Main.py is launched, as described [above](README.md/#3-launch-hypercp-for-the-first-time):
 
  ```
@@ -239,6 +234,7 @@ Optional data fields in the SeaBASS format include
 - ship speed,
 - relative sensor azimuth,
 - aerosol optical depth,
+- air temperature,
 - cloud cover,
 - salinity,
 - water temperature,
