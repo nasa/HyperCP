@@ -281,7 +281,7 @@ class Window(QtWidgets.QWidget):
                 self.ancFileDir = ConfigFile.settings['ancFileDir']
                 # self.anc = ConfigFile.settings['ancFile']
                 self.inDirButton.setText(MainConfig.settings["inDir"])
-                self.outDirButton.setText(MainConfig.settings["outDir"])                
+                self.outDirButton.setText(MainConfig.settings["outDir"])
                 self.ancFileLineEdit.setText(
                     os.path.join(MainConfig.settings['ancFileDir'],MainConfig.settings["ancFile"]))
         # ConfigFile.saveConfig(ConfigFile.filename)
@@ -687,13 +687,11 @@ class Command:
         # inputFile = [inputFile]
 
         ConfigFile.loadConfig(self.configFilename)
-        
+
         # No GUI used: error message are display in prompt and not in graphical window
         MainConfig.settings["popQuery"] = 1 # 1 suppresses popup
         MainConfig.saveConfig(MainConfig.fileName)
         print("MainConfig - Config updated with cmd line arguments")
-
-        
 
         calFiles = ConfigFile.settings["CalibrationFiles"]
 

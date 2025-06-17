@@ -60,8 +60,7 @@ class Controller:
                     msg = "Controller.writeReport: Unable to open HDF file. May be open in another application."
                     if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
                         Utilities.errorWindow("File Error", msg)
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    Utilities.writeLogFileAndPrint(msg)
                     return
 
             else:
@@ -139,9 +138,8 @@ class Controller:
         except Exception:
             msg = '**********************Unable to write the PDF file. It may be open in another program.**********************'
             Utilities.errorWindow("File Error", msg)
-            print(msg)
-            Utilities.writeLogFile(msg)
-
+            Utilities.writeLogFileAndPrint(msg)
+            
     @staticmethod
     def generateContext(calibrationMap):
         ''' Generate a calibration context map for the instrument suite '''
@@ -280,10 +278,6 @@ class Controller:
             print("Specified ancillary file not found: " + fp)
             return None
         ancillaryData = AncillaryReader.readAncillary(fp)
-
-        # if ConfigFile.settings['SensorType'].lower() == 'trios':
-        #     ancillaryData.columns['RELAZ'] = ancillaryData.columns['HOMEANGLE']
-        #     del ancillaryData.columns['HOMEANGLE']
         return ancillaryData
 
     @staticmethod

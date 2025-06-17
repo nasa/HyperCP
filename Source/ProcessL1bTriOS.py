@@ -390,7 +390,7 @@ class ProcessL1bTriOS:
             node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
             if node is None:
                 Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
-                return None        
+                return None
 
         if ConfigFile.settings["fL1bCal"] == 1 or ConfigFile.settings["fL1bCal"] == 2:
             # Calculate 6S model

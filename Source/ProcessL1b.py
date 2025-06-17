@@ -346,10 +346,10 @@ class ProcessL1b:
         windDataset.columns["WINDFLAG"] = windFlag
         windDataset.columnsToDataset()
         aodDataset.columns["AOD"] = aod
-        aodDataset.columns["AODFLAG"] = aodFlag        
+        aodDataset.columns["AODFLAG"] = aodFlag
         aodDataset.columnsToDataset()
         airDataset.columns["AIRTEMP"] = air
-        airDataset.columns["AIRFLAG"] = airFlag        
+        airDataset.columns["AIRFLAG"] = airFlag
         airDataset.columnsToDataset()
         saltDataset.columns["NONE"] = salt
         saltDataset.columns["SALTFLAG"] = saltFlag
