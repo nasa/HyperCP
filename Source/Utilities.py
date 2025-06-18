@@ -2210,8 +2210,12 @@ class Utilities:
         #   2) Only for airTemp +5C > 30 C, otherwise 1) or 3).
 
         # Get the reference temperature
-        if 'REFERENCE_TEMP' in uncDS.attributes:
-            refTemp = float(uncDS.attributes["REFERENCE_TEMP"])
+        # if 'REFERENCE_TEMP' in uncDS.attributes:
+        if 'AMBIENT_TEMP' in uncDS.attributes:
+            # refTemp = float(uncDS.attributes["REFERENCE_TEMP"])
+            # This is temperature of the sensor during calibration
+            #   REFERENCE_TEMP is not relevant.
+            calTemp = float(uncDS.attributes["AMBIENT_TEMP"])
         else:
             print("reference temperature not found")
             print("aborting ...")
@@ -2226,12 +2230,12 @@ class Utilities:
 
         for i,therm_coeffi in enumerate(therm_coeff):
             try:
-                ThermCorr.append(1 + (therm_coeffi * (InternalTemp - refTemp)))
+                ThermCorr.append(1 + (therm_coeffi * (InternalTemp - calTemp)))
                 if ConfigFile.settings["fL1bCal"] == 3:
-                    ThermUnc.append(np.abs(therm_unc[i] * (InternalTemp - refTemp)) / 2)
+                    ThermUnc.append(np.abs(therm_unc[i] * (InternalTemp - calTemp)) / 2)
                     # div by 2 because uncertainty is k=2
                 else:
-                    ThermUnc.append(np.abs(therm_coeffi * (InternalTemp - refTemp)))
+                    ThermUnc.append(np.abs(therm_coeffi * (InternalTemp - calTemp)))
             except IndexError as err:
                 print(f'{err} in Utilities.generateTempCoeffs')
                 ThermCorr.append(1.0)
