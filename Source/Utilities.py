@@ -2254,9 +2254,8 @@ class Utilities:
         #   See Utilities.UncTempCorrection
 
         # Get the reference temperature
-        # if 'REFERENCE_TEMP' in thermalCoeffDS.attributes:
         if 'AMBIENT_TEMP' in thermalCoeffDS.attributes:
-            # This is temperature of the sensor during calibration
+            # This is temperature of the sensor during calibration from the _THERMAL_ file
             #   REFERENCE_TEMP is the AMBIENT_TEMP during derivation of thermal coefficients, and not relevant here.
             calTemp = float(thermalCoeffDS.attributes["AMBIENT_TEMP"])
         else:
@@ -2266,26 +2265,28 @@ class Utilities:
         # Get thermal coefficient from characterization
         thermalCoeffDS.datasetToColumns()
         therm_coeff = thermalCoeffDS.data[list(thermalCoeffDS.columns.keys())[2]]
-        therm_unc = thermalCoeffDS.data[list(thermalCoeffDS.columns.keys())[3]] # NOTE: See below. Is this sigmaC?
+        therm_unc = thermalCoeffDS.data[list(thermalCoeffDS.columns.keys())[3]]     # NOTE: See below. Is this sigmaC?
         ThermCorr = []
         ThermUnc = []
 
+        dT = workingTemp - calTemp
+        if sigmaT is None:
+            sigmaT = dT             # NOTE: Confirm this
         for i, therm_coeffi in enumerate(therm_coeff):
             try:
                 # Thermal Correction:
-                dT = workingTemp - calTemp
                 ThermCorr.append(1 + (therm_coeffi * dT))
 
                 # Thermal Correction Uncertainty:
-                # NOTE: Zibordi and Talone, in prep. 2025
+                # Zibordi and Talone, in prep. 2025
                 # 𝑢𝑟(λ, ∆𝑇, DN) = [ε𝑐(λ, ∆𝑇)^2 + ε𝑇(λ, DN)^2]1/2
                 # 𝜀𝑐(𝜆, Δ𝑇) = Δ𝑇 × 𝜎𝑐(𝜆)
                 # 𝜀𝑇(𝜆, DN) = 𝑐(λ ) × 𝜎𝑇(DN)
                 # σc(λ)=0.03×10-2 (°C)-1 in the 400-800 nm spectral range for the 10-40°C interval
-                # σc(λ)= therm_unc from THERMAL file NOTE: CHECK THIS!
+                # σc(λ)= therm_unc from THERMAL file NOTE: Confirm this.
                 # ∆𝑇 = workingT - calTemp
-                sigmaC = therm_unc[i] # NOTE: Confirm this
-                # sigmaC = 0.0003
+                sigmaC = therm_unc[i]               # NOTE: Confirm this
+                # sigmaC = 0.0003 # See above
                 epsC = dT*sigmaC
                 epsT = therm_coeffi*sigmaT
                 ur = np.sqrt(epsC**2 + epsT**2)
@@ -2293,7 +2294,7 @@ class Utilities:
                 if ConfigFile.settings["fL1bCal"] == 3:
                     # ThermUnc.append(np.abs(therm_unc[i] * (workingTemp - calTemp)) / 2)
                     # div by 2 because uncertainty is k=2
-                    ThermUnc.append(ur / 2)
+                    ThermUnc.append(ur / 2)         # NOTE: Confirm this
                 else:
                     ThermUnc.append(ur)
             except IndexError as err:
@@ -2342,7 +2343,7 @@ class Utilities:
                 #     meanCAPSONTEMP = capsonTEMP.columns['T'][0]
                 # # else:
                 # #     Utilities.writeLogFileAndPrint("Caps-on temperature dataset not found")
-            elif ConfigFile.settings['SensorType'].lower() == "trios": 
+            elif ConfigFile.settings['SensorType'].lower() == "trios":
                 sensorGroup = node.getGroup(f'{sensor}')
                 if "SPECTEMP" in sensorGroup.datasets:
                     # NOTE: Need to distinguish G2 at some point
@@ -2354,6 +2355,8 @@ class Utilities:
                     capsonTEMP = sensorGroup.getDataset("CAPSONTEMP")
                     capsonTEMP.datasetToColumns()
                     meanCAPSONTEMP = capsonTEMP.columns['T'][0]
+                    # NOTE: This is used for unc. in thermal corr even if COD temp is not used due to 30 deg. C threshold
+                    # NOTE: Confirm this.
                     sigmaT = capsonTEMP.columns['sigmaT'][0]
                 if "AIRTEMP" in node.getGroup('ANCILLARY_METADATA').datasets:
                     airTEMP = node.getGroup('ANCILLARY_METADATA').getDataset("AIRTEMP").columns['AIRTEMP']
@@ -2373,7 +2376,7 @@ class Utilities:
                     if (meanAIRTEMP + airTempMargin < 30) and (meanCAPSONTEMP < 30): # Both conditions must be met
                         Utilities.writeLogFileAndPrint(f"{sensor}: meanAIRTEMP + airTempMargin < 30. Using air temp with margin for sensor working temperature")
                         workingTemp = meanAIRTEMP + airTempMargin
-                        workingTempSource = 'AirTemp+5C'
+                        workingTempSource = 'AirTemp+2.5C'
                     else:
                         Utilities.writeLogFileAndPrint(f"{sensor}: (meanAIRTEMP + airTempMargin) and/or COD >= 30. Using caps-on dark algorithm for sensor working temperature")
                         workingTemp = meanCAPSONTEMP
@@ -2387,7 +2390,7 @@ class Utilities:
                 if meanAIRTEMP:
                     Utilities.writeLogFileAndPrint(f"{sensor}:Using air temp with margin for sensor working temperature")
                     workingTemp = meanAIRTEMP + airTempMargin
-                    workingTempSource = 'AirTemp+5C'
+                    workingTempSource = 'AirTemp+2.5C'
                 else:
                     # Considering fallbacks for air temperature, this should never be reached.
                     Utilities.writeLogFileAndPrint(f"{sensor}:WARNING: No source of information available for sensor working temperature!")

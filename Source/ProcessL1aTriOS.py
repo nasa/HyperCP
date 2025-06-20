@@ -170,12 +170,13 @@ class ProcessL1aTriOS:
                         if gpDark.id.startswith('SAM'):
                             sensorIDS = ['ES','LI','LT']
                             for ds in gpDark.datasets:
-                                if gpDark.datasets[ds].id in sensorIDS:                                    
+                                if gpDark.datasets[ds].id in sensorIDS:                         
                                     DN = gpDark.datasets[ds].data[:].tolist()
                                     if len(DN) < minSpectra:
                                         Utilities.writeLogFileAndPrint("Too few spectra for caps-on dark algorithm. Abort.")
                                         return None, None
 
+                            # Zibordi & Talone, in prep. (2025)
                             # T = -Tc + S * ln(DN-DNc)
                             # RAMSES class coefficients
                             Tc = -16.4
@@ -185,12 +186,12 @@ class ProcessL1aTriOS:
 
                             T = [Tc + S * np.log(dn-DNc) for dn in np.array(DN[:])]
                             meanT = np.mean(T)
+                            # meanT = 31 NOTE: use to force COD threshold for testing
                             stdT = np.std(T)
                             # Add dataset CAPSONTEMP for T and sigmaT columns. SPECTEMP reserved for internal thermistor temp (G2 and others)
                             dsT = gpDark.addDataset('CAPSONTEMP')
                             dsT.appendColumn('T',meanT)
                             dsT.appendColumn('sigmaT',stdT)
-                            # NOTE: Not clear how long of a record to average, or how to (whether to) average the DNs across all bands.
                             dsT.columnsToDataset()
                 elif re.search(r'\d{4}[S]', a_name):
                     darkFile = None
