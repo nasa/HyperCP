@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import QMessageBox
 import pytz
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
+import matplotlib.dates as mdates
 import numpy as np
 import scipy.interpolate
 from scipy.interpolate import splev, splrep
@@ -37,18 +38,17 @@ class Utilities:
 
     @staticmethod
     def downloadZhangLUT(fpfZhangLUT, force=False):
-        infoText = "  NEW INSTALLATION\nGlint LUT required.\nClick OK to download.\n\nTHIS IS A 258 MB DOWNLOAD.\n\n\
-        If canceled, Zhang et al. (2017) glint correction will fail. If download fails, a link and instructions will be provided in the terminal."
+        infoText = "  NEW INSTALLATION\nGlint LUTs required.\nClick OK to download.\n\nThis comprisese two 200 MB files.\n\n\
+        If canceled, Zhang et al. (2017) glint correction will revert to slower analytical solution. If download fails, a link and instructions will be provided in the terminal."
         YNReply = True if force else Utilities.YNWindow("Database Download", infoText) == QMessageBox.Ok
         if YNReply:
 
-            # url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Zhang_rho_LUT.nc"
-            url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Z17_LUT_v2.nc"
+            url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Z17_LUT_40.nc"
             download_session = requests.Session()
             try:
                 file_size = int(
                     download_session.head(url).headers["Content-length"]
-                )
+                ) # If this fails, check the file permissions on the server.
                 file_size_read = round(int(file_size) / (1024**3), 2)
                 print(
                     f"##### Downloading {file_size_read}GB data file. ##### "
@@ -78,13 +78,55 @@ class Utilities:
                     f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
                     f" {dirPath}/Data directory."
                 )
-
             else:
                 print(
                     "Failed to download core databases."
                     f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
                     f" {dirPath}/Data directory."
                 )
+
+            # url = "https://oceancolor.gsfc.nasa.gov/fileshare/dirk_aurin/Z17_LUT_30.nc"
+            # download_session = requests.Session()
+            # try:
+            #     file_size = int(
+            #         download_session.head(url).headers["Content-length"]
+            #     )# If this fails, check the file permissions on the server.
+            #     file_size_read = round(int(file_size) / (1024**3), 2)
+            #     print(
+            #         f"##### Downloading {file_size_read}GB data file. ##### "
+            #     )
+            #     download_file = download_session.get(url, stream=True)
+            #     download_file.raise_for_status()
+            # except requests.exceptions.HTTPError as err:
+            #     print("Error in download_file:", err)
+            # if download_file.ok:
+            #     progress_bar = tqdm(
+            #         total=file_size, unit="iB", unit_scale=True, unit_divisor=1024
+            #     )
+            #     with open(fpfZhangLUT, "wb") as f:
+            #         for chunk in download_file.iter_content(chunk_size=1024):
+            #             progress_bar.update(len(chunk))
+            #             f.write(chunk)
+            #     progress_bar.close()
+
+            #     # Check the hash of the file
+            #     print('Checking file...')
+            #     thisHash = Utilities.md5(fpfZhangLUT)
+            #     if thisHash == '1a33ed647d9c7359b0800915bd0229c7':
+            #         print('File checks out.')
+            #     else:
+            #         print(f'Error in downloaded file {fpfZhangLUT}. Recommend you delete the downloaded file and try again.')
+            #         print(
+            #         f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
+            #         f" {dirPath}/Data directory."
+            #     )
+
+            # else:
+            #     print(
+            #         "Failed to download core databases."
+            #         f"Try download from {url} (e.g. copy paste this URL in your internet browser) and place under"
+            #         f" {dirPath}/Data directory."
+                # )
 
     @staticmethod
     def downloadZhangDB(fpfZhang, force=False):
@@ -98,7 +140,7 @@ class Utilities:
             try:
                 file_size = int(
                     download_session.head(url).headers["Content-length"]
-                )
+                )# If this fails, check the file permissions on the server.
                 file_size_read = round(int(file_size) / (1024**3), 2)
                 print(
                     f"##### Downloading {file_size_read}GB data file. This could take several minutes. ##### "
@@ -142,7 +184,7 @@ class Utilities:
         with open(fname, "rb") as f:
             for chunk in iter(lambda: f.read(4096), b""):
                 hash_md5.update(chunk)
-        return hash_md5.hexdigest()                
+        return hash_md5.hexdigest()
 
     @staticmethod
     def checkInputFiles(inFilePath, level="L1A+"):
@@ -1026,7 +1068,7 @@ class Utilities:
         return newYList
 
     @staticmethod
-    def fixDarkTimes(darkGroup,lightGroup):        
+    def fixDarkTimes(darkGroup,lightGroup):
         ''' Find the nearest timestamp in the light data to each dark measurements (Sea-Bird) '''
 
         darkDatetime = darkGroup.datasets["DATETIME"].data
@@ -1061,7 +1103,7 @@ class Utilities:
             
             filterData for L1AQC is contained within ProcessL1aqc.py'''
 
-        # NOTE: This is still very slow on long files with many badTimes, despite badTimes being filtered for 
+        # NOTE: This is still very slow on long files with many badTimes, despite badTimes being filtered for
         #   unique pairs.
 
         Utilities.writeLogFileAndPrint(f'Remove {group.id} Data')
@@ -1152,7 +1194,8 @@ class Utilities:
     @staticmethod
     def plotRadiometry(root, filename, rType, plotDelta = False):
         # refresh figure to ensure debug plots do not affect Rrs plotting
-        plt.figure()
+        # plt.figure()
+        plt.figure(1, figsize=(8,6))
 
         outDir = MainConfig.settings["outDir"]
 
@@ -1192,7 +1235,7 @@ class Utilities:
             Data = group.getDataset(f'{rType}_HYPER')
             if plotDelta:
                 dataDelta = group.getDataset(f'{rType}_HYPER_unc').data.copy()
-       
+
             plotRange = [340, 800]
             if ConfigFile.settings['bL2WeightMODISA']:
                 Data_MODISA = group.getDataset(f'{rType}_MODISA')
@@ -1338,7 +1381,7 @@ class Utilities:
         cmap = cm.get_cmap("jet")
         color=iter(cmap(np.linspace(0,1,total)))
 
-        plt.figure(1, figsize=(8,6))
+        # plt.figure(1, figsize=(8,6))
         for i in range(total):
             # Hyperspectral
             y = []
@@ -2112,7 +2155,6 @@ class Utilities:
 
     @staticmethod
     def saveDeglitchPlots(fileName,timeSeries,dateTime,sensorType,lightDark,windowSize,sigma,badIndex,badIndex2,badIndex3):#,\
-        import matplotlib.dates as mdates
         #Plot results
 
         # # Set up datetime axis objects
@@ -2148,7 +2190,7 @@ class Utilities:
         avg = Utilities.movingAverage(radiometry1D, windowSize).tolist()
 
         # try:
-        text_xlabel="Time Series"
+        # text_xlabel="Time Series"
         text_ylabel=f'{sensorType}({waveBand}) {lightDark}'
         # plt.figure(figsize=(15, 8))
         fig, ax = plt.subplots(1)
@@ -2203,85 +2245,75 @@ class Utilities:
             dateTime.append(Utilities.timeTag2ToDateTime(dt,timeTags[i]))
 
         return dateTime
+
+
     @staticmethod
-    # def generateTempCoeffs(InternalTemp, uncDS, ambTemp, sensor):
-    def generateTempCoeffs(InternalTemp, uncDS, sensor):        
-        # InternalTemp can come from 1) internal thermistor, 2) caps-on dark, 3) airTemp + 5 C
-        #   2) Only for airTemp +5C > 30 C, otherwise 1) or 3).
+    def generateTempCoeffs(workingTemp, sigmaT, thermalCoeffDS, sensor):
+        # workingTemp can come from 1) internal thermistor, 2) caps-on dark, 3) airTemp + 2.5 C
+        #   Option (2) is only for airTemp +2.5C and COD temp both > 30 C, otherwise (1) or (3).
+        #   See Utilities.UncTempCorrection
 
         # Get the reference temperature
-        # if 'REFERENCE_TEMP' in uncDS.attributes:
-        if 'AMBIENT_TEMP' in uncDS.attributes:
-            # refTemp = float(uncDS.attributes["REFERENCE_TEMP"])
+        # if 'REFERENCE_TEMP' in thermalCoeffDS.attributes:
+        if 'AMBIENT_TEMP' in thermalCoeffDS.attributes:
             # This is temperature of the sensor during calibration
-            #   REFERENCE_TEMP is not relevant.
-            calTemp = float(uncDS.attributes["AMBIENT_TEMP"])
+            #   REFERENCE_TEMP is the AMBIENT_TEMP during derivation of thermal coefficients, and not relevant here.
+            calTemp = float(thermalCoeffDS.attributes["AMBIENT_TEMP"])
         else:
-            print("reference temperature not found")
-            print("aborting ...")
+            Utilities.writeLogFileAndPrint("Reference temperature not found. Aborting ...")
             return None
 
         # Get thermal coefficient from characterization
-        uncDS.datasetToColumns()
-        therm_coeff = uncDS.data[list(uncDS.columns.keys())[2]]
-        therm_unc = uncDS.data[list(uncDS.columns.keys())[3]]
+        thermalCoeffDS.datasetToColumns()
+        therm_coeff = thermalCoeffDS.data[list(thermalCoeffDS.columns.keys())[2]]
+        therm_unc = thermalCoeffDS.data[list(thermalCoeffDS.columns.keys())[3]] # NOTE: See below. Is this sigmaC?
         ThermCorr = []
         ThermUnc = []
 
-        for i,therm_coeffi in enumerate(therm_coeff):
+        for i, therm_coeffi in enumerate(therm_coeff):
             try:
-                ThermCorr.append(1 + (therm_coeffi * (InternalTemp - calTemp)))
+                # Thermal Correction:
+                dT = workingTemp - calTemp
+                ThermCorr.append(1 + (therm_coeffi * dT))
+
+                # Thermal Correction Uncertainty:
+                # NOTE: Zibordi and Talone, in prep. 2025
+                # 𝑢𝑟(λ, ∆𝑇, DN) = [ε𝑐(λ, ∆𝑇)^2 + ε𝑇(λ, DN)^2]1/2
+                # 𝜀𝑐(𝜆, Δ𝑇) = Δ𝑇 × 𝜎𝑐(𝜆)
+                # 𝜀𝑇(𝜆, DN) = 𝑐(λ ) × 𝜎𝑇(DN)
+                # σc(λ)=0.03×10-2 (°C)-1 in the 400-800 nm spectral range for the 10-40°C interval
+                # σc(λ)= therm_unc from THERMAL file NOTE: CHECK THIS!
+                # ∆𝑇 = workingT - calTemp
+                sigmaC = therm_unc[i] # NOTE: Confirm this
+                # sigmaC = 0.0003
+                epsC = dT*sigmaC
+                epsT = therm_coeffi*sigmaT
+                ur = np.sqrt(epsC**2 + epsT**2)
+
                 if ConfigFile.settings["fL1bCal"] == 3:
-                    ThermUnc.append(np.abs(therm_unc[i] * (InternalTemp - calTemp)) / 2)
+                    # ThermUnc.append(np.abs(therm_unc[i] * (workingTemp - calTemp)) / 2)
                     # div by 2 because uncertainty is k=2
+                    ThermUnc.append(ur / 2)
                 else:
-                    ThermUnc.append(np.abs(therm_coeffi * (InternalTemp - calTemp)))
+                    ThermUnc.append(ur)
             except IndexError as err:
                 print(f'{err} in Utilities.generateTempCoeffs')
                 ThermCorr.append(1.0)
                 ThermUnc.append(0)
 
-        # BUG: This ACRI code was wrong from the start due to confusion about ambient temperature.
-        #   ambTemp, as originally written, came from the calibration lab, not the field.
-        # # Seabird case
-        # if ConfigFile.settings['SensorType'].lower() == "seabird" or ConfigFile.settings['SensorType'].lower() == "dalec":
-            # for i in range(len(therm_coeff)):
-            #     try:
-            #         ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp - refTemp)))
-            #         if ConfigFile.settings["fL1bCal"] == 3:
-            #             ThermUnc.append(np.abs(therm_unc[i] * (InternalTemp - refTemp)) / 2)
-            #             # div by 2 because uncertainty is k=2
-            #         else:
-            #             ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp - refTemp)))
-            #     except IndexError:
-            #         ThermCorr.append(1.0)
-            #         ThermUnc.append(0)
-        # TRIOS case: no temperature available
-        # elif ConfigFile.settings['SensorType'].lower() == "trios":
-        #     # For Trios the radiometer InternalTemp is a place holder filled with 0.
-        #     # We use ambiant_temp+2.5° instead to estimate internal temp
-        #     for i in range(len(therm_coeff)):
-        #         try:
-        #             ThermCorr.append(1 + (therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))
-        #             if ConfigFile.settings["fL1bCal"] == 3:
-        #                 ThermUnc.append(np.abs(therm_unc[i]*(InternalTemp+ambTemp+5 - refTemp)) / 2)
-        #                 # uncertainty is k=2 from char file
-        #             else:
-        #                 ThermUnc.append(np.abs(therm_coeff[i] * (InternalTemp+ambTemp+5 - refTemp)))
-        #         except IndexError:
-        #             ThermCorr.append(1.0)
-        #             ThermUnc.append(0)
-
         # Change thermal general coefficients into ones specific for processed data
-        uncDS.columns[f"{sensor}_TEMPERATURE_COEFFICIENTS"] = ThermCorr
-        uncDS.columns[f"{sensor}_TEMPERATURE_UNCERTAINTIES"] = ThermUnc
-        uncDS.columnsToDataset()
+        thermalCoeffDS.columns[f"{sensor}_TEMPERATURE_COEFFICIENTS"] = ThermCorr
+        thermalCoeffDS.columns[f"{sensor}_TEMPERATURE_UNCERTAINTIES"] = ThermUnc
+        thermalCoeffDS.columnsToDataset()
 
         return True
 
     @staticmethod
     def UncTempCorrection(node):
-        ''' Called by ProcessL1b.read_unc_coefficient_factory, .read_unc_coefficient_class, .read_unc_coefficient_frm '''
+        ''' Called by ProcessL1b.read_unc_coefficient_factory, .read_unc_coefficient_class, .read_unc_coefficient_frm 
+            Thermal coefficients devised for each radiometer class are base on "Working Temperature" defined as:
+                TriOS G1: ambient temperature in the thermal chamber external to the radiometer in thermal equilibrium. 
+                Sea-Bird: internal thermistor temperature.'''
         unc_grp = node.getGroup("RAW_UNCERTAINTIES")
         # sensorID = Utilities.get_sensor_dict(node)
         # inv_ID = {v: k for k, v in sensorID.items()}
@@ -2289,10 +2321,12 @@ class Utilities:
             TempCoeffDS = unc_grp.getDataset(sensor+"_TEMPDATA_CAL")
 
             meanSPECTEMP,meanAIRTEMP,meanCAPSONTEMP = None,None,None
-            airTempMargin = 5 # 5 degrees above air temp per Zibordi Talone (in prep 2025)
+            airTempMargin = 2.5 # Average estimate of margin for working temperature (G1) above air temp
             # SPECTEMP should be present for all platform/sensors (SeaBird,TriOS,DALEC),
             #   but only populated with non-zeroes where an internal thermistor is available.
+
             # CAPSONTEMP only available for TriOS.
+            sigmaT = None
             if ConfigFile.settings['SensorType'].lower() == "seabird" or \
                 ConfigFile.settings['SensorType'].lower() == "dalec":
                 sensorGroup = node.getGroup(f'{sensor}_LIGHT')
@@ -2301,15 +2335,17 @@ class Utilities:
                     meanSPECTEMP = np.mean(np.array(specTEMP.data.tolist()))
                 else:
                     Utilities.writeLogFileAndPrint("Internal temperature dataset not found")
-                if "CAPSONTEMP" in sensorGroup.datasets:
-                    capsonTEMP = sensorGroup.getDataset("CAPSONTEMP")
-                    capsonTEMP.datasetToColumns()
-                    meanCAPSONTEMP = capsonTEMP.columns['T'][0]
-                # else:
-                #     Utilities.writeLogFileAndPrint("Caps-on temperature dataset not found")
-            else:
+                    return False
+                # if "CAPSONTEMP" in sensorGroup.datasets:
+                #     capsonTEMP = sensorGroup.getDataset("CAPSONTEMP")
+                #     capsonTEMP.datasetToColumns()
+                #     meanCAPSONTEMP = capsonTEMP.columns['T'][0]
+                # # else:
+                # #     Utilities.writeLogFileAndPrint("Caps-on temperature dataset not found")
+            elif ConfigFile.settings['SensorType'].lower() == "trios": 
                 sensorGroup = node.getGroup(f'{sensor}')
                 if "SPECTEMP" in sensorGroup.datasets:
+                    # NOTE: Need to distinguish G2 at some point
                     specTEMP = sensorGroup.getDataset("SPECTEMP")
                     meanSPECTEMP = np.mean(np.array(specTEMP.data.tolist()))
                 else:
@@ -2318,101 +2354,51 @@ class Utilities:
                     capsonTEMP = sensorGroup.getDataset("CAPSONTEMP")
                     capsonTEMP.datasetToColumns()
                     meanCAPSONTEMP = capsonTEMP.columns['T'][0]
-
+                    sigmaT = capsonTEMP.columns['sigmaT'][0]
                 if "AIRTEMP" in node.getGroup('ANCILLARY_METADATA').datasets:
                     airTEMP = node.getGroup('ANCILLARY_METADATA').getDataset("AIRTEMP").columns['AIRTEMP']
                     meanAIRTEMP = np.mean(np.array(airTEMP))
                 else:
                     Utilities.writeLogFileAndPrint("Air temperature dataset not found")
 
-            #Now make the decision which value to use as the internal working temperature of the sensor.
+            # Now make the decision which value to use as the internal working temperature of the sensor.
             # NOTE: Currently, only TriOS L1A processing matches dark files to extract CAPSONTEMP
             if meanSPECTEMP != 0.0:
                 # NOTE: G2 thermistor acquisition is still under development
                 Utilities.writeLogFileAndPrint(f"{sensor}: Using internal thermistor for sensor working temperature")
-                internalTemp = meanSPECTEMP     # SeaBird, DALEC, and TriOS G2 should always follow this path
-                internalTempSource = 'InternalThermistor'
+                workingTemp = meanSPECTEMP     # SeaBird, DALEC, and TriOS G2 should always follow this path
+                workingTempSource = 'InternalThermistor'
             elif meanCAPSONTEMP and ConfigFile.settings['fL1bThermal'] == 3:
                 if meanAIRTEMP:
                     if (meanAIRTEMP + airTempMargin < 30) and (meanCAPSONTEMP < 30): # Both conditions must be met
                         Utilities.writeLogFileAndPrint(f"{sensor}: meanAIRTEMP + airTempMargin < 30. Using air temp with margin for sensor working temperature")
-                        internalTemp = meanAIRTEMP + airTempMargin
-                        internalTempSource = 'AirTemp+5C'
+                        workingTemp = meanAIRTEMP + airTempMargin
+                        workingTempSource = 'AirTemp+5C'
                     else:
                         Utilities.writeLogFileAndPrint(f"{sensor}: (meanAIRTEMP + airTempMargin) and/or COD >= 30. Using caps-on dark algorithm for sensor working temperature")
-                        internalTemp = meanCAPSONTEMP
-                        internalTempSource = 'CapsOnDark'
+                        workingTemp = meanCAPSONTEMP
+                        workingTempSource = 'CapsOnDark'
                 else:
                     # Emergency fallback where no other source is available. Least accurate.
                     Utilities.writeLogFileAndPrint(f"{sensor}:WARNING: No air temperature provided. Caps-on dark temp used despite temps < 30 C.")
-                    internalTemp = meanCAPSONTEMP
-                    internalTempSource = 'CapsOnDark'
+                    workingTemp = meanCAPSONTEMP
+                    workingTempSource = 'CapsOnDark'
             else:
                 if meanAIRTEMP:
                     Utilities.writeLogFileAndPrint(f"{sensor}:Using air temp with margin for sensor working temperature")
-                    internalTemp = meanAIRTEMP + airTempMargin
-                    internalTempSource = 'AirTemp+5C'
+                    workingTemp = meanAIRTEMP + airTempMargin
+                    workingTempSource = 'AirTemp+5C'
                 else:
                     # Considering fallbacks for air temperature, this should never be reached.
                     Utilities.writeLogFileAndPrint(f"{sensor}:WARNING: No source of information available for sensor working temperature!")
                     return False
 
-            # add internalTempSource to attributes
-            sensorGroup.attributes['InternalTempSource'] = internalTempSource
-            sensorGroup.attributes['InternalTemp'] = f'{internalTemp:.1f}'
+            # add workingTempSource to attributes
+            sensorGroup.attributes['WorkingTempSource'] = workingTempSource
+            sensorGroup.attributes['WorkingTemp'] = f'{workingTemp:.1f}'
 
-            # if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
-            if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, sensor):
+            if not Utilities.generateTempCoeffs(workingTemp, sigmaT, TempCoeffDS, sensor):
                 Utilities.writeLogFileAndPrint("Failed to generate Thermal Coefficients")
-
-            # ### Seabird
-            # if ConfigFile.settings['SensorType'].lower() == "seabird":
-            #     if "TEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
-            #         TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("TEMP")
-            #     elif "SPECTEMP" in node.getGroup(f'{sensor}_LIGHT').datasets:
-            #         TempDS = node.getGroup(f'{sensor}_LIGHT').getDataset("SPECTEMP")
-            #     else:
-            #         Utilities.writeLogFileAndPrint("Thermal dataset not found")
-            #     # internal temperature is the mean of all replicate
-            #     internalTemp = np.mean(np.array(TempDS.data.tolist()))
-            #     # ambiant temp is not needed for seabird as internal temp is measured, set to 0
-            #     ambTemp = 0
-            #     # if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
-            #     if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, sensor):
-            #         Utilities.writeLogFileAndPrint("Failed to generate Thermal Coefficients")
-
-            # ### Dalec
-            # elif ConfigFile.settings['SensorType'].lower() == "dalec":
-            #     if "SPECTEMP" in node.getGroup(f'{sensor}').datasets:
-            #         TempDS = node.getGroup(f'{sensor}').getDataset("SPECTEMP")
-            #     else:
-            #         Utilities.writeLogFileAndPrint("Thermal dataset not found")
-            #     # internal temperature is the mean of all replicate
-            #     internalTemp = np.mean(np.array(TempDS.data.tolist()))
-            #     # ambiant temp is not needed for seabird as internal temp is measured, set to 0
-            #     ambTemp = 0
-            #     # if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
-            #     if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, sensor):
-            #         Utilities.writeLogFileAndPrint("Failed to generate Thermal Coefficients")
-
-            # ### Trios
-            # elif ConfigFile.settings['SensorType'].lower() == "trios":
-            #     # G1 has no internal temp, but G2 should. I don't know where...
-            #     # For G1, use either air temp + 5C or caps-on darks for case of airTemp+5C > 30C
-
-            #     # NOTE: This ACRI approach was wrong from the very beginning. RADCAL_CAL ambient temperature is 
-            #     #   from the calibration lab, and has nothing to do with sensor temp in the field.
-            #     internalTemp = 0
-            #     # Ambiant temperature is needed to estimate internal temperature instead.
-            #     RadcalDS = unc_grp.getDataset(sensor+"_RADCAL_CAL")
-            #     if 'AMBIENT_TEMP' in RadcalDS.attributes:
-            #         ambTemp = float(RadcalDS.attributes["AMBIENT_TEMP"])
-            #     else:
-            #         print("Ambient temperature not found")
-            #         print("Aborting ...")
-            #         return None
-            #     if not Utilities.generateTempCoeffs(internalTemp, TempCoeffDS, ambTemp, sensor):
-            #         Utilities.writeLogFileAndPrint("Failed to generate Thermal Coefficients")
 
         return True
 
@@ -2502,7 +2488,7 @@ class Utilities:
                 new_ds.datasetToColumns()
                 unc_group.removeDataset(ds.id) # remove dataset
 
-            if "_RADCAL_" in name: 
+            if "_RADCAL_" in name:
                 # RADCAL are always sensor specific
                 for sensor in sensorID:
                     if sensor in ds.id:

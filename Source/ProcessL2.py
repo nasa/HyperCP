@@ -1349,7 +1349,7 @@ class ProcessL2:
             # Zhang rho is based on Zhang et al. 2017 and calculates the wavelength-dependent rho vector
             # separated for sun and sky to include polarization factors.
 
-            # Model limitations: AOD 0 - 0.2, Solar zenith 0-60 deg, Wavelength 350-1000 nm.
+            # Model limitations: AOD 0 - 0.5, Solar zenith 0-60 deg, Wavelength 350-1000 nm, SVA 30 or 40 degrees.
 
             # reduce number of draws because of how computationally intensive the Zhang method is
             Rho_Uncertainty_Obj = Propagate(M=10, cores=1)
@@ -1377,10 +1377,8 @@ class ProcessL2:
 
             SVA = ConfigFile.settings['fL2SVA']
 
-            rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice, SalXSlice, RelAzXSlice, 
-                                                          SVA, waveSubset, Rho_Uncertainty_Obj) 
-        
-
+            rhoVector, rhoUNC = RhoCorrections.ZhangCorr(WINDSPEEDXSlice,AODXSlice, CloudXSlice, SZAXSlice, SSTXSlice, SalXSlice, RelAzXSlice,
+                                                          SVA, waveSubset, Rho_Uncertainty_Obj)
 
             for i, k in enumerate(waveSubset):
                 rhoVec[str(k)] = rhoVector[i]
