@@ -170,7 +170,7 @@ class ProcessL1aTriOS:
                         if gpDark.id.startswith('SAM'):
                             sensorIDS = ['ES','LI','LT']
                             for ds in gpDark.datasets:
-                                if gpDark.datasets[ds].id in sensorIDS:                         
+                                if gpDark.datasets[ds].id in sensorIDS:                 
                                     DN = gpDark.datasets[ds].data[:].tolist()
                                     if len(DN) < minSpectra:
                                         Utilities.writeLogFileAndPrint("Too few spectra for caps-on dark algorithm. Abort.")

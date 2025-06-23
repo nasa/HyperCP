@@ -516,7 +516,9 @@ class ProcessL1b_Interp:
         root = HDFRoot()
         root.copyAttributes(node)
 
-        interval = float(ConfigFile.settings["fL1bInterpInterval"])
+        # Halt user-imposed interval for now as FRM uncertainties do not support this
+        #   Instead, use the interval from Es
+        # interval = float(ConfigFile.settings["fL1bInterpInterval"])
 
         sunTrackers = ['SunTracker_SOLARTRACKER','SunTracker_pySAS','SunTracker_DALEC','SunTracker_SoRad']
 
@@ -574,6 +576,9 @@ class ProcessL1b_Interp:
         # Determine interpolated wavelength values
         esStart = np.ceil(esWavelength[0])
         esEnd = np.floor(esWavelength[len(esWavelength)-1])
+
+        # No longer using user-input interval
+        interval = (esStart - esEnd)/len(esWavelength)
 
         # Li dataset to dictionary
         liData.datasetToColumns()

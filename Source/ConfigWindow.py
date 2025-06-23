@@ -127,7 +127,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1aCODCheckBox = QtWidgets.QCheckBox("", self)
         if ConfigFile.settings["bL1aCOD"]:
             self.l1aCODCheckBox.setChecked(True)
-        # self.l1aCODCheckBoxUpdate()
+        self.l1aCODCheckBoxUpdate()
         self.l1aCODCheckBox.clicked.connect(self.l1aCODCheckBoxUpdate)
 
         # L1AQC
