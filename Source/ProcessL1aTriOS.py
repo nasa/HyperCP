@@ -165,22 +165,34 @@ class ProcessL1aTriOS:
 
                 # For Caps-On Dark measurements
                 if cod:
+                    minSpectra = 5 # minimum number of spectra to estimate T from DN
                     for gpDark in root.groups:
                         if gpDark.id.startswith('SAM'):
-                            # NOTE: Placeholder to calculate T and dT from DN.
+                            sensorIDS = ['ES','LI','LT']
+                            for ds in gpDark.datasets:
+                                if gpDark.datasets[ds].id in sensorIDS:                         
+                                    DN = gpDark.datasets[ds].data[:].tolist()
+                                    if len(DN) < minSpectra:
+                                        Utilities.writeLogFileAndPrint("Too few spectra for caps-on dark algorithm. Abort.")
+                                        return None, None
+
+                            # Zibordi & Talone, in prep. (2025)
                             # T = -Tc + S * ln(DN-DNc)
                             # RAMSES class coefficients
-                            # Tc = -16.4
-                            # S = 6.147
-                            # DNc = 1438
+                            Tc = -16.4
+                            S = 6.147
+                            DNc = 1438
                             print(f'Running caps-on dark algorithm to estimate internal temp:{gpDark.id}')
+
+                            T = [Tc + S * np.log(dn-DNc) for dn in np.array(DN[:])]
+                            meanT = np.mean(T)
+                            # meanT = 31 NOTE: use to force COD threshold for testing
+                            stdT = np.std(T)
                             # Add dataset CAPSONTEMP for T and sigmaT columns. SPECTEMP reserved for internal thermistor temp (G2 and others)
-                            T = gpDark.addDataset('CAPSONTEMP')
-                            # Dummy values
-                            T.appendColumn('T',float(31))                          # NOTE: Placeholder for average internal T from DN
-                            T.appendColumn('sigmaT',float(3))                      # NOTE: Placeholder for standard devation of DN
-                            # NOTE: Not clear how long of a record to average, or how to (whether to) average the DNs across all bands.
-                            T.columnsToDataset()
+                            dsT = gpDark.addDataset('CAPSONTEMP')
+                            dsT.appendColumn('T',meanT)
+                            dsT.appendColumn('sigmaT',stdT)
+                            dsT.columnsToDataset()
                 elif re.search(r'\d{4}[S]', a_name):
                     darkFile = None
                     if os.path.isdir(outFilePathDark):
@@ -204,8 +216,7 @@ class ProcessL1aTriOS:
                 except Exception:
                     msg = 'Unable to write L1A file. It may be open in another program.'
                     Utilities.errorWindow("File Error", msg)
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    Utilities.writeLogFileAndPrint(msg)
                     return None, None
 
                 Utilities.checkOutputFiles(outFFP[-1])

@@ -80,7 +80,7 @@ class CalCharWindow(QtWidgets.QDialog):
         self.ThermistorRadioButton = QtWidgets.QRadioButton("Internal Thermistor (SeaBird, DALEC, TriOS-G2)")
         # self.ThermistorRadioButton.setAutoExclusive(False)
         self.ThermistorRadioButton.clicked.connect(self.ThermistorRadioButtonClicked)
-        self.AirTempRadioButton = QtWidgets.QRadioButton("Air Temperature + 5 deg. C")
+        self.AirTempRadioButton = QtWidgets.QRadioButton("Air Temperature + 2.5 deg. C")
         self.AirTempRadioButton.clicked.connect(self.AirTempRadioButtonClicked)
         self.CapsOnFileRadioButton = QtWidgets.QRadioButton("Caps-on Dark File (T > 30 deg. C)")
         self.CapsOnFileRadioButton.clicked.connect(self.CapsOnFileRadioButtonClicked)
