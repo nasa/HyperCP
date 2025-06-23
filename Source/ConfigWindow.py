@@ -267,6 +267,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1bInterpInterval"]))
         self.l1bInterpIntervalLineEdit.setValidator(doubleValidator)
         self.l1bInterpIntervalLineEdit.setDisabled(True) # No longer an option; not accomodated in uncertainties
+        l1bInterpIntervalLabel.setDisabled(True)
 
         # l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Plots ({os.path.split(MainConfig.settings['outDir'])[-1]}/Plots/L1B_Interp/)", self)
         l1bPlotTimeInterpLabel = QtWidgets.QLabel("    Generate Interpolation Plots", self)
