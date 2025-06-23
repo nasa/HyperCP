@@ -6,10 +6,11 @@ from pathlib import Path
 from PyQt5 import QtWidgets
 
 from ocdb.api.OCDBApi import new_api, OCDBApi
-
 from Source.ConfigFile import ConfigFile
 from Source import PATH_TO_CONFIG
-
+from Source.Controller import Controller
+from Source.CalibrationFileReader import CalibrationFileReader
+from Source import PACKAGE_DIR as CODE_HOME
 
 class CalCharWindow(QtWidgets.QDialog):
     ''' Object for calibration/characterization configuration GUI '''
@@ -23,6 +24,51 @@ class CalCharWindow(QtWidgets.QDialog):
         ''' Initialize the GUI '''
         calibrationDir = os.path.splitext(self.name)[0] + "_Calibration"
         self.calibrationPath = os.path.join(PATH_TO_CONFIG, calibrationDir)
+
+        # Sensor information
+        # SERIAL NUMBERS...
+        self.neededCalCharsFRM = {}
+        if ConfigFile.settings['SensorType'] == 'TriOS':
+            for k,v in ConfigFile.settings['CalibrationFiles'].items():
+
+                sensorType = v['frameType']
+
+                v['serialNumber'] = k.split('.ini')[0]
+                if sensorType in  ['LI', 'LT']:
+                    self.neededCalCharsFRM[v['frameType']] = ['%s_%s' % (v['serialNumber'], c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'POLAR']]
+                elif sensorType == 'ES':
+                    self.neededCalCharsFRM[v['frameType']] = ['%s_%s' % (v['serialNumber'], c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
+        elif ConfigFile.settings['SensorType'] == 'SeaBird':
+
+            calibrationMap = CalibrationFileReader.read(self.calibrationPath)
+            Controller.generateContext(calibrationMap)
+
+            for k,v in ConfigFile.settings['CalibrationFiles'].items():
+                print(k,v)
+                if not ((k.startswith('HSL') or k.startswith('HED')) and k.endswith('.cal')):
+                    continue
+
+                # extract digits...
+                serialNumber0 = '%04d' % int(''.join([k0 for k0 in k[len('HSE'):-len('.cal')] if k0.isdigit()]))
+                v['serialNumber'] = 'SAT' + serialNumber0
+
+                sensorType = calibrationMap[k].sensorType
+
+                if sensorType in  ['LI', 'LT']:
+                    self.neededCalCharsFRM[sensorType] = ['%s_%s' % (v['serialNumber'], c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'POLAR']]
+                elif sensorType == 'ES':
+                    self.neededCalCharsFRM[sensorType] = ['%s_%s' % (v['serialNumber'], c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
+
+        elif ConfigFile.settings['SensorType'] == 'Dalec':
+            # TODO
+            pass # Not yet implemented, and not needed, as FRM regimes are not available still for DALEC.
+
+        if ConfigFile.settings['SensorType'] == 'Dalec':
+            # FRM regimes not yet implemented, forcing factory mode.
+            ConfigFile.settings["fL1bCal"] == 1
+
+        # Files needed
+
 
         # Thermal source selection
         ThermalLabel = QtWidgets.QLabel(" Select source of internal sensor working temperature:", self)
@@ -57,31 +103,18 @@ class CalCharWindow(QtWidgets.QDialog):
         self.ClassCalRadioButton = QtWidgets.QRadioButton(f"FRM Class-Specific characterisation coefficients will be used (available in /Data/Class_Based_Characterizations/{ConfigFile.settings['SensorType']})"
                                                           "\n NB: Sensor-specific calibrations with uncertainties in the FidRadDB format required" )
         self.ClassCalRadioButton.setAutoExclusive(False)
-        self.ClassRadio1 = QtWidgets.QRadioButton("Local", self)
-        self.addClassFilesButton = QtWidgets.QPushButton("Add calibration files:")
-        self.classFilesLineEdit = QtWidgets.QLineEdit(self)
-        self.classFilesLineEdit.setDisabled(True)
-        self.ClassRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
-        ClassFidRadDBLabel = QtWidgets.QLabel(f"Calibration files will be downloaded into /Data/FidRadDB/{ConfigFile.settings['SensorType']}", self)
         self.ClassCalRadioButton.clicked.connect(self.ClassCalRadioButtonClicked)
-        self.ClassRadio1.clicked.connect(self.RadioUpdate1)
-        self.ClassRadio2.clicked.connect(self.RadioUpdate2)
 
-        # Full
+         # Full
         self.FullCalRadioButton = QtWidgets.QRadioButton("FRM Sensor-Specific characterisation coefficients will be used (highest quality)"
                                                          "\n NB: Sensor-specific calibrations with uncertainties and characterizations in the FidRadDB format required")
         self.FullCalRadioButton.setAutoExclusive(False)
-        self.FRMRadio1 = QtWidgets.QRadioButton("Local", self)
-        self.addFullFilesButton = QtWidgets.QPushButton("Add Cal/Char files:")
-        # self.addFullFilesButton.clicked.connect(self.ChooseCalFiles('cal_char'))
-        self.fullFilesLineEdit = QtWidgets.QLineEdit(self)
-        self.fullFilesLineEdit.setDisabled(True)
-        self.FRMRadio2 = QtWidgets.QRadioButton("FidRadDB", self)
-        FidRadDBLabel = QtWidgets.QLabel(f"Cal/Char files will be downloaded into /Data/FidRadDB/{ConfigFile.settings['SensorType']}", self)
         self.FullCalRadioButton.clicked.connect(self.FullCalRadioButtonClicked)
-        self.FullCalDir = ConfigFile.settings['FullCalDir']
-        self.FRMRadio1.clicked.connect(self.RadioUpdate1)
-        self.FRMRadio2.clicked.connect(self.RadioUpdate2)
+
+        # Disable FRM regimes for DALEC for the moment.
+        if ConfigFile.settings['SensorType'] == 'Dalec':
+            self.ClassCalRadioButton.setDisabled(True)
+            self.FullCalRadioButton.setDisabled(True)
 
         if ConfigFile.settings["fL1bCal"] == 1:
             self.DefaultCalRadioButton.setChecked(True)
@@ -90,25 +123,75 @@ class CalCharWindow(QtWidgets.QDialog):
         elif ConfigFile.settings["fL1bCal"] == 3:
             self.FullCalRadioButton.setChecked(True)
 
-        if ConfigFile.settings['FidRadDB']:
-            self.FRMRadio1.setChecked(False)
-            self.ClassRadio1.setChecked(False)
-            self.FRMRadio2.setChecked(True)
-            self.ClassRadio2.setChecked(True)
-        else:
-            self.FRMRadio1.setChecked(True)
-            self.ClassRadio1.setChecked(True)
-            self.FRMRadio2.setChecked(False)
-            self.ClassRadio2.setChecked(False)
-
-        CalLabel2 = QtWidgets.QLabel("Multiple calibrations for each sensor (FRM regimes only)? Select option:", self)
+        CalLabel2 = QtWidgets.QLabel("If FRM cal-char regime selected, then ...", self)
 
         CalLabel2_font = CalLabel2.font()
         CalLabel2_font.setPointSize(12)
         CalLabel2_font.setBold(True)
         CalLabel2.setFont(CalLabel2_font)
 
-        self.calFileMostRecent = QtWidgets.QRadioButton("Use most recent calibration prior to acquisition time (default)")
+
+        FidRadDB_link = '<a href="https://ocdb.eumetsat.int/docs/fidrad-database.html">FidRadDB-formatted</a>'
+        CalLabel2a = QtWidgets.QLabel(f'... check that all the needed {FidRadDB_link} cal/char files are available under: <br> {self.calibrationPath}', self)
+
+        CalLabel2a_font = CalLabel2a.font()
+        CalLabel2a_font.setPointSize(9)
+        CalLabel2a_font.setBold(False)
+        CalLabel2a.setFont(CalLabel2a_font)
+
+        CalLabel2b = QtWidgets.QLabel("Missing cal/char files?", self)
+
+        CalLabel2b_font = CalLabel2b.font()
+        CalLabel2b_font.setPointSize(9)
+        CalLabel2b_font.setBold(False)
+        CalLabel2b.setFont(CalLabel2b_font)
+
+        CalLabel2cES = QtWidgets.QLabel("Downwelling irradiance, ES", self)
+
+        CalLabel2cES_font = CalLabel2cES.font()
+        CalLabel2cES_font.setPointSize(9)
+        CalLabel2cES_font.setBold(False)
+        CalLabel2cES.setFont(CalLabel2cES_font)
+
+        CalLabel2cLT = QtWidgets.QLabel("Total water radiance, LT (water)", self)
+
+        CalLabel2cLT_font = CalLabel2cLT.font()
+        CalLabel2cLT_font.setPointSize(9)
+        CalLabel2cLT_font.setBold(False)
+        CalLabel2cLT.setFont(CalLabel2cLT_font)
+
+        CalLabel2cLI = QtWidgets.QLabel("Sky radiance, LI (sky)", self)
+
+        CalLabel2cLI_font = CalLabel2cLI.font()
+        CalLabel2cLI_font.setPointSize(9)
+        CalLabel2cLI_font.setBold(False)
+        CalLabel2cLI.setFont(CalLabel2cLI_font)
+
+        self.FidRadDBcalCharDirCheckES = QtWidgets.QLineEdit(self)
+        self.FidRadDBcalCharDirCheckES.setDisabled(True)
+
+        self.FidRadDBcalCharDirCheckLT = QtWidgets.QLineEdit(self)
+        self.FidRadDBcalCharDirCheckLT.setDisabled(True)
+
+        self.FidRadDBcalCharDirCheckLI = QtWidgets.QLineEdit(self)
+        self.FidRadDBcalCharDirCheckLI.setDisabled(True)
+
+        self.addCalCharFilesButton = QtWidgets.QPushButton("Copy from local source")
+        self.addCalCharFilesButton.clicked.connect(self.addCalCharFilesButtonClicked)
+
+
+        self.FidRadDBdownload = QtWidgets.QPushButton("Download from FidRadDB", self)
+        self.FidRadDBdownload.clicked.connect(self.FidRadDBdownloadClicked)
+
+
+        CalLabel3 = QtWidgets.QLabel("Multiple calibrations available? Select option (only supported for FRM regimes):", self)
+
+        CalLabel3_font = CalLabel3.font()
+        CalLabel3_font.setPointSize(12)
+        CalLabel3_font.setBold(True)
+        CalLabel3.setFont(CalLabel3_font)
+
+        self.calFileMostRecent = QtWidgets.QRadioButton("Use most recent calibrations prior to acquisition time (default)")
         self.calFileMostRecent.setAutoExclusive(False)
         self.calFileMostRecent.clicked.connect(lambda: self.MultiCalOptions('most_recent'))
 
@@ -116,12 +199,12 @@ class CalCharWindow(QtWidgets.QDialog):
         self.calFilePrePost.setAutoExclusive(False)
         self.calFilePrePost.clicked.connect(lambda: self.MultiCalOptions('pre_post'))
 
-        self.addPreCalButton = QtWidgets.QPushButton("Choose pre-cal files:")
+        self.addPreCalButton = QtWidgets.QPushButton("Choose (3) pre-cal files:")
         self.addPreCalButton.clicked.connect(lambda: self.ChooseCalFiles('pre_cal'))
         self.PreCalLineEdit = QtWidgets.QLineEdit(self)
         self.PreCalLineEdit.setDisabled(True)
 
-        self.addPostCalButton = QtWidgets.QPushButton("Choose post-cal files:")
+        self.addPostCalButton = QtWidgets.QPushButton("Choose (3) post-cal files:")
         self.addPostCalButton.clicked.connect(lambda: self.ChooseCalFiles('post_cal'))
         self.PostCalLineEdit = QtWidgets.QLineEdit(self)
         self.PostCalLineEdit.setDisabled(True)
@@ -140,6 +223,12 @@ class CalCharWindow(QtWidgets.QDialog):
         self.saveButton.clicked.connect(self.saveButtonPressed)
         self.cancelButton.clicked.connect(self.cancelButtonPressed)
 
+        # TODO Average of pre and post still not implemented (disabled)
+        self.calFilePrePost.setDisabled(True)
+        self.addPreCalButton.setDisabled(True)
+        self.addPostCalButton.setDisabled(True)
+
+
         self.CalStatusUpdate()
         self.MultiCalOptions('most_recent')
 
@@ -150,59 +239,56 @@ class CalCharWindow(QtWidgets.QDialog):
         # Thermal Source
         VBox.addWidget(ThermalLabel)
         ThermalHBox = QtWidgets.QHBoxLayout()
-        ThermalHBox.addStretch()
         ThermalHBox.addWidget(self.ThermistorRadioButton)
         ThermalHBox.addWidget(self.AirTempRadioButton)
         ThermalHBox.addWidget(self.CapsOnFileRadioButton)
+        ThermalHBox.addStretch()
         VBox.addLayout(ThermalHBox)
 
         # Instrument/Cal Files
         VBox.addWidget(CalLabel)
 
-        #   Factory
-        VBox.addWidget(self.DefaultCalRadioButton)
+        #  Cal/char regimes
+        VBox.addWidget(self.DefaultCalRadioButton) # Factory
+        VBox.addWidget(self.ClassCalRadioButton) # Class
+        VBox.addWidget(self.FullCalRadioButton) # Full
 
-        #   Class
-        VBox.addWidget(self.ClassCalRadioButton)
+        # UT/FidRadDB files location
+        VBox.addWidget(CalLabel2)
+        VBox.addWidget(CalLabel2a)
+        VBox.addWidget(CalLabel2b)
+
+        # Check cal/char files: Es
         CalHBox1 = QtWidgets.QHBoxLayout()
-        CalHBox1.addStretch()
-        CalHBox1.addWidget(self.ClassRadio1)
-        CalHBox1.addWidget(self.addClassFilesButton)
-        CalHBox1.addWidget(self.classFilesLineEdit)
-        CalHBox1.addStretch()
+        CalHBox1.addWidget(CalLabel2cES)
+        CalHBox1.addWidget(self.FidRadDBcalCharDirCheckES)
         VBox.addLayout(CalHBox1)
 
+        # Check cal/char files: Lt
         CalHBox2 = QtWidgets.QHBoxLayout()
-        CalHBox2.addStretch()
-        CalHBox2.addWidget(self.ClassRadio2)
-        CalHBox2.addWidget(ClassFidRadDBLabel)
-        CalHBox2.addStretch()
+        CalHBox2.addWidget(CalLabel2cLT)
+        CalHBox2.addWidget(self.FidRadDBcalCharDirCheckLT)
         VBox.addLayout(CalHBox2)
 
-        #   Full
-        VBox.addWidget(self.FullCalRadioButton)
+        # Check cal/char files: Li
         CalHBox3 = QtWidgets.QHBoxLayout()
-        CalHBox3.addStretch()
-        CalHBox3.addWidget(self.FRMRadio1)
-        CalHBox3.addWidget(self.addFullFilesButton)
-        CalHBox3.addWidget(self.fullFilesLineEdit)
-        CalHBox3.addStretch()
+        CalHBox3.addWidget(CalLabel2cLI)
+        CalHBox3.addWidget(self.FidRadDBcalCharDirCheckLI)
         VBox.addLayout(CalHBox3)
 
+        # Copy/download missing files
         CalHBox4 = QtWidgets.QHBoxLayout()
-        CalHBox4.addStretch()
-        CalHBox4.addWidget(self.FRMRadio2)
-        CalHBox4.addWidget(FidRadDBLabel)
-        CalHBox4.addStretch()
+        CalHBox4.addWidget(self.addCalCharFilesButton)
+        CalHBox4.addWidget(self.FidRadDBdownload)
         VBox.addLayout(CalHBox4)
 
-        # Multiple calibration files
-        VBox.addWidget(CalLabel2)
+        # Multiple calibration files options
+        VBox.addWidget(CalLabel3)
 
-        #   Most recent
+        # Most recent
         VBox.addWidget(self.calFileMostRecent)
 
-        #   Pre- Post-
+        # Pre - Post average
         VBox.addWidget(self.calFilePrePost)
         CalHBox5 = QtWidgets.QHBoxLayout()
         CalHBox5.addStretch()
@@ -213,7 +299,7 @@ class CalCharWindow(QtWidgets.QDialog):
         CalHBox5.addStretch()
         VBox.addLayout(CalHBox5)
 
-        #   Choose other
+        # Choose other
         VBox.addWidget(self.calFileChoose)
         CalHBox6 = QtWidgets.QHBoxLayout()
         CalHBox6.addStretch()
@@ -235,7 +321,7 @@ class CalCharWindow(QtWidgets.QDialog):
         self.setGeometry(100, 100, 0, 0)
         self.setWindowTitle('Calibration/Characterization options')
 
-    #####################################################################################
+    ###################################### GUI-controlled functions ###############################################
 
     def ThermalStatusUpdate(self):
         if ConfigFile.settings['SensorType'].lower() == 'trios': # G1
@@ -266,10 +352,12 @@ class CalCharWindow(QtWidgets.QDialog):
         print("ConfigWindow - L1b Thermal source set to internal thermistor")
         ConfigFile.settings["fL1bThermal"] = 1
         self.ThermalStatusUpdate()
+
     def AirTempRadioButtonClicked(self):
         print("ConfigWindow - L1b Thermal source set to air-temperature-based")
         ConfigFile.settings["fL1bThermal"] = 2
         self.ThermalStatusUpdate()
+
     def CapsOnFileRadioButtonClicked(self):
         print("ConfigWindow - L1b Thermal source set to caps-on dark file")
         ConfigFile.settings["fL1bThermal"] = 3
@@ -289,10 +377,8 @@ class CalCharWindow(QtWidgets.QDialog):
             calFileStr = "3 pre-calibration"
         elif option_cal_char_file == 'post_cal':
             calFileStr = "3 post-calibration"
-        elif option_cal_char_file in ['only_cal', 'choose_cal']:
+        elif option_cal_char_file in 'choose_cal':
             calFileStr = "3 calibration"
-        elif option_cal_char_file == 'cal_char':
-            calFileStr = "3 calibration and 9 characterisation"
 
         correctSelection = False
         while not correctSelection:
@@ -307,7 +393,7 @@ class CalCharWindow(QtWidgets.QDialog):
             if not file_paths:
                 correctSelection = True
             else:
-                # Then filter for files containing "ABC" in their name
+                # Then filter for files containing "RADCAL" in their name
                 file_paths = [f for f in file_paths if "RADCAL" in os.path.basename(f)]
 
                 if len(file_paths) != 3:
@@ -328,12 +414,10 @@ class CalCharWindow(QtWidgets.QDialog):
             self.ClassCalRadioButton.setChecked(False)
             self.FullCalRadioButton.setChecked(False)
 
-            self.addClassFilesButton.setDisabled(True)
-            self.FRMRadio1.setDisabled(True)
-            self.ClassRadio1.setDisabled(True)
-            self.FRMRadio2.setDisabled(True)
-            self.ClassRadio2.setDisabled(True)
-            self.addFullFilesButton.setDisabled(True)
+            self.addCalCharFilesButton.setDisabled(True)
+            self.FidRadDBdownload.setDisabled(True)
+            # self.addClassFilesButton.setDisabled(True)
+            # self.addFullFilesButton.setDisabled(True)
 
             self.calFileMostRecent.setDisabled(True)
             self.calFilePrePost.setDisabled(True)
@@ -348,19 +432,15 @@ class CalCharWindow(QtWidgets.QDialog):
             self.ClassCalRadioButton.setChecked(True)
             self.FullCalRadioButton.setChecked(False)
 
-            self.addClassFilesButton.setDisabled(False)
-            self.FRMRadio1.setDisabled(True)
-            self.ClassRadio1.setDisabled(False)
-            self.FRMRadio2.setDisabled(True)
-            self.ClassRadio2.setDisabled(False)
-            self.addFullFilesButton.setDisabled(True)
+            self.addCalCharFilesButton.setDisabled(False)
+            self.FidRadDBdownload.setDisabled(False)
 
             self.calFileMostRecent.setDisabled(False)
-            self.calFilePrePost.setDisabled(False)
+            # self.calFilePrePost.setDisabled(False) TODO not yet implemented
             self.calFileChoose.setDisabled(False)
 
-            self.addPreCalButton.setDisabled(False)
-            self.addPostCalButton.setDisabled(False)
+            # self.addPreCalButton.setDisabled(False) TODO not yet implemented
+            # self.addPostCalButton.setDisabled(False) TODO not yet implemented
             self.addChooseCalButton.setDisabled(False)
 
         elif ConfigFile.settings["fL1bCal"] == 3:
@@ -368,48 +448,19 @@ class CalCharWindow(QtWidgets.QDialog):
             self.ClassCalRadioButton.setChecked(False)
             self.FullCalRadioButton.setChecked(True)
 
-            self.addClassFilesButton.setDisabled(True)
-            self.FRMRadio1.setDisabled(False)
-            self.ClassRadio1.setDisabled(True)
-            self.FRMRadio2.setDisabled(False)
-            self.ClassRadio2.setDisabled(True)
-            self.addFullFilesButton.setDisabled(False)
+            self.addCalCharFilesButton.setDisabled(False)
+            self.FidRadDBdownload.setDisabled(False)
 
             self.calFileMostRecent.setDisabled(False)
-            self.calFilePrePost.setDisabled(False)
+            # self.calFilePrePost.setDisabled(False) TODO not yet implemented
             self.calFileChoose.setDisabled(False)
 
-            self.addPreCalButton.setDisabled(False)
-            self.addPostCalButton.setDisabled(False)
+            # self.addPreCalButton.setDisabled(False) TODO not yet implemented
+            # self.addPostCalButton.setDisabled(False) TODO not yet implemented
             self.addChooseCalButton.setDisabled(False)
 
-        # Check for RadCal and Full-char files:
-        failCode = 0
-        # Confirm 3 RADCAL files found in destination
-        files = glob.glob(os.path.join(self.calibrationPath, '*RADCAL*.[tT][xX][tT]'))
-        if len(files) != 3:
-            failCode += 1
-            self.classFilesLineEdit.setText("Files not found")
-        else:
-            self.classFilesLineEdit.setText("Files found")
-            ConfigFile.settings['RadCalDir'] = self.calibrationPath
-        # Confirm 2 POLAR files found in destination
-        files = glob.glob(os.path.join(self.calibrationPath, '*POLAR*.[tT][xX][tT]'))
-        if len(files) != 2:
-            failCode += 1
-        # Confirm 3 STRAY files found in destination
-        files = glob.glob(os.path.join(self.calibrationPath, '*STRAY*.[tT][xX][tT]'))
-        if len(files) != 3:
-            failCode += 1
-        # Confirm 3 THERMAL files found in destination
-        files = glob.glob(os.path.join(self.calibrationPath, '*THERMAL*.[tT][xX][tT]'))
-        if len(files) != 3:
-            failCode += 1
-        if failCode > 0:
-            self.fullFilesLineEdit.setText("Files not found")
-        else:
-            self.fullFilesLineEdit.setText("Files found")
-            ConfigFile.settings['FullCalDir'] = self.calibrationPath
+        self.missing_files(ConfigFile.settings['fL1bCal'])
+
 
     def DefaultCalRadioButtonClicked(self):
         print("ConfigWindow - L1b Calibration set to Factory")
@@ -426,135 +477,113 @@ class CalCharWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL1bCal"] = 3
         self.CalStatusUpdate()
 
-    def RadioUpdate1(self):
-        print("ConfigWindow - FRMRadioUpdate local files")
-        if self.FRMRadio1.isChecked():
-            self.FRMRadio2.setChecked(False)
-            ConfigFile.settings['FidRadDB'] = 0
+    def missing_files(self, fL1bCal):
 
-    def addFullFilesButtonClicked(self):
+        missingFilesStrings = {'ES':'All needed files found', 'LT':'All needed files found', 'LI':'All needed files found'}
+        missingFilesList = []
+
+        if fL1bCal == 1:
+            missingFilesStrings = {k:'No FidRadDB cal./char. files needed' for k in missingFilesStrings.keys()}
+            missingFilesList = []
+        else:
+            for frameType, files in self.neededCalCharsFRM.items():
+                missingFullFRM0 = [f for f in files if len(glob.glob(os.path.join(Path(self.calibrationPath), '*%s*.[tT][xX][tT]' % f))) == 0]
+                if fL1bCal == 2:
+                    missingFullFRM = [f for f in missingFullFRM0 if f.split('_')[-1] == 'RADCAL']
+                elif fL1bCal == 3:
+                    missingFullFRM = missingFullFRM0
+
+                if len(missingFullFRM)>0:
+                    missingFilesStrings[frameType] = 'Missing files: %s' % ' '.join(missingFullFRM)
+                    missingFilesList = missingFilesList + missingFullFRM
+
+        self.FidRadDBcalCharDirCheckES.setText(missingFilesStrings['ES'])
+        self.FidRadDBcalCharDirCheckLT.setText(missingFilesStrings['LT'])
+        self.FidRadDBcalCharDirCheckLI.setText(missingFilesStrings['LI'])
+
+        return missingFilesStrings, missingFilesList
+
+    def addCalCharFilesButtonClicked(self):
         print("ConfigWindow - Add/update full characterization files")
-        targetDir = QtWidgets.QFileDialog.getExistingDirectory(self, \
-                                                               'Choose Characterization File Directory.',
-                                                               ConfigFile.settings['FullCalDir'])
 
-        # Copy full characterization files into calibration folder and test it
-        failCode = 0
-        # POLAR
-        files = glob.iglob(os.path.join(Path(targetDir), '*POLAR*.[tT][xX][tT]'))
-        for file in files:
+        selected_files, _ = QtWidgets.QFileDialog.getOpenFileNames(
+            self,  # parent window
+            f"Select cal/char files",
+            self.calibrationPath,
+            "Text files (*.txt);;All Files (*)",  # file filter
+            options=QtWidgets.QFileDialog.Options())
+
+        for file in selected_files:
             dest = Path(self.calibrationPath) / os.path.basename(file)
             if not dest.exists():
                 print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
                 shutil.copy(file, dest)
-        # Confirm 2 POLAR files found in destination
-        files = glob.glob(os.path.join(self.calibrationPath, '*POLAR*.[tT][xX][tT]'))
-        if len(files) != 2:
-            failCode += 1
-            print(f'Copying of POLAR files failed. {len(files)}/2 POLAR files found in Config folder')
 
-        # RADCAL
-        files = glob.iglob(os.path.join(Path(targetDir), '*RADCAL*.[tT][xX][tT]'))
-        for file in files:
-            dest = Path(self.calibrationPath) / os.path.basename(file)
-            if not dest.exists():
-                print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
-                shutil.copy(file, dest)
-        # Confirm 3 RADCAL files found in destination
-        files = glob.glob(os.path.join(self.calibrationPath, '*RADCAL*.[tT][xX][tT]'))
-        if len(files) != 3:
-            failCode += 1
-            print(f'Copying of RADCAL files failed. {len(files)}/3 RADCAL files found in Config folder')
+        self.missing_files(ConfigFile.settings['fL1bCal'])
 
-        # STRAYLIGHT
-        files = glob.iglob(os.path.join(Path(targetDir), '*STRAY*.[tT][xX][tT]'))
-        for file in files:
-            dest = Path(self.calibrationPath) / os.path.basename(file)
-            if not dest.exists():
-                print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
-                shutil.copy(file, dest)
-        # Confirm 3 STRAY files found in destination
-        files = glob.glob(os.path.join(self.calibrationPath, '*STRAY*.[tT][xX][tT]'))
-        if len(files) != 3:
-            failCode += 1
-            print(f'Copying of STRAY files failed. {len(files)}/3 STRAY files found in Config folder')
 
-        # THERMAL
-        files = glob.iglob(os.path.join(Path(targetDir), '*THERMAL*.[tT][xX][tT]'))
-        for file in files:
-            dest = Path(self.calibrationPath) / os.path.basename(file)
-            if not dest.exists():
-                print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
-                shutil.copy(file, dest)
-        # Confirm 3 THERMAL files found in destination
-        files = glob.glob(os.path.join(self.calibrationPath, '*THERMAL*.[tT][xX][tT]'))
-        if len(files) != 3:
-            failCode += 1
-            print(f'Copying of THERMAL files failed. {len(files)}/3 THERMAL files found in Config folder')
+    def FidRadDBdownloadClicked(self):
 
-        # ANGULAR
-        files = glob.iglob(os.path.join(Path(targetDir), '*ANGULAR*.[tT][xX][tT]'))
-        for file in files:
-            dest = Path(self.calibrationPath) / os.path.basename(file)
-            if not dest.exists():
-                print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
-                shutil.copy(file, dest)
-        # Confirm 1 ANGULAR files found in destination
-        files = glob.glob(os.path.join(self.calibrationPath, '*ANGULAR*.[tT][xX][tT]'))
-        if len(files) != 1:
-            failCode += 1
-            print(f'Copying of ANGULAR files failed. {len(files)}/1 ANGULAR files found in Config folder')
+        ConfigFile.settings['FidRadDB'] = 1 # TODO deprecated... remove
 
-        if failCode > 0:
-            self.fullFilesLineEdit.setText("Files not found")
-        else:
-            self.fullFilesLineEdit.setText("Files found")
+        # First list missing files
+        _, missingFilesList = self.missing_files(ConfigFile.settings['fL1bCal'])
 
-        self.FullCalDir = self.calibrationPath
-        print('Full characterization directory changed: ', self.FullCalDir)
-        ConfigFile.settings['FullCalDir'] = self.FullCalDir
+        if len(missingFilesList) == 0:
+            print('All cal./char. files were found under %s, nothing to download' % self.calibrationPath)
+            return
 
-    def RadioUpdate2(self):
-        print("ConfigWindow - FRMRadioUpdate FidRadDB")
-        if self.FRMRadio2.isChecked():
-            self.FRMRadio1.setChecked(False)
-            ConfigFile.settings['FidRadDB'] = 1
+        path_FidRadDB = os.path.join(CODE_HOME, 'Data', 'FidRadDB',ConfigFile.settings['SensorType'])
+
+        try:
             api = new_api(server_url='https://ocdb.eumetsat.int')
+        except:
+            print('Unable to connect to FidRadDB.')
 
-            ##### SERIAL NUMBERS...
-            if ConfigFile.settings['SensorType'] ==  'TriOS':
-                serialNumbers = [sn.split('.ini')[0] for sn in ConfigFile.settings['CalibrationFiles'].keys()]
-            elif ConfigFile.settings['SensorType'] == 'SeaBird':
-                serialNumbers = ['SAT' + sn[3:7] for sn in ConfigFile.settings['CalibrationFiles'].keys() if sn.endswith('.cal')]
+        # Check if files are already in local FidRadDB repository
+        # If not download them first to local FidRadDB repository
+        # Then, copy them to calPath
+        for serialNumber_calCharType in missingFilesList:
+
+            try:
+                cal_char_files_remote = OCDBApi.fidrad_list_files(api, serialNumber_calCharType)
+                cal_char_files_remote = [os.path.basename(file) for file in cal_char_files_remote]
+            except:
+                print('File %s not available at FidRadDB (https://ocdb.eumetsat.int) or not reachable.')
+                cal_char_files_remote = []
             else:
-                print('Only implemented for TriOS... and SeaBird')
+                print('File(s) found at FidRadDB (https://ocdb.eumetsat.int) for tag %s.' % serialNumber_calCharType)
 
-            for sn in serialNumbers:
-                cal_char_files = OCDBApi.fidrad_list_files(api, sn)
-                for cal_char_file in cal_char_files:
+            cal_char_files_local = [os.path.basename(file) for file in glob.glob(os.path.join(path_FidRadDB,'*%s*' % serialNumber_calCharType))]
+
+            cal_char_files = list(set(cal_char_files_remote + cal_char_files_local))
+
+            print(serialNumber_calCharType, cal_char_files)
+
+
+            for file in cal_char_files:
+
+                dest_FidRadDB_local = os.path.join(path_FidRadDB, file)
+                dest_CalPath = os.path.join(self.calibrationPath, file)
+
+                if not os.path.exists(dest_FidRadDB_local):
                     try:
-                        OCDBApi.fidrad_download_file(api, cal_char_file, '/tcenas/home/gossn')
-                    except Exception as exc:
-                        raise ConnectionError('Unable to download file from FidRadDB. Check your internet connection. '
-                                              'If problem persists, provide cal/char file manually.') from exc
+                        OCDBApi.fidrad_download_file(api, file, path_FidRadDB)
+                    except:
+                        print('Unable to download file %s from FidRadDB. Maybe file does not exist. '
+                              'Also check your internet connection, if problem persists, provide cal/char file manually.')
+                    else:
+                        print('File %s successfully downloaded from FidRadDB' % file)
 
-    def FullCalDirButtonPressed(self):
-        if not ConfigFile.settings['FullCalDir'].startswith('Choose'):
-            srcDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory',
-                                                                ConfigFile.settings['FullCalDir'])
-        else:
-            srcDir = QtWidgets.QFileDialog.getExistingDirectory(self, 'Choose Directory')
-        print('Full characterization folders selected for copy: ', srcDir)
+                if os.path.exists(dest_FidRadDB_local) and not os.path.exists(dest_CalPath):
+                    try:
+                        print(f'Copying {os.path.basename(file)} to {self.calibrationPath}')
+                        shutil.copy(dest_FidRadDB_local, dest_CalPath)
+                    except:
+                        print(f'Could not copy {os.path.basename(file)} to {self.calibrationPath}. Check permissions, and try manually ...')
 
-        calDir = Path(srcDir)
-        files = glob.iglob(os.path.join(Path(calDir), '*.[tT][xX][tT]'))
-        for file in files:
-            dest = Path(self.calibrationPath) / os.path.basename(file)
-            if not dest.exists():
-                shutil.copy(file, dest)
+        self.missing_files(ConfigFile.settings['fL1bCal'])
 
-        ConfigFile.settings['FullCalDir'] = self.calibrationPath
-        self.CalStatusUpdate()
 
     def MultiCalOptions(self,option_multical):
 
