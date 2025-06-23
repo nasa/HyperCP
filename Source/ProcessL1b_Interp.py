@@ -427,7 +427,7 @@ class ProcessL1b_Interp:
         # xData will be interpolated to yDatetimes
         xData.columns["Datetag"] = yData.data["Datetag"].tolist()
         xData.columns["Timetag2"] = yData.data["Timetag2"].tolist()
-        xData.columns["Datetime"] = yData.data["Datetime"].tolist()    
+        xData.columns["Datetime"] = yData.data["Datetime"].tolist()
 
         # Perform interpolation on full hyperspectral time series
         #   In the case of solar geometries, calculate to new times, don't interpolate
@@ -578,7 +578,7 @@ class ProcessL1b_Interp:
         esEnd = np.floor(esWavelength[len(esWavelength)-1])
 
         # No longer using user-input interval
-        interval = (esStart - esEnd)/len(esWavelength)
+        interval = (esEnd - esStart)/len(esWavelength)
 
         # Li dataset to dictionary
         liData.datasetToColumns()

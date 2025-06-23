@@ -846,7 +846,6 @@ class ProcessL1bqc:
                 # print (grp.id, ds)
                 grp.datasets[ds].datasetToColumns()
 
-       
         # Need to either create a new ancData object, or populate the nans in the current one with the model data
         if not ProcessL1bqc.QC(node):
             return None

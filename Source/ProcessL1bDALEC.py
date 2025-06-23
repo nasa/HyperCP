@@ -280,13 +280,6 @@ class ProcessL1bDALEC:
             # Results may differs due to updated calibration files but the two
             # process are the same. The class-based characterisation will be used
             # in the uncertainty computation.
-            # '''
-            # calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
-            # calPath = os.path.join(PATH_TO_CONFIG, calFolder)
-            # print("Read CalibrationFile ", calPath)
-            # calibrationMap = CalibrationFileReader.read(calPath)
-            # ProcessL1b_FactoryCal.processL1b_SeaBird(node, calibrationMap)
-            # '''
             ProcessL1bDALEC.processES(node)
             ProcessL1bDALEC.processLT(node)
             ProcessL1bDALEC.processLI(node)
