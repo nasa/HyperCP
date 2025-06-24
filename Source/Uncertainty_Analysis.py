@@ -395,11 +395,11 @@ class Propagate:
             sza = 60
 
         from Source.RhoCorrections import InterpolationError
-        try:
-            zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
-        except InterpolationError as err:
-            Utilities.writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
-            zhang = Propagate.zhangWrapper(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
+        # try:
+        #     zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
+        # except InterpolationError as err:
+            # Utilities.writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
+        zhang = Propagate.zhangWrapper(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
         
         return zhang
 
