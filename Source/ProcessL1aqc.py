@@ -186,7 +186,7 @@ class ProcessL1aqc:
         Order datasets chronologically. Screen for SunTracker data dropouts.
         Filter data for tilt, yaw, rotator, and azimuth. Deglitch (SeaBird).
         '''
-      
+
         node.attributes["PROCESSING_LEVEL"] = "1aqc"
         now = datetime.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")

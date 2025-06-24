@@ -65,6 +65,11 @@ class Window(QtWidgets.QWidget):
         if not os.path.exists(fpfZhangLUT):
             Utilities.downloadZhangLUT(fpfZhangLUT)
 
+        # Confirm that core data files are in place. Download if necessary.
+        fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Z17_LUT_30.nc")
+        if not os.path.exists(fpfZhangLUT):
+            Utilities.downloadZhangLUT(fpfZhangLUT)
+
         self.initUI()
 
     def initUI(self):
@@ -660,6 +665,11 @@ class Command:
         # Confirm that core data files are in place. Download if necessary.
         # fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Zhang_rho_LUT.nc")
         fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Z17_LUT_40.nc")
+        if not os.path.exists(fpfZhangLUT):
+            Utilities.downloadZhangLUT(fpfZhangLUT, force=True)
+
+        # Confirm that core data files are in place. Download if necessary.
+        fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Z17_LUT_30.nc")
         if not os.path.exists(fpfZhangLUT):
             Utilities.downloadZhangLUT(fpfZhangLUT, force=True)
 
