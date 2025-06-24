@@ -31,42 +31,52 @@ class ProcessL1aTriOS:
 
                 ## Test filename for station/cast
                 # XXXXS for light, XXXXD for caps-on dark
-                def parse_filename(data):
-                    dates = []
-                    for pattern in [
+                def parse_filename(fileStr):
+                    ''' Test filename for datetime or station/cast light/dark '''
+                    matches = []
+                    matchTypes = []
+                    # Possibilities:
+                    #   YYYYMMDD_hhmmss, YYYY_MM_DD_hh_mm_ss, YYYYMMDD_hh_mm_ss,YYYY_MM_DD_hhmmss
+                    #   SSCCS, SSCCD
+                    for i, pattern in enumerate([
                         r'\d{8}.\d{6}', 
                         r'\d{4}.\d{2}.\d{2}.\d{2}.\d{2}.\d{2}',
                         r'\d{8}.\d{2}.\d{2}.\d{2}',
                         r'\d{4}.\d{2}.\d{2}.\d{6}',
                         r'\d{4}S', 
-                        r'\d{4}D',
-                    ]:
-                        match = re.search(pattern, data)
+                        r'\d{4}D']):
+
+                        match = re.search(pattern, fileStr)
                         if match is not None:
-                            dates.append(match.group(0))
+                            matches.append(match.group(0))
+                            if i < 3:
+                                matchTypes.append('datetime')
+                            else:
+                                matchTypes.append('stationcast')
 
-                    if len(dates) == 0:
+                    if len(matches) == 0:
                         raise IndexError
-
-                    return dates[0]
+                    if 'stationcast' in matchTypes:
+                        fileDesignation = matches[matchTypes.index('stationcast')]
+                        matchType = 'stationcast'
+                    else:
+                        fileDesignation = matches[0] # Any of the datetimes
+                        matchType = 'datetime'
+                    return fileDesignation, matchType
 
                 try:
-                    a_name = parse_filename(file.split('/')[-1])
+                    a_name, a_type = parse_filename(file.split('/')[-1])
                 except IndexError:
                     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
                     print("  L0 filename should have a cast to identify triplet instrument")
                     print("  ending in 4 digits before S.mlb (light) or D.mlb for caps-on dark. ")
                     return None,None
 
-                # match1 = re.search(r'\d{8}_\d{6}', file.split('/')[-1])
-                # match2 = re.search(r'\d{4}S', file.split('/')[-1])
-                # match3 = re.search(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}', file.split('/')[-1])
                 acq_name.append(a_name)
 
-            # acq_time = list(dict.fromkeys(acq_time)) # Returns unique timestamps
             acq_name = list(dict.fromkeys(acq_name)) # Returns unique names
-            
-            outFFP = []            
+
+            outFFP = []
             for a_name in acq_name:
                 print("")
                 print("Generate the telemetric file...")
@@ -100,12 +110,12 @@ class ProcessL1aTriOS:
                     root.attributes["FRAME_TYPE"] = 'light'
                 for file in ffp:
                     if "SAM_" in file:
-                        name = file[file.index('SAM_')+4:file.index('SAM_')+8]
+                        serialNumber = file[file.index('SAM_')+4:file.index('SAM_')+8]
                     else:
                         print("ERROR : naming convention os not respected")
-                        name = None
+                        serialNumber = None
 
-                    start,stop = ProcessL1aTriOS.formatting_instrument(name,cal_path,file,root,configPath)
+                    start,stop = ProcessL1aTriOS.formatting_instrument(serialNumber,cal_path,file,root,configPath)
 
                     if start is None:
                         return None, None
@@ -124,7 +134,8 @@ class ProcessL1aTriOS:
                     new_name = a_name #acq_name[0]
                     # new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_RAW_SPECTRUM_')[1]
                     # NOTE: For caps-on darks, we require a 4-digit station number plus 'S' or 'D' for light or dark, respectively
-                    if re.search(r'\d{4}[DS]', file.split('/')[-1]) is not None:
+                    # If this is a stationcast type filename, append the start time from the data:
+                    if (re.search(r'\d{4}[DS]', file.split('/')[-1]) is not None) or (a_type == 'stationcast'):
                         new_name = str(start)+'_'+new_name
                 except IndexError as err:
                     print(err)

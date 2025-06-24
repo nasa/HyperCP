@@ -107,6 +107,37 @@ SeaBASS output as described below.
 Click 'Save/Close' or 'Save As' to save the configuration file. SeaBASS headers will be updated automatically to reflect
  your selection in the Configuration window.
 
+ ## Level 0 (RAW) Files
+
+ Raw filenames for autonomously collected data (i.e., SolarTracker, pySAS, DALEC, So-Rad) have no restrictions as these files contain data from all three radiometers in one file.
+
+ Manual-acquisition TriOS raw files, as exported in Matlab compatible format (ASCII, .mlb, see MSDA_XE Advanced Manual and [Measurement Procedure Document D-6](https://frm4soc2.eumetsat.int/sites/default/files/inline-files/FRM4SOC-2_D-06_MeasurementProcedure_v3.1_24032023_RBINS_EUMETSAT_signed.pdf)) comprise one file per sensor (i.e., Li, Lt, Es). These files have certain filename restrictions in HyperCP.
+ - Raw filenames should contain the string "SAM_DDDD", where DDDD refers to the serial number of the instrument.
+ - They should contain a date/time signature and/or a station/cast signature
+ - Datetime signatures should conform to one of the following conventions: YYYYMMDD_hhmmss, YYYY_MM_DD_hh_mm_ss, YYYYMMDD_hh_mm_ss,YYYY_MM_DD_hhmmss
+ - Station/cast signatures should be in the format "SSCCX", where SS is the station number and CC is the cast number. X designates the acquisition as normal ("S") or caps-on-darks ("D").
+ - The datetime and station/cast signatures should be set apart from the rest of the name with a seperator such as "_" or "-".
+ - For example, a triplet of raw files might be named "SAM_0123_20250625_191500_0101S.mlb","SAM_0124_20250625_191500_0101S.mlb", and "SAM_0125_20250625_191500_0101S.mlb".
+
+ If a station/cast designation is provided, this will supercede any datetime stamp provided, and higher level data will contain the station/cast designation as well as the datetime of the start of the raw file (provided in the data).
+
+ Additional conventions for raw filenaming are permitted, though largely ignored in higher level data filenaming.
+ One convention might be GEE_SSCCX_SAM_DDDD, where:
+- G indicates the region/site (i.e., A for the AAOT);
+- EE indicates the campaign number (i.e., 01-99);
+- SS indicates the station number (i.e., 01-99);
+- CC indicates the cast number (i.e., 01-99);
+- X indicates the data type (i.e., D for dark, S for the actual above-water measurements)
+- DDDD indicates the device serial number (anything alphanumerical identifying the sensor operated in the field)
+- For example, a raw file might be named "A99_0101S_SAM_0123.mlb"
+
+Another that conforms more closely with SeaBASS conventions would be EXPERIMENT_CRUISE_PLATFORM_DATETIME_SAM_DDDD_SSCCX, where:
+- EXPERIMENT and CRUISE are self explanatory (and agreed upon with SeaBASS staff prior to submission)
+- PLATFORM refers to the ship or tower, etc. the sensor is mounted on
+- DATETIME, SAM_DDDD, and SSCCX conform to the norms listed above
+- For example "FICE_FICE2025_AAOT_20250625_191500_SAM_0123.mlb" or "FICE_FICE2025_AAOT_20250625_191500_SAM_0123_0101S.mlb"
+
+Regardless of the raw filenames for the individual instruments, the higher level data will either conform to the data start time and SSCCX designiation, or the datetime designation provided. (Keep in mind that from L1A onwards, the three files become one.)
 
  ## Level 1A Processing
 
@@ -114,7 +145,7 @@ Click 'Save/Close' or 'Save As' to save the configuration file. SeaBASS headers 
 
 Process data from raw binary to L1A (Hierarchical Data Format 5 '.hdf'). Raw data files expected are .raw (or .RAW), .mlb, or .TXT for Sea-Bird, TriOS, or DALEC, respectively. It is helpful to keep them in the directory that the Main configuration points to, but directory can be named anything (e.g., "RAW").
 
-***NOTE:*** Since TriOS instruments use a triplet of raw data (.mlb) files it is necessary to provide information on the measurement date. This is done by adding the date to the name of the raw data file in one of the following formats: yyyymmdd-hhmmss or yyyy-mm-dd-hh:mm:ss. Additionally, station/cast can be designated using a 2-digit station number followed by a 2-digit cast number followed by "S" for regular acquisition or "D" for caps-on dark measurements. Caps-on dark measurements are made to help estimate the internal noise of the instrument as a function of temperature, and by inversion can be applied to extract the temperature of the instrument during a station collection and apply that temperature in the processing of normal "S" data aquisition. When selected in L1B (see below), filenames containing "XXYYS" (where XX is station and YY is cast) can use the internal temperature derived in the "XXYYD" file for each radiometer (where only XX-station needs to match, not YY-cast). For example, a caps-on dark processed to L1A using the option **Caps-on darks only** with filename containing "20250617-100300_0101D" to find the internal working temperature of each sensor can have that temperature applied to files with filenames containing "20250617-100800_0101S", "20250617-101300_0102S", and "20250617-101800_0103S".
+***NOTE: Caps-on-darks*** For TriOS manual acquisition, it is possible to estimate the internal working temperature of each radiometer by collecting data samples with the light occluded by covering the foreoptics (i.e., with the cap). The basis for this approach is provided in Zibordi and Talone, in prep. (2025). This requires that station/cast can be designated as described above for L0 filenaming. Caps-on dark measurements are made to help estimate the internal noise of the instrument as a function of temperature, and by inversion can be applied to extract the temperature of the instrument during a station collection and apply that temperature in the processing of normal "S" data aquisition. When selected in L1B (see below), filenames containing "XXYYS" (where XX is station and YY is cast) can use the internal temperature derived in the "XXYYD" file for each radiometer (where only XX-station needs to match, not YY-cast). For example, a caps-on dark file at station 01 processed to L1A using the option **Caps-on darks only** with filename containing "20250617-100300_0101D" can be used to find the internal working temperature of each sensor and applied to regular casts with filenames containing "20250617-100800_0101S", "20250617-101300_0102S", and "20250617-101800_0103S" (casts 01, 02, and 03 at station 01).
 
 **Solar Zenith Angle Filter**: prescreens data for high SZA (low solar elevation) to exclude files which may have been
 collected post-dusk or pre-dawn from further processing.
