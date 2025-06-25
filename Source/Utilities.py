@@ -2259,9 +2259,12 @@ class Utilities:
             # This is temperature of the sensor during calibration from the _THERMAL_ file
             #   REFERENCE_TEMP is the AMBIENT_TEMP during derivation of thermal coefficients, and not relevant here.
             calTemp = float(thermalCoeffDS.attributes["AMBIENT_TEMP"])
+        elif 'REFERENCE_TEMP' in thermalCoeffDS.attributes:
+            # This is a fallback when class-based thermal coefficients are used and AMBIENT is not provided
+            calTemp = float(thermalCoeffDS.attributes["REFERENCE_TEMP"])
         else:
             Utilities.writeLogFileAndPrint("Reference temperature not found. Aborting ...")
-            return None
+            return False
 
         # Get thermal coefficient from characterization
         thermalCoeffDS.datasetToColumns()
