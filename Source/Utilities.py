@@ -1742,7 +1742,8 @@ class Utilities:
             # cmap = cm.get_cmap("jet")
             # color=iter(cmap(np.linspace(0,1,total)))
             print('Creating plots...')
-            plt.figure(1, figsize=(10,8))
+            # plt.figure(1, figsize=(10,8))
+            plt.figure(figsize=(10,8))
 
         for timei in range(total):
             y = []

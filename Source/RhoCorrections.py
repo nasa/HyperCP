@@ -151,10 +151,7 @@ class RhoCorrections:
     @staticmethod
     # def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
     def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, sva, waveBands, Propagate = None, db = None):
-
-        msg = 'Calculating Zhang glint correction (FULL MODEL).'
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint('Calculating Zhang glint correction (FULL MODEL).')
 
         # === environmental conditions during experiment ===
         env = {'wind': windSpeedMean, 'od': AOD, 'C': cloud, 'zen_sun': sza, 'wtem': wTemp, 'sal': sal}
@@ -196,7 +193,6 @@ class RhoCorrections:
 
         """
 
-        # convert wt to kelvin so we can't have negative values
         if sva == 30:
             # raise not implemented error until LUT is complete for VZA 30 (should take a couple days) - Ashley
             # raise NotImplementedError("LUT for VZA of 30 is still under development")
@@ -259,7 +255,7 @@ class RhoCorrections:
                         wt,
                         nwb
                     ),
-                    method="cubic", 
+                    method="cubic",
                 )
                 print('Interpolating Z17 LUT using cubic method')
             
