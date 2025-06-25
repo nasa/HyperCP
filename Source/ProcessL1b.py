@@ -99,8 +99,7 @@ class ProcessL1b:
             'most_recent_prior_acquisition' --> applicable to RADCAL files (default "multi cal option", i.e. ConfigFile.settings['MultiCal'] = 0
             'most_recent' --> applicable to sensor-specific characterisations
 
-        return:
-        a file:
+        return: a string, /full/path/to/selected_cal_char_file.TXT
         '''
 
         # TEST

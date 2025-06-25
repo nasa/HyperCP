@@ -8,6 +8,7 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
+from Source import PATH_TO_DATA
 from Source import PATH_TO_CONFIG
 from Source.ProcessL1b import ProcessL1b
 # from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
@@ -165,24 +166,36 @@ class ProcessL1bDALEC:
             elif gp.id == 'LT':
                 ltGroup.copy(gp)
 
-        # Add class-based files (RAW_UNCERTAINTIES)
-        # '''
-        # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations',
-        #                               ConfigFile.settings['SensorType']+"_initial")  # classbased_dir required for FRM-cPol
+        ######### PLACEHOOLDER: when DALEC class-based and full-FRM become available #########
+        # classbased_dir needed for FRM whilst pol is handled in class-based way
+        # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType'] + "_initial")
+        #
+        # # The radCalDir is now the same for all cal/char regimes and regardless of whether files were downloaded from FidRadDB or not
+        # radcal_dir = ConfigFile.settings['calibrationPath']
+        #
+        # # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         # if ConfigFile.settings['fL1bCal'] == 1:
-        #     print("Dalec Factory Regime")
-        #     #node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
-        #     #node = ProcessL1bDALEC.read_unc_coefficient_factory(node)
-
+        #     print("Factory DALEC - no uncertainty computation")
+        #
+        # # Add Class-based characterization files + RADCAL files
+        # elif ConfigFile.settings['fL1bCal'] == 2:
+        #
+        #     print("Class-Based - uncertainty computed from class-based and RADCAL")
+        #     print('Class-Based:', classbased_dir)
+        #     print('RADCAL:', radcal_dir)
+        #     node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir)
         #     if node is None:
-        #         msg = 'Error running factory uncertainties.'
-        #         print(msg)
-        #         Utilities.writeLogFile(msg)
+        #         Utilities.writeLogFileAndPrint('Error running class based uncertainties.')
         #         return None
-        # '''
-        # Interpolate only the Ancillary group, and then fold in model data
-        # This is run ahead of the other groups for all processing pathways. Anc group
-        # exists regardless of Ancillary file being provided
+        #
+        # # Or add Full characterization files (RAW_UNCERTAINTIES)
+        # elif ConfigFile.settings['fL1bCal'] == 3:
+        #
+        #     node = ProcessL1b.read_unc_coefficient_frm(node)
+        #     if node is None:
+        #         Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
+        #         return None
+        ############################################################################################################
 
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
             msg = 'Error interpolating ancillary data'
