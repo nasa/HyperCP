@@ -254,26 +254,41 @@ are saved in the so called "RADCAL" file, with one file per sensor. The calibrat
 and follow the manufacturer guidelines. In addition the Class-Specific regime also computes FRM uncertainties using the absolute
 radiometric characterization and class-based values for all other contributors. The contributors included in the uncertainty
 propagation are: the straylight impact, the temperature sensitivity, the polarisation sensitivity (for radiance only), the cosine
-response (for irradiance only), the detector non-linearity and the calibration stability (see D10). Currently, the only classes 
-characterized are Sea-Bird and TriOS.
+response (for irradiance only), the detector non-linearity and the calibration stability (see [this report](https://frm4soc2.eumetsat.int/sites/default/files/inline-files/FRM4SOC-2_D-10_v2.4_210042023_NPL_EUMETSAT_signed.pdf)).
+Currently, the only classes characterized are Sea-Bird and TriOS.
 
 **FRM Sensor-Specific (Full-Characterization; Highest Quality):**
 This regime performs the complete correction of the radiometry using the full characterization of each sensor by external
 laboratories. For both Sea-Bird and TriOS the radiometric calibration process is performed with additional corrections (DALEC in development). The
 corrections are possible only thanks to the full characterization of the sensors provided in the matching files. The process
 performs the non-linearity correction, the straylight correction, the polarisation correction (for radiance only), the cosine
-response correction (for irradiance only) and the temperature correction (see D10). The process also provides FRM compliant
-uncertainties accounting for the residuals effects of each contributors, meaning the correction residuals are used as uncertainty
+response correction (for irradiance only) and the temperature correction (see [this report](https://frm4soc2.eumetsat.int/sites/default/files/inline-files/FRM4SOC-2_D-10_v2.4_210042023_NPL_EUMETSAT_signed.pdf)). 
+The process also provides FRM compliant uncertainties accounting for the residuals effects of each contributors, meaning the correction residuals are used as uncertainty
 contributor instead of global class-based contribution, leading to smaller uncertainty values.
 
-There are three options for deciding which calibration files are applied when using FidRadDB RADCAL files:
+There are three options for deciding which calibration files are applied when using FidRadDB RADCAL files (see Cal/Char options button under Config. Edit):
 
-**Most recent (default)**
+**Most recent prior to acquisition (default)**
+Given the available RADCALs for each of the 3 individual radiometric sensors ivolved in the measurement (ES, LT, and LI),
+HyperCP will select all 3 RADCALS whose calibration time stamp corresponds to the most recent one prior to the field
+measurement acquisition. As an example, if you went to the field in March and had two pre-calibrations for ES done in January, 
+February and then two post-calibrations done in August, and October, HyperCP will pick the February one. In the absence of
+pre-calibrations, it will choose the closest post-calibration (August). The same criterion will be applied for LT (water)
+and LI (sky)
 
 **Pre- and Post- deployment average**
+NB: This option is yet not implemented. This option will take user-specified pre-calibrations and post-calibrations and 
+average them. Details of how this average will be done are pending scientific discussions.
 
 **User specified**
+This option simply takes specific calibration files selected by the user. The user must select 3 RADCALs, one for each sensor
+ES, LT, and LI
 
+**Multiple characterizations?**
+In the very rare case in which Full FRM cal/char regime is selected and a specific radiometer (a specimen with a serial
+number) was characterised several times for the same effect, HyperCP will always choose the most recent characterisation 
+(regardless of the filed measurement acquisition time). An example would be an ES sensor which was chacarterised for 
+internal straylight twice, in 2022 and 2025. Then, HyperCP will always consider the 2025 characterisation as the valid one.
 
 Once instrument calibration has been applied, data are interpolated to common timestamps and wavebands, optionally
 generating temporal plots of Li, Lt, and Es, and ancillary data to show how data were interpolated.
