@@ -12,7 +12,6 @@ from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
-from Source.FidradDB_api import FidradDB_api
 
 
 class ProcessL1bTriOS:
@@ -388,7 +387,7 @@ class ProcessL1bTriOS:
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
             print('RADCAL:', radcal_dir)
-            node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir, radcal_dir)
+            node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir)
             if node is None:
                 Utilities.writeLogFileAndPrint('Error running class based uncertainties.')
                 return None
@@ -396,7 +395,7 @@ class ProcessL1bTriOS:
         # Or add Full characterization files (RAW_UNCERTAINTIES)
         elif ConfigFile.settings['fL1bCal'] == 3:
 
-            node = ProcessL1b.read_unc_coefficient_frm(node, radcal_dir, classbased_dir)
+            node = ProcessL1b.read_unc_coefficient_frm(node)
             if node is None:
                 Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
                 return None

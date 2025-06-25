@@ -17,7 +17,7 @@ from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
-from Source.FidradDB_api import FidradDB_api
+from Source import PACKAGE_DIR as CODE_HOME
 
 class ProcessL1b:
     '''L1B mainly for SeaBird with some shared methods'''
@@ -86,11 +86,146 @@ class ProcessL1b:
         return root
 
     @staticmethod
-    def choose_cal_char(acquisition_time,cal_char_type):
-        pass
+    def choose_cal_char_per_time(acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent_prior_acquisition'):
+        '''
+        Choose FidRadDB cal/char file according to it's timestamp, provided in filename.
+            e.g. 'CP_SAT0385_POLAR_20220603115256.TXT',
+            where:
+            - 'SAT0385' is the sensor ID
+            - 'POLAR' is the characterisation type
+            - '20220603115256' is the time stamp, i.e. the time when the given characterisation was masured at cal/char laboratory.
+
+        Two possible options are:
+            'most_recent_prior_acquisition' --> applicable to RADCAL files (default "multi cal option", i.e. ConfigFile.settings['MultiCal'] = 0
+            'most_recent' --> applicable to sensor-specific characterisations
+
+        return:
+        a file:
+        '''
+
+        # TEST
+        # acq_time_seconds = 3
+        # available_files_calTime_seconds = np.array([0, 1, 2, 3.01, 30])
+        # available_files = np.array(['a', 'b', 'c', 'd', 'e'])
+
+        # Check goodness of some inputs...
+        if (len(available_files_calTime_seconds) == 0) or (len(available_files) == 0) or (len(available_files_calTime_seconds) != len(available_files)):
+            raise ValueError('Something wrong here! At least X candidate files (X>0) should be inputted to this function, with X corrsponding cal. timestamps!')
+
+        # Two possible rules (see above)
+        if rule == 'most_recent_prior_acquisition':
+
+            # Filter by only those cal./chars. whose timestamps is previous to measurement acquisition
+            prior2acq = available_files_calTime_seconds <= acq_time_seconds
+
+            # If found, chose the most recent prior to acquisition, otherwise simply choose the closest to acquisition
+            if np.any(prior2acq):
+                # Selection of the closest char data file PRE-EXISTING to the measuring date
+                chosen_file_idx = np.argmax(available_files_calTime_seconds[prior2acq])
+                chosen_file = available_files[prior2acq][chosen_file_idx]
+            else:
+                # Selection of the closest char data file to the measuring date
+                chosen_file_idx = np.argmin(np.abs(available_files_calTime_seconds - acq_time_seconds))
+                chosen_file = available_files[chosen_file_idx]
+        elif rule == 'most_recent':
+
+            # Choose the most recent (applicable to sensor-specific characterisations)
+            chosen_file_idx = np.argmax(available_files_calTime_seconds)
+            chosen_file = available_files[chosen_file_idx]
+
+        return chosen_file
 
     @staticmethod
-    def read_unc_coefficient_class(root, inpath, radcal_dir):
+    def read_FidRadDB_cal_char_files(root):
+        '''Read FidRadDB cal/char files into root according:
+        - Acquisition time stamp
+        - Cal/char files available under ConfigFile.settings['calibrationPath'], according to their sensorID, cal/char type (e.g. STRAY) and time stamp.
+        - Selected cal/char regime
+        - Selected multi-cal option
+
+        return root (with the group "RAW_UNCERTAINTIES" updated to contain the read cal/chars)
+        '''
+
+        # Initialise "RAW_UNCERTAINTIES"
+        gp = root.addGroup("RAW_UNCERTAINTIES")
+
+        # add FrameType = None so grp passes a quality check later
+        gp.attributes['FrameType'] = 'NONE'
+
+        # Get measurement acquisition time stamp and convert to seconds to compare to cal/char files' timestamps
+        acq_time_seconds = datetime.strptime(root.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y').timestamp()
+
+        # Check which cal/char files are needed for each of the 3 sensor types (ES, LT, LI) in cal/char regime = Full, i.e. ConfigFile.settings["fL1bCal"] == 3
+        # ... then filter to RADCAL if cal'char regime = class, i.e. ConfigFile.settings["fL1bCal"] == 2
+        for sensorType, needed_cal_chars_fullFRM in ConfigFile.settings['neededCalCharsFRM'].items():
+            # Loop over each serialNumber_calCharType tag available in ConfigFile.settings['neededCalCharsFRM']
+            for serialNumber_calCharType in needed_cal_chars_fullFRM:
+
+                # Get cal/char type from tag (e.g. 'POLAR')
+                calCharType = serialNumber_calCharType.split('_')[-1]
+
+                # Find available files in ConfigFile.settings['calibrationPath'] for the given serialNumber_calCharType tag
+                available_files = np.array(glob.glob(os.path.join(CODE_HOME,ConfigFile.settings['calibrationPath'],'CP_%s_*' % serialNumber_calCharType)))
+
+                # get their timestamps anc convert to seconds since UNIX epoch (Jan 1 1970 00:00 UTC)
+                available_files_calTime0 = [os.path.basename(f).split('_')[-1].split('.')[0] for f in available_files]
+                available_files_calTime_seconds  = np.array([datetime.strptime(t, '%Y%m%d%H%M%S').timestamp() for t in available_files_calTime0])
+
+                # Unless this is a characterisation tag and not calibration tag (i.e. not RADCAL) + class-based regime, raise an error if files are missing...
+                if len(available_files) == 0 and not (calCharType != 'RADCAL' and ConfigFile.settings["fL1bCal"] == 2):
+                    raise ValueError('Missing FidRadDB file of type CP_%s_yyyymmdd.txt for %s sensor. At least one file with this name format should be stored at %s (see GUI-->Edit-->Cal/Char options).' % (serialNumber_calCharType, sensorType, ConfigFile.settings['calibrationPath']))
+
+                if calCharType != 'RADCAL': # Char case
+
+                    if ConfigFile.settings["fL1bCal"] == 2:# class-based
+                        continue # class-based, skipping sensor-specific char
+
+                    elif ConfigFile.settings["fL1bCal"] == 3:# sensor-specific
+                        # Choose most recent sensor-specific characterisation (this is regardless of measurement acquisition time)
+                        chosen_file = ProcessL1b.choose_cal_char_per_time(acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent')
+                        Utilities.read_char(chosen_file, gp)
+
+                elif calCharType == 'RADCAL':
+
+                    # RADCAL files to be ingested depend on the multical options
+                    if ConfigFile.settings["MultiCal"] == 0:# Most recent prior to acquisition
+
+                        # This will choose the most recent prior to acquisition unless nothing prior to acquisition exists, then it will choose simply the closest
+                        chosen_file = ProcessL1b.choose_cal_char_per_time(acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent_prior2acquisition')
+                        Utilities.read_char(chosen_file, gp)
+
+                    elif ConfigFile.settings["MultiCal"] == 1:  # Pre-post average
+
+                        # TODO Not implemented! But pre- and post- cals are at least read into the HDF file
+                        raise NotImplementedError("pre/post cal average is not implemented yet.")
+
+                        # Read preCal into gp
+                        preCal = os.path.join(CODE_HOME,ConfigFile.settings['calibrationPath'],ConfigFile.settings.get("preCal_%s" % sensorType))
+                        if preCal is None:
+                            raise ValueError('Pre-calibration file should have been chosen if pre-post average was chosen (see GUI-->Edit-->Cal/Char options).')
+                        Utilities.read_char(preCal, gp)
+
+                        # Read postCal into gp
+                        postCal = os.path.join(CODE_HOME,ConfigFile.settings['calibrationPath'],ConfigFile.settings.get("postCal_%s" % sensorType))
+                        if postCal is None:
+                            raise ValueError('Post-calibration file should have been chosen if pre-post average was chosen (see GUI-->Edit-->Cal/Char options).')
+                        Utilities.read_char(postCal, gp)
+
+                        ###### TO BE CONTINUED #######
+
+                    elif ConfigFile.settings["MultiCal"] == 2: # Choose-cal
+
+                        # Read specific chosen cal into gp
+                        chooseCal = os.path.join(CODE_HOME,ConfigFile.settings['calibrationPath'],ConfigFile.settings.get("chooseCal_%s" % sensorType))
+                        if chooseCal is None:
+                            raise ValueError('Calibration file should have been chosen if "Chose cal." option was chosen (see GUI-->Edit-->Cal/Char options).')
+                        Utilities.read_char(chooseCal, gp)
+
+        return root
+
+
+    @staticmethod
+    def read_unc_coefficient_class(root, classbased_dir):
         ''' SeaBird or TriOS. ProcessL1bTriOS also redirects here.'''
 
         # Read Uncertainties_new_char from provided files
@@ -98,46 +233,22 @@ class ProcessL1b:
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
         # Read uncertainty parameters from class-based calibration
-        for f in glob.glob(os.path.join(inpath, r'*class_POLAR*')):
+        for f in glob.glob(os.path.join(classbased_dir, r'*class_POLAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*class_STRAY*')):
+        for f in glob.glob(os.path.join(classbased_dir, r'*class_STRAY*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*class_ANGULAR*')):
+        for f in glob.glob(os.path.join(classbased_dir, r'*class_ANGULAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
+        for f in glob.glob(os.path.join(classbased_dir, r'*class_THERMAL*')):
             Utilities.read_char(f, gp)
 
-        for f in glob.glob(os.path.join(inpath, r'*class_LINEAR*')):
+        for f in glob.glob(os.path.join(classbased_dir, r'*class_LINEAR*')):
             Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
+        for f in glob.glob(os.path.join(classbased_dir, r'*class_STAB*')):
             Utilities.read_char(f, gp)
 
         # Read sensor-specific radiometric calibration
-        cal_dates = []
-        for s in ['ES', 'LI', 'LT']:
-            save_delta,save_cal_date = None, None
-            if ConfigFile.settings["SensorType"].lower() == "trios":
-                s_tag = root.getGroup(f"{s}").attributes['IDDevice'][-4:]
-            else:
-                s_tag = root.getGroup(f"{s}_LIGHT").attributes['FrameTag'][-4:]
-
-            for f in glob.glob(os.path.join(radcal_dir, f'*{s_tag}_RADCAL*')):
-                cal_date = datetime.strptime(re.search(r'\d{14}', f.split('/')[-1]).group(), "%Y%m%d%H%M%S")
-                meas_date = root.getGroup("ANCILLARY_METADATA").getDataset("DATETIME").data[0]
-                t_delta = cal_date - meas_date.replace(tzinfo=None)
-
-                if save_delta is None and t_delta.total_seconds() < 0:
-                    save_delta = abs(t_delta.total_seconds())
-
-                if t_delta.total_seconds() < 0 and abs(t_delta.total_seconds()) <= save_delta:
-                    save_cal_date = cal_date
-                    save_delta = abs(t_delta.total_seconds())
-
-            cal_dates.append(save_cal_date)
-
-        for f in glob.glob(os.path.join(radcal_dir, r'*RADCAL*')):
-            if datetime.strptime(re.search(r'\d{14}', f.split('/')[-1]).group(), "%Y%m%d%H%M%S") in cal_dates:
-                Utilities.read_char(f, gp)
+        root = ProcessL1b.read_FidRadDB_cal_char_files(root)
 
         # Unc dataset renaming
         Utilities.RenameUncertainties_Class(root)
@@ -152,33 +263,14 @@ class ProcessL1b:
 
 
     @staticmethod
-    def read_unc_coefficient_frm(root, inpath, classbased_dir):
+    def read_unc_coefficient_frm(root):
         ''' SeaBird or TriOS.  ProcessL1bTriOS also redirects here. '''
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
-        # Read uncertainty parameters from full calibration from TARTU
-        # for f in glob.glob(os.path.join(inpath, r'*POLAR*')):
-        #     Utilities.read_char(f, gp)
-        # temporarily use class-based polar unc for FRM
-        for f in glob.glob(os.path.join(classbased_dir, r'*class_POLAR*')):
-            if any([s in os.path.basename(f).split('_') for s in ["LI", "LT"]]):  # don't read ES Pol which is the manufacturer cosine error
-                Utilities.read_char(f, gp)
-        # Polar correction to be developed and added to FRM branch.
-        # for f in glob.glob(os.path.join(inpath, r'*RADCAL*', '*')):
-        for f in glob.glob(os.path.join(inpath, r'*RADCAL*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*STRAY*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*ANGULAR*')):
-            Utilities.read_char(f, gp)
-        for f in glob.glob(os.path.join(inpath, r'*THERMAL*')):
-            Utilities.read_char(f, gp)
-
-        if len(gp.datasets) < 23:
-            print(f'Too few characterization files found: {len(gp.datasets)} of 23')
-            return None
+        # Read sensor-specific radiometric calibration
+        root = ProcessL1b.read_FidRadDB_cal_char_files(root)
 
         # unc dataset renaming
         Utilities.RenameUncertainties_FullChar(root)
@@ -654,7 +746,7 @@ class ProcessL1b:
             print('Class-Based:', classbased_dir)
             print('RADCAL:', radcal_dir)
 
-            node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir, radcal_dir)
+            node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir)
             if node is None:
                 Utilities.writeLogFileAndPrint('Error running class based uncertainties.')
                 return None
@@ -663,7 +755,7 @@ class ProcessL1b:
         elif ConfigFile.settings['fL1bCal'] == 3:
 
             # NOTE: Does this method lead to to corrections being applied in addition to uncertainty estimates?s
-            node = ProcessL1b.read_unc_coefficient_frm(node, radcal_dir, classbased_dir)
+            node = ProcessL1b.read_unc_coefficient_frm(node)
 
             if node is None:
                 Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
