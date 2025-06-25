@@ -86,6 +86,10 @@ class ProcessL1b:
         return root
 
     @staticmethod
+    def choose_cal_char(acquisition_time,cal_char_type):
+        pass
+
+    @staticmethod
     def read_unc_coefficient_class(root, inpath, radcal_dir):
         ''' SeaBird or TriOS. ProcessL1bTriOS also redirects here.'''
 
@@ -159,7 +163,7 @@ class ProcessL1b:
         #     Utilities.read_char(f, gp)
         # temporarily use class-based polar unc for FRM
         for f in glob.glob(os.path.join(classbased_dir, r'*class_POLAR*')):
-            if any([s in os.path.basename(f) for s in ["LI", "LT"]]):  # don't read ES Pol which is the manufacturer cosine error
+            if any([s in os.path.basename(f).split('_') for s in ["LI", "LT"]]):  # don't read ES Pol which is the manufacturer cosine error
                 Utilities.read_char(f, gp)
         # Polar correction to be developed and added to FRM branch.
         # for f in glob.glob(os.path.join(inpath, r'*RADCAL*', '*')):
@@ -632,6 +636,10 @@ class ProcessL1b:
             classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', # Hard-coded solution for sorad
                                      'TriOS' +"_initial")
 
+
+        # The radCalDir is now the same for all cal/char regimes and regardless of whether files were downloaded from FidRadDB or not
+        radcal_dir = ConfigFile.settings['calibrationPath']
+
         if ConfigFile.settings['fL1bCal'] == 1:
             # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
             print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
@@ -642,7 +650,6 @@ class ProcessL1b:
 
         # Add class-based files + RADCAL file
         elif ConfigFile.settings['fL1bCal'] == 2:
-            radcal_dir = ConfigFile.settings['RadCalDir']
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
             print('RADCAL:', radcal_dir)
@@ -654,28 +661,9 @@ class ProcessL1b:
 
         # Add full characterization files
         elif ConfigFile.settings['fL1bCal'] == 3:
-            if ConfigFile.settings['FidRadDB'] == 0:
-                inpath = ConfigFile.settings['FullCalDir']
-                print("Full-Char - uncertainty computed from full characterization")
-                print('Full-Char dir:', inpath)
 
-            elif ConfigFile.settings['FidRadDB'] == 1:
-                sensorIDs = Utilities.get_sensor_dict(node)
-                acq_datetime = datetime.strptime(node.attributes["TIME-STAMP"], "%a %b %d %H:%M:%S %Y")
-                acq_time = acq_datetime.strftime('%Y%m%d%H%M%S')
-                inpath = os.path.join(PATH_TO_DATA, 'FidRadDB', "SeaBird")
-                print('FidRadDB Char dir:', inpath)
-
-                # FidRad DB connection and download of calibration files by api
-                cal_char_types = ['STRAY','RADCAL','POLAR','THERMAL','ANGULAR']
-                for sensorID in sensorIDs:
-                    for cal_char_type in cal_char_types:
-                        # Exceptions due to non-existing cal/char files now handled directly in FidradDB_api function
-                        # If cal/char file missing entails an error, this should be handled while performing the particular
-                        # correction, not here.
-                        FidradDB_api(sensorID+'_'+cal_char_type, acq_time, inpath)
             # NOTE: Does this method lead to to corrections being applied in addition to uncertainty estimates?s
-            node = ProcessL1b.read_unc_coefficient_frm(node, inpath, classbased_dir)
+            node = ProcessL1b.read_unc_coefficient_frm(node, radcal_dir, classbased_dir)
 
             if node is None:
                 Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
