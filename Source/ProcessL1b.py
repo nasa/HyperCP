@@ -1,7 +1,6 @@
 ''' Process L1AQC to L1B '''
 import os
 import datetime as dt
-import re
 import calendar
 from inspect import currentframe, getframeinfo
 import glob
@@ -9,11 +8,11 @@ from datetime import datetime
 import numpy as np
 
 from Source import PATH_TO_CONFIG, PATH_TO_DATA
-from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
-from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
+from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
+from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
@@ -112,6 +111,7 @@ class ProcessL1b:
             raise ValueError('Something wrong here! At least X candidate files (X>0) should be inputted to this function, with X corrsponding cal. timestamps!')
 
         # Two possible rules (see above)
+        chosen_file = None
         if rule == 'most_recent_prior_acquisition':
 
             # Filter by only those cal./chars. whose timestamps is previous to measurement acquisition
@@ -138,12 +138,13 @@ class ProcessL1b:
     def read_FidRadDB_cal_char_files(root):
         '''Read FidRadDB cal/char files into root according:
         - Acquisition time stamp
-        - Cal/char files available under ConfigFile.settings['calibrationPath'], according to their sensorID, cal/char type (e.g. STRAY) and time stamp.
+        - Cal/char files available under fidRadPath, according to their sensorID, cal/char type (e.g. STRAY) and time stamp.
         - Selected cal/char regime
         - Selected multi-cal option
 
         return root (with the group "RAW_UNCERTAINTIES" updated to contain the read cal/chars)
         '''
+        fidRadPath =os.path.join(CODE_HOME, 'Data', 'FidRadDB',ConfigFile.settings['SensorType'])
 
         # Initialise "RAW_UNCERTAINTIES"
         gp = root.addGroup("RAW_UNCERTAINTIES")
@@ -163,8 +164,8 @@ class ProcessL1b:
                 # Get cal/char type from tag (e.g. 'POLAR')
                 calCharType = serialNumber_calCharType.split('_')[-1]
 
-                # Find available files in ConfigFile.settings['calibrationPath'] for the given serialNumber_calCharType tag
-                available_files = np.array(glob.glob(os.path.join(CODE_HOME,ConfigFile.settings['calibrationPath'],'CP_%s_*' % serialNumber_calCharType)))
+                # Find available files in fidRadPath for the given serialNumber_calCharType tag
+                available_files = np.array(glob.glob(os.path.join(CODE_HOME,fidRadPath,'CP_%s_*' % serialNumber_calCharType)))
 
                 # get their timestamps anc convert to seconds since UNIX epoch (Jan 1 1970 00:00 UTC)
                 available_files_calTime0 = [os.path.basename(f).split('_')[-1].split('.')[0] for f in available_files]
@@ -172,25 +173,26 @@ class ProcessL1b:
 
                 # Unless this is a characterisation tag and not calibration tag (i.e. not RADCAL) + class-based regime, raise an error if files are missing...
                 if len(available_files) == 0 and not (calCharType != 'RADCAL' and ConfigFile.settings["fL1bCal"] == 2):
-                    raise ValueError('Missing FidRadDB file of type CP_%s_yyyymmdd.txt for %s sensor. At least one file with this name format should be stored at %s (see GUI-->Edit-->Cal/Char options).' % (serialNumber_calCharType, sensorType, ConfigFile.settings['calibrationPath']))
+                    raise ValueError(
+                        'Missing FidRadDB file of type CP_%s_yyyymmdd.txt for %s sensor. At least one file with this name format should be stored at %s (see GUI-->Edit-->Cal/Char options).' % (serialNumber_calCharType, sensorType, fidRadPath))
 
                 if calCharType != 'RADCAL': # Char case
-
                     if ConfigFile.settings["fL1bCal"] == 2:# class-based
                         continue # class-based, skipping sensor-specific char
 
                     elif ConfigFile.settings["fL1bCal"] == 3:# sensor-specific
                         # Choose most recent sensor-specific characterisation (this is regardless of measurement acquisition time)
-                        chosen_file = ProcessL1b.choose_cal_char_per_time(acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent')
+                        chosen_file = ProcessL1b.choose_cal_char_per_time(
+                            acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent')
                         Utilities.read_char(chosen_file, gp)
 
                 elif calCharType == 'RADCAL':
-
                     # RADCAL files to be ingested depend on the multical options
                     if ConfigFile.settings["MultiCal"] == 0:# Most recent prior to acquisition
 
                         # This will choose the most recent prior to acquisition unless nothing prior to acquisition exists, then it will choose simply the closest
-                        chosen_file = ProcessL1b.choose_cal_char_per_time(acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent_prior2acquisition')
+                        chosen_file = ProcessL1b.choose_cal_char_per_time(
+                            acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent_prior_acquisition')
                         Utilities.read_char(chosen_file, gp)
 
                     elif ConfigFile.settings["MultiCal"] == 1:  # Pre-post average
@@ -199,13 +201,13 @@ class ProcessL1b:
                         raise NotImplementedError("pre/post cal average is not implemented yet.")
 
                         # Read preCal into gp
-                        preCal = os.path.join(CODE_HOME,ConfigFile.settings['calibrationPath'],ConfigFile.settings.get("preCal_%s" % sensorType))
+                        preCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get("preCal_%s" % sensorType))
                         if preCal is None:
                             raise ValueError('Pre-calibration file should have been chosen if pre-post average was chosen (see GUI-->Edit-->Cal/Char options).')
                         Utilities.read_char(preCal, gp)
 
                         # Read postCal into gp
-                        postCal = os.path.join(CODE_HOME,ConfigFile.settings['calibrationPath'],ConfigFile.settings.get("postCal_%s" % sensorType))
+                        postCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get("postCal_%s" % sensorType))
                         if postCal is None:
                             raise ValueError('Post-calibration file should have been chosen if pre-post average was chosen (see GUI-->Edit-->Cal/Char options).')
                         Utilities.read_char(postCal, gp)
@@ -215,7 +217,7 @@ class ProcessL1b:
                     elif ConfigFile.settings["MultiCal"] == 2: # Choose-cal
 
                         # Read specific chosen cal into gp
-                        chooseCal = os.path.join(CODE_HOME,ConfigFile.settings['calibrationPath'],ConfigFile.settings.get("chooseCal_%s" % sensorType))
+                        chooseCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get("chooseCal_%s" % sensorType))
                         if chooseCal is None:
                             raise ValueError('Calibration file should have been chosen if "Chose cal." option was chosen (see GUI-->Edit-->Cal/Char options).')
                         Utilities.read_char(chooseCal, gp)
@@ -262,14 +264,20 @@ class ProcessL1b:
 
 
     @staticmethod
-    def read_unc_coefficient_frm(root):
+    def read_unc_coefficient_frm(root, classbased_dir):
         ''' SeaBird or TriOS.  ProcessL1bTriOS also redirects here. '''
         # Read Uncertainties_new_char from provided files
         gp = root.addGroup("RAW_UNCERTAINTIES")
-        gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
+        gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later        
 
         # Read sensor-specific radiometric calibration
         root = ProcessL1b.read_FidRadDB_cal_char_files(root)
+
+        # temporarily use class-based polar unc for FRM
+        for f in glob.glob(os.path.join(classbased_dir, r'*class_POLAR*')):
+            if any([s in os.path.basename(f) for s in ["LI", "LT"]]):  # don't read ES Pol which is the manufacturer cosine error
+                Utilities.read_char(f, gp)
+        # Polar correction to be developed and added to FRM branch.
 
         # unc dataset renaming
         Utilities.RenameUncertainties_FullChar(root)
@@ -729,7 +737,7 @@ class ProcessL1b:
 
 
         # The radCalDir is now the same for all cal/char regimes and regardless of whether files were downloaded from FidRadDB or not
-        radcal_dir = ConfigFile.settings['calibrationPath']
+        radcal_dir = os.path.join(CODE_HOME, 'Data', 'FidRadDB',ConfigFile.settings['SensorType'])
 
         if ConfigFile.settings['fL1bCal'] == 1:
             # classbased_dir = os.path.join(PATH_TO_DATA, 'Class_Based_Characterizations', ConfigFile.settings['SensorType']+"_initial")
@@ -754,7 +762,7 @@ class ProcessL1b:
         elif ConfigFile.settings['fL1bCal'] == 3:
 
             # NOTE: Does this method lead to to corrections being applied in addition to uncertainty estimates?s
-            node = ProcessL1b.read_unc_coefficient_frm(node)
+            node = ProcessL1b.read_unc_coefficient_frm(node, classbased_dir)
 
             if node is None:
                 Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')

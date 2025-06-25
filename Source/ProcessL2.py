@@ -1495,14 +1495,14 @@ class ProcessL2:
                     from Source.Uncertainty_Visualiser import UncertaintyGUI
                     gui = UncertaintyGUI()
                     gui.plot_FRM(
-                        node, 
+                        node,
                         uncGroup,
                         dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
-                        dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice), 
+                        dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
                         stats,
-                        rhoScalar, 
-                        rhoVec, 
-                        rhoUNC, 
+                        rhoScalar,
+                        rhoVec,
+                        rhoUNC,
                         waveSubset
                     )
 

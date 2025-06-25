@@ -19,16 +19,12 @@ class ConfigFile:
     # Creates the calibration file folder if not exist
     @staticmethod
     def createCalibrationFolder():
-        #print("ConfigFile - createCalibrationFolder")
-        fp = ConfigFile.getCalibrationDirectory()
-        os.makedirs(fp, exist_ok=True)
-
+        os.makedirs(ConfigFile.getCalibrationDirectory(), exist_ok=True)
 
     # Generates the default configuration
     @staticmethod
     def createDefaultConfig(fileName, new=1):
         # fileName: the filename of the configuration file without path
-        # if new==1:
         print("ConfigFile - Create Default Config, or fill in newly added parameters with default values.")
 
         if not fileName.endswith(".cfg"):
@@ -109,8 +105,8 @@ class ConfigFile:
         ConfigFile.settings["fL1bCal"] = 1  # 1 for Factory, 2 for Class, 3 for Instrument Full
         ConfigFile.settings["fL1bThermal"] = 1  # 1 for internal thermistor, 2 for airTemp-based, 3 for caps-on darks
 
-        # Cal/char directory (inclusing FidRadDB cal/chars for config)
-        ConfigFile.settings["calibrationPath"] = PACKAGE_DIR
+        # # Cal/char directory (inclusing FidRadDB cal/chars for config)
+        # ConfigFile.settings["calibrationPath"] = ConfigFile.getCalibrationDirectory()#PATH_TO_CONFIG#PACKAGE_DIR
 
         # Cal/char directory (needed FidRadDB cal/chars for the full FRM cal/char regime)
         ConfigFile.settings['neededCalCharsFRM'] = {}
@@ -237,7 +233,7 @@ class ConfigFile:
         print(f"ConfigFile - Save Config: {filename}")
         ConfigFile.filename = filename
         params = dict(ConfigFile.settings, **ConfigFile.products)
-        params['calibrationPath'] = os.path.relpath(params['calibrationPath'])
+        # params['calibrationPath'] = os.path.relpath(params['calibrationPath'])
         fp = os.path.join(PATH_TO_CONFIG, filename)
 
         with open(fp, 'w', encoding="utf-8") as f:
@@ -295,9 +291,8 @@ class ConfigFile:
                 os.remove(seabassPath)
         if os.path.isfile(configPath):
             ConfigFile.filename = filename
-            calibrationPath = ConfigFile.getCalibrationDirectory()
             os.remove(configPath)
-            shutil.rmtree(calibrationPath)
+            shutil.rmtree(ConfigFile.getCalibrationDirectory())
         if os.path.isfile(seabassPath):
             os.remove()
 
@@ -312,8 +307,7 @@ class ConfigFile:
     @staticmethod
     def refreshCalibrationFiles():
         print("ConfigFile - refreshCalibrationFiles")
-        calibrationPath = ConfigFile.getCalibrationDirectory()
-        files = os.listdir(calibrationPath)
+        files = os.listdir(ConfigFile.getCalibrationDirectory())
 
         newCalibrationFiles = {}
         calibrationFiles = ConfigFile.settings["CalibrationFiles"]

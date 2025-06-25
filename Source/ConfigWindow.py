@@ -58,9 +58,10 @@ class ConfigWindow(QtWidgets.QDialog):
         fsm.setNameFilters(["*.cal", "*.tdf", "*.ini", ".dat"])
         fsm.setNameFilterDisables(False)
         fsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
-        calibrationDir = os.path.splitext(self.name)[0] + "_Calibration"
-        ConfigFile.settings['calibrationPath'] = os.path.join(PATH_TO_CONFIG, calibrationDir)
-        index = fsm.setRootPath(ConfigFile.settings['calibrationPath'])
+        # calibrationDir = os.path.splitext(self.name)[0] + "_Calibration"
+        # ConfigFile.settings['calibrationPath'] = os.path.join(PATH_TO_CONFIG, calibrationDir)
+        self.calibrationPath = ConfigFile.getCalibrationDirectory()
+        index = fsm.setRootPath(self.calibrationPath)
         self.calibrationFileComboBox.setModel(fsm)
         self.calibrationFileComboBox.setRootModelIndex(index)
         self.calibrationFileComboBox.currentIndexChanged.connect(self.calibrationFileChanged)
@@ -1102,18 +1103,18 @@ class ConfigWindow(QtWidgets.QDialog):
             if ".sip" in fnames[0][0]:
                 src = fnames[0][0]
                 (_, filename) = os.path.split(src)
-                dest = os.path.join(ConfigFile.settings['calibrationPath'], filename)
+                dest = os.path.join(self.calibrationPath, filename)
                 print(src)
                 print(dest)
                 shutil.copy(src, dest)
                 CalibrationFileReader.readSip(dest)
                 # [folder,_] = filename.split('.')
-                # os.rmdir(os.path.join(ConfigFile.settings['calibrationPath'],folder))
+                # os.rmdir(os.path.join(self.calibrationPath,folder))
 
             else:
                 for src in fnames[0]:
                     (_, filename) = os.path.split(src)
-                    dest = os.path.join(ConfigFile.settings['calibrationPath'], filename)
+                    dest = os.path.join(self.calibrationPath, filename)
                     print(src)
                     print(dest)
                     shutil.copy(src, dest)
@@ -1140,7 +1141,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def deleteCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Remove Calibration File Pressed")
-        cal_fp = os.path.join(ConfigFile.settings['calibrationPath'],self.calibrationFileComboBox.currentText())
+        cal_fp = os.path.join(self.calibrationPath,self.calibrationFileComboBox.currentText())
 
         if os.path.exists(cal_fp) and cal_fp != '/':  # if cal file removed from empty then does not crash.
             try:
@@ -1197,8 +1198,7 @@ class ConfigWindow(QtWidgets.QDialog):
         print("CalibrationEditWindow - Calibration File Changed")
         print("Current index",i,"selection changed ", self.calibrationFileComboBox.currentText())
         calFileName = self.calibrationFileComboBox.currentText()
-        calDir = ConfigFile.getCalibrationDirectory()
-        calPath = os.path.join(calDir, calFileName)
+        calPath = os.path.join(self.calibrationPath, calFileName)
         if os.path.isfile(calPath):
             self.getCalibrationSettings()
             self.calibrationEnabledCheckBox.setEnabled(True)
@@ -1346,67 +1346,6 @@ class ConfigWindow(QtWidgets.QDialog):
         anomAnalDialog = AnomAnalWindow(self.inputDirectory, self)
         anomAnalDialog.show()
 
-    def l1bPlotTimeInterpCheckBoxUpdate(self):
-        print("ConfigWindow - l1bPlotTimeInterpCheckBoxUpdate")
-        if self.l1bPlotTimeInterpCheckBox.isChecked():
-            ConfigFile.settings["bL1bPlotTimeInterp"] = 1
-        else:
-            ConfigFile.settings["bL1bPlotTimeInterp"] = 0
-
-    def l1bqcLtUVNIRCheckBoxUpdate(self):
-        print("ConfigWindow - l2UVNIRCheckBoxUpdate")
-
-        if self.l1bqcLtUVNIRCheckBox.isChecked():
-            ConfigFile.settings["bL1bqcLtUVNIR"] = 1
-        else:
-            ConfigFile.settings["bL1bqcLtUVNIR"] = 0
-
-    def l1bqcSpecQualityCheckBoxUpdate(self):
-        print("ConfigWindow - l1bqcSpecQualityCheckBoxUpdate")
-
-        disabled = not self.l1bqcSpecQualityCheckBox.isChecked()
-        self.l1bqcSpecFilterLiLabel.setDisabled(disabled)
-        self.l1bqcSpecFilterLiLineEdit.setDisabled(disabled)
-        self.l1bqcSpecFilterLtLabel.setDisabled(disabled)
-        self.l1bqcSpecFilterLtLineEdit.setDisabled(disabled)
-        self.l1bqcSpecFilterEsLabel.setDisabled(disabled)
-        self.l1bqcSpecFilterEsLineEdit.setDisabled(disabled)
-
-        self.l1bqcSpecQualityCheckPlotBox.setDisabled(disabled)
-
-        if disabled:
-            ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 0
-            ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 0
-            self.l1bqcSpecQualityCheckPlotBox.setChecked(False)
-        else:
-            ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 1
-
-    def l1bqcSpecQualityCheckPlotBoxUpdate(self):
-        print("ConfigWindow - l1bqcSpecQualityCheckPlotBoxUpdate")
-
-        disabled = not self.l1bqcSpecQualityCheckPlotBox.isChecked()
-        if disabled:
-            ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 0
-        else:
-            ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 1
-
-    def l1bqcQualityFlagCheckBoxUpdate(self):
-        print("ConfigWindow - l1bqcQualityFlagCheckBoxUpdate")
-
-        disabled = not self.l1bqcQualityFlagCheckBox.isChecked()
-        self.l1bqcCloudFlagLabel.setDisabled(disabled)
-        self.l1bqcCloudFlagLineEdit.setDisabled(disabled)
-        self.l1bqcEsFlagLabel.setDisabled(disabled)
-        self.l1bqcEsFlagLineEdit.setDisabled(disabled)
-        self.l1bqcDawnDuskFlagLabel.setDisabled(disabled)
-        self.l1bqcDawnDuskFlagLineEdit.setDisabled(disabled)
-        self.l1bqcRainfallHumidityFlagLabel.setDisabled(disabled)
-        self.l1bqcRainfallHumidityFlagLineEdit.setDisabled(disabled)
-        if disabled:
-            ConfigFile.settings["bL2EnableQualityFlags"] = 0
-        else:
-            ConfigFile.settings["bL2EnableQualityFlags"] = 1
-
     def l1bGetAncUntickIfNoCredentials(self,ancillarySource):
         '''
         ancillarySource: a string, either 'NASA_Earth_Data' or 'ECMWF_ADS'
@@ -1521,18 +1460,78 @@ class ConfigWindow(QtWidgets.QDialog):
         CalCharWindowDialog = CalCharWindow(self.name,self)
         CalCharWindowDialog.show()
 
+    def l1bPlotTimeInterpCheckBoxUpdate(self):
+        print("ConfigWindow - l1bPlotTimeInterpCheckBoxUpdate")
+        if self.l1bPlotTimeInterpCheckBox.isChecked():
+            ConfigFile.settings["bL1bPlotTimeInterp"] = 1
+        else:
+            ConfigFile.settings["bL1bPlotTimeInterp"] = 0
+
+    def l1bqcLtUVNIRCheckBoxUpdate(self):
+        print("ConfigWindow - l2UVNIRCheckBoxUpdate")
+
+        if self.l1bqcLtUVNIRCheckBox.isChecked():
+            ConfigFile.settings["bL1bqcLtUVNIR"] = 1
+        else:
+            ConfigFile.settings["bL1bqcLtUVNIR"] = 0
+
+    def l1bqcSpecQualityCheckBoxUpdate(self):
+        print("ConfigWindow - l1bqcSpecQualityCheckBoxUpdate")
+
+        disabled = not self.l1bqcSpecQualityCheckBox.isChecked()
+        self.l1bqcSpecFilterLiLabel.setDisabled(disabled)
+        self.l1bqcSpecFilterLiLineEdit.setDisabled(disabled)
+        self.l1bqcSpecFilterLtLabel.setDisabled(disabled)
+        self.l1bqcSpecFilterLtLineEdit.setDisabled(disabled)
+        self.l1bqcSpecFilterEsLabel.setDisabled(disabled)
+        self.l1bqcSpecFilterEsLineEdit.setDisabled(disabled)
+
+        self.l1bqcSpecQualityCheckPlotBox.setDisabled(disabled)
+
+        if disabled:
+            ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 0
+            ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 0
+            self.l1bqcSpecQualityCheckPlotBox.setChecked(False)
+        else:
+            ConfigFile.settings["bL1bqcEnableSpecQualityCheck"] = 1
+
+    def l1bqcSpecQualityCheckPlotBoxUpdate(self):
+        print("ConfigWindow - l1bqcSpecQualityCheckPlotBoxUpdate")
+
+        disabled = not self.l1bqcSpecQualityCheckPlotBox.isChecked()
+        if disabled:
+            ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 0
+        else:
+            ConfigFile.settings["bL1bqcEnableSpecQualityCheckPlot"] = 1
+
+    def l1bqcQualityFlagCheckBoxUpdate(self):
+        print("ConfigWindow - l1bqcQualityFlagCheckBoxUpdate")
+
+        disabled = not self.l1bqcQualityFlagCheckBox.isChecked()
+        self.l1bqcCloudFlagLabel.setDisabled(disabled)
+        self.l1bqcCloudFlagLineEdit.setDisabled(disabled)
+        self.l1bqcEsFlagLabel.setDisabled(disabled)
+        self.l1bqcEsFlagLineEdit.setDisabled(disabled)
+        self.l1bqcDawnDuskFlagLabel.setDisabled(disabled)
+        self.l1bqcDawnDuskFlagLineEdit.setDisabled(disabled)
+        self.l1bqcRainfallHumidityFlagLabel.setDisabled(disabled)
+        self.l1bqcRainfallHumidityFlagLineEdit.setDisabled(disabled)
+        if disabled:
+            ConfigFile.settings["bL2EnableQualityFlags"] = 0
+        else:
+            ConfigFile.settings["bL2EnableQualityFlags"] = 1
 
     def l2SVARadioButtonDefaultClicked(self):
         print("ConfigWindow - l2SVA set to 40")
         self.SVARadioButtonDefault.setChecked(True)
         self.SVARadioButton30.setChecked(False)
         ConfigFile.settings["fL2SVA"] = 40
+        
     def l2SVARadioButton30Clicked(self):
         print("ConfigWindow - l2SVA set to 30")
         self.SVARadioButtonDefault.setChecked(False)
         self.SVARadioButton30.setChecked(True)
         ConfigFile.settings["fL2SVA"] = 30
-    
 
     def l2StationsCheckBoxUpdate(self):
         print("ConfigWindow - l2StationsCheckBoxUpdate")

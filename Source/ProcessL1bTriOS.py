@@ -12,6 +12,7 @@ from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
+from Source import PACKAGE_DIR as CODE_HOME
 
 
 class ProcessL1bTriOS:
@@ -374,7 +375,7 @@ class ProcessL1bTriOS:
                                      'TriOS' +"_initial")
 
         # The radCalDir is now the same for all cal/char regimes and regardless of whether files were downloaded from FidRadDB or not
-        radcal_dir = ConfigFile.settings['calibrationPath']
+        radcal_dir = os.path.join(CODE_HOME, 'Data', 'FidRadDB',ConfigFile.settings['SensorType'])
 
         # Add Class-based characterization files if needed (RAW_UNCERTAINTIES)
         if ConfigFile.settings['fL1bCal'] == 1:
@@ -382,8 +383,6 @@ class ProcessL1bTriOS:
 
         # Add Class-based characterization files + RADCAL files
         elif ConfigFile.settings['fL1bCal'] == 2:
-
-
             print("Class-Based - uncertainty computed from class-based and RADCAL")
             print('Class-Based:', classbased_dir)
             print('RADCAL:', radcal_dir)
@@ -394,8 +393,8 @@ class ProcessL1bTriOS:
 
         # Or add Full characterization files (RAW_UNCERTAINTIES)
         elif ConfigFile.settings['fL1bCal'] == 3:
-
-            node = ProcessL1b.read_unc_coefficient_frm(node)
+            print("Sensor-Specific - uncertainty and corrections computed from complete FidRadDB files")
+            node = ProcessL1b.read_unc_coefficient_frm(node, classbased_dir)
             if node is None:
                 Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
                 return None
