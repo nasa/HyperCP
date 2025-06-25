@@ -22,7 +22,6 @@ class ConfigWindow(QtWidgets.QDialog):
         self.name = name
         self.newName = ''
         self.inputDirectory = inputDir
-        self.FullCalDir = ''
         self.initUI()
 
 
@@ -60,8 +59,8 @@ class ConfigWindow(QtWidgets.QDialog):
         fsm.setNameFilterDisables(False)
         fsm.setFilter(QtCore.QDir.NoDotAndDotDot | QtCore.QDir.Files)
         calibrationDir = os.path.splitext(self.name)[0] + "_Calibration"
-        self.calibrationPath = os.path.join(PATH_TO_CONFIG, calibrationDir)
-        index = fsm.setRootPath(self.calibrationPath)
+        ConfigFile.settings['calibrationPath'] = os.path.join(PATH_TO_CONFIG, calibrationDir)
+        index = fsm.setRootPath(ConfigFile.settings['calibrationPath'])
         self.calibrationFileComboBox.setModel(fsm)
         self.calibrationFileComboBox.setRootModelIndex(index)
         self.calibrationFileComboBox.currentIndexChanged.connect(self.calibrationFileChanged)
@@ -1102,18 +1101,18 @@ class ConfigWindow(QtWidgets.QDialog):
             if ".sip" in fnames[0][0]:
                 src = fnames[0][0]
                 (_, filename) = os.path.split(src)
-                dest = os.path.join(self.calibrationPath, filename)
+                dest = os.path.join(ConfigFile.settings['calibrationPath'], filename)
                 print(src)
                 print(dest)
                 shutil.copy(src, dest)
                 CalibrationFileReader.readSip(dest)
                 # [folder,_] = filename.split('.')
-                # os.rmdir(os.path.join(self.calibrationPath,folder))
+                # os.rmdir(os.path.join(ConfigFile.settings['calibrationPath'],folder))
 
             else:
                 for src in fnames[0]:
                     (_, filename) = os.path.split(src)
-                    dest = os.path.join(self.calibrationPath, filename)
+                    dest = os.path.join(ConfigFile.settings['calibrationPath'], filename)
                     print(src)
                     print(dest)
                     shutil.copy(src, dest)
@@ -1140,7 +1139,7 @@ class ConfigWindow(QtWidgets.QDialog):
 
     def deleteCalibrationFileButtonPressed(self):
         print("CalibrationEditWindow - Remove Calibration File Pressed")
-        cal_fp = os.path.join(self.calibrationPath,self.calibrationFileComboBox.currentText())
+        cal_fp = os.path.join(ConfigFile.settings['calibrationPath'],self.calibrationFileComboBox.currentText())
 
         if os.path.exists(cal_fp) and cal_fp != '/':  # if cal file removed from empty then does not crash.
             try:

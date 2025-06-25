@@ -108,9 +108,20 @@ class ConfigFile:
         ConfigFile.settings["fL1bDefaultSST"] = 26.0
         ConfigFile.settings["fL1bCal"] = 1  # 1 for Factory, 2 for Class, 3 for Instrument Full
         ConfigFile.settings["fL1bThermal"] = 1  # 1 for internal thermistor, 2 for airTemp-based, 3 for caps-on darks
-        ConfigFile.settings["FullCalDir"] = PACKAGE_DIR
-        ConfigFile.settings['RadCalDir'] = PACKAGE_DIR
-        ConfigFile.settings['FidRadDB'] = 0
+
+        # Cal/char directory (inclusing FidRadDB cal/chars for config)
+        ConfigFile.settings["calibrationPath"] = PACKAGE_DIR
+
+        # Cal/char directory (needed FidRadDB cal/chars for the full FRM cal/char regime)
+        ConfigFile.settings['neededCalCharsFRM'] = {}
+
+        # Multical config defaults
+        ConfigFile.settings['MultiCal'] = 0 # 0: most recent prior to acquisition, 1: pre-post average, 2: choose cal
+        for multiCalOpt in ['preCal', 'postCal', 'chooseCal']:
+            for sensorType in ['ES', 'LT', 'LI']:
+                # RADCAL filename instead if selected in Source/CalCharWindow.py options.
+                ConfigFile.settings['%s_%s' % (multiCalOpt, sensorType)] = None
+
 
         ConfigFile.settings["fL1bInterpInterval"] = 3.3 #3.3 is nominal HyperOCR; Brewin 2016 uses 3.5 nm
         ConfigFile.settings["bL1bPlotTimeInterp"] = 0
@@ -226,8 +237,7 @@ class ConfigFile:
         print(f"ConfigFile - Save Config: {filename}")
         ConfigFile.filename = filename
         params = dict(ConfigFile.settings, **ConfigFile.products)
-        params['FullCalDir'] = os.path.relpath(params['FullCalDir'])
-        params['RadCalDir'] = os.path.relpath(params['RadCalDir'])
+        params['calibrationPath'] = os.path.relpath(params['calibrationPath'])
         fp = os.path.join(PATH_TO_CONFIG, filename)
 
         with open(fp, 'w', encoding="utf-8") as f:
