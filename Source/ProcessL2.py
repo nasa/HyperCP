@@ -1260,7 +1260,7 @@ class ProcessL2:
         # (Combines Slice and XSlice -- as above -- into one method)
         ProcessL2.sliceAveOther(node, start, end, y, ancGroup, sixSGroup)
         newAncGroup = node.getGroup("ANCILLARY") # Just populated above
-        newAncGroup.attributes['Ancillary_Flags (0, 1, 2, 3)'] = ['undetermined','field','model','default']
+        newAncGroup.attributes['ANC_SOURCE_FLAGS'] = ['0: Undetermined, 1: Field, 2: Model, 3: Fallback']
 
         # Extract the last/current element/slice for each dataset and hold for use in calculating reflectances
         # Ancillary group, unlike most groups, will have named data columns in datasets (i.e. not NONE)
