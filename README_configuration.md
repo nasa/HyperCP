@@ -1,18 +1,27 @@
 # Configuration
 
-Launch the configuration module and GUI (ConfigWindow.py) from the Main window by selecting/editing a configuration file
- or creating a new one. This file will be instrument-suite-specific, and is also deployment-specific according to which
- factory calibration files are needed, as well as how the instrument was configured on the platform or ship.
- Some cruises (e.g. moving between significantly different water types) may also require multiple configurations to
- obtain the highest quality ocean color products at Level 2. Sharp gradients in environmental conditions could also
- warrant multiple configurations for the same cruise (e.g. sharp changes in air temperature may effect how data
- deglitching is parameterized, as described [below](README_deglitching.md)).
+Launch the configuration window from the Main window by selecting/editting a configuration file
+ or creating a new one. This configuration is sensor/platform specific and deployment-specific according to which
+ factory calibration files are needed, as well as how the instrument was configured on the platform.
 
-The configuration window looks like this:
+The configuration window should look like this:
 
 <center><img src="Data/Img/Configuration_window.png" alt="banner"></center>
 
-## Calibration & Instrument Files
+# Contents
+### [Calibration/Instrument Setup](#calibration-and-instrument-files)
+### [Level 0](#level-0-raw-files)
+### [Level 1A](#level-1a)
+### [Level 1AQC](#level-1aqc)
+### [Level 1B](#level-1b)
+### [Level 1BQC](#level-1bqc)
+### [Level 2](#level-2)
+### [SeaBASS/OCDB Output](#1-seabassocdb-file-and-header)
+### [PDF Reports](#2-pdf-reports)
+
+
+
+## Calibration and Instrument Files
 
 ***NOTE: IT IS IMPORTANT THAT THESE INSTRUCTIONS FOR SELECTING AND ACTIVATING CALIBRATION AND INSTRUMENT FILES ARE
 FOLLOWED CAREFULLY OR PROCESSING WILL FAIL***
@@ -371,7 +380,7 @@ Individual spectra may be filtered out for:
     document to see recommended QC screening in the frame of [FRM4SOC-2](https://frm4soc2.eumetsat.int/).
 
 
-## L2 Processing
+## Level 2 Processing
 
 Data are averaged within optional time interval ensembles prior to calculating the remote sensing
 reflectance within each ensemble. A typical field collection file for the SunTracker is one hour, and the
