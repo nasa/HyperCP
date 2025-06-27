@@ -1,10 +1,12 @@
 """
+    Split long DALEC files (e.g., dailies) into hourly raw files for HyperCP
+
     Args Needed To Run:
         -f, --file (str)  : The path to the text file that you want to split into hourly files
         -o, --output (str): The path to the directory that you want the hourly files to be placed in. 
 
     Example Run Command:
-        python raw_Data_Hourly_Cutter.py -f path/to/file.TXT -o dir/to/place/files
+        python prepDALEC.py -f path/to/file.TXT -o dir/to/place/files
 
     *** NOTE : The output directory path should NOT end with a '/' ***
     *** NOTE : Currently only works with DALEC Raw data file! ***
