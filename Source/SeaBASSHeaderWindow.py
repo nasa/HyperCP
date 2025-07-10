@@ -492,13 +492,21 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
                     omitList = ['data_file_name','calibration_files','data_status','station','documents','start_date','end_date',\
                                 'north_latitude','south_latitude','east_longitude','west_longitude','start_time','end_time',\
                                     'measurement_depth','water_depth','fields','units']
-                    if key in SeaBASSHeader.settings and SeaBASSHeader.settings[key] == '' and key not in omitList:
+                    if key in SeaBASSHeader.settings and \
+                        (SeaBASSHeader.settings[key] == '' or SeaBASSHeader.settings[key] == 'temp') \
+                            and key not in omitList:
                         SeaBASSHeader.settings[key] = value
 
-        # if ConfigFile.settings["bL1aCleanSZA"]:
-        #     szaFilt = "On"
-        # else:
-        #     szaFilt = "Off"
+        SeaBASSHeader.settings['instrument_manufacturer'] = ConfigFile.settings['SensorType']
+        if ConfigFile.settings['SensorType'].lower() == 'trios':
+            SeaBASSHeader.settings['instrument_model'] = 'RAMSES'
+        if ConfigFile.settings['SensorType'].lower() == 'seabird':
+            SeaBASSHeader.settings['instrument_model'] = 'HyperOCR'
+        if ConfigFile.settings['SensorType'].lower() == 'dalec':
+            SeaBASSHeader.settings['instrument_model'] = 'DALEC'
+
+        # NOTE: Need to capture the calibration date for the SeaBASS file header
+        
         if ConfigFile.settings["bL1aqcCleanPitchRoll"]:
             pitchRollFilt = "On"
         else:

@@ -1646,6 +1646,10 @@ class ConfigWindow(QtWidgets.QDialog):
             ConfigFile.settings["bL2BRDF_IOP"] = 0
             self.l2BRDF_fQCheckBox.setChecked(False)
             self.l2BRDF_IOPCheckBox.setChecked(False)
+        elif ConfigFile.settings["bL2BRDF_fQ"] == 0 and ConfigFile.settings["bL2BRDF_IOP"] == 0:
+            ConfigFile.settings["bL2BRDF_IOP"] = 1
+            self.l2BRDF_IOPCheckBox.setChecked(True)
+
 
     # Make BRDF type exclusive so that it is clear what is written to SeaBASS output
     #   Reprocess to change to another BRDF type
