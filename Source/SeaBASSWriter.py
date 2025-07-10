@@ -97,10 +97,11 @@ class SeaBASSWriter:
             station = node.getGroup('ANCILLARY').getDataset('STATION').data[0][2]
             headerBlock['station'] = station
         else:
-            if ConfigFile.settings['SensorType'].lower() =='trios':
-                headerBlock['station'] = headerRawNames
-            else:
-                headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
+            # if ConfigFile.settings['SensorType'].lower() =='trios':
+                # headerBlock['station'] = headerRawNames
+            headerBlock['station'] = node.attributes['L1BQC_FILE_NAME'].split('.')[0]
+            # else:
+                # headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
         if headerBlock['start_time'] == '':
             headerBlock['start_time'] = startTime
         if headerBlock['end_time'] == '':
@@ -240,12 +241,13 @@ class SeaBASSWriter:
         outFile = open(outFileName,'w',newline='\n')
         outFile.write('/begin_header\n')
         for key,value in headerBlock.items():
-            if key != 'comments' and key != 'other_comments' and key != 'version' and key != 'platform':
+            if key != 'comments' and key != 'other_comments' and key != 'version':# and key != 'platform':
                 line = f'/{key}={value}\n'
                 outFile.write(line)
-            if key == 'platform':
-                line = f'!/{key}={value}\n'
-                outFile.write(line)
+            # if key == 'platform':
+            #     # NOTE: While header is pending at SeaBASS
+            #     line = f'!/{key}={value}\n'
+            #     outFile.write(line)
         outFile.write(headerBlock['comments']+'\n')
         outFile.write(headerBlock['other_comments']+'\n')
         outFile.write('/fields='+fields+'\n')

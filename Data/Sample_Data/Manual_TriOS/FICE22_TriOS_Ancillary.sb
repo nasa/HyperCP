@@ -4,7 +4,7 @@
 /contact=gdal@pml.ac.uk
 /experiment=FRM4SOC2
 /cruise=FICE22
-/station=AAOT
+/platform=AAOT
 /data_file_name=FICE_TriOS_Ancillary_TrueRelAz_V2.sb
 /documents=FICE_TriOS_Ancillary_TrueRelAz_V2.sb
 /calibration_files=notapplicable.txt
