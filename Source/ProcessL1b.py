@@ -610,6 +610,10 @@ class ProcessL1b:
 
         for gp in node.groups:
             if not gp.id.endswith('_L1AQC') and 'FrameType' in gp.attributes:
+                if gp.attributes["FrameType"] == "Not Required":
+                    Utilities.writeLogFileAndPrint(f'ERROR: Check the FrameType for {sensorType}')
+                    break
+
                 if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensorType):
                     darkGroup = gp
                     darkData = gp.getDataset(sensorType)

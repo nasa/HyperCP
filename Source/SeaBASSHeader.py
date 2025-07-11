@@ -72,7 +72,7 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["cruise"] = name.split('.')[0] # I generally name configuration files after cruise.
         SeaBASSHeader.settings["platform"] = ''
 
-        SeaBASSHeader.settings["documents"] = ''
+        SeaBASSHeader.settings["documents"] = 'README.md'
 
         SeaBASSHeader.settings["instrument_manufacturer"] = ''
         SeaBASSHeader.settings["instrument_model"] = ''

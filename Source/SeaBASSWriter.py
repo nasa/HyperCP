@@ -118,6 +118,8 @@ class SeaBASSWriter:
             headerBlock['east_longitude'] = eastLon
         if headerBlock['west_longitude'] == '':
             headerBlock['west_longitude'] = westLon
+        if headerBlock['documents'] == '':
+            headerBlock['documents'] = 'README.md'
         if level == '2':
             headerBlock['wind_speed'] = aveWind
         return headerBlock
