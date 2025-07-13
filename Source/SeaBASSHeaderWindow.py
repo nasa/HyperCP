@@ -578,11 +578,14 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
             elif ConfigFile.settings["bL2BRDF_IOP"]:
                 # Lee 2011
                 SeaBASSHeader.settings["BRDF_correction"] = 'L11'
+            elif ConfigFile.settings["bL2BRDF_O23"]:
+                # Pitarch 2025
+                SeaBASSHeader.settings["BRDF_correction"] = 'O23'
             # elif ConfigFile.settings["bL2BRDF_OXX"]:
             #     # Lee 2011 adapted by D'Allimonte et al.
             #     SeaBASSHeader.settings["BRDF_correction"] = 'Rrs:OXX,Lwnex:OXX'
         else:
-            SeaBASSHeader.settings["BRDF_correction"] = 'NoBRDF'
+            SeaBASSHeader.settings["BRDF_correction"] = 'noBRDF'
 
         if ConfigFile.settings["bL2NegativeSpec"]:
             NegativeFilt = "On"
