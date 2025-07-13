@@ -72,7 +72,7 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["cruise"] = name.split('.')[0] # I generally name configuration files after cruise.
         SeaBASSHeader.settings["platform"] = ''
 
-        SeaBASSHeader.settings["documents"] = ''
+        SeaBASSHeader.settings["documents"] = 'README.md'
 
         SeaBASSHeader.settings["instrument_manufacturer"] = ''
         SeaBASSHeader.settings["instrument_model"] = ''
@@ -105,7 +105,7 @@ class SeaBASSHeader:
         SeaBASSHeader.settings["nadir"] = '40'
 
         SeaBASSHeader.settings["rho_correction"] = ''
-        SeaBASSHeader.settings["NIR_residual_correction"] = 'noBRDF'
+        SeaBASSHeader.settings["NIR_residual_correction"] = ''
         SeaBASSHeader.settings["BRDF_correction"] = ''
 
 
@@ -192,11 +192,11 @@ class SeaBASSHeader:
             elif ConfigFile.settings["bL2BRDF_IOP"]:
                 # Lee 2011
                 SeaBASSHeader.settings["BRDF_correction"] = 'L11'
-            # elif ConfigFile.settings["bL2BRDF_OXX"]:
-            #     # Lee 2011 adapted by D'Allimonte et al.
-            #     SeaBASSHeader.settings["BRDF_correction"] = 'Rrs:OXX,Lwnex:OXX'
+            elif ConfigFile.settings["bL2BRDF_O23"]:
+                # Pitarch et al. 2025
+                SeaBASSHeader.settings["BRDF_correction"] = 'O23'
         else:
-            SeaBASSHeader.settings["BRDF_correction"] = 'NoBRDF'
+            SeaBASSHeader.settings["BRDF_correction"] = 'noBRDF'
 
         if ConfigFile.settings["bL2NegativeSpec"]:
             NegativeFilt = "On"

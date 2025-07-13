@@ -214,13 +214,13 @@ class PDF(FPDF):
                     metaData += 'Cal. Type: Class-based'
                 elif ConfigFile.settings["fL1bCal"] == 3:
                     metaData += 'Cal. Type: Full-FRM'
-                metaData += f'Wavelength Interp Int: {ConfigFile.settings["fL1bInterpInterval"]}\n'
+                # metaData += f'Wavelength Interp Int: {ConfigFile.settings["fL1bInterpInterval"]}\n'
                 if  ConfigFile.settings["fL1bThermal"] == 1:
-                    metaData += 'Internal working tempsource: Internal thermistor\n'
+                    metaData += 'Internal working temp source: Internal thermistor\n'
                 if  ConfigFile.settings["fL1bThermal"] == 2:
-                    metaData += 'Internal working tempsource: Air temperature\n'
+                    metaData += 'Internal working temp source: Air temperature + margin\n'
                 if  ConfigFile.settings["fL1bThermal"] == 3:
-                    metaData += 'Internal working tempsource: Caps-on dark file\n'                    
+                    metaData += 'Internal working temp source: Caps-on dark file unless < 30C.\n'                    
 
         if level == "L1BQC":
             intro = 'Apply more quality control filters.\n'
@@ -415,12 +415,13 @@ class PDF(FPDF):
                 self.multi_cell(0, 5, "None found.\n")
 
         if level == "L1B":
-            inPath = os.path.join(inPlotPath, f'{level}')
+            inPath = os.path.join(inPlotPath, f'{level}_Interp')
             self.cell(0, 6, 'Example Temporal Interpolations', 0, 1, 'L', 1)
             self.multi_cell(0, 5, 'Randomized. Complete plots of hyperspectral \n'\
                 'interpolations can be found in [output_directory]/Plots/L1B_Interp.\n')
 
             fileList = glob.glob(os.path.join(inPath, f'{filebasename}_*.png'))
+            # NOTE: Should screen out the sixS plots here at some point
 
             print('Adding interpolation plots...')
             if len(fileList) > 0:

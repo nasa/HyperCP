@@ -160,6 +160,7 @@ class ConfigFile:
         ConfigFile.settings["bL2BRDF"] = 0
         ConfigFile.settings["bL2BRDF_fQ"] = 0
         ConfigFile.settings["bL2BRDF_IOP"] = 0
+        ConfigFile.settings["bL2BRDF_O23"] = 0
 
         ConfigFile.settings["bL2WeightMODISA"] = 0
         ConfigFile.settings["bL2WeightSentinel3A"] = 0

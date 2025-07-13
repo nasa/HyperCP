@@ -2107,9 +2107,9 @@ class ProcessL2:
                 Utilities.writeLogFileAndPrint("Applying Lee et al. 2011 BRDF correction to Rrs and nLw")
                 ProcessL2BRDF.procBRDF(node, BRDF_option='L11')
 
-            # if ConfigFile.settings['bL2BRDF_OXX']:
-            #     Utilities.writeLogFileAndPrint("Applying OXX BRDF correction to Rrs and nLw"
-            #     ProcessL2BRDF.procBRDF(node, BRDF_option='OXX')
+            if ConfigFile.settings['bL2BRDF_O23']:
+                Utilities.writeLogFileAndPrint("Applying Pitarch et al. 2025 BRDF correction to Rrs and nLw")
+                ProcessL2BRDF.procBRDF(node, BRDF_option='O23')
 
 
         # Strip out L1AQC data

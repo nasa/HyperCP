@@ -55,7 +55,7 @@ class ProcessL2BRDF():
                     if ds.startswith("Rrs"):
                         # Can't change datasets in this loop, so make a list
                         # TODO consider uncertainties!
-                        if not (ds.endswith("_unc") or ds.endswith("_uncorr") or ds.endswith("_L11") or ds.endswith("_M02")):
+                        if not (ds.endswith("_unc") or ds.endswith("_uncorr") or ds.endswith("_O23") or ds.endswith("_L11") or ds.endswith("_M02")):
                             Rrs_list.append(ds)
                 # Extract the spectrla information
                 for ds in Rrs_list:

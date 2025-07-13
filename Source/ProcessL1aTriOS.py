@@ -67,6 +67,7 @@ class ProcessL1aTriOS:
                 try:
                     a_name, a_type = parse_filename(file.split('/')[-1])
                 except IndexError:
+                    print(f'Full path file: {file}')
                     print("  ERROR: no identifier recognized in TRIOS L0 file name" )
                     print("  L0 filename should have a cast to identify triplet instrument")
                     print("  ending in 4 digits before S.mlb (light) or D.mlb for caps-on dark. ")
