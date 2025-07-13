@@ -83,10 +83,10 @@ class Controller:
         inLogPath = os.path.join(PACKAGE_DIR, 'Logs')
 
         inPlotPath = os.path.join(pathOut,'Plots')
-        # The inPlotPath is going to be different for L1A-L1E than L2 for many cruises...
-        # In that case, move up one directory
-        if os.path.isdir(os.path.join(inPlotPath, 'L1AQC_Anoms')) is False:
-            inPlotPath = os.path.join(pathOut,'..','Plots')
+        # # The inPlotPath is going to be different for L1A-L1E than L2 for many cruises...
+        # # In that case, move up one directory
+        # if os.path.isdir(os.path.join(inPlotPath, 'L1AQC_Anoms')) is False:
+        #     inPlotPath = os.path.join(pathOut,'..','Plots')
 
         outHDF = os.path.split(outFilePath)[1]
 
