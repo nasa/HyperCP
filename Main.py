@@ -80,6 +80,16 @@ class Window(QtWidgets.QWidget):
         )  # VERSION in case it has to make new
         MainConfig.settings["version"] = VERSION  # VERSION to update if necessary
 
+        # Test that current In/Out folders and ancillary file are valid
+        if not os.path.isdir(MainConfig.settings["inDir"]):
+            MainConfig.settings["inDir"] = CODE_HOME
+        if not os.path.isdir(MainConfig.settings["outDir"]):
+            MainConfig.settings["outDir"] = CODE_HOME
+        if not os.path.isdir(MainConfig.settings["ancFileDir"]):
+            MainConfig.settings["ancFileDir"] = CODE_HOME
+        if not os.path.isfile(MainConfig.settings["ancFile"]):
+            MainConfig.settings["ancFile"] = CODE_HOME
+
         # Banner
         banner = QtWidgets.QLabel(self)
         # pixmap = QtGui.QPixmap('./Data/banner.jpg')
