@@ -611,6 +611,7 @@ class ProcessL1b:
         for gp in node.groups:
             if not gp.id.endswith('_L1AQC') and 'FrameType' in gp.attributes:
                 if gp.attributes["FrameType"] == "Not Required":
+                    # BUG: This is catching the SATTHS erroneously and calling it a radiometer (sensortype) in the error.
                     Utilities.writeLogFileAndPrint(f'ERROR: Check the FrameType for {sensorType}')
                     break
 

@@ -441,6 +441,7 @@ class OCproductsWindow(QtWidgets.QDialog):
             self.plotCheckBox.setChecked(False)
             ConfigFile.products["bL2PlotProd"] = 0
         else:
+            self.plotCheckBox.setChecked(True)
             ConfigFile.products["bL2PlotProd"] = 1
 
     def avwCheckBoxUpdate(self):

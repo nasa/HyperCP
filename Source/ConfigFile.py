@@ -177,7 +177,7 @@ class ConfigFile:
 
         ConfigFile.settings["bL2UncertaintyBreakdownPlot"] = 0
 
-        ConfigFile.products["bL2PlotProd"] = 0
+        ConfigFile.products["bL2PlotProd"] = 1
         ConfigFile.products["bL2Prodoc3m"] = 0
         ConfigFile.products["bL2Prodkd490"] = 0
         ConfigFile.products["bL2Prodpic"] = 0
