@@ -139,7 +139,7 @@ class CalCharWindow(QtWidgets.QDialog):
         CalLabel2.setFont(CalLabel2_font)
 
         FidRadDB_link = '<a href="https://ocdb.eumetsat.int/docs/fidrad-database.html">FidRadDB-formatted</a>'
-        CalLabel2a = QtWidgets.QLabel(f'... check that all the needed {FidRadDB_link} cal/char files are available under: <br> {self.path_FidRadDB}', self)
+        CalLabel2a = QtWidgets.QLabel(f'Checking for required {FidRadDB_link} cal/char files in: <br> {self.path_FidRadDB}', self)
         # CalLabel2a_font = CalLabel2a.font()
         # CalLabel2a_font.setPointSize(9)
         # CalLabel2a_font.setBold(False)
