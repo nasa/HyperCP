@@ -62,10 +62,10 @@ Data/Sample_Data/SoRad/*
 
 Config/* 
 # To update sample configurations, uncomment:
-!Config/sample_*_Calibration/
-!Config/sample_*.cfg
-!Config/sample_*.hdr
-!Config/sample_*.csv
+# !Config/sample_*_Calibration/
+# !Config/sample_*.cfg
+# !Config/sample_*.hdr
+# !Config/sample_*.csv
 
 ## To allow local changes to a file on remote, but not have those tracked:
 # git update-index --skip-worktree Config/sample_SEABIRD_pySAS.cfg
