@@ -27,7 +27,7 @@ from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
 from Source.Utilities import Utilities
 
-VERSION = "1.2.14"
+VERSION = "1.2.14b"
 
 
 class Window(QtWidgets.QWidget):
@@ -79,6 +79,16 @@ class Window(QtWidgets.QWidget):
             MainConfig.fileName, VERSION
         )  # VERSION in case it has to make new
         MainConfig.settings["version"] = VERSION  # VERSION to update if necessary
+
+        # Test that current In/Out folders and ancillary file are valid
+        if not os.path.isdir(MainConfig.settings["inDir"]):
+            MainConfig.settings["inDir"] = CODE_HOME
+        if not os.path.isdir(MainConfig.settings["outDir"]):
+            MainConfig.settings["outDir"] = CODE_HOME
+        if not os.path.isdir(MainConfig.settings["ancFileDir"]):
+            MainConfig.settings["ancFileDir"] = CODE_HOME
+        if not os.path.isfile(MainConfig.settings["ancFile"]):
+            MainConfig.settings["ancFile"] = CODE_HOME
 
         # Banner
         banner = QtWidgets.QLabel(self)

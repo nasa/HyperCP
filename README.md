@@ -16,7 +16,7 @@ retrieval. Data outputs are formatted to text files for submission to the [SeaBA
 Currently, HyperCP supports <a href='https://www.seabird.com/'>Sea-Bird Scientific</a> HyperSAS packages with and
 without SolarTracker or pySAS robotic platforms as well as [TriOS](https://www.trios.de/en/radiometers.html) used in manual configuration and IMO [DALEC](https://insitumarineoptics.com/dalec/). Support of Monocle/PML [So-Rad](https://monocle-h2020.eu/Sensors_and_platforms/Solar_tracking_radiometry_platform_en.html) is pending. If you are interested in integrating support for your platform, contact us at the email addresses below or in the Discussions tab of the GitHub repository.
 
-## Version 1.2.14
+## Version 1.2.14b
 
 ```
 The MIT license

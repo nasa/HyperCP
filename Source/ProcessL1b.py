@@ -153,6 +153,9 @@ class ProcessL1b:
         gp.attributes['FrameType'] = 'NONE'
 
         # Get measurement acquisition time stamp and convert to seconds to compare to cal/char files' timestamps
+        # BUG: Some are unable to read this root attribute
+        print(f"Root attribute TIME_STAMP: {root.attributes['TIME-STAMP']}")
+
         acq_time_seconds = datetime.strptime(root.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y').timestamp()
 
         # Check which cal/char files are needed for each of the 3 sensor types (ES, LT, LI) in cal/char regime = Full, i.e. ConfigFile.settings["fL1bCal"] == 3
@@ -609,7 +612,11 @@ class ProcessL1b:
             None,None,None,None,None,None
 
         for gp in node.groups:
-            if not gp.id.endswith('_L1AQC') and 'FrameType' in gp.attributes:
+            if not gp.id.endswith('_L1AQC') and not gp.id.startswith('SATTHS') \
+                and not gp.id.startswith('SunTracker') \
+                and not gp.id.startswith('GPS') \
+                and not gp.id.startswith('ANCILLARY') \
+                    and 'FrameType' in gp.attributes:
                 if gp.attributes["FrameType"] == "Not Required":
                     Utilities.writeLogFileAndPrint(f'ERROR: Check the FrameType for {sensorType}')
                     break

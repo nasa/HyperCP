@@ -156,6 +156,9 @@ class ProcessL1bqc:
 
         if start==0 and stop==end_index: # All records are bad
             return False
+        
+        # Restore timestamps to columns (since it's not going to filterData, where it otherwise happens)
+        ltData.datasetToColumns()
 
         return badTimes, timeStamp
 

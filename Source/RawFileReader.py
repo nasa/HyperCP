@@ -89,6 +89,8 @@ class RawFileReader:
                         hdr = f.read(RawFileReader.SATHDR_READ)
                         (k,v) = RawFileReader.readSATHDR(hdr)
                         root.attributes[k] = v
+                        # BUG: Some are not getting TIME-STAMP from SATHDR
+                        print(f"{k}: {v}")
 
                         break
                     else:
