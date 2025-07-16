@@ -1,7 +1,7 @@
 name: hypercp
 channels:
-  - defaults
   - conda-forge
+  - defaults
   - ocdb
 dependencies:
   - python=3.11

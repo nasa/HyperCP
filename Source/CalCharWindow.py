@@ -42,7 +42,11 @@ class CalCharWindow(QtWidgets.QDialog):
                 elif sensorType == 'ES':
                     ConfigFile.settings['neededCalCharsFRM'][v['frameType']] = ['%s_%s' % (v['serialNumber'], c) for c in ['RADCAL', 'STRAY', 'THERMAL', 'ANGULAR']]
 
-        elif ConfigFile.settings['SensorType'] == 'SeaBird':
+        elif ConfigFile.settings['SensorType'].lower() == 'seabird':
+
+            # Force use of thermistor
+            ConfigFile.settings["fL1bThermal"] == 1
+
             # SeaBird: sensor type inferred from calibration map
             calibrationMap = CalibrationFileReader.read(ConfigFile.getCalibrationDirectory())
             Controller.generateContext(calibrationMap)
@@ -360,6 +364,7 @@ class CalCharWindow(QtWidgets.QDialog):
             self.ThermistorRadioButton.setDisabled(False)
             self.AirTempRadioButton.setDisabled(True)
             self.CapsOnFileRadioButton.setDisabled(True)
+
         if ConfigFile.settings["fL1bThermal"] == 1:
             self.ThermistorRadioButton.setChecked(True)
             self.AirTempRadioButton.setChecked(False)

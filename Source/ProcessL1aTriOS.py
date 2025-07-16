@@ -553,7 +553,10 @@ class ProcessL1aTriOS:
                 # BACK_ and CAL_ are nLambda x 2 and nLambda x 1, respectively, not timestamped to DATETAG, TIMETAG2
                 if (not ds.startswith('BACK_')) and (not ds.startswith('CAL_')):
                     gp.datasets[ds].datasetToColumns()
-                    gp.datasets[ds].data = np.array([x for _, x in sorted(zip(dateTime,gp.datasets[ds].data))])
+                    try:
+                        gp.datasets[ds].data = np.array([x for _, x in sorted(zip(dateTime,gp.datasets[ds].data))])
+                    except:
+                        print('fail')
 
         return node
 
