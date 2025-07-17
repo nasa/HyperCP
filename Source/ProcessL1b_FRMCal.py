@@ -70,41 +70,32 @@ class ProcessL1b_FRMCal:
         str_wvl = np.asarray(pd.DataFrame(irr_grp.getDataset(sensortype).data).columns)
         wvl = np.asarray([float(x) for x in str_wvl])
         if not called_L2:
-            datetime = irr_grp.datasets['DATETIME'].data
+            irr_datetime = irr_grp.datasets['DATETIME'].data
         else:
             datetag = np.asarray(pd.DataFrame(irr_grp.getDataset("DATETAG").data))
             timetag = np.asarray(pd.DataFrame(irr_grp.getDataset("TIMETAG2").data))
             dtime = [dt.strptime(str(int(x[0])) + str(int(y[0])).rjust(9, '0'), "%Y%j%H%M%S%f") for x, y in
                         zip(datetag, timetag)]
-            datetime = [pytz.utc.localize(dt) for dt in dtime]  # set to utc localisation
+            irr_datetime = [pytz.utc.localize(dt) for dt in dtime]  # set to utc localisation
 
         ## SIXS configuration
-        n_mesure = len(datetime)
+        n_mesure = len(irr_datetime)
         nband = len(wvl)
 
         # SIXS called over 3min bin
         ## SIXS configuration
-        n_mesure = len(datetime)
+        n_mesure = len(irr_datetime)
         nband = len(wvl)
         
-        # SIXS called over 3min bin  - original code section in HyperCP Dev
-        # deltat = (datetime[-1]-datetime[0])/len(datetime)
-        # n_min = int(3*60//deltat.total_seconds())  # nb of mesures over a bin
-        # n_bin = len(datetime)//n_min  # nb of bin in a cast
-        # if len(datetime) % n_min != 0:
-            # +1 to account for last points that fall in the last bin (smaller than 3 min)
-         #   n_bin += 1
-        
-        # code section for, So-rad where I had issues with division by zero 
-        deltat = (datetime[-1]-datetime[0])/len(datetime)
+        # SIXS called over 3min bin
+        deltat = (irr_datetime[-1]-irr_datetime[0])/len(irr_datetime)
         n_min = int(3*60/deltat.total_seconds())  # nb of mesures over a bin
         if n_min == 0:  
             n_min = n_min + 1
-        n_bin = len(datetime)//(n_min)  # nb of bin in a cast
-        if len(datetime) % n_min != 0:
+        n_bin = len(irr_datetime)//(n_min)  # nb of bin in a cast
+        if len(irr_datetime) % n_min != 0:
             # +1 to account for last points that fall in the last bin (smaller than 3 min)
             n_bin += 1
-  
         
         percent_direct_solar_irradiance = np.zeros((n_bin, nband))
         percent_diffuse_solar_irradiance = np.zeros((n_bin, nband))
@@ -118,17 +109,17 @@ class ProcessL1b_FRMCal:
 
         for n in range(n_bin):
             # find ancillary point that match the 1st mesure of the 3min ensemble
-            ind_anc = np.argmin(np.abs(np.array(anc_datetime)-datetime[n*n_min]))
+            ind_anc = np.argmin(np.abs(np.array(anc_datetime)-irr_datetime[n*n_min]))
 
-            solar_zenith[n] = sun_azimuth[ind_anc]
+            solar_zenith[n] = sun_zenith[ind_anc]
 
             s.geometry(
                 sun_zen=sun_zenith[ind_anc],
                 sun_azi=sun_azimuth[ind_anc],
                 view_zen=180,
                 view_azi=rel_az[ind_anc],
-                month=datetime[ind_anc].month,
-                day=datetime[ind_anc].day
+                month=irr_datetime[ind_anc].month,
+                day=irr_datetime[ind_anc].day
             )
             s.gas()
             s.aerosol(aot_550=aod[ind_anc])
