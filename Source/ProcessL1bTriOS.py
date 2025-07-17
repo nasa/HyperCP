@@ -91,6 +91,9 @@ class ProcessL1bTriOS:
         mesure = raw_data/65535.0
         FRM_mesure = np.zeros((nmes, nband))
         back_mesure = np.zeros((nmes, nband))
+
+        ancGroup = node.getGroup('ANCILLARY_METADATA')
+        sza = ancGroup.datasets['SZA'].columns['NONE']
         for n in range(nmes):
             # Background correction : B0 and B1 read from full charaterisation
             back_mesure[n,:] = B0 + B1*(int_time[n]/int_time_t0)
@@ -120,13 +123,15 @@ class ProcessL1bTriOS:
             # Cosine correction : commented for the moment
             if sensortype == "ES":
                 # retrive sixS variables for given wvl
-                solar_zenith = res_sixS['solar_zenith'][n]
+                # solar_zenith = res_sixS['solar_zenith'][n]
+                solar_zenith = sza[0]
                 direct_ratio = res_sixS['direct_ratio'][n]
                 diffuse_ratio = res_sixS['diffuse_ratio'][n]
                 ind_closest_zen = np.argmin(np.abs(zenith_ang-solar_zenith))
                 cos_corr = 1-avg_coserror[:,ind_closest_zen]/100
                 Fhcorr = 1-full_hemi_coserror/100
-                cos_corr_mesure = (direct_ratio*thermal_corr_mesure*cos_corr) + ((1-direct_ratio)*thermal_corr_mesure*Fhcorr)
+                cos_corr_mesure = (direct_ratio*thermal_corr_mesure*cos_corr) + \
+                    ((1-direct_ratio)*thermal_corr_mesure*Fhcorr)
                 FRM_mesure[n,:] = cos_corr_mesure
             else:
                 FRM_mesure[n,:] = thermal_corr_mesure

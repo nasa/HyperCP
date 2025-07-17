@@ -549,10 +549,12 @@ class ProcessL2:
                     newRrsUNCData.columns[k].append(rrsUNC[k])
                     # newnLwUNCData.columns[k].append(nLwUNC)
                     newnLwUNCData.columns[k].append(nLwUNC[k])
-                    if ConfigFile.settings['fL1bCal']==1 and ((ConfigFile.settings['SensorType'].lower() == 'trios' or\
-                                                                ConfigFile.settings['SensorType'].lower() == 'sorad') or \
-                                                              ConfigFile.settings['SensorType'].lower() == 'dalec'):
-                    # Specifique case for Factory-Trios and Dalec
+                    if ConfigFile.settings['fL1bCal']==1 and \
+                        ((ConfigFile.settings['SensorType'].lower() == 'trios' or\
+                        ConfigFile.settings['SensorType'].lower() == 'sorad') or \
+                        ConfigFile.settings['SensorType'].lower() == 'dalec'):
+                        
+                        # Specifique case for Factory-Trios and Dalec
                         newESUNCData.columns[k].append(esUNC[k])
                         newLIUNCData.columns[k].append(liUNC[k])
                         newLTUNCData.columns[k].append(ltUNC[k])
