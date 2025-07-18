@@ -1493,7 +1493,9 @@ class ProcessL2:
                                 stats, np.array(waveSubset, float)))  # instrument_WB
                 xUNC.update(instrument.FRM_L2(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
-                if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+                # NOTE: Block for FRM-Full for now
+                if ConfigFile.settings['bL2UncertaintyBreakdownPlot'] and\
+                    ConfigFile.settings['fL1bCal'] == 2:
                     from Source.Uncertainty_Visualiser import UncertaintyGUI
                     gui = UncertaintyGUI()
                     gui.plot_FRM(

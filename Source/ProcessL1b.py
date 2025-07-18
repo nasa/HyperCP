@@ -157,7 +157,10 @@ class ProcessL1b:
         # print(f"Root attribute TIME-STAMP: {root.attributes['TIME-STAMP']}")
         # acq_time_seconds = datetime.strptime(root.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y').timestamp()
         # Alternative: Grab start time of Es
-        esDatetime = root.getGroup('ES').datasets['DATETIME'].data[0]
+        if ConfigFile.settings['SensorType'] .lower() == 'seabird':
+            esDatetime = root.getGroup('ES_LIGHT').datasets['DATETIME'].data[0]
+        else:
+            esDatetime = root.getGroup('ES').datasets['DATETIME'].data[0]
         acq_time_seconds = esDatetime.timestamp()
 
         # Check which cal/char files are needed for each of the 3 sensor types (ES, LT, LI) in cal/char regime = Full, i.e. ConfigFile.settings["fL1bCal"] == 3
