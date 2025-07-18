@@ -278,7 +278,7 @@ class Window(QtWidgets.QWidget):
     def comboBox1Changed(self, value):
         # Save prior Config
         if value != MainConfig.settings['cfgFile']:
-            ConfigFile.saveConfig(MainConfig.settings['cfgPath'])
+            ConfigFile.saveConfig(MainConfig.settings['cfgFile'])
         MainConfig.settings["cfgFile"] = value
         index = self.configComboBox.findText(MainConfig.settings["cfgFile"])
         self.configComboBox.setCurrentIndex(index)
