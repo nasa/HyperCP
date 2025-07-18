@@ -29,7 +29,7 @@ class CalCharWindow(QtWidgets.QDialog):
         # SERIAL NUMBERS and cl/char files needed for full FRM case
         # NB: This is needed only for FRM regimes (class and full)
         ConfigFile.settings['neededCalCharsFRM'] = {}
-        if ConfigFile.settings['SensorType'].lower == 'trios':
+        if ConfigFile.settings['SensorType'].lower() == 'trios':
             for k,v in ConfigFile.settings['CalibrationFiles'].items():
                 # sensorType is frameType only for TriOS
                 sensorType = v['frameType']
@@ -110,20 +110,20 @@ class CalCharWindow(QtWidgets.QDialog):
 
         # Class
         self.ClassCalRadioButton = QtWidgets.QRadioButton(
-            f"FRM Class-Specific characterisation coefficients (in /Data/Class_Based_Characterizations/{ConfigFile.settings['SensorType']})\n"
-                "    NB: Sensor-Specific calibrations with uncertainties in the FidRadDB format required" )
+            f"FRM Class-Specific characterisations\n"# (in /Data/Class_Based_Characterizations/{ConfigFile.settings['SensorType']})\n"
+                "    Sensor-Specific cal/char files with uncertainties in FidRadDB format required" )
         self.ClassCalRadioButton.setAutoExclusive(False)
         self.ClassCalRadioButton.clicked.connect(self.ClassCalRadioButtonClicked)
 
          # Full
         self.FullCalRadioButton = QtWidgets.QRadioButton(
-            "FRM Sensor-Specific characterisation coefficients (highest quality)\n"
-                "    NB: Sensor-Specific calibrations with uncertainties and characterizations in the FidRadDB format required")
+            "FRM Sensor-Specific characterisations (highest quality)\n"
+                "    Sensor-Specific calibrations with uncertainties in FidRadDB format required")
         self.FullCalRadioButton.setAutoExclusive(False)
         self.FullCalRadioButton.clicked.connect(self.FullCalRadioButtonClicked)
 
         # Disable FRM regimes for DALEC for the moment.
-        if ConfigFile.settings['SensorType'] == 'Dalec':
+        if ConfigFile.settings['SensorType'].lower() == 'dalec':
             self.ClassCalRadioButton.setDisabled(True)
             self.FullCalRadioButton.setDisabled(True)
 
@@ -136,14 +136,14 @@ class CalCharWindow(QtWidgets.QDialog):
             self.FullCalRadioButton.setChecked(True)
 
         # Check completeness of calibration directory according to selected cal/char regime
-        CalLabel2 = QtWidgets.QLabel("If FRM cal-char regime selected, then ...", self)
+        FidRadDB_link = '<a href="https://ocdb.eumetsat.int/docs/fidrad-database.html">FidRadDB-formatted</a>'
+        CalLabel2 = QtWidgets.QLabel("Checking for required {FidRadDB_link} cal/char files:", self)
         CalLabel2_font = CalLabel2.font()
         CalLabel2_font.setPointSize(12)
         CalLabel2_font.setBold(True)
         CalLabel2.setFont(CalLabel2_font)
 
-        FidRadDB_link = '<a href="https://ocdb.eumetsat.int/docs/fidrad-database.html">FidRadDB-formatted</a>'
-        CalLabel2a = QtWidgets.QLabel(f'Checking for required {FidRadDB_link} cal/char files in: <br> {self.path_FidRadDB}', self)
+        # CalLabel2a = QtWidgets.QLabel(f'Checking for required {FidRadDB_link} cal/char files in: <br> {self.path_FidRadDB}', self)
         # CalLabel2a_font = CalLabel2a.font()
         # CalLabel2a_font.setPointSize(9)
         # CalLabel2a_font.setBold(False)
@@ -155,19 +155,19 @@ class CalCharWindow(QtWidgets.QDialog):
         # CalLabel2b_font.setBold(False)
         # CalLabel2b.setFont(CalLabel2b_font)
 
-        CalLabel2cES = QtWidgets.QLabel("Downwelling irradiance, ES", self)
+        CalLabel2cES = QtWidgets.QLabel("       Es:", self)
         # CalLabel2cES_font = CalLabel2cES.font()
         # CalLabel2cES_font.setPointSize(9)
         # CalLabel2cES_font.setBold(False)
         # CalLabel2cES.setFont(CalLabel2cES_font)
 
-        CalLabel2cLT = QtWidgets.QLabel("Total water radiance, LT (water)", self)
+        CalLabel2cLT = QtWidgets.QLabel("       Lt:", self)
         # CalLabel2cLT_font = CalLabel2cLT.font()
         # CalLabel2cLT_font.setPointSize(9)
         # CalLabel2cLT_font.setBold(False)
         # CalLabel2cLT.setFont(CalLabel2cLT_font)
 
-        CalLabel2cLI = QtWidgets.QLabel("Sky radiance, LI (sky)", self)
+        CalLabel2cLI = QtWidgets.QLabel("       Li:", self)
         # CalLabel2cLI_font = CalLabel2cLI.font()
         # CalLabel2cLI_font.setPointSize(9)
         # CalLabel2cLI_font.setBold(False)
@@ -291,7 +291,7 @@ class CalCharWindow(QtWidgets.QDialog):
 
         # UT/FidRadDB files location
         VBox.addWidget(CalLabel2)
-        VBox.addWidget(CalLabel2a)
+        # VBox.addWidget(CalLabel2a)
         # VBox.addWidget(CalLabel2b)
 
         # Check cal/char files: Es

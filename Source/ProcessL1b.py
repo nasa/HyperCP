@@ -153,10 +153,12 @@ class ProcessL1b:
         gp.attributes['FrameType'] = 'NONE'
 
         # Get measurement acquisition time stamp and convert to seconds to compare to cal/char files' timestamps
-        # BUG: Some are unable to read this root attribute
-        print(f"Root attribute TIME_STAMP: {root.attributes['TIME-STAMP']}")
-
-        acq_time_seconds = datetime.strptime(root.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y').timestamp()
+        # BUG: Some are unable to read this root attribute due to OS language settings
+        # print(f"Root attribute TIME-STAMP: {root.attributes['TIME-STAMP']}")
+        # acq_time_seconds = datetime.strptime(root.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y').timestamp()
+        # Alternative: Grab start time of Es
+        esDatetime = root.getGroup('ES').datasets['DATETIME'].data[0]
+        acq_time_seconds = esDatetime.timestamp()
 
         # Check which cal/char files are needed for each of the 3 sensor types (ES, LT, LI) in cal/char regime = Full, i.e. ConfigFile.settings["fL1bCal"] == 3
         # ... then filter to RADCAL if cal'char regime = class, i.e. ConfigFile.settings["fL1bCal"] == 2

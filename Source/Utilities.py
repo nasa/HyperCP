@@ -2641,7 +2641,10 @@ class Utilities:
             for data_type in ["_RADCAL_CAL"]:
 
                 ds = grp.getDataset(sensor+data_type)
-                ds.datasetToColumns()
+                try:
+                    ds.datasetToColumns()
+                except:
+                    print('erk')
                 for indx in range(len(ds.columns)):
                     indx_name = str(indx)
                     if indx_name != '':
