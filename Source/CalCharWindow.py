@@ -29,7 +29,7 @@ class CalCharWindow(QtWidgets.QDialog):
         # SERIAL NUMBERS and cl/char files needed for full FRM case
         # NB: This is needed only for FRM regimes (class and full)
         ConfigFile.settings['neededCalCharsFRM'] = {}
-        if ConfigFile.settings['SensorType'] == 'TriOS':
+        if ConfigFile.settings['SensorType'].lower == 'trios':
             for k,v in ConfigFile.settings['CalibrationFiles'].items():
                 # sensorType is frameType only for TriOS
                 sensorType = v['frameType']
@@ -358,6 +358,11 @@ class CalCharWindow(QtWidgets.QDialog):
     def ThermalStatusUpdate(self):
         if ConfigFile.settings['SensorType'].lower() == 'trios': # G1
             self.ThermistorRadioButton.setDisabled(True)
+            if ConfigFile.settings["fL1bThermal"] == 1:
+                # NOTE: This will need to be changed for G2
+                ConfigFile.settings["fL1bThermal"] == 2 # Fallback in case of corrupted config
+                self.AirTempRadioButton.setChecked(True)
+                self.ThermistorRadioButton.setChecked(False)
             self.AirTempRadioButton.setDisabled(False)
             self.CapsOnFileRadioButton.setDisabled(False)
         else:

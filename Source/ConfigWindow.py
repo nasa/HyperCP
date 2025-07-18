@@ -262,12 +262,12 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l1bCalCharButton = QtWidgets.QPushButton("Select Cal/Char options", self)
         self.l1bCalCharButton.clicked.connect(self.l1bCalCharButtonPressed)
 
-        l1bInterpIntervalLabel = QtWidgets.QLabel("    Interpolation Interval (nm)", self)
-        self.l1bInterpIntervalLineEdit = QtWidgets.QLineEdit(self)
-        self.l1bInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1bInterpInterval"]))
-        self.l1bInterpIntervalLineEdit.setValidator(doubleValidator)
-        self.l1bInterpIntervalLineEdit.setDisabled(True) # No longer an option; not accomodated in uncertainties
-        l1bInterpIntervalLabel.setDisabled(True)
+        # l1bInterpIntervalLabel = QtWidgets.QLabel("    Interpolation Interval (nm)", self)
+        # self.l1bInterpIntervalLineEdit = QtWidgets.QLineEdit(self)
+        # self.l1bInterpIntervalLineEdit.setText(str(ConfigFile.settings["fL1bInterpInterval"]))
+        # self.l1bInterpIntervalLineEdit.setValidator(doubleValidator)
+        # self.l1bInterpIntervalLineEdit.setDisabled(True) # No longer an option; not accomodated in uncertainties
+        # l1bInterpIntervalLabel.setDisabled(True)
 
         # l1bPlotTimeInterpLabel = QtWidgets.QLabel(f"    Generate Plots ({os.path.split(MainConfig.settings['outDir'])[-1]}/Plots/L1B_Interp/)", self)
         l1bPlotTimeInterpLabel = QtWidgets.QLabel("    Generate Interpolation Plots", self)
@@ -808,10 +808,10 @@ class ConfigWindow(QtWidgets.QDialog):
         VBox2.addWidget(self.l1bCalCharButton)
 
         #   Interpolation interval (wavelength)
-        interpHBox = QtWidgets.QHBoxLayout()
-        interpHBox.addWidget(l1bInterpIntervalLabel)
-        interpHBox.addWidget(self.l1bInterpIntervalLineEdit)
-        VBox2.addLayout(interpHBox)
+        # interpHBox = QtWidgets.QHBoxLayout()
+        # interpHBox.addWidget(l1bInterpIntervalLabel)
+        # interpHBox.addWidget(self.l1bInterpIntervalLineEdit)
+        # VBox2.addLayout(interpHBox)
 
         l1bPlotTimeInterpHBox = QtWidgets.QHBoxLayout()
         l1bPlotTimeInterpHBox.addWidget(l1bPlotTimeInterpLabel)
@@ -1804,7 +1804,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["fL1bDefaultAOD"] = float(self.l1bDefaultAODLineEdit.text())
         ConfigFile.settings["fL1bDefaultSalt"] = float(self.l1bDefaultSaltLineEdit.text())
         ConfigFile.settings["fL1bDefaultSST"] = float(self.l1bDefaultSSTLineEdit.text())
-        ConfigFile.settings["fL1bInterpInterval"] = float(self.l1bInterpIntervalLineEdit.text())
+        # ConfigFile.settings["fL1bInterpInterval"] = float(self.l1bInterpIntervalLineEdit.text())
         ConfigFile.settings["bL1bPlotTimeInterp"] = int(self.l1bPlotTimeInterpCheckBox.isChecked())
         ConfigFile.settings["fL1bPlotInterval"] = float(self.l1bPlotIntervalLineEdit.text())
 
