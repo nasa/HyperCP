@@ -1449,7 +1449,7 @@ class Utilities:
             if rType == 'LI' and maxRad > 20:
                 maxRad = 20
             if rType == 'LT' and maxRad > 2:
-                maxRad = 2
+                maxRad = 2.5
             if min(y) < minRad:
                 minRad = min(y)-0.1*min(y)
             if rType == 'LI':
