@@ -2134,15 +2134,17 @@ class ProcessL2:
                     for dsName in removeList:
                         gp.removeDataset(dsName)
 
-        # Change _median nomiclature to _uncorr
-        for gp in node.groups:
-            if gp.id in ('IRRADIANCE', 'RADIANCE', 'REFLECTANCE'):
-                changeList = []
-                for dsName in gp.datasets:
-                    if dsName.endswith('_median'):
-                        changeList.append(dsName)
-                for dsName in changeList:
-                    gp.datasets[dsName].changeDatasetName(gp,dsName,dsName.replace('_median','_uncorr'))
+        # NOTE: Unclear why this had been done. _median (not applicable to Lw or Rrs) refers to median of the slice, whereas no suffix is the mean.
+        #   Chaning _median to _uncorr makes little sense...
+        # # Change _median nomiclature to _uncorr
+        # for gp in node.groups:
+        #     if gp.id in ('IRRADIANCE', 'RADIANCE', 'REFLECTANCE'):
+        #         changeList = []
+        #         for dsName in gp.datasets:
+        #             if dsName.endswith('_median'):
+        #                 changeList.append(dsName)
+        #         for dsName in changeList:
+        #             gp.datasets[dsName].changeDatasetName(gp,dsName,dsName.replace('_median','_uncorr'))
 
 
         # Now strip datetimes from all datasets
