@@ -49,6 +49,9 @@ class SeaBASSWriter:
             wind.datasetToColumns()
             winCol = wind.columns["WINDSPEED"]
             aveWind = np.nanmean(winCol)
+        else:
+            # Cannot get here. level force to 2
+            esData = None
 
         if ConfigFile.settings['SensorType'].lower() =='trios':
             fileNameString = node.attributes['RAW_FILE_NAME']
@@ -295,7 +298,7 @@ class SeaBASSWriter:
             rrsUnc = reflectanceGroup.getDataset("Rrs_HYPER_sd")
 
         nLwData = reflectanceGroup.getDataset("nLw_HYPER")
-        nLwUnc = reflectanceGroup.getDataset("nLw_HYPER_unc")  
+        nLwUnc = reflectanceGroup.getDataset("nLw_HYPER_unc")
         # Fallback uncertainty for non-SeaBird, Factory regime
         if nLwUnc is None:
             nLwUnc = reflectanceGroup.getDataset("nLw_HYPER_sd")
@@ -374,6 +377,9 @@ class SeaBASSWriter:
         if rrsUnc is not None:
             rrsColsUnc = rrsUnc.columns
             nLwColsUnc = nLwUnc.columns
+        else:
+            rrsColsUnc = None
+            nLwColsUnc = None
 
         for k in list(esCols.keys()):
             if (k != 'Datetag') and (k != 'Timetag2'):

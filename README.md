@@ -221,6 +221,8 @@ are also auto-created during processing as described below. The parent directory
 sub-directories for processing levels (e.g. "/L1A", "/L1B", etc.) If no input or output data directories are selected,
 '/Data' and '/Plots' under the HyperCP directory structure will be used by default as the parent directories.
 
+NOTE: For users with their operating system set to non-English language, please avoid OS-specific folders such as "Documents" in your user directory. Python and Windows (at least) disagree on how to spell these leading to data output conflicts.
+
 #### 3. Ancillary Input Files
 
 Ancillary data files for environmental conditions and relevant geometries used in processing must be text files in
