@@ -290,8 +290,16 @@ class SeaBASSWriter:
 
         rrsData = reflectanceGroup.getDataset("Rrs_HYPER")
         rrsUnc = reflectanceGroup.getDataset("Rrs_HYPER_unc")
+        # Fallback uncertainty for non-SeaBird, Factory regime
+        if rrsUnc is None:
+            rrsUnc = reflectanceGroup.getDataset("Rrs_HYPER_sd")
+
         nLwData = reflectanceGroup.getDataset("nLw_HYPER")
-        nLwUnc = reflectanceGroup.getDataset("nLw_HYPER_unc")
+        nLwUnc = reflectanceGroup.getDataset("nLw_HYPER_unc")  
+        # Fallback uncertainty for non-SeaBird, Factory regime
+        if nLwUnc is None:
+            nLwUnc = reflectanceGroup.getDataset("nLw_HYPER_sd")
+
         if ConfigFile.settings['bL2BRDF']:
             if ConfigFile.settings['bL2BRDF_fQ']:
                 nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_M02")
@@ -306,7 +314,10 @@ class SeaBASSWriter:
             # nLwUnc_BRDF = reflectanceGroup.getDataset("nLw_HYPER_unc")
 
         esData = irradianceGroup.getDataset("ES_HYPER")
-        esUnc = irradianceGroup.getDataset("ES_HYPER_sd")
+        esUnc = irradianceGroup.getDataset("ES_HYPER_unc")
+        # Fallback uncertainty for non-SeaBird, Factory regime
+        if esUnc is None:
+            esUnc = irradianceGroup.getDataset("ES_HYPER_sd")
 
         # Keep for now, but these won't be output for SeaBASS
         # They are of little use to others...
