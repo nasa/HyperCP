@@ -36,7 +36,7 @@ class SeaBASSHeaderWindow(QtWidgets.QDialog):
         instructionLabel_font.setBold(True)
         instructionLabel.setFont(instructionLabel_font)
 
-        versionLabel = QtWidgets.QLabel("SeaBASS submission verion (e.g. 'R1', 'R2')", self)
+        versionLabel = QtWidgets.QLabel("SeaBASS revision ('R0' for original, 'R1',etc.)", self)
         self.versionLineEdit = QtWidgets.QLineEdit(self)
         self.versionLineEdit.setText(str(SeaBASSHeader.settings["version"]))
 
