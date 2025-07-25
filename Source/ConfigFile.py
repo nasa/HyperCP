@@ -3,6 +3,7 @@ import collections
 import json
 import os
 import shutil
+import threading
 
 from Source import PATH_TO_CONFIG, PACKAGE_DIR
 
@@ -14,7 +15,6 @@ class ConfigFile:
     products = collections.OrderedDict()
     minDeglitchBand = 350
     maxDeglitchBand = 850
-
 
     # Creates the calibration file folder if not exist
     @staticmethod
@@ -237,8 +237,10 @@ class ConfigFile:
         # params['calibrationPath'] = os.path.relpath(params['calibrationPath'])
         fp = os.path.join(PATH_TO_CONFIG, filename)
 
-        with open(fp, 'w', encoding="utf-8") as f:
-            json.dump(params,f,indent=4)
+        lock = threading.Lock()
+        with lock:
+            with open(fp, 'w', encoding="utf-8") as f:
+                json.dump(params,f,indent=4)
         ConfigFile.createCalibrationFolder()
 
     # Loads the cfg file
@@ -257,29 +259,27 @@ class ConfigFile:
             # print(f'Populating ConfigFile with saved parameters: {filename}')
             ConfigFile.filename = filename
             text = ""
-            with open(configPath, 'r', encoding="utf-8") as f:
-                text = f.read()
-                # ConfigFile.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
-                try:
+            lock = threading.Lock()
+            with lock:
+                with open(configPath, 'r', encoding="utf-8") as f:
+                    text = f.read()
+                    # ConfigFile.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
                     fullCollection = json.loads(text, object_pairs_hook=collections.OrderedDict)
-                except:
-                    print('Json error ConfigFile L264')
-                    print('text: {text}')
 
-                for key, value in fullCollection.items():
-                    if key.startswith("bL2Prod"):
-                        if key in goodProdKeys:
-                            ConfigFile.products[key] = value
-                    else:
-                        if key in goodSettingsKeys:
-                            # Clean out extraneous files (e.g., Full FRM Characterizations) from CalibrationFiles
-                            if key.startswith('CalibrationFiles'):
-                                for k in list(value.keys()):
-                                    if not any(ele.lower() in k.lower() for ele in calFormats):
-                                        del value[k]
-                            ConfigFile.settings[key] = value
+                    for key, value in fullCollection.items():
+                        if key.startswith("bL2Prod"):
+                            if key in goodProdKeys:
+                                ConfigFile.products[key] = value
+                        else:
+                            if key in goodSettingsKeys:
+                                # Clean out extraneous files (e.g., Full FRM Characterizations) from CalibrationFiles
+                                if key.startswith('CalibrationFiles'):
+                                    for k in list(value.keys()):
+                                        if not any(ele.lower() in k.lower() for ele in calFormats):
+                                            del value[k]
+                                ConfigFile.settings[key] = value
 
-                ConfigFile.createCalibrationFolder()
+                    ConfigFile.createCalibrationFolder()
         else:
             print(f'####### Configuration {filename} not found. Using defaults. No cals.############')
 

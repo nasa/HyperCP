@@ -1,6 +1,7 @@
 import collections
 import json
 import os
+import threading
 
 from Source import PATH_TO_CONFIG
 from Source.ConfigFile import ConfigFile
@@ -292,14 +293,16 @@ class SeaBASSHeader:
         if os.path.isfile(seaBASSHeaderPath):
             SeaBASSHeader.filename = filename
             text = ""
-            with open(seaBASSHeaderPath, 'r', encoding="utf-8") as f:
-                text = f.read()
-                # SeaBASSHeader.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
-                fullCollection = json.loads(text, object_pairs_hook=collections.OrderedDict)
-                for key, value in fullCollection.items():
-                    if key in goodSettingsKeys:
-                        SeaBASSHeader.settings[key] = value
-                # SeaBASSHeader.createCalibrationFolder()
+            lock = threading.Lock()
+            with lock:
+                with open(seaBASSHeaderPath, 'r', encoding="utf-8") as f:
+                    text = f.read()
+                    # SeaBASSHeader.settings = json.loads(text, object_pairs_hook=collections.OrderedDict)
+                    fullCollection = json.loads(text, object_pairs_hook=collections.OrderedDict)
+                    for key, value in fullCollection.items():
+                        if key in goodSettingsKeys:
+                            SeaBASSHeader.settings[key] = value
+                    # SeaBASSHeader.createCalibrationFolder()
 
     # Deletes a seaBASSHeader
     @staticmethod
