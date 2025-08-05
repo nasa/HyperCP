@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 # maths
 import numpy as np
+import comet_maths as cm
 
 # typing
 from typing import Optional, Union, Any
@@ -15,6 +16,8 @@ from Source.HDFGroup import HDFGroup
 
 # PIU files
 from Source.PIU.BaseInstrument import BaseInstrument
+from Source.PIU.MeasurementFunctions import MeasurementFunctions as mf
+from Source.PIU.PIUDataStore import PIUDataStore as pds
 
 
 class TriOS(BaseInstrument):
@@ -108,6 +111,158 @@ class TriOS(BaseInstrument):
             std_Dark=np.array(dark_std),
             std_Signal=std_signal,
         )
+
+    def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
+        output_UNC = {}
+        for s_type in self.sensors:
+            print(f"FRM Processing, {s_type}")
+
+            # set up uncertainty propagation
+            import punpy
+            mDraws = 100  # number of monte carlo draws
+            prop = punpy.MCPropagation(mDraws, parallel_cores=1)
+
+            DATA = PDS.coeff[s_type]  # retrieve dictionaries for speed
+            UNC = PDS.uncs[s_type]
+
+            # generate samples
+            sample_cal_int = cm.generate_sample(mDraws, DATA['cal_int'], None, None)
+            sample_int_time = cm.generate_sample(mDraws, DATA['int_time'], None, None)
+            sample_n_iter =   cm.generate_sample(mDraws, DATA['n_iter'], None, None, dtype=int)
+            
+            sample_Ct =   cm.generate_sample(mDraws, DATA['Ct'], UNC['Ct'], "syst")
+            sample_LAMP = cm.generate_sample(mDraws, DATA['LAMP'], UNC['LAMP'], "syst")
+            sample_mZ =   cm.generate_sample(mDraws, DATA['mZ'], UNC['mZ'], "rand")
+
+            k = DATA['t1']/(DATA['t2'] - DATA['t1'])
+            sample_k = cm.generate_sample(mDraws, k, None, None)
+            sample_t1 = cm.generate_sample(mDraws, DATA['t1'], None, None)
+            sample_S1 = cm.generate_sample(mDraws, np.asarray(DATA['S1']), UNC['S1'], "rand")
+            sample_S2 = cm.generate_sample(mDraws, np.asarray(DATA['S2']), UNC['S2'], "rand")
+            sample_S12 = prop.run_samples(self.S12func, [sample_k, sample_S1, sample_S2])
+
+            if self.sl_method.upper() == 'ZONG':  # for internal coding use only, set by default in HCP
+                sample_n_IB = self.gen_n_IB_sample(mDraws)  # n_IB sample must be integer and in the range 3-6
+                from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
+                sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
+                                                 [sample_mZ, sample_n_IB])
+                sample_S12_sl_corr = prop.run_samples(self.Zong_SL_correction, [sample_S12, sample_C_zong])
+            else:  # slaper
+                sample_S12_sl_corr = self.get_Slaper_Sl_unc(
+                    DATA['S12'], sample_S12, DATA['mZ'], sample_mZ, DATA['n_iter'], sample_n_iter, prop, mDraws
+                )
+
+            # sample for Non-Linearity
+            sample_alpha = prop.run_samples(self.alphafunc, [sample_S1, sample_S12])
+
+            if s_type.upper() == "ES":
+                sample_updated_radcal_gain = prop.run_samples(mf.update_cal_ES, 
+                                                              [sample_S12_sl_corr, sample_LAMP, sample_cal_int, sample_t1]
+                                                              )
+                
+                # compute cosine error based on lab characterisation and cosine response asymmetry
+                sample_zen_ang = cm.generate_sample(mDraws, DATA['zenith_ang'], None, None)
+                sample_zen_avg_coserror = cm.generate_sample(mDraws, DATA['zen_avg_coserr'], UNC['zenith_ang'], "syst")
+                sample_fhemi_coserr = cm.generate_sample(mDraws, DATA['fhemi'], UNC['fhemi'], "syst")
+            else:
+                sample_PANEL = cm.generate_sample(mDraws, DATA['PANEL'], UNC['PANEL'], "syst")
+                sample_updated_radcal_gain = prop.run_samples(mf.update_cal_rad,
+                                                              [sample_S12_sl_corr, sample_LAMP, sample_PANEL,
+                                                               sample_cal_int,
+                                                               sample_t1])
+            
+            ind_nocal = DATA['ind_nocal']
+            sample_updated_radcal_gain[:, ind_nocal == True] = 1
+
+            std_light = stats[s_type]['std_Light']  # standard deviations are taken from generateSensorStats
+            std_dark = stats[s_type]['std_Dark']
+
+            sample_back_corr = cm.generate_sample(mDraws, np.mean(DATA['light'], axis=0), std_light, "rand")
+            sample_offset = cm.generate_sample(mDraws, np.mean(DATA['dark']), std_dark, "rand")  # mean of std_dark?
+            sample_dark_corr = prop.run_samples(self.dark_Substitution, [sample_back_corr, sample_offset])
+            
+            # Non-Linearity Correction
+            sample_linear_corr = prop.run_samples(self.non_linearity_corr, [sample_dark_corr, sample_alpha])
+
+            # Straylight Correction
+            if self.sl_method.upper() == 'ZONG':  # for internal use only, Zong set as default in HCP
+                sample_sl_corr = prop.run_samples(
+                    self.Zong_SL_correction, [sample_linear_corr, sample_C_zong]
+                )
+            else:
+                S12 = self.S12func(k, DATA['S1'], DATA['S2'])
+                alpha = self.alphafunc(DATA['S1'], S12)
+                offset_corr = np.mean(np.asarray([DATA['light'][:, i] - DATA['dark'] for i in range(DATA['nband'])]).transpose(), axis=0)
+                linear_corr = self.non_linearity_corr(offset_corr, alpha)
+                sample_sl_corr = self.get_Slaper_Sl_unc(
+                    linear_corr, sample_linear_corr, DATA['mZ'], sample_mZ, DATA['n_iter'], sample_n_iter, prop, mDraws
+                )   # simplified code by adding Slaper correction to one fucntion
+
+            # Normalise based on integration time
+            sample_normalised = prop.run_samples(mf.normalise, [sample_sl_corr, sample_cal_int, sample_int_time])
+            
+            # Apply Updated Calibration
+            sample_cal_corr = prop.run_samples(mf.absolute_calibration, [sample_normalised, sample_updated_radcal_gain])
+
+            # Stability correction
+            sample_stab = cm.generate_sample(mDraws, np.ones(len(UNC['stab'])), UNC['stab'], "syst")
+            sample_stab_corr = prop.run_samples(mf.apply_CB_corr, [sample_cal_corr, sample_stab])
+
+            # Thermal correction
+            sample_ct_corr = prop.run_samples(mf.thermal_corr, [sample_stab_corr, sample_Ct])
+
+            if s_type == "ES":
+                # Cosine correction
+                sol_zen = DATA['solar_zenith']
+                dir_rat = DATA['direct_ratio']
+                sample_sol_zen = cm.generate_sample(mDraws, sol_zen, np.asarray([0.05 for i in range(np.size(sol_zen))]), "rand")
+                sample_dir_rat = cm.generate_sample(mDraws, dir_rat, 0.08*dir_rat, "syst")
+
+                sample_cos_corr = prop.run_samples(
+                    mf.get_cos_corr, [
+                        sample_zen_ang,
+                        sample_sol_zen,
+                        sample_zen_avg_coserror
+                        ]
+                )
+                sample_cos_corr = prop.run_samples(
+                    mf.cos_corr, [sample_ct_corr, sample_dir_rat, sample_cos_corr, sample_fhemi_coserr]  # sample_cos_corr[:,ind_raw_wvl], sample_fhemi_coserr[:,ind_raw_wvl]
+                )
+
+                # Save Uncertainties
+                unc = prop.process_samples(None, sample_cos_corr)
+                sample = sample_cos_corr
+
+            else:
+                sample_pol = cm.generate_sample(mDraws, np.ones(len(UNC['pol'])), UNC['pol'], "syst")
+                sample_pol_corr = prop.run_samples(mf.apply_CB_corr, [sample_ct_corr, sample_pol])
+
+                # Save Uncertainties
+                unc = prop.process_samples(None, sample_pol_corr)
+                sample = sample_pol_corr
+
+            ind_nocal = DATA['ind_nocal']
+            output_UNC[f"{s_type.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
+            output_UNC[f"{s_type.lower()}Sample"] = sample[:, ind_nocal == False]  # keep samples raw
+
+            # sort the outputs ready for processing
+            # get sensor specific wavebands to be keys for uncs, then remove from output
+            wvls = DATA['wvls']
+            output_UNC[f"{s_type.lower()}Unc"] = PDS.interp_common_wvls(
+                output_UNC[f"{s_type.lower()}Unc"], 
+                wvls, 
+                newWaveBands, 
+                return_as_dict=True
+                )
+            output_UNC[f"{s_type.lower()}Sample"] = PDS.interpolateSamples(
+                output_UNC[f"{s_type.lower()}Sample"], 
+                wvls,
+                newWaveBands
+                )
+        
+        return output_UNC
+            
+
 
 
 class TriOSUtils:

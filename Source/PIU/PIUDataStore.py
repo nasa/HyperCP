@@ -56,28 +56,59 @@ class PIUDataStore:
     def readCalFRM(self, root, uncGrp, raw_grps, raw_slices, s_type):
         # read data
         grp = raw_grps[s_type]
-        self.coeff[s_type]['light'] = np.asarray(list(raw_slices[s_type]['LIGHT']['data'].values())).transpose()
-        self.coeff[s_type]['dark']  = np.asarray(list(raw_slices[s_type]['DARK']['data'].values())).transpose()
-        self.coeff[s_type]['int_time'] = np.mean(np.asarray(grp.getDataset("INTTIME").data.tolist()))
-
+        
         radcal_wvl = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '1')[1:]  # keep local var because it is used for reading the FRM cal
         self.coeff[s_type]['radcal_wvl'] = radcal_wvl
-        radcal_cal_raw = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '2', return_df=True)
         ind_raw_wvl = (radcal_wvl > 0)  # remove any index for which we do not have radcal wvls available
 
+        if self.instrument == "seabird":
+            radcal_cal_raw = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '2', return_df=True)
+            self.coeff[s_type]['light'] = np.asarray(list(raw_slices[s_type]['LIGHT']['data'].values())).transpose()
+            self.coeff[s_type]['dark']  = np.asarray(list(raw_slices[s_type]['DARK']['data'].values())).transpose()
+            self.coeff[s_type]['int_time'] = np.mean(np.asarray(grp.getDataset("INTTIME").data.tolist()))
+            self.coeff[s_type]['cal_int'] = radcal_cal_raw.pop(0)
+
+        elif self.instrument == "trios":
+            radcal_cal_raw = grp.getDataset(f"CAL_{s_type}").data
+            raw_data = np.asarray(list(raw_slices[s_type]['data'].values())).transpose() / 65535.0
+            DarkPixelStart = int(grp.attributes["DarkPixelStart"])
+            DarkPixelStop = int(grp.attributes["DarkPixelStop"])
+            self.coeff[s_type]['int_time'] = np.asarray(grp.getDataset("INTTIME").data.tolist())  # no mean for TriOS
+            self.coeff[s_type]['cal_int'] = int(grp.getDataset("BACK_" + s_type).attributes["IntegrationTime"])
+            B0 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '4')[1:]
+            B1 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '5')[1:]
+            self.coeff[s_type]['nband'] = len(B0)
+            grp.attributes["nmes"] = len(raw_data)  # TODO: why is this necessary?
+            
+            back = np.array([B0 + B1*(self.coeff[s_type]['int_time'][n]/self.coeff[s_type]['cal_int']) for n in range(nmes)])
+            back_corr = raw_data - back
+
+            self.coeff[s_type]['light'] = back_corr
+            self.coeff[s_type]['dark']  = np.mean(back_corr[:, DarkPixelStart:DarkPixelStop], axis=1)
+
+        # define input data
+        self.coeff[s_type]['n_iter'] = 5
+        self.coeff[s_type]['radcal_cal'] = radcal_cal_raw[ind_raw_wvl]
+        
         S1 = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '6', return_df=True)  # needs to be pandas dataframes
         S2 = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '8', return_df=True)
-        
+
         self.coeff[s_type]['t1'] = S1.iloc[0]
         S1 = S1.drop(S1.index[0])
         self.coeff[s_type]['t2'] = S2.iloc[0]
         S2 = S2.drop(S2.index[0])
+        
+        S1_unc = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '7')[1:]
+        S2_unc = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '9')[1:]
+
+        if self.instrument == "trios":  # if trios then convert to same units as signal
+            S1 = S1/65535.0
+            S2 = S2/65535.0
+            S1_unc = np.asarray(S1_unc/65535.0, dtype=float)  # TODO: does this need to cast to np.array?
+            S2_unc = np.asarray(S2_unc/65535.0, dtype=float)
 
         self.coeff[s_type]['S1'] = np.asarray(S1, dtype=float)[ind_raw_wvl]
         self.coeff[s_type]['S2'] = np.asarray(S2, dtype=float)[ind_raw_wvl]
-
-        S1_unc = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '7')[1:]
-        S2_unc = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '9')[1:]
         self.uncs[s_type]['S1'] = S1_unc[ind_raw_wvl]
         self.uncs[s_type]['S2'] = S2_unc[ind_raw_wvl]
 
@@ -97,14 +128,8 @@ class PIUDataStore:
         self.coeff[s_type]['LAMP'] = self.read_cal(uncGrp, s_type, "_RADCAL_LAMP", '2')
         self.uncs[s_type]['LAMP'] = (self.read_cal(uncGrp, s_type, "_RADCAL_LAMP", '3') / 100) * self.coeff[s_type]['LAMP']
 
-        # define input data
-        self.coeff[s_type]['n_iter'] = 5
-        self.coeff[s_type]['cal_int'] = radcal_cal_raw.pop(0)
-        self.coeff[s_type]['radcal_cal'] = radcal_cal_raw[ind_raw_wvl]
-
-        self.coeff[s_type]['ind_cal'] = (radcal_cal_raw[ind_raw_wvl]) > 0
-        ind_zero = self.coeff[s_type]['radcal_cal'] <= 0
-        ind_nan = np.isnan(self.coeff[s_type]['radcal_cal'])
+        ind_zero = radcal_cal_raw[ind_raw_wvl] <= 0
+        ind_nan = np.isnan(radcal_cal_raw[ind_raw_wvl])
         self.coeff[s_type]['ind_nocal'] = ind_nan | ind_zero
         
         self.coeff[s_type]['wvls'] = np.asarray(radcal_wvl[ind_raw_wvl == True][self.coeff[s_type]['ind_cal'] == True], dtype=float)  # optimise by removing ind_cal, replace with ind_nocal==False
@@ -202,7 +227,12 @@ class PIUDataStore:
             pol.columns['1'] = y_new
 
             self.uncs[s_type]['pol'] = np.asarray(list(pol.columns['1']))[ind_raw_wvl]
-            # TODO: think about the class based uncs for FRM, should they be multiplied by some coeff?
+            # When using the class based uncs for FRM, should they be multiplied by some coeff?
+            # thoughts - Ashley
+            # to convert the polarisation and stability uncertainty from a percentage to absolute values we must multiply by the magnitude of the correction.
+            # Since we are using CB regime, we do not apply the correction. Therefore the correction = 1 since it is applied by multiplying.
+            # Then: U_abs = U_rel * corr_coeff = U_rel * 1 = U_rel. No conversion necessary. 
+
     #### Class-Based ####
     def readCalClassBased(self, inpt: HDFGroup, s: str, i_type: str) -> None:
         radcal = self.extract_unc_from_grp(inpt, f"{s}_RADCAL_CAL")
