@@ -373,8 +373,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         return UNC
 
     @abstractmethod
-    def FRM(self, node: HDFRoot, uncGrp: HDFGroup, raw_grps: dict[str, HDFGroup], raw_slices: dict[str, np.array],
-            stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
+    def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:
         """
         Propagates instrument uncertainties with corrections (except polarisation/stability) if full characterisation available - see D-10 section 5.3.1
         
@@ -606,9 +605,10 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         :param mDraws: number of monte carlo draws, M
         """
         # calculates difference between n=4 and n=5, then propagates as an error
-        sl_corr = self.Slaper_SL_correction(data, mZ, n_iter)
+        from Source.PIU.MeasurementFunctions import MeasurementFunctions as mf
+        sl_corr = mf.Slaper_SL_correction(data, mZ, n_iter)
         sl_corr_unc = []
-        sl4 = self.Slaper_SL_correction(data, mZ, n_iter=n_iter - 1)
+        sl4 = mf.Slaper_SL_correction(data, mZ, n_iter=n_iter - 1)
         for i in range(len(sl_corr)):  # get the difference between n=4 and n=5
             if sl_corr[i] > sl4[i]:
                 sl_corr_unc.append(sl_corr[i] - sl4[i])
