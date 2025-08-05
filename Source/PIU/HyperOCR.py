@@ -110,7 +110,7 @@ class HyperOCR(BaseInstrument):
             std_Signal=std_signal,
             )  # output as dictionary for use in ProcessL2/PIU
 
-    def FRM(self, PDS: pds, stats, newWaveBands):
+    def FRM(self, PDS: pds, stats, newWaveBands) -> dict[str, np.array]:
         """
         FRM regime propagation instrument uncertainties for HyperOCR, see D10 section 5.3.2 for more information.
 
@@ -197,10 +197,10 @@ class HyperOCR(BaseInstrument):
             sample_dark = cm.generate_sample(100, dark, std_dark, "rand")
 
             # Dark correction
-            sample_dark_corr_data = prop.run_samples(mf.dark_Substitution, [sample_light, sample_dark])
+            sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_light, sample_dark])
 
             # Non-Linearity
-            sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr_data, sample_alpha])
+            sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
 
             # Straylight
             if self.sl_method.upper() == 'ZONG':
@@ -256,9 +256,9 @@ class HyperOCR(BaseInstrument):
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
 
-            ind_cal = DATA['ind_cal']
-            output_UNC[f"{s_type.lower()}Unc"] = unc[ind_cal == True]  # relative uncertainty
-            output_UNC[f"{s_type.lower()}Sample"] = sample[:, ind_cal == True]  # keep samples raw
+            ind_nocal = DATA['ind_nocal']
+            output_UNC[f"{s_type.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
+            output_UNC[f"{s_type.lower()}Sample"] = sample[:, ind_nocal == False]  # keep samples raw
 
             # sort the outputs ready for processing
             # get sensor specific wavebands to be keys for uncs, then remove from output
