@@ -62,29 +62,14 @@ class PIUDataStore:
         ind_raw_wvl = (radcal_wvl > 0)  # remove any index for which we do not have radcal wvls available
 
         if self.instrument == "seabird":
-            radcal_cal_raw = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '2', return_df=True)
-            self.coeff[s_type]['light'] = np.asarray(list(raw_slices[s_type]['LIGHT']['data'].values())).transpose()
-            self.coeff[s_type]['dark']  = np.asarray(list(raw_slices[s_type]['DARK']['data'].values())).transpose()
-            self.coeff[s_type]['int_time'] = np.mean(np.asarray(grp.getDataset("INTTIME").data.tolist()))
-            self.coeff[s_type]['cal_int'] = radcal_cal_raw.pop(0)
-
+            radcal_cal_raw = self.readHyperCal(grp, uncGrp, raw_slices, s_type)
         elif self.instrument == "trios":
-            radcal_cal_raw = grp.getDataset(f"CAL_{s_type}").data
-            raw_data = np.asarray(list(raw_slices[s_type]['data'].values())).transpose() / 65535.0
-            DarkPixelStart = int(grp.attributes["DarkPixelStart"])
-            DarkPixelStop = int(grp.attributes["DarkPixelStop"])
-            self.coeff[s_type]['int_time'] = np.asarray(grp.getDataset("INTTIME").data.tolist())  # no mean for TriOS
-            self.coeff[s_type]['cal_int'] = int(grp.getDataset("BACK_" + s_type).attributes["IntegrationTime"])
-            B0 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '4')[1:]
-            B1 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '5')[1:]
-            self.coeff[s_type]['nband'] = len(B0)
-            grp.attributes["nmes"] = len(raw_data)  # TODO: why is this necessary?
-            
-            back = np.array([B0 + B1*(self.coeff[s_type]['int_time'][n]/self.coeff[s_type]['cal_int']) for n in range(nmes)])
-            back_corr = raw_data - back
-
-            self.coeff[s_type]['light'] = back_corr
-            self.coeff[s_type]['dark']  = np.mean(back_corr[:, DarkPixelStart:DarkPixelStop], axis=1)
+            radcal_cal_raw = self.readTriOSCal(grp, uncGrp, raw_slices, s_type)
+        else:
+            msg = f"{self.instsrument} not yet implemented"
+            print(msg)
+            Utilities.writeLogFile(msg)
+            raise NotImplementedError
 
         # define input data
         self.coeff[s_type]['n_iter'] = 5
@@ -232,6 +217,35 @@ class PIUDataStore:
             # to convert the polarisation and stability uncertainty from a percentage to absolute values we must multiply by the magnitude of the correction.
             # Since we are using CB regime, we do not apply the correction. Therefore the correction = 1 since it is applied by multiplying.
             # Then: U_abs = U_rel * corr_coeff = U_rel * 1 = U_rel. No conversion necessary. 
+
+    def readHyperCal(self, grp, uncGrp, raw_slices, s_type):
+        radcal_cal_raw = self.read_cal(uncGrp, s_type, '_RADCAL_CAL', '2', return_df=True)
+        self.coeff[s_type]['light'] = np.asarray(list(raw_slices[s_type]['LIGHT']['data'].values())).transpose()
+        self.coeff[s_type]['dark']  = np.asarray(list(raw_slices[s_type]['DARK']['data'].values())).transpose()
+        self.coeff[s_type]['int_time'] = np.mean(np.asarray(grp.getDataset("INTTIME").data.tolist()))
+        self.coeff[s_type]['cal_int'] = radcal_cal_raw.pop(0)
+    
+        return radcal_cal_raw
+    
+    def readTriOSCal(self, grp, uncGrp, raw_slices, s_type):
+        radcal_cal_raw = grp.getDataset(f"CAL_{s_type}").data
+        raw_data = np.asarray(list(raw_slices[s_type]['data'].values())).transpose() / 65535.0
+        DarkPixelStart = int(grp.attributes["DarkPixelStart"])
+        DarkPixelStop = int(grp.attributes["DarkPixelStop"])
+        self.coeff[s_type]['int_time'] = np.asarray(grp.getDataset("INTTIME").data.tolist())  # no mean for TriOS
+        self.coeff[s_type]['cal_int'] = int(grp.getDataset("BACK_" + s_type).attributes["IntegrationTime"])
+        B0 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '4')[1:]
+        B1 = self.read_cal(uncGrp, s_type, "_RADCAL_CAL", '5')[1:]
+        self.coeff[s_type]['nband'] = len(B0)
+        grp.attributes["nmes"] = len(raw_data)  # TODO: why is this necessary?
+        
+        back = np.array([B0 + B1*(self.coeff[s_type]['int_time'][n]/self.coeff[s_type]['cal_int']) for n in range(nmes)])
+        back_corr = raw_data - back
+
+        self.coeff[s_type]['light'] = back_corr
+        self.coeff[s_type]['dark']  = np.mean(back_corr[:, DarkPixelStart:DarkPixelStop], axis=1)
+
+        return radcal_cal_raw
 
     #### Class-Based ####
     def readCalClassBased(self, inpt: HDFGroup, s: str, i_type: str) -> None:
