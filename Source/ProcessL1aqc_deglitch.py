@@ -19,7 +19,7 @@ class ProcessL1aqc_deglitch:
         ''' Dark deglitching is now based on double-pass discrete linear convolution of the residual
         with a stationary std over a rolling average.
 
-        TBD: This is very aggressive in that it eliminates data in all bands if a record in any band fails
+        NOTE: This is very aggressive in that it eliminates data in all bands if a record in any band fails
             the test. This is why the percentages in the logs appear much higher than the knockouts in any
             given band (as seen in the plots). Could be revisited. '''
 
@@ -114,23 +114,21 @@ class ProcessL1aqc_deglitch:
                         badIndex[i] = True
                     else:
                         badIndex[i] = False # this is redundant
-
         return badIndex
 
     @staticmethod
     def processDataDeglitching(node, sensorType):
-        msg = sensorType
-        print(msg)
-        Utilities.writeLogFile(msg)
+        Utilities.writeLogFileAndPrint(f'{sensorType}')
 
         step = float(ConfigFile.settings["fL1aqcAnomalyStep"])
 
         rawFileName = node.attributes['RAW_FILE_NAME']
         L1AfileName = f"{rawFileName.split('.')[0]}_L1A"
 
-        darkData = None
-        lightData = None
-
+        darkData, lightData, windowLight, windowDark, darkDateTime, sigmaDark = None, None, None, None, None, None
+        minDark, maxDark, minMaxBandDark, lightDateTime = None,None,None,None
+        minLight, maxLight, minMaxBandLight, sigmaLight = None,None,None,None
+        badIndexDark, badIndexLight = None,None
         for gp in node.groups:
             if 'FrameType' not in gp.attributes:
                 continue
@@ -151,30 +149,23 @@ class ProcessL1aqc_deglitch:
                 maxLight = None if ConfigFile.settings[f'fL1aqc{sensorType}MaxLight']=='None' else ConfigFile.settings[f'fL1aqc{sensorType}MaxLight']
                 minMaxBandLight = ConfigFile.settings[f'fL1aqc{sensorType}MinMaxBandLight']
 
-            # Rolling averages required for deglitching of data are intolerant to 2 or fewer data points
-            # Furthermore, 5 or fewer datapoints is a suspiciously short sampling time. Finally,
-            # Having fewer data points than the size of the rolling window won't work. Exit processing if
-            # these conditions are met.
+        # Rolling averages required for deglitching of data are intolerant to 2 or fewer data points
+        # Furthermore, 5 or fewer datapoints is a suspiciously short sampling time. Finally,
+        # Having fewer data points than the size of the rolling window won't work. Exit processing if
+        # these conditions are met.
 
         # Problems with the sizes of the datasets:
         if darkData is not None and lightData is not None:
-            if len(darkData.data) <= 2 or \
-                len(lightData.data) <= 5 or \
-                len(darkData.data) < windowDark or \
-                len(lightData.data) < windowLight:
-                    msg = f'Error: Too few records to deglitch. Darks: {len(darkData.data)} Lights: {len(lightData.data)}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
-                    return True # Sets the flag to true
+            if len(darkData.data) <= 2 or len(lightData.data) <= 5 or \
+                len(darkData.data) < windowDark or len(lightData.data) < windowLight:
+
+                Utilities.writeLogFileAndPrint(f'Error: Too few records to deglitch. Darks: {len(darkData.data)} Lights: {len(lightData.data)}')
+                return True # Sets the flag to true
 
         if darkData is None:
-            msg = "Error: No dark data to deglitch"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("Error: No dark data to deglitch")
         else:
-            msg = "Deglitching dark"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            Utilities.writeLogFileAndPrint("Deglitching dark")
             lightDark = 'Dark'
 
             darkData.datasetToColumns()
@@ -182,7 +173,7 @@ class ProcessL1aqc_deglitch:
             dateTime = darkDateTime
 
             globalBadIndex = []
-
+            globBad, globBad2, globBad3 = None, None, None
             index = 0
             # Loop over bands to populate globBads
             for timeSeries in columns.items():
@@ -195,7 +186,8 @@ class ProcessL1aqc_deglitch:
                 if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
                     # if index % step == 0:
                     radiometry1D = timeSeries[1]
-                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowDark, sigmaDark, lightDark, minDark, maxDark,minMaxBandDark)
+                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(\
+                        band,radiometry1D, windowDark, sigmaDark, lightDark, minDark, maxDark,minMaxBandDark)
 
                     # for the plotting routine:
                     globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
@@ -255,7 +247,8 @@ class ProcessL1aqc_deglitch:
                 band = float(timeSeries[0])
                 if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
                     radiometry1D = timeSeries[1]
-                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, windowLight, sigmaLight, lightDark, minLight, maxLight,minMaxBandLight)
+                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(\
+                        band,radiometry1D, windowLight, sigmaLight, lightDark, minLight, maxLight,minMaxBandLight)
 
                     # For plotting:
                     globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
@@ -348,24 +341,7 @@ class ProcessL1aqc_deglitch:
             root.attributes['L1AQC_DEGLITCH'] = 'OFF'
 
         msg = f"ProcessL1aqc.processL1aqc: {timestr}"
-        print(msg)
-        Utilities.writeLogFile(msg)
-
-        # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
-        # root  = Utilities.rootAddDateTime(root)
-
-        # # Fix in case time doesn't increase from one sample to the next
-        # # or there are fewer than 2 two stamps remaining.
-        # for gp in root.groups:
-        #     if gp.id != "SOLARTRACKER_STATUS":
-        #         msg = f'Screening {gp.id} for clean timestamps.'
-        #         print(msg)
-        #         Utilities.writeLogFile(msg)
-        #         if not Utilities.fixDateTime(gp):
-        #             msg = f'***********Too few records in {gp.id} to continue after timestamp correction. Exiting.'
-        #             print(msg)
-        #             Utilities.writeLogFile(msg)
-        #             return None
+        Utilities.writeLogFileAndPrint(msg)
 
         if int(ConfigFile.settings["bL1aqcDeglitch"]) == 1:
             flagES = ProcessL1aqc_deglitch.processDataDeglitching(root, "ES")
@@ -374,8 +350,7 @@ class ProcessL1aqc_deglitch:
 
             if flagES or flagLI or flagLT:
                 msg = '***********Too few records in the file after deglitching to continue. Exiting.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                Utilities.writeLogFileAndPrint(msg)
                 return None
 
         return root

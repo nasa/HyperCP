@@ -288,6 +288,9 @@ class PDF(FPDF):
                     metaData += 'Remove Negatives: ON'
 
         metaData += ' \n'
+
+        # Remove any em dashes.
+        metaData.translate({8212: None}) # Only works with breakpoint and repeat (??)
         return intro, metaData
 
 

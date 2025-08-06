@@ -1467,6 +1467,7 @@ class ProcessL2:
 
         tic = time.process_time()
         with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal
+            Utilities.writeLogFileAndPrint('Updating instrument uncertainties...')
             if ConfigFile.settings["fL1bCal"] <= 2:  # and
                 L1B_UNC = instrument.ClassBased(node, uncGroup, stats)
                 if L1B_UNC:

@@ -559,6 +559,7 @@ class Window(QtWidgets.QWidget):
         MainConfig.settings["cfgPath"] = os.path.join(
             CODE_HOME, "Config", configFileName)
         MainConfig.saveConfig(MainConfig.fileName)
+        ConfigFile.saveConfig(configFileName)
         event.accept()
 
     def singleL1aClicked(self):
