@@ -237,7 +237,7 @@ class ProcessL2:
 
 
     @staticmethod
-    def spectralReflectance(node, sensor, timeObj, xSlice, F0, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC):
+    def spectralReflectance(node, sensor, timeObj, xSlice, F0, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC, xBreakdownUNC=None):
         ''' The slices, stds, F0, rhoVec here are sensor-waveband specific '''
         esXSlice = xSlice['es'] # mean
         esXmedian = xSlice['esMedian']
@@ -262,8 +262,21 @@ class ProcessL2:
         newReflectanceGroup = node.getGroup("REFLECTANCE")
         newRadianceGroup = node.getGroup("RADIANCE")
         newIrradianceGroup = node.getGroup("IRRADIANCE")
+        newBreakdownGroup = node.getGroup("Breakdown")
 
         newRhoHyper, newRhoUNCHyper, newNIRnLwData, newNIRData, nLw = None, None, None, None, None
+
+         # add breakdowns to HDF
+        if xBreakdownUNC is not None:
+            BDData = {'ES': {}, 'LI': {}, 'LT': {}}
+            for key in xBreakdownUNC['ES'].keys():
+                BDData['ES'][key] = newBreakdownGroup.addDataset(f"ES_{sensor}_{key}")
+                BDData['LI'][key] = newBreakdownGroup.addDataset(f"LI_{sensor}_{key}")
+                BDData['LT'][key] = newBreakdownGroup.addDataset(f"LT_{sensor}_{key}")
+            # use list comprehension to speed up processing
+            BDData['LW'][key]  = [newBreakdownGroup.addDataset(f"LW_{sensor}_{key}") for key in xBreakdownUNC['LW']]
+            BDData['Rrs'][key] = [newBreakdownGroup.addDataset(f"Rrs_{sensor}_{key}") for key in xBreakdownUNC['RRS']]
+
 
         # If this is the first ensemble spectrum, set up the new datasets
         if not f'Rrs_{sensor}' in newReflectanceGroup.datasets:
@@ -451,6 +464,16 @@ class ProcessL2:
                     newRrsSTDData.columns[k] = []
                     newnLwSTDData.columns[k] = []
 
+                    if xBreakdownUNC is not None:
+                        for key in BDData['ES'].keys():
+                            BDData['ES'][key].columns[k] = []
+                            BDData['LI'][key].columns[k] = []
+                            BDData['LT'][key].columns[k] = []
+                        for key in BDData['LW']:
+                            BDData['LW'][key].columns[k] = []
+                        for key in BDData['RRS']:
+                            BDData['Rrs'][key].columns[k] = []
+
                     if sensor == 'HYPER':
                         newRhoHyper.columns[k] = []
                         newRhoUNCHyper.columns[k] = []
@@ -540,6 +563,16 @@ class ProcessL2:
                 newLIDataMedian.columns[k].append(liMedian)
                 newLTDataMedian.columns[k].append(ltMedian)
 
+                if xBreakdownUNC is not None:
+                    for key in BDData['ES'].keys():
+                        BDData['ES'][key].columns[k].append(xBreakdownUNC['ES'][key][k])
+                        BDData['LI'][key].columns[k].append(xBreakdownUNC['LI'][key][k])
+                        BDData['LT'][key].columns[k].append(xBreakdownUNC['LT'][key][k])
+                    for key in BDData['LW']:
+                        BDData['LW'][key].columns[k].append(xBreakdownUNC['LW'][key][k])
+                    for key in BDData['RRS']:
+                        BDData['Rrs'][key].columns[k].append(xBreakdownUNC['Rrs'][key][k])
+
                 # Only populate valid wavelengths. Mark others for deletion
                 if float(k) in waveSubset:  # should be redundant!
                     newRrsUncorrData.columns[k].append(rrs_uncorr)
@@ -626,6 +659,16 @@ class ProcessL2:
         newLWUNCData.columnsToDataset()
         newRrsUNCData.columnsToDataset()
         newnLwUNCData.columnsToDataset()
+
+        if xBreakdownUNC is not None:
+            for key in BDData['ES'].keys():
+                BDData['ES'][key].columnsToDataset()
+                BDData['LI'][key].columnsToDataset()
+                BDData['LT'][key].columnsToDataset()
+            for key in BDData['LW']:
+                BDData['LW'][key].columnsToDataset()
+            for key in BDData['RRS']:
+                BDData['Rrs'][key].columntToDataset()
 
         if sensor == 'HYPER':
             newRhoHyper.columnsToDataset()
@@ -1470,16 +1513,21 @@ class ProcessL2:
         tic = time.process_time()
         with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal
             if ConfigFile.settings["fL1bCal"] <= 2:  # and
-                L1B_UNC = instrument.ClassBased(node, uncGroup, stats)
+                L1B_UNC, xBreakdownUNC = instrument.ClassBased(node, uncGroup, stats)
                 if L1B_UNC:
                     xSlice.update(L1B_UNC)  # update the xSlice dict with uncertianties and samples
-                    del L1B_UNC  # delete to save memory as no longer required
                     # convert uncertainties back into absolute form using the signals recorded from ProcessL2
                     xSlice['esUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['esUnc'].items(), esXSlice.values())}
                     xSlice['liUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['liUnc'].items(), liXSlice.values())}
                     xSlice['ltUnc'] = {u[0]: [u[1][0]*np.abs(s[0])] for u, s in zip(xSlice['ltUnc'].items(), ltXSlice.values())}
+                    L2_UNC, L2_BD = instrument.ClassBasedL2(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice)
+                    xUNC.update(L2_UNC)
+                    xBreakdownUNC.update(L2_BD)
+                    # delete unused dictionaries to save memory
+                    del L1B_UNC  
+                    del L2_UNC
+                    del L2_BD
 
-                    xUNC.update(instrument.ClassBasedL2(node, uncGroup, rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
                 elif ((ConfigFile.settings['SensorType'].lower() == "trios") or \
                     (ConfigFile.settings['SensorType'].lower() == "dalec")) and (ConfigFile.settings["fL1bCal"] == 1):
                     xUNC = None
@@ -1718,7 +1766,7 @@ class ProcessL2:
                 xSlice['ltSTD'] = ltXstdSentinel3A
 
                 # if xUNC is not None:
-                #     xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='A')
+                #     xUNC['esUNC'] = Weight_RSR.processSentinel3Bands(esUNCSlice, sensor='A')  # why are these commented? - Ashley
                 #     xUNC['liUNC'] = Weight_RSR.processSentinel3Bands(liUNCSlice, sensor='A')
                 #     xUNC['ltUNC'] = Weight_RSR.processSentinel3Bands(ltUNCSlice, sensor='A')
 
