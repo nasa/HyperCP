@@ -124,17 +124,17 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         try:
             # create object for running uncertainty propagation, M means number of monte carlo draws
             UNC_obj_CB = Propagate(M=100, cores=0)
-            UNCS = pds(node, uncGrp)
+            PDS = pds(node, uncGrp)
         except NotImplementedError:
              print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
              return False
 
-        ones = np.ones_like(UNCS.uncs['ES']['cal'])  # array of ones with correct shape.
+        ones = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
 
         means = [stats['ES']['ave_Light'], stats['ES']['ave_Dark'],
                  stats['LI']['ave_Light'], stats['LI']['ave_Dark'],
                  stats['LT']['ave_Light'], stats['LT']['ave_Dark'],
-                 UNCS.coeff['ES']['cal'], UNCS.coeff['LI']['cal'], UNCS.coeff['LT']['cal'],
+                 PDS.coeff['ES']['cal'], PDS.coeff['LI']['cal'], PDS.coeff['LT']['cal'],
                  ones, ones, ones,
                  ones, ones, ones,
                  ones, ones, ones,
@@ -145,16 +145,16 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         uncertainties = [stats['ES']['std_Light'], stats['ES']['std_Dark'],
                          stats['LI']['std_Light'], stats['LI']['std_Dark'],
                          stats['LT']['std_Light'], stats['LT']['std_Dark'],
-                         UNCS.uncs['ES']['cal'] * UNCS.coeff['ES']['cal'] / 200,
-                         UNCS.uncs['LI']['cal'] * UNCS.coeff['LI']['cal'] / 200,
-                         UNCS.uncs['LT']['cal'] * UNCS.coeff['LT']['cal'] / 200,
-                         UNCS.uncs['ES']['stab'], UNCS.uncs['LI']['stab'], UNCS.uncs['LT']['stab'],
-                         UNCS.uncs['ES']['nlin'], UNCS.uncs['LI']['nlin'], UNCS.uncs['LT']['nlin'],
-                         np.array( UNCS.uncs['ES']['stray']) / 100,
-                         np.array( UNCS.uncs['LI']['stray']) / 100,
-                         np.array( UNCS.uncs['LT']['stray']) / 100,
-                         np.array( UNCS.uncs['ES']['ct']), np.array( UNCS.uncs['LI']['ct']), np.array( UNCS.uncs['LT']['ct']),
-                         np.array( UNCS.uncs['LI']['pol']), np.array( UNCS.uncs['LT']['pol']), np.array( UNCS.uncs['ES']['cos'])
+                         PDS.uncs['ES']['cal'] * PDS.coeff['ES']['cal'] / 200,
+                         PDS.uncs['LI']['cal'] * PDS.coeff['LI']['cal'] / 200,
+                         PDS.uncs['LT']['cal'] * PDS.coeff['LT']['cal'] / 200,
+                         PDS.uncs['ES']['stab'], PDS.uncs['LI']['stab'], PDS.uncs['LT']['stab'],
+                         PDS.uncs['ES']['nlin'], PDS.uncs['LI']['nlin'], PDS.uncs['LT']['nlin'],
+                         np.array( PDS.uncs['ES']['stray']) / 100,
+                         np.array( PDS.uncs['LI']['stray']) / 100,
+                         np.array( PDS.uncs['LT']['stray']) / 100,
+                         np.array( PDS.uncs['ES']['ct']), np.array( PDS.uncs['LI']['ct']), np.array( PDS.uncs['LT']['ct']),
+                         np.array( PDS.uncs['LI']['pol']), np.array( PDS.uncs['LT']['pol']), np.array( PDS.uncs['ES']['cos'])
                          ]
 
         # generate uncertainties using Monte Carlo Propagation object
@@ -176,6 +176,29 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
         cal_col_str = "1" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
 
+        if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+            acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
+            cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
+
+            from Source.PIU.UncPlotting import PlotTools
+            PT = PlotTools(PDS, "", UNC_obj_CB)
+            try:
+                breakdown_UNCS = PT.pie_plot_class(
+                    means,
+                    uncertainties,
+                    dict(
+                        ES=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
+                        LI=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
+                        LT=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str])
+                    ),
+                    cast,
+                    node.getGroup("ANCILLARY")
+                )
+            except ValueError as err:
+                msg = f"unable to run uncertainty breakdown plots for {cast}, with error: {err}"
+                print(msg)
+                Utilities.writeLogFile(msg)
+
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
             
@@ -190,24 +213,24 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         return dict(
             esUnc=utils.interp_common_wvls(ES_unc,
                                          np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
-                                                     dtype=float)[UNCS.ind_rad_wvl['ES']],
+                                                     dtype=float)[PDS.ind_rad_wvl['ES']],
                                          data_wvl,
                                          return_as_dict=True
                                          ),
             liUnc=utils.interp_common_wvls(LI_unc,
                                          np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
-                                                  dtype=float)[UNCS.ind_rad_wvl['LI']],
+                                                  dtype=float)[PDS.ind_rad_wvl['LI']],
                                          data_wvl,
                                          return_as_dict=True
                                          ),
             ltUnc=utils.interp_common_wvls(LT_unc,
                                          np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
-                                                  dtype=float)[UNCS.ind_rad_wvl['LT']],
+                                                  dtype=float)[PDS.ind_rad_wvl['LT']],
                                          data_wvl,
                                          return_as_dict=True
                                          ),
-            valid_pixels=UNCS.nan_mask
-        )
+            valid_pixels=PDS.nan_mask
+        ), breakdown_UNCS
 
     def ClassBasedL2(self, node, uncGrp, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice) -> dict:
         """
@@ -226,7 +249,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         try:
             # create object for running uncertainty propagation, M means number of monte carlo draws
             UNC_obj_CB = Propagate(M=100, cores=0)
-            UNCS = pds(node, uncGrp)
+            PDS = pds(node, uncGrp)
         except NotImplementedError:
              print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
              return False
@@ -258,17 +281,17 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         es = utils.interp_common_wvls(np.asarray(list(xSlice['es'].values()), dtype=float).flatten(),
                                      np.asarray(list(xSlice['es'].keys()), dtype=float).flatten(),
                                      np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
-                                              dtype=float)[UNCS.ind_rad_wvl['ES']],
+                                              dtype=float)[PDS.ind_rad_wvl['ES']],
                                      return_as_dict=False)
         li = utils.interp_common_wvls(np.asarray(list(xSlice['li'].values()), dtype=float).flatten(),
                                      np.asarray(list(xSlice['li'].keys()), dtype=float).flatten(),
                                      np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
-                                              dtype=float)[UNCS.ind_rad_wvl['LI']],
+                                              dtype=float)[PDS.ind_rad_wvl['LI']],
                                      return_as_dict=False)
         lt = utils.interp_common_wvls(np.asarray(list(xSlice['lt'].values()), dtype=float).flatten(),
                                      np.asarray(list(xSlice['lt'].keys()), dtype=float).flatten(),
                                      np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str],
-                                              dtype=float)[UNCS.ind_rad_wvl['LT']],
+                                              dtype=float)[PDS.ind_rad_wvl['LT']],
                                      return_as_dict=False)
 
         ones = np.ones_like(es)
@@ -285,12 +308,12 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         lw_uncertainties = [np.abs(np.array(list(ltXstd.values())).flatten() * lt),
                             rhoUNC,
                             np.abs(np.array(list(liXstd.values())).flatten() * li),
-                            UNCS.uncs['LI']['cal'] / 200, UNCS.uncs['LT']['cal'] / 200,
-                            UNCS.uncs['LI']['stab'], UNCS.uncs['LT']['stab'],
-                            UNCS.uncs['LI']['nlin'], UNCS.uncs['LT']['nlin'],
-                            UNCS.uncs['LI']['stray'] / 100, UNCS.uncs['LI']['stray'] / 100,
-                            UNCS.uncs['LI']['ct'], UNCS.uncs['LI']['ct'],
-                            UNCS.uncs['LI']['pol'], UNCS.uncs['LI']['pol']
+                            PDS.uncs['LI']['cal'] / 200, PDS.uncs['LT']['cal'] / 200,
+                            PDS.uncs['LI']['stab'], PDS.uncs['LT']['stab'],
+                            PDS.uncs['LI']['nlin'], PDS.uncs['LT']['nlin'],
+                            PDS.uncs['LI']['stray'] / 100, PDS.uncs['LI']['stray'] / 100,
+                            PDS.uncs['LI']['ct'], PDS.uncs['LI']['ct'],
+                            PDS.uncs['LI']['pol'], PDS.uncs['LI']['pol']
                             ]
 
         lwAbsUnc = UNC_obj_CB.Propagate_Lw_HYPER(lw_means, lw_uncertainties)
@@ -308,34 +331,54 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                              rhoUNC,
                              np.abs(np.array(list(liXstd.values())).flatten() * li),
                              np.abs(np.array(list(esXstd.values())).flatten() * es),
-                             UNCS.uncs['ES']['cal'] / 200, UNCS.uncs['LI']['cal'] / 200, UNCS.uncs['LT']['cal'] / 200,
-                             UNCS.uncs['ES']['stab'], UNCS.uncs['LI']['stab'], UNCS.uncs['LT']['stab'],
-                             UNCS.uncs['ES']['nlin'], UNCS.uncs['LI']['nlin'], UNCS.uncs['LT']['nlin'],
-                             UNCS.uncs['ES']['stray'] / 100, UNCS.uncs['LI']['stray'] / 100, UNCS.uncs['LT']['stray'] / 100,
-                             UNCS.uncs['ES']['ct'], UNCS.uncs['LI']['ct'], UNCS.uncs['LT']['ct'],
-                             UNCS.uncs['LI']['pol'], UNCS.uncs['LT']['pol'], UNCS.uncs['ES']['cos']
+                             PDS.uncs['ES']['cal'] / 200, PDS.uncs['LI']['cal'] / 200, PDS.uncs['LT']['cal'] / 200,
+                             PDS.uncs['ES']['stab'], PDS.uncs['LI']['stab'], PDS.uncs['LT']['stab'],
+                             PDS.uncs['ES']['nlin'], PDS.uncs['LI']['nlin'], PDS.uncs['LT']['nlin'],
+                             PDS.uncs['ES']['stray'] / 100, PDS.uncs['LI']['stray'] / 100, PDS.uncs['LT']['stray'] / 100,
+                             PDS.uncs['ES']['ct'], PDS.uncs['LI']['ct'], PDS.uncs['LT']['ct'],
+                             PDS.uncs['LI']['pol'], PDS.uncs['LT']['pol'], PDS.uncs['ES']['cos']
                              ]
 
         rrsAbsUnc = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
 
+        if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
+            acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
+            cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
+            from Source.PIU.UncPlotting import PlotTools
+            PT = PlotTools(PDS, "", UNC_obj_CB)
+            try:
+                breakdown_UNCS = PT.pie_plot_class_l2(
+                    rrs_means,
+                    lw_means,
+                    rrs_uncertainties,
+                    lw_uncertainties,
+                    np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float),  # pass radcal wavelengths
+                    cast,
+                    node.getGroup("ANCILLARY")
+                )
+            except ValueError as err:
+                msg = f"unable to run uncertainty breakdown plots for {cast}, with error: {err}"
+                print(msg)
+                Utilities.writeLogFile(msg)
+
         # these are absolute values!
         rhoUNC_CWB = utils.interp_common_wvls(
             rhoUNC,
-            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[UNCS.ind_rad_wvl['ES']],
+            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
             waveSubset,
             return_as_dict=False
         )
-        # lwAbsUnc[UNCS.nan_mask] = np.nan
+        # lwAbsUnc[PDS.nan_mask] = np.nan
         lwAbsUnc = utils.interp_common_wvls(
             lwAbsUnc,
-            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[UNCS.ind_rad_wvl['ES']],
+            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
             waveSubset,
             return_as_dict=False
         )
-        # rrsAbsUnc[UNCS.nan_mask] = np.nan
+        # rrsAbsUnc[PDS.nan_mask] = np.nan
         rrsAbsUnc = utils.interp_common_wvls(
             rrsAbsUnc,
-            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[UNCS.ind_rad_wvl['ES']],
+            np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float)[PDS.ind_rad_wvl['ES']],
             waveSubset,
             return_as_dict=False
         )
@@ -370,7 +413,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
              "rrsUNC": rrsAbsUnc}
         )
 
-        return UNC
+        return UNC, breakdown_UNCS
 
     @abstractmethod
     def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:

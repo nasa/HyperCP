@@ -122,6 +122,9 @@ class TriOS(BaseInstrument):
             mDraws = 100  # number of monte carlo draws
             prop = punpy.MCPropagation(mDraws, parallel_cores=1)
 
+            from Source.PIU.UncPlotting import PlotTools
+            PT = PlotTools(PDS, s_type, prop)
+
             DATA = PDS.coeff[s_type]  # retrieve dictionaries for speed
             UNC = PDS.uncs[s_type]
 
@@ -139,25 +142,25 @@ class TriOS(BaseInstrument):
             sample_t1 = cm.generate_sample(mDraws, DATA['t1'], None, None)
             sample_S1 = cm.generate_sample(mDraws, np.asarray(DATA['S1']), UNC['S1'], "rand")
             sample_S2 = cm.generate_sample(mDraws, np.asarray(DATA['S2']), UNC['S2'], "rand")
-            sample_S12 = prop.run_samples(self.S12func, [sample_k, sample_S1, sample_S2])
+            sample_S12 = prop.run_samples(mf.S12func, [sample_k, sample_S1, sample_S2])
 
             if self.sl_method.upper() == 'ZONG':  # for internal coding use only, set by default in HCP
                 sample_n_IB = self.gen_n_IB_sample(mDraws)  # n_IB sample must be integer and in the range 3-6
                 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
                 sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
                                                  [sample_mZ, sample_n_IB])
-                sample_S12_sl_corr = prop.run_samples(self.Zong_SL_correction, [sample_S12, sample_C_zong])
+                sample_sl_corr = prop.run_samples(mf.Zong_SL_correction, [sample_S12, sample_C_zong])
             else:  # slaper
-                sample_S12_sl_corr = self.get_Slaper_Sl_unc(
+                sample_sl_corr = self.get_Slaper_Sl_unc(
                     DATA['S12'], sample_S12, DATA['mZ'], sample_mZ, DATA['n_iter'], sample_n_iter, prop, mDraws
                 )
 
             # sample for Non-Linearity
-            sample_alpha = prop.run_samples(self.alphafunc, [sample_S1, sample_S12])
+            sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
 
             if s_type.upper() == "ES":
                 sample_updated_radcal_gain = prop.run_samples(mf.update_cal_ES, 
-                                                              [sample_S12_sl_corr, sample_LAMP, sample_cal_int, sample_t1]
+                                                              [sample_sl_corr, sample_LAMP, sample_cal_int, sample_t1]
                                                               )
                 
                 # compute cosine error based on lab characterisation and cosine response asymmetry
@@ -167,49 +170,56 @@ class TriOS(BaseInstrument):
             else:
                 sample_PANEL = cm.generate_sample(mDraws, DATA['PANEL'], UNC['PANEL'], "syst")
                 sample_updated_radcal_gain = prop.run_samples(mf.update_cal_rad,
-                                                              [sample_S12_sl_corr, sample_LAMP, sample_PANEL,
+                                                              [sample_sl_corr, sample_LAMP, sample_PANEL,
                                                                sample_cal_int,
                                                                sample_t1])
             
             ind_nocal = DATA['ind_nocal']
             sample_updated_radcal_gain[:, ind_nocal == True] = 1
 
-            std_light = stats[s_type]['std_Light']  # standard deviations are taken from generateSensorStats
+            std_light = stats[s_type]['std_Light'] / 65535.0 # standard deviations are taken from generateSensorStats
             std_dark = stats[s_type]['std_Dark']
 
             sample_back_corr = cm.generate_sample(mDraws, np.mean(DATA['light'], axis=0), std_light, "rand")
-            sample_offset = cm.generate_sample(mDraws, np.mean(DATA['dark']), std_dark, "rand")  # mean of std_dark?
-            sample_dark_corr = prop.run_samples(self.dark_Substitution, [sample_back_corr, sample_offset])
-            
+            sample_offset = cm.generate_sample(mDraws, np.mean(DATA['dark']), np.mean(std_dark), "rand")  # mean of std_dark?
+            sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_back_corr, sample_offset])
+            PT.plot_sample(DATA['radcal_wvl'], sample_dark_corr, "dark")
+
             # Non-Linearity Correction
-            sample_linear_corr = prop.run_samples(self.non_linearity_corr, [sample_dark_corr, sample_alpha])
+            sample_linear_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
+            PT.plot_sample(DATA['radcal_wvl'], sample_linear_corr, "nlin")
 
             # Straylight Correction
             if self.sl_method.upper() == 'ZONG':  # for internal use only, Zong set as default in HCP
                 sample_sl_corr = prop.run_samples(
-                    self.Zong_SL_correction, [sample_linear_corr, sample_C_zong]
+                    mf.Zong_SL_correction, [sample_linear_corr, sample_C_zong]
                 )
             else:
-                S12 = self.S12func(k, DATA['S1'], DATA['S2'])
-                alpha = self.alphafunc(DATA['S1'], S12)
+                S12 = mf.S12func(k, DATA['S1'], DATA['S2'])
+                alpha = mf.alphafunc(DATA['S1'], S12)
                 offset_corr = np.mean(np.asarray([DATA['light'][:, i] - DATA['dark'] for i in range(DATA['nband'])]).transpose(), axis=0)
-                linear_corr = self.non_linearity_corr(offset_corr, alpha)
+                linear_corr = mf.non_linearity_corr(offset_corr, alpha)
                 sample_sl_corr = self.get_Slaper_Sl_unc(
                     linear_corr, sample_linear_corr, DATA['mZ'], sample_mZ, DATA['n_iter'], sample_n_iter, prop, mDraws
                 )   # simplified code by adding Slaper correction to one fucntion
+
+            PT.plot_sample(DATA['radcal_wvl'], sample_sl_corr, "straylight")
 
             # Normalise based on integration time
             sample_normalised = prop.run_samples(mf.normalise, [sample_sl_corr, sample_cal_int, sample_int_time])
             
             # Apply Updated Calibration
             sample_cal_corr = prop.run_samples(mf.absolute_calibration, [sample_normalised, sample_updated_radcal_gain])
+            PT.plot_sample(DATA['radcal_wvl'], sample_cal_corr, "calibration")
 
             # Stability correction
             sample_stab = cm.generate_sample(mDraws, np.ones(len(UNC['stab'])), UNC['stab'], "syst")
             sample_stab_corr = prop.run_samples(mf.apply_CB_corr, [sample_cal_corr, sample_stab])
+            PT.plot_sample(DATA['radcal_wvl'], sample_stab_corr, "stability")
 
             # Thermal correction
             sample_ct_corr = prop.run_samples(mf.thermal_corr, [sample_stab_corr, sample_Ct])
+            PT.plot_sample(DATA['radcal_wvl'], sample_ct_corr, "Temperature")
 
             if s_type == "ES":
                 # Cosine correction
@@ -228,18 +238,21 @@ class TriOS(BaseInstrument):
                 sample_cos_corr = prop.run_samples(
                     mf.cos_corr, [sample_ct_corr, sample_dir_rat, sample_cos_corr, sample_fhemi_coserr]  # sample_cos_corr[:,ind_raw_wvl], sample_fhemi_coserr[:,ind_raw_wvl]
                 )
+                PT.plot_sample(DATA['radcal_wvl'], sample_cos_corr, "cosine")
 
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_cos_corr)
                 sample = sample_cos_corr
-
+                PT.save_figure()
             else:
                 sample_pol = cm.generate_sample(mDraws, np.ones(len(UNC['pol'])), UNC['pol'], "syst")
                 sample_pol_corr = prop.run_samples(mf.apply_CB_corr, [sample_ct_corr, sample_pol])
+                PT.plot_sample(DATA['radcal_wvl'], sample_pol_corr, "polarisation")
 
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_pol_corr)
                 sample = sample_pol_corr
+                PT.save_figure()
 
             ind_nocal = DATA['ind_nocal']
             output_UNC[f"{s_type.lower()}Unc"] = unc[ind_nocal == False]  # relative uncertainty
@@ -260,9 +273,7 @@ class TriOS(BaseInstrument):
                 newWaveBands
                 )
         
-        return output_UNC
-            
-
+        return output_UNC    
 
 
 class TriOSUtils:
