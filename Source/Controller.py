@@ -24,6 +24,7 @@ from Source.ProcessL2 import ProcessL2
 from Source.SeaBASSWriter import SeaBASSWriter
 from Source.PDFreport import PDF
 from Source.Utilities import Utilities
+import Source.utils.files as files
 
 
 class Controller:
@@ -291,7 +292,8 @@ class Controller:
         root = None
 
         # test = Utilities.checkInputFiles(inFilePath,flag_Trios, level="L1A")
-        test = Utilities.checkInputFiles(inFilePath,level="L1A")
+        # test = Utilities.checkInputFiles(inFilePath,level="L1A")
+        test = files.checkInputFiles(inFilePath,level="L1A")
         if test is False:
             return None, None
 
@@ -335,7 +337,8 @@ class Controller:
     @staticmethod
     def processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData):
         root = None
-        test = Utilities.checkInputFiles(inFilePath)
+        # test = Utilities.checkInputFiles(inFilePath)
+        test = files.checkInputFiles(inFilePath)
         if test is False:
             return None
 
@@ -630,15 +633,18 @@ class Controller:
                 else:
                     Utilities.writeLogFileAndPrint('No deglitching will be performed.')
                 root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
-                Utilities.checkOutputFiles(outFilePath)
+                # Utilities.checkOutputFiles(outFilePath)
+                files.checkOutputFiles(outFilePath)
 
             elif level == "L1B":
                 root = Controller.processL1b(inFilePath, outFilePath)
-                Utilities.checkOutputFiles(outFilePath)
+                # Utilities.checkOutputFiles(outFilePath)
+                files.checkOutputFiles(outFilePath)
 
             elif level == "L1BQC":
                 root = Controller.processL1bqc(inFilePath, outFilePath)
-                Utilities.checkOutputFiles(outFilePath)
+                # Utilities.checkOutputFiles(outFilePath)
+                files.checkOutputFiles(outFilePath)
 
         elif level == "L2":
             # Ancillary data from metadata have been read in at L1C,
@@ -714,7 +720,8 @@ class Controller:
 
                         # Cannot overwrite root here, in case there is more than one station in the file.
                         Controller.processL2(root, outFilePathStation,station)
-                        Utilities.checkOutputFiles(outFilePathStation)
+                        # Utilities.checkOutputFiles(outFilePathStation)
+                        files.checkOutputFiles(outFilePathStation)
 
                         if os.path.isfile(outFilePathStation):
                             # Ensure that the L2 on file is recent before continuing with
@@ -748,7 +755,8 @@ class Controller:
                 # Even where not extracting stations, processL2 returns PL2 node, not root, but to comply with expectations
                 # below based on the other levels and PDF reporting, overwrite root with node
                 root = Controller.processL2(root,outFilePath)
-                Utilities.checkOutputFiles(outFilePath)
+                # Utilities.checkOutputFiles(outFilePath)
+                files.checkOutputFiles(outFilePath)
 
                 if os.path.isfile(outFilePath):
                     # Ensure that the L2 on file is recent before continuing with

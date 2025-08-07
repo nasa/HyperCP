@@ -12,6 +12,7 @@ from Source.MainConfig import MainConfig
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 from Source.Utilities import Utilities
+import Source.utils.files as files
 
 
 class ProcessL1aTriOS:
@@ -234,7 +235,8 @@ class ProcessL1aTriOS:
                     Utilities.writeLogFileAndPrint(msg)
                     return None, None
 
-                Utilities.checkOutputFiles(outFFP[-1])
+                # Utilities.checkOutputFiles(outFFP[-1])
+                files.checkOutputFiles(outFFP[-1])
 
             return root, outFFP
         else:
