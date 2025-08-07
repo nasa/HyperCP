@@ -394,12 +394,14 @@ class Propagate:
         if sza > 60:
             sza = 60
 
+        # TODO: add more guards so we cannot go out of bounds when running MCP
+
         from Source.RhoCorrections import InterpolationError
-        # try:
-        #     zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
-        # except InterpolationError as err:
-            # Utilities.writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
-        zhang = Propagate.zhangWrapper(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
+        try:
+            zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
+        except InterpolationError as err:
+            Utilities.writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
+            zhang = Propagate.zhangWrapper(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
         
         return zhang
 
