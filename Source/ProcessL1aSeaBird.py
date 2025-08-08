@@ -7,9 +7,10 @@ import numpy as np
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 from Source.MainConfig import MainConfig
-from Source.Utilities import Utilities
 from Source.RawFileReader import RawFileReader
 from Source.ConfigFile import ConfigFile
+import Source.utils.loggingHCP as logging
+import Source.utils.dating as dating
 
 
 class ProcessL1aSeaBird:
@@ -40,9 +41,7 @@ class ProcessL1aSeaBird:
         root.attributes["FILE_CREATION_TIME"] = timestr
         # SZA Filter configuration parameter added to attributes below
 
-        msg = f"ProcessL1a.processL1a: {timestr}"
-        print(msg)
-        Utilities.writeLogFile(msg)
+        logging.writeLogFileAndPrint(f"ProcessL1a.processL1a: {timestr}")
 
         contextMap = collections.OrderedDict()
 
@@ -100,19 +99,16 @@ class ProcessL1aSeaBird:
             msg = f'{msg}\nhld: {hld} :2'
             msg = f'{msg}\nhse: {hse} :1'
             msg = f'{msg}\nhsl: {hsl} :2'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(msg)
             return None
         # No GPS workaround
         if gps != 1:
-            msg = "ProcessL1a.processL1a: GPS data missing from raw file. Will attempt to use ancillary data"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("ProcessL1a.processL1a: GPS data missing from raw file. Will attempt to use ancillary data")
 
         # Update the GPS group to include a datasets for DATETAG and TIMETAG2
         gpsGroup = None
         esDateTag = None
-        for gp in root.groups:            
+        for gp in root.groups:
             if gp.id.startswith("GP"):
                 gpsGroup = gp
             # Need year-gang and sometimes Datetag from one of the sensors
@@ -121,7 +117,7 @@ class ProcessL1aSeaBird:
                 esTimeTag2 = gp.datasets["TIMETAG2"].columns["NONE"]
                 esSec = []
                 for time in esTimeTag2:
-                    esSec.append(Utilities.timeTag2ToSec(time))
+                    esSec.append(dating.timeTag2ToSec(time))
 
         if gps == 1:
             gpsGroup.addDataset("DATETAG")
@@ -132,9 +128,7 @@ class ProcessL1aSeaBird:
                 # prepSAS output
                 gpsTime = gpsGroup.datasets["TIME"].columns["UTC"]
             else:
-                msg ='Failed to import GPS data.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                logging.writeLogFileAndPrint('Failed to import GPS data.')
                 return None
 
             # Another case for GPGGA input...
@@ -151,12 +145,10 @@ class ProcessL1aSeaBird:
                 gpsTimeTag2 = []
 
                 if esDateTag[0] != esDateTag[-1]:
-                    msg = "ProcessL1a.processL1a: Warning: File crosses UTC 00:00. Adjusting timestamps for matchup of Datetag."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    logging.writeLogFileAndPrint("ProcessL1a.processL1a: Warning: File crosses UTC 00:00. Adjusting timestamps for matchup of Datetag.")
                     newDay = False
                     for time in gpsTime:
-                        gpsSec = Utilities.utcToSec(time)
+                        gpsSec = dating.utcToSec(time)
                         if 'gpsSecPrior' not in locals():
                             gpsSecPrior = gpsSec
                         # Test for a change of ~24 hrs between this sample and the last sample
@@ -167,18 +159,18 @@ class ProcessL1aSeaBird:
                             newDay = True
                         if newDay is True:
                             gpsDateTag.append(esDateTag[-1])
-                            dtDate = Utilities.dateTagToDateTime(esDateTag[-1])
-                            gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
+                            dtDate = dating.dateTagToDateTime(esDateTag[-1])
+                            gpsTimeTag2.append(dating.datetime2TimeTag2(dating.utcToDateTime(dtDate,time)))
                         else:
                             gpsDateTag.append(esDateTag[0])
-                            dtDate = Utilities.dateTagToDateTime(esDateTag[0])
-                            gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
+                            dtDate = dating.dateTagToDateTime(esDateTag[0])
+                            gpsTimeTag2.append(dating.datetime2TimeTag2(dating.utcToDateTime(dtDate,time)))
                         gpsSecPrior = gpsSec
                 else:
                     for time in gpsTime:
                         gpsDateTag.append(esDateTag[0])
-                        dtDate = Utilities.dateTagToDateTime(esDateTag[0])
-                        gpsTimeTag2.append(Utilities.datetime2TimeTag2(Utilities.utcToDateTime(dtDate,time)))
+                        dtDate = dating.dateTagToDateTime(esDateTag[0])
+                        gpsTimeTag2.append(dating.datetime2TimeTag2(dating.utcToDateTime(dtDate,time)))
 
                 gpsGroup.datasets["DATETAG"].columns["NONE"] = gpsDateTag
                 gpsGroup.datasets["TIMETAG2"].columns["NONE"] = gpsTimeTag2
@@ -189,23 +181,19 @@ class ProcessL1aSeaBird:
             if not gp.id.startswith("SATMSG"): # Don't convert these strings to datasets.
                 for ds in gp.datasets.values():
                     if not ds.columnsToDataset():
-                        msg = "ProcessL1a.processL1a: Essential column cannot be converted to Dataset. Aborting."
-                        print(msg)
-                        Utilities.writeLogFile(msg)
+                        logging.writeLogFileAndPrint("ProcessL1a.processL1a: Essential column cannot be converted to Dataset. Aborting.")
                         return None
 
         try:
-            root  = Utilities.rootAddDateTime(root)
+            root  = dating.rootAddDateTime(root)
         except AttributeError as err:
-            msg = f"ProcessL1a.processL1a: Cannot add datetime to a group dataset: {err}. Aborting."
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f"ProcessL1a.processL1a: Cannot add datetime to a group dataset: {err}. Aborting.")
             return None
 
         # Adjust to UTC if necessary
         if ConfigFile.settings["fL1aUTCOffset"] != 0:
             # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
-            root = Utilities.SASUTCOffset(root)
+            root = dating.SASUTCOffset(root)
 
         # Apply SZA filter; Currently only works with SunTracker data at L1A (again possible in L2 for all types)
         if ConfigFile.settings["bL1aCleanSZA"]:
@@ -220,18 +208,14 @@ class ProcessL1aSeaBird:
 
                         # NOTE: It would be good to add local time as a printed output with SZA
                         if (90-np.nanmax(elevation)) > szaLimit:
-                            msg = f'SZA too low. Discarding entire file. {round(90-np.nanmax(elevation))}'
-                            print(msg)
-                            Utilities.writeLogFile(msg)
+                            logging.writeLogFileAndPrint(f'SZA too low. Discarding entire file. {round(90-np.nanmax(elevation))}')
                             return None
                         else:
                             if np.isnan(elevation).all():
                                 msg = 'SZA: elevation all NaNs.'
                             else:
                                 msg = f'SZA passed filter: {round(90-np.nanmax(elevation))}'
-                            print(msg)
-                            Utilities.writeLogFile(msg)
-
+                            logging.writeLogFileAndPrint(msg)
                 else:
                     print(f'No FrameTag in {gp.id} group')
 

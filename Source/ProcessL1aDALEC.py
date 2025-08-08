@@ -9,9 +9,9 @@ import pandas as pd
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 from Source.MainConfig import MainConfig
-from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
-
+import Source.utils.loggingHCP as logging
+import Source.utils.dating as dating
 
 class ProcessL1aDALEC:
     '''Process L1A'''
@@ -82,9 +82,7 @@ class ProcessL1aDALEC:
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         root.attributes["FILE_CREATION_TIME"] = timestr
 
-        msg = f"ProcessL1a.processL1a: {timestr}"
-        print(msg)
-        Utilities.writeLogFile(msg)
+        logging.writeLogFileAndPrint(f"ProcessL1a.processL1a: {timestr}")
 
         #add global attributes from calfile
         for row in meta_instrument.itertuples():
@@ -97,8 +95,8 @@ class ProcessL1aDALEC:
         #get TimeTag2 and DateTag data sets
         dateFormat='%Y-%m-%dT%H:%M:%S.%f'
         dtime=[datetime.strptime(i.replace('Z','000'),dateFormat) for i in data_good['UTCtimestamp']]
-        TimeTag2 = [Utilities.datetime2TimeTag2(i) for i in dtime]
-        DateTag = [Utilities.datetime2DateTag(i) for i in dtime]
+        TimeTag2 = [dating.datetime2TimeTag2(i) for i in dtime]
+        DateTag = [dating.datetime2DateTag(i) for i in dtime]
         root.attributes["TIME-STAMP"] = dt.datetime.strftime(dtime[0],'%a %b %d %H:%M:%S %Y')
 
         #add GPS group
@@ -145,14 +143,10 @@ class ProcessL1aDALEC:
         szaLimit = float(ConfigFile.settings["fL1aCleanSZAMax"])
         szaMin=np.nanmin(data_good['SolarZenith'].tolist())
         if szaMin > szaLimit:
-            msg = f'SZA too low. Discarding entire file. {round(szaMin)}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f'SZA too low. Discarding entire file. {round(szaMin)}')
             return None
         else:
-            msg = f'SZA passed filter: {round(szaMin)}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f'SZA passed filter: {round(szaMin)}')
 
         gp.addDataset("SZA")
         gp.datasets["SZA"].data = np.array(data_good['SolarZenith'].tolist(), dtype=[('NONE', '<f8')])
@@ -198,8 +192,8 @@ class ProcessL1aDALEC:
             #add ancillary data sets
             dateFormat='%Y-%m-%dT%H:%M:%S.%f'
             dtime=[datetime.strptime(i.replace('Z','000'),dateFormat) for i in data_ch[i]['UTCtimestamp']]
-            TimeTag2 = [Utilities.datetime2TimeTag2(i) for i in dtime]
-            DateTag = [Utilities.datetime2DateTag(i) for i in dtime]
+            TimeTag2 = [dating.datetime2TimeTag2(i) for i in dtime]
+            DateTag = [dating.datetime2DateTag(i) for i in dtime]
             #print(TimeTag2)
 
             gp.addDataset("DATETAG")
@@ -217,17 +211,15 @@ class ProcessL1aDALEC:
 
             # Correct for UTC offset
         try:
-            root  = Utilities.rootAddDateTime(root)
+            root  = dating.rootAddDateTime(root)
         except AttributeError as err:
-            msg = f"ProcessL1a.processL1a: Cannot add datetime to a group dataset: {err}. Aborting."
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f"ProcessL1a.processL1a: Cannot add datetime to a group dataset: {err}. Aborting.")
             return None
 
         # Adjust to UTC if necessary
         if ConfigFile.settings["fL1aUTCOffset"] != 0:
             # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
-            root = Utilities.SASUTCOffset(root)
+            root = dating.SASUTCOffset(root)
 
         # DATETIME is not supported in HDF5; remove
         for gp in root.groups:

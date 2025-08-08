@@ -3,8 +3,12 @@ import numpy as np
 import scipy as sp
 
 from Source.MainConfig import MainConfig
-from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
+import Source.utils.loggingHCP as logging
+import Source.utils.dating as dating
+import Source.utils.filtering as filtering
+import Source.utils.comparing as comparing
+import Source.utils.plotting as plotting
 
 
 class ProcessL1bqc:
@@ -60,24 +64,24 @@ class ProcessL1bqc:
         if group.id == 'IRRADIANCE':
             Data = group.getDataset("ES")
             timeStamp = group.getDataset("ES").data["Datetime"]
-            badTimes = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
+            badTimes = plotting.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
                 filterFactor=ConfigFile.settings["fL1bqcSpecFilterEs"], rType='Es')
             msg = f'{len(np.unique(badTimes))/len(timeStamp)*100:.1f}% of Es data flagged'
-            Utilities.writeLogFileAndPrint(msg)
+            logging.writeLogFileAndPrint(msg)
         else:
             Data = group.getDataset("LI")
             timeStamp = group.getDataset("LI").data["Datetime"]
-            badTimes1 = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
+            badTimes1 = plotting.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
                 filterFactor=ConfigFile.settings["fL1bqcSpecFilterLi"], rType='Li')
             msg = f'{len(np.unique(badTimes1))/len(timeStamp)*100:.1f}% of Li data flagged'
-            Utilities.writeLogFileAndPrint(msg)
+            logging.writeLogFileAndPrint(msg)
 
             Data = group.getDataset("LT")
             timeStamp = group.getDataset("LT").data["Datetime"]
-            badTimes2 = Utilities.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
+            badTimes2 = plotting.specFilter(inFilePath, Data, timeStamp, station, filterRange=fRange,\
                 filterFactor=ConfigFile.settings["fL1bqcSpecFilterLt"], rType='Lt')
             msg = f'{len(np.unique(badTimes2))/len(timeStamp)*100:.1f}% of Lt data flagged'
-            Utilities.writeLogFileAndPrint(msg)
+            logging.writeLogFileAndPrint(msg)
 
             badTimes = np.append(badTimes1,badTimes2, axis=0)
 
@@ -118,7 +122,7 @@ class ProcessL1bqc:
                 i += 1
                 if start == -1:
                     msg =f'Bad Lt(UV) < Lt(NIR): {np.nanmean(ltUVA)}, {np.nanmean(ltNIR)}'
-                    Utilities.writeLogFileAndPrint(msg,False)
+                    logging.writeLogFileAndPrint(msg,False)
                     start = index
                 stop = index
                 if badTimes is None:
@@ -126,20 +130,20 @@ class ProcessL1bqc:
             else:
                 if start != -1:
                     msg = f'Passed. Lt(UV) >= Lt(NIR): {np.nanmean(ltUVA)}, {np.nanmean(ltNIR)}'
-                    Utilities.writeLogFileAndPrint(msg,False)
+                    logging.writeLogFileAndPrint(msg,False)
                     startstop = [timeStamp[start],timeStamp[stop]]
                     msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
-                    Utilities.writeLogFileAndPrint(msg,False)
+                    logging.writeLogFileAndPrint(msg,False)
                     badTimes.append(startstop)
                     start = -1
             end_index = index
         msg = f'Percentage of data out of Lt limits: {round(100*i/len(timeStamp))} %'
-        Utilities.writeLogFileAndPrint(msg)
+        logging.writeLogFileAndPrint(msg)
 
         if start != -1 and stop == end_index: # Records from a mid-point to the end are bad
             startstop = [timeStamp[start],timeStamp[stop]]
             msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
-            Utilities.writeLogFileAndPrint(msg,False)
+            logging.writeLogFileAndPrint(msg,False)
             if badTimes is None: # only one set of records
                 badTimes = [startstop]
             else:
@@ -235,7 +239,7 @@ class ProcessL1bqc:
         badTimes = np.unique(badTimes)
         badTimes = np.rot90(np.matlib.repmat(badTimes,2,1), 3) # Duplicates each element to a list of two elements in a list
         msg = f'{len(np.unique(badTimes))/len(esTime)*100:.1f}% of spectra flagged (not filtered)'
-        Utilities.writeLogFileAndPrint(msg)
+        logging.writeLogFileAndPrint(msg)
 
         # Restore timestamps to columns (since it's not going to filterData, where it otherwise happens)
         esData.datasetToColumns()
@@ -422,7 +426,7 @@ class ProcessL1bqc:
         # At this stage, all datasets in all groups of node have Timetag2
         #     and Datetag incorporated into data arrays. Calculate and add
         #     Datetime to each data array.
-        Utilities.rootAddDateTimeCol(node)
+        dating.rootAddDateTimeCol(node)
 
 
         #################################################################################
@@ -434,48 +438,48 @@ class ProcessL1bqc:
         # Lt Quality Filtering; anomalous elevation in the NIR
         if ConfigFile.settings["bL1bqcLtUVNIR"]:
             msg = "Applying Lt(NIR)>Lt(UV) quality filtering to eliminate spectra."
-            Utilities.writeLogFileAndPrint(msg)
+            logging.writeLogFileAndPrint(msg)
             # This is not well optimized for large files...
             badTimes, dateTime = ProcessL1bqc.ltQuality(sasGroup)
             if badTimes is False:
                 return False
 
             if badTimes is not None:
-                badTimes = Utilities.uniquePairs(badTimes)
-                badTimes = Utilities.catConsecutiveBadTimes(badTimes, dateTime)
+                badTimes = comparing.uniquePairs(badTimes)
+                badTimes = dating.catConsecutiveBadTimes(badTimes, dateTime)
                 print('Removing records... Can be slow for large files')
-                check = Utilities.filterData(referenceGroup, badTimes)
+                check = filtering.filterData(referenceGroup, badTimes)
                 # check is now fraction removed
                 #   I.e., if >99% of the Es spectra from this entire file were remove, abort this file
                 if check > 0.99:
                     msg = "Too few spectra remaining. Abort."
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     return False
-                Utilities.filterData(sasGroup, badTimes)
-                Utilities.filterData(ancGroup, badTimes)
+                filtering.filterData(sasGroup, badTimes)
+                filtering.filterData(ancGroup, badTimes)
 
                 # Filter L1AQC data for L1BQC criteria. badTimes start/stop
                 # are used to bracket the same spectral collections, though it
                 # will involve a difference number/percentage of the datasets.
                 if ConfigFile.settings['SensorType'].lower() == 'seabird':
                     check = []
-                    check.append(Utilities.filterData(esDarkGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(esLightGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(liDarkGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(liLightGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(ltDarkGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(ltLightGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(esDarkGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(esLightGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(liDarkGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(liLightGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(ltDarkGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(ltLightGroup,badTimes,'L1AQC'))
                     if any(np.array(check) > 0.99):
                         msg = "Too few spectra remaining. Abort."
-                        Utilities.writeLogFileAndPrint(msg)
+                        logging.writeLogFileAndPrint(msg)
                         return False
                 elif ConfigFile.settings['SensorType'].lower() == 'trios' or  ConfigFile.settings['SensorType'].lower() == 'sorad':
-                    Utilities.filterData(esGroup,badTimes,'L1AQC')
-                    Utilities.filterData(liGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
+                    filtering.filterData(esGroup,badTimes,'L1AQC')
+                    filtering.filterData(liGroup,badTimes,'L1AQC')
+                    filtering.filterData(ltGroup,badTimes,'L1AQC')
 
                 if sixSGroup is not None:
-                    Utilities.filterData(sixSGroup,badTimes)
+                    filtering.filterData(sixSGroup,badTimes)
 
         # Filter low SZAs and high winds after interpolating model/ancillary data
         maxWind = float(ConfigFile.settings["fL1bqcMaxWind"])
@@ -492,7 +496,7 @@ class ProcessL1bqc:
                 i += 1
                 if start == -1:
                     msg =f'High Wind: {round(wind[index])}'
-                    Utilities.writeLogFileAndPrint(msg,False)
+                    logging.writeLogFileAndPrint(msg,False)
                     start = index
                 stop = index
                 if badTimes is None:
@@ -501,22 +505,22 @@ class ProcessL1bqc:
                 if start != -1:
                     msg = f'Passed. Wind: {round(wind[index])}'
                     print(msg)
-                    Utilities.writeLogFileAndPrint(msg,False)
+                    logging.writeLogFileAndPrint(msg,False)
                     startstop = [timeStamp[start],timeStamp[stop]]
                     msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
                     # print(msg)
-                    Utilities.writeLogFileAndPrint(msg,False)
+                    logging.writeLogFileAndPrint(msg,False)
                     badTimes.append(startstop)
                     start = -1
             end_index = index
         msg = f'Percentage of data out of Wind limits: {round(100*i/len(timeStamp))} %'
-        Utilities.writeLogFileAndPrint(msg)
+        logging.writeLogFileAndPrint(msg)
 
         if start != -1 and stop == end_index: # Records from a mid-point to the end are bad
             startstop = [timeStamp[start],timeStamp[stop]]
             msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
             # print(msg)
-            Utilities.writeLogFileAndPrint(msg,False)
+            logging.writeLogFileAndPrint(msg,False)
             if badTimes is None: # only one set of records
                 badTimes = [startstop]
             else:
@@ -526,35 +530,35 @@ class ProcessL1bqc:
             return False
 
         if badTimes is not None and len(badTimes) != 0:
-            badTimes = Utilities.uniquePairs(badTimes)
-            badTimes = Utilities.catConsecutiveBadTimes(badTimes, timeStamp)
+            badTimes = comparing.uniquePairs(badTimes)
+            badTimes = dating.catConsecutiveBadTimes(badTimes, timeStamp)
             print('Removing records...')
-            check = Utilities.filterData(referenceGroup, badTimes)
+            check = filtering.filterData(referenceGroup, badTimes)
             if check > 0.99:
                 msg = "Too few spectra remaining. Abort."
-                Utilities.writeLogFileAndPrint(msg)
+                logging.writeLogFileAndPrint(msg)
                 return False
-            Utilities.filterData(sasGroup, badTimes)
-            Utilities.filterData(ancGroup, badTimes)
+            filtering.filterData(sasGroup, badTimes)
+            filtering.filterData(ancGroup, badTimes)
             # Filter L1AQC data for L1BQC criteria
             if ConfigFile.settings['SensorType'].lower() == 'seabird':
                 check = []
-                check.append(Utilities.filterData(esDarkGroup,badTimes,'L1AQC'))
-                check.append(Utilities.filterData(esLightGroup,badTimes,'L1AQC'))
-                check.append(Utilities.filterData(liDarkGroup,badTimes,'L1AQC'))
-                check.append(Utilities.filterData(liLightGroup,badTimes,'L1AQC'))
-                check.append(Utilities.filterData(ltDarkGroup,badTimes,'L1AQC'))
-                check.append(Utilities.filterData(ltLightGroup,badTimes,'L1AQC'))
+                check.append(filtering.filterData(esDarkGroup,badTimes,'L1AQC'))
+                check.append(filtering.filterData(esLightGroup,badTimes,'L1AQC'))
+                check.append(filtering.filterData(liDarkGroup,badTimes,'L1AQC'))
+                check.append(filtering.filterData(liLightGroup,badTimes,'L1AQC'))
+                check.append(filtering.filterData(ltDarkGroup,badTimes,'L1AQC'))
+                check.append(filtering.filterData(ltLightGroup,badTimes,'L1AQC'))
                 if any(np.array(check) > 0.99):
                     msg = "Too few spectra remaining. Abort."
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     return False
             elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
-                Utilities.filterData(esGroup,badTimes,'L1AQC')
-                Utilities.filterData(liGroup,badTimes,'L1AQC')
-                Utilities.filterData(ltGroup,badTimes,'L1AQC')
+                filtering.filterData(esGroup,badTimes,'L1AQC')
+                filtering.filterData(liGroup,badTimes,'L1AQC')
+                filtering.filterData(ltGroup,badTimes,'L1AQC')
             if sixSGroup is not None:
-                Utilities.filterData(sixSGroup,badTimes)
+                filtering.filterData(sixSGroup,badTimes)
 
 
         # Filter SZAs
@@ -575,7 +579,7 @@ class ProcessL1bqc:
                 i += 1
                 if start == -1:
                     msg =f'Out-of-bounds SZA. SZA: {round(sza)}'
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     start = index
                 stop = index
                 if badTimes is None:
@@ -583,21 +587,21 @@ class ProcessL1bqc:
             else:
                 if start != -1:
                     msg = f'Passed. SZA: {round(sza)}'
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     startstop = [timeStamp[start],timeStamp[stop]]
                     msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
-                    Utilities.writeLogFileAndPrint(msg,False)
+                    logging.writeLogFileAndPrint(msg,False)
                     badTimes.append(startstop)
                     start = -1
             end_index = index
         msg = f'Percentage of data out of SZA limits: {round(100*i/len(timeStamp))} %'
-        Utilities.writeLogFileAndPrint(msg)
+        logging.writeLogFileAndPrint(msg)
 
         if start != -1 and stop == end_index: # Records from a mid-point to the end are bad
             startstop = [timeStamp[start],timeStamp[stop]]
             msg = f'   Flag data from TT2: {startstop[0]} to {startstop[1]}'
             # print(msg)
-            Utilities.writeLogFileAndPrint(msg,False)
+            logging.writeLogFileAndPrint(msg,False)
             if badTimes is None: # only one set of records
                 badTimes = [startstop]
             else:
@@ -608,43 +612,43 @@ class ProcessL1bqc:
 
 
         if badTimes is not None and len(badTimes) != 0:
-            badTimes = Utilities.uniquePairs(badTimes)
-            badTimes = Utilities.catConsecutiveBadTimes(badTimes, timeStamp)
+            badTimes = comparing.uniquePairs(badTimes)
+            badTimes = dating.catConsecutiveBadTimes(badTimes, timeStamp)
             print('Removing records...')
-            check = Utilities.filterData(referenceGroup, badTimes)
+            check = filtering.filterData(referenceGroup, badTimes)
             if check > 0.99:
                 msg = "Too few spectra remaining. Abort."
                 print(msg)
-                Utilities.writeLogFileAndPrint(msg)
+                logging.writeLogFileAndPrint(msg)
                 return False
-            Utilities.filterData(sasGroup, badTimes)
-            Utilities.filterData(ancGroup, badTimes)
+            filtering.filterData(sasGroup, badTimes)
+            filtering.filterData(ancGroup, badTimes)
             # Filter L1AQC data for L1BQC criteria
             if ConfigFile.settings['SensorType'].lower() == 'seabird':
                 check = []
-                check.append(Utilities.filterData(esDarkGroup,badTimes,'L1AQC'))
-                check.append(Utilities.filterData(esLightGroup,badTimes,'L1AQC'))
-                check.append(Utilities.filterData(liDarkGroup,badTimes,'L1AQC'))
-                check.append(Utilities.filterData(liLightGroup,badTimes,'L1AQC'))
-                check.append(Utilities.filterData(ltDarkGroup,badTimes,'L1AQC'))
-                check.append(Utilities.filterData(ltLightGroup,badTimes,'L1AQC'))
+                check.append(filtering.filterData(esDarkGroup,badTimes,'L1AQC'))
+                check.append(filtering.filterData(esLightGroup,badTimes,'L1AQC'))
+                check.append(filtering.filterData(liDarkGroup,badTimes,'L1AQC'))
+                check.append(filtering.filterData(liLightGroup,badTimes,'L1AQC'))
+                check.append(filtering.filterData(ltDarkGroup,badTimes,'L1AQC'))
+                check.append(filtering.filterData(ltLightGroup,badTimes,'L1AQC'))
                 if any(np.array(check) > 0.99):
                     msg = "Too few spectra remaining. Abort."
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     return False
             elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
-                Utilities.filterData(esGroup,badTimes,'L1AQC')
-                Utilities.filterData(liGroup,badTimes,'L1AQC')
-                Utilities.filterData(ltGroup,badTimes,'L1AQC')
+                filtering.filterData(esGroup,badTimes,'L1AQC')
+                filtering.filterData(liGroup,badTimes,'L1AQC')
+                filtering.filterData(ltGroup,badTimes,'L1AQC')
             if sixSGroup is not None:
-                Utilities.filterData(sixSGroup,badTimes)
+                filtering.filterData(sixSGroup,badTimes)
 
        # Spectral Outlier Filter
         enableSpecQualityCheck = ConfigFile.settings['bL1bqcEnableSpecQualityCheck']
         if enableSpecQualityCheck:
             badTimes = None
             msg = "Applying spectral filtering to eliminate noisy spectra."
-            Utilities.writeLogFileAndPrint(msg)
+            logging.writeLogFileAndPrint(msg)
             inFilePath = node.attributes['In_Filepath']
             badTimes1,_ = ProcessL1bqc.specQualityCheck(referenceGroup, inFilePath)
             badTimes2,timeStamp = ProcessL1bqc.specQualityCheck(sasGroup, inFilePath)
@@ -658,54 +662,54 @@ class ProcessL1bqc:
 
             if badTimes is not None:
                 # These contain many consecutive single-timestamp records that need to be concatonated.
-                badTimes = Utilities.uniquePairs(badTimes)
-                badTimes = Utilities.catConsecutiveBadTimes(badTimes, timeStamp.tolist())
+                badTimes = comparing.uniquePairs(badTimes)
+                badTimes = dating.catConsecutiveBadTimes(badTimes, timeStamp.tolist())
                 msg = "Removing spectra from combined flags."
-                Utilities.writeLogFileAndPrint(msg)
-                check = Utilities.filterData(referenceGroup, badTimes)
+                logging.writeLogFileAndPrint(msg)
+                check = filtering.filterData(referenceGroup, badTimes)
                 if check > 0.99:
                     msg = "Too few spectra remaining. Abort."
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     return False
-                check = Utilities.filterData(sasGroup, badTimes)
+                check = filtering.filterData(sasGroup, badTimes)
                 if check > 0.99:
                     msg = "Too few spectra remaining. Abort."
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     return False
-                check = Utilities.filterData(ancGroup, badTimes)
+                check = filtering.filterData(ancGroup, badTimes)
                 if check > 0.99:
                     msg = "Too few spectra remaining. Abort."
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     return False
 
                 if sixSGroup is not None:
-                    Utilities.filterData(sixSGroup,badTimes)
+                    filtering.filterData(sixSGroup,badTimes)
 
                 # Filter L1AQC data for L1BQC criteria
                 if ConfigFile.settings['SensorType'].lower() == 'seabird':
                     check = []
-                    check.append(Utilities.filterData(esDarkGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(esLightGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(liDarkGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(liLightGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(ltDarkGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(ltLightGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(esDarkGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(esLightGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(liDarkGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(liLightGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(ltDarkGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(ltLightGroup,badTimes,'L1AQC'))
                     if any(np.array(check) > 0.99):
                         msg = "Too few spectra remaining. Abort."
-                        Utilities.writeLogFileAndPrint(msg)
+                        logging.writeLogFileAndPrint(msg)
                         return False
                 elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
                     
-                    Utilities.filterData(esGroup,badTimes,'L1AQC')
-                    Utilities.filterData(liGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
+                    filtering.filterData(esGroup,badTimes,'L1AQC')
+                    filtering.filterData(liGroup,badTimes,'L1AQC')
+                    filtering.filterData(ltGroup,badTimes,'L1AQC')
 
         # Next apply the Meteorological FLAGGING prior to slicing
         # esData = referenceGroup.getDataset("ES")
         if enableMetQualityCheck:
             # msg = "Applying meteorological filtering to eliminate spectra."
             msg = "Applying meteorological flags. Met flags are NOT used to eliminate spectra."
-            Utilities.writeLogFileAndPrint(msg)
+            logging.writeLogFileAndPrint(msg)
             badTimes = ProcessL1bqc.metQualityCheck(referenceGroup, sasGroup, sixSGroup, ancGroup)
 
         # NOTE: This is not finalized and needs a ConfigFile.setting #########################################
@@ -728,46 +732,46 @@ class ProcessL1bqc:
             # msg = f'{len(np.unique(badTimes))/len(AncDatetime)*100:.1f}% of spectra flagged'
 
             if badTimes is not None:
-                badTimes = Utilities.uniquePairs(badTimes)
-                badTimes = Utilities.catConsecutiveBadTimes(badTimes, dateTime)
+                badTimes = comparing.uniquePairs(badTimes)
+                badTimes = dating.catConsecutiveBadTimes(badTimes, dateTime)
                 msg = "Removing spectra from Met flags. ######################### Hard-coded override for Flag3"
-                Utilities.writeLogFileAndPrint(msg)
-                check = Utilities.filterData(referenceGroup, badTimes)
+                logging.writeLogFileAndPrint(msg)
+                check = filtering.filterData(referenceGroup, badTimes)
                 if check > 0.99:
                     msg = "Too few spectra remaining. Abort."
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     return False
-                check = Utilities.filterData(sasGroup, badTimes)
+                check = filtering.filterData(sasGroup, badTimes)
                 if check > 0.99:
                     msg = "Too few spectra remaining. Abort."
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     return False
-                check = Utilities.filterData(ancGroup, badTimes)
+                check = filtering.filterData(ancGroup, badTimes)
                 if check > 0.99:
                     msg = "Too few spectra remaining. Abort."
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     return False
 
                 if sixSGroup is not None:
-                    Utilities.filterData(sixSGroup,badTimes)
+                    filtering.filterData(sixSGroup,badTimes)
 
                 # Filter L1AQC data for L1BQC criteria
                 if ConfigFile.settings['SensorType'].lower() == 'seabird':
                     check = []
-                    check.append(Utilities.filterData(esDarkGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(esLightGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(liDarkGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(liLightGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(ltDarkGroup,badTimes,'L1AQC'))
-                    check.append(Utilities.filterData(ltLightGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(esDarkGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(esLightGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(liDarkGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(liLightGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(ltDarkGroup,badTimes,'L1AQC'))
+                    check.append(filtering.filterData(ltLightGroup,badTimes,'L1AQC'))
                     if any(np.array(check) > 0.99):
                         msg = "Too few spectra remaining. Abort."
-                        Utilities.writeLogFileAndPrint(msg)
+                        logging.writeLogFileAndPrint(msg)
                         return False
                 elif ConfigFile.settings['SensorType'].lower() == 'trios' or ConfigFile.settings['SensorType'].lower() == 'sorad':
-                    Utilities.filterData(esGroup,badTimes,'L1AQC')
-                    Utilities.filterData(liGroup,badTimes,'L1AQC')
-                    Utilities.filterData(ltGroup,badTimes,'L1AQC')
+                    filtering.filterData(esGroup,badTimes,'L1AQC')
+                    filtering.filterData(liGroup,badTimes,'L1AQC')
+                    filtering.filterData(ltGroup,badTimes,'L1AQC')
 
         return True
 
@@ -950,7 +954,7 @@ class ProcessL1bqc:
         # Check to insure at least some data survived quality checks
         if node.getGroup("RADIANCE").getDataset("LT").data is None:
             msg = "All data appear to have been eliminated from the file. Aborting."
-            Utilities.writeLogFileAndPrint(msg)
+            logging.writeLogFileAndPrint(msg)
             return None
 
         # Now strip datetimes from all datasets

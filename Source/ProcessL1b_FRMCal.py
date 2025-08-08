@@ -1,18 +1,18 @@
 ''' L1AQC to L1B for Full-FRM or Class-based '''
-import logging
+import logging # Is this necessary?
 import os
+import concurrent.futures
 from datetime import datetime as dt
 import numpy as np
 import pandas as pd
 import pytz
 from scipy import interpolate
-import concurrent.futures
 
 from j6s import SixS
 
 # internal files
 from Source.ConfigFile import ConfigFile
-from Source.Utilities import Utilities
+import Source.utils.loggingHCP as loggingHCP 
 
 class ProcessL1b_FRMCal:
     ''' L1AQC to L1B for Full-FRM or Class-based '''
@@ -428,26 +428,18 @@ class ProcessL1b_FRMCal:
         now = dt.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
-        msg = f"ProcessL1b_FactoryCal.processL1b: {timestr}"
-        print(msg)
-        Utilities.writeLogFile(msg)
+        loggingHCP.writeLogFileAndPrint(f"ProcessL1b_FactoryCal.processL1b: {timestr}")
 
-        msg = "Applying factory calibrations."
-        print(msg)
-        Utilities.writeLogFile(msg)
+        loggingHCP.writeLogFileAndPrint("Applying factory calibrations.")
 
         for gp in node.groups:
             if 'L1AQC' not in gp.id:
-                msg = f'  Group: {gp.id}'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                loggingHCP.writeLogFileAndPrint(f'  Group: {gp.id}')
                 if "CalFileName" in gp.attributes:
                     if gp.attributes["CalFileName"] != 'ANCILLARY':  # GPS constructed from Ancillary data will cause bug here
                         cf = calibrationMap[gp.attributes["CalFileName"]]
                         #print(gp.id, gp.attributes)
-                        msg = f'    File: {cf.id}'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
+                        loggingHCP.writeLogFileAndPrint(f'    File: {cf.id}')
 
                         if esUnits == None:
                             esUnits = cf.getUnits("ES")

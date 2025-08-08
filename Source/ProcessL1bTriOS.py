@@ -9,10 +9,11 @@ from Source.ConfigFile import ConfigFile
 from Source.ProcessL1b import ProcessL1b
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
-from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
 from Source import PACKAGE_DIR as CODE_HOME
+import Source.utils.loggingHCP as logging
+import Source.utils.dating as dating
 
 
 class ProcessL1bTriOS:
@@ -321,7 +322,7 @@ class ProcessL1bTriOS:
         elif ConfigFile.settings["fL1bCal"] == 3:
             node.attributes['CAL_TYPE'] = 'FRM-Full'
 
-        Utilities.writeLogFileAndPrint(f"ProcessL1bTriOS.processL1b: {timestr}")
+        logging.writeLogFileAndPrint(f"ProcessL1bTriOS.processL1b: {timestr}")
 
         # Retain L1BQC data for L2 instrument uncertainty analysis
         for gp in node.groups:
@@ -337,22 +338,22 @@ class ProcessL1bTriOS:
                         newGroup.datasets[ds].datasetToColumns()
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
-        node  = Utilities.rootAddDateTime(node)
+        node  = dating.rootAddDateTime(node)
 
         # Interpolate only the Ancillary group, and then fold in model data
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
-            Utilities.writeLogFileAndPrint('Error interpolating ancillary data')
+            logging.writeLogFileAndPrint('Error interpolating ancillary data')
             return None
 
         # Need to fill in with model data here. This had previously been run on the GPS group, but now shifted to Ancillary group
         ancGroup = node.getGroup("ANCILLARY_METADATA")
         # Retrieve MERRA2 model ancillary data
         if ConfigFile.settings["bL1bGetAnc"] ==1:
-            Utilities.writeLogFileAndPrint('MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...')
+            logging.writeLogFileAndPrint('MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...')
             modRoot = GetAnc.getAnc(ancGroup)
         # Retrieve ECMWF model ancillary data
         elif ConfigFile.settings["bL1bGetAnc"] == 2:
-            Utilities.writeLogFileAndPrint('ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...')
+            logging.writeLogFileAndPrint('ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...')
             modRoot = GetAnc_ecmwf.getAnc_ecmwf(ancGroup)
         else:
             modRoot = None
@@ -392,7 +393,7 @@ class ProcessL1bTriOS:
             print('RADCAL:', radcal_dir)
             node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir)
             if node is None:
-                Utilities.writeLogFileAndPrint('Error running class based uncertainties.')
+                logging.writeLogFileAndPrint('Error running class based uncertainties.')
                 return None
 
         # Or add Full characterization files (RAW_UNCERTAINTIES)
@@ -400,7 +401,7 @@ class ProcessL1bTriOS:
             print("Sensor-Specific - uncertainty and corrections computed from complete FidRadDB files")
             node = ProcessL1b.read_unc_coefficient_frm(node, classbased_dir)
             if node is None:
-                Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
+                logging.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
                 return None
 
         if ConfigFile.settings["fL1bCal"] == 1 or ConfigFile.settings["fL1bCal"] == 2:
@@ -461,15 +462,15 @@ class ProcessL1bTriOS:
             sensortype = ConfigFile.settings['CalibrationFiles'][instrument]['frameType']
             enabled = ConfigFile.settings['CalibrationFiles'][instrument]['enabled']
             if enabled:
-                Utilities.writeLogFileAndPrint(f'Dark Correction: {instrument_number} - {sensortype}')
+                logging.writeLogFileAndPrint(f'Dark Correction: {instrument_number} - {sensortype}')
 
                 if ConfigFile.settings["fL1bCal"] <= 2:
                     if not ProcessL1bTriOS.processDarkCorrection(node, sensortype, stats):
-                        Utilities.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}')
+                        logging.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection: {instrument_number} - {sensortype}')
                         return None
                 elif ConfigFile.settings['fL1bCal'] == 3:
                     if not ProcessL1bTriOS.processDarkCorrection_FRM(node, sensortype, stats):
-                        Utilities.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection_FRM: {instrument_number} - {sensortype}')
+                        logging.writeLogFileAndPrint(f'Error in ProcessL1bTriOS.processDarkCorrection_FRM: {instrument_number} - {sensortype}')
                         return None
 
         ## Interpolation

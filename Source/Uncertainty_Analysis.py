@@ -5,14 +5,14 @@ import numpy as np
 import punpy
 from Source.Weight_RSR import Weight_RSR
 
-# zhangWrapper
-import collections
+
 from Source import ZhangRho, PATH_TO_DATA
 from Source.RhoCorrections import RhoCorrections
+import Source.utils.loggingHCP as logging
 
 # M99 Rho
 from Source.HDFRoot import HDFRoot
-from Source.Utilities import Utilities
+import Source.utils.comparing as comparing
 
 # TODO remove this part and properly address the warning
 import warnings
@@ -390,17 +390,17 @@ class Propagate:
         if windSpeedMean > 15:
             windSpeedMean = 15
         if AOD > 0.5:
-            Utilities.writeLogFileAndPrint("Warning: AOD > 0.5. Adjusting to 0.5.")
+            logging.writeLogFileAndPrint("Warning: AOD > 0.5. Adjusting to 0.5.")
             AOD = 0.5
         if sza > 60:
-            Utilities.writeLogFileAndPrint("Warning: SZA > 60. Adjusting to 60.")
+            logging.writeLogFileAndPrint("Warning: SZA > 60. Adjusting to 60.")
             sza = 60
 
         from Source.RhoCorrections import InterpolationError
         try:
             zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
         except InterpolationError as err:
-            Utilities.writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
+            logging.writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
             zhang = Propagate.zhangWrapper(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
 
         return zhang
@@ -550,11 +550,11 @@ class Propagate:
         phiViews = np.arange(0, 180 + 1, 15)  # 0:15:180 # phiView is relAz
 
         # Find the nearest values in the LUT
-        wind_idx = Utilities.find_nearest(winds, windSpeedMean)
+        wind_idx = comparing.find_nearest(winds, windSpeedMean)
         wind = winds[wind_idx]
-        sza_idx = Utilities.find_nearest(szas, SZAMean)
+        sza_idx = comparing.find_nearest(szas, SZAMean)
         sza = szas[sza_idx]
-        relAz_idx = Utilities.find_nearest(phiViews, relAzMean)
+        relAz_idx = comparing.find_nearest(phiViews, relAzMean)
         relAz = phiViews[relAz_idx]
 
         # load in the LUT HDF file

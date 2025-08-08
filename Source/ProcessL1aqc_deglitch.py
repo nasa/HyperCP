@@ -5,7 +5,11 @@ import pandas as pd
 
 from Source.HDFRoot import HDFRoot
 from Source.ConfigFile import ConfigFile
-from Source.Utilities import Utilities
+import Source.utils.loggingHCP as logging
+import Source.utils.plotting as plotting
+import Source.utils.averaging as averaging
+import Source.utils.filtering as filtering
+import Source.utils.dating as dating
 
 class ProcessL1aqc_deglitch:
     '''
@@ -33,22 +37,22 @@ class ProcessL1aqc_deglitch:
         for key,timeSeries in columns.items():   # Loop over all wavebands
             if float(key) > minBand and float(key) < maxBand:
                 # Note: the moving average is not tolerant to 2 or fewer records
-                avg = Utilities.movingAverage(timeSeries, windowSize).tolist()
+                avg = averaging.movingAverage(timeSeries, windowSize).tolist()
                 residual = np.array(timeSeries) - np.array(avg)
                 stdData = np.std(residual)
 
                 # First pass
-                badIndex1 = Utilities.darkConvolution(timeSeries,avg,stdData,sigma)
+                badIndex1 = filtering.darkConvolution(timeSeries,avg,stdData,sigma)
 
                 # Second pass
                 timeSeries2 = np.array(timeSeries[:])
                 timeSeries2[badIndex1] = np.nan # BEWARE: NaNs introduced
                 timeSeries2 = timeSeries2.tolist()
-                avg2 = Utilities.movingAverage(timeSeries2, windowSize).tolist()
+                avg2 = averaging.movingAverage(timeSeries2, windowSize).tolist()
                 residual = np.array(timeSeries2) - np.array(avg2)
                 stdData = np.nanstd(residual)
 
-                badIndex2 = Utilities.darkConvolution(timeSeries2,avg2,stdData,sigma)
+                badIndex2 = filtering.darkConvolution(timeSeries2,avg2,stdData,sigma)
 
                 for i in range(len(badIndex)):
                     if badIndex1[i] is True or badIndex2[i] is True or badIndex[i] is True:
@@ -72,7 +76,7 @@ class ProcessL1aqc_deglitch:
         for key,timeSeries in columns.items():   # Loop over all wavebands
             if float(key) > minBand and float(key) < maxBand:
                 # Note: the moving average is not tolerant to 2 or fewer records
-                avg = Utilities.movingAverage(timeSeries, windowSize).tolist()
+                avg = averaging.movingAverage(timeSeries, windowSize).tolist()
                 residual = np.array(timeSeries) - np.array(avg)
 
                 # Calculate the variation in the distribution of the residual
@@ -87,13 +91,13 @@ class ProcessL1aqc_deglitch:
                 rolling_std = y.tolist()
 
                 # First pass
-                badIndex1 = Utilities.lightConvolution(timeSeries,avg,rolling_std,sigma)
+                badIndex1 = filtering.lightConvolution(timeSeries,avg,rolling_std,sigma)
 
                 # Second pass
                 timeSeries2 = np.array(timeSeries[:])
                 timeSeries2[badIndex1] = np.nan
                 timeSeries2 = timeSeries2.tolist()
-                avg2 = Utilities.movingAverage(timeSeries2, windowSize).tolist()
+                avg2 = averaging.movingAverage(timeSeries2, windowSize).tolist()
                 residual2 = np.array(timeSeries2) - np.array(avg2)
                 # Calculate the variation in the distribution of the residual
                 residualDf2 = pd.DataFrame(residual2)
@@ -107,7 +111,7 @@ class ProcessL1aqc_deglitch:
                 y[y > np.nanmedian(y)+3*np.nanstd(y)] = np.nanmedian(y)
                 rolling_std2 = y.tolist()
 
-                badIndex2 = Utilities.lightConvolution(timeSeries2,avg2,rolling_std2,sigma)
+                badIndex2 = filtering.lightConvolution(timeSeries2,avg2,rolling_std2,sigma)
 
                 for i in range(len(badIndex)):
                     if badIndex1[i] is True or badIndex2[i] is True or badIndex[i] is True:
@@ -118,7 +122,7 @@ class ProcessL1aqc_deglitch:
 
     @staticmethod
     def processDataDeglitching(node, sensorType):
-        Utilities.writeLogFileAndPrint(f'{sensorType}')
+        logging.writeLogFileAndPrint(f'{sensorType}')
 
         step = float(ConfigFile.settings["fL1aqcAnomalyStep"])
 
@@ -134,7 +138,7 @@ class ProcessL1aqc_deglitch:
                 continue
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 darkData = gp.getDataset(sensorType)
-                darkDateTime = Utilities.getDateTime(gp)
+                darkDateTime = dating.getDateTime(gp)
                 windowDark = int(ConfigFile.settings[f'fL1aqc{sensorType}WindowDark'])
                 sigmaDark = float(ConfigFile.settings[f'fL1aqc{sensorType}SigmaDark'])
                 minDark = None if ConfigFile.settings[f'fL1aqc{sensorType}MinDark']=='None' else ConfigFile.settings[f'fL1aqc{sensorType}MinDark']
@@ -142,7 +146,7 @@ class ProcessL1aqc_deglitch:
                 minMaxBandDark = ConfigFile.settings[f'fL1aqc{sensorType}MinMaxBandDark']
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
-                lightDateTime = Utilities.getDateTime(gp)
+                lightDateTime = dating.getDateTime(gp)
                 windowLight = int(ConfigFile.settings[f'fL1aqc{sensorType}WindowLight'])
                 sigmaLight = float(ConfigFile.settings[f'fL1aqc{sensorType}SigmaLight'])
                 minLight = None if ConfigFile.settings[f'fL1aqc{sensorType}MinLight']=='None' else ConfigFile.settings[f'fL1aqc{sensorType}MinLight']
@@ -159,13 +163,13 @@ class ProcessL1aqc_deglitch:
             if len(darkData.data) <= 2 or len(lightData.data) <= 5 or \
                 len(darkData.data) < windowDark or len(lightData.data) < windowLight:
 
-                Utilities.writeLogFileAndPrint(f'Error: Too few records to deglitch. Darks: {len(darkData.data)} Lights: {len(lightData.data)}')
+                logging.writeLogFileAndPrint(f'Error: Too few records to deglitch. Darks: {len(darkData.data)} Lights: {len(lightData.data)}')
                 return True # Sets the flag to true
 
         if darkData is None:
-            Utilities.writeLogFileAndPrint("Error: No dark data to deglitch")
+            logging.writeLogFileAndPrint("Error: No dark data to deglitch")
         else:
-            Utilities.writeLogFileAndPrint("Deglitching dark")
+            logging.writeLogFileAndPrint("Deglitching dark")
             lightDark = 'Dark'
 
             darkData.datasetToColumns()
@@ -186,7 +190,7 @@ class ProcessL1aqc_deglitch:
                 if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
                     # if index % step == 0:
                     radiometry1D = timeSeries[1]
-                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(\
+                    badIndex, badIndex2, badIndex3 = filtering.deglitchBand(\
                         band,radiometry1D, windowDark, sigmaDark, lightDark, minDark, maxDark,minMaxBandDark)
 
                     # for the plotting routine:
@@ -206,9 +210,7 @@ class ProcessL1aqc_deglitch:
             gIndex = np.any(np.array(globalBadIndex), 0)
             percentLoss = 100*(sum(gIndex)/len(gIndex))
             # badIndexDark = ProcessL1aqc.darkDataDeglitching(darkData, sensorType, windowDark, sigmaDark)
-            msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)')
             badIndexDark = gIndex
 
             # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
@@ -217,17 +219,13 @@ class ProcessL1aqc_deglitch:
                 band = float(timeSeries[0])
                 if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
                     if index % step == 0:
-                        Utilities.saveDeglitchPlots(L1AfileName,timeSeries,dateTime,sensorType,lightDark,windowDark,sigmaDark,globBad,globBad2,globBad3)
+                        plotting.saveDeglitchPlots(L1AfileName,timeSeries,dateTime,sensorType,lightDark,windowDark,sigmaDark,globBad,globBad2,globBad3)
                 index +=1
 
         if lightData is None:
-            msg = "Error: No light data to deglitch"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Error: No light data to deglitch")
         else:
-            msg = "Deglitching light"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Deglitching light")
 
             lightData.datasetToColumns()
             columns = lightData.columns
@@ -247,7 +245,7 @@ class ProcessL1aqc_deglitch:
                 band = float(timeSeries[0])
                 if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
                     radiometry1D = timeSeries[1]
-                    badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(\
+                    badIndex, badIndex2, badIndex3 = filtering.deglitchBand(\
                         band,radiometry1D, windowLight, sigmaLight, lightDark, minLight, maxLight,minMaxBandLight)
 
                     # For plotting:
@@ -268,9 +266,7 @@ class ProcessL1aqc_deglitch:
             # NOTE: if you similarly collapse globBads 1-3, you should get the same result as gIndex
             # NOTE: Confirmed that plotted AnomAnal deletions correspond to gIndex
 
-            msg = f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f'Data reduced by {sum(gIndex)} ({round(percentLoss)}%)')
             badIndexLight = gIndex
 
             # Now plot a selection of these USING UNIVERSALLY EXCLUDED INDEXES
@@ -279,7 +275,7 @@ class ProcessL1aqc_deglitch:
                 band = float(timeSeries[0])
                 if band > ConfigFile.minDeglitchBand and band < ConfigFile.maxDeglitchBand:
                     if index % step == 0:
-                        Utilities.saveDeglitchPlots(L1AfileName,timeSeries,dateTime,sensorType,lightDark,windowLight,sigmaLight,globBad,globBad2,globBad3)
+                        plotting.saveDeglitchPlots(L1AfileName,timeSeries,dateTime,sensorType,lightDark,windowLight,sigmaLight,globBad,globBad2,globBad3)
                 index +=1
 
         # Delete the glitchy rows of the datasets
@@ -341,7 +337,7 @@ class ProcessL1aqc_deglitch:
             root.attributes['L1AQC_DEGLITCH'] = 'OFF'
 
         msg = f"ProcessL1aqc.processL1aqc: {timestr}"
-        Utilities.writeLogFileAndPrint(msg)
+        logging.writeLogFileAndPrint(msg)
 
         if int(ConfigFile.settings["bL1aqcDeglitch"]) == 1:
             flagES = ProcessL1aqc_deglitch.processDataDeglitching(root, "ES")
@@ -350,7 +346,7 @@ class ProcessL1aqc_deglitch:
 
             if flagES or flagLI or flagLT:
                 msg = '***********Too few records in the file after deglitching to continue. Exiting.'
-                Utilities.writeLogFileAndPrint(msg)
+                logging.writeLogFileAndPrint(msg)
                 return None
 
         return root

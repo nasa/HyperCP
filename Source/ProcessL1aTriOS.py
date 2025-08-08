@@ -11,8 +11,9 @@ import tables
 from Source.MainConfig import MainConfig
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
-from Source.Utilities import Utilities
-import Source.utils.files as files
+import Source.utils.filing as filing
+import Source.utils.loggingHCP as logging
+import Source.utils.dating as dating
 
 
 class ProcessL1aTriOS:
@@ -75,7 +76,7 @@ class ProcessL1aTriOS:
                     print("  L0 filename should have a cast to identify triplet instrument")
                     print("  ending in 4 digits before S.mlb (light) or D.mlb for caps-on dark. ")
                     msg = 'PL1aTriOS raw filename not recognized'
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     return None,None
 
                 acq_name.append(a_name)
@@ -106,7 +107,7 @@ class ProcessL1aTriOS:
                 match = re.search(r"\dD$", a_name)
                 outFilePathDark = os.path.join(outFilePath+'/DARK')
                 if match is not None:
-                    Utilities.writeLogFileAndPrint(f'Caps-on dark file recognized {a_name}.')
+                    logging.writeLogFileAndPrint(f'Caps-on dark file recognized {a_name}.')
                     cod = True
                     root.attributes["FRAME_TYPE"] = 'caps-on dark'
                     if os.path.isdir(outFilePathDark) is False:
@@ -118,7 +119,7 @@ class ProcessL1aTriOS:
                     if "SAM_" in file:
                         serialNumber = file[file.index('SAM_')+4:file.index('SAM_')+8]
                     else:
-                        Utilities.writeLogFileAndPrint("ERROR : naming convention is not respected")
+                        logging.writeLogFileAndPrint("ERROR : naming convention is not respected")
                         serialNumber = None
 
                     start,stop = ProcessL1aTriOS.formatting_instrument(serialNumber,cal_path,file,root,configPath)
@@ -144,7 +145,7 @@ class ProcessL1aTriOS:
                     if (re.search(r'\d{4}[DSR]', file.split('/')[-1]) is not None) or (a_type == 'stationcast'):
                         new_name = str(start)+'_'+new_name
                 except IndexError as err:
-                    Utilities.writeLogFileAndPrint(f"Error in naming of Raw files {err}")
+                    logging.writeLogFileAndPrint(f"Error in naming of Raw files {err}")
                     return None, None
                     # new_name = file.split('/')[-1].split('.mlb')[0].split(f'SAM_{name}_Spectrum_RAW_')[1]
 
@@ -188,7 +189,7 @@ class ProcessL1aTriOS:
                                 if gpDark.datasets[ds].id in sensorIDS:
                                     DN = gpDark.datasets[ds].data[:].tolist()
                                     if len(DN) < minSpectra:
-                                        Utilities.writeLogFileAndPrint("Too few spectra for caps-on dark algorithm. Abort.")
+                                        logging.writeLogFileAndPrint("Too few spectra for caps-on dark algorithm. Abort.")
                                         return None, None
 
                             # Zibordi & Talone, in prep. (2025)
@@ -231,12 +232,12 @@ class ProcessL1aTriOS:
 
                 except Exception:
                     msg = 'Unable to write L1A file. It may be open in another program.'
-                    Utilities.errorWindow("File Error", msg)
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.errorWindow("File Error", msg)
+                    logging.writeLogFileAndPrint(msg)
                     return None, None
 
                 # Utilities.checkOutputFiles(outFFP[-1])
-                files.checkOutputFiles(outFFP[-1])
+                filing.checkOutputFiles(outFFP[-1])
 
             return root, outFFP
         else:
@@ -262,7 +263,7 @@ class ProcessL1aTriOS:
     # Function for reading and formatting .dat data file
     @staticmethod
     def read_dat(inputfile):
-        file_dat = open(inputfile,'r')
+        file_dat = open(inputfile,'r', encoding="utf-8")
         flag = 0
         index = 0
         for line in file_dat:
@@ -407,10 +408,8 @@ class ProcessL1aTriOS:
 
         # meta contains Datetime, PositionLat, PositionLon, and IntegrationTime
         if meta is None:
-            msg = "Error reading mlb file"
-            print(msg)
-            Utilities.writeLogFile(msg)
-            return None,None        
+            logging.writeLogFileAndPrint("Error reading mlb file")
+            return None,None
 
         ## if date is the first field "%yyy-mm-dd"
         #   This derives date/time from IDData, not Datetime column of .mlb file
@@ -509,9 +508,7 @@ class ProcessL1aTriOS:
         # Calibrations files
         metacal,cal = ProcessL1aTriOS.read_cal(cal_path + 'Cal_SAM_'+name+'.dat')
         if metacal is None:
-            msg = "Error reading calibration file"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Error reading calibration file")
             return None,None
         B1 = gp.addDataset('CAL_'+sensor)
         B1.columns["0"] = cal.values[:,1].astype(np.float64)
@@ -520,9 +517,7 @@ class ProcessL1aTriOS:
         ProcessL1aTriOS.get_attr(metacal,B1)
         metaback,back = ProcessL1aTriOS.read_cal(cal_path + 'Back_SAM_'+name+'.dat')
         if metacal is None:
-            msg = "Error reading calibration file"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Error reading calibration file")
             return None,None
         # C1 = gp.addDataset('BACK_'+sensor,data=back[[1,2]].astype(np.float64))
         C1 = gp.addDataset('BACK_'+sensor)
@@ -550,8 +545,8 @@ class ProcessL1aTriOS:
             dateTagArray = gp.datasets['DATETAG'].data
             timeTagArray = gp.datasets['TIMETAG2'].data
             for i, dateTag in enumerate(dateTagArray):
-                dt1 = Utilities.dateTagToDateTime(dateTag[0])
-                dateTime.append(Utilities.timeTag2ToDateTime(dt1,timeTagArray[i][0]))
+                dt1 = dating.dateTagToDateTime(dateTag[0])
+                dateTime.append(dating.timeTag2ToDateTime(dt1,timeTagArray[i][0]))
 
             for ds in gp.datasets:
 

@@ -10,6 +10,6 @@ def L2poc(Rrs443, Rrs555):
     a = 203.2
     b = -1.034
 
-    poc = a * (Rrs443/Rrs555)**b     
+    poc = a * (Rrs443/Rrs555)**b
 
     return poc

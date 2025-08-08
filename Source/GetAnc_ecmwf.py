@@ -1,21 +1,17 @@
+''' Retrieve ECMWF CAMS models '''
 import os
-import shutil
-# import stat
+import datetime
+import decimal
+
 import numpy as np
 import xarray as xr
-import pandas as pd
-# import math
-import datetime
-import configparser
-import decimal
 import cdsapi
 
-from Source import PATH_TO_DATA, PACKAGE_DIR
-# from Source.MainConfig import MainConfig
+from Source import PATH_TO_DATA
 from Source.HDFRoot import HDFRoot
-# from HDFGroup import HDFGroup
-from Source.Utilities import Utilities
 from Source.GetAnc_credentials import GetAnc_credentials
+import Source.utils.loggingHCP as logging
+import Source.utils.dating as dating
 
 class GetAnc_ecmwf:
 
@@ -93,7 +89,7 @@ class GetAnc_ecmwf:
                 print('CAMS dataset not available before 2015, skipping')
             else:
                 try:
-                 
+
                     c = cdsapi.Client(timeout=5, url=url, key=key)
                     c.retrieve(
                         'cams-global-atmospheric-composition-forecasts',
@@ -164,7 +160,7 @@ class GetAnc_ecmwf:
             CAMS_flag = True
         except:
             CAMS_flag = False
-            Utilities.writeLogFileAndPrint('CAMS data missing. Skipping...')
+            logging.writeLogFileAndPrint('CAMS data missing. Skipping...')
 
         if CAMS_flag:
             try:
@@ -176,13 +172,13 @@ class GetAnc_ecmwf:
                     ancillary[CAMS_variable]['long_name']  = var.long_name
                     ancillary[CAMS_variable]['source']     = 'CAMS (ECMWF). https://ads.atmosphere.copernicus.eu/cdsapp#!/dataset/cams-global-atmospheric-composition-forecasts?tab=overview'
             except:
-                Utilities.writeLogFileAndPrint('Problem processing CAMS data. Skipping...')
+                logging.writeLogFileAndPrint('Problem processing CAMS data. Skipping...')
 
         # Check for recent addition of 2m temp data
         if '2m_temperature' not in ancillary:
-            Utilities.writeLogFileAndPrint('2m_temperature data not found in CAMS. Try deleting and re-running:')
+            logging.writeLogFileAndPrint('2m_temperature data not found in CAMS. Try deleting and re-running:')
             print('###################################################')
-            Utilities.writeLogFileAndPrint(f'{pathOut}')
+            logging.writeLogFileAndPrint(f'{pathOut}')
             print('###################################################')
 
         return ancillary
@@ -205,8 +201,8 @@ class GetAnc_ecmwf:
 
         # Loop through the input group and extract model data for each element
         for index, dateTag in enumerate(latDate):
-            dateTagNew = Utilities.dateTagToDateTime(dateTag)
-            timeStamp = Utilities.timeTag2ToDateTime(dateTagNew,latTime[index])
+            dateTagNew = dating.dateTagToDateTime(dateTag)
+            timeStamp = dating.timeTag2ToDateTime(dateTagNew,latTime[index])
 
             ancillary = GetAnc_ecmwf.get_ancillary_main(lat[index], lon[index], timeStamp, ancPath)
 

@@ -1,17 +1,6 @@
 '''Process Raw (L0) data to L1A HDF5'''
-import collections
-import datetime as dt
-import os
-import numpy as np
 
 from Source.HDFRoot import HDFRoot
-from Source.HDFGroup import HDFGroup
-from Source.MainConfig import MainConfig
-from Source.Utilities import Utilities
-from Source.RawFileReader import RawFileReader
-from Source.ConfigFile import ConfigFile
-
-
 class ProcessL1aSoRad:
     '''Process L1A SoRad. 
     
@@ -23,7 +12,6 @@ class ProcessL1aSoRad:
     '''
     @staticmethod
     def processL1a(input_path, output_path, calibrationMap):
-       
         root = HDFRoot.readHDF5(input_path)
         print('Reading hdf file' + str(input_path))
 

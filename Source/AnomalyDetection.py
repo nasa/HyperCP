@@ -12,9 +12,15 @@ from Source.Controller import Controller
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
 from Source.HDFRoot import HDFRoot
-from Source.Utilities import Utilities
 from Source.FieldPhotos import FieldPhotos
 from Source.CalibrationFileReader import CalibrationFileReader
+import Source.utils.plotting as plotting
+import Source.utils.comparing as comparing
+import Source.utils.averaging as averaging
+import Source.utils.filing as filing
+import Source.utils.filtering as filtering
+import Source.utils.loggingHCP as logging
+import Source.utils.dating as dating
 
 class AnomAnalWindow(QtWidgets.QDialog):
     '''Anomaly Analysis supervised screening and deglitching GUI'''
@@ -50,7 +56,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         fp = os.path.join(PATH_TO_CONFIG, self.anomAnalFileName)
         if os.path.exists(fp):
             print(f'{self.anomAnalFileName} found. Loading params.')
-            self.params = Utilities.readAnomAnalFile(fp)
+            self.params = filing.readAnomAnalFile(fp)
         else:
             self.params = {}
 
@@ -448,7 +454,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             print(inFilePath[0])
             if "hdf" not in inFilePath[0] and "HDF" not in inFilePath[0]:
                 msg = "This does not appear to be an HDF file."
-                Utilities.errorWindow("File Error", msg)
+                logging.errorWindow("File Error", msg)
                 print(msg)
                 return
         except Exception as err:
@@ -458,7 +464,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         root = HDFRoot.readHDF5(inFilePath[0])
         if root.attributes["PROCESSING_LEVEL"] != "1a":
             msg = "This is not a Level 1A file."
-            Utilities.errorWindow("File Error", msg)
+            logging.errorWindow("File Error", msg)
             print(msg)
             return
 
@@ -477,7 +483,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
 
         if root is None:
             msg = "L1A file fails basic L1AQC."
-            Utilities.errorWindow("File Error", msg)
+            logging.errorWindow("File Error", msg)
             print(msg)
             return
         # Restore full ancillary data
@@ -485,7 +491,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         ConfigFile.settings['bL1aqcDeglitch'] = temp
 
 
-        Utilities.rootAddDateTime(root)
+        dating.rootAddDateTime(root)
 
         # self.fileName = os.path.basename(os.path.splitext(inFilePath[0])[0])
         self.fileName = fileName.replace(".hdf",'')
@@ -731,10 +737,10 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 continue
             if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                 darkData = gp.getDataset(sensorType)
-                darkDateTime = Utilities.getDateTime(gp)
+                darkDateTime = dating.getDateTime(gp)
             if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                 lightData = gp.getDataset(sensorType)
-                lightDateTime = Utilities.getDateTime(gp)
+                lightDateTime = dating.getDateTime(gp)
 
         # Deglitch and plot Dark from selected band
         if darkData is None:
@@ -754,7 +760,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
             self.waveBands = waveBands
             if not self.sliderWave:
                 self.sliderWave = float(self.slider.value())
-            whr = Utilities.find_nearest(self.waveBands, self.sliderWave)
+            whr = comparing.find_nearest(self.waveBands, self.sliderWave)
             self.waveBand = self.waveBands[whr]
             # print(self.waveBand)
 
@@ -805,7 +811,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 maxDark = None if self.MaxDarkLineEdit.text()=='None' else float(self.MaxDarkLineEdit.text())
                 MinMaxDarkBand = getattr(self,f'{self.sensor}MinMaxBandDark')
                 lightDark = 'Dark'
-                badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minDark, maxDark,MinMaxDarkBand)
+                badIndex, badIndex2, badIndex3 = filtering.deglitchBand(band,radiometry1D, window, sigma, lightDark, minDark, maxDark,MinMaxDarkBand)
                 globalBadIndex.append(badIndex)
                 globalBadIndex.append(badIndex2)
                 globalBadIndex.append(badIndex3)
@@ -833,7 +839,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                 maxLight = None if self.MaxLightLineEdit.text()=='None' else float(self.MaxLightLineEdit.text())
                 MinMaxLightBand = getattr(self,f'{self.sensor}MinMaxBandLight')
                 lightDark = 'Light'
-                badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minLight, maxLight,MinMaxLightBand)
+                badIndex, badIndex2, badIndex3 = filtering.deglitchBand(band,radiometry1D, window, sigma, lightDark, minLight, maxLight,MinMaxLightBand)
                 globalBadIndex.append(badIndex)
                 globalBadIndex.append(badIndex2)
                 globalBadIndex.append(badIndex3)
@@ -929,12 +935,12 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     continue
                 if gp.attributes["FrameType"] == "ShutterDark" and sensorType in gp.datasets:
                     darkData = gp.getDataset(sensorType)
-                    darkDateTime = Utilities.getDateTime(gp)
+                    darkDateTime = dating.getDateTime(gp)
                     # print(type(darkData))
                     # print(type(darkData.data))
                 if gp.attributes["FrameType"] == "ShutterLight" and sensorType in gp.datasets:
                     lightData = gp.getDataset(sensorType)
-                    lightDateTime = Utilities.getDateTime(gp)
+                    lightDateTime = dating.getDateTime(gp)
 
             if darkData is None:
                 print("Error: No dark data to deglitch")
@@ -962,7 +968,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     if band > self.minBand and band < self.maxBand:
                         # if index % step == 0:
                         radiometry1D = timeSeries[1]
-                        badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minDark, maxDark,minMaxDarkBand)
+                        badIndex, badIndex2, badIndex3 = filtering.deglitchBand(band,radiometry1D, window, sigma, lightDark, minDark, maxDark,minMaxDarkBand)
                         globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
                         globBad2[:] = (True if val2 else val1 for (val1,val2) in zip(globBad2,badIndex2))
                         globBad3[:] = (True if val2 else val1 for (val1,val2) in zip(globBad3,badIndex3))
@@ -975,7 +981,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     band = float(timeSeries[0])
                     if band > self.minBand and band < self.maxBand:
                         if index % step == 0:
-                            Utilities.saveDeglitchPlots(self.fileName,timeSeries,dateTime,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            plotting.saveDeglitchPlots(self.fileName,timeSeries,dateTime,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
                     index +=1
 
             if lightData is None:
@@ -1004,7 +1010,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     band = float(timeSeries[0])
                     if band > self.minBand and band < self.maxBand:
                         radiometry1D = timeSeries[1]
-                        badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(band,radiometry1D, window, sigma, lightDark, minLight, maxLight,minMaxLightBand)
+                        badIndex, badIndex2, badIndex3 = filtering.deglitchBand(band,radiometry1D, window, sigma, lightDark, minLight, maxLight,minMaxLightBand)
 
                         # For plotting:
                         globBad[:] = (True if val2 else val1 for (val1,val2) in zip(globBad,badIndex))
@@ -1029,7 +1035,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
                     if band > self.minBand and band < self.maxBand:
                         if index % step == 0:
                             # self.savePlots(self.fileName,plotdir,timeSeries,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
-                            Utilities.saveDeglitchPlots(self.fileName,timeSeries,dateTime,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
+                            plotting.saveDeglitchPlots(self.fileName,timeSeries,dateTime,sensorType,lightDark,window,sigma,globBad,globBad2,globBad3)
                     index +=1
 
                 print('Complete')
@@ -1045,7 +1051,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         # Jumpstart the logger:
         msg = "Process Single Level from Anomaly Analysis"
         os.environ["LOGFILE"] = fileBaseName + '_L1A_L1AQC.log'
-        Utilities.writeLogFile(msg,mode='w') # <<---- Logging initiated here
+        logging.writeLogFile(msg,mode='w') # <<---- Logging initiated here
 
         calFolder = os.path.splitext(ConfigFile.filename)[0] + "_Calibration"
         calPath = os.path.join(PATH_TO_CONFIG, calFolder)
@@ -1105,7 +1111,7 @@ class AnomAnalWindow(QtWidgets.QDialog):
         print(sensorType)
 
          # Set parameters in the local object from the GUI
-        whr = Utilities.find_nearest(self.waveBands, float(self.slider.value()))
+        whr = comparing.find_nearest(self.waveBands, float(self.slider.value()))
         self.waveBand = self.waveBands[whr]
         setattr(self,f'{self.sensor}MinMaxBandDark', self.waveBand)
         self.MinMaxDarkLabel.setText(str(self.waveBand) +' nm' )
@@ -1192,8 +1198,8 @@ class AnomAnalWindow(QtWidgets.QDialog):
             self.plotWidgetLight.showGrid(x=True, y=True)
             # self.plotWidgetLight.addLegend()
 
-        badIndex, badIndex2, badIndex3 = Utilities.deglitchBand(self.waveBand,radiometry1D, window, sigma, lightDark, minRad, maxRad,minMaxBand)
-        avg = Utilities.movingAverage(radiometry1D, window).tolist()
+        badIndex, badIndex2, badIndex3 = filtering.deglitchBand(self.waveBand,radiometry1D, window, sigma, lightDark, minRad, maxRad,minMaxBand)
+        avg = averaging.movingAverage(radiometry1D, window).tolist()
 
         # Convert to timestamp
         x = np.array([x.timestamp() for x in dateTime])
@@ -1217,7 +1223,6 @@ class AnomAnalWindow(QtWidgets.QDialog):
             ph1st.setData(x_anomaly , y_anomaly , symbolPen='r',symbol='x', name='Low-pass filter (1)')
             ph2nd.setData(x_anomaly2, y_anomaly2, symbolPen='m',symbol='+', name='Low-pass filter (2)')
             ph3rd.setData(x_anomaly3, y_anomaly3, symbolPen='c',symbol='o', symbolBrush=None, name='Threshold exceeded')
-
 
         except Exception:
             e = sys.exc_info()[0]

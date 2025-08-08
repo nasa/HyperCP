@@ -1,14 +1,12 @@
-
+'''# Reads SeaBASS ancillary data file and returns an HDFDataset'''
 import pytz
 
 from Source.HDFDataset import HDFDataset
 from Source.SB_support import readSB
-from Source.Utilities import Utilities
-
+import Source.utils.loggingHCP as logging
 
 class AncillaryReader:
-
-    # Reads SeaBASS ancillary data file and returns an HDFDataset
+    '''# Reads SeaBASS ancillary data file and returns an HDFDataset'''
     @staticmethod
     def readAncillary(fp):
         print("AncillaryReader.readAncillary: " + fp)
@@ -17,12 +15,12 @@ class AncillaryReader:
             print('This may take a moment on large SeaBASS files...')
             ancData=readSB(fp, no_warn=True)
         except IOError:
-            Utilities.writeLogFileAndPrint("Unable to read ancillary data file. Make sure it is in SeaBASS format.")
+            logging.writeLogFileAndPrint("Unable to read ancillary data file. Make sure it is in SeaBASS format.")
             return None
 
         # ancData = readSB(fp, no_warn=False)
         if not ancData.fd_datetime():
-            Utilities.writeLogFileAndPrint("SeaBASS ancillary file has no datetimes and cannot be used.")
+            logging.writeLogFileAndPrint("SeaBASS ancillary file has no datetimes and cannot be used.")
             return None
         else:
             ancDatetime = ancData.fd_datetime()
@@ -57,7 +55,7 @@ class AncillaryReader:
 
         for ds in ancData.data:
             if ds in dsTranslation:
-                Utilities.writeLogFileAndPrint(f'Found data: {ds}')
+                logging.writeLogFileAndPrint(f'Found data: {ds}')
                 ancillaryData.appendColumn(dsTranslation[ds][0], ancData.data[ds])
                 ancillaryData.attributes[dsTranslation[ds][1]]=ancData.variables[ds][1]
                 if ds == 'aot':
@@ -81,7 +79,7 @@ class AncillaryReader:
             print('This may take a moment on large SeaBASS files...')
             ancData=readSB(fp, no_warn=True)
         except IOError:
-            Utilities.writeLogFileAndPrint("Unable to read ancillary data file. Make sure it is in SeaBASS format.")
+            logging.writeLogFileAndPrint("Unable to read ancillary data file. Make sure it is in SeaBASS format.")
             return None
 
         return ancData.headers

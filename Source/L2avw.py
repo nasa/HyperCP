@@ -3,20 +3,13 @@ import numpy as np
 import scipy
 
 def L2avw(wavelength, Rrs):
-    ''' Use hyperspectral Rrs to calculate average visible wavelength. Vectorwise.'''
+    ''' Use hyperspectral Rrs to calculate average visible wavelength. Vectorwise.
     # Inputs:
     #   wavelength: vector of length Rrs or array of shape Rrs
-    #   Rrs: array of shape wavelength X n
+    #   Rrs: array of shape wavelength X n'''
 
     # Truncate to the VIS
     lims = [400, 701]
-    # outIndex = []
-    # for i, wl in enumerate(wavelength):
-    #     if wl < lims[0] or wl > lims[-1]:
-    #         outIndex.append(i)
-
-    # wavelength = np.delete(wavelength, outIndex)
-    # Rrs = np.delete(Rrs, outIndex, axis = 0)
 
     if np.shape(wavelength) != np.shape(Rrs):
         wavelength = np.transpose(np.matlib.repmat(wavelength,np.shape(Rrs)[1],1))
@@ -34,7 +27,4 @@ def L2avw(wavelength, Rrs):
     brightness =  np.trapz(Rrs_1nm, wave_1nm, axis=0).tolist()
 
     return avw, lambda_max, brightness
-
-
-
 

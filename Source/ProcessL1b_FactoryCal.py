@@ -6,7 +6,7 @@ import pandas as pd
 
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ProcessL1aDALEC import ProcessL1aDALEC
-from Source.Utilities import Utilities
+import Source.utils.loggingHCP as logging
 
 class ProcessL1b_FactoryCal:
     '''Process L1AQC to L1B for SeaBird in Factory or Class regime '''
@@ -46,9 +46,7 @@ class ProcessL1b_FactoryCal:
         elif cd.fitType == "THERMAL_RESP":
             pass
         else:
-            msg = f'ProcessL1b_FactoryCal.processDataset: Unknown Fit Type: {cd.fitType}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f'ProcessL1b_FactoryCal.processDataset: Unknown Fit Type: {cd.fitType}')
 
     # # Process OPTIC1 - not implemented
     # @staticmethod
@@ -226,28 +224,20 @@ class ProcessL1b_FactoryCal:
         # node.attributes['CAL_LINES'] = lines
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
-        msg = f"ProcessL1b_FactoryCal.processL1b: {timestr}"
-        print(msg)
-        Utilities.writeLogFile(msg)
+        logging.writeLogFileAndPrint(f"ProcessL1b_FactoryCal.processL1b: {timestr}")
 
-        msg = "Applying factory calibrations."
-        print(msg)
-        Utilities.writeLogFile(msg)
+        logging.writeLogFileAndPrint("Applying factory calibrations.")
 
         for gp in node.groups:
             # Apply calibration factors to each dataset in HDF except the L1AQC datasets carried forward
             # for L2 uncertainty propagation
             if 'L1AQC' not in gp.id:
-                msg = f'  Group: {gp.id}'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                logging.writeLogFileAndPrint(f'  Group: {gp.id}')
                 if "CalFileName" in gp.attributes:
                     if gp.attributes["CalFileName"] != 'ANCILLARY':  # GPS constructed from Ancillary data will cause bug here
                         cf = calibrationMap[gp.attributes["CalFileName"]]
                         #print(gp.id, gp.attributes)
-                        msg = f'    File: {cf.id}'
-                        print(msg)
-                        Utilities.writeLogFile(msg)
+                        logging.writeLogFileAndPrint(f'    File: {cf.id}')
 
                         ProcessL1b_FactoryCal.processGroup(gp, cf)
 
@@ -328,9 +318,7 @@ class ProcessL1b_FactoryCal:
                     cf = calibrationMap[gp.attributes["CalFileName"]]
                 except Exception:
                     # This can happen if you try to process L2 with a different calMap from L1B data
-                    msg = f'ProcessL1b_FactoryCal.extract_calibration_coeff: Mismatched Cal File: {gp.attributes["CalFileName"]}'
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    logging.writeLogFileAndPrint(f'ProcessL1b_FactoryCal.extract_calibration_coeff: Mismatched Cal File: {gp.attributes["CalFileName"]}')
                     return None, None
 
                 for cd in cf.data:

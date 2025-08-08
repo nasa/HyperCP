@@ -8,6 +8,7 @@ from datetime import datetime
 import numpy as np
 
 from Source import PATH_TO_CONFIG, PATH_TO_DATA
+from Source import PACKAGE_DIR as CODE_HOME
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
@@ -16,7 +17,12 @@ from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
-from Source import PACKAGE_DIR as CODE_HOME
+import Source.utils.loggingHCP as logging
+import Source.utils.dating as dating
+import Source.utils.comparing as comparing
+import Source.utils.thermalling as thermalling
+import Source.utils.interpolating as interpolating
+import Source.utils.filing as filing
 
 class ProcessL1b:
     '''L1B mainly for SeaBird with some shared methods'''
@@ -31,17 +37,17 @@ class ProcessL1b:
 
         # Read uncertainty parameters from class-based calibration
         for f in glob.glob(os.path.join(inpath, r'*class_POLAR*')):
-            Utilities.read_char(f, gp)
+            filing.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_STRAY*')):
-            Utilities.read_char(f, gp)
+            filing.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_ANGULAR*')):
-            Utilities.read_char(f, gp)
+            filing.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_THERMAL*')):
-            Utilities.read_char(f, gp)
+            filing.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_LINEAR*')):
-            Utilities.read_char(f, gp)
+            filing.read_char(f, gp)
         for f in glob.glob(os.path.join(inpath, r'*class_STAB*')):
-            Utilities.read_char(f, gp)
+            filing.read_char(f, gp)
 
         # Unc dataset renaming
         Utilities.RenameUncertainties_Class(root)
@@ -79,8 +85,8 @@ class ProcessL1b:
         # interpolate unc to full wavelength range, depending on class based or full char
         Utilities.interpUncertainties_Factory(root)
 
-        # # generate temperature coefficient
-        Utilities.UncTempCorrection(root)
+        # generate temperature coefficient
+        thermalling.UncTempCorrection(root)
 
         return root
 
@@ -188,7 +194,7 @@ class ProcessL1b:
                         # Choose most recent sensor-specific characterisation (this is regardless of measurement acquisition time)
                         chosen_file = ProcessL1b.choose_cal_char_per_time(
                             acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent')
-                        Utilities.read_char(chosen_file, gp)
+                        filing.read_char(chosen_file, gp)
 
                 elif calCharType == 'RADCAL':
                     # RADCAL files to be ingested depend on the multical options
@@ -197,7 +203,7 @@ class ProcessL1b:
                         # This will choose the most recent prior to acquisition unless nothing prior to acquisition exists, then it will choose simply the closest
                         chosen_file = ProcessL1b.choose_cal_char_per_time(
                             acq_time_seconds, available_files_calTime_seconds, available_files, rule='most_recent_prior_acquisition')
-                        Utilities.read_char(chosen_file, gp)
+                        filing.read_char(chosen_file, gp)
 
                     elif ConfigFile.settings["MultiCal"] == 1:  # Pre-post average
 
@@ -208,13 +214,13 @@ class ProcessL1b:
                         preCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get("preCal_%s" % sensorType))
                         if preCal is None:
                             raise ValueError('Pre-calibration file should have been chosen if pre-post average was chosen (see GUI-->Edit-->Cal/Char options).')
-                        Utilities.read_char(preCal, gp)
+                        filing.read_char(preCal, gp)
 
                         # Read postCal into gp
                         postCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get("postCal_%s" % sensorType))
                         if postCal is None:
                             raise ValueError('Post-calibration file should have been chosen if pre-post average was chosen (see GUI-->Edit-->Cal/Char options).')
-                        Utilities.read_char(postCal, gp)
+                        filing.read_char(postCal, gp)
 
                         ###### TO BE CONTINUED #######
 
@@ -224,7 +230,7 @@ class ProcessL1b:
                         chooseCal = os.path.join(CODE_HOME,fidRadPath,ConfigFile.settings.get("chooseCal_%s" % sensorType))
                         if chooseCal is None:
                             raise ValueError('Calibration file should have been chosen if "Chose cal." option was chosen (see GUI-->Edit-->Cal/Char options).')
-                        Utilities.read_char(chooseCal, gp)
+                        filing.read_char(chooseCal, gp)
 
         return root
 
@@ -239,18 +245,18 @@ class ProcessL1b:
 
         # Read uncertainty parameters from class-based calibration
         for f in glob.glob(os.path.join(classbased_dir, r'*class_POLAR*')):
-            Utilities.read_char(f, gp)
+            filing.read_char(f, gp)
         for f in glob.glob(os.path.join(classbased_dir, r'*class_STRAY*')):
-            Utilities.read_char(f, gp)
+            filing.read_char(f, gp)
         for f in glob.glob(os.path.join(classbased_dir, r'*class_ANGULAR*')):
-            Utilities.read_char(f, gp)
+            filing.read_char(f, gp)
         for f in glob.glob(os.path.join(classbased_dir, r'*class_THERMAL*')):
-            Utilities.read_char(f, gp)
+            filing.read_char(f, gp)
 
         for f in glob.glob(os.path.join(classbased_dir, r'*class_LINEAR*')):
-            Utilities.read_char(f, gp)
+            filing.read_char(f, gp)
         for f in glob.glob(os.path.join(classbased_dir, r'*class_STAB*')):
-            Utilities.read_char(f, gp)
+            filing.read_char(f, gp)
 
         # Read sensor-specific radiometric calibration
         root = ProcessL1b.read_FidRadDB_cal_char_files(root)
@@ -262,7 +268,7 @@ class ProcessL1b:
         Utilities.interpUncertainties_Class(root)
 
         # # generate temperature coefficient
-        Utilities.UncTempCorrection(root)
+        thermalling.UncTempCorrection(root)
 
         return root
 
@@ -281,7 +287,7 @@ class ProcessL1b:
         # temporarily use class-based polar unc for FRM
         for f in glob.glob(os.path.join(classbased_dir, r'*class_POLAR*')):
             if any([s in os.path.basename(f) for s in ["LI", "LT"]]):  # don't read ES Pol which is the manufacturer cosine error
-                Utilities.read_char(f, gp)
+                filing.read_char(f, gp)
         # Polar correction to be developed and added to FRM branch.
 
         # unc dataset renaming
@@ -294,7 +300,7 @@ class ProcessL1b:
             return None
 
         # generate temperature coefficient
-        Utilities.UncTempCorrection(root)
+        thermalling.UncTempCorrection(root)
 
         return root
 
@@ -314,7 +320,7 @@ class ProcessL1b:
             ancSeconds = []
             ancDatetime = []
             for i, ancDate in enumerate(ancGroup.datasets['LATITUDE'].columns['Datetag']):
-                ancDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(ancDate),ancTime[i]))
+                ancDatetime.append(dating.timeTag2ToDateTime(dating.dateTagToDateTime(ancDate),ancTime[i]))
                 ancSeconds.append((ancDatetime[i]-epoch).total_seconds())
         # Convert model data date and time to datetime and then to seconds for interpolation
         if modRoot is not None:
@@ -322,7 +328,7 @@ class ProcessL1b:
             modSeconds = []
             modDatetime = []
             for i, modDate in enumerate(modRoot.groups[0].datasets["Datetag"].tolist()):
-                modDatetime.append(Utilities.timeTag2ToDateTime(Utilities.dateTagToDateTime(modDate),modTime[i]))
+                modDatetime.append(dating.timeTag2ToDateTime(dating.dateTagToDateTime(modDate),modTime[i]))
                 modSeconds.append((modDatetime[i]-epoch).total_seconds())
 
         # Model or default fills
@@ -394,31 +400,31 @@ class ProcessL1b:
         # Replace Wind, AOD, and AirTemp NaNs with modeled data where possible.
         # These will be within one hour of the field data.
         if modRoot is not None:
-            Utilities.writeLogFileAndPrint('Filling in field data with model data where needed.')
+            logging.writeLogFileAndPrint('Filling in field data with model data where needed.')
 
             for i,ancSec in enumerate(ancSeconds):
 
                 if np.isnan(wind[i]):
-                    idx = Utilities.find_nearest(modSeconds,ancSec)
+                    idx = comparing.find_nearest(modSeconds,ancSec)
                     wind[i] = modRoot.groups[0].datasets['Wind'][idx]
                     windFlag[i] = 'model'
                     if i==0:
                         ancGroup.attributes['Model Wind units'] = modRoot.groups[0].attributes['Wind units']
                 if np.isnan(aod[i]):
-                    idx = Utilities.find_nearest(modSeconds,ancSec)
+                    idx = comparing.find_nearest(modSeconds,ancSec)
                     aod[i] = modRoot.groups[0].datasets['AOD'][idx]
                     aodFlag[i] = 'model'
                     if i==0:
                         ancGroup.attributes['Model AOD wavelength'] = modRoot.groups[0].attributes['AOD wavelength']
                 if np.isnan(air[i]):
-                    idx = Utilities.find_nearest(modSeconds,ancSec)
+                    idx = comparing.find_nearest(modSeconds,ancSec)
                     air[i] = modRoot.groups[0].datasets['AirTemp'][idx]
                     airFlag[i] = 'model'
                     if i==0:
                         ancGroup.attributes['Model AIRTEMP units'] = modRoot.groups[0].attributes['Air Temp. units']
 
         # Replace Wind, AOD, SST, Sal, and AirTemp with defaults where still nan
-        Utilities.writeLogFileAndPrint('Filling in ancillary data with default values where still needed.')
+        logging.writeLogFileAndPrint('Filling in ancillary data with default values where still needed.')
         # Salt and SST do not have model fallbacks.
         saltFlag = []
         sstFlag = []
@@ -509,7 +515,7 @@ class ProcessL1b:
                 for i in range(dataset.data.shape[0]):
                     latDM = latPosData.data["NONE"][i]
                     latDirection = latHemiData.data["NONE"][i]
-                    latDD = Utilities.dmToDd(latDM, latDirection)
+                    latDD = dating.dmToDd(latDM, latDirection)
                     latPosData.data["NONE"][i] = latDD
             if newDatasetName == "LONGITUDE":
                 lonPosData = group.getDataset("LONPOS")
@@ -517,7 +523,7 @@ class ProcessL1b:
                 for i in range(dataset.data.shape[0]):
                     lonDM = lonPosData.data["NONE"][i]
                     lonDirection = lonHemiData.data["NONE"][i]
-                    lonDD = Utilities.dmToDd(lonDM, lonDirection)
+                    lonDD = dating.dmToDd(lonDM, lonDirection)
                     lonPosData.data["NONE"][i] = lonDD
 
         newSensorData = newGroup.addDataset(newDatasetName)
@@ -540,14 +546,14 @@ class ProcessL1b:
         7.7 User Manual SAT-DN-00228-K)
         '''
         if (darkData is None) or (lightData is None):
-            Utilities.writeLogFileAndPrint(f'Dark Correction, dataset not found: {darkData} , {lightData}')
+            logging.writeLogFileAndPrint(f'Dark Correction, dataset not found: {darkData} , {lightData}')
             return False
 
-        if Utilities.hasNan(lightData):
+        if comparing.hasNan(lightData):
             frameinfo = getframeinfo(currentframe())
             # msg = f'found NaN {frameinfo.lineno}'
 
-        if Utilities.hasNan(darkData):
+        if comparing.hasNan(darkData):
             frameinfo = getframeinfo(currentframe())
             # msg = f'found NaN {frameinfo.lineno}'
 
@@ -559,14 +565,14 @@ class ProcessL1b:
             new_x = lightTimer.data  # lighttimer
 
             if len(x) < 3 or len(y) < 3 or len(new_x) < 3:
-                Utilities.writeLogFileAndPrint("**************Cannot do cubic spline interpolation, length of datasets < 3")
+                logging.writeLogFileAndPrint("**************Cannot do cubic spline interpolation, length of datasets < 3")
                 return False
 
-            if not Utilities.isIncreasing(x):
-                Utilities.writeLogFileAndPrint("**************darkTimer does not contain strictly increasing values")
+            if not comparing.isIncreasing(x):
+                logging.writeLogFileAndPrint("**************darkTimer does not contain strictly increasing values")
                 return False
-            if not Utilities.isIncreasing(new_x):
-                Utilities.writeLogFileAndPrint("**************lightTimer does not contain strictly increasing values")
+            if not comparing.isIncreasing(new_x):
+                logging.writeLogFileAndPrint("**************lightTimer does not contain strictly increasing values")
                 return False
 
             if len(x) >= 3:
@@ -575,21 +581,21 @@ class ProcessL1b:
                 xTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in x]
                 newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
 
-                newDarkData[k] = Utilities.interp(xTS,y,newXTS, fill_value=np.nan)
+                newDarkData[k] = interpolating.interp(xTS,y,newXTS, fill_value=np.nan)
 
                 for val in newDarkData[k]:
                     if np.isnan(val):
                         frameinfo = getframeinfo(currentframe())
                         # msg = f'found NaN {frameinfo.lineno}'
             else:
-                Utilities.writeLogFileAndPrint('**************Record too small for splining. Exiting.')
+                logging.writeLogFileAndPrint('**************Record too small for splining. Exiting.')
                 return False
 
         darkData.data = newDarkData
 
-        if Utilities.hasNan(darkData):
+        if comparing.hasNan(darkData):
             frameinfo = getframeinfo(currentframe())
-            Utilities.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
+            logging.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
             return False
 
         # Correct light data by subtracting interpolated dark data from light data
@@ -597,9 +603,9 @@ class ProcessL1b:
             for x in range(lightData.data.shape[0]):
                 lightData.data[k][x] -= newDarkData[k][x]
 
-        if Utilities.hasNan(lightData):
+        if comparing.hasNan(lightData):
             frameinfo = getframeinfo(currentframe())
-            Utilities.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
+            logging.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
             return False
 
         return True
@@ -607,7 +613,7 @@ class ProcessL1b:
 
     @staticmethod
     def processDarkCorrection(node, sensorType):
-        Utilities.writeLogFileAndPrint(f'Dark Correction: {sensorType}')
+        logging.writeLogFileAndPrint(f'Dark Correction: {sensorType}')
         darkGroup,darkData,darkDateTime,lightGroup,lightData,lightDateTime = \
             None,None,None,None,None,None
 
@@ -618,7 +624,7 @@ class ProcessL1b:
                 and not gp.id.startswith('ANCILLARY') \
                     and 'FrameType' in gp.attributes:
                 if gp.attributes["FrameType"] == "Not Required":
-                    Utilities.writeLogFileAndPrint(f'ERROR: Check the FrameType for {sensorType}')
+                    logging.writeLogFileAndPrint(f'ERROR: Check the FrameType for {sensorType}')
                     break
 
                 if gp.attributes["FrameType"] == "ShutterDark" and gp.getDataset(sensorType):
@@ -632,13 +638,13 @@ class ProcessL1b:
                     lightDateTime = gp.getDataset("DATETIME")
 
         if darkGroup is None or lightGroup is None:
-            Utilities.writeLogFileAndPrint(f'No radiometry found for {sensorType}')
+            logging.writeLogFileAndPrint(f'No radiometry found for {sensorType}')
             return False
 
         # Instead of using TT2 or seconds, use python datetimes to avoid problems crossing
         # UTC midnight.
         if not ProcessL1b.darkCorrection(darkData, darkDateTime, lightData, lightDateTime):
-            Utilities.writeLogFileAndPrint(f'ProcessL1b.darkCorrection failed  for {sensorType}')
+            logging.writeLogFileAndPrint(f'ProcessL1b.darkCorrection failed  for {sensorType}')
             return False
 
         # Now that the dark correction is done, we can strip the dark shutter data from the
@@ -674,10 +680,10 @@ class ProcessL1b:
             node.attributes['CAL_TYPE'] = 'FRM-Full'
         node.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
-        Utilities.writeLogFileAndPrint(f"ProcessL1b.processL1b: {timestr}")
+        logging.writeLogFileAndPrint(f"ProcessL1b.processL1b: {timestr}")
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
-        node  = Utilities.rootAddDateTime(node)
+        node  = dating.rootAddDateTime(node)
 
         # Introduce a new group for carrying L1AQC data forward. Groups keep consistent timestamps across all datasets,
         #    so it has to be a new group to avoid conflict with interpolated timestamps.
@@ -706,7 +712,7 @@ class ProcessL1b:
         # This is run ahead of the other groups for all processing pathways. Anc group
         # exists regardless of Ancillary file being provided
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
-            Utilities.writeLogFileAndPrint('Error interpolating ancillary data')
+            logging.writeLogFileAndPrint('Error interpolating ancillary data')
             return None
 
         # Need to fill in with model and fallback values before running ProcessL1b.read_unc_coefficient_class in order to get proper thermal data
@@ -714,11 +720,11 @@ class ProcessL1b:
 
         # Retrieve MERRA2 model ancillary data
         if ConfigFile.settings["bL1bGetAnc"] ==1:
-            Utilities.writeLogFileAndPrint('MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...')
+            logging.writeLogFileAndPrint('MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...')
             modRoot = GetAnc.getAnc(ancGroup)
         # Retrieve ECMWF model ancillary data
         elif ConfigFile.settings["bL1bGetAnc"] == 2:
-            Utilities.writeLogFileAndPrint('ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...')
+            logging.writeLogFileAndPrint('ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...')
             modRoot = GetAnc_ecmwf.getAnc_ecmwf(ancGroup)
         else:
             modRoot = None
@@ -754,7 +760,7 @@ class ProcessL1b:
             print("Factory SeaBird HyperOCR - uncertainty computed from class-based and Sirrex-7")
             node = ProcessL1b.read_unc_coefficient_factory(node, classbased_dir)
             if node is None:
-                Utilities.writeLogFileAndPrint('Error running factory uncertainties.')
+                logging.writeLogFileAndPrint('Error running factory uncertainties.')
                 return None
 
         # Add class-based files + RADCAL file
@@ -765,7 +771,7 @@ class ProcessL1b:
 
             node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir)
             if node is None:
-                Utilities.writeLogFileAndPrint('Error running class based uncertainties.')
+                logging.writeLogFileAndPrint('Error running class based uncertainties.')
                 return None
 
         # Add full characterization files
@@ -775,18 +781,18 @@ class ProcessL1b:
             node = ProcessL1b.read_unc_coefficient_frm(node, classbased_dir)
 
             if node is None:
-                Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
+                logging.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
                 return None
 
         # Dark Correction
         if not ProcessL1b.processDarkCorrection(node, "ES"):
-            Utilities.writeLogFileAndPrint('Error dark correcting ES')
+            logging.writeLogFileAndPrint('Error dark correcting ES')
             return None
         if not ProcessL1b.processDarkCorrection(node, "LI"):
-            Utilities.writeLogFileAndPrint('Error dark correcting LI')
+            logging.writeLogFileAndPrint('Error dark correcting LI')
             return None
         if not ProcessL1b.processDarkCorrection(node, "LT"):
-            Utilities.writeLogFileAndPrint('Error dark correcting LT')
+            logging.writeLogFileAndPrint('Error dark correcting LT')
             return None
 
         # For SeaBird (shutter darks), now that dark correction is complete, change the dark timestamps to their
@@ -800,7 +806,7 @@ class ProcessL1b:
                 gp.datasets['TIMETAG2'].id = 'TIMETAG2'
                 gp.removeDataset('TIMETAG2_ADJUSTED')
                 gp.removeDataset('DATETIME')
-                gp = Utilities.groupAddDateTime(gp)
+                gp = dating.groupAddDateTime(gp)
 
         # Calibration
         # Depending on the Configuration, process either the factory
@@ -823,7 +829,7 @@ class ProcessL1b:
             print("Read CalibrationFile ", calPath)
             calibrationMap = CalibrationFileReader.read(calPath)
             if not ProcessL1b_FRMCal.processL1b_SeaBird(node, calibrationMap):
-                Utilities.writeLogFileAndPrint('Error in ProcessL1b.process_FRM_calibration')
+                logging.writeLogFileAndPrint('Error in ProcessL1b.process_FRM_calibration')
                 return None
 
         # Interpolation
