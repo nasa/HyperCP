@@ -176,16 +176,23 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
         rad_cal_str = "ES_RADCAL_CAL" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "ES_RADCAL_UNC"
         cal_col_str = "1" if "ES_RADCAL_CAL" in uncGrp.datasets.keys() else "wvl"
 
+        from Source.PIU.UncPlotting import PlotTools, PlotMaths
+        BD_UNCS, BD_VALS = PlotMaths.classBased(UNC_obj_CB, means, uncertainties, False)
+        
+        # check if negative signal for any pixels
+        is_negative = np.any([ x < 0 for x in means])
+        if is_negative:
+            print('WARNING: Negative uncertainty potential')
+
+        # TODO: when plotting include the UV. start at 350-360 nm
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
             acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
             cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
-
-            from Source.PIU.UncPlotting import PlotTools
             PT = PlotTools(PDS, "", UNC_obj_CB)
             try:
-                breakdown_UNCS = PT.pie_plot_class(
-                    means,
-                    uncertainties,
+                PT.pie_plot_class(
+                    BD_UNCS,
+                    BD_VALS,
                     dict(
                         ES=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
                         LI=np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str]),
@@ -230,7 +237,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                                          return_as_dict=True
                                          ),
             valid_pixels=PDS.nan_mask
-        ), breakdown_UNCS
+        ), BD_UNCS
 
     def ClassBasedL2(self, node, uncGrp, rhoScalar, rhoVec, rhoDelta, waveSubset, xSlice) -> dict:
         """
@@ -341,17 +348,17 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
         rrsAbsUnc = UNC_obj_CB.Propagate_RRS_HYPER(rrs_means, rrs_uncertainties)
 
+        from Source.PIU.UncPlotting import PlotTools, PlotMaths
+        BD_UNCS, BD_VALS = PlotMaths.classBasedL2(UNC_obj_CB, lw_means, rrs_means, lw_uncertainties, rrs_uncertainties, False)
+        
         if ConfigFile.settings['bL2UncertaintyBreakdownPlot']:
             acqTime = datetime.strptime(node.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
             cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
-            from Source.PIU.UncPlotting import PlotTools
             PT = PlotTools(PDS, "", UNC_obj_CB)
             try:
                 breakdown_UNCS = PT.pie_plot_class_l2(
-                    rrs_means,
-                    lw_means,
-                    rrs_uncertainties,
-                    lw_uncertainties,
+                    BD_UNCS,
+                    BD_VALS,
                     np.array(uncGrp.getDataset(rad_cal_str).columns[cal_col_str], dtype=float),  # pass radcal wavelengths
                     cast,
                     node.getGroup("ANCILLARY")
@@ -413,7 +420,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
              "rrsUNC": rrsAbsUnc}
         )
 
-        return UNC, breakdown_UNCS
+        return UNC, BD_UNCS
 
     @abstractmethod
     def FRM(self, PDS: pds, stats: dict, newWaveBands: np.array) -> dict[str, np.array]:

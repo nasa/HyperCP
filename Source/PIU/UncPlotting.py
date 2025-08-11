@@ -29,23 +29,19 @@ class PlotTools:
         self.engine = prop if prop is not None else MCPropagation(100, parallel_cores=1)
         self.plot_folder = path.join(MainConfig.settings['outDir'],'Plots','L2_Uncertainty_Breakdown')
 
-    def pie_plot_class(self, vals, uncs, wavelengths, cast, ancGrp) -> dict[str: np.array]:
-        is_negative = np.any([ x < 0 for x in vals])
-        if is_negative:
-            print('WARNING: Negative uncertainty potential')
-
+    def pie_plot_class(self, BD_UNCS, BD_VALS, wavelengths, cast, ancGrp) -> dict[str: np.array]:
         if ConfigFile.settings["fL1bCal"] == 1:
             regime = 'Factory'
         else:
             regime = 'Class'
 
-        results, values = PlotMaths.classBased(self.engine, vals, uncs, False)
+        # results, values = PlotMaths.classBased(self.engine, vals, uncs, False)
         
-        if np.any(values['ES'] < 0):
+        if np.any(BD_VALS['ES'] < 0):
             print('WARNING: Negative uncertainty potential')
-        if np.any(values['LI'] < 0):
+        if np.any(BD_VALS['LI'] < 0):
             print('WARNING: Negative uncertainty potential')
-        if np.any(values['LT'] < 0):
+        if np.any(BD_VALS['LT'] < 0):
             print('WARNING: Negative uncertainty potential')
         
         labels = dict(
@@ -80,7 +76,7 @@ class PlotTools:
             [sst]
         ]
 
-        for sensor in results.keys():
+        for sensor in BD_UNCS.keys():
             indexes = [
                 np.argmin(np.abs(wavelengths[sensor] - 675)),
                 np.argmin(np.abs(wavelengths[sensor] - 560)),
@@ -99,7 +95,7 @@ class PlotTools:
                 # plt.text(0.1, 0.5, 'Ancillary Data', size=12)
 
                 ax.pie(
-                    [PlotMaths.getpct(results[sensor][key], values[sensor])[indx] for key in labels[sensor]],
+                    [PlotMaths.getpct(BD_UNCS[sensor][key], BD_VALS[sensor])[indx] for key in labels[sensor]],
                     labels=labels[sensor],
                     autopct='%1.1f%%'
                 )
@@ -107,7 +103,7 @@ class PlotTools:
                 fp = path.join(self.plot_folder, f"pie_{sensor}_{cast}_{wvl_at_indx}.png")
                 if not path.exists(self.plot_folder):
                     try:
-                        orig_umask = umask(0)
+                        orig_umask = umask(0)  # bypasses permission issue on my computer - Ashley
                         makedirs(fp, 0o777)
                     finally:
                         umask(orig_umask)
@@ -115,9 +111,9 @@ class PlotTools:
                 plt.savefig(fp)
                 plt.close(fig)
             
-            return results
+            return BD_UNCS
 
-    def pie_plot_class_l2(self, rrs_vals, lw_vals, rrs_uncs, lw_uncs, wavelengths, cast, ancGrp) -> dict[str: np.array]:
+    def pie_plot_class_l2(self, BD_UNCS, BD_VALS, wavelengths, cast, ancGrp) -> dict[str: np.array]:
         if ConfigFile.settings["fL1bCal"] == 1:
             regime = 'Factory'
         else:
@@ -149,12 +145,11 @@ class PlotTools:
             [sst]
         ]
 
-        results, values = PlotMaths.classBasedL2(self.engine, lw_vals, rrs_vals, lw_uncs, rrs_uncs, False)
         labels = dict(
             Lw=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "rho"],
             Rrs=["noise", "Cal", "Stab", "Lin", "cT", "Stray", "pol", "cosine", "rho"]
         )
-        for product in results.keys():
+        for product in BD_UNCS.keys():
             indexes = [
                 np.argmin(np.abs(wavelengths - 675)),
                 np.argmin(np.abs(wavelengths - 560)),
@@ -172,7 +167,7 @@ class PlotTools:
                 # plt.text(12, 3.4, 'Ancillary Data', size=8)
 
                 try:
-                    ax.pie([PlotMaths.getpct(results[product][key], values[product])[indx] for key in labels[product]],
+                    ax.pie([PlotMaths.getpct(BD_UNCS[product][key], BD_VALS[product])[indx] for key in labels[product]],
                            labels=labels[product], autopct='%1.1f%%')
                 except ValueError:
                     # todo discuss a better solution to issue #262 with programming team
@@ -190,7 +185,7 @@ class PlotTools:
                 plt.savefig(fp)
                 plt.close(fig)
 
-            return results
+            return BD_UNCS
     
     def plot_sample(self, x: np.array, sample: np.ndarray, name: str):
         y_mean = np.mean(sample, axis=0)
