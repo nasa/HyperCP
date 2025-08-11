@@ -262,20 +262,22 @@ class ProcessL2:
         newReflectanceGroup = node.getGroup("REFLECTANCE")
         newRadianceGroup = node.getGroup("RADIANCE")
         newIrradianceGroup = node.getGroup("IRRADIANCE")
-        newBreakdownGroup = node.getGroup("Breakdown")
+        newBreakdownGroup = node.addGroup("BREAKDOWN")
 
         newRhoHyper, newRhoUNCHyper, newNIRnLwData, newNIRData, nLw = None, None, None, None, None
 
          # add breakdowns to HDF
         if xBreakdownUNC is not None:
-            BDData = {'ES': {}, 'LI': {}, 'LT': {}}
+            BDData = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}}
             for key in xBreakdownUNC['ES'].keys():
                 BDData['ES'][key] = newBreakdownGroup.addDataset(f"ES_{sensor}_{key}")
+            for key in xBreakdownUNC['LI'].keys():
                 BDData['LI'][key] = newBreakdownGroup.addDataset(f"LI_{sensor}_{key}")
                 BDData['LT'][key] = newBreakdownGroup.addDataset(f"LT_{sensor}_{key}")
-            # use list comprehension to speed up processing
-            BDData['LW'][key]  = [newBreakdownGroup.addDataset(f"LW_{sensor}_{key}") for key in xBreakdownUNC['LW']]
-            BDData['Rrs'][key] = [newBreakdownGroup.addDataset(f"Rrs_{sensor}_{key}") for key in xBreakdownUNC['RRS']]
+            for key in xBreakdownUNC['Lw'].keys():
+                BDData['LW'][key]  = newBreakdownGroup.addDataset(f"LW_{sensor}_{key}")
+            for key in xBreakdownUNC['Rrs'].keys():
+                BDData['Rrs'][key] = newBreakdownGroup.addDataset(f"Rrs_{sensor}_{key}")
 
 
         # If this is the first ensemble spectrum, set up the new datasets
@@ -467,11 +469,12 @@ class ProcessL2:
                     if xBreakdownUNC is not None:
                         for key in BDData['ES'].keys():
                             BDData['ES'][key].columns[k] = []
+                        for key in BDData['LI'].keys():
                             BDData['LI'][key].columns[k] = []
                             BDData['LT'][key].columns[k] = []
                         for key in BDData['LW']:
                             BDData['LW'][key].columns[k] = []
-                        for key in BDData['RRS']:
+                        for key in BDData['Rrs']:
                             BDData['Rrs'][key].columns[k] = []
 
                     if sensor == 'HYPER':
@@ -565,13 +568,14 @@ class ProcessL2:
 
                 if xBreakdownUNC is not None:
                     for key in BDData['ES'].keys():
-                        BDData['ES'][key].columns[k].append(xBreakdownUNC['ES'][key][k])
-                        BDData['LI'][key].columns[k].append(xBreakdownUNC['LI'][key][k])
-                        BDData['LT'][key].columns[k].append(xBreakdownUNC['LT'][key][k])
+                        BDData['ES'][key].columns[k].append(xBreakdownUNC['ES'][key][i])
+                    for key in BDData['LI'].keys():
+                        BDData['LI'][key].columns[k].append(xBreakdownUNC['LI'][key][i])
+                        BDData['LT'][key].columns[k].append(xBreakdownUNC['LT'][key][i])
                     for key in BDData['LW']:
-                        BDData['LW'][key].columns[k].append(xBreakdownUNC['LW'][key][k])
-                    for key in BDData['RRS']:
-                        BDData['Rrs'][key].columns[k].append(xBreakdownUNC['Rrs'][key][k])
+                        BDData['LW'][key].columns[k].append(xBreakdownUNC['Lw'][key][i])
+                    for key in BDData['Rrs']:
+                        BDData['Rrs'][key].columns[k].append(xBreakdownUNC['Rrs'][key][i])
 
                 # Only populate valid wavelengths. Mark others for deletion
                 if float(k) in waveSubset:  # should be redundant!
@@ -663,12 +667,13 @@ class ProcessL2:
         if xBreakdownUNC is not None:
             for key in BDData['ES'].keys():
                 BDData['ES'][key].columnsToDataset()
+            for key in BDData['LI'].keys():
                 BDData['LI'][key].columnsToDataset()
                 BDData['LT'][key].columnsToDataset()
             for key in BDData['LW']:
                 BDData['LW'][key].columnsToDataset()
-            for key in BDData['RRS']:
-                BDData['Rrs'][key].columntToDataset()
+            for key in BDData['Rrs']:
+                BDData['Rrs'][key].columnsToDataset()
 
         if sensor == 'HYPER':
             newRhoHyper.columnsToDataset()
@@ -1581,7 +1586,7 @@ class ProcessL2:
             ltUNCSlice = xUNC["ltUNC_HYPER"]
 
         # Populate the relevant fields in node
-        ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC)
+        ProcessL2.spectralReflectance(node, sensor, timeObj, xSlice, F0_hyper, F0_unc, rhoScalar, rhoVec, waveSubset, xUNC, xBreakdownUNC)
 
         # Apply residual NIR corrections
         # Perfrom near-infrared residual correction to remove additional atmospheric and glint contamination

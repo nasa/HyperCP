@@ -188,7 +188,7 @@ class TriOS(BaseInstrument):
             # Non-Linearity Correction
             sample_linear_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
             PT.plot_sample(DATA['radcal_wvl'], sample_linear_corr, "nlin")
-
+            # apply cal to absolute uncs at the end of the process to put them all in the same units. then put them relative to final signal
             # Straylight Correction
             if self.sl_method.upper() == 'ZONG':  # for internal use only, Zong set as default in HCP
                 sample_sl_corr = prop.run_samples(
