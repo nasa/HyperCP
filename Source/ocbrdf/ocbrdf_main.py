@@ -4,7 +4,7 @@ import xarray as xr
 from .brdf_model_M02 import M02
 from .brdf_model_M02SeaDAS import M02SeaDAS
 from .brdf_model_L11 import L11
-from .brdf_model_O23 import O23
+from .brdf_model_O25 import O25
 from .brdf_utils import ADF_OCP, squeeze_trivial_dims
 
 """
@@ -55,8 +55,8 @@ def brdf_prototype(ds, adf=None, brdf_model='L11'):
         BRDF_model = M02SeaDAS(bands=ds.bands, adf=None)  # Don't use brdf_py.ADF context
     elif brdf_model == 'L11':
         BRDF_model = L11(bands=ds.bands, adf=None)  # Don't use brdf_py.ADF context
-    elif brdf_model == 'O23':
-        BRDF_model = O23(bands=ds.bands, adf=None)  # Don't use brdf_py.ADF context
+    elif brdf_model == 'O25':
+        BRDF_model = O25(bands=ds.bands, adf=None)  # Don't use brdf_py.ADF context
     else:
         print("BRDF model %s not supported" % brdf_model)
         sys.exit(1)

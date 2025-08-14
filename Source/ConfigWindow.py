@@ -525,10 +525,10 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2BRDF_IOP"]) == 1:
             self.l2BRDF_IOPCheckBox.setChecked(True)
 
-        self.l2BRDF_O23Label = QtWidgets.QLabel("Pitarch IOP [beta]", self)
-        self.l2BRDF_O23CheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL2BRDF_O23"]) == 1:
-            self.l2BRDF_O23CheckBox.setChecked(True)
+        self.l2BRDF_O25Label = QtWidgets.QLabel("Pitarch IOP", self)
+        self.l2BRDF_O25CheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2BRDF_O25"]) == 1:
+            self.l2BRDF_O25CheckBox.setChecked(True)
 
         self.l2BRDFCheckBoxUpdate()
 
@@ -610,7 +610,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2BRDFCheckBox.clicked.connect(self.l2BRDFCheckBoxUpdate)
         self.l2BRDF_fQCheckBox.clicked.connect(self.l2BRDF_fQCheckBoxUpdate)
         self.l2BRDF_IOPCheckBox.clicked.connect(self.l2BRDF_IOPCheckBoxUpdate)
-        self.l2BRDF_O23CheckBox.clicked.connect(self.l2BRDF_O23CheckBoxUpdate)
+        self.l2BRDF_O25CheckBox.clicked.connect(self.l2BRDF_O25CheckBoxUpdate)
 
         self.l2OCproducts = QtWidgets.QPushButton("Derived L2 Ocean Color Products", self)
         self.l2OCproducts.clicked.connect(self.l2OCproductsButtonPressed)
@@ -993,8 +993,8 @@ class ConfigWindow(QtWidgets.QDialog):
         BRDFHBox2.addWidget(self.l2BRDF_fQCheckBox)
         BRDFHBox2.addWidget(self.l2BRDF_IOPLabel)
         BRDFHBox2.addWidget(self.l2BRDF_IOPCheckBox)
-        BRDFHBox2.addWidget(self.l2BRDF_O23Label)
-        BRDFHBox2.addWidget(self.l2BRDF_O23CheckBox)
+        BRDFHBox2.addWidget(self.l2BRDF_O25Label)
+        BRDFHBox2.addWidget(self.l2BRDF_O25CheckBox)
         BRDFVBox.addLayout(BRDFHBox2)
         VBox4.addLayout(BRDFVBox)
 
@@ -1645,22 +1645,22 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2BRDF_fQLabel.setDisabled(disabled)
         self.l2BRDF_IOPCheckBox.setDisabled(disabled)
         self.l2BRDF_IOPLabel.setDisabled(disabled)
-        self.l2BRDF_O23CheckBox.setDisabled(disabled)
-        self.l2BRDF_O23Label.setDisabled(disabled)
+        self.l2BRDF_O25CheckBox.setDisabled(disabled)
+        self.l2BRDF_O25Label.setDisabled(disabled)
 
         if disabled:
             ConfigFile.settings["bL2BRDF"] = 0
             ConfigFile.settings["bL2BRDF_fQ"] = 0
             ConfigFile.settings["bL2BRDF_IOP"] = 0
-            ConfigFile.settings["bL2BRDF_O23"] = 0
+            ConfigFile.settings["bL2BRDF_O25"] = 0
             self.l2BRDF_fQCheckBox.setChecked(False)
             self.l2BRDF_IOPCheckBox.setChecked(False)
-            self.l2BRDF_O23CheckBox.setChecked(False)
-        elif ConfigFile.settings["bL2BRDF_fQ"] == 0 and ConfigFile.settings["bL2BRDF_IOP"] == 0 and ConfigFile.settings["bL2BRDF_O23"] == 0:
+            self.l2BRDF_O25CheckBox.setChecked(False)
+        elif ConfigFile.settings["bL2BRDF_fQ"] == 0 and ConfigFile.settings["bL2BRDF_IOP"] == 0 and ConfigFile.settings["bL2BRDF_O25"] == 0:
             ConfigFile.settings["bL2BRDF_IOP"] = 1
             self.l2BRDF_fQCheckBox.setChecked(False)
             self.l2BRDF_IOPCheckBox.setChecked(True)
-            self.l2BRDF_O23CheckBox.setChecked(False)
+            self.l2BRDF_O25CheckBox.setChecked(False)
 
 
     # Make BRDF type exclusive so that it is clear what is written to SeaBASS output
@@ -1674,10 +1674,10 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL2BRDF_fQ"] = 1
             ConfigFile.settings["bL2BRDF_IOP"] = 0
-            ConfigFile.settings["bL2BRDF_O23"] = 0
+            ConfigFile.settings["bL2BRDF_O25"] = 0
             self.l2BRDF_fQCheckBox.setChecked(True)
             self.l2BRDF_IOPCheckBox.setChecked(False)
-            self.l2BRDF_O23CheckBox.setChecked(False)
+            self.l2BRDF_O25CheckBox.setChecked(False)
 
     def l2BRDF_IOPCheckBoxUpdate(self):
         print("ConfigWindow - l2BRDF_IOPCheckBoxUpdate")
@@ -1688,24 +1688,24 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL2BRDF_fQ"] = 0
             ConfigFile.settings["bL2BRDF_IOP"] = 1
-            ConfigFile.settings["bL2BRDF_O23"] = 0
+            ConfigFile.settings["bL2BRDF_O25"] = 0
             self.l2BRDF_fQCheckBox.setChecked(False)
             self.l2BRDF_IOPCheckBox.setChecked(True)
-            self.l2BRDF_O23CheckBox.setChecked(False)
+            self.l2BRDF_O25CheckBox.setChecked(False)
 
-    def l2BRDF_O23CheckBoxUpdate(self):
-        print("ConfigWindow - l2BRDF_O23CheckBoxUpdate")
-        disabled = (not self.l2BRDF_O23CheckBox.isChecked())
+    def l2BRDF_O25CheckBoxUpdate(self):
+        print("ConfigWindow - l2BRDF_O25CheckBoxUpdate")
+        disabled = (not self.l2BRDF_O25CheckBox.isChecked())
         if disabled:
-            ConfigFile.settings["bL2BRDF_O23"] = 0
-            self.l2BRDF_O23CheckBox.setChecked(False)
+            ConfigFile.settings["bL2BRDF_O25"] = 0
+            self.l2BRDF_O25CheckBox.setChecked(False)
         else:
             ConfigFile.settings["bL2BRDF_fQ"] = 0
             ConfigFile.settings["bL2BRDF_IOP"] = 0
-            ConfigFile.settings["bL2BRDF_O23"] = 1
+            ConfigFile.settings["bL2BRDF_O25"] = 1
             self.l2BRDF_fQCheckBox.setChecked(False)
             self.l2BRDF_IOPCheckBox.setChecked(False)
-            self.l2BRDF_O23CheckBox.setChecked(True)
+            self.l2BRDF_O25CheckBox.setChecked(True)
 
     def l2OCproductsButtonPressed(self):
         print("OC Products Dialogue")
@@ -1841,7 +1841,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2BRDF"] = int(self.l2BRDFCheckBox.isChecked())
         ConfigFile.settings["bL2BRDF_fQ"] = int(self.l2BRDF_fQCheckBox.isChecked())
         ConfigFile.settings["bL2BRDF_IOP"] = int(self.l2BRDF_IOPCheckBox.isChecked())
-        ConfigFile.settings["bL2BRDF_O23"] = int(self.l2BRDF_O23CheckBox.isChecked())
+        ConfigFile.settings["bL2BRDF_O25"] = int(self.l2BRDF_O25CheckBox.isChecked())
 
         ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
         ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())

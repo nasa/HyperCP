@@ -5,14 +5,14 @@ from .brdf_utils import ADF_OCP, solve_2nd_order_poly, drop_unused_coords
 from .Raman import Raman
 
 
-''' O23 BRDF correction from EUMETSAT BRDF4OLCI study
+''' O25 BRDF correction from EUMETSAT BRDF4OLCI study
     Ref. ATBD_EUM-CO-21-4600002626-JIG, 29/03/2024
 '''
 
 # Init Raman class
 Raman = Raman()
 
-""" Class for O23 coefficients """
+""" Class for O25 coefficients """
 class Coeffs():
     def __init__(self,Gw0,Gw1,Gp0,Gp1):
         self.Gw0 = Gw0
@@ -20,10 +20,10 @@ class Coeffs():
         self.Gp0 = Gp0
         self.Gp1 = Gp1
 
-""" Class for O23 BRDF model """
-class O23:
+""" Class for O25 BRDF model """
+class O25:
 
-    """ Initialise O23 model: BRDF LUT, coeffs, QAA parameters, water IOPs LUT
+    """ Initialise O25 model: BRDF LUT, coeffs, QAA parameters, water IOPs LUT
         Note: bands are fixed and defined at class initilization, but could be initialized in init_pixels if needed
     """
     def __init__(self, bands, adf=None):
@@ -40,7 +40,7 @@ class O23:
         self.b442, self.b490, self.b560, self.b665 = bands_ref
 
         # Read BRDF LUT and compute default coeffs
-        LUT_OCP = xr.open_dataset(adf % 'O23',engine='netcdf4')
+        LUT_OCP = xr.open_dataset(adf % 'O25',engine='netcdf4')
         self.LUT = xr.Dataset()
         self.LUT['Gw0'] = LUT_OCP.Gw0
         self.LUT['Gw1'] = LUT_OCP.Gw1 
