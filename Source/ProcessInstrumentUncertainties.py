@@ -19,7 +19,6 @@ import comet_maths as cm
 
 # HCP files
 from Source import PATH_TO_CONFIG
-from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
 from Source.HDFRoot import HDFRoot  # for typing and docstrings
 from Source.HDFGroup import HDFGroup  # for typing and docstrings
@@ -30,6 +29,9 @@ from Source.Weight_RSR import Weight_RSR
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 from Source.Uncertainty_Visualiser import UncertaintyGUI # class for uncertainty visualisation plots
+import Source.utils.loggingHCP as logging
+import Source.utils.comparing as comparing
+import Source.utils.interpolating as interpolating
 
 
 class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators which exist to give warnings to coders.
@@ -149,7 +151,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             except IndexError as err:
                 msg = "Unable to parse statistics for the ensemble, possibly too few scans."
                 print(msg)
-                Utilities.writeLogFile(msg)
+                logging.writeLogFile(msg)
                 return False
         #print("generateSensorStats: output(stats)")
         #print(output)
@@ -204,7 +206,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
 
             else:
                 msg = "TriOS/Dalec factory uncertainties not implemented"
-                Utilities.writeLogFile(msg)
+                logging.writeLogFile(msg)
                 print(msg)
                 return False,False
 
@@ -647,7 +649,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             except ValueError as err:
                 msg = f"unable to run uncertainty breakdown plots for {cast}, with error: {err}"
                 print(msg)
-                Utilities.writeLogFile(msg)
+                logging.writeLogFile(msg)
 
         # these are absolute values!
         output = {}
@@ -1247,21 +1249,18 @@ class HyperOCR(BaseInstrument):
     def _check_data(dark, light):
         msg = None
         if (dark is None) or (light is None):
-            msg = f'Dark Correction, dataset not found: {dark} , {light}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f'Dark Correction, dataset not found: {dark} , {light}')
             return False
 
-        if Utilities.hasNan(light):
+        if comparing.hasNan(light):
             frameinfo = getframeinfo(currentframe())
             msg = f'found NaN {frameinfo.lineno}'
 
-        if Utilities.hasNan(dark):
+        if comparing.hasNan(dark):
             frameinfo = getframeinfo(currentframe())
             msg = f'found NaN {frameinfo.lineno}'
         if msg:
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(msg)
         return True
 
     def darkToLightTimer(self, rawGrp, sensortype):
@@ -1276,9 +1275,7 @@ class HyperOCR(BaseInstrument):
             lightDateTime = lightGrp.getDataset("DATETIME")
 
         if darkGrp is None or lightGrp is None:
-            msg = f'No radiometry found for {sensortype}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f'No radiometry found for {sensortype}')
             return False
         elif not self._check_data(darkData, lightData):
             return False
@@ -1301,19 +1298,13 @@ class HyperOCR(BaseInstrument):
             new_x = lightTimer.data  # lighttimer
 
             if len(x) < 3 or len(y) < 3 or len(new_x) < 3:
-                msg = "**************Cannot do cubic spline interpolation, length of datasets < 3"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                logging.writeLogFileAndPrint("**************Cannot do cubic spline interpolation, length of datasets < 3")
                 return False
-            if not Utilities.isIncreasing(x):
-                msg = "**************darkTimer does not contain strictly increasing values"
-                print(msg)
-                Utilities.writeLogFile(msg)
+            if not comparing.isIncreasing(x):
+                logging.writeLogFileAndPrint("**************darkTimer does not contain strictly increasing values")
                 return False
-            if not Utilities.isIncreasing(new_x):
-                msg = "**************lightTimer does not contain strictly increasing values"
-                print(msg)
-                Utilities.writeLogFile(msg)
+            if not comparing.isIncreasing(new_x):
+                logging.writeLogFileAndPrint("**************lightTimer does not contain strictly increasing values")
                 return False
 
             if len(x) >= 3:
@@ -1322,23 +1313,19 @@ class HyperOCR(BaseInstrument):
                 xTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in x]
                 newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
 
-                newDarkData[k] = Utilities.interp(xTS,y,newXTS, fill_value=np.nan)
+                newDarkData[k] = interpolating.interp(xTS,y,newXTS, fill_value=np.nan)
 
                 for val in newDarkData[k]:
                     if np.isnan(val):
                         frameinfo = getframeinfo(currentframe())
                         msg = f'found NaN {frameinfo.lineno}'
             else:
-                msg = '**************Record too small for splining. Exiting.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                logging.writeLogFileAndPrint('**************Record too small for splining. Exiting.')
                 return False
 
-        if Utilities.hasNan(darkData):
+        if comparing.hasNan(darkData):
             frameinfo = getframeinfo(currentframe())
-            msg = f'found NaN {frameinfo.lineno}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
             return False
 
         return newDarkData
@@ -1359,9 +1346,7 @@ class HyperOCR(BaseInstrument):
             # lightDateTime = lightSlice['datetime']  # lightGrp.getDataset("DATETIME")
 
         if darkGrp is None or lightGrp is None:
-            msg = f'No radiometry found for {sensortype}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f'No radiometry found for {sensortype}')
             return False
 
         elif not self._check_data(darkData, lightData):
@@ -1392,9 +1377,7 @@ class HyperOCR(BaseInstrument):
                 std_Light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
                 std_Dark.append(np.sqrt(((Nd-1)/(Nd-3))*(np.std(darkData[k]) / np.sqrt(Nd))**2))
             else:
-                msg = "too few scans to make meaningful statistics"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                logging.writeLogFileAndPrint("too few scans to make meaningful statistics")
                 return False
 
             ave_Light.append(np.average(lightData[k]))
@@ -1404,9 +1387,7 @@ class HyperOCR(BaseInstrument):
                 try:
                     lightData[k][x] -= darkData[k][x]
                 except IndexError as err:
-                    msg = f"Light/Dark indexing error PIU.HypperOCR: {err}"
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    logging.writeLogFileAndPrint(f"Light/Dark indexing error PIU.HypperOCR: {err}")
                     return False
             
 
@@ -1902,9 +1883,7 @@ class Trios(BaseInstrument):
         elif nmes > 3:
             light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(calibrated_light_measure, axis=0) / np.sqrt(nmes))**2)
         else:
-            msg = "too few scans to make meaningful statistics"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("too few scans to make meaningful statistics")
             return False
         # ensure all TriOS outputs are length 255 to match SeaBird HyperOCR stats output
         ones = np.ones(nband)  # to provide array of 1s with the correct shape
@@ -2336,9 +2315,7 @@ class Dalec(BaseInstrument):
         lightData = lightSlice['data']  # lightGrp.getDataset(sensortype)
         darkData = lightSlice['dc']
         if  grp is None:
-            msg = f'No radiometry found for {sensortype}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f'No radiometry found for {sensortype}')
             return False
         
         # Correct light data by subtracting interpolated dark data from light data
@@ -2370,9 +2347,7 @@ class Dalec(BaseInstrument):
                 std_Light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
                 std_Dark.append(std_Dark0)
             else:
-                msg = "too few scans to make meaningful statistics"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                logging.writeLogFileAndPrint("too few scans to make meaningful statistics")
                 return False
 
             ave_Light.append(np.average(lightData[k]))

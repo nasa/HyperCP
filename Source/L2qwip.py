@@ -1,6 +1,6 @@
 
 import numpy as np
-from Source.Utilities import Utilities
+import Source.utils.interpolating as interpolating
 
 
 def L2qwip(wavelength, Rrs, avw):
@@ -19,7 +19,7 @@ def L2qwip(wavelength, Rrs, avw):
     test_lambda = np.array([490, 665])
     test_Rrs = np.empty([len(test_lambda), n]) * np.nan
     for i in np.arange(0,n):
-        test_Rrs[:,i] = Utilities.interp(wavelength.tolist(), Rrs[:,i].tolist(), test_lambda.tolist())
+        test_Rrs[:,i] = interpolating.interp(wavelength.tolist(), Rrs[:,i].tolist(), test_lambda.tolist())
 
     QCI = (test_Rrs[1,:] - test_Rrs[0,:])/(test_Rrs[1,:] + test_Rrs[0,:])
     p = [-8.399885e-09,1.715532e-05,-1.301670e-02,4.357838,-5.449532e02]

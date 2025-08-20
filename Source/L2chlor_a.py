@@ -14,7 +14,7 @@ def L2chlor_a(Rrs443, Rrs488, Rrs547, Rrs555, Rrs667):
 
     ci1 = -0.4909
     ci2 = 191.6590
-    
+
     if Rrs443 > Rrs488:
         Rrsblue = Rrs443
     else:
@@ -29,7 +29,7 @@ def L2chlor_a(Rrs443, Rrs488, Rrs547, Rrs555, Rrs667):
 
     CI = Rrs555 - ( Rrs443 + (555 - 443)/(667 - 443) * \
         (Rrs667 -Rrs443) )
-        
+
     ChlCI = 10** (ci1 + ci2*CI)
 
     if ChlCI <= thresh[0]:

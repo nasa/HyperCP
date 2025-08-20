@@ -6,9 +6,7 @@ import os
 import sys
 
 from Source.CalibrationData import CalibrationData
-from Source.Utilities import Utilities
-
-
+import Source.utils.loggingHCP as logging
 class CalibrationFile:
     '''CalibrationFile class stores information about an instrument
         obtained from reading a calibration file'''
@@ -27,11 +25,7 @@ class CalibrationFile:
 
     def printd(self):
         if len(self.id) != 0:
-            pmsg = f'id: {self.id}'
-            print(pmsg)
-            Utilities.writeLogFile(pmsg)
-#        for cd in self.data:
-#            cd.printd()
+            logging.writeLogFileAndPrint(f'id: {self.id}')
 
     # Reads a calibration file and generates calibration data
     def read(self, f):
@@ -99,15 +93,16 @@ class CalibrationFile:
                     delimiter = delimiter.encode("utf-8").decode("unicode_escape").encode("utf-8")
                     #print("delimiter:", delimiter)
 
-                    end = msg[nRead:].find(delimiter)
+                    ender = msg[nRead:].find(delimiter)
                     # print("read:", nRead, end)
-                    if end == 0:
-                        v = 0.0
-                    else:
-                        b = msg[nRead:nRead+end]
+                    # if end == 0:
+                    #     v = 0.0
+                    # else:
+                    if ender != 0:
+                        b = msg[nRead:nRead+ender]
                         v = cd.convertRaw(b)
 
-                    nRead += end
+                    nRead += ender
 
                 # Read fixed length message frames
                 else:
@@ -118,17 +113,11 @@ class CalibrationFile:
                             v = cd.convertRaw(b)
                     nRead  += cd.fieldLength
 
-                # Passed EndOfFile
-                #if nRead > len(msg):
-                #    return False
-
             return True
 
         except KeyError:
             # pass
-            pmsg = "Failed to read message successfully"
-            print(pmsg)
-            Utilities.writeLogFile(pmsg)
+            logging.writeLogFileAndPrint("Failed to read message successfully")
 
         return False
 

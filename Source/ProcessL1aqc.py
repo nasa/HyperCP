@@ -8,8 +8,10 @@ from pysolar.solar import get_azimuth, get_altitude
 
 from Source.HDFDataset import HDFDataset
 from Source.ProcessL1aqc_deglitch import ProcessL1aqc_deglitch
-from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
+import Source.utils.loggingHCP as logging
+import Source.utils.dating as dating
+import Source.utils.comparing as comparing
 
 class ProcessL1aqc:
     ''' Process L1A to L1AQC '''
@@ -19,7 +21,7 @@ class ProcessL1aqc:
         ''' For each dataset in each group, find the badTimes to remove and delete those rows
          Keep Ancillary Data in tact. This may help in L1B to capture better ancillary data '''
         if len(badTimes) > 0:
-            Utilities.writeLogFileAndPrint("Eliminate combined filtered data from datasets.*****************************")
+            logging.writeLogFileAndPrint("Eliminate combined filtered data from datasets.*****************************")
 
             for gp in node.groups:
 
@@ -30,14 +32,14 @@ class ProcessL1aqc:
 
                     # Now test whether the overlap has eliminated all radiometric data
                     if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
-                        Utilities.writeLogFileAndPrint("Radiometric data >98'%' eliminated. Aborting.")
+                        logging.writeLogFileAndPrint("Radiometric data >98'%' eliminated. Aborting.")
                         return None
 
                     gpTimeset  = gp.getDataset("TIMETAG2")
 
                     gpTime = gpTimeset.data["NONE"]
                     lenGpTime = len(gpTime)
-                    Utilities.writeLogFileAndPrint(f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %')
+                    logging.writeLogFileAndPrint(f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %')
 
                     if 'FrameType' in gp.attributes:
                         if gp.attributes['FrameType'] == 'ShutterDark':
@@ -45,28 +47,28 @@ class ProcessL1aqc:
 
                             # Now test whether the overlap has eliminated all radiometric data
                             if fractionRemoved > 0.98 and (gp.id.startswith("ES") or gp.id.startswith("LI") or gp.id.startswith("LT")):
-                                Utilities.writeLogFileAndPrint("Radiometric data >98'%' eliminated. Aborting.")
+                                logging.writeLogFileAndPrint("Radiometric data >98'%' eliminated. Aborting.")
                                 return None
 
                             gpTimeset  = gp.getDataset("TIMETAG2")
 
                             gpTime = gpTimeset.data["NONE"]
                             lenGpTime = len(gpTime)
-                            Utilities.writeLogFileAndPrint(f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %')
+                            logging.writeLogFileAndPrint(f'   Data end {lenGpTime} long, a loss of {round(100*(fractionRemoved))} %')
         return node
 
     @staticmethod
     def filterData(group, badTimes):
         ''' Delete flagged records '''
 
-        Utilities.writeLogFileAndPrint(f'Remove {group.id} Data')
+        logging.writeLogFileAndPrint(f'Remove {group.id} Data')
 
         timeStamp = group.getDataset("DATETIME").data
 
         startLength = len(timeStamp)
-        Utilities.writeLogFileAndPrint(f'   Length of dataset prior to removal {startLength} long')
+        logging.writeLogFileAndPrint(f'   Length of dataset prior to removal {startLength} long')
 
-        badTimes = Utilities.uniquePairs(badTimes)
+        badTimes = comparing.uniquePairs(badTimes)
         # Couple of problems with this: 1) timestamps are not yet uniformly consecutive, 2) timestamps differ
         #   between instruments, so badTimes may have entries not found in timeStamp.
         # badTimes = Utilities.catConsecutiveBadTimes(badTimes, timeStamp)#.tolist())
@@ -86,7 +88,7 @@ class ProcessL1aqc:
         if rowsToDelete:
             group.datasetDeleteRow(rowsToDelete)
 
-        Utilities.writeLogFileAndPrint(f'   Length of records removed from dataset: {finalCount}')
+        logging.writeLogFileAndPrint(f'   Length of records removed from dataset: {finalCount}')
 
         return finalCount/startLength
 
@@ -95,12 +97,12 @@ class ProcessL1aqc:
         ''' Delete additional flagged records for Sea-Bird Darks with adjusted 
             timestamps to match Lights '''
 
-        Utilities.writeLogFileAndPrint(f'Remove {group.id} Data')
+        logging.writeLogFileAndPrint(f'Remove {group.id} Data')
 
         timeStamp = group.getDataset("DATETIME_ADJUSTED").data
 
         startLength = len(timeStamp)
-        Utilities.writeLogFileAndPrint(f'   Length of dataset prior to removal {startLength} long')
+        logging.writeLogFileAndPrint(f'   Length of dataset prior to removal {startLength} long')
 
         # Delete the records in badTime ranges from each dataset in the group
         finalCount = 0
@@ -123,10 +125,10 @@ class ProcessL1aqc:
                         newTimeStamp.append(timeStamp[i])
                 group.datasetDeleteRow(rowsToDelete)
             else:
-                Utilities.writeLogFileAndPrint('Data group is empty. Continuing.')
+                logging.writeLogFileAndPrint('Data group is empty. Continuing.')
             timeStamp = newTimeStamp.copy()
 
-        Utilities.writeLogFileAndPrint(f'   Length of records removed from dataset: {finalCount}')
+        logging.writeLogFileAndPrint(f'   Length of records removed from dataset: {finalCount}')
 
         return finalCount/originalLength
 
@@ -175,8 +177,8 @@ class ProcessL1aqc:
                 #gp.id = "DALEC_TRACKER"
                 gp.id = "SunTracker_DALEC"
         elif ConfigFile.settings['SensorType'].lower() == 'sorad':
-           if  gp.id.startswith("sorad"):
-               gp.id = "SunTracker_sorad"
+            if  gp.id.startswith("sorad"):
+                gp.id = "SunTracker_sorad"
         else:
             gp.id = cf.sensorType
 
@@ -191,7 +193,7 @@ class ProcessL1aqc:
         now = datetime.datetime.now()
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         node.attributes["FILE_CREATION_TIME"] = timestr
-        Utilities.writeLogFileAndPrint(f"ProcessL1aqc.processL1aqc: {timestr}")
+        logging.writeLogFileAndPrint(f"ProcessL1aqc.processL1aqc: {timestr}")
 
         # Add configuration parameters (L1C) to root/node attributes
         if ConfigFile.settings['bL1aqcSunTracker']:
@@ -215,14 +217,14 @@ class ProcessL1aqc:
                 ProcessL1aqc.renameGroup(gp,cf)
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
-        node  = Utilities.rootAddDateTime(node)
+        node  = dating.rootAddDateTime(node)
 
         #############################################################################################
         # Sort groups chronologically and removes duplicate timestamps
         #############################################################################################
-        Utilities.writeLogFileAndPrint('Sorting all datasets chronologically')
+        logging.writeLogFileAndPrint('Sorting all datasets chronologically')
         for gp in node.groups:
-            gp = Utilities.sortDateTime(gp)
+            gp = dating.sortDateTime(gp)
             if not gp:
                 return None
 
@@ -238,8 +240,8 @@ class ProcessL1aqc:
                 ancLat = []
                 ancLon = []
                 gpsDateTime = gp.getDataset('DATETIME').data
-                ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
-                ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
+                ancTimeTag2 = [dating.datetime2TimeTag2(dt) for dt in gpsDateTime]
+                ancDateTag = [dating.datetime2DateTag(dt) for dt in gpsDateTime]
                 if ConfigFile.settings['SensorType'].lower() == 'trios':
                     # Rarely(?) used lat/lon in MSDA acquisition.
                     ancLat = gp.getDataset('LATITUDE') # These will be replaced by ancillary file, if present
@@ -253,10 +255,10 @@ class ProcessL1aqc:
                     for i in range(gpsLat.data.shape[0]):
                         latDM = gpsLat.data["NONE"][i]
                         latDirection = latHemiData.data["NONE"][i]
-                        latDD = Utilities.dmToDd(latDM, latDirection)
+                        latDD = dating.dmToDd(latDM, latDirection)
                         lonDM = gpsLon.data["NONE"][i]
                         lonDirection = lonHemiData.data["NONE"][i]
-                        lonDD = Utilities.dmToDd(lonDM, lonDirection)
+                        lonDD = dating.dmToDd(lonDM, lonDirection)
                         ancLat.append(latDD)
                         ancLon.append(lonDD)
 
@@ -275,16 +277,16 @@ class ProcessL1aqc:
                 ancLat=gp.getDataset('LAT').data
                 ancLon=gp.getDataset('LON').data
 
-                ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
-                ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
+                ancTimeTag2 = [dating.datetime2TimeTag2(dt) for dt in gpsDateTime]
+                ancDateTag = [dating.datetime2DateTag(dt) for dt in gpsDateTime]
             elif gp.id.startswith("SunTracker_sorad"): # So-rad GPS
                 # Note - So-Rad Lat, Lon are already in decimal format 
                 gpsDateTime = gp.getDataset('DATETIME').data
                 gpsLat = np.array(gp.getDataset('LATITUDE').data.tolist()).ravel()
                 gpsLon = np.array(gp.getDataset('LONGITUDE').data.tolist()).ravel()
 
-                ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in gpsDateTime]
-                ancDateTag = [Utilities.datetime2DateTag(dt) for dt in gpsDateTime]
+                ancTimeTag2 = [dating.datetime2TimeTag2(dt) for dt in gpsDateTime]
+                ancDateTag = [dating.datetime2DateTag(dt) for dt in gpsDateTime]
 
                 latAnc = []
                 lonAnc = []
@@ -293,7 +295,7 @@ class ProcessL1aqc:
                     lonAnc.append(gpsLon[i])
 
         if esDateTime is None:
-            Utilities.writeLogFileAndPrint('Required Es data is missing. Check L1A and raw input files. Abort.')
+            logging.writeLogFileAndPrint('Required Es data is missing. Check L1A and raw input files. Abort.')
             return None
 
         # Solar geometry from GPS alone; No Tracker, no Ancillary
@@ -312,13 +314,13 @@ class ProcessL1aqc:
 
                 # SATTHS fluxgate compass on SAS
                 if compass is None:
-                    Utilities.writeLogFileAndPrint('Required ancillary data for sensor offset missing. Abort.')
+                    logging.writeLogFileAndPrint('Required ancillary data for sensor offset missing. Abort.')
                     return None
                 else:
                     relAzAnc = compass - sunAzimuthAnc
             else:
                 # TODO: Make sure DALEC, So-Rad can get the datetime from the GPS.
-                Utilities.writeLogFileAndPrint('Required GPS data is missing. Check tdf files and ancillary data. Abort.')
+                logging.writeLogFileAndPrint('Required GPS data is missing. Check tdf files and ancillary data. Abort.')
                 return None
 
         # If ancillary file is provided, use it. Otherwise fill in what you can using the datetime, lat, lon from GPS
@@ -343,21 +345,21 @@ class ProcessL1aqc:
 
             # Remove all ancillary data that does not intersect ES data
             print('Removing non-pertinent ancillary data.')
-            lower = Utilities.find_nearest(ancDateTime,min(esDateTime))
+            lower = comparing.find_nearest(ancDateTime,min(esDateTime))
             lower = list(range(0,lower-1))                  # keep one record before that
-            upper = Utilities.find_nearest(ancDateTime,max(esDateTime))
+            upper = comparing.find_nearest(ancDateTime,max(esDateTime))
             upper = list(range(upper+2,len(ancDateTime)))   # keep one record after that
             ancData.colDeleteRow(upper)
             ancData.colDeleteRow(lower)
 
             # Test if any data remaining
             if not ancData.columns["DATETIME"][0]:
-                Utilities.writeLogFileAndPrint("No coincident ancillary data found. Check ancillary file. Aborting")
+                logging.writeLogFileAndPrint("No coincident ancillary data found. Check ancillary file. Aborting")
                 return None
 
             timeStamp = ancData.columns["DATETIME"][0]
-            ancTimeTag2 = [Utilities.datetime2TimeTag2(dt) for dt in timeStamp]
-            ancDateTag = [Utilities.datetime2DateTag(dt) for dt in timeStamp]
+            ancTimeTag2 = [dating.datetime2TimeTag2(dt) for dt in timeStamp]
+            ancDateTag = [dating.datetime2DateTag(dt) for dt in timeStamp]
             ancLat = ancData.columns["LATITUDE"][0]
             ancLon = ancData.columns["LONGITUDE"][0]
 
@@ -380,7 +382,7 @@ class ProcessL1aqc:
                 sasAzAnc = ancData.columns["SENSOR_AZ"][0]
 
             if not ConfigFile.settings["bL1aqcSunTracker"] and not relAzAnc and not sasAzAnc:
-                Utilities.writeLogFileAndPrint('Required ancillary sensor geometries missing or incorrect ancillary file used. Abort.')
+                logging.writeLogFileAndPrint('Required ancillary sensor geometries missing or incorrect ancillary file used. Abort.')
                 return None
             elif not ConfigFile.settings["bL1aqcSunTracker"] and not relAzAnc:
                 # Corrected below for +/- solar-sensor orientation
@@ -409,7 +411,7 @@ class ProcessL1aqc:
             ancillaryData.attributes["LONGITUDE_UNITS"]='degrees'
 
         if not ConfigFile.settings["bL1aqcSunTracker"] and not ancillaryData:
-            Utilities.writeLogFileAndPrint('Required ancillary metadata for sensor offset missing. Abort.')
+            logging.writeLogFileAndPrint('Required ancillary metadata for sensor offset missing. Abort.')
             return None
 
         if relAzAnc:
@@ -440,7 +442,7 @@ class ProcessL1aqc:
                         lightGroup = node.groups[groupDict["ES_LIGHT"]]
                     else:
                         lightGroup = None
-                    gp = Utilities.fixDarkTimes(gp,lightGroup)
+                    gp = dating.fixDarkTimes(gp,lightGroup)
 
         # Apply Filter for lack of Suntracker data while Es is collecting when Suntracker in use
         if node is not None and ConfigFile.settings["bL1aqcSunTracker"]:
@@ -453,15 +455,15 @@ class ProcessL1aqc:
                     esDateTime = group.datasets['DATETIME'].data
 
             if sunTrackerDateTime is None:
-                Utilities.writeLogFileAndPrint('  No SunTracker group found')
+                logging.writeLogFileAndPrint('  No SunTracker group found')
                 return None
 
-            Utilities.writeLogFileAndPrint("Filtering file for Suntracker data outages")
+            logging.writeLogFileAndPrint("Filtering file for Suntracker data outages")
 
             tThreshold = 30 # seconds gap between datasets
-            badTimes = Utilities.findGaps_dateTime(esDateTime,sunTrackerDateTime,tThreshold)
+            badTimes = dating.findGaps_dateTime(esDateTime,sunTrackerDateTime,tThreshold)
 
-            Utilities.writeLogFileAndPrint(f'Percentage of data failed on Suntracker outage: {round(100*len(badTimes)/len(esDateTime))} %')
+            logging.writeLogFileAndPrint(f'Percentage of data failed on Suntracker outage: {round(100*len(badTimes)/len(esDateTime))} %')
 
             if badTimes is False:
                 # All records are bad
@@ -486,7 +488,7 @@ class ProcessL1aqc:
                 timeStamp = gp.getDataset("DATETIME").data
 
         if gps:
-            Utilities.writeLogFileAndPrint("Filtering file for GPS status")
+            logging.writeLogFileAndPrint("Filtering file for GPS status")
 
             i = 0
             start = -1
@@ -501,15 +503,15 @@ class ProcessL1aqc:
                 else:
                     if start != -1:
                         startstop = [timeStamp[start],timeStamp[stop]]
-                        Utilities.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}',False)
+                        logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}',False)
                         badTimes.append(startstop)
                         start = -1
 
             if start != -1 and stop == index: # Records from a mid-point to the end are bad
                 startstop = [timeStamp[start],timeStamp[stop]]
                 badTimes.append(startstop)
-                Utilities.writeLogFileAndPrint(f'   Flag additional data from {startstop[0]} to {startstop[1]}',False)
-            Utilities.writeLogFileAndPrint(f'Percentage of data failed on GPS Status: {round(100*i/len(timeStamp))} %')
+                logging.writeLogFileAndPrint(f'   Flag additional data from {startstop[0]} to {startstop[1]}',False)
+            logging.writeLogFileAndPrint(f'Percentage of data failed on GPS Status: {round(100*i/len(timeStamp))} %')
 
             if start==0 and stop==index: # All records are bad
                 return None
@@ -527,7 +529,7 @@ class ProcessL1aqc:
         # filtering out tilt values > 5 deg)
 
         if node is not None and int(ConfigFile.settings["bL1aqcCleanPitchRoll"]) == 1:
-            Utilities.writeLogFileAndPrint("Filtering file for high pitch and roll")
+            logging.writeLogFileAndPrint("Filtering file for high pitch and roll")
 
             # Preferentially read PITCH and ROLL from SunTracker/pySAS THS sensor...
             pitch, roll, gp = None, None, None
@@ -558,17 +560,17 @@ class ProcessL1aqc:
             # ...and failing that, try to pull from ancillary data
             if pitch is None or roll is None:
                 if "PITCH" in ancData.columns:
-                    Utilities.writeLogFileAndPrint("Pitch data from ancillary file used.")
+                    logging.writeLogFileAndPrint("Pitch data from ancillary file used.")
 
                     pitch = ancData.columns["PITCH"][0]
                     if "ROLL" in ancData.columns:
-                        Utilities.writeLogFileAndPrint("Roll data from ancillary file used.")
+                        logging.writeLogFileAndPrint("Roll data from ancillary file used.")
                         roll = ancData.columns["ROLL"][0]
                     timeStamp = ancData.columns["DATETIME"][0]
                 else:
                     msg = "Pitch and roll data not found for tilt sensor or in Ancillary Data.\n"
                     msg = msg + " Try adding to Ancillary Data or turning off tilt filter. Aborting."
-                    Utilities.writeLogFileAndPrint(msg)
+                    logging.writeLogFileAndPrint(msg)
                     return None
 
             tiltMax = float(ConfigFile.settings["fL1aqcPitchRollPitch"]) # Same as PitchRollRoll...
@@ -588,16 +590,16 @@ class ProcessL1aqc:
                     if start != -1:
                         # print('Pitch or roll angle passed. Pitch: ' + str(round(pitch[index])) + ' Roll: ' +str(round(pitch[index])))
                         startstop = [timeStamp[start],timeStamp[stop]]
-                        Utilities.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}',False)
+                        logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}',False)
                         badTimes.append(startstop)
                         start = -1
 
             if start != -1 and stop == index: # Records from a mid-point to the end are bad
                 startstop = [timeStamp[start],timeStamp[stop]]
                 badTimes.append(startstop)
-                Utilities.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]} ',False)
+                logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]} ',False)
 
-            Utilities.writeLogFileAndPrint(f'Percentage of data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %')
+            logging.writeLogFileAndPrint(f'Percentage of data out of Pitch/Roll bounds: {round(100*i/len(timeStamp))} %')
 
             if start==0 and stop==index: # All records are bad
                 return None
@@ -626,7 +628,7 @@ class ProcessL1aqc:
                     delay = float(ConfigFile.settings["fL1aqcRotatorDelay"])
 
                     # if node is not None and int(ConfigFile.settings["bL1aqcRotatorDelay"]) == 1:
-                    Utilities.writeLogFileAndPrint("Filtering file for Rotator Delay")
+                    logging.writeLogFileAndPrint("Filtering file for Rotator Delay")
 
                     kickout = 0
                     start, startstop, time = None, None, None
@@ -651,19 +653,19 @@ class ProcessL1aqc:
                                 if kickout==1 and time > (start + datetime.timedelta(0,delay)):
                                     # startstop = [timeStampTuple[startIndex],timeStampTuple[index-1]]
                                     startstop = [timeStamp[startIndex],timeStamp[index-1]]
-                                    Utilities.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}',False)
+                                    logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}',False)
                                     badTimes.append(startstop)
                                     kickout = 0
                                     startIndex = None
                                 elif kickout ==1:
                                     i += 1
-                    Utilities.writeLogFileAndPrint(f'Percentage of Tracker data out of Rotator Delay bounds: {round(100*i/len(timeStamp))} %')
+                    logging.writeLogFileAndPrint(f'Percentage of Tracker data out of Rotator Delay bounds: {round(100*i/len(timeStamp))} %')
 
                 else:
-                    Utilities.writeLogFileAndPrint('No POINTING data found. Filtering on rotator delay failed.')
+                    logging.writeLogFileAndPrint('No POINTING data found. Filtering on rotator delay failed.')
                     return None
             else:
-                Utilities.writeLogFileAndPrint('No solar tracker data found. Filtering on rotator delay failed.')
+                logging.writeLogFileAndPrint('No solar tracker data found. Filtering on rotator delay failed.')
                 return None
 
 
@@ -672,7 +674,7 @@ class ProcessL1aqc:
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
         if node is not None and ConfigFile.settings["bL1aqcSunTracker"] and ConfigFile.settings["bL1aqcRotatorAngle"]:
-            Utilities.writeLogFileAndPrint("Filtering file for bad Absolute Rotator Angle")
+            logging.writeLogFileAndPrint("Filtering file for bad Absolute Rotator Angle")
 
             gp = None
             for group in node.groups:
@@ -708,22 +710,22 @@ class ProcessL1aqc:
                             if start != -1:
                                 # print('Absolute rotator angle passed: ' + str(round(rotatori + home)))
                                 startstop = [timeStamp[start],timeStamp[stop]]
-                                Utilities.writeLogFileAndPrint(f'   Flag data from {str(startstop[0])} to {str(startstop[1])}',False)
+                                logging.writeLogFileAndPrint(f'   Flag data from {str(startstop[0])} to {str(startstop[1])}',False)
 
                                 badTimes.append(startstop)
                                 start = -1
 
                     if start != -1 and stop == index: # Records from a mid-point to the end are bad
                         startstop = [timeStamp[start],timeStamp[stop]]
-                        Utilities.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}',False)
+                        logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]}',False)
                         badTimes.append(startstop)
 
-                    Utilities.writeLogFileAndPrint(f'Percentage of Tracker data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %')
+                    logging.writeLogFileAndPrint(f'Percentage of Tracker data out of Absolute Rotator bounds: {round(100*i/len(timeStamp))} %')
 
                     if start==0 and stop==index: # All records are bad
                         return None
                 else:
-                    Utilities.writeLogFileAndPrint('No rotator data found. Filtering on absolute rotator angle failed.')
+                    logging.writeLogFileAndPrint('No rotator data found. Filtering on absolute rotator angle failed.')
                     return None
 
         # General setup for ancillary or SunTracker data prior to Relative Solar Azimuth option
@@ -803,9 +805,7 @@ class ProcessL1aqc:
                     relAz=gp.getDataset('REL_AZ').data['REL_AZ']
                     relAzSource = 'SunTracker'
                 else:
-                    msg = "No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added."
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    logging.writeLogFileAndPrint("No rotator, solar azimuth, and/or ship'''s heading data found. Filtering on relative azimuth not added.")
         else:
             relAz = relAzAnc
             relAzSource = 'Ancillary'
@@ -856,11 +856,11 @@ class ProcessL1aqc:
             # Converts from TT2 (hhmmssmss. UTC) and Datetag (YYYYDOY UTC) to datetime
             # Filter for aberrant Datetags
             if str(dateTag[i]).startswith("19") or str(dateTag[i]).startswith("20"):
-                dt = Utilities.dateTagToDateTime(dateTag[i])
-                timeStampAnc.append(Utilities.timeTag2ToDateTime(dt, time))
+                dt = dating.dateTagToDateTime(dateTag[i])
+                timeStampAnc.append(dating.timeTag2ToDateTime(dt, time))
             else:
                 ancGroup.datasetDeleteRow(i)
-                Utilities.writeLogFileAndPrint("Bad Datetag found in ancillary. Eliminating record")
+                logging.writeLogFileAndPrint("Bad Datetag found in ancillary. Eliminating record")
         dateTime.data = timeStampAnc
 
         # For non-SunTracker datasets, define the timeStamp around the ancillary data
@@ -885,8 +885,8 @@ class ProcessL1aqc:
         # rather than indexed values gleaned from SATNAV, since they have not yet been interpolated in time.
         # Interpolating them first would introduce error.
         if node is not None and int(ConfigFile.settings["bL1aqcCleanSunAngle"]) == 1:
-            Utilities.writeLogFileAndPrint("Filtering file for bad Relative Solar Azimuth")
-            Utilities.writeLogFileAndPrint(f"    Source of Relative Solar Azimuth data: {relAzSource}")
+            logging.writeLogFileAndPrint("Filtering file for bad Relative Solar Azimuth")
+            logging.writeLogFileAndPrint(f"    Source of Relative Solar Azimuth data: {relAzSource}")
 
             relAzimuthMin = float(ConfigFile.settings["fL1aqcSunAngleMin"])
             relAzimuthMax = float(ConfigFile.settings["fL1aqcSunAngleMax"])
@@ -913,19 +913,19 @@ class ProcessL1aqc:
                         # good data follows bad data
                         # print('Relative solar azimuth angle passed: ' + str(round(relAzimuthAngle,2)))
                         startstop = [timeStamp[start],timeStamp[stop]]
-                        Utilities.writeLogFileAndPrint(f'   Flag data from: {startstop[0]}  to {startstop[1]}',False)
+                        logging.writeLogFileAndPrint(f'   Flag data from: {startstop[0]}  to {startstop[1]}',False)
                         badTimes.append(startstop)
                         start = -1
 
             if start != -1 and stop == index: # Records from a mid-point to the end are bad
                 startstop = [timeStamp[start],timeStamp[stop]]
-                Utilities.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]} ',False)
+                logging.writeLogFileAndPrint(f'   Flag data from {startstop[0]} to {startstop[1]} ',False)
                 badTimes.append(startstop)
 
-            Utilities.writeLogFileAndPrint(f'Percentage of data out of Relative Solar Azimuth bounds: {round(100*i/len(relAz))} %')
+            logging.writeLogFileAndPrint(f'Percentage of data out of Relative Solar Azimuth bounds: {round(100*i/len(relAz))} %')
 
             if start==0 and stop==index: # All records are bad
-                Utilities.writeLogFileAndPrint("All records out of bounds. Aborting.")
+                logging.writeLogFileAndPrint("All records out of bounds. Aborting.")
                 return None
 
         node = ProcessL1aqc.filterBadTimes(node,badTimes)
@@ -953,7 +953,7 @@ class ProcessL1aqc:
             min(liDateTime) > max(ltDateTime) or min(liDateTime) > max(ltDateTime) or
             min(ltDateTime) > max(liDateTime) or min(ltDateTime) > max(liDateTime)):
 
-            Utilities.writeLogFileAndPrint('Radiometry groups no longer overlap in time. Abort.')
+            logging.writeLogFileAndPrint('Radiometry groups no longer overlap in time. Abort.')
             return None
 
 

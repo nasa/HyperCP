@@ -25,7 +25,8 @@ from Source.ConfigWindow import ConfigWindow
 from Source.GetAnc_credentials import GetAnc_credentials
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.SeaBASSHeaderWindow import SeaBASSHeaderWindow
-from Source.Utilities import Utilities
+# from Source.Utilities import Utilities
+import Source.utils.filing as filing
 
 VERSION = "1.2.15"
 
@@ -58,17 +59,20 @@ class Window(QtWidgets.QWidget):
         # Confirm that core data files are in place. Download if necessary.
         fpfZhang = os.path.join(CODE_HOME, "Data", "Zhang_rho_db_expanded.mat")
         if not os.path.exists(fpfZhang):
-            Utilities.downloadZhangDB(fpfZhang)
+            # Utilities.downloadZhangDB(fpfZhang)
+            filing.downloadZhangDB(fpfZhang)
 
         # Confirm that core data files are in place. Download if necessary.
         fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Z17_LUT_40.nc")
         if not os.path.exists(fpfZhangLUT):
-            Utilities.downloadZhangLUT(fpfZhangLUT)
+            # Utilities.downloadZhangLUT(fpfZhangLUT)
+            filing.downloadZhangLUT(fpfZhangLUT)
 
         # Confirm that core data files are in place. Download if necessary.
         fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Z17_LUT_30.nc")
         if not os.path.exists(fpfZhangLUT):
-            Utilities.downloadZhangLUT(fpfZhangLUT)
+            # Utilities.downloadZhangLUT(fpfZhangLUT)
+            filing.downloadZhangLUT(fpfZhangLUT)
 
         self.initUI()
 
@@ -559,6 +563,7 @@ class Window(QtWidgets.QWidget):
         MainConfig.settings["cfgPath"] = os.path.join(
             CODE_HOME, "Config", configFileName)
         MainConfig.saveConfig(MainConfig.fileName)
+        ConfigFile.saveConfig(configFileName)
         event.accept()
 
     def singleL1aClicked(self):
@@ -673,18 +678,21 @@ class Command:
         # Confirm that core data files are in place. Download if necessary.
         fpfZhang = os.path.join(CODE_HOME, "Data", "Zhang_rho_db_expanded.mat")
         if not os.path.exists(fpfZhang):
-            Utilities.downloadZhangDB(fpfZhang, force=True)
+            # Utilities.downloadZhangDB(fpfZhang, force=True)
+            filing.downloadZhangDB(fpfZhang, force=True)
 
         # Confirm that core data files are in place. Download if necessary.
         # fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Zhang_rho_LUT.nc")
         fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Z17_LUT_40.nc")
         if not os.path.exists(fpfZhangLUT):
-            Utilities.downloadZhangLUT(fpfZhangLUT, force=True)
+            # Utilities.downloadZhangLUT(fpfZhangLUT, force=True)
+            filing.downloadZhangLUT(fpfZhangLUT, force=True)
 
         # Confirm that core data files are in place. Download if necessary.
         fpfZhangLUT = os.path.join(CODE_HOME, "Data", "Z17_LUT_30.nc")
         if not os.path.exists(fpfZhangLUT):
-            Utilities.downloadZhangLUT(fpfZhangLUT, force=True)
+            # Utilities.downloadZhangLUT(fpfZhangLUT, force=True)
+            filing.downloadZhangLUT(fpfZhangLUT, force=True)
 
         # Create a default main config to be filled with cmd argument
         # to avoid reading the one generated with the GUI

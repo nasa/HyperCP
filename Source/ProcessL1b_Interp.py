@@ -1,18 +1,21 @@
-
+''' Interpolate L1b data '''
 import collections
 import datetime as dt
 import time
-import calendar
+import warnings
 from inspect import currentframe, getframeinfo
+
 from pysolar.solar import get_azimuth, get_altitude
 import numpy as np
 import scipy as sp
-import warnings
 
 from Source.HDFRoot import HDFRoot
-from Source.Utilities import Utilities
 from Source.ConfigFile import ConfigFile
-
+import Source.utils.plotting as plotting
+import Source.utils.comparing as comparing
+import Source.utils.loggingHCP as logging
+import Source.utils.interpolating as interpolating
+import Source.utils.dating as dating
 
 class ProcessL1b_Interp:
 
@@ -191,13 +194,13 @@ class ProcessL1b_Interp:
 
         interpData = None
         if esLength < liLength and esLength < ltLength:
-            Utilities.writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
+            logging.writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
             interpData = esData
         elif liLength < ltLength:
-            Utilities.writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
+            logging.writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
             interpData = liData
         else:
-            Utilities.writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
+            logging.writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
             interpData = ltData
 
         # latData, lonData need to correspond to interpData.
@@ -215,14 +218,14 @@ class ProcessL1b_Interp:
 
         # Required:
         if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['REL_AZ'], interpData, "REL_AZ", fileName):
-            Utilities.writeLogFileAndPrint("Error: REL_AZ missing from Ancillary data, and no Tracker group")
+            logging.writeLogFileAndPrint("Error: REL_AZ missing from Ancillary data, and no Tracker group")
             return None
         # Solar geometries are not interpolated, but re-calculated, so need latData, lonData
         if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['SOLAR_AZ'], interpData, "SOLAR_AZ", fileName, latData, lonData):
-            Utilities.writeLogFileAndPrint("Error: SOLAR_AZ missing from Ancillary data, and no Tracker group")
+            logging.writeLogFileAndPrint("Error: SOLAR_AZ missing from Ancillary data, and no Tracker group")
             return None
         if not ProcessL1b_Interp.interpolateData(newAncGroup.datasets['SZA'], interpData, "SZA", fileName, latData, lonData):
-            Utilities.writeLogFileAndPrint("Error: SZA missing from Ancillary data, and no Tracker group")
+            logging.writeLogFileAndPrint("Error: SZA missing from Ancillary data, and no Tracker group")
             return None
 
         # Optional:
@@ -304,7 +307,7 @@ class ProcessL1b_Interp:
 
             if dataName in angList:
 
-                newXData.columns[k] = Utilities.interpAngular(xTS, y, newXTS, fill_value=0)
+                newXData.columns[k] = interpolating.interpAngular(xTS, y, newXTS, fill_value=0)
 
                 # Some angular measurements (like SAS pointing) are + and -, and get converted
                 # to all +. Convert them back to - for 180-359
@@ -315,18 +318,18 @@ class ProcessL1b_Interp:
                             pointingData[i] = angle - 360
 
             elif dataName in fillList:
-                newXData.columns[k] = Utilities.interpFill(xTS,y,newXTS, fillValue=np.nan)
+                newXData.columns[k] = interpolating.interpFill(xTS,y,newXTS, fillValue=np.nan)
 
             else:
                 if kind == 'cubic':
-                    newXData.columns[k] = Utilities.interpSpline(xTS, y, newXTS)
+                    newXData.columns[k] = interpolating.interpSpline(xTS, y, newXTS)
                 else:
-                    newXData.columns[k] = Utilities.interp(xTS,y,newXTS, fill_value=np.nan)
+                    newXData.columns[k] = interpolating.interp(xTS,y,newXTS, fill_value=np.nan)
 
         if ConfigFile.settings["bL1bPlotTimeInterp"] == 1 and dataName != 'T':
             print('Plotting time interpolations ' +dataName)
             # Plots the interpolated data in /Plots/
-            Utilities.plotTimeInterp(xData, xTimer, newXData, yTimer, dataName, fileName)
+            plotting.plotTimeInterp(xData, xTimer, newXData, yTimer, dataName, fileName)
 
     @staticmethod
     def convertDataset(group, datasetName, newGroup, newDatasetName):
@@ -358,7 +361,7 @@ class ProcessL1b_Interp:
                     for i in range(dataset.data.shape[0]):
                         latDM = latPosData.data["NONE"][i]
                         latDirection = latHemiData.data["NONE"][i]
-                        latDD = Utilities.dmToDd(latDM, latDirection)
+                        latDD = dating.dmToDd(latDM, latDirection)
                         latPosData.data["NONE"][i] = latDD
                 if newDatasetName == "LONGITUDE":
                     lonPosData = group.getDataset("LONPOS")
@@ -366,7 +369,7 @@ class ProcessL1b_Interp:
                     for i in range(dataset.data.shape[0]):
                         lonDM = lonPosData.data["NONE"][i]
                         lonDirection = lonHemiData.data["NONE"][i]
-                        lonDD = Utilities.dmToDd(lonDM, lonDirection)
+                        lonDD = dating.dmToDd(lonDM, lonDirection)
                         lonPosData.data["NONE"][i] = lonDD
 
         newSensorData = newGroup.addDataset(newDatasetName)
@@ -389,11 +392,11 @@ class ProcessL1b_Interp:
         ''' Preforms time interpolation to match xData to yData. xData is the dataset to be
         interpolated, yData is the reference dataset with the times to be interpolated to.'''
 
-        Utilities.writeLogFileAndPrint(f'Interpolate Data {dataName}')
+        logging.writeLogFileAndPrint(f'Interpolate Data {dataName}')
 
         # Interpolating to itself
         if xData is yData:
-            Utilities.writeLogFileAndPrint('Skip. Other instruments are being interpolated to this one.')
+            logging.writeLogFileAndPrint('Skip. Other instruments are being interpolated to this one.')
             return True
 
         xDatetime = xData.data["Datetime"].tolist()
@@ -403,10 +406,10 @@ class ProcessL1b_Interp:
         print('           To '+str(len(yDatetime))+' timestamps from '+\
             str(min(yDatetime))+' to '+str(max(yDatetime)))
 
-        if Utilities.hasNan(xData):
+        if comparing.hasNan(xData):
             frameinfo = getframeinfo(currentframe())
             # print(frameinfo.filename, frameinfo.lineno)
-            Utilities.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
+            logging.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
 
             if dataName == 'REL_AZ':
                 # Replace nans by interpolating over them if necessary
@@ -414,7 +417,7 @@ class ProcessL1b_Interp:
                     y = np.array(xData.columns['REL_AZ'])   # <- Robot file
                 else:
                     y = np.array(xData.columns['NONE'])     # <- Ancillary file
-                nans, x= Utilities.nan_helper(y) # x is a lambda function
+                nans, x= comparing.nan_helper(y) # x is a lambda function
                 y[nans]= np.interp(x(nans), x(~nans), y[~nans])
                 if 'REL_AZ' in xData.columns:
                     xData.columns['REL_AZ'] = y.tolist()
@@ -422,7 +425,7 @@ class ProcessL1b_Interp:
                     xData.columns['NONE'] = y.tolist()
                 xData.columnsToDataset()
 
-                Utilities.writeLogFileAndPrint(f'Replaced NaNs in {dataName}')
+                logging.writeLogFileAndPrint(f'Replaced NaNs in {dataName}')
 
         # xData will be interpolated to yDatetimes
         xData.columns["Datetag"] = yData.data["Datetag"].tolist()
@@ -452,9 +455,9 @@ class ProcessL1b_Interp:
 
         xData.columnsToDataset()
 
-        if Utilities.hasNan(xData):
+        if comparing.hasNan(xData):
             frameinfo = getframeinfo(currentframe())
-            Utilities.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
+            logging.writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
         return True
 
     @staticmethod
@@ -630,7 +633,7 @@ class ProcessL1b_Interp:
         Used for both SeaBird and TriOS L1b
         '''
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
-        # node  = Utilities.rootAddDateTime(node)
+        # node  = dating.rootAddDateTime(node)
 
         root = HDFRoot() # creates a new instance of HDFRoot Class
         root.copyAttributes(node) # Now copy the attributes in from the L1a object
@@ -638,7 +641,7 @@ class ProcessL1b_Interp:
         timestr = now.strftime("%d-%b-%Y %H:%M:%S")
         root.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
-        Utilities.writeLogFileAndPrint(f"ProcessL1b_Interp.processL1b_Interp: {timestr}")
+        logging.writeLogFileAndPrint(f"ProcessL1b_Interp.processL1b_Interp: {timestr}")
 
         gpsGroup,pyrGroup,esGroup,liGroup,ltGroup,robotGroup,ancGroup,satmsgGroup,esL1AQCDark=\
             None,None,None,None,None,None,None,None,None
@@ -839,26 +842,26 @@ class ProcessL1b_Interp:
 
         interpData = None
         if esLength < liLength and esLength < ltLength:
-            Utilities.writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
+            logging.writeLogFileAndPrint(f"ES has fewest records - interpolating to ES. This should raise a red flag; {esLength} records")
             interpData = esData
         elif liLength < ltLength:
-            Utilities.writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
+            logging.writeLogFileAndPrint(f"LI has fewest records - interpolating to LI. This should raise a red flag; {liLength} records")
             interpData = liData
         else:
-            Utilities.writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
+            logging.writeLogFileAndPrint(f"LT has fewest records (as expected) - interpolating to LT; {ltLength} records")
             interpData = ltData
 
         # Confirm that datasets are overlapping in time
         minInterpDT = min(interpData.columns['Datetime'])
         maxInterpDT = max(interpData.columns['Datetime'])
         if min(esData.columns['Datetime']) > maxInterpDT or max(esData.columns['Datetime']) < minInterpDT:
-            Utilities.writeLogFileAndPrint("ES data does not overlap interpolation dataset")
+            logging.writeLogFileAndPrint("ES data does not overlap interpolation dataset")
             return None
         if min(liData.columns['Datetime']) > maxInterpDT or max(liData.columns['Datetime']) < minInterpDT:
-            Utilities.writeLogFileAndPrint("LI data does not overlap interpolation dataset")
+            logging.writeLogFileAndPrint("LI data does not overlap interpolation dataset")
             return None
         if min(ltData.columns['Datetime']) > maxInterpDT or max(ltData.columns['Datetime']) < minInterpDT:
-            Utilities.writeLogFileAndPrint("LT data does not overlap interpolation dataset")
+            logging.writeLogFileAndPrint("LT data does not overlap interpolation dataset")
             return None
 
         # Perform time interpolation

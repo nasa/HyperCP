@@ -7,7 +7,7 @@ from Source import PATH_TO_CONFIG
 from Source.HDFRoot import HDFRoot
 from Source.SeaBASSHeader import SeaBASSHeader
 from Source.ConfigFile import ConfigFile
-from Source.Utilities import Utilities
+import Source.utils.dating as dating
 
 
 class SeaBASSWriter:
@@ -73,11 +73,11 @@ class SeaBASSWriter:
         # Convert Dates and Times
         # timeDT = esData.data['Datetime'].tolist() # Datetime has already been stripped off for saving the HDF
         dateDay = esData.data['Datetag'].tolist()
-        dateDT = [Utilities.dateTagToDateTime(x) for x in dateDay]
+        dateDT = [dating.dateTagToDateTime(x) for x in dateDay]
         timeTag2 = esData.data['Timetag2'].tolist()
         timeDT = []
         for i, dtDT in enumerate(dateDT):
-            timeDT.append(Utilities.timeTag2ToDateTime(dtDT,timeTag2[i]))
+            timeDT.append(dating.timeTag2ToDateTime(dtDT,timeTag2[i]))
 
         # Python 2 format operator
         # startTime = "%02d:%02d:%02d[GMT]" % (min(timeDT).hour, min(timeDT).minute, min(timeDT).second)
@@ -141,7 +141,7 @@ class SeaBASSWriter:
         if dsDelta is not None:
             if 'Datetag' in dsDelta.columns:
                 del dsDelta.columns['Datetag']
-        dateDT = [Utilities.dateTagToDateTime(x) for x in dateDay]
+        dateDT = [dating.dateTagToDateTime(x) for x in dateDay]
         timeTag2 = dsCopy['Timetag2'].tolist()
         newData = SeaBASSWriter.removeColumns(newData,'Timetag2')
         if dsDelta is not None:
@@ -153,7 +153,7 @@ class SeaBASSWriter:
 
         timeDT = []
         for i in range(len(dateDT)):
-            timeDT.append(Utilities.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
+            timeDT.append(dating.timeTag2ToDateTime(dateDT[i],timeTag2[i]))
 
         # Retrieve ancillaries and remove from dataset (they are not on deltas)
         lat = dsCopy['LATITUDE'].tolist()
@@ -243,7 +243,7 @@ class SeaBASSWriter:
 
         outFileName = SeaBASSWriter.sbFileName(fp,headerBlock,formattedData,dtype)
 
-        outFile = open(outFileName,'w',newline='\n')
+        outFile = open(outFileName,'w',newline='\n', encoding="utf-8")
         outFile.write('/begin_header\n')
         for key,value in headerBlock.items():
             if key != 'comments' and key != 'other_comments' and key != 'version':# and key != 'platform':

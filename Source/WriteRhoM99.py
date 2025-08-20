@@ -26,7 +26,7 @@ def readLUT(node,filename, headerlines):
     node.attributes['Citation'] = 'Mobley, 1999, Appl Opt 38, page 7445, Eqn. 4'
 
     try:
-        fileobj = open(filename,'r')
+        fileobj = open(filename,'r', encoding="utf-8")
     except Exception as e:
         print(f'Unable to open file for reading: {filename}. Error: {e}')
         return
@@ -50,6 +50,7 @@ def readLUT(node,filename, headerlines):
     phiSun = [] # 0:15:180 # phi of 45 deg is relaz of 135 deg
     phiView = []# 0:15:180
     rho = []    # result
+    elems = None
 
     for i, line in enumerate(lines):
         if i < headerlines:

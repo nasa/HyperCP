@@ -1,14 +1,9 @@
 ''' Process L1AQC to L1B '''
 import os
 import datetime as dt
-# import calendar
-# from inspect import currentframe, getframeinfo
-# import glob
-# from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from Source import PATH_TO_DATA
 from Source import PATH_TO_CONFIG
 from Source.ProcessL1b import ProcessL1b
 # from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
@@ -19,6 +14,8 @@ from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
+import Source.utils.loggingHCP as logging
+import Source.utils.dating as dating
 
 class ProcessL1bDALEC:
     '''L1B for DALEC'''
@@ -144,12 +141,10 @@ class ProcessL1bDALEC:
             node.attributes['CAL_TYPE'] = 'FRM-Full'
         node.attributes['WAVE_INTERP'] = str(ConfigFile.settings['fL1bInterpInterval']) + ' nm'
 
-        msg = f"ProcessL1bDALEC.processL1b: {timestr}"
-        print(msg)
-        Utilities.writeLogFile(msg)
+        logging.writeLogFileAndPrint(f"ProcessL1bDALEC.processL1b: {timestr}")
 
         # Add a dataset to each group for DATETIME, as defined by TIMETAG2 and DATETAG
-        node  = Utilities.rootAddDateTime(node)
+        node  = dating.rootAddDateTime(node)
 
         # Introduce a new group for carrying L1AQC data forward. Groups keep consistent timestamps across all datasets,
         #    so it has to be a new group to avoid conflict with interpolated timestamps.
@@ -185,7 +180,7 @@ class ProcessL1bDALEC:
         #     print('RADCAL:', radcal_dir)
         #     node = ProcessL1b.read_unc_coefficient_class(node, classbased_dir)
         #     if node is None:
-        #         Utilities.writeLogFileAndPrint('Error running class based uncertainties.')
+        #         logging.writeLogFileAndPrint('Error running class based uncertainties.')
         #         return None
         #
         # # Or add Full characterization files (RAW_UNCERTAINTIES)
@@ -193,29 +188,23 @@ class ProcessL1bDALEC:
         #
         #     node = ProcessL1b.read_unc_coefficient_frm(node)
         #     if node is None:
-        #         Utilities.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
+        #         logging.writeLogFileAndPrint('Error loading FRM characterization files. Check directory.')
         #         return None
         ############################################################################################################
 
         if not ProcessL1b_Interp.interp_Anc(node, outFilePath):
-            msg = 'Error interpolating ancillary data'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint('Error interpolating ancillary data')
             return None
 
         # Need to fill in with model data here. This had previously been run on the GPS group, but now shifted to Ancillary group
         ancGroup = node.getGroup("ANCILLARY_METADATA")
         # Retrieve MERRA2 model ancillary data
         if ConfigFile.settings["bL1bGetAnc"] ==1:
-            msg = 'MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint('MERRA2 data for Wind and AOD may be used to replace blank values. Reading in model data...')
             modRoot = GetAnc.getAnc(ancGroup)
         # Retrieve ECMWF model ancillary data
         elif ConfigFile.settings["bL1bGetAnc"] == 2:
-            msg = 'ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint('ECMWF data for Wind and AOD may be used to replace blank values. Reading in model data...')
             modRoot = GetAnc_ecmwf.getAnc_ecmwf(ancGroup)
         else:
             modRoot = None

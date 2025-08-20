@@ -220,7 +220,7 @@ class PDF(FPDF):
                 if  ConfigFile.settings["fL1bThermal"] == 2:
                     metaData += 'Internal working temp source: Air temperature + margin\n'
                 if  ConfigFile.settings["fL1bThermal"] == 3:
-                    metaData += 'Internal working temp source: Caps-on dark file unless < 30C.\n'                    
+                    metaData += 'Internal working temp source: Caps-on dark file unless < 30C.\n'
 
         if level == "L1BQC":
             intro = 'Apply more quality control filters.\n'
@@ -288,6 +288,9 @@ class PDF(FPDF):
                     metaData += 'Remove Negatives: ON'
 
         metaData += ' \n'
+
+        # Remove any em dashes.
+        metaData.translate({8212: None}) # Only works with breakpoint and repeat (??)
         return intro, metaData
 
 

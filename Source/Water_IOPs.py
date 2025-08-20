@@ -6,19 +6,18 @@ from Source.SB_support import readSB
 
 def water_iops(fp, wave,T,S):
 
-    ''' Function to obtain pure seawater absorption and backscattering spectra '''
-    
+    ''' Function to obtain pure seawater absorption and backscattering spectra 
     #Pure water absorption from
-    #   Pope R.M., Fry E.S. Absorption spectrum (380-700 nm) of pure water. 
-    #   II. Integrating cavity measurements. Appl. Opt. 1997;36:8710–8723. 
+    #   Pope R.M., Fry E.S. Absorption spectrum (380-700 nm) of pure water.
+    #   II. Integrating cavity measurements. Appl. Opt. 1997;36:8710–8723.
     #   doi: 10.1364/AO.36.008710.
     #   Smith R.C., Baker K.S. Optical properties of the clearest natural waters (
     #   200–800 nm) Appl. Opt. 1981;20:177–184. doi: 10.1364/AO.20.000177.
 
     #Pure water backscattering from Morel 1974 (powerlaw fit unknown, but looks good...)
-    #   Morel A. Optical properties of pure water and pure sea water. 
-    #   In: Jerlov N.G., Nielsen E.S., editors. Optical Aspects of Oceanography. 
-    #   Academic Press; New York, NY, USA: 1974. pp. 1–24. 
+    #   Morel A. Optical properties of pure water and pure sea water.
+    #   In: Jerlov N.G., Nielsen E.S., editors. Optical Aspects of Oceanography.
+    #   Academic Press; New York, NY, USA: 1974. pp. 1–24.
 
     #Corrected for in situ temperature and salinity conditions
     #   Sullivan, J M , M Twardowski, I R V Zanefcld, C M Moore, A H
@@ -35,10 +34,10 @@ def water_iops(fp, wave,T,S):
 
     # Outputs
     #   a_sw (list): absorption of seawater
-    #   bb_sw (list): backscattering of seawater
+    #   bb_sw (list): backscattering of seawater'''
 
     wave = np.array(wave)
-    
+
     #Pope and Frye pure water absorption 380-730 nm, then Smith and Baker 730-800 nm
     aw_sb = readSB(fp, no_warn=True)
     a_pw = scipy.interpolate.interp1d(aw_sb.data['wavelength'], aw_sb.data['aw'], \
@@ -55,15 +54,15 @@ def water_iops(fp, wave,T,S):
 
     # Salinity correct:
     if S>0:
-        bb_sw = ( (1 + 0.01*S) * bb_logfit)
+        bb_sw =  (1 + 0.01*S) * bb_logfit
     else:
         bb_sw = bb_logfit
 
-    # Temp and salinity correction for water absorption (need to know at what T it was measured): 
+    # Temp and salinity correction for water absorption (need to know at what T it was measured):
     if S==0:
-         S = 35.0
+        S = 35.0
     if T==0:
-         T = 22.0
+        T = 22.0
     T_pope = 22.0
 
     # Parameters for temp and salinity callibration (From Pegau et al Applied optics 1997):
@@ -87,16 +86,6 @@ def water_iops(fp, wave,T,S):
         kind='linear', bounds_error=False, fill_value=0.0)(wave)
 
     # Temperature and salinity corrections:
-    a_sw = ( a_pw + phi_T*(T - T_pope) + phi_S*S)
+    a_sw =  a_pw + phi_T*(T - T_pope) + phi_S*S
 
     return a_sw, bb_sw
-
-# wave = list(range(400, 701))
-# T = 20.0
-# S = 33.0
-# fp = os.path.join(os.path.abspath('.'), 'Data')
-# fp = os.path.join(fp,'Water_Absorption.sb')
-
-# a_sw, bb_sw = water_iops(fp, wave, T, S)
-# print(a_sw)
-

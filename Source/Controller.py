@@ -23,7 +23,9 @@ from Source.ProcessL1bqc import ProcessL1bqc
 from Source.ProcessL2 import ProcessL2
 from Source.SeaBASSWriter import SeaBASSWriter
 from Source.PDFreport import PDF
-from Source.Utilities import Utilities
+import Source.utils.loggingHCP as logging
+import Source.utils.filing as filing
+import Source.utils.plotting as plotting
 
 
 class Controller:
@@ -59,8 +61,8 @@ class Controller:
                 except Exception:
                     msg = "Controller.writeReport: Unable to open HDF file. May be open in another application."
                     if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                        Utilities.errorWindow("File Error", msg)
-                    Utilities.writeLogFileAndPrint(msg)
+                        logging.errorWindow("File Error", msg)
+                    logging.writeLogFileAndPrint(msg)
                     return
 
             else:
@@ -137,8 +139,8 @@ class Controller:
             pdf.output(outPDF, 'F')
         except Exception:
             msg = '**********************Unable to write the PDF file. It may be open in another program.**********************'
-            Utilities.errorWindow("File Error", msg)
-            Utilities.writeLogFileAndPrint(msg)
+            logging.errorWindow("File Error", msg)
+            logging.writeLogFileAndPrint(msg)
 
     @staticmethod
     def generateContext(calibrationMap):
@@ -291,11 +293,12 @@ class Controller:
         root = None
 
         # test = Utilities.checkInputFiles(inFilePath,flag_Trios, level="L1A")
-        test = Utilities.checkInputFiles(inFilePath,level="L1A")
+        # test = Utilities.checkInputFiles(inFilePath,level="L1A")
+        test = filing.checkInputFiles(inFilePath,level="L1A")
         if test is False:
             return None, None
 
-        Utilities.writeLogFileAndPrint("ProcessL1a")
+        logging.writeLogFileAndPrint("ProcessL1a")
 
         # Process the data
         outFFPs = None
@@ -320,14 +323,14 @@ class Controller:
             except Exception:
                 msg = '**********************Unable to write L1A file. It may be open in another program.**********************'
                 if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                    Utilities.errorWindow("File Error", msg)
-                Utilities.writeLogFileAndPrint(msg)
+                    logging.errorWindow("File Error", msg)
+                logging.writeLogFileAndPrint(msg)
                 return None, None
         else:
             msg = "L1a processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                Utilities.errorWindow("File Error", msg)
-            Utilities.writeLogFileAndPrint(msg)
+                logging.errorWindow("File Error", msg)
+            logging.writeLogFileAndPrint(msg)
             return None, None
 
         return root, outFFPs
@@ -335,7 +338,8 @@ class Controller:
     @staticmethod
     def processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData):
         root = None
-        test = Utilities.checkInputFiles(inFilePath)
+        # test = Utilities.checkInputFiles(inFilePath)
+        test = filing.checkInputFiles(inFilePath)
         if test is False:
             return None
 
@@ -345,8 +349,8 @@ class Controller:
             root = HDFRoot.readHDF5(inFilePath)
         except Exception:
             msg = "Unable to open file. May be open in another application."
-            Utilities.errorWindow("File Error", msg)
-            Utilities.writeLogFileAndPrint(msg)
+            logging.errorWindow("File Error", msg)
+            logging.writeLogFileAndPrint(msg)
 
             return None
 
@@ -361,14 +365,14 @@ class Controller:
             except Exception:
                 msg = "Controller.processL1aqc: Unable to open HDF file. May be open in another application."
                 if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                    Utilities.errorWindow("File Error", msg)
-                Utilities.writeLogFileAndPrint(msg)
+                    logging.errorWindow("File Error", msg)
+                logging.writeLogFileAndPrint(msg)
                 return None
         else:
             msg = "L1aqc processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                Utilities.errorWindow("File Error", msg)
-            Utilities.writeLogFileAndPrint(msg)
+                logging.errorWindow("File Error", msg)
+            logging.writeLogFileAndPrint(msg)
             return None
 
         return root
@@ -381,13 +385,13 @@ class Controller:
             return None
 
         # Process the data
-        Utilities.writeLogFileAndPrint(f"ProcessL1b: {inFilePath}")
+        logging.writeLogFileAndPrint(f"ProcessL1b: {inFilePath}")
         try:
             root = HDFRoot.readHDF5(inFilePath)
         except Exception:
             msg = "Controller.processL1b: Unable to open HDF file. May be open in another application."
-            Utilities.errorWindow("File Error", msg)
-            Utilities.writeLogFileAndPrint(msg)
+            logging.errorWindow("File Error", msg)
+            logging.writeLogFileAndPrint(msg)
             return None
 
         if ConfigFile.settings["SensorType"].lower() == "trios" or  ConfigFile.settings["SensorType"].lower() == "sorad":
@@ -405,14 +409,14 @@ class Controller:
                 root.writeHDF5(outFilePath)
             except Exception:
                 msg = "**********************Controller.ProcessL1b: Unable to write file. May be open in another application.**********************"
-                Utilities.errorWindow("File Error", msg)
-                Utilities.writeLogFileAndPrint(msg)
+                logging.errorWindow("File Error", msg)
+                logging.writeLogFileAndPrint(msg)
                 return None
         else:
             msg = "L1b processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                Utilities.errorWindow("File Error", msg)
-            Utilities.writeLogFileAndPrint(msg)
+                logging.errorWindow("File Error", msg)
+            logging.writeLogFileAndPrint(msg)
             return None
 
         return root
@@ -431,8 +435,8 @@ class Controller:
             root = HDFRoot.readHDF5(inFilePath)
         except Exception:
             msg = "Unable to open file. May be open in another application."
-            Utilities.errorWindow("File Error", msg)
-            Utilities.writeLogFileAndPrint(msg)
+            logging.errorWindow("File Error", msg)
+            logging.writeLogFileAndPrint(msg)
             return None
 
         root.attributes['In_Filepath'] = inFilePath
@@ -444,14 +448,14 @@ class Controller:
                 root.writeHDF5(outFilePath)
             except Exception:
                 msg = "**********************Unable to write file. May be open in another application.**********************"
-                Utilities.errorWindow("File Error", msg)
-                Utilities.writeLogFileAndPrint(msg)
+                logging.errorWindow("File Error", msg)
+                logging.writeLogFileAndPrint(msg)
                 return None
         else:
             msg = "L1bqc processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                Utilities.errorWindow("File Error", msg)
-            Utilities.writeLogFileAndPrint(msg)
+                logging.errorWindow("File Error", msg)
+            logging.writeLogFileAndPrint(msg)
             return None
 
         return root
@@ -476,31 +480,31 @@ class Controller:
             # Create Plots
             # Radiometry
             if ConfigFile.settings['bL2PlotRrs']==1:
-                Utilities.plotRadiometry(node, filename, rType='Rrs', plotDelta = plotDeltaBool)
+                plotting.plotRadiometry(node, filename, rType='Rrs', plotDelta = plotDeltaBool)
             if ConfigFile.settings['bL2PlotnLw']==1:
-                Utilities.plotRadiometry(node, filename, rType='nLw', plotDelta = plotDeltaBool)
+                plotting.plotRadiometry(node, filename, rType='nLw', plotDelta = plotDeltaBool)
             if ConfigFile.settings['bL2PlotEs']==1:
-                Utilities.plotRadiometry(node, filename, rType='ES', plotDelta = plotDeltaBool)
+                plotting.plotRadiometry(node, filename, rType='ES', plotDelta = plotDeltaBool)
             if ConfigFile.settings['bL2PlotLi']==1:
-                Utilities.plotRadiometry(node, filename, rType='LI', plotDelta = plotDeltaBool)
+                plotting.plotRadiometry(node, filename, rType='LI', plotDelta = plotDeltaBool)
             if ConfigFile.settings['bL2PlotLt']==1:
-                Utilities.plotRadiometry(node, filename, rType='LT', plotDelta = plotDeltaBool)
+                plotting.plotRadiometry(node, filename, rType='LT', plotDelta = plotDeltaBool)
 
             # IOPs
             # These three should plot GIOP and QAA together (eventually, once GIOP is complete)
             if ConfigFile.products["bL2PlotProd"]==1:
                 print('Plotting L2 Derived Products')
                 if ConfigFile.products["bL2ProdadgQaa"]:
-                    Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
+                    plotting.plotIOPs(node, filename, algorithm = 'qaa', iopType='adg', plotDelta = False)
                 if ConfigFile.products["bL2ProdaphQaa"]:
-                    Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
+                    plotting.plotIOPs(node, filename, algorithm = 'qaa', iopType='aph', plotDelta = False)
                 if ConfigFile.products["bL2ProdbbpQaa"]:
-                    Utilities.plotIOPs(node, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
+                    plotting.plotIOPs(node, filename, algorithm = 'qaa', iopType='bbp', plotDelta = False)
 
                 # This puts ag, Sg, and DOC on the same plot
                 if ConfigFile.products["bL2Prodgocad"] and ConfigFile.products["bL2ProdSg"] \
                     and ConfigFile.products["bL2Prodag"] and ConfigFile.products["bL2ProdDOC"]:
-                    Utilities.plotIOPs(node, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
+                    plotting.plotIOPs(node, filename, algorithm = 'gocad', iopType='ag', plotDelta = False)
 
         # Write output file
         if node is not None:
@@ -509,14 +513,14 @@ class Controller:
                 return node
             except Exception:
                 msg = "**********************Unable to write file. May be open in another application.**********************"
-                Utilities.errorWindow("File Error", msg)
-                Utilities.writeLogFileAndPrint(msg)
+                logging.errorWindow("File Error", msg)
+                logging.writeLogFileAndPrint(msg)
                 return None
         else:
             msg = "L2 processing failed. Nothing to output."
             if MainConfig.settings["popQuery"] == 0 and os.getenv('HYPERINSPACE_CMD') != 'TRUE':
-                Utilities.errorWindow("File Error", msg)
-            Utilities.writeLogFileAndPrint(msg)
+                logging.errorWindow("File Error", msg)
+            logging.writeLogFileAndPrint(msg)
             return None
 
     # Process every file in a list of files 1 level
@@ -530,7 +534,7 @@ class Controller:
         if os.path.isdir(pathOut):
             pathOutLevel = os.path.join(pathOut, level)
         else:
-            Utilities.writeLogFileAndPrint("Bad output destination. Select new Output Data Directory.")
+            logging.writeLogFileAndPrint("Bad output destination. Select new Output Data Directory.")
             return False
 
         # Add output level directory if necessary
@@ -560,12 +564,12 @@ class Controller:
             os.environ["LOGFILE"] = f'Stations_{fileName}_{level}.log'
         else:
             os.environ["LOGFILE"] = fileName + '_' + level + '.log'
-        Utilities.writeLogFileAndPrint("Process Single Level",mode='w')# <<---- Logging initiated here
+        logging.writeLogFileAndPrint("Process Single Level",mode='w')# <<---- Logging initiated here
 
         testExts = ['.raw','.mlb','.hdf','.txt']
 
         if extension.lower() not in testExts:
-            Utilities.writeLogFileAndPrint("Unrecognized file type. Aborting.")
+            logging.writeLogFileAndPrint("Unrecognized file type. Aborting.")
             return False#, None
 
         # If this is an HDF, assume it is not RAW, drop the level from fileName
@@ -585,7 +589,8 @@ class Controller:
                 root, outFFPs = Controller.processL1a(inFilePath, outFilePath, calibrationMap)
                 if not flag_Trios:
                     # Checked in TriosL1A for TriOS
-                    Utilities.checkOutputFiles(outFilePath)
+                    # Utilities.checkOutputFiles(outFilePath)
+                    filing.checkOutputFiles(outFilePath)
                 else:
                     # Set the class variable for use in moving on from L1A trios
                     Controller.trios_L1A_files = outFFPs
@@ -603,8 +608,8 @@ class Controller:
                     anomAnalFileName = anomAnalFileName + '_anoms.csv'
                     fp = os.path.join(PATH_TO_CONFIG, anomAnalFileName)
                     if os.path.exists(fp):
-                        Utilities.writeLogFileAndPrint(f"Deglitching file {fp} found for {ConfigFile.filename.split('.', maxsplit=1)[0]}. Using these parameters.")
-                        params = Utilities.readAnomAnalFile(fp)
+                        logging.writeLogFileAndPrint(f"Deglitching file {fp} found for {ConfigFile.filename.split('.', maxsplit=1)[0]}. Using these parameters.")
+                        params = filing.readAnomAnalFile(fp)
                         # If a parameterization has been saved in the AnomAnalFile, set the properties in the local object
                         # for all sensors
                         l1aqcfileName = fileName + '_L1AQC'
@@ -624,21 +629,24 @@ class Controller:
                                 ConfigFile.settings[f'fL1aqc{sensor}MinMaxBandLight'] = params[l1aqcfileName][ref+9]
                                 ref += 10
                         else:
-                            Utilities.writeLogFileAndPrint(f'{l1aqcfileName} not found in parameter file {anomAnalFileName}. Resort to values in ConfigFile.settings.')
+                            logging.writeLogFileAndPrint(f'{l1aqcfileName} not found in parameter file {anomAnalFileName}. Resort to values in ConfigFile.settings.')
                     else:
-                        Utilities.writeLogFileAndPrint('No deglitching parameter file found. Resorting to default values. NOT RECOMMENDED. RUN ANOMALY ANALYSIS.')
+                        logging.writeLogFileAndPrint('No deglitching parameter file found. Resorting to default values. NOT RECOMMENDED. RUN ANOMALY ANALYSIS.')
                 else:
-                    Utilities.writeLogFileAndPrint('No deglitching will be performed.')
+                    logging.writeLogFileAndPrint('No deglitching will be performed.')
                 root = Controller.processL1aqc(inFilePath, outFilePath, calibrationMap, ancillaryData)
-                Utilities.checkOutputFiles(outFilePath)
+                # Utilities.checkOutputFiles(outFilePath)
+                filing.checkOutputFiles(outFilePath)
 
             elif level == "L1B":
                 root = Controller.processL1b(inFilePath, outFilePath)
-                Utilities.checkOutputFiles(outFilePath)
+                # Utilities.checkOutputFiles(outFilePath)
+                filing.checkOutputFiles(outFilePath)
 
             elif level == "L1BQC":
                 root = Controller.processL1bqc(inFilePath, outFilePath)
-                Utilities.checkOutputFiles(outFilePath)
+                # Utilities.checkOutputFiles(outFilePath)
+                filing.checkOutputFiles(outFilePath)
 
         elif level == "L2":
             # Ancillary data from metadata have been read in at L1C,
@@ -649,7 +657,7 @@ class Controller:
                 print('No such input file: ' + inFilePath)
                 return False#None, outFilePath
 
-            Utilities.writeLogFileAndPrint("ProcessL2: " + inFilePath)
+            logging.writeLogFileAndPrint("ProcessL2: " + inFilePath)
             try:
                 # root variable is replaced by L2 node unless station extraction, in which case
                 #   it is retained and node is returned from ProcessL2
@@ -658,28 +666,28 @@ class Controller:
                 del root.attributes["In_Filepath"]
             except Exception:
                 msg = "Unable to open file. May be open in another application."
-                Utilities.errorWindow("File Error", msg)
-                Utilities.writeLogFileAndPrint(msg)
+                logging.errorWindow("File Error", msg)
+                logging.writeLogFileAndPrint(msg)
                 return False#None, outFilePath
 
             # Check for new 6S model group
             test = root.getGroup('SIXS_MODEL')
             if test is None:
-                Utilities.writeLogFileAndPrint("6S model not found, probably because lower level data was processed before v1.2.5. ")
+                logging.writeLogFileAndPrint("6S model not found, probably because lower level data was processed before v1.2.5. ")
                 return False
 
             # Check L2 file for low-level uncertainty processing matching the uncertainty processing
             # called here (i.e., don't let Factory-Only files get processed for FRM-Class or FRM-Full)
             if ConfigFile.settings["fL1bCal"] == 3 and 'FRM-Full' not in root.attributes['CAL_TYPE']:
-                Utilities.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
+                logging.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
                     f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}.")
                 return False
             if ConfigFile.settings["fL1bCal"] == 2 and 'FRM-Class' not in root.attributes['CAL_TYPE']:
-                Utilities.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
+                logging.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
                     f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}.")
                 return False
             if ConfigFile.settings["fL1bCal"] == 1 and 'Factory' not in root.attributes['CAL_TYPE']:
-                Utilities.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
+                logging.writeLogFileAndPrint(f"Low-level processing {root.attributes['CAL_TYPE']} does not match "\
                     f"uncertainty pathway in configuration. (ConfigFile.settings['fL1bCal'] ==) {ConfigFile.settings['fL1bCal']}.")
                 return False
 
@@ -691,7 +699,7 @@ class Controller:
                     try:
                         ancGroup.datasets[ds].datasetToColumns()
                     except Exception:
-                        Utilities.writeLogFileAndPrint('Error: Something wrong with root ANCILLARY')
+                        logging.writeLogFileAndPrint('Error: Something wrong with root ANCILLARY')
                 if root.getGroup("ANCILLARY").getDataset("STATION") is not None:
                     stations = np.array(root.getGroup("ANCILLARY").getDataset("STATION").columns["STATION"])
                     stations = np.unique(stations[~np.isnan(stations)]).tolist()
@@ -710,11 +718,12 @@ class Controller:
                         filename = f'{filename}_STATION_{stationStr}.hdf'
                         outFilePathStation = os.path.join(outPath,filename)
 
-                        Utilities.writeLogFileAndPrint(f'Processing station: {stationStr}: \n')
+                        logging.writeLogFileAndPrint(f'Processing station: {stationStr}: \n')
 
                         # Cannot overwrite root here, in case there is more than one station in the file.
                         Controller.processL2(root, outFilePathStation,station)
-                        Utilities.checkOutputFiles(outFilePathStation)
+                        # Utilities.checkOutputFiles(outFilePathStation)
+                        filing.checkOutputFiles(outFilePathStation)
 
                         if os.path.isfile(outFilePathStation):
                             # Ensure that the L2 on file is recent before continuing with
@@ -722,11 +731,11 @@ class Controller:
                             modTime = os.path.getmtime(outFilePathStation)
                             nowTime = datetime.datetime.now()
                             if nowTime.timestamp() - modTime < 60:
-                                Utilities.writeLogFileAndPrint(f'{level} file produced: \n{outFilePathStation}')
+                                logging.writeLogFileAndPrint(f'{level} file produced: \n{outFilePathStation}')
 
                                 # Write SeaBASS
                                 if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
-                                    Utilities.writeLogFileAndPrint(f'Output SeaBASS for HDF: \n{outFilePathStation}')
+                                    logging.writeLogFileAndPrint(f'Output SeaBASS for HDF: \n{outFilePathStation}')
                                     sbFileName = SeaBASSWriter.outputTXT_Type2(outFilePathStation)
 
                                     # If this is being output to SeaBASS later, add a root attribute
@@ -742,13 +751,14 @@ class Controller:
                         if ConfigFile.settings["bL2WriteReport"] == 1:
                             Controller.writeReport(fileName, pathOut, outFilePathStation, level, inFilePath)
                 else:
-                    Utilities.writeLogFileAndPrint(f'No stations found in: {fileName}')
+                    logging.writeLogFileAndPrint(f'No stations found in: {fileName}')
 
             else:
                 # Even where not extracting stations, processL2 returns PL2 node, not root, but to comply with expectations
                 # below based on the other levels and PDF reporting, overwrite root with node
                 root = Controller.processL2(root,outFilePath)
-                Utilities.checkOutputFiles(outFilePath)
+                # Utilities.checkOutputFiles(outFilePath)
+                filing.checkOutputFiles(outFilePath)
 
                 if os.path.isfile(outFilePath):
                     # Ensure that the L2 on file is recent before continuing with
@@ -756,11 +766,11 @@ class Controller:
                     modTime = os.path.getmtime(outFilePath)
                     nowTime = datetime.datetime.now()
                     if nowTime.timestamp() - modTime < 60:
-                        Utilities.writeLogFileAndPrint(f'{level} file produced: \n{outFilePath}')
+                        logging.writeLogFileAndPrint(f'{level} file produced: \n{outFilePath}')
 
                         # Write SeaBASS
                         if int(ConfigFile.settings["bL2SaveSeaBASS"]) == 1:
-                            Utilities.writeLogFileAndPrint(f'Output SeaBASS for HDF: \n{outFilePath}')
+                            logging.writeLogFileAndPrint(f'Output SeaBASS for HDF: \n{outFilePath}')
                             sbFileName = SeaBASSWriter.outputTXT_Type2(outFilePath)
 
                             # If this is being output to SeaBASS later, add a root attribute
@@ -857,7 +867,7 @@ class Controller:
                 fileName = str.lower(os.path.split(fp)[1])
 
                 if np.sum([fileName.find(str.lower(s)) for s in srchStr] ) < 0 :
-                    Utilities.writeLogFileAndPrint(f'{fileName} does not match expected input level for outputing {level}')
+                    logging.writeLogFileAndPrint(f'{fileName} does not match expected input level for outputing {level}')
                     return
 
             #Pass entire list L0 files
@@ -873,7 +883,7 @@ class Controller:
                 fileName = str.lower(os.path.split(fp)[1])
 
                 if np.sum([fileName.find(str.lower(s)) for s in srchStr] ) < 0 :
-                    Utilities.writeLogFileAndPrint(f'{fileName} does not match expected input level for outputing {level}')
+                    logging.writeLogFileAndPrint(f'{fileName} does not match expected input level for outputing {level}')
                     return
 
                 print("Processing: " + fp)

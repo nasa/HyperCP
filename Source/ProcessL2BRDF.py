@@ -1,12 +1,11 @@
-#!/usr/bin/env python3
+
 import numpy as np
 import xarray as xr
-from Source import PATH_TO_DATA
 import Source.ocbrdf.ocbrdf_main as oc_brdf
 
 
 class ProcessL2BRDF():
-    # purpose: estimate BRDF factors for a given suite of observations.
+    '''# purpose: estimate BRDF factors for a given suite of observations.
     # For the moment, only Morel et al. 2002 BRDF scheme is supported.
     # references:
     # 1) Morel and Gentilli, Applied Optics, 35(24), 1996
@@ -18,7 +17,7 @@ class ProcessL2BRDF():
     # 2023.08.22: adapted for HyperCP by Juan Gossn (EUMETSAT) from ThoMaS code:
     #   https://gitlab.eumetsat.int/eumetlab/oceans/ocean-science-studies/ThoMaS
     # ...
-    # 2024.07.10: adapted for HyperCP by Juan Gossn (EUMETSAT) from Constant Mazeran's BRDF Python tool (BRDF4OLCI project)
+    # 2024.07.10: adapted for HyperCP by Juan Gossn (EUMETSAT) from Constant Mazeran's BRDF Python tool (BRDF4OLCI project)'''
 
     @staticmethod
 
@@ -32,7 +31,10 @@ class ProcessL2BRDF():
         '''
 
         # Assuming that measurement protocol is well followed, then sensor should be pointing towards 40 degrees from nadir
+        #   NOTE: Juan, can this work with viewz of 30? We should check what is set in the GUI.
         viewz = 40
+
+        solz,relaz,aod,wind = None,None,None,None,
         # Iterate over root groups to extract ancillary and radiometric quantities to feed the BRDF function.
         for gp in root.groups:
             # if (gp.id == "DERIVED_PRODUCTS"):

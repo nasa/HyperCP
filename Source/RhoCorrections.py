@@ -9,8 +9,9 @@ import scipy.interpolate as spin
 
 from Source.ZhangRho import get_sky_sun_rho, PATH_TO_DATA
 from Source.ConfigFile import ConfigFile
-from Source.Utilities import Utilities
 from Source.HDFRoot import HDFRoot
+import Source.utils.loggingHCP as logging
+import Source.utils.comparing as comparing
 
 class RhoCorrections:
     ''' Object for processing glint corrections '''
@@ -19,21 +20,19 @@ class RhoCorrections:
                 AOD=None, cloud=None, wTemp=None, sal=None, waveBands=None):
         ''' Mobley 1999 AO'''
 
-        msg = 'Calculating M99 glint correction with complete LUT'
-        print(msg)
-        Utilities.writeLogFile(msg)
-
-        theta = 40 # viewing zenith angle
+        logging.writeLogFileAndPrint('Calculating M99 glint correction with complete LUT')
+        
+        theta = 40 # viewing nadir angle of Lt or VZA of Li (TODO: tweak to allow theta=30)
         winds = np.arange(0, 14+1, 2)       # 0:2:14
         szas = np.arange(0, 80+1, 10)       # 0:10:80
         phiViews = np.arange(0, 180+1, 15)  # 0:15:180 # phiView is relAz
 
         # Find the nearest values in the LUT
-        wind_idx = Utilities.find_nearest(winds, windSpeedMean)
+        wind_idx = comparing.find_nearest(winds, windSpeedMean)
         wind = winds[wind_idx]
-        sza_idx = Utilities.find_nearest(szas, SZAMean)
+        sza_idx = comparing.find_nearest(szas, SZAMean)
         sza = szas[sza_idx]
-        relAz_idx = Utilities.find_nearest(phiViews, relAzMean)
+        relAz_idx = comparing.find_nearest(phiViews, relAzMean)
         relAz = phiViews[relAz_idx]
 
         # load in the LUT HDF file
@@ -42,8 +41,8 @@ class RhoCorrections:
             lut = HDFRoot.readHDF5(inFilePath)
         except Exception as err:
             msg = f"Unable to open M99 LUT. {err}"
-            Utilities.writeLogFileAndPrint(msg)
-            Utilities.errorWindow("File Error", msg)
+            logging.writeLogFileAndPrint(msg)
+            logging.errorWindow("File Error", msg)
 
         lutData = lut.groups[0].datasets['LUT'].data
         # convert to a 2D array
@@ -65,11 +64,11 @@ class RhoCorrections:
             # Fix: Truncate input parameters to stay within Zhang ranges:
             # AOD
             if AOD > 0.5:
-                Utilities.writeLogFileAndPrint("Warning: AOD > 0.5. Adjusting to 0.5.")
+                logging.writeLogFileAndPrint("Warning: AOD > 0.5. Adjusting to 0.5.")
                 AOD = 0.5
             # SZA
             if SZAMean > 60:
-                Utilities.writeLogFileAndPrint("Warning: SZA > 60. Adjusting to 60.")
+                logging.writeLogFileAndPrint("Warning: SZA > 60. Adjusting to 60.")
                 # raise ValueError('SZAMean is too high (%s), Zhang correction cannot be performed above SZA=70.')
                 SZAMean = 60
             # wavelengths in range [350-1000] nm
@@ -84,7 +83,7 @@ class RhoCorrections:
                 zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
             except (InterpolationError, NotImplementedError) as err:
                 # Full Z17 model
-                Utilities.writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
+                logging.writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
                 zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
 
             if isinstance(zhang, float):
@@ -111,7 +110,7 @@ class RhoCorrections:
             # NOTE: It is possible for users to not select any ancillary data in the config, meaning Zhang Rho 
             # will fail. It is far too easy for a user to do this, so I added the following line to make sure the
             # processor doesn't break.
-            Utilities.writeLogFileAndPrint("Z17 innaccessible likely from lack of ancillary data. Fall back on rho_unc est. by Ruddick 2006")
+            logging.writeLogFileAndPrint("Z17 innaccessible likely from lack of ancillary data. Fall back on rho_unc est. by Ruddick 2006")
 
             # 0.003 was chosen because it is the only number with any scientific justification
             # (estimated from Ruddick 2006).
@@ -122,16 +121,12 @@ class RhoCorrections:
     @staticmethod
     def threeCCorr(sky750,rhoDefault,windSpeedMean):
         ''' Groetsch et al. 2017 PLACEHOLDER'''
-        msg = 'Calculating 3C glint correction'
-        print(msg)
-        Utilities.writeLogFile(msg)
+        logging.writeLogFileAndPrint('Calculating 3C glint correction')
 
         if sky750 >= 0.05:
             # Cloudy conditions: no further correction
             if sky750 >= 0.05:
-                msg = f'Sky 750 threshold triggered for cloudy sky. Rho set to {rhoDefault}.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                logging.writeLogFileAndPrint(f'Sky 750 threshold triggered for cloudy sky. Rho set to {rhoDefault}.')
             rhoScalar = rhoDefault
             rhoDelta = 0.003 # Unknown, presumably higher...
 
@@ -142,16 +137,14 @@ class RhoCorrections:
             rhoScalar = 0.0256 + 0.00039 * w + 0.000034 * w * w
             rhoDelta = 0.003 # Ruddick 2006 Appendix 2; intended for clear skies as defined here
 
-            msg = f'Rho_sky: {rhoScalar:.6f} Wind: {w:.1f} m/s'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint(f'Rho_sky: {rhoScalar:.6f} Wind: {w:.1f} m/s')
 
         return rhoScalar, rhoDelta
 
     @staticmethod
     # def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):
     def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, sva, waveBands, Propagate = None, db = None):
-        Utilities.writeLogFileAndPrint('Calculating Zhang glint correction (FULL MODEL).')
+        logging.writeLogFileAndPrint('Calculating Zhang glint correction (FULL MODEL).')
 
         # === environmental conditions during experiment ===
         env = {'wind': windSpeedMean, 'od': AOD, 'C': cloud, 'zen_sun': sza, 'wtem': wTemp, 'sal': sal}
@@ -169,7 +162,7 @@ class RhoCorrections:
 
         tic = time.process_time()
         rhoVector = get_sky_sun_rho(env, sensor, round4cache=True, DB=db)['rho']
-        Utilities.writeLogFileAndPrint(f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s')
+        logging.writeLogFileAndPrint(f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s')
 
         # Presumably obsolete (Ashley)? -DAA
         # No I'm only changing how the zhang uncertainties work - this all happes in uncertianty_analysis.py - Ashley
@@ -182,7 +175,7 @@ class RhoCorrections:
             rhoDelta = Propagate.Zhang_Rho_Uncertainty(mean_vals=varlist,
                                                        uncertainties=ulist,
                                                        )
-            Utilities.writeLogFileAndPrint(f'Zhang_Rho_Uncertainty Elapsed Time: {time.process_time() - tic:.1f} s')
+            logging.writeLogFileAndPrint(f'Zhang_Rho_Uncertainty Elapsed Time: {time.process_time() - tic:.1f} s')
 
         return rhoVector, rhoDelta
 
@@ -194,10 +187,10 @@ class RhoCorrections:
         """
         if sva == 30:
             db_path = "Z17_LUT_30.nc"
-            Utilities.writeLogFileAndPrint("running Z17 interpolation for instrument viewing zenith of 30",False)
+            logging.writeLogFileAndPrint("running Z17 interpolation for instrument viewing zenith of 30",False)
         else:
             db_path = "Z17_LUT_40.nc"
-            Utilities.writeLogFileAndPrint("running Z17 interpolation for instrument viewing zenith of 40",False)
+            logging.writeLogFileAndPrint("running Z17 interpolation for instrument viewing zenith of 40",False)
 
         try:
             LUT = xr.open_dataset(os.path.join(PATH_TO_DATA, db_path), engine='netcdf4')

@@ -3,9 +3,11 @@
 import os
 import re
 import subprocess
+import logging
 import requests
 from requests.adapters import HTTPAdapter
-import logging
+
+# import Source.utils.loggingHCP as logging
 
 DEFAULT_CHUNK_SIZE = 131072
 
@@ -74,7 +76,7 @@ def httpdl(server, request, localpath='.', outputfilename=None, ntries=5,
                 if compressStatus:
                     status = compressStatus
             else:
-               status = 0
+                status = 0
  
     return status
 

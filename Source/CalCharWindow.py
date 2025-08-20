@@ -45,7 +45,7 @@ class CalCharWindow(QtWidgets.QDialog):
         elif ConfigFile.settings['SensorType'].lower() == 'seabird':
 
             # Force use of thermistor
-            ConfigFile.settings["fL1bThermal"] == 1
+            ConfigFile.settings["fL1bThermal"] = 1
 
             # SeaBird: sensor type inferred from calibration map
             calibrationMap = CalibrationFileReader.read(ConfigFile.getCalibrationDirectory())
@@ -76,7 +76,7 @@ class CalCharWindow(QtWidgets.QDialog):
 
         if ConfigFile.settings['SensorType'] == 'Dalec':
             # FRM regimes not yet implemented, forcing factory mode.
-            ConfigFile.settings["fL1bCal"] == 1
+            ConfigFile.settings["fL1bCal"] = 1
 
 
         # Thermal source selection
@@ -137,7 +137,7 @@ class CalCharWindow(QtWidgets.QDialog):
 
         # Check completeness of calibration directory according to selected cal/char regime
         FidRadDB_link = '<a href="https://ocdb.eumetsat.int/docs/fidrad-database.html">FidRadDB-formatted</a>'
-        CalLabel2 = QtWidgets.QLabel("Checking for required {FidRadDB_link} cal/char files:", self)
+        CalLabel2 = QtWidgets.QLabel(f"Checking for required {FidRadDB_link} cal/char files:", self)
         CalLabel2_font = CalLabel2.font()
         CalLabel2_font.setPointSize(12)
         CalLabel2_font.setBold(True)
@@ -360,7 +360,7 @@ class CalCharWindow(QtWidgets.QDialog):
             self.ThermistorRadioButton.setDisabled(True)
             if ConfigFile.settings["fL1bThermal"] == 1:
                 # NOTE: This will need to be changed for G2
-                ConfigFile.settings["fL1bThermal"] == 2 # Fallback in case of corrupted config
+                ConfigFile.settings["fL1bThermal"] = 2 # Fallback in case of corrupted config
                 self.AirTempRadioButton.setChecked(True)
                 self.ThermistorRadioButton.setChecked(False)
             self.AirTempRadioButton.setDisabled(False)
@@ -600,7 +600,7 @@ class CalCharWindow(QtWidgets.QDialog):
                         print('Unable to download file %s from FidRadDB. Maybe file does not exist. '
                               'Also check your internet connection, if problem persists, provide cal/char file manually.')
                     else:
-                        print('File %s successfully downloaded from FidRadDB' % file)
+                        print(f'File {file} successfully downloaded from FidRadDB')
 
                 # # If existing in local FidRadDB repo and not in sel.calibrationPath, then attempt copying file...
                 # if os.path.exists(dest_FidRadDB_local) and not os.path.exists(dest_CalPath):

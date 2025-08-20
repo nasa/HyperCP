@@ -2,7 +2,6 @@
 import numpy as np
 
 from Source.ConfigFile import ConfigFile
-from Source.Utilities import Utilities
 from Source.L2chlor_a import L2chlor_a
 from Source.L2pic import L2pic
 from Source.L2poc import L2poc
@@ -15,6 +14,8 @@ from Source.L2qaa import L2qaa
 from Source.L2avw import L2avw
 from Source.L2wei_QA import QAscores_5Bands
 from Source.L2qwip import L2qwip
+import Source.utils.loggingHCP as logging
+import Source.utils.interpolating as interpolating
 
 
 class ProcessL2OCproducts():
@@ -56,9 +57,7 @@ class ProcessL2OCproducts():
 
         # chlor_a
         if ConfigFile.products["bL2Prodoc3m"]:
-            msg = "Processing chlor_a"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Processing chlor_a")
 
             DerProd.attributes['chlor_a_UNITS'] = 'mg m^-3'
             chlDS = DerProd.addDataset('chlor_a')
@@ -77,9 +76,7 @@ class ProcessL2OCproducts():
         # pic
         # Not yet implemented
         if ConfigFile.products["bL2Prodpic"]:
-            msg = "Processing pic"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Processing pic")
 
             picDS = DerProd.addDataset('pic')
             DerProd.attributes['pic_UNITS'] = 'mol m^-3'
@@ -93,9 +90,7 @@ class ProcessL2OCproducts():
 
         # poc
         if ConfigFile.products["bL2Prodpoc"]:
-            msg = "Processing poc"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Processing poc")
 
             pocDS = DerProd.addDataset('poc')
             DerProd.attributes['poc_UNITS'] = 'mg m^-3'
@@ -111,9 +106,7 @@ class ProcessL2OCproducts():
 
         # kd490
         if ConfigFile.products["bL2Prodkd490"]:
-            msg = "Processing kd490"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Processing kd490")
 
             kdDS = DerProd.addDataset('kd490')
             DerProd.attributes['kd490_UNITS'] = 'm^-1'
@@ -129,9 +122,7 @@ class ProcessL2OCproducts():
 
         # ipar
         if ConfigFile.products["bL2Prodipar"]:
-            msg = "Processing ipar"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Processing ipar")
 
             Es_ds = root.getGroup("IRRADIANCE").datasets["ES_HYPER"]
             keys = list(Es_ds.columns.keys())
@@ -161,9 +152,7 @@ class ProcessL2OCproducts():
         #      121, doi:10.1002/2016JC012126'''
 
         if ConfigFile.products["bL2ProdweiQA"]:
-            msg = "Processing Wei QA"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Processing Wei QA")
 
             DerProd.attributes['wei_QA_UNITS'] = 'score'
             weiQADS = DerProd.addDataset('wei_QA')
@@ -179,7 +168,7 @@ class ProcessL2OCproducts():
             test_lambda = np.array([412, 443, 488, 551, 670])
             test_Rrs = np.empty((Rrs_mArray.shape[0],len(test_lambda))) * np.nan
             for i, Rrsi in enumerate(Rrs_mArray):
-                test_Rrs[i,:] = Utilities.interp(Rrs_wave.tolist(), Rrsi.tolist(), test_lambda.tolist(), \
+                test_Rrs[i,:] = interpolating.interp(Rrs_wave.tolist(), Rrsi.tolist(), test_lambda.tolist(), \
                     kind='linear', fill_value=0.0)
 
 
@@ -194,9 +183,7 @@ class ProcessL2OCproducts():
         #     Vandermuelen et al. 2020'''
 
         if ConfigFile.products["bL2Prodavw"]:
-            msg = "Processing avw"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Processing avw")
 
             keys = list(RrsHYPER.columns.keys())
             values = list(RrsHYPER.columns.values())
@@ -225,9 +212,7 @@ class ProcessL2OCproducts():
         #     Dierssen et al. 2022'''
 
         if ConfigFile.products["bL2Prodqwip"]:
-            msg = "Processing QWIP"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Processing QWIP")
 
             qwipDS = DerProd.addDataset('qwip')
             DerProd.attributes['qwip_UNITS'] = 'sr^-1'
@@ -246,9 +231,7 @@ class ProcessL2OCproducts():
         #     Aurin et al. 2018 MLRs for global dataset (GOCAD) '''
 
         if ConfigFile.products["bL2Prodgocad"]:
-            msg = "Processing CDOM, Sg, DOC"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Processing CDOM, Sg, DOC")
 
             SAL = Ancillary.datasets["SALINITY"].columns["SALINITY"]
 
@@ -266,7 +249,8 @@ class ProcessL2OCproducts():
                 agDS.columns['Datetag'] = dateTag
                 agDS.columns['Timetag2'] = timeTag2
                 ag = dict(zip(waveStr,np.transpose(ag).tolist()))
-                for key, value in ag.items(): agDS.columns[key] = value
+                for key, value in ag.items():
+                    agDS.columns[key] = value
                 agDS.columnsToDataset()
             if ConfigFile.products["bL2ProdSg"]:
                 DerProd.attributes['Sg_UNITS'] = '1/nm'
@@ -275,7 +259,8 @@ class ProcessL2OCproducts():
                 SgDS.columns['Datetag'] = dateTag
                 SgDS.columns['Timetag2'] = timeTag2
                 Sg = dict(zip(waveStrS,np.transpose(Sg).tolist()))
-                for key, value in Sg.items(): SgDS.columns[key] = value
+                for key, value in Sg.items():
+                    SgDS.columns[key] = value
                 SgDS.columnsToDataset()
             if ConfigFile.products["bL2ProdDOC"]:
                 DerProd.attributes['doc_UNITS'] = 'umol/L'
@@ -285,8 +270,6 @@ class ProcessL2OCproducts():
                 docDS.columns['Timetag2'] = timeTag2
                 docDS.columns['doc'] = doc.tolist()
                 docDS.columnsToDataset()
-
-
 
         # GIOP
         # ''' Generalized ocean color inversion model for Inherent Optical Properties
@@ -299,9 +282,7 @@ class ProcessL2OCproducts():
         #     Lee et al. 2002, updated to QAAv6 for MODIS bands'''
 
         if ConfigFile.products["bL2Prodqaa"]:
-            msg = "Processing qaa"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            logging.writeLogFileAndPrint("Processing qaa")
 
             # For fun, let's apply it to the full hyperspectral dataset
             keys = list(RrsHYPER.columns.keys())
@@ -339,7 +320,7 @@ class ProcessL2OCproducts():
                         Rrs[:,i], wavelength, \
                             T[i], S[i])
                 for msgs in msg:
-                    Utilities.writeLogFile(msgs)
+                    logging.writeLogFileAndPrint(msgs)
 
             if ConfigFile.products["bL2ProdaQaa"]:
                 DerProd.attributes['a_UNITS'] = '1/m'
@@ -348,7 +329,8 @@ class ProcessL2OCproducts():
                 aDS.columns['Datetag'] = dateTag
                 aDS.columns['Timetag2'] = timeTag2
                 a = dict(zip(waveStr,a.tolist()))
-                for key, value in a.items(): aDS.columns[key] = value
+                for key, value in a.items():
+                    aDS.columns[key] = value
                 aDS.columnsToDataset()
             if ConfigFile.products["bL2ProdadgQaa"]:
                 DerProd.attributes['adg_UNITS'] = '1/m'
@@ -357,7 +339,8 @@ class ProcessL2OCproducts():
                 adgDS.columns['Datetag'] = dateTag
                 adgDS.columns['Timetag2'] = timeTag2
                 adg = dict(zip(waveStr,adg.tolist()))
-                for key, value in adg.items(): adgDS.columns[key] = value
+                for key, value in adg.items():
+                    adgDS.columns[key] = value
                 adgDS.columnsToDataset()
             if ConfigFile.products["bL2ProdaphQaa"]:
                 DerProd.attributes['aph_UNITS'] = '1/m'
@@ -366,7 +349,8 @@ class ProcessL2OCproducts():
                 aphDS.columns['Datetag'] = dateTag
                 aphDS.columns['Timetag2'] = timeTag2
                 aph = dict(zip(waveStr,aph.tolist()))
-                for key, value in aph.items(): aphDS.columns[key] = value
+                for key, value in aph.items():
+                    aphDS.columns[key] = value
                 aphDS.columnsToDataset()
             if ConfigFile.products["bL2ProdbQaa"]:
                 DerProd.attributes['b_UNITS'] = '1/m'
@@ -375,7 +359,8 @@ class ProcessL2OCproducts():
                 bDS.columns['Datetag'] = dateTag
                 bDS.columns['Timetag2'] = timeTag2
                 b = dict(zip(waveStr,b.tolist()))
-                for key, value in b.items(): bDS.columns[key] = value
+                for key, value in b.items():
+                    bDS.columns[key] = value
                 bDS.columnsToDataset()
             if ConfigFile.products["bL2ProdbbQaa"]:
                 DerProd.attributes['bb_UNITS'] = '1/m'
@@ -384,7 +369,8 @@ class ProcessL2OCproducts():
                 bbDS.columns['Datetag'] = dateTag
                 bbDS.columns['Timetag2'] = timeTag2
                 bb = dict(zip(waveStr,bb.tolist()))
-                for key, value in bb.items(): bbDS.columns[key] = value
+                for key, value in bb.items():
+                    bbDS.columns[key] = value
                 bbDS.columnsToDataset()
             if ConfigFile.products["bL2ProdbbpQaa"]:
                 DerProd.attributes['bbp_UNITS'] = '1/m'
@@ -393,7 +379,8 @@ class ProcessL2OCproducts():
                 bbpDS.columns['Datetag'] = dateTag
                 bbpDS.columns['Timetag2'] = timeTag2
                 bbp = dict(zip(waveStr,bbp.tolist()))
-                for key, value in bbp.items(): bbpDS.columns[key] = value
+                for key, value in bbp.items():
+                    bbpDS.columns[key] = value
                 bbpDS.columnsToDataset()
             if ConfigFile.products["bL2ProdcQaa"]:
                 DerProd.attributes['c_UNITS'] = '1/m'
@@ -402,6 +389,6 @@ class ProcessL2OCproducts():
                 cDS.columns['Datetag'] = dateTag
                 cDS.columns['Timetag2'] = timeTag2
                 c = dict(zip(waveStr,c.tolist()))
-                for key, value in c.items(): cDS.columns[key] = value
+                for key, value in c.items():
+                    cDS.columns[key] = value
                 cDS.columnsToDataset()
-

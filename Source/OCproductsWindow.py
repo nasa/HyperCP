@@ -427,7 +427,7 @@ class OCproductsWindow(QtWidgets.QDialog):
         VBox.addLayout(saveHBox)
 
         self.setLayout(VBox)
-        ''' TO DO: I still have no control over the window size or line spacing'''
+        # BUG: I still have no control over the window size or line spacing
         self.setGeometry(100, 100, 0, 0)
         self.setWindowTitle('Derived L2 Geophysical and Inherent Optical Properties')
 

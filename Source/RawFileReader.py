@@ -1,8 +1,7 @@
 """Read raw Sea-Bird file"""
 import sys
-import logging
 
-from Source.Utilities import Utilities
+import Source.utils.loggingHCP as logging
 
 class RawFileReader:
     """Read raw Sea-Bird file"""
@@ -34,7 +33,7 @@ class RawFileReader:
                 str1 = hdr[sp1 + 1:sp2].decode('utf-8')
                 str2 = hdr[sp2 + 2:end - 1].decode('utf-8')
             except UnicodeDecodeError:
-                logging.debug("HOCR raw header contains non UTF-8 encoded character")
+                logging.writeLogFileAndPrint("HOCR raw header contains non UTF-8 encoded character")
                 str1 = hdr[sp1 + 1:sp2].decode('utf-8', 'ignore')
                 str2 = hdr[sp2 + 2:end - 1].decode('utf-8', 'ignore')
 
@@ -119,9 +118,7 @@ class RawFileReader:
                                 try:
                                     num = cf.convertRaw(msg, gp)
                                 except Exception:
-                                    pmsg = f'Unable to convert the following raw message: {msg}'
-                                    print(pmsg)
-                                    Utilities.writeLogFile(pmsg)
+                                    logging.writeLogFileAndPrint(f'Unable to convert the following raw message: {msg}')
 
                                 if num >= 0:
                                     # Generate POSFRAME

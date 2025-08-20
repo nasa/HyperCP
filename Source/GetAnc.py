@@ -4,8 +4,10 @@ import numpy as np
 from PyQt5 import QtWidgets
 
 from Source.HDFRoot import HDFRoot
-from Source.Utilities import Utilities
 from Source import OBPGSession, PATH_TO_DATA
+import Source.utils.loggingHCP as logging
+import Source.utils.dating as dating
+import Source.utils.comparing as comparing
 
 class GetAnc:
     '''API object for retrieving MERRA2'''
@@ -32,7 +34,7 @@ class GetAnc:
         # Loop through the input group and extract model data for each element
         oldFile,ancLat,ancLon,ancUwind,ancVwind,ancLatAer,ancLonAer,ancAirT = None,None,None,None,None,None,None,None
         for index, dateTag in enumerate(latDate):
-            dateTagNew = Utilities.dateTagToDate(dateTag)
+            dateTagNew = dating.dateTagToDate(dateTag)
             year = int(str(int(dateTagNew))[0:4])
             month = int(str(int(dateTagNew))[4:6])
             day = int(str(int(dateTagNew))[6:8])
@@ -40,7 +42,7 @@ class GetAnc:
             # Casting below can push hr to 24. Truncate the hr decimal using
             # int() so the script always calls from within the hour in question,
             # and no rounding occurs.
-            hr = int(Utilities.timeTag2ToSec(latTime[index])/60/60)
+            hr = int(dating.timeTag2ToSec(latTime[index])/60/60)
 
             file1 = f"GMAO_MERRA2.{year}{month:02.0f}{day:02.0f}T{hr:02.0f}0000.MET.nc"
 
@@ -52,7 +54,7 @@ class GetAnc:
                     request = f"/ob/getfile/{file1}"
                     msg = f'Retrieving anchillary file from server: {file1}'
                     print(msg)
-                    Utilities.writeLogFile(msg)
+                    logging.writeLogFile(msg)
 
                     status = OBPGSession.httpdl(server, request, localpath=ancPath,
                         outputfilename=file1, uncompress=False, verbose=2)
@@ -60,7 +62,7 @@ class GetAnc:
                     status = 200
                     msg = f'Ancillary file found locally: {file1}'
                     print(msg)
-                    Utilities.writeLogFile(msg)
+                    logging.writeLogFile(msg)
 
                 file2 = f"GMAO_MERRA2.{year}{month:02.0f}{day:02.0f}T{hr:02.0f}0000.AER.nc"
                 filePath2 = os.path.join(PATH_TO_DATA, 'Anc', file2)
@@ -69,7 +71,7 @@ class GetAnc:
                     request = f"/ob/getfile/{file2}"
                     msg = f'Retrieving anchillary file from server: {file2}'
                     print(msg)
-                    Utilities.writeLogFile(msg)
+                    logging.writeLogFile(msg)
 
                     status = OBPGSession.httpdl(server, request, localpath=ancPath,
                         outputfilename=file2, uncompress=False, verbose=2)
@@ -77,12 +79,12 @@ class GetAnc:
                     status = 200
                     msg = f'Ancillary file found locally: {file2}'
                     print(msg)
-                    Utilities.writeLogFile(msg)
+                    logging.writeLogFile(msg)
 
                 if status in (400, 401, 403, 404, 416):
                     msg = f'Request error: {status}'
                     print(msg)
-                    Utilities.writeLogFile(msg)
+                    logging.writeLogFile(msg)
                     if os.environ["HYPERINSPACE_CMD"].lower() == 'true':
                         return
                     alert = QtWidgets.QMessageBox()
@@ -145,8 +147,8 @@ class GetAnc:
             oldFile = file1
 
             # Locate the relevant cell            
-            latInd = Utilities.find_nearest(ancLat,lat[index])
-            lonInd = Utilities.find_nearest(ancLon,lon[index])
+            latInd = comparing.find_nearest(ancLat,lat[index])
+            lonInd = comparing.find_nearest(ancLon,lon[index])
 
             # position retrieval index has been confirmed manually in SeaDAS
             uWind = ancUwind.data["None"][latInd][lonInd]
@@ -157,8 +159,8 @@ class GetAnc:
             modAirT.append(aTemp - 273.15) # [C]
 
             # Locate the relevant cell
-            latInd = Utilities.find_nearest(ancLatAer,lat[index])
-            lonInd = Utilities.find_nearest(ancLonAer,lon[index])
+            latInd = comparing.find_nearest(ancLatAer,lat[index])
+            lonInd = comparing.find_nearest(ancLonAer,lon[index])
 
             # position confirmed in SeaDAS
             modAOD.append(ancTExt.data["None"][latInd][lonInd])
