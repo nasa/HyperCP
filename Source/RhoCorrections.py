@@ -22,7 +22,7 @@ class RhoCorrections:
 
         logging.writeLogFileAndPrint('Calculating M99 glint correction with complete LUT')
         
-        theta = 40 # viewing zenith angle
+        theta = 40 # viewing nadir angle of Lt or VZA of Li (TODO: tweak to allow theta=30)
         winds = np.arange(0, 14+1, 2)       # 0:2:14
         szas = np.arange(0, 80+1, 10)       # 0:10:80
         phiViews = np.arange(0, 180+1, 15)  # 0:15:180 # phiView is relAz
