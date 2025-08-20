@@ -57,7 +57,7 @@ class ProcessL2BRDF():
                     if ds.startswith("Rrs"):
                         # Can't change datasets in this loop, so make a list
                         # TODO consider uncertainties!
-                        if not (ds.endswith("_unc") or ds.endswith("_uncorr") or ds.endswith("_O23") or ds.endswith("_L11") or ds.endswith("_M02")):
+                        if not (ds.endswith("_unc") or ds.endswith("_uncorr") or ds.endswith("_O25") or ds.endswith("_L11") or ds.endswith("_M02")):
                             Rrs_list.append(ds)
                 # Extract the spectrla information
                 for ds in Rrs_list:
@@ -102,8 +102,8 @@ class ProcessL2BRDF():
                         if np.shape(v) == ():
                             I[k] = I[k].reshape((1,))
                             
-                    # Calculate BRDF correction for Lee11 or O23
-                    if BRDF_option in ['L11','O23','M02','M02_SeaDAS']:
+                    # Calculate BRDF correction for Lee11 or O25
+                    if BRDF_option in ['L11','O25','M02','M02_SeaDAS']:
                         # fomating input into xarray wanted by OLCI-BRDF code
                         xr_ds = xr.Dataset({
                             'Rw': xr.DataArray(

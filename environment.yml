@@ -28,3 +28,4 @@ dependencies:
     - comet_maths<=1.0.3
     - punpy
     - fpdf2
+    - lmfit
