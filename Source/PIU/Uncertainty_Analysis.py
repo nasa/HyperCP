@@ -12,9 +12,11 @@ from Source.RhoCorrections import RhoCorrections
 
 # M99 Rho
 from Source.HDFRoot import HDFRoot
-from Source.Utilities import Utilities
 
-# TODO remove this part and properly address the warning
+# Utilities
+from Source.utils.loggingHCP import writeLogFileAndPrint
+from Source.utils.comparing import find_nearest
+
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -400,7 +402,7 @@ class Propagate:
         try:
             zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
         except InterpolationError as err:
-            Utilities.writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
+            writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')
             zhang = Propagate.zhangWrapper(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
         
         return zhang
@@ -550,11 +552,11 @@ class Propagate:
         phiViews = np.arange(0, 180 + 1, 15)  # 0:15:180 # phiView is relAz
 
         # Find the nearest values in the LUT
-        wind_idx = Utilities.find_nearest(winds, windSpeedMean)
+        wind_idx = find_nearest(winds, windSpeedMean)
         wind = winds[wind_idx]
-        sza_idx = Utilities.find_nearest(szas, SZAMean)
+        sza_idx = find_nearest(szas, SZAMean)
         sza = szas[sza_idx]
-        relAz_idx = Utilities.find_nearest(phiViews, relAzMean)
+        relAz_idx = find_nearest(phiViews, relAzMean)
         relAz = phiViews[relAz_idx]
 
         # load in the LUT HDF file

@@ -11,13 +11,18 @@ from typing import Union, Any, Optional
 from collections import OrderedDict
 
 # Source files
-from Source.Utilities import Utilities
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 
 # PIU files
 from Source.PIU.BaseInstrument import BaseInstrument
 from Source.PIU.PIUDataStore import PIUDataStore as pds
+
+# Utilities
+from Source.utils.filtering import hasNan
+from Source.utils.comparing import isIncreasing
+from Source.utils.interpolating import interp
+from Source.utils.loggingHCP import writeLogFileAndPrint
 
 
 class HyperOCR(BaseInstrument):
@@ -50,7 +55,7 @@ class HyperOCR(BaseInstrument):
         if darkGrp is None or lightGrp is None:
             msg = f'No radiometry found for {sensortype}'
             print(msg)
-            Utilities.writeLogFile(msg)
+            writeLogFileAndPrint(msg)
             return False
         elif not HyperOCRUtils.check_data(darkData, lightData):
             return False
@@ -76,9 +81,7 @@ class HyperOCR(BaseInstrument):
                 std_light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
                 std_dark.append(np.sqrt(((Nd-1)/(Nd-3))*(np.std(darkData[k]) / np.sqrt(Nd))**2))
             else:
-                msg = "too few scans to make meaningful statistics"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                writeLogFileAndPrint("too few scans to make meaningful statistics")
                 return False
 
             ave_light.append(np.average(lightData[k]))
@@ -88,9 +91,7 @@ class HyperOCR(BaseInstrument):
                 try:
                     lightData[k][x] -= darkData[k][x]
                 except IndexError as err:
-                    msg = f"Light/Dark indexing error PIU.HypperOCR: {err}"
-                    print(msg)
-                    Utilities.writeLogFile(msg)
+                    writeLogFileAndPrint(f"Light/Dark indexing error PIU.HypperOCR: {err}")
                     return False
             
 
@@ -312,9 +313,7 @@ class HyperOCRUtils:
             lightDateTime = lightGrp.getDataset("DATETIME")
 
         if darkGrp is None or lightGrp is None:
-            msg = f'No radiometry found for {sensortype}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            writeLogFileAndPrint(f'No radiometry found for {sensortype}')
             return False
         elif not HyperOCRUtils.check_data(darkData, lightData):
             return False
@@ -337,19 +336,13 @@ class HyperOCRUtils:
             new_x = lightTimer.data                  # lighttimer
 
             if len(x) < 3 or len(y) < 3 or len(new_x) < 3:
-                msg = "**************Cannot do cubic spline interpolation, length of datasets < 3"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                writeLogFileAndPrint("**************Cannot do cubic spline interpolation, length of datasets < 3")
                 return False
-            if not Utilities.isIncreasing(x):
-                msg = "**************darkTimer does not contain strictly increasing values"
-                print(msg)
-                Utilities.writeLogFile(msg)
+            if not isIncreasing(x):
+                writeLogFileAndPrint("**************darkTimer does not contain strictly increasing values")
                 return False
-            if not Utilities.isIncreasing(new_x):
-                msg = "**************lightTimer does not contain strictly increasing values"
-                print(msg)
-                Utilities.writeLogFile(msg)
+            if not isIncreasing(new_x):
+                writeLogFileAndPrint("**************lightTimer does not contain strictly increasing values")
                 return False
 
             if len(x) >= 3:
@@ -357,23 +350,19 @@ class HyperOCRUtils:
                 xTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in x]
                 newXTS = [calendar.timegm(xDT.utctimetuple()) + xDT.microsecond / 1E6 for xDT in new_x]
 
-                newDarkData[k] = Utilities.interp(xTS,y,newXTS, fill_value=np.nan)
+                newDarkData[k] = interp(xTS,y,newXTS, fill_value=np.nan)
 
                 for val in newDarkData[k]:
                     if np.isnan(val):
                         frameinfo = getframeinfo(currentframe())
                         msg = f'found NaN {frameinfo.lineno}'
             else:
-                msg = '**************Record too small for splining. Exiting.'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                writeLogFileAndPrint('**************Record too small for splining. Exiting.')
                 return False
 
-        if Utilities.hasNan(darkData):
+        if hasNan(darkData):
             frameinfo = getframeinfo(currentframe())
-            msg = f'found NaN {frameinfo.lineno}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            writeLogFileAndPrint(f'found NaN {frameinfo.lineno}')
             return False
 
         return newDarkData
@@ -382,19 +371,18 @@ class HyperOCRUtils:
     def check_data(dark, light):
         msg = None
         if (dark is None) or (light is None):
-            msg = f'Dark Correction, dataset not found: {dark} , {light}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            writeLogFileAndPrint(f'Dark Correction, dataset not found: {dark} , {light}')
             return False
 
-        if Utilities.hasNan(light):
+        if hasNan(light):
             frameinfo = getframeinfo(currentframe())
             msg = f'found NaN {frameinfo.lineno}'
 
-        if Utilities.hasNan(dark):
+        if hasNan(dark):
             frameinfo = getframeinfo(currentframe())
             msg = f'found NaN {frameinfo.lineno}'
+
         if msg:
-            print(msg)
-            Utilities.writeLogFile(msg)
+            writeLogFileAndPrint(msg)
+
         return True

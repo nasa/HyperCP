@@ -11,13 +11,15 @@ import comet_maths as cm
 from typing import Optional, Union, Any
 
 # Source files
-from Source.Utilities import Utilities
 from Source.HDFGroup import HDFGroup
 
 # PIU files
 from Source.PIU.BaseInstrument import BaseInstrument
 from Source.PIU.MeasurementFunctions import MeasurementFunctions as mf
 from Source.PIU.PIUDataStore import PIUDataStore as pds
+
+# UTILITIES
+from Source.utils.loggingHCP import writeLogFileAndPrint
 
 
 class TriOS(BaseInstrument):
@@ -85,9 +87,7 @@ class TriOS(BaseInstrument):
         elif nmes > 3:
             light_std = np.sqrt(((nmes-1)/(nmes-3))*(np.std(calibrated_light_measure, axis=0) / np.sqrt(nmes))**2)
         else:
-            msg = "too few scans to make meaningful statistics"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            writeLogFileAndPrint("too few scans to make meaningful statistics")
             return False
         # ensure all TriOS outputs are length 255 to match SeaBird HyperOCR stats output
         ones = np.ones(nband)  # to provide array of 1s with the correct shape
@@ -156,6 +156,7 @@ class TriOS(BaseInstrument):
                 )
 
             # sample for Non-Linearity
+            alpha = mf.alphafunc(S1, S12)
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
 
             if s_type.upper() == "ES":

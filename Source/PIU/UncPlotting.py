@@ -12,7 +12,6 @@ from punpy import MCPropagation
 import matplotlib.pyplot as plt
 
 # Source
-from Source.Utilities import Utilities
 from Source.MainConfig import MainConfig
 from Source.ConfigFile import ConfigFile
 

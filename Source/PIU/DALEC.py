@@ -5,11 +5,11 @@ import numpy as np
 import warnings
 from copy import deepcopy
 
-# Source
-from Source.Utilities import Utilities
-
 # PIU
 from Source.PIU.BaseInstrument import BaseInstrument
+
+# Utilities
+from Source.utils.loggingHCP import writeLogFileAndPrint
 
 
 class Dalec(BaseInstrument):
@@ -27,9 +27,7 @@ class Dalec(BaseInstrument):
         lightData = lightSlice['data']  # lightGrp.getDataset(sensortype)
         darkData = lightSlice['dc']
         if  grp is None:
-            msg = f'No radiometry found for {sensortype}'
-            print(msg)
-            Utilities.writeLogFile(msg)
+            writeLogFileAndPrint(f'No radiometry found for {sensortype}')
             return False
         
         # Correct light data by subtracting interpolated dark data from light data
@@ -61,9 +59,7 @@ class Dalec(BaseInstrument):
                 std_Light.append(np.sqrt(((N-1)/(N-3))*(np.std(lightData[k]) / np.sqrt(N))**2))
                 std_Dark.append(std_Dark0)
             else:
-                msg = "too few scans to make meaningful statistics"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                writeLogFileAndPrint("too few scans to make meaningful statistics")
                 return False
 
             ave_Light.append(np.average(lightData[k]))

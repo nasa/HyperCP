@@ -9,7 +9,6 @@ from datetime import datetime as dt
 
 # Source
 from Source.ConfigFile import ConfigFile
-from Source.Utilities import Utilities
 from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 from Source.HDFDataset import HDFDataset
@@ -17,9 +16,12 @@ from Source.HDFDataset import HDFDataset
 # PIU
 from Source.PIU.utils import utils
 
-# contains class to read and store input uncertainties for PIU
+# Utilities
+from Source.utils.loggingHCP import writeLogFileAndPrint
+
 
 class PIUDataStore:
+    """contains class to read and store input uncertainties for PIU"""
     sensors: list = ['ES', 'LI', 'LT']
 
     def __init__(self, root: HDFRoot, input: HDFGroup, raw_grps: Optional[dict[str: dict]]=None, raw_slices: Optional[dict[str:dict]]=None):
@@ -57,9 +59,7 @@ class PIUDataStore:
             elif instrument == 'seabird':
                 [self.readCalFactory(root, input, sensor) for sensor in self.sensors]
             else:
-                msg = "TriOS/Dalec factory uncertainties not implemented"
-                Utilities.writeLogFile(msg)
-                print(msg)
+                writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
                 raise NotImplementedError  # TODO: test behaviour of this - implemented because _init__ classes cannot have return or yeilds - Ashley
             
             # finally
@@ -80,9 +80,7 @@ class PIUDataStore:
         elif instrument == "trios":
             radcal_raw = self.readTriOSCal(grp, uncGrp, raw_slices, s_type)
         else:
-            msg = f"{self.instsrument} not yet implemented"
-            print(msg)
-            Utilities.writeLogFile(msg)
+            writeLogFileAndPrint(f"{self.instsrument} not yet implemented")
             raise NotImplementedError
 
         # define input data

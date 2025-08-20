@@ -11,15 +11,17 @@ import comet_maths as cm
 
 # Source
 from Source.ConfigFile import ConfigFile
-from Source.Utilities import Utilities
 from Source.HDFGroup import HDFGroup
 from Source.HDFRoot import HDFRoot
 from Source.Weight_RSR import Weight_RSR
 
-# Uncertainties
+# PIU
 from Source.PIU.Uncertainty_Analysis import Propagate
 from Source.PIU.utils import utils
 from Source.PIU.PIUDataStore import PIUDataStore as pds
+
+# UTILITIES
+from Source.utils.loggingHCP import writeLogFileAndPrint
 
 
 class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators which exist to give warnings to coders.
@@ -80,14 +82,11 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                         s_type
                         ]
             else:
-                msg = "WARNING sensor not recognised"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                writeLogFileAndPrint("WARNING sensor not recognised")
             try:
                 stats[s_type] = self.lightDarkStats(*args)
             except (ValueError, IndexError, KeyError):
-                msg = "Could not generate statistics for the ensemble"
-                print(msg)
+                writeLogFileAndPrint("Could not generate statistics for the ensemble")
                 return False
 
         # interpolate std Signal to common wavebands - taken from L2 ES group: ProcessL2.py L1352
@@ -103,9 +102,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             return stats
             
         except IndexError as err:
-            msg = f"Unable to parse statistics with for the ensemble: {err}. (possibly too few scans)."
-            print(msg)
-            Utilities.writeLogFile(msg)
+            writeLogFileAndPrint(f"Unable to parse statistics with for the ensemble: {err}. (possibly too few scans).")
             return False
 
     def ClassBased(self, node: HDFRoot, uncGrp: HDFGroup, stats: dict[str, np.array]) -> Union[dict[str, dict], bool]:
@@ -199,9 +196,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     node.getGroup("ANCILLARY")
                 )
             except ValueError as err:
-                msg = f"unable to run uncertainty breakdown plots for {cast}, with error: {err}"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                writeLogFileAndPrint(f"unable to run uncertainty breakdown plots for {cast}, with error: {err}")
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="invalid value encountered in divide")
@@ -361,9 +356,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
                     node.getGroup("ANCILLARY")
                 )
             except ValueError as err:
-                msg = f"unable to run uncertainty breakdown plots for {cast}, with error: {err}"
-                print(msg)
-                Utilities.writeLogFile(msg)
+                writeLogFileAndPrint(f"unable to run uncertainty breakdown plots for {cast}, with error: {err}")
 
         # these are absolute values!
         rhoUNC_CWB = utils.interp_common_wvls(
