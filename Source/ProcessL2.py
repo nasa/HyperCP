@@ -1466,10 +1466,10 @@ class ProcessL2:
         # insert Uncertainties into analysis
         xUNC = {}
 
-        tic = time.process_time()
-        with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal
-            logging.writeLogFileAndPrint('Updating instrument uncertainties...')
-            if ConfigFile.settings["fL1bCal"] <= 2:  # and
+        tic = time.time()
+        with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal            
+            if ConfigFile.settings["fL1bCal"] <= 2:
+                logging.writeLogFileAndPrint('Updating class-based instrument uncertainties...')
                 L1B_UNC = instrument.ClassBased(node, uncGroup, stats)
                 if L1B_UNC:
                     xSlice.update(L1B_UNC)  # update the xSlice dict with uncertianties and samples
@@ -1488,6 +1488,7 @@ class ProcessL2:
                     return False
 
             elif ConfigFile.settings["fL1bCal"] == 3:
+                logging.writeLogFileAndPrint('Updating sensor-specific instrument uncertainties...')
                 xSlice.update(
                     instrument.FRM(node, uncGroup,
                                 dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
@@ -1495,7 +1496,7 @@ class ProcessL2:
                                 stats, np.array(waveSubset, float)))  # instrument_WB
                 xUNC.update(instrument.FRM_L2(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
-                # NOTE: Block for FRM-Full for now
+                # NOTE: Block sensor-specific plotting for now
                 if ConfigFile.settings['bL2UncertaintyBreakdownPlot'] and\
                     ConfigFile.settings['fL1bCal'] == 2:
                     gui = UncertaintyGUI()
@@ -1511,7 +1512,7 @@ class ProcessL2:
                         waveSubset
                     )
 
-        logging.writeLogFileAndPrint(f'Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s')
+        logging.writeLogFileAndPrint(f'Uncertainty Update Elapsed Time: {time.time() - tic:.1f} s')
 
         # move uncertainties from xSlice to xUNC
         if xUNC is not None:
