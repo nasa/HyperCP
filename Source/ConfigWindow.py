@@ -435,6 +435,19 @@ class ConfigWindow(QtWidgets.QDialog):
             self.RhoRadioButtonZhang.setChecked(True)
         self.RhoRadioButtonZhang.clicked.connect(self.l2RhoRadioButtonZhangClicked)
 
+        self.RhoRadioButton3C = QtWidgets.QRadioButton("Groetsch et al. (2017)")
+        self.RhoRadioButton3C.setAutoExclusive(False)
+        if ConfigFile.settings["bL23CRho"]==1:
+            self.RhoRadioButtonZhang.setChecked(True)
+        self.RhoRadioButton3C.clicked.connect(self.l2RhoRadioButton3CClicked)
+
+        self.RhoRadioButtonYour = QtWidgets.QRadioButton("Your Glint (2023) ρ")
+        self.RhoRadioButtonYour.setAutoExclusive(False)
+        self.RhoRadioButtonYour.setDisabled(True)
+        # if ConfigFile.settings["bL2YourRho"]==1:
+        #     self.RhoRadioButtonYour.setChecked(True)
+        # self.RhoRadioButtonYour.clicked.connect(self.l2RhoRadioButtonYourClicked)
+
         # Initialization of ancillary buttons NB: placed here because must come after Zhang button definition!
         # NB : the following are NOT "elif" blocks because bL1bGetAnc can change after each block.
 
@@ -457,23 +470,13 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1bGetAncResetButton.setDisabled(True)
             self.RhoRadioButtonZhang.setChecked(0)
             self.RhoRadioButtonZhang.setDisabled(1)
+            self.RhoRadioButton3C.setChecked(0)
+            self.RhoRadioButton3C.setDisabled(1)
             self.RhoRadioButtonDefault.setChecked(1)
 
             ConfigFile.settings["bL23CRho"] = 0
             ConfigFile.settings["bL2Z17Rho"] = 0
             ConfigFile.settings["bL2M99Rho"] = 1
-
-        self.RhoRadoButton3C = QtWidgets.QRadioButton("Groetsch et al. (2017)")
-        self.RhoRadoButton3C.setAutoExclusive(False)
-        self.RhoRadoButton3C.setDisabled(True)
-
-        self.RhoRadioButtonYour = QtWidgets.QRadioButton("Your Glint (2023) ρ")
-        self.RhoRadioButtonYour.setAutoExclusive(False)
-        self.RhoRadioButtonYour.setDisabled(True)
-        # if ConfigFile.settings["bL2YourRho"]==1:
-        #     self.RhoRadioButtonYour.setChecked(True)
-        # self.RhoRadioButtonYour.clicked.connect(self.l2RhoRadioButtonYourClicked)
-
 
         #   L2 NIR AtmoCorr
         l2NIRCorrectionLabel = QtWidgets.QLabel("NIR Residual Correction", self)
@@ -525,10 +528,10 @@ class ConfigWindow(QtWidgets.QDialog):
         if int(ConfigFile.settings["bL2BRDF_IOP"]) == 1:
             self.l2BRDF_IOPCheckBox.setChecked(True)
 
-        self.l2BRDF_O23Label = QtWidgets.QLabel("Pitarch IOP [beta]", self)
-        self.l2BRDF_O23CheckBox = QtWidgets.QCheckBox("", self)
-        if int(ConfigFile.settings["bL2BRDF_O23"]) == 1:
-            self.l2BRDF_O23CheckBox.setChecked(True)
+        self.l2BRDF_O25Label = QtWidgets.QLabel("Pitarch IOP", self)
+        self.l2BRDF_O25CheckBox = QtWidgets.QCheckBox("", self)
+        if int(ConfigFile.settings["bL2BRDF_O25"]) == 1:
+            self.l2BRDF_O25CheckBox.setChecked(True)
 
         self.l2BRDFCheckBoxUpdate()
 
@@ -610,7 +613,7 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2BRDFCheckBox.clicked.connect(self.l2BRDFCheckBoxUpdate)
         self.l2BRDF_fQCheckBox.clicked.connect(self.l2BRDF_fQCheckBoxUpdate)
         self.l2BRDF_IOPCheckBox.clicked.connect(self.l2BRDF_IOPCheckBoxUpdate)
-        self.l2BRDF_O23CheckBox.clicked.connect(self.l2BRDF_O23CheckBoxUpdate)
+        self.l2BRDF_O25CheckBox.clicked.connect(self.l2BRDF_O25CheckBoxUpdate)
 
         self.l2OCproducts = QtWidgets.QPushButton("Derived L2 Ocean Color Products", self)
         self.l2OCproducts.clicked.connect(self.l2OCproductsButtonPressed)
@@ -956,7 +959,7 @@ class ConfigWindow(QtWidgets.QDialog):
         RhoHBox2.addWidget(self.RhoRadioButtonZhang)
         VBox3.addLayout(RhoHBox2)
         RhoHBox3 = QtWidgets.QHBoxLayout()
-        RhoHBox3.addWidget(self.RhoRadoButton3C)
+        RhoHBox3.addWidget(self.RhoRadioButton3C)
         RhoHBox3.addWidget(self.RhoRadioButtonYour)
         VBox3.addLayout(RhoHBox3)
 
@@ -993,8 +996,8 @@ class ConfigWindow(QtWidgets.QDialog):
         BRDFHBox2.addWidget(self.l2BRDF_fQCheckBox)
         BRDFHBox2.addWidget(self.l2BRDF_IOPLabel)
         BRDFHBox2.addWidget(self.l2BRDF_IOPCheckBox)
-        BRDFHBox2.addWidget(self.l2BRDF_O23Label)
-        BRDFHBox2.addWidget(self.l2BRDF_O23CheckBox)
+        BRDFHBox2.addWidget(self.l2BRDF_O25Label)
+        BRDFHBox2.addWidget(self.l2BRDF_O25CheckBox)
         BRDFVBox.addLayout(BRDFHBox2)
         VBox4.addLayout(BRDFVBox)
 
@@ -1367,6 +1370,7 @@ class ConfigWindow(QtWidgets.QDialog):
             elif ancillarySource == 'ECMWF_ADS':
                 ConfigFile.settings["bL1bGetAnc"] = 2
             self.RhoRadioButtonZhang.setDisabled(0)
+            self.RhoRadioButton3C.setDisabled(0)
         else:
             ConfigFile.settings["bL1bGetAnc"] = 0
             self.l1bGetAncCheckBox1.setChecked(False)
@@ -1405,7 +1409,8 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1bGetAncResetButton.setDisabled(True)
             self.RhoRadioButtonZhang.setChecked(0)
             self.RhoRadioButtonZhang.setDisabled(1)
-            # self.RhoRadoButton3C.setChecked(1)
+            self.RhoRadioButton3C.setChecked(0)
+            self.RhoRadioButton3C.setDisabled(1)
             self.RhoRadioButtonDefault.setChecked(1)
 
             print("ConfigWindow - l2RhoCorrection set to M99")
@@ -1450,7 +1455,8 @@ class ConfigWindow(QtWidgets.QDialog):
             self.l1bGetAncResetButton.setDisabled(True)
             self.RhoRadioButtonZhang.setChecked(0)
             self.RhoRadioButtonZhang.setDisabled(1)
-            # self.RhoRadoButton3C.setChecked(1)
+            self.RhoRadioButton3C.setChecked(0)
+            self.RhoRadioButton3C.setDisabled(1)
             self.RhoRadioButtonDefault.setChecked(1)
 
             print("ConfigWindow - l2RhoCorrection set to M99")
@@ -1559,17 +1565,18 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL2EnablePercentLt"] = 1
 
-    def l2RhoRadoButton3CClicked(self):
-        print("ConfigWindow - l2RhoCorrection set to Ruddick")
-        self.RhoRadoButton3C.setChecked(True)
+    def l2RhoRadioButton3CClicked(self):
+        print("ConfigWindow - l2RhoCorrection set to Groetsch et al.")
+        self.RhoRadioButton3C.setChecked(True)
         self.RhoRadioButtonZhang.setChecked(False)
         self.RhoRadioButtonDefault.setChecked(False)
         ConfigFile.settings["bL23CRho"] = 1
         ConfigFile.settings["bL2Z17Rho"] = 0
         ConfigFile.settings["bL2M99Rho"] = 0
+
     def l2RhoRadioButtonZhangClicked(self):
         print("ConfigWindow - l2RhoCorrection set to Zhang")
-        self.RhoRadoButton3C.setChecked(False)
+        self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZhang.setChecked(True)
         self.RhoRadioButtonDefault.setChecked(False)
         ConfigFile.settings["bL23CRho"] = 0
@@ -1579,17 +1586,19 @@ class ConfigWindow(QtWidgets.QDialog):
             print("SZA outside model limits; adjusting to 60")
             ConfigFile.settings["fL1bqcSZAMax"] = 60
             self.l1bqcSZAMaxLineEdit.setText(str(60.0))
+
     def l2RhoRadioButtonDefaultClicked(self):
         print("ConfigWindow - l2RhoCorrection set to Default")
-        self.RhoRadoButton3C.setChecked(False)
+        self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZhang.setChecked(False)
         self.RhoRadioButtonDefault.setChecked(True)
         ConfigFile.settings["bL23CRho"] = 0
         ConfigFile.settings["bL2Z17Rho"] = 0
         ConfigFile.settings["bL2M99Rho"] = 1
+
     def l2RhoRadioButtonYourClicked(self):
         print("ConfigWindow - l2RhoCorrection set to Default. You have not submitted your method.")
-        self.RhoRadoButton3C.setChecked(False)
+        self.RhoRadioButton3C.setChecked(False)
         self.RhoRadioButtonZhang.setChecked(False)
         self.RhoRadioButtonYour.setChecked(True)
         ConfigFile.settings["bL23CRho"] = 0
@@ -1645,22 +1654,22 @@ class ConfigWindow(QtWidgets.QDialog):
         self.l2BRDF_fQLabel.setDisabled(disabled)
         self.l2BRDF_IOPCheckBox.setDisabled(disabled)
         self.l2BRDF_IOPLabel.setDisabled(disabled)
-        self.l2BRDF_O23CheckBox.setDisabled(disabled)
-        self.l2BRDF_O23Label.setDisabled(disabled)
+        self.l2BRDF_O25CheckBox.setDisabled(disabled)
+        self.l2BRDF_O25Label.setDisabled(disabled)
 
         if disabled:
             ConfigFile.settings["bL2BRDF"] = 0
             ConfigFile.settings["bL2BRDF_fQ"] = 0
             ConfigFile.settings["bL2BRDF_IOP"] = 0
-            ConfigFile.settings["bL2BRDF_O23"] = 0
+            ConfigFile.settings["bL2BRDF_O25"] = 0
             self.l2BRDF_fQCheckBox.setChecked(False)
             self.l2BRDF_IOPCheckBox.setChecked(False)
-            self.l2BRDF_O23CheckBox.setChecked(False)
-        elif ConfigFile.settings["bL2BRDF_fQ"] == 0 and ConfigFile.settings["bL2BRDF_IOP"] == 0 and ConfigFile.settings["bL2BRDF_O23"] == 0:
+            self.l2BRDF_O25CheckBox.setChecked(False)
+        elif ConfigFile.settings["bL2BRDF_fQ"] == 0 and ConfigFile.settings["bL2BRDF_IOP"] == 0 and ConfigFile.settings["bL2BRDF_O25"] == 0:
             ConfigFile.settings["bL2BRDF_IOP"] = 1
             self.l2BRDF_fQCheckBox.setChecked(False)
             self.l2BRDF_IOPCheckBox.setChecked(True)
-            self.l2BRDF_O23CheckBox.setChecked(False)
+            self.l2BRDF_O25CheckBox.setChecked(False)
 
 
     # Make BRDF type exclusive so that it is clear what is written to SeaBASS output
@@ -1674,10 +1683,10 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL2BRDF_fQ"] = 1
             ConfigFile.settings["bL2BRDF_IOP"] = 0
-            ConfigFile.settings["bL2BRDF_O23"] = 0
+            ConfigFile.settings["bL2BRDF_O25"] = 0
             self.l2BRDF_fQCheckBox.setChecked(True)
             self.l2BRDF_IOPCheckBox.setChecked(False)
-            self.l2BRDF_O23CheckBox.setChecked(False)
+            self.l2BRDF_O25CheckBox.setChecked(False)
 
     def l2BRDF_IOPCheckBoxUpdate(self):
         print("ConfigWindow - l2BRDF_IOPCheckBoxUpdate")
@@ -1688,24 +1697,24 @@ class ConfigWindow(QtWidgets.QDialog):
         else:
             ConfigFile.settings["bL2BRDF_fQ"] = 0
             ConfigFile.settings["bL2BRDF_IOP"] = 1
-            ConfigFile.settings["bL2BRDF_O23"] = 0
+            ConfigFile.settings["bL2BRDF_O25"] = 0
             self.l2BRDF_fQCheckBox.setChecked(False)
             self.l2BRDF_IOPCheckBox.setChecked(True)
-            self.l2BRDF_O23CheckBox.setChecked(False)
+            self.l2BRDF_O25CheckBox.setChecked(False)
 
-    def l2BRDF_O23CheckBoxUpdate(self):
-        print("ConfigWindow - l2BRDF_O23CheckBoxUpdate")
-        disabled = (not self.l2BRDF_O23CheckBox.isChecked())
+    def l2BRDF_O25CheckBoxUpdate(self):
+        print("ConfigWindow - l2BRDF_O25CheckBoxUpdate")
+        disabled = (not self.l2BRDF_O25CheckBox.isChecked())
         if disabled:
-            ConfigFile.settings["bL2BRDF_O23"] = 0
-            self.l2BRDF_O23CheckBox.setChecked(False)
+            ConfigFile.settings["bL2BRDF_O25"] = 0
+            self.l2BRDF_O25CheckBox.setChecked(False)
         else:
             ConfigFile.settings["bL2BRDF_fQ"] = 0
             ConfigFile.settings["bL2BRDF_IOP"] = 0
-            ConfigFile.settings["bL2BRDF_O23"] = 1
+            ConfigFile.settings["bL2BRDF_O25"] = 1
             self.l2BRDF_fQCheckBox.setChecked(False)
             self.l2BRDF_IOPCheckBox.setChecked(False)
-            self.l2BRDF_O23CheckBox.setChecked(True)
+            self.l2BRDF_O25CheckBox.setChecked(True)
 
     def l2OCproductsButtonPressed(self):
         print("OC Products Dialogue")
@@ -1828,7 +1837,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2EnablePercentLt"] = int(self.l2EnablePercentLtCheckBox.isChecked())
         ConfigFile.settings["fL2PercentLt"] = float(self.l2PercentLtLineEdit.text())
         # ConfigFile.settings["fL2RhoSky"] = float(self.l2RhoSkyLineEdit.text())
-        ConfigFile.settings["bL23CRho"] = int(self.RhoRadoButton3C.isChecked())
+        ConfigFile.settings["bL23CRho"] = int(self.RhoRadioButton3C.isChecked())
         ConfigFile.settings["bL2Z17Rho"] = int(self.RhoRadioButtonZhang.isChecked())
         ConfigFile.settings["bL2M99Rho"] = int(self.RhoRadioButtonDefault.isChecked())
 
@@ -1841,7 +1850,7 @@ class ConfigWindow(QtWidgets.QDialog):
         ConfigFile.settings["bL2BRDF"] = int(self.l2BRDFCheckBox.isChecked())
         ConfigFile.settings["bL2BRDF_fQ"] = int(self.l2BRDF_fQCheckBox.isChecked())
         ConfigFile.settings["bL2BRDF_IOP"] = int(self.l2BRDF_IOPCheckBox.isChecked())
-        ConfigFile.settings["bL2BRDF_O23"] = int(self.l2BRDF_O23CheckBox.isChecked())
+        ConfigFile.settings["bL2BRDF_O25"] = int(self.l2BRDF_O25CheckBox.isChecked())
 
         ConfigFile.settings["bL2WeightMODISA"] = int(self.l2WeightMODISACheckBox.isChecked())
         ConfigFile.settings["bL2WeightSentinel3A"] = int(self.l2WeightSentinel3ACheckBox.isChecked())

@@ -160,9 +160,11 @@ class RhoCorrections:
         ulist = [2.0, 0.01, 0.5, 2, 0.5, 3, 0.0, None]
         # TODO: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
 
-        tic = time.process_time()
+        # tic = time.process_time() # CPU time
+        tic = time.time()
         rhoVector = get_sky_sun_rho(env, sensor, round4cache=True, DB=db)['rho']
-        logging.writeLogFileAndPrint(f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s')
+        # logging.writeLogFileAndPrint(f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s')
+        logging.writeLogFileAndPrint(f'Zhang17 Elapsed Time: {time.time() - tic:.1f} s')
 
         # Presumably obsolete (Ashley)? -DAA
         # No I'm only changing how the zhang uncertainties work - this all happes in uncertianty_analysis.py - Ashley
@@ -171,11 +173,11 @@ class RhoCorrections:
         if Propagate is None:
             rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
         else:
-            tic = time.process_time()
+            tic = time.time()
             rhoDelta = Propagate.Zhang_Rho_Uncertainty(mean_vals=varlist,
                                                        uncertainties=ulist,
                                                        )
-            logging.writeLogFileAndPrint(f'Zhang_Rho_Uncertainty Elapsed Time: {time.process_time() - tic:.1f} s')
+            logging.writeLogFileAndPrint(f'Zhang_Rho_Uncertainty Elapsed Time: {time.time() - tic:.1f} s')
 
         return rhoVector, rhoDelta
 
@@ -185,6 +187,8 @@ class RhoCorrections:
         windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang
 
         """
+        logging.writeLogFileAndPrint('Calculating Zhang glint correction (LUT).')
+        tic = time.time()
         if sva == 30:
             db_path = "Z17_LUT_30.nc"
             logging.writeLogFileAndPrint("running Z17 interpolation for instrument viewing zenith of 30",False)
@@ -246,6 +250,8 @@ class RhoCorrections:
                     method="cubic",
                 )
                 print('Interpolating Z17 LUT using cubic method')
+
+            logging.writeLogFileAndPrint(f'Zhang17 LUT Elapsed Time: {time.time() - tic:.1f} s')
 
         except ValueError as err:
             raise InterpolationError(f"Interpolation of Z17 LUT failed with {err}") from err
