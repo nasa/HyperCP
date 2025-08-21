@@ -233,3 +233,23 @@ def filterData(group, badTimes, level = None):
     logging.writeLogFileAndPrint(\
         f'   Length of dataset after removal {originalLength-finalCount} long: {(100*finalCount/originalLength):.1f}% removed')
     return finalCount/originalLength
+
+
+def hasNan(ds):
+    """Check if dataset contains NANs"""
+    try:
+        keys = ds.data.dtype.fields.keys()
+        data = ds.data
+        length = ds.data.shape[0]
+    except AttributeError:
+        keys = ds.keys()  # for if columns passed directly
+        data = ds
+        length = np.asarray(list(ds.values())).shape[1]
+
+    for k in keys:
+        for x in range(length):
+            if k != 'Datetime':
+                if np.isnan(data[k][x]):
+                    return True
+
+    return False
