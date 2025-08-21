@@ -46,7 +46,7 @@ class PIUDataStore:
             
         try:
             acqTime = dt.strptime(root.attributes['TIME-STAMP'], '%a %b %d %H:%M:%S %Y')
-            self.cast = f"{type(self).__name__}_{acqTime.strftime('%Y%m%d%H%M%S')}"
+            self.cast = f"{self.get_regime_Name(self.cal_level)}_{acqTime.strftime('%Y%m%d%H%M%S')}"
         except (AttributeError, KeyError):
             self.cast = None
 
@@ -64,7 +64,7 @@ class PIUDataStore:
             
             # finally
             [self.read_uncertainties(input, sensor) for sensor in self.sensors]
-    
+
     #### FRM ####
     def readCalFRM(self, root, uncGrp, raw_grps, raw_slices, s_type):
         # read data
@@ -331,6 +331,15 @@ class PIUDataStore:
 
 
     ## UTILITIES ##
+    @staticmethod
+    def get_regime_name(lvl: int):
+        if lvl == int(3):
+            return "FRM_Sensor-Specific"
+        elif lvl == int(2):
+            return "FRM_Class-Based"
+        else:
+            return "Factory"
+
     @staticmethod
     def instrument_calfile_name(i:str) -> str:
         if i == "seabird":

@@ -156,7 +156,6 @@ class TriOS(BaseInstrument):
                 )
 
             # sample for Non-Linearity
-            alpha = mf.alphafunc(S1, S12)
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
 
             if s_type.upper() == "ES":

@@ -387,10 +387,12 @@ class Propagate:
     def temporary_zhangWrapper(windSpeedMean, AOD, sza, wTemp, sal, relAz, sva, waveBands):
 
         # Guardrails on Z17 inputs from MC
-        if windSpeedMean < 0:
+        if windSpeedMean < 0:  # shouldn't be possible now - Ashley
             windSpeedMean = 0
         if windSpeedMean > 15:
             windSpeedMean = 15
+        if relAz > 140:
+            relAz = 140
         if AOD > 0.5:
             AOD = 0.5
         if sza > 60:

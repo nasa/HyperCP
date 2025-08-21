@@ -100,14 +100,7 @@ class PlotTools:
                 )
                 plt.title(f"{sensor} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
                 fp = path.join(self.plot_folder, f"pie_{sensor}_{self.Data.cast}_{wvl_at_indx}.png")
-                if not path.exists(self.plot_folder):
-                    try:
-                        orig_umask = umask(0)  # bypasses permission issue on my computer - Ashley
-                        makedirs(fp, 0o777)
-                    finally:
-                        umask(orig_umask)
-                
-                plt.savefig(fp)
+                self.save_figure(fp)
                 plt.close(fig)
             
             return BD_UNCS
@@ -174,18 +167,11 @@ class PlotTools:
 
                 plt.title(f"{product} {regime} Based Uncertainty Components at {wvl_at_indx}nm")
                 fp = path.join(self.plot_folder,f"pie_{product}_{cast}_{wvl_at_indx}.png")
-                if not path.exists(self.plot_folder):
-                    try:
-                        orig_umask = umask(0)
-                        makedirs(fp, 0o777)
-                    finally:
-                        umask(orig_umask)
-                
-                plt.savefig(fp)
+                self.save_figure(fp)
                 plt.close(fig)
 
             return BD_UNCS
-    
+
     def plot_sample(self, x: np.array, sample: np.ndarray, name: str, rel_to: Optional[np.array]=None, cal: Optional[np.array]=None):
         if rel_to is None:
             y_mean = np.mean(sample, axis=0)
@@ -215,19 +201,25 @@ class PlotTools:
         plt.ylabel("relative uncertainty (%)")
         plt.xlim(400,800)
         plt.ylim(0,5)
-        
-    def save_figure(self):
+    
+    def save_figure(self, fp: Optional=None):
         plt.legend()
         plt.grid()
-        try:
-            fp = path.join(self.plot_folder, f"BD_plot_{self.s}_{self.Data.cast}_{self.Data.station}.png")
-        except (AttributeError, ValueError):
-            fp = path.join(self.plot_folder, f"plot_sample_{self.s}.png")
-        finally:
-            if not path.exists(self.plot_folder):
-                makedirs(self.plot_folder)
-            
-            plt.savefig(fp)
+
+        if fp is None:
+            try:
+                fp = path.join(self.plot_folder, f"BD_plot_{self.s}_{self.Data.cast}_{self.Data.station}.png")
+            except (AttributeError, ValueError):
+                fp = path.join(self.plot_folder, f"plot_sample_{self.s}.png")
+        
+        if not path.exists(self.plot_folder):
+            try:
+                orig_umask = umask(0)
+                makedirs(self.plot_folder, 0o777)
+            finally:
+                umask(orig_umask)
+        
+        plt.savefig(fp)
     
 class PlotMaths:
     

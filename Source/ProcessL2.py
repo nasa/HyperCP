@@ -271,20 +271,6 @@ class ProcessL2:
 
         newRhoHyper, newRhoUNCHyper, newNIRnLwData, newNIRData, nLw = None, None, None, None, None
 
-        # add breakdowns to HDF
-        if xBreakdownUNC is not None:
-            newBreakdownUNC = node.addGroup("BREAKDOWN")
-            BDData = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}}
-            for key in xBreakdownUNC['ES'].keys():
-                BDData['ES'][key] = newBreakdownGroup.addDataset(f"ES_{sensor}_{key}")
-            for key in xBreakdownUNC['LI'].keys():
-                BDData['LI'][key] = newBreakdownGroup.addDataset(f"LI_{sensor}_{key}")
-                BDData['LT'][key] = newBreakdownGroup.addDataset(f"LT_{sensor}_{key}")
-            for key in xBreakdownUNC['Lw'].keys():
-                BDData['LW'][key]  = newBreakdownGroup.addDataset(f"LW_{sensor}_{key}")
-            for key in xBreakdownUNC['Rrs'].keys():
-                BDData['Rrs'][key] = newBreakdownGroup.addDataset(f"Rrs_{sensor}_{key}")
-
         # If this is the first ensemble spectrum, set up the new datasets
         if not f'Rrs_{sensor}' in newReflectanceGroup.datasets:
             newESData = newIrradianceGroup.addDataset(f"ES_{sensor}")
@@ -323,6 +309,20 @@ class ProcessL2:
 
             # For CV, use CV = STD/n
 
+            # add breakdowns to HDF
+            if xBreakdownUNC is not None:
+                newBreakdownGroup = node.addGroup("BREAKDOWN")
+                BDData = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}}
+                for key in xBreakdownUNC['ES'].keys():
+                    BDData['ES'][key] = newBreakdownGroup.addDataset(f"ES_{sensor}_{key}")
+                for key in xBreakdownUNC['LI'].keys():
+                    BDData['LI'][key] = newBreakdownGroup.addDataset(f"LI_{sensor}_{key}")
+                    BDData['LT'][key] = newBreakdownGroup.addDataset(f"LT_{sensor}_{key}")
+                for key in xBreakdownUNC['Lw'].keys():
+                    BDData['LW'][key]  = newBreakdownGroup.addDataset(f"LW_{sensor}_{key}")
+                for key in xBreakdownUNC['Rrs'].keys():
+                    BDData['Rrs'][key] = newBreakdownGroup.addDataset(f"Rrs_{sensor}_{key}")
+
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.addDataset(f"rho_{sensor}")
                 newRhoUNCHyper = newReflectanceGroup.addDataset(f"rho_{sensor}_unc")
@@ -360,6 +360,20 @@ class ProcessL2:
             newLWSTDData = newRadianceGroup.getDataset(f"LW_{sensor}_sd")
             newRrsSTDData = newReflectanceGroup.getDataset(f"Rrs_{sensor}_sd")
             newnLwSTDData = newReflectanceGroup.getDataset(f"nLw_{sensor}_sd")
+
+            # add breakdowns to HDF
+            if xBreakdownUNC is not None:
+                newBreakdownGroup = node.addGroup("BREAKDOWN")
+                BDData = {'ES': {}, 'LI': {}, 'LT': {}, 'LW': {}, 'Rrs': {}}
+                for key in xBreakdownUNC['ES'].keys():
+                    BDData['ES'][key] = newBreakdownGroup.getDataset(f"ES_{sensor}_{key}")
+                for key in xBreakdownUNC['LI'].keys():
+                    BDData['LI'][key] = newBreakdownGroup.getDataset(f"LI_{sensor}_{key}")
+                    BDData['LT'][key] = newBreakdownGroup.getDataset(f"LT_{sensor}_{key}")
+                for key in xBreakdownUNC['Lw'].keys():
+                    BDData['LW'][key]  = newBreakdownGroup.getDataset(f"LW_{sensor}_{key}")
+                for key in xBreakdownUNC['Rrs'].keys():
+                    BDData['Rrs'][key] = newBreakdownGroup.getDataset(f"Rrs_{sensor}_{key}")
 
             if sensor == 'HYPER':
                 newRhoHyper = newReflectanceGroup.getDataset(f"rho_{sensor}")
