@@ -20,10 +20,10 @@ from Source.ProcessL2OCproducts import ProcessL2OCproducts
 from Source.ProcessL2BRDF import ProcessL2BRDF
 from Source.ProcessInstrumentUncertainties import Trios, HyperOCR, Dalec
 from Source.Uncertainty_Visualiser import UncertaintyGUI
-import Source.utils.loggingHCP as logging
-import Source.utils.dating as dating
-import Source.utils.comparing as comparing
-import Source.utils.F0ing as F0ing
+from Source.utils import loggingHCP as logging
+from Source.utils import dating
+from Source.utils import comparing
+from Source.utils import F0ing
 
 
 class ProcessL2:
