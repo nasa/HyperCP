@@ -1390,6 +1390,8 @@ class ProcessL2:
 
         else:
             # Full Mobley 1999 model from LUT
+            # https://misclab.umeoce.maine.edu/ftp/classes/OO2011/Readings/rhoNotes.pdf
+            # https://www.oceanopticsbook.info/packages/iws_l2h/conversion/files/rhoTable_AO1999.txt
             try:
                 AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
                 if isinstance(AODXSlice, list):
