@@ -19,8 +19,7 @@ from Source.PIU.BaseInstrument import BaseInstrument
 from Source.PIU.PIUDataStore import PIUDataStore as pds
 
 # Utilities
-from Source.utils.filtering import hasNan
-from Source.utils.comparing import isIncreasing
+from Source.utils.comparing import isIncreasing, hasNan
 from Source.utils.interpolating import interp
 from Source.utils.loggingHCP import writeLogFileAndPrint
 
