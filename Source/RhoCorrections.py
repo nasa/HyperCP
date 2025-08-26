@@ -79,7 +79,9 @@ class RhoCorrections:
             SVA = ConfigFile.settings['fL2SVA']
 
             try:
+                # raise InterpolationError("Forcing full model")
                 # Z17 LUT interpolation
+                logging.writeLogFileAndPrint('Using LUT interpolations.')
                 zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
             except (InterpolationError, NotImplementedError) as err:
                 # Full Z17 model
@@ -87,7 +89,7 @@ class RhoCorrections:
                 zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
 
             if isinstance(zhang, float):
-                raise ValueError("Interpolation of zhnag lookup table failed")
+                raise ValueError("Interpolation of zhang lookup table failed")
 
             # |M99 - Z17| is an estimation of model error added to MC M99 uncertainty 
             # in quadrature to give combined uncertainty
@@ -186,7 +188,7 @@ class RhoCorrections:
         """
         windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang
 
-        """
+        """        
         logging.writeLogFileAndPrint('Calculating Zhang glint correction (LUT).')
         tic = time.time()
         if sva == 30:
