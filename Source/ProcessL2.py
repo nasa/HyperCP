@@ -1457,6 +1457,8 @@ class ProcessL2:
 
         else:
             # Full Mobley 1999 model from LUT
+            # https://misclab.umeoce.maine.edu/ftp/classes/OO2011/Readings/rhoNotes.pdf
+            # https://www.oceanopticsbook.info/packages/iws_l2h/conversion/files/rhoTable_AO1999.txt
             try:
                 AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
                 if isinstance(AODXSlice, list):
@@ -1534,11 +1536,12 @@ class ProcessL2:
         xUNC = {}
         xBreakdownUNC = None
 
-        tic = time.process_time()
-        with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal
-            logging.writeLogFileAndPrint('Updating instrument uncertainties...')
-            if ConfigFile.settings["fL1bCal"] <= 2:  # and
-                L1B_UNC, xBreakdownUNC = instrument.ClassBased(node, uncGroup, stats)
+        tic = time.time()
+        with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal            
+            if ConfigFile.settings["fL1bCal"] <= 2:
+                logging.writeLogFileAndPrint('Updating class-based instrument uncertainties...')
+                L1B_UNC = instrument.ClassBased(node, uncGroup, stats)
+
                 if L1B_UNC:
                     xSlice.update(L1B_UNC)  # update the xSlice dict with uncertianties and samples
                     # convert uncertainties back into absolute form using the signals recorded from ProcessL2
@@ -1570,11 +1573,12 @@ class ProcessL2:
                         dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
                         dict(ES=esRawSlice, LI=liRawSlice, LT=ltRawSlice),
                         )  # TODO add helper function to baseinstrument so we don't have to call PDS again
+                #logging.writeLogFileAndPrint('Updating sensor-specific instrument uncertainties...')
                 xSlice.update(
                     instrument.FRM(PDS, stats, np.array(waveSubset, float)))  # instrument_WB
                 xUNC.update(instrument.FRML2(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
-                # NOTE: Block for FRM-Full for now
+                # NOTE: Block sensor-specific plotting for now
                 if ConfigFile.settings['bL2UncertaintyBreakdownPlot'] and\
                     ConfigFile.settings['fL1bCal'] == 2:
                     gui = UncertaintyGUI()
@@ -1590,7 +1594,7 @@ class ProcessL2:
                         waveSubset
                     )
 
-        logging.writeLogFileAndPrint(f'Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s')
+        logging.writeLogFileAndPrint(f'Uncertainty Update Elapsed Time: {time.time() - tic:.1f} s')
 
         # move uncertainties from xSlice to xUNC
         if xUNC is not None:
@@ -2187,9 +2191,9 @@ class ProcessL2:
                 logging.writeLogFileAndPrint("Applying Lee et al. 2011 BRDF correction to Rrs and nLw")
                 ProcessL2BRDF.procBRDF(node, BRDF_option='L11')
 
-            if ConfigFile.settings['bL2BRDF_O23']:
+            if ConfigFile.settings['bL2BRDF_O25']:
                 logging.writeLogFileAndPrint("Applying Pitarch et al. 2025 BRDF correction to Rrs and nLw")
-                ProcessL2BRDF.procBRDF(node, BRDF_option='O23')
+                ProcessL2BRDF.procBRDF(node, BRDF_option='O25')
 
 
         # Strip out L1AQC data

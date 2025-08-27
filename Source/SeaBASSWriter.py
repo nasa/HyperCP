@@ -310,9 +310,9 @@ class SeaBASSWriter:
             if ConfigFile.settings['bL2BRDF_IOP']:
                 nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_L11")
                 rrsData_BRDF = reflectanceGroup.getDataset("Rrs_HYPER_L11")
-            if ConfigFile.settings['bL2BRDF_O23']:
-                nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_O23")
-                rrsData_BRDF = reflectanceGroup.getDataset("Rrs_HYPER_O23")
+            if ConfigFile.settings['bL2BRDF_O25']:
+                nLwData_BRDF = reflectanceGroup.getDataset("nLw_HYPER_O25")
+                rrsData_BRDF = reflectanceGroup.getDataset("Rrs_HYPER_O25")
             # There are currently no additional uncertainties added for BRDF
             # nLwUnc_BRDF = reflectanceGroup.getDataset("nLw_HYPER_unc")
 
@@ -613,9 +613,9 @@ class SeaBASSWriter:
                 SeaBASSWriter.writeSeaBASS('Lwn_L11',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
                 SeaBASSWriter.writeSeaBASS('Rrs_L11',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
 
-            if ConfigFile.settings['bL2BRDF_O23']:
-                SeaBASSWriter.writeSeaBASS('Lwn_O23',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
-                SeaBASSWriter.writeSeaBASS('Rrs_O23',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
+            if ConfigFile.settings['bL2BRDF_O25']:
+                SeaBASSWriter.writeSeaBASS('Lwn_O25',fp,headerBlock,formattednLw_BRDF,fieldsnLw_BRDF,unitsnLw_BRDF)
+                SeaBASSWriter.writeSeaBASS('Rrs_O25',fp,headerBlock,formattedRrs_BRDF,fieldsRrs_BRDF,unitsRrs_BRDF)
 
         # SeaBASSWriter.writeSeaBASS('LI',fp,headerBlock,formattedLi,fieldsLi,unitsLi)
         # SeaBASSWriter.writeSeaBASS('LT',fp,headerBlock,formattedLt,fieldsLt,unitsLt)

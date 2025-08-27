@@ -1,5 +1,3 @@
-# maths
-import numpy as np
 
 # python packages
 from copy import deepcopy
@@ -7,11 +5,14 @@ import calendar
 from inspect import currentframe, getframeinfo
 
 # typing
-from typing import Union, Any, Optional
+from typing import Union#, Any, Optional
 from collections import OrderedDict
 
+# maths
+import numpy as np
+
 # Source files
-from Source.HDFRoot import HDFRoot
+# from Source.HDFRoot import HDFRoot
 from Source.HDFGroup import HDFGroup
 
 # PIU files
