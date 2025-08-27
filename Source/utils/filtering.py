@@ -233,4 +233,3 @@ def filterData(group, badTimes, level = None):
     logging.writeLogFileAndPrint(\
         f'   Length of dataset after removal {originalLength-finalCount} long: {(100*finalCount/originalLength):.1f}% removed')
     return finalCount/originalLength
-
