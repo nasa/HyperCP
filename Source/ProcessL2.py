@@ -1540,7 +1540,7 @@ class ProcessL2:
         with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal            
             if ConfigFile.settings["fL1bCal"] <= 2:
                 logging.writeLogFileAndPrint('Updating class-based instrument uncertainties...')
-                L1B_UNC = instrument.ClassBased(node, uncGroup, stats)
+                L1B_UNC, xBreakdownUNC = instrument.ClassBased(node, uncGroup, stats)
 
                 if L1B_UNC:
                     xSlice.update(L1B_UNC)  # update the xSlice dict with uncertianties and samples
