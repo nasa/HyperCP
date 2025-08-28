@@ -50,7 +50,7 @@ class SeaBASSWriter:
             winCol = wind.columns["WINDSPEED"]
             aveWind = np.nanmean(winCol)
 
-        if ConfigFile.settings['SensorType'].lower() =='trios':
+        if ConfigFile.settings['SensorType'].lower() in ['trios', 'trios es only']:
             fileNameString = node.attributes['RAW_FILE_NAME']
             fileNameList = fileNameString.split(',')
             headerRawNames = ''
@@ -97,7 +97,7 @@ class SeaBASSWriter:
             station = node.getGroup('ANCILLARY').getDataset('STATION').data[0][2]
             headerBlock['station'] = station
         else:
-            if ConfigFile.settings['SensorType'].lower() =='trios':
+            if ConfigFile.settings['SensorType'].lower() in ['trios', 'trios es only']:
                 headerBlock['station'] = headerRawNames
             else:
                 headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
