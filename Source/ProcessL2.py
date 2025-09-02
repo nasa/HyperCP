@@ -20,10 +20,10 @@ from Source.ProcessL2OCproducts import ProcessL2OCproducts
 from Source.ProcessL2BRDF import ProcessL2BRDF
 from Source.ProcessInstrumentUncertainties import Trios, HyperOCR, Dalec
 from Source.Uncertainty_Visualiser import UncertaintyGUI
-import Source.utils.loggingHCP as logging
-import Source.utils.dating as dating
-import Source.utils.comparing as comparing
-import Source.utils.F0ing as F0ing
+from Source.utils import loggingHCP as logging
+from Source.utils import dating
+from Source.utils import comparing
+from Source.utils import F0ing
 
 
 class ProcessL2:
@@ -1390,6 +1390,8 @@ class ProcessL2:
 
         else:
             # Full Mobley 1999 model from LUT
+            # https://misclab.umeoce.maine.edu/ftp/classes/OO2011/Readings/rhoNotes.pdf
+            # https://www.oceanopticsbook.info/packages/iws_l2h/conversion/files/rhoTable_AO1999.txt
             try:
                 AODXSlice = newAncGroup.getDataset('AOD').data['AOD'][-1].copy()
                 if isinstance(AODXSlice, list):
@@ -1466,10 +1468,10 @@ class ProcessL2:
         # insert Uncertainties into analysis
         xUNC = {}
 
-        tic = time.process_time()
-        with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal
-            logging.writeLogFileAndPrint('Updating instrument uncertainties...')
-            if ConfigFile.settings["fL1bCal"] <= 2:  # and
+        tic = time.time()
+        with warnings.catch_warnings(action="ignore"):  # added to suppress comet-maths warnings which clog up terminal            
+            if ConfigFile.settings["fL1bCal"] <= 2:
+                logging.writeLogFileAndPrint('Updating class-based instrument uncertainties...')
                 L1B_UNC = instrument.ClassBased(node, uncGroup, stats)
                 if L1B_UNC:
                     xSlice.update(L1B_UNC)  # update the xSlice dict with uncertianties and samples
@@ -1488,6 +1490,7 @@ class ProcessL2:
                     return False
 
             elif ConfigFile.settings["fL1bCal"] == 3:
+                logging.writeLogFileAndPrint('Updating sensor-specific instrument uncertainties...')
                 xSlice.update(
                     instrument.FRM(node, uncGroup,
                                 dict(ES=esRawGroup, LI=liRawGroup, LT=ltRawGroup),
@@ -1495,7 +1498,7 @@ class ProcessL2:
                                 stats, np.array(waveSubset, float)))  # instrument_WB
                 xUNC.update(instrument.FRM_L2(rhoScalar, rhoVec, rhoUNC, waveSubset, xSlice))
 
-                # NOTE: Block for FRM-Full for now
+                # NOTE: Block sensor-specific plotting for now
                 if ConfigFile.settings['bL2UncertaintyBreakdownPlot'] and\
                     ConfigFile.settings['fL1bCal'] == 2:
                     gui = UncertaintyGUI()
@@ -1511,7 +1514,7 @@ class ProcessL2:
                         waveSubset
                     )
 
-        logging.writeLogFileAndPrint(f'Uncertainty Update Elapsed Time: {time.process_time() - tic:.1f} s')
+        logging.writeLogFileAndPrint(f'Uncertainty Update Elapsed Time: {time.time() - tic:.1f} s')
 
         # move uncertainties from xSlice to xUNC
         if xUNC is not None:
@@ -2110,9 +2113,9 @@ class ProcessL2:
                 logging.writeLogFileAndPrint("Applying Lee et al. 2011 BRDF correction to Rrs and nLw")
                 ProcessL2BRDF.procBRDF(node, BRDF_option='L11')
 
-            if ConfigFile.settings['bL2BRDF_O23']:
+            if ConfigFile.settings['bL2BRDF_O25']:
                 logging.writeLogFileAndPrint("Applying Pitarch et al. 2025 BRDF correction to Rrs and nLw")
-                ProcessL2BRDF.procBRDF(node, BRDF_option='O23')
+                ProcessL2BRDF.procBRDF(node, BRDF_option='O25')
 
 
         # Strip out L1AQC data

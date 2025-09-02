@@ -398,6 +398,8 @@ class Propagate:
 
         from Source.RhoCorrections import InterpolationError
         try:
+            # raise InterpolationError("Forcing full model")
+            logging.writeLogFileAndPrint('Using LUT interpolations.')
             zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, sza, wTemp - 273.15, sal, relAz, sva, waveBands)
         except InterpolationError as err:
             logging.writeLogFileAndPrint(f'{err}: Unable to use LUT interpolations. Reverting to analytical solution.')

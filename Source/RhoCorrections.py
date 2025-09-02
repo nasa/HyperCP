@@ -79,7 +79,9 @@ class RhoCorrections:
             SVA = ConfigFile.settings['fL2SVA']
 
             try:
+                # raise InterpolationError("Forcing full model")
                 # Z17 LUT interpolation
+                logging.writeLogFileAndPrint('Using LUT interpolations.')
                 zhang = RhoCorrections.read_Z17_LUT(windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
             except (InterpolationError, NotImplementedError) as err:
                 # Full Z17 model
@@ -87,7 +89,7 @@ class RhoCorrections:
                 zhang, _ = RhoCorrections.ZhangCorr(windSpeedMean, AOD, cloud, SZAMean, wTemp, sal, relAzMean, SVA, newWaveBands)
 
             if isinstance(zhang, float):
-                raise ValueError("Interpolation of zhnag lookup table failed")
+                raise ValueError("Interpolation of zhang lookup table failed")
 
             # |M99 - Z17| is an estimation of model error added to MC M99 uncertainty 
             # in quadrature to give combined uncertainty
@@ -160,9 +162,11 @@ class RhoCorrections:
         ulist = [2.0, 0.01, 0.5, 2, 0.5, 3, 0.0, None]
         # TODO: find the source of the windspeed uncertainty to reference this. EMWCF should have this info
 
-        tic = time.process_time()
+        # tic = time.process_time() # CPU time
+        tic = time.time()
         rhoVector = get_sky_sun_rho(env, sensor, round4cache=True, DB=db)['rho']
-        logging.writeLogFileAndPrint(f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s')
+        # logging.writeLogFileAndPrint(f'Zhang17 Elapsed Time: {time.process_time() - tic:.1f} s')
+        logging.writeLogFileAndPrint(f'Zhang17 Elapsed Time: {time.time() - tic:.1f} s')
 
         # Presumably obsolete (Ashley)? -DAA
         # No I'm only changing how the zhang uncertainties work - this all happes in uncertianty_analysis.py - Ashley
@@ -171,11 +175,11 @@ class RhoCorrections:
         if Propagate is None:
             rhoDelta = 0.003  # Unknown; estimated from Ruddick 2006
         else:
-            tic = time.process_time()
+            tic = time.time()
             rhoDelta = Propagate.Zhang_Rho_Uncertainty(mean_vals=varlist,
                                                        uncertainties=ulist,
                                                        )
-            logging.writeLogFileAndPrint(f'Zhang_Rho_Uncertainty Elapsed Time: {time.process_time() - tic:.1f} s')
+            logging.writeLogFileAndPrint(f'Zhang_Rho_Uncertainty Elapsed Time: {time.time() - tic:.1f} s')
 
         return rhoVector, rhoDelta
 
@@ -184,7 +188,9 @@ class RhoCorrections:
         """
         windSpeedMean, AOD, SZAMean, wTemp, sal, relAzMean, newWaveBands, zhang
 
-        """
+        """        
+        logging.writeLogFileAndPrint('Calculating Zhang glint correction (LUT).')
+        tic = time.time()
         if sva == 30:
             db_path = "Z17_LUT_30.nc"
             logging.writeLogFileAndPrint("running Z17 interpolation for instrument viewing zenith of 30",False)
@@ -246,6 +252,8 @@ class RhoCorrections:
                     method="cubic",
                 )
                 print('Interpolating Z17 LUT using cubic method')
+
+            logging.writeLogFileAndPrint(f'Zhang17 LUT Elapsed Time: {time.time() - tic:.1f} s')
 
         except ValueError as err:
             raise InterpolationError(f"Interpolation of Z17 LUT failed with {err}") from err
