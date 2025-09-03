@@ -48,7 +48,7 @@ class SeaBASSWriter:
             wind = ancillaryGroup.getDataset("WINDSPEED")
             wind.datasetToColumns()
             winCol = wind.columns["WINDSPEED"]
-            aveWind = np.nanmean(winCol)
+            aveWind = f'{np.nanmean(winCol):.1g}'
         else:
             # Cannot get here. level force to 2
             esData = None
@@ -79,32 +79,22 @@ class SeaBASSWriter:
         for i, dtDT in enumerate(dateDT):
             timeDT.append(dating.timeTag2ToDateTime(dtDT,timeTag2[i]))
 
-        # Python 2 format operator
-        # startTime = "%02d:%02d:%02d[GMT]" % (min(timeDT).hour, min(timeDT).minute, min(timeDT).second)
         startTime = f"{min(timeDT).hour:02d}:{min(timeDT).minute:02d}:{min(timeDT).second:02d}[GMT]"
-        # endTime = "%02d:%02d:%02d[GMT]" % (max(timeDT).hour, max(timeDT).minute, max(timeDT).second)
         endTime = f"{max(timeDT).hour:02d}:{max(timeDT).minute:02d}:{max(timeDT).second:02d}[GMT]"
-        # startDate = "%04d%02d%02d" % (min(timeDT).year, min(timeDT).month, min(timeDT).day)
         startDate = f"{min(timeDT).year:04d}{min(timeDT).month:02d}{min(timeDT).day:02d}"
-        # endDate = "%04d%02d%02d" % (max(timeDT).year, max(timeDT).month, max(timeDT).day)
         endDate = f"{max(timeDT).year:04d}{max(timeDT).month:02d}{max(timeDT).day:02d}"
 
         # Convert Position
-        # Python 3 format syntax
-        southLat = "{:.4f}[DEG]".format(min(esData.data['LATITUDE'].tolist()))
-        northLat = "{:.4f}[DEG]".format(max(esData.data['LATITUDE'].tolist()))
-        eastLon = "{:.4f}[DEG]".format(max(esData.data['LONGITUDE'].tolist()))
-        westLon = "{:.4f}[DEG]".format(min(esData.data['LONGITUDE'].tolist()))
+        southLat = f"{min(esData.data['LATITUDE'].tolist()):.4g}[DEG]"
+        northLat = f"{max(esData.data['LATITUDE'].tolist()):.4g}[DEG]"
+        eastLon = f"{max(esData.data['LONGITUDE'].tolist()):.4g}[DEG]"
+        westLon = f"{min(esData.data['LONGITUDE'].tolist()):.4g}[DEG]"
 
         if headerBlock['station'] == '' and ConfigFile.settings['bL2Stations'] == 1:
             station = node.getGroup('ANCILLARY').getDataset('STATION').data[0][2]
             headerBlock['station'] = station
         else:
-            # if ConfigFile.settings['SensorType'].lower() =='trios':
-                # headerBlock['station'] = headerRawNames
             headerBlock['station'] = node.attributes['L1BQC_FILE_NAME'].split('.')[0]
-            # else:
-                # headerBlock['station'] = node.attributes['RAW_FILE_NAME'].split('.')[0]
         if headerBlock['start_time'] == '':
             headerBlock['start_time'] = startTime
         if headerBlock['end_time'] == '':
