@@ -25,10 +25,10 @@ from Source.PIU.TriOS import TriOS
 from Source.PIU.DALEC import Dalec
 
 #Utilities
-import Source.utils.loggingHCP as logging
-import Source.utils.dating as dating
-import Source.utils.comparing as comparing
-import Source.utils.F0ing as F0ing
+from Source.utils import loggingHCP as logging
+from Source.utils import dating
+from Source.utils import comparing
+from Source.utils import F0ing
 
 
 class ProcessL2:
