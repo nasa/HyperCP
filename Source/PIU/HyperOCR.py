@@ -154,6 +154,7 @@ class HyperOCR(BaseInstrument):
             k = DATA['t1']/(DATA['t2'] - DATA['t1'])
             sample_k = cm.generate_sample(mDraws, k, None, None)
             sample_S12 = prop.run_samples(mf.S12func, [sample_k, sample_S1, sample_S2])
+            S12_mag = np.mean(sample_S12)            # output sample means for Sample_S12 mean per pixel (dont worry about 320 nm)
 
             # samples for Straylight correction
             if self.sl_method.upper() == 'ZONG':  # zong is the default straylight correction
@@ -169,12 +170,14 @@ class HyperOCR(BaseInstrument):
 
             # sample for Non-Linearity
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
+            # direct comparison between Sample_S12 and alpha is useful but only if we're on the same integration time
+            # Sample_S12 is integration time of lab, alpha is integration time of measurement
 
             if s_type.upper() == "ES":
                 sample_updated_radcal_gain = prop.run_samples(mf.update_cal_ES, 
                                                               [sample_S12_sl_corr, sample_LAMP, sample_cal_int, sample_t1]
                                                               )
-                
+                # maybe it is enough to take the sample mean?
                 # compute cosine error based on lab characterisation and cosine response asymmetry
                 sample_zen_ang = cm.generate_sample(mDraws, DATA['zenith_ang'], None, None)
                 sample_zen_avg_coserror = cm.generate_sample(mDraws, DATA['zen_avg_coserr'], UNC['zenith_ang'], "syst")
