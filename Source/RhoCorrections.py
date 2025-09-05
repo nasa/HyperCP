@@ -4,10 +4,13 @@ import time
 
 import numpy as np
 import xarray as xr
+import lmfit as lm
 # import matplotlib.pyplot as plt
 import scipy.interpolate as spin
 
 from Source.ZhangRho import get_sky_sun_rho, PATH_TO_DATA
+from Source.rrs_model_3C_numpy_O25_v4 import rrs_model_3C
+
 from Source.ConfigFile import ConfigFile
 from Source.HDFRoot import HDFRoot
 import Source.utils.loggingHCP as logging
@@ -121,27 +124,68 @@ class RhoCorrections:
         return rhoScalar, rhoDelta
 
     @staticmethod
-    def threeCCorr(sky750,rhoDefault,windSpeedMean):
+    def threeCCorr(ltXSlice, liXSlice, esXSlice, SZAXSlice,SVA,RelAzXSlice, am, rh, pressure, weighting_option='uniform'):
         ''' Groetsch et al. 2017 PLACEHOLDER'''
         logging.writeLogFileAndPrint('Calculating 3C glint correction')
 
-        if sky750 >= 0.05:
-            # Cloudy conditions: no further correction
-            if sky750 >= 0.05:
-                logging.writeLogFileAndPrint(f'Sky 750 threshold triggered for cloudy sky. Rho set to {rhoDefault}.')
-            rhoScalar = rhoDefault
-            rhoDelta = 0.003 # Unknown, presumably higher...
+        Lu = np.zeros((len(ltXSlice),))
+        wl_Lu = np.zeros((len(ltXSlice),))
 
+        for w0,(wl,Lu_wl) in enumerate(ltXSlice.items()):
+            wl_Lu[w0] = wl
+            Lu[w0] = Lu_wl[0]
+
+        Ls = np.zeros((len(liXSlice),))
+        wl_Ls = np.zeros((len(liXSlice),))
+
+        for w0,(wl,Ls_wl) in enumerate(liXSlice.items()):
+            wl_Ls[w0] = wl
+            Ls[w0] = Ls_wl[0]
+
+        Ed = np.zeros((len(esXSlice),))
+        wl_Ed = np.zeros((len(esXSlice),))
+
+        for w0,(wl,Ed_wl) in enumerate(esXSlice.items()):
+            wl_Ed[w0] = wl
+            Ed[w0] = Ed_wl[0]
+
+        try:
+            assert(np.all(wl_Ed == wl_Ls) and np.all(wl_Ed == wl_Lu))
+        except:
+            raise ValueError('3C: Inputted wavelengths for Ed, Lu and Ls should coincide!')
+
+        wl = wl_Ed
+        geom = (SZAXSlice, SVA, RelAzXSlice)
+
+        model = rrs_model_3C()
+        params = lm.Parameters()
+        params.add_many(
+            ('C', 10, True, 0.1, 50, None), ('N', 10, True, 0.1, 60, None), ('Y', 0.5, True, 0.05, 2, None),
+            ('rho_s', 0.028, False, 0.0, 0.04, None), ('rho_dd', 0.001, True, 0.0, 0.2, None),
+            ('rho_ds', 0.00, True, -0.01, 0.01, None),
+            ('delta', 0.0, False, -0.001, 0.001, None), ('alpha', 1.0, True, 0.0, 3, None),
+            ('beta', 0.05, True, 0.01, 0.5, None)
+        )
+
+        if weighting_option == 'Pitarch':
+            weights = np.where(wl < 700, 1, 5)
+        elif weighting_option == 'uniform':
+            weights = np.ones((len(wl),))
         else:
-            # Clear sky conditions: correct for wind
-            # Set wind speed here
-            w = windSpeedMean
-            rhoScalar = 0.0256 + 0.00039 * w + 0.000034 * w * w
-            rhoDelta = 0.003 # Ruddick 2006 Appendix 2; intended for clear skies as defined here
+            raise ValueError('weighting option %s not implemented!' % weighting_option)
 
-            logging.writeLogFileAndPrint(f'Rho_sky: {rhoScalar:.6f} Wind: {w:.1f} m/s')
+        reg, R_rs_mod, R_g, Lumod, LuEd_meas = model.fit_LuEd(wl, Ls, Lu, Ed, params, weights, geom, anc=(am, rh, pressure))
 
-        return rhoScalar, rhoDelta
+        rhoVector = R_g * Ed/Ls
+
+        # logging.writeLogFileAndPrint(f'Rho_sky: {rhoVector:.6f} Wind: {w:.1f} m/s')
+
+        # TODO: an initial guess on rhoDelta ...
+        # TODO! Decide what to do if R_g<0!
+        rhoDelta = np.abs(0.1 * rhoVector)
+        rhoVector[rhoVector < 0] = 0
+
+        return rhoVector, rhoDelta
 
     @staticmethod
     # def ZhangCorr(windSpeedMean, AOD, cloud, sza, wTemp, sal, relAz, waveBands):

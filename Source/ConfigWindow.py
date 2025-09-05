@@ -435,10 +435,10 @@ class ConfigWindow(QtWidgets.QDialog):
             self.RhoRadioButtonZhang.setChecked(True)
         self.RhoRadioButtonZhang.clicked.connect(self.l2RhoRadioButtonZhangClicked)
 
-        self.RhoRadioButton3C = QtWidgets.QRadioButton("Groetsch et al. (2017)")
+        self.RhoRadioButton3C = QtWidgets.QRadioButton("3C [beta test]")
         self.RhoRadioButton3C.setAutoExclusive(False)
         if ConfigFile.settings["bL23CRho"]==1:
-            self.RhoRadioButtonZhang.setChecked(True)
+            self.RhoRadioButton3C.setChecked(True)
         self.RhoRadioButton3C.clicked.connect(self.l2RhoRadioButton3CClicked)
         self.RhoRadioButton3C.setDisabled(True)
 
