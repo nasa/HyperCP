@@ -482,19 +482,8 @@ class ProcessL2:
                 lwRemainingSD = 0
                 rrsRemainingSD = 0
                 nLwRemainingSD = 0
-                if threeCRho:
-                    lw = lt - (rhoScalar * li)
-                    rrs = lw / es
-                    nLw = rrs*f0
 
-                    # Now calculate the std for lw, rrs
-                    lwRemaining = ltRemaining - (rhoScalar * liRemaining)
-                    rrsRemaining = lwRemaining / esRemaining
-                    lwRemainingSD = np.std(lwRemaining)
-                    rrsRemainingSD = np.std(rrsRemaining)
-                    nLwRemainingSD = np.std(rrsRemaining*f0)
-
-                elif ZhangRho:
+                if ZhangRho or threeCRho:
                     # Only populate the valid wavelengths
                     if float(k) in waveSubset:
                         lw = lt - (rhoVec[k] * li)
@@ -567,7 +556,7 @@ class ProcessL2:
                         newLTUNCData.columns[k].append(ltUNC[k][0])
 
                     if sensor == 'HYPER':
-                        if ZhangRho:
+                        if ZhangRho or threeCRho:
                             newRhoHyper.columns[k].append(rhoVec[k])
                             if xUNC is not None:  # TriOS factory does not require uncertainties
                                 newRhoUNCHyper.columns[k].append(xUNC[f'rhoUNC_{sensor}'][k])
@@ -771,7 +760,7 @@ class ProcessL2:
                 badTimes.append(timeTag)
 
             # Set negatives to 0
-            NIR = [VIS[-1]+1,max(wavelengths)]
+            NIR = [VIS[-1] + 1, max(wavelengths)]
             UV = [min(wavelengths),VIS[0]-1]
             for wave in reflColumns:
                 if ((float(wave) >= UV[0] and float(wave) < UV[1]) or \
@@ -1338,15 +1327,28 @@ class ProcessL2:
 
         # Rho will be the same across the entire ensemble slice based on input averages
         if threeCRho:
-            # NOTE: Placeholder for Groetsch et al. 2017
 
-            li750 = ProcessL2.interpolateColumn(liXSlice, 750.0)
-            es750 = ProcessL2.interpolateColumn(esXSlice, 750.0)
-            sky750 = li750[0]/es750[0]
+            # TODO: Retrieve these values from ancillary info (is it actually necessary? TBD)
+            # am: aerosol Mie parameter or similar, regulating amount of forward-to-total aerosol scattering...
+            # ... eventually impacting the atmospheric transmittance
+            am = 4
+            rh = 60 # relative humidity, also impacting atm. transmittance
+            pressure = 1013.25 # atm pressure, also impacting atm. transmittance
+            weighting_option = 'Pitarch'
 
-            rhoScalar, rhoUNC = RhoCorrections.threeCCorr(sky750, rhoDefault, WINDSPEEDXSlice)
-            # The above is not wavelength dependent. No need for seperate values/vectors for satellites
-            rhoVec = None
+            # Sensor Nadir
+            SVA = ConfigFile.settings['fL2SVA']
+
+            rhoVector, rhoUNC = RhoCorrections.threeCCorr(ltXSlice, liXSlice, esXSlice, SZAXSlice, SVA, RelAzXSlice, am, rh, pressure, weighting_option)
+
+            waveSubset = [float(w) for w in list(ltXSlice.keys())]
+            rhoVec = {str(wl): rhoVector[wl0] for wl0,wl in enumerate(waveSubset)}
+
+            # The above is not wavelength dependent. No need for separate values/vectors for satellites
+            for i, k in enumerate(waveSubset):
+                rhoVec[str(k)] = rhoVector[i]
+
+            rhoScalar = None
 
         elif ZhangRho:
             # Zhang rho is based on Zhang et al. 2017 and calculates the wavelength-dependent rho vector
@@ -1545,7 +1547,7 @@ class ProcessL2:
             if ConfigFile.settings['bL2WeightMODISA']:
                 print('Processing MODISA')
 
-                if ZhangRho:
+                if ZhangRho or threeCRho:
                     rhoVecMODIS = Weight_RSR.processMODISBands(rhoVec,sensor='A')
                     # Weight_RSR process is designed to return list of lists in the ODict; convert to list
                     rhoVecMODIS = {key:value[0] for (key,value) in rhoVecMODIS.items()}
@@ -1584,7 +1586,7 @@ class ProcessL2:
             if ConfigFile.settings['bL2WeightMODIST']:
                 print('Processing MODIST')
 
-                if ZhangRho:
+                if ZhangRho or threeCRho:
                     rhoVecMODIS = Weight_RSR.processMODISBands(rhoVec,sensor='T')
                     rhoVecMODIS = {key:value[0] for (key,value) in rhoVecMODIS.items()}
 
@@ -1622,7 +1624,7 @@ class ProcessL2:
             if ConfigFile.settings['bL2WeightVIIRSN']:
                 print('Processing VIIRSN')
 
-                if ZhangRho:
+                if ZhangRho or threeCRho:
                     rhoVecVIIRS = Weight_RSR.processVIIRSBands(rhoVec,sensor='A')
                     rhoVecVIIRS = {key:value[0] for (key,value) in rhoVecVIIRS.items()}
 
@@ -1656,7 +1658,7 @@ class ProcessL2:
             if ConfigFile.settings['bL2WeightVIIRSJ']:
                 print('Processing VIIRSJ')
 
-                if ZhangRho:
+                if ZhangRho or threeCRho:
                     rhoVecVIIRS = Weight_RSR.processVIIRSBands(rhoVec,sensor='T')
                     rhoVecVIIRS = {key:value[0] for (key,value) in rhoVecVIIRS.items()}
 
@@ -1694,7 +1696,7 @@ class ProcessL2:
             if ConfigFile.settings['bL2WeightSentinel3A']:
                 print('Processing Sentinel3A')
 
-                if ZhangRho:
+                if ZhangRho or threeCRho:
                     rhoVecSentinel3 = Weight_RSR.processSentinel3Bands(rhoVec,sensor='A')
                     rhoVecSentinel3 = {key:value[0] for (key,value) in rhoVecSentinel3.items()}
 
@@ -1728,7 +1730,7 @@ class ProcessL2:
             if ConfigFile.settings['bL2WeightSentinel3B']:
                 print('Processing Sentinel3B')
 
-                if ZhangRho:
+                if ZhangRho or threeCRho:
                     rhoVecSentinel3 = Weight_RSR.processSentinel3Bands(rhoVec,sensor='B')
                     rhoVecSentinel3 = {key:value[0] for (key,value) in rhoVecSentinel3.items()}
 
@@ -1768,7 +1770,6 @@ class ProcessL2:
                 gp.datasets['LI_HYPER'].attributes = sasGroup.datasets['LI'].attributes.copy()
 
         return True
-
 
     @staticmethod
     def stationsEnsemblesReflectance(node, root, station=None):
