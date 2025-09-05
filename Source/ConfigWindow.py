@@ -440,6 +440,7 @@ class ConfigWindow(QtWidgets.QDialog):
         if ConfigFile.settings["bL23CRho"]==1:
             self.RhoRadioButton3C.setChecked(True)
         self.RhoRadioButton3C.clicked.connect(self.l2RhoRadioButton3CClicked)
+        self.RhoRadioButton3C.setDisabled(True)
 
         self.RhoRadioButtonYour = QtWidgets.QRadioButton("Your Glint (2023) ρ")
         self.RhoRadioButtonYour.setAutoExclusive(False)
@@ -1370,7 +1371,7 @@ class ConfigWindow(QtWidgets.QDialog):
             elif ancillarySource == 'ECMWF_ADS':
                 ConfigFile.settings["bL1bGetAnc"] = 2
             self.RhoRadioButtonZhang.setDisabled(0)
-            self.RhoRadioButton3C.setDisabled(0)
+            self.RhoRadioButton3C.setDisabled(1)
         else:
             ConfigFile.settings["bL1bGetAnc"] = 0
             self.l1bGetAncCheckBox1.setChecked(False)
