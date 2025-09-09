@@ -231,6 +231,7 @@ class ProcessL1bqc:
 
             # Flag spectra affected by rainfall and high humidity
             # Wernand 2002 (940/370), Garaba et al. 2012 also uses Es(940/370), presumably 720 was developed by Wang...???
+            # Cited in Vandenberg 2017
             # NOTE: Follow up on the source of this flag
             if es720[indx]/es370[indx] < humidityFlag:
                 badTimes.append(dateTime)
