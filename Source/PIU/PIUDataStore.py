@@ -24,7 +24,7 @@ class PIUDataStore:
     """contains class to read and store input uncertainties for PIU"""
     sensors: list = ['ES', 'LI', 'LT']
 
-    def __init__(self, root: HDFRoot, input: HDFGroup, raw_grps: Optional[dict[str: dict]]=None, raw_slices: Optional[dict[str:dict]]=None):
+    def __init__(self, root: HDFRoot, input: HDFGroup, raw_grps: Optional[dict[str: dict]]=None, raw_slices: Optional[dict[str:dict]]=None, create_empty: Optional[bool]=False):
         """ class which contains methods that provide digestable uncertainties to classes in PIU 
             converts datafile inputs into a dictionary of coefficients and uncertainties for all regimes
         """
@@ -50,20 +50,21 @@ class PIUDataStore:
         except (AttributeError, KeyError):
             self.cast = None
 
-        instrument = ConfigFile.settings['SensorType'].lower()  # get instrument type
-        if self.cal_level == 3:
-            [self.readCalFRM(root, input, raw_grps, raw_slices, sensor) for sensor in self.sensors]
-        else:
-            if self.cal_level == 2:
-                [self.readCalClassBased(input, sensor, instrument) for sensor in self.sensors]
-            elif instrument == 'seabird':
-                [self.readCalFactory(root, input, sensor) for sensor in self.sensors]
+        if not create_empty:  # do not read uncs and coeffs if we are creating an empty PDS
+            instrument = ConfigFile.settings['SensorType'].lower()  # get instrument type
+            if self.cal_level == 3:
+                [self.readCalFRM(root, input, raw_grps, raw_slices, sensor) for sensor in self.sensors]
             else:
-                writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
-                raise NotImplementedError  # TODO: test behaviour of this - implemented because _init__ classes cannot have return or yeilds - Ashley
-            
-            # finally
-            [self.read_uncertainties(input, sensor) for sensor in self.sensors]
+                if self.cal_level == 2:
+                    [self.readCalClassBased(input, sensor, instrument) for sensor in self.sensors]
+                elif instrument == 'seabird':
+                    [self.readCalFactory(root, input, sensor) for sensor in self.sensors]
+                else:
+                    writeLogFileAndPrint("TriOS/Dalec factory uncertainties not implemented")
+                    raise NotImplementedError  # TODO: test behaviour of this - implemented because _init__ classes cannot have return or yeilds - Ashley
+                
+                # finally
+                [self.read_uncertainties(input, sensor) for sensor in self.sensors]
 
     #### FRM ####
     def readCalFRM(self, root, uncGrp, raw_grps, raw_slices, s_type):
@@ -279,7 +280,7 @@ class PIUDataStore:
         self.cal_start = int(node.attributes['CAL_START'])
         self.cal_stop = int(node.attributes['CAL_STOP'])
 
-        self.uncs['cal'], self.coeff['cal'] = self.extract_factory_cal(node, radcal, s)  # populates dicts with calibration
+        self.uncs[s]['cal'], self.coeff[s]['cal'] = self.extract_factory_cal(node, radcal, s)  # populates dicts with calibration
         self.ind_rad_wvl[s] = ind_rad_wvl
 
     def read_uncertainties(self, inpt: HDFGroup, s: str) -> None:
@@ -376,7 +377,7 @@ class PIUDataStore:
             print(msg)  # to cover for potential coding errors, should not be hit in normal use
 
     @staticmethod
-    def extract_factory_cal(node: HDFGroup, radcal: np,array, s: str) -> tuple[np.array, np.array]:
+    def extract_factory_cal(node: HDFGroup, radcal: np.array, s: str) -> tuple[np.array, np.array]:
         """
 
         :param node: HDF root - full HDF file
