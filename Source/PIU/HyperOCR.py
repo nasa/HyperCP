@@ -150,11 +150,25 @@ class HyperOCR(BaseInstrument):
             sample_t1 = cm.generate_sample(mDraws, DATA['t1'], None, None)
             sample_S1 = cm.generate_sample(mDraws, np.asarray(DATA['S1']), UNC['S1'], "rand")
             sample_S2 = cm.generate_sample(mDraws, np.asarray(DATA['S2']), UNC['S2'], "rand")
+            # normalise to the longer time
 
             k = DATA['t1']/(DATA['t2'] - DATA['t1'])
             sample_k = cm.generate_sample(mDraws, k, None, None)
             sample_S12 = prop.run_samples(mf.S12func, [sample_k, sample_S1, sample_S2])
-            S12_mag = np.mean(sample_S12)            # output sample means for Sample_S12 mean per pixel (dont worry about 320 nm)
+            S12_mag = np.mean(sample_S12, axis=0)  # output sample means for Sample_S12 mean per pixel (dont worry about 320 nm)
+
+            from Source.PIU.FRM_breakdown import Plotting as pt
+            import matplotlib.pyplot as plt
+            wvls = DATA['radcal_wvl']
+            
+            S1_mag = np.mean(sample_S1, axis=0)
+            S2_mag = np.mean(sample_S2, axis=0)
+            S_mag = np.array([np.average([S1_mag[i], S2_mag[i]]) for i in range(len(S1_mag))])
+            S12_mag = np.mean(sample_S12, axis=0)
+
+            pt.plot(s_type, "S1 S2", wvls, S1_mag, S2_mag, "S1", "S2", 'Signal (DN)', xlim=[320, 380], ylim=[1000, 3000], diff=False)
+            pt.plot(s_type, "S12", wvls, S_mag, S12_mag, "S Ave", "S12", 'Signal (DN)', xlim=[320, 380], ylim=[1000, 3000], diff=False)
+            pt.plot(s_type, "S12", wvls, S1_mag, S2_mag, "S1", "S2", 'divided difference (%)', xlim=[320, 800], ylim=[-2.5, 2.5], diff=True)
 
             # samples for Straylight correction
             if self.sl_method.upper() == 'ZONG':  # zong is the default straylight correction
@@ -162,7 +176,7 @@ class HyperOCR(BaseInstrument):
                 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
                 sample_C_zong = prop.run_samples(ProcessL1b_FRMCal.Zong_SL_correction_matrix,
                                                  [sample_mZ, sample_n_IB])
-                sample_S12_sl_corr = prop.run_samples(mf.Zong_SL_correction, [sample_S12, sample_C_zong])
+                sample_S12_sl_corr = prop.run_samples(mf.Zong_SL_correction, [sample_S12, sample_C_zong])  # TODO: REPLACED sample_S12 WITH sample_S1
             else:  # use slaper correction if selected - only available as a developer option currently
                 sample_S12_sl_corr = self.get_Slaper_Sl_unc(
                     DATA['S12'], sample_S12, DATA['mZ'], sample_mZ, DATA['n_iter'], sample_n_iter, prop, mDraws
@@ -170,6 +184,7 @@ class HyperOCR(BaseInstrument):
 
             # sample for Non-Linearity
             sample_alpha = prop.run_samples(mf.alphafunc, [sample_S1, sample_S12])
+            alpha_mag = np.mean(sample_alpha, axis=0)
             # direct comparison between Sample_S12 and alpha is useful but only if we're on the same integration time
             # Sample_S12 is integration time of lab, alpha is integration time of measurement
 
@@ -205,6 +220,7 @@ class HyperOCR(BaseInstrument):
 
             # Dark correction
             sample_dark_corr = prop.run_samples(mf.dark_Substitution, [sample_light, sample_dark])
+            dark_corr_data = mf.dark_Substitution(data, dark)
 
             # Non-Linearity
             sample_nlin_corr = prop.run_samples(mf.non_linearity_corr, [sample_dark_corr, sample_alpha])
@@ -213,18 +229,57 @@ class HyperOCR(BaseInstrument):
             if self.sl_method.upper() == 'ZONG':
                 sample_sl_corr = prop.run_samples(mf.Zong_SL_correction, [sample_nlin_corr, sample_C_zong])
             else:  # slaper
-                S12 = self.S12func(k, DATA['S1'], DATA['S2'])
-                alpha = self.alphafunc(DATA['S1'], S12)
-                nl_corr_signal = mf.non_linearity_corr(data, alpha)
+                S12 = mf.S12func(k, DATA['S1'], DATA['S2'])
+                alpha = mf.alphafunc(DATA['S1'], S12)
+                nl_corr_signal = mf.non_linearity_corr(dark_corr_data, alpha)
                 sample_sl_corr = self.get_Slaper_Sl_unc(
                     nl_corr_signal, sample_nlin_corr, DATA['mZ'], sample_mZ, DATA['n_iter'], sample_n_iter, prop, mDraws
                 )
             
+            sample_dark_mag = np.mean(sample_dark_corr, axis=0)
+            nlin_corr_mag    = np.mean(sample_nlin_corr, axis=0)
+            sl_corr_mag      = np.mean(sample_sl_corr, axis=0)
+            
+            pt.plot(s_type, "nlin vs dark", wvls, nlin_corr_mag, sample_dark_mag, "Nlin", "Dark", 'Signal (DN)', xlim=[320, 800], ylim=[None, None], diff=False)
+            pt.plot(s_type, "nlin vs dark", wvls, nlin_corr_mag, sample_dark_mag, "Nlin", "Dark", 'Div Diff (%)', xlim=[320, 800], ylim=[-7.5, 7.5], diff=True)
+
+            pt.plot(s_type, "sl vs nlin", wvls, sl_corr_mag, nlin_corr_mag, "StrayLight", "Nlin", 'Signal (DN)', xlim=[320, 800], ylim=[None, None], diff=False)
+            pt.plot(s_type, "sl vs nlin", wvls, sl_corr_mag, nlin_corr_mag, "StrayLight", "Nlin", 'Div Diff (%)', xlim=[320, 800], ylim=[-7.5, 7.5], diff=True)
+
             # Normalise based on integration time
             sample_normalised = prop.run_samples(mf.normalise, [sample_sl_corr, sample_cal_int, sample_int_time])
 
+            # First slide S1, S2, S12 + same plot zoomed in 
+            # S12 vs SL corrected signal + average of S1 and S2
+            # non linearity correction
+            # strayight
+            # cal vs updated radcal gain + uncertainty (either shaded area or separate plot)
+            # 
+
             # Apply Updated Calibration
             sample_cal_corr = prop.run_samples(mf.absolute_calibration, [sample_normalised, sample_updated_radcal_gain])
+            S12_sl_mag = np.mean(sample_S12_sl_corr, axis=0)
+            LAMP_mag = np.mean(sample_LAMP, axis=0)
+            # updt_cal_mag = 1 / np.mean(sample_updated_radcal_gain, axis=0)
+             
+            if s_type.upper() == "ES":
+                unit = "Irradiance (W.m^-2)"
+                ylim = [0, 150]
+                updt_cal_mag = LAMP_mag / (S12_sl_mag*10)
+            elif s_type.upper() == 'LI':
+                unit = "Radiance (W.sr^-1.m^-2)"
+                ylim = [0, 7]
+                PANEL_mag = np.mean(sample_PANEL, axis=0)
+                updt_cal_mag = (LAMP_mag * PANEL_mag) / (np.pi*S12_sl_mag*10)
+            else:  # LT
+                unit = "Radiance (W.sr^-1.m^-2)"
+                ylim = [0, 2]
+                PANEL_mag = np.mean(sample_PANEL, axis=0)
+                updt_cal_mag = (LAMP_mag * PANEL_mag) / (np.pi*S12_sl_mag*10)
+
+            pt.plot(s_type, "cal vs updated cal", wvls, DATA['radcal_cal'], updt_cal_mag, "RadCal", "Updated RadCal", 'Cal Coeff', xlim=[350, 800], ylim=[0, 0.0015], diff=False)
+            # pt.plot(s_type, "cal vs updated cal", wvls, DATA['radcal_cal'], updt_cal_mag, "RadCal", "Updated RadCal", 'Cal Coeff', xlim=[350, 800], ylim=[0, 0.0015], diff=False)
+            pt.plot(s_type, "cal vs updated cal", wvls, DATA['radcal_cal'], updt_cal_mag, "RadCal", "Updated RadCal", 'Div Diff (%)', xlim=[350, 800], ylim=[-5, 0], diff=True)
 
             # Stability correction
             sample_stab = cm.generate_sample(mDraws, np.ones(len(UNC['stab'])), UNC['stab'], "syst")
@@ -232,6 +287,12 @@ class HyperOCR(BaseInstrument):
             
             # Thermal correction
             sample_ct_corr = prop.run_samples(mf.thermal_corr, [sample_stab_corr, sample_Ct])
+            cal_corr_mag = np.mean(sample_cal_corr, axis=0)
+            ct_corr_mag =  np.mean(sample_ct_corr,  axis=0)
+
+
+            pt.plot(s_type, "cal vs cT", wvls, cal_corr_mag, ct_corr_mag, "Calibration Corrected", "Temperature Corrected", f'{unit}', xlim=[350, 800], ylim=ylim, diff=False)
+            pt.plot(s_type, "cal vs cT", wvls, cal_corr_mag, ct_corr_mag, "Calibration Corrected", "Temperature Corrected", 'Div Diff (%)', xlim=[350, 800], ylim=[-7.5, 7.5], diff=True)
 
             if s_type == "ES":
                 # Cosine correction
@@ -255,6 +316,11 @@ class HyperOCR(BaseInstrument):
                 # Save Uncertainties
                 unc = prop.process_samples(None, sample_cos_corr)
                 sample = sample_cos_corr
+
+                cos_corr_mag = np.mean(sample_cos_corr, axis=0)
+                pt.plot(s_type, "cT vs Cosine", wvls, ct_corr_mag, cos_corr_mag, "Temperature Corrected", "Cosine Corrected", f'{unit}', xlim=[350, 800], ylim=ylim, diff=False)
+                pt.plot(s_type, "cT vs Cosine", wvls, ct_corr_mag, cos_corr_mag, "Temperature Corrected", "Cosine Corrected", 'Div Diff (%)', xlim=[350, 800], ylim=[-7.5, 7.5], diff=True)
+
             else:
                 sample_pol = cm.generate_sample(mDraws, np.ones(len(UNC['pol'])), UNC['pol'], "syst")
                 sample_pol_corr = prop.run_samples(mf.apply_CB_corr, [sample_ct_corr, sample_pol])
