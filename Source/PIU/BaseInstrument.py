@@ -124,7 +124,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             PDS = pds(node, uncGrp)
         except NotImplementedError:
              print("Uncertainties not implemented for TriOS/DALEC/So-rad in Factory Regime")
-             return False
+             return False, None
 
         ones = np.ones_like(PDS.uncs['ES']['cal'])  # array of ones with correct shape.
 
