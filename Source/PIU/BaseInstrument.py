@@ -101,7 +101,7 @@ class BaseInstrument(ABC):  # Inheriting ABC allows for more function decorators
             
             return stats
             
-        except IndexError as err:
+        except (IndexError, TypeError) as err:
             writeLogFileAndPrint(f"Unable to parse statistics with for the ensemble: {err}. (possibly too few scans).")
             return False
 
