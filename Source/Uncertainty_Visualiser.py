@@ -505,20 +505,20 @@ class UncertaintyEngine(ABC):
 
         L1B = {}; L2 = {}
         for i, comp in enumerate([
-                ('Noise', 0), 
-                ('RADCAL_CAL', ''),  
-                ('RADCAL_LAMP', ''),  # data[3] updated radcal gain
-                ('RADCAL_PANEL', ''),  # data[3] updated radcal gain
-                ('Nlin', ['6', '8']), # RADCAL_CAL data 7 & 9 S1, S2
-                ('STRAYDATA_UNCERTAINTY', 0), 
-                ('Stability', 0), 
-                ('TEMPDATA', ['ES_TEMPERATURE_UNCERTAINTIES',
-                              'LI_TEMPERATURE_UNCERTAINTIES',
-                              'LT_TEMPERATURE_UNCERTAINTIES'
-                              ]), # TEMPDATA_CAL needs to not include class based
-                ('POLDATA_CAL', 0), 
-                ('ANGDATA_UNCERTAINTY', 0),
-                ('Glint', 0),
+                'Noise', 
+                'RADCAL_CAL',  
+                'RADCAL_LAMP',  # data[3] updated radcal gain
+                'RADCAL_PANEL',  # data[3] updated radcal gain
+                'Nlin',  # ['6', '8'], # RADCAL_CAL data 7 & 9 S1, S2
+                'STRAYDATA_UNCERTAINTY', 
+                'Stability', 
+                'TEMPDATA',  # ['ES_TEMPERATURE_UNCERTAINTIES',
+                            #   'LI_TEMPERATURE_UNCERTAINTIES',
+                            #   'LT_TEMPERATURE_UNCERTAINTIES'
+                            #   ]), # TEMPDATA_CAL needs to not include class based
+                'POLDATA_CAL', 
+                'ANGDATA_UNCERTAINTY',
+                'Glint',
             ]):  # breakdown of corrections also
             # adjust uncertainties
             uncGrp_adjusted = HDFGroup()
