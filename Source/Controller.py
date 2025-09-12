@@ -2,6 +2,7 @@
 import os
 import datetime
 import collections
+import threading
 import numpy as np
 
 from Source import PATH_TO_CONFIG, PACKAGE_DIR
@@ -539,7 +540,9 @@ class Controller:
 
         # Add output level directory if necessary
         if os.path.isdir(pathOutLevel) is False:
-            os.mkdir(pathOutLevel)
+            lock = threading.Lock()
+            with lock:
+                os.mkdir(pathOutLevel)
 
         # Redeploying flag_Trios here as it's the only SensorType/Platform that requires triplets at L1A so far
         if ConfigFile.settings["SensorType"].lower() == "trios":
