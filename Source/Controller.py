@@ -539,10 +539,9 @@ class Controller:
             return False
 
         # Add output level directory if necessary
-        if os.path.isdir(pathOutLevel) is False:
-            lock = threading.Lock()
-            with lock:
-                os.mkdir(pathOutLevel)
+        lock = threading.Lock()
+        with lock:
+            os.mkdirs(pathOutLevel,exist_ok=True)
 
         # Redeploying flag_Trios here as it's the only SensorType/Platform that requires triplets at L1A so far
         if ConfigFile.settings["SensorType"].lower() == "trios":
