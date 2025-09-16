@@ -528,8 +528,6 @@ class ProcessL2:
                 nLwRemainingSD = 0
 
                 if ZhangRho or threeCRho:
-
-                if ZhangRho or threeCRho:
                     # Only populate the valid wavelengths
                     if float(k) in waveSubset:
                         lw = lt - (rhoVec[k] * li)
