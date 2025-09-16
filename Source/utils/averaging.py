@@ -1,6 +1,5 @@
 '''################################# AVERAGE ORIENTED #################################'''
 
-import pandas as pd
 import numpy as np
 
 # def windowAverage(data,window_size):
