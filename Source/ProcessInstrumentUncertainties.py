@@ -1954,9 +1954,9 @@ class Trios(BaseInstrument):
                 unc_dict[f'unc_PANEL_{sensortype}'] = (np.asarray(
                     pd.DataFrame(uncGrp.getDataset(sensortype + "_RADCAL_PANEL").data)['3'])/100)*PANEL
 
-        return self.processFRM(node, uncGrp, unc_dict, raw_grps, raw_slices, stats, newWaveBands)
+        return self._FRM(node, uncGrp, unc_dict, raw_grps, raw_slices, stats, newWaveBands)
 
-    def processFRM(self, node, uncGrp, uncDict, raw_grps, raw_slices, stats, newWaveBands) -> dict[str, Any]:
+    def _FRM(self, node, uncGrp, uncDict, raw_grps, raw_slices, stats, newWaveBands) -> dict[str, Any]:
         """
         FRM regime propagation instrument uncertainties, see D10 section 5.3.2 for more information.
         :param node: HDFRoot containing entire HDF file
