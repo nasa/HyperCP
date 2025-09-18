@@ -463,10 +463,12 @@ class ProcessL1aqc:
             tThreshold = 30 # seconds gap between datasets
             badTimes = dating.findGaps_dateTime(esDateTime,sunTrackerDateTime,tThreshold)
 
-            logging.writeLogFileAndPrint(f'Percentage of data failed on Suntracker outage: {round(100*len(badTimes)/len(esDateTime))} %')
+            if badTimes is not False:
+                logging.writeLogFileAndPrint(f'Percentage of data failed on Suntracker outage: {round(100*len(badTimes)/len(esDateTime))} %')
 
             if badTimes is False:
                 # All records are bad
+                logging.writeLogFileAndPrint('All records removed for Suntracker outage.')
                 return None
 
             node = ProcessL1aqc.filterBadTimes(node,badTimes)
