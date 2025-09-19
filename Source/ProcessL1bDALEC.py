@@ -11,11 +11,12 @@ from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
 from Source.ConfigFile import ConfigFile
 from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
-from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
 import Source.utils.loggingHCP as logging
 import Source.utils.dating as dating
+from Source.utils.uncertainties import unc_management as um
+from Source.utils.loggingHCP import writeLogFileAndPrint
 
 class ProcessL1bDALEC:
     '''L1B for DALEC'''
@@ -28,7 +29,7 @@ class ProcessL1bDALEC:
         gp.attributes['FrameType'] = 'NONE'  # add FrameType = None so grp passes a quality check later
 
         # Unc dataset renaming
-        Utilities.RenameUncertainties_Class(root)
+        um.RenameUncertainties_Class(root)
 
         for sensor in ['LI','LT','ES']:
             dsname = sensor+'_RADCAL_UNC'
@@ -39,7 +40,7 @@ class ProcessL1bDALEC:
             ds.columnsToDataset()
 
         # interpolate unc to full wavelength range, depending on class based or full char
-        Utilities.interpUncertainties_Factory(root)
+        um.interpUncertainties_Factory(root)
 
         # # generate temperature coefficient
        #Utilities.UncTempCorrection(root)
@@ -292,8 +293,7 @@ class ProcessL1bDALEC:
             calibrationMap = CalibrationFileReader.read(calPath)
             if not ProcessL1b_FRMCal.processL1b_SeaBird(node, calibrationMap):
                 msg = 'Error in ProcessL1b.process_FRM_calibration'
-                print(msg)
-                Utilities.writeLogFile(msg)
+                writeLogFileAndPrint(msg)
                 return None
 
         # Interpolation

@@ -14,7 +14,6 @@ from Source.CalibrationFileReader import CalibrationFileReader
 from Source.ProcessL1b_Interp import ProcessL1b_Interp
 from Source.ProcessL1b_FactoryCal import ProcessL1b_FactoryCal
 from Source.ProcessL1b_FRMCal import ProcessL1b_FRMCal
-from Source.Utilities import Utilities
 from Source.GetAnc import GetAnc
 from Source.GetAnc_ecmwf import GetAnc_ecmwf
 import Source.utils.loggingHCP as logging
@@ -23,6 +22,7 @@ import Source.utils.comparing as comparing
 import Source.utils.thermalling as thermalling
 import Source.utils.interpolating as interpolating
 import Source.utils.filing as filing
+from Source.utils.uncertainties import unc_management as um
 
 class ProcessL1b:
     '''L1B mainly for SeaBird with some shared methods'''
@@ -50,7 +50,7 @@ class ProcessL1b:
             filing.read_char(f, gp)
 
         # Unc dataset renaming
-        Utilities.RenameUncertainties_Class(root)
+        um.RenameUncertainties_Class(root)
 
         # Creation of RADCAL class unc for Seabird, values are extracted from:
         # The Seventh SeaWiFS Intercalibration Round-Robin Experiment (SIRREX-7), March 1999.
@@ -83,7 +83,7 @@ class ProcessL1b:
                 ds.columnsToDataset()
 
         # interpolate unc to full wavelength range, depending on class based or full char
-        Utilities.interpUncertainties_Factory(root)
+        um.interpUncertainties_Factory(root)
 
         # generate temperature coefficient
         thermalling.UncTempCorrection(root)
@@ -262,10 +262,10 @@ class ProcessL1b:
         root = ProcessL1b.read_FidRadDB_cal_char_files(root)
 
         # Unc dataset renaming
-        Utilities.RenameUncertainties_Class(root)
+        um.RenameUncertainties_Class(root)
 
         # interpolate unc to full wavelength range, depending on class based or full char
-        Utilities.interpUncertainties_Class(root)
+        um.interpUncertainties_Class(root)
 
         # # generate temperature coefficient
         thermalling.UncTempCorrection(root)
@@ -291,10 +291,10 @@ class ProcessL1b:
         # Polar correction to be developed and added to FRM branch.
 
         # unc dataset renaming
-        Utilities.RenameUncertainties_FullChar(root)
+        um.RenameUncertainties_FullChar(root)
 
         # interpolate LAMP and PANEL to full wavelength range
-        success = Utilities.interpUncertainties_FullChar(root)
+        success = um.interpUncertainties_FullChar(root)
         if not success:
             print('interpUncertainties_FullChar failed.')
             return None
