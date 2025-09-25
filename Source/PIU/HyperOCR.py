@@ -166,9 +166,9 @@ class HyperOCR(BaseInstrument):
             S_mag = np.array([np.average([S1_mag[i], S2_mag[i]]) for i in range(len(S1_mag))])
             S12_mag = np.mean(sample_S12, axis=0)
 
-            pt.plot(s_type, "S1 S2", wvls, S1_mag, S2_mag, "S1", "S2", 'Signal (DN)', xlim=[320, 380], ylim=[1000, 3000], diff=False)
-            pt.plot(s_type, "S12", wvls, S_mag, S12_mag, "S Ave", "S12", 'Signal (DN)', xlim=[320, 380], ylim=[1000, 3000], diff=False)
-            pt.plot(s_type, "S12", wvls, S1_mag, S2_mag, "S1", "S2", 'divided difference (%)', xlim=[320, 800], ylim=[-2.5, 2.5], diff=True)
+            #pt.plot(s_type, "S1 S2", wvls, S1_mag, S2_mag, "S1", "S2", 'Signal (DN)', xlim=[320, 380], ylim=[1000, 3000], diff=False)
+            #pt.plot(s_type, "S12", wvls, S_mag, S12_mag, "S Ave", "S12", 'Signal (DN)', xlim=[320, 380], ylim=[1000, 3000], diff=False)
+            #pt.plot(s_type, "S12", wvls, S1_mag, S2_mag, "S1", "S2", 'divided difference (%)', xlim=[320, 800], ylim=[-2.5, 2.5], diff=True)
 
             # samples for Straylight correction
             if self.sl_method.upper() == 'ZONG':  # zong is the default straylight correction
@@ -240,11 +240,11 @@ class HyperOCR(BaseInstrument):
             nlin_corr_mag    = np.mean(sample_nlin_corr, axis=0)
             sl_corr_mag      = np.mean(sample_sl_corr, axis=0)
             
-            pt.plot(s_type, "nlin vs dark", wvls, nlin_corr_mag, sample_dark_mag, "Nlin", "Dark", 'Signal (DN)', xlim=[320, 800], ylim=[None, None], diff=False)
-            pt.plot(s_type, "nlin vs dark", wvls, nlin_corr_mag, sample_dark_mag, "Nlin", "Dark", 'Div Diff (%)', xlim=[320, 800], ylim=[-7.5, 7.5], diff=True)
+            #pt.plot(s_type, "nlin vs dark", wvls, nlin_corr_mag, sample_dark_mag, "Nlin", "Dark", 'Signal (DN)', xlim=[320, 800], ylim=[None, None], diff=False)
+            #pt.plot(s_type, "nlin vs dark", wvls, nlin_corr_mag, sample_dark_mag, "Nlin", "Dark", 'Div Diff (%)', xlim=[320, 800], ylim=[-7.5, 7.5], diff=True)
 
-            pt.plot(s_type, "sl vs nlin", wvls, sl_corr_mag, nlin_corr_mag, "StrayLight", "Nlin", 'Signal (DN)', xlim=[320, 800], ylim=[None, None], diff=False)
-            pt.plot(s_type, "sl vs nlin", wvls, sl_corr_mag, nlin_corr_mag, "StrayLight", "Nlin", 'Div Diff (%)', xlim=[320, 800], ylim=[-7.5, 7.5], diff=True)
+            #pt.plot(s_type, "sl vs nlin", wvls, sl_corr_mag, nlin_corr_mag, "StrayLight", "Nlin", 'Signal (DN)', xlim=[320, 800], ylim=[None, None], diff=False)
+            #pt.plot(s_type, "sl vs nlin", wvls, sl_corr_mag, nlin_corr_mag, "StrayLight", "Nlin", 'Div Diff (%)', xlim=[320, 800], ylim=[-7.5, 7.5], diff=True)
 
             # Normalise based on integration time
             sample_normalised = prop.run_samples(mf.normalise, [sample_sl_corr, sample_cal_int, sample_int_time])
@@ -277,9 +277,9 @@ class HyperOCR(BaseInstrument):
                 PANEL_mag = np.mean(sample_PANEL, axis=0)
                 updt_cal_mag = (LAMP_mag * PANEL_mag) / (np.pi*S12_sl_mag*10)
 
-            pt.plot(s_type, "cal vs updated cal", wvls, DATA['radcal_cal'], updt_cal_mag, "RadCal", "Updated RadCal", 'Cal Coeff', xlim=[350, 800], ylim=[0, 0.0015], diff=False)
-            # pt.plot(s_type, "cal vs updated cal", wvls, DATA['radcal_cal'], updt_cal_mag, "RadCal", "Updated RadCal", 'Cal Coeff', xlim=[350, 800], ylim=[0, 0.0015], diff=False)
-            pt.plot(s_type, "cal vs updated cal", wvls, DATA['radcal_cal'], updt_cal_mag, "RadCal", "Updated RadCal", 'Div Diff (%)', xlim=[350, 800], ylim=[-5, 0], diff=True)
+            #pt.plot(s_type, "cal vs updated cal", wvls, DATA['radcal_cal'], updt_cal_mag, "RadCal", "Updated RadCal", 'Cal Coeff', xlim=[350, 800], ylim=[0, 0.0015], diff=False)
+            # #pt.plot(s_type, "cal vs updated cal", wvls, DATA['radcal_cal'], updt_cal_mag, "RadCal", "Updated RadCal", 'Cal Coeff', xlim=[350, 800], ylim=[0, 0.0015], diff=False)
+            #pt.plot(s_type, "cal vs updated cal", wvls, DATA['radcal_cal'], updt_cal_mag, "RadCal", "Updated RadCal", 'Div Diff (%)', xlim=[350, 800], ylim=[-5, 0], diff=True)
 
             # Stability correction
             sample_stab = cm.generate_sample(mDraws, np.ones(len(UNC['stab'])), UNC['stab'], "syst")
@@ -291,8 +291,8 @@ class HyperOCR(BaseInstrument):
             ct_corr_mag =  np.mean(sample_ct_corr,  axis=0)
 
 
-            pt.plot(s_type, "cal vs cT", wvls, cal_corr_mag, ct_corr_mag, "Calibration Corrected", "Temperature Corrected", f'{unit}', xlim=[350, 800], ylim=ylim, diff=False)
-            pt.plot(s_type, "cal vs cT", wvls, cal_corr_mag, ct_corr_mag, "Calibration Corrected", "Temperature Corrected", 'Div Diff (%)', xlim=[350, 800], ylim=[-7.5, 7.5], diff=True)
+            #pt.plot(s_type, "cal vs cT", wvls, cal_corr_mag, ct_corr_mag, "Calibration Corrected", "Temperature Corrected", f'{unit}', xlim=[350, 800], ylim=ylim, diff=False)
+            #pt.plot(s_type, "cal vs cT", wvls, cal_corr_mag, ct_corr_mag, "Calibration Corrected", "Temperature Corrected", 'Div Diff (%)', xlim=[350, 800], ylim=[-7.5, 7.5], diff=True)
 
             if s_type == "ES":
                 # Cosine correction
@@ -318,8 +318,8 @@ class HyperOCR(BaseInstrument):
                 sample = sample_cos_corr
 
                 cos_corr_mag = np.mean(sample_cos_corr, axis=0)
-                pt.plot(s_type, "cT vs Cosine", wvls, ct_corr_mag, cos_corr_mag, "Temperature Corrected", "Cosine Corrected", f'{unit}', xlim=[350, 800], ylim=ylim, diff=False)
-                pt.plot(s_type, "cT vs Cosine", wvls, ct_corr_mag, cos_corr_mag, "Temperature Corrected", "Cosine Corrected", 'Div Diff (%)', xlim=[350, 800], ylim=[-7.5, 7.5], diff=True)
+                #pt.plot(s_type, "cT vs Cosine", wvls, ct_corr_mag, cos_corr_mag, "Temperature Corrected", "Cosine Corrected", f'{unit}', xlim=[350, 800], ylim=ylim, diff=False)
+                #pt.plot(s_type, "cT vs Cosine", wvls, ct_corr_mag, cos_corr_mag, "Temperature Corrected", "Cosine Corrected", 'Div Diff (%)', xlim=[350, 800], ylim=[-7.5, 7.5], diff=True)
 
             else:
                 sample_pol = cm.generate_sample(mDraws, np.ones(len(UNC['pol'])), UNC['pol'], "syst")
@@ -373,6 +373,8 @@ class HyperOCRUtils:
     def darkToLightTimer(rawGrp, sensortype):
         darkGrp = rawGrp['DARK']
         lightGrp = rawGrp['LIGHT']
+
+        lightData,darkData,lightDateTime,darkDateTime  = None,None,None,None,
 
         if darkGrp.attributes["FrameType"] == "ShutterDark" and darkGrp.getDataset(sensortype):
             darkData = darkGrp.getDataset(sensortype)

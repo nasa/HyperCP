@@ -283,7 +283,7 @@ class Controller:
         if fp is None or fp=='':
             return None
         elif not os.path.isfile(fp):
-            print("Specified ancillary file not found: " + fp)
+            logging.writeLogFileAndPrint("Specified ancillary file not found: " + fp)
             return None
         ancillaryData = AncillaryReader.readAncillary(fp)
         return ancillaryData
